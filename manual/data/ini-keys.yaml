@@ -4850,6 +4850,24 @@ Behind:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BerserkColor:
+  key: BerserkColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: BerserkColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BerserkFriendly:
   key: BerserkFriendly
   scopes:
@@ -10493,6 +10511,23 @@ DeadBodies:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DeathAnims:
+  key: DeathAnims
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AnimTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: InfantryTypeClass
+      member: DeathAnims
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 DeathFrameRate:
   key: DeathFrameRate
   scopes:
@@ -20158,6 +20193,24 @@ IonStorms:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+IronCurtainColor:
+  key: IronCurtainColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: IronCurtainColor
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 IronCurtainDuration:
   key: IronCurtainDuration
   scopes:

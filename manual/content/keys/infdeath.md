@@ -1,7 +1,7 @@
 ---
 key: InfDeath
 summary: The death sequence an infantryman killed by the warhead performs.
-see_also: [DeadBodies, InfantryExplode, FlamingInfantry, InfantryHeadPop, InfantryNuked, InfantryVirus, InfantryBrute, "system:laser-fences"]
+see_also: [DeadBodies, DeathAnims, InfantryExplode, FlamingInfantry, InfantryHeadPop, InfantryNuked, InfantryVirus, InfantryBrute, "system:laser-fences"]
 when_omitted:
   kind: value
   value: "0"
@@ -24,6 +24,8 @@ The value selects one of eleven deaths:
 | `10` | The soldier is removed and leaves the [`InfantryBrute`](/keys/infantrybrute/) animation |
 
 A death that names an animation the rules leave unset removes the soldier without one.
+
+A type with [`DeathAnims=`](/keys/deathanims/#scope-infantrytype) takes its animation from that list at this value instead, and the soldier is removed at once.
 
 Any other value behaves as `0`.
 

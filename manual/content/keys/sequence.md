@@ -30,6 +30,22 @@ The frame drawn is the run's first frame, plus the animation stage wrapped to th
 
 An action whose entry is missing from the section gets a frame count of `0`, and an action with a frame count of `0` never starts. A soldier whose section omits `Idle1` never plays it.
 
+## Frame sounds
+
+A sound key named after an entry plays a sound on one frame of that run: `FireUpSounds` belongs to `FireUp`, `WalkSounds` to `Walk`, and so on. Its value lists up to two pairs, each a frame number and a sound name from the sound list:
+
+```ini title="art.ini"
+[SlaveSequence]
+FireUp=164,8,8
+FireUpSounds=2 SlaveAttack
+```
+
+Frames count from `0` within the run, so `2` is the run's third frame. A pair whose sound name is not in the sound list is skipped, and the next pair takes its place. Only the first two pairs that name a sound are kept.
+
+A sound plays on the tick the run's timer moves onto its frame, once for each pass over that frame. It plays at the soldier's position. Its volume and pan are set when it starts and do not follow the soldier afterward. Frame sounds do not affect gameplay.
+
+Two cases never play a sound. An entry whose rate, its third field, is `0` never moves on, so its sounds never play. A run starts on its first frame without a timer step, so a sound on frame `0` is rarely heard; put it on a later frame.
+
 ## Entry names
 
 The table lists every entry a sequence section may have and the action each one drives.

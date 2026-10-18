@@ -62,8 +62,11 @@
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
+#include "voc.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 /***********************************************************************************************
  * InfantryTypeClass::InfantryTypeClass -- Constructor for infantry type class objects.        *
@@ -116,10 +119,12 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	IsDoggie(false),
 	IsNotHuman(false),
 	DeadBodies(),
+	DeathAnims(),
 	IsWebImmune(false),
 	HeapID(INFANTRY_NONE),
 	Pip(PIP_GREEN),
 	DoControls(NULL),
+	DoSounds(),
 	FireLaunch(false),
 	ProneLaunch(false),
 	SecondaryLaunch(false),
@@ -369,6 +374,28 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 					doinfo->Facing = FACING_NW;
 				}
 			}
+
+			// Each pair is a stage then a sound name; a pair whose sound is unknown is dropped.
+			SequenceSoundStruct & sounds = DoSounds[i];
+			char soundkey[32];
+			char soundlist[32];
+			sounds.Count = 0;
+			snprintf(soundkey, sizeof(soundkey), "%sSounds", SequenceName[i]);
+			if (ArtINI.Get_String(seqname, soundkey, "", soundlist, sizeof(soundlist)) > 0) {
+				char * token = strtok(soundlist, " ,\t");
+				while (token != NULL) {
+					int const frame = atoi(token);
+					token = strtok(NULL, " ,\t");
+					if (token == NULL) break;
+					VocType const voc = VocClass::From_Name(token);
+					token = strtok(NULL, " ,\t");
+					if (voc != VOC_NONE && sounds.Count < 2) {
+						sounds.Frame[sounds.Count] = frame;
+						sounds.Sound[sounds.Count] = voc;
+						sounds.Count++;
+					}
+				}
+			}
 		}
 	}
 }
@@ -429,6 +456,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
 		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
+		DeathAnims = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeathAnims", DeathAnims, 0x80);
 		if (IsBomber) IsCapture = true;
 		if (IsEngineer) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
@@ -524,6 +552,7 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAssaulter);
 	crc(UndeployDelay);
 	crc(IsDeployedCrushable);
+	crc(DeathAnims.Count());
 }
 
 
@@ -594,7 +623,9 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDoggie);
 	stream.Serialize(IsNotHuman);
 	stream.Serialize(DeadBodies);
+	stream.Serialize(DeathAnims);
 	stream.Serialize(IsWebImmune);
+	stream.Serialize_Bytes((void *)DoSounds, sizeof(DoSounds));
 }
 
 

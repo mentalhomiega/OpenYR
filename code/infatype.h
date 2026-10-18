@@ -19,6 +19,16 @@
 #include "infantry.hh"
 #include "pip.hh"
 
+/*
+ * A frame-synced sound from a sequence's <Name>Sounds= key. Sound plays on the sequence
+ * stage that equals Frame. A sequence keeps at most two.
+ */
+struct SequenceSoundStruct {
+	int Count;
+	int Frame[2];
+	VocType Sound[2];
+};
+
 /***************************************************************************
 **	The various unit types need specific data that is unique to units as
 **	opposed to buildings. This derived class elaborates these additional
@@ -46,6 +56,12 @@ class InfantryTypeClass : public TechnoTypeClass
 		**	the infantry may perform.
 		*/
 		DoInfoStruct const * DoControls;
+
+		/*
+		 * Frame-synced sounds for each sequence, indexed like DoControls. They are audio only
+		 * and are left out of the sync checksum.
+		 */
+		SequenceSoundStruct DoSounds[DO_COUNT];
 
 		/*
 		**	There are certain units with special animation sequences built into the
@@ -199,6 +215,10 @@ class InfantryTypeClass : public TechnoTypeClass
 
 		// The bodies this type leaves when it dies; empty means the shared [General] list.
 		TypeList<AnimTypeClass const *> DeadBodies;
+
+		// A non-empty list replaces the death sequence: the entry at the warhead's InfantryDeath
+		// index plays, or entry 0 when that index falls outside the list, and the soldier is removed.
+		TypeList<AnimTypeClass const *> DeathAnims;
 
 		/*
 		 * If this infantry type shrugs off webbing weapons, then this flag will be true.
