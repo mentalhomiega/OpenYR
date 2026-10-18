@@ -117,6 +117,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsTilter(true),
 	DeathFrameRate(1),
 	IsLockTurret(false),
+	IsTurretRecoil(false),
 	IsNoFireWhileMoving(false),
 	IsDeployToFire(false),
 	IsUseTurretShadow(false),
@@ -397,6 +398,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsCarriesCrate = ini.Get_Bool(Name(), "CarriesCrate", IsCarriesCrate);
 		WreckReleasesPassengers = ini.Get_Bool(Name(), "WreckReleasesPassengers", WreckReleasesPassengers);
 		IsLockTurret = !IsTurretEquipped;
+		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
 		IsTooBigToFitUnderBridge = ini.Get_Bool(Name(), "TooBigToFitUnderBridge", IsTooBigToFitUnderBridge);
 		IsTotable = ini.Get_Bool(Name(), "Totable", IsTotable);
 
@@ -567,6 +569,7 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsToVeinHarvest);
 	crc(IsFireAnim);
 	crc(IsLockTurret);
+	crc(IsTurretRecoil);
 	crc(IsNoFireWhileMoving);
 	crc(IsTilter);
 	crc(IsUseTurretShadow);
@@ -617,6 +620,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsToVeinHarvest);
 	stream.Serialize(IsFireAnim);
 	stream.Serialize(IsLockTurret);
+	stream.Serialize(IsTurretRecoil);
 	stream.Serialize(IsNoFireWhileMoving);
 	stream.Serialize(IsDeployToFire);
 	stream.Serialize(IsTilter);

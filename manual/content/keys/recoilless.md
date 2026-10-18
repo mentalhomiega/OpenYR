@@ -7,4 +7,4 @@ when_omitted:
   value: "no"
 ---
 
-A structure's voxel turret and barrel still move back briefly after each shot, whatever this key says.
+A structure's voxel turret and barrel move back after each shot only when its type sets [`TurretRecoil=yes`](/keys/turretrecoil/#scope-buildingtype), whatever this key says.

@@ -5342,9 +5342,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 
 				if (Is_Turret_Equipped()) {
-					IsInRecoilState = true;
 					if (RTTI == RTTI_BUILDING) {
 						((BuildingClass *)this)->Start_Turret_Recoil();
+						IsInRecoilState = ((BuildingClass *)this)->Class->IsTurretRecoil;
+					} else if (RTTI == RTTI_UNIT) {
+						IsInRecoilState = ((UnitClass *)this)->Class->IsTurretRecoil;
 					}
 				}
 
