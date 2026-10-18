@@ -1426,6 +1426,8 @@ static void Stock_Check_Step(void)
 			if (!motion.Read_File(file)) {
 				refused_anims++;
 				DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
+			} else if (motion.Get_Frame_Count() > 1) {
+				DebugString("AUTOTEST   stockcheck multiframe %s frames %d\n", hva.c_str(), motion.Get_Frame_Count());
 			}
 		}
 		if (has_vxl && has_hva) {
@@ -3848,7 +3850,7 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "animlog") {
 		// animlog <TypeID>: the animation state of each object of that type, whoever owns it. The body draws the voxel frame
-		// TotalFramesWalked / 2 modulo its frame count (UnitClass::Unit_Draw_Voxel), the turret animates from its facing and
+		// TotalFramesWalked modulo its frame count (UnitClass::Unit_Draw_Voxel, AircraftClass::Draw_It), the turret animates from its facing and
 		// TurretAnimFrame, and a DiskLaser ring is drawn while DiskLaser is active.
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass const * techno = Technos[index];
@@ -3863,8 +3865,11 @@ void Run(StepType const & step)
 				body_frames = vehicle->Class->Voxel.MotLib != NULL ? vehicle->Class->Voxel.MotLib->Get_Frame_Count() : -1;
 				secondary = (int)vehicle->SecondaryFacing.Current().As_Int();
 				secondary_desired = (int)vehicle->SecondaryFacing.Desired().As_Int();
+			} else if (techno->RTTI == RTTI_AIRCRAFT) {
+				AircraftClass const * aircraft = static_cast<AircraftClass const *>(techno);
+				body_frames = aircraft->Class->Voxel.MotLib != NULL ? aircraft->Class->Voxel.MotLib->Get_Frame_Count() : -1;
 			}
-			int const body_frame = body_frames > 0 && walked >= 0 ? (walked / 2) % body_frames : -1;
+			int const body_frame = body_frames > 0 && walked >= 0 ? walked % body_frames : -1;
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 			char tar[48] = "none";
 			if (tarobject != NULL) {

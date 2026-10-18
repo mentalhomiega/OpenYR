@@ -40183,6 +40183,23 @@ TurretAnimZAdjust:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+TurretBob:
+  key: TurretBob
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: UnitTypeClass
+      member: IsTurretBob
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 TurretChargeAnimRate:
   key: TurretChargeAnimRate
   scopes:

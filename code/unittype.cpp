@@ -118,6 +118,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	DeathFrameRate(1),
 	IsLockTurret(false),
 	IsTurretRecoil(false),
+	IsTurretBob(false),
 	IsNoFireWhileMoving(false),
 	IsDeployToFire(false),
 	IsUseTurretShadow(false),
@@ -399,6 +400,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		WreckReleasesPassengers = ini.Get_Bool(Name(), "WreckReleasesPassengers", WreckReleasesPassengers);
 		IsLockTurret = !IsTurretEquipped;
 		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
+		IsTurretBob = ini.Get_Bool(Name(), "TurretBob", IsTurretBob);
 		IsTooBigToFitUnderBridge = ini.Get_Bool(Name(), "TooBigToFitUnderBridge", IsTooBigToFitUnderBridge);
 		IsTotable = ini.Get_Bool(Name(), "Totable", IsTotable);
 

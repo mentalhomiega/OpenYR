@@ -2752,24 +2752,27 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	Point2D offset(0, 0);
 	Matrix3D main_matrix;
 
-	int frame = TotalFramesWalked / 2 % Class->Voxel.MotLib->Get_Frame_Count();
+	int frame = TotalFramesWalked % Class->Voxel.MotLib->Get_Frame_Count();
 
-	switch (frame) {
-		case 0:
-		case 7:
-		case 15:
-			break;
+	// Without TurretBob=yes the turret and barrel stay on the hull's pixel, as gamemd's DrawAsVXL draws them.
+	if (Class->IsTurretBob) {
+		switch (frame) {
+			case 0:
+			case 7:
+			case 15:
+				break;
 
-		case 1:
-		case 6:
-		case 8:
-		case 14:
-			offset = Point2D(0, -1);
-			break;
+			case 1:
+			case 6:
+			case 8:
+			case 14:
+				offset = Point2D(0, -1);
+				break;
 
-		default:
-			offset = Point2D(0, -2);
-			break;
+			default:
+				offset = Point2D(0, -2);
+				break;
+		}
 	}
 
 	Rect cliprect = xcliprect;
