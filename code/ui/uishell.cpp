@@ -705,6 +705,7 @@ void UIShellClass::Shutdown(void)
 	Context = nullptr;
 
 	Rml::Shutdown();
+	UI_Unregister_Surface_Element();
 	Render->Shutdown();
 	FontLoaded = false;
 }
