@@ -25,7 +25,7 @@ Modern differs from Classic in these bindings. Everything else is the same in bo
 
 | Key | Modern | Classic |
 | --- | --- | --- |
-| A | `AttackMove`, a press | `ToggleAlliance` |
+| A | `AttackMove`, a press; holding A keeps attack-move on for the clicks made while it is down | `ToggleAlliance` |
 | V | `WaypointMode`, a press | none |
 | Home | `CenterBase`, a press; H is its secondary key | `LeftSidebarUp` |
 | End | none | `LeftSidebarDown` |

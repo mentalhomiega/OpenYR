@@ -248,7 +248,9 @@ UIMD.INI picks the buttons with [`ButtonList`](/keys/buttonlist/): the `[Advance
 | `Guard` | Puts the selection on guard, as [Guard](/commands/guardobject/) |
 | `Stop` | Stops the selection, as [Stop](/commands/stopobject/) |
 | `PlanningMode` | Toggles planning mode. Each click plans an order for every selected unit that can move, and the planned orders run when the mode ends. The mode ends when the planning key (Z by default) is released or when this button is clicked again |
-| `AttackMove`, `Beacon`, `Cheer` | Nothing yet |
+| `AttackMove` | Arms an attack-move, as [Attack move](/commands/attackmove/) does |
+| `Cheer` | Makes the player's infantry cheer, as the `AllToCheer` command does |
+| `Beacon` | Nothing yet |
 
 ## What is fixed in the engine
 
