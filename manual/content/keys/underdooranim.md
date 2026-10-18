@@ -8,7 +8,7 @@ when_omitted:
   note: No under-door shape is loaded and none is drawn.
 ---
 
-`UnderDoorAnim` names a shape that a structure draws while it is unloading, such as a war factory letting a finished vehicle out. Write the filename without its extension; the engine loads `<value>.SHP`. The name gets the same theater letter rewrite that [`DoorAnim`](/keys/dooranim/) describes.
+`UnderDoorAnim` names a shape that a structure draws while it is unloading, such as a war factory letting a finished vehicle out. Write the filename without its extension; the engine loads `<value>.SHP`. The name gets the same theater letter rewrite that [`DoorAnim`](/keys/dooranim/) describes. A unit that leaves through the roof does not use this shape; it draws [`UnderRoofDoorAnim`](/keys/underroofdooranim/) instead.
 
 The shape is drawn after the structure and its [`BibShape`](/keys/bibshape/), at ground depth. Only its first two frames are used, chosen by the structure's health alone:
 

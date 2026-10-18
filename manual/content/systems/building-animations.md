@@ -94,6 +94,7 @@ keys:
   - DoorStages
   - DamagedDoor
   - UnderDoorAnim
+  - UnderRoofDoorAnim
   - Bib
   - BibShape
   - SensorArray
@@ -304,6 +305,6 @@ Four more shapes are drawn with the structure, but none of them is an attached a
 
 - [`BibShape`](/keys/bibshape/) is drawn under the structure.
 - [`DeployingAnim`](/keys/deployinganim/#scope-buildingtype) replaces the structure's artwork while it releases a unit.
-- [`DoorAnim`](/keys/dooranim/) and [`UnderDoorAnim`](/keys/underdooranim/) are drawn around its factory door while it releases a unit.
+- [`DoorAnim`](/keys/dooranim/) and [`UnderDoorAnim`](/keys/underdooranim/) are drawn around its factory door while it releases a unit. A unit that leaves through the roof gets [`UnderRoofDoorAnim`](/keys/underroofdooranim/) instead; if that is omitted, no under-door shape is drawn for the exit.
 
 Despite its name, [`Bib=yes`](/keys/bib/) does not draw the apron. It draws nothing, and lets vehicles drive onto the eastern edge of the structure's footprint.
