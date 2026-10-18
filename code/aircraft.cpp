@@ -433,9 +433,11 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		/*
 		**	Actually draw the root body of the unit.
 		*/
+		// The body is drawn uncached, so its frame is not folded into a cache key.
+		int const body_frame = Class->Voxel.MotLib != NULL && Class->Voxel.MotLib->Get_Frame_Count() > 0 ? TotalFramesWalked % Class->Voxel.MotLib->Get_Frame_Count() : 0;
 		key = -1;
 		matrix = Locomotion->Draw_Matrix(&key);
-		Draw_Voxel(Class->Voxel, 0, key, &Class->VoxelIndex, cliprect, point, Get_Isometric_View_Matrix() * matrix, newbrightness, SHAPE_NORMAL);
+		Draw_Voxel(Class->Voxel, body_frame, key, &Class->VoxelIndex, cliprect, point, Get_Isometric_View_Matrix() * matrix, newbrightness, SHAPE_NORMAL);
 	}
 
 	/*

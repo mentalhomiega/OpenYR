@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 108 entries
+- [Rules](#rules): 109 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -168,6 +168,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`Totable`](../manual/content/keys/totable.md) | `yes` | Whether a carryall may pick this vehicle up. | OpenYR |
+| [`TurretBob`](../manual/content/keys/turretbob--unittype.md) | `no` | With `yes`, the turret and barrel of a voxel vehicle shift up by the hull's frame number. | OpenYR |
 | [`WreckReleasesPassengers`](../manual/content/keys/wreckreleasespassengers--unittype.md) | `yes` | A vehicle whose artwork sets `DeathFrames` above `0` becomes a wreck when it is destroyed, and stays on the map until its `MaxDeathCounter` passes. | OpenYR |
 
 ### WarheadType

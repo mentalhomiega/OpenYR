@@ -18,6 +18,7 @@ records:
   # Our own keys.
   added-barrelanimzadjust: OpenYR
   added-synclog: OpenYR
+  added-turretbob: OpenYR
   added-voxelshadescale: OpenYR
   added-voxelspecularfromview: OpenYR
   added-voxelspecularstrength: OpenYR
