@@ -216,6 +216,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Broadcast(bool closed);
 		void Flush(void);
 		void Own_Setup(int side, int color, int start, int team);
+		int Playing_Count(void) const;
 
 		CnCNetSessionClass & Network;
 		CnCNetRoomClass TheRoom;
@@ -458,6 +459,13 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 		state.Sides.push_back(option);
 	}
+	UINetOption watch;
+	watch.Label = "Spectator";
+	watch.Value = CNCNET_SPECTATOR_SIDE;
+	if (self != nullptr && self->Side == CNCNET_SPECTATOR_SIDE) {
+		state.Side = static_cast<int>(state.Sides.size());
+	}
+	state.Sides.push_back(watch);
 
 	state.Colors.clear();
 	for (int index = 0; index < MAX_MPLAYER_COLORS && index < COLOR_COUNT; index++) {
@@ -475,7 +483,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Teams.clear();
 	for (int team = -1; team < 4; team++) {
 		UINetOption option;
-		option.Label = team < 0 ? std::string("None") : std::string("Team ") + static_cast<char>('A' + team);
+		option.Label = team < 0 ? std::string("None") : std::string(1, static_cast<char>('A' + team));
 		option.Value = team;
 		state.Teams.push_back(option);
 	}
@@ -501,14 +509,19 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		UINetPlayerRow row;
 		row.Name = player.Name;
 		row.Color = (player.Color >= 0 && player.Color < MAX_MPLAYER_COLORS) ? UI_Color_Text(PlayerColorTable[player.Color]) : std::string(PLAIN);
-		if (player.Side >= 0 && player.Side < HouseTypes.Count()) {
+		if (player.Side == CNCNET_SPECTATOR_SIDE) {
+			row.House = "nodi.pcx";
+			row.Hint = "Spectator";
+		} else if (player.Side >= 0 && player.Side < HouseTypes.Count()) {
 			row.House = HouseTypes[player.Side]->Side == SIDE_GDI ? "gdii.pcx" : "nodi.pcx";
 			row.Hint = HouseTypes[player.Side]->Full_Name();
 		} else {
 			row.House = "nodi.pcx";
 			row.Hint = "Random";
 		}
-		if (player.Team >= 0) {
+		if (player.Side == CNCNET_SPECTATOR_SIDE) {
+			row.Detail = "Watching";
+		} else if (player.Team >= 0) {
 			row.Detail = std::string(1, static_cast<char>('A' + player.Team));
 		}
 		if (player.Start >= 0) {
@@ -565,7 +578,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			map_ready = false;
 		}
 	}
-	if (static_cast<int>(TheRoom.Players().size()) + Session.Options.AIPlayers > Map_Player_Limit()) {
+	if (Playing_Count() + Session.Options.AIPlayers > Map_Player_Limit()) {
 		state.MapName += " (holds " + std::to_string(Map_Player_Limit()) + " players)";
 	}
 	if (PreviewMap != Session.ScenarioFileName) {
@@ -586,7 +599,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Redeploy = options.MCVRedeploy;
 	state.GameSpeed = 6 - options.GameSpeed;
 	state.AIPlayers = options.AIPlayers;
-	state.AIPlayersMax = std::max(0, std::min(6, Map_Player_Limit() - static_cast<int>(TheRoom.Players().size())));
+	state.AIPlayersMax = std::max(0, std::min(6, Map_Player_Limit() - Playing_Count()));
 	state.AILevel = options.AIDifficulty;
 	state.UnitCountMin = 1;
 	state.UnitCountMax = 10;
@@ -633,6 +646,21 @@ void CnCNetRoomServiceClass::Set_Side(int index)
 			return;
 		}
 	}
+	if (index == count) {
+		if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+			Own_Setup(CNCNET_SPECTATOR_SIDE, self->Color, -1, -1);
+		}
+	}
+}
+
+
+int CnCNetRoomServiceClass::Playing_Count(void) const
+{
+	int count = 0;
+	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
+		count += player.Side != CNCNET_SPECTATOR_SIDE;
+	}
+	return(count);
 }
 
 
@@ -652,7 +680,8 @@ void CnCNetRoomServiceClass::Set_Team(int index)
 	if (index < 0 || index > 4) {
 		return;
 	}
-	if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
+	if (self != nullptr && self->Side != CNCNET_SPECTATOR_SIDE) {
 		Own_Setup(self->Side, self->Color, self->Start, index - 1);
 	}
 }
@@ -664,7 +693,8 @@ void CnCNetRoomServiceClass::Set_Start(int index)
 	if (index < 0 || index > static_cast<int>(starts.size())) {
 		return;
 	}
-	if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
+	if (self != nullptr && self->Side != CNCNET_SPECTATOR_SIDE) {
 		Own_Setup(self->Side, self->Color, index == 0 ? -1 : starts[index - 1], self->Team);
 	}
 }
@@ -742,7 +772,7 @@ void CnCNetRoomServiceClass::Pick_Map(void)
 bool CnCNetRoomServiceClass::Can_Start(void)
 {
 	return(TheRoom.Is_Host() && TheRoom.Can_Start()
-		&& static_cast<int>(TheRoom.Players().size()) + Session.Options.AIPlayers <= Map_Player_Limit());
+		&& Playing_Count() + Session.Options.AIPlayers > 0 && Playing_Count() + Session.Options.AIPlayers <= Map_Player_Limit());
 }
 
 

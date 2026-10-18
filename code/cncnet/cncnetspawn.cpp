@@ -102,7 +102,9 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 		seat.Name = player.Name;
 		seat.Team = player.Team;
 		seat.Side = player.Side;
-		if (seat.Side < 0 && !sides.empty()) {
+		if (seat.Side == CNCNET_SPECTATOR_SIDE) {
+			seat.Team = -1;
+		} else if (seat.Side < 0 && !sides.empty()) {
 			seat.Side = sides[random() % sides.size()];
 		}
 		seat.Color = player.Color;
@@ -111,8 +113,8 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 				seat.Color = color;
 			}
 		}
-		seat.Start = player.Start;
-		if (seat.Start < 0) {
+		seat.Start = player.Side == CNCNET_SPECTATOR_SIDE ? -1 : player.Start;
+		if (seat.Start < 0 && player.Side != CNCNET_SPECTATOR_SIDE) {
 			std::vector<int> free;
 			for (int start : starts) {
 				if (taken_starts.count(start) == 0) {
@@ -196,6 +198,13 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 }
 
 
+// A spectator still needs a country for the house the game makes; the first one serves.
+static int Spawn_Side(CnCNetMatchSeatType const & seat)
+{
+	return(seat.Side == CNCNET_SPECTATOR_SIDE ? 0 : seat.Side);
+}
+
+
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
 	std::string const & own_name, uint16_t bridge_port)
 {
@@ -216,9 +225,9 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	line("UIMapName", Option(options, "MapName", ""));
 	line("UIGameMode", "Standard");
 	line("PlayerCount", std::to_string(match.Seats.size()));
-	line("Side", std::to_string(own->Side));
+	line("Side", std::to_string(Spawn_Side(*own)));
 	line("Color", std::to_string(own->Color));
-	line("IsSpectator", "no");
+	line("IsSpectator", own->Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
 	line("Host", CnCNetLobbyClass::Same_Nick(match.Seats.front().Name, own_name) ? "yes" : "no");
 	line("Port", std::to_string(own->TunnelId));
 	line("Seed", std::to_string(match.Seed));
@@ -248,9 +257,9 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		}
 		ini += "\n[Other" + std::to_string(++other) + "]\n";
 		line("Name", seat.Name);
-		line("Side", std::to_string(seat.Side));
+		line("Side", std::to_string(Spawn_Side(seat)));
 		line("Color", std::to_string(seat.Color));
-		line("IsSpectator", "no");
+		line("IsSpectator", seat.Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
 		line("Ip", "0.0.0.0");
 		line("Port", std::to_string(seat.TunnelId));
 	}

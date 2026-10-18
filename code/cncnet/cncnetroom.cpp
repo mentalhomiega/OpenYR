@@ -392,7 +392,11 @@ void CnCNetRoomClass::Refuse(std::string const & nick, std::string const & reaso
 bool CnCNetRoomClass::Setup_Allowed(CnCNetRoomPlayerType const & player, int side, int color, int start, int team) const
 {
 	CnCNetRoomLimitsType const & limits = Config.Limits;
-	if (side < -1 || side >= limits.Sides || color < -1 || color >= limits.Colors
+	bool const spectator = side == CNCNET_SPECTATOR_SIDE;
+	if (spectator && (start != -1 || team != -1)) {
+		return(false);
+	}
+	if ((!spectator && (side < -1 || side >= limits.Sides)) || color < -1 || color >= limits.Colors
 		|| start < -1 || start >= limits.Starts || team < -1 || team >= limits.Teams) {
 		return(false);
 	}
@@ -629,7 +633,10 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 		}
 		CnCNetRoomPlayerType player;
 		player.Name = Unescape(fields[0]);
-		player.Side = std::max(To_Int(fields[1], -1), -1);
+		player.Side = To_Int(fields[1], -1);
+		if (player.Side != CNCNET_SPECTATOR_SIDE) {
+			player.Side = std::max(player.Side, -1);
+		}
 		player.Color = std::max(To_Int(fields[2], -1), -1);
 		player.Start = std::max(To_Int(fields[3], -1), -1);
 		player.Team = std::max(To_Int(fields[4], -1), -1);

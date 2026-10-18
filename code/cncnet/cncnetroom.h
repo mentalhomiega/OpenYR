@@ -38,10 +38,14 @@ enum class CnCNetRoomStatus
 };
 
 
+// The side of a player who watches the match; such a player has no start and no team.
+constexpr int CNCNET_SPECTATOR_SIDE = -3;
+
+
 struct CnCNetRoomPlayerType
 {
 	std::string Name;
-	int Side = -1;      // -1 is random.
+	int Side = -1;      // -1 is random; CNCNET_SPECTATOR_SIDE watches.
 	int Color = -1;     // -1 is random.
 	int Start = -1;     // -1 is random.
 	int Team = -1;      // -1 is no team.

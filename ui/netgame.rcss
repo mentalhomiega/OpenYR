@@ -118,9 +118,9 @@
 /* CnCNet rooms also pick a team and a start, so the player list gives up a row for the two drop-downs. */
 .teams #players { height: 84dp; }
 #cap-team { left: 27dp; top: 182dp; }
-#team { box-sizing: border-box; margin: 0; left: 67dp; top: 179dp; width: 70dp; height: 22dp; }
-#cap-start { left: 142dp; top: 182dp; }
-#start { box-sizing: border-box; margin: 0; left: 178dp; top: 179dp; width: 75dp; height: 22dp; }
+#team { box-sizing: border-box; margin: 0; left: 64dp; top: 179dp; width: 56dp; height: 22dp; }
+#cap-start { left: 126dp; top: 182dp; }
+#start { box-sizing: border-box; margin: 0; left: 162dp; top: 179dp; width: 91dp; height: 22dp; }
 
 
 #settings, #switches

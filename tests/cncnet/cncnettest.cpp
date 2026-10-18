@@ -589,6 +589,18 @@ void Test_Room(void)
 	Deliver(guest, "Guest", {&host}, 450);
 	Check(host.Find_Player("Guest")->Color == 3, "room: a colour past the limit is refused");
 
+	guest.Request_Setup(CNCNET_SPECTATOR_SIDE, 3, 1, -1);
+	Deliver(guest, "Guest", {&host}, 460);
+	Check(host.Find_Player("Guest")->Side == 2, "room: a spectator with a start is refused");
+	guest.Request_Setup(CNCNET_SPECTATOR_SIDE, 3, -1, -1);
+	Deliver(guest, "Guest", {&host}, 470);
+	Check(host.Find_Player("Guest")->Side == CNCNET_SPECTATOR_SIDE && host.Find_Player("Guest")->Start == -1, "room: a player may watch");
+	Deliver(host, "Host", {&guest}, 475);
+	Check(guest.Find_Player("Guest")->Side == CNCNET_SPECTATOR_SIDE, "room: guests see who watches");
+	guest.Request_Setup(2, 3, 1, 0);
+	Deliver(guest, "Guest", {&host}, 480);
+	Deliver(host, "Host", {&guest}, 480);
+
 	Check(!host.Can_Start(), "room: the host cannot start before the guests are ready");
 	guest.Set_Ready(true);
 	Deliver(guest, "Guest", {&host}, 500);
@@ -720,6 +732,17 @@ void Test_Spawn(void)
 	Check(!Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000), "_Alliances"), "spawn: no alliances without teams");
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
 	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
+
+	CnCNetRoomPlayerType watcher;
+	watcher.Name = "Watcher";
+	watcher.Side = CNCNET_SPECTATOR_SIDE;
+	watcher.Team = 2;
+	CnCNetMatchType const watched = CnCNet_Settle_Match({host, guest, watcher}, {0, 1, 2}, 8, {0, 1, 2, 3}, "127.0.0.1", 50000, random);
+	Check(watched.Seats.size() == 3 && watched.Seats[2].Side == CNCNET_SPECTATOR_SIDE && watched.Seats[2].Start == -1 && watched.Seats[2].Team == -1,
+		"spawn: a spectator keeps no start and no team");
+	std::string const watcher_ini = CnCNet_Spawn_Ini(watched, options, "Watcher", 40000);
+	Check(Has(watcher_ini, "Side=0\nColor=" + std::to_string(watched.Seats[2].Color) + "\nIsSpectator=yes\n"), "spawn: a spectator's own seat watches");
+	Check(Has(CnCNet_Spawn_Ini(watched, options, "Host", 40000), "Name=Watcher\nSide=0\n"), "spawn: other machines see the spectator's seat");
 }
 
 
