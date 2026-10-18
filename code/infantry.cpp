@@ -4182,6 +4182,11 @@ void InfantryClass::Doing_AI(void)
 						} else {
 							Do_Action(DO_WALK, true);
 						}
+					} else if (!Locomotion->Is_Moving() && (Doing == DO_SECONDARY_FIRE || Doing == DO_SECONDARY_PRONE) && Class->AirstrikeTeam > 0 && TarCom != NULL) {
+						// A soldier of a type with AirstrikeTeam keeps its secondary pose while it has a target. Do_Action
+						// leaves the sequence that is already playing alone, so the pose keeps cycling rather than rewinding.
+						Do_Action(IsProne ? DO_SECONDARY_PRONE : DO_SECONDARY_FIRE, true);
+						IsFiring = false;
 					} else {
 						if (IsProne) {
 							Do_Action(DO_PRONE, true);
@@ -4293,8 +4298,12 @@ void InfantryClass::Movement_AI(void)
 			}
 		}
 	} else {
-		if (Doing == DO_WALK || Doing == DO_SWIM || Doing == DO_FLY || Doing == DO_HOVER || Doing == DO_PANIC || Doing == DO_CARRY) {
+		// As gamemd's FUN_00520F40: a stopped soldier resets only Walk, Fly, Hover, Crawl and Swim, and Swim stops into Tread.
+		if (Doing == DO_WALK || Doing == DO_FLY || Doing == DO_HOVER) {
 			Do_Action(DO_STAND_READY);
+		}
+		if (Doing == DO_SWIM) {
+			Do_Action(DO_TREAD);
 		}
 		if (Doing == DO_CRAWL) {
 			Do_Action(DO_PRONE);
