@@ -2660,7 +2660,7 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 					todo = DO_WET_DIE2;
 					break;
 
-				// Only FireUp and FireProne have wet forms in gamemd (InfantryClass::PlayAnim, 0x51D800).
+				// Only FireUp and FireProne have wet forms in gamemd (InfantryClass::PlayAnim, 0x51D6F0).
 				// The secondary sequences play dry in water.
 				case DO_FIRE_WEAPON:
 				case DO_FIRE_PRONE:
@@ -2694,7 +2694,7 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 		return(false);
 	}
 
-	// As InfantryClass::PlayAnim (0x51D800): a soldier standing in the air hovers when its art has a
+	// As InfantryClass::PlayAnim (0x51D6F0): a soldier standing in the air hovers when its art has a
 	// Hover sequence, a civilian who panics runs with its Panic sequence, and a slave carrying a full
 	// load walks with its Carry sequence.
 	if (todo == DO_STAND_READY && In_Air() && !IsOnBridge && Class->DoControls[DO_HOVER].Frame > 0) {
@@ -2712,7 +2712,7 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 	if (todo != Doing && (Doing == DO_NOTHING || force || MasterDoControls[Doing].Interrupt)) {
 		Doing = todo;
 
-		// gamemd scales only these sequences' rates by the game speed (InfantryClass::PlayAnim, 0x51D800).
+		// gamemd scales only these sequences' rates by the game speed (InfantryClass::PlayAnim, 0x51D6F0).
 		if (todo == DO_IDLE1 || todo == DO_IDLE2 || todo == DO_WET_IDLE1 || todo == DO_WET_IDLE2 || todo == DO_HOVER || todo == DO_CHEER) {
 			Set_Rate(Options.Normalize_Delay(MasterDoControls[Doing].Rate));
 		} else {
