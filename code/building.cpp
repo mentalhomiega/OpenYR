@@ -935,7 +935,10 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 		cliprect.Height = height;
 	}
 
-	zdrawpoint += Class->ZShapePointMove;
+	// Buildup and builddown read the depth shape from the base point, without ZShapePointMove (BuildingClass::DrawIt, 0x43D6E5).
+	if (Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION) {
+		zdrawpoint += Class->ZShapePointMove;
+	}
 	Point2D zsizeoffset((Class->Width() * CELL_LEPTON) - CELL_LEPTON, (Class->Height() * CELL_LEPTON) - CELL_LEPTON);
 	zdrawpoint -= TacticalMap->Coord_To_Pixel_Absolute(zsizeoffset);
 
