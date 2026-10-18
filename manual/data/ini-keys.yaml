@@ -15878,6 +15878,23 @@ ForbiddenHouses:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+ForceBigCraters:
+  key: ForceBigCraters
+  scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AnimTypeClass
+      member: IsForceBigCraters
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 ForceShieldBlackoutDuration:
   key: ForceShieldBlackoutDuration
   scopes:
@@ -17633,6 +17650,23 @@ HelipadRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+HideIfNoOre:
+  key: HideIfNoOre
+  scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: AnimTypeClass
+      member: IsHideIfNoOre
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 High:
   key: High
   scopes:
