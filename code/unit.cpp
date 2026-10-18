@@ -7363,7 +7363,10 @@ int UnitClass::Simple_Deploy_AI(void)
 				if (IsSimpleDeployed) {
 					anim->Play_Backward();
 				}
-				SimpleDeployFrame = Frame + std::max(Class->DeployingAnim->Stages, 1) * std::max(Class->DeployingAnim->Delay, 1);
+				// The unit steps its animation value once per Rate frames from Start. Deploy ends after End-1 steps,
+				// undeploy after End-2 (UnitClass::Deploy 0x739AC0, Undeploy 0x739CD0).
+				int const steps = Class->DeployingAnim->Stages - (IsSimpleDeployed ? 2 : 1);
+				SimpleDeployFrame = Frame + std::max(steps, 0) * std::max(Class->DeployingAnim->Delay, 1);
 			}
 			// As UnitClass::Deploy (0x739AC0) and Undeploy (0x739CD0).
 			Sound_Effect(IsSimpleDeployed ? Class->AuxSound2 : Class->AuxSound1, Center_Coord());
