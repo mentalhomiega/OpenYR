@@ -337,6 +337,25 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
 }
 
 
+// Not tracked: an endless loop keeps playing when the view moves away from its place.
+AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (voc == VOC_NONE || voc >= Vocs.Count()) {
+		return(AudioHandle());
+	}
+	int pan;
+	float volume = Calculate_Volume_And_Pan(coord, Vocs[voc]->Type_Data(), pan);
+	if (volume <= 0.0f) {
+		if (handle != nullptr && handle->Is_Valid()) {
+			handle->Stop();
+			handle->Clear();
+		}
+		return(AudioHandle());
+	}
+	return(Sound_Effect(voc, volume, pan, handle));
+}
+
+
 AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle, bool start)
 {
 	if (handle == nullptr || voc == VOC_NONE || voc >= Vocs.Count()) {

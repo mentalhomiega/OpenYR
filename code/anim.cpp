@@ -317,6 +317,7 @@ AnimClass::AnimClass(void) :
  *=============================================================================================*/
 AnimClass::~AnimClass(void)
 {
+	StartSoundHandle.End_Looping();
 	Detach_This_From_All(this, true);
 	if (GameActive) {
 
@@ -1215,7 +1216,9 @@ void AnimClass::Start(void)
 		/*
 		**	Play the sound effect for this animation.
 		*/
-		Sound_Effect(Class->Sound, Center_Coord());
+		Sound_Effect_Fixed(Class->Sound, Center_Coord(), &StartSoundHandle);
+	} else {
+		StartSoundHandle.Stop();
 	}
 
 	/*
