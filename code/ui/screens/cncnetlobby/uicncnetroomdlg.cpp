@@ -132,6 +132,19 @@ std::string File_SHA1(char const * name)
 }
 
 
+// The map file's SHA-1, read again only when the file name changes.
+std::string Map_SHA1(char const * name)
+{
+	static std::string last_name;
+	static std::string last_hash;
+	if (last_name != name) {
+		last_name = name;
+		last_hash = File_SHA1(name);
+	}
+	return(last_hash);
+}
+
+
 std::map<std::string, std::string> Session_Options(void);
 
 
@@ -184,7 +197,6 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		std::string ClosedReason;
 		std::string PreviewMap;
 		UIMapPreviewImage Preview;
-		std::string MapSHA1;
 };
 
 
@@ -301,10 +313,7 @@ void CnCNetRoomServiceClass::Broadcast(bool closed)
 	listing.MapName = Session.Options.ScenarioDescription;
 	listing.GameMode = "Standard";
 	listing.DynamicTunnel = true;
-	if (PreviewMap != Session.ScenarioFileName) {
-		MapSHA1 = File_SHA1(Session.ScenarioFileName);
-	}
-	listing.MapSHA1 = MapSHA1;
+	listing.MapSHA1 = Map_SHA1(Session.ScenarioFileName);
 	Network.Send_CTCP(Setup.BroadcastChannel, "GAME", CnCNet_Format_Game_Listing(listing), 40, "game:" + TheRoom.Channel());
 }
 
@@ -315,6 +324,7 @@ std::map<std::string, std::string> Session_Options(void)
 	return(std::map<std::string, std::string>{
 		{"Map", Session.ScenarioFileName},
 		{"MapName", options.ScenarioDescription},
+		{"MapSHA1", Map_SHA1(Session.ScenarioFileName)},
 		{"Bases", Number(options.Bases)},
 		{"Crates", Number(options.Goodies)},
 		{"ShortGame", Number(options.ShortGame)},
@@ -468,9 +478,18 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 	}
 
+	// A guest whose map is missing or differs from the host's cannot get ready: the match would not start or would go out of sync.
 	state.MapName = Session.Options.ScenarioDescription;
+	bool map_ready = true;
 	if (Session.ScenarioFileName[0] != '\0' && !CCFileClass(Session.ScenarioFileName).Is_Available()) {
 		state.MapName += " (you do not have this map)";
+		map_ready = false;
+	} else if (!TheRoom.Is_Host()) {
+		auto const hash = TheRoom.Options().find("MapSHA1");
+		if (hash != TheRoom.Options().end() && !hash->second.empty() && hash->second != Map_SHA1(Session.ScenarioFileName)) {
+			state.MapName += " (your copy differs from the host's)";
+			map_ready = false;
+		}
 	}
 	if (PreviewMap != Session.ScenarioFileName) {
 		PreviewMap = Session.ScenarioFileName;
@@ -502,7 +521,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CreditsStep = 100;
 	state.Credits = options.Credits;
 
-	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready;
+	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready;
 	state.CanGo = TheRoom.Is_Host() && TheRoom.Can_Start();
 }
 
@@ -809,6 +828,9 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 		return(!service.Service() || ended || service.Room().Status() == CnCNetRoomStatus::STARTING);
 	});
 	view.reset();
+	DebugString("[CnCNet] Room screen closed: choice %d, room status %d, screen kind %d, reason \"%s\".\n",
+		static_cast<int>(presenter.Choice), static_cast<int>(service.Room().Status()), static_cast<int>(presenter.State.Kind),
+		service.Room().Status_Text().c_str());
 
 	UICnCNetRoomResult result;
 	if (presenter.Choice == UI_NET_GO && setup.Host) {
