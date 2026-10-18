@@ -1722,6 +1722,16 @@ void InfantryClass::AI(void)
 }
 
 
+static bool Is_Strange_For_Thief(ObjectClass const * obj)
+{
+	if (obj->RTTI == RTTI_BUILDING) {
+		BuildingTypeClass const * btype = ((BuildingClass const *)obj)->Class;
+		return(btype->UndeploysInto != NULL && btype->Width() == 1 && btype->Height() == 1);
+	}
+	return(obj->Considered_Vehicle());
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Can_Enter_Cell -- Determines if the infantry can enter the cell specified.   *
  *                                                                                             *
@@ -1739,10 +1749,6 @@ void InfantryClass::AI(void)
  *=============================================================================================*/
 MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, int cell_height, CellClass const * adj_cellptr, bool) const
 {
-	if (IsInLimbo && Locomotion != NULL && Locomotion->In_Which_Layer() == LAYER_AIR) {
-		return(MOVE_OK);
-	}
-
 	/*
 	**	If we are moving into an illegal cell, then we can't do that.
 	*/
@@ -1837,18 +1843,28 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 	**	for how they affect movement.
 	*/
 	int trynum = 0;
+	MissionType const mission = Get_Mission();
 	ObjectClass * obj = cellptr->Cell_Occupier(isbridge);
 	while (obj != NULL) {
 
 		if (obj != (ObjectClass *)this) {
 
-			/*
-			**	Always allow movement if the cell is the object to be captured or sabotaged.
-			*/
-			if (Mission == MISSION_ENTER || Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE ||
-				((Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL || Mission == MISSION_GUARD) && Class->IsEngineer)) {
-				if (obj == NavCom || (&Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom)) {
-					if (obj->RTTI == RTTI_BUILDING && obj == NavCom && ((BuildingClass *)obj)->Is_Iron_Curtained()) {
+			// A parasite whose victim shares this cell lets the infantry through.
+			if (ParasiteImUsing.has_value() && ParasiteImUsing->Victim != NULL && ParasiteImUsing->Victim->Get_Cell() == obj->Get_Cell()) {
+				return(MOVE_OK);
+			}
+
+			TechnoClass * techno = Dynamic_Cast<TechnoClass *>(obj);
+			bool const warping_out = techno != NULL && techno->IsBeingWarpedOut;
+
+			// A mission that enters, captures, sabotages, or is carried out by an engineer may pass
+			// its destination and the building beside it.
+			bool const mission_ok = !warping_out && (mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_EATEN
+				|| (mission == MISSION_SABOTAGE && Class->IsBomber)
+				|| ((mission == MISSION_GUARD_AREA || mission == MISSION_PATROL || mission == MISSION_GUARD) && Class->IsEngineer));
+			if (mission_ok) {
+				if (obj == NavCom || &Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom) {
+					if (techno != NULL && techno->Is_Iron_Curtained()) {
 						return(MOVE_NO);
 					}
 					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
@@ -1856,17 +1872,11 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 					}
 					return(MOVE_OK);
 				}
-				BuildingClass *building = cellptr->Cell_Building();
-				if (building != NULL && obj != building) {
-					if (building == NavCom) {
-						obj = obj->Next;
-						continue;
-					}
 
-					if (&Map[building->Center_Coord()] == NavCom || building == TarCom) {
-						obj = obj->Next;
-						continue;
-					}
+				BuildingClass *building = cellptr->Cell_Building();
+				if (building != NULL && obj != building && (building == NavCom || &Map[building->Center_Coord()] == NavCom || building == TarCom)) {
+					obj = obj->Next;
+					continue;
 				}
 			}
 
@@ -1879,7 +1889,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				return(MOVE_NO);
 			}
 
-			if (Class->IsVehicleThief && obj->Considered_Vehicle() && NavCom == obj && !obj->TClass->IsTrain && obj->TClass->IsVehicleThiefAllowed) {
+			if (Class->IsVehicleThief && Is_Strange_For_Thief(obj) && NavCom == obj && !obj->TClass->IsTrain) {
 				return(MOVE_OK);
 			}
 
@@ -1998,8 +2008,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 					**	Cloaked enemy objects are not considered if this is a Find_Path()
 					**	call.
 					*/
-					TechnoClass *tech = Dynamic_Cast<TechnoClass *>(obj);
-					if (tech == NULL || tech->Cloak != CLOAKED) {
+					if (techno == NULL || techno->Cloak != CLOAKED) {
 
 						RTTIType rtti = obj->RTTI;
 
@@ -2029,7 +2038,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 								break;
 #endif
 							case RTTI_INFANTRY:
-								if (((InfantryClass *)obj)->Class->IsDisguised) {
+								if (((InfantryClass *)obj)->Is_Disguised_As(House)) {
 									retval = MOVE_TEMP;
 								}
 								break;
