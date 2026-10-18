@@ -1584,13 +1584,19 @@ void InfantryClass::AI(void)
 		Commence();
 	}
 
+	// Only a death sequence keeps a dead soldier at zero strength. gamemd's list is Die1 to Die5, WetDie1, WetDie2
+	// and the air death sequences (InfantryClass::Update, 0x51BAB0); any other sequence resets the strength to 1.
 	if (Strength <= 0) {
 		if (Doing != DO_GUN_DEATH &&
 			Doing != DO_EXPLOSION_DEATH &&
 			Doing != DO_EXPLOSION2_DEATH &&
 			Doing != DO_GRENADE_DEATH &&
 			Doing != DO_FIRE_DEATH &&
-			Doing != DO_TUMBLE) {
+			Doing != DO_WET_DIE1 &&
+			Doing != DO_WET_DIE2 &&
+			Doing != DO_AIR_DEATH_START &&
+			Doing != DO_AIR_DEATH_FALLING &&
+			Doing != DO_AIR_DEATH_FINISH) {
 			Strength = 1;
 		}
 	}
@@ -4176,11 +4182,14 @@ void InfantryClass::Doing_AI(void)
 				}
 				break;
 
+			// A soldier killed in water is removed when its wet death ends, as one killed on land is.
 			case DO_GUN_DEATH:
 			case DO_EXPLOSION_DEATH:
 			case DO_EXPLOSION2_DEATH:
 			case DO_GRENADE_DEATH:
 			case DO_FIRE_DEATH:
+			case DO_WET_DIE1:
+			case DO_WET_DIE2:
 				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
 					// As gamemd's FUN_00520AE0: the type's own bodies, else the shared list unless NotHuman=yes.
 					if (Class->DeadBodies.Count() > 0) {
