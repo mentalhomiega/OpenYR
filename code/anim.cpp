@@ -1028,7 +1028,8 @@ void AnimClass::AI(void)
 			**	Check to see if the last frame has been displayed. If so, then the
 			**	animation either ends or loops.
 			*/
-			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (IsReversed && stage <= Class->Start)) {
+			// The stage is relative to Class->Start, so a reversed animation ends at stage 0 (gamemd AnimClass::Update, 0x424752).
+			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (IsReversed && stage <= 0)) {
 
 				/*
 				**	Determine if this animation should loop another time. If so, then start the loop
