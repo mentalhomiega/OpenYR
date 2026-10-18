@@ -3355,7 +3355,8 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		}
 		brightness += Rule->ExtraUnitLight;
 
-		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now()) {
+		// The gather sparkles are not drawn while a temporal warp holds the unit or a warp moves it, as in gamemd.
+		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now() && WarpedBy == NULL && !IsBeingWarpedOut && !Is_Chrono_Warping()) {
 			Point2D pixel;
 			FacingType face = (FacingType)PrimaryFacing.Current().As_Dir8();
 			TacticalMap->Coord_To_Pixel(Move_Coord(Render_Coord(), face, 150), pixel);
