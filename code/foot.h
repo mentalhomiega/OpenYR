@@ -575,6 +575,9 @@ class FootClass : public TechnoClass
 		**	AI.
 		*/
 		virtual void AI(void) override;
+
+		// Sinks a sinking object one frame. Returns true once it is too deep to see, and the caller removes it.
+		bool Advance_Sinking(void);
 		virtual void Sell_Back(int control) override;
 		virtual void Set_Waypoint_Path(PathType path, char index) override;
 		void Execute_Waypoint_Path(WaypointClass * waypoint);

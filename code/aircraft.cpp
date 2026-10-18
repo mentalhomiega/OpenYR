@@ -634,6 +634,12 @@ void AircraftClass::AI(void)
 		return;
 	}
 
+	if (IsSinking && Advance_Sinking()) {
+		Record_The_Kill(NULL);
+		Delete_Me();
+		return;
+	}
+
 	if (Class->Trailer != NULL && Class->SpawnDelay > 0 && Frame % Class->SpawnDelay == 0) {
 		new AnimClass(Class->Trailer, PositionCoord, 1, 1);
 	}

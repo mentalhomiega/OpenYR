@@ -4072,6 +4072,32 @@ void FootClass::AI(void)
 
 
 /// <summary>
+/// Sinks this object one frame and lays a wake every fourth frame. The caller removes the
+/// object when this returns true.
+/// </summary>
+bool FootClass::Advance_Sinking(void)
+{
+	PositionCoord = Coord(PositionCoord.X, PositionCoord.Y, PositionCoord.Z - 5);
+	if (HeightAGL < -400) {
+		return(true);
+	}
+
+	if ((Frame & 3) == 0) {
+		// The Y offset is drawn before the X offset, as gamemd does, so the synchronized sequence matches.
+		int const dy = Scen->RandomNumber(-170, 170);
+		int const dx = Scen->RandomNumber(-170, 170);
+
+		// The wake sits on the ground under the object, not at its sinking height.
+		Coord const wake(PositionCoord.X + dx, PositionCoord.Y + dy, PositionCoord.Z - HeightAGL);
+		if (Rule->Wake != NULL) {
+			new AnimClass(Rule->Wake, wake);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Draws the voxel body of this object.
 /// This override shifts the draw position by whatever offset the locomotor asks for, so that
 /// a bobbing or lurching locomotion carries the artwork along with it.

@@ -537,29 +537,12 @@ void UnitClass::AI(void)
 	BASECLASS::AI();
 	Airborne_Look();
 
-	if (IsSinking) {
-		static Coord _sink_coords[] = {
-			Coord( 0, -1, 0),
-			Coord( 1, -1, 0),
-			Coord( 1,  0, 0),
-			Coord( 1,  1, 0),
-			Coord( 0,  1, 0),
-			Coord(-1,  1, 0),
-			Coord(-1,  0, 0),
-			Coord( 0,  0, 0)
-		};
-
-		Coord coord = PositionCoord;
-		coord += _sink_coords[PrimaryFacing.Current().As_Dir8()] * 3;
-		PositionCoord = coord - Coord(0, 0, 9);
-
-		if (HeightAGL < -400) {
-			if (!IsSinkingWreck) {
-				Record_The_Kill(NULL);
-			}
-			Delete_Me();
-			return;
+	if (IsSinking && Advance_Sinking()) {
+		if (!IsSinkingWreck) {
+			Record_The_Kill(NULL);
 		}
+		Delete_Me();
+		return;
 	}
 
 	if (!IsActive) {
