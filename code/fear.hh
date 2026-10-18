@@ -19,8 +19,8 @@
 */
 enum FearType {
 	FEAR_NONE=0,        // No fear at all (default state).
-	FEAR_ANXIOUS=10,    // Something makes them scared.
+	FEAR_ANXIOUS=50,    // Something makes them scared.
 	FEAR_SCARED=100,    // Scared enough to take cover.
 	FEAR_PANIC=200,     // Run away! Run away!
-	FEAR_MAXIMUM=255    // Scared to death.
+	FEAR_MAXIMUM=300    // Scared to death.
 };

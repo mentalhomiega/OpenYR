@@ -604,7 +604,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 		if (source != NULL && Fear < FEAR_SCARED) {
 			if (Class->IsFraidyCat) {
-				Fear = FEAR_PANIC;
+				Fear = FEAR_MAXIMUM;
 			} else if (!Class->IsFearless && !Has_Ability(ABILITY_FEARLESS)) {
 				Fear = FEAR_SCARED;
 				if (Class->IsDoggie && HealthRatio <= Rule->ConditionRed) {
@@ -618,7 +618,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				**	Increase the fear of the infantry by a bit. The fear increases more
 				**	quickly if the infantry is damaged.
 				*/
-				int morefear = FEAR_ANXIOUS;
+				int morefear = 50;
 				if (HealthRatio > Rule->ConditionRed) morefear /= 2;
 				if (HealthRatio > Rule->ConditionYellow) morefear /= 2;
 				Fear = FearType(std::min<int>((int)Fear + morefear, FEAR_MAXIMUM));
@@ -2722,10 +2722,10 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 	}
 
 	// As InfantryClass::PlayAnim (0x51D6F0): a soldier standing in the air hovers when its art has a
-	// Hover sequence, and a civilian who panics runs with its Panic sequence.
+	// Hover sequence, and a soldier at panic fear runs with its Panic sequence.
 	if (todo == DO_STAND_READY && In_Air() && !IsOnBridge && Class->DoControls[DO_HOVER].Frame > 0) {
 		todo = DO_HOVER;
-	} else if (todo == DO_WALK && Class->IsFraidyCat && Fear > FEAR_SCARED && Class->DoControls[DO_PANIC].Count > 0) {
+	} else if (todo == DO_WALK && Fear >= FEAR_PANIC && Class->DoControls[DO_PANIC].Count > 0) {
 		todo = DO_PANIC;
 	}
 
@@ -3837,6 +3837,8 @@ void InfantryClass::Write_INI(CCINIClass & ini)
  *=============================================================================================*/
 void InfantryClass::Fear_AI(void)
 {
+	bool const deployed = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+
 	/*
 	**	After a time, the infantry will gain courage.
 	*/
@@ -3876,10 +3878,10 @@ void InfantryClass::Fear_AI(void)
 		}
 
 		/*
-		**	Stand up if brave and lie down if afraid.
+		**	Stand up if brave and lie down if afraid. A Fraidycat never lies down; it scatters instead.
 		*/
 		if (IsProne) {
-			if (Fear < FEAR_ANXIOUS) {
+			if (Fear < FEAR_ANXIOUS && !deployed) {
 				Do_Action(DO_GET_UP);
 			}
 		} else  {
@@ -3888,7 +3890,7 @@ void InfantryClass::Fear_AI(void)
 			**	Drop to the ground if anxious. Don't drop to the ground while moving
 			**	and the special elite flag is active.
 			*/
-			if (Fear >= FEAR_ANXIOUS && (!House->Is_Human_Player() || ((NavCom == NULL && !Locomotion->Is_Moving())))) {
+			if (Fear >= FEAR_ANXIOUS && !Class->IsFraidyCat && !deployed && (!House->Is_Human_Player() || ((NavCom == NULL && !Locomotion->Is_Moving())))) {
 				Do_Action(DO_LIE_DOWN);
 			}
 		}
@@ -3898,7 +3900,7 @@ void InfantryClass::Fear_AI(void)
 	**	When in darkness or in doubt,
 	**	run in circles, scream, and shout.
 	*/
-	if (Class->IsFraidyCat && Fear > FEAR_ANXIOUS && !IsFalling && !Locomotion->Is_Moving() && NavCom == NULL) {
+	if (Class->IsFraidyCat && Fear > FEAR_ANXIOUS && !deployed && !IsFalling && !Locomotion->Is_Moving() && NavCom == NULL) {
 		Scatter(COORD_NONE, true);
 	}
 }

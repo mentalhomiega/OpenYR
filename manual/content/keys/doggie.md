@@ -9,7 +9,7 @@ when_omitted:
 
 ## Fear
 
-Fear is a figure from `0` to `255` that a soldier gains when it is shot at. An ordinary soldier frightened by a hit goes to `100`. A dog goes to `200` instead when the hit leaves its health at or below [`ConditionRed`](/keys/conditionred/). A [`Fearless=yes`](/keys/fearless/) dog is not frightened at all.
+Fear is a figure from `0` to `300` that a soldier gains when it is shot at. An ordinary soldier frightened by a hit goes to `100`. A dog goes to `200` instead when the hit leaves its health at or below [`ConditionRed`](/keys/conditionred/). A [`Fearless=yes`](/keys/fearless/) dog is not frightened at all.
 
 At `200` or above, a dog that is standing still with no destination does one of these:
 
