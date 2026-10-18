@@ -201,7 +201,7 @@ Some fills always use the healthy form, whatever the structure's health. On a da
 
 - the production slot's start on every structure except a construction yard ([`ProductionAnim`](/keys/productionanim/) lists them);
 - the pre-production slot's start when a harvester begins unloading;
-- every animation of [a service depot's repair sequence](/keys/specialanim/#a-service-depot);
+- the first slot of [a service depot's repair sequence](/keys/specialanim/#a-service-depot);
 - the fill indicator of a `SiloDamage=yes` structure.
 
 ## Placement and draw order
