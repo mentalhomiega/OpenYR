@@ -55,13 +55,18 @@ The table lists every entry a sequence section may have and the action each one 
 | `Tumble` | Tumbling on jump jets; never played |
 | `FireFly` | Firing while flying |
 | `Struggle` | Struggling inside a web |
-| `Tread`, `Swim`, `WetIdle1`, `WetIdle2`, `WetDie1`, `WetDie2`, `WetAttack` | Actions in water; never played |
+| `Tread`, `Swim`, `WetIdle1`, `WetIdle2`, `WetDie1`, `WetDie2`, `WetAttack` | Water forms for a [`MovementZone=AmphibiousDestroyer`](/keys/movementzone/) soldier in water. `Tread` replaces `Ready` and `Prone`, `Swim` replaces `Walk` and `Crawl`, `WetIdle1` and `WetIdle2` replace the two idles, `WetDie1` and `WetDie2` replace `Die1` and `Die2`, and `WetAttack` replaces `FireUp` and `FireProne`. The dry sequence plays when the water form is empty |
 | `Deploy` | Deploying, for a [`Deployer=yes`](/keys/deployer/#scope-infantrytype) type |
 | `Deployed` | Standing deployed |
 | `DeployedFire` | Firing while deployed |
 | `DeployedIdle` | Idling while deployed; never played |
 | `Undeploy` | Packing up from a deployment |
-| `Cheer`, `Paradrop`, `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish`, `Panic`, `Shovel`, `Carry` | Never played |
+| `Cheer` | Cheering. The All to Cheer trigger action makes each soldier on guard that is standing ready, idle or already cheering cheer |
+| `Paradrop` | Falling under the parachute after a paradrop |
+| `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish` | Never played |
+| `Panic` | Walking while a [`Fraidycat=yes`](/keys/fraidycat/) soldier is frightened |
+| `Shovel` | Digging, while a slave miner works a harvest node |
+| `Carry` | Walking with a full load, for a slave |
 | `SecondaryFire` | Firing the second weapon upright, with `FireUp` as the fallback when the entry is absent |
 | `SecondaryProne` | Firing the second weapon while prone, with `FireProne` as the fallback when the entry is absent |
 
