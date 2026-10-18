@@ -1,6 +1,6 @@
 ---
 key: ProductionAnim
-summary: The animation a structure plays as it delivers what it built, after a harvester unloads, or while it repairs a vehicle.
+summary: The animation a structure plays as it delivers what it built, or after a harvester unloads.
 see_also: ["ProductionAnimDamaged", "ProductionAnimX", "ProductionAnimY", "ProductionAnimYSort", "ProductionAnimZAdjust", "PreProductionAnim", "ActiveAnim", "system:production"]
 when_omitted:
   kind: value
@@ -11,17 +11,16 @@ when_omitted:
 
 Only the first 15 characters of the name are kept, and a name that no `[Animations]` entry registers creates nothing.
 
-Five kinds of structure start the production animation, each at a different moment.
+Four kinds of structure start the production animation, each at a different moment.
 
 | Structure | Starts when | Stops when |
 | --- | --- | --- |
 | [`ConstructionYard=yes`](/keys/constructionyard/) | A structure it built finishes its buildup | The animation ends |
 | [`Refinery=yes`](/keys/refinery/) | The docked harvester has unloaded the last of its load, or the docked harvester is given a destination and a queued mission other than harvesting | The animation ends |
-| [`UnitRepair=yes`](/keys/unitrepair/) | The depot begins repairing the vehicle on it | The repair finishes, the house cannot pay for the next repair step, the vehicle leaves or loses contact with the depot, or the depot stops repairing |
 | [`WeaponsFactory=yes`](/keys/weaponsfactory/) | The door begins opening for a finished vehicle | The animation ends |
 | Any other structure with [`Factory=`](/keys/factory/) | A finished vehicle or soldier leaves it | The animation ends |
 
-A looping animation never ends by itself, so on every row but the service depot it keeps playing until the structure is sold, undeployed or removed.
+A looping animation never ends by itself, so it keeps playing until the structure is sold, undeployed or removed.
 
 The last row covers barracks, and structures that build vehicles without `WeaponsFactory=yes`. A [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure does not start the animation when a healed or upgraded soldier leaves, unless its `Factory=` is `InfantryType`. Tiberian Sun ships no structure in that row with a `ProductionAnim`, so the row matters only to a mod that adds one.
 

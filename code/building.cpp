@@ -6440,7 +6440,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								} else {
 									if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
 									Status = DURING;
-									Begin_Anim(BANIM_PRODUCTION, false);
+									// gamemd's Mission_Repair (0x44B780) starts special slot one here, and not the production slot.
 									Begin_Anim(BANIM_SPECIAL_ONE, false);
 									End_Anim(BANIM_ACTIVE_ONE);
 									// gamemd's BuildingClass::Mission_Repair (0x44B780) also destroys the idle animation at the repair start.
