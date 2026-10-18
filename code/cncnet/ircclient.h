@@ -106,6 +106,7 @@ class IRCClientClass
 			int priority = 0, std::string const & queue_key = std::string());
 		void Set_Mode(std::string const & channel, std::vector<std::string> const & modes);
 		void Set_Topic(std::string const & channel, std::string const & topic);
+		void Kick(std::string const & channel, std::string const & nick, std::string const & reason);
 		void Quit(std::string const & reason);
 
 		std::size_t Queued(void) const { return(Queue.size()); }

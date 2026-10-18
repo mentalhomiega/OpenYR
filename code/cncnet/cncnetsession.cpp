@@ -123,6 +123,12 @@ void CnCNetSessionClass::Set_Topic(std::string const & channel, std::string cons
 }
 
 
+void CnCNetSessionClass::Kick(std::string const & channel, std::string const & nick, std::string const & reason)
+{
+	Post([channel, nick, reason](IRCClientClass & client) { client.Kick(channel, nick, reason); });
+}
+
+
 void CnCNetSessionClass::Mark_Read(std::string const & channel)
 {
 	std::lock_guard<std::mutex> guard(Lock);

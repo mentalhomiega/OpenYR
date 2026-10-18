@@ -183,6 +183,12 @@ void IRCClientClass::Set_Mode(std::string const & channel, std::vector<std::stri
 }
 
 
+void IRCClientClass::Kick(std::string const & channel, std::string const & nick, std::string const & reason)
+{
+	Enqueue(IRC_Format_Line("KICK", {channel, nick, reason}), 80, std::string());
+}
+
+
 void IRCClientClass::Set_Topic(std::string const & channel, std::string const & topic)
 {
 	Enqueue(IRC_Format_Line("TOPIC", {channel, topic}), 80, std::string());

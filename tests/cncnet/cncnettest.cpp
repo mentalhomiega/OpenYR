@@ -9,15 +9,21 @@
 
 // Pins the CnCNet lobby's IRC layer and game listings: line parsing and
 // building, CTCP, the line buffer, the GAME listing layout, and the client's
-// registration, keepalive, nickname retry and send pacing. Everything runs on
-// in-memory lines; nothing connects.
+// registration, keepalive, nickname retry and send pacing, SHA-1 and room keys,
+// and the OpenYR game room protocol. Everything runs on in-memory lines;
+// nothing connects.
 
 #include "cncnet/cncnetgame.h"
 #include "cncnet/cncnetlobby.h"
+#include "cncnet/cncnetroom.h"
+#include "cncnet/cncnetsha1.h"
 #include "cncnet/ircclient.h"
 #include "cncnet/ircmessage.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -396,6 +402,7 @@ void Test_Lobby(void)
 	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", listing, "GAME"), 5000);
 	lobby.Apply(Make_Event(IRCEventKind::QUIT, "HOST", "", "bye"), 5001);
 	Check(lobby.Games().empty(), "lobby: host quitting removes the game");
+	lobby.Take_Room_Messages();
 
 	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-game1234567", "x", "GSETTINGS"), 6000);
 	std::vector<IRCEventType> const room = lobby.Take_Room_Messages();
@@ -425,6 +432,201 @@ void Test_Quit(void)
 	Check(events.size() == 1 && events[0].Kind == IRCEventKind::DISCONNECT, "quit: ERROR becomes DISCONNECT");
 }
 
+void Test_SHA1(void)
+{
+	Check(CnCNet_SHA1_Hex("") == "da39a3ee5e6b4b0d3255bfef95601890afd80709", "sha1: empty input");
+	Check(CnCNet_SHA1_Hex("abc") == "a9993e364706816aba3e25717850c26c9cd0d89d", "sha1: abc");
+	Check(CnCNet_SHA1_Hex("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq") == "84983e441c3bd26ebaae4aa1f95129e5e54670f1",
+		"sha1: two-block message");
+
+	std::string const million(1000000, 'a');
+	CnCNetSHA1Class sha;
+	for (std::size_t offset = 0; offset < million.size(); offset += 999) {
+		sha.Update(million.data() + offset, std::min<std::size_t>(999, million.size() - offset));
+	}
+	std::array<uint8_t, 20> const digest = sha.Finish();
+	Check(digest[0] == 0x34 && digest[1] == 0xaa && digest[19] == 0x6f, "sha1: a million a's fed in uneven pieces");
+
+	Check(CnCNet_Room_Key("#cncnet-yr-game1234567") == CnCNet_SHA1_Hex("#cncnet-yr-game1234567").substr(0, 10),
+		"room key: first 10 digits of the channel's SHA-1");
+	Check(CnCNet_Room_Channel(42) == "#cncnet-yr-game0000042", "room channel: seven zero-padded digits");
+}
+
+
+void Test_Room_Encoding(void)
+{
+	std::map<std::string, std::string> const options{{"Map", "Lake; North=1|2,%"}, {"Credits", "10000"}, {"Line", "a\r\nb"}};
+	std::string const encoded = CnCNetRoomClass::Encode_Map(options);
+	Check(encoded.find_first_of("\r\n|,") == std::string::npos, "room encoding: separators and line breaks are escaped");
+	Check(CnCNetRoomClass::Decode_Map(encoded) == options, "room encoding: options survive a round trip");
+
+	std::vector<CnCNetRoomPlayerType> players(2);
+	players[0].Name = "Host";
+	players[0].Host = true;
+	players[0].Color = 2;
+	players[1].Name = "Guest[1]";
+	players[1].Side = 9;
+	players[1].Start = 3;
+	players[1].Team = 1;
+	players[1].Ready = true;
+	std::vector<CnCNetRoomPlayerType> const decoded = CnCNetRoomClass::Decode_Players(CnCNetRoomClass::Encode_Players(players));
+	Check(decoded.size() == 2 && decoded[0].Name == "Host" && decoded[0].Host && !decoded[0].Ready && decoded[0].Color == 2
+		&& decoded[1].Name == "Guest[1]" && decoded[1].Side == 9 && decoded[1].Start == 3 && decoded[1].Team == 1 && decoded[1].Ready,
+		"room encoding: players survive a round trip");
+	Check(CnCNetRoomClass::Decode_Players("bad|,1,2,3,4,|x,1").empty(), "room encoding: malformed players are skipped");
+}
+
+
+char const * const ROOM = "#cncnet-yr-game1234567";
+
+
+IRCEventType Room_Event(IRCEventKind kind, std::string nick, std::string channel, std::string command = std::string(), std::string text = std::string())
+{
+	IRCEventType event;
+	event.Kind = kind;
+	event.Nick = std::move(nick);
+	event.Channel = std::move(channel);
+	event.Command = std::move(command);
+	event.Text = std::move(text);
+	return(event);
+}
+
+
+// Hands every CTCP the sender queued to each receiver, as the room channel
+// would, and returns everything the sender queued.
+std::vector<CnCNetRoomSendType> Deliver(CnCNetRoomClass & from, std::string const & nick, std::vector<CnCNetRoomClass *> const & to, uint64_t now)
+{
+	std::vector<CnCNetRoomSendType> const sent = from.Take_Outgoing();
+	for (CnCNetRoomSendType const & send : sent) {
+		if (send.Kind != CnCNetRoomSendKind::CTCP) {
+			continue;
+		}
+		for (CnCNetRoomClass * room : to) {
+			room->Apply(Room_Event(IRCEventKind::CTCP, nick, send.Target, send.Command, send.Text), now);
+		}
+	}
+	return(sent);
+}
+
+
+CnCNetRoomConfigType Room_Config(std::string nick, std::string build)
+{
+	CnCNetRoomConfigType config;
+	config.OwnNick = std::move(nick);
+	config.Channel = ROOM;
+	config.HostNick = "Host";
+	config.Build = std::move(build);
+	return(config);
+}
+
+
+bool Sent(std::vector<CnCNetRoomSendType> const & sent, CnCNetRoomSendKind kind, std::string const & command)
+{
+	for (CnCNetRoomSendType const & send : sent) {
+		if (send.Kind == kind && send.Command == command) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void Test_Room(void)
+{
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
+	Check(host.Status() == CnCNetRoomStatus::IN_ROOM && sent.size() == 1 && sent[0].Kind == CnCNetRoomSendKind::MODE
+		&& sent[0].Text == "+klnNs " + CnCNet_Room_Key(ROOM) + " 8", "room: the host locks the channel with the room key");
+
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 100);
+	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	Check(guest.Status() == CnCNetRoomStatus::WAITING_HOST, "room: a guest waits for the host after joining");
+	sent = Deliver(guest, "Guest", {&host}, 200);
+	Check(Sent(sent, CnCNetRoomSendKind::CTCP, "OYRHELLO") && sent[0].Text == "1;b1", "room: the guest says hello with protocol and build");
+	Check(host.Players().size() == 2 && host.Find_Player("guest") != nullptr, "room: the host seats a guest with the same build");
+	sent = Deliver(host, "Host", {&guest}, 300);
+	Check(Sent(sent, CnCNetRoomSendKind::CTCP, "OYROPTS") && Sent(sent, CnCNetRoomSendKind::CTCP, "OYRPLAYERS"),
+		"room: the host answers with the options and the players");
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM && guest.Options().at("Map") == "Lake" && guest.Players().size() == 2
+		&& guest.Players()[0].Host, "room: the guest takes the host's options and players");
+
+	guest.Request_Setup(2, 3, 1, 0);
+	Deliver(guest, "Guest", {&host}, 400);
+	Deliver(host, "Host", {&guest}, 400);
+	CnCNetRoomPlayerType const * seated = guest.Find_Player("Guest");
+	Check(seated != nullptr && seated->Side == 2 && seated->Color == 3 && seated->Start == 1 && seated->Team == 0,
+		"room: the host accepts a free colour and start");
+
+	host.Request_Setup(0, 3, 4, -1);
+	host.Take_Outgoing();
+	Check(host.Find_Player("Host")->Color == -1, "room: a taken colour is refused, the host's own included");
+
+	guest.Request_Setup(2, 9, 1, 0);
+	Deliver(guest, "Guest", {&host}, 450);
+	Check(host.Find_Player("Guest")->Color == 3, "room: a colour past the limit is refused");
+
+	Check(!host.Can_Start(), "room: the host cannot start before the guests are ready");
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 500);
+	Deliver(host, "Host", {&guest}, 500);
+	Check(host.Can_Start() && guest.Find_Player("Guest")->Ready, "room: a ready guest lets the host start");
+
+	host.Set_Options({{"Map", "Island"}});
+	Deliver(host, "Host", {&guest}, 600);
+	Check(!host.Can_Start() && !guest.Find_Player("Guest")->Ready && guest.Options().at("Map") == "Island",
+		"room: changed options clear the guests' ready");
+
+	CnCNetRoomClass other = CnCNetRoomClass::Guest(Room_Config("Other", "b2"), 700);
+	other.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 700);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 700);
+	Deliver(other, "Other", {&host}, 700);
+	sent = Deliver(host, "Host", {&other, &guest}, 700);
+	Check(Sent(sent, CnCNetRoomSendKind::KICK, "Other") && host.Players().size() == 2, "room: a guest on another build is refused and kicked");
+	Check(other.Status() == CnCNetRoomStatus::CLOSED && other.Status_Text().find("b1") != std::string::npos
+		&& guest.Status() == CnCNetRoomStatus::IN_ROOM, "room: the refused guest learns why; others are unaffected");
+
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 1000);
+	host.Tick(20999);
+	Check(!Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a silent joiner gets the full hello timeout");
+	host.Tick(21000);
+	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a joiner that never says hello is kicked");
+
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 22000);
+	Deliver(host, "Host", {&guest}, 22000);
+	Check(host.Start({{"Seed", "5"}}), "room: the host starts when everyone is ready");
+	Deliver(host, "Host", {&guest}, 22100);
+	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5", "room: the guest receives the start");
+
+	CnCNetRoomClass lonely = CnCNetRoomClass::Guest(Room_Config("Lonely", "b1"), 0);
+	lonely.Apply(Room_Event(IRCEventKind::JOINED, "Lonely", ROOM), 0);
+	lonely.Take_Outgoing();
+	lonely.Tick(20000);
+	Check(lonely.Status() == CnCNetRoomStatus::CLOSED && Sent(lonely.Take_Outgoing(), CnCNetRoomSendKind::PART, std::string()),
+		"room: a guest leaves a room whose host never answers");
+
+	CnCNetRoomClass left = CnCNetRoomClass::Guest(Room_Config("Left", "b1"), 0);
+	left.Apply(Room_Event(IRCEventKind::JOINED, "Left", ROOM), 0);
+	left.Apply(Room_Event(IRCEventKind::QUIT, "Host", std::string()), 10);
+	Check(left.Status() == CnCNetRoomStatus::CLOSED, "room: the room closes for guests when the host quits");
+
+	CnCNetRoomClass refused = CnCNetRoomClass::Guest(Room_Config("Refused", "b1"), 0);
+	refused.Apply(Room_Event(IRCEventKind::CHANNEL_REFUSED, std::string(), ROOM, "475"), 0);
+	Check(refused.Status() == CnCNetRoomStatus::CLOSED && refused.Status_Text().find("password") != std::string::npos,
+		"room: a wrong password closes the room with a reason");
+
+	CnCNetLobbyClass lobby{CnCNetLobbyConfigType()};
+	lobby.Apply(Room_Event(IRCEventKind::JOINED, "Somebody", ROOM), 0);
+	lobby.Apply(Room_Event(IRCEventKind::JOINED, "Somebody", "#cncnet-yr"), 0);
+	lobby.Apply(Room_Event(IRCEventKind::QUIT, "Somebody", std::string()), 0);
+	std::vector<IRCEventType> const messages = lobby.Take_Room_Messages();
+	Check(messages.size() == 2 && messages[0].Kind == IRCEventKind::JOINED && messages[1].Kind == IRCEventKind::QUIT,
+		"lobby: room joins and quits reach the room, chat joins do not");
+}
+
+
 }
 
 
@@ -442,6 +644,9 @@ int main(void)
 	Test_Events();
 	Test_Quit();
 	Test_Lobby();
+	Test_SHA1();
+	Test_Room_Encoding();
+	Test_Room();
 
 	if (Failures != 0) {
 		std::printf("%d check(s) FAILED\n", Failures);

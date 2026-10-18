@@ -54,6 +54,26 @@ bool CnCNetLobbyClass::Same_Nick(std::string const & a, std::string const & b)
 /// </summary>
 void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 {
+	bool const room_channel = event.Channel.size() >= Config.RoomPrefix.size()
+		&& Same_Nick(event.Channel.substr(0, Config.RoomPrefix.size()), Config.RoomPrefix);
+	switch (event.Kind) {
+		case IRCEventKind::JOINED:
+		case IRCEventKind::PARTED:
+		case IRCEventKind::KICKED:
+			if (room_channel) {
+				Queue_Room_Message(event);
+			}
+			break;
+
+		case IRCEventKind::QUIT:
+		case IRCEventKind::NICK_CHANGED:
+			Queue_Room_Message(event);
+			break;
+
+		default:
+			break;
+	}
+
 	switch (event.Kind) {
 		case IRCEventKind::WELCOME:
 			OwnNick = event.Text;
@@ -150,7 +170,7 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 					Add_Line(*channel, CnCNetLineKind::ACTION, event.Nick, event.Text, now);
 				}
 			} else {
-				RoomMessages.push_back(event);
+				Queue_Room_Message(event);
 			}
 			break;
 
@@ -200,7 +220,7 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 			if (event.Command == "475") reason = "needs a different password.";
 			if (event.Command == "403") reason = "no longer exists.";
 			Add_System_Line(std::string(), event.Channel + " " + reason, now);
-			RoomMessages.push_back(event);
+			Queue_Room_Message(event);
 			break;
 		}
 
@@ -291,6 +311,15 @@ CnCNetChannelType const * CnCNetLobbyClass::Find_Channel(std::string const & nam
 		}
 	}
 	return(nullptr);
+}
+
+
+void CnCNetLobbyClass::Queue_Room_Message(IRCEventType const & event)
+{
+	if (RoomMessages.size() >= Config.MaxRoomMessages && !RoomMessages.empty()) {
+		RoomMessages.erase(RoomMessages.begin());
+	}
+	RoomMessages.push_back(event);
 }
 
 

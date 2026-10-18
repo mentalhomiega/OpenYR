@@ -6,6 +6,8 @@ opents_add_test(CnCNetTest
         cncnet/ircclient.cpp
         cncnet/cncnetgame.cpp
         cncnet/cncnetlobby.cpp
+        cncnet/cncnetroom.cpp
+        cncnet/cncnetsha1.cpp
 )
 
 # A manual probe, not run by CTest: connects a lobby session to an IRC server (normally the

@@ -84,7 +84,9 @@ struct CnCNetLobbyConfigType
 {
 	std::string BroadcastChannel = "#cncnet-yr-games";
 	std::string GameVersion;
+	std::string RoomPrefix = "#cncnet-yr-game";
 	std::size_t MaxLines = 200;
+	std::size_t MaxRoomMessages = 256;
 };
 
 
@@ -110,8 +112,10 @@ class CnCNetLobbyClass
 		CnCNetChannelType const * Find_Channel(std::string const & name) const;
 		std::vector<CnCNetGameType> const & Games(void) const { return(GameList); }
 
-		// CTCP messages other than game listings, oldest first, for the game
-		// room to act on. Taking them clears the list.
+		// Events for the game room to act on, oldest first: CTCP messages other
+		// than game listings, refused joins, joins, parts and kicks in channels
+		// named with RoomPrefix, and every quit and nick change. Taking them
+		// clears the list; past MaxRoomMessages the oldest are dropped.
 		std::vector<IRCEventType> Take_Room_Messages(void);
 
 		static bool Same_Nick(std::string const & a, std::string const & b);
@@ -125,6 +129,7 @@ class CnCNetLobbyClass
 		void Sort_Users(CnCNetChannelType & channel);
 		void Remove_Games_Of(std::string const & nick);
 		void Game_Listing(std::string const & nick, std::string const & arguments, uint64_t now);
+		void Queue_Room_Message(IRCEventType const & event);
 
 		CnCNetLobbyConfigType Config;
 		CnCNetStatus CurrentStatus = CnCNetStatus::OFFLINE;
