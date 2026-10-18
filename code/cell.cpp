@@ -1480,7 +1480,8 @@ void CellClass::Destroy_Bridge(void)
 				new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count() - 1)], coord);
 			}
 
-			new AnimClass(Rule->BridgeExplosions[Random_Pick(0, Rule->BridgeExplosions.Count() - 1)], coord, Random_Pick(1, 5));
+			int const delay = Random_Pick(1, 5);
+			new AnimClass(Rule->BridgeExplosions[Random_Pick(0, Rule->BridgeExplosions.Count() - 1)], coord, delay);
 		}
 	}
 }

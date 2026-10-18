@@ -13337,7 +13337,8 @@ void MapClass::Spawn_Bridge_Explosion(Cell const & cell)
 	coord.Y += Random_Double(-0.5, 0.5) * 50;
 	coord.Z = LEVEL_LEPTON_H * cptr->Height;
 
-	new AnimClass(Rule->BridgeExplosions[Random_Pick(0, Rule->BridgeExplosions.Count() - 1)], coord, Random_Pick(1, 5));
+	int const delay = Random_Pick(1, 5);
+	new AnimClass(Rule->BridgeExplosions[Random_Pick(0, Rule->BridgeExplosions.Count() - 1)], coord, delay);
 }
 
 
