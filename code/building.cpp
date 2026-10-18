@@ -4135,7 +4135,7 @@ void BuildingClass::Grand_Opening(bool captured)
 {
 	if (!HasOpened || captured) {
 		if (!HasOpened) {
-			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow, Class->IsSensorArray ? 30 : 0);
+			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow);
 
 			// A structure that needs power starts without its power animations; the first update that finds it in service gives them back.
 			if (Class->IsPowered && Class->Drain > 0) {
