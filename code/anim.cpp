@@ -195,7 +195,8 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 
 	if (Class->IsReverse) {
 		IsReversed = true;
-		Set_Stage(Class->LoopEnd);
+		// The first frame is the last one of the loop, as gamemd's AnimClass constructor (0x421EA0) sets it.
+		Set_Stage(Class->LoopEnd - 1);
 		Set_Step(-Fetch_Step());
 	}
 
@@ -1871,6 +1872,6 @@ void AnimClass::Play_Backward(void)
 		return;
 	}
 	IsReversed = true;
-	Set_Stage(std::max(Class->Stages - 1, 0));
+	Set_Stage(std::max(Class->LoopEnd - 1, 0));
 	Set_Step(-std::abs(Fetch_Step()));
 }
