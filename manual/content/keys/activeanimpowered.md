@@ -9,6 +9,8 @@ when_omitted:
 
 With `yes`, the [`ActiveAnim`](/keys/activeanim/) animation freezes on its current frame while its house is short of power, and resumes when the house has full power again. With `no`, a power shortfall does not freeze it.
 
+A [`NeedsEngineer=yes`](/keys/needsengineer/) structure that has not changed owner also freezes a `yes` animation when it is placed on the map, whatever its house's power. The first change of owner resumes it; see [Power](/systems/building-animations/#power).
+
 A shortfall freezes the animation only on some structures; [Fields, fences and lights](/systems/power/#fields-fences-and-lights) says which. Switching the structure off and an [EMP pulse](/systems/emp-pulse/) can also freeze a `yes` animation, and [Power](/systems/building-animations/#power) covers when.
 
 To remove the animation during a shortfall instead of freezing it, set `ActiveAnimPowered=no` and [`ActiveAnimPoweredLight=yes`](/keys/activeanimpoweredlight/).

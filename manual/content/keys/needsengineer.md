@@ -11,6 +11,8 @@ when_omitted:
 
 The structure makes no [`ProduceCashAmount`](/keys/producecashamount/) payment until its owner has changed at least once. A neutral structure that an engineer captures starts paying on capture. A structure that the map places under a player's house does not pay until something changes its owner.
 
+Its `…Powered=yes` animations are also frozen until its owner first changes; see [Power](/systems/building-animations/#power).
+
 ```ini title="rulesmd.ini"
 [CAOILD]
 NeedsEngineer=yes

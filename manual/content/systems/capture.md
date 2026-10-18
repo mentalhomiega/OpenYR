@@ -256,6 +256,7 @@ A captured structure also goes through these steps:
 - Production in progress is abandoned. The object under construction is removed, and the money spent on it so far is refunded to the losing house.
 - Both houses recount their factories. A captured construction yard moves between the two houses' lists of construction yards. If the player loses their last construction yard this way, any structure placement in progress is canceled.
 - The structure opens as a capture, not as a new build. It therefore gives out no free units: a captured [`FreeUnit`](/keys/freeunit/) structure yields nothing, and a captured helipad gets no free aircraft.
+- A [`NeedsEngineer=yes`](/keys/needsengineer/) structure resumes its `…Powered=yes` animations on capture. See [Power](/systems/building-animations/#power).
 - A structure that produces cash follows the rules under [cash-producing structures](/systems/produce-cash/#capture).
 - The repair flag is cleared. A cloak generator's radius is reset and re-enabled if it still has power. EVA announces the capture when either house is under player control.
 - The losing house records the structure as its recapture target. [Computer-controlled engineers](#computer-controlled-engineers) covers when its engineers head for it.
