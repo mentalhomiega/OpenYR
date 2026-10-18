@@ -387,6 +387,10 @@ class RulesClass
 		std::vector<RGBClass> ColorAdd;
 		int LaserTargetColor;
 
+		// IronCurtainColor and BerserkColor pick the ColorAdd entries that tint a vehicle under the Iron Curtain and a berserk unit. 0 is the empty entry.
+		int IronCurtainColor;
+		int BerserkColor;
+
 		/*
 		 * Radiation: a site lasts RadDurationMultiple frames per point of level, loses a step every
 		 * RadLevelDelay frames and dims its light every RadLightDelay frames. Every

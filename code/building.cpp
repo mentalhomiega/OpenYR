@@ -9302,7 +9302,7 @@ void BuildingClass::Update_Anim_Appearance(void)
 	if (AirstrikeMarkedBy != NULL && !Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
 		RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
 		if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
-			ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 2, add.Get_Green(), add.Get_Blue() * 2);
+			ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 8, add.Get_Green() * 4, add.Get_Blue() * 8);
 			if (tinted != NULL) {
 				converter = tinted;
 			}

@@ -7823,9 +7823,9 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 				converter = EightBitDrawer;
 			} else if (Is_Disguised_To_Player()) {
-				converter = ColorSchemes[House_Display_Scheme(DisguiseHouse)]->Converter;
+				converter = Effect_Converter(ColorSchemes[House_Display_Scheme(DisguiseHouse)]);
 			} else {
-				converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+				converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
 			}
 		}
 
@@ -7875,8 +7875,8 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		if (RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && !((BuildingClass *)this)->Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
 			RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
 			if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
-				// The table's red and blue are 5-bit and green 6-bit; the palette is 6-bit throughout.
-				ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 2, add.Get_Green(), add.Get_Blue() * 2);
+				// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
+				ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 8, add.Get_Green() * 4, add.Get_Blue() * 8);
 				if (tinted != NULL) {
 					converter = tinted;
 				}
@@ -8147,7 +8147,7 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 		converter = EightBitDrawer;
 	} else {
-		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+		converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
 	}
 
 	int predoffset = 0;
@@ -8210,7 +8210,7 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 		converter = EightBitDrawer;
 	} else {
-		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+		converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
 	}
 
 	RLEBlitter const * blitter = converter->RLEBlitter_From_Flags(flags);
@@ -11223,8 +11223,8 @@ int TechnoClass::Apparent_Brightness(int brightness) const
 
 /// <summary>
 /// Scales the brightness of an object under the Iron Curtain by the stage of its pulse, as
-/// TechnoClass::GetInvulnerabilityTintIntensity (0x70E380) does. Yuri's Revenge also adds
-/// the IronCurtainColor tint, which is not drawn here.
+/// TechnoClass::GetInvulnerabilityTintIntensity (0x70E380) does. The colour tint is not part
+/// of this scale; TechnoClass::Effect_Converter adds it.
 /// </summary>
 /// <param name="brightness">The brightness the object would otherwise be drawn with.</param>
 /// <returns>Returns with the brightness to draw the object with, no more than 2000.</returns>
@@ -11274,6 +11274,49 @@ int TechnoClass::Iron_Curtain_Brightness(int brightness) const
 			return(brightness);
 	}
 	return(std::min((scale * brightness) >> 8, 2000));
+}
+
+
+/// <summary>
+/// Returns the converter that draws this object, with the palette tinted by the colour of the
+/// effect it is under. A voxel vehicle under the Iron Curtain takes IronCurtainColor, and a
+/// berserk vehicle or infantryman takes BerserkColor. Shape vehicles take no tint, as
+/// UnitClass::DrawAsSHP (0x73C5F0) draws them without one.
+/// </summary>
+/// <param name="scheme">The color scheme of the house the object is drawn for.</param>
+/// <returns>Returns with the tinted converter, or the scheme's own converter when no tint applies.</returns>
+ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
+{
+	int red = 0;
+	int green = 0;
+	int blue = 0;
+
+	auto add_entry = [&red, &green, &blue](int index) {
+		if (index >= 0 && index < (int)Rule->ColorAdd.size()) {
+			RGBClass const & color = Rule->ColorAdd[index];
+			red += color.Get_Red() * 8;
+			green += color.Get_Green() * 4;
+			blue += color.Get_Blue() * 8;
+		}
+	};
+
+	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->Class->IsVoxel) {
+		if (Is_Iron_Curtained()) {
+			add_entry(Rule->IronCurtainColor);
+		}
+		if (IsBerzerk) {
+			add_entry(Rule->BerserkColor);
+		}
+	} else if (RTTI == RTTI_INFANTRY && IsBerzerk) {
+		add_entry(Rule->BerserkColor);
+	}
+
+	if (red == 0 && green == 0 && blue == 0) {
+		return(scheme->Converter);
+	}
+
+	ConvertClass * tinted = scheme->Designated_Converter(std::min(red, 255), std::min(green, 255), std::min(blue, 255));
+	return(tinted != NULL ? tinted : scheme->Converter);
 }
 
 

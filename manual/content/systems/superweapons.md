@@ -504,7 +504,7 @@ A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininv
 
 A protected object takes no damage, except from damage that ignores armor, such as a demolition charge going off. Healing still reaches it. Infantry cannot plant a demolition charge on a protected structure or walk into one, so an engineer cannot capture it.
 
-A protected object pulses dark while the protection lasts: it flashes bright as the protection starts, throbs dark, and flashes bright again in its last second. Yuri's Revenge also tints it with `IronCurtainColor`, which is not drawn yet.
+A protected object pulses dark while the protection lasts: it flashes bright as the protection starts, throbs dark, and flashes bright again in its last second. A vehicle drawn as a voxel also takes the `[ColorAdd]` entry that `IronCurtainColor=` names, added to its colours. The stock rules name entry 0, which adds nothing, so the pulse is the only visible change until a mod names another entry. Infantry do not take the tint, because the curtain destroys them.
 
 ```ini title="rulesmd.ini"
 [MyCurtainSpecial]
