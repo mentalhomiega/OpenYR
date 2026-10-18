@@ -805,6 +805,13 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 }
 
 
+// gamemd repairs an occupiable building of a multiplayer-passive house as it would an ally's (0x51E3B0, 0x519630).
+static bool Is_Passive_Occupiable_Building(BuildingClass const * building)
+{
+	return(building->House->Class->IsMultiplayPassive && building->Class->IsCanBeOccupied);
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Per_Cell_Process -- Handles special operations that occur once per cell.     *
  *                                                                                             *
@@ -942,29 +949,25 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					}
 
 					/*
-					**	An engineer will either mega-repair a friendly or allied
-					**	building or it will damage/capture an enemy building. Whether
-					**	it damages or captures depends on how badly damaged the
-					**	enemy building is.
+					**	An engineer will either mega-repair a friendly, allied or
+					**	occupiable multiplayer-passive building or it will damage/capture
+					**	an enemy building. Whether it damages or captures depends on how
+					**	badly damaged the enemy building is.
 					*/
-					else if (House->Is_Ally(tech)) {
+					else if (House->Is_Ally(tech) || (tech->RTTI == RTTI_BUILDING && Is_Passive_Occupiable_Building((BuildingClass *)tech))) {
 						tech->Renovate();
 					} else {
 						bool iscapturable = false;
-						bool passive = false;
 						if (tech->RTTI == RTTI_BUILDING) {
 							iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
-
-							// gamemd (InfantryClass arrival) leaves an occupiable structure of a multiplayer-passive house alone.
-							passive = tech->House->Class->IsMultiplayPassive && ((BuildingClass *)tech)->Class->IsCanBeOccupied;
 						}
 
-						if (!passive && Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
+						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
 							&& tech->House->Class->HeapID != HouseTypeClass::From_Name("Neutral")) {
 							int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
 							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
 							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
-						} else if (!passive && iscapturable) {
+						} else if (iscapturable) {
 							if (tech->Tag) {
 								tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 							}
@@ -3147,7 +3150,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 				if (bldg->Class->IsBridgeRepairHut) {
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
-				if (House->Is_Ally(bldg)) {
+				if (House->Is_Ally(bldg) || (Is_Passive_Occupiable_Building(bldg) && !bldg->IsBeingWarpedOut)) {
 					if (bldg->HealthRatio == Rule->ConditionGreen) {
 						return(ACTION_NO_GREPAIR);
 					}
