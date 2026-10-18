@@ -16,6 +16,7 @@ version: 1
 # in its From column.
 records:
   # Our own keys.
+  animation-fires-key: OpenYR
   added-barrelanimzadjust: OpenYR
   added-synclog: OpenYR
   added-turretbob: OpenYR

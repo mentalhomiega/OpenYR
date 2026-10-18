@@ -1,13 +1,13 @@
 ---
 key: Flamer
-summary: Throws one to three fires onto the ground around the animation.
-see_also: ["Scorch", "SmallFire", "LargeFire"]
+summary: Throws one to three fires onto the ground around the animation when AnimationFires is set.
+see_also: ["Scorch", "SmallFire", "LargeFire", "AnimationFires"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-When the animation reaches its [middle frame](/keys/crater/#scope-animtype), it starts fires around itself:
+With [`AnimationFires=yes`](/keys/animationfires/), an animation that reaches its [middle frame](/keys/crater/#scope-animtype) starts fires around itself:
 
 - one [`SmallFire`](/keys/smallfire/) 64 leptons away;
 - a 50% chance of a second `SmallFire` 160 leptons away;

@@ -1351,7 +1351,8 @@ void AnimClass::Middle(void)
 	**	do so now. Usually, these side effects are in the form of other
 	**	animations.
 	*/
-	if (Class->IsFlameThrower) {
+	// Yuri's Revenge lights no fire from these animations; AnimationFires=yes enables it.
+	if (Rule->IsAnimationFires && Class->IsFlameThrower) {
 		if (Rule->SmallFire != NULL) {
 			new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), CELL_LEPTON / 4), true), 0, Random_Pick(1, 2));
 		}
@@ -1365,7 +1366,7 @@ void AnimClass::Middle(void)
 				new AnimClass(Rule->LargeFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 7 * CELL_LEPTON / 16), true), 0, Random_Pick(1, 2));
 			}
 		}
-	} else if (Class->IsScorcher) {
+	} else if (Rule->IsAnimationFires && Class->IsScorcher) {
 		if (HeightAGL < 10) {
 			LandType land = Map[(Coord const &)PositionCoord].Land_Type();
 			if (land != LAND_WATER && land != LAND_BEACH && land != LAND_ICE && land != LAND_ROCK) {

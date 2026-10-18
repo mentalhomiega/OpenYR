@@ -14,9 +14,9 @@ SmallFire=MYFIRE_SM ; an AnimType registered in [Animations]
 
 The game creates this flame in the cases below, and no object type can choose a different flame for any of them.
 
-- A [`Flamer=yes`](/keys/flamer/) animation lays a patch of fire when it reaches its middle frame. One flame lands a quarter of a cell away in a random direction. On an even chance, a second lands five eighths of a cell away. On a separate even chance, a [`LargeFire`](/keys/largefire/) lands seven sixteenths of a cell away. Each flame is moved to the nearest free spot.
-- A [`Scorch=yes`](/keys/scorch/) animation less than ten leptons above the ground creates one at its center, unless it is over water, beach, ice or rock. If the animation is attached to an object, the flame is attached to that object too.
+- A [`Flamer=yes`](/keys/flamer/) animation lays a patch of fire when it reaches its middle frame, if [`AnimationFires=yes`](/keys/animationfires/) is set. One flame lands a quarter of a cell away in a random direction. On an even chance, a second lands five eighths of a cell away. On a separate even chance, a [`LargeFire`](/keys/largefire/) lands seven sixteenths of a cell away. Each flame is moved to the nearest free spot.
+- A [`Scorch=yes`](/keys/scorch/) animation less than ten leptons above the ground creates one at its center, unless it is over water, beach, ice or rock, if [`AnimationFires=yes`](/keys/animationfires/) is set. If the animation is attached to an object, the flame is attached to that object too.
 - A destroyed structure gives each cell of its footprint an even chance of one, half a cell from the cell's center in a random direction. Half of those cells also get a `LargeFire`.
 - A structure knocked down a damage level can get one on each footprint cell. [`Sparky`](/keys/sparky/) covers that case, including the engineer damage that prevents the flame and the [`OnFire`](/keys/onfire/) set that replaces it.
 
-With the key unset or `SmallFire=none`, no flame appears in any of these cases. Yuri's Revenge's stock rules do not set it.
+With `SmallFire` unset or `none`, no flame appears in any of these cases. The first two cases also need `AnimationFires=yes`. Yuri's Revenge's stock rules do not set `SmallFire`.
