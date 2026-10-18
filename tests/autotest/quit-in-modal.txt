@@ -1,0 +1,12 @@
+; Quits the game while the skirmish lobby is open. The lobby is a modal screen with <surface> elements, and
+; the game exits without closing it. The run must end with no exception report: the open screen's documents
+; are released while the interface shuts down, and their surfaces need the instancer that is still alive then.
+; Run from the workspace root, in PowerShell:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Script src-agent23/tests/autotest/quit-in-modal.txt -Build agent23 -Menus -Seconds 120 -Filter "UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui quit

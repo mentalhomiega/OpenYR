@@ -17,6 +17,7 @@
 #include <RmlUi/Core/Mesh.h>
 #include <RmlUi/Core/MeshUtilities.h>
 #include <RmlUi/Core/RenderManager.h>
+#include <memory>
 #include <span>
 #include <utility>
 
@@ -129,8 +130,22 @@ void UIRmlSurfaceElementClass::Generate_Geometry(void)
 }
 
 
+// Not a function-local static: the C runtime destroys one at exit, and that can come before
+// Prog_End shuts the interface down while a surface is still in an open document.
+static std::unique_ptr<Rml::ElementInstancerGeneric<UIRmlSurfaceElementClass>> Surface_Instancer;
+
+
 void UI_Register_Surface_Element(void)
 {
-	static Rml::ElementInstancerGeneric<UIRmlSurfaceElementClass> instancer;
-	Rml::Factory::RegisterElementInstancer("surface", &instancer);
+	if (!Surface_Instancer) {
+		Surface_Instancer = std::make_unique<Rml::ElementInstancerGeneric<UIRmlSurfaceElementClass>>();
+	}
+	Rml::Factory::RegisterElementInstancer("surface", Surface_Instancer.get());
+}
+
+
+// Call only after Rml::Shutdown, when no element can still be released through the instancer.
+void UI_Unregister_Surface_Element(void)
+{
+	Surface_Instancer.reset();
 }

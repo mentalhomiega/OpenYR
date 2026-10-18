@@ -50,3 +50,4 @@ class UIRmlSurfaceElementClass : public Rml::Element
 
 
 void UI_Register_Surface_Element(void);
+void UI_Unregister_Surface_Element(void);
