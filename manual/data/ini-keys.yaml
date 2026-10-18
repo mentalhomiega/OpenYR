@@ -40311,7 +40311,7 @@ TurretRecoil:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: null
       declared_in: BuildingTypeClass
@@ -40325,7 +40325,7 @@ TurretRecoil:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: needs_review
+    status: reviewed
     _provenance:
       default_candidate: 'no'
       declared_in: UnitTypeClass

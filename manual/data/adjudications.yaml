@@ -371,6 +371,10 @@ Translucent:
   "AnimTypeClass::IsTranslucent": {verdict: distinct}
   "VoxelAnimTypeClass::IsTranslucent": {verdict: distinct}
 
+TurretRecoil:
+  "BuildingTypeClass::IsTurretRecoil": {verdict: distinct}
+  "UnitTypeClass::IsTurretRecoil": {verdict: distinct}
+
 TurboBoost:
   "WeaponTypeClass::IsTurboBoosted": {verdict: distinct}
   "RulesClass::TurboBoost": {verdict: distinct}
