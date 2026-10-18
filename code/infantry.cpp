@@ -2304,11 +2304,11 @@ bool InfantryClass::Random_Animate(void)
 				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
 				break;
 
+			// The second idle animation keeps the facing, as in gamemd (InfantryClass::UpdateIdleAction, 0x51CDB0).
 			case 1:
 			case 2:
 			case 7:
 				Do_Action(DO_IDLE2);
-				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
 				if (!IsSelected && IsOwnedByPlayer && Class->VoiceComment.Count() > 0 && Sim_Random_Pick(0, 2) == 0) {
 					Sound_Effect((VocType)Class->VoiceComment[0], PositionCoord);
 				}
