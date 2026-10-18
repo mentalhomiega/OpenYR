@@ -2635,6 +2635,12 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 		}
 	}
 
+	// A slave carrying a full load walks with its Carry sequence. gamemd checks this before the water
+	// sequences, so the load keeps Carry in water (InfantryClass::PlayAnim, 0x51D6F0).
+	if (todo == DO_WALK && SlaveOwner != NULL && Class->Capacity > 0 && Storage.Get_Total_Amount() >= Class->Capacity && Class->DoControls[DO_CARRY].Count > 0) {
+		todo = DO_CARRY;
+	}
+
 	// An AmphibiousDestroyer soldier off a bridge on water or beach swims, treads water and fights with its wet
 	// sequences, and plays EnterWaterSound or LeaveWaterSound as it changes between land and water.
 	if (Class->MZone == MZONE_AMPHIBIOUS_DESTROYER && todo != DO_NOTHING) {
@@ -2703,14 +2709,11 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 	}
 
 	// As InfantryClass::PlayAnim (0x51D6F0): a soldier standing in the air hovers when its art has a
-	// Hover sequence, a civilian who panics runs with its Panic sequence, and a slave carrying a full
-	// load walks with its Carry sequence.
+	// Hover sequence, and a civilian who panics runs with its Panic sequence.
 	if (todo == DO_STAND_READY && In_Air() && !IsOnBridge && Class->DoControls[DO_HOVER].Frame > 0) {
 		todo = DO_HOVER;
 	} else if (todo == DO_WALK && Class->IsFraidyCat && Fear > FEAR_SCARED && Class->DoControls[DO_PANIC].Count > 0) {
 		todo = DO_PANIC;
-	} else if (todo == DO_WALK && SlaveOwner != NULL && Class->Capacity > 0 && Storage.Get_Total_Amount() >= Class->Capacity && Class->DoControls[DO_CARRY].Count > 0) {
-		todo = DO_CARRY;
 	}
 
 	if (todo == DO_NOTHING || Class->DoControls[todo].Count == 0) {
