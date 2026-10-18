@@ -682,10 +682,17 @@ class SessionClass
 		int MasterPlayerID;
 
 		/*
-		 * If the network diagnostics display is to be drawn over the game, then this flag
-		 * will be true. It is a developer aid, turned on by a command line switch.
+		 * Set by the -MPDEBUG switch, a developer aid. It makes the stall counts record every
+		 * frame of a stall. Whether the display is drawn is DrawMPDebugStats, not this flag.
 		 */
 		bool ShowInternetDebug;
+
+		/*
+		 * Whether the network diagnostics display is drawn now. The MultiplayerDebug command
+		 * toggles it, and the -MPDEBUG switch starts it on. Only the drawing code reads it, so
+		 * toggling it never changes what the game counts or sends.
+		 */
+		bool DrawMPDebugStats;
 
 		//.....................................................................
 		// This flag is set when we've loaded a multiplayer game.

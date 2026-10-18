@@ -57,8 +57,8 @@ HotkeyCategory Hotkey_Category_Of(std::string const & command)
 		return(HOTKEY_CATEGORY_CONTROL_GROUPS);
 	}
 
-	// The cheat commands, which only work with debug mode on.
-	if (Starts_With(command, "Debug")) {
+	// The cheat commands, which need debug mode, and the multiplayer debug display, which gamemd lists with them.
+	if (Starts_With(command, "Debug") || command == "MultiplayerDebug") {
 		return(HOTKEY_CATEGORY_DEBUG);
 	}
 

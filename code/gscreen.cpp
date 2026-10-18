@@ -482,7 +482,7 @@ void GScreenClass::Render(void)
 		Session.Messages.Draw();
 		TacticalMap->Draw_Super_Timers();
 	}
-	if (Session.ShowInternetDebug) {
+	if (Session.DrawMPDebugStats) {
 		Multiplayer_Debug_Print();
 	}
 

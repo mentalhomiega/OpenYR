@@ -17,8 +17,9 @@
 namespace
 {
 
-// The keys of Yuri's Revenge's built-in KEYBOARDMD.INI, in the order that file lists them. The game
-// reads this copy when no loose KEYBOARDMD.INI sits beside it. HealthNav has no entry, so it is unbound.
+// The keys of Yuri's Revenge's built-in KEYBOARDMD.INI for the commands this build has, in the order that
+// file lists them. The game reads this copy when no loose KEYBOARDMD.INI sits beside it. HealthNav has no
+// entry, so it is unbound.
 std::vector<HotkeyEntry> const Stock_Table = {
 	{ "CenterView", 12 },
 	{ "Options", 27 },
@@ -94,6 +95,7 @@ std::vector<HotkeyEntry> const Stock_Table = {
 	{ "TeamCreate_7", 567 },
 	{ "TeamCreate_8", 568 },
 	{ "TeamCreate_9", 569 },
+	{ "MultiplayerDebug", 585 },
 	{ "SetView1", 624 },
 	{ "SetView2", 625 },
 	{ "SetView3", 626 },
@@ -297,6 +299,7 @@ std::vector<HotkeyEntry> const Modern_Table = {
 	{ "TeamAddSelect_8", 312 },
 	{ "TeamAddSelect_9", 313 },
 	{ "ScreenCapture", 339 },
+	{ "MultiplayerDebug", 585 },
 	{ "TeamCreate_10", 560 },
 	{ "TeamCreate_1", 561 },
 	{ "TeamCreate_2", 562 },

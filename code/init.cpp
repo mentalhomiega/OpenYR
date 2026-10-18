@@ -1597,6 +1597,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 		if (strstr(string, "-MPDEBUG")) {
 			Session.ShowInternetDebug = true;
+			Session.DrawMPDebugStats = true;
 		}
 
 		/*
@@ -6243,6 +6244,32 @@ class DebugFastForwardCommandClass : public CommandClass
 
 
 /// <summary>
+/// Shows or hides the network diagnostics display. The display is drawn only in an IPX or
+/// Internet game, and the command only changes whether it is drawn.
+/// </summary>
+class MultiplayerDebugCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("MultiplayerDebug");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Multiplayer debug info");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String(TXT_DEBUG_CATEGORY));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Turns the multiplayer debug display on or off.");
+		}
+
+		virtual void Execute(void) const {
+			Session.DrawMPDebugStats = !Session.DrawMPDebugStats;
+		}
+};
+
+
+/// <summary>
 /// Selects the player's combatants on screen, or every combatant on the map once the ones on
 /// screen are all selected already.
 /// </summary>
@@ -6913,6 +6940,8 @@ static void Init_Commands(void)
 	AllCommands.Add(debugdestroycmd);
 	CommandClass * debugfastforwardcmd = new DebugFastForwardCommandClass;
 	AllCommands.Add(debugfastforwardcmd);
+
+	AllCommands.Add(new MultiplayerDebugCommandClass);
 
 	Init_Hotkeys();
 

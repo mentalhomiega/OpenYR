@@ -844,12 +844,12 @@ void Message_Input(KeyNumType &input)
 /// Draws the network statistics overlay.
 /// This routine prints the frame counter, frame rate, latency and processing figures
 /// across the bottom of the screen, and then lets the connection manager add its own
-/// per-connection display. It is used while debugging a multiplayer game and does
-/// nothing at all in a single player game.
+/// per-connection display. It draws only in an IPX or Internet game, and only while
+/// Session.DrawMPDebugStats is set; the MultiplayerDebug command toggles that flag.
 /// </summary>
 void Multiplayer_Debug_Print(void)
 {
-	if (Session.Type == GAME_NORMAL) {
+	if (Session.Type != GAME_IPX && Session.Type != GAME_INTERNET) {
 		return;
 	}
 

@@ -83,6 +83,7 @@ void Test_Defaults(void)
 	Check(Key_Of(defaults, "SidebarUp") == 104 && Key_Of(defaults, "SidebarDown") == 98, "SidebarUp and SidebarDown keep the numpad keys 8 and 2");
 	Check(Key_Of(defaults, "SidebarPageUp") == 2085, "SidebarPageUp keeps its stock release code");
 	Check(Key_Of(defaults, "ScreenCapture") == 339, "ScreenCapture keeps Shift+S");
+	Check(Key_Of(defaults, "MultiplayerDebug") == 585, "MultiplayerDebug defaults to Ctrl+I, as the stock KEYBOARDMD.INI binds it");
 	Check(Key_Of(defaults, "TeamCreate_10") == 560 && Key_Of(defaults, "TeamCenter_1") == 1073, "team keys keep the stock Control and Alt codes");
 	Check(!Has_Command(defaults, "HealthNav"), "HealthNav has no default key");
 	Check(Has_Command(defaults, "ChatToAll") && Has_Command(defaults, "DeleteWaypoint"), "OpenTS extra commands keep their keys");

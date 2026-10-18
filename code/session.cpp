@@ -231,6 +231,7 @@ SessionClass::SessionClass(void)
 	memset(ConnectionStats, 0, sizeof(ConnectionStats));
 
 	ShowInternetDebug = false;
+	DrawMPDebugStats = false;
 
 	LoadGame = 0;
 	EmergencySave = 0;
