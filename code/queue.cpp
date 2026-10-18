@@ -1509,26 +1509,31 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			 * Record (and optionally display) who's stalling the game.
 			 * ..................................................................
 			 */
-			int show_stall = 1;
-			if (Session.ShowInternetDebug && loop_count > 0 && (!stall_drawn || frame_stall != -1 || count_stall != -1)) {
+			// The counts follow the -MPDEBUG switch alone, so that toggling the display never changes them.
+			bool const stalling = loop_count > 0 && (!stall_drawn || frame_stall != -1 || count_stall != -1);
+			if (Session.DrawMPDebugStats && stalling) {
 				Multiplayer_Debug_Print();
-			} else if (stall_drawn) {
+			}
+			int show_stall = 1;
+			if (stall_drawn && !(Session.ShowInternetDebug && stalling)) {
 				show_stall = 0;
 			}
 			if (show_stall) {
 				if (frame_stall != -1) {
-					if (Session.ShowInternetDebug) {
-						VisibleSurface->Fill_Rect(Stall_Marker_Rect(frame_stall, 0, 35), DSurface::Build_Hicolor_Pixel(255, 255, 40));
-					}
 					Session.ConnectionStats[frame_stall].FrameSyncStalls++;
 				}
 				if (count_stall != -1) {
-					if (Session.ShowInternetDebug) {
-						VisibleSurface->Fill_Rect(Stall_Marker_Rect(count_stall, 40, 40), DSurface::Build_Hicolor_Pixel(255, 40, 40));
-					}
 					Session.ConnectionStats[count_stall].CommandCountStalls++;
 				}
 				stall_drawn = true;
+			}
+			if (Session.DrawMPDebugStats) {
+				if (frame_stall != -1) {
+					VisibleSurface->Fill_Rect(Stall_Marker_Rect(frame_stall, 0, 35), DSurface::Build_Hicolor_Pixel(255, 255, 40));
+				}
+				if (count_stall != -1) {
+					VisibleSurface->Fill_Rect(Stall_Marker_Rect(count_stall, 40, 40), DSurface::Build_Hicolor_Pixel(255, 40, 40));
+				}
 			}
 		}
 
@@ -1561,7 +1566,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 	if (reconnect_dlg) {
 		Close_Reconnect_Dialog();
 	}
-	if (stall_drawn && Session.ShowInternetDebug) {
+	if (stall_drawn && Session.DrawMPDebugStats) {
 		Rect rect = Stall_Marker_Rect(0, 0, VisibleSurface->Get_Width() - 100);
 		rect.Height = 4;
 		VisibleSurface->Fill_Rect(rect, 0);

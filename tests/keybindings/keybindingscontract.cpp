@@ -160,6 +160,7 @@ void Test_Names(void)
 void Test_Categories(void)
 {
 	Check(Hotkey_Category_Of("DebugInfiniteMoney") == HOTKEY_CATEGORY_DEBUG && Hotkey_Category_Of("DebugFastForward") == HOTKEY_CATEGORY_DEBUG, "the cheat commands are listed under debug");
+	Check(Hotkey_Category_Of("MultiplayerDebug") == HOTKEY_CATEGORY_DEBUG, "the multiplayer debug display is listed under debug");
 	Check(Hotkey_Category_Of("TeamCenter_3") == HOTKEY_CATEGORY_CONTROL_GROUPS, "TeamCenter_3 is listed under control groups");
 	Check(Hotkey_Category_Of("TeamSelect_10") == HOTKEY_CATEGORY_CONTROL_GROUPS, "TeamSelect_10 is listed under control groups");
 	Check(Hotkey_Category_Of("ScrollNorth") == HOTKEY_CATEGORY_CAMERA && Hotkey_Category_Of("SetView2") == HOTKEY_CATEGORY_CAMERA, "scrolling and bookmarks are camera commands");
