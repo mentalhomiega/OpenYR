@@ -1661,6 +1661,11 @@ void AnimClass::Vein_Attack_AI(void)
 void AnimClass::Delete_Me(void)
 {
 	Attach_To(NULL);
+
+	// Attach_To(NULL) runs first, so the sound plays at the position the animation has once detached.
+	if (!IsInert && Class->StopSound != VOC_NONE) {
+		Sound_Effect(Class->StopSound, Center_Coord());
+	}
 	BASECLASS::Delete_Me();
 }
 

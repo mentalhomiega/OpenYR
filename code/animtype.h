@@ -176,6 +176,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		VocType ExpireSound;
 
+		// The StopSound= key. It plays when the animation ends or is removed, unless the animation is inert.
+		VocType StopSound;
+
 		/*
 		 * This points to the animation created at the point of contact each time a bouncing
 		 * animation strikes the ground -- a puff of dust or a spark, typically.

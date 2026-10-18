@@ -141,6 +141,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	StartSound(VOC_NONE),
 	BounceSound(VOC_NONE),
 	ExpireSound(VOC_NONE),
+	StopSound(VOC_NONE),
 	BounceAnim(NULL),
 	ExpireAnim(NULL),
 	TrailerAnim(NULL),
@@ -541,6 +542,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 		BounceSound = ini.Get_VocType(Name(), "BounceSound", BounceSound);
 		ExpireSound = ini.Get_VocType(Name(), "ExpireSound", ExpireSound);
+		StopSound = ini.Get_VocType(Name(), "StopSound", StopSound);
 
 		BounceAnim = TGet_Class(ini, Name(), "BounceAnim", BounceAnim);
 		ExpireAnim = TGet_Class(ini, Name(), "ExpireAnim", ExpireAnim);
@@ -633,6 +635,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(StartSound);
 	stream.Serialize(BounceSound);
 	stream.Serialize(ExpireSound);
+	stream.Serialize(StopSound);
 	stream.Serialize(BounceAnim);
 	stream.Serialize(ExpireAnim);
 	stream.Serialize(TrailerAnim);

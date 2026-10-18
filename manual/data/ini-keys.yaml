@@ -36462,6 +36462,20 @@ Sticky:
 StopSound:
   key: StopSound
   scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: AnimTypeClass
+      member: StopSound
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -36469,7 +36483,7 @@ StopSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
