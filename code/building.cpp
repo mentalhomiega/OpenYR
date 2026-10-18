@@ -9208,6 +9208,18 @@ void BuildingClass::Update_Anim_Appearance(void)
 {
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
 	ConvertClass * converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+
+	// An airstrike-marked structure draws its animations with the LaserTargetColor tint its body gets (TechnoClass::Techno_Draw_Object).
+	if (AirstrikeMarkedBy != NULL && !Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
+		RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
+		if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
+			ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 2, add.Get_Green(), add.Get_Blue() * 2);
+			if (tinted != NULL) {
+				converter = tinted;
+			}
+		}
+	}
+
 	Set_Anim_Drawer(converter, Brightness);
 	Set_Anim_Translucency(TranslucencyLevel);
 }
