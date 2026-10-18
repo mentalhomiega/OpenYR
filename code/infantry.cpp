@@ -2660,10 +2660,10 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 					todo = DO_WET_DIE2;
 					break;
 
+				// Only FireUp and FireProne have wet forms in gamemd (InfantryClass::PlayAnim, 0x51D800).
+				// The secondary sequences play dry in water.
 				case DO_FIRE_WEAPON:
 				case DO_FIRE_PRONE:
-				case DO_SECONDARY_FIRE:
-				case DO_SECONDARY_PRONE:
 					todo = DO_WET_ATTACK;
 					break;
 
