@@ -712,8 +712,8 @@ class BuildingClass : public TechnoClass
 
 		int Get_Firestorm_Wall_Frame(void);
 
-		void Begin_Anim(BAnimType anim, bool damaged, int delay = 0);
-		void Begin_Opening_Anims(bool damaged, int delay = 0);
+		void Begin_Anim(BAnimType anim, bool damaged, int delay = 0, bool garrisoned = true);
+		void Begin_Opening_Anims(bool damaged, int delay = 0, bool placed = false);
 		void Freeze_Powered_Anims(bool frozen);
 		int Storage_Anim_Level(void) const;
 		void Update_Storage_Anims(void);

@@ -4137,7 +4137,7 @@ void BuildingClass::Grand_Opening(bool captured)
 {
 	if (!HasOpened || captured) {
 		if (!HasOpened) {
-			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow);
+			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow, 0, true);
 
 			// A structure that needs power starts without its power animations; the first update that finds it in service gives them back.
 			if (Class->IsPowered && Class->Drain > 0) {
@@ -8812,8 +8812,9 @@ bool BuildingClass::Remove_Upgrade(void)
 }
 
 
-// Only the idle and first four active slots, and super slots one and three, take a garrisoned name
-// (BuildingClass::UpdateAnims 0x458330, BeginMode 0x447780, Place 0x445F80); other slots never do.
+// The idle, four active and super slots one and three take a garrisoned name (UpdateAnims 0x458330,
+// BeginMode 0x447780), except that Place 0x445F80 gives it only to the idle and ACTIVE_ONE slots.
+// Other slots never take one.
 static bool Has_Garrisoned_Anim(BAnimType anim)
 {
 	return(anim == BANIM_IDLE || (anim >= BANIM_ACTIVE_ONE && anim <= BANIM_ACTIVE_FOUR) || anim == BANIM_SUPER_ONE || anim == BANIM_SUPER_THREE);
@@ -8829,12 +8830,13 @@ static bool Has_Garrisoned_Anim(BAnimType anim)
 /// <param name="anim">The animation slot to start.</param>
 /// <param name="damaged">Should the damaged form of the animation be used?</param>
 /// <param name="delay">The delay in game frames before the animation begins.</param>
-void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay)
+/// <param name="garrisoned">Should the garrisoned form be used while the building has occupants? Pass false for the base form.</param>
+void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay, bool garrisoned)
 {
 	char const * name = NULL;
 	if (damaged) {
 		name = Class->AnimData[anim].AnimDamaged ;
-	} else if (Occupants.Count() > 0 && Has_Garrisoned_Anim(anim)) {
+	} else if (garrisoned && Occupants.Count() > 0 && Has_Garrisoned_Anim(anim)) {
 		name = Class->AnimData[anim].AnimGarrisoned;
 	} else {
 		name = Class->AnimData[anim].Anim;
@@ -8847,23 +8849,24 @@ void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay)
 
 /// <summary>
 /// Starts the animations a building shows from the moment it is on the map, as
-/// BuildingClass::Place (0x442D50) and BuildingClass::BeginMode (0x447780) do. A building
+/// BuildingClass::Place (0x445F80) and BuildingClass::BeginMode (0x447780) do. A building
 /// other than a refinery gets its idle animation and the four active ones. A refinery gets
 /// only the active animation for how full it is, and so shows one ore level at a time.
 /// </summary>
 /// <param name="damaged">Should the damaged form of the animations be used?</param>
 /// <param name="delay">The delay in game frames before the first active animation begins.</param>
-void BuildingClass::Begin_Opening_Anims(bool damaged, int delay)
+/// <param name="placed">True when placing the building (Grand_Opening). Placement garrisons only the idle and ACTIVE_ONE slots.</param>
+void BuildingClass::Begin_Opening_Anims(bool damaged, int delay, bool placed)
 {
 	if (Class->IsRefinery) {
-		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + Storage_Anim_Level()), damaged, delay);
+		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + Storage_Anim_Level()), damaged, delay, !placed);
 		return;
 	}
 	Begin_Anim(BANIM_IDLE, damaged);
 	Begin_Anim(BANIM_ACTIVE_ONE, damaged, delay);
-	Begin_Anim(BANIM_ACTIVE_TWO, damaged);
-	Begin_Anim(BANIM_ACTIVE_THREE, damaged);
-	Begin_Anim(BANIM_ACTIVE_FOUR, damaged);
+	Begin_Anim(BANIM_ACTIVE_TWO, damaged, 0, !placed);
+	Begin_Anim(BANIM_ACTIVE_THREE, damaged, 0, !placed);
+	Begin_Anim(BANIM_ACTIVE_FOUR, damaged, 0, !placed);
 }
 
 
@@ -9193,7 +9196,8 @@ void BuildingClass::End_Anim(BAnimType anim)
 /// Switches this building's animations to their damaged form.
 /// Each building animation may have a separate damaged version. This routine is used
 /// as the building crosses a damage threshold so that every animation it is running is
-/// restarted in the matching form.
+/// restarted in the matching form. Occupants do not change that form: each animation
+/// restarts with its base or damaged name.
 /// </summary>
 /// <param name="damaged">Should the damaged versions of the animations be used?</param>
 void BuildingClass::Set_Anim_Damage_State(bool damaged)
@@ -9202,7 +9206,7 @@ void BuildingClass::Set_Anim_Damage_State(bool damaged)
 		IsDamagedAnims = damaged;
 		for (int i = 0; i < BANIM_COUNT; i++) {
 			if (Anims[i] != NULL) {
-				Begin_Anim((BAnimType)i, damaged);
+				Begin_Anim((BAnimType)i, damaged, 0, false);
 			}
 		}
 	}
