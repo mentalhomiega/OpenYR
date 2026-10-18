@@ -8827,12 +8827,13 @@ static bool Has_Garrisoned_Anim(BAnimType anim)
 /// <param name="anim">The animation slot to start.</param>
 /// <param name="damaged">Should the damaged form of the animation be used?</param>
 /// <param name="delay">The delay in game frames before the animation begins.</param>
-void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay)
+/// <param name="garrisoned">Should the garrisoned form be used while the building has occupants? Pass false for the base form.</param>
+void BuildingClass::Begin_Anim(BAnimType anim, bool damaged, int delay, bool garrisoned)
 {
 	char const * name = NULL;
 	if (damaged) {
 		name = Class->AnimData[anim].AnimDamaged ;
-	} else if (Occupants.Count() > 0 && Has_Garrisoned_Anim(anim)) {
+	} else if (garrisoned && Occupants.Count() > 0 && Has_Garrisoned_Anim(anim)) {
 		name = Class->AnimData[anim].AnimGarrisoned;
 	} else {
 		name = Class->AnimData[anim].Anim;
@@ -9183,7 +9184,8 @@ void BuildingClass::End_Anim(BAnimType anim)
 /// Switches this building's animations to their damaged form.
 /// Each building animation may have a separate damaged version. This routine is used
 /// as the building crosses a damage threshold so that every animation it is running is
-/// restarted in the matching form.
+/// restarted in the matching form. Occupants do not change that form: each animation
+/// restarts with its base or damaged name.
 /// </summary>
 /// <param name="damaged">Should the damaged versions of the animations be used?</param>
 void BuildingClass::Set_Anim_Damage_State(bool damaged)
@@ -9192,7 +9194,7 @@ void BuildingClass::Set_Anim_Damage_State(bool damaged)
 		IsDamagedAnims = damaged;
 		for (int i = 0; i < BANIM_COUNT; i++) {
 			if (Anims[i] != NULL) {
-				Begin_Anim((BAnimType)i, damaged);
+				Begin_Anim((BAnimType)i, damaged, 0, false);
 			}
 		}
 	}
