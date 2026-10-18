@@ -157,7 +157,7 @@ The scan walks that many whole rings of cells.
 
 When the guard radius falls back to weapon range, the scan changes in two ways:
 
-- It walks as many rings as the longer of the two weapon ranges, in whole cells, plus one. An object with no weapon at all therefore scans only the cell it stands in.
+- It walks as many rings as its weapon range, in whole cells, plus one. A type with a [`TurretCount`](/keys/turretcount/) above `0` that is not a gattling type uses the range of its current turret's weapon, so a gunner vehicle scans out to the weapon its passenger's [`IFVMode`](/keys/ifvmode/) names, or its first weapon when empty. Any other object uses the longer of its first two weapon ranges. An object with no weapon at all therefore scans only the cell it stands in.
 - Each candidate must also pass a range test. An object with a primary weapon accepts a candidate only within range of the weapon it would choose against it. An object with no primary weapon accepts a candidate within `GuardRange`.
 
 When `GuardRange` is not zero, the guard radius replaces the weapon test. A candidate inside it is not checked against the weapon's range, and one beyond it is rejected even when the weapon reaches it. The stock Dreadnought (`DRED`) shows the effect: its `GuardRange` is 10 cells, its `DredLauncher` reaches 25, and its `CanPassiveAquire=no` means it takes no target on its own while guarding.
