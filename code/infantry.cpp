@@ -2711,7 +2711,9 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 
 	if (todo != Doing && (Doing == DO_NOTHING || force || MasterDoControls[Doing].Interrupt)) {
 		Doing = todo;
-		if (todo == DO_IDLE1 || todo == DO_IDLE2) {
+
+		// gamemd scales only these sequences' rates by the game speed (InfantryClass::PlayAnim, 0x51D800).
+		if (todo == DO_IDLE1 || todo == DO_IDLE2 || todo == DO_WET_IDLE1 || todo == DO_WET_IDLE2 || todo == DO_HOVER || todo == DO_CHEER) {
 			Set_Rate(Options.Normalize_Delay(MasterDoControls[Doing].Rate));
 		} else {
 			Set_Rate(MasterDoControls[Doing].Rate);
