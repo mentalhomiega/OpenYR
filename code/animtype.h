@@ -448,6 +448,9 @@ class AnimTypeClass : public ObjectTypeClass
 		// A Shadow=yes animation keeps a shadow for each frame in the second half of its file.
 		bool IsShadow;
 
+		// A PsiWarning=yes animation is shown only to players whose psychic detectors cover its cell (see AnimClass::AI).
+		bool IsPsiWarning;
+
 		/*
 		 * If this animation should be hidden while the cell it occupies is fogged, then
 		 * this flag will be true. An animation belonging to a building is exempt from it,

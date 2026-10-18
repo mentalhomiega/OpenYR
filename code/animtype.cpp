@@ -181,6 +181,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsPingPong(false),
 	IsReverse(false),
 	IsShadow(false),
+	IsPsiWarning(false),
 	IsShouldFogRemove(true),
 	IsArtMissing(false),
 	ArtMissingTheater(THEATER_NONE)
@@ -453,6 +454,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsSticky = ini.Get_Bool(Name(), "Sticky", IsSticky);
 		IsPingPong = ini.Get_Bool(Name(), "PingPong", IsPingPong);
 		IsReverse = ini.Get_Bool(Name(), "Reverse", IsReverse);
+		IsPsiWarning = ini.Get_Bool(Name(), "PsiWarning", IsPsiWarning);
 		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
 		IsTiberiumChainReaction = ini.Get_Bool(Name(), "TiberiumChainReaction", IsTiberiumChainReaction);
 
@@ -658,6 +660,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsShouldFogRemove);
 	stream.Serialize(SpawnsParticle);
 	stream.Serialize(NumParticles);
+	stream.Serialize(IsPsiWarning);
 }
 
 
@@ -704,6 +707,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTiled);
 	crc(SpawnsParticle);
 	crc(NumParticles);
+	crc(IsPsiWarning);
 }
 
 

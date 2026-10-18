@@ -65,6 +65,8 @@
 #include "_tactica.h"
 #include "animtype.h"
 #include "bench.h"
+#include "building.h"
+#include "bullet.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
@@ -151,10 +153,12 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsInert(false),
 	IsFogged(false),
 	IsFlamingGuyEnd(false),
+	AttachedBullet(NULL),
 	IsToDelete(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
+	IsPsychicHidden(type != NULL && type->IsPsiWarning),
 	Delay(timedelay),
 	Accum(1),
 	TranslucencyLevel(0),
@@ -269,10 +273,12 @@ AnimClass::AnimClass(void) :
 	xObject(NULL),
 	OwnerHouse(HOUSE_NONE),
 	Loops(1),
+	AttachedBullet(NULL),
 	IsToDelete(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
+	IsPsychicHidden(false),
 	Delay(0),
 	Accum(0),
 	AlternativeDrawer(NULL),
@@ -511,7 +517,7 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
  *=============================================================================================*/
 void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (!IsInvisible && Class->DetailLevel <= Options.DetailLevel && (!IsFogged || !Class->IsShouldFogRemove)) {
+	if (!IsInvisible && !IsPsychicHidden && Class->DetailLevel <= Options.DetailLevel && (!IsFogged || !Class->IsShouldFogRemove)) {
 		BStart(BENCH_ANIMS);
 		ShapeSet const * shapefile = (ShapeSet const *)Get_Image_Data();
 
@@ -752,6 +758,40 @@ BounceResultType AnimClass::Bounce_AI(void)
 }
 
 
+/// <summary>
+/// Tells whether the local player can see a psychic warning on a cell.
+/// A warning is never shown to the owner's side, which is the owner and its allies. Otherwise
+/// it is shown only while one of the local player's powered psychic detectors has the cell
+/// within its radius, measured from the center of the detector to the center of the cell.
+/// </summary>
+/// <returns>Returns true when the local player sees the warning.</returns>
+static bool Psychic_Warning_Seen(CellClass const & cell, HouseClass const * owner)
+{
+	HouseClass const * viewer = PlayerPtr;
+	if (viewer == NULL || viewer->Is_Ally(owner)) {
+		return(false);
+	}
+
+	Coord const target = cell.Center_Coord();
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * detector = Buildings[index];
+		if (detector->House != viewer || detector->Class->PsychicDetectionRadius <= 0 || !detector->Is_Powered_On()) {
+			continue;
+		}
+
+		Coord const center = detector->Center_Coord();
+		double const dx = center.X - target.X;
+		double const dy = center.Y - target.Y;
+		double const dz = center.Z - target.Z;
+		int const distance = (int)std::sqrt(dx * dx + dy * dy + dz * dz);
+		if (distance <= detector->Class->PsychicDetectionRadius * CELL_LEPTON_W) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 /***********************************************************************************************
  * AnimClass::AI -- This is the low level anim processor.                                      *
  *                                                                                             *
@@ -769,6 +809,11 @@ BounceResultType AnimClass::Bounce_AI(void)
  *=============================================================================================*/
 void AnimClass::AI(void)
 {
+	if (Class->IsPsiWarning) {
+		HouseClass const * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
+	}
+
 	if (Class->IsFlamingGuy) {
 		Flaming_Guy_AI();
 		BASECLASS::AI();
@@ -1327,6 +1372,12 @@ void AnimClass::Detach(AbstractClass const * target, bool all)
 		IsToDelete = true;
 		Mark(MARK_UP);
 	}
+	if (AttachedBullet != NULL && (AbstractClass const *)AttachedBullet == target) {
+		Map.Remove(this);
+		AttachedBullet = NULL;
+		IsToDelete = true;
+		Mark(MARK_UP);
+	}
 	if (Class == target) {
 		Class = NULL;
 	}
@@ -1421,6 +1472,7 @@ void AnimClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBrandNew);
 	stream.Serialize(IsInvisible);
 	stream.Serialize(IsDisabled);
+	stream.Serialize(AttachedBullet);
 }
 
 

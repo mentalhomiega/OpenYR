@@ -412,6 +412,9 @@ class BuildingClass : public TechnoClass
 
 		// The fires burning on the structure while it is badly damaged, and whether it should have them.
 		AnimClass * DamageFireAnims[8];
+
+		// The psychic warning this silo put on its target when the launch began. It is cleared when the missile bullet takes it over.
+		AnimClass * PsiWarnAnim;
 		bool IsRequiresDamageFires;
 		void Create_Damage_Fires(void);
 		void Remove_Damage_Fires(void);
@@ -728,6 +731,7 @@ class BuildingClass : public TechnoClass
 		void Update_Anim_Appearance(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
+		void Start_Psi_Warning(void);
 
 		/*
 		**	Scenario and debug support.
