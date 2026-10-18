@@ -2650,7 +2650,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 					// A random DestroyAnim plays where the structure stood, in its house's colors (BuildingClass::Destroy, 0x4415F0).
 					if (Class->DestroyAnim.Count() > 0) {
-						AnimTypeClass const * type = Class->DestroyAnim[Scen->RandomNumber(0, Class->DestroyAnim.Count() - 1)];
+						AnimTypeClass const * type = Class->DestroyAnim.Pick(Scen->RandomNumber());
 						if (type != NULL) {
 							AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
 							if (anim != NULL) {
