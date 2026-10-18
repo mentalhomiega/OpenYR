@@ -64,7 +64,7 @@ The table lists every entry a sequence section may have and the action each one 
 | `Cheer` | Cheering. The All to Cheer trigger action makes each soldier on guard that is standing ready, idle or already cheering cheer |
 | `Paradrop` | Falling under the parachute after a paradrop |
 | `AirDeathStart`, `AirDeathFalling`, `AirDeathFinish` | Never played |
-| `Panic` | Walking while a [`Fraidycat=yes`](/keys/fraidycat/) soldier is frightened |
+| `Panic` | Walking while a soldier's fear is `200` or more, whatever its type |
 | `Shovel` | Digging, while a slave miner works a harvest node |
 | `Carry` | Walking with a full load, for a slave |
 | `SecondaryFire` | Firing the second weapon upright, with `FireUp` as the fallback when the entry is absent |

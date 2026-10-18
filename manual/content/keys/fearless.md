@@ -7,13 +7,13 @@ when_omitted:
   value: "no"
 ---
 
-Fear is a figure from `0` to `255` that a soldier gains when it is shot at. A frightened soldier drops prone when it can, and a [`Fraidycat=yes`](/keys/fraidycat/) soldier also scatters. A fearless soldier's fear stays at zero, so neither happens, unless its type also sets `Fraidycat=yes`. That flag's panic ignores `Fearless`, as the caution below explains.
+Fear is a figure from `0` to `300` that a soldier gains when it is shot at. A frightened soldier drops prone when it can. A [`Fraidycat=yes`](/keys/fraidycat/) soldier does not drop prone; it scatters instead. A fearless soldier's fear stays at zero, so neither happens, unless its type also sets `Fraidycat=yes`. That flag's panic ignores `Fearless`, as the caution below explains.
 
 Three things normally raise fear, and none of them affects a fearless soldier:
 
 - a hit from an attacker while its fear is below `100`, which raises it to `100`;
-- any other hit, which adds up to `10`;
-- the [Panic](/mapping/missions/tmission-panic/) team mission, which raises it to `255`.
+- any other hit, which adds `50`. If the soldier's health after the hit is above [`ConditionRed`](/keys/conditionred/), the amount is `25`. If it is above `ConditionYellow`, the amount is halved, which gives `12` with the stock thresholds;
+- the [Panic](/mapping/missions/tmission-panic/) team mission, which raises it to `300`.
 
 The `FEARLESS` [veteran ability](/systems/veterancy/#abilities) blocks the same three.
 
