@@ -4451,7 +4451,7 @@ class AttackMoveCommandClass : public CommandClass
 			return(Fetch_String(TXT_INTERFACE));
 		}
 		virtual char const * Get_Description(void) const {
-			return("Makes the next click on the ground an attack-move order for the selected units.");
+			return("Makes the next click on the ground an attack-move order for the selected units. While the key is held, every click on the ground is one.");
 		}
 
 		virtual void Execute(void) const {
@@ -7015,6 +7015,20 @@ static KeyNumType Held_Key_Of(char const * command, int slot)
 
 
 /// <summary>
+/// Gives the keyboard identifier of the command's binding in the slot with any trigger, or KN_NONE when it has none there.
+/// </summary>
+static KeyNumType Bound_Key_Of(char const * command, int slot)
+{
+	for (HotkeyEntry const & entry : HotkeyBindings) {
+		if (entry.Command == command && entry.Slot == slot) {
+			return((KeyNumType)entry.Key);
+		}
+	}
+	return(KN_NONE);
+}
+
+
+/// <summary>
 /// Turns the keyboard bindings into the tables the game reads: the press and trigger commands, the
 /// trigger timing, and the modifier keys the mouse commands test. A binding whose command does not
 /// exist is skipped.
@@ -7089,6 +7103,12 @@ void Apply_Hotkeys(void)
 	KeyNumType const queue_2 = Held_Key_Of("QueueMove", 1);
 	Options.KeyQueueMove1 = (queue_1 != KN_NONE) ? queue_1 : queue_2;
 	Options.KeyQueueMove2 = (queue_2 != KN_NONE) ? queue_2 : queue_1;
+
+	// The attack-move key is read as held, whatever its trigger, so holding it keeps attack-move on for the clicks made meanwhile.
+	KeyNumType const attack_move_1 = Bound_Key_Of("AttackMove", 0);
+	KeyNumType const attack_move_2 = Bound_Key_Of("AttackMove", 1);
+	Options.KeyAttackMove1 = (attack_move_1 != KN_NONE) ? attack_move_1 : attack_move_2;
+	Options.KeyAttackMove2 = (attack_move_2 != KN_NONE) ? attack_move_2 : attack_move_1;
 
 	for (int slot = 0; slot < HOTKEY_SLOT_COUNT; slot++) {
 		GridModifierKeys[slot] = Held_Key_Of("GridBuildModifier", slot);

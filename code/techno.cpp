@@ -5533,6 +5533,19 @@ static void Play_Unit_Voice(VocType voc)
 }
 
 
+bool AttackMoveArmed = false;
+bool AttackMoveOrdering = false;
+
+
+/// <summary>
+/// Returns whether the attack-move key is held down. Clicks made while it is held are attack-moves, as the armed click is.
+/// </summary>
+bool Attack_Move_Key_Held(void)
+{
+	return((Options.KeyAttackMove1 != KN_NONE && Keyboard->Down(Options.KeyAttackMove1)) || (Options.KeyAttackMove2 != KN_NONE && Keyboard->Down(Options.KeyAttackMove2)));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Player_Assign_Mission -- Assigns a mission as result of player input.          *
  *                                                                                             *
@@ -5555,10 +5568,6 @@ static void Play_Unit_Voice(VocType voc)
  * HISTORY:                                                                                    *
  *   05/22/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool AttackMoveArmed = false;
-bool AttackMoveOrdering = false;
-
-
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
 	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held.

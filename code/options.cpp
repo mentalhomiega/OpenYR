@@ -254,6 +254,8 @@ OptionsClass::OptionsClass(void) :
 	KeySelect2(KN_LSHIFT),
 	KeyQueueMove1(KN_Q),
 	KeyQueueMove2(KN_Q),
+	KeyAttackMove1(KN_NONE),
+	KeyAttackMove2(KN_NONE),
 	LastSovietMovie(-1),
 	LastAlliedMovie(-1)
 {
