@@ -1,0 +1,35 @@
+; A spy that a team's spy mission orders onto a deployed Slave Miner (YAREFN, Spyable=yes, Capturable=no) gets the
+; capture mission and the building as its target, but no destination. gamemd's InfantryClass::SetTarget (0x51B1F0) then
+; sets the destination for a spy when the building is Spyable, so the spy walks in, infiltrates and is consumed, and
+; its owner takes half of the victim's money (Infiltrated_By, 0x4571E0, the Capacity branch). The bug left the spy
+; standing still with the capture mission, no destination, and nothing done.
+; The enemy refinery is placed by "spawn SMIN", which the computer house deploys into a YAREFN (waitowns waits for it).
+; "teamspy" gives the capture mission and then the target, in that order, as team.cpp does for TMISSION_SPY.
+; Run on XMP29U2.MAP with the same -Settings as spy-click-barracks.txt:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/spy-slave-miner.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 300 -Filter "AUTOTEST|Exception"
+; Expected: "teamspy SPY -> YAREFN" at 605. "where SPY" at 650 to 800 shows the spy walking to nav 66,40 with mission
+; Capture. The spy is gone by 850, and "houses" at 1000 shows the Americans' money rising and the Africans' falling
+; by about the same amount. Before the fix the spy stays at 58,42 with nav -1,-1 at every step, and the money does not move.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy GAREFN 44 22
+40 spawn SMIN 62 38
+460 waitowns Africans YAREFN 1 2000
+470 where YAREFN
+500 houses
+600 own SPY 58 42
+605 teamspy SPY 65 39
+650 where SPY
+700 where SPY
+750 where SPY
+800 where SPY
+850 where SPY
+900 where SPY
+1000 houses
+1500 quit

@@ -2954,6 +2954,18 @@ void Run(StepType const & step)
 				techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
 			}
 		}
+	} else if (step.Command == "teamspy") {
+		// teamspy <TypeID> x y: the player's objects of that type get the capture mission and target a team's spy mission gives
+		// (TeamClass, team.cpp), with no destination set. The spy's own target assignment must then set one.
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
+		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Mission(MISSION_CAPTURE);
+				techno->Assign_Target(building);
+			}
+		}
 	} else if (step.Command == "unload") {
 		// unload <x> <y>: the structure on that cell unloads; otherwise the vehicle on it unloads its passengers.
 		Cell const cell(std::atoi(step.Argument.c_str()), step.X);
