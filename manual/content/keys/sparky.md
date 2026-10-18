@@ -27,7 +27,7 @@ When a hit drops the structure a damage level, each cell of its foundation rolls
 
 The flame results stay fixed while the range grows with the foundation, so the chance of a flame per cell depends on the structure's size. It is 7 in 8 for a one-by-one structure, peaks at 9 in 10 when width plus height is 4, and falls for anything larger, to 3 in 4 for a three-by-three structure. The third entry needs a width plus height of at least 4, so a one-by-one structure never shows it.
 
-Without `Sparky`, each foundation cell instead has an even chance of the [`SmallFire`](/keys/smallfire/) animation. It gets none when an engineer caused the damage.
+Without `Sparky`, a structure shows no flame from the hit unless [`AnimationFires=yes`](/keys/animationfires/) is set. With it set, each foundation cell has an even chance of the [`SmallFire`](/keys/smallfire/) animation, and none when an engineer caused the damage.
 
 A terrain object hit by this warhead catches fire when **all of** these hold:
 
