@@ -4,10 +4,12 @@ summary: How many cells around a meteor impact are slumped into a crater.
 see_also: [IsMeteor]
 when_omitted:
   kind: value
-  value: "4"
+  value: "0"
 ---
 
-The value selects how far a meteor's crater spreads from the impact cell. It does not change how deep each cell slumps:
+The value selects how far a meteor's crater spreads from the impact cell. The default, `0`, leaves the terrain unchanged when a meteor lands. The original game never reads this key, so a meteor makes a crater only when a mod or map sets a value above `0`. The stock rules file's `CraterLevel=1` is ignored.
+
+The value does not change how deep each cell slumps:
 
 | Value | Cells deformed |
 | --- | --- |

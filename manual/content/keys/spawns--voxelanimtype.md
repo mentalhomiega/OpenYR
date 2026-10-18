@@ -17,5 +17,5 @@ All the pieces appear in the same frame. Ordinary debris starts at the impact po
 A name missing from `[VoxelAnims]` still creates a voxel animation type of that name. If that file or a later rules or map file declares a section with that name, the type reads it. Otherwise the type has no model and every setting at its built-in value, so its pieces are invisible.
 
 :::caution[A meteor that spawns itself can multiply without limit]
-If `Spawns` names the meteor's own type, or a chain of meteor types leads back to it, each impact launches new meteors toward the point where it struck. At a `SpawnCount` of `1` each impact produces one meteor on average. At `2` or more the number of meteors usually grows with every generation, and each impact on land can deform the terrain again, as [`CraterLevel`](/keys/craterlevel/) sets.
+If `Spawns` names the meteor's own type, or a chain of meteor types leads back to it, each impact launches new meteors toward the point where it struck. At a `SpawnCount` of `1` each impact produces one meteor on average. At `2` or more the number of meteors usually grows with every generation. With [`CraterLevel`](/keys/craterlevel/) above `0`, each impact on land can deform the terrain again.
 :::

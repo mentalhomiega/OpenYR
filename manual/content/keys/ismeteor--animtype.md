@@ -18,7 +18,7 @@ A meteor's velocity is chosen differently from a bouncing animation's:
 
 The starting point is placed as though the meteor dropped by `MinZVel` alone. The extra 1.4 leptons per frame take its path 71 to 98 leptons below the creation point by the end of its travel time. A meteor aimed at the ground therefore lands short of the creation point, on the side it came from. The slower it descends, the shorter it lands: with `MinZVel=-1` it lands before covering half its path.
 
-When a meteor lands on ground, the terrain around the impact cell caves in as [`CraterLevel`](/keys/craterlevel/) sets. It makes no crater when it ends four height levels (416 leptons) or more above the ground, which is where a bridge deck sits.
+When a meteor lands on ground and [`CraterLevel`](/keys/craterlevel/) is above `0`, the terrain around the impact cell caves in as that setting sets. It makes no crater when it ends four height levels (416 leptons) or more above the ground, which is where a bridge deck sits.
 
 When a meteor lands in water, it plays the last animation in the rules' [`SplashList`](/keys/splashlist/). Other thrown animations play a wake and the first splash instead.
 

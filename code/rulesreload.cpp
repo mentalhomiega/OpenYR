@@ -57,6 +57,7 @@ bool Reload_Rules(void)
 	RuleINI->Clear();
 	CCFileClass rules_again(DeploymentConfig.RulesFile.c_str());
 	RuleINI->Load(rules_again, false);
+	Drop_Stock_CraterLevel(*RuleINI);
 	Load_Mod_Overlays(ModOverlayType::RULES, *RuleINI);
 	Rule->Addition(*RuleINI);
 
