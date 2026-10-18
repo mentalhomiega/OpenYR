@@ -3160,7 +3160,13 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		int crange = range / CELL_LEPTON;
 		if (range == 0) {
-			crange = std::max(Weapon_Range(0), Weapon_Range(1)) / CELL_LEPTON;
+			// As TechnoClass::GreatestThreat (0x6F8DF0): a turreted, non-gattling object scans to the range
+			// of its current weapon, so a gunner vehicle reaches the weapon its passenger's IFVMode names.
+			if (TClass->Has_Multiple_Turrets() && !TClass->IsGattling) {
+				crange = Weapon_Range(std::max(CurrentWeaponNumber, 0)) / CELL_LEPTON;
+			} else {
+				crange = std::max(Weapon_Range(0), Weapon_Range(1)) / CELL_LEPTON;
+			}
 			crange++;
 		}
 
