@@ -281,6 +281,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsGapSuperCharged(false),
 	HasExtraPowerDrain(false),
 	DamageFireAnims{},
+	PsiWarnAnim(NULL),
 	IsRequiresDamageFires(false),
 	IsGapCounted(false),
 	IsSensing(false),
@@ -6668,6 +6669,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 			case INITIAL:
 				IsReadyToCommence = false;
 				Begin_Mode(BSTATE_ACTIVE);	// open the door
+				Start_Psi_Warning();
 				Status = DOOR_OPENING;
 				[[fallthrough]];
 
@@ -6692,6 +6694,11 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					WarheadTypeClass const * warhead = weap->WarheadPtr;
 					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true);
 					if (bullet) {
+						// The warning passes to the missile bullet and stays up until that bullet is removed.
+						if (PsiWarnAnim != NULL) {
+							PsiWarnAnim->AttachedBullet = bullet;
+							PsiWarnAnim = NULL;
+						}
 						bullet->Limbo();
 						Coord launch = Move_Coord(Center_Coord(), DIR_N, 5 * CELL_LEPTON / 8);
 						/*
@@ -6837,6 +6844,26 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 	}
 
 	return(Current_Mission_Control().Normal_Delay());
+}
+
+
+/// <summary>
+/// Puts the psychic warning marker on the cell this silo is about to fire its missile at.
+/// The marker belongs to the launch: once the missile bullet is created, the bullet takes the
+/// marker over and the marker is removed when the bullet is removed. Nothing is placed when the
+/// PSIWARN animation type is not loaded.
+/// </summary>
+void BuildingClass::Start_Psi_Warning(void)
+{
+	static char const * const PSI_WARN_ANIM = "PSIWARN";
+
+	AnimType const type = Anim_From_Name(PSI_WARN_ANIM);
+	if (type == ANIM_NONE) {
+		return;
+	}
+
+	PsiWarnAnim = new AnimClass(AnimTypes[type], Map[House->NukeDest].Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
+	PsiWarnAnim->OwnerHouse = (HousesType)House->HeapID;
 }
 
 
@@ -7431,6 +7458,9 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 	}
 	if (AnimToTrack == target) {
 		AnimToTrack = NULL;
+	}
+	if (PsiWarnAnim != NULL && (AbstractClass const *)PsiWarnAnim == target) {
+		PsiWarnAnim = NULL;
 	}
 	if (Factory == target) {
 		Factory = NULL;
@@ -10823,6 +10853,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProduceCashStartupPaid);
 	stream.Serialize(HasEngineer);
 	stream.Serialize(SecretProduct);
+	stream.Serialize(PsiWarnAnim);
 }
 
 

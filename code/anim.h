@@ -41,6 +41,7 @@
 #include "draw.hh"
 #include "layer.hh"
 
+class BulletClass;
 class ConvertClass;
 
 
@@ -266,6 +267,12 @@ class AnimClass : public ObjectClass, public StageClass
 		 */
 		bool IsFlamingGuyEnd;
 
+		/*
+		 * The launched missile this psychic warning belongs to, or NULL. The warning is removed
+		 * when that bullet is removed. While this is NULL, the warning follows its type's schedule.
+		 */
+		BulletClass * AttachedBullet;
+
 	private:
 		/*
 		**	Delete this animation at the next opportunity. This is flagged when the
@@ -305,6 +312,12 @@ class AnimClass : public ObjectClass, public StageClass
 		 * building sets both on every frame from its own temporal state.
 		 */
 		bool IsUnderTemporal;
+
+		/*
+		 * Whether this psychic warning is hidden from the local player. The result depends on the
+		 * local player, so it is recomputed each frame and kept out of saves and the checksum.
+		 */
+		bool IsPsychicHidden;
 };
 
 void Shorten_Attached_Anims(ObjectClass * obj);
