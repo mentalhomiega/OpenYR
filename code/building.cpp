@@ -3448,8 +3448,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					if (base->Unlimbo(exitcoord, dir)) {
 
 						// A hospital or armory also exits its infantry here without having produced them.
+						// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
 						if (Class->ToBuild == RTTI_INFANTRYTYPE) {
-							Begin_Anim(BANIM_PRODUCTION, false);
+							Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
 						}
 
 						if (((FootClass *)base)->NavCom != NULL) {
