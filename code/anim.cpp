@@ -155,6 +155,8 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
+	IsPaused(false),
+	IsUnderTemporal(false),
 	Delay(timedelay),
 	Accum(1),
 	TranslucencyLevel(0),
@@ -272,6 +274,8 @@ AnimClass::AnimClass(void) :
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
+	IsPaused(false),
+	IsUnderTemporal(false),
 	Delay(0),
 	Accum(0),
 	AlternativeDrawer(NULL),
@@ -551,6 +555,11 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT25);
 					}
 				}
+			}
+
+			// The blitter picks one translucency, so an animation that already has one keeps it. The DoubleThick key (75 percent) is not read by this build.
+			if (IsUnderTemporal && (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) == 0) {
+				flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 			}
 
 			if ((flags & SHAPE_DARKEN) == 0) {
@@ -919,7 +928,7 @@ void AnimClass::AI(void)
 		*/
 		Mark(MARK_CHANGE);
 
-		if (!IsDisabled && StageClass::Graphic_Logic()) {
+		if (!IsDisabled && !IsPaused && StageClass::Graphic_Logic()) {
 			int stage = Fetch_Stage();
 
 			/*
