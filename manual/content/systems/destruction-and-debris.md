@@ -205,7 +205,7 @@ An aircraft in the air falls instead, unless its type sets [`Crashable=no`](/key
 
 A vehicle, soldier or aircraft lays no ground mark itself. A structure lays [its central mark](#a-structure), and its footprint walk lays more on a delayed removal. Every other mark comes from an animation the death created that declares [`Scorch=yes`](/keys/scorch/) or [`Crater=yes`](/keys/crater/#scope-animtype).
 
-Such an animation stamps the ground on its largest frame if it is under 30 leptons above the ground. The mark is picked at random each time from the smudge types with the matching flag that fit the spot; [`Scorch`](/keys/scorch/) lists what makes a spot fit. No mark lands on a cell a structure still stands on, except a structure's central mark. A [`Flamer=yes`](/keys/flamer/) or `Scorch=yes` animation also starts fires, within the height and ground limits that [`Scorch`](/keys/scorch/#the-fire) gives.
+Such an animation stamps the ground on its middle frame if it is under 30 leptons above the ground. The mark is picked at random each time from the smudge types with the matching flag that fit the spot; [`Scorch`](/keys/scorch/) lists what makes a spot fit. No mark lands on a cell a structure still stands on, except a structure's central mark. A [`Flamer=yes`](/keys/flamer/) or `Scorch=yes` animation also starts fires, within the height and ground limits that [`Scorch`](/keys/scorch/#the-fire) gives.
 
 The table lists what can remain after each kind of object dies, besides the Tiberium a [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds. Check it when a death leaves less than you expect.
 

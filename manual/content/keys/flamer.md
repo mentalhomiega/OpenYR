@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-When the animation shows its largest frame, the one with the biggest drawn area, it starts fires around itself:
+When the animation reaches its [middle frame](/keys/crater/#scope-animtype), it starts fires around itself:
 
 - one [`SmallFire`](/keys/smallfire/) 64 leptons away;
 - a 50% chance of a second `SmallFire` 160 leptons away;
@@ -17,12 +17,12 @@ Each fire is placed at its distance in a random direction and then moved to the 
 
 Each fire plays one or two times the [`LoopCount`](/keys/loopcount/) of its fire type, or once if the fire type sets none.
 
-When the fires start depends on which frame is the largest:
+When the fires start depends on which frame is the middle frame:
 
-- When the largest frame is frame 0 of the shape, the fires start each time the animation starts. That covers its creation or the end of its creation delay, the end of each [`RandomLoopDelay`](/keys/randomloopdelay/) pause, and a switch to this type through [`Next=`](/keys/next/). Showing frame 0 later starts none.
-- Otherwise, the fires start each time the animation advances onto the largest frame, so a looping animation starts a new set on each pass through it. The frame an animation or a loop pass opens on is not advanced onto. A largest frame equal to [`Start`](/keys/start/) therefore starts no fires on the first pass, and one equal to [`LoopStart`](/keys/loopstart/) starts none on the later passes.
-- A largest frame outside the frames `Start` and [`End`](/keys/end/) select, other than frame 0, starts no fires.
-- A [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype) animation starts fires only when its largest frame is frame 0.
+- When the middle frame is frame 0 of the shape, the fires start each time the animation starts. That covers its creation or the end of its creation delay, the end of each [`RandomLoopDelay`](/keys/randomloopdelay/) pause, and a switch to this type through [`Next=`](/keys/next/). Showing frame 0 later starts none.
+- Otherwise, the fires start each time the animation advances onto the middle frame, so a looping animation starts a new set on each pass through it. The frame an animation or a loop pass opens on is not advanced onto. A middle frame equal to [`Start`](/keys/start/) therefore starts no fires on the first pass, and one equal to [`LoopStart`](/keys/loopstart/) starts none on the later passes.
+- A middle frame outside the frames `Start` and [`End`](/keys/end/) select, other than frame 0, starts no fires.
+- A [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype) animation starts fires only when its middle frame is frame 0.
 
 `Flamer=yes` replaces the single fire that [`Scorch=yes`](/keys/scorch/) would start, and does not scorch or crater the ground by itself. Add `Scorch=yes` for scorch marks as well.
 

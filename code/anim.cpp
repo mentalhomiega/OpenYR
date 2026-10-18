@@ -1021,11 +1021,10 @@ void AnimClass::AI(void)
 			}
 
 			/*
-			**	During the biggest stage (covers the most ground), perform any ground altering
-			**	action required. This masks craters and scorch marks, so that they appear
-			**	naturally rather than "popping" into existence while in plain sight.
+			**	On the middle frame, perform any ground altering action. A bouncer or meteor is in
+			**	flight and skips it here; with a Middle frame of 0 it acts at launch, from Start.
 			*/
-			if (Class->Biggest && Class->Start+stage == Class->Biggest && !IsBouncing) {
+			if (Class->MiddleFrameIndex != 0 && Class->Start+stage == Class->MiddleFrameIndex && !IsBouncing) {
 				Middle();
 			}
 
@@ -1236,11 +1235,10 @@ void AnimClass::Start(void)
 	}
 
 	/*
-	**	If the stage where collateral effects occur is the first stage of the animation, then
-	**	perform this action now. Subsequent checks against this stage value starts with the
-	**	second frame of the animation.
+	**	A Middle frame of 0 is the first frame, so the middle event runs now. Otherwise Update
+	**	runs it when the animation reaches that frame.
 	*/
-	if (!Class->Biggest) {
+	if (Class->MiddleFrameIndex == 0) {
 		Middle();
 	}
 
@@ -1271,7 +1269,7 @@ void AnimClass::Start(void)
 /***********************************************************************************************
  * AnimClass::Middle -- Processes any middle events.                                           *
  *                                                                                             *
- *    This routine is called when the animation as reached its largest stage. Typically, this  *
+ *    This routine is called when the animation reaches its middle frame. Typically, this      *
  *    routine is used to cause scorches or craters to appear at a cosmetically pleasing        *
  *    moment.                                                                                  *
  *                                                                                             *
@@ -1295,8 +1293,14 @@ void AnimClass::Middle(void)
 
 	ShapeSet const * shapefile = (ShapeSet const *)Get_Image_Data();
 	if (shapefile != NULL) {
-		width = shapefile->Get_Rect(Class->Biggest).Width;
-		height = shapefile->Get_Rect(Class->Biggest).Height;
+		if (Class->MiddleFrameWidth == -1) {
+			Class->MiddleFrameWidth = shapefile->Get_Rect(Class->MiddleFrameIndex).Width;
+		}
+		if (Class->MiddleFrameHeight == -1) {
+			Class->MiddleFrameHeight = shapefile->Get_Rect(Class->MiddleFrameIndex).Height;
+		}
+		width = Class->MiddleFrameWidth;
+		height = Class->MiddleFrameHeight;
 	}
 
 	// A particle outside GasSystem is never stepped, so it would never age or poison (gamemd spawns into its global system, AnimClass::Middle 0x424F00).

@@ -30,7 +30,7 @@ A smudge type fits a spot only if the origin cell is inside the [playfield](/key
 Among the types that fit, the request prefers some sizes over others:
 
 - A destroyed structure's central mark prefers multiple-cell smudges, those with both `Width` and `Height` above `1`.
-- An animation prefers one-by-one smudges. If its largest frame is more than 48 pixels wide and more than 40 pixels tall, it has no preference.
+- An animation prefers one-by-one smudges. If its [middle frame](/keys/crater/#scope-animtype) is more than 48 pixels wide and more than 40 pixels tall, it has no preference.
 - The marks a destroyed structure lays across its footprint have no preference.
 
 If no type of the preferred size fits, the pick is made from every type that fits. A type with only one side above `1`, such as two by one, is never preferred. It is picked only by a request with no preference or when no preferred type fits.

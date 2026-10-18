@@ -17,7 +17,7 @@ When the pause ends, the animation repeats the effects it had when it first star
 
 - Its [`Report=`](/keys/report/#scope-animtype) sound plays again.
 - A [`TiberiumChainReaction=yes`](/keys/tiberiumchainreaction/) animation sets off the Tiberium beneath it again.
-- If its largest frame is frame 0 of its shape, its [`Scorch`](/keys/scorch/), [`Crater`](/keys/crater/#scope-animtype) and [`Flamer`](/keys/flamer/) effects run again. A new scorch mark or crater appears only on a cell with no smudge yet, so a stationary animation leaves one mark.
+- If its middle frame is frame 0 of its shape, its [`Scorch`](/keys/scorch/), [`Crater`](/keys/crater/#scope-animtype) and [`Flamer`](/keys/flamer/) effects run again. A new scorch mark or crater appears only on a cell with no smudge yet, so a stationary animation leaves one mark.
 
 Animations placed by the Play Anim At and Drop Zone Flare trigger actions skip the sound and the chain reaction.
 
