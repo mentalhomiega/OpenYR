@@ -3240,6 +3240,24 @@ AnimToInfantry:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AnimationFires:
+  key: AnimationFires
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsAnimationFires
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AnimationProbability:
   key: AnimationProbability
   scopes:

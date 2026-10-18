@@ -621,7 +621,8 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height));
 			}
 
-			if (Class->IsShadow && !Class->IsTiled) {
+			// Yuri's Revenge draws no shadow under a flat animation.
+			if (Class->IsShadow && !Class->IsTiled && !Class->IsFlat) {
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum + shapefile->Get_Count() / 2, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
 			}
 
@@ -661,7 +662,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 					drawpoint.Y -= frameheight;
 				}
 			} else if (Class->IsFlat) {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_GROUND, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
 			} else {
 				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_90DEG, brightness);
 			}
@@ -1350,7 +1351,8 @@ void AnimClass::Middle(void)
 	**	do so now. Usually, these side effects are in the form of other
 	**	animations.
 	*/
-	if (Class->IsFlameThrower) {
+	// Yuri's Revenge lights no fire from these animations; AnimationFires=yes enables it.
+	if (Rule->IsAnimationFires && Class->IsFlameThrower) {
 		if (Rule->SmallFire != NULL) {
 			new AnimClass(Rule->SmallFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), CELL_LEPTON / 4), true), 0, Random_Pick(1, 2));
 		}
@@ -1364,7 +1366,7 @@ void AnimClass::Middle(void)
 				new AnimClass(Rule->LargeFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 7 * CELL_LEPTON / 16), true), 0, Random_Pick(1, 2));
 			}
 		}
-	} else if (Class->IsScorcher) {
+	} else if (Rule->IsAnimationFires && Class->IsScorcher) {
 		if (HeightAGL < 10) {
 			LandType land = Map[(Coord const &)PositionCoord].Land_Type();
 			if (land != LAND_WATER && land != LAND_BEACH && land != LAND_ICE && land != LAND_ROCK) {

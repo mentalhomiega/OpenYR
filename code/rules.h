@@ -1703,6 +1703,12 @@ class RulesClass
 		AnimTypeClass const * SmallFire;
 		AnimTypeClass const * LargeFire;
 
+		/*
+		 * When true, Flamer and Scorch animations light fires from SmallFire and LargeFire at their
+		 * middle frame. Yuri's Revenge lights none, so this is false by default.
+		 */
+		bool IsAnimationFires;
+
 		/// Unused
 		InfantryTypeClass const * Paratrooper;
 

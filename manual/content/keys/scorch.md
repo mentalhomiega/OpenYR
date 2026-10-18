@@ -1,13 +1,13 @@
 ---
 key: Scorch
-summary: Blackens the ground under the animation and sets a small fire burning there.
-see_also: ["Crater", "Flamer", "Scorches", "SmallFire"]
+summary: Blackens the ground under the animation and, when AnimationFires is set, sets a small fire burning there.
+see_also: ["Crater", "Flamer", "Scorches", "SmallFire", "AnimationFires"]
 when_omitted:
   kind: value
   value: "no"
 ---
 
-A scorching animation leaves a scorch mark and starts a small fire when it reaches its [middle frame](/keys/crater/#scope-animtype). A looping animation does this again each time it returns to that frame.
+A scorching animation leaves a scorch mark when it reaches its [middle frame](/keys/crater/#scope-animtype). With [`AnimationFires=yes`](/keys/animationfires/), it also starts a small fire then. A looping animation does this again each time it returns to that frame.
 
 If the middle frame is frame 0 of the shape, the effects happen when the animation starts instead. A looping animation then repeats them only after a [`RandomLoopDelay`](/keys/randomloopdelay/) pause.
 
@@ -30,7 +30,7 @@ An animation that also sets [`Crater=yes`](/keys/crater/#scope-animtype) leaves 
 
 ## The fire
 
-When the animation is less than 10 leptons above the ground, it also starts the rules' [`SmallFire`](/keys/smallfire/) animation at its position. There is no fire on water, beach, ice or rock, though the scorch mark is not limited that way. The fire does not depend on the scorch mark, so a scorching animation that leaves a crater instead still starts it.
+The fire starts only when [`AnimationFires=yes`](/keys/animationfires/) is set. When the animation is less than 10 leptons above the ground, it starts the rules' [`SmallFire`](/keys/smallfire/) animation at its position. There is no fire on water, beach, ice or rock, though the scorch mark is not limited that way. The fire does not depend on the scorch mark, so a scorching animation that leaves a crater instead still starts it.
 
 The height limits for the mark and the fire, and the ground limit for the fire, hold only for an animation that is not attached to an object. An attached animation measures its height and the ground type at the wrong place, so whether it leaves the mark or starts the fire cannot be predicted from its height or the ground under it.
 

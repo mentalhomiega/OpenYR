@@ -808,6 +808,7 @@ RulesClass::RulesClass(void) :
 	DisabledDisguiseDetectionPercent(),
 	SmallFire(NULL),
 	LargeFire(NULL),
+	IsAnimationFires(false),
 	Paratrooper(NULL),
 	Disguise(NULL),
 	AlliedDisguise(NULL),
@@ -1286,6 +1287,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BombParachute = TGet_Class(ini, AUDIOVISUAL, "BombParachute", BombParachute);
 		SmallFire = TGet_Class(ini, AUDIOVISUAL, "SmallFire", SmallFire);
 		LargeFire = TGet_Class(ini, AUDIOVISUAL, "LargeFire", LargeFire);
+		IsAnimationFires = ini.Get_Bool(AUDIOVISUAL, "AnimationFires", IsAnimationFires);
 		IsAllyReveal = ini.Get_Bool(AUDIOVISUAL, "AllyReveal", IsAllyReveal);
 		ConditionGreen = 1;
 		ConditionRed = ini.Get_Float(AUDIOVISUAL, "ConditionRed", ConditionRed);
@@ -3252,6 +3254,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DisabledDisguiseDetectionPercent);
 	stream.Serialize(SmallFire);
 	stream.Serialize(LargeFire);
+	stream.Serialize(IsAnimationFires);
 	stream.Serialize(Paratrooper);
 	stream.Serialize(Disguise);
 	stream.Serialize(AlliedDisguise);

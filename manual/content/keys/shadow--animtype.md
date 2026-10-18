@@ -15,4 +15,4 @@ With `yes`, the second half of the animation's file holds a shadow for each fram
 Shadow=yes
 ```
 
-Tiled animations draw no shadow.
+Tiled and [flat](/keys/flat/#scope-animtype) animations draw no shadow.
