@@ -604,7 +604,7 @@ RulesClass::RulesClass(void) :
 	LowPowerPenaltyModifier(1.0),
 	MultipleFactory(1),
 	MultipleFactoryCap(0),
-	CraterLevel(4),
+	CraterLevel(0),
 	TreeFlammability(.1),
 	MissileSpeedVar(.25),
 	MissileROTVar(.25),
@@ -886,6 +886,14 @@ RulesClass::~RulesClass(void)
 }
 
 
+// gamemd never reads CraterLevel, and the stock rule files set it to 1. Each stock layer loses
+// the entry before its values are read, so only a mod or map that sets it turns craters on.
+void Drop_Stock_CraterLevel(CCINIClass & ini)
+{
+	ini.Clear("General", "CraterLevel");
+}
+
+
 /// <summary>
 /// Builds the game's rule data from scratch.
 /// This routine wipes every object type heap clean, reloads the art database, and then
@@ -986,6 +994,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 		if (langini.Load(langfile, true) > 1) {
 			return;
 		}
+		Drop_Stock_CraterLevel(langini);
 		DebugString("Processing LangRule.ini\n");
 		Addition(langini);
 	}
@@ -998,6 +1007,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	if (langfsfile.Is_Available() == true) {
 		CCINIClass langfsini;
 		langfsini.Load(langfsfile, false);
+		Drop_Stock_CraterLevel(langfsini);
 		Addition(langfsini);
 	}
 

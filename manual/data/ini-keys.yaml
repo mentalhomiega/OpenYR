@@ -9574,7 +9574,7 @@ CraterLevel:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '4'
+      default_candidate: '0'
       declared_in: RulesClass
       member: CraterLevel
       source: code/rules.cpp

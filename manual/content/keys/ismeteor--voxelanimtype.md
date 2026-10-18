@@ -25,6 +25,6 @@ A `MinZVel` of 0 or above starts the meteor at or below the height of its target
 When a meteor's life ends anywhere except low over water, it has two effects that ordinary debris never has:
 
 - [`Spawns`](/keys/spawns/#scope-voxelanimtype) breaks it into new pieces of debris.
-- The terrain around the impact cell is deformed according to [`CraterLevel`](/keys/craterlevel/), unless the meteor ends at bridge-deck height or above.
+- The terrain around the impact cell is deformed according to [`CraterLevel`](/keys/craterlevel/) when that is above `0`, unless the meteor ends at bridge-deck height or above.
 
 Low over water, as [`ExpireAnim`](/keys/expireanim/#scope-voxelanimtype) defines it, a meteor plays the last animation in [`SplashList`](/keys/splashlist/) in place of the wake and splash other debris makes.

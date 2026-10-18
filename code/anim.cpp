@@ -882,7 +882,7 @@ void AnimClass::AI(void)
 					}
 				}
 
-				if (Rule->CraterLevel != 0 && Class->IsMeteor && !bridge) {
+				if (Rule->CraterLevel > 0 && Class->IsMeteor && !bridge) {
 					Map.Deform_Terrain(coord.As_Cell(), false);
 					if (Rule->CraterLevel > 1) {
 						for (int dir = FACING_FIRST; dir < FACING_COUNT; dir++) {

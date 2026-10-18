@@ -766,6 +766,7 @@ static bool Init_Rules(void)
 	CCINIClass * rules = new CCINIClass;
 	CCFileClass rules_file(DeploymentConfig.RulesFile.c_str());
 	rules->Load(rules_file, false);
+	Drop_Stock_CraterLevel(*rules);
 	Load_Mod_Overlays(ModOverlayType::RULES, *rules);
 	Check_Rules_File(DeploymentConfig.RulesFile.c_str(), DeploymentConfig.ArtFile.c_str());
 
@@ -792,6 +793,7 @@ static bool Init_Rules(void)
 				DebugString("Failed to load %s!\n", DeploymentConfig.RulesExpansionFile.c_str());
 				return(false);
 			}
+			Drop_Stock_CraterLevel(FSRuleINI);
 		}
 	}
 
@@ -803,6 +805,7 @@ static bool Init_Rules(void)
 		if (!MPRuleINI.Load(rules_mp_file, false)) {
 			DebugString("Failed to load %s!\n", DeploymentConfig.MultiplayerRulesFile.c_str());
 		}
+		Drop_Stock_CraterLevel(MPRuleINI);
 	}
 
 	if (Addon_Installed(ADDON_FIRESTORM)) {
@@ -811,6 +814,7 @@ static bool Init_Rules(void)
 			if (!FSMPRuleINI.Load(rules_mp_fs_file, false)) {
 				DebugString("Failed to load %s!\n", DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
 			}
+			Drop_Stock_CraterLevel(FSMPRuleINI);
 		}
 	}
 

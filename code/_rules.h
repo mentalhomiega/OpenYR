@@ -32,3 +32,5 @@ extern CCINIClass FSMPRuleINI;
 extern CCINIClass *RuleINI;
 
 extern RulesClass *Rule;
+
+void Drop_Stock_CraterLevel(CCINIClass & ini);

@@ -364,7 +364,7 @@ void VoxelAnimClass::AI(void)
 				/*
 				 * Gouge a crater into the terrain around the impact cell.
 				 */
-				if (Rule->CraterLevel) {
+				if (Rule->CraterLevel > 0) {
 					if (!is_above_bridge) {
 						Map.Deform_Terrain(impact.As_Cell(), false);
 						if (Rule->CraterLevel > 1) {

@@ -25,5 +25,5 @@ Each time the animation reaches that frame, it also removes Tiberium from the ce
 An animation that also sets [`Scorch=yes`](/keys/scorch/) leaves a scorch mark half the time and a crater the other half, never both. Tiberium is removed only on the crater half.
 
 :::caution[A thrown animation rarely craters]
-A [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype) animation skips the largest-frame test while it is in flight. It leaves a crater only when its largest frame is its first, and then at the point it was thrown from, not where it lands. The terrain a meteor impact deforms is a separate effect that [`CraterLevel`](/keys/craterlevel/) controls.
+A [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype) animation skips the largest-frame test while it is in flight. It leaves a crater only when its largest frame is its first, and then at the point it was thrown from, not where it lands. The terrain a meteor impact deforms is a separate effect. [`CraterLevel`](/keys/craterlevel/) turns it on when set above `0`; the default leaves the terrain unchanged.
 :::
