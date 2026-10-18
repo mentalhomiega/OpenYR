@@ -412,6 +412,14 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	}
 
 	/*
+	**	A mutation warhead (InfantryDeath=9) does no damage to a soldier in the air, as gamemd's
+	**	InfantryClass::Destroy (0x517FA0) does before it applies the damage.
+	*/
+	if (warhead != NULL && warhead->InfantryDeath == 9 && HeightAGL > 0) {
+		damage = 0;
+	}
+
+	/*
 	 * If the warhead is webby and we're not web immune, paralyze us.
 	 */
 	if (warhead != NULL && warhead->IsWebby && !Class->IsWebImmune) {
