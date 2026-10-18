@@ -480,16 +480,6 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	will perform when killed.
 			*/
 			int infdeath = warhead != NULL ? warhead->InfantryDeath : 0;
-			if (source != NULL && source->RTTI == RTTI_BUILDING && reinterpret_cast<BuildingClass*>(source)->Class->IsLaserFence) {
-				infdeath = 5;
-			}
-
-			/*
-			**	Yuri's Revenge's death types (InfantryClass::Destroy, 0x517FA0 in gamemd). The
-			**	animation types come from the rules, and a death whose animation is not set
-			**	removes the infantryman without one.
-			*/
-			AnimTypeClass const * deathanim = NULL;
 
 			// A soldier killed while parachuting always bursts apart, whatever the warhead.
 			if (Doing == DO_PARADROP) {
@@ -499,77 +489,97 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				infdeath = 3;
 			}
 
-			// A NotHuman= type dies with its own first death sequence from every warhead, and plays
-			// the virus animation beside it when the warhead is a virus.
-			bool const own_death = Class->IsNotHuman && Doing != DO_PARADROP;
-			if (own_death) {
-				Do_Action(DO_GUN_DEATH, true);
-				if (infdeath == 8 && Rule->InfantryVirus != NULL) {
-					new AnimClass(Rule->InfantryVirus, PositionCoord);
-				}
-				infdeath = 1;
+			// A laser fence kill electrocutes even a parachuting soldier.
+			if (source != NULL && source->RTTI == RTTI_BUILDING && reinterpret_cast<BuildingClass*>(source)->Class->IsLaserFence) {
+				infdeath = 5;
 			}
 
-			switch (infdeath) {
-				default:
-				case 0:
-					break;
-
-				case 1:
-					Do_Action(DO_GUN_DEATH, true);
-					break;
-
-				case 2:
-					Do_Action(DO_EXPLOSION_DEATH, true);
-					break;
-
-				case 9:
-					// Mutation: InfantryMutate plays, owned by the attacker's house, and its
-					// MakeInfantry entry turns into a new infantryman for that house.
-					if (Rule->InfantryMutate != NULL) {
-						AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
-						HouseClass const * owner = source != NULL ? source->House : sourcehouse;
-						if (mutate != NULL && owner != NULL) {
-							mutate->OwnerHouse = (HousesType)owner->HeapID;
-						}
-					}
-					break;
-
-				case 3:
-					deathanim = Rule->InfantryExplode;
-					break;
-
-				case 4:
-					deathanim = Rule->FlamingInfantry;
-					break;
-
-				case 5:
-					// Yuri's Revenge takes the second entry of [Animations] for electrocution.
-					deathanim = AnimTypes.Count() > ANIM_ELECT_DIE ? AnimTypes[ANIM_ELECT_DIE] : NULL;
-					break;
-
-				case 6:
-					deathanim = Rule->InfantryHeadPop;
-					break;
-
-				case 7:
-					deathanim = Rule->InfantryNuked;
-					break;
-
-				case 8:
-					deathanim = Rule->InfantryVirus;
-					break;
-
-				case 10:
-					deathanim = Rule->InfantryBrute;
-					break;
-			}
-
-			if (infdeath != 1 && infdeath != 2) {
-				if (deathanim != NULL) {
-					new AnimClass(deathanim, PositionCoord);
+			if (Class->DeathAnims.Count() > 0) {
+				int const index = (infdeath >= 0 && infdeath < Class->DeathAnims.Count()) ? infdeath : 0;
+				if (Class->DeathAnims[index] != NULL) {
+					new AnimClass(Class->DeathAnims[index], PositionCoord);
 				}
 				delthis = true;
+			} else {
+				/*
+				**	Yuri's Revenge's death types (InfantryClass::Destroy, 0x517FA0 in gamemd). The
+				**	animation types come from the rules, and a death whose animation is not set
+				**	removes the infantryman without one.
+				*/
+				AnimTypeClass const * deathanim = NULL;
+
+				// A NotHuman= type dies with its own first death sequence from every warhead, and plays
+				// the virus animation beside it when the warhead is a virus.
+				bool const own_death = Class->IsNotHuman && Doing != DO_PARADROP;
+				if (own_death) {
+					Do_Action(DO_GUN_DEATH, true);
+					if (infdeath == 8 && Rule->InfantryVirus != NULL) {
+						new AnimClass(Rule->InfantryVirus, PositionCoord);
+					}
+					infdeath = 1;
+				}
+
+				switch (infdeath) {
+					default:
+					case 0:
+						break;
+
+					case 1:
+						Do_Action(DO_GUN_DEATH, true);
+						break;
+
+					case 2:
+						Do_Action(DO_EXPLOSION_DEATH, true);
+						break;
+
+					case 9:
+						// Mutation: InfantryMutate plays, owned by the attacker's house, and its
+						// MakeInfantry entry turns into a new infantryman for that house.
+						if (Rule->InfantryMutate != NULL) {
+							AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
+							HouseClass const * owner = source != NULL ? source->House : sourcehouse;
+							if (mutate != NULL && owner != NULL) {
+								mutate->OwnerHouse = (HousesType)owner->HeapID;
+							}
+						}
+						break;
+
+					case 3:
+						deathanim = Rule->InfantryExplode;
+						break;
+
+					case 4:
+						deathanim = Rule->FlamingInfantry;
+						break;
+
+					case 5:
+						// Yuri's Revenge takes the second entry of [Animations] for electrocution.
+						deathanim = AnimTypes.Count() > ANIM_ELECT_DIE ? AnimTypes[ANIM_ELECT_DIE] : NULL;
+						break;
+
+					case 6:
+						deathanim = Rule->InfantryHeadPop;
+						break;
+
+					case 7:
+						deathanim = Rule->InfantryNuked;
+						break;
+
+					case 8:
+						deathanim = Rule->InfantryVirus;
+						break;
+
+					case 10:
+						deathanim = Rule->InfantryBrute;
+						break;
+				}
+
+				if (infdeath != 1 && infdeath != 2) {
+					if (deathanim != NULL) {
+						new AnimClass(deathanim, PositionCoord);
+					}
+					delthis = true;
+				}
 			}
 		}
 
@@ -4216,7 +4226,6 @@ void InfantryClass::Doing_AI(void)
 						new AnimClass(Rule->DeadBodies.Pick(Scen->RandomNumber), Center_Coord());
 					}
 					Delete_Me();
-					return;
 				}
 				break;
 
@@ -4226,9 +4235,20 @@ void InfantryClass::Doing_AI(void)
 			case DO_AIR_DEATH_FINISH:
 				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
 					Delete_Me();
-					return;
 				}
 				break;
+		}
+	}
+
+	// Frame sounds are checked even after a death sequence has removed the soldier, as in
+	// gamemd's FUN_00520AE0. They are audio only and never read back by the simulation.
+	if (Doing != DO_NOTHING && Has_Changed()) {
+		SequenceSoundStruct const & sounds = Class->DoSounds[Doing];
+		int const length = std::max(Class->DoControls[Doing].Count, 1);
+		for (int i = 0; i < sounds.Count; i++) {
+			if (Fetch_Stage() % length == sounds.Frame[i]) {
+				Sound_Effect_Fixed(sounds.Sound[i], PositionCoord);
+			}
 		}
 	}
 }

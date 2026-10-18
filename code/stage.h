@@ -63,9 +63,16 @@ class StageClass {
 		 */
 		int Step;
 
-	public:
-		StageClass(void) : Stage(0), Timer(0), Rate(0), Step(1) {};
+		/*
+		 * True when the most recent Graphic_Logic call moved the stage on. It is recomputed on
+		 * every call and is not saved.
+		 */
+		bool HasChanged;
 
+	public:
+		StageClass(void) : Stage(0), Timer(0), Rate(0), Step(1), HasChanged(false) {};
+
+		bool Has_Changed(void) const {return(HasChanged);};
 		int Fetch_Stage(void) const {return(Stage);};
 		int Fetch_Rate(void) const {return(Rate);};
 		int Fetch_Step(void) const {return(Step);};
@@ -88,12 +95,12 @@ class StageClass {
 
 		bool About_To_Change(void) const {return(Timer == 0 && Rate != 0);}
 		bool Graphic_Logic(void) {
-			if (About_To_Change()) {
+			HasChanged = About_To_Change();
+			if (HasChanged) {
 				Stage += Step;
 				Timer = Rate;
-				return(true);
 			}
-			return(false);
+			return(HasChanged);
 		};
 
 };
