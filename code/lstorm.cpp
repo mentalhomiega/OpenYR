@@ -340,7 +340,7 @@ void LightningStormClass::Strike(Cell const & cell)
 	Coord coord = cell.As_Coord();
 	coord.Z = height;
 
-	AnimTypeClass const * type = Rule->WeatherConClouds[Random_Pick(0, Rule->WeatherConClouds.Count() - 1)];
+	AnimTypeClass const * type = Rule->WeatherConClouds.Pick(Scen->RandomNumber());
 	AnimClass * cloud = new AnimClass(type, coord);
 	if (cloud != NULL) {
 		ManifestingClouds.Add(cloud);
@@ -365,7 +365,7 @@ void LightningStormClass::Bolt(Coord const & from)
 
 	Coord coord = cellptr.Cell_Coord();
 	if (Rule->WeatherConBolts.Count() > 0) {
-		AnimTypeClass const * type = Rule->WeatherConBolts[Random_Pick(0, Rule->WeatherConBolts.Count() - 1)];
+		AnimTypeClass const * type = Rule->WeatherConBolts.Pick(Scen->RandomNumber());
 		AnimClass * bolt = new AnimClass(type, coord);
 		if (bolt != NULL) {
 			Bolts.Add(bolt);
@@ -376,7 +376,7 @@ void LightningStormClass::Bolt(Coord const & from)
 	coord.Z = level * LEVEL_LEPTON_H + (cellptr.IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
 
 	if (Rule->LightningSounds.Count() > 0) {
-		Sound_Effect((VocType)Rule->LightningSounds[Random_Pick(0, Rule->LightningSounds.Count() - 1)], coord);
+		Sound_Effect((VocType)Rule->LightningSounds.Pick(Scen->RandomNumber()), coord);
 	}
 
 	AnimTypeClass const * explosion = Combat_Anim(Rule->LightningStormDamage, Rule->LightningWarhead, cellptr.Land_Type(), coord);
