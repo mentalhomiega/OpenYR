@@ -13,6 +13,7 @@
 // in-memory lines; nothing connects.
 
 #include "cncnet/cncnetgame.h"
+#include "cncnet/cncnetlobby.h"
 #include "cncnet/ircclient.h"
 #include "cncnet/ircmessage.h"
 
@@ -324,6 +325,91 @@ void Test_Events(void)
 }
 
 
+IRCEventType Make_Event(IRCEventKind kind, std::string nick, std::string channel, std::string text, std::string command = std::string())
+{
+	return(IRCEventType{kind, std::move(nick), std::move(channel), std::move(command), std::move(text), {}});
+}
+
+
+void Test_Lobby(void)
+{
+	CnCNetLobbyConfigType config;
+	config.GameVersion = "1.001";
+	config.MaxLines = 3;
+	CnCNetLobbyClass lobby(config);
+
+	lobby.Apply(Make_Event(IRCEventKind::WELCOME, "", "", "Me"), 0);
+	Check(lobby.Status() == CnCNetStatus::ONLINE && lobby.Own_Nick() == "Me", "lobby: WELCOME sets online and own nick");
+
+	lobby.Apply(Make_Event(IRCEventKind::JOINED, "me", "#cncnet-yr", "yr.abc"), 1);
+	Check(lobby.Find_Channel("#CNCNET-YR") != nullptr, "lobby: own join opens the channel, case folded");
+	lobby.Apply(Make_Event(IRCEventKind::JOINED, "Zed", "#elsewhere", "yr.z"), 2);
+	Check(lobby.Find_Channel("#elsewhere") == nullptr, "lobby: another user's join does not open a channel");
+
+	IRCEventType names = Make_Event(IRCEventKind::NAMES, "", "#cncnet-yr", "");
+	names.Names = {"zed", "@Op", "+Voice", "Me"};
+	lobby.Apply(names, 3);
+	lobby.Apply(Make_Event(IRCEventKind::JOINED, "Abe", "#cncnet-yr", "yr.abe"), 4);
+	CnCNetChannelType const * chat = lobby.Find_Channel("#cncnet-yr");
+	Check(chat && chat->Users.size() == 5, "lobby: NAMES and a join fill the user list");
+	Check(chat && chat->Users[0].Nick == "Op" && chat->Users[0].Operator, "lobby: operators first, prefix removed");
+	Check(chat && chat->Users[1].Nick == "Abe" && chat->Users[1].Ident == "yr.abe", "lobby: others by nick with ident");
+	Check(chat && chat->Users[2].Nick == "Me" && chat->Users[3].Nick == "Voice" && chat->Users[4].Nick == "zed", "lobby: sort ignores case");
+
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "Abe", "#cncnet-yr", "hi"), 5);
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Abe", "#cncnet-yr", "waves", "ACTION"), 6);
+	chat = lobby.Find_Channel("#cncnet-yr");
+	Check(chat && chat->Lines.size() == 2 && chat->Lines[1].Kind == CnCNetLineKind::ACTION && chat->Unread == 2, "lobby: chat and action lines counted unread");
+	lobby.Mark_Read("#cncnet-yr");
+	lobby.Add_Own_Line("#cncnet-yr", "a", 7);
+	lobby.Add_Own_Line("#cncnet-yr", "b", 8);
+	chat = lobby.Find_Channel("#cncnet-yr");
+	Check(chat && chat->Lines.size() == 3 && chat->Lines.front().Text == "waves" && chat->Unread == 0, "lobby: line cap drops the oldest");
+
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "Abe", "Me", "psst"), 9);
+	CnCNetChannelType const * query = lobby.Find_Channel("abe");
+	Check(query && query->Private && query->Lines.size() == 1, "lobby: private message opens a conversation");
+	lobby.Apply(Make_Event(IRCEventKind::NICK_CHANGED, "Abe", "", "Abel"), 10);
+	Check(lobby.Find_Channel("Abel") != nullptr && lobby.Find_Channel("Abe") == nullptr, "lobby: conversation follows a rename");
+
+	std::string const listing = CnCNet_Format_Game_Listing(Sample_Listing());
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", listing, "GAME"), 1000);
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", listing, "GAME"), 2000);
+	CnCNetGameListingType other = Sample_Listing();
+	other.GameVersion = "2.0";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Other", "#cncnet-yr-games", CnCNet_Format_Game_Listing(other), "GAME"), 3000);
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Bad", "#cncnet-yr-games", "A;1;2", "GAME"), 3000);
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Chat", "#cncnet-yr", listing, "GAME"), 3000);
+	Check(lobby.Games().size() == 2, "lobby: one listing per host, bad and off-channel listings ignored");
+	Check(lobby.Games().size() == 2 && lobby.Games()[0].Compatible && !lobby.Games()[1].Compatible, "lobby: version decides compatibility");
+
+	lobby.Expire(2000 + 35000);
+	Check(lobby.Games().size() == 2, "lobby: listing kept for its lifetime");
+	lobby.Expire(2000 + 35001);
+	Check(lobby.Games().size() == 1 && lobby.Games()[0].HostNick == "Other", "lobby: stale listing expires");
+
+	CnCNetGameListingType closed = other;
+	closed.Closed = true;
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "other", "#cncnet-yr-games", CnCNet_Format_Game_Listing(closed), "GAME"), 4000);
+	Check(lobby.Games().empty(), "lobby: closed listing removes the game");
+
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", listing, "GAME"), 5000);
+	lobby.Apply(Make_Event(IRCEventKind::QUIT, "HOST", "", "bye"), 5001);
+	Check(lobby.Games().empty(), "lobby: host quitting removes the game");
+
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-game1234567", "x", "GSETTINGS"), 6000);
+	std::vector<IRCEventType> const room = lobby.Take_Room_Messages();
+	Check(room.size() == 1 && room[0].Command == "GSETTINGS" && lobby.Take_Room_Messages().empty(), "lobby: other CTCP kept for the room once");
+
+	lobby.Apply(Make_Event(IRCEventKind::KICKED, "Op", "#cncnet-yr", "Me"), 7000);
+	Check(lobby.Find_Channel("#cncnet-yr") == nullptr, "lobby: being kicked closes the channel");
+
+	lobby.Connection_Lost("timeout", 8000);
+	query = lobby.Find_Channel("Abel");
+	Check(query && query->Lines.back().Kind == CnCNetLineKind::SYSTEM, "lobby: lost connection keeps conversations with a note");
+}
+
+
 void Test_Quit(void)
 {
 	IRCClientClass client = Registered_Client(0);
@@ -355,6 +441,7 @@ int main(void)
 	Test_Pacing();
 	Test_Events();
 	Test_Quit();
+	Test_Lobby();
 
 	if (Failures != 0) {
 		std::printf("%d check(s) FAILED\n", Failures);

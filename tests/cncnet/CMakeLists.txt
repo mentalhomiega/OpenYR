@@ -5,4 +5,5 @@ opents_add_test(CnCNetTest
         cncnet/ircmessage.cpp
         cncnet/ircclient.cpp
         cncnet/cncnetgame.cpp
+        cncnet/cncnetlobby.cpp
 )
