@@ -211,8 +211,11 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	} else {
 		IsBouncing = true;
 		if (Class->IsMeteor) {
-			Vector3 velocity((abs(Scen->RandomNumber) % int(Class->MaxXYVel * 2)) - Class->MaxXYVel,
-							(abs(Scen->RandomNumber) % int(Class->MaxXYVel * 2)) - Class->MaxXYVel, Class->MinZVel);
+			// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x421EA0).
+			int const y_draw = abs(Scen->RandomNumber);
+			int const x_draw = abs(Scen->RandomNumber);
+			Vector3 velocity((x_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel,
+							(y_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel, Class->MinZVel);
 
 			if (velocity.X < -velocity.Y) {
 				velocity.X = -velocity.X;

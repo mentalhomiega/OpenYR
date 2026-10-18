@@ -7238,11 +7238,6 @@ void UnitClass::Explode(void)
 
 		new AnimClass(anim, PositionCoord);
 
-		// A random DestroyAnim also plays where the vehicle was destroyed (UnitClass::Explode, 0x738680).
-		if (Class->DestroyAnim.Count() > 0) {
-			new AnimClass(Class->DestroyAnim[Scen->RandomNumber(0, Class->DestroyAnim.Count() - 1)], PositionCoord);
-		}
-
 		/*
 		**	Harvesters explode with a force equal to the amount of
 		**	Tiberium they are carrying.
@@ -7264,6 +7259,11 @@ void UnitClass::Explode(void)
 			shakes = std::min(shakes, 6);
 			Shake_The_Screen(shakes);
 		}
+	}
+
+	// Plays with or without an Explosion list; gamemd (0x738680) draws this pick after the explosion effects.
+	if (Class->DestroyAnim.Count() > 0) {
+		new AnimClass(Class->DestroyAnim.Pick(Scen->RandomNumber), PositionCoord);
 	}
 }
 
