@@ -504,6 +504,26 @@ bool CnCNetRoomClass::Start(std::map<std::string, std::string> info)
 }
 
 
+void CnCNetRoomClass::Return_To_Room(void)
+{
+	if (CurrentStatus != CnCNetRoomStatus::STARTING) {
+		return;
+	}
+	CurrentStatus = CnCNetRoomStatus::IN_ROOM;
+	StartList.clear();
+	for (CnCNetRoomPlayerType & player : PlayerList) {
+		if (!player.Host) {
+			player.Ready = false;
+		}
+	}
+	Changed();
+	if (IsHost) {
+		Send_Options();
+		Send_Players();
+	}
+}
+
+
 void CnCNetRoomClass::Leave(void)
 {
 	if (CurrentStatus == CnCNetRoomStatus::CLOSED) {

@@ -622,6 +622,18 @@ void Test_Room(void)
 	Deliver(host, "Host", {&guest}, 22100);
 	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5", "room: the guest receives the start");
 
+	host.Return_To_Room();
+	sent = Deliver(host, "Host", {&guest}, 30000);
+	Check(host.Status() == CnCNetRoomStatus::IN_ROOM && host.Start_Info().empty() && !host.Can_Start()
+		&& Sent(sent, CnCNetRoomSendKind::CTCP, "OYRPLAYERS"), "room: after the match the host is back in the room, guests unready");
+	Check(guest.Status() == CnCNetRoomStatus::STARTING && !guest.Find_Player("Guest")->Ready,
+		"room: a guest still playing keeps its match and learns it is unready");
+	guest.Return_To_Room();
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 31000);
+	Deliver(host, "Host", {&guest}, 31000);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM && host.Can_Start(), "room: a returned guest can get ready for another match");
+
 	CnCNetRoomClass lonely = CnCNetRoomClass::Guest(Room_Config("Lonely", "b1"), 0);
 	lonely.Apply(Room_Event(IRCEventKind::JOINED, "Lonely", ROOM), 0);
 	lonely.Take_Outgoing();

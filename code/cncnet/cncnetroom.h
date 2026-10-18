@@ -125,6 +125,10 @@ class CnCNetRoomClass
 		bool Can_Start(void) const;
 		bool Start(std::map<std::string, std::string> info);
 
+		// After our copy of a started match has ended: back in the room with every
+		// guest unready, so the same players can set up another match.
+		void Return_To_Room(void);
+
 		void Leave(void);
 
 		std::vector<CnCNetRoomSendType> Take_Outgoing(void);

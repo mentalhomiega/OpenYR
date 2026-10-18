@@ -162,6 +162,8 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Close(std::string const & reason);
 		bool Begin_Match(std::string & error);
 		std::string Play_Match(void);
+		void Return_To_Room(std::string const & outcome);
+		void Note(std::string const & text) { Network.Note(TheRoom.Channel(), text); }
 
 		virtual void Read(UINetLobbyState & state) override;
 		virtual void Set_Handle(char const *) override {}
@@ -680,6 +682,19 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 }
 
 
+void CnCNetRoomServiceClass::Return_To_Room(std::string const & outcome)
+{
+	Service();
+	TheRoom.Return_To_Room();
+	Flush();
+	if (TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
+		Broadcast(false);
+		NextBroadcast = CnCNet_Clock() + CNCNET_GAME_BROADCAST_INTERVAL * 1000ull;
+	}
+	Note(outcome);
+}
+
+
 std::string Without_Separator(std::string path)
 {
 	while (!path.empty() && (path.back() == '\\' || path.back() == '/')) {
@@ -814,35 +829,47 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 		service.Service();
 	}
 
-	UINetLobbyState state;
-	service.Read(state);
-	state.Kind = setup.Host ? UI_NET_LOBBY_HOST : UI_NET_LOBBY_GUEST;
-	UINetLobbyPresenterClass presenter(service, std::move(state));
-	std::unique_ptr<UIViewClass> view = UI_Net_Setup_View(presenter);
-
 	// The outer screen's service keeps the window answering messages while the room runs.
 	UIServiceCallback const * outer = UIShell.Running_Service();
-	// A guest's screen closes when the host's start message arrives.
-	UIShell.Run_Modal(*view, [&service, outer](void) {
-		bool const ended = outer != nullptr ? (*outer)() : UI_Service_Game();
-		return(!service.Service() || ended || service.Room().Status() == CnCNetRoomStatus::STARTING);
-	});
-	view.reset();
-	DebugString("[CnCNet] Room screen closed: choice %d, room status %d, screen kind %d, reason \"%s\".\n",
-		static_cast<int>(presenter.Choice), static_cast<int>(service.Room().Status()), static_cast<int>(presenter.State.Kind),
-		service.Room().Status_Text().c_str());
-
 	UICnCNetRoomResult result;
-	if (presenter.Choice == UI_NET_GO && setup.Host) {
-		std::string error;
-		if (!service.Begin_Match(error)) {
-			result.Reason = error;
+	for (;;) {
+		UINetLobbyState state;
+		service.Read(state);
+		state.Kind = setup.Host ? UI_NET_LOBBY_HOST : UI_NET_LOBBY_GUEST;
+		UINetLobbyPresenterClass presenter(service, std::move(state));
+		std::unique_ptr<UIViewClass> view = UI_Net_Setup_View(presenter);
+
+		// A guest's screen closes when the host's start message arrives.
+		UIShell.Run_Modal(*view, [&service, outer](void) {
+			bool const ended = outer != nullptr ? (*outer)() : UI_Service_Game();
+			return(!service.Service() || ended || service.Room().Status() == CnCNetRoomStatus::STARTING);
+		});
+		view.reset();
+		DebugString("[CnCNet] Room screen closed: choice %d, room status %d, screen kind %d, reason \"%s\".\n",
+			static_cast<int>(presenter.Choice), static_cast<int>(service.Room().Status()), static_cast<int>(presenter.State.Kind),
+			service.Room().Status_Text().c_str());
+
+		if (presenter.Choice == UI_NET_GO && setup.Host) {
+			std::string error;
+			if (!service.Begin_Match(error)) {
+				service.Note(error);
+				continue;
+			}
+		}
+		if (service.Room().Status() != CnCNetRoomStatus::STARTING) {
+			break;
+		}
+
+		// After a match the same players are back in the room, unless the room closed meanwhile.
+		result.Started = true;
+		std::string const outcome = service.Play_Match();
+		service.Return_To_Room(outcome);
+		if (service.Room().Status() != CnCNetRoomStatus::IN_ROOM) {
+			result.Reason = outcome;
+			break;
 		}
 	}
-	if (service.Room().Status() == CnCNetRoomStatus::STARTING) {
-		result.Started = true;
-		result.Reason = service.Play_Match();
-	}
+
 	service.Close("You left the room.");
 	if (result.Reason.empty()) {
 		result.Reason = service.Closed_Reason();
