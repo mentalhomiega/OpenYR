@@ -17,6 +17,7 @@
 */
 
 bool AutoTest_Active(void);
+bool AutoTest_Key_Held(int virtualkey);
 
 // Where an unattended run's pointer rests, in window pixels. A script moves it with the windowmove
 // and windowclick steps; it starts away from the screen's edges.
