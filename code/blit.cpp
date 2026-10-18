@@ -46,8 +46,10 @@
 #include "emissive_surface.h"
 #include "bsurface.h"
 #include "rect.h"
+#include "zshapewindow.h"
 
 #include <algorithm>
+#include <vector>
 
 
 /***********************************************************************************************
@@ -486,7 +488,6 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	int z_step_ratio = 0;
 
 	int zshapew = 0;
-	int zshapelocky = 0;
 
 	ZGradStruct * grad = &ZGradients[zgrad];
 
@@ -541,8 +542,22 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		if (zshape != NULL) {
 			zrect = zshape->Get_Rect();
 			zshapew = zrect.Width;
-			zshapelock = (char *)zshape->Lock(Point2D(zrect.X, zrect.Y) + zpoint + Point2D(leftmargin, topmargin));
-			zshapelocky = zrect.Y + zpoint.Y + topmargin;
+
+			// The depth window is the cells this blit reads after clipping. A window that runs past the
+			// shape is read from a copy with 0 outside the shape.
+			int const zwindow_x = zrect.X + zpoint.X + leftmargin;
+			int const zwindow_y = zrect.Y + zpoint.Y + topmargin;
+			int const zwindow_height = std::min(srect.Height, drect.Height);
+			if (Z_Shape_Window_Fits(zrect.Width, zrect.Height, zwindow_x, zwindow_y, srect.Width, zwindow_height)) {
+				zshapelock = (char *)zshape->Lock(Point2D(zwindow_x, zwindow_y));
+			} else {
+				static std::vector<signed char> zshape_window;
+				zshape_window.resize(srect.Width * zwindow_height);
+				Z_Shape_Window_Copy((signed char const *)zshape->Lock(Point2D(0, 0)), zrect.Width, zrect.Height, zwindow_x, zwindow_y, srect.Width, zwindow_height, zshape_window.data());
+				zshape->Unlock();
+				zshapew = srect.Width;
+				zshapelock = (char *)zshape_window.data();
+			}
 		} else {
 			zshapelock = _temp_buf;
 		}
@@ -588,13 +603,6 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			emissive = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
 			emissive_pitch = plane->Pitch;
 		}
-	}
-
-	/*
-	**
-	*/
-	if (zshape != NULL) {
-		assert(zshapelocky + height <= zshape->Get_Height());
 	}
 
 	for (int y = 0; y < height; y++) {

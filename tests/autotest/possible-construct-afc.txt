@@ -1,0 +1,25 @@
+; Air Force Command built up on Possible.yrm ("Anything is Possible", NEWURBAN), as a tester placed it: an Alliance
+; player with a refinery and a deployed MCV produces GAAIRC, and the finished structure is placed in the base. The
+; placed structure is in its build-up, whose frames run up to 27 rows past the 477-row BUILDNGZ.SHP depth shape.
+; Before the z-shape window fix the blit read those rows from memory outside the shape. The tester's Beta 26 game
+; crashed right after the PLACE event on a 1912-wide screen (DEBUG_18-10-2026_17-46-14.LOG). The map is a game file and
+; is not in the repository. Copy it into the runner's user folder first, build\<runner>-autotest-user\Possible.yrm,
+; which the game searches for loose maps.
+; Run: scripts/run_autotest.ps1 -Build agent7 -Script src-agent7/tests/autotest/possible-construct-afc.txt -Map Possible.yrm -Country 1 -Width 1912 -Height 1000 -RenderFrameRate 30 -Seconds 300 -Filter "AUTOTEST (place|where)|Exception|quit"
+; Expected: "AUTOTEST frame 2100: quit" and no Exception line. The log has a "where GAAIRC" line with the Alliance house,
+; cell 102,37 and mission Guard once the structure has been placed.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+200 own GAREFN 100 40
+210 produce GAAIRC
+300 place GAAIRC
+500 place GAAIRC
+700 place GAAIRC
+900 place GAAIRC
+1100 place GAAIRC
+1300 place GAAIRC
+1500 place GAAIRC
+1700 place GAAIRC
+1900 where GAAIRC
+2100 quit
