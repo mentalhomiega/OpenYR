@@ -13,7 +13,7 @@ Keys are written as the Windows virtual-key code, in brackets. Shift adds 256, C
 
 ## Summary
 
-Of the 95 Yuri's Revenge commands in the table, 72 keep the key our old builds bound, because that key matches the stock copy. Five commands we already had gain the key Yuri's Revenge gives them: `DefenseTab`, `InfantryTab`, `PlanningMode`, `StructureTab` and `UnitTab`. Three new commands work: `TypeSelect`, `CombatantSelect` and `VeterancyNav`. `HealthNav` is new and has no key. Ten new commands only report that their feature is missing from this build: `PlaceBeacon`, `Delete` and `Taunt_1` to `Taunt_8`. Four are not ported: `PageUser`, `CursorCheat`, `MultiplayerDebug` and `ExtraSyncChecking`.
+Of the 95 Yuri's Revenge commands in the table, 72 keep the key our old builds bound, because that key matches the stock copy. Five commands we already had gain the key Yuri's Revenge gives them: `DefenseTab`, `InfantryTab`, `PlanningMode`, `StructureTab` and `UnitTab`. Four new commands work: `TypeSelect`, `CombatantSelect`, `VeterancyNav` and `MultiplayerDebug`. `HealthNav` is new and has no key. Ten new commands only report that their feature is missing from this build: `PlaceBeacon`, `Delete` and `Taunt_1` to `Taunt_8`. Three are not ported: `PageUser`, `CursorCheat` and `ExtraSyncChecking`.
 
 No OpenTS command takes a key that a Yuri's Revenge command uses by default. The table gives every default a distinct key.
 
@@ -51,7 +51,8 @@ Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W,
 - `VeterancyNav` runs the same cycle over elite, veteran and green units.
 - `PlaceBeacon` and `Delete` work on beacons, which this build does not have. In a single-player game they do nothing, as in gamemd. In a multiplayer game they report that beacons are not available.
 - `Taunt_1` to `Taunt_8` play taunts in multiplayer games in gamemd. In a single-player game they do nothing. In a multiplayer game they report that taunts are not available.
-- `PageUser` sends an event whose gamemd identity the decompile does not settle. `CursorCheat` shows a cell readout, `MultiplayerDebug` toggles a debug overlay, and `ExtraSyncChecking` toggles extra sync logging. We have not ported them.
+- `MultiplayerDebug` toggles the multiplayer debug display. gamemd registers the command only when the game starts with `-MPDEBUG`, and nothing in its code turns the display on at start. This build always lists the command, and `-MPDEBUG` still starts the display shown. The display uses gamemd's labels. It does not show gamemd's `NFT`, `LNFT`, `Rout resp` or `MC resp` lines, and gamemd's display has no `FrameSendRate` line.
+- `PageUser` sends an event whose gamemd identity the decompile does not settle. `CursorCheat` shows a cell readout, and `ExtraSyncChecking` toggles extra sync logging. We have not ported them.
 
 ## Upgrading existing keyboard files
 
@@ -80,7 +81,7 @@ Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W,
 | `InfantryTab` | Interface | E (69) | none | `SetInfantryTabCommandClass::Execute` `00535f10` | Added; the old build had no key |
 | `LeftSidebarDown` | Interface | End (35) | End (35) | not located in the class files | Kept |
 | `LeftSidebarUp` | Interface | Home (36) | Home (36) | not located in the class files | Kept |
-| `MultiplayerDebug` | - | Ctrl+I (585) | none | `MultiplayerDebugCommandClass::Execute` `00537a90` | Not ported |
+| `MultiplayerDebug` | Debug | Ctrl+I (585) | none | `MultiplayerDebugCommandClass::Execute` `00537a90` | New; the display draws only in an IPX or Internet game |
 | `NextObject` | Selection | N (78) | N (78) | `NextObjectCommandClass::Execute` `00536610` | Kept |
 | `Options` | Interface | Esc (27) | Esc (27) | `OptionsCommandClass::Execute` `005372d0` | Kept |
 | `PageUser` | - | U (85) | none | `PageUserCommandClass::Execute` `00537e50` | Not ported |

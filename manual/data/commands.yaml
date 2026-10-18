@@ -2422,6 +2422,21 @@ registered_commands:
     source: code/init.cpp
     class: DebugFastForwardCommandClass
     guard: null
+- id: MultiplayerDebug
+  route_id: multiplayerdebug
+  kind: registered
+  title: Multiplayer debug info
+  description: Turns the multiplayer debug display on or off.
+  category: Debug
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: MultiplayerDebugCommandClass
+    guard: null
 fixed_controls:
 - id: fixed:options-menu
   route_id: fixed-options-menu
