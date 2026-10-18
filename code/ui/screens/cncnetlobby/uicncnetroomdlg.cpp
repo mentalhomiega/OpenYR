@@ -145,6 +145,25 @@ std::string Map_SHA1(char const * name)
 }
 
 
+// The map's start positions as waypoint numbers, read again only when the file name changes.
+std::vector<int> const & Map_Starts(char const * name)
+{
+	static std::string last_name;
+	static std::vector<int> last_starts;
+	if (last_name != name) {
+		last_name = name;
+		last_starts.clear();
+		for (int index = 0; index < Session.Scenarios.Count(); index++) {
+			if (_stricmp(Session.Scenarios[index]->Get_Filename(), name) == 0) {
+				last_starts = RandomMapStartPositions(index);
+				break;
+			}
+		}
+	}
+	return(last_starts);
+}
+
+
 std::map<std::string, std::string> Session_Options(void);
 
 
@@ -172,6 +191,8 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		virtual void Set_Side(int index) override;
 		virtual void Set_Color(int index) override;
 		virtual void Set_Custom_Color(int index, unsigned int) override { Set_Color(index); }
+		virtual void Set_Team(int index) override;
+		virtual void Set_Start(int index) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
 		virtual void Set_Slider(UINetSlider which, int value) override;
 		virtual void Kick(std::vector<std::string> const & names) override;
@@ -186,7 +207,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Publish(void);
 		void Broadcast(bool closed);
 		void Flush(void);
-		void Own_Setup(int side, int color);
+		void Own_Setup(int side, int color, int start, int team);
 
 		CnCNetSessionClass & Network;
 		CnCNetRoomClass TheRoom;
@@ -198,6 +219,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		bool AskedSetup = false;
 		std::string ClosedReason;
 		std::string PreviewMap;
+		int StartLimit = -1;
 		UIMapPreviewImage Preview;
 };
 
@@ -385,6 +407,14 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 void CnCNetRoomServiceClass::Publish(void)
 {
 	if (TheRoom.Is_Host()) {
+		std::vector<int> const & starts = Map_Starts(Session.ScenarioFileName);
+		int const limit = starts.empty() ? MAX_PLAYERS : starts.back() + 1;
+		if (limit != StartLimit) {
+			StartLimit = limit;
+			CnCNetRoomLimitsType limits;
+			limits.Starts = limit;
+			TheRoom.Set_Limits(limits);
+		}
 		TheRoom.Set_Options(Session_Options());
 		Flush();
 	}
@@ -430,6 +460,31 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CustomColor = 0;
 	state.Rivals.clear();
 
+	state.HasTeams = true;
+	state.Teams.clear();
+	for (int team = -1; team < 4; team++) {
+		UINetOption option;
+		option.Label = team < 0 ? std::string("None") : std::string("Team ") + static_cast<char>('A' + team);
+		option.Value = team;
+		state.Teams.push_back(option);
+	}
+	state.Team = (self != nullptr && self->Team >= 0 && self->Team < 4) ? self->Team + 1 : 0;
+	state.Starts.clear();
+	state.Start = 0;
+	UINetOption random_start;
+	random_start.Label = "Random";
+	random_start.Value = -1;
+	state.Starts.push_back(random_start);
+	for (int start : Map_Starts(Session.ScenarioFileName)) {
+		UINetOption option;
+		option.Label = std::to_string(start + 1);
+		option.Value = start;
+		if (self != nullptr && self->Start == start) {
+			state.Start = static_cast<int>(state.Starts.size());
+		}
+		state.Starts.push_back(option);
+	}
+
 	state.Players.clear();
 	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
 		UINetPlayerRow row;
@@ -441,6 +496,12 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		} else {
 			row.House = "nodi.pcx";
 			row.Hint = "Random";
+		}
+		if (player.Team >= 0) {
+			row.Detail = std::string(1, static_cast<char>('A' + player.Team));
+		}
+		if (player.Start >= 0) {
+			row.Detail += (row.Detail.empty() ? "#" : " #") + std::to_string(player.Start + 1);
 		}
 		if (player.Host) {
 			row.Mark = "wolhost.pcx";
@@ -536,13 +597,9 @@ void CnCNetRoomServiceClass::Say(char const * text)
 }
 
 
-void CnCNetRoomServiceClass::Own_Setup(int side, int color)
+void CnCNetRoomServiceClass::Own_Setup(int side, int color, int start, int team)
 {
-	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
-	if (self == nullptr) {
-		return;
-	}
-	TheRoom.Request_Setup(side, color, self->Start, self->Team);
+	TheRoom.Request_Setup(side, color, start, team);
 	Flush();
 }
 
@@ -556,8 +613,9 @@ void CnCNetRoomServiceClass::Set_Side(int index)
 		}
 		if (count++ == index) {
 			Session.House = house;
-			CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
-			Own_Setup(house, self != nullptr ? self->Color : -1);
+			if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+				Own_Setup(house, self->Color, self->Start, self->Team);
+			}
 			return;
 		}
 	}
@@ -569,8 +627,32 @@ void CnCNetRoomServiceClass::Set_Color(int index)
 	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
 		return;
 	}
-	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
-	Own_Setup(self != nullptr ? self->Side : -1, index);
+	if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+		Own_Setup(self->Side, index, self->Start, self->Team);
+	}
+}
+
+
+void CnCNetRoomServiceClass::Set_Team(int index)
+{
+	if (index < 0 || index > 4) {
+		return;
+	}
+	if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+		Own_Setup(self->Side, self->Color, self->Start, index - 1);
+	}
+}
+
+
+void CnCNetRoomServiceClass::Set_Start(int index)
+{
+	std::vector<int> const & starts = Map_Starts(Session.ScenarioFileName);
+	if (index < 0 || index > static_cast<int>(starts.size())) {
+		return;
+	}
+	if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+		Own_Setup(self->Side, self->Color, index == 0 ? -1 : starts[index - 1], self->Team);
+	}
 }
 
 
@@ -669,8 +751,8 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		}
 	}
 	std::mt19937 random{std::random_device{}()};
-	// Starts left at -1 are placed by the game from the shared seed.
-	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, COLOR_COUNT), 0,
+	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, COLOR_COUNT),
+		Map_Starts(Session.ScenarioFileName),
 		Setup.Tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
 		error = "The match could not start: every guest must be ready.";

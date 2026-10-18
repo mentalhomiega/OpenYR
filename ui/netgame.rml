@@ -31,8 +31,17 @@
 			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
 			<span class="cell-house" data-attr-tip="row.hint"><img data-attr-src="row.house"/></span>
 			<span class="cell-name" data-style-color="row.color">{{row.name}}</span>
+			<span class="cell-detail" data-if="hasteams">{{row.detail}}</span>
 		</div>
 	</div></div>
+	<span class="caption" id="cap-team" data-if="hasteams">Team:</span>
+	<select id="team" data-if="hasteams" data-event-change="queue('team', ev.value)">
+		<option data-for="entry : teams" data-attr-value="it_index" data-attrif-selected="it_index == team">{{entry.label}}</option>
+	</select>
+	<span class="caption" id="cap-start" data-if="hasteams">Start:</span>
+	<select id="start" data-if="hasteams" data-event-change="queue('start', ev.value)">
+		<option data-for="entry : starts" data-attr-value="it_index" data-attrif-selected="it_index == start">{{entry.label}}</option>
+	</select>
 
 	<div id="settings">
 		<div class="row" id="row-speed"><span class="caption">Game Speed<span data-if="host">:</span></span><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-attrif-disabled="!host" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span><span class="trough-edge"></span></div>

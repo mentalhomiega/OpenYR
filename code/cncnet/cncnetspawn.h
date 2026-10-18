@@ -44,9 +44,9 @@ struct CnCNetMatchType
 
 // Settles the room's random sides, colours and starts and draws a seed and a
 // tunnel number per player. sides lists the countries a random side may
-// become; starts is the map's start count.
+// become; starts lists the map's start positions.
 CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & players, std::vector<int> const & sides,
-	int colors, int starts, std::string const & tunnel_host, uint16_t tunnel_port, std::mt19937 & random);
+	int colors, std::vector<int> const & starts, std::string const & tunnel_host, uint16_t tunnel_port, std::mt19937 & random);
 
 std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & match);
 

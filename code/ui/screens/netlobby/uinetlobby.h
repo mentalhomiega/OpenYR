@@ -85,6 +85,7 @@ struct UINetPlayerRow
 	std::string House;
 	std::string Hint;
 	std::string Mark;
+	std::string Detail;     // Team and start, where the lobby has them.
 	bool Selected = false;
 };
 
@@ -109,6 +110,12 @@ struct UINetLobbyState
 	int Side = 0;
 	std::vector<UINetOption> Colors;
 	int Color = 0;
+	/// Whether the lobby lets each player choose a team and a start; the LAN lobby does not.
+	bool HasTeams = false;
+	std::vector<UINetOption> Teams;
+	int Team = 0;
+	std::vector<UINetOption> Starts;
+	int Start = 0;
 	/// The free color, zero for the stock color at Color, and the picker over the lobby.
 	unsigned int CustomColor = 0;
 	/// What the color button shows: its name, its hover tip with the full name of a free color, and
@@ -162,6 +169,8 @@ class UINetLobbyServiceClass
 		virtual void Say(char const * text) = 0;
 		virtual void Set_Side(int index) = 0;
 		virtual void Set_Color(int index) = 0;
+		virtual void Set_Team(int) {}
+		virtual void Set_Start(int) {}
 		virtual void Set_Custom_Color(int index, unsigned int custom) = 0;
 		virtual void Set_Switch(UINetSwitch which, bool on) = 0;
 		virtual void Set_Slider(UINetSlider which, int value) = 0;

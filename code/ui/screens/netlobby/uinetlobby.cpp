@@ -101,6 +101,16 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			State.Side = intent.Value;
 			Service.Set_Side(State.Side);
 		}
+	} else if (intent.Name == "team") {
+		if (intent.Value >= 0 && intent.Value < (int)State.Teams.size()) {
+			State.Team = intent.Value;
+			Service.Set_Team(State.Team);
+		}
+	} else if (intent.Name == "start") {
+		if (intent.Value >= 0 && intent.Value < (int)State.Starts.size()) {
+			State.Start = intent.Value;
+			Service.Set_Start(State.Start);
+		}
 	} else if (intent.Name == "pickopen") {
 		UI_Color_Pick_Open(State.Picker, 0, State.CustomColor, State.Color, State.Rivals);
 	} else if (intent.Name == "pickfield") {
@@ -362,6 +372,7 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			row.RegisterMember("house", &UINetPlayerRow::House);
 			row.RegisterMember("hint", &UINetPlayerRow::Hint);
 			row.RegisterMember("mark", &UINetPlayerRow::Mark);
+			row.RegisterMember("detail", &UINetPlayerRow::Detail);
 			row.RegisterMember("selected", &UINetPlayerRow::Selected);
 
 			UINetLobbyState & state = Data.State;
@@ -518,6 +529,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			if (Document() != nullptr) {
 				Document()->SetClass("host", Data.State.Kind == UI_NET_LOBBY_HOST);
 				Document()->SetClass("guest", Data.State.Kind != UI_NET_LOBBY_HOST);
+				Document()->SetClass("teams", Data.State.HasTeams);
 			}
 		}
 
@@ -526,6 +538,10 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Sync_Shared();
 			Model.DirtyVariable("host");
 			Model.DirtyVariable("side");
+			Model.DirtyVariable("teams");
+			Model.DirtyVariable("team");
+			Model.DirtyVariable("starts");
+			Model.DirtyVariable("start");
 			Model.DirtyVariable("colorname");
 			Model.DirtyVariable("colortip");
 			Model.DirtyVariable("colorstyle");
@@ -561,6 +577,11 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 				&& model.Bind("host", &state.Host)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
+				&& model.Bind("hasteams", &state.HasTeams)
+				&& model.Bind("teams", &state.Teams)
+				&& model.Bind("team", &state.Team)
+				&& model.Bind("starts", &state.Starts)
+				&& model.Bind("start", &state.Start)
 				&& model.Bind("colorname", &state.ColorName)
 				&& model.Bind("colortip", &state.ColorTip)
 				&& model.Bind("colorstyle", &state.ColorStyle)

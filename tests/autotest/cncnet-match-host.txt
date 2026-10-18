@@ -17,7 +17,9 @@ ui wait 34000
 ui set password test
 ui wait 500
 ui press Host game
-ui wait 36000
+ui wait 3000
+ui set team 1
+ui wait 33000
 ui shot match-host-room
 ui press Go!
 ui wait 5000

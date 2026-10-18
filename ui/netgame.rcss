@@ -112,6 +112,15 @@
 
 #players .cell-mark { width: 20dp; margin-left: 5dp; }
 #players .cell-house { width: 20dp; }
+#players .cell-name { width: 120dp; overflow: hidden; white-space: nowrap; }
+#players .cell-detail { display: inline-block; vertical-align: top; width: 56dp; text-align: right; color: #c8c8c8; }
+
+/* CnCNet rooms also pick a team and a start, so the player list gives up a row for the two drop-downs. */
+.teams #players { height: 84dp; }
+#cap-team { left: 27dp; top: 182dp; }
+#team { box-sizing: border-box; margin: 0; left: 67dp; top: 179dp; width: 70dp; height: 22dp; }
+#cap-start { left: 142dp; top: 182dp; }
+#start { box-sizing: border-box; margin: 0; left: 178dp; top: 179dp; width: 75dp; height: 22dp; }
 
 
 #settings, #switches

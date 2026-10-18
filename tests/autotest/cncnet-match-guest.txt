@@ -12,6 +12,10 @@ ui choose Commander's game
 ui wait 1000
 ui press Join
 ui wait 6000
+ui set team 2
+ui wait 1000
+ui set start 1
+ui wait 1500
 ui press Accept
 ui wait 3000
 ui shot match-guest-ready

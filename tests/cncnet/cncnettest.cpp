@@ -678,7 +678,7 @@ void Test_Spawn(void)
 	guest.Name = "guest";
 	guest.Start = 3;
 	std::mt19937 random(12345);
-	CnCNetMatchType const match = CnCNet_Settle_Match({host, guest}, {0, 1, 2}, 8, 4, "127.0.0.1", 50000, random);
+	CnCNetMatchType const match = CnCNet_Settle_Match({host, guest}, {0, 1, 2}, 8, {0, 1, 2, 3}, "127.0.0.1", 50000, random);
 
 	Check(match.Seats.size() == 2 && match.Seats[0].Name == "Host", "spawn: seats keep the room order");
 	Check(match.Seats.size() == 2 && match.Seats[0].Side == 2 && match.Seats[1].Side >= 0 && match.Seats[1].Side <= 2, "spawn: random side drawn from the list");

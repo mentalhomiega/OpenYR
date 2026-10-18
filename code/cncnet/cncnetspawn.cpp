@@ -82,7 +82,7 @@ bool Name_Less(std::string const & left, std::string const & right)
 
 
 CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & players, std::vector<int> const & sides,
-	int colors, int starts, std::string const & tunnel_host, uint16_t tunnel_port, std::mt19937 & random)
+	int colors, std::vector<int> const & starts, std::string const & tunnel_host, uint16_t tunnel_port, std::mt19937 & random)
 {
 	CnCNetMatchType match;
 	match.Seed = static_cast<int>(random() & 0x7FFFFFFF);
@@ -112,9 +112,9 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 			}
 		}
 		seat.Start = player.Start;
-		if (seat.Start < 0 && starts > 0) {
+		if (seat.Start < 0) {
 			std::vector<int> free;
-			for (int start = 0; start < starts; ++start) {
+			for (int start : starts) {
 				if (taken_starts.count(start) == 0) {
 					free.push_back(start);
 				}
