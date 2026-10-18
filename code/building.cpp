@@ -6451,7 +6451,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								} else {
 									if (IsOwnedByPlayer) Speak(VOX_REPAIRING);
 									Status = DURING;
-									Begin_Anim(BANIM_PRODUCTION, false);
+									// gamemd's Mission_Repair (0x44B780) starts special slot one here, and not the production slot.
 									Begin_Anim(BANIM_SPECIAL_ONE, false);
 									End_Anim(BANIM_ACTIVE_ONE);
 									// gamemd's BuildingClass::Mission_Repair (0x44B780) also destroys the idle animation at the repair start.
@@ -9134,7 +9134,7 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 				Anims[i] = NULL;
 				if (i == BANIM_SPECIAL_ONE && Class->IsCanUnitRepair) {
 					if (In_Radio_Contact() && Mission == MISSION_REPAIR) {
-						Begin_Anim(BANIM_SPECIAL_TWO, false);
+						Begin_Anim(BANIM_SPECIAL_TWO, HealthRatio <= Rule->ConditionYellow);
 					}
 				}
 
@@ -9152,6 +9152,10 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 				}
 				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsAnimDelayedFire && !Class->IsCanUnitRepair) {
 					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+				}
+				// The idle animation returns when this one ends, as gamemd's AnimExpired (0x451B40) does, but not during a repair (status 2 is DURING in Do_MISSION_REPAIR).
+				if (!IsInLimbo && i == BANIM_SPECIAL_THREE && Class->IsCanUnitRepair && !(Mission == MISSION_REPAIR && Status == 2)) {
+					Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
 				}
 				break;
 			}

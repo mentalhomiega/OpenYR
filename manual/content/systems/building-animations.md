@@ -134,7 +134,7 @@ The table lists each slot, the key that names its animation, and when the slot i
 | Upgrade one, two, three | `PowerUp1Anim=`, `PowerUp2Anim=`, `PowerUp3Anim=`, each with a `PowerUp<n>DamagedAnim=`, `PowerUp<n>LocXX=`, `PowerUp<n>LocYY=`, `PowerUp<n>LocZZ=` and `PowerUp<n>YSort=` beside it | The first, second or third [`Upgrades=`](/keys/upgrades/) plug is installed. Removing that plug empties the slot |
 | Active one to four | [`ActiveAnim=`](/keys/activeanim/), [`ActiveAnimTwo=`](/keys/activeanimtwo/), [`ActiveAnimThree=`](/keys/activeanimthree/), [`ActiveAnimFour=`](/keys/activeanimfour/) | The structure comes online, either when construction finishes or when the scenario places it. A repair step, or a plug installed on a damaged structure, refills any active slot that is empty. A repair step skips active slot two while a `TurretAnimIsExclusive=yes` turret is charging or charged |
 | Pre-production | [`PreProductionAnim=`](/keys/preproductionanim/) | A construction yard begins a structure, or a harvester begins unloading into the structure |
-| Production | [`ProductionAnim=`](/keys/productionanim/) | A construction yard finishes a structure, a factory releases what it built, a refinery finishes unloading a harvester, or a service depot begins a repair |
+| Production | [`ProductionAnim=`](/keys/productionanim/) | A construction yard finishes a structure, a factory releases what it built, or a refinery finishes unloading a harvester |
 | Turret | [`TurretAnim=`](/keys/turretanim/) | A turret-equipped or [`ChargeAnim=yes`](/keys/chargeanim/) structure comes online, or the structure begins charging its weapon. With [`TurretAnimIsExclusive=yes`](/keys/turretanimisexclusive/), only charging fills it. A [`TurretAnimIsVoxel=yes`](/keys/turretanimisvoxel/) structure skips the fill when it comes online |
 | Special one to four | [`SpecialAnim=`](/keys/specialanim/), [`SpecialAnimTwo=`](/keys/specialanimtwo/), [`SpecialAnimThree=`](/keys/specialanimthree/), [`SpecialAnimFour=`](/keys/specialanimfour/) | An event on a [`UnitRepair=yes`](/keys/unitrepair/), [`SiloDamage=yes`](/keys/silodamage/) or [`FirestormWall=yes`](/keys/firestormwall/) structure, or a shot charging on an [`IsAnimDelayedFire=yes`](/keys/isanimdelayedfire/) structure, which fills special slot one. No event fills special slot four |
 | Super one to four | [`SuperAnim=`](/keys/superanim/), [`SuperAnimTwo=`](/keys/superanimtwo/), [`SuperAnimThree=`](/keys/superanimthree/), [`SuperAnimFour=`](/keys/superanimfour/) | The charge state of the structure's superweapon, as [`ChargedAnimTime`](/keys/chargedanimtime/) describes |
@@ -201,7 +201,7 @@ Some fills always use the healthy form, whatever the structure's health. On a da
 
 - the production slot's start on every structure except a construction yard ([`ProductionAnim`](/keys/productionanim/) lists them);
 - the pre-production slot's start when a harvester begins unloading;
-- every animation of [a service depot's repair sequence](/keys/specialanim/#a-service-depot);
+- the first slot of [a service depot's repair sequence](/keys/specialanim/#a-service-depot);
 - the fill indicator of a `SiloDamage=yes` structure.
 
 ## Placement and draw order
