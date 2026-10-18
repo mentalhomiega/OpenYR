@@ -494,6 +494,8 @@ RulesClass::RulesClass(void) :
 	RadSiteWarhead(NULL),
 	ChronoBeamColor(0, 0, 0),
 	LaserTargetColor(0),
+	IronCurtainColor(0),
+	BerserkColor(0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
 	MindControlAttackLineFrames(0),
@@ -1244,6 +1246,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		CratePromoteSound = ini.Get_VocType(AUDIOVISUAL, "CratePromoteSound", CratePromoteSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
 		LaserTargetColor = ini.Get_Int(AUDIOVISUAL, "LaserTargetColor", LaserTargetColor);
+		IronCurtainColor = ini.Get_Int(AUDIOVISUAL, "IronCurtainColor", IronCurtainColor);
+		BerserkColor = ini.Get_Int(AUDIOVISUAL, "BerserkColor", BerserkColor);
 		ColorAdd.clear();
 		for (int i = 0; i < ini.Entry_Count("ColorAdd"); i++) {
 			ColorAdd.push_back(ini.Get_RGBClass("ColorAdd", ini.Get_Entry("ColorAdd", i), RGBClass(0, 0, 0)));

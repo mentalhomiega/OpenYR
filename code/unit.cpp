@@ -2653,29 +2653,30 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 
 	Blitter const * blitter = NULL;
 	int predoffset = 0;
+	ConvertClass * converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
 
 	switch (Visual_Character()) {
 
 	case VISUAL_INDISTINCT:
-		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_ZGRAD));
+		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_DARKEN:
-		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
+		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_SHADOWY:
-		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
+		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_ZGRAD));
 		break;
 
 	case VISUAL_RIPPLE: {
 		int stage = CloakingDevice.Fetch_Stage();
 		if (stage == 0) {
-			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT25 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		} else if (stage == 1) {
-			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		} else {
-			blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
+			blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_TRANSLUCENT50 | SHAPE_PREDATOR | SHAPE_ZGRAD));
 		}
 
 		predoffset = Get_Predator_Offset();
@@ -2686,7 +2687,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 		break;
 
 	default:
-		blitter = ColorSchemes[House_Display_Scheme(House)]->Converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
+		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
 		break;
 	}
 

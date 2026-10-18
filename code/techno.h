@@ -78,6 +78,8 @@ bool Attack_Move_Key_Held(void);
 #include <optional>
 
 
+class ColorScheme;
+class ConvertClass;
 class ParticleSystemClass;
 class WaveClass;
 class WeaponTypeClass;
@@ -929,6 +931,7 @@ class TechnoClass :	public RadioClass,
 		*/
 		virtual int Apparent_Brightness(int brightness = 1000) const;
 		int Iron_Curtain_Brightness(int brightness) const;
+		ConvertClass * Effect_Converter(ColorScheme * scheme) const;
 		void Iron_Tint_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);

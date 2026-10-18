@@ -18,6 +18,8 @@
 
 #include "scheme.hh"
 
+#include <vector>
+
 class Surface;
 template<class T> class DynamicVectorClass;
 class ConvertClass;
@@ -53,6 +55,13 @@ class ColorScheme
 		PaletteClass Palette;
 
 		/*
+		 * This is the screen palette the converters were last built against. A tinted converter is
+		 * built against it too, rather than against the live game palette, so that it maps the
+		 * colors the same way the scheme's converter does.
+		 */
+		PaletteClass ScreenPalette;
+
+		/*
 		 * This is the name that the scheme is looked up by, usually the house color it
 		 * stands for. Two schemes are told apart by this alone, ignoring case.
 		 */
@@ -79,12 +88,19 @@ class ColorScheme
 		int IntensityLevels;
 
 		/*
-		 * This is the converter that draws the scheme with an amount added to every palette entry,
-		 * for a structure that an airstrike designator marks, and the amount it was built with. It is
-		 * thrown away whenever Converter is rebuilt.
+		 * These are the converters that draw the scheme with an amount added to every palette entry,
+		 * one for each amount asked for so far: a structure that an airstrike designator marks, or a
+		 * unit under the Iron Curtain or in berserk frenzy. An anim may keep one, so an entry is
+		 * replaced only when Converter is rebuilt.
 		 */
-		LightConvertClass * TintedConverter = NULL;
-		int TintedAmount[3] = {0, 0, 0};
+		struct TintedConverterEntry {
+			int Red;
+			int Green;
+			int Blue;
+			PaletteClass * Palette;
+			LightConvertClass * Converter;
+		};
+		std::vector<TintedConverterEntry> TintedConverters;
 
 		/****************************************************************************
 		**	This entry defines a complete color scheme, with the player's remap table,
