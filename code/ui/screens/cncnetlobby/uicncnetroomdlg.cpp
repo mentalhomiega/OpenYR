@@ -164,6 +164,14 @@ std::vector<int> const & Map_Starts(char const * name)
 }
 
 
+// How many players, human and computer, the current map holds.
+int Map_Player_Limit(void)
+{
+	std::vector<int> const & starts = Map_Starts(Session.ScenarioFileName);
+	return(starts.empty() ? MAX_PLAYERS : std::min(static_cast<int>(starts.size()), static_cast<int>(MAX_PLAYERS)));
+}
+
+
 std::map<std::string, std::string> Session_Options(void);
 
 
@@ -220,6 +228,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		std::string ClosedReason;
 		std::string PreviewMap;
 		int StartLimit = -1;
+		int PlayerLimit = -1;
 		UIMapPreviewImage Preview;
 };
 
@@ -326,7 +335,7 @@ void CnCNetRoomServiceClass::Broadcast(bool closed)
 {
 	CnCNetGameListingType listing;
 	listing.GameVersion = Setup.GameVersion;
-	listing.MaxPlayers = 8;
+	listing.MaxPlayers = Map_Player_Limit();
 	listing.RoomChannel = TheRoom.Channel();
 	listing.RoomName = Setup.RoomName;
 	listing.CustomPassword = true;
@@ -409,10 +418,12 @@ void CnCNetRoomServiceClass::Publish(void)
 	if (TheRoom.Is_Host()) {
 		std::vector<int> const & starts = Map_Starts(Session.ScenarioFileName);
 		int const limit = starts.empty() ? MAX_PLAYERS : starts.back() + 1;
-		if (limit != StartLimit) {
+		if (limit != StartLimit || Map_Player_Limit() != PlayerLimit) {
 			StartLimit = limit;
+			PlayerLimit = Map_Player_Limit();
 			CnCNetRoomLimitsType limits;
 			limits.Starts = limit;
+			limits.MaxPlayers = PlayerLimit;
 			TheRoom.Set_Limits(limits);
 		}
 		TheRoom.Set_Options(Session_Options());
@@ -554,6 +565,9 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			map_ready = false;
 		}
 	}
+	if (static_cast<int>(TheRoom.Players().size()) + Session.Options.AIPlayers > Map_Player_Limit()) {
+		state.MapName += " (holds " + std::to_string(Map_Player_Limit()) + " players)";
+	}
 	if (PreviewMap != Session.ScenarioFileName) {
 		PreviewMap = Session.ScenarioFileName;
 		UI_Map_File_Preview_Image(PreviewMap.c_str(), Preview);
@@ -572,7 +586,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Redeploy = options.MCVRedeploy;
 	state.GameSpeed = 6 - options.GameSpeed;
 	state.AIPlayers = options.AIPlayers;
-	state.AIPlayersMax = 6;
+	state.AIPlayersMax = std::max(0, std::min(6, Map_Player_Limit() - static_cast<int>(TheRoom.Players().size())));
 	state.AILevel = options.AIDifficulty;
 	state.UnitCountMin = 1;
 	state.UnitCountMax = 10;
@@ -585,7 +599,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Credits = options.Credits;
 
 	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready;
-	state.CanGo = TheRoom.Is_Host() && TheRoom.Can_Start();
+	state.CanGo = Can_Start();
 }
 
 
@@ -727,7 +741,8 @@ void CnCNetRoomServiceClass::Pick_Map(void)
 
 bool CnCNetRoomServiceClass::Can_Start(void)
 {
-	return(TheRoom.Is_Host() && TheRoom.Can_Start());
+	return(TheRoom.Is_Host() && TheRoom.Can_Start()
+		&& static_cast<int>(TheRoom.Players().size()) + Session.Options.AIPlayers <= Map_Player_Limit());
 }
 
 
