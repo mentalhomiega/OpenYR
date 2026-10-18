@@ -2990,28 +2990,28 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 		return;
 	}
 
-	shapenum = Shape_Facing_Index(PrimaryFacing.Current(), Class->Facings);
+	// A disguised body is drawn at facing 0 (UnitClass::DrawAsSHP, 0x73C5F0). gamemd indexes facings
+	// only at 8; 16, 32 and 64 are an OpenTS extension.
+	shapenum = (MirageType == NULL) ? Shape_Facing_Index(PrimaryFacing.Current(), Class->Facings) : 0;
 
-	if (Locomotion->Is_Moving() || (Class->IdleRate != 0 && FiringSyncDelay < 0)) {
+	if (FiringSyncDelay >= 0) {
+		shapenum = Class->StartFiringFrame + FiringSyncDelay / 2 + shapenum * Class->FiringFrames;
+	} else if (Locomotion->Is_Moving() || Class->IdleRate != 0) {
 		shapenum = Class->StartWalkFrame + shapenum * Class->WalkFrames + TotalFramesWalked % Class->WalkFrames;
 	} else {
-		if (FiringSyncDelay >= 0) {
-			shapenum = Class->StartFiringFrame + FiringSyncDelay / 2 + shapenum * Class->FiringFrames;
-		} else {
-			if (DeathCounter >= 0) {
-				int deathframe = DeathCounter / Class->DeathFrameRate;
-				int StartDeathFrame = Class->StartDeathFrame;
-				int lastframe = Class->DeathFrames - 1;
-				if (deathframe >= lastframe) {
-					deathframe = lastframe;
-				}
-				shapenum = deathframe + StartDeathFrame;
-			} else if (IsOccupyingCell) {
-				if (Class->StandingFrames == 0) {
-					shapenum = Class->StartWalkFrame + shapenum * Class->WalkFrames;
-				} else {
-					shapenum = Class->StartStandFrame + shapenum * Class->StandingFrames;
-				}
+		if (DeathCounter >= 0) {
+			int deathframe = DeathCounter / Class->DeathFrameRate;
+			int StartDeathFrame = Class->StartDeathFrame;
+			int lastframe = Class->DeathFrames - 1;
+			if (deathframe >= lastframe) {
+				deathframe = lastframe;
+			}
+			shapenum = deathframe + StartDeathFrame;
+		} else if (IsOccupyingCell) {
+			if (Class->StandingFrames == 0) {
+				shapenum = Class->StartWalkFrame + shapenum * Class->WalkFrames;
+			} else {
+				shapenum = Class->StartStandFrame + shapenum * Class->StandingFrames;
 			}
 		}
 	}
