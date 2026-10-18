@@ -714,6 +714,7 @@ class BuildingClass : public TechnoClass
 
 		void Begin_Anim(BAnimType anim, bool damaged, int delay = 0);
 		void Begin_Opening_Anims(bool damaged, int delay = 0);
+		void Freeze_Powered_Anims(bool frozen);
 		int Storage_Anim_Level(void) const;
 		void Update_Storage_Anims(void);
 		void Update_Absorber_Anims(void);

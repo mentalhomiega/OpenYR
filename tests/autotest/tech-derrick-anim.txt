@@ -1,0 +1,24 @@
+; A neutral tech oil derrick (CAOILD, NeedsEngineer) is placed with its Powered animations frozen, so the
+; pumping ActiveAnim (slot 3, ActiveAnimPowered defaults to yes) does not run. ActiveAnimTwo (slot 4,
+; ActiveAnimTwoPowered=no) is not frozen. An engineer's capture resumes the frozen slot. A later hit below
+; ConditionYellow re-creates the slot's animation in its damaged form, and that new animation is not frozen,
+; as gamemd's PlayAnim (0x451890) freezes only structures whose type is Powered=yes.
+; The skirmish map already has three neutral derricks, so banimstate lists them too. Only the derrick at
+; 66,40 is captured, so the others must stay frozen after the capture.
+; Expected: at frame 200 every derrick shows slot 3 disabled 1 and slot 4 disabled 0, and house Civilian.
+; At frame 500 the derrick at 66,40 shows slot 3 disabled 0 and house is the player's house, while the other
+; three keep slot 3 disabled 1. At frame 520, after the hit at 510, every derrick shows slot 3 disabled 0
+; as CAOILD_AD.
+; Run from E:\Claude ra2 decomp:
+;   scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/tech-derrick-anim.txt -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAOILD 66 40
+110 own ENGINEER 62 40
+200 banimstate CAOILD
+300 capture ENGINEER 66 40
+500 banimstate CAOILD
+510 hit CAOILD:HE 2000
+520 banimstate CAOILD
+900 quit

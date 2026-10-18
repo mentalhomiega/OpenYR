@@ -242,6 +242,8 @@ An [EMP pulse](/systems/emp-pulse/) freezes the same animations. They resume whe
 
 Neither switching off nor an EMP pulse removes a `…PoweredLight=yes` animation unless the house is also short of power.
 
+A [`NeedsEngineer=yes`](/keys/needsengineer/) structure that has not changed owner yet is frozen when it is placed on the map. Each of its `…Powered=yes` animations stops on the frame it has reached, whatever its house's power. The first change of owner resumes them. A later start of an animation, such as the damaged form that a hit below `ConditionYellow` starts, is frozen only when the structure is also `Powered=yes`.
+
 ## Where each setting is read from
 
 Most slots read every setting from the structure's art entry, but the turret slot reads its settings from the rules. The difference matters only for a structure that borrows another structure's artwork with [`Image=`](/keys/image/), so that its Image ID and ObjectType ID name different sections. The table gives the section each half of a slot is read from.

@@ -2323,6 +2323,11 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			Submit_Radar_Event(RADAREVENT_BUILDING_PLACED, Get_Cell());
 		}
 
+		// A NeedsEngineer structure that no engineer has taken is placed with its Powered animations frozen (DisableStuff, 0x452480).
+		if (Class->IsNeedsEngineer && !HasEngineer) {
+			Freeze_Powered_Anims(true);
+		}
+
 		return(true);
 	}
 	return(false);
@@ -4999,6 +5004,10 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 
 		IsCaptured = true;
 		HasEngineer = true;
+		// An owner change resumes a NeedsEngineer structure's frozen animations (SetOwningHouse, 0x448260).
+		if (Class->IsNeedsEngineer) {
+			Freeze_Powered_Anims(false);
+		}
 		if (Rule->BuildConst.Is_In_List(Class)) {
 			oldowner->ConYards.Delete(this);
 		}
@@ -8857,6 +8866,26 @@ void BuildingClass::Begin_Opening_Anims(bool damaged, int delay)
 
 
 /// <summary>
+/// Freezes or resumes the animations whose Powered flag is set, each on the frame it has reached.
+/// The placement and owner-change paths of a NeedsEngineer structure call this routine, as
+/// gamemd's DisableStuff (0x452480) and the SetOwningHouse loop (0x448260) do.
+/// </summary>
+/// <param name="frozen">Should the animations be frozen (true) or resumed (false)?</param>
+void BuildingClass::Freeze_Powered_Anims(bool frozen)
+{
+	for (int index = 0; index < BANIM_COUNT; index++) {
+		if (Class->AnimData[index].Powered && Anims[index] != NULL) {
+			if (frozen) {
+				Anims[index]->Disable();
+			} else {
+				Anims[index]->Enable();
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Tells how full this refinery is, as a number from 0 for under a quarter of what it can
 /// hold to 3 for three quarters or more. This is the ore level the refinery's active
 /// animations show, one level to each of its four.
@@ -9014,8 +9043,8 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 
 		Anims[anim] = animptr;
 
-		// A Powered animation begun while the structure is out of service starts still, as BuildingClass::PlayAnim (0x451890) does.
-		if (Class->IsPowered && Class->AnimData[anim].Powered && (!IsPoweredOn || !Is_Powered_On())) {
+		// A Powered animation begun while the structure is out of service, or before an engineer has taken a NeedsEngineer one, starts still, as BuildingClass::PlayAnim (0x451890) does.
+		if (Class->IsPowered && Class->AnimData[anim].Powered && (!IsPoweredOn || !Is_Powered_On() || (Class->IsNeedsEngineer && !HasEngineer))) {
 			animptr->Disable();
 		}
 
