@@ -1730,6 +1730,8 @@ bool BuildingClass::Mark(MarkType mark)
  *=============================================================================================*/
 void BuildingClass::AI(void)
 {
+	Update_Temporal_Anims();
+
 	if (Temporal_AI()) {
 		return;
 	}
@@ -9043,6 +9045,10 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 
 		Anims[anim] = animptr;
 
+		// A new animation starts paused, as BuildingClass::PlayAnim (0x451890) does, and faded like the others while a beam holds the structure.
+		animptr->Set_Paused(IsBeingWarpedOut);
+		animptr->Set_Under_Temporal(IsBeingWarpedOut);
+
 		// A Powered animation begun while the structure is out of service, or before an engineer has taken a NeedsEngineer one, starts still, as BuildingClass::PlayAnim (0x451890) does.
 		if (Class->IsPowered && Class->AnimData[anim].Powered && (!IsPoweredOn || !Is_Powered_On() || (Class->IsNeedsEngineer && !HasEngineer))) {
 			animptr->Disable();
@@ -9231,8 +9237,39 @@ void BuildingClass::Update_Anim_Appearance(void)
 {
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
 	ConvertClass * converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+
+	// An airstrike-marked structure draws its animations with the LaserTargetColor tint its body gets (TechnoClass::Techno_Draw_Object).
+	if (AirstrikeMarkedBy != NULL && !Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
+		RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
+		if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
+			ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 2, add.Get_Green(), add.Get_Blue() * 2);
+			if (tinted != NULL) {
+				converter = tinted;
+			}
+		}
+	}
+
 	Set_Anim_Drawer(converter, Brightness);
 	Set_Anim_Translucency(TranslucencyLevel);
+}
+
+
+/// <summary>
+/// Pauses this building's animations, and fades them, for as long as a temporal beam holds
+/// the building. They run again once the beam lets go.
+/// gamemd sets the same two flags in BuildingClass::DisableTemporal and clears them in
+/// EnableTemporal (0x4521C0 and 0x452210). This routine follows IsBeingWarpedOut each frame
+/// instead, so every way a beam can end, and a loaded save, leaves the animations in step
+/// with the building.
+/// </summary>
+void BuildingClass::Update_Temporal_Anims(void)
+{
+	for (AnimClass * anim : Anims) {
+		if (anim != NULL) {
+			anim->Set_Paused(IsBeingWarpedOut);
+			anim->Set_Under_Temporal(IsBeingWarpedOut);
+		}
+	}
 }
 
 

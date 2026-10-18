@@ -108,6 +108,8 @@ class AnimClass : public ObjectClass, public StageClass
 		void Disable(void);
 		void Enable(void);
 		bool Is_Disabled(void) const {return IsDisabled;}
+		void Set_Paused(bool on) {IsPaused = on;}
+		void Set_Under_Temporal(bool on) {IsUnderTemporal = on;}
 
 		void Vein_Attack_AI(void);
 		void Flaming_Guy_AI(void);
@@ -290,6 +292,19 @@ class AnimClass : public ObjectClass, public StageClass
 		 * this is how a building holds its powered animations still while it has no power.
 		 */
 		bool IsDisabled;
+
+		/*
+		 * This is set while a temporal beam holds the building that owns this animation. A paused
+		 * animation is still drawn, but it stops advancing and dealing damage until the beam lets go.
+		 */
+		bool IsPaused;
+
+		/*
+		 * This is set on the animations of a building held by a temporal beam, which draws them half
+		 * see-through so they fade with the building's body. Neither flag is saved: the owning
+		 * building sets both on every frame from its own temporal state.
+		 */
+		bool IsUnderTemporal;
 };
 
 void Shorten_Attached_Anims(ObjectClass * obj);
