@@ -836,6 +836,10 @@ void AnimClass::AI(void)
 		BASECLASS::AI();
 	}
 
+	if (Class->MakeInfantry != -1) {
+		Mark_Infantry_Spot(true);
+	}
+
 	if (IsBouncing) {
 		BounceResultType bounce_result = Bounce_AI();
 		if (bounce_result == BOUNCE_SETTLED || bounce_result == BOUNCE_IMPACT) {
@@ -1087,9 +1091,12 @@ void AnimClass::AI(void)
 						Set_Stage(Class->Start);
 						Start();
 					} else {
-						if (Class->MakeInfantry != -1 && !Make_Infantry()) {
-							Set_Stage(Fetch_Stage() - 1);
-							return;
+						if (Class->MakeInfantry != -1) {
+							Mark_Infantry_Spot(false);
+							if (!Make_Infantry()) {
+								Set_Stage(Fetch_Stage() - 1);
+								return;
+							}
 						}
 						Delete_Me();
 					}
@@ -1936,6 +1943,46 @@ bool AnimClass::Make_Infantry(void)
 		infantry->Assign_Mission(MISSION_HUNT);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Holds or releases the infantry spot at this animation's coordinate, as gamemd's
+/// AnimClass::MarkAllOccupationBits and UnmarkAllOccupationBits do. Mark runs on every logic
+/// frame while the animation has MakeInfantry. Unmark runs only when the animation ends, before
+/// Make_Infantry places the infantryman there.
+/// </summary>
+/// <param name="mark">True to hold the spot, false to release it.</param>
+void AnimClass::Mark_Infantry_Spot(bool mark)
+{
+	Coord coord = Center_Coord();
+	int spot = CellClass::Spot_Index(coord);
+	CellClass & cell = Map[coord];
+	int bridge_height = Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT;
+
+	// The owner index is left at HOUSE_NONE because gamemd's animation owner index is -1.
+	if (mark) {
+		if (bridge_height <= coord.Z && cell.IsUnderBridge) {
+			cell.BridgeFlag.Composite |= (1 << spot);
+			cell.BridgeInfType = HOUSE_NONE;
+		} else {
+			cell.Flag.Composite |= (1 << spot);
+			cell.InfType = HOUSE_NONE;
+		}
+		return;
+	}
+
+	if (coord.Z < bridge_height) {
+		cell.Flag.Composite &= ~(1 << spot);
+		if (!(cell.Flag.Composite & 0x1C)) {
+			cell.InfType = HOUSE_NONE;
+		}
+	} else {
+		cell.BridgeFlag.Composite &= ~(1 << spot);
+		if (!(cell.BridgeFlag.Composite & 0x1C)) {
+			cell.BridgeInfType = HOUSE_NONE;
+		}
+	}
 }
 
 
