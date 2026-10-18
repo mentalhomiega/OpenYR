@@ -66,6 +66,7 @@ class AnimClass : public ObjectClass, public StageClass
 		AnimClass(void);
 		virtual ~AnimClass(void) override;
 		bool Make_Infantry(void);
+		void Mark_Infantry_Spot(bool mark);
 
 		virtual ClassID Class_ID(void) const override;
 
