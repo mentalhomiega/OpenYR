@@ -10,20 +10,41 @@
 // Pins the CnCNet lobby's IRC layer and game listings: line parsing and
 // building, CTCP, the line buffer, the GAME listing layout, and the client's
 // registration, keepalive, nickname retry and send pacing, SHA-1 and room keys,
-// and the OpenYR game room protocol. Everything runs on in-memory lines;
-// nothing connects.
+// the OpenYR game room protocol, the launch file a started room writes, and the
+// tunnel bridge. Only the bridge test opens sockets, all on the loopback address.
 
 #include "cncnet/cncnetgame.h"
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsha1.h"
+#include "cncnet/cncnetspawn.h"
+#include "cncnet/cncnettunnel.h"
 #include "cncnet/ircclient.h"
 #include "cncnet/ircmessage.h"
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#endif
 
 #include <algorithm>
 #include <array>
 #include <cstdio>
 #include <map>
+#include <optional>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -628,6 +649,201 @@ void Test_Room(void)
 }
 
 
+bool Has(std::string const & text, std::string const & part)
+{
+	return(text.find(part) != std::string::npos);
+}
+
+
+void Test_Spawn(void)
+{
+	CnCNetRoomPlayerType host;
+	host.Name = "Host";
+	host.Side = 2;
+	host.Color = 0;
+	host.Host = true;
+	CnCNetRoomPlayerType guest;
+	guest.Name = "guest";
+	guest.Start = 3;
+	std::mt19937 random(12345);
+	CnCNetMatchType const match = CnCNet_Settle_Match({host, guest}, {0, 1, 2}, 8, 4, "127.0.0.1", 50000, random);
+
+	Check(match.Seats.size() == 2 && match.Seats[0].Name == "Host", "spawn: seats keep the room order");
+	Check(match.Seats.size() == 2 && match.Seats[0].Side == 2 && match.Seats[1].Side >= 0 && match.Seats[1].Side <= 2, "spawn: random side drawn from the list");
+	Check(match.Seats.size() == 2 && match.Seats[1].Color == 1, "spawn: random colour is the first free one");
+	Check(match.Seats.size() == 2 && match.Seats[1].Start == 3 && match.Seats[0].Start >= 0 && match.Seats[0].Start < 3, "spawn: random start avoids a taken one");
+	Check(match.Seats.size() == 2 && match.Seats[0].TunnelId != match.Seats[1].TunnelId
+		&& match.Seats[0].TunnelId >= 1 && match.Seats[0].TunnelId <= 65535 && match.Seats[1].TunnelId >= 1 && match.Seats[1].TunnelId <= 65535,
+		"spawn: tunnel numbers distinct and in range");
+
+	CnCNetMatchType read;
+	Check(CnCNet_Read_Match(CnCNet_Match_Info(match), read), "spawn: start info reads back");
+	Check(read.Seed == match.Seed && read.TunnelHost == "127.0.0.1" && read.TunnelPort == 50000 && read.Seats.size() == 2
+		&& read.Seats[1].Name == "guest" && read.Seats[1].Color == 1 && read.Seats[1].TunnelId == match.Seats[1].TunnelId,
+		"spawn: start info round trip");
+
+	std::map<std::string, std::string> info = CnCNet_Match_Info(match);
+	info.erase("Ids");
+	Check(!CnCNet_Read_Match(info, read), "spawn: start info without ids refused");
+	info = CnCNet_Match_Info(match);
+	info["Sides"] = "1";
+	Check(!CnCNet_Read_Match(info, read), "spawn: start info with short seat list refused");
+	info = CnCNet_Match_Info(match);
+	info["Ids"] = "0,5";
+	Check(!CnCNet_Read_Match(info, read), "spawn: start info with tunnel number 0 refused");
+
+	CnCNetMatchType teams = match;
+	teams.Seats[0].Team = 1;
+	teams.Seats[1].Team = 1;
+	std::map<std::string, std::string> const options = {{"Map", "lake.map"}, {"Credits", "5000"}, {"Crates", "1"}, {"Bases", "0"}};
+	std::string const ini = CnCNet_Spawn_Ini(teams, options, "GUEST", 40000);
+	std::string const host_port = "Port=" + std::to_string(match.Seats[0].TunnelId) + "\n";
+	Check(Has(ini, "[Settings]\nName=guest\n") && Has(ini, "Host=no\n") && Has(ini, "Scenario=lake.map\n"), "spawn: settings name the player and map");
+	Check(Has(ini, "Port=" + std::to_string(match.Seats[1].TunnelId) + "\n"), "spawn: own tunnel number is the settings port");
+	Check(Has(ini, "Credits=5000\n") && Has(ini, "Crates=yes\n") && Has(ini, "Bases=no\n") && Has(ini, "ShortGame=no\n"), "spawn: options written with defaults");
+	Check(Has(ini, "[Other1]\nName=Host\nSide=2\nColor=0\n") && Has(ini, "Ip=0.0.0.0\n" + host_port), "spawn: other player reached through the tunnel");
+	Check(Has(ini, "[Tunnel]\nIp=127.0.0.1\nPort=40000\n"), "spawn: tunnel section names the local bridge");
+	Check(Has(ini, "[SpawnLocations]\nMulti1=" + std::to_string(match.Seats[0].Start) + "\nMulti2=3\n"), "spawn: starts in colour order");
+	Check(Has(ini, "[Multi1_Alliances]\nHouseAllyOne=1\n") && Has(ini, "[Multi2_Alliances]\nHouseAllyOne=0\n"), "spawn: team mates allied by sorted seat");
+	Check(!Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000), "_Alliances"), "spawn: no alliances without teams");
+	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
+	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
+}
+
+
+void Test_Tunnel_Envelope(void)
+{
+	uint8_t const payload[] = {'a', 'b'};
+	std::vector<uint8_t> const envelope = CnCNetTunnelBridgeClass::Wrap(0x01020304, 5, payload, sizeof(payload));
+	std::vector<uint8_t> const expected = {4, 3, 2, 1, 5, 0, 0, 0, 'a', 'b'};
+	Check(envelope == expected, "tunnel: envelope is two little-endian ids then the datagram");
+
+	uint8_t const packet[] = {0x00, 0x07, 0x12, 0x34, 0xFF};
+	std::optional<uint32_t> const peer = CnCNetTunnelBridgeClass::Receiver(packet, sizeof(packet), {9, 0x1234});
+	Check(peer.has_value() && *peer == 0x1234, "tunnel: receiver read from the game header");
+	Check(!CnCNetTunnelBridgeClass::Receiver(packet, sizeof(packet), {9}).has_value(), "tunnel: unknown receiver dropped");
+	Check(!CnCNetTunnelBridgeClass::Receiver(packet, 3, {0x1234}).has_value(), "tunnel: short datagram dropped");
+}
+
+
+#if defined(_WIN32)
+using TestSocket = SOCKET;
+void Close_Test_Socket(TestSocket handle) { closesocket(handle); }
+#else
+using TestSocket = int;
+void Close_Test_Socket(TestSocket handle) { close(handle); }
+#endif
+
+
+TestSocket Loopback_Socket(uint16_t & port)
+{
+	TestSocket handle = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sockaddr_in address{};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	bind(handle, reinterpret_cast<sockaddr *>(&address), sizeof(address));
+#if defined(_WIN32)
+	int length = sizeof(address);
+#else
+	socklen_t length = sizeof(address);
+#endif
+	getsockname(handle, reinterpret_cast<sockaddr *>(&address), &length);
+	port = ntohs(address.sin_port);
+	return(handle);
+}
+
+
+void Send_To(TestSocket handle, sockaddr_in const & to, std::vector<uint8_t> const & data)
+{
+	sendto(handle, reinterpret_cast<char const *>(data.data()), static_cast<int>(data.size()), 0, reinterpret_cast<sockaddr const *>(&to), sizeof(to));
+}
+
+
+sockaddr_in Loopback(uint16_t port)
+{
+	sockaddr_in address{};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	address.sin_port = htons(port);
+	return(address);
+}
+
+
+// The next datagram within wait_ms, or nothing.
+std::optional<std::vector<uint8_t>> Receive(TestSocket handle, int wait_ms, sockaddr_in * from = nullptr)
+{
+	fd_set readable;
+	FD_ZERO(&readable);
+	FD_SET(handle, &readable);
+	timeval wait{wait_ms / 1000, (wait_ms % 1000) * 1000};
+	if (select(static_cast<int>(handle) + 1, &readable, nullptr, nullptr, &wait) <= 0) {
+		return(std::nullopt);
+	}
+	uint8_t buffer[2048];
+	sockaddr_in sender{};
+#if defined(_WIN32)
+	int length = sizeof(sender);
+#else
+	socklen_t length = sizeof(sender);
+#endif
+	int const read = recvfrom(handle, reinterpret_cast<char *>(buffer), sizeof(buffer), 0, reinterpret_cast<sockaddr *>(&sender), &length);
+	if (read < 0) {
+		return(std::nullopt);
+	}
+	if (from != nullptr) {
+		*from = sender;
+	}
+	return(std::vector<uint8_t>(buffer, buffer + read));
+}
+
+
+void Test_Tunnel_Bridge(void)
+{
+#if defined(_WIN32)
+	WSADATA data;
+	WSAStartup(MAKEWORD(2, 2), &data);
+#endif
+	uint16_t relay_port = 0;
+	uint16_t game_port = 0;
+	uint16_t stranger_port = 0;
+	TestSocket const relay = Loopback_Socket(relay_port);
+	TestSocket const game = Loopback_Socket(game_port);
+	TestSocket const stranger = Loopback_Socket(stranger_port);
+
+	CnCNetTunnelBridgeClass bridge;
+	std::string error;
+	bool const started = bridge.Start("127.0.0.1", relay_port, 7, {9}, error);
+	Check(started && bridge.Game_Port() != 0, "bridge: starts on a loopback port");
+
+	if (started) {
+		Send_To(game, Loopback(bridge.Game_Port()), {0, 7, 0, 9, 'x'});
+		sockaddr_in bridge_relay{};
+		std::optional<std::vector<uint8_t>> const wrapped = Receive(relay, 2000, &bridge_relay);
+		std::vector<uint8_t> const expected = {7, 0, 0, 0, 9, 0, 0, 0, 0, 7, 0, 9, 'x'};
+		Check(wrapped.has_value() && *wrapped == expected, "bridge: game datagram reaches the relay wrapped");
+
+		Send_To(game, Loopback(bridge.Game_Port()), {0, 7, 0, 8, 'y'});
+		Check(!Receive(relay, 300).has_value(), "bridge: datagram for an unknown player not sent");
+
+		if (wrapped.has_value()) {
+			Send_To(stranger, bridge_relay, {9, 0, 0, 0, 7, 0, 0, 0, 'n', 'o'});
+			Check(!Receive(game, 300).has_value(), "bridge: datagram from another address ignored");
+			Send_To(relay, bridge_relay, {9, 0, 0, 0, 7, 0, 0, 0, 'h', 'i'});
+			std::optional<std::vector<uint8_t>> const unwrapped = Receive(game, 2000);
+			Check(unwrapped.has_value() && *unwrapped == std::vector<uint8_t>{'h', 'i'}, "bridge: relay datagram reaches the game unwrapped");
+		}
+		bridge.Stop();
+		Check(bridge.Sent() == 1 && bridge.Received() == 1 && !bridge.Is_Running(), "bridge: counts and stops");
+	}
+
+	Close_Test_Socket(relay);
+	Close_Test_Socket(game);
+	Close_Test_Socket(stranger);
+#if defined(_WIN32)
+	WSACleanup();
+#endif
+}
+
 }
 
 
@@ -648,6 +864,9 @@ int main(void)
 	Test_SHA1();
 	Test_Room_Encoding();
 	Test_Room();
+	Test_Spawn();
+	Test_Tunnel_Envelope();
+	Test_Tunnel_Bridge();
 
 	if (Failures != 0) {
 		std::printf("%d check(s) FAILED\n", Failures);

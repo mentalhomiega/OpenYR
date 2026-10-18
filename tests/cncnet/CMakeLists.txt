@@ -8,7 +8,12 @@ opents_add_test(CnCNetTest
         cncnet/cncnetlobby.cpp
         cncnet/cncnetroom.cpp
         cncnet/cncnetsha1.cpp
+        cncnet/cncnetspawn.cpp
+        cncnet/cncnettunnel.cpp
 )
+if(WIN32)
+    target_link_libraries(CnCNetTest PRIVATE ws2_32)
+endif()
 
 # A manual probe, not run by CTest: connects a lobby session to an IRC server (normally the
 # stand-in in scripts/cncnet_irc_standin.py) and prints what the lobby sees.
