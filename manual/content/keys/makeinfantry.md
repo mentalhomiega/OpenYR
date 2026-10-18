@@ -7,7 +7,7 @@ when_omitted:
   value: "-1"
 ---
 
-When the animation ends, it becomes an infantryman of the type at this position in [`AnimToInfantry`](/keys/animtoinfantry/), counting from 0, owned by the animation's house. A computer house's new infantryman hunts. When the cell is too crowded to place him, the animation holds its last frame and tries again on the next frame.
+When the animation ends, it becomes an infantryman of the type at this position in [`AnimToInfantry`](/keys/animtoinfantry/), counting from 0, owned by the animation's house, facing south-east. A computer house's new infantryman hunts. When the cell is too crowded to place him, the animation holds its last frame and tries again on the next frame.
 
 ```ini title="artmd.ini"
 [MYMUTATE] ; example AnimType

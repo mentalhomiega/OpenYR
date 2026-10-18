@@ -1939,7 +1939,7 @@ bool AnimClass::Make_Infantry(void)
 	if (infantry == NULL) {
 		return(true);
 	}
-	if (!infantry->Unlimbo(Center_Coord(), DIR_S)) {
+	if (!infantry->Unlimbo(Center_Coord(), DIR_SE)) {
 		delete infantry;
 		return(false);
 	}

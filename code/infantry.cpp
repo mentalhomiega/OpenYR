@@ -122,6 +122,7 @@
 #include "mono.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -532,17 +533,37 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						Do_Action(DO_EXPLOSION_DEATH, true);
 						break;
 
-					case 9:
-						// Mutation: InfantryMutate plays, owned by the attacker's house, and its
+					case 9: {
+						// Mutation needs ground the soldier can walk on (or a bridge), a free spot in the
+						// cell and no building there; otherwise he dies with the Die2 sequence. The
+						// InfantryMutate animation takes the attacker's palette and house, and its
 						// MakeInfantry entry turns into a new infantryman for that house.
-						if (Rule->InfantryMutate != NULL) {
-							AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
-							HouseClass const * owner = source != NULL ? source->House : sourcehouse;
-							if (mutate != NULL && owner != NULL) {
-								mutate->OwnerHouse = (HousesType)owner->HeapID;
+						Clear_Occupy_Bit(PositionCoord);
+						CellClass & mutate_cell = Map[(Coord const &)PositionCoord];
+						bool const building_here = mutate_cell.Cell_Building() != NULL;
+						bool mutated = false;
+						if (Ground[mutate_cell.Land_Type()].Cost[SPEED_FOOT] != 0 || IsOnBridge) {
+							mutated = mutate_cell.Closest_Free_Spot(PositionCoord) != COORD_NONE && !building_here;
+						}
+						if (mutated) {
+							Set_Occupy_Bit(PositionCoord);
+							if (Rule->InfantryMutate != NULL) {
+								AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
+								HouseClass const * owner = source != NULL ? source->House : sourcehouse;
+								if (mutate != NULL) {
+									if (owner != NULL) {
+										mutate->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
+										mutate->OwnerHouse = (HousesType)owner->HeapID;
+									}
+									mutate->Mark_Infantry_Spot(true);
+								}
 							}
+						} else {
+							Do_Action(DO_EXPLOSION_DEATH, true);
+							infdeath = 2;
 						}
 						break;
+					}
 
 					case 3:
 						deathanim = Rule->InfantryExplode;
