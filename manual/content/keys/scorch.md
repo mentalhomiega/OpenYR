@@ -7,11 +7,11 @@ when_omitted:
   value: "no"
 ---
 
-A scorching animation leaves a scorch mark and starts a small fire when it reaches the frame with the largest artwork. A looping animation does this again each time it returns to that frame.
+A scorching animation leaves a scorch mark and starts a small fire when it reaches its [middle frame](/keys/crater/#scope-animtype). A looping animation does this again each time it returns to that frame.
 
-The largest frame is chosen from the whole shape. If it is frame 0 of the shape, the effects happen when the animation starts instead. A looping animation then repeats them only after a [`RandomLoopDelay`](/keys/randomloopdelay/) pause.
+If the middle frame is frame 0 of the shape, the effects happen when the animation starts instead. A looping animation then repeats them only after a [`RandomLoopDelay`](/keys/randomloopdelay/) pause.
 
-If the largest frame is the animation's [`Start`](/keys/start/) frame and `Start` is above `0`, an animation playing forward never leaves the mark or starts the fire.
+If the middle frame is the animation's [`Start`](/keys/start/) frame and `Start` is above `0`, an animation playing forward never leaves the mark or starts the fire.
 
 ## The scorch mark
 
@@ -24,7 +24,7 @@ The animation leaves a scorch mark when it is less than 30 leptons above the gro
 - a structure stands on any of those cells;
 - any of those cells is a tile that will not take a smudge ([`Morphable=no`](/keys/morphable/)).
 
-Scorch marks that cover more than one cell are candidates only when the largest frame is more than 48 pixels wide and 40 pixels tall. If no single-cell scorch fits, a multi-cell scorch that fits can still be chosen.
+Scorch marks that cover more than one cell are candidates only when the middle frame is more than 48 pixels wide and 40 pixels tall. If no single-cell scorch fits, a multi-cell scorch that fits can still be chosen.
 
 An animation that also sets [`Crater=yes`](/keys/crater/#scope-animtype) leaves a scorch mark half the time and a crater the other half, never both.
 

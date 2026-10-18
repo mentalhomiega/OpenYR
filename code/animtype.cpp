@@ -115,7 +115,9 @@ static void * Load_Demand_Shape(char * name)
 AnimTypeClass::AnimTypeClass(char const *ininame) :
 	BASECLASS(ininame),
 	HeapID(ANIM_NONE),
-	Biggest(0),
+	MiddleFrameIndex(0),
+	MiddleFrameWidth(0),
+	MiddleFrameHeight(0),
 	Damage(0.0),
 	Delay(1),
 	Start(0),
@@ -258,6 +260,7 @@ void AnimTypeClass::Init(TheaterType theater)
 					}
 				} else if (anim->IsNewTheater) {
 					anim->Load_Image(theater);
+					anim->Set_Middle_Frame();
 				}
 			} else {
 				if (anim->IsTheater || anim->IsNewTheater) {
@@ -272,6 +275,7 @@ void AnimTypeClass::Init(TheaterType theater)
 			AnimTypeClass * anim = AnimTypes[index];
 			if (anim->IsNewTheater && anim->ImageData == NULL) {
 				anim->Load_Image(theater);
+				anim->Set_Middle_Frame();
 			}
 		}
 	}
@@ -290,6 +294,7 @@ void AnimTypeClass::Init_Theater(TheaterType theater)
 		if (!IsTheater || IsDemandLoad) {
 			if (IsNewTheater) {
 				Load_Image(theater);
+				Set_Middle_Frame();
 			}
 		} else {
 			char fullname[_MAX_FNAME+_MAX_EXT];	// Fully constructed iconset name.
@@ -303,8 +308,8 @@ void AnimTypeClass::Init_Theater(TheaterType theater)
 /// <summary>
 /// Loads the artwork for this animation and takes its measurements.
 /// This routine fetches the shape file appropriate for the theater specified and then
-/// notes the animation's frame count and its largest frame, so that sensible values stand
-/// in for anything the rules did not bother to state.
+/// notes the animation's frame count, so that sensible values stand in for anything the
+/// rules did not bother to state. It does not set the Middle frame; Set_Middle_Frame does.
 /// </summary>
 /// <param name="theater">The theater to align the animation artwork with.</param>
 void AnimTypeClass::Load_Image(TheaterType theater)
@@ -340,19 +345,23 @@ void AnimTypeClass::Load_Image(TheaterType theater)
 		if (LoopEnd == 0) {
 			LoopEnd = Stages;
 		}
+	}
+}
 
-		int biggest_size = 0;
-		int biggest_frame = 0;
 
-		for (int frame = 0; frame < shape->Get_Count(); frame++) {
-			Rect rect = shape->Get_Rect(frame);
-			if (rect.Size() > biggest_size) {
-				biggest_frame = frame;
-				biggest_size = rect.Size();
-			}
-		}
-
-		Biggest = biggest_frame;
+/// <summary>
+/// Sets the Middle frame from the artwork in memory: the frame count halved, with both sizes
+/// left at -1 for Middle to measure. Leaves the Middle frame unchanged when no artwork is in
+/// memory. Only the paths that load artwork for the type call this. The constructor's
+/// name-based load does not, because gamemd's constructor loads nothing.
+/// </summary>
+void AnimTypeClass::Set_Middle_Frame(void)
+{
+	ShapeSet const * shape = (ShapeSet const *)ImageData;
+	if (shape != NULL) {
+		MiddleFrameIndex = shape->Get_Count() / 2;
+		MiddleFrameWidth = -1;
+		MiddleFrameHeight = -1;
 	}
 }
 
@@ -508,6 +517,8 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFreeAfterPlaying = ini.Get_Bool(Name(), "FreeAfterPlaying", IsFreeAfterPlaying);
 		if (IsDemandLoad) {
 			ImageData = NULL;
+		} else if (ini.Is_Present(Name(), "Image")) {
+			Set_Middle_Frame();
 		}
 
 		Elasticity = ini.Get_Float(Name(), "Elasticity", Elasticity);
@@ -583,6 +594,7 @@ void AnimTypeClass::Post_Load(void)
 			ImageData = MFCD::Retrieve(fullname);
 		} else if (IsNewTheater) {
 			Load_Image(Scen->Theater);
+			Set_Middle_Frame();
 		}
 	}
 }
@@ -597,7 +609,9 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(HeapID);
-	stream.Serialize(Biggest);
+	stream.Serialize(MiddleFrameIndex);
+	stream.Serialize(MiddleFrameWidth);
+	stream.Serialize(MiddleFrameHeight);
 	stream.Serialize(Damage);
 	stream.Serialize(Delay);
 	stream.Serialize(Start);
@@ -697,7 +711,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsPingPong);
 	crc(IsReverse);
 	crc(IsShadow);
-	crc(Biggest);
+	crc(MiddleFrameIndex);
 	crc(Damage);
 	crc(IsTiberiumChainReaction);
 	crc(IsHideIfNoOre);
@@ -779,6 +793,7 @@ void const * AnimTypeClass::Get_Image_Data(void) const
 
 		((void const *&)ImageData) = shape;
 		((AnimTypeClass*)this)->Load_Image(Scen->Theater);
+		((AnimTypeClass*)this)->Set_Middle_Frame();
 
 		data = ImageData;
 	}

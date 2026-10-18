@@ -25,7 +25,7 @@ On water, a wake and a splash replace the expiry animation and its blast, and th
 A thrown animation differs from an ordinary one in two more ways:
 
 - It deals none of the per-frame [`Damage`](/keys/damage/#scope-animtype) an ordinary animation deals to its surroundings.
-- It leaves a [`Crater`](/keys/crater/#scope-animtype) or [`Scorch`](/keys/scorch/) mark only when its largest frame is its first. The mark is made when the animation starts, at the launch point.
+- It leaves a [`Crater`](/keys/crater/#scope-animtype) or [`Scorch`](/keys/scorch/) mark only when its middle frame is frame 0. The mark is made when the animation starts, at the launch point.
 
 ```ini title="art.ini"
 [MYDEBRIS]         ; a chunk thrown off a destroyed vehicle

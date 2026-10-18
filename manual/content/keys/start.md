@@ -35,4 +35,4 @@ Three cases use a frame number where a stage belongs, so the animation acts on t
 - An animation that switches to this type through [`Next`](/keys/next/) begins on the frame at twice its `Start`.
 :::
 
-The moment an animation leaves its scorch mark or crater is tied to the largest frame in the shape file, not to a stage, so `Start` does not move it. [`Crater`](/keys/crater/#scope-animtype) covers that timing.
+The moment an animation leaves its scorch mark or crater is tied to the middle frame in the shape file, not to a stage, so `Start` does not move it. [`Crater`](/keys/crater/#scope-animtype) covers that timing.

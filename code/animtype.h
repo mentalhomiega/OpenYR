@@ -40,12 +40,18 @@ class AnimTypeClass : public ObjectTypeClass
 		AnimType HeapID;
 
 		/*
-		**	This is the frame that the animation is biggest. The biggest frame of animation
-		**	will hide any changes to underlying ground (e.g., craters) that the animation
-		**	causes, so these effects are delayed until this frame is reached. The end result
-		**	is to prevent the player from seeing craters "pop" into existence.
+		**	This is the frame the Middle event runs on: frames / 2 once the artwork is loaded, or 0
+		**	when Middle runs as the animation starts.
 		*/
-		int Biggest;
+		int MiddleFrameIndex;
+
+		/*
+		**	The width and height of the Middle frame, which size the craters and scorch marks. They
+		**	are -1 until Middle first measures that frame. An animation whose artwork is never set up
+		**	for Middle keeps them at 0.
+		*/
+		int MiddleFrameWidth;
+		int MiddleFrameHeight;
 
 		/*
 		 * Some animations (when attached to another object) damage the object they are in
@@ -507,5 +513,6 @@ class AnimTypeClass : public ObjectTypeClass
 		virtual void const * Get_Image_Data(void) const override;
 
 		virtual void Load_Image(TheaterType theater);
+		void Set_Middle_Frame(void);
 		void Free_Image(void);
 };
