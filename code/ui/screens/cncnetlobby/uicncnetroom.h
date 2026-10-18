@@ -26,16 +26,19 @@ struct UICnCNetRoomSetupType
 	std::string RoomName;           // Hosts only; the name the game list shows.
 	std::string GameVersion;
 	std::string BroadcastChannel;
+	std::string Tunnel;             // Hosts only; the relay a started match plays through, as host:port.
+	std::string MatchArguments;     // Added to the command line of the copy that plays the match.
 };
 
 
 struct UICnCNetRoomResult
 {
 	bool Started = false;
-	std::string Reason;             // Why the room closed, for the lobby chat.
+	std::string Reason;             // Why the room closed or how the match went, for the lobby chat.
 };
 
 
-// Joins or hosts the room and runs the setup screen until the room closes or
-// the player leaves it. The session must be connected.
+// Joins or hosts the room and runs the setup screen until the room closes, the
+// player leaves it, or a match the host starts has ended. The session must be
+// connected.
 UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetRoomSetupType const & setup);

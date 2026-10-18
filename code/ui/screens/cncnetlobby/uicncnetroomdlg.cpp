@@ -19,25 +19,33 @@
 #include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsession.h"
 #include "cncnet/cncnetsha1.h"
+#include "cncnet/cncnetspawn.h"
+#include "cncnet/cncnettunnel.h"
 #include "conquer.h"
 #include "data.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "houstype.h"
 #include "language/language.h"
+#include "misc.h"
+#include "mods.h"
 #include "netshare.h"
 #include "rules.h"
 #include "session.h"
 #include "ui/screens/netlobby/uinetlobby.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
 #include "version.h"
+#include "win.h"
 
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <random>
 #include <string>
 
@@ -139,6 +147,8 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		std::string const & Closed_Reason(void) const { return(ClosedReason); }
 		CnCNetRoomClass const & Room(void) const { return(TheRoom); }
 		void Close(std::string const & reason);
+		bool Begin_Match(std::string & error);
+		std::string Play_Match(void);
 
 		virtual void Read(UINetLobbyState & state) override;
 		virtual void Set_Handle(char const *) override {}
@@ -617,6 +627,146 @@ bool CnCNetRoomServiceClass::Can_Start(void)
 	return(TheRoom.Is_Host() && TheRoom.Can_Start());
 }
 
+
+/// <summary>
+/// Settles the host's match and tells the room it has started. False with the
+/// reason in error when the tunnel setting cannot be read or the room cannot start.
+/// </summary>
+bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
+{
+	std::size_t const colon = Setup.Tunnel.rfind(':');
+	int const port = colon == std::string::npos ? 0 : std::atoi(Setup.Tunnel.c_str() + colon + 1);
+	if (colon == 0 || port <= 0 || port > 65535) {
+		error = "The tunnel setting \"" + Setup.Tunnel + "\" is not host:port.";
+		return(false);
+	}
+
+	std::vector<int> sides;
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		if (HouseTypes[index]->IsMultiplay) {
+			sides.push_back(index);
+		}
+	}
+	std::mt19937 random{std::random_device{}()};
+	// Starts left at -1 are placed by the game from the shared seed.
+	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, COLOR_COUNT), 0,
+		Setup.Tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
+	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
+		error = "The match could not start: every guest must be ready.";
+		return(false);
+	}
+	Broadcast(true);
+	Flush();
+	return(true);
+}
+
+
+std::string Without_Separator(std::string path)
+{
+	while (!path.empty() && (path.back() == '\\' || path.back() == '/')) {
+		path.pop_back();
+	}
+	return(path);
+}
+
+
+/// <summary>
+/// Plays the started match in a second copy of the game and waits for it to
+/// end, keeping the room and the window serviced. Returns the line for the
+/// lobby chat.
+/// </summary>
+std::string CnCNetRoomServiceClass::Play_Match(void)
+{
+	CnCNetMatchType match;
+	if (!CnCNet_Read_Match(TheRoom.Start_Info(), match)) {
+		return("The host's start message could not be read.");
+	}
+	CnCNetMatchSeatType const * own = nullptr;
+	std::vector<uint32_t> peers;
+	for (CnCNetMatchSeatType const & seat : match.Seats) {
+		if (CnCNetLobbyClass::Same_Nick(seat.Name, Setup.Nick)) {
+			own = &seat;
+		} else {
+			peers.push_back(seat.TunnelId);
+		}
+	}
+	if (own == nullptr) {
+		return("The host started the match without you.");
+	}
+
+	CnCNetTunnelBridgeClass bridge;
+	std::string error;
+	if (!bridge.Start(match.TunnelHost, match.TunnelPort, own->TunnelId, peers, error)) {
+		return(error);
+	}
+
+	std::string const ini = CnCNet_Spawn_Ini(match, TheRoom.Options(), Setup.Nick, bridge.Game_Port());
+	std::string const spawn_path = User_Directory() + "SPAWN.INI";
+	{
+		std::ofstream file(spawn_path, std::ios::binary | std::ios::trunc);
+		file << ini;
+		if (!file) {
+			return("SPAWN.INI could not be written to " + spawn_path + ".");
+		}
+	}
+
+#if defined(_WIN32)
+	char exe[MAX_PATH];
+	DWORD const length = GetModuleFileNameA(nullptr, exe, MAX_PATH);
+	if (length == 0 || length >= MAX_PATH) {
+		return("The game's own path could not be read.");
+	}
+	std::string command = "\"" + std::string(exe) + "\" -SPAWN -MULTIINSTANCE";
+	if (!Data_Directory().empty()) {
+		command += " \"-DATADIR=" + Without_Separator(Data_Directory()) + "\"";
+	}
+	if (!User_Directory().empty()) {
+		command += " \"-USERDIR=" + Without_Separator(User_Directory()) + "\"";
+	}
+	for (std::string const & mod : Command_Line_Mods()) {
+		command += " \"-MOD=" + mod + "\"";
+	}
+	if (WindowedMode) {
+		command += " -WIN";
+	}
+	if (!Setup.MatchArguments.empty()) {
+		command += " " + Setup.MatchArguments;
+	}
+	std::vector<char> line(command.begin(), command.end());
+	line.push_back('\0');
+
+	STARTUPINFOA startup{};
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION process{};
+	if (!CreateProcessA(exe, line.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup, &process)) {
+		return("The match could not start (error " + std::to_string(GetLastError()) + ").");
+	}
+	CloseHandle(process.hThread);
+
+	UIWaitBoxClass box;
+	box.Show("The match is running in its own window.");
+	UIServiceCallback const * outer = UIShell.Running_Service();
+	while (WaitForSingleObject(process.hProcess, 0) == WAIT_TIMEOUT) {
+		if (outer != nullptr) {
+			(*outer)();
+		} else {
+			UI_Service_Game();
+		}
+		Service();
+		Sleep(15);
+	}
+	DWORD code = 0;
+	GetExitCodeProcess(process.hProcess, &code);
+	CloseHandle(process.hProcess);
+	box.Hide();
+	bridge.Stop();
+	return(code == 0 ? "The match has ended." : "The match ended with exit code " + std::to_string(code) + ".");
+#else
+	bridge.Stop();
+	return("Starting a match from the built-in lobby needs Windows for now.");
+#endif
+}
+
 }
 
 
@@ -653,15 +803,23 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 
 	// The outer screen's service keeps the window answering messages while the room runs.
 	UIServiceCallback const * outer = UIShell.Running_Service();
+	// A guest's screen closes when the host's start message arrives.
 	UIShell.Run_Modal(*view, [&service, outer](void) {
 		bool const ended = outer != nullptr ? (*outer)() : UI_Service_Game();
-		return(!service.Service() || ended);
+		return(!service.Service() || ended || service.Room().Status() == CnCNetRoomStatus::STARTING);
 	});
+	view.reset();
 
 	UICnCNetRoomResult result;
-	if (presenter.Choice == UI_NET_GO) {
+	if (presenter.Choice == UI_NET_GO && setup.Host) {
+		std::string error;
+		if (!service.Begin_Match(error)) {
+			result.Reason = error;
+		}
+	}
+	if (service.Room().Status() == CnCNetRoomStatus::STARTING) {
 		result.Started = true;
-		result.Reason = "Starting games through the built-in lobby comes in a later build.";
+		result.Reason = service.Play_Match();
 	}
 	service.Close("You left the room.");
 	if (result.Reason.empty()) {

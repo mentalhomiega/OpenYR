@@ -1,0 +1,26 @@
+; The guest half of cncnet-match-host.txt; see that file for how to run both.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui set password test
+ui wait 14000
+ui shot match-guest-lobby
+ui choose Commander's game
+ui wait 1000
+ui press Join
+ui wait 6000
+ui press Accept
+ui wait 3000
+ui shot match-guest-ready
+ui wait 120000
+ui shot match-guest-after
+ui press Cancel
+ui wait 1500
+ui press Back
+ui wait 1500
+ui press OK
+ui wait 1000
+ui quit

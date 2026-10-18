@@ -176,7 +176,7 @@
 
 #chattabs button.tab.unread
 {
-	font-style: italic;
+	font-weight: bold;
 }
 
 #closetab { margin-left: auto; }
@@ -213,9 +213,10 @@
 #chat .time { color: #9ab08a; margin-right: 4dp; }
 #chat .nick { font-weight: bold; }
 #chat .own .nick { text-decoration: underline; }
-#chat .notice { font-style: italic; }
-#chat .action { font-style: italic; }
-#chat .system { color: #c8c8c8; font-style: italic; }
+/* The UI fonts have no italic face, and RmlUi draws nothing for a face it cannot find. */
+#chat .notice { color: #e0d090; }
+#chat .action { color: #a8d0f0; }
+#chat .system { color: #c8c8c8; }
 
 #userside
 {

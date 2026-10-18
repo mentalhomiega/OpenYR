@@ -176,6 +176,13 @@ bool UI_CnCNet_Lobby_Dialog(void)
 
 	UICnCNetLobbyPresenterClass presenter(session, chat);
 	std::unique_ptr<UIViewClass> view = UI_CnCNet_Lobby_View(presenter);
+	// Matches play through this relay. Like the servers, it must be on this machine unless live servers are allowed.
+	std::string tunnel = Setting("Tunnel", "127.0.0.1:50000");
+	if (!live && !Is_Loopback(tunnel.substr(0, tunnel.rfind(':')))) {
+		session.Note(chat, "Tunnel=" + tunnel + " is not on this machine, so matches use 127.0.0.1:50000.");
+		tunnel = "127.0.0.1:50000";
+	}
+
 	std::mt19937 random{std::random_device{}()};
 	for (;;) {
 		UI_Run_Modal(*view);
@@ -194,6 +201,8 @@ bool UI_CnCNet_Lobby_Dialog(void)
 		setup.RoomName = setup.Nick + "'s game";
 		setup.GameVersion = version;
 		setup.BroadcastChannel = config.Lobby.BroadcastChannel;
+		setup.Tunnel = tunnel;
+		setup.MatchArguments = Setting("MatchArguments", "");
 
 		UICnCNetRoomResult const result = UI_CnCNet_Room_Dialog(session, setup);
 		if (!result.Reason.empty()) {

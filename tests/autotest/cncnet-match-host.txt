@@ -1,0 +1,33 @@
+; Hosting a match through the built-in CnCNet lobby, with a second copy joining as the guest
+; (cncnet-match-guest.txt). Both copies need the IRC stand-in and the relay on this machine:
+;   python -I scripts/cncnet_irc_standin.py --port 16668 --bots 0 --game-version 9.3.5
+;   python -I <workspace>/scripts/cncnet_tunnel_relay.py --relay-port 50000
+; Run this copy and the guest copy at the same time, each from its own build folder, with
+;   -Menus -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668`nTunnel=127.0.0.1:50000`nMatchArguments=-AUTOTEST=<path to cncnet-match-child.txt>"
+; The path in MatchArguments must have no spaces. The host takes the nick Commander and the
+; guest Commander_. Each copy writes SPAWN.INI and starts the match in a child copy, which logs
+; CNCNET_MATCH_FRAME_0 and _300 and quits at frame 600; the same session identity in both
+; children's [Spawner] lines shows they played one match.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui set password test
+ui wait 500
+ui press Host game
+ui wait 36000
+ui shot match-host-room
+ui press Go!
+ui wait 5000
+ui shot match-host-waiting
+ui wait 100000
+ui shot match-host-after
+ui press Cancel
+ui wait 1500
+ui press Back
+ui wait 1500
+ui press OK
+ui wait 1000
+ui quit
