@@ -589,7 +589,7 @@ void IonStormClass::Lightning_Bolt(Cell cell)
 		Explosion_Damage(coord, damage, NULL, Rule->IonStormWarhead);
 
 		if (building != cellptr->Cell_Building() || techno != cellptr->Cell_Techno() || cellptr->Height != cell_height || debris == true) {
-			int count = Random_Pick(2, 6);
+			int count = Random_Pick(2, 4);
 			for (i = 0; i < count; i++) {
 				//new AnimClass(Rule->MetallicDebris.Random_Pick(Scen->RandomNumber), coord);
 				new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count()-1)], coord);
