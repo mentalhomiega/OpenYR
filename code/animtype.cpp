@@ -428,7 +428,8 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 			Load_Image(THEATER_NONE);
 		}
 
-		Sound = ArtINI.Get_VocType(Name(), "Report", Sound);
+		StartSound = ini.Get_VocType(Name(), "StartSound", StartSound);
+		Sound = StartSound != VOC_NONE ? StartSound : ArtINI.Get_VocType(Name(), "Report", Sound);
 		IsAltPalette = ArtINI.Get_Bool(Name(), "AltPalette", IsAltPalette);
 		char palette[64];
 		ArtINI.Get_String(Name(), "CustomPalette", CustomPalette.c_str(), palette, sizeof(palette));
@@ -523,7 +524,6 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		YDrawOffset = ini.Get_Int(Name(), "YDrawOffset", YDrawOffset);
 		ZAdjust = ini.Get_Int(Name(), "ZAdjust", ZAdjust);
 
-		StartSound = ini.Get_VocType(Name(), "StartSound", StartSound);
 		BounceSound = ini.Get_VocType(Name(), "BounceSound", BounceSound);
 		ExpireSound = ini.Get_VocType(Name(), "ExpireSound", ExpireSound);
 

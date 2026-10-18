@@ -52,6 +52,11 @@ AudioHandle Sound_Effect(VocType voc, float volume = 1.0f, int pan = SOUND_PAN_C
 // is on screen, and kept so while it plays.
 AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle = nullptr);
 
+// A sound at a place, like the one above, but its level and pan are set once, when it starts,
+// and it is not tracked as the view moves. An endless loop plays until its handle ends it.
+// An animation's start sound uses this, as gamemd's VocClass::PlayAt sets it once.
+AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * handle = nullptr);
+
 // Spoken responses; the sound effect option does not scale them.
 AudioHandle Voice_Sound_Effect(VocType voc, float volume = 1.0f);
 

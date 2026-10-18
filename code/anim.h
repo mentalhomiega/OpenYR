@@ -33,6 +33,7 @@
 #pragma once
 
 #include "animtype.h"
+#include "audio/audiohandle.h"
 #include "bounce.h"
 #include "coord.h"
 #include "object.h"
@@ -318,6 +319,13 @@ class AnimClass : public ObjectClass, public StageClass
 		 * local player, so it is recomputed each frame and kept out of saves and the checksum.
 		 */
 		bool IsPsychicHidden;
+
+		/*
+		 * The start sound this animation is playing, or null. Starting again re-aims a live sound
+		 * instead of playing a second copy, and the handle ends a loop when the animation is deleted.
+		 * It is not saved, so a loaded animation holds a null handle.
+		 */
+		AudioHandle StartSoundHandle;
 };
 
 void Shorten_Attached_Anims(ObjectClass * obj);

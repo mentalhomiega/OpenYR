@@ -95,8 +95,8 @@ class AnimTypeClass : public ObjectTypeClass
 		int Loops;
 
 		/*
-		**	This is the sound effect to play when this animation starts. Usually, this
-		**	applies to explosion animations.
+		**	This is the sound effect to play when this animation starts: StartSound if it
+		**	names one, otherwise Report. Usually, this applies to explosion animations.
 		*/
 		VocType Sound;
 
@@ -156,7 +156,7 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		int SpawnCount;
 
-		/// Unused
+		// The StartSound= key. Sound takes it over from Report= when it names a sound.
 		VocType StartSound;
 
 		/*
