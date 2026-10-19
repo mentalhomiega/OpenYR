@@ -65,6 +65,10 @@ class DeploymentConfigClass
 		std::string ExpandPrefixes = "EXPANDMD";
 		std::string CachePrefixes = "ECACHE";
 
+		// Does the title menu follow the button actions of the UI file's [UISettings]? A mod written
+		// for a launcher that supplies its own menus can turn this off to keep every button.
+		bool FollowMenuButtons = true;
+
 		// The file a player's own settings are read from and written back to.
 		std::string SettingsFile = "RA2MD.INI";
 

@@ -96,6 +96,20 @@ bool UIControlsClass::Read_INI(CCINIClass const & ini)
 		ColorBlindSafeColors[seat] = ini.Get_RGBClass(COLORBLIND_SAFE, STOCK_KEYS[seat], ColorBlindSafeColors[seat]);
 	}
 
+	// The title menu buttons, in UIMenuButtonType order.
+	static char const * const BUTTON_KEYS[UI_BUTTON_COUNT] = {
+		"SinglePlayerButton", "NetworkButton", "WWOnlineButton", "MoviesAndCreditsButton", "CampaignButton",
+		"SkirmishButton", "SneakPeeksButton", "PlayMoviesButton", "ViewCreditsButton"};
+	static char const * const ACTION_NAMES[] = {"default", "disable", "hide", "message", "credits", "sneakpeek"};
+	for (int button = 0; button < UI_BUTTON_COUNT; button++) {
+		std::string const action = ini.Get_String("UISettings", BUTTON_KEYS[button]);
+		for (int kind = 0; kind < (int)(sizeof(ACTION_NAMES) / sizeof(ACTION_NAMES[0])); kind++) {
+			if (_stricmp(action.c_str(), ACTION_NAMES[kind]) == 0) {
+				MenuButtonActions[button] = (UIMenuActionType)kind;
+			}
+		}
+	}
+
 	// A missing section keeps its list; an empty one clears it.
 	if (ini.Is_Present("AdvancedCommandBar")) {
 		CommandBarButtons = Split_Button_List(ini.Get_String("AdvancedCommandBar", "ButtonList"));

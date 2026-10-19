@@ -3089,18 +3089,70 @@ static void Show_Title_Badges(UIMenuState & menu)
 }
 
 
+// The action the UI file's [UISettings] gives a title menu button, unless the deployment turns the actions off.
+static UIMenuActionType Button_Action(UIMenuButtonType button)
+{
+	return(DeploymentConfig.FollowMenuButtons ? UIControls.MenuButtonActions[button] : UI_ACTION_DEFAULT);
+}
+
+
+// Adds a title menu button unless its action hides it, and shows it disabled when its action disables it.
+static void Add_Button(UIMenuState & menu, UIMenuButtonType button, char const * label, char const * fallback, int selection, bool enabled)
+{
+	UIMenuActionType const action = Button_Action(button);
+	if (action == UI_ACTION_HIDE) {
+		return;
+	}
+	menu.Items.push_back(UIMenuItemType{Menu_Text(label, fallback), selection, enabled && action != UI_ACTION_DISABLE});
+}
+
+
+// Carries out the action a button was given when the player picks it. A message button shows its text and
+// returns SEL_NONE so that the same menu shows again; the credits and sneak peek buttons start those movies.
+static int Button_Choice(UIMenuButtonType button, char const * message_label, int choice)
+{
+	switch (Button_Action(button)) {
+		case UI_ACTION_MESSAGE: {
+			std::string const text = StringTable.Find_UTF8(message_label);
+			WWMessageBox().Process(text.empty() ? message_label : text.c_str(), TXT_OK);
+			return(SEL_NONE);
+		}
+
+		case UI_ACTION_CREDITS:
+			return(SEL_VIEW_CREDITS);
+
+		case UI_ACTION_SNEAK_PEEK:
+			return(SEL_INTRO);
+
+		default:
+			return(choice);
+	}
+}
+
+
 static int Single_Player_Menu(void)
 {
-	UIMenuState menu;
-	menu.Kind = UI_MENU_SINGLE_PLAYER;
-	menu.Title = Menu_Text("GUI:SinglePlayerMenu", "Single Player");
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:NewCampaign", "New Campaign"), SEL_CAMPAIGN_GAME, true});
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
-	menu.Items.push_back(Back_Item());
-	Show_Title_Badges(menu);
-	UI_Menu_Place(menu);
-	return(UI_Menu_Dialog(menu, MENU_BACK));
+	while (true) {
+		UIMenuState menu;
+		menu.Kind = UI_MENU_SINGLE_PLAYER;
+		menu.Title = Menu_Text("GUI:SinglePlayerMenu", "Single Player");
+		Add_Button(menu, UI_BUTTON_CAMPAIGN, "GUI:NewCampaign", "New Campaign", SEL_CAMPAIGN_GAME, true);
+		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+		Add_Button(menu, UI_BUTTON_SKIRMISH, "GUI:Skirmish", "Skirmish", MENU_SKIRMISH, true);
+		menu.Items.push_back(Back_Item());
+		Show_Title_Badges(menu);
+		UI_Menu_Place(menu);
+
+		int choice = UI_Menu_Dialog(menu, MENU_BACK);
+		if (choice == SEL_CAMPAIGN_GAME) {
+			choice = Button_Choice(UI_BUTTON_CAMPAIGN, "TXT_CAMPAIGNBUTTON_MSG", choice);
+		} else if (choice == MENU_SKIRMISH) {
+			choice = Button_Choice(UI_BUTTON_SKIRMISH, "TXT_SKIRMISHBUTTON_MSG", choice);
+		}
+		if (choice != SEL_NONE) {
+			return(choice);
+		}
+	}
 }
 
 
@@ -3110,18 +3162,28 @@ static int Movies_Menu(void)
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MOVIES;
 		menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
+		Add_Button(menu, UI_BUTTON_SNEAK_PEEKS, "GUI:SneakPeeks", "Sneak Peeks", SEL_INTRO, true);
+		Add_Button(menu, UI_BUTTON_PLAY_MOVIES, "GUI:PlayMovies", "Play Movies", MENU_PLAY_MOVIES, true);
+		Add_Button(menu, UI_BUTTON_VIEW_CREDITS, "GUI:ViewCredits", "View Credits", SEL_VIEW_CREDITS, true);
 		menu.Items.push_back(Back_Item());
 		Show_Title_Badges(menu);
 		UI_Menu_Place(menu);
 
-		int const choice = UI_Menu_Dialog(menu, MENU_BACK);
-		if (choice != MENU_PLAY_MOVIES) {
+		int choice = UI_Menu_Dialog(menu, MENU_BACK);
+		if (choice == SEL_INTRO) {
+			choice = Button_Choice(UI_BUTTON_SNEAK_PEEKS, "TXT_SNEAKPEEKSBUTTON_MSG", choice);
+		} else if (choice == MENU_PLAY_MOVIES) {
+			choice = Button_Choice(UI_BUTTON_PLAY_MOVIES, "TXT_PLAYMOVIESBUTTON_MSG", choice);
+			if (choice == MENU_PLAY_MOVIES) {
+				UI_Movies_Dialog();
+			}
+			continue;
+		} else if (choice == SEL_VIEW_CREDITS) {
+			choice = Button_Choice(UI_BUTTON_VIEW_CREDITS, "TXT_VIEWCREDITSBUTTON_MSG", choice);
+		}
+		if (choice != SEL_NONE) {
 			return(choice);
 		}
-		UI_Movies_Dialog();
 	}
 }
 
@@ -3193,10 +3255,10 @@ int Main_Menu(unsigned int timeout)
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MAIN;
 		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
+		Add_Button(menu, UI_BUTTON_SINGLE_PLAYER, "GUI:SinglePlayer", "Single Player", MENU_SINGLE_PLAYER, true);
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
+		Add_Button(menu, UI_BUTTON_NETWORK, "GUI:Network", "Network", MENU_NETWORK, true);
+		Add_Button(menu, UI_BUTTON_MOVIES_AND_CREDITS, "GUI:MoviesAndCredits", "Movies & Credits", MENU_MOVIES, true);
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
 		if (Options.IsClassicMenus) {
@@ -3212,9 +3274,17 @@ int Main_Menu(unsigned int timeout)
 		}
 
 		if (choice == MENU_SINGLE_PLAYER) {
-			choice = Single_Player_Menu();
+			choice = Button_Choice(UI_BUTTON_SINGLE_PLAYER, "TXT_SINGLEPLAYERBUTTON_MSG", choice);
+			if (choice == MENU_SINGLE_PLAYER) {
+				choice = Single_Player_Menu();
+			}
+		} else if (choice == MENU_NETWORK) {
+			choice = Button_Choice(UI_BUTTON_NETWORK, "TXT_NETWORKBUTTON_MSG", choice);
 		} else if (choice == MENU_MOVIES) {
-			choice = Movies_Menu();
+			choice = Button_Choice(UI_BUTTON_MOVIES_AND_CREDITS, "TXT_MOVIESANDCREDITSBUTTON_MSG", choice);
+			if (choice == MENU_MOVIES) {
+				choice = Movies_Menu();
+			}
 		}
 
 		retval = Menu_Selection(choice);
