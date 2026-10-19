@@ -77,6 +77,13 @@ namespace WarheadRules
 		return(duration > 0 ? (int)(duration * modifier) : duration);
 	}
 
+	// Whether an Abductor weapon takes a target with this much strength left: at or below the weapon's
+	// Abductor.AbductBelowPercent of the target's maximum strength.
+	inline bool Abducts_At(int strength, int max_strength, double below_percent)
+	{
+		return(max_strength > 0 && (double)strength / (double)max_strength <= below_percent);
+	}
+
 	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
 	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
 	// ProtectedDriver.MinHealth.

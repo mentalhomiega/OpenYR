@@ -8749,6 +8749,54 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 
 
 /// <summary>
+/// Pulls the target into this transport's hold instead of damaging it, as an Abductor=yes weapon does
+/// (Ares). The target must be infantry or a vehicle that is not ImmuneToAbduction, is not under the
+/// Iron Curtain, has no more strength left than Abductor.AbductBelowPercent allows, and fits the hold
+/// under the same rules as a loading passenger. A target that cannot be taken is left alone, so the
+/// shot deals its ordinary damage.
+/// </summary>
+/// <param name="target">The object the shot hit.</param>
+/// <param name="weapon">The Abductor weapon that was fired.</param>
+/// <returns>bool; Is the target now a passenger of this transport?</returns>
+bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	FootClass * victim = dynamic_cast<FootClass *>(target);
+	if (weapon == NULL || !weapon->IsAbductor || victim == NULL || victim == this) return(false);
+	if (!IsActive || IsInLimbo || (RTTI != RTTI_UNIT && RTTI != RTTI_AIRCRAFT) || TClass->Max_Passengers() <= 0) return(false);
+	if (!victim->IsActive || victim->IsInLimbo || victim->Strength <= 0) return(false);
+	if (victim->RTTI != RTTI_INFANTRY && victim->RTTI != RTTI_UNIT) return(false);
+	if (victim->TClass->IsImmuneToAbduction || victim->Is_Iron_Curtained()) return(false);
+	if (!WarheadRules::Abducts_At(victim->Strength, victim->TClass->MaxStrength, weapon->AbductBelowPercent)) return(false);
+	if (!Can_Fit_Passenger(victim)) return(false);
+
+	if (weapon->AbductAnim != NULL) {
+		new AnimClass(weapon->AbductAnim, victim->Center_Coord());
+	}
+	if (weapon->IsAbductChangeOwner && !victim->Is_Immune_To_Psionics()) {
+		victim->Set_Owning_House(House, false);
+	}
+
+	victim->Remove_From_Team();
+	victim->Assign_Target(NULL);
+	victim->Assign_Destination(NULL);
+	if (victim->In_Radio_Contact()) {
+		victim->Transmit_Message(RADIO_OVER_OUT);
+	}
+	victim->Limbo();
+	Cargo.Attach(victim);
+	if (TClass->IsGunner && Cargo.How_Many() == 1) {
+		Receive_Gunner(victim);
+	}
+	Play_Transport_Sound(true);
+	victim->Hidden();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST abducted %s into %s, owner %s, %d of %d room used\n", victim->TClass->Name(), TClass->Name(), victim->House->Class->Name(), Cargo.Total_Size(), TClass->Max_Passengers());
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Whether this transport accepts the passenger: not one under mind control, as in Yuri's
 /// Revenge; its kind against IsVehicleTransport; and its Size against both the room left in
 /// the hold and this transport's SizeLimit.

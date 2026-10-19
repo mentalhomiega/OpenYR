@@ -807,6 +807,7 @@ class TechnoClass :	public RadioClass,
 		double Area_Modify(Cell const & cell) const;
 		void Base_Is_Attacked(TechnoClass const * enemy);
 		void Kill_Cargo(TechnoClass * source);
+		bool Abduct(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;

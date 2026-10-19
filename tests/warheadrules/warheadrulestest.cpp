@@ -116,6 +116,17 @@ void Test_Urban_Combat(void)
 	Check(WarheadRules::Urban_Combat_Damage(10, 1.5) == 15, "a multiplier above 100% raises the damage");
 }
 
+
+void Test_Abduction_Health(void)
+{
+	Check(WarheadRules::Abducts_At(125, 125, 1.0), "a full-strength target passes at 100%");
+	Check(!WarheadRules::Abducts_At(125, 125, 0.5), "a full-strength target fails at 50%");
+	Check(WarheadRules::Abducts_At(62, 125, 0.5), "a target just under half passes at 50%");
+	Check(WarheadRules::Abducts_At(50, 100, 0.5), "a target at exactly 50% passes at 50%");
+	Check(!WarheadRules::Abducts_At(51, 100, 0.5), "a target just over 50% fails at 50%");
+	Check(!WarheadRules::Abducts_At(10, 0, 1.0), "a target with no maximum strength is never taken");
+}
+
 }
 
 
@@ -126,6 +137,7 @@ int main(void)
 	Test_Driver_Protection();
 	Test_Driver_Kill_Threshold();
 	Test_Iron_Curtain_Duration();
+	Test_Abduction_Health();
 	Test_Urban_Combat();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);

@@ -91,6 +91,10 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	RadLevel(0),
 	IsLimboLaunch(false),
 	IsFireOnce(false),
+	IsAbductor(false),
+	AbductBelowPercent(1.0),
+	AbductAnim(NULL),
+	IsAbductChangeOwner(false),
 	OpenToppedAnim(NULL),
 	OccupantAnim(NULL),
 	AssaultAnim(NULL),
@@ -236,6 +240,10 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		RadLevel = ini.Get_Int(IniName, "RadLevel", RadLevel);
 		IsLimboLaunch = ini.Get_Bool(IniName, "LimboLaunch", IsLimboLaunch);
 		IsFireOnce = ini.Get_Bool(IniName, "FireOnce", IsFireOnce);
+		IsAbductor = ini.Get_Bool(IniName, "Abductor", IsAbductor);
+		AbductBelowPercent = ini.Get_Float(IniName, "Abductor.AbductBelowPercent", AbductBelowPercent);
+		AbductAnim = TGet_Class(ini, IniName, "Abductor.Anim", AbductAnim);
+		IsAbductChangeOwner = ini.Get_Bool(IniName, "Abductor.ChangeOwner", IsAbductChangeOwner);
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		OccupantAnim = TGet_Class(ini, IniName, "OccupantAnim", OccupantAnim);
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
@@ -502,6 +510,10 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDrainWeapon);
 	stream.Serialize(IsAlternateColor);
 	stream.Serialize(IsIonSensitive);
+	stream.Serialize(IsAbductor);
+	stream.Serialize(AbductBelowPercent);
+	stream.Serialize(AbductAnim);
+	stream.Serialize(IsAbductChangeOwner);
 }
 
 

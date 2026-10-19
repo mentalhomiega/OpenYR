@@ -309,6 +309,18 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Does the firer drop its target after one shot?
 		bool IsFireOnce;
+
+		// Abductor (Ares): a hit pulls an eligible target into the firer's passenger hold instead of damaging it.
+		bool IsAbductor;
+
+		// Abductor.AbductBelowPercent (Ares): the largest share of its maximum strength a target may have left to be abducted.
+		double AbductBelowPercent;
+
+		// Abductor.Anim (Ares): played where the target was taken from.
+		AnimTypeClass const * AbductAnim;
+
+		// Abductor.ChangeOwner (Ares): does the target change to the firer's house?
+		bool IsAbductChangeOwner;
 		AnimTypeClass const * OpenToppedAnim;
 
 		// Played at the muzzle of a garrisoned structure each time an occupant fires this weapon.

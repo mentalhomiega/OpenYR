@@ -18,6 +18,11 @@ keys:
   - OpenToppedAnim
   - OpenToppedDamageMultiplier
   - OpenToppedRangeBonus
+  - Abductor
+  - Abductor.AbductBelowPercent
+  - Abductor.Anim
+  - Abductor.ChangeOwner
+  - ImmuneToAbduction
 ---
 
 A vehicle or aircraft with a [`Passengers`](/keys/passengers/) budget above zero is a transport. A structure or infantry type that sets `Passengers` admits nobody, except a structure with [`InfantryAbsorb=yes`](/keys/infantryabsorb/) or [`UnitAbsorb=yes`](/keys/unitabsorb/), which its owner's infantry or vehicles can enter. A player can order infantry and vehicles aboard a transport, but not aircraft.
@@ -58,6 +63,10 @@ An ordered passenger moves onto the cell the transport stands on and is tested a
 Several passengers can be sent to a transport that has room for only one of them. Only those that still fit when they arrive get in.
 
 A passenger that passes is taken off the map into the hold. An infantry passenger that is refused steps aside and stands guard.
+
+## Abduction
+
+A weapon with [`Abductor=yes`](/keys/abductor/) takes the infantry or vehicle it hits aboard the firing vehicle or aircraft. The target is admitted by the size and mind-control tests of [Being admitted](#being-admitted), with no tests of ownership, so enemy units can be taken. [`ImmuneToAbduction=yes`](/keys/immunetoabduction/) and the Iron Curtain protect a target. A target that is refused takes the hit's ordinary damage.
 
 ## Unloading
 

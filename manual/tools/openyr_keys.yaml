@@ -76,6 +76,7 @@ records:
   ui-documents-replace-dialogs: OpenTS
   # Keys we read as the Ares or Phobos documentation describes them.
   ares-superweapon-keys: Ares
+  added-abductor: Ares
   added-affectsenemies: Ares
   added-altcameopcx: Ares
   added-immunetoabduction: Ares

@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 224 entries
+- [Rules](#rules): 228 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -120,7 +120,7 @@ Bounty.Value=200
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
-| [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | Parsed marker that an Abductor weapon would not take this object aboard; no weapon in the engine abducts yet. | Ares |
+| [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | With yes, an Abductor weapon cannot take this object aboard and deals its ordinary damage instead. | Ares |
 | [`ImmuneToEMP`](../manual/content/keys/immunetoemp.md) | A BuildingType or UnitType uses its `IsCoreDefender=` value. Every other type uses `no` | Stops an EM pulse from stunning, powering off, downing or destroying objects of this type. | OpenTS |
 | [`Insignia`](../manual/content/keys/insignia.md) | `PIPS.SHP` | The shape file that supplies the rank insignia frames of an object type, for all three ranks at once. | Ares, Phobos |
 | [`Insignia.ShowEnemy`](../manual/content/keys/insignia.showenemy.md) | [General] EnemyInsignia, which is yes when it is also absent | Whether a player not allied with the owner sees this object type's rank insignia. | Ares, Phobos |
@@ -312,6 +312,10 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Abductor`](../manual/content/keys/abductor.md) | `no` | With yes, a hit from this weapon pulls its target into the firer's passenger hold instead of damaging it. | Ares |
+| [`Abductor.AbductBelowPercent`](../manual/content/keys/abductor.abductbelowpercent.md) | `100%` | The largest share of its strength a target may have left for an Abductor weapon to take it. | Ares |
+| [`Abductor.Anim`](../manual/content/keys/abductor.anim.md) | `none` | The animation an Abductor weapon plays where it takes its target from. | Ares |
+| [`Abductor.ChangeOwner`](../manual/content/keys/abductor.changeowner.md) | `no` | With yes, an object an Abductor weapon takes aboard changes to the firer's house. | Ares |
 | [`Emissive`](../manual/content/keys/emissive--weapontype.md) | Computed; see the page | `Emissive` on a weapon sets the strength of the beam or electric bolt the weapon draws. | OpenYR |
 
 ### [AI]
