@@ -16,7 +16,7 @@ values:
   - { constant: SPEED_WINGED, value: 4, input: "Winged", meaning: "Aircraft movement." }
   - { constant: SPEED_FLOAT, value: 5, input: "Float", meaning: "Watercraft movement." }
   - { constant: SPEED_AMPHIBIOUS, value: 6, input: "Amphibious", meaning: "Amphibious movement." }
-  - { constant: SPEED_CREEP, value: 7, input: "Creep", meaning: "Creeping movement." }
+  - { constant: SPEED_FLOATBEACH, value: 7, input: "FloatBeach", meaning: "Movement that reads the `FloatBeach=` figure of each land section." }
 ---
 
 A speed type picks the column of the [terrain table](/systems/movement-and-terrain/#the-terrain-table) that an object reads. The table is one `rules.ini` section per [land type](/reference/enums/land-type/), such as `[Clear]`, `[Road]` or `[Water]`. Each section holds one entry per speed type, named by the tokens below, beside its [`Buildable`](/keys/buildable/) setting. The terrain table section explains what each entry does.
