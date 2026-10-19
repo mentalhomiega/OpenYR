@@ -36,8 +36,8 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 300 entries
-- [Art](#art): 6 entries
+- [Rules](#rules): 332 entries
+- [Art](#art): 7 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
@@ -72,6 +72,7 @@ Bounty.Value=200
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`LightningRod.Modifier`](../manual/content/keys/lightningrod.modifier--buildingtype.md) | `1.0` | Scales the damage a lightning storm bolt does to a structure with LightningRod=yes. | Ares |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
+| [`SolidHeight`](../manual/content/keys/solidheight.md) | 0, so the building is not solid | How many cells of a building's height stop a SubjectToBuildings projectile. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
 | [`SuperWeapons`](../manual/content/keys/superweapons--buildingtype.md) | `none` | The superweapons a structure grants, or the house intelligence level at which a computer house fires them. | Ares |
 | [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
@@ -82,6 +83,11 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AirburstSpread`](../manual/content/keys/airburstspread.md) | not set, so an Airburst projectile splits as `Splits` describes | Makes an Airburst projectile fire its AirburstWeapon at every cell within this many cells of the burst. | Ares |
+| [`AroundTarget`](../manual/content/keys/aroundtarget.md) | Depends; see the page | Whether the bomblets of a splitting or spreading projectile are placed around its target or around the point it burst at. | Ares |
+| [`BallisticScatter.Max`](../manual/content/keys/ballisticscatter.max.md) | the `[CombatDamage]` `BallisticScatter` value | The most a projectile type moves the aim point of an inaccurate arcing shot, in cells. | Ares |
+| [`BallisticScatter.Min`](../manual/content/keys/ballisticscatter.min.md) | Depends; see the page | The least a projectile type moves the aim point of an inaccurate arcing shot, in cells. | Ares |
+| [`SubjectToBuildings`](../manual/content/keys/subjecttobuildings.md) | `no` | Makes a projectile explode on a building that is solid to it, so that it cannot fly through. | Ares |
 | [`SubjectToTrenches`](../manual/content/keys/subjecttotrenches.md) | `yes` | With no, every shot of this projectile at a structure with UC.PassThrough passes through to its occupants. | Ares |
 
 ### HouseType
@@ -129,9 +135,10 @@ Bounty.Value=200
 | [`Crashable`](../manual/content/keys/crashable--aircrafttype.md) | `yes` | Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed. | Ares, Phobos |
 | [`EMP.Modifier`](../manual/content/keys/emp.modifier.md) | 1.0, so the stun lasts the pulse's full duration | Scales how long an EM pulse stuns this object. | Ares |
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
+| [`ForceShield.Modifier`](../manual/content/keys/forceshield.modifier.md) | `1` | Multiplies the length of a Force Shield put on an object of this type; 0 or less makes it immune. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
-| [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | Parsed marker that an Abductor weapon would not take this object aboard; no weapon in the engine abducts yet. | Ares |
+| [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | With yes, an Abductor weapon cannot take this object aboard and deals its ordinary damage instead. | Ares |
 | [`ImmuneToEMP`](../manual/content/keys/immunetoemp.md) | A BuildingType or UnitType uses its `IsCoreDefender=` value. Every other type uses `no` | Stops an EM pulse from stunning, powering off, downing or destroying objects of this type. | OpenTS |
 | [`Insignia`](../manual/content/keys/insignia.md) | `PIPS.SHP` | The shape file that supplies the rank insignia frames of an object type, for all three ranks at once. | Ares, Phobos |
 | [`Insignia.ShowEnemy`](../manual/content/keys/insignia.showenemy.md) | [General] EnemyInsignia, which is yes when it is also absent | Whether a player not allied with the owner sees this object type's rank insignia. | Ares, Phobos |
@@ -375,19 +382,43 @@ Bounty.Value=200
 | [`AttachEffect.ROFMultiplier`](../manual/content/keys/attacheffect.rofmultiplier--warheadtype.md) | `1.0` | Multiplies the reload time of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.SpeedMultiplier`](../manual/content/keys/attacheffect.speedmultiplier--warheadtype.md) | `1.0` | Multiplies the movement speed of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.TemporalHidesAnim`](../manual/content/keys/attacheffect.temporalhidesanim--warheadtype.md) | `no` | Whether an attached effect's animation is hidden while a temporal weapon warps the object out. | Ares |
+| [`EffectsRequireDamage`](../manual/content/keys/effectsrequiredamage.md) | `no` | With yes, the extra effects of a warhead reach an object only when the hit damages it by at least one point. | Ares |
+| [`EffectsRequireVerses`](../manual/content/keys/effectsrequireverses.md) | `yes` | With no, the extra effects of a warhead reach an object whose armor has a Verses of 0%. | Ares |
+| [`EMP.Cap`](../manual/content/keys/emp.cap.md) | -1, so a hit sets the stun to its duration unless the object already has more | How an EMP.Duration hit combines with the stun frames an object already has. | Ares |
+| [`EMP.Duration`](../manual/content/keys/emp.duration.md) | 0, so the warhead stuns nothing through this key | Makes a warhead stun the objects its blast damages for this many frames, or reactivate them when negative. | Ares |
 | [`InfDeathAnim`](../manual/content/keys/infdeathanim.md) | (none) | The animation an infantryman dies with when this warhead kills him, in place of InfDeath. | Ares |
 | [`KillDriver`](../manual/content/keys/killdriver.md) | `no` | With yes, a hit takes the driver of a vehicle in place of damaging it. | Ares |
 | [`KillDriver.Chance`](../manual/content/keys/killdriver.chance.md) | `100%` | The chance that a hit takes the driver of a vehicle that has met every other condition. | Ares |
 | [`KillDriver.KillBelowPercent`](../manual/content/keys/killdriver.killbelowpercent.md) | `100%` | The share of its health a vehicle must be at or below for the warhead to take its driver. | Ares |
 | [`KillDriver.Owner`](../manual/content/keys/killdriver.owner.md) | `special` | The house that takes a vehicle whose driver a KillDriver warhead killed. | Ares |
 | [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
+| [`PreImpactAnim`](../manual/content/keys/preimpactanim.md) | `NUKEBALL` for the warhead named `NUKE`, otherwise none, so the blast goes off at once | An animation played where a projectile with this warhead hits, before the blast goes off. | Ares |
 | [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
 
 ### WeaponType
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Abductor`](../manual/content/keys/abductor.md) | `no` | With yes, a hit from this weapon pulls its target into the firer's passenger hold instead of damaging it. | Ares |
+| [`Abductor.AbductBelowPercent`](../manual/content/keys/abductor.abductbelowpercent.md) | `100%` | The largest share of its strength a target may have left for an Abductor weapon to take it. | Ares |
+| [`Abductor.Anim`](../manual/content/keys/abductor.anim.md) | `none` | The animation an Abductor weapon plays where it takes its target from. | Ares |
+| [`Abductor.ChangeOwner`](../manual/content/keys/abductor.changeowner.md) | `no` | With yes, an object an Abductor weapon takes aboard changes to the firer's house. | Ares |
+| [`Beam.Color`](../manual/content/keys/beam.color.md) | `ChronoBeamColor` for a weapon whose warhead is `Temporal=yes`, otherwise `RadColor` | The colour of the radiation beam of this weapon. | Ares |
+| [`Bolt.Color1`](../manual/content/keys/bolt.color1.md) | Depends; see the page | The colour of the first strand of this weapon's electric bolt. | Ares |
+| [`Bolt.Color2`](../manual/content/keys/bolt.color2.md) | Depends; see the page | The colour of the second strand of this weapon's electric bolt. | Ares |
+| [`Bolt.Color3`](../manual/content/keys/bolt.color3.md) | The palette colour: the third strand uses colour 15 of the palette | The colour of the third strand of this weapon's electric bolt. | Ares |
 | [`Emissive`](../manual/content/keys/emissive--weapontype.md) | Computed; see the page | `Emissive` on a weapon sets the strength of the beam or electric bolt the weapon draws. | OpenYR |
+| [`IsDetachedRailgun`](../manual/content/keys/isdetachedrailgun.md) | `no` | Makes a weapon fire the railgun beam of IsRailgun without waiting for the previous beam to fade. | Ares |
+| [`IvanBomb.AttachSound`](../manual/content/keys/ivanbomb.attachsound.md) | `BombAttachSound` from `[AudioVisual]` | The sound played when a bomb this weapon plants is attached. | Ares |
+| [`IvanBomb.CanDetonateTimeBomb`](../manual/content/keys/ivanbomb.candetonatetimebomb.md) | `CanDetonateTimeBomb` from `[CombatDamage]` | Whether the player can set off a bomb this weapon plants by hand. | Ares |
+| [`IvanBomb.Damage`](../manual/content/keys/ivanbomb.damage.md) | `IvanDamage` from `[CombatDamage]` | The damage a bomb this weapon plants deals when it goes off. | Ares |
+| [`IvanBomb.Delay`](../manual/content/keys/ivanbomb.delay.md) | `IvanTimedDelay` from `[CombatDamage]` | The frames before a bomb this weapon plants goes off. | Ares |
+| [`IvanBomb.DestroysBridges`](../manual/content/keys/ivanbomb.destroysbridges.md) | `yes` | Whether a bomb this weapon plants on a bridge repair hut destroys the bridge. | Ares |
+| [`IvanBomb.Detachable`](../manual/content/keys/ivanbomb.detachable.md) | `yes` | Whether a bomb this weapon plants can be removed by a bomb disarming weapon. | Ares |
+| [`IvanBomb.DetonateOnSell`](../manual/content/keys/ivanbomb.detonateonsell.md) | no, so selling the structure removes the bomb | Whether a bomb this weapon plants goes off when the structure carrying it is sold. | Ares |
+| [`IvanBomb.Image`](../manual/content/keys/ivanbomb.image.md) | ``BOMBCURS`` | The icon file shown over an object carrying a bomb this weapon planted. | Ares |
+| [`IvanBomb.TickingSound`](../manual/content/keys/ivanbomb.tickingsound.md) | `BombTickingSound` from `[AudioVisual]` | The sound a bomb this weapon plants makes while it counts down. | Ares |
+| [`IvanBomb.Warhead`](../manual/content/keys/ivanbomb.warhead.md) | `IvanWarhead` from `[CombatDamage]` | The warhead a bomb this weapon plants goes off with. | Ares |
 
 ### [AI]
 
@@ -410,6 +441,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AlliedSolidTransparency`](../manual/content/keys/alliedsolidtransparency.md) | `no` | Lets SubjectToBuildings shots fly through solid buildings owned by the firer's allies. | Ares |
 | [`OpenTransport.DamageMultiplier`](../manual/content/keys/opentransport.damagemultiplier--global-rules.md) | `1.0` | `OpenTransport.DamageMultiplier` in `[CombatDamage]` multiplies the damage of a passenger's shots from an `OpenTopped=yes` transport, unless the passenger's own type sets ... | Phobos |
 | [`OpenTransport.RangeBonus`](../manual/content/keys/opentransport.rangebonus--global-rules.md) | `0` | `OpenTransport.RangeBonus` in `[CombatDamage]` is the range bonus, in whole cells, that a passenger adds for itself when firing from an `OpenTopped=yes` transport, unless its own ... | Phobos |
 
@@ -445,6 +477,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`CustomPalette`](../manual/content/keys/custompalette.md) | none; the animation is drawn through the shared animation palette | Names a palette file that the animation is drawn through instead of the shared animation palette. | Ares |
+| [`Damage.Delay`](../manual/content/keys/damage.delay.md) | 0, so the damage applies on every animation frame | The animation frames between two applications of an animation's Damage. | Ares |
 | [`Emissive`](../manual/content/keys/emissive--animtype.md) | Computed; see the page | `Emissive` sets how strongly the animation's picture can rise above paper white on HDR output. | OpenYR |
 
 ### Object types

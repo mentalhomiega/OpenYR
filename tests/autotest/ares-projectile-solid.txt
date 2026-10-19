@@ -1,0 +1,18 @@
+; SubjectToBuildings, SolidHeight, with the mods in tests/autotest/ares-projectile-keys (the power plant is solid up to its full height)
+; and ares-projectile-units-solid. An Apocalypse tank (FlatShellSolid, SubjectToBuildings=yes) and a flak track (FlatShellPlain)
+; each fire at an enemy barracks 6 cells east with an enemy power plant 3 cells east of them in the way (the power plant's
+; SolidHeight is -1, its whole height). Expected "detonate" lines:
+;   FlatShellSolid at x near 16266, inside the power plant's cell 63 (cells 16128 to 16383).
+;   FlatShellPlain at x 17280, the barracks' cell 67, as the shell flies over the power plant.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-solid.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-keys,E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-units-solid" -Seconds 60 -Filter "AUTOTEST detonate frame [0-9]+ FlatShell|AUTOTEST strike|Exception"
+30 command CenterBase
+100 own APOC 60 36
+101 spawn GAPOWR 63 36
+102 spawn GAPILE 66 36
+103 own HTK 60 46
+104 spawn GAPOWR 63 46
+105 spawn GAPILE 66 46
+200 strike APOC 66 36
+201 strike HTK 66 46
+400 quit

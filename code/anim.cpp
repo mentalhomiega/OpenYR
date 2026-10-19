@@ -53,6 +53,8 @@
 #include "always.h"
 
 #include "anim.h"
+#include "autotest.h"
+#include "dbgprint.h"
 #include "custompalette.h"
 
 #include "_bench.h"
@@ -1023,7 +1025,7 @@ void AnimClass::AI(void)
 			**	damaging kind of animation, then do the damage to the other
 			**	object.
 			*/
-			if (Class->Damage > 0 && !IsBouncing) {
+			if (Class->Damage > 0 && !IsBouncing && (Class->DamageDelay <= 1 || stage % Class->DamageDelay == 0)) {
 				if (Is_Target_Terrain(xObject)) {
 					Accum += Class->Damage * 5;
 				} else {
@@ -1038,6 +1040,9 @@ void AnimClass::AI(void)
 					*/
 					int damage = Accum;
 					Accum -= damage;
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST animdamage %s stage %d damage %d at %d,%d\n", Class->Name(), stage, damage, Center_Coord().X, Center_Coord().Y);
+					}
 					if (strcmp(Class->IniName, "INVISO") == 0) {
 						Explosion_Damage(Center_Coord(), damage, NULL, Rule->C4Warhead);
 					} else {

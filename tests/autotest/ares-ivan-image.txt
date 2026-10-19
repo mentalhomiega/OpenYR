@@ -1,0 +1,15 @@
+; IvanBomb.Image, with the mod in tests/autotest/ares-bomb-keys. The player's Apocalypse tank carries a BombA bomb (IvanBomb.Image=PIPS)
+; and the Rhino a BombB bomb (the BOMBCURS icon of the rules). The window shot shows the icon over each tank: the tank with the BombB
+; bomb shows the bomb icon, the other the pip frames of PIPS.SHP, stepping with the bomb's delay.
+; Run from the repository root, with -ShotDir naming the folder the shot goes to:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-ivan-image.txt -Mods <path of ares-bomb-keys> -ShotDir <folder> -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST bomb planted|Exception"
+30 command CenterBase
+100 own E1 56 36
+101 own APOC 62 36
+102 own HTNK 62 40
+105 reveal
+110 view 62 38
+120 plantbomb APOC:BombA
+120 plantbomb HTNK:BombB
+125 windowshot ivanimage
+300 quit

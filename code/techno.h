@@ -284,6 +284,9 @@ class TechnoClass :	public RadioClass,
 		HouseClass * BombHouse;
 		int BombPlantFrame;
 		int BombDetonateFrame;
+
+		// The weapon that planted the bomb, whose IvanBomb keys it follows. NULL for a bomb that follows the rules' settings alone.
+		WeaponTypeClass const * BombWeapon;
 		AudioHandle BombSound;
 
 		/*
@@ -720,7 +723,9 @@ class TechnoClass :	public RadioClass,
 		 * Is a chrono teleport holding this object? Its AI waits while the teleport runs.
 		 */
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
-		void Plant_Bomb(TechnoClass * planter);
+		void Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon = NULL);
+		int Bomb_Delay(void) const;
+		bool Can_Detonate_Bomb(void) const;
 		bool Is_Disguised_To_Player(void) const;
 		bool Looks_Friendly_To(HouseClass const * viewer) const;
 		bool Is_Bomb_Visible(void) const;
@@ -807,6 +812,7 @@ class TechnoClass :	public RadioClass,
 		double Area_Modify(Cell const & cell) const;
 		void Base_Is_Attacked(TechnoClass const * enemy);
 		void Kill_Cargo(TechnoClass * source);
+		bool Abduct(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;

@@ -4,6 +4,16 @@ summary: "How a soldier's IvanBomb weapon fixes a time bomb to its target and wh
 category: combat-targeting
 keys:
   - IvanBomb
+  - IvanBomb.Delay
+  - IvanBomb.Damage
+  - IvanBomb.Warhead
+  - IvanBomb.AttachSound
+  - IvanBomb.TickingSound
+  - IvanBomb.Image
+  - IvanBomb.Detachable
+  - IvanBomb.DetonateOnSell
+  - IvanBomb.DestroysBridges
+  - IvanBomb.CanDetonateTimeBomb
   - IvanTimedDelay
   - IvanDamage
   - IvanWarhead
@@ -34,6 +44,10 @@ IvanTimedDelay=450   ; the bomb goes off 450 frames after it is planted
 IvanDamage=450
 IvanWarhead=MyIvanWH
 ```
+
+## Settings of one weapon
+
+A weapon with an `IvanBomb=yes` warhead can write its own bomb settings, which a bomb it plants follows in place of the rules' settings: [`IvanBomb.Delay`](/keys/ivanbomb.delay/), [`IvanBomb.Damage`](/keys/ivanbomb.damage/), [`IvanBomb.Warhead`](/keys/ivanbomb.warhead/), [`IvanBomb.AttachSound`](/keys/ivanbomb.attachsound/), [`IvanBomb.TickingSound`](/keys/ivanbomb.tickingsound/), [`IvanBomb.Image`](/keys/ivanbomb.image/) and [`IvanBomb.CanDetonateTimeBomb`](/keys/ivanbomb.candetonatetimebomb/). [`IvanBomb.Detachable`](/keys/ivanbomb.detachable/) decides whether a disarming weapon can remove the bomb, [`IvanBomb.DetonateOnSell`](/keys/ivanbomb.detonateonsell/) whether selling its structure sets it off, and [`IvanBomb.DestroysBridges`](/keys/ivanbomb.destroysbridges/) whether it destroys the bridge beside a bridge repair hut. A setting a weapon does not write keeps the rules' behavior.
 
 ## The countdown
 

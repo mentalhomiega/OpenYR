@@ -119,6 +119,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	MiddleFrameWidth(0),
 	MiddleFrameHeight(0),
 	Damage(0.0),
+	DamageDelay(0),
 	Delay(1),
 	Start(0),
 	LoopStart(0),
@@ -480,6 +481,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		Damage = ini.Get_Float(Name(), "Damage", Damage);
+		DamageDelay = ini.Get_Int(Name(), "Damage.Delay", DamageDelay);
 		Start = ini.Get_Int(Name(), "Start", Start);
 		Stages = ini.Get_Int(Name(), "End", Stages);
 		LoopStart = ini.Get_Int(Name(), "LoopStart", LoopStart);
@@ -617,6 +619,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MiddleFrameWidth);
 	stream.Serialize(MiddleFrameHeight);
 	stream.Serialize(Damage);
+	stream.Serialize(DamageDelay);
 	stream.Serialize(Delay);
 	stream.Serialize(Start);
 	stream.Serialize(LoopStart);
@@ -719,6 +722,7 @@ void AnimTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsShadow);
 	crc(MiddleFrameIndex);
 	crc(Damage);
+	crc(DamageDelay);
 	crc(IsTiberiumChainReaction);
 	crc(IsHideIfNoOre);
 	crc(Delay);

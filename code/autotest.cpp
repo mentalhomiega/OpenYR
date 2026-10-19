@@ -88,6 +88,9 @@
 **	cameopcx <TypeID>		writes the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing
 **	ironcurtain <TypeID> <frames>	puts the player's objects of that type under the Iron Curtain for that many frames, as the superweapon does,
 **							and writes the frames each has left
+**	forceshield <TypeID> <frames>	puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does,
+**							and writes the frames each has left
+**	plantbomb <TypeID>:<Weapon>	the player's first infantryman plants the weapon's Ivan bomb on the player's objects of that type
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
@@ -137,7 +140,7 @@
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
-**							warhead, fired by one of the player's objects of another type, or of the named type
+**							warhead, fired by one of the player's objects of another type, or of the named type, and writes each one's strength, berzerk and stun
 **	infiltrate barracks|warfactory	marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans
 **	occupy <TypeID> x y	puts the player's infantry of that type inside the structure on that cell, without walking there
 **	rank <TypeID> <0|1|2>	makes every object of that type, whoever owns it, rookie, veteran or elite
@@ -3191,6 +3194,33 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   ironcurtain %s at %d,%d for %d: %d frames left, strength %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->Strength);
 			}
 		}
+	} else if (step.Command == "forceshield") {
+		// forceshield <TypeID> <frames>: puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does,
+		// and writes the frames each has left.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Iron_Curtain(step.X, PlayerPtr, true);
+				DebugString("AUTOTEST   forceshield %s at %d,%d for %d: %d frames left, shielded %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->IsForceShielded);
+			}
+		}
+	} else if (step.Command == "plantbomb") {
+		// plantbomb <TypeID>:<Weapon>: the first infantryman of the player plants the weapon's Ivan bomb on each of the player's objects of that type.
+		std::size_t const colon = step.Argument.find(':');
+		std::string const type_name = step.Argument.substr(0, colon);
+		WeaponTypeClass const * weapon = colon != std::string::npos ? WeaponTypeClass::Find_Or_Make(step.Argument.substr(colon + 1).c_str()) : NULL;
+		TechnoClass * planter = NULL;
+		for (int index = 0; index < Infantry.Count() && planter == NULL; index++) {
+			if (Infantry[index]->House == PlayerPtr && !Infantry[index]->IsInLimbo) {
+				planter = Infantry[index];
+			}
+		}
+		for (int index = 0; planter != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+				techno->Plant_Bomb(planter, weapon);
+			}
+		}
 	} else if (step.Command == "hurt") {
 		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.
 		int percent = step.X;
@@ -3492,7 +3522,7 @@ void Run(StepType const & step)
 			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
-				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none");
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s stun %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none", (int)techno->StunDuration);
 			}
 		}
 	} else if (step.Command == "clickcell") {

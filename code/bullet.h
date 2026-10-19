@@ -109,6 +109,7 @@ class BulletClass : public ObjectClass
 		void Shrapnel(void);
 		void Nuke_Maker(void);
 		bool Start_Nuke_Blast(void);
+		bool Start_Pre_Impact_Anim(void);
 
 		/*
 		**	If this bullet is forced to be inaccurate because of some outside means. A tank

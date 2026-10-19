@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Each shot draws a beam from the firing position to the target's center for 15 frames. The beam is a vertical wave, one cycle per 180 leptons of beam and two on a shorter beam, whose height grows to 40 leptons by its last frame; the wave's peaks are drawn brightest. The beam takes [`RadColor`](/keys/radcolor/), or [`ChronoBeamColor`](/keys/chronobeamcolor/) when the weapon's warhead is [`Temporal=yes`](/keys/temporal/). The beam is drawn only; the shot's projectile still carries the damage.
+Each shot draws a beam from the firing position to the target's center for 15 frames. The beam is a vertical wave, one cycle per 180 leptons of beam and two on a shorter beam, whose height grows to 40 leptons by its last frame; the wave's peaks are drawn brightest. The beam takes [`Beam.Color`](/keys/beam.color/) when the weapon sets it, otherwise [`RadColor`](/keys/radcolor/), or [`ChronoBeamColor`](/keys/chronobeamcolor/) when the weapon's warhead is [`Temporal=yes`](/keys/temporal/). The beam is drawn only; the shot's projectile still carries the damage.
 
 ```ini title="rulesmd.ini"
 [MyRadBeam] ; example Weapon

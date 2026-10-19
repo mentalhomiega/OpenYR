@@ -397,6 +397,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsMobileStealth(false),
 	IsJuggernaut(false),
 	IsCoreDefender(false),
+	SolidHeight(0),
 	IsBarrelAnimAVoxel(false),
 	BarrelAnimZAdjust(-21),
 	IsTurretAnimExclusive(false),
@@ -1366,6 +1367,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsMobileStealth = ini.Get_Bool(Name(), "IsMobileStealth", IsMobileStealth);
 		IsJuggernaut = ini.Get_Bool(Name(), "IsJuggernaut", IsJuggernaut);
 		IsCoreDefender = ini.Get_Bool(Name(), "IsCoreDefender", IsCoreDefender);
+		SolidHeight = ini.Get_Int(Name(), "SolidHeight", SolidHeight);
 
 		IsBarrelAnimAVoxel = ini.Get_Bool(Name(), "BarrelAnimIsVoxel", IsBarrelAnimAVoxel);
 		BarrelAnimZAdjust = ini.Get_Int(Name(), "BarrelAnimZAdjust", BarrelAnimZAdjust);
@@ -2358,6 +2360,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsMobileStealth);
 	crc(IsJuggernaut);
 	crc(IsCoreDefender);
+	crc(SolidHeight);
 	crc(IsBarrelAnimAVoxel);
 	crc(BarrelAnimZAdjust);
 	crc(TurretChargeAnimRate);
@@ -2605,6 +2608,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMobileStealth);
 	stream.Serialize(IsJuggernaut);
 	stream.Serialize(IsCoreDefender);
+	stream.Serialize(SolidHeight);
 	stream.Serialize(IsBarrelAnimAVoxel);
 	stream.Serialize(BarrelAnimZAdjust);
 	stream.Serialize(IsTurretAnimExclusive);

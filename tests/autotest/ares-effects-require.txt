@@ -1,0 +1,19 @@
+; EffectsRequireVerses and EffectsRequireDamage, with the warheads of tests/autotest/ares-weapon-keys that take a vehicle's driver.
+; Four enemy tanks are hit once each by a warhead with Verses of 0% (or 100% for the last one). Expected "hit" lines:
+;   MTNK  DrvZero (default EffectsRequireVerses=yes): strength unchanged, owner unchanged.
+;   HTNK  DrvZeroNoVerses (EffectsRequireVerses=no): the driver goes, so the tank's owner is no longer the enemy house.
+;   HTK   DrvZeroNoVersesDmg (EffectsRequireDamage=yes, 0% Verses): zero damage, so owner unchanged.
+;   SREF  DrvFullDmg (EffectsRequireDamage=yes, 100% Verses): the driver goes.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-effects-require.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-weapon-keys" -Seconds 40 -Filter "AUTOTEST   hit|Exception"
+30 command CenterBase
+100 own E1 56 36
+101 spawn MTNK 64 36
+102 spawn HTNK 64 40
+103 spawn HTK 64 44
+104 spawn SREF 64 48
+150 hit MTNK:DrvZero 100
+151 hit HTNK:DrvZeroNoVerses 100
+152 hit HTK:DrvZeroNoVersesDmg 100
+153 hit SREF:DrvFullDmg 100
+200 quit

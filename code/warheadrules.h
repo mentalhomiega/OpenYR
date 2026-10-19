@@ -77,6 +77,53 @@ namespace WarheadRules
 		return(duration > 0 ? (int)(duration * modifier) : duration);
 	}
 
+	// Whether an Abductor weapon takes a target with this much strength left: at or below the weapon's
+	// Abductor.AbductBelowPercent of the target's maximum strength.
+	inline bool Abducts_At(int strength, int max_strength, double below_percent)
+	{
+		return(max_strength > 0 && (double)strength / (double)max_strength <= below_percent);
+	}
+
+	// Whether the effects of a warhead (KillDriver, AttachEffect) apply to an object. EffectsRequireVerses (the default)
+	// asks for a nonzero Verses against the object's armor, and EffectsRequireDamage for at least one point of damage
+	// after armor.
+	inline bool Warhead_Effects_Apply(bool require_verses, bool require_damage, double versus, int damage)
+	{
+		return((!require_verses || versus != 0.0) && (!require_damage || damage >= 1));
+	}
+
+	// The EMP counter of an object after a hit of an EMP.Duration warhead with this EMP.Cap (Ares). A positive duration adds
+	// to the counter up to a positive cap, without limit at cap 0, and raises it to the duration at a negative cap. A negative
+	// duration lowers the counter, to the cap at most for a positive cap and to 0 at cap 0.
+	inline int Emp_Counter(int counter, int duration, int cap)
+	{
+		if (duration > 0) {
+			if (cap > 0) {
+				return(counter >= cap ? counter : (counter + duration < cap ? counter + duration : cap));
+			}
+			if (cap == 0) {
+				return(counter + duration);
+			}
+			return(counter > duration ? counter : duration);
+		}
+		if (duration < 0) {
+			if (cap == 0) {
+				return(0);
+			}
+			int const lowered = counter + duration > 0 ? counter + duration : 0;
+			return(cap > 0 && lowered > cap ? cap : lowered);
+		}
+		return(counter);
+	}
+
+	// Whether a counter that has reached this size destroys an object whose EMP.Threshold is as given (0 never). A negative
+	// threshold destroys only an object in the air.
+	inline bool Emp_Counter_Destroys(int counter, int threshold, bool in_air)
+	{
+		int const limit = threshold < 0 ? -threshold : threshold;
+		return(threshold != 0 && counter > limit && (threshold > 0 || in_air));
+	}
+
 	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
 	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
 	// ProtectedDriver.MinHealth.

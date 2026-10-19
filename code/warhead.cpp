@@ -156,8 +156,13 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	KillDriverBelowPercent(1.0),
 	KillDriverChance(1.0),
 	IsKillDriverRemoveVeterancy(false),
+	IsEffectsRequireDamage(false),
+	IsEffectsRequireVerses(true),
+	EMPDuration(0),
+	EMPCap(-1),
 	IsPreventScatter(false),
-	InfDeathAnim(NULL)
+	InfDeathAnim(NULL),
+	PreImpactAnim(NULL)
 {
 	Create_ID();
 
@@ -221,6 +226,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		InfantryDeath = ini.Get_Int(Name(), "InfDeath", InfantryDeath);
 		InfDeathAnim = TGet_Class(ini, Name(), "InfDeathAnim", InfDeathAnim);
+		PreImpactAnim = TGet_Class(ini, Name(), "PreImpactAnim", PreImpactAnim);
 
 		Deform = ini.Get_Float(Name(), "Deform", Deform);
 		DeformThreshhold = ini.Get_Int(Name(), "DeformThreshhold", DeformThreshhold);
@@ -270,6 +276,10 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
 		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
 		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
+		IsEffectsRequireDamage = ini.Get_Bool(Name(), "EffectsRequireDamage", IsEffectsRequireDamage);
+		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
+		EMPDuration = ini.Get_Int(Name(), "EMP.Duration", EMPDuration);
+		EMPCap = ini.Get_Int(Name(), "EMP.Cap", EMPCap);
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
@@ -377,7 +387,12 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(KillDriverChance);
 	crc(IsKillDriverRemoveVeterancy);
 	crc(IsPreventScatter);
+	crc(IsEffectsRequireDamage);
+	crc(IsEffectsRequireVerses);
+	crc(EMPDuration);
+	crc(EMPCap);
 	crc(InfDeathAnim != NULL);
+	crc(PreImpactAnim != NULL);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -541,6 +556,11 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsKillDriverRemoveVeterancy);
 	stream.Serialize(IsPreventScatter);
 	stream.Serialize(InfDeathAnim);
+	stream.Serialize(PreImpactAnim);
+	stream.Serialize(IsEffectsRequireDamage);
+	stream.Serialize(IsEffectsRequireVerses);
+	stream.Serialize(EMPDuration);
+	stream.Serialize(EMPCap);
 }
 
 

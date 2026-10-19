@@ -116,6 +116,51 @@ void Test_Urban_Combat(void)
 	Check(WarheadRules::Urban_Combat_Damage(10, 1.5) == 15, "a multiplier above 100% raises the damage");
 }
 
+
+void Test_Emp_Counter(void)
+{
+	Check(WarheadRules::Emp_Counter(0, 10, 20) == 10, "a hit adds its duration below the cap");
+	Check(WarheadRules::Emp_Counter(15, 10, 20) == 20, "a hit stops at the cap");
+	Check(WarheadRules::Emp_Counter(60, 10, 20) == 60, "a counter above the cap is not lowered");
+	Check(WarheadRules::Emp_Counter(25, 10, 0) == 35, "a cap of 0 adds without limit");
+	Check(WarheadRules::Emp_Counter(5, 10, -1) == 10, "a cap of -1 sets the counter to the duration");
+	Check(WarheadRules::Emp_Counter(20, 10, -1) == 20, "a cap of -1 keeps a larger counter");
+	Check(WarheadRules::Emp_Counter(50, -10, -1) == 40, "a negative duration lowers the counter");
+	Check(WarheadRules::Emp_Counter(7, -10, -1) == 0, "a negative duration stops at 0");
+	Check(WarheadRules::Emp_Counter(50, -10, 70) == 40, "a negative duration under a cap above the counter");
+	Check(WarheadRules::Emp_Counter(50, -10, 20) == 20, "a negative duration is cut down to the cap");
+	Check(WarheadRules::Emp_Counter(50, -10, 0) == 0, "a cap of 0 ends the stun whatever the duration");
+	Check(WarheadRules::Emp_Counter(33, 0, -1) == 33, "a duration of 0 leaves the counter alone");
+	Check(WarheadRules::Emp_Counter_Destroys(41, 40, false), "a counter above a positive threshold destroys");
+	Check(!WarheadRules::Emp_Counter_Destroys(40, 40, false), "a counter equal to the threshold spares");
+	Check(!WarheadRules::Emp_Counter_Destroys(500, -40, false), "a negative threshold spares an object on the ground");
+	Check(WarheadRules::Emp_Counter_Destroys(41, -40, true), "a negative threshold destroys an object in the air");
+	Check(!WarheadRules::Emp_Counter_Destroys(500, 0, true), "a threshold of 0 never destroys");
+}
+
+
+void Test_Warhead_Effects(void)
+{
+	Check(!WarheadRules::Warhead_Effects_Apply(true, false, 0.0, 10), "a 0% Verses stops the effects by default");
+	Check(WarheadRules::Warhead_Effects_Apply(true, false, 0.5, 0), "a nonzero Verses lets the effects through by default");
+	Check(WarheadRules::Warhead_Effects_Apply(false, false, 0.0, 0), "EffectsRequireVerses=no lets the effects reach 0% Verses");
+	Check(!WarheadRules::Warhead_Effects_Apply(true, true, 1.0, 0), "EffectsRequireDamage stops the effects when no damage lands");
+	Check(WarheadRules::Warhead_Effects_Apply(true, true, 1.0, 1), "EffectsRequireDamage lets one point of damage through");
+	Check(!WarheadRules::Warhead_Effects_Apply(false, true, 0.0, 0), "EffectsRequireDamage still stops zero damage at 0% Verses");
+	Check(WarheadRules::Warhead_Effects_Apply(true, true, -1.0, 5), "a negative Verses is not zero");
+}
+
+
+void Test_Abduction_Health(void)
+{
+	Check(WarheadRules::Abducts_At(125, 125, 1.0), "a full-strength target passes at 100%");
+	Check(!WarheadRules::Abducts_At(125, 125, 0.5), "a full-strength target fails at 50%");
+	Check(WarheadRules::Abducts_At(62, 125, 0.5), "a target just under half passes at 50%");
+	Check(WarheadRules::Abducts_At(50, 100, 0.5), "a target at exactly 50% passes at 50%");
+	Check(!WarheadRules::Abducts_At(51, 100, 0.5), "a target just over 50% fails at 50%");
+	Check(!WarheadRules::Abducts_At(10, 0, 1.0), "a target with no maximum strength is never taken");
+}
+
 }
 
 
@@ -126,6 +171,9 @@ int main(void)
 	Test_Driver_Protection();
 	Test_Driver_Kill_Threshold();
 	Test_Iron_Curtain_Duration();
+	Test_Abduction_Health();
+	Test_Warhead_Effects();
+	Test_Emp_Counter();
 	Test_Urban_Combat();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
