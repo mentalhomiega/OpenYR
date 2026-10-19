@@ -403,7 +403,7 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 {
 	display: none;
 	position: absolute;
-	left: 16dp;
+	right: 16dp;
 	top: 16dp;
 	width: 200dp;
 	height: 50dp;
@@ -428,14 +428,14 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	color: var(--t-muted, #a99bc9);
 }
 
-/* The version at the top right of the title menus. */
+/* The version at the bottom left of the title menus. */
 #emblem
 {
 	display: none;
 	position: absolute;
-	right: 16dp;
-	top: 16dp;
-	width: 180dp;
+	left: 16dp;
+	bottom: 10dp;
+	width: 240dp;
 	height: 16dp;
 	pointer-events: none;
 }
@@ -445,11 +445,11 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	position: absolute;
 	left: 0;
 	top: 0;
-	width: 180dp;
+	width: 240dp;
 	height: 16dp;
 	font-size: 12dp;
 	line-height: 16dp;
-	text-align: right;
+	text-align: left;
 	color: #e8e8e8d8;
 	font-effect: shadow(1dp 1dp #000000);
 }
@@ -1320,4 +1320,24 @@ body.netlobby #join:hover
 body.netlobby #join:active
 {
 	decorator: vertical-gradient(var(--t-accent, #b46bff) var(--t-accent-strong, #d29bff));
+}
+
+/* The main menu shows the game's logo above its panel. titlelogo is cut from the installed title
+   picture until a drawn logo replaces it; with a replaced picture it is empty. */
+#logo
+{
+	display: none;
+	position: absolute;
+	left: 7%;
+	top: 50%;
+	width: 400dp;
+	height: 128dp;
+	margin: -314dp 0 0 -28dp;
+	decorator: image(titlelogo fill);
+	pointer-events: none;
+}
+
+body.titlemenu.main.live #logo
+{
+	display: block;
 }

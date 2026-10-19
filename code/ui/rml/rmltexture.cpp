@@ -20,9 +20,12 @@
 #define STBI_ONLY_PNG
 #define STBI_ONLY_TGA
 #define STBI_NO_STDIO
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <utility>
+#include <vector>
 #include <stb_image.h>
 
 
@@ -106,6 +109,196 @@ bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image)
 }
 
 
+namespace
+{
+
+// The logo sits in the top left of the stock 800 by 600 title picture, GLSLMD.SHP.
+constexpr int LOGO_ART_WIDTH = 800;
+constexpr int LOGO_ART_HEIGHT = 600;
+constexpr int LOGO_X = 12;
+constexpr int LOGO_Y = 10;
+constexpr int LOGO_WIDTH = 392;
+constexpr int LOGO_HEIGHT = 118;
+
+// Dark pixels and the teal and green of the lightning and haze count as background; the logo's
+// silver, gold and red do not.
+bool Is_Logo_Background(unsigned char const * pixel)
+{
+	int const r = pixel[0];
+	int const g = pixel[1];
+	int const b = pixel[2];
+	if (pixel[3] == 0 || std::max(r, std::max(g, b)) < 70) {
+		return(true);
+	}
+	return((b > r + 25 && g > r + 10) || (g > r + 25 && g > b));
+}
+
+
+void Spread_Mask(std::vector<unsigned char> & mask, int radius, bool grow)
+{
+	std::vector<unsigned char> source = mask;
+	for (int y = 0; y < LOGO_HEIGHT; y++) {
+		for (int x = 0; x < LOGO_WIDTH; x++) {
+			unsigned char value = grow ? 0 : 255;
+			for (int dy = -radius; dy <= radius; dy++) {
+				for (int dx = -radius; dx <= radius; dx++) {
+					int const u = std::clamp(x + dx, 0, LOGO_WIDTH - 1);
+					int const v = std::clamp(y + dy, 0, LOGO_HEIGHT - 1);
+					unsigned char const other = source[(size_t)v * LOGO_WIDTH + u];
+					value = grow ? std::max(value, other) : std::min(value, other);
+				}
+			}
+			mask[(size_t)y * LOGO_WIDTH + x] = value;
+		}
+	}
+}
+
+
+/// <summary>
+/// Cuts the game logo out of the installed title picture, with the painted background made
+/// transparent. It stands in for a drawn logo, so nothing from the picture is shipped.
+/// </summary>
+UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, int & height, bool premultiply)
+{
+	std::vector<unsigned char> art;
+	int art_width = 0;
+	int art_height = 0;
+	UIImageResult const result = UI_Load_Image("GLSLMD.SHP@GLSMD.PAL", art, art_width, art_height, false);
+	if (result != UI_IMAGE_LOADED) {
+		return(result);
+	}
+	// A replaced title picture has no logo at the stock place.
+	if (art_width != LOGO_ART_WIDTH || art_height != LOGO_ART_HEIGHT) {
+		return(UI_IMAGE_MISSING);
+	}
+
+	auto pixel = [&art](int x, int y) {
+		return(&art[((size_t)(LOGO_Y + y) * LOGO_ART_WIDTH + (LOGO_X + x)) * 4]);
+	};
+
+	// The background is what the crop's edge reaches through background pixels.
+	std::vector<unsigned char> background((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
+	std::vector<std::pair<int, int>> stack;
+	for (int x = 0; x < LOGO_WIDTH; x++) {
+		stack.emplace_back(x, 0);
+		stack.emplace_back(x, LOGO_HEIGHT - 1);
+	}
+	for (int y = 0; y < LOGO_HEIGHT; y++) {
+		stack.emplace_back(0, y);
+		stack.emplace_back(LOGO_WIDTH - 1, y);
+	}
+	while (!stack.empty()) {
+		auto const [x, y] = stack.back();
+		stack.pop_back();
+		if (x < 0 || y < 0 || x >= LOGO_WIDTH || y >= LOGO_HEIGHT) {
+			continue;
+		}
+		unsigned char & seen = background[(size_t)y * LOGO_WIDTH + x];
+		if (seen != 0 || !Is_Logo_Background(pixel(x, y))) {
+			continue;
+		}
+		seen = 1;
+		stack.emplace_back(x + 1, y);
+		stack.emplace_back(x - 1, y);
+		stack.emplace_back(x, y + 1);
+		stack.emplace_back(x, y - 1);
+	}
+
+	// The rest splits into pieces. Specks, lightning at the sides, and the soldiers' heads under
+	// the wings (pieces that start in the lowest rows) are dropped.
+	std::vector<unsigned char> mask((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
+	std::vector<int> label((size_t)LOGO_WIDTH * LOGO_HEIGHT, 0);
+	int pieces = 0;
+	for (int y = 0; y < LOGO_HEIGHT; y++) {
+		for (int x = 0; x < LOGO_WIDTH; x++) {
+			size_t const at = (size_t)y * LOGO_WIDTH + x;
+			if (background[at] != 0 || label[at] != 0) {
+				continue;
+			}
+			pieces++;
+			std::vector<size_t> piece;
+			std::vector<size_t> open{at};
+			label[at] = pieces;
+			int top = y;
+			int left = x;
+			int right = x;
+			while (!open.empty()) {
+				size_t const here = open.back();
+				open.pop_back();
+				piece.push_back(here);
+				int const px = (int)(here % LOGO_WIDTH);
+				int const py = (int)(here / LOGO_WIDTH);
+				top = std::min(top, py);
+				left = std::min(left, px);
+				right = std::max(right, px);
+				int const steps[4][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}};
+				for (auto const & step : steps) {
+					int const u = px + step[0];
+					int const v = py + step[1];
+					if (u < 0 || v < 0 || u >= LOGO_WIDTH || v >= LOGO_HEIGHT) {
+						continue;
+					}
+					size_t const next = (size_t)v * LOGO_WIDTH + u;
+					if (background[next] == 0 && label[next] == 0) {
+						label[next] = pieces;
+						open.push_back(next);
+					}
+				}
+			}
+			if (piece.size() >= 10 && top < 80 && left > 1 && right < LOGO_WIDTH - 2) {
+				for (size_t const kept : piece) {
+					// Haze joins the right wing below its tip.
+					if (kept % LOGO_WIDTH < 364 || kept / LOGO_WIDTH < 56) {
+						mask[kept] = 255;
+					}
+				}
+			}
+		}
+	}
+
+	// Close small holes, take in the dark outline, then soften the edge.
+	Spread_Mask(mask, 2, true);
+	Spread_Mask(mask, 2, false);
+	Spread_Mask(mask, 1, true);
+	std::vector<unsigned char> soft = mask;
+	for (int y = 0; y < LOGO_HEIGHT; y++) {
+		for (int x = 0; x < LOGO_WIDTH; x++) {
+			int sum = 0;
+			int weight = 0;
+			for (int dy = -1; dy <= 1; dy++) {
+				for (int dx = -1; dx <= 1; dx++) {
+					int const u = std::clamp(x + dx, 0, LOGO_WIDTH - 1);
+					int const v = std::clamp(y + dy, 0, LOGO_HEIGHT - 1);
+					int const w = (dx == 0 ? 2 : 1) * (dy == 0 ? 2 : 1);
+					sum += mask[(size_t)v * LOGO_WIDTH + u] * w;
+					weight += w;
+				}
+			}
+			soft[(size_t)y * LOGO_WIDTH + x] = (unsigned char)(sum / weight);
+		}
+	}
+
+	rgba.resize((size_t)LOGO_WIDTH * LOGO_HEIGHT * 4);
+	for (int y = 0; y < LOGO_HEIGHT; y++) {
+		for (int x = 0; x < LOGO_WIDTH; x++) {
+			unsigned char const * from = pixel(x, y);
+			unsigned char * to = &rgba[((size_t)y * LOGO_WIDTH + x) * 4];
+			unsigned int const alpha = soft[(size_t)y * LOGO_WIDTH + x];
+			for (int channel = 0; channel < 3; channel++) {
+				to[channel] = premultiply ? (unsigned char)(from[channel] * alpha / 255) : from[channel];
+			}
+			to[3] = (unsigned char)alpha;
+		}
+	}
+
+	width = LOGO_WIDTH;
+	height = LOGO_HEIGHT;
+	return(UI_IMAGE_LOADED);
+}
+
+}
+
+
 UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height, bool premultiply)
 {
 	rgba.clear();
@@ -114,6 +307,10 @@ UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba
 
 	if (name == NULL) {
 		return(UI_IMAGE_MISSING);
+	}
+
+	if (Has_Extension(name, "titlelogo")) {
+		return(Make_Title_Logo(rgba, width, height, premultiply));
 	}
 
 	// A shape names its palette, and optionally a frame: NAME.SHP@PALETTE.PAL@frame.
