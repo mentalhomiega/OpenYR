@@ -1784,8 +1784,13 @@ void BulletClass::Detonate(Coord const & coord)
 				targets.Delete_Index(number);
 			}
 
+			WeaponTypeClass * weapon = Class->AirburstWeapon;
+			if (weapon == NULL || weapon->Bullet == NULL) {
+				DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
+				break;
+			}
+
 			if (target != NULL) {
-				WeaponTypeClass * weapon = Class->AirburstWeapon;
 				const BulletTypeClass * btype = weapon->Bullet;
 				BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
 				if (bullet != NULL) {
