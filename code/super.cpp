@@ -977,7 +977,8 @@ void SuperClass::Paradrop(Cell const & cell) const
 	// ParaDrop.* keys from the weapon take over: the country's own set first, then the side's, then the plain one.
 	{
 		SuperWeaponKeys::ParaGroup const * group = NULL;
-		SideClass const * side = Sides[House->Planning_Side()];
+		int const planning = House->Planning_Side();
+		SideClass const * side = (planning >= 0 && planning < Sides.Count()) ? Sides[planning] : NULL;
 		for (SuperWeaponKeys::ParaGroup const & candidate : keys.ParaByOwner) {
 			if (SuperRules::Same(candidate.Owner, House->Class->Name())) {
 				group = &candidate;
@@ -1326,7 +1327,11 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_PSYCHIC_REVEAL:
 			if (IsReady) {
 				// Uncovers the area for the firing house, shroud and fog (the PsychicReveal case of SuperClass::Launch).
-				int const radius = Rule->PsychicRevealRadius;
+				// SW.Range sets the radius; a negative one uncovers the whole map.
+				int radius = Rule->PsychicRevealRadius;
+				if (Class->Keys.AreaIsSet && !Class->Keys.AreaIsBlock) {
+					radius = Class->Keys.AreaRadius < 0.0f ? 400 : (int)Class->Keys.AreaRadius;
+				}
 				for (int dy = -radius; dy <= radius; dy++) {
 					for (int dx = -radius; dx <= radius; dx++) {
 						Cell const where = cell + Cell(dx, dy);
@@ -1484,18 +1489,27 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 					Cell closest = Map.Closest_Edge_Cell(start);
 
+					// The stock launcher weapons are not in every rules file; the payload weapon stands in when they are missing.
+					auto weapon_named = [](char const * name) -> WeaponTypeClass const * {
+						WeaponType const found = WeaponTypeClass::From_Name(name);
+						return(found >= 0 && found < Weapons.Count() ? Weapons[found] : NULL);
+					};
 					WeaponTypeClass const * wtype;
 					if (Class->Type == SUPER_CHEM_MISSILE) {
-						wtype = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
+						wtype = weapon_named("ChemLauncher");
 					} else {
-						wtype = Class->Keys.NukePayload != NULL ? Class->Keys.NukePayload : Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
+						wtype = Class->Keys.NukePayload;
+						if (wtype == NULL) wtype = weapon_named("MultiLauncher");
+						if (wtype == NULL) wtype = weapon_named("NukePayload");
 					}
 
 					// SW.Damage and SW.Warhead replace the payload's own when the weapon sets them.
-					int const strike_damage = Class->Keys.Damage >= 0 ? Class->Keys.Damage : wtype->Attack;
-					WarheadTypeClass const * strike_warhead = Class->Keys.Warhead != NULL ? Class->Keys.Warhead : wtype->WarheadPtr;
-					BulletTypeClass const * btype = wtype->Bullet;
-					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, strike_damage, strike_warhead, wtype->MaxSpeed, false);
+					BulletClass * bullet = NULL;
+					if (wtype != NULL && wtype->Bullet != NULL) {
+						int const strike_damage = Class->Keys.Damage >= 0 ? Class->Keys.Damage : wtype->Attack;
+						WarheadTypeClass const * strike_warhead = Class->Keys.Warhead != NULL ? Class->Keys.Warhead : wtype->WarheadPtr;
+						bullet = Create_Bullet(wtype->Bullet, &Map[start], NULL, strike_damage, strike_warhead, wtype->MaxSpeed, false);
+					}
 
 					if (bullet) {
 						TVelocity3D<double> velocity = TVelocity3D<double>(DIR_E, DIR_N, 100);
