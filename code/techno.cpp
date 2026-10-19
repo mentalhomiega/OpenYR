@@ -3657,8 +3657,8 @@ void TechnoClass::AI(void)
 
 	// A PermaDisguise object always looks like its side's default soldier when it has no other disguise (TechnoClass::Init, 0x6F3F40).
 	if (DisguiseType == NULL && TClass->IsCanDisguise && TClass->IsPermaDisguise) {
-		int const side = (int)House->Class->Side;
-		DisguiseType = side == 0 ? Rule->AlliedDisguise : (side == 1 ? Rule->SovietDisguise : Rule->ThirdDisguise);
+		SideType const side = House->Class->Side;
+		DisguiseType = side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Disguise_Type() : NULL;
 		DisguiseHouse = House;
 	}
 
@@ -8776,22 +8776,13 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	*/
 	// The crew follows the side of the owning house, as TechnoClass::GetCrew (0x707D20) does.
 	InfantryTypeClass const * infantry = Rule->Technician;
-	switch (SideClass::Place_In_Sides(House->Class->Side)) {
-		case 0:
-			infantry = Rule->AlliedCrew;
-			break;
-		case 1:
-			infantry = Rule->SovietCrew;
-			break;
-		case 2:
-			infantry = Rule->ThirdCrew;
-			break;
-		default:
-			break;
+	SideType const side = House->Class->Side;
+	if (side != SIDE_NONE && side < Sides.Count()) {
+		infantry = Sides[side]->Crew_Type();
 	}
-	if (House->Class->Side != SIDE_NONE) {
+	if (side != SIDE_NONE) {
 		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = Rule->Technician;
+			infantry = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
 		}
 	} else {
 		infantry = Rule->Technician;

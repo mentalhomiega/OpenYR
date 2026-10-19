@@ -17,6 +17,9 @@
 #include "crc.h"
 #include "findmake.h"
 #include "globals.h"
+#include "infatype.h"
+#include "rules.h"
+#include "_rules.h"
 #include "savestream.h"
 #include "sun.h"
 #include "tracker.h"
@@ -41,14 +44,25 @@ SideClass::SideClass(char const * ininame) :
 	AIWallDefenseCoefficient(0.0),
 	IsAIBuildsWalls(true),
 	AIBaseDefensePlaceholders(2),
-	IsAIBaseDefensesWithWalls(false)
+	IsAIBaseDefensesWithWalls(false),
+	SidebarMixFileIndex(0),
+	SidebarYuriFileNames(-1),
+	IsToolTipColor(false),
+	ToolTipColor{0, 0, 0},
+	MessageTextColor(),
+	EvaTag(),
+	Crew(NULL),
+	Engineer(NULL),
+	Technician(NULL),
+	DefaultDisguise(NULL),
+	SurvivorDivisor(-1)
 {
 	Create_ID();
 	Sides.Add(this);
 
 	// No rules key seeds these, so the first two positions take what Tiberian Sun hard-coded
 	// for GDI and Nod.
-	int position = Sides.ID(this);
+	int position = Sides.ID(const_cast<SideClass *>(this));
 	if (position == 0) {
 		AIBaseDefensePlaceholders = 3;
 	} else if (position == 1) {
@@ -87,6 +101,107 @@ int SideClass::Place_In_Sides(SideType side)
 }
 
 
+/// <summary>
+/// Fetches the number that names this side's sidebar archives.
+/// </summary>
+int SideClass::Sidebar_Archive_Number(void) const
+{
+	if (SidebarMixFileIndex > 0) {
+		return(SidebarMixFileIndex);
+	}
+	int const id = Sides.ID(const_cast<SideClass *>(this));
+	return((id == SIDE_THIRD ? (int)SIDE_NOD : id) + 1);
+}
+
+
+bool SideClass::Uses_Yuri_File_Names(void) const
+{
+	if (SidebarYuriFileNames >= 0) {
+		return(SidebarYuriFileNames != 0);
+	}
+	return(Sides.ID(const_cast<SideClass *>(this)) == SIDE_THIRD);
+}
+
+
+InfantryTypeClass const * SideClass::Crew_Type(void) const
+{
+	if (Crew != NULL) {
+		return(Crew);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedCrew);
+		case 1:
+			return(Rule->SovietCrew);
+		case 2:
+			return(Rule->ThirdCrew);
+		default:
+			return(Rule->Technician);
+	}
+}
+
+
+InfantryTypeClass const * SideClass::Engineer_Type(void) const
+{
+	return(Engineer != NULL ? Engineer : Rule->Engineer);
+}
+
+
+InfantryTypeClass const * SideClass::Technician_Type(void) const
+{
+	return(Technician != NULL ? Technician : Rule->Technician);
+}
+
+
+InfantryTypeClass const * SideClass::Disguise_Type(void) const
+{
+	if (DefaultDisguise != NULL) {
+		return(DefaultDisguise);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedDisguise);
+		case 1:
+			return(Rule->SovietDisguise);
+		case 2:
+			return(Rule->ThirdDisguise);
+		default:
+			return(NULL);
+	}
+}
+
+
+int SideClass::Survivor_Divisor(void) const
+{
+	if (SurvivorDivisor >= 0) {
+		return(SurvivorDivisor);
+	}
+	switch (ListPosition) {
+		case 0:
+			return(Rule->AlliedSurvivorDivisor);
+		case 1:
+			return(Rule->SovietSurvivorDivisor);
+		case 2:
+			return(Rule->ThirdSurvivorDivisor);
+		default:
+			return(0);
+	}
+}
+
+
+std::string SideClass::Eva_Voice_Name(void) const
+{
+	if (!EvaTag.empty()) {
+		return(stricmp(EvaTag.c_str(), "none") == 0 ? std::string() : EvaTag);
+	}
+	int const id = Sides.ID(const_cast<SideClass *>(this));
+	if (id == SIDE_NOD) {
+		return("Russian");
+	}
+	return(id == SIDE_THIRD ? "Yuri" : "Allied");
+}
+
+
 /// <returns>Returns with the identifier of the matching side, or SIDE_NONE if there is no
 /// such side.</returns>
 SideType SideClass::From_Name(char const * name)
@@ -118,6 +233,13 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 	crc(AIBaseDefensePlaceholders);
 	crc(IsAIBaseDefensesWithWalls);
 	crc(ListPosition);
+	crc(SidebarMixFileIndex);
+	crc(SidebarYuriFileNames);
+	crc(SurvivorDivisor);
+	crc(Crew != NULL ? Crew->Name() : "");
+	crc(Engineer != NULL ? Engineer->Name() : "");
+	crc(Technician != NULL ? Technician->Name() : "");
+	crc(DefaultDisguise != NULL ? DefaultDisguise->Name() : "");
 }
 
 
@@ -142,6 +264,30 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	IsAIBuildsWalls = ini.Get_Bool(Name(), "AIBuildsWalls", IsAIBuildsWalls);
 	AIBaseDefensePlaceholders = ini.Get_Int(Name(), "AIBaseDefensePlaceholders", AIBaseDefensePlaceholders);
 	IsAIBaseDefensesWithWalls = ini.Get_Bool(Name(), "AIBaseDefensesWithWalls", IsAIBaseDefensesWithWalls);
+
+	SidebarMixFileIndex = ini.Get_Int(Name(), "Sidebar.MixFileIndex", SidebarMixFileIndex);
+	if (ini.Is_Present(Name(), "Sidebar.YuriFileNames")) {
+		SidebarYuriFileNames = ini.Get_Bool(Name(), "Sidebar.YuriFileNames", false) ? 1 : 0;
+	}
+	if (ini.Is_Present(Name(), "ToolTipColor")) {
+		RGBClass const color = ini.Get_RGBClass(Name(), "ToolTipColor", RGBClass(0, 0, 0));
+		IsToolTipColor = true;
+		ToolTipColor[0] = color.Get_Red();
+		ToolTipColor[1] = color.Get_Green();
+		ToolTipColor[2] = color.Get_Blue();
+	}
+	char buffer[64];
+	if (ini.Get_String(Name(), "MessageTextColor", "", buffer, sizeof(buffer)) > 0) {
+		MessageTextColor = buffer;
+	}
+	if (ini.Get_String(Name(), "EVA.Tag", "", buffer, sizeof(buffer)) > 0) {
+		EvaTag = buffer;
+	}
+	Crew = TGet_Class(ini, Name(), "Crew", Crew);
+	Engineer = TGet_Class(ini, Name(), "Engineer", Engineer);
+	Technician = TGet_Class(ini, Name(), "Technician", Technician);
+	DefaultDisguise = TGet_Class(ini, Name(), "DefaultDisguise", DefaultDisguise);
+	SurvivorDivisor = ini.Get_Int(Name(), "SurvivorDivisor", SurvivorDivisor);
 	return(true);
 }
 
@@ -173,4 +319,15 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAIBuildsWalls);
 	stream.Serialize(AIBaseDefensePlaceholders);
 	stream.Serialize(IsAIBaseDefensesWithWalls);
+	stream.Serialize(SidebarMixFileIndex);
+	stream.Serialize(SidebarYuriFileNames);
+	stream.Serialize(IsToolTipColor);
+	stream.Serialize(ToolTipColor);
+	stream.Serialize(MessageTextColor);
+	stream.Serialize(EvaTag);
+	stream.Serialize(Crew);
+	stream.Serialize(Engineer);
+	stream.Serialize(Technician);
+	stream.Serialize(DefaultDisguise);
+	stream.Serialize(SurvivorDivisor);
 }

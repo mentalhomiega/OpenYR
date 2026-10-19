@@ -18,8 +18,11 @@
 
 #include "side.hh"
 
+#include <string>
+
 class BuildingTypeClass;
 class UnitTypeClass;
+class InfantryTypeClass;
 
 
 class SideClass : public AbstractTypeClass
@@ -48,6 +51,42 @@ class SideClass : public AbstractTypeClass
 		 * the survivor divisor and the crew both follow it.
 		 */
 		static int Place_In_Sides(SideType side);
+
+		/*
+		 * The number that names this side's sidebar archives (SIDEC<n>MD.MIX, SIDEC<n>.MIX and
+		 * SIDENC<n>.MIX), from the side's own section or, without one, from the side's place in the
+		 * list. The third side shares the archives of the second, as Yuri's Revenge does.
+		 */
+		int Sidebar_Archive_Number(void) const;
+
+		/*
+		 * Does the side draw its radar logo from the Yuri files (RADARY.SHP and RADARYURI.PAL)? The
+		 * side's own section decides; without a setting only the third side does.
+		 */
+		bool Uses_Yuri_File_Names(void) const;
+
+		/*
+		 * The survivors and the disguise of this side: the side's own section when it names one,
+		 * otherwise the rules' key for the side's place in the list. A side whose place the rules
+		 * give no key falls back to the rules' technician and engineer, and to no disguise.
+		 */
+		InfantryTypeClass const * Crew_Type(void) const;
+		InfantryTypeClass const * Engineer_Type(void) const;
+		InfantryTypeClass const * Technician_Type(void) const;
+		InfantryTypeClass const * Disguise_Type(void) const;
+
+		/*
+		 * The survivor divisor for buildings of this side: the side's own section, else the rules'
+		 * key for the side's place in the list, or 0 (no survivors) for a place with none.
+		 */
+		int Survivor_Divisor(void) const;
+
+		/*
+		 * The announcer voice the side speaks in, as a name in the EVA file: the side's own tag, else
+		 * Russian for the second side, Yuri for the third and Allied for any other. An empty name
+		 * means the side has no announcer.
+		 */
+		std::string Eva_Voice_Name(void) const;
 
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
@@ -80,4 +119,20 @@ class SideClass : public AbstractTypeClass
 		bool IsAIBuildsWalls;
 		int AIBaseDefensePlaceholders;
 		bool IsAIBaseDefensesWithWalls;
+
+		/*
+		 * Interface and survivor keys read from the side's own section. SidebarMixFileIndex is 0 and
+		 * SidebarYuriFileNames, SurvivorDivisor are -1 until the section sets them.
+		 */
+		int SidebarMixFileIndex;
+		int SidebarYuriFileNames;
+		bool IsToolTipColor;
+		int ToolTipColor[3];
+		std::string MessageTextColor;
+		std::string EvaTag;
+		InfantryTypeClass const * Crew;
+		InfantryTypeClass const * Engineer;
+		InfantryTypeClass const * Technician;
+		InfantryTypeClass const * DefaultDisguise;
+		int SurvivorDivisor;
 };

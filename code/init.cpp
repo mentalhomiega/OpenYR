@@ -7958,6 +7958,9 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 }
 
 
+static SideType PreparedSide = SIDE_NONE;
+
+
 /// <summary>
 /// Mounts the archives used outside a match, SIDEC00.MIX and SIDENC00.MIX with the expansions'
 /// copies, in place of any side's. Every one of them is optional. The interface drops the side's
@@ -7977,10 +7980,20 @@ void Prep_For_No_Side(void)
 	}
 
 	Release_Side_Mixfiles();
+	PreparedSide = SIDE_NONE;
 	Mount_Side_Mixfiles(0, false);
 
 	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
 	UI_On_Archives_Change(SIDE_NONE);
+}
+
+
+/// <summary>
+/// Fetches the side whose archives Prep_For_Side mounted last, or SIDE_NONE for the archives used outside a match.
+/// </summary>
+SideType Prepared_Side(void)
+{
+	return(PreparedSide);
 }
 
 
@@ -8000,9 +8013,19 @@ bool Prep_For_Side(SideType side)
 	DebugString("Preparing Mixfiles for Side %02d.\n", side);
 
 	Release_Side_Mixfiles();
+	PreparedSide = side;
 
-	// The third side, Yuri, uses the second side's archives, as in Yuri's Revenge.
-	id = (side == SIDE_THIRD ? (int)SIDE_NOD : (int)side) + 1;
+	// The third side, Yuri, uses the second side's archives, as in Yuri's Revenge, unless the side's
+	// section numbers its own archives.
+	if (side >= 0 && side < Sides.Count()) {
+		// The rules are read for the scenario after this, so the archive keys are read ahead of it.
+		if (RuleINI != NULL) {
+			Sides[side]->Read_INI(*RuleINI);
+		}
+		id = Sides[side]->Sidebar_Archive_Number();
+	} else {
+		id = (side == SIDE_THIRD ? (int)SIDE_NOD : (int)side) + 1;
+	}
 
 	if (!Mount_Side_Mixfiles(id, true)) {
 		return(false);

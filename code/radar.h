@@ -45,6 +45,7 @@
 
 class DSurface;
 class BSurface;
+class ConvertClass;
 template<class T> class DynamicVectorClass;
 
 typedef DynamicVectorClass<Point2D> FOUNDATION_LIST;
@@ -388,5 +389,8 @@ class RadarClass: public DisplayClass
 		CDTimerClass<SystemTimerClass> RadarAnimTimer;
 
 		static void const * RadarAnim;
+
+		// The palette of the radar logo when it is not the sidebar's.
+		static ConvertClass * RadarAnimDrawer;
 		static void const * TopShape;
 };

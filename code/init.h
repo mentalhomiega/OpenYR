@@ -65,6 +65,7 @@ bool Prep_For_Side(SideType side);
 void Prep_For_No_Side(void);
 bool Prep_Speech_For_Side(SideType side);
 SideType Prep_For_Side_Or_First(SideType side);
+SideType Prepared_Side(void);
 SideType Prep_Speech_For_Side_Or_First(SideType side);
 
 void Anim_Init(void);

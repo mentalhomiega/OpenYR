@@ -23,6 +23,7 @@
 #include "deploymentconfig.h"
 #include "globals.h"
 #include "shellmap.h"
+#include "side.h"
 #include "stimer.h"
 #include "timer.h"
 #include "voxqueue.h"
@@ -630,7 +631,7 @@ int const LEGACY_LINE = 0x10000;
 // One line of the announcer file: its sample for each side's voice, and how it waits its turn.
 struct EvaLineType {
 	std::string Name;
-	std::string Sample[3];
+	std::vector<std::string> Sample;
 	int Priority;
 	VoxControlType Control;
 	float Volume;
@@ -640,6 +641,29 @@ struct EvaLineType {
 std::vector<EvaLineType> EvaLines;
 int VoiceLines[VOX_COUNT];
 int EvaSide = 0;
+
+// The announcer voices the file offers: Allied, Russian and Yuri, then each [EVATypes] entry. The voice a side
+// asked for is kept by name so that it can be found again when the file is read after the side is set.
+std::vector<std::string> EvaTypes;
+std::string EvaVoiceName = "Allied";
+
+// Does the line have a sample in the voice the player's side speaks in?
+static bool Has_Eva_Sample(EvaLineType const & line)
+{
+	return(EvaSide >= 0 && EvaSide < (int)line.Sample.size() && !line.Sample[EvaSide].empty());
+}
+
+// Finds the declared voice the side asked for, or -1 when there is none.
+static void Select_Eva_Voice(void)
+{
+	EvaSide = -1;
+	for (int index = 0; index < (int)EvaTypes.size(); index++) {
+		if (_stricmp(EvaTypes[index].c_str(), EvaVoiceName.c_str()) == 0) {
+			EvaSide = index;
+			break;
+		}
+	}
+}
 
 // The lines waiting to be spoken, the one speaking, and the silence between.
 VoxQueueClass Queue;
@@ -909,7 +933,7 @@ void Speak_AI(void)
 			_makepath(name, NULL, NULL, Speech[next - LEGACY_LINE], ".AUD");
 		} else {
 			EvaLineType const & entry = EvaLines[next];
-			if (entry.Sample[EvaSide].empty()) {
+			if (!Has_Eva_Sample(entry)) {
 				continue;
 			}
 			_makepath(name, NULL, NULL, entry.Sample[EvaSide].c_str(), ".WAV");
@@ -1018,15 +1042,22 @@ void Load_Eva(void)
 	}
 
 	static char const * const LIST = "DialogList";
-	static char const * const _sides[3] = {"Allied", "Russian", "Yuri"};
+	EvaTypes = {"Allied", "Russian", "Yuri"};
+	int const typecount = ini.Entry_Count("EVATypes");
+	for (int index = 0; index < typecount; index++) {
+		std::string const type = ini.Get_String("EVATypes", ini.Get_Entry("EVATypes", index));
+		if (!type.empty()) {
+			EvaTypes.push_back(type);
+		}
+	}
 	int const count = ini.Entry_Count(LIST);
 	for (int index = 0; index < count; index++) {
 		EvaLineType line;
 		line.Name = ini.Get_String(LIST, ini.Get_Entry(LIST, index));
 		char const * section = line.Name.c_str();
-		for (int side = 0; side < 3; side++) {
+		for (std::string const & type : EvaTypes) {
 			// The game keeps eight characters of a sample's name.
-			line.Sample[side] = ini.Get_String(section, _sides[side]).substr(0, 8);
+			line.Sample.push_back(ini.Get_String(section, type.c_str()).substr(0, 8));
 		}
 
 		std::string const type = ini.Get_String(section, "Type");
@@ -1048,17 +1079,25 @@ void Load_Eva(void)
 	for (VoiceEvaType const & entry : VoiceEva) {
 		VoiceLines[entry.Voice] = Eva_Line(entry.Name);
 	}
+	Select_Eva_Voice();
 	DebugString("Read %d announcer lines from %s\n", (int)EvaLines.size(), DeploymentConfig.EvaFile.c_str());
 }
 
 
 /// <summary>
-/// Picks the voice the announcer speaks in: the Allied voice for the first side, the Russian
-/// voice for the second, and the Yuri voice for any other (VoxClass::EVAIndex).
+/// Picks the voice the announcer speaks in, from the side's EVA.Tag or else the Allied voice for
+/// the first side, the Russian voice for the second and the Yuri voice for the third. A voice
+/// the file does not declare, or the tag none, leaves the announcer silent.
 /// </summary>
 void Set_Eva_Side(int side)
 {
-	EvaSide = side == 0 || side < 0 ? 0 : (side == 1 ? 1 : 2);
+	EvaVoiceName = "Allied";
+	if (side >= 0 && side < Sides.Count()) {
+		EvaVoiceName = Sides[side]->Eva_Voice_Name();
+	} else if (side == 1) {
+		EvaVoiceName = "Russian";
+	}
+	Select_Eva_Voice();
 }
 
 
@@ -1072,7 +1111,7 @@ bool Is_Eva_Loaded(void)
 std::string Eva_Sample_File(char const * name)
 {
 	int const line = Eva_Line(name);
-	if (line < 0 || EvaLines[line].Sample[EvaSide].empty()) {
+	if (line < 0 || !Has_Eva_Sample(EvaLines[line])) {
 		return(std::string());
 	}
 	return(EvaLines[line].Sample[EvaSide] + ".WAV");
