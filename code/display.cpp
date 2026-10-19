@@ -155,6 +155,7 @@
 #include "waypoint.h"
 #include "xpipe.h"
 #include "xstraw.h"
+#include "weapon.h"
 #include "zbuffer.h"
 
 #include "color.hh"
@@ -1816,6 +1817,34 @@ static MouseType Type_Cursor(MouseType stock, ActionType action, ObjectClass con
 
 
 /// <summary>
+/// The attack cursor a weapon names with Cursor.Attack, for a target in range, or Cursor.AttackOutOfRange, for one the
+/// weapon cannot reach yet (Ares). The weapon is the one the first selected object would fire at the target, and the
+/// out-of-range cursor is used only when a single object is selected.
+/// </summary>
+/// <returns>Returns with the cursor the weapon names, or the stock one when it names none that exists.</returns>
+static MouseType Weapon_Cursor(MouseType stock, bool in_range, AbstractClass * target)
+{
+	if (CurrentObject.Count() == 0 || CurrentObject[0] == NULL || !CurrentObject[0]->Is_Techno() || target == NULL) {
+		return(stock);
+	}
+	if (!in_range && CurrentObject.Count() != 1) {
+		return(stock);
+	}
+	TechnoClass const * selected = static_cast<TechnoClass const *>(CurrentObject[0]);
+	WeaponDataStruct const * data = selected->Get_Class_Weapon_Data(selected->What_Weapon_Should_I_Use(target));
+	if (data == NULL || data->Weapon == NULL) {
+		return(stock);
+	}
+	std::string const & name = in_range ? data->Weapon->CursorAttack : data->Weapon->CursorAttackOutOfRange;
+	if (name.empty()) {
+		return(stock);
+	}
+	MouseType const named = MouseClass::Find_Cursor(name.c_str());
+	return((int)named >= 0 ? named : stock);
+}
+
+
+/// <summary>
 /// The cursor for a super weapon targeting action. While a weapon is being aimed, its Cursor and
 /// NoCursor keys decide; otherwise the stock cursor for the action stands.
 /// </summary>
@@ -2026,10 +2055,11 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 
 			case ACTION_ATTACK:
 				if (target != NULL && CurrentObject.Count() == 1 && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->In_Range(target, 0)) {
-					Set_Default_Mouse(MOUSE_STAY_ATTACK, wsmall);
+					Set_Default_Mouse(Weapon_Cursor(MOUSE_STAY_ATTACK, true, target), wsmall);
 					break;
 				}
-				// fall into next case.
+				Set_Default_Mouse(Weapon_Cursor(MOUSE_CAN_ATTACK, false, target), wsmall);
+				break;
 
 			case ACTION_HARVEST:
 				Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
@@ -3876,7 +3906,14 @@ char const * DisplayClass::Help_Text(int id)
 			if (object->RTTI != RTTI_BUILDING || !((BuildingClass *)object)->IsNominal) {
 				if (!dynamic_cast<TechnoTypeClass const *>(object->Class_Of())->IsNominal) {
 
-					if (!techno->House->Shares_View_With(PlayerPtr)) {
+					// A type's EnemyUIName is the name an enemy sees; an observer, or a player who has infiltrated the structure, sees the real name (Ares).
+					char const * const enemy_name = techno->TClass->Enemy_Full_Name();
+					bool const revealed = PlayerPtr->IsObserver || (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->SpiedBy[PlayerPtr]);
+					if (!techno->House->Shares_View_With(PlayerPtr) && enemy_name != NULL) {
+						if (!revealed) {
+							text = enemy_name;
+						}
+					} else if (!techno->House->Shares_View_With(PlayerPtr)) {
 						switch ((RTTIType)object->RTTI) {
 							case RTTI_INFANTRY:
 								text = Fetch_String(TXT_ENEMY_SOLDIER);

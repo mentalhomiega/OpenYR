@@ -117,6 +117,50 @@ void Test_Spy_Effects(void)
 	Check(ObjectKeyRules::Stolen_Techs_Satisfied(0x1F8u, {3, 5}), "extra stolen kinds do no harm");
 }
 
+void Test_Passengers(void)
+{
+	Check(ObjectKeyRules::Passenger_Allowed("E1", {}, {}), "no lists admit everyone");
+	Check(ObjectKeyRules::Passenger_Allowed("e1", {"E1", "E2"}, {}), "an allowed name is admitted whatever its case");
+	Check(!ObjectKeyRules::Passenger_Allowed("ENGINEER", {"E1", "E2"}, {}), "a name outside a non-empty allowed list is refused");
+	Check(!ObjectKeyRules::Passenger_Allowed("E1", {}, {"E1"}), "a disallowed name is refused");
+	Check(!ObjectKeyRules::Passenger_Allowed("E1", {"E1"}, {"E1"}), "disallowed wins over allowed");
+	Check(ObjectKeyRules::Passenger_Allowed("E2", {}, {"E1"}), "a name outside the disallowed list is admitted");
+}
+
+
+void Test_Payload_And_Ammo(void)
+{
+	std::vector<int> counts = ObjectKeyRules::Payload_Counts(3, {});
+	Check(counts.size() == 3 && counts[0] == 1 && counts[2] == 1, "no counts make every entry one");
+	counts = ObjectKeyRules::Payload_Counts(3, {2, 4});
+	Check(counts[0] == 2 && counts[1] == 4 && counts[2] == 4, "the last count repeats for the entries after it");
+	counts = ObjectKeyRules::Payload_Counts(1, {5, 6, 7});
+	Check(counts.size() == 1 && counts[0] == 5, "extra counts are ignored");
+
+	Check(ObjectKeyRules::No_Ammo_Weapon_Active(1, 3, 0, 0), "a type out of ammunition uses its NoAmmoWeapon");
+	Check(!ObjectKeyRules::No_Ammo_Weapon_Active(1, 3, 1, 0), "a type with ammunition left does not");
+	Check(ObjectKeyRules::No_Ammo_Weapon_Active(1, 3, 1, 1), "NoAmmoAmount raises the threshold");
+	Check(!ObjectKeyRules::No_Ammo_Weapon_Active(-1, 3, 0, 0), "without NoAmmoWeapon nothing changes");
+	Check(!ObjectKeyRules::No_Ammo_Weapon_Active(1, -1, -1, 0), "unlimited ammunition never switches weapons");
+}
+
+
+void Test_Selection_And_Triplets(void)
+{
+	std::vector<bool> kept = ObjectKeyRules::Selection_Kept({true, false, true});
+	Check(!kept[0] && kept[1] && !kept[2], "low priority objects drop out when a normal one was caught");
+	kept = ObjectKeyRules::Selection_Kept({true, true});
+	Check(kept[0] && kept[1], "low priority objects stay when nothing else was caught");
+	kept = ObjectKeyRules::Selection_Kept({false, false});
+	Check(kept[0] && kept[1], "normal objects always stay");
+
+	int values[3] = {7, 7, 7};
+	Check(ObjectKeyRules::Parse_Triplet("64, 0,96", values) && values[0] == 64 && values[1] == 0 && values[2] == 96, "decimal triplets parse");
+	Check(ObjectKeyRules::Parse_Triplet("40h,0h,60h", values) && values[0] == 64 && values[1] == 0 && values[2] == 96, "hexadecimal triplets parse");
+	Check(ObjectKeyRules::Parse_Triplet("-5,0,1", values) && values[0] == -5, "negative values parse");
+	Check(!ObjectKeyRules::Parse_Triplet("1,2", values) && values[0] == -5, "a short list reports failure and leaves the result");
+}
+
 }
 
 
@@ -127,6 +171,9 @@ int main(void)
 	Test_Factory_Owners();
 	Test_Converted_Strength();
 	Test_Spy_Effects();
+	Test_Passengers();
+	Test_Payload_And_Ammo();
+	Test_Selection_And_Triplets();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

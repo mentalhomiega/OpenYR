@@ -861,6 +861,18 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsSpyAircraftVeterancy;
 		bool IsSpyBuildingVeterancy;
 
+		// EngineerRepairable (Ares): an engineer can restore this structure to full strength. Follows Repairable.
+		bool IsEngineerRepairable;
+
+		// MassSelectable (Ares): -1 leaves the stock rule, a structure that undeploys into a vehicle; 0 and 1 leave this structure out of a drag selection or put it in.
+		int MassSelectable;
+
+		// UnitSell (Ares): a vehicle or aircraft docked at this structure can be sold there. Follows UnitRepair.
+		bool IsUnitSell;
+
+		// IsPassable (Ares): vehicles and soldiers can enter the cells of this structure.
+		bool IsPassable;
+
 		// The cursor shown over this structure when a spy could infiltrate it, or empty for the stock enter cursor (Ares Cursor.Spy).
 		std::string CursorSpy;
 

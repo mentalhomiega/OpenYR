@@ -52,6 +52,8 @@
 #include "globals.h"
 #include "gmmath.h"
 #include "goptions.h"
+#include "objectkeyrules.h"
+#include "techtype.h"
 #include "house.h"
 #include "houstype.h"
 #include "hud.h"
@@ -3498,8 +3500,11 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 
 		/*
 		 * Sweep through all selectable objects and select the ones within the
-		 * bounding box.
+		 * bounding box. An object with LowSelectionPriority is held back until the
+		 * sweep is done, and left out if the box caught any object without the flag.
 		 */
+		std::vector<ObjectClass *> picks;
+		std::vector<bool> low_priority;
 		for (int index = 0; index < (int)SelectableObjects.size(); index++) {
 			Selectable & sel = SelectableObjects[index];
 			ObjectClass * obj = sel.Object;
@@ -3527,18 +3532,28 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
 					if ((type->UndeploysInto && !type->IsConstructionYard) || type->IsSelectableCombatant) {
 						force = true;
 					}
+					// MassSelectable=yes puts a structure in a drag selection, and no keeps it out (Ares).
+					if (type->MassSelectable >= 0) {
+						force = type->MassSelectable != 0;
+					}
 				}
 
 				HouseClass * hptr = obj->Owner_HouseClass();
 				if (hptr != NULL && hptr->Is_Player_Control() &&
 					obj->Class_Of()->IsSelectable &&
 					(obj->RTTI != RTTI_BUILDING || force)) {
-					if (obj->Select()) {
-						AllowVoice = false;
-					}
+					picks.push_back(obj);
+					low_priority.push_back(Options.PrioritySelectionFiltering && obj->Is_Techno() && static_cast<TechnoClass *>(obj)->TClass->IsLowSelectionPriority);
 				}
 			} else {
 				select_callback(sel.Object);
+			}
+		}
+
+		std::vector<bool> const kept = ObjectKeyRules::Selection_Kept(low_priority);
+		for (size_t index = 0; index < picks.size(); index++) {
+			if (kept[index] && picks[index]->Select()) {
+				AllowVoice = false;
 			}
 		}
 	}

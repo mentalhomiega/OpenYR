@@ -43,6 +43,7 @@
 #include "tactical.h"
 #include "tracker.h"
 #include "unit.h"
+#include "custompalette.h"
 #include "wave.h"
 #include "zbuffer.h"
 
@@ -666,7 +667,14 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 							flags = ShapeFlags_Type(SHAPE_TRANSLUCENT75|SHAPE_ALPHA|SHAPE_ZGRAD);
 						}
 					}
-					Draw_Shape(*LogicalSurface, *AnimDrawer, shape, shapenum, point, cliprect, (ShapeFlags_Type)(flags|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), 0, height_offset, ZGRAD_90DEG);
+					// A Palette of the type replaces the animation palette for a gas, smoke or fire image (Ares).
+					ConvertClass * drawer = AnimDrawer;
+					if (!Class->PaletteName.empty()) {
+						if (ConvertClass * custom = Custom_Palette_Drawer(Class->PaletteName)) {
+							drawer = custom;
+						}
+					}
+					Draw_Shape(*LogicalSurface, *drawer, shape, shapenum, point, cliprect, (ShapeFlags_Type)(flags|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), 0, height_offset, ZGRAD_90DEG);
 				}
 			} else {
 				Point2D pixel;

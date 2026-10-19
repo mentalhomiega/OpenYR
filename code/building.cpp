@@ -129,6 +129,7 @@
 #include "classids.h"
 #include "combat.h"
 #include "conquer.h"
+#include "custompalette.h"
 #include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
@@ -339,6 +340,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 		IsCloakable = Class->IsCloakable;
 		Set_Link_Count(std::max(Class->NumberOfDocks, 1));
 	}
+
+	Create_Initial_Payload();
 }
 
 
@@ -9215,6 +9218,14 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 			animptr->AlternativeBrightness = Apparent_Brightness();
 		}
 
+		// The animations of a structure with an art Palette are drawn through it too.
+		if (!Class->PaletteName.empty()) {
+			if (ConvertClass * custom = Custom_Palette_Drawer(Class->PaletteName, ColorSchemes[House_Display_Scheme(House)])) {
+				animptr->AlternativeDrawer = custom;
+				animptr->AlternativeBrightness = Apparent_Brightness();
+			}
+		}
+
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
 			animptr->Make_Invisible();
 		}
@@ -10877,6 +10888,10 @@ Coord BuildingClass::Voxel_Fire_Coord(int which, bool just_fired) const
 /// <param name="coord">The coordinate of the cell to flag.</param>
 void BuildingClass::Set_Occupy_Bit(Coord const & coord)
 {
+	// A passable structure (Ares IsPassable) leaves its cells free for vehicles and soldiers.
+	if (Class->IsPassable) {
+		return;
+	}
 	Map[coord.As_Cell()].Flag.Occupy.Building = true;
 }
 
@@ -10889,6 +10904,9 @@ void BuildingClass::Set_Occupy_Bit(Coord const & coord)
 /// <param name="coord">The coordinate of the cell to clear.</param>
 void BuildingClass::Clear_Occupy_Bit(Coord const & coord)
 {
+	if (Class->IsPassable) {
+		return;
+	}
 	Map[coord.As_Cell()].Flag.Occupy.Building = false;
 }
 

@@ -14,6 +14,7 @@
 #pragma once
 
 #include "objtype.h"
+#include <string>
 #include "rgb.h"
 
 #include "bsize.hh"
@@ -86,6 +87,9 @@ class TerrainTypeClass : public ObjectTypeClass
 		**	a good example of this.
 		*/
 		bool IsTiberiumSpawn;
+
+		// Palette (Phobos): the palette file, without extension or theater suffix, the terrain object is drawn with instead of the palette of the tile it stands on. Empty for the tile palette.
+		std::string PaletteName;
 
 		/*
 		**	If this terrain object is flammable (such as trees are) then this

@@ -52,6 +52,9 @@ class LaserDrawClass : public StageClass
 		// Mask strength of the beam's core line; set by the weapon that fired it. Not saved.
 		unsigned char EmissiveStrength;
 
+		// The width of the beam's core in pixels, from the weapon's LaserThickness (Ares). 1 draws the stock single line.
+		int Thickness;
+
 		/*
 		 * This is the color of the beam's thin core, drawn as a single line from one end to
 		 * the other.

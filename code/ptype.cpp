@@ -119,6 +119,9 @@ bool ParticleTypeClass::Read_INI(CCINIClass const & ini)
 		Translucent25State = ini.Get_Int(IniName, "Translucent25State", Translucent25State);
 
 		IsNormalized = ini.Get_Bool(IniName, "Normalized", IsNormalized);
+		if (ini.Is_Present(IniName, "Palette")) {
+			PaletteName = ini.Get_String(IniName, "Palette");
+		}
 		ColorSpeed = ini.Get_Float(IniName, "ColorSpeed", ColorSpeed);
 
 		XVelocity = ini.Get_Int(IniName, "XVelocity", XVelocity);
@@ -273,6 +276,7 @@ void ParticleTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Translucent25State);
 	stream.Serialize(Translucent50State);
 	stream.Serialize(IsNormalized);
+	stream.Serialize(PaletteName);
 	stream.Serialize(NextParticle);
 	stream.Serialize(BehavesLike);
 }

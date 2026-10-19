@@ -390,6 +390,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	MessageCapture(),
 	MessageLost(),
 	CursorSpy(),
+	IsEngineerRepairable(true),
+	MassSelectable(-1),
+	IsUnitSell(false),
+	IsPassable(false),
 	IsSpyEffectCustom(false),
 	IsSpyResetRadar(false),
 	SpyPowerOutage(0),
@@ -1422,6 +1426,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsPlug = ini.Get_Bool(Name(), "IsPlug", IsPlug);
 		IsCanTogglePower = ini.Get_Bool(Name(), "TogglePower", IsCanTogglePower);
 		IsCanUnitRepair = ini.Get_Bool(Name(), "UnitRepair", IsCanUnitRepair);
+		IsUnitSell = ini.Get_Bool(Name(), "UnitSell", IsCanUnitRepair);
+		IsEngineerRepairable = ini.Get_Bool(Name(), "EngineerRepairable", IsRepairable);
+		if (ini.Is_Present(Name(), "MassSelectable")) {
+			MassSelectable = ini.Get_Bool(Name(), "MassSelectable", false) ? 1 : 0;
+		}
+		IsPassable = ini.Get_Bool(Name(), "IsPassable", IsPassable);
 		IsCanUnitReload = ini.Get_Bool(Name(), "UnitReload", IsCanUnitReload);
 		IsOrePurifier = ini.Get_Bool(Name(), "OrePurifier", IsOrePurifier);
 		InfantryGainSelfHeal = ini.Get_Int(Name(), "InfantryGainSelfHeal", InfantryGainSelfHeal);
@@ -2649,6 +2659,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MessageCapture);
 	stream.Serialize(MessageLost);
 	stream.Serialize(CursorSpy);
+	stream.Serialize(IsEngineerRepairable);
+	stream.Serialize(MassSelectable);
+	stream.Serialize(IsUnitSell);
+	stream.Serialize(IsPassable);
 	stream.Serialize(IsSpyEffectCustom);
 	stream.Serialize(IsSpyResetRadar);
 	stream.Serialize(SpyPowerOutage);

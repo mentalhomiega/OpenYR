@@ -67,6 +67,10 @@ class AbstractTypeClass : public AbstractClass
 		// NOSTR: prefix, or else the Name text.
 		const char * Full_Name(void) const;
 
+		// The text a string table label stands for, or the text after an Ares NOSTR: prefix; NULL when the label names no text.
+		// The text is kept in cache.
+		static const char * Label_Text(std::string const & label, std::string & cache);
+
 		// The string table label of the name players see (UIName), or NOSTR: and the name, or empty.
 		std::string UINameLabel;
 

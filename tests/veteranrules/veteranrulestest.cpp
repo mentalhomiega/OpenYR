@@ -95,6 +95,17 @@ void Test_Experience(void)
 }
 
 
+void Test_Scaled_Experience(void)
+{
+	// A modifier of 1 gives the unscaled total, and any other modifier scales the share only.
+	Check(VeteranRules::Experience_After_Scaled_Kill(0, 1000, 1000, 10, 1, 1.0) == Kill(0, 1000, 1000, 10, 1), "a modifier of 1 changes nothing");
+	Check(VeteranRules::Experience_After_Scaled_Kill(0, 1000, 1000, 10, 2, 0.5) == double(0.05f), "half a modifier gives half the share");
+	Check(VeteranRules::Experience_After_Scaled_Kill(0.5, 1000, 1000, 10, 2, 2.0) == double(0.7f), "a modifier of 2 doubles the share and keeps the earlier total");
+	Check(VeteranRules::Experience_After_Scaled_Kill(0, 1000, 1000, 10, 2, 0.0) == 0.0, "a modifier of 0 adds nothing");
+	Check(VeteranRules::Experience_After_Scaled_Kill(1.9, 1000, 5000, 10, 2, 3.0) == 2.0, "the cap holds under a modifier");
+}
+
+
 void Test_Kill_Value(void)
 {
 	Check(VeteranRules::Kill_Value(1000, false, false, false) == 1000, "a rookie is worth its cost");
@@ -143,6 +154,7 @@ void Test_Multipliers(void)
 int main(void)
 {
 	Test_Experience();
+	Test_Scaled_Experience();
 	Test_Kill_Value();
 	Test_Multipliers();
 

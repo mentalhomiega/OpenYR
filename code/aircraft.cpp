@@ -2089,6 +2089,8 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 	if (action == ACTION_SELF) {
 		if (!Cargo.How_Many()) {
 		action = ACTION_NONE;
+		} else if (Class->IsNoManualUnload) {
+			action = ACTION_SELECT;
 		} else if (Map[(Coord const &)PositionCoord].Cell_Building() != NULL) {
 			action = ACTION_NO_DEPLOY;
 		}

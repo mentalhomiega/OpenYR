@@ -224,6 +224,32 @@ class WeaponTypeClass : public AbstractTypeClass
 		bool HasBeamColor;
 		RGBClass BeamColor;
 
+		// Beam.Duration and Beam.Amplitude (Ares): how long a radiation beam shows and how far it arches; -1 keeps the stock values.
+		int BeamDuration;
+		double BeamAmplitude;
+
+		// LaserThickness (Ares): the width in pixels of this weapon's laser; 1 is the stock line.
+		int LaserThickness;
+
+		// Wave.Color and Wave.Intensity (Ares): what a sonic, magnetron or laser wave of this weapon adds to each colour channel,
+		// as a constant and in proportion to the pixel it covers, in 256ths. Both are unset until the weapon names one.
+		bool HasWaveColor;
+		int WaveColor[3];
+		bool HasWaveIntensity;
+		int WaveIntensity[3];
+
+		// Wave.ReverseAgainstVehicles, Buildings, Infantry, Aircraft and Others (Ares): the wave is drawn from the target back to the firer. -1 follows IsMagBeam, which reverses a wave at a vehicle.
+		int WaveReverseVehicles;
+		int WaveReverseBuildings;
+		int WaveReverseInfantry;
+		int WaveReverseAircraft;
+		int WaveReverseOthers;
+		bool Wave_Is_Reversed_Against(int rtti) const;
+
+		// Cursor.Attack and Cursor.AttackOutOfRange (Ares): the mouse cursor names for a target in range and out of range.
+		std::string CursorAttack;
+		std::string CursorAttackOutOfRange;
+
 		/*
 		 * If this weapon always lobs its shot in a high arc, then this flag will be true.
 		 * Other weapons resort to an arc only when the target sits high enough overhead that

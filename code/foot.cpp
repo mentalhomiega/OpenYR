@@ -3514,7 +3514,7 @@ bool FootClass::Can_Demolish(void) const
 		case RTTI_AIRCRAFT:
 			if (In_Radio_Contact() &&
 				Contact_With_Whom()->RTTI == RTTI_BUILDING &&
-				((BuildingClass *)Contact_With_Whom())->Class->IsCanUnitRepair &&
+				((BuildingClass *)Contact_With_Whom())->Class->IsUnitSell &&
 				Distance(Contact_With_Whom()->Center_Coord()) < CELL_LEPTON / 2) {
 
 				return(true);
@@ -5275,6 +5275,9 @@ ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionT
 
 	TechnoTypeClass const * tclass = object->TClass;
 	if (tclass == NULL || tclass->Max_Passengers() <= 0) return(action);
+
+	// A NoManualEnter transport shows no enter cursor (Ares).
+	if (tclass->IsNoManualEnter) return(action);
 
 	// A moving transport, or one on a team whose script forbids loading, takes nobody.
 	if (object->Is_Foot()) {

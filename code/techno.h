@@ -957,6 +957,8 @@ class TechnoClass :	public RadioClass,
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
 		bool Is_Immune_To_Iron_Curtain(bool force_shield) const;
+		bool Uses_No_Ammo_Weapon(void) const;
+		void Create_Initial_Payload(void);
 		void Apply_Iron_Curtain_Warhead(WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse);
 		virtual bool Is_Ready_To_Random_Animate(void) const;
 		virtual bool Random_Animate(void) {return(false);}

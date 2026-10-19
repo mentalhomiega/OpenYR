@@ -133,6 +133,7 @@
 #include "tracker.h"
 
 #include <algorithm>
+#include <climits>
 #include <cassert>
 
 
@@ -293,12 +294,14 @@ void ObjectClass::AI(void)
 		}
 
 		if (!IsInLimbo) {
+			// FallRate.* of a type replace the fall acceleration and the fastest fall (Ares).
+			TechnoTypeClass const * const fall_type = Is_Techno() ? static_cast<TechnoClass *>(this)->TClass : NULL;
 			if (IsAnimAttached) {
-				Riser.Z -= 1;
-				Riser.Z = std::max<int>(Riser.Z, Rule->ParachuteMaxFallRate);
+				Riser.Z -= (fall_type != NULL && fall_type->FallRateParachute != INT_MIN) ? fall_type->FallRateParachute : 1;
+				Riser.Z = std::max<int>(Riser.Z, (fall_type != NULL && fall_type->FallRateParachuteMax != INT_MIN) ? fall_type->FallRateParachuteMax : Rule->ParachuteMaxFallRate);
 			} else {
-				Riser.Z -= GRAVITY;
-				Riser.Z = std::max<int>(Riser.Z, Rule->NoParachuteMaxFallRate);
+				Riser.Z -= (fall_type != NULL && fall_type->FallRateNoParachute != INT_MIN) ? (double)fall_type->FallRateNoParachute : GRAVITY;
+				Riser.Z = std::max<int>(Riser.Z, (fall_type != NULL && fall_type->FallRateNoParachuteMax != INT_MIN) ? fall_type->FallRateNoParachuteMax : Rule->NoParachuteMaxFallRate);
 			}
 
 			if (layer != In_Which_Layer()) {

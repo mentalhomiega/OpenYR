@@ -137,6 +137,9 @@ class AnimClass : public ObjectClass, public StageClass
 		*/
 		HousesType OwnerHouse;
 
+		// The house the MakeInfantry soldier of an animation type belongs to under its MakeInfantryOwner setting (Ares); the invoker's house stands when the type names no other.
+		static HousesType Make_Infantry_Owner(AnimTypeClass const * type, HouseClass const * invoker, HouseClass const * killer, HouseClass const * victim);
+
 		/*
 		 * If this animation is to be drawn through a palette other than the standard animation
 		 * drawer, then this points to that converter. Tiberium debris and burning victims are
