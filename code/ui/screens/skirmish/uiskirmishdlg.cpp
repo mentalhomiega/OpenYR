@@ -11,6 +11,8 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "csf.h"
+#include "lobbycolor.h"
 #include "autotest.h"
 #include "ccfile.h"
 #include "data.h"
@@ -436,17 +438,23 @@ void UI_Skirmish_State(UISkirmishState & state)
 		UISkirmishOption option;
 		option.Label = house->Full_Name();
 		option.Value = index;
+		if (!house->StatusText.empty()) {
+			option.Tip = Fetch_String_UTF8(house->StatusText.c_str());
+		}
 		state.Sides.push_back(option);
 	}
 
 	int const palette = (int)(sizeof(UI_SKIRMISH_COLORS) / sizeof(UI_SKIRMISH_COLORS[0]));
 	UI_Color_Pick_Build_Presets(state.Picker);
 	state.Colors.clear();
-	for (int index = 0; index < MAX_PLAYERS && index < palette; index++) {
+	for (int index = 0; index < Lobby_Color_Count(); index++) {
 		UISkirmishOption option;
-		option.Label = Fetch_String(UI_SKIRMISH_COLORS[index]);
+		option.Label = Lobby_Color_Name(index);
+		if (option.Label.empty() && index < palette) {
+			option.Label = Fetch_String(UI_SKIRMISH_COLORS[index]);
+		}
 		option.Value = index;
-		option.Color = UI_Color_Text(PlayerColorTable[index]);
+		option.Color = UI_Color_Text(Lobby_Color_Ref(index));
 		state.Colors.push_back(option);
 	}
 

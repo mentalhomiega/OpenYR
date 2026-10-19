@@ -11,6 +11,8 @@
 
 #include "shellmap.h"
 
+#include "playercolor.h"
+
 #include "_logic.h"
 #include "_rules.h"
 #include "_map.h"
@@ -302,15 +304,15 @@ bool Prepare_Battle(char * file, int file_size)
 	}
 
 	int const wanted = ConfigINI.Get_Int("MenuBattle", "Players", 4);
-	int const computers = std::clamp(std::min(wanted, starts), 2, MAX_MPLAYER_COLORS - 1);
+	int const computers = std::clamp(std::min(wanted, starts), 2, PLAYER_COLOR_SEATS - 1);
 
 	Free_Players(Battle);
-	NodeNameType * watcher = New_Node("Observer", observer_house, MAX_MPLAYER_COLORS - 1);
+	NodeNameType * watcher = New_Node("Observer", observer_house, PLAYER_COLOR_SEATS - 1);
 	watcher->Player.IsObserver = true;
 	Battle.Players.push_back(watcher);
 
 	std::vector<int> colors;
-	for (int color = 0; color < MAX_MPLAYER_COLORS - 1; color++) {
+	for (int color = 0; color < PLAYER_COLOR_SEATS - 1; color++) {
 		colors.push_back(color);
 	}
 	std::shuffle(colors.begin(), colors.end(), Dice);

@@ -92,6 +92,8 @@ The map preview is the map's `[Preview]` picture, enlarged or reduced to fit the
 
 A multiplayer match has a row for each player, and a skirmish one for the local player. From left to right, a row shows a bar in the player's color, the flag of the player's country, and the player's name in the player's color. The bar is the first frame of `PROGBARM.SHP` inside an outline in the player's color, and shows as much of its width as the share of the scenario that player has loaded. Rows follow each other down the screen, each as tall as the tallest of the bar's outline, the `USAI.PCX` flag and a line of text, plus 4 pixels. Magenta pixels of a flag are left out.
 
+A match plays a theme while it loads when the local player's country sets [`LoadingTheme=`](/keys/loadingtheme/#scope-housetype), or the country's side sets [`LoadingTheme=`](/keys/loadingtheme/#scope-side). Without either key the music is not changed. The theme starts once the rules have been read, and the match's own music takes over when the map is ready.
+
 ## Size on large screens
 
 The layout is drawn in the middle of the screen, enlarged smoothly, every pixel blended with its neighbors, to the largest size that fits at its own proportions: the screen's full height on a screen at least as wide as the layout's 4 to 3. A 1920 by 1080 screen therefore shows an 800 by 600 layout at 1.8 times its size, 1440 by 1080 pixels, a 2560 by 1440 screen at 2.4 times, and a 3840 by 2160 screen at 3.6 times. Black fills the rest of the screen. The text is part of the picture and is enlarged with it.

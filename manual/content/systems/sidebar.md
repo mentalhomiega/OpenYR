@@ -288,6 +288,8 @@ Each side has its own numbered set of archives, and they give the panel its per-
 
 The darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 
+The modern interface draws its own frames and icons. It colors them blue, red or purple for the first, second and third side, and a later side takes the hue of its first country's color scheme or the color of [`Hud.Color=`](/keys/hud.color/).
+
 ## Parsed settings without effect
 
 [`TimerWarning`](/keys/timerwarning/) is read but changes nothing. The mission timer's tab looks the same whether or not the time left is inside that many minutes.

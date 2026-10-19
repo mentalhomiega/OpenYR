@@ -47,6 +47,7 @@
 #include "always.h"
 
 #include "session.h"
+#include "lobbycolor.h"
 
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
@@ -1384,10 +1385,18 @@ int SessionClass::Color_Index_To_Scheme(int id)
 	static char const _table[] = { 3, 11, 21, 29, 13, 25, 17, 15, 5 };
 
 	if (id == -2) {
-		return(_table[8]);
+		int const observer = Lobby_Observer_Scheme();
+		return(observer >= 0 ? observer : _table[8]);
+	}
+	int const listed = Lobby_Color_Scheme(id);
+	if (listed >= 0) {
+		return(listed);
 	}
 	if (id >= 0 && id < (int)sizeof(_table)) {
 		return(_table[id]);
+	}
+	if (id >= (int)sizeof(_table) && id < Lobby_Color_Count()) {
+		return(_table[id % (int)(sizeof(_table) - 1)]);
 	}
 	return(id);
 }

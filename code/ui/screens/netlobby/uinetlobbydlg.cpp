@@ -11,6 +11,8 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "csf.h"
+#include "lobbycolor.h"
 #include "conquer.h"
 #include "data.h"
 #include "globals.h"
@@ -127,7 +129,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 			UINetPlayerRow row;
 			row.Name = who->Name;
-			row.Color = Player_Color_Is_Custom(who->Player.CustomColor) ? UI_Color_CSS(Player_Color_Preview(who->Player.CustomColor)) : UI_Color_Text(PlayerColorTable[who->Player.Color]);
+			row.Color = Player_Color_Is_Custom(who->Player.CustomColor) ? UI_Color_CSS(Player_Color_Preview(who->Player.CustomColor)) : UI_Color_Text(Lobby_Color_Ref(who->Player.Color));
 
 			int country = who->Player.House;
 			SideType side = (country >= HOUSE_FIRST && country < HouseTypes.Count()) ? HouseTypes[country]->Side : SIDE_NONE;
@@ -166,6 +168,9 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		UINetOption option;
 		option.Label = house->Full_Name();
 		option.Value = index;
+		if (!house->StatusText.empty()) {
+			option.Tip = Fetch_String_UTF8(house->StatusText.c_str());
+		}
 		if (index == Session.House) {
 			state.Side = (int)state.Sides.size();
 		}
@@ -174,11 +179,14 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 	int const palette = (int)(sizeof(UI_NET_COLORS) / sizeof(UI_NET_COLORS[0]));
 	state.Colors.clear();
-	for (int index = 0; index < MAX_MPLAYER_COLORS && index < palette; index++) {
+	for (int index = 0; index < Lobby_Color_Count(); index++) {
 		UINetOption option;
-		option.Label = Fetch_String(UI_NET_COLORS[index]);
+		option.Label = Lobby_Color_Name(index);
+		if (option.Label.empty() && index < palette) {
+			option.Label = Fetch_String(UI_NET_COLORS[index]);
+		}
 		option.Value = index;
-		option.Color = UI_Color_Text(PlayerColorTable[index]);
+		option.Color = UI_Color_Text(Lobby_Color_Ref(index));
 		state.Colors.push_back(option);
 	}
 	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
@@ -267,7 +275,7 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 
 void UINetLobbyEngineServiceClass::Set_Color(int index)
 {
-	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
+	if (index < 0 || index >= Lobby_Color_Count()) {
 		return;
 	}
 
@@ -282,7 +290,7 @@ void UINetLobbyEngineServiceClass::Set_Color(int index)
 
 void UINetLobbyEngineServiceClass::Set_Custom_Color(int index, unsigned int custom)
 {
-	if (index < 0 || index >= MAX_MPLAYER_COLORS || !Player_Color_Is_Custom(custom)) {
+	if (index < 0 || index >= Lobby_Color_Count() || !Player_Color_Is_Custom(custom)) {
 		return;
 	}
 

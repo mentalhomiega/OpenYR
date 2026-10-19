@@ -108,6 +108,7 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	BuildTimeDefensesMult(1.0),
 	Scheme(0),
 	Prefix('A'),
+	IsObserverFlagAltPalette(false),
 	ListIndex(100),
 	IsMultiplay(false),
 	IsMultiplayPassive(false),
@@ -258,6 +259,12 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		LoadScreenBrief = ini.Get_String(Name(), "LoadScreenText.Brief", LoadScreenBrief.c_str());
 		LoadScreenColor = ini.Get_String(Name(), "LoadScreenText.Color", LoadScreenColor.c_str());
 		FlagFile = ini.Get_String(Name(), "File.Flag", FlagFile.c_str());
+		LoadingTheme = ini.Get_String(Name(), "LoadingTheme", LoadingTheme.c_str());
+		StatusText = ini.Get_String(Name(), "MenuText.Status", StatusText.c_str());
+		TauntFile = ini.Get_String(Name(), "File.Taunt", TauntFile.c_str());
+		ObserverFlagFile = ini.Get_String(Name(), "File.ObserverFlag", ObserverFlagFile.c_str());
+		ObserverBackgroundFile = ini.Get_String(Name(), "File.ObserverBackground", ObserverBackgroundFile.c_str());
+		IsObserverFlagAltPalette = ini.Get_Bool(Name(), "File.ObserverFlagAltPalette", IsObserverFlagAltPalette);
 		ListIndex = ini.Get_Int(Name(), "ListIndex", ListIndex);
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
@@ -376,6 +383,12 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	LoadScreenBrief = parent.LoadScreenBrief;
 	LoadScreenColor = parent.LoadScreenColor;
 	FlagFile = parent.FlagFile;
+	LoadingTheme = parent.LoadingTheme;
+	StatusText = parent.StatusText;
+	TauntFile = parent.TauntFile;
+	ObserverFlagFile = parent.ObserverFlagFile;
+	ObserverBackgroundFile = parent.ObserverBackgroundFile;
+	IsObserverFlagAltPalette = parent.IsObserverFlagAltPalette;
 }
 
 

@@ -26,9 +26,15 @@
 #define PLAYER_COLOR_MIN_VALUE		96
 
 /*
- * The number of stock lobby colors. The engine checks it against MAX_MPLAYER_COLORS.
+ * The number of stock lobby colors, which is also the number of seats the color-blind safe colors
+ * cover. The engine checks it against MAX_MPLAYER_COLORS.
  */
 #define PLAYER_COLOR_SEATS		8
+
+/*
+ * The most lobby colors a UI file's [Colors] section can list.
+ */
+#define PLAYER_COLOR_LISTED_MAX		16
 
 /*
  * The smallest CIELAB distance, in Delta E 1976 units, between two colors that the lobby accepts

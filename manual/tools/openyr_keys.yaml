@@ -29,6 +29,7 @@ records:
   interface-scale: OpenYR
   map-packs-and-yrm-maps: OpenYR
   menu-styles: OpenYR
+  modern-interface-side-colors: OpenYR
   modern-ingame-interface: OpenYR
   modern-sidebar-rows: OpenYR
   mods-screen: OpenYR
@@ -109,6 +110,8 @@ records:
   ares-side-interface-keys: Ares
   ares-side-survivor-keys: Ares
   ares-side-score-screen-keys: Ares
+  ares-lobby-colors: Ares
+  ares-country-lobby-keys: Ares
   ares-country-interface-keys: Ares
   menu-buttons-follow-uimd: Ares
   rank-insignia-keys: Ares, Phobos

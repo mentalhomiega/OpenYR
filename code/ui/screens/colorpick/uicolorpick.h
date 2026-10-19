@@ -61,6 +61,8 @@ struct UIColorPickState
 };
 
 RGBClass UI_Stock_Color_RGB(int index);
+int UI_Stock_Color_Count(void);
+std::string UI_Stock_Color_Name(int index);
 std::string UI_Color_CSS(RGBClass const & rgb);
 RGBClass UI_Color_Pick_Color(UIColorPickState const & state);
 std::string UI_Color_Name(std::string const & stock_label, unsigned int custom);

@@ -42,7 +42,9 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "side.h"
 #include "tactical.h"
+#include "theme.h"
 #include "truecolour.h"
 #include "utf8.h"
 
@@ -691,6 +693,38 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 		CampaignBriefing = true;
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Plays the loading theme of the local player's country, else of the country's side, while a
+/// match's loading screen is up. A match with neither theme, or a player watching, leaves the
+/// music as it was.
+/// </summary>
+void LoadScreenClass::Play_Theme(void)
+{
+	if (!Active || !Match || Session.Players.Count() == 0 || Session.Players[0]->Player.IsObserver) {
+		return;
+	}
+	int const country = Session.Players[0]->Player.House;
+	if (country < 0 || country >= HouseTypes.Count()) {
+		return;
+	}
+	HouseTypeClass const * type = HouseTypes[country];
+	std::string name = type->LoadingTheme;
+	if (name.empty() && type->Side != SIDE_NONE && type->Side < Sides.Count()) {
+		name = Sides[type->Side]->LoadingTheme;
+	}
+	if (name.empty()) {
+		return;
+	}
+	ThemeType const theme = Theme.From_Name(name.c_str());
+	if (theme == THEME_NONE) {
+		DebugString("Loading screen: the theme %s is not in the theme list\n", name.c_str());
+		return;
+	}
+	DebugString("Loading screen: playing the theme %s\n", name.c_str());
+	Theme.Play_Song(theme);
 }
 
 

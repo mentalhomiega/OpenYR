@@ -13,7 +13,11 @@
 
 #include "ccfile.h"
 #include "ccini.h"
+#include "netglobal.h"
 #include "playerdisplay.h"
+
+#include <algorithm>
+#include <cstdio>
 
 
 namespace {
@@ -96,6 +100,29 @@ bool UIControlsClass::Read_INI(CCINIClass const & ini)
 		ColorBlindSafeColors[seat] = ini.Get_RGBClass(COLORBLIND_SAFE, STOCK_KEYS[seat], ColorBlindSafeColors[seat]);
 	}
 
+	// The lobby's player colors. Count is held between 8 and 16, and a slot keeps what an earlier
+	// file set for the parts this file leaves out.
+	LobbyColorCount = std::clamp(ini.Get_Int("Colors", "Count", LobbyColorCount), (int)PLAYER_COLOR_SEATS, (int)PLAYER_COLOR_LISTED_MAX);
+	NetGlobal::Set_Color_Limit(LobbyColorCount);
+	auto read_slot = [&ini](UILobbyColorType & slot, char const * prefix) {
+		char key[48];
+		std::snprintf(key, sizeof(key), "%s.ColorScheme", prefix);
+		slot.Scheme = ini.Get_String("Colors", key, slot.Scheme.c_str());
+		std::snprintf(key, sizeof(key), "%s.DisplayColor", prefix);
+		if (ini.Is_Present("Colors", key)) {
+			slot.Display = ini.Get_RGBClass("Colors", key, slot.Display);
+			slot.HasDisplay = true;
+		}
+		std::snprintf(key, sizeof(key), "%s.Tooltip", prefix);
+		slot.Tooltip = ini.Get_String("Colors", key, slot.Tooltip.c_str());
+	};
+	for (int slot = 0; slot < PLAYER_COLOR_LISTED_MAX; slot++) {
+		char prefix[16];
+		std::snprintf(prefix, sizeof(prefix), "Slot%d", slot + 1);
+		read_slot(LobbyColors[slot], prefix);
+	}
+	read_slot(ObserverColor, "Observer");
+
 	// The title menu buttons, in UIMenuButtonType order.
 	static char const * const BUTTON_KEYS[UI_BUTTON_COUNT] = {
 		"SinglePlayerButton", "NetworkButton", "WWOnlineButton", "MoviesAndCreditsButton", "CampaignButton",
@@ -132,6 +159,7 @@ bool UIControlsClass::Read_INI_File(char const * filename, bool reset)
 {
 	if (reset) {
 		*this = UIControlsClass();
+		NetGlobal::Set_Color_Limit(LobbyColorCount);
 		Player_View_Changed();
 	}
 

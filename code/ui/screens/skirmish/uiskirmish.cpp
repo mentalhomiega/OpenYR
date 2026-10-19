@@ -552,6 +552,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 			option.RegisterMember("label", &UISkirmishOption::Label);
 			option.RegisterMember("value", &UISkirmishOption::Value);
 			option.RegisterMember("color", &UISkirmishOption::Color);
+			option.RegisterMember("tip", &UISkirmishOption::Tip);
 
 			slot.RegisterMember("kind", &UISkirmishSlot::Kind);
 			slot.RegisterMember("side", &UISkirmishSlot::Side);

@@ -54,6 +54,9 @@ class LoadScreenClass
 		// the art mounts them here, and End or the destructor releases them.
 		void Mount_Art(void);
 
+		// Starts the match's loading theme, once the rules that name it have been read.
+		void Play_Theme(void);
+
 		// Draws a campaign mission's loading picture with its top left at the point given. False, with nothing drawn, when
 		// the picture or its palette cannot be read. Palette is the 800 by 600 palette file; small picks the side palette.
 		static bool Draw_Campaign_Picture(std::string const & picture, std::string const & palette, bool small, CCINIClass const * mission, Surface & surface, Point2D at);
