@@ -565,7 +565,7 @@ void SuperClass::Note_Enabled(bool player)
 {
 	if (!WasEnabled) {
 		WasEnabled = true;
-		if (Class->Keys.InitialReady && !IsSuspended) {
+		if (Class->Keys.InitialReady) {
 			Forced_Charge(player);
 		}
 	}

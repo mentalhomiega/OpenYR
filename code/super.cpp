@@ -849,7 +849,7 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 	for (int index = 0; index < covered.Count(); index++) {
 		TechnoClass * techno = covered[index];
 		if (techno->IsActive && !techno->IsInLimbo) {
-			techno->Iron_Curtain(Rule->IronCurtainDuration, House, false);
+			techno->Iron_Curtain(Class->Keys.ProtectDuration >= 0 ? Class->Keys.ProtectDuration : Rule->IronCurtainDuration, House, false);
 		}
 	}
 }
@@ -921,19 +921,26 @@ void SuperClass::Force_Shield(Cell const & cell)
 		new AnimClass(Rule->ForceShieldInvokeAnim, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
 
-	SpecialSoundTimer = Rule->ForceShieldDuration - Rule->ForceShieldPlayFadeSoundTime;
+	// Protect.* replace the rules values, SW.Range the radius, and SW.AffectsHouse the houses covered (the owner and its allies without it).
+	SuperWeaponKeys const & keys = Class->Keys;
+	int const duration = keys.ProtectDuration >= 0 ? keys.ProtectDuration : Rule->ForceShieldDuration;
+	int const outage = keys.ProtectPowerOutage >= 0 ? keys.ProtectPowerOutage : Rule->ForceShieldBlackoutDuration;
+	int const fade = keys.ProtectFadeSoundTime >= 0 ? keys.ProtectFadeSoundTime : Rule->ForceShieldPlayFadeSoundTime;
+	double const radius = (keys.AreaIsSet && !keys.AreaIsBlock) ? (keys.AreaRadius < 0.0f ? 100000.0 : (double)keys.AreaRadius) : (double)Rule->ForceShieldRadius;
+	SpecialSoundTimer = duration - fade;
 	IsSpecialSoundPending = Class->SpecialSound != VOC_NONE;
 	SpecialSoundCoord = coord;
 	Sound_Effect(Class->StartSound, coord);
 
-	House->PowerBlackout = Rule->ForceShieldBlackoutDuration;
+	House->PowerBlackout = outage;
 	House->IsPowerBlackout = true;
 	House->RecalcPower = true;
 
 	for (int index = Buildings.Count() - 1; index >= 0; index--) {
 		BuildingClass * building = Buildings[index];
-		if (House->Is_Ally(building) && (building->Center_Coord() - coord).Gamemd_Length() < Rule->ForceShieldRadius * CELL_LEPTON_W) {
-			building->Iron_Curtain(Rule->ForceShieldDuration, House, true);
+		bool const covered = keys.AffectsHouseSet ? SuperRules::House_Passes(keys.AffectsHouse, building->House == House, House->Is_Ally(building)) : House->Is_Ally(building);
+		if (covered && (building->Center_Coord() - coord).Gamemd_Length() < radius * CELL_LEPTON_W) {
+			building->Iron_Curtain(duration, House, true);
 		}
 	}
 }

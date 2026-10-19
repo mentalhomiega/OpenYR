@@ -115,6 +115,9 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	EMPulsePulseBall(NULL),
 	EMPulseNoPulseBall(false),
 	EMPulsePulseDelay(32),
+	ProtectDuration(-1),
+	ProtectPowerOutage(-1),
+	ProtectFadeSoundTime(-1),
 	NukePayload(NULL),
 	NukeSiloLaunch(true),
 	SonarPulseDelay(60),
@@ -413,6 +416,9 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulsePulseBall);
 	stream.Serialize(EMPulseNoPulseBall);
 	stream.Serialize(EMPulsePulseDelay);
+	stream.Serialize(ProtectDuration);
+	stream.Serialize(ProtectPowerOutage);
+	stream.Serialize(ProtectFadeSoundTime);
 	stream.Serialize(NukePayload);
 	stream.Serialize(NukeSiloLaunch);
 	stream.Serialize(SonarPulseDelay);
@@ -457,6 +463,9 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(DropPodMinimum);
 	crc(DropPodMaximum);
 	crc(EMPulsePulseDelay);
+	crc(ProtectDuration);
+	crc(ProtectPowerOutage);
+	crc(ProtectFadeSoundTime);
 	crc(SonarPulseDelay);
 	crc(BatteryPower);
 	crc(SpyPlaneCount);

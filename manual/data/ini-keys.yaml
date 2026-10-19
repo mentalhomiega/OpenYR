@@ -30211,6 +30211,57 @@ PropulsionSoundEffect:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+Protect.Duration:
+  key: Protect.Duration
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectDuration
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Protect.PlayFadeSoundTime:
+  key: Protect.PlayFadeSoundTime
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectFadeSoundTime
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Protect.PowerOutage:
+  key: Protect.PowerOutage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectPowerOutage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 ProtectWithWall:
   key: ProtectWithWall
   scopes:

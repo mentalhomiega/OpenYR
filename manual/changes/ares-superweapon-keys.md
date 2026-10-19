@@ -289,6 +289,15 @@ targets:
   id: Text.Ready
   effect: added
 - type: key
+  id: Protect.Duration
+  effect: added
+- type: key
+  id: Protect.PowerOutage
+  effect: added
+- type: key
+  id: Protect.PlayFadeSoundTime
+  effect: added
+- type: key
   id: Action
   effect: changed
 - type: enum

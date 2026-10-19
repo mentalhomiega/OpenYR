@@ -139,6 +139,9 @@ keys:
   - PostClick
   - PreClick
   - PreDependent
+  - Protect.Duration
+  - Protect.PlayFadeSoundTime
+  - Protect.PowerOutage
   - PsychicDominatorActivateSound
   - PsychicRevealActivateSound
   - PsychicRevealRadius
@@ -677,7 +680,7 @@ The drone type is [`HunterSeeker.Type=`](/keys/hunterseeker.type/) when the weap
 
 ### Iron curtain
 
-A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind:
+A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. [`SW.Range=`](/keys/sw.range/) changes the area, [`SW.AffectsHouse=`](/keys/sw.affectshouse/) and [`SW.AffectsTarget=`](/keys/sw.affectstarget/) limit which objects are covered, [`Protect.Duration=`](/keys/protect.duration/) replaces the protection time, and [`SW.Animation=`](/keys/sw.animation/) replaces the invoke animation. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind:
 
 - Infantry die, and the firing house is credited with the kill.
 - A vehicle or aircraft with [`Organic=yes`](/keys/organic/) takes damage equal to its full strength, which its armor can reduce.
@@ -742,6 +745,8 @@ A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: ea
 ### Force shield
 
 A `Type=ForceShield` weapon plays [`ForceShieldInvokeAnim`](/keys/forceshieldinvokeanim/) over the target and the weapon's [`StartSound`](/keys/startsound/#scope-superweapontype). Every structure of the firing house or its allies whose center is less than [`ForceShieldRadius`](/keys/forceshieldradius/) cells from the target is protected for [`ForceShieldDuration`](/keys/forceshieldduration/) frames, exactly as the [Iron Curtain](#iron-curtain) protects it. The firing house then makes no power for [`ForceShieldBlackoutDuration`](/keys/forceshieldblackoutduration/) frames. The weapon's [`SpecialSound`](/keys/specialsound/) plays [`ForceShieldPlayFadeSoundTime`](/keys/forceshieldplayfadesoundtime/) frames before the protection ends.
+
+[`Protect.Duration=`](/keys/protect.duration/), [`Protect.PowerOutage=`](/keys/protect.poweroutage/) and [`Protect.PlayFadeSoundTime=`](/keys/protect.playfadesoundtime/) replace the three rules values for one weapon. [`SW.Range=`](/keys/sw.range/) replaces the radius, and [`SW.AffectsHouse=`](/keys/sw.affectshouse/) replaces the owner-and-allies rule.
 
 Yuri's Revenge tints shielded structures with `ForceShieldColor`, which is not drawn yet.
 
@@ -874,7 +879,7 @@ The [Preferred target](/mapping/actions/taction-preferred-target/) action change
 
 ## Parsed settings without effect
 
-These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), the `Light.*` keys, [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Lightning.*`, `Dominator.*`, `Chronosphere.*`, `Protect.*`, `Mutate.*` and `Nuke.PsiWarning`/`Nuke.TakeOff` keys are not read.
+These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), the `Light.*` keys, [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Lightning.*`, `Dominator.*`, `Chronosphere.*`, `Mutate.*` and `Nuke.PsiWarning`/`Nuke.TakeOff` keys are not read.
 
 
 [`NukeProjectile`](/keys/nukeprojectile/) and [`NukeDown`](/keys/nukedown/) in `[SpecialWeapons]` are read but have no effect; a silo takes its projectile from a section's `WeaponType=` instead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in the same section have no effect either. [The EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) covers them.

@@ -191,6 +191,11 @@ struct SuperWeaponKeys
 	WeaponTypeClass const * NukePayload;
 	bool NukeSiloLaunch;
 
+	// IronCurtain and ForceShield: frames of protection, of power outage and before the end at which the fade sound plays; -1 keeps the rules value.
+	int ProtectDuration;
+	int ProtectPowerOutage;
+	int ProtectFadeSoundTime;
+
 	// SonarPulse.
 	int SonarPulseDelay;
 

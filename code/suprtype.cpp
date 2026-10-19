@@ -390,6 +390,10 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.Set_Pulse_Ball(ini.Get_String(IniName, "EMPulse.PulseBall"));
 		Keys.EMPulsePulseDelay = ini.Get_Int(IniName, "EMPulse.PulseDelay", Keys.EMPulsePulseDelay);
 
+		Keys.ProtectDuration = ini.Get_Int(IniName, "Protect.Duration", Keys.ProtectDuration);
+		Keys.ProtectPowerOutage = ini.Get_Int(IniName, "Protect.PowerOutage", Keys.ProtectPowerOutage);
+		Keys.ProtectFadeSoundTime = ini.Get_Int(IniName, "Protect.PlayFadeSoundTime", Keys.ProtectFadeSoundTime);
+
 		Keys.NukePayload = SuperKeyParse::Weapon_Named(ini.Get_String(IniName, "Nuke.Payload"), Keys.NukePayload);
 		Keys.NukeSiloLaunch = ini.Get_Bool(IniName, "Nuke.SiloLaunch", Keys.NukeSiloLaunch);
 

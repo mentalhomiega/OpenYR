@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-With `yes`, the weapon starts ready the first time the house holds it. Later charges take the full [`RechargeTime=`](/keys/rechargetime/). A weapon that starts suspended for lack of power charges normally.
+With `yes`, the weapon starts ready the first time the house holds it. Later charges take the full [`RechargeTime=`](/keys/rechargetime/). A weapon that starts suspended for lack of power is charged but stays on hold until power returns.
 
 ```ini title="rulesmd.ini"
 [MySpecial] ; example SuperWeaponType
