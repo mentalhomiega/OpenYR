@@ -347,6 +347,33 @@ static bool Read_INI_And_Expansion(CCINIClass & ini, char const * basename, char
 }
 
 
+/// <summary>
+/// Makes an [#include] section in any INI file read from here on find its files as the game
+/// finds data files, loose in the search folders or inside any mounted archive.
+/// </summary>
+static void Install_INI_Include_Reader(void)
+{
+	INIClass::Set_Include_Reader([](char const * name, std::string & text) {
+		CCFileClass file(name);
+		if (!file.Is_Available()) {
+			return(false);
+		}
+
+		FileStraw straw(file);
+		char block[4096];
+		text.clear();
+		for (;;) {
+			int const got = straw.Get(block, sizeof(block));
+			if (got <= 0) {
+				break;
+			}
+			text.append(block, (std::size_t)got);
+		}
+		return(true);
+	});
+}
+
+
 /***********************************************************************************************
  * Init_Game -- Main game initialization routine.                                              *
  *                                                                                             *
@@ -2356,6 +2383,8 @@ static bool Init_Bootstrap_Mixfiles(void)
 	//int index;
 	//char name[64];
 	//MFCD * expand;
+
+	Install_INI_Include_Reader();
 
 	// The language archives hold localised content such as CAMEOMD.MIX, which the secondary
 	// archives need, and are searched ahead of every other startup archive.
