@@ -95,6 +95,20 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	AbductBelowPercent(1.0),
 	AbductAnim(NULL),
 	IsAbductChangeOwner(false),
+	HasIvanDelay(false),
+	IvanDelay(0),
+	IvanWarhead(NULL),
+	HasIvanDamage(false),
+	IvanDamage(0),
+	IvanAttachSound(IVAN_SOUND_UNSET),
+	IvanTickingSound(IVAN_SOUND_UNSET),
+	IvanImage(),
+	IvanDetachable(-1),
+	IvanDetonateOnSell(-1),
+	IvanDestroysBridges(-1),
+	IvanCanDetonateTimeBomb(-1),
+	IvanImageData(NULL),
+	IvanImageLooked(false),
 	OpenToppedAnim(NULL),
 	OccupantAnim(NULL),
 	AssaultAnim(NULL),
@@ -247,6 +261,38 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AbductBelowPercent = ini.Get_Float(IniName, "Abductor.AbductBelowPercent", AbductBelowPercent);
 		AbductAnim = TGet_Class(ini, IniName, "Abductor.Anim", AbductAnim);
 		IsAbductChangeOwner = ini.Get_Bool(IniName, "Abductor.ChangeOwner", IsAbductChangeOwner);
+		if (ini.Is_Present(IniName, "IvanBomb.Delay")) {
+			IvanDelay = ini.Get_Int(IniName, "IvanBomb.Delay", IvanDelay);
+			HasIvanDelay = true;
+		}
+		IvanWarhead = TGet_Class(ini, IniName, "IvanBomb.Warhead", IvanWarhead);
+		if (ini.Is_Present(IniName, "IvanBomb.Damage")) {
+			IvanDamage = ini.Get_Int(IniName, "IvanBomb.Damage", IvanDamage);
+			HasIvanDamage = true;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.AttachSound")) {
+			IvanAttachSound = ini.Get_VocType(IniName, "IvanBomb.AttachSound", VOC_NONE);
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.TickingSound")) {
+			IvanTickingSound = ini.Get_VocType(IniName, "IvanBomb.TickingSound", VOC_NONE);
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.Image")) {
+			IvanImage = ini.Get_String(IniName, "IvanBomb.Image", "");
+			IvanImageData = NULL;
+			IvanImageLooked = false;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.Detachable")) {
+			IvanDetachable = ini.Get_Bool(IniName, "IvanBomb.Detachable", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.DetonateOnSell")) {
+			IvanDetonateOnSell = ini.Get_Bool(IniName, "IvanBomb.DetonateOnSell", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.DestroysBridges")) {
+			IvanDestroysBridges = ini.Get_Bool(IniName, "IvanBomb.DestroysBridges", true) ? 1 : 0;
+		}
+		if (ini.Is_Present(IniName, "IvanBomb.CanDetonateTimeBomb")) {
+			IvanCanDetonateTimeBomb = ini.Get_Bool(IniName, "IvanBomb.CanDetonateTimeBomb", false) ? 1 : 0;
+		}
 		OpenToppedAnim = TGet_Class(ini, IniName, "OpenToppedAnim", OpenToppedAnim);
 		OccupantAnim = TGet_Class(ini, IniName, "OccupantAnim", OccupantAnim);
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
@@ -535,6 +581,17 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AbductBelowPercent);
 	stream.Serialize(AbductAnim);
 	stream.Serialize(IsAbductChangeOwner);
+	stream.Serialize(HasIvanDelay);
+	stream.Serialize(IvanDelay);
+	stream.Serialize(IvanWarhead);
+	stream.Serialize(HasIvanDamage);
+	stream.Serialize(IvanDamage);
+	stream.Serialize(IvanAttachSound);
+	stream.Serialize(IvanTickingSound);
+	stream.Serialize(IvanDetachable);
+	stream.Serialize(IvanDetonateOnSell);
+	stream.Serialize(IvanDestroysBridges);
+	stream.Serialize(IvanCanDetonateTimeBomb);
 	stream.Serialize(IsDetachedRailgun);
 	stream.Serialize(BoltColorMask);
 	stream.Serialize(BoltColor[0]);

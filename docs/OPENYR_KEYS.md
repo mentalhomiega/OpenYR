@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 246 entries
+- [Rules](#rules): 256 entries
 - [Art](#art): 7 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -334,6 +334,16 @@ Bounty.Value=200
 | [`Bolt.Color3`](../manual/content/keys/bolt.color3.md) | The palette colour: the third strand uses colour 15 of the palette | The colour of the third strand of this weapon's electric bolt. | Ares |
 | [`Emissive`](../manual/content/keys/emissive--weapontype.md) | Computed; see the page | `Emissive` on a weapon sets the strength of the beam or electric bolt the weapon draws. | OpenYR |
 | [`IsDetachedRailgun`](../manual/content/keys/isdetachedrailgun.md) | `no` | Makes a weapon fire the railgun beam of IsRailgun without waiting for the previous beam to fade. | Ares |
+| [`IvanBomb.AttachSound`](../manual/content/keys/ivanbomb.attachsound.md) | `BombAttachSound` from `[AudioVisual]` | The sound played when a bomb this weapon plants is attached. | Ares |
+| [`IvanBomb.CanDetonateTimeBomb`](../manual/content/keys/ivanbomb.candetonatetimebomb.md) | `CanDetonateTimeBomb` from `[CombatDamage]` | Whether the player can set off a bomb this weapon plants by hand. | Ares |
+| [`IvanBomb.Damage`](../manual/content/keys/ivanbomb.damage.md) | `IvanDamage` from `[CombatDamage]` | The damage a bomb this weapon plants deals when it goes off. | Ares |
+| [`IvanBomb.Delay`](../manual/content/keys/ivanbomb.delay.md) | `IvanTimedDelay` from `[CombatDamage]` | The frames before a bomb this weapon plants goes off. | Ares |
+| [`IvanBomb.DestroysBridges`](../manual/content/keys/ivanbomb.destroysbridges.md) | `yes` | Whether a bomb this weapon plants on a bridge repair hut destroys the bridge. | Ares |
+| [`IvanBomb.Detachable`](../manual/content/keys/ivanbomb.detachable.md) | `yes` | Whether a bomb this weapon plants can be removed by a bomb disarming weapon. | Ares |
+| [`IvanBomb.DetonateOnSell`](../manual/content/keys/ivanbomb.detonateonsell.md) | no, so selling the structure removes the bomb | Whether a bomb this weapon plants goes off when the structure carrying it is sold. | Ares |
+| [`IvanBomb.Image`](../manual/content/keys/ivanbomb.image.md) | ``BOMBCURS`` | The icon file shown over an object carrying a bomb this weapon planted. | Ares |
+| [`IvanBomb.TickingSound`](../manual/content/keys/ivanbomb.tickingsound.md) | `BombTickingSound` from `[AudioVisual]` | The sound a bomb this weapon plants makes while it counts down. | Ares |
+| [`IvanBomb.Warhead`](../manual/content/keys/ivanbomb.warhead.md) | `IvanWarhead` from `[CombatDamage]` | The warhead a bomb this weapon plants goes off with. | Ares |
 
 ### [AI]
 

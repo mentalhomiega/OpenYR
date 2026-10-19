@@ -90,6 +90,7 @@
 **							and writes the frames each has left
 **	forceshield <TypeID> <frames>	puts the player's objects of that type under the Force Shield for that many frames, as the superweapon does,
 **							and writes the frames each has left
+**	plantbomb <TypeID>:<Weapon>	the player's first infantryman plants the weapon's Ivan bomb on the player's objects of that type
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
@@ -3190,6 +3191,23 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Iron_Curtain(step.X, PlayerPtr, true);
 				DebugString("AUTOTEST   forceshield %s at %d,%d for %d: %d frames left, shielded %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->IsForceShielded);
+			}
+		}
+	} else if (step.Command == "plantbomb") {
+		// plantbomb <TypeID>:<Weapon>: the first infantryman of the player plants the weapon's Ivan bomb on each of the player's objects of that type.
+		std::size_t const colon = step.Argument.find(':');
+		std::string const type_name = step.Argument.substr(0, colon);
+		WeaponTypeClass const * weapon = colon != std::string::npos ? WeaponTypeClass::Find_Or_Make(step.Argument.substr(colon + 1).c_str()) : NULL;
+		TechnoClass * planter = NULL;
+		for (int index = 0; index < Infantry.Count() && planter == NULL; index++) {
+			if (Infantry[index]->House == PlayerPtr && !Infantry[index]->IsInLimbo) {
+				planter = Infantry[index];
+			}
+		}
+		for (int index = 0; planter != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+				techno->Plant_Bomb(planter, weapon);
 			}
 		}
 	} else if (step.Command == "hurt") {

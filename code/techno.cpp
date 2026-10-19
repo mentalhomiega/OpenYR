@@ -218,6 +218,7 @@
 #include "voc.h"
 #include "vox.h"
 #include "voxdrsys.h"
+#include "ivanrules.h"
 #include "projectilerules.h"
 #include "warhead.h"
 #include "warheadrules.h"
@@ -333,6 +334,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombHouse(NULL),
 	BombPlantFrame(0),
 	BombDetonateFrame(-1),
+	BombWeapon(NULL),
 	IsBerzerk(false),
 	BerzerkDuration(0),
 	BombSound(),
@@ -1510,15 +1512,22 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
 	if (Is_Bomb_Visible()) {
 		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		if (_bombcurs != NULL) {
-			int frame = 0;
-			if (Rule->IvanTimedDelay >= 6) {
-				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+		ShapeSet const * icons = _bombcurs;
+		// A weapon's IvanBomb.Image replaces the icon file when the file can be loaded.
+		if (BombWeapon != NULL && !BombWeapon->IvanImage.empty()) {
+			if (!BombWeapon->IvanImageLooked) {
+				BombWeapon->IvanImageLooked = true;
+				BombWeapon->IvanImageData = (ShapeSet const *)MFCD::Retrieve((BombWeapon->IvanImage + ".SHP").c_str());
 			}
-			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
-				frame++;
+			if (BombWeapon->IvanImageData != NULL) {
+				icons = BombWeapon->IvanImageData;
 			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (icons != NULL) {
+			int const frame = IvanBombRules::Icon_Frame(Frame - BombPlantFrame, Bomb_Delay(), IvanBombRules::Icon_Blocks(icons->Get_Count()), Rule->IvanIconFlickerRate, Frame);
+			if (frame >= 0) {
+				Draw_Shape(*LogicalSurface, *NormalDrawer, icons, frame, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
 		}
 	}
 
@@ -3788,7 +3797,8 @@ void TechnoClass::AI(void)
 	// As TechnoClass::Update (0x6F9E50) and BombListClass::Update (0x438BF0): the bomb ticks where the planter's player can hear it, and goes off on time.
 	if (BombDetonateFrame != -1) {
 		if (BombHouse != NULL && BombHouse->Is_Player_Control()) {
-			Play_If_In_Range(Rule->BombTickingSound, Center_Coord(), &BombSound, true);
+			int const sound = BombWeapon != NULL && BombWeapon->IvanTickingSound != WeaponTypeClass::IVAN_SOUND_UNSET ? BombWeapon->IvanTickingSound : Rule->BombTickingSound;
+			Play_If_In_Range((VocType)sound, Center_Coord(), &BombSound, true);
 		}
 		if (Frame > BombDetonateFrame) {
 			Detonate_Bomb();
@@ -5689,7 +5699,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	the no action flag.
 		*/
 		// The player sets off their own bomb by clicking the vehicle or soldier carrying it (TechnoClass::MouseOverObject, 0x6FFEC0).
-		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Rule->IsCanDetonateTimeBomb) {
+		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Can_Detonate_Bomb()) {
 			return(ACTION_DETONATE);
 		}
 
@@ -8372,10 +8382,11 @@ void TechnoClass::Delete_Me(void)
 
 /// <summary>
 /// Fixes an Ivan bomb to this object (BombListClass::Plant, 0x438E70). Only a soldier plants
-/// one, and an object holds one bomb at a time. BombAttachSound plays when the planter is the
-/// player's.
+/// one, and an object holds one bomb at a time. The attach sound plays when the planter is the
+/// player's. The bomb takes its delay, sounds and other settings from the weapon's IvanBomb keys
+/// where it writes them, and from the rules otherwise.
 /// </summary>
-void TechnoClass::Plant_Bomb(TechnoClass * planter)
+void TechnoClass::Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon)
 {
 	if (planter == NULL || planter->RTTI != RTTI_INFANTRY || BombDetonateFrame != -1) {
 		return;
@@ -8383,10 +8394,33 @@ void TechnoClass::Plant_Bomb(TechnoClass * planter)
 	BombOwner = planter;
 	BombHouse = planter->House;
 	BombPlantFrame = Frame;
-	BombDetonateFrame = Frame + Rule->IvanTimedDelay;
-	if (BombHouse->Is_Player_Control()) {
-		Sound_Effect(Rule->BombAttachSound, Center_Coord());
+	BombWeapon = weapon;
+	BombDetonateFrame = Frame + Bomb_Delay();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb planted on %s by %s with %s at frame %d, goes off at frame %d\n", TClass->Name(), planter->TClass->Name(), weapon != NULL ? weapon->Name() : "no weapon", Frame, BombDetonateFrame);
 	}
+	if (BombHouse->Is_Player_Control()) {
+		int const sound = weapon != NULL && weapon->IvanAttachSound != WeaponTypeClass::IVAN_SOUND_UNSET ? weapon->IvanAttachSound : Rule->BombAttachSound;
+		Sound_Effect((VocType)sound, Center_Coord());
+	}
+}
+
+
+/// <summary>
+/// The frames the bomb on this object runs before it goes off: the planting weapon's IvanBomb.Delay, or IvanTimedDelay.
+/// </summary>
+int TechnoClass::Bomb_Delay(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->HasIvanDelay ? BombWeapon->IvanDelay : Rule->IvanTimedDelay);
+}
+
+
+/// <summary>
+/// Can the player set off the bomb on this object by hand: the planting weapon's IvanBomb.CanDetonateTimeBomb, or CanDetonateTimeBomb?
+/// </summary>
+bool TechnoClass::Can_Detonate_Bomb(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->IvanCanDetonateTimeBomb >= 0 ? BombWeapon->IvanCanDetonateTimeBomb != 0 : Rule->IsCanDetonateTimeBomb);
 }
 
 
@@ -8401,24 +8435,30 @@ void TechnoClass::Detonate_Bomb(void)
 		return;
 	}
 	TechnoClass * planter = BombOwner;
+	WeaponTypeClass const * const weapon = BombWeapon;
 	bool const harmless = IsInLimbo;
 	Disarm_Bomb();
-	if (harmless || Rule->IvanWarhead == NULL) {
+	WarheadTypeClass const * const warhead = weapon != NULL && weapon->IvanWarhead != NULL ? weapon->IvanWarhead : Rule->IvanWarhead;
+	int const damage = weapon != NULL && weapon->HasIvanDamage ? weapon->IvanDamage : Rule->IvanDamage;
+	if (harmless || warhead == NULL) {
 		return;
 	}
 
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb on %s goes off at frame %d: damage %d, warhead %s\n", TClass->Name(), Frame, damage, warhead->Name());
+	}
 	Coord const coord = PositionCoord;
-	AnimTypeClass const * anim = Combat_Anim(Rule->IvanDamage, Rule->IvanWarhead, Map[coord].Land_Type(), coord);
+	AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
 	if (anim != NULL) {
 		new AnimClass(anim, coord);
 	}
-	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true);
+	Explosion_Damage(coord, damage, planter, warhead, true);
 
 	/*
 	 * A bridge repair hut that carries the bomb also runs the bridge search beside it once the
 	 * bomb has gone off (BombClass::Detonate, 0x438720).
 	 */
-	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut) {
+	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut && (weapon == NULL || weapon->IvanDestroysBridges != 0)) {
 		Map.Destroy_Bridge_At(Get_Cell());
 	}
 }
@@ -8428,6 +8468,7 @@ void TechnoClass::Disarm_Bomb(void)
 {
 	BombOwner = NULL;
 	BombHouse = NULL;
+	BombWeapon = NULL;
 	BombDetonateFrame = -1;
 	BombSound.Stop();
 	BombSound.Clear();
@@ -10789,6 +10830,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombHouse);
 	stream.Serialize(BombPlantFrame);
 	stream.Serialize(BombDetonateFrame);
+	stream.Serialize(BombWeapon);
 	stream.Serialize(IsBerzerk);
 	stream.Serialize(BerzerkDuration);
 	stream.Serialize(IsForceShielded);

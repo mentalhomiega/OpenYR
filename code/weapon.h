@@ -32,6 +32,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "abstype.h"
 #include "rgb.h"
 #include "typelist.h"
@@ -45,6 +47,7 @@ class ParticleSystemTypeClass;
 class AnimTypeClass;
 class WarheadTypeClass;
 class BulletTypeClass;
+class ShapeSet;
 
 
 /**********************************************************************
@@ -333,6 +336,27 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// Abductor.ChangeOwner (Ares): does the target change to the firer's house?
 		bool IsAbductChangeOwner;
+
+		// IvanBomb.* (Ares): what a bomb this weapon plants does, in place of the [CombatDamage] and [AudioVisual] settings. A
+		// setting the weapon does not write is -1 (IVAN_SOUND_UNSET for a sound, NULL or empty for the rest, and a flag for a number) and leaves that
+		// setting in charge.
+		bool HasIvanDelay;
+		int IvanDelay;
+		WarheadTypeClass const * IvanWarhead;
+		bool HasIvanDamage;
+		int IvanDamage;
+		int IvanAttachSound;
+		int IvanTickingSound;
+		static int const IVAN_SOUND_UNSET = -2;
+		std::string IvanImage;
+		int IvanDetachable;
+		int IvanDetonateOnSell;
+		int IvanDestroysBridges;
+		int IvanCanDetonateTimeBomb;
+
+		// The icon file IvanBomb.Image names, found the first time a bomb of this weapon is drawn. Not saved.
+		mutable ShapeSet const * IvanImageData;
+		mutable bool IvanImageLooked;
 		AnimTypeClass const * OpenToppedAnim;
 
 		// Played at the muzzle of a garrisoned structure each time an occupant fires this weapon.

@@ -4386,6 +4386,13 @@ void BuildingClass::Sell_Back(int control)
 		**	appropriate action.
 		*/
 		if (decon) {
+			// A bomb planted by a weapon with IvanBomb.DetonateOnSell=yes goes off when the sale starts.
+			if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+				Detonate_Bomb();
+				if (!IsActive) {
+					return;
+				}
+			}
 			Assign_Mission(MISSION_DECONSTRUCTION);
 			Commence();
 			//if (House->Is_Player_Control()) {
@@ -4428,6 +4435,12 @@ void BuildingClass::Assign_Planning_Path(void)
 		return;
 	}
 
+	if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+		Detonate_Bomb();
+		if (!IsActive) {
+			return;
+		}
+	}
 	Assign_Mission(MISSION_DECONSTRUCTION);
 	Commence();
 	if (House->Is_Player_Control()) {

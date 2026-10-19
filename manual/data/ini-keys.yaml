@@ -22236,6 +22236,176 @@ IvanBomb:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+IvanBomb.AttachSound:
+  key: IvanBomb.AttachSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: IvanAttachSound
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.CanDetonateTimeBomb:
+  key: IvanBomb.CanDetonateTimeBomb
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: IvanCanDetonateTimeBomb
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.Damage:
+  key: IvanBomb.Damage
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WeaponTypeClass
+      member: IvanDamage
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.Delay:
+  key: IvanBomb.Delay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WeaponTypeClass
+      member: IvanDelay
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.DestroysBridges:
+  key: IvanBomb.DestroysBridges
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: IvanDestroysBridges
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.Detachable:
+  key: IvanBomb.Detachable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: IvanDetachable
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.DetonateOnSell:
+  key: IvanBomb.DetonateOnSell
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: IvanDetonateOnSell
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.Image:
+  key: IvanBomb.Image
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: WeaponTypeClass
+      member: IvanImage
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.TickingSound:
+  key: IvanBomb.TickingSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: IvanTickingSound
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IvanBomb.Warhead:
+  key: IvanBomb.Warhead
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WeaponTypeClass
+      member: IvanWarhead
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IvanDamage:
   key: IvanDamage
   scopes:

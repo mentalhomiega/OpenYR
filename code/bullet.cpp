@@ -1544,14 +1544,19 @@ void BulletClass::Detonate(Coord const & coord)
 	else if (warhead->IsIvanBomb) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (target != NULL) {
-			target->Plant_Bomb(Payback);
+			target->Plant_Bomb(Payback, Weapon);
 		}
 	}
 
 	// A bomb disarming warhead removes the target's bomb (BombClass::Disarm, 0x4389B0).
 	else if (warhead->IsBombDisarm && !direct_rocks) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (target != NULL) {
+		// A bomb planted by a weapon with IvanBomb.Detachable=no stays on.
+		bool const detachable = target != NULL && (target->BombWeapon == NULL || target->BombWeapon->IvanDetachable != 0);
+		if (AutoTest_Active() && target != NULL) {
+			DebugString("AUTOTEST bomb on %s: defusing %s at frame %d\n", target->TClass->Name(), detachable ? "removes it" : "fails", Frame);
+		}
+		if (detachable) {
 			target->Disarm_Bomb();
 		}
 	}
