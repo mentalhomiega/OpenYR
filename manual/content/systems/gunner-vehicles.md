@@ -51,7 +51,7 @@ A [`Gunner=yes`](/keys/gunner/) vehicle with [`TurretCount`](/keys/turretcount/)
 Weapons are counted from `0` here, so weapon `0` is [`Weapon1`](/keys/weapon1/) of the vehicle's [numbered list](/systems/gattling-weapons/#numbered-weapon-lists), weapon `2` is `Weapon3`, and so on.
 
 - An empty gunner vehicle fires weapon `0`.
-- When a passenger boards the empty vehicle, the vehicle fires the weapon that passenger's [`IFVMode`](/keys/ifvmode/) names. A value outside `0` to `17` selects weapon `0`.
+- When a passenger boards the empty vehicle, the vehicle fires the weapon that passenger's [`IFVMode`](/keys/ifvmode/) names. A value outside `0` to `63` selects weapon `0`.
 - Passengers who board after the first, and passengers who leave while others stay aboard, change nothing.
 - Once the last passenger leaves or dies, the vehicle returns to weapon `0`.
 

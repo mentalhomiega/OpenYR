@@ -116,6 +116,8 @@ records:
   ares-eva-keys: Ares
   ares-spy-effect-keys: Ares
   ares-warhead-effect-keys: Ares
+  ares-more-mo-keys: Ares
+  phobos-more-mo-keys: Phobos
   ares-convert-deploy: Ares
   ares-type-presentation-keys: Ares
   ares-type-cursor-keys: Ares
