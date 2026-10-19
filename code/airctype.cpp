@@ -103,6 +103,16 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	IsMoveToShroud = false;
 	Rotation = 32;
 	IsCrashable = true;
+	IsConsideredAircraft = true;
+}
+
+
+/// <summary>
+/// Aircraft never take an attack-move order, whatever weapons they carry.
+/// </summary>
+bool AircraftTypeClass::Can_Attack_Move(void) const
+{
+	return(false);
 }
 
 
