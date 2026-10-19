@@ -110,6 +110,10 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	DetonationAltitude(0),
 	Color(0),
 	Trailer(0),
+	SpawnDelay(3),
+	ScaledSpawnDelay(0),
+	IsScalable(false),
+	IsFirersPalette(false),
 	ROT(0),
 	RetargetAccuracy(0),
 	Arming(0),
@@ -197,8 +201,12 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsSplits = ini.Get_Bool(Name(), "Splits", IsAirburst);
 		RetargetAccuracy = ini.Get_Float(Name(), "RetargetAccuracy", RetargetAccuracy);
 
+		IsScalable = ini.Get_Bool(Name(), "Scalable", IsScalable);
+		IsFirersPalette = ini.Get_Bool(Name(), "FirersPalette", IsFirersPalette);
+
 		if (ini.Get_String(Name(), "Image", "", GraphicName) > 0) {
 			Trailer = TGet_Class(ArtINI, Graphic_Name(), "Trailer", Trailer);
+			SpawnDelay = ArtINI.Get_Int(Graphic_Name(), "SpawnDelay", SpawnDelay);
 			IsFaceless = !ArtINI.Get_Bool(Graphic_Name(), "Rotates", !IsFaceless);
 		}
 
@@ -317,6 +325,8 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(Arming);
 	crc(IsSplits);
 	crc(RetargetAccuracy);
+	crc(SpawnDelay);
+	crc(IsScalable);
 }
 
 
@@ -363,6 +373,10 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDegenerate);
 	stream.Serialize(IsBouncy);
 	stream.Serialize(IsAnimPalette);
+	stream.Serialize(IsScalable);
+	stream.Serialize(IsFirersPalette);
+	stream.Serialize(SpawnDelay);
+	stream.Serialize(ScaledSpawnDelay);
 	stream.Serialize(IsSplits);
 	stream.Serialize(IsAntiVehicle);
 	stream.Serialize(Cluster);

@@ -126,7 +126,22 @@ class BulletClass : public ObjectClass
 		AnimClass * NextAnim;
 		bool SpawnNextAnim;
 
+	private:
+		// Every projectile of a Scalable=yes type that a vehicle has fired and that is still in flight.
+		static DynamicVectorClass<BulletClass *> ScalableBullets;
+
+	public:
+
 		void Set_Payback(TechnoClass * firer) { Payback = firer; }
+
+		// Registers this Scalable projectile and lengthens its type's trail delay while many are in flight.
+		void Init_Scalable(void);
+
+		/*
+		 * The index of the house whose color scheme draws this projectile when its type sets
+		 * FirersPalette=yes, or -1 when no firer was known; the local player's scheme is used then.
+		 */
+		int FirerHouse;
 
 	private:
 		/*

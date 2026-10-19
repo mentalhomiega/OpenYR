@@ -224,9 +224,22 @@ class BulletTypeClass : public ObjectTypeClass
 
 		/*
 		 * This is the animation that trails behind this projectile in flight -- a missile's
-		 * smoke trail. It is spawned every third game frame. If NULL, there is no trail.
+		 * smoke trail. It is spawned on every game frame that is a multiple of the trail delay
+		 * below. If NULL, there is no trail.
 		 */
 		AnimTypeClass *Trailer;
+
+		// The trail delay, in frames, from the art section's SpawnDelay.
+		int SpawnDelay;
+
+		// The trail delay that replaces SpawnDelay while it is not zero. Firing a Scalable projectile sets it.
+		int ScaledSpawnDelay;
+
+		// A vehicle that fires a Scalable=yes projectile lengthens the trail delay of its type while many of these projectiles are in flight.
+		bool IsScalable;
+
+		// A FirersPalette=yes shape projectile is drawn in the color scheme of the house that fired it.
+		bool IsFirersPalette;
 
 		/*
 		**	This is the rotation speed of the bullet. It only has practical value

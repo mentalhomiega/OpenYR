@@ -98,6 +98,7 @@ enum ActionType {
 	ACTION_NO_IVAN_BOMB,	// The object cannot take an Ivan bomb.
 	ACTION_DISARM_BOMB,		// Disarm the Ivan bomb on the object.
 	ACTION_DETONATE,		// Set off the Ivan bomb this object carries.
+	ACTION_DEMOLISH,		// Attack with a weapon that has SabotageCursor=yes; shown with the demolition cursor.
 
 	ACTION_COUNT
 };
