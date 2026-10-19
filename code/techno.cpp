@@ -9944,11 +9944,13 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 		rank = -1;
 	}
 	if (rank >= 0) {
-		if (TClass->InsigniaFrame[rank] >= 0) {
-			veterancy_shape = TClass->InsigniaFrame[rank];
-		}
+		// A custom file without a frame number shows its first frame, which also gives a rookie an insignia.
 		if (TClass->InsigniaShapes[rank] != NULL) {
 			pips1 = TClass->InsigniaShapes[rank];
+			veterancy_shape = 0;
+		}
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
 		}
 	}
 	if (veterancy_shape != PIP_NONE) {
