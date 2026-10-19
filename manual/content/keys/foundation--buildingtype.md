@@ -8,7 +8,7 @@ when_omitted:
   value: "1x1"
 ---
 
-The value is one of the fixed [building foundation](/reference/enums/building-foundation/) names, matched without regard to case. In the Image ID entry, any other value gives the structure a one-cell footprint.
+The value is one of the fixed [building foundation](/reference/enums/building-foundation/) names, matched without regard to case, or `Custom` for a footprint of any shape (below). In the Image ID entry, any other value gives the structure a one-cell footprint.
 
 The footprint alone fixes a structure's shape on the map. It sets:
 
@@ -35,3 +35,28 @@ The width and height are the two numbers in the name, and `3x3Refinery` counts a
 ## The second reading
 
 To give a structure a one-cell footprint, write `Foundation=1x1` in its Image ID entry and write no other size in the entry named after the BuildingType.
+
+## Custom footprints
+
+`Foundation=Custom` follows the Ares format and lists the footprint cell by cell:
+
+| Key | Value |
+|---|---|
+| `Foundation.X`, `Foundation.Y` | The width and height in cells. Both must be at least 1, or the entry keeps the size it had. |
+| `Foundation.0`, `Foundation.1`, ... | The occupied cells as `x,y` offsets from the top-left cell. The list ends at the first missing number or after width times height entries. With none, every cell of the rectangle is occupied. |
+| `FoundationOutline.Length` | The number of cells in the exit ring. |
+| `FoundationOutline.0`, `FoundationOutline.1`, ... | The exit ring as `x,y` offsets, in the order a finished object tries them. With no ring given, every free cell that touches the footprint, diagonals included, is used, row by row from the top. |
+
+```ini title="art.ini"
+[MYPOWR] ; an L-shaped structure: three cells across, one below the left end
+Foundation=Custom
+Foundation.X=3
+Foundation.Y=2
+Foundation.0=0,0
+Foundation.1=1,0
+Foundation.2=2,0
+Foundation.3=0,1
+```
+
+A war factory leaves by the eleventh cell of its exit ring, as with the fixed sizes. Give a custom war factory at least eleven ring cells; with fewer, its vehicles have no preferred exit cell. The entry named after the BuildingType is read before the Image ID entry, and a fixed size written in either clears a custom footprint read earlier.
+

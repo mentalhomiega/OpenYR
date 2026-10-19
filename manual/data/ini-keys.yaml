@@ -4835,7 +4835,7 @@ BehavesLike:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: &id057
+  - applies_to: &id058
     - ParticleSystemType
     file: rules.ini
     section:
@@ -16111,6 +16111,32 @@ Foundation:
       overrides only when it resolves to something other than 1x1, so a 1x1 or an unrecognized value there
       cannot replace the footprint the image entry gave
     level: BuildingTypeClass
+  - applies_to: *id005
+    file: art.ini
+    section: &id055
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    read_from:
+    - file: art.ini
+      section:
+        kind: identifier
+        source: object-type
+      value_type: string
+      applies_to: *id005
+    - file: art.ini
+      section: *id055
+      value_type: string
+      applies_to: *id005
+    precedence: accepted under more than one entry heading; the last one the engine reads wins
+    level: BuildingTypeClass
   - applies_to: *id009
     file: art.ini
     section:
@@ -16556,10 +16582,10 @@ GameForming:
 GameSpeed:
   key: GameSpeed
   scopes:
-  - applies_to: &id055
+  - applies_to: &id056
     - global rules
     file: rules.ini
-    section: &id056
+    section: &id057
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -16576,11 +16602,11 @@ GameSpeed:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id055
+      applies_to: *id056
     - file: rules.ini
-      section: *id056
+      section: *id057
       value_type: integer
-      applies_to: *id055
+      applies_to: *id056
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
   - applies_to:
@@ -17807,7 +17833,7 @@ High:
 HighRadarBrightness:
   key: HighRadarBrightness
   scopes:
-  - applies_to: &id058
+  - applies_to: &id059
     - Theater
     file: rules.ini
     section:
@@ -17825,7 +17851,7 @@ HighRadarBrightness:
 HoldsWhat:
   key: HoldsWhat
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -18775,7 +18801,7 @@ Image:
 ImageLetter:
   key: ImageLetter
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -19164,10 +19190,10 @@ InfantryBlinkDisguiseTime:
 InfantryBrute:
   key: InfantryBrute
   scopes:
-  - applies_to: &id059
+  - applies_to: &id060
     - global rules
     file: rules.ini
-    section: &id060
+    section: &id061
       kind: literal
       name: General
     value_type: class
@@ -19184,11 +19210,11 @@ InfantryBrute:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id059
+      applies_to: *id060
     - file: rules.ini
-      section: *id060
+      section: *id061
       value_type: class
-      applies_to: *id059
+      applies_to: *id060
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryCostBonus:
@@ -19211,10 +19237,10 @@ InfantryCostBonus:
 InfantryExplode:
   key: InfantryExplode
   scopes:
-  - applies_to: &id061
+  - applies_to: &id062
     - global rules
     file: rules.ini
-    section: &id062
+    section: &id063
       kind: literal
       name: General
     value_type: class
@@ -19231,11 +19257,11 @@ InfantryExplode:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id061
+      applies_to: *id062
     - file: rules.ini
-      section: *id062
+      section: *id063
       value_type: class
-      applies_to: *id061
+      applies_to: *id062
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryGainSelfHeal:
@@ -19276,10 +19302,10 @@ InfantryGroupNumberOffset:
 InfantryHeadPop:
   key: InfantryHeadPop
   scopes:
-  - applies_to: &id063
+  - applies_to: &id064
     - global rules
     file: rules.ini
-    section: &id064
+    section: &id065
       kind: literal
       name: General
     value_type: class
@@ -19296,20 +19322,20 @@ InfantryHeadPop:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id063
+      applies_to: *id064
     - file: rules.ini
-      section: *id064
+      section: *id065
       value_type: class
-      applies_to: *id063
+      applies_to: *id064
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryMutate:
   key: InfantryMutate
   scopes:
-  - applies_to: &id065
+  - applies_to: &id066
     - global rules
     file: rules.ini
-    section: &id066
+    section: &id067
       kind: literal
       name: General
     value_type: class
@@ -19326,20 +19352,20 @@ InfantryMutate:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id065
+      applies_to: *id066
     - file: rules.ini
-      section: *id066
+      section: *id067
       value_type: class
-      applies_to: *id065
+      applies_to: *id066
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryNuked:
   key: InfantryNuked
   scopes:
-  - applies_to: &id067
+  - applies_to: &id068
     - global rules
     file: rules.ini
-    section: &id068
+    section: &id069
       kind: literal
       name: General
     value_type: class
@@ -19356,11 +19382,11 @@ InfantryNuked:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id067
+      applies_to: *id068
     - file: rules.ini
-      section: *id068
+      section: *id069
       value_type: class
-      applies_to: *id067
+      applies_to: *id068
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryReserve:
@@ -19384,10 +19410,10 @@ InfantryReserve:
 InfantryVirus:
   key: InfantryVirus
   scopes:
-  - applies_to: &id069
+  - applies_to: &id070
     - global rules
     file: rules.ini
-    section: &id070
+    section: &id071
       kind: literal
       name: General
     value_type: class
@@ -19404,11 +19430,11 @@ InfantryVirus:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id069
+      applies_to: *id070
     - file: rules.ini
-      section: *id070
+      section: *id071
       value_type: class
-      applies_to: *id069
+      applies_to: *id070
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 InfantryWithPipGroupNumberOffset:
@@ -19862,10 +19888,10 @@ IonAmbient:
 IonBeam:
   key: IonBeam
   scopes:
-  - applies_to: &id071
+  - applies_to: &id072
     - global rules
     file: rules.ini
-    section: &id072
+    section: &id073
       kind: literal
       name: General
     value_type: class
@@ -19882,20 +19908,20 @@ IonBeam:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id071
+      applies_to: *id072
     - file: rules.ini
-      section: *id072
+      section: *id073
       value_type: class
-      applies_to: *id071
+      applies_to: *id072
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 IonBlast:
   key: IonBlast
   scopes:
-  - applies_to: &id073
+  - applies_to: &id074
     - global rules
     file: rules.ini
-    section: &id074
+    section: &id075
       kind: literal
       name: General
     value_type: class
@@ -19912,11 +19938,11 @@ IonBlast:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id073
+      applies_to: *id074
     - file: rules.ini
-      section: *id074
+      section: *id075
       value_type: class
-      applies_to: *id073
+      applies_to: *id074
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 IonBlue:
@@ -20440,7 +20466,7 @@ IsAnimatedTiberium:
 IsArctic:
   key: IsArctic
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -20655,7 +20681,7 @@ IsHouseColor:
 IsIceGrowthEnabled:
   key: IsIceGrowthEnabled
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -21226,7 +21252,7 @@ IsWebImmune:
 IsoRoot:
   key: IsoRoot
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -21672,7 +21698,7 @@ LargeVisceroid:
 Laser:
   key: Laser
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -21689,7 +21715,7 @@ Laser:
 LaserColor:
   key: LaserColor
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -22164,7 +22190,7 @@ Level:
 Lifetime:
   key: Lifetime
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -22249,7 +22275,7 @@ LightRedTint:
 LightSize:
   key: LightSize
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -22977,7 +23003,7 @@ LowPowerZAdjust:
 LowRadarBrightness:
   key: LowRadarBrightness
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -23012,10 +23038,10 @@ MCVDeploy:
 MCVRedeploys:
   key: MCVRedeploys
   scopes:
-  - applies_to: &id075
+  - applies_to: &id076
     - global rules
     file: rules.ini
-    section: &id076
+    section: &id077
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -23032,11 +23058,11 @@ MCVRedeploys:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id075
+      applies_to: *id076
     - file: rules.ini
-      section: *id076
+      section: *id077
       value_type: boolean
-      applies_to: *id075
+      applies_to: *id076
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MMRampBase:
@@ -23060,7 +23086,7 @@ MMRampBase:
 MMSuffix:
   key: MMSuffix
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -23406,10 +23432,10 @@ MaxLowPowerProductionSpeed:
 MaxMoney:
   key: MaxMoney
   scopes:
-  - applies_to: &id077
+  - applies_to: &id078
     - global rules
     file: rules.ini
-    section: &id078
+    section: &id079
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -23426,11 +23452,11 @@ MaxMoney:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id077
+      applies_to: *id078
     - file: rules.ini
-      section: *id078
+      section: *id079
       value_type: integer
-      applies_to: *id077
+      applies_to: *id078
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MaxNumberOccupants:
@@ -23820,10 +23846,10 @@ MessageDelay:
 MetallicDebris:
   key: MetallicDebris
   scopes:
-  - applies_to: &id079
+  - applies_to: &id080
     - global rules
     file: rules.ini
-    section: &id080
+    section: &id081
       kind: literal
       name: General
     value_type: typelist
@@ -23840,11 +23866,11 @@ MetallicDebris:
         kind: literal
         name: AudioVisual
       value_type: typelist
-      applies_to: *id079
+      applies_to: *id080
     - file: rules.ini
-      section: *id080
+      section: *id081
       value_type: typelist
-      applies_to: *id079
+      applies_to: *id080
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Meteorites:
@@ -24314,10 +24340,10 @@ Mods:
 Money:
   key: Money
   scopes:
-  - applies_to: &id081
+  - applies_to: &id082
     - global rules
     file: rules.ini
-    section: &id082
+    section: &id083
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -24334,11 +24360,11 @@ Money:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id081
+      applies_to: *id082
     - file: rules.ini
-      section: *id082
+      section: *id083
       value_type: integer
-      applies_to: *id081
+      applies_to: *id082
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MonorailSlopes:
@@ -24522,7 +24548,7 @@ MovementLineThick:
 MovementPerturbationCoefficient:
   key: MovementPerturbationCoefficient
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -24591,10 +24617,10 @@ MovieTime:
 MultiEngineer:
   key: MultiEngineer
   scopes:
-  - applies_to: &id083
+  - applies_to: &id084
     - global rules
     file: rules.ini
-    section: &id084
+    section: &id085
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -24611,11 +24637,11 @@ MultiEngineer:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id083
+      applies_to: *id084
     - file: rules.ini
-      section: *id084
+      section: *id085
       value_type: boolean
-      applies_to: *id083
+      applies_to: *id084
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MultiMCV:
@@ -25057,7 +25083,7 @@ NSGates:
 Name:
   key: Name
   scopes:
-  - applies_to: &id099
+  - applies_to: &id100
     - AITriggerType
     - AircraftType
     - AnimType
@@ -25425,7 +25451,7 @@ NewTheater:
     level: ObjectTypeClass
   - applies_to: *id007
     file: art.ini
-    section: &id085
+    section: &id086
       kind: identifier
       source: object-type
     value_type: boolean
@@ -25444,7 +25470,7 @@ NewTheater:
       value_type: boolean
       applies_to: *id007
     - file: art.ini
-      section: *id085
+      section: *id086
       value_type: boolean
       applies_to: *id007
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -26530,7 +26556,7 @@ OnTransOnly:
 OneFrameLight:
   key: OneFrameLight
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -27082,10 +27108,10 @@ PadAircraft:
 Parachute:
   key: Parachute
   scopes:
-  - applies_to: &id086
+  - applies_to: &id087
     - global rules
     file: rules.ini
-    section: &id087
+    section: &id088
       kind: literal
       name: General
     value_type: class
@@ -27102,11 +27128,11 @@ Parachute:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id086
+      applies_to: *id087
     - file: rules.ini
-      section: *id087
+      section: *id088
       value_type: class
-      applies_to: *id086
+      applies_to: *id087
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 ParachuteMaxFallRate:
@@ -27287,7 +27313,7 @@ Particle:
 ParticleCap:
   key: ParticleCap
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -27304,7 +27330,7 @@ ParticleCap:
 ParticlesPerCoord:
   key: ParticlesPerCoord
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -28056,7 +28082,7 @@ PoseDir:
 PositionPerturbationCoefficient:
   key: PositionPerturbationCoefficient
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -31511,7 +31537,7 @@ RollAngle:
 Root:
   key: Root
   scopes:
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -32845,10 +32871,10 @@ ShadowCaster:
 ShadowGrow:
   key: ShadowGrow
   scopes:
-  - applies_to: &id088
+  - applies_to: &id089
     - global rules
     file: rules.ini
-    section: &id089
+    section: &id090
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -32865,11 +32891,11 @@ ShadowGrow:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id088
+      applies_to: *id089
     - file: rules.ini
-      section: *id089
+      section: *id090
       value_type: boolean
-      applies_to: *id088
+      applies_to: *id089
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 ShadowIndex:
@@ -33152,10 +33178,10 @@ ShorePieces:
 ShortGame:
   key: ShortGame
   scopes:
-  - applies_to: &id090
+  - applies_to: &id091
     - global rules
     file: rules.ini
-    section: &id091
+    section: &id092
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -33172,11 +33198,11 @@ ShortGame:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id090
+      applies_to: *id091
     - file: rules.ini
-      section: *id091
+      section: *id092
       value_type: boolean
-      applies_to: *id090
+      applies_to: *id091
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 ShouldFogRemove:
@@ -33908,7 +33934,7 @@ SlopeSetPieces2:
 Slowdown:
   key: Slowdown
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34346,7 +34372,7 @@ Soylent:
 SparkSpawnFrames:
   key: SparkSpawnFrames
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34411,7 +34437,7 @@ SpawnCount:
 SpawnCutoff:
   key: SpawnCutoff
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34445,7 +34471,7 @@ SpawnDelay:
 SpawnDirection:
   key: SpawnDirection
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34462,7 +34488,7 @@ SpawnDirection:
 SpawnFrames:
   key: SpawnFrames
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34479,7 +34505,7 @@ SpawnFrames:
 SpawnRadius:
   key: SpawnRadius
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34530,7 +34556,7 @@ SpawnReloadRate:
 SpawnSparkPercentage:
   key: SpawnSparkPercentage
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34547,7 +34573,7 @@ SpawnSparkPercentage:
 SpawnTranslucencyCutoff:
   key: SpawnTranslucencyCutoff
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -34626,7 +34652,7 @@ Spawns:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -35675,7 +35701,7 @@ SpeedUnitsMult:
 SpiralDeltaPerCoord:
   key: SpiralDeltaPerCoord
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -35692,7 +35718,7 @@ SpiralDeltaPerCoord:
 SpiralRadius:
   key: SpiralRadius
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -36721,7 +36747,7 @@ Suffix:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
-  - applies_to: *id058
+  - applies_to: *id059
     file: rules.ini
     section:
       kind: identifier
@@ -37773,10 +37799,10 @@ SuperWeapons:
 SuperWeaponsAllowed:
   key: SuperWeaponsAllowed
   scopes:
-  - applies_to: &id092
+  - applies_to: &id093
     - global rules
     file: rules.ini
-    section: &id093
+    section: &id094
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -37793,11 +37819,11 @@ SuperWeaponsAllowed:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id092
+      applies_to: *id093
     - file: rules.ini
-      section: *id093
+      section: *id094
       value_type: boolean
-      applies_to: *id092
+      applies_to: *id093
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 SuppressionThreshold:
@@ -38450,10 +38476,10 @@ TechLevel:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
-  - applies_to: &id094
+  - applies_to: &id095
     - global rules
     file: rules.ini
-    section: &id095
+    section: &id096
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -38470,11 +38496,11 @@ TechLevel:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id094
+      applies_to: *id095
     - file: rules.ini
-      section: *id095
+      section: *id096
       value_type: integer
-      applies_to: *id094
+      applies_to: *id095
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
   - applies_to:
@@ -38739,7 +38765,7 @@ Theater:
     level: ObjectTypeClass
   - applies_to: *id007
     file: art.ini
-    section: &id096
+    section: &id097
       kind: identifier
       source: object-type
     value_type: boolean
@@ -38758,7 +38784,7 @@ Theater:
       value_type: boolean
       applies_to: *id007
     - file: art.ini
-      section: *id096
+      section: *id097
       value_type: boolean
       applies_to: *id007
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -39110,10 +39136,10 @@ TiberiumExplosive:
 TiberiumGrows:
   key: TiberiumGrows
   scopes:
-  - applies_to: &id097
+  - applies_to: &id098
     - global rules
     file: rules.ini
-    section: &id098
+    section: &id099
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -39130,11 +39156,11 @@ TiberiumGrows:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id097
+      applies_to: *id098
     - file: rules.ini
-      section: *id098
+      section: *id099
       value_type: boolean
-      applies_to: *id097
+      applies_to: *id098
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
   - applies_to:
@@ -40657,7 +40683,7 @@ TypeImmune:
 UIName:
   key: UIName
   scopes:
-  - applies_to: *id099
+  - applies_to: *id100
     file: rules.ini
     section:
       kind: identifier
@@ -40859,10 +40885,10 @@ UnitActionLines:
 UnitCount:
   key: UnitCount
   scopes:
-  - applies_to: &id100
+  - applies_to: &id101
     - global rules
     file: rules.ini
-    section: &id101
+    section: &id102
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -40879,11 +40905,11 @@ UnitCount:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id100
+      applies_to: *id101
     - file: rules.ini
-      section: *id101
+      section: *id102
       value_type: integer
-      applies_to: *id100
+      applies_to: *id101
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 UnitCrateType:
@@ -41715,7 +41741,7 @@ Velocity:
 VelocityPerturbationCoefficient:
   key: VelocityPerturbationCoefficient
   scopes:
-  - applies_to: *id057
+  - applies_to: *id058
     file: rules.ini
     section:
       kind: identifier
@@ -42623,10 +42649,10 @@ VoxelSpecularStrength:
 Wake:
   key: Wake
   scopes:
-  - applies_to: &id102
+  - applies_to: &id103
     - global rules
     file: rules.ini
-    section: &id103
+    section: &id104
       kind: literal
       name: General
     value_type: class
@@ -42643,11 +42669,11 @@ Wake:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id102
+      applies_to: *id103
     - file: rules.ini
-      section: *id103
+      section: *id104
       value_type: class
-      applies_to: *id102
+      applies_to: *id103
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 WalkFrames:
