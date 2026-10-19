@@ -8,6 +8,6 @@ The key also works as a held modifier. While it is held, every left click on the
 
 Holding Control and Shift with a left click on the ground gives the same order without arming first. The [Command bar](/commands/) attack-move button arms the order in the same way as the key. Holding Control and Alt with a left click on the ground gives the original game's guard-area order, not an attack-move.
 
-A click on an enemy object still attacks it. Only ground orders are attack-moves; a click on a friendly object gives its usual order.
+A click on an enemy object still attacks it. Only ground orders are attack-moves; a click on a friendly object gives its usual order. An aircraft, a type with no primary weapon, and a type with [`PreventAttackMove=yes`](/keys/preventattackmove/) each keep their plain move or attack order.
 
 The default key is A in the Modern control scheme, bound as a press. The Classic scheme leaves the command unbound, because Classic uses A for Toggle Alliance.

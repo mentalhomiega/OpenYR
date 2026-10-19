@@ -83,10 +83,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsScanner(false),
 	IsNominal(false),
 	IsTurretEquipped(false),
+	IsHasTurretTooltips(false),
 	IsCrew(false),
 	IsRepairable(true),
 	IsRemappable(false),
 	IsCloakable(false),
+	IsNoShadow(false),
 	IsSelfHealing(false),
 	SelfHealingStep(-1),
 	SelfHealingRate(-1),
@@ -158,6 +160,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	UnloadingClass(NULL),
 	VoiceSelect(),
 	VoiceMove(),
+	VoiceSpecialAttack(),
 	VoiceAttack(),
 	VoiceDie(),
 	DieSound(),
@@ -179,6 +182,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsCanRetaliate(true),
 	IsHoverAttack(false),
 	IsJumpJet(false),
+	IsTiltCrashJumpjet(false),
 	VHPScan(VHP_SCAN_NONE),
 	IsOpportunityFire(false),
 	IsWarpable(true),
@@ -192,6 +196,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsParasiteable(true),
 	SuppressionThreshold(0),
 	IsReselectIfLimboed(false),
+	IsRejoinTeamIfLimboed(false),
 	IsCanDisguise(false),
 	IsPermaDisguise(false),
 	IsBalloonHover(false),
@@ -210,6 +215,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsVehicleThiefAllowed(true),
 	BuildTimeMultipleFactory(-1.0),
 	IsCrashable(false),
+	IsConsideredAircraft(false),
 	PromoteVeteranSound(VOC_NONE),
 	PromoteEliteSound(VOC_NONE),
 	IsHealthBarHidden(false),
@@ -267,6 +273,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDistributedFire(false),
 	IsCanApproachTarget(true),
 	IsCanRecalcApproachTarget(true),
+	IsStupidHunt(false),
 	SensorsSight(0),
 	IsPoweredUnit(false),
 	ActivateSound(VOC_NONE),
@@ -297,6 +304,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	WeaponCount(0),
 	IsClearAllWeapons(false),
 	IsMobileFire(true),
+	IsPreventAttackMove(false),
 	IsGattling(false),
 	IsChargeTurret(false),
 	WeaponStages(0),
@@ -317,6 +325,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Explosion(),
 	ScrapExplosion(),
 	NaturalParticleSystem(NULL),
+	RefinerySmokeParticleSystem(NULL),
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
 	DamageSmokeOffset(0,0,0),
@@ -816,6 +825,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
 		IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
 		IsJumpJet = ini.Get_Bool(Name(), "JumpJet", IsJumpJet);
+		IsTiltCrashJumpjet = ini.Get_Bool(Name(), "TiltCrashJumpjet", IsTiltCrashJumpjet);
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
@@ -828,6 +838,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsParasiteable = ini.Get_Bool(Name(), "Parasiteable", IsParasiteable);
 		SuppressionThreshold = ini.Get_Int(Name(), "SuppressionThreshold", SuppressionThreshold);
 		IsReselectIfLimboed = ini.Get_Bool(Name(), "ReselectIfLimboed", IsReselectIfLimboed);
+		IsRejoinTeamIfLimboed = ini.Get_Bool(Name(), "RejoinTeamIfLimboed", IsRejoinTeamIfLimboed);
 		IsCanDisguise = ini.Get_Bool(Name(), "CanDisguise", IsCanDisguise);
 		IsPermaDisguise = ini.Get_Bool(Name(), "PermaDisguise", IsPermaDisguise);
 		IsBalloonHover = ini.Get_Bool(Name(), "BalloonHover", IsBalloonHover);
@@ -879,6 +890,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
 		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
 		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
+		IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
 		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
@@ -978,6 +990,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsDistributedFire = ini.Get_Bool(Name(), "DistributedFire", IsDistributedFire);
 		IsCanApproachTarget = ini.Get_Bool(Name(), "CanApproachTarget", IsCanApproachTarget);
 		IsCanRecalcApproachTarget = ini.Get_Bool(Name(), "CanRecalcApproachTarget", IsCanRecalcApproachTarget);
+		IsStupidHunt = ini.Get_Bool(Name(), "StupidHunt", IsStupidHunt);
 		SensorsSight = ini.Get_Int(Name(), "SensorsSight", SensorsSight);
 		IsPoweredUnit = ini.Get_Bool(Name(), "PoweredUnit", IsPoweredUnit);
 		ActivateSound = ini.Get_VocType(Name(), "ActivateSound", ActivateSound);
@@ -1023,6 +1036,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		WeaponCount = ini.Get_Int(Name(), "WeaponCount", WeaponCount);
 		IsClearAllWeapons = ini.Get_Bool(Name(), "ClearAllWeapons", IsClearAllWeapons);
 		IsMobileFire = ini.Get_Bool(Name(), "MobileFire", IsMobileFire);
+		IsPreventAttackMove = ini.Get_Bool(Name(), "PreventAttackMove", IsPreventAttackMove);
 		if (!Has_Multiple_Turrets()) {
 			Weapons[0].Weapon = TGet_Class(ini, Name(), "Primary", Weapons[0].Weapon);
 			Weapons[1].Weapon = TGet_Class(ini, Name(), "Secondary", Weapons[1].Weapon);
@@ -1079,6 +1093,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 		VoiceMove = ini.Get_VocType_List(ini, IniName, "VoiceMove", VoiceMove);
+		VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
 		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
@@ -1100,14 +1115,17 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsManualReload = ini.Get_Bool(Name(), "ManualReload", IsManualReload);
 		IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
 		IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
+		IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
 		Explosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "Explosion", Explosion);
 		ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
 		NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
+		RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
 		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
 		DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
 		IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 		IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
+		IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
 		IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 		PipScale = ini.Get_PipScaleType(Name(), "PipScale", PipScale);
 		if (ini.Is_Present(Name(), "MaxPips")) {
@@ -1499,6 +1517,16 @@ void TechnoTypeClass::Post_Load(void)
 }
 
 
+/// <summary>
+/// Tells whether an object of this type can take an attack-move order.
+/// It needs a primary weapon, and PreventAttackMove=yes rules the order out.
+/// </summary>
+bool TechnoTypeClass::Can_Attack_Move(void) const
+{
+	return(Weapons[0].Weapon != NULL && !IsPreventAttackMove);
+}
+
+
 std::string TechnoTypeClass::Select_Group(void) const
 {
 	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
@@ -1579,6 +1607,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnloadingClass);
 	stream.Serialize(VoiceSelect);
 	stream.Serialize(VoiceMove);
+	stream.Serialize(VoiceSpecialAttack);
 	stream.Serialize(VoiceAttack);
 	stream.Serialize(VoiceDie);
 	stream.Serialize(DieSound);
@@ -1602,6 +1631,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanRetaliate);
 	stream.Serialize(IsHoverAttack);
 	stream.Serialize(IsJumpJet);
+	stream.Serialize(IsTiltCrashJumpjet);
 	stream.Serialize(VHPScan);
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
@@ -1615,6 +1645,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsParasiteable);
 	stream.Serialize(SuppressionThreshold);
 	stream.Serialize(IsReselectIfLimboed);
+	stream.Serialize(IsRejoinTeamIfLimboed);
 	stream.Serialize(IsCanDisguise);
 	stream.Serialize(IsPermaDisguise);
 	stream.Serialize(IsBalloonHover);
@@ -1633,6 +1664,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsVehicleThiefAllowed);
 	stream.Serialize(BuildTimeMultipleFactory);
 	stream.Serialize(IsCrashable);
+	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
 	stream.Serialize(IsHealthBarHidden);
@@ -1693,6 +1725,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDistributedFire);
 	stream.Serialize(IsCanApproachTarget);
 	stream.Serialize(IsCanRecalcApproachTarget);
+	stream.Serialize(IsStupidHunt);
 	stream.Serialize(SensorsSight);
 	stream.Serialize(IsPoweredUnit);
 	stream.Serialize(ActivateSound);
@@ -1722,6 +1755,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TurretCount);
 	stream.Serialize(WeaponCount);
 	stream.Serialize(IsMobileFire);
+	stream.Serialize(IsPreventAttackMove);
 	stream.Serialize(IsGattling);
 	stream.Serialize(IsChargeTurret);
 	stream.Serialize(WeaponStages);
@@ -1769,6 +1803,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Explosion);
 	stream.Serialize(ScrapExplosion);
 	stream.Serialize(NaturalParticleSystem);
+	stream.Serialize(RefinerySmokeParticleSystem);
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
 	stream.Serialize(DamageSmokeOffset);
@@ -1810,10 +1845,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsScanner);
 	stream.Serialize(IsNominal);
 	stream.Serialize(IsTurretEquipped);
+	stream.Serialize(IsHasTurretTooltips);
 	stream.Serialize(IsRepairable);
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
+	stream.Serialize(IsNoShadow);
 	stream.Serialize(IsSelfHealing);
 	stream.Serialize(SelfHealingStep);
 	stream.Serialize(SelfHealingRate);
@@ -1882,6 +1919,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Max_Pips());
 	crc(VoiceSelect.Count());
 	crc(VoiceMove.Count());
+	crc(VoiceSpecialAttack.Count());
 	crc(VoiceAttack.Count());
 	crc(VoiceDie.Count());
 	crc(VoiceFeedback.Count());
@@ -1926,10 +1964,12 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsScanner);
 	crc(IsNominal);
 	crc(IsTurretEquipped);
+	crc(IsHasTurretTooltips);
 	crc(IsRepairable);
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsNoShadow);
 	crc(IsSelfHealing);
 	crc(SelfHealingStep);
 	crc(SelfHealingRate);
@@ -1944,12 +1984,17 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
 	crc(IsJumpJet);
+	crc(IsTiltCrashJumpjet);
 	crc(VHPScan);
 	crc(SuperGapRadiusInCells);
 	crc(IsCloseRange);
 	crc(IsCanRecalcApproachTarget);
+	crc(IsStupidHunt);
+	crc(IsConsideredAircraft);
+	crc(IsRejoinTeamIfLimboed);
 	crc(JumpjetCrash);
 	crc(IsMobileFire);
+	crc(IsPreventAttackMove);
 	crc(IsChargeTurret);
 	crc(RadialFireSegments);
 	crc(IsOmniCrusher);
