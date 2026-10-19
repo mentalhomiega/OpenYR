@@ -1277,6 +1277,15 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
 		}
 		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+		if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
+			PrerequisiteStolenTechs.clear();
+			for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
+				int const value = atoi(index.c_str());
+				if (value >= 0) {
+					PrerequisiteStolenTechs.push_back(value);
+				}
+			}
+		}
 		PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
 		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
 		DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
@@ -1843,6 +1852,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilots);
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(PrerequisiteStolenTechs);
 	stream.Serialize(ParachuteAnim);
 	stream.Serialize(SlamSound);
 	stream.Serialize(IsSlamSoundSet);

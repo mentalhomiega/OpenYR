@@ -274,6 +274,9 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsNavalSpied && Class != NULL && Class->IsTrainable && Class->IsNaval) {
+		Veterancy.Set_Veteran(true);
+	}
 
 	if (Class != NULL && Class->IsGunner) {
 		Set_Turret_Weapon(0);

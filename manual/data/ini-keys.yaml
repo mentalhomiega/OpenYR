@@ -30217,6 +30217,23 @@ Prerequisite:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Prerequisite.StolenTechs:
+  key: Prerequisite.StolenTechs
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 PrerequisiteBarracks:
   key: PrerequisiteBarracks
   scopes:
@@ -38600,6 +38617,244 @@ SpreadPercentage:
       source: code/tiberium.cpp
       guard: null
     level: TiberiumClass
+SpyEffect.AircraftVeterancy:
+  key: SpyEffect.AircraftVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyAircraftVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.BuildingVeterancy:
+  key: SpyEffect.BuildingVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyBuildingVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.Custom:
+  key: SpyEffect.Custom
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyEffectCustom
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.InfantryVeterancy:
+  key: SpyEffect.InfantryVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyInfantryVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.NavalVeterancy:
+  key: SpyEffect.NavalVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyNavalVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.PowerOutageDuration:
+  key: SpyEffect.PowerOutageDuration
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SpyPowerOutage
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.ResetRadar:
+  key: SpyEffect.ResetRadar
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyResetRadar
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.ResetSuperweapons:
+  key: SpyEffect.ResetSuperweapons
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyResetSuperweapons
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.StolenMoneyAmount:
+  key: SpyEffect.StolenMoneyAmount
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SpyStolenMoneyAmount
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.StolenMoneyPercentage:
+  key: SpyEffect.StolenMoneyPercentage
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SpyStolenMoneyPercentage
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.StolenTechIndex:
+  key: SpyEffect.StolenTechIndex
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.UndoReverseEngineer:
+  key: SpyEffect.UndoReverseEngineer
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyUndoReverseEngineer
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.UnitVeterancy:
+  key: SpyEffect.UnitVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: 'false'
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+SpyEffect.VehicleVeterancy:
+  key: SpyEffect.VehicleVeterancy
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyVehicleVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpyMoneyStealPercent:
   key: SpyMoneyStealPercent
   scopes:

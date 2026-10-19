@@ -231,6 +231,9 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranAircraft.Is_In_List(Class)) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsAircraftSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
 
 	Aircraft.Add(this);
 

@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 270 entries
+- [Rules](#rules): 285 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -83,6 +83,20 @@ Bounty.Value=200
 | [`Message.Lost`](../manual/content/keys/message.lost.md) | `none` | The text shown to the player who loses a structure of this type that needs an engineer to a capture. | Ares |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
+| [`SpyEffect.AircraftVeterancy`](../manual/content/keys/spyeffect.aircraftveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable aircraft veterans. | Ares |
+| [`SpyEffect.BuildingVeterancy`](../manual/content/keys/spyeffect.buildingveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable structures veterans. | Ares |
+| [`SpyEffect.Custom`](../manual/content/keys/spyeffect.custom.md) | `no` | With yes, a spy that infiltrates this structure does what the other SpyEffect keys say, instead of the stock effect. | Ares |
+| [`SpyEffect.InfantryVeterancy`](../manual/content/keys/spyeffect.infantryveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable soldiers veterans. | Ares |
+| [`SpyEffect.NavalVeterancy`](../manual/content/keys/spyeffect.navalveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable ships veterans. | Ares |
+| [`SpyEffect.PowerOutageDuration`](../manual/content/keys/spyeffect.poweroutageduration.md) | `0` | How many frames infiltrating this structure cuts the owner's power. | Ares |
+| [`SpyEffect.ResetRadar`](../manual/content/keys/spyeffect.resetradar.md) | `no` | With yes, infiltrating this structure shrouds the owner's map again. | Ares |
+| [`SpyEffect.ResetSuperweapons`](../manual/content/keys/spyeffect.resetsuperweapons.md) | `no` | With yes, infiltrating this structure restarts the charge of its owner's super weapons. | Ares |
+| [`SpyEffect.StolenMoneyAmount`](../manual/content/keys/spyeffect.stolenmoneyamount.md) | `0` | The number of credits a spy steals from this structure. | Ares |
+| [`SpyEffect.StolenMoneyPercentage`](../manual/content/keys/spyeffect.stolenmoneypercentage.md) | `0` | The share of the owner's credits a spy steals from this structure. | Ares |
+| [`SpyEffect.StolenTechIndex`](../manual/content/keys/spyeffect.stolentechindex.md) | `none` | The kinds of technology infiltrating this structure steals, as a list of numbers from 0 to 31. | Ares |
+| [`SpyEffect.UndoReverseEngineer`](../manual/content/keys/spyeffect.undoreverseengineer.md) | `no` | With yes, infiltrating this structure takes away what its owner has reverse engineered. | Ares |
+| [`SpyEffect.UnitVeterancy`](../manual/content/keys/spyeffect.unitveterancy.md) | `no` | The same key as SpyEffect.VehicleVeterancy under its other spelling. | Ares |
+| [`SpyEffect.VehicleVeterancy`](../manual/content/keys/spyeffect.vehicleveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable land vehicles veterans. | Ares |
 | [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
 | [`UC.FatalRate`](../manual/content/keys/uc.fatalrate.md) | `0%` | The share of passed-through shots that kill one occupant of the structure outright. | Ares |
 | [`UC.PassThrough`](../manual/content/keys/uc.passthrough.md) | `0%` | The share of shots at an occupied structure that hit one of its occupants instead of the structure. | Ares |
@@ -170,6 +184,7 @@ Bounty.Value=200
 | [`OpenTransport.DamageMultiplier`](../manual/content/keys/opentransport.damagemultiplier--aircrafttype.md) | The [CombatDamage] OpenTransport.DamageMultiplier= value | `OpenTransport.DamageMultiplier` multiplies the damage of each shot this object fires from any `OpenTopped=yes` transport. | Phobos |
 | [`OpenTransport.RangeBonus`](../manual/content/keys/opentransport.rangebonus--aircrafttype.md) | The [CombatDamage] OpenTransport.RangeBonus= value | `OpenTransport.RangeBonus` adds whole cells to this object's weapon range while it fires from any `OpenTopped=yes` transport. | Phobos |
 | [`Parachute.Anim`](../manual/content/keys/parachute.anim.md) | [General] Parachute | The canopy animation drawn above a paradropped object of this type. | Ares |
+| [`Prerequisite.StolenTechs`](../manual/content/keys/prerequisite.stolentechs.md) | `none` | The kinds of stolen technology a house must have before it can build this type. | Ares |
 | [`Promote.EliteSound`](../manual/content/keys/promote.elitesound.md) | [AudioVisual] UpgradeEliteSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes elite. | Ares, Phobos |
 | [`Promote.VeteranSound`](../manual/content/keys/promote.veteransound.md) | [AudioVisual] UpgradeVeteranSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes a veteran. | Ares, Phobos |
 | [`ProtectedDriver`](../manual/content/keys/protecteddriver.md) | `no` | With yes, KillDriver warheads leave this vehicle's driver alone. | Ares |

@@ -841,6 +841,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		TypeList<int> Prerequisite;
 
+		// The kinds of stolen technology a house must have stolen before it can build this type, as indexes from 0 to 31 (Ares Prerequisite.StolenTechs).
+		std::vector<int> PrerequisiteStolenTechs;
+
 		// A house that owns one of these buildings skips the Prerequisite, tech level, stolen tech
 		// and house checks. The Unbuildable flag and the build limit still apply.
 		TypeList<int> PrerequisiteOverride;

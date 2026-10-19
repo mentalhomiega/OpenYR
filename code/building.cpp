@@ -327,6 +327,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval && Class->UndeploysInto != NULL) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
 
 	if (Class != NULL) {
 		if (Class->IsCanUnitRepair) {
@@ -12203,6 +12206,98 @@ static void Speak_Stolen_Tech(bool victim, bool spy)
 
 
 /// <summary>
+/// Applies the SpyEffect keys of this structure's type to the house that infiltrated it and to its owner.
+/// </summary>
+/// <param name="house">The house that infiltrated the structure.</param>
+/// <param name="victim">Does the structure's owner hear the lines?</param>
+/// <param name="spy">Does the infiltrating house hear the lines?</param>
+void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
+{
+	bool spoke = false;
+
+	if (Class->IsSpyResetRadar && !House->IsSpySatActive) {
+		if (House == PlayerPtr) {
+			Map.Shroud_The_Map(House);
+		} else {
+			House->IsVisionary = false;
+		}
+		if (victim) Speak_Eva("EVA_RadarSabotaged");
+		if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
+		spoke = true;
+	}
+
+	if (Class->SpyPowerOutage > 0) {
+		House->PowerBlackout = Class->SpyPowerOutage;
+		House->IsPowerBlackout = true;
+		House->RecalcPower = true;
+		if (victim) {
+			Speak_Eva("EVA_PowerSabotaged");
+		} else if (spy) {
+			Speak_Eva("EVA_BuildingInfiltrated");
+			Speak_Eva("EVA_EnemyBasePoweredDown");
+		}
+		spoke = true;
+	}
+
+	int const stolen = ObjectKeyRules::Spy_Money_Taken(House->Available_Money(), Class->SpyStolenMoneyPercentage, Class->SpyStolenMoneyAmount);
+	if (stolen > 0) {
+		House->Spend_Money(stolen);
+		house->Refund_Money(stolen);
+		if (victim) Speak_Eva("EVA_CashStolen");
+		if (spy) Speak_Eva("EVA_BuildingInfCashStolen");
+		spoke = true;
+	}
+
+	if (Class->IsSpyResetSuperweapons) {
+		SuperWeaponType const weapons[2] = {Class->SuperWeapon, Class->SuperWeapon2};
+		for (SuperWeaponType weapon : weapons) {
+			if (weapon != SUPER_NONE && weapon < House->SuperWeapon.Count()) {
+				SuperClass * super = House->SuperWeapon[weapon];
+				if (super != NULL) {
+					super->Reset();
+				}
+			}
+		}
+	}
+
+	if (!Class->SpyStolenTechIndex.empty()) {
+		house->StolenTechs |= ObjectKeyRules::Stolen_Tech_Mask(Class->SpyStolenTechIndex);
+		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
+		spoke = true;
+	}
+
+	if (Class->IsSpyUndoReverseEngineer && !House->ReversedTypes.empty()) {
+		House->ReversedTypes.clear();
+		House->IsRecalcNeeded = true;
+		House->Production_Status_Changed();
+	}
+
+	if (Class->IsSpyInfantryVeterancy) {
+		house->IsBarracksInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyVehicleVeterancy) {
+		house->IsWarFactoryInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyNavalVeterancy) {
+		house->IsNavalSpied = true;
+	}
+	if (Class->IsSpyAircraftVeterancy) {
+		house->IsAircraftSpied = true;
+	}
+	if (Class->IsSpyBuildingVeterancy) {
+		house->IsBuildingSpied = true;
+	}
+
+	if (!spoke && (victim || spy)) {
+		Speak_Eva("EVA_BuildingInfiltrated");
+	}
+}
+
+
+/// <summary>
 /// Records that a spy has infiltrated this building.
 /// This routine is called when a spy makes it inside. The spying house is handed whatever
 /// intelligence this building type is worth -- radar coverage and power plant readings.
@@ -12223,6 +12318,13 @@ void BuildingClass::Spied_By(HouseClass * house)
 	if (!((victim || spy) && Submit_Radar_Event(RADAREVENT_INFILTRATED, Center_Coord().As_Cell()))) {
 		victim = false;
 		spy = false;
+	}
+
+	// SpyEffect.Custom replaces the stock effect of the structure with the effects its keys list.
+	if (Class->IsSpyEffectCustom) {
+		Custom_Spy_Effect(house, victim, spy);
+		Mark(MARK_CHANGE);
+		return;
 	}
 
 	/*

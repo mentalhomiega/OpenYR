@@ -4197,6 +4197,7 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction());
+			DebugString("AUTOTEST   spied %s stolen techs %08x naval %d aircraft %d building %d reversed %d\n", house->Class->Name(), house->StolenTechs, (int)house->IsNavalSpied, (int)house->IsAircraftSpied, (int)house->IsBuildingSpied, (int)house->ReversedTypes.size());
 			DebugString("AUTOTEST   gatherers %s %d powered %d\n", house->Class->Name(), house->Count_Resource_Gatherers(), house->PoweredUnitCenters);
 		}
 		for (int index = 0; index < Buildings.Count(); index++) {

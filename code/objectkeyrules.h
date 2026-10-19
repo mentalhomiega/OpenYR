@@ -129,6 +129,45 @@ namespace ObjectKeyRules
 		return(scaled < 1 ? 1 : (int)scaled);
 	}
 
+	// The credits a spy takes (Ares SpyEffect.StolenMoneyPercentage and SpyEffect.StolenMoneyAmount): the share of the
+	// victim's money, the fixed amount, or the smaller of the two when both are set, never more than the victim has.
+	inline int Spy_Money_Taken(int available, double percentage, int amount)
+	{
+		if (available <= 0) {
+			return(0);
+		}
+		int const by_share = percentage > 0.0 ? (int)(available * percentage) : 0;
+		int taken = 0;
+		if (percentage > 0.0 && amount > 0) {
+			taken = by_share < amount ? by_share : amount;
+		} else if (percentage > 0.0) {
+			taken = by_share;
+		} else if (amount > 0) {
+			taken = amount;
+		}
+		return(taken > available ? available : taken);
+	}
+
+	// The bit set of stolen technology kinds a list of indexes from 0 to 31 gives; an index outside that range is ignored.
+	inline unsigned int Stolen_Tech_Mask(std::vector<int> const & indexes)
+	{
+		unsigned int mask = 0;
+		for (int index : indexes) {
+			if (index >= 0 && index < 32) {
+				mask |= 1u << index;
+			}
+		}
+		return(mask);
+	}
+
+	// Whether every stolen technology a type requires (Ares Prerequisite.StolenTechs) is among those a house has stolen.
+	// A type that requires none is always satisfied.
+	inline bool Stolen_Techs_Satisfied(unsigned int stolen, std::vector<int> const & required)
+	{
+		unsigned int const need = Stolen_Tech_Mask(required);
+		return((stolen & need) == need);
+	}
+
 	// The place of a veteran level among the three per-rank keys: 0 rookie, 1 veteran, 2 elite.
 	inline int Rank_Index(bool veteran, bool elite)
 	{

@@ -835,6 +835,23 @@ class BuildingTypeClass : public TechnoTypeClass
 		std::string MessageCapture;
 		std::string MessageLost;
 
+		// What a spy that infiltrates this structure does when SpyEffect.Custom is yes: the keys SpyEffect.ResetRadar,
+		// PowerOutageDuration, StolenMoneyPercentage, StolenMoneyAmount, ResetSuperweapons, StolenTechIndex,
+		// UndoReverseEngineer and the five veterancy keys (UnitVeterancy is read as VehicleVeterancy).
+		bool IsSpyEffectCustom;
+		bool IsSpyResetRadar;
+		int SpyPowerOutage;
+		double SpyStolenMoneyPercentage;
+		int SpyStolenMoneyAmount;
+		bool IsSpyResetSuperweapons;
+		std::vector<int> SpyStolenTechIndex;
+		bool IsSpyUndoReverseEngineer;
+		bool IsSpyInfantryVeterancy;
+		bool IsSpyVehicleVeterancy;
+		bool IsSpyNavalVeterancy;
+		bool IsSpyAircraftVeterancy;
+		bool IsSpyBuildingVeterancy;
+
 		// The cursor shown over this structure when a spy could infiltrate it, or empty for the stock enter cursor (Ares Cursor.Spy).
 		std::string CursorSpy;
 

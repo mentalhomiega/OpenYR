@@ -97,6 +97,26 @@ void Test_Converted_Strength(void)
 	Check(ObjectKeyRules::Converted_Strength(2000000000, 2000000000, 2000000000) == 2000000000, "a large strength does not overflow");
 }
 
+
+void Test_Spy_Effects(void)
+{
+	Check(ObjectKeyRules::Spy_Money_Taken(10000, 0.5, 0) == 5000, "a share alone takes that share");
+	Check(ObjectKeyRules::Spy_Money_Taken(10000, 0.0, 1500) == 1500, "an amount alone takes that amount");
+	Check(ObjectKeyRules::Spy_Money_Taken(10000, 0.5, 1500) == 1500, "both keys take the smaller, here the amount");
+	Check(ObjectKeyRules::Spy_Money_Taken(1000, 0.5, 1500) == 500, "both keys take the smaller, here the share");
+	Check(ObjectKeyRules::Spy_Money_Taken(800, 0.0, 1500) == 800, "the theft never exceeds the money");
+	Check(ObjectKeyRules::Spy_Money_Taken(0, 0.5, 100) == 0, "a victim with no money loses none");
+	Check(ObjectKeyRules::Spy_Money_Taken(10000, 0.0, 0) == 0, "no keys take nothing");
+
+	Check(ObjectKeyRules::Stolen_Tech_Mask({3, 5}) == 0x28u, "indexes 3 and 5 are bits 3 and 5");
+	Check(ObjectKeyRules::Stolen_Tech_Mask({31}) == 0x80000000u, "index 31 is the top bit");
+	Check(ObjectKeyRules::Stolen_Tech_Mask({-1, 32, 100}) == 0, "indexes outside 0 to 31 are ignored");
+	Check(ObjectKeyRules::Stolen_Techs_Satisfied(0, {}), "a type that requires none is satisfied");
+	Check(ObjectKeyRules::Stolen_Techs_Satisfied(0x28u, {3, 5}), "all the required kinds stolen satisfies it");
+	Check(!ObjectKeyRules::Stolen_Techs_Satisfied(0x08u, {3, 5}), "one missing kind does not");
+	Check(ObjectKeyRules::Stolen_Techs_Satisfied(0x1F8u, {3, 5}), "extra stolen kinds do no harm");
+}
+
 }
 
 
@@ -106,6 +126,7 @@ int main(void)
 	Test_None_Text();
 	Test_Factory_Owners();
 	Test_Converted_Strength();
+	Test_Spy_Effects();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

@@ -260,6 +260,10 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsSide2TechStolen(false),
 	IsBarracksInfiltrated(false),
 	IsWarFactoryInfiltrated(false),
+	IsNavalSpied(false),
+	IsAircraftSpied(false),
+	IsBuildingSpied(false),
+	StolenTechs(0),
 	PowerBlackout(0),
 	IsPowerBlackout(false),
 	PoweredUnitCenters(0),
@@ -1173,6 +1177,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (!unlocked && techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
+		if (!unlocked && !ObjectKeyRules::Stolen_Techs_Satisfied(StolenTechs, techno->PrerequisiteStolenTechs)) return(0);
 
 		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
 		if (unlocked) pre.Clear();
@@ -7754,6 +7759,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReversedTypes);
 	stream.Serialize(IsBarracksInfiltrated);
 	stream.Serialize(IsWarFactoryInfiltrated);
+	stream.Serialize(IsNavalSpied);
+	stream.Serialize(IsAircraftSpied);
+	stream.Serialize(IsBuildingSpied);
+	stream.Serialize(StolenTechs);
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(PoweredUnitCenters);

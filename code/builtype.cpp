@@ -79,6 +79,7 @@
 #include "infatype.h"
 #include "isotype.h"
 #include "mixfile.h"
+#include "objectkeyrules.h"
 #include "overtype.h"
 #include "rules.h"
 #include "savestream.h"
@@ -385,6 +386,19 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	MessageCapture(),
 	MessageLost(),
 	CursorSpy(),
+	IsSpyEffectCustom(false),
+	IsSpyResetRadar(false),
+	SpyPowerOutage(0),
+	SpyStolenMoneyPercentage(0.0),
+	SpyStolenMoneyAmount(0),
+	IsSpyResetSuperweapons(false),
+	SpyStolenTechIndex(),
+	IsSpyUndoReverseEngineer(false),
+	IsSpyInfantryVeterancy(false),
+	IsSpyVehicleVeterancy(false),
+	IsSpyNavalVeterancy(false),
+	IsSpyAircraftVeterancy(false),
+	IsSpyBuildingVeterancy(false),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1477,6 +1491,24 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			if (ini.Get_String(Name(), "Cursor.Spy", "", text, sizeof(text)) > 0) {
 				CursorSpy = text;
 			}
+			IsSpyEffectCustom = ini.Get_Bool(Name(), "SpyEffect.Custom", IsSpyEffectCustom);
+			IsSpyResetRadar = ini.Get_Bool(Name(), "SpyEffect.ResetRadar", IsSpyResetRadar);
+			SpyPowerOutage = ini.Get_Int(Name(), "SpyEffect.PowerOutageDuration", SpyPowerOutage);
+			SpyStolenMoneyPercentage = ini.Get_Float(Name(), "SpyEffect.StolenMoneyPercentage", SpyStolenMoneyPercentage);
+			SpyStolenMoneyAmount = ini.Get_Int(Name(), "SpyEffect.StolenMoneyAmount", SpyStolenMoneyAmount);
+			IsSpyResetSuperweapons = ini.Get_Bool(Name(), "SpyEffect.ResetSuperweapons", IsSpyResetSuperweapons);
+			if (ini.Is_Present(Name(), "SpyEffect.StolenTechIndex")) {
+				SpyStolenTechIndex.clear();
+				for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "SpyEffect.StolenTechIndex"))) {
+					SpyStolenTechIndex.push_back(atoi(index.c_str()));
+				}
+			}
+			IsSpyUndoReverseEngineer = ini.Get_Bool(Name(), "SpyEffect.UndoReverseEngineer", IsSpyUndoReverseEngineer);
+			IsSpyInfantryVeterancy = ini.Get_Bool(Name(), "SpyEffect.InfantryVeterancy", IsSpyInfantryVeterancy);
+			IsSpyVehicleVeterancy = ini.Get_Bool(Name(), "SpyEffect.VehicleVeterancy", IsSpyVehicleVeterancy) || ini.Get_Bool(Name(), "SpyEffect.UnitVeterancy", false);
+			IsSpyNavalVeterancy = ini.Get_Bool(Name(), "SpyEffect.NavalVeterancy", IsSpyNavalVeterancy);
+			IsSpyAircraftVeterancy = ini.Get_Bool(Name(), "SpyEffect.AircraftVeterancy", IsSpyAircraftVeterancy);
+			IsSpyBuildingVeterancy = ini.Get_Bool(Name(), "SpyEffect.BuildingVeterancy", IsSpyBuildingVeterancy);
 		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
@@ -2597,6 +2629,19 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MessageCapture);
 	stream.Serialize(MessageLost);
 	stream.Serialize(CursorSpy);
+	stream.Serialize(IsSpyEffectCustom);
+	stream.Serialize(IsSpyResetRadar);
+	stream.Serialize(SpyPowerOutage);
+	stream.Serialize(SpyStolenMoneyPercentage);
+	stream.Serialize(SpyStolenMoneyAmount);
+	stream.Serialize(IsSpyResetSuperweapons);
+	stream.Serialize(SpyStolenTechIndex);
+	stream.Serialize(IsSpyUndoReverseEngineer);
+	stream.Serialize(IsSpyInfantryVeterancy);
+	stream.Serialize(IsSpyVehicleVeterancy);
+	stream.Serialize(IsSpyNavalVeterancy);
+	stream.Serialize(IsSpyAircraftVeterancy);
+	stream.Serialize(IsSpyBuildingVeterancy);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(GateStages);
