@@ -381,7 +381,8 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	font-family: fullfnt;
 	font-size: 12dp;
 	line-height: 16dp;
-	color: var(--t-stamp, #8f84a8);
+	color: #e8e8e8d8;
+	font-effect: shadow(1dp 1dp #000000);
 	pointer-events: none;
 }
 
@@ -449,7 +450,8 @@ scrollbarvertical sliderarrowinc, scrollbarvertical sliderarrowinc:active
 	font-size: 12dp;
 	line-height: 16dp;
 	text-align: right;
-	color: var(--t-stamp, #8f84a8);
+	color: #e8e8e8d8;
+	font-effect: shadow(1dp 1dp #000000);
 }
 
 body.titlemenu #profile, body.titlemenu #emblem
@@ -462,21 +464,28 @@ body.titlemenu #profile, body.titlemenu #emblem
 body.titlemenu #backdrop #reveal
 {
 	width: 300dp;
-	height: 374dp;
+	height: 366dp;
 	top: 50%;
-	margin: -187dp 0 0 7%;
+	margin: -183dp 0 0 7%;
 }
 
 body.titlemenu.count-4 #backdrop #reveal
 {
-	height: 278dp;
-	margin-top: -139dp;
+	height: 270dp;
+	margin-top: -135dp;
 }
 
 body.titlemenu.count-5 #backdrop #reveal
 {
-	height: 326dp;
-	margin-top: -163dp;
+	height: 318dp;
+	margin-top: -159dp;
+}
+
+/* The main menu has no caption: its buttons start at the top of the panel. */
+body.titlemenu.main #backdrop #reveal
+{
+	height: 328dp;
+	margin-top: -164dp;
 }
 
 body.titlemenu #wallpaper
@@ -488,7 +497,12 @@ body.titlemenu #wallpaper
 
 body.titlemenu #content
 {
-	padding: 74dp 0 0 0;
+	padding: 66dp 0 0 0;
+}
+
+body.titlemenu.main #content
+{
+	padding-top: 24dp;
 }
 
 body.titlemenu #content > button
@@ -525,15 +539,19 @@ body.titlemenu #title
 	display: block;
 	position: absolute;
 	left: 28dp;
-	top: 24dp;
+	top: 22dp;
 	width: 244dp;
-	height: 32dp;
-	font-size: 22dp;
-	line-height: 30dp;
+	height: 28dp;
+	font-size: 16dp;
+	line-height: 26dp;
 	text-align: left;
-	text-transform: uppercase;
-	color: var(--t-text-hot, #ffffff);
-	border-bottom: 2dp var(--t-accent, #b46bff);
+	color: var(--t-muted, #a99bc9);
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
+}
+
+body.titlemenu.main #title
+{
+	display: none;
 }
 
 /* The skirmish lobby fills most of the screen: the player list on the left, the map and the game
