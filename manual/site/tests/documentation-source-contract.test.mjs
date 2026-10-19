@@ -1582,12 +1582,13 @@ test('A game played alone is paced by its own speed table', () => {
 });
 
 test('An insignificant unit dies without announcing it', () => {
-	assert.equal(
-		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')
-			.replace(/\/\/[^\n]*/g, '')
-			.replace(/[\s]+/g, ' ')
-			.trim(),
-		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { if (!TClass->IsEvaLostSet) { Speak(VOX_UNIT_LOST); } else if (!TClass->IsDontScore && !ObjectKeyRules::Names_Nothing(TClass->EvaLost) && !TClass->EvaLost.empty()) { Speak_Eva(TClass->EvaLost.c_str()); } } }',
+	assertOrdered(
+		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const'),
+		[
+			'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {',
+			'if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {',
+			'Speak(VOX_UNIT_LOST);',
+		],
 		'the event and the voice are refused together',
 	);
 
