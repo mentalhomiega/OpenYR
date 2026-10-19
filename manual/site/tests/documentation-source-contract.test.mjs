@@ -969,8 +969,12 @@ test('A computer player draws a country from the lobby roster', () => {
 test('A lobby side entry carries its country', () => {
 	const lobby = source('code/ui/screens/netlobby/uinetlobbydlg.cpp');
 
+	assertOrdered(functionBody(source('code/houstype.cpp'), 'std::vector<int> HouseTypeClass::Lobby_Countries(void)'), [
+		'HouseTypes[index]->IsMultiplay',
+		'list.push_back(index);',
+	], 'the lobby lists the countries open to multiplayer');
 	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'), [
-		'house->IsMultiplay',
+		'HouseTypeClass::Lobby_Countries()',
 		'option.Value = index;',
 		'if (index == Session.House) {',
 	], 'each entry carries its country and the list is positioned by the country it holds');
@@ -979,8 +983,8 @@ test('A lobby side entry carries its country', () => {
 		'Session.House = country;',
 	], 'the selection is read back through its country');
 	assertOrdered(functionBody(source('code/netdlg2.cpp'), 'int Net2Country_At(int index)'), [
-		'HouseTypes[country]->IsMultiplay',
-		'return(country);',
+		'HouseTypeClass::Lobby_Countries()',
+		'return(list[index]);',
 	], 'a row names the country standing at it');
 	const skirmish = source('code/ui/screens/skirmish/uiskirmishdlg.cpp');
 
