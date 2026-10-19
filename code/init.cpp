@@ -208,6 +208,7 @@
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
 #include "ui/screens/version/uiversion.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -309,6 +310,8 @@ static void Cheat_Disable(void);
 static bool Cheat_Key_Process(char chr);
 static void Cheat_Version_Suffix(char * string);
 static std::string Version_Text(void);
+static void Startup_Notice_Show(void);
+static void Startup_Notice_Hide(void);
 
 
 
@@ -476,6 +479,7 @@ int Init_Game(int , char * [])
 	}
 
 	Draw_Menu_Background();
+	Startup_Notice_Show();
 	Call_Back();
 
 	/*
@@ -1248,6 +1252,8 @@ restart:
 		*/
 		//Scen.Set_Scenario_Name("SCG01EA.INI");
 	}
+
+	Startup_Notice_Hide();
 
 	/*
 	**	Don't carry stray keystrokes into game.
@@ -3109,12 +3115,17 @@ int Main_Menu(unsigned int timeout)
 
 	timeout = 0;
 
-	char * background = Get_New_Menu()->Background;
-	Load_Title_Screen(background, HiddenSurface, &CCPalette);
-	Update_Visible_Surface();
+	if (Options.IsClassicMenus) {
+		char * background = Get_New_Menu()->Background;
+		Load_Title_Screen(background, HiddenSurface, &CCPalette);
+		Update_Visible_Surface();
+	} else {
+		Draw_Menu_Background();
+	}
 
-	// The title art stays up while the battle loads behind it.
+	// The modern menus' loading notice stays up while the battle loads behind the menu.
 	Shellmap_Start();
+	Startup_Notice_Hide();
 
 	while (retval == SEL_NONE) {
 		MainMenuKeyResult = SEL_NONE;
@@ -3174,10 +3185,43 @@ void Title_Screen_Restore(bool force)
 	}
 
 	if (force == true) {
-		HiddenSurface->Fill(0);
-		char *menu = Get_New_Menu()->Background;
-		Load_Title_Screen(menu, HiddenSurface, &CCPalette);
-		Update_Visible_Surface(HiddenSurface);
+		if (Options.IsClassicMenus) {
+			HiddenSurface->Fill(0);
+			char *menu = Get_New_Menu()->Background;
+			Load_Title_Screen(menu, HiddenSurface, &CCPalette);
+			Update_Visible_Surface(HiddenSurface);
+		} else {
+			Draw_Menu_Background();
+		}
+	}
+}
+
+
+// The modern menus show a loading notice over their backdrop from the start of the data load until the
+// title menu stands, so the wait is not a bare screen. The notice is left allocated at exit.
+static UIWaitBoxClass * StartupNotice = NULL;
+
+
+static void Startup_Notice_Show(void)
+{
+	if (Options.IsClassicMenus || StartupNotice != NULL) {
+		return;
+	}
+
+	StartupNotice = new UIWaitBoxClass;
+	if (!StartupNotice->Show("Loading...")) {
+		delete StartupNotice;
+		StartupNotice = NULL;
+	}
+}
+
+
+static void Startup_Notice_Hide(void)
+{
+	if (StartupNotice != NULL) {
+		StartupNotice->Hide();
+		delete StartupNotice;
+		StartupNotice = NULL;
 	}
 }
 

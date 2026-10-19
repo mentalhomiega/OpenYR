@@ -576,7 +576,10 @@ void Shellmap_Start(void)
 	if (Running || !Shellmap_Enabled()) {
 		return;
 	}
-	Load_Battle();
+	// The first frame is drawn at once, so the menu opens over the battle rather than over a blank screen.
+	if (Load_Battle()) {
+		Shellmap_Service();
+	}
 }
 
 

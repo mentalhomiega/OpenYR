@@ -14,11 +14,16 @@
 #include "_pk.h"
 #include "addon.h"
 #include "ccfile.h"
+#include "globals.h"
+#include "goptions.h"
 #include "grphmenu.h"
+#include "gscreen.h"
 #include "init.h"
 #include "loaddlg.h"
 #include "mixfile.h"
 #include "movie.h"
+#include "shellmap.h"
+#include "surface.h"
 #include "vector.h"
 
 
@@ -37,13 +42,25 @@ NewMenuClass * Get_New_Menu(void)
 
 
 /// <summary>
-/// Draws the title page behind the menus.
+/// Draws the backdrop behind the menus.
 /// This routine is used by the various menu and dialog screens to restore the backdrop
-/// before they draw themselves over it.
+/// before they draw themselves over it. The classic menus get the title page. The modern
+/// menus draw their own backdrop, so under them this leaves the menu battle on screen while
+/// it runs and otherwise clears the screen to black.
 /// </summary>
 void Draw_Menu_Background(void)
 {
-	Load_Title_Page(Get_New_Menu()->Background, true);
+	if (Options.IsClassicMenus) {
+		Load_Title_Page(Get_New_Menu()->Background, true);
+		return;
+	}
+
+	if (Shellmap_Running()) {
+		return;
+	}
+
+	HiddenSurface->Fill(0);
+	Update_Visible_Surface(HiddenSurface);
 }
 
 
