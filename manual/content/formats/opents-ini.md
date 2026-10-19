@@ -93,6 +93,16 @@ The eight `Expansion` keys, such as `RulesExpansion` and `ArtExpansion`, name no
 
 These keys change only a file's name. The game looks for each named file in the [search order](#the-order-files-are-searched-for-in) below, as it does for every other file.
 
+A [mod](/formats/mod-ini/#replacing-base-files-and-archives) can name these files too, and an `[Archives]` section sets which numbered expansion archives are mounted:
+
+```ini title="OPENTS.INI"
+[Archives]
+ExpandPrefix=EXPANDMD
+CachePrefix=ECACHE
+```
+
+`ExpandPrefix` and `CachePrefix` hold comma separated prefixes. Each prefix mounts the 100 archives numbered 99 down to 00, and the files of an earlier prefix are searched before those of a later one.
+
 The game reads its rules from the one file `Rules` names. Other files matching `RULE*.INI` are not read.
 
 Campaign files are gathered by the fixed pattern `BATTLE*.INI`. Every matching file is read and adds its campaigns to the list. The file `Battle` names is read as well when its name does not match the pattern.

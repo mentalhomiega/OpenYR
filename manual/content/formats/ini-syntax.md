@@ -41,6 +41,20 @@ A replaced key moves to the end of its section. This changes its position in a s
 
 A repeat within one file is written to the debug log with the file, section and key. The log does not show a value that a later file replaces, so check the later files to find which one set a value.
 
+## Including other files
+
+A section named `[#include]` lists files to read after the file that holds it, as in Ares. Each entry's value is a file name, and the key is ignored:
+
+```ini
+[#include]
+1=weapons.ini
+2=units.ini
+```
+
+The listed files are read in order, each over what the earlier ones wrote, and a listed file may have its own `[#include]` section. A name is looked for as the game looks for any data file, loose in the search folders or in a mounted archive. A file that is not found is written to the debug log and passed over, and a file that is already being read, such as the one that includes it, is not read again. The section itself is not stored, and the included files are read after the whole of the including file, wherever the section stands in it.
+
+This applies to every INI file the game reads after startup begins, such as the rules, art, AI and map files.
+
 ## Malformed values
 
 What happens to a value the game cannot read depends on the kind of value its key expects.

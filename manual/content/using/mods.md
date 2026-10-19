@@ -24,7 +24,7 @@ related:
     id: game-data
 ---
 
-A mod is a folder of files that the game reads ahead of its own. A file in a mod's folder replaces the game's file of the same name, whether the game's copy is loose or inside an archive, except for the data the game reads only from cached archives. A mod can also carry a [`mod.ini`](/formats/mod-ini/) that names overlays: INI files read over the rules, art and AI files, which change only the keys they write.
+A mod is a folder of files that the game reads ahead of its own. A file in a mod's folder replaces the game's file of the same name, whether the game's copy is loose or inside an archive, except for the data the game reads only from cached archives. A mod can also carry a [`mod.ini`](/formats/mod-ini/) that names overlays: INI files read over the rules, art and AI files, which change only the keys they write. A mod that replaces the game's data wholesale names its own base files and expansion archives there instead, as a conversion such as Mental Omega does.
 
 ## Choosing mods
 

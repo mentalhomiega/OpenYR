@@ -26,8 +26,8 @@ Startup mounts these archives in this order:
 | 1 | `LANGMD.MIX`, then `LANGUAGE.MIX` | No | No |
 | 2 | `PATCH.MIX` | No | No |
 | 3 | `PCACHE.MIX` | No | Yes |
-| 4 | `EXPANDMD99.MIX` down to `EXPANDMD00.MIX` | No | No |
-| 5 | `ECACHE99.MIX` down to `ECACHE00.MIX` | No | Yes |
+| 4 | `EXPANDMD99.MIX` down to `EXPANDMD00.MIX`, or the prefixes a [mod names](/formats/mod-ini/#replacing-base-files-and-archives) | No | No |
+| 5 | `ECACHE99.MIX` down to `ECACHE00.MIX`, or the prefixes a mod names | No | Yes |
 | 6 | `RA2MD.MIX`, then `RA2.MIX` | No | No |
 | 7 | `CACHEMD.MIX`, then `CACHE.MIX` | Yes | Yes |
 | 8 | `LOCALMD.MIX`, then `LOCAL.MIX` | No | No |
@@ -44,7 +44,7 @@ Startup mounts these archives in this order:
 
 Several of these are normally members of an earlier archive rather than loose files: `CONQMD.MIX`, `GENERMD.MIX` and `ISOGENMD.MIX` are in `RA2MD.MIX`, `CONQUER.MIX` is in `RA2.MIX`, and the cameo archives are in the language archives.
 
-`PATCH.MIX` and the `EXPANDMD` archives are mounted only as loose files, never as members of another archive.
+`PATCH.MIX` and the `EXPANDMD` archives are mounted only as loose files, never as members of another archive. While a mod is active, rows 2 to 5 are mounted before row 1, so the mod's archives are searched ahead of the language archives.
 
 If a required archive is missing or cannot be cached, the game stops during startup. An optional archive that is missing is skipped, and later lookups do not search it. A deployment can therefore keep the maps and the multiplayer content loose or in other archives.
 
