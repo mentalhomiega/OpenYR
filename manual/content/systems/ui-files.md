@@ -33,7 +33,7 @@ The pictures, and the dialog font that captions and buttons are drawn in, are th
 
 The kit gives every layout size in `dp`, RmlUi's scaled pixel, so a screen grows with the window. The [menu style](#menu-styles) in force sets how large a `dp` is.
 
-A screen opens the way the original dialogs did: it slides out from the middle behind a pair of side bars, with the dialog sound once as it starts. Put `reveal="none"` on a document's `<body>` for a screen that should appear at once instead.
+A screen opens the way the original dialogs did: it slides out from the middle behind a pair of side bars, with the dialog sound once as it starts. Put `reveal="none"` on a document's `<body>` for a screen that should appear at once instead. The modern style's title menus (Main Menu, Single Player and Movies & Credits) always appear at once.
 
 ## Menu styles
 

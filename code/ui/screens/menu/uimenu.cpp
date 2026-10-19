@@ -103,6 +103,9 @@ class UIMenuViewClass : public UIRmlViewClass
 			if (Data.State.Kind == UI_MENU_MAIN || Data.State.Kind == UI_MENU_SINGLE_PLAYER || Data.State.Kind == UI_MENU_MOVIES) {
 				Document()->SetClass("titlemenu", true);
 				Document()->SetClass("count-" + std::to_string(Data.State.Items.size()), true);
+				if (!Data.State.Slide) {
+					Document()->SetAttribute("reveal", Rml::String("none"));
+				}
 			}
 			if (Data.State.Kind == UI_MENU_MULTIPLAYER_FIRESTORM) {
 				Document()->SetClass("firestorm", true);
