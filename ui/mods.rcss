@@ -31,7 +31,7 @@
 #mods
 {
 	margin-top: 7dp;
-	height: 182dp;
+	height: 154dp;
 }
 
 /* Taller rows than the kit's, to hold a check box. */
@@ -104,6 +104,24 @@
 #status.problem
 {
 	color: #ff7070;
+}
+
+#ask
+{
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	align-items: center;
+	height: 20dp;
+	margin-top: 4dp;
+	line-height: 18dp;
+	white-space: nowrap;
+}
+
+#ask input
+{
+	flex: 0 0 auto;
+	margin: 0 8dp 0 1dp;
 }
 
 #buttons

@@ -8,6 +8,9 @@ endif()
 
 add_library(OpenYRLauncherCore STATIC
     launcher_core.cpp
+    launcher_mods.cpp
+    # The game's mod list and choice rules, compiled here so the picker writes the list the game reads.
+    "${CMAKE_SOURCE_DIR}/code/modchoice.cpp"
 )
 target_include_directories(OpenYRLauncherCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_compile_features(OpenYRLauncherCore PUBLIC cxx_std_20)
@@ -21,6 +24,7 @@ set_target_properties(OpenYRLauncherCore PROPERTIES FOLDER "Tools")
 add_executable(OpenYRLauncher WIN32
     launcher_main.cpp
     launcher_system.cpp
+    launcher_picker.cpp
     launcher.rc
 )
 target_compile_features(OpenYRLauncher PRIVATE cxx_std_20)

@@ -26,6 +26,10 @@ class UIModsServiceClass
 
 		// Writes the list as the player's Mods= setting; false when the settings file cannot be written.
 		virtual bool Save(std::string const & list) = 0;
+
+		// Whether the launcher asks which mod to use each time it starts, and the setting that says so.
+		virtual bool Ask_For_Mod(void) = 0;
+		virtual bool Save_Ask_For_Mod(bool ask) = 0;
 		virtual std::string File_Name(void) = 0;
 };
 
@@ -54,6 +58,7 @@ struct UIModsState
 	bool CanToggle = false;
 	bool CanRaise = false;
 	bool CanLower = false;
+	bool AskForMod = true;
 };
 
 
@@ -72,6 +77,8 @@ class UIModsPresenterClass : public UIPresenterClass
 
 	private:
 		void Show(void);
+
+		bool AskedOriginally = true;
 
 		UIModsServiceClass & Service;
 };

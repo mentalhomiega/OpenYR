@@ -74,6 +74,23 @@ bool Ask_Update(std::wstring const & question);
 // A message box with the launcher's title. A silent run shows none.
 void Show_Message(std::wstring const & text, bool is_error);
 
+// What the mod picker shows and what the player chose.
+struct ModPickerRequestType
+{
+	std::vector<std::wstring> Names;
+	std::vector<std::wstring> Descriptions;
+
+	// The row selected when the window opens, and the row chosen when the player presses Play.
+	int Selected = 0;
+
+	// The check box "Do not ask again", which starts as given.
+	bool DontAskAgain = false;
+};
+
+// Shows the mod picker and waits. True when the player presses Play, and Selected is then the chosen row.
+// Cancel, the close button and Escape give false. DontAskAgain holds the check box either way.
+bool Show_Mod_Picker(ModPickerRequestType & request);
+
 // A small window with a line of text and a progress bar, shown while the update works.
 class ProgressWindowType
 {

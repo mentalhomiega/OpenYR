@@ -13,6 +13,7 @@ source_files:
   - code/startup.cpp
   - code/ui/screens/mods/uimods.cpp
   - code/ui/screens/mods/uimodsdlg.cpp
+  - docs/LAUNCHER.md
 related:
   - type: format
     id: mod-ini
@@ -28,7 +29,7 @@ A mod is a folder of files that the game reads ahead of its own. A file in a mod
 
 ## Choosing mods
 
-Choose mods on the [Mods screen](#the-mods-screen), list them in [`Mods=` in `RA2MD.INI`](/keys/mods/) or [in `OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
+Choose mods in [the launcher](#the-launcher-picker) or on the [Mods screen](#the-mods-screen), list them in [`Mods=` in `RA2MD.INI`](/keys/mods/) or [in `OPENTS.INI`](/formats/opents-ini/#the-mods-it-starts-with), or name each one with [`-MOD=`](/using/command-line/mod/) on the command line:
 
 ```text
 Game.exe -MOD=HighTech -MOD="D:\Mods\Map Pack"
@@ -47,6 +48,8 @@ A name is a folder inside the `Mods` folder of the game data directory, so `High
 
 - Tick a mod, or select it and choose **Turn On**, to add it to the end of the list. Untick it, or choose **Turn Off**, to take it out.
 - **Move Up** and **Move Down** move the selected mod within the list.
+- Until OK is pressed, the status line says that the list has changed and takes effect when the game starts again.
+- The **Ask which mod to use when OpenYR starts** check box sets whether the [launcher picker](#the-launcher-picker) opens.
 - **OK** writes a changed list and shows a message that the change takes effect after a restart. The mods in force stay the same until the game starts again. **Cancel** discards the changes.
 
 A mod only the command line names is marked *command line*. It stays ticked, cannot be moved, and is never written to the list, so it is on only while the game is started with its `-MOD=`. A listed mod that the command line also names keeps its listed place; turning it off moves it below the listed mods, where the command line puts it.
@@ -54,6 +57,14 @@ A mod only the command line names is marked *command line*. It stays ticked, can
 A listed mod whose folder does not exist is marked *not found* and has no number. It stays in the list until it is turned off. A folder whose name holds a comma or a semicolon, or starts or ends with a space, cannot be turned on, because the list cannot hold that name; rename the folder to use it.
 
 OK writes the list as `Mods=` under `[Options]` in the player's `RA2MD.INI`, which is in the [user data directory](/using/game-data/#keeping-the-data-somewhere-else) when [`-USERDIR`](/using/command-line/user-directory/) names one. The file's other settings are kept, and the game data directory is never written to, so players who share one data directory keep separate lists. Turning every mod off writes `Mods=,` rather than removing the key, so the choice overrides a list in `OPENTS.INI`. If the file cannot be written, the screen stays open and names the file.
+
+### The launcher picker
+
+`OpenYR.exe`, the launcher the setup installs, shows a window before it starts the game. It lists "Yuri's Revenge (no mods)" and every folder in the `Mods` folder of the game data directory, with the name and description from each [`mod.ini`](/formats/mod-ini/). Select one and choose **Play** to start with that mod alone. **Cancel** starts nothing.
+
+The picker writes the choice as `Mods=` under `[Options]` in `RA2MD.INI`, in the same place and form as the Mods screen, so the screen shows the choice and the picker opens on a list saved in the game. Choosing no mods writes `Mods=,`. A list of several mods, a mod that is not in the `Mods` folder, or a folder that does not exist appears as a first row, **Keep the current mods**, which is selected; **Play** with that row changes nothing. Any other row replaces the whole list with that one choice, so use the Mods screen to run several mods or change their order.
+
+Tick **Do not ask again** to stop the window from opening. The setting is `ModPicker=` under `[Launcher]` in `RA2MD.INI`; a value starting with `N`, `F` or `0` turns the picker off, and no key leaves it on. The Mods screen has a check box, **Ask which mod to use when OpenYR starts**, to turn the picker back on. The window is also not shown when the game's arguments contain `-MOD=`, `-DATADIR=` or `-USERDIR=`, or when there is no mod folder and no mod list.
 
 ## What a mod folder holds
 

@@ -133,6 +133,9 @@ std::wstring Ansi_To_Wide(std::string const & text);
 std::wstring Utf8_To_Wide(std::string const & text);
 std::string Wide_To_Utf8(std::wstring const & text);
 
+// The text in the system code page, the encoding the game reads its INI files in. Characters the code page lacks become '?'.
+std::string Wide_To_Ansi(std::wstring const & text);
+
 // One argument, quoted so that CommandLineToArgvW and the C runtime read it back unchanged.
 std::wstring Quote_Argument(std::wstring const & arg);
 
