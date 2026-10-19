@@ -171,7 +171,7 @@ Each person has a section: `[Settings]` for the player at this machine, and `[Ot
 
 - `Name` is UTF-8 text. A name longer than 63 bytes is shortened.
 - `Side` is the person's country, numbered from `0` in the order of the rules' `[Countries]` list.
-- `Color` is one of the eight player colors, `0` to `7`. In a game against other machines, no two people may share a color.
+- `Color` is one of the lobby's player colors, `0` to `7`, or up to one less than the [`Count`](/keys/count/#scope-ui-controls) a mod's UI file sets. In a game against other machines, no two people may share a color.
 - `ColorRGB` is optional. It gives three values from `0` to `255` separated by commas, such as `ColorRGB=255,128,0`, for a free color that the person draws in. `Color` still picks the seat, so the seats stay distinct. A value that is not three numbers in that range is ignored and the person keeps the color at `Color`. A brightness below `96` is raised to `96`. The file is not checked for two people with close colors.
 - `IsSpectator` is `yes` when the person watches instead of playing. The client writes it here as well as in `[IsSpectator]`; either one makes the seat a watcher.
 
@@ -188,7 +188,7 @@ The file positions that no person's section claims are for computer players. The
 
 | Section | Entry | Meaning |
 | --- | --- | --- |
-| `[HouseColors]` | `Multi1`–`Multi8` | The color that seat plays, `0` to `7`, or `-1` for the game's choice. |
+| `[HouseColors]` | `Multi1`–`Multi8` | The color that seat plays, in the same range as `Color`, or `-1` for the game's choice. |
 | `[HouseCountries]` | `Multi1`–`Multi8` | The country that seat plays, or `-1` for the game's choice. |
 | `[HouseHandicaps]` | `Multi1`–`Multi8` | The difficulty slot that seat plays at, or `-1` to follow `AIDifficulty`. |
 
@@ -312,7 +312,7 @@ A new skirmish, and any game against other machines, new or resumed, is also ref
 - the file has no `[Settings]` or `[OtherN]` section, so it seats no person;
 - `AIDifficulty` is outside `0` to `2`;
 - `AIPlayers` is negative or more than the seats no person holds;
-- a person's `Side` is not a country the rules have, or their `Color` is outside `0` to `7`; a computer seat's country and color are checked the same way unless they are `-1`;
+- a person's `Side` is not a country the rules have, or their `Color` is outside the lobby's colors; a computer seat's country and color are checked the same way unless they are `-1`;
 - a `[HouseHandicaps]` entry is outside `-1` to `6`;
 - an occupied seat's alliance entry is outside `-1` to `7`, or names a seat that is empty;
 - every person watches and no computer plays; this check does not apply to a resumed game.
