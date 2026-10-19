@@ -235,6 +235,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDefaultToGuardArea(false),
 	IsSelectableCombatant(false),
 	BuildTimeMultiplier(1.0),
+	SurvivorSide{},
+	CrewTechnicianChance(-1),
+	CrewEngineerChance(-1),
+	SurvivorPilots(-1),
+	SurvivorPilotChance{-1, -1, -1},
+	SurvivorPassengerChance{-1, -1, -1},
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -947,6 +953,27 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
 		// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
 		BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
+		if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
+			SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
+			SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
+			SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
+			SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
+		CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
+		SurvivorPilots = ini.Get_Int(Name(), "Survivor.Pilots", SurvivorPilots);
+		SurvivorPilotChance[0] = ini.Get_Int(Name(), "Survivor.RookiePilotChance", SurvivorPilotChance[0]);
+		SurvivorPilotChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPilotChance", SurvivorPilotChance[1]);
+		SurvivorPilotChance[2] = ini.Get_Int(Name(), "Survivor.ElitePilotChance", SurvivorPilotChance[2]);
+		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
+		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
+		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -1726,6 +1753,14 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDefaultToGuardArea);
 	stream.Serialize(IsSelectableCombatant);
 	stream.Serialize(BuildTimeMultiplier);
+	for (std::string & side : SurvivorSide) {
+		stream.Serialize(side);
+	}
+	stream.Serialize(CrewTechnicianChance);
+	stream.Serialize(CrewEngineerChance);
+	stream.Serialize(SurvivorPilots);
+	stream.Serialize(SurvivorPilotChance);
+	stream.Serialize(SurvivorPassengerChance);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

@@ -94,6 +94,7 @@ records:
   reverse-engineering: Ares
   object-type-keys: Ares, Phobos
   rank-insignia-keys: Ares, Phobos
+  ares-survivor-keys: Ares
   phobos-opentopped-values: Phobos
   # Added keys that the original gamemd.exe has no string for, checked on 2026-10-16.
   healer-target-kinds: OpenYR

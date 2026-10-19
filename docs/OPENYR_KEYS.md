@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 224 entries
+- [Rules](#rules): 237 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -116,6 +116,8 @@ Bounty.Value=200
 | [`Chronoshift.Allow`](../manual/content/keys/chronoshift.allow.md) | `yes` | Lets the chronosphere skip a vehicle, infantry type or landed aircraft, leaving it where it is. | Ares |
 | [`Chronoshift.Crushable`](../manual/content/keys/chronoshift.crushable.md) | `yes` | Stops a unit the chronosphere sets down on this object from destroying it; the arriving unit is destroyed instead. | Ares |
 | [`Crashable`](../manual/content/keys/crashable--aircrafttype.md) | `yes` | Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed. | Ares, Phobos |
+| [`Crew.EngineerChance`](../manual/content/keys/crew.engineerchance.md) | 25 for a structure that builds buildings, otherwise 0 | The odds in percent that a survivor of this structure type is an engineer. | Ares |
+| [`Crew.TechnicianChance`](../manual/content/keys/crew.technicianchance.md) | An armed object has 15 percent odds, and an unarmed one none | The odds in percent that a survivor of this type is its owner's technician rather than its side's crew. | Ares |
 | [`EMP.Modifier`](../manual/content/keys/emp.modifier.md) | 1.0, so the stun lasts the pulse's full duration | Scales how long an EM pulse stuns this object. | Ares |
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
@@ -145,6 +147,17 @@ Bounty.Value=200
 | [`SelfHealingCap`](../manual/content/keys/selfhealingcap.md) | `-1` | The share of maximum strength at which this type stops healing itself. | OpenTS |
 | [`SelfHealingRate`](../manual/content/keys/selfhealingrate.md) | `-1` | The interval between this type's self-healing ticks. | OpenTS |
 | [`SelfHealingStep`](../manual/content/keys/selfhealingstep.md) | `-1` | The strength one self-healing tick restores to this type. | OpenTS |
+| [`Survivor.ElitePassengerChance`](../manual/content/keys/survivor.elitepassengerchance.md) | `-1` | The odds in percent that each passenger of this elite transport survives its destruction. | Ares |
+| [`Survivor.ElitePilotChance`](../manual/content/keys/survivor.elitepilotchance.md) | [General] CrewEscape, as a fraction | The odds in percent that each pilot of a destroyed elite vehicle of this type escapes. | Ares |
+| [`Survivor.Pilots`](../manual/content/keys/survivor.pilots.md) | One for a Crewed=yes type that declares no Passengers capacity, otherwise none | How many pilots try to step out of this vehicle type when it is destroyed. | Ares |
+| [`Survivor.RookiePassengerChance`](../manual/content/keys/survivor.rookiepassengerchance.md) | `-1` | The odds in percent that each passenger of this rookie transport survives its destruction. | Ares |
+| [`Survivor.RookiePilotChance`](../manual/content/keys/survivor.rookiepilotchance.md) | [General] CrewEscape, as a fraction | The odds in percent that each pilot of a destroyed rookie vehicle of this type escapes. | Ares |
+| [`Survivor.Side0`](../manual/content/keys/survivor.side0.md) | The owning side's crew type, as AlliedCrew, SovietCrew or ThirdCrew gives it | The infantry type that survives this object when its owner is on place 0 of [Sides]. | Ares |
+| [`Survivor.Side1`](../manual/content/keys/survivor.side1.md) | The owning side's crew type, as AlliedCrew, SovietCrew or ThirdCrew gives it | The infantry type that survives this object when its owner is on place 1 of [Sides]. | Ares |
+| [`Survivor.Side2`](../manual/content/keys/survivor.side2.md) | The owning side's crew type, as AlliedCrew, SovietCrew or ThirdCrew gives it | The infantry type that survives this object when its owner is on place 2 of [Sides]. | Ares |
+| [`Survivor.Side3`](../manual/content/keys/survivor.side3.md) | The owning side's crew type, as AlliedCrew, SovietCrew or ThirdCrew gives it | The infantry type that survives this object when its owner is on place 3 of [Sides]. | Ares |
+| [`Survivor.VeteranPassengerChance`](../manual/content/keys/survivor.veteranpassengerchance.md) | `-1` | The odds in percent that each passenger of this veteran transport survives its destruction. | Ares |
+| [`Survivor.VeteranPilotChance`](../manual/content/keys/survivor.veteranpilotchance.md) | [General] CrewEscape, as a fraction | The odds in percent that each pilot of a destroyed veteran vehicle of this type escapes. | Ares |
 | [`VehicleThief.Allowed`](../manual/content/keys/vehiclethief.allowed.md) | `yes` | Whether a vehicle thief can take vehicles of this type. | Ares, Phobos |
 
 ### OverlayType

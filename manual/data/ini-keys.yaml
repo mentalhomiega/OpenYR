@@ -9904,6 +9904,40 @@ Credits:
       source: code/house.cpp
       guard: null
     level: HouseClass
+Crew.EngineerChance:
+  key: Crew.EngineerChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrewEngineerChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Crew.TechnicianChance:
+  key: Crew.TechnicianChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CrewTechnicianChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CrewEscape:
   key: CrewEscape
   scopes:
@@ -40032,6 +40066,193 @@ Surface:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+Survivor.ElitePassengerChance:
+  key: Survivor.ElitePassengerChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPassengerChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.ElitePilotChance:
+  key: Survivor.ElitePilotChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPilotChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.Pilots:
+  key: Survivor.Pilots
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPilots
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.RookiePassengerChance:
+  key: Survivor.RookiePassengerChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPassengerChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.RookiePilotChance:
+  key: Survivor.RookiePilotChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPilotChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.Side0:
+  key: Survivor.Side0
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.Side1:
+  key: Survivor.Side1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.Side2:
+  key: Survivor.Side2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.Side3:
+  key: Survivor.Side3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.VeteranPassengerChance:
+  key: Survivor.VeteranPassengerChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPassengerChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Survivor.VeteranPilotChance:
+  key: Survivor.VeteranPilotChance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: SurvivorPilotChance
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SuspendDelay:
   key: SuspendDelay
   scopes:

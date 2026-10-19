@@ -506,6 +506,20 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The multiplier on this type's build time (TechnoTypeClass::BuildTimeMultiplier).
 		double BuildTimeMultiplier;
 
+		// The infantry type that survives this object for an owner on each place in [Sides], or empty for the side's crew (Ares Survivor.Side).
+		std::string SurvivorSide[4];
+
+		// The odds in percent that a survivor of this object is its owner's technician or engineer, or -1 for the stock odds (Ares Crew.TechnicianChance, Crew.EngineerChance).
+		int CrewTechnicianChance;
+		int CrewEngineerChance;
+
+		// How many pilots try to leave a destroyed vehicle, or -1 for the stock rule (Ares Survivor.Pilots).
+		int SurvivorPilots;
+
+		// The odds in percent that a pilot escapes, or a passenger survives, by rank, or -1 for the stock rule (Ares Survivor.*PilotChance and Survivor.*PassengerChance).
+		int SurvivorPilotChance[3];
+		int SurvivorPassengerChance[3];
+
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
 

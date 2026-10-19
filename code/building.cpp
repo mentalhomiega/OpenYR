@@ -5724,8 +5724,10 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						**	construction yard.
 						*/
 						const InfantryTypeClass * typ = Crew_Type();
+						int attempts = 0;
 						while (typ != NULL && typ->IsEngineer && engineer) {
-							typ = Crew_Type();
+							// Crew.EngineerChance=100 would otherwise never name a second survivor.
+							typ = ++attempts < 100 ? Crew_Type() : NULL;
 						}
 						if (typ == NULL) {
 							// A survivor with no type is left out, and the rest still come out, as the destroyed-structure path does.
@@ -7559,7 +7561,11 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 InfantryTypeClass const * BuildingClass::Crew_Type(void) const
 {
-	if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
+	if (Class->CrewEngineerChance >= 0) {
+		if (!IsCaptured && Percent_Chance(Class->CrewEngineerChance)) {
+			return(Rule->Engineer);
+		}
+	} else if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
 		return(Rule->Engineer);
 	}
 	return(BASECLASS::Crew_Type());

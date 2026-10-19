@@ -8807,7 +8807,8 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	*/
 	// The crew follows the side of the owning house, as TechnoClass::GetCrew (0x707D20) does.
 	InfantryTypeClass const * infantry = Rule->Technician;
-	switch (SideClass::Place_In_Sides(House->Class->Side)) {
+	int const place = SideClass::Place_In_Sides(House->Class->Side);
+	switch (place) {
 		case 0:
 			infantry = Rule->AlliedCrew;
 			break;
@@ -8820,8 +8821,21 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 		default:
 			break;
 	}
+
+	// A type's own survivor for the owner's side stands in for the side's crew, and the technician roll does not replace it.
+	if (House->Class->Side != SIDE_NONE && place >= 0 && place < 4 && !TClass->SurvivorSide[place].empty()) {
+		InfantryType const named = InfantryTypeClass::From_Name(TClass->SurvivorSide[place].c_str());
+		if (named != INFANTRY_NONE) {
+			return(InfantryTypes[named]);
+		}
+	}
+
 	if (House->Class->Side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
+		if (TClass->CrewTechnicianChance >= 0) {
+			if (Percent_Chance(TClass->CrewTechnicianChance)) {
+				infantry = Rule->Technician;
+			}
+		} else if (Is_Weapon_Equipped() && Percent_Chance(15)) {
 			infantry = Rule->Technician;
 		}
 	} else {

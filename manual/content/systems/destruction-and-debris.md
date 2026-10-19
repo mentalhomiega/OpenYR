@@ -142,7 +142,7 @@ The rest follows in this order:
 1. A train car is uncoupled, and the cars behind it stop.
 2. The vehicle is lifted off its cells.
 3. Each passenger gets out onto the vehicle's cell if it can enter that cell, and the rest are killed. Every passenger is killed when the damage was forced, when the vehicle was falling, when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team.
-4. One crew member may escape; [`CrewEscape`](/keys/crewescape/) owns that roll. A vehicle taken by a hijacker skips the roll, and [the hijacker steps back out](/systems/capture/#stealing-a-vehicle) instead.
+4. One crew member may escape; [`CrewEscape`](/keys/crewescape/) owns that roll, and [`Survivor.Pilots`](/keys/survivor.pilots/) changes the number of rolls. A vehicle taken by a hijacker skips the roll, and [the hijacker steps back out](/systems/capture/#stealing-a-vehicle) instead.
 5. A crate-carrying truck may drop a wooden crate on a nearby cell, when the scenario enables [truck crates](/keys/truckcrate/) or, for a train, [train crates](/keys/traincrate/).
 6. The vehicle is taken off the map.
 
