@@ -83,7 +83,8 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename, ColorScheme c
 
 	std::string const name = Palette_File_Name(filename);
 
-	auto const key = std::make_pair(name, scheme->ID);
+	// A drawer is built against the theater's game palette, so each theater keeps its own.
+	auto const key = std::make_pair(name + '@' + std::to_string(Scen != NULL ? (int)Scen->Theater : -1), scheme->ID);
 	auto found = SchemeDrawers.find(key);
 	if (found != SchemeDrawers.end()) {
 		return(found->second.get());
@@ -121,7 +122,8 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 		letter = (char)toupper((unsigned char)letter);
 	}
 
-	auto found = Drawers.find(name);
+	std::string const cache_key = name + '@' + std::to_string(Scen != NULL ? (int)Scen->Theater : -1);
+	auto found = Drawers.find(cache_key);
 	if (found != Drawers.end()) {
 		return(found->second.get());
 	}
@@ -139,5 +141,5 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	} else {
 		DebugString("Custom palette %s not found; the normal palette is used.\n", name.c_str());
 	}
-	return((Drawers[name] = std::move(drawer)).get());
+	return((Drawers[cache_key] = std::move(drawer)).get());
 }
