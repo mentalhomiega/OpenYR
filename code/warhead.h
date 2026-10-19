@@ -373,4 +373,8 @@ class WarheadTypeClass : public AbstractTypeClass
 		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
 		bool IsPreventScatter;
 
+		// The animation an infantryman not marked NotHuman=yes dies with when this warhead kills him, in place of InfDeath (Ares
+		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.
+		AnimTypeClass const * InfDeathAnim;
+
 };

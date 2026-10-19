@@ -495,7 +495,49 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				infdeath = 5;
 			}
 
-			if (Class->DeathAnims.Count() > 0) {
+			/*
+			**	A mutation turns the soldier into the infantryman of the animation's MakeInfantry for the
+			**	killer's house. It needs ground the soldier can walk on (or a bridge), a free spot in the
+			**	cell and no building there. The animation takes the attacker's palette and house.
+			*/
+			auto const mutate = [&](AnimTypeClass const * mutate_type) -> bool {
+				Clear_Occupy_Bit(PositionCoord);
+				CellClass & mutate_cell = Map[(Coord const &)PositionCoord];
+				bool const building_here = mutate_cell.Cell_Building() != NULL;
+				bool mutated = false;
+				if (Ground[mutate_cell.Land_Type()].Cost[SPEED_FOOT] != 0 || IsOnBridge) {
+					mutated = mutate_cell.Closest_Free_Spot(PositionCoord) != COORD_NONE && !building_here;
+				}
+				if (mutated) {
+					Set_Occupy_Bit(PositionCoord);
+					if (mutate_type != NULL) {
+						AnimClass * mutate_anim = new AnimClass(mutate_type, PositionCoord);
+						HouseClass const * owner = source != NULL ? source->House : sourcehouse;
+						if (mutate_anim != NULL) {
+							if (owner != NULL) {
+								mutate_anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
+								mutate_anim->OwnerHouse = (HousesType)owner->HeapID;
+							}
+							mutate_anim->Mark_Infantry_Spot(true);
+						}
+					}
+				}
+				return(mutated);
+			};
+
+			// A warhead's InfDeathAnim has a soldier that is not NotHuman=yes die with that animation, in place of InfDeath (Ares).
+			if (warhead != NULL && warhead->InfDeathAnim != NULL && !Class->IsNotHuman) {
+				if (warhead->InfDeathAnim->MakeInfantry != -1) {
+					if (mutate(warhead->InfDeathAnim)) {
+						delthis = true;
+					} else {
+						Do_Action(DO_EXPLOSION_DEATH, true);
+					}
+				} else {
+					new AnimClass(warhead->InfDeathAnim, PositionCoord);
+					delthis = true;
+				}
+			} else if (Class->DeathAnims.Count() > 0) {
 				int const index = (infdeath >= 0 && infdeath < Class->DeathAnims.Count()) ? infdeath : 0;
 				if (Class->DeathAnims[index] != NULL) {
 					new AnimClass(Class->DeathAnims[index], PositionCoord);
@@ -533,37 +575,14 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						Do_Action(DO_EXPLOSION_DEATH, true);
 						break;
 
-					case 9: {
-						// Mutation needs ground the soldier can walk on (or a bridge), a free spot in the
-						// cell and no building there; otherwise he dies with the Die2 sequence. The
-						// InfantryMutate animation takes the attacker's palette and house, and its
-						// MakeInfantry entry turns into a new infantryman for that house.
-						Clear_Occupy_Bit(PositionCoord);
-						CellClass & mutate_cell = Map[(Coord const &)PositionCoord];
-						bool const building_here = mutate_cell.Cell_Building() != NULL;
-						bool mutated = false;
-						if (Ground[mutate_cell.Land_Type()].Cost[SPEED_FOOT] != 0 || IsOnBridge) {
-							mutated = mutate_cell.Closest_Free_Spot(PositionCoord) != COORD_NONE && !building_here;
-						}
-						if (mutated) {
-							Set_Occupy_Bit(PositionCoord);
-							if (Rule->InfantryMutate != NULL) {
-								AnimClass * mutate = new AnimClass(Rule->InfantryMutate, PositionCoord);
-								HouseClass const * owner = source != NULL ? source->House : sourcehouse;
-								if (mutate != NULL) {
-									if (owner != NULL) {
-										mutate->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
-										mutate->OwnerHouse = (HousesType)owner->HeapID;
-									}
-									mutate->Mark_Infantry_Spot(true);
-								}
-							}
-						} else {
+					case 9:
+						// Otherwise he dies with the Die2 sequence. The InfantryMutate animation's MakeInfantry
+						// entry turns into a new infantryman for the killer's house.
+						if (!mutate(Rule->InfantryMutate)) {
 							Do_Action(DO_EXPLOSION_DEATH, true);
 							infdeath = 2;
 						}
 						break;
-					}
 
 					case 3:
 						deathanim = Rule->InfantryExplode;

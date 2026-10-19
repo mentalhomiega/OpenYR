@@ -19125,6 +19125,23 @@ InfDeath:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+InfDeathAnim:
+  key: InfDeathAnim
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: InfDeathAnim
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 InfantryAbsorb:
   key: InfantryAbsorb
   scopes:

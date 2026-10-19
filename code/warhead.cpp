@@ -156,7 +156,8 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	KillDriverBelowPercent(1.0),
 	KillDriverChance(1.0),
 	IsKillDriverRemoveVeterancy(false),
-	IsPreventScatter(false)
+	IsPreventScatter(false),
+	InfDeathAnim(NULL)
 {
 	Create_ID();
 
@@ -219,6 +220,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ExplosionSet = TGet_TypeList<AnimTypeClass>(ini, Name(), "AnimList", ExplosionSet);
 
 		InfantryDeath = ini.Get_Int(Name(), "InfDeath", InfantryDeath);
+		InfDeathAnim = TGet_Class(ini, Name(), "InfDeathAnim", InfDeathAnim);
 
 		Deform = ini.Get_Float(Name(), "Deform", Deform);
 		DeformThreshhold = ini.Get_Int(Name(), "DeformThreshhold", DeformThreshhold);
@@ -375,6 +377,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(KillDriverChance);
 	crc(IsKillDriverRemoveVeterancy);
 	crc(IsPreventScatter);
+	crc(InfDeathAnim != NULL);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -537,6 +540,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(KillDriverChance);
 	stream.Serialize(IsKillDriverRemoveVeterancy);
 	stream.Serialize(IsPreventScatter);
+	stream.Serialize(InfDeathAnim);
 }
 
 
