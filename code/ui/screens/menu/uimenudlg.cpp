@@ -11,6 +11,8 @@
 
 #include "_surface.h"
 #include "_ui.h"
+#include "globals.h"
+#include "goptions.h"
 #include "init.h"
 #include "surface.h"
 #include "ui/screens/menu/uimenu.h"
@@ -20,9 +22,11 @@
 
 
 // The menu styles place the menus themselves, so the menu keeps the position its sheet gives it.
+// The modern title menus stand at the left edge, where the slide-out from the middle would clip them.
 void UI_Menu_Place(UIMenuState & state)
 {
 	state.Top = -1;
+	state.Slide = Options.IsClassicMenus;
 }
 
 

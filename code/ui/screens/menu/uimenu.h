@@ -53,6 +53,9 @@ struct UIMenuState
 	std::string Profile;
 
 	bool Wide = true;
+
+	// Whether a title screen menu opens with the slide-out from its middle; false shows it at once.
+	bool Slide = true;
 	std::vector<UIMenuItemType> Items;
 	int Top = -1;
 };
