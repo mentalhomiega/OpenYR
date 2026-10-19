@@ -773,3 +773,36 @@ body.lobby #ok, body.lobby #cancel
 {
 	display: none;
 }
+
+/* Wait notices ("Loading...", "Saving...") are a slim panel with the accent edge of the title menus;
+   one without a progress bar is a single line tall. */
+body.waitbox #wallpaper
+{
+	border-width: 1dp 1dp 1dp 3dp;
+	border-color: var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-accent, #b46bff);
+	border-radius: 2dp;
+}
+
+body.waitbox #text
+{
+	font-size: 16dp;
+	line-height: 20dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.waitbox.nobar #backdrop #reveal
+{
+	width: 300dp;
+	height: 64dp;
+	margin-top: -32dp;
+}
+
+body.waitbox.nobar #content
+{
+	padding: 22dp 20dp 0 20dp;
+}
+
+body.waitbox.nobar #text
+{
+	height: 20dp;
+}

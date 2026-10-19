@@ -13,7 +13,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="wait.rcss"/>
 </head>
-<body template="dialog" data-model="wait">
+<body template="dialog" class="waitbox" data-model="wait" data-class-nobar="!bar">
 	<p id="text">{{text}}</p>
 	<progress id="bar" data-if="bar" max="100" direction="right" data-attr-value="percent"/>
 </body>
