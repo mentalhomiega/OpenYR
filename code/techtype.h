@@ -359,6 +359,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// An ImmuneToAbduction type (Ares) is never taken aboard by an Abductor weapon, which damages it as any other weapon does.
 		bool IsImmuneToAbduction;
 
+		// Does any weapon slot of the type, elite ones included, hold an Abductor weapon?
+		bool Has_Abductor_Weapon(void) const;
+
 		// ProtectedDriver and ProtectedDriver.MinHealth (Ares): a KillDriver hit takes the driver only while the vehicle's
 		// health ratio is at or below the minimum, which is 0 for a protected driver and 1 otherwise unless the rules set it.
 		bool IsProtectedDriver;

@@ -1136,6 +1136,40 @@ Abductor.ChangeOwner:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Abductor.MaxHealth:
+  key: Abductor.MaxHealth
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WeaponTypeClass
+      member: AbductMaxHealth
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+Abductor.Temporal:
+  key: Abductor.Temporal
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsAbductTemporal
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 Accelerates:
   key: Accelerates
   scopes:

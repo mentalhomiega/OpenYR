@@ -1506,7 +1506,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	// An Abductor weapon pulls a target it can take into the firer's hold instead of hurting it.
-	if (Weapon != NULL && Weapon->IsAbductor && Payback != NULL && Payback->Abduct(TarCom, Weapon)) {
+	if (Weapon != NULL && Weapon->IsAbductor && !(Weapon->IsAbductTemporal && warhead->IsTemporal) && Payback != NULL && Payback->Abduct(TarCom, Weapon)) {
 		return;
 	}
 

@@ -113,7 +113,7 @@ When a vehicle transport is destroyed, each passenger gets out onto the transpor
 
 Every passenger is killed, and none gets out, when the destroying damage was forced, when the vehicle was falling (for example when a bridge collapsed under it), when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
 
-An aircraft transport's passengers always die with it, whether it falls or is removed where it stands.
+An aircraft transport's passengers always die with it, whether it falls or is removed where it stands. A vehicle with an [`Abductor=yes`](/keys/abductor/) weapon is the exception to the rules above: its passengers get out whatever destroyed it.
 
 A passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience). A passenger of a `Crashable=yes` vehicle that was not above 208 leptons, or of an aircraft removed on the ground, is killed with no attacker credited.
 

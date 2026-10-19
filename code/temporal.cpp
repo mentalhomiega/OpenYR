@@ -174,6 +174,17 @@ void TemporalClass::Update(void)
 		return;
 	}
 
+	// An Abductor.Temporal weapon takes the target aboard when the warp finishes. A target it cannot take is erased as usual.
+	if (weapon != nullptr && weapon->IsAbductor && weapon->IsAbductTemporal) {
+		target->WarpedBy = nullptr;
+		target->IsBeingWarpedOut = false;
+		if (Owner->Abduct(target, weapon)) {
+			return;
+		}
+		target->WarpedBy = Owner;
+		target->IsBeingWarpedOut = true;
+	}
+
 	if (Rule->WarpAway != nullptr) {
 		new AnimClass(Rule->WarpAway, target->PositionCoord);
 	}

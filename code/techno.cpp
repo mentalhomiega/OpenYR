@@ -8858,6 +8858,7 @@ bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
 	if (victim->RTTI != RTTI_INFANTRY && victim->RTTI != RTTI_UNIT) return(false);
 	if (victim->TClass->IsImmuneToAbduction || victim->Is_Iron_Curtained()) return(false);
 	if (!WarheadRules::Abducts_At(victim->Strength, victim->TClass->MaxStrength, weapon->AbductBelowPercent)) return(false);
+	if (weapon->AbductMaxHealth > 0 && victim->Strength > weapon->AbductMaxHealth) return(false);
 	if (!Can_Fit_Passenger(victim)) return(false);
 
 	if (weapon->AbductAnim != NULL) {

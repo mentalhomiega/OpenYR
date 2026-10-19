@@ -1408,6 +1408,32 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 
 
 /// <summary>
+/// Puts a passenger that has left the hold on the first free cell beside this vehicle that it can enter.
+/// </summary>
+/// <returns>bool; Was the passenger placed?</returns>
+bool UnitClass::Place_Passenger_Beside(FootClass * passenger)
+{
+	bool placed = false;
+	for (FacingType face = FACING_N; face < FACING_COUNT && !placed; face++) {
+		Cell const cell = Adjacent_Cell(PositionCell, face);
+		if (!Map.In_Radar(cell) || Map[cell].IsUnderBridge) {
+			continue;
+		}
+		if (passenger->Can_Enter_Cell(&Map[cell], face, Get_Cell_Height()) == MOVE_OK) {
+			Coord coord = cell.As_Coord();
+			if (passenger->RTTI == RTTI_INFANTRY) {
+				coord = Map.Closest_Free_Spot(coord);
+			}
+			ScenarioInit++;
+			placed = passenger->Unlimbo(coord, DirType(face).As_Dir256());
+			ScenarioInit--;
+		}
+	}
+	return(placed);
+}
+
+
+/// <summary>
 /// Puts every passenger on a free cell beside this vehicle. A passenger with no free cell to go to stays aboard.
 /// </summary>
 void UnitClass::Eject_Passengers(void)
@@ -1418,22 +1444,7 @@ void UnitClass::Eject_Passengers(void)
 			break;
 		}
 
-		bool placed = false;
-		for (FacingType face = FACING_N; face < FACING_COUNT && !placed; face++) {
-			Cell const cell = Adjacent_Cell(PositionCell, face);
-			if (!Map.In_Radar(cell) || Map[cell].IsUnderBridge) {
-				continue;
-			}
-			if (passenger->Can_Enter_Cell(&Map[cell], face, Get_Cell_Height()) == MOVE_OK) {
-				Coord coord = cell.As_Coord();
-				if (passenger->RTTI == RTTI_INFANTRY) {
-					coord = Map.Closest_Free_Spot(coord);
-				}
-				ScenarioInit++;
-				placed = passenger->Unlimbo(coord, DirType(face).As_Dir256());
-				ScenarioInit--;
-			}
-		}
+		bool const placed = Place_Passenger_Beside(passenger);
 
 		if (placed) {
 			if (Class->IsGunner && Cargo.How_Many() == 0) {
@@ -1523,11 +1534,14 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 		}
 	}
 
-	if (HeightAGL > 208) {
+	// The passengers of a vehicle that carries an Abductor weapon get out whatever the cause of its destruction (Ares).
+	bool const abductor = Class->Has_Abductor_Weapon();
+
+	if (HeightAGL > 208 && !abductor) {
 		Kill_Cargo(source);
 	}
 
-	if (Class->IsCrashable) {
+	if (Class->IsCrashable && !abductor) {
 		Kill_Cargo(NULL);
 		return;
 	}
@@ -1551,13 +1565,16 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
 		**	Only a clear cell, or one blocked for a moment, lets the passenger out.
 		*/
-		MoveType const reach = (forced || IsToExplode) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
+		MoveType const reach = ((forced || IsToExplode) && !abductor) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
 		object->IsOnBridge = IsOnBridge;
 
 		bool placed = false;
 		if (reach == MOVE_OK || reach == MOVE_MOVING_BLOCK) {
 			Coord const where = IsOnBridge ? Center_Coord() : Map[Get_Coord()].Center_Coord();
 			placed = object->Unlimbo(where, PrimaryFacing.Current().As_Dir256());
+		}
+		if (!placed && abductor) {
+			placed = Place_Passenger_Beside(object);
 		}
 
 		if (placed) {

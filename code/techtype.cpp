@@ -1938,6 +1938,17 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ZFudgeBridge);
 }
 
+bool TechnoTypeClass::Has_Abductor_Weapon(void) const
+{
+	for (int slot = 0; slot < WEAPON_SLOT_COUNT; slot++) {
+		if ((Weapons[slot].Weapon != NULL && Weapons[slot].Weapon->IsAbductor) || (EliteWeapons[slot].Weapon != NULL && EliteWeapons[slot].Weapon->IsAbductor)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 
 /// <summary>
 /// Adds this object type's rule data to a running checksum.
