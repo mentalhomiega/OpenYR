@@ -3218,6 +3218,12 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "scenarios") {
+		// scenarios: the multiplayer list the skirmish setup offers, with each file's description and availability.
+		DebugString("AUTOTEST   scenarios: %d listed, number %d is selected\n", Session.Scenarios.Count(), Session.Options.ScenarioIndex);
+		for (int index = 0; index < Session.Scenarios.Count(); index++) {
+			DebugString("AUTOTEST   scenario %d: %s \"%s\" official %d on hand %d\n", index, Session.Scenarios[index]->Get_Filename(), Session.Scenarios[index]->Description(), (int)Session.Scenarios[index]->Get_Official(), (int)CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available());
+		}
 	} else if (step.Command == "inifile") {
 		// inifile <FILE.INI>: every section and entry of that file, as the game's file system finds it.
 		CCINIClass ini;
