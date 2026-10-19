@@ -86,11 +86,11 @@ An infantryman that enters a building, or is otherwise lifted off the map, relea
 
 ## The terrain table
 
-The terrain table is twelve `rules.ini` sections, one per [land type](/reference/enums/land-type/): `[Clear]`, `[Road]`, `[Water]`, `[Rock]`, `[Wall]`, `[Tiberium]`, `[Beach]`, `[Rough]`, `[Ice]`, `[Railroad]`, `[Tunnel]` and `[Weeds]`. Each section holds one figure per [speed type](/reference/enums/speed-type/), `Foot=`, `Track=`, `Wheel=`, `Hover=`, `Winged=`, `Float=`, `Amphibious=` and `Creep=`, plus [`Buildable=`](/keys/buildable/). The engine has no built-in values for any of the 96 figures.
+The terrain table is twelve `rules.ini` sections, one per [land type](/reference/enums/land-type/): `[Clear]`, `[Road]`, `[Water]`, `[Rock]`, `[Wall]`, `[Tiberium]`, `[Beach]`, `[Rough]`, `[Ice]`, `[Railroad]`, `[Tunnel]` and `[Weeds]`. Each section holds one figure per [speed type](/reference/enums/speed-type/), `Foot=`, `Track=`, `Wheel=`, `Hover=`, `Float=`, `Amphibious=` and `FloatBeach=`, plus [`Buildable=`](/keys/buildable/). The engine reads 84 figures from the files and never reads `Winged=`. It ships no figures of its own.
 
 A land type is read only from files that contain its section. If no file declares the section, every figure for that land type is zero and `Buildable` is off. Zero means impassable, not slow, so deleting `[Rough]` closes rough ground to every infantryman and vehicle instead of speeding it up.
 
-When a file does contain the section, each key it writes replaces the figure already in force and each key it leaves out keeps it. A later file or a map can therefore change one entry without restating the rest.
+When a file does contain the section, each key it writes sets its figure, and a key that no loaded file writes is `1`. A later file that leaves out a key an earlier file wrote keeps the earlier figure, so it can change one entry without restating the rest.
 
 Each figure is used in two ways:
 
@@ -118,7 +118,7 @@ The skimmer needs its first two settings to cross water. `SpeedType=Hover` makes
 
 The hover locomotor is not needed to cross water. It moves the skimmer at the same speed whatever the `Hover=` figure is, as long as it is not zero. The drive locomotor would scale that speed by the figure.
 
-Aircraft never read the `Winged` column, because the aircraft cell test treats every cell as clear before it reaches the table. The sections the game ships contain no `Winged=` line, so that column is zero for all twelve land types. A vehicle given `SpeedType=Winged` is therefore refused every cell on the map until a rules file fills the column in.
+Aircraft never read the `Winged` column, because the aircraft cell test treats every cell as clear before it reaches the table. The engine never reads a `Winged=` figure. A present land section sets the Winged column to `1`, so a vehicle given `SpeedType=Winged` is not refused by the table. An absent section leaves that column at zero, as it does for every figure.
 
 ## Why a cell refuses a vehicle
 

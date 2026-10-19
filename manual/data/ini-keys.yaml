@@ -6374,7 +6374,7 @@ Buildable:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: null
+      default_candidate: 'no'
       declared_in: RulesClass
       member: Build
       source: code/rules.cpp
@@ -23993,6 +23993,23 @@ MidPoint:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+MigAttackCursor:
+  key: MigAttackCursor
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsMigAttackCursor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 MinAngularVelocity:
   key: MinAngularVelocity
   scopes:
