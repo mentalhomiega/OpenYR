@@ -3111,7 +3111,6 @@ int Main_Menu(unsigned int timeout)
 
 	char * background = Get_New_Menu()->Background;
 	Load_Title_Screen(background, HiddenSurface, &CCPalette);
-	Draw_Version_Text(HiddenSurface);
 	Update_Visible_Surface();
 
 	// The title art stays up while the battle loads behind it.
@@ -3178,7 +3177,6 @@ void Title_Screen_Restore(bool force)
 		HiddenSurface->Fill(0);
 		char *menu = Get_New_Menu()->Background;
 		Load_Title_Screen(menu, HiddenSurface, &CCPalette);
-		Draw_Version_Text(HiddenSurface);
 		Update_Visible_Surface(HiddenSurface);
 	}
 }
