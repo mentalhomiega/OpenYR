@@ -12,6 +12,7 @@
 #include "suprkeys.h"
 
 #include "_warhead.h"
+#include "_weapon.h"
 #include "airctype.h"
 #include "animtype.h"
 #include "builtype.h"
@@ -26,6 +27,7 @@
 #include "techtype.h"
 #include "unittype.h"
 #include "warhead.h"
+#include "weapon.h"
 
 #include <cstring>
 
@@ -154,6 +156,8 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	EMPulsePulseBall(NULL),
 	EMPulseNoPulseBall(false),
 	EMPulsePulseDelay(32),
+	NukePayload(NULL),
+	NukeSiloLaunch(true),
 	SonarPulseDelay(60),
 	BatteryPower(0),
 	SpyPlaneType(NULL),
@@ -305,6 +309,11 @@ void SuperWeaponKeys::Read_INI(CCINIClass const & ini, char const * section)
 		EMPulsePulseBall = EMPulseNoPulseBall ? NULL : Find_Named(AnimTypes, std::string(Trim(name)).c_str());
 	}
 	EMPulsePulseDelay = ini.Get_Int(section, "EMPulse.PulseDelay", EMPulsePulseDelay);
+
+	if (ini.Is_Present(section, "Nuke.Payload")) {
+		NukePayload = Find_Named(Weapons, ini.Get_String(section, "Nuke.Payload").c_str());
+	}
+	NukeSiloLaunch = ini.Get_Bool(section, "Nuke.SiloLaunch", NukeSiloLaunch);
 
 	SonarPulseDelay = ini.Get_Int(section, "SonarPulse.Delay", SonarPulseDelay);
 
@@ -463,6 +472,8 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EMPulsePulseBall);
 	stream.Serialize(EMPulseNoPulseBall);
 	stream.Serialize(EMPulsePulseDelay);
+	stream.Serialize(NukePayload);
+	stream.Serialize(NukeSiloLaunch);
 	stream.Serialize(SonarPulseDelay);
 	stream.Serialize(BatteryPower);
 	stream.Serialize(BatteryOverpower);

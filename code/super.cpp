@@ -504,13 +504,21 @@ bool SuperClass::Discharged(bool player, Cell const & cell)
 		// One storm and one dominator blast at a time; a refused shot keeps its charge (SuperClass::ClickFire).
 		if (Class->Type == SUPER_LIGHTNING_STORM && LightningStormClass::Is_Active_Or_Pending()) {
 			if (player) {
-				LightningStormClass::Print_Refusal();
+				if (Class->Keys.MessageAbort.empty()) {
+					LightningStormClass::Print_Refusal();
+				} else {
+					Show_Message(Class->Keys.MessageAbort);
+				}
 			}
 			return(false);
 		}
 		if (Class->Type == SUPER_PSYCHIC_DOMINATOR && PsychicDominatorClass::Is_Active()) {
 			if (player) {
-				PsychicDominatorClass::Print_Refusal();
+				if (Class->Keys.MessageAbort.empty()) {
+					PsychicDominatorClass::Print_Refusal();
+				} else {
+					Show_Message(Class->Keys.MessageAbort);
+				}
 			}
 			return(false);
 		}
@@ -668,6 +676,10 @@ void SuperClass::Impatient_Click(void) const
 {
 	if (!Control.Is_Active()) {
 		Speak(Class->VoxSuspend);
+	} else if (!Class->Keys.EvaImpatient.empty()) {
+		if (!SuperRules::Same(Class->Keys.EvaImpatient, "none")) {
+			Speak_Eva(Class->Keys.EvaImpatient.c_str());
+		}
 	} else {
 		Speak(Class->VoxImpatient);
 	}
@@ -1461,7 +1473,8 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_MULTI_MISSILE:
 		case SUPER_CHEM_MISSILE:
 			if (IsReady) {
-				if (IsOneTime && IsPresent) {
+				// A one-time weapon, and a MultiMissile with Nuke.SiloLaunch=no, flies in from the map edge rather than from a silo.
+				if ((IsOneTime && IsPresent) || (Class->Type == SUPER_MULTI_MISSILE && !Class->Keys.NukeSiloLaunch)) {
 					Cell target = cell;
 					Coord start = target.As_Coord();
 					start.Z = Map.Get_Height_GL(start);
@@ -1475,11 +1488,14 @@ void SuperClass::Place(Cell const & cell, bool player)
 					if (Class->Type == SUPER_CHEM_MISSILE) {
 						wtype = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
 					} else {
-						wtype = Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
+						wtype = Class->Keys.NukePayload != NULL ? Class->Keys.NukePayload : Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
 					}
 
+					// SW.Damage and SW.Warhead replace the payload's own when the weapon sets them.
+					int const strike_damage = Class->Keys.Damage >= 0 ? Class->Keys.Damage : wtype->Attack;
+					WarheadTypeClass const * strike_warhead = Class->Keys.Warhead != NULL ? Class->Keys.Warhead : wtype->WarheadPtr;
 					BulletTypeClass const * btype = wtype->Bullet;
-					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);
+					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, strike_damage, strike_warhead, wtype->MaxSpeed, false);
 
 					if (bullet) {
 						TVelocity3D<double> velocity = TVelocity3D<double>(DIR_E, DIR_N, 100);
@@ -1510,7 +1526,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 								launchsite->Assign_Mission(MISSION_MISSILE);
 								launchsite->Commence();
 								House->NukeDest = cell;
-								launchsite->LastSuperWeaponIndex = Class->Type;
+								launchsite->LastSuperWeaponIndex = Class->HeapID;
 								if (Class->Type == SUPER_MULTI_MISSILE) {
 									Speak_Activated("EVA_NuclearMissileLaunched");
 								}

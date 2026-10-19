@@ -24,6 +24,7 @@ class SaveStreamClass;
 class TechnoTypeClass;
 class UnitTypeClass;
 class WarheadTypeClass;
+class WeaponTypeClass;
 class CRCEngine;
 
 
@@ -162,6 +163,10 @@ struct SuperWeaponKeys
 	AnimTypeClass const * EMPulsePulseBall;
 	bool EMPulseNoPulseBall;
 	int EMPulsePulseDelay;
+
+	// MultiMissile: the payload weapon, and whether a building with NukeSilo=yes launches it.
+	WeaponTypeClass const * NukePayload;
+	bool NukeSiloLaunch;
 
 	// SonarPulse.
 	int SonarPulseDelay;

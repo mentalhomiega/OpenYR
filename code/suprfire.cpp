@@ -46,6 +46,7 @@
 #include "unit.h"
 #include "voc.h"
 #include "warhead.h"
+#include "weapon.h"
 #include "vox.h"
 
 #include <algorithm>
@@ -414,6 +415,11 @@ void SuperClass::Play_Target_Effects(Cell const & cell) const
 bool SuperClass::Check_Launch(Cell const & cell, bool player) const
 {
 	SuperWeaponKeys const & keys = Class->Keys;
+
+	// A weapon whose Type the engine does not know stays charged and unspent, so no shot is wasted on it.
+	if (Class->Has_Unknown_Type()) {
+		return(false);
+	}
 
 	if (Class->Needs_Target() && !Class->Can_Fire_At(House, cell, NULL)) {
 		return(false);
@@ -813,10 +819,24 @@ void SuperClass::EM_Pulse_Launch(Cell const & cell) const
 
 	size_t const wanted = keys.MaxCount < 0 ? sites.size() : (size_t)std::max(1, keys.MaxCount);
 	for (size_t index = 0; index < sites.size() && index < wanted; index++) {
-		sites[index].Building->Assign_Mission(MISSION_MISSILE);
-		sites[index].Building->Commence();
+		BuildingClass * cannon = sites[index].Building;
+		if (keys.EMPulseTargetSelf) {
+			// The cannon's primary weapon goes off on the cannon itself instead of flying to the target.
+			auto const * data = cannon->Get_Class_Weapon_Data();
+			if (data != NULL && data->Weapon != NULL && data->Weapon->WarheadPtr != NULL) {
+				Coord const where = cannon->Center_Coord();
+				Explosion_Damage(where, data->Weapon->Attack, cannon, data->Weapon->WarheadPtr, true, House);
+				AnimTypeClass const * anim = Combat_Anim(data->Weapon->Attack, data->Weapon->WarheadPtr, Map[where.As_Cell()].Land_Type(), where);
+				if (anim != NULL) {
+					new AnimClass(anim, where, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD | SHAPE_WIN_REL | SHAPE_CENTER), Get_Explosion_Z(where));
+				}
+			}
+			continue;
+		}
+		cannon->Assign_Mission(MISSION_MISSILE);
+		cannon->Commence();
 	}
-	if (!sites.empty()) {
+	if (!sites.empty() && !keys.EMPulseTargetSelf) {
 		House->EMPDest = cell;
 	}
 }

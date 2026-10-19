@@ -119,6 +119,7 @@
 #include "shapeset.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
 #include "surface.h"
 #include "techtype.h"
 #include "ui/uishell.h"
@@ -2362,7 +2363,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					production = true;
 					completed = PlayerPtr->SuperWeapon[spc]->Is_Charging() == false;
 					isready = PlayerPtr->SuperWeapon[spc]->Can_Place();
-					state = PlayerPtr->SuperWeapon[spc]->State_String();
+					state = PlayerPtr->SuperWeapon[spc]->Caption();
 					stage = PlayerPtr->SuperWeapon[spc]->Anim_Stage();
 					darken = false;
 				}
@@ -2814,7 +2815,12 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						Map.Place_Beacon_Mode_Control(0);
 						Map.IsTargettingMode = spc;
 						Unselect_All();
-						Speak(VOX_SELECT_TARGET);
+						SuperWeaponKeys const & select = PlayerPtr->SuperWeapon[spc]->Class->Keys;
+						if (select.EvaSelectTarget.empty()) {
+							Speak(VOX_SELECT_TARGET);
+						} else if (!SuperRules::Same(select.EvaSelectTarget, "none")) {
+							Speak_Eva(select.EvaSelectTarget.c_str());
+						}
 					}
 				} else {
 					PlayerPtr->SuperWeapon[spc]->Impatient_Click();
