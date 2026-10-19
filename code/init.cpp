@@ -3025,6 +3025,16 @@ static UIMenuItemType Back_Item(void)
 }
 
 
+// The modern style shows the player's name and the version on every title menu; the classic style shows neither.
+static void Show_Title_Badges(UIMenuState & menu)
+{
+	if (!Options.IsClassicMenus) {
+		menu.Version = Version_Text();
+		menu.Profile = (Session.Handle[0] != 0) ? Session.Handle : Fetch_String(TXT_NONAME);
+	}
+}
+
+
 static int Single_Player_Menu(void)
 {
 	UIMenuState menu;
@@ -3034,6 +3044,7 @@ static int Single_Player_Menu(void)
 	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
 	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
 	menu.Items.push_back(Back_Item());
+	Show_Title_Badges(menu);
 	UI_Menu_Place(menu);
 	return(UI_Menu_Dialog(menu, MENU_BACK));
 }
@@ -3049,6 +3060,7 @@ static int Movies_Menu(void)
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
 		menu.Items.push_back(Back_Item());
+		Show_Title_Badges(menu);
 		UI_Menu_Place(menu);
 
 		int const choice = UI_Menu_Dialog(menu, MENU_BACK);
@@ -3131,10 +3143,8 @@ int Main_Menu(unsigned int timeout)
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
 		if (Options.IsClassicMenus) {
 			menu.Stamp.push_back(Version_Text());
-		} else {
-			menu.Version = Version_Text();
-			menu.Profile = (Session.Handle[0] != 0) ? Session.Handle : Fetch_String(TXT_NONAME);
 		}
+		Show_Title_Badges(menu);
 		menu.Stamp.push_back(Fetch_String(TXT_COPYRIGHT));
 		UI_Menu_Place(menu);
 

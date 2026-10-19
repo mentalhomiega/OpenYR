@@ -14,7 +14,7 @@ body.theme-allied
 	--t-ink: #040812;
 	--t-shade-top: #0a1a3499;
 	--t-shade-bottom: #05102ae6;
-	--t-panel: #0c1e44a0;
+	--t-panel: #0c1e44e0;
 	--t-edge: #7fb2ff;
 	--t-edge-dim: #1d4687;
 	--t-caption: #cfe3ff;
@@ -43,12 +43,12 @@ body.theme-allied
 	--t-rule: #2a4a7a;
 	--t-muted: #9fb7da;
 	--t-stamp: #8aa4c9;
-	--t-column: #0a1a3ab3;
+	--t-column: #0a1a3ae6;
 	--t-column-edge: #2a4a7a;
 	--t-tab-top: #22467f;
 	--t-tab-text: #b4cbec;
 	--t-tab-active: #0c1e44;
 	--t-frame: #2f6fd6;
-	--t-backdrop: #0a1a3a80;
+	--t-backdrop: #0a1a3acc;
 }
 

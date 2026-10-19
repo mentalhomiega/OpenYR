@@ -43,12 +43,12 @@ body.theme-yuri
 	--t-rule: #2e2640;
 	--t-muted: #a99bc9;
 	--t-stamp: #8f84a8;
-	--t-column: #0a0814b3;
+	--t-column: #0a0814e6;
 	--t-column-edge: #3b2f55;
 	--t-tab-top: #2a2238;
 	--t-tab-text: #b9aad6;
 	--t-tab-active: #120d1c;
 	--t-frame: #6b43a8;
-	--t-backdrop: #0a081480;
+	--t-backdrop: #0a0814cc;
 }
 

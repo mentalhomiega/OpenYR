@@ -102,6 +102,7 @@ class UIMenuViewClass : public UIRmlViewClass
 			// The menus of the title screen share one place and one look in each menu style.
 			if (Data.State.Kind == UI_MENU_MAIN || Data.State.Kind == UI_MENU_SINGLE_PLAYER || Data.State.Kind == UI_MENU_MOVIES) {
 				Document()->SetClass("titlemenu", true);
+				Document()->SetClass("count-" + std::to_string(Data.State.Items.size()), true);
 			}
 			if (Data.State.Kind == UI_MENU_MULTIPLAYER_FIRESTORM) {
 				Document()->SetClass("firestorm", true);

@@ -14,7 +14,7 @@ body.theme-soviet
 	--t-ink: #0a0404;
 	--t-shade-top: #1a060699;
 	--t-shade-bottom: #100303e6;
-	--t-panel: #3a0c0ca0;
+	--t-panel: #3a0c0ce0;
 	--t-edge: #ff9c8a;
 	--t-edge-dim: #6e1a16;
 	--t-caption: #ffd6cf;
@@ -43,12 +43,12 @@ body.theme-soviet
 	--t-rule: #6e1a16;
 	--t-muted: #d8a59c;
 	--t-stamp: #c99086;
-	--t-column: #1e0606b3;
+	--t-column: #1e0606e6;
 	--t-column-edge: #6e1a16;
 	--t-tab-top: #6e1f1a;
 	--t-tab-text: #e6b8b0;
 	--t-tab-active: #3a0c0c;
 	--t-frame: #b3261e;
-	--t-backdrop: #1e060680;
+	--t-backdrop: #1e0606cc;
 }
 

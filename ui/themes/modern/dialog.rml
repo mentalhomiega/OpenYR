@@ -20,7 +20,7 @@
 	<link type="text/rcss" href="tint-yuri.rcss"/>
 </head>
 <body>
-	<div id="screen-bg"><div id="screen-art"></div><div id="screen-shade"></div></div>
+	<div id="screen-bg"><div id="screen-art"></div><div id="screen-shade"></div><div id="screen-vignette"></div></div>
 	<div id="backdrop">
 		<div id="tabs">
 			<button class="tab" id="tab-game" data-event-click="queue('tab', 0)">Game</button>
