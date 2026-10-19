@@ -11,7 +11,7 @@
 ;   With the structures from line 400 on, TestAuto fires by itself every 90 frames near the power plant, and TestBattery raises
 ;   the house power by 500 for 180 frames after "fire TestBattery".
 ; Run from the repository root:
-;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons.txt -Mods src-agent17/tests/autotest/ares-superweapons -Seconds 240 -Filter "AUTOTEST   swaim|AUTOTEST   house Am|SUPER|Exception"
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\ares-superweapons" -Seconds 240 -Filter "AUTOTEST   swaim|AUTOTEST   house Am|SUPER|Exception"
 30 command CenterBase
 40 grant TestBlast
 41 grant TestDeliver
