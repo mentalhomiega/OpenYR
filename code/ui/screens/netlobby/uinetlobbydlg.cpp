@@ -160,11 +160,8 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 	state.Sides.clear();
 	state.Side = 0;
-	for (int index = 0; index < HouseTypes.Count(); index++) {
+	for (int index : HouseTypeClass::Lobby_Countries()) {
 		HouseTypeClass * house = HouseTypes[index];
-		if (!house->IsMultiplay) {
-			continue;
-		}
 
 		UINetOption option;
 		option.Label = house->Full_Name();

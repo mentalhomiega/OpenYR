@@ -194,14 +194,9 @@ int Net2CurrentGame(void)
 /// </summary>
 int Net2Country_At(int index)
 {
-	for (int country = 0; country < HouseTypes.Count(); country++) {
-		if (!HouseTypes[country]->IsMultiplay) {
-			continue;
-		}
-		if (index == 0) {
-			return(country);
-		}
-		index--;
+	std::vector<int> const list = HouseTypeClass::Lobby_Countries();
+	if (index >= 0 && index < (int)list.size()) {
+		return(list[index]);
 	}
 
 	return(-1);

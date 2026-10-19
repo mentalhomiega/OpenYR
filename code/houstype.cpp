@@ -58,6 +58,8 @@
 #include "unittype.h"
 #include "vector.h"
 
+#include <algorithm>
+
 /***********************************************************************************************
  * HouseTypeClass::HouseTypeClass -- Constructor for house type objects.                       *
  *                                                                                             *
@@ -106,6 +108,7 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	BuildTimeDefensesMult(1.0),
 	Scheme(0),
 	Prefix('A'),
+	ListIndex(100),
 	IsMultiplay(false),
 	IsMultiplayPassive(false),
 	IsGivesBounty(true),
@@ -248,6 +251,15 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		BuildTimeBuildingsMult = ini.Get_Float(Name(), "BuildTimeBuildingsMult", BuildTimeBuildingsMult);
 		BuildTimeDefensesMult = ini.Get_Float(Name(), "BuildTimeDefensesMult", BuildTimeDefensesMult);
 
+		LoadScreenFile = ini.Get_String(Name(), "File.LoadScreen", LoadScreenFile.c_str());
+		LoadScreenPalette = ini.Get_String(Name(), "File.LoadScreenPAL", LoadScreenPalette.c_str());
+		LoadScreenName = ini.Get_String(Name(), "LoadScreenText.Name", LoadScreenName.c_str());
+		LoadScreenSpecialName = ini.Get_String(Name(), "LoadScreenText.SpecialName", LoadScreenSpecialName.c_str());
+		LoadScreenBrief = ini.Get_String(Name(), "LoadScreenText.Brief", LoadScreenBrief.c_str());
+		LoadScreenColor = ini.Get_String(Name(), "LoadScreenText.Color", LoadScreenColor.c_str());
+		FlagFile = ini.Get_String(Name(), "File.Flag", FlagFile.c_str());
+		ListIndex = ini.Get_Int(Name(), "ListIndex", ListIndex);
+
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
 		IsGivesBounty = ini.Get_Bool(Name(), "GivesBounty", IsGivesBounty);
@@ -279,6 +291,21 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		return(true);
 	}
 	return(false);
+}
+
+
+std::vector<int> HouseTypeClass::Lobby_Countries(void)
+{
+	std::vector<int> list;
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		if (HouseTypes[index]->IsMultiplay && HouseTypes[index]->ListIndex >= 0) {
+			list.push_back(index);
+		}
+	}
+	std::stable_sort(list.begin(), list.end(), [](int left, int right) {
+		return(HouseTypes[left]->ListIndex < HouseTypes[right]->ListIndex);
+	});
+	return(list);
 }
 
 
@@ -342,6 +369,13 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	IsGivesBounty = parent.IsGivesBounty;
 	IsWallOwner = parent.IsWallOwner;
 	IsSmartAI = parent.IsSmartAI;
+	LoadScreenFile = parent.LoadScreenFile;
+	LoadScreenPalette = parent.LoadScreenPalette;
+	LoadScreenName = parent.LoadScreenName;
+	LoadScreenSpecialName = parent.LoadScreenSpecialName;
+	LoadScreenBrief = parent.LoadScreenBrief;
+	LoadScreenColor = parent.LoadScreenColor;
+	FlagFile = parent.FlagFile;
 }
 
 
