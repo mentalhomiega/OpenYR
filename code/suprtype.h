@@ -16,14 +16,19 @@
 #include <string>
 
 #include "abstype.h"
+#include "suprkeys.h"
 
 #include "action.hh"
+#include "mouse.hh"
 #include "overlay.hh"
 #include "super.hh"
 #include "voc.hh"
 #include "vox.hh"
 
 class BuildingTypeClass;
+class HouseClass;
+class ObjectClass;
+class Cell;
 class SuperWeaponTypeClass;
 class ShapeSet;
 class WeaponTypeClass;
@@ -49,8 +54,22 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 
 		virtual ActionType What_Action(Cell const & cell, ObjectClass * object);
 
+		// Does aiming this weapon call for a click on the map?
+		bool Needs_Target(void) const;
+
+		// May the house fire this weapon at the cell, given the object the cursor is over (NULL for the cell itself)?
+		bool Can_Fire_At(HouseClass const * house, Cell const & cell, ObjectClass const * object) const;
+
+		// The cursor for an action while this weapon is being aimed; the stock cursor stands when the weapon names none.
+		MouseType Mouse_For(ActionType action, MouseType stock) const;
+
 		static SuperWeaponTypeClass * Find_Or_Make(const char * name);
 		static SuperWeaponTypeClass * From_Action(ActionType action);
+
+	private:
+		ActionType Stock_Action(Cell const & cell, ObjectClass * object);
+
+	public:
 		static SuperWeaponType From_Name(char const * name);
 
 	public:
@@ -171,6 +190,18 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		 */
 		float Range;
 		int LineMultiplier;
+
+		// The keys Ares adds to a superweapon (SW.*, Money.Amount, EVA.*, Message.*, Text.* and the per-behavior keys).
+		SuperWeaponKeys Keys;
+
+		// Does any superweapon type in the rules behave as a Battery? Power calculations skip their search when none does.
+		static bool BatteryTypesExist;
+
+		// May the house's computer rules fire this weapon at the cell, by SW.AIRequiresTarget, SW.AIRequiresHouse and the target rules?
+		bool Fits_AI_Target(HouseClass const * house, Cell const & cell) const;
+
+		// Is this weapon's Type a name the engine does not know, so that firing it does nothing?
+		bool Has_Unknown_Type(void) const {return(Type == SUPER_NONE);}
 };
 
 SuperWeaponType Special_From_Name(char const * name);

@@ -983,6 +983,11 @@ class HouseClass : public AbstractClass
 		void Recalc_Radar_Availability(void);
 
 		void Update_Present_Super_Weapons(void);
+		bool Super_Weapon_Allowed(SuperClass const * super) const;
+		bool Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const;
+		bool Pick_Super_Target(SuperClass const * super, Cell & cell);
+		int Battery_Power(void) const;
+		bool Battery_Affects(BuildingTypeClass const * type, bool overpower) const;
 		void Enable_Available_Super_Weapons(void);
 
 		void Calculate_Enemy_Predictions(void);

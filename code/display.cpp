@@ -1739,7 +1739,7 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 /// The cursor for a super weapon targeting action; any other action gets the plain cursor.
 /// The Tiberian Sun weapons borrow the Yuri's Revenge cursor that uses the same frames.
 /// </summary>
-static MouseType Super_Weapon_Mouse(ActionType action)
+static MouseType Stock_Super_Weapon_Mouse(ActionType action)
 {
 	switch (action) {
 		case ACTION_IRON_CURTAIN:		return(MOUSE_IRON_CURTAIN);
@@ -1761,6 +1761,20 @@ static MouseType Super_Weapon_Mouse(ActionType action)
 		case ACTION_EMPULSE_RANGE:		return(MOUSE_DISALLOWED);
 		default:						return(MOUSE_NORMAL);
 	}
+}
+
+
+/// <summary>
+/// The cursor for a super weapon targeting action. While a weapon is being aimed, its Cursor and
+/// NoCursor keys decide; otherwise the stock cursor for the action stands.
+/// </summary>
+static MouseType Super_Weapon_Mouse(ActionType action)
+{
+	MouseType const stock = Stock_Super_Weapon_Mouse(action);
+	if (Map.IsTargettingMode != SUPER_NONE && (unsigned)Map.IsTargettingMode < (unsigned)SuperWeaponTypes.Count()) {
+		return(SuperWeaponTypes[Map.IsTargettingMode]->Mouse_For(action, stock));
+	}
+	return(stock);
 }
 
 
@@ -2305,7 +2319,13 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 					}
 				}
 
-				SuperWeaponTypeClass *stype = SuperWeaponTypeClass::From_Action(action);
+				// The weapon being aimed fires when its own action is clicked; two weapons that share an action no longer fire the earlier one.
+				SuperWeaponTypeClass * stype = NULL;
+				if (IsTargettingMode != SUPER_NONE && (unsigned)IsTargettingMode < (unsigned)SuperWeaponTypes.Count() && SuperWeaponTypes[IsTargettingMode]->Action == action) {
+					stype = SuperWeaponTypes[IsTargettingMode];
+				} else if (action != ACTION_CUSTOM) {
+					stype = SuperWeaponTypeClass::From_Action(action);
+				}
 				if (stype != NULL) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, stype->HeapID, cell));
 				}

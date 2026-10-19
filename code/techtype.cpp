@@ -103,6 +103,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SizeLimit(1),
 	IsVehicleTransport(true),
 	SightRange(0),
+	DesignatorRange(-1),
+	InhibitorRange(-1),
 	Cost(0),
 	Soylent(0),
 	Level(255),
@@ -1134,6 +1136,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
 		PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
 		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
+		DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
+		InhibitorRange = ini.Get_Int(Name(), "InhibitorRange", InhibitorRange);
 		Level = ini.Get_Int(Name(), "TechLevel", Level);
 		int maxspeed = ini.Get_Int(Name(), "Speed", -1);
 		if (maxspeed != -1) {
@@ -1780,6 +1784,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SizeLimit);
 	stream.Serialize(IsVehicleTransport);
 	stream.Serialize(SightRange);
+	stream.Serialize(DesignatorRange);
+	stream.Serialize(InhibitorRange);
 	stream.Serialize(Cost);
 	stream.Serialize(Soylent);
 	stream.Serialize(FlightLevel);

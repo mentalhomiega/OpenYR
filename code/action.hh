@@ -99,5 +99,11 @@ enum ActionType {
 	ACTION_DISARM_BOMB,		// Disarm the Ivan bomb on the object.
 	ACTION_DETONATE,		// Set off the Ivan bomb this object carries.
 
+	/*
+	**	Ares superweapons with Action=Custom aim with the cursors their Cursor and NoCursor keys name.
+	*/
+	ACTION_CUSTOM,			// A custom super weapon may fire here.
+	ACTION_NO_CUSTOM,		// A custom super weapon may not fire here.
+
 	ACTION_COUNT
 };

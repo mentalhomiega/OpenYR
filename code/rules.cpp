@@ -77,6 +77,7 @@
 #include "levitate.h"
 #include "mission.h"
 #include "mods.h"
+#include "mouse.h"
 #include "movie.h"
 #include "numparse.h"
 #include "overtype.h"
@@ -1050,6 +1051,9 @@ bool RulesClass::Addition(CCINIClass const & ini)
 
 	// Declared armor types come first, so warheads and objects can name them.
 	Read_Armor_Types(ini);
+
+	// Named cursors come before the superweapons that choose them.
+	MouseClass::Read_Cursors(ini);
 
 	Color_Schemes(ini);
 	Do_HouseTypes(ini);

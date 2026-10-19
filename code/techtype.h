@@ -731,6 +731,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		int SightRange;
 
+		// How far, in cells, this object designates or inhibits a superweapon target (Ares DesignatorRange and InhibitorRange); -1 uses SightRange.
+		int DesignatorRange;
+		int InhibitorRange;
+
 		/*
 		**	This is the credit cost to produce this object (presuming production is
 		**	allowed).

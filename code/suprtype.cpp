@@ -23,7 +23,11 @@
 #include "savestream.h"
 #include "sun.h"
 #include "swizzle.h"
+#include "dbgprint.h"
 #include "weapon.h"
+
+#include <set>
+#include <string>
 
 
 /// <summary>
@@ -33,6 +37,9 @@
 /// </summary>
 /// <returns>Returns with the super weapon type named. Otherwise, SUPER_NONE is
 /// returned.</returns>
+bool SuperWeaponTypeClass::BatteryTypesExist = false;
+
+
 SuperWeaponType Special_From_Name(char const * name)
 {
 	static const char * _names[SUPER_COUNT] = {
@@ -53,7 +60,11 @@ SuperWeaponType Special_From_Name(char const * name)
 		"SpyPlane",
 		"GeneticConverter",
 		"ForceShield",
-		"PsychicReveal"
+		"PsychicReveal",
+		"GenericWarhead",
+		"UnitDelivery",
+		"SonarPulse",
+		"Battery"
 	};
 
 	for (int i = SUPER_FIRST; i < SUPER_COUNT; i++) {
@@ -174,6 +185,9 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPostClick);
 	stream.Serialize(IsShowTimer);
 	stream.Serialize(PreDependent);
+	stream.Serialize(Range);
+	stream.Serialize(LineMultiplier);
+	stream.Serialize(Keys);
 }
 
 
@@ -211,6 +225,7 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsPreClick);
 	crc(IsPostClick);
 	crc(PreDependent);
+	Keys.Compute_CRC(crc);
 }
 
 
@@ -251,7 +266,15 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		ini.Get_String(IniName, "Type", "", buffer, sizeof(buffer));
 		if (strlen(buffer) != 0) {
 			SuperWeaponType type = Special_From_Name(buffer);
-			if (type != SUPER_NONE) Type = type;
+			if (type != SUPER_NONE) {
+				Type = type;
+			} else {
+				// A name no behavior answers to leaves the weapon inert: it charges, shows and discharges without an effect.
+				static std::set<std::string> reported;
+				if (reported.insert(std::string(Name())).second) {
+					DebugString("SuperWeaponType %s: Type=%s is not a behavior this engine implements; firing it does nothing.\n", Name(), buffer);
+				}
+			}
 		}
 
 		AuxBuilding = TGet_Class(ini, IniName, "AuxBuilding", AuxBuilding);
@@ -270,6 +293,133 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		CameoSortOrder = ini.Get_Int(IniName, "CameoSortOrder", CameoSortOrder);
 		Range = (float)ini.Get_Float(IniName, "Range", Range);
 		LineMultiplier = ini.Get_Int(IniName, "LineMultiplier", LineMultiplier);
+
+		// The keys Ares adds. A key the section leaves out keeps the value the weapon already has.
+		Keys.MoneyAmount = ini.Get_Int(IniName, "Money.Amount", Keys.MoneyAmount);
+		Keys.Deferment = ini.Get_Int(IniName, "SW.Deferment", Keys.Deferment);
+		Keys.Shots = ini.Get_Int(IniName, "SW.Shots", Keys.Shots);
+		Keys.MaxCount = ini.Get_Int(IniName, "SW.MaxCount", Keys.MaxCount);
+		Keys.Group = ini.Get_Int(IniName, "SW.Group", Keys.Group);
+		Keys.InitialReady = ini.Get_Bool(IniName, "SW.InitialReady", Keys.InitialReady);
+		Keys.AllowPlayer = ini.Get_Bool(IniName, "SW.AllowPlayer", Keys.AllowPlayer);
+		Keys.AllowAI = ini.Get_Bool(IniName, "SW.AllowAI", Keys.AllowAI);
+		Keys.Unstoppable = ini.Get_Bool(IniName, "SW.Unstoppable", Keys.Unstoppable);
+		Keys.ChargeToDrainRatio = (float)ini.Get_Float(IniName, "SW.ChargeToDrainRatio", Keys.ChargeToDrainRatio);
+
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "SW.AuxBuildings"), Keys.AuxBuildings);
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "SW.NegBuildings"), Keys.NegBuildings);
+		Keys.RequiredHouses = ini.Get_House_List(IniName, "SW.RequiredHouses", Keys.RequiredHouses);
+		Keys.ForbiddenHouses = ini.Get_House_List(IniName, "SW.ForbiddenHouses", Keys.ForbiddenHouses);
+
+		Keys.AffectsHouse = SuperRules::Parse_Houses(ini.Get_String(IniName, "SW.AffectsHouse"), Keys.AffectsHouse);
+		Keys.AffectsHouseSet = Keys.AffectsHouseSet || ini.Is_Present(IniName, "SW.AffectsHouse");
+		Keys.AffectsTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.AffectsTarget"), Keys.AffectsTarget);
+		Keys.RequiresTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.RequiresTarget"), Keys.RequiresTarget);
+		Keys.RequiresHouse = SuperRules::Parse_Houses(ini.Get_String(IniName, "SW.RequiresHouse"), Keys.RequiresHouse);
+		Keys.FireIntoShroud = ini.Get_Bool(IniName, "SW.FireIntoShroud", Keys.FireIntoShroud);
+		Keys.RangeMinimum = (float)ini.Get_Float(IniName, "SW.RangeMinimum", Keys.RangeMinimum);
+		Keys.RangeMaximum = (float)ini.Get_Float(IniName, "SW.RangeMaximum", Keys.RangeMaximum);
+		Keys.Set_Area(SuperRules::Parse_Area(ini.Get_String(IniName, "SW.Range")));
+		SuperKeyParse::Techno_List(ini.Get_String(IniName, "SW.Designators"), Keys.Designators);
+		SuperKeyParse::Techno_List(ini.Get_String(IniName, "SW.Inhibitors"), Keys.Inhibitors);
+		Keys.AnyDesignator = ini.Get_Bool(IniName, "SW.AnyDesignator", Keys.AnyDesignator);
+		Keys.AnyInhibitor = ini.Get_Bool(IniName, "SW.AnyInhibitor", Keys.AnyInhibitor);
+
+		Keys.Set_AI_Targeting(ini.Get_String(IniName, "SW.AITargeting"));
+		Keys.AIRequiresTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.AIRequiresTarget"), Keys.AIRequiresTarget);
+		Keys.Set_AI_Requires_House(ini.Get_String(IniName, "SW.AIRequiresHouse"));
+		Keys.AIConstraints = SuperRules::Parse_Constraints_Or(ini.Get_String(IniName, "SW.AITargeting.Constraints"), Keys.AIConstraints);
+		Keys.UseAITargeting = ini.Get_Bool(IniName, "SW.UseAITargeting", Keys.UseAITargeting);
+		Keys.AutoFire = ini.Get_Bool(IniName, "SW.AutoFire", Keys.AutoFire);
+		Keys.ManualFire = ini.Get_Bool(IniName, "SW.ManualFire", Keys.ManualFire);
+		Keys.ShowCameo = ini.Get_Bool(IniName, "SW.ShowCameo", Keys.ShowCameo);
+
+		Keys.Warhead = SuperKeyParse::Warhead_Named(ini.Get_String(IniName, "SW.Warhead"), Keys.Warhead);
+		Keys.Damage = ini.Get_Int(IniName, "SW.Damage", Keys.Damage);
+		Keys.Animation = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "SW.Animation"), Keys.Animation);
+		Keys.AnimationHeight = ini.Get_Int(IniName, "SW.AnimationHeight", Keys.AnimationHeight);
+		Keys.Sound = ini.Get_VocType(IniName, "SW.Sound", Keys.Sound);
+		Keys.ActivationSound = ini.Get_VocType(IniName, "SW.ActivationSound", Keys.ActivationSound);
+		Keys.CreateRadarEvent = ini.Get_Bool(IniName, "SW.CreateRadarEvent", Keys.CreateRadarEvent);
+
+		Keys.EvaReady = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.Ready"), Keys.EvaReady);
+		Keys.EvaDetected = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.Detected"), Keys.EvaDetected);
+		Keys.EvaActivated = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.Activated"), Keys.EvaActivated);
+		Keys.EvaImpatient = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.Impatient"), Keys.EvaImpatient);
+		Keys.EvaSelectTarget = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.SelectTarget"), Keys.EvaSelectTarget);
+		Keys.EvaInsufficientFunds = SuperKeyParse::Text_Or(ini.Get_String(IniName, "EVA.InsufficientFunds"), Keys.EvaInsufficientFunds);
+		Keys.MessageDetected = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.Detected"), Keys.MessageDetected);
+		Keys.MessageReady = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.Ready"), Keys.MessageReady);
+		Keys.MessageLaunch = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.Launch"), Keys.MessageLaunch);
+		Keys.MessageActivate = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.Activate"), Keys.MessageActivate);
+		Keys.MessageAbort = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.Abort"), Keys.MessageAbort);
+		Keys.MessageInsufficientFunds = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.InsufficientFunds"), Keys.MessageInsufficientFunds);
+		Keys.MessageCannotFire = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Message.CannotFire"), Keys.MessageCannotFire);
+		Keys.MessageFirerColor = ini.Get_Bool(IniName, "Message.FirerColor", Keys.MessageFirerColor);
+		Keys.TextHold = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Text.Hold"), Keys.TextHold);
+		Keys.TextReady = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Text.Ready"), Keys.TextReady);
+		Keys.TextCharging = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Text.Charging"), Keys.TextCharging);
+		Keys.TextActive = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Text.Active"), Keys.TextActive);
+		Keys.TextPreparing = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Text.Preparing"), Keys.TextPreparing);
+		Keys.Cursor = SuperKeyParse::Text_Or(ini.Get_String(IniName, "Cursor"), Keys.Cursor);
+		Keys.NoCursor = SuperKeyParse::Text_Or(ini.Get_String(IniName, "NoCursor"), Keys.NoCursor);
+
+		Keys.LightEnabled = ini.Get_Bool(IniName, "Light.Enabled", Keys.LightEnabled);
+		Keys.LightAmbient = ini.Get_Int(IniName, "Light.Ambient", Keys.LightAmbient);
+		Keys.LightRed = ini.Get_Int(IniName, "Light.Red", Keys.LightRed);
+		Keys.LightGreen = ini.Get_Int(IniName, "Light.Green", Keys.LightGreen);
+		Keys.LightBlue = ini.Get_Int(IniName, "Light.Blue", Keys.LightBlue);
+
+		SuperKeyParse::Techno_List(ini.Get_String(IniName, "Deliver.Types"), Keys.DeliverTypes);
+		Keys.DeliverOwnerMode = SuperKeyParse::Deliver_Owner(ini.Get_String(IniName, "Deliver.Owner"), Keys.DeliverOwnerMode);
+		Keys.DeliverBaseNormal = ini.Get_Bool(IniName, "Deliver.BaseNormal", Keys.DeliverBaseNormal);
+		Keys.DeliverBuildups = ini.Get_Bool(IniName, "Deliver.Buildups", Keys.DeliverBuildups);
+
+		SuperKeyParse::Techno_List(ini.Get_String(IniName, "DropPod.Types"), Keys.DropPodTypes);
+		Keys.DropPodMinimum = ini.Get_Int(IniName, "DropPod.Minimum", Keys.DropPodMinimum);
+		Keys.DropPodMaximum = ini.Get_Int(IniName, "DropPod.Maximum", Keys.DropPodMaximum);
+		Keys.DropPodVeterancy = (float)ini.Get_Float(IniName, "DropPod.Veterancy", Keys.DropPodVeterancy);
+
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "HunterSeeker.Buildings"), Keys.HunterSeekerBuildings);
+		Keys.HunterSeekerType = SuperKeyParse::Unit_Named(ini.Get_String(IniName, "HunterSeeker.Type"), Keys.HunterSeekerType);
+		Keys.HunterSeekerRandomOnly = ini.Get_Bool(IniName, "HunterSeeker.RandomOnly", Keys.HunterSeekerRandomOnly);
+
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "EMPulse.Cannons"), Keys.EMPulseCannons);
+		Keys.EMPulseTargetSelf = ini.Get_Bool(IniName, "EMPulse.TargetSelf", Keys.EMPulseTargetSelf);
+		Keys.EMPulseLinked = ini.Get_Bool(IniName, "EMPulse.Linked", Keys.EMPulseLinked);
+		Keys.Set_Pulse_Ball(ini.Get_String(IniName, "EMPulse.PulseBall"));
+		Keys.EMPulsePulseDelay = ini.Get_Int(IniName, "EMPulse.PulseDelay", Keys.EMPulsePulseDelay);
+
+		Keys.ProtectDuration = ini.Get_Int(IniName, "Protect.Duration", Keys.ProtectDuration);
+		Keys.ProtectPowerOutage = ini.Get_Int(IniName, "Protect.PowerOutage", Keys.ProtectPowerOutage);
+		Keys.ProtectFadeSoundTime = ini.Get_Int(IniName, "Protect.PlayFadeSoundTime", Keys.ProtectFadeSoundTime);
+
+		Keys.NukePayload = SuperKeyParse::Weapon_Named(ini.Get_String(IniName, "Nuke.Payload"), Keys.NukePayload);
+		Keys.NukeSiloLaunch = ini.Get_Bool(IniName, "Nuke.SiloLaunch", Keys.NukeSiloLaunch);
+
+		Keys.SonarPulseDelay = ini.Get_Int(IniName, "SonarPulse.Delay", Keys.SonarPulseDelay);
+
+		Keys.BatteryPower = ini.Get_Int(IniName, "Battery.Power", Keys.BatteryPower);
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "Battery.Overpower"), Keys.BatteryOverpower);
+		SuperKeyParse::Building_List(ini.Get_String(IniName, "Battery.KeepOnline"), Keys.BatteryKeepOnline);
+
+		Keys.SpyPlaneType = SuperKeyParse::Aircraft_Named(ini.Get_String(IniName, "SpyPlane.Type"), Keys.SpyPlaneType);
+		Keys.SpyPlaneCount = ini.Get_Int(IniName, "SpyPlane.Count", Keys.SpyPlaneCount);
+
+		Keys.ParaDropCount = ini.Get_Int(IniName, "ParaDrop.Count", Keys.ParaDropCount);
+		SuperKeyParse::Techno_List(ini.Get_String(IniName, "ParaDrop.Types"), Keys.ParaDefault.Types);
+		Keys.ParaDefault.Num = ini.Get_IntList(IniName, "ParaDrop.Num", Keys.ParaDefault.Num);
+		Keys.ParaDefault.Aircraft = SuperKeyParse::Aircraft_Named(ini.Get_String(IniName, "ParaDrop.Aircraft"), Keys.ParaDefault.Aircraft);
+		Keys.ParaDefault.IsSet = Keys.ParaDefault.Types.Count() > 0 || Keys.ParaDefault.Num.Count() > 0 || Keys.ParaDefault.Aircraft != NULL;
+		Keys.Read_Para_Owners(ini, IniName);
+
+		// Ares forces the charge drain on for the behaviors that run on it.
+		if (Type == SUPER_BATTERY || Type == SUPER_FIRESTORM) {
+			UseChargeDrain = true;
+		}
+		if (Type == SUPER_BATTERY) {
+			BatteryTypesExist = true;
+		}
 
 		float recharge = ini.Get_Float(IniName, "RechargeTime");
 		if (recharge != 0.0) {
@@ -352,13 +502,13 @@ SuperWeaponTypeClass * SuperWeaponTypeClass::Find_Or_Make(const char *name)
 /// target.</param>
 /// <returns>Returns with the action to perform, which the caller turns into a mouse
 /// shape.</returns>
-ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * object)
+ActionType SuperWeaponTypeClass::Stock_Action(Cell const & cell, ObjectClass * object)
 {
 	// A force shield offers its own cursor only over a structure of the player or an ally; elsewhere
 	// it is the no-shield cursor (SuperWeaponTypeClass::MouseOverObject, 0x6CEF80).
 	if (Type == SUPER_FORCE_SHIELD) {
 		if (object == NULL || object->RTTI != RTTI_BUILDING || !((BuildingClass *)object)->House->Is_Ally(PlayerPtr)) {
-			return(ACTION_NO_FORCE_SHIELD);
+			return(Action == ACTION_CUSTOM ? ACTION_NO_CUSTOM : ACTION_NO_FORCE_SHIELD);
 		}
 		return(Action);
 	}
@@ -383,7 +533,7 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * building = Buildings[i];
-		if (building->Class->IsEMPulseCannon && building->House == PlayerPtr && building->Is_Powered_On()) {
+		if (building->Class->IsEMPulseCannon && building->House == PlayerPtr && building->Is_Powered_On() && Keys.Allows_Cannon(building->Class)) {
 			if (building->Distance(target) < mindist) {
 				mindist = building->Distance(target);
 				cannon = building;
@@ -391,17 +541,25 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 		}
 	}
 
+	// A weapon with Action=Custom keeps that action in range, and takes NoCustom out of range.
+	ActionType const in_range = Action == ACTION_CUSTOM ? ACTION_CUSTOM : ACTION_EMPULSE;
+	ActionType const out_of_range = Action == ACTION_CUSTOM ? ACTION_NO_CUSTOM : ACTION_EMPULSE_RANGE;
+
 	if (cannon == NULL) {
-		return(ACTION_EMPULSE_RANGE);
+		return(out_of_range);
 	}
 
-	WeaponTypeClass *weap = cannon->Get_Class_Weapon_Data()->Weapon;
-	int range = weap->Range / CELL_LEPTON;
+	auto const * data = cannon->Get_Class_Weapon_Data();
+	WeaponTypeClass * weap = data != NULL ? data->Weapon : NULL;
+	if (Keys.RangeMaximum < 0.0f && weap == NULL) {
+		return(out_of_range);
+	}
+	int range = Keys.RangeMaximum >= 0.0f ? (int)Keys.RangeMaximum : weap->Range / CELL_LEPTON;
 	Cell cannon_cell = cannon->PositionCell;
 	Cell dist(target_cell - cannon_cell);
 	if (dist.X * dist.X + dist.Y * dist.Y < range * range) {
-		return(ACTION_EMPULSE);
+		return(in_range);
 	}
 
-	return(ACTION_EMPULSE_RANGE);
+	return(out_of_range);
 }

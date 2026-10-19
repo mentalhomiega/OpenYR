@@ -169,6 +169,8 @@
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
+#include "csf.h"
 #include "swizzle.h"
 #include "tactical.h"
 #include "tag.h"
@@ -1791,6 +1793,10 @@ void BuildingClass::AI(void)
 	if (Class->IsOverpowerable) {
 		int const count = Overpowerer_Count();
 		IsOverpowered = count >= 3 || (count >= 1 && House->Power_Fraction() >= 1.0 && IsPoweredOn);
+	}
+	if (SuperWeaponTypeClass::BatteryTypesExist) {
+		// A Battery superweapon can overpower the types it lists, with or without Overpowerable.
+		IsOverpowered = IsOverpowered || House->Battery_Affects(Class, true);
 	}
 
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
@@ -4240,14 +4246,26 @@ void BuildingClass::Grand_Opening(bool captured)
 		// Outside a campaign, an enemy superweapon structure is announced (BuildingClass::Place, 0x445F80).
 		SuperWeaponType const super = Fetch_Super_Weapon();
 		if (Session.Type != GAME_NORMAL && super != SUPER_NONE && PlayerPtr != NULL && !House->Is_Player_Control() && !House->Is_Ally(PlayerPtr)) {
-			switch (SuperWeaponTypes[super]->Type) {
-				case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearSiloDetected"); break;
-				case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainDetected"); break;
-				case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_WeatherDeviceReady"); break;
-				case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereDetected"); break;
-				case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorDetected"); break;
-				case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorDetected"); break;
-				default: break;
+			SuperWeaponKeys const & announce = SuperWeaponTypes[super]->Keys;
+			if (!announce.EvaDetected.empty()) {
+				// EVA.Detected names the line to play, and "none" plays nothing.
+				if (!SuperRules::Same(announce.EvaDetected, "none")) {
+					Speak_Eva(announce.EvaDetected.c_str());
+				}
+			} else {
+				switch (SuperWeaponTypes[super]->Type) {
+					case SUPER_MULTI_MISSILE: Speak_Eva("EVA_NuclearSiloDetected"); break;
+					case SUPER_IRON_CURTAIN: Speak_Eva("EVA_IronCurtainDetected"); break;
+					case SUPER_LIGHTNING_STORM: Speak_Eva("EVA_WeatherDeviceReady"); break;
+					case SUPER_CHRONOSPHERE: Speak_Eva("EVA_ChronosphereDetected"); break;
+					case SUPER_PSYCHIC_DOMINATOR: Speak_Eva("EVA_PsychicDominatorDetected"); break;
+					case SUPER_GENETIC_CONVERTER: Speak_Eva("EVA_GeneticMutatorDetected"); break;
+					default: break;
+				}
+			}
+			if (!announce.MessageDetected.empty() && !SuperRules::Same(announce.MessageDetected, "none")) {
+				std::string const text = Fetch_String_UTF8(announce.MessageDetected.c_str());
+				Session.Messages.Add_Message(NULL, 0, text.c_str(), House_Display_Scheme(announce.MessageFirerColor ? House : PlayerPtr), TextPrintType(TPF_USE_GRAD_PAL | TPF_FULLSHADOW | TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
 			}
 		}
 	}
@@ -6692,10 +6710,15 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					Cell center = Center_Coord();
 					//Cell cell = Cell( Cell_X(center), 1);
 					AbstractClass * targ = &Map[House->NukeDest];
-					WeaponTypeClass const * weap = SuperWeaponTypes[LastSuperWeaponIndex]->Weapon;
-					BulletTypeClass const * bullet_type = weap->Bullet;
-					WarheadTypeClass const * warhead = weap->WarheadPtr;
-					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true);
+					SuperWeaponTypeClass const * launched = SuperWeaponTypes[LastSuperWeaponIndex];
+					WeaponTypeClass const * weap = launched->Keys.NukePayload != NULL ? launched->Keys.NukePayload : launched->Weapon;
+					// A weapon with no payload launches nothing.
+					BulletClass * bullet = NULL;
+					if (weap != NULL) {
+						WarheadTypeClass const * warhead = launched->Keys.Warhead != NULL ? launched->Keys.Warhead : weap->WarheadPtr;
+						int const strike_damage = launched->Keys.Damage >= 0 ? launched->Keys.Damage : weap->Attack;
+						bullet = Create_Bullet(weap->Bullet, targ, this, strike_damage, warhead, MPH_LIGHT_SPEED, true);
+					}
 					if (bullet) {
 						// The warning passes to the missile bullet and stays up until that bullet is removed.
 						if (PsiWarnAnim != NULL) {
@@ -11347,7 +11370,7 @@ bool BuildingClass::Is_Powered_On(void) const
 	**	short of power, stays down unless two infantry overpower it (BuildingClass::IsPowerOnline,
 	**	0x4555D0). The rule applies to every structure with a drain, whatever its TogglePower.
 	*/
-	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0;
+	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0 && !House->Battery_Affects(Class, false);
 	if ((!IsOn || short_of_power) && Overpowerer_Count() < 2) {
 		return(false);
 	}

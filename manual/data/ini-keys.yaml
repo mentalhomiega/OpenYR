@@ -4817,6 +4817,57 @@ Bases:
       applies_to: *id020
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+Battery.KeepOnline:
+  key: Battery.KeepOnline
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Battery.Overpower:
+  key: Battery.Overpower
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Battery.Power:
+  key: Battery.Power
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.BatteryPower
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 BehavesLike:
   key: BehavesLike
   scopes:
@@ -10094,6 +10145,23 @@ CurleyShuffle:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Cursor:
+  key: Cursor
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 CursorScale:
   key: CursorScale
   scopes:
@@ -11189,6 +11257,74 @@ DeleteOnStateLimit:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
+Deliver.BaseNormal:
+  key: Deliver.BaseNormal
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DeliverBaseNormal
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Deliver.Buildups:
+  key: Deliver.Buildups
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DeliverBuildups
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Deliver.Owner:
+  key: Deliver.Owner
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Deliver.Types:
+  key: Deliver.Types
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 DemandLoad:
   key: DemandLoad
   scopes:
@@ -11619,6 +11755,23 @@ DescriptionText:
       source: code/session.cpp
       guard: null
     level: MultiMission
+DesignatorRange:
+  key: DesignatorRange
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: DesignatorRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DestroyAnim:
   key: DestroyAnim
   scopes:
@@ -12740,6 +12893,74 @@ DropPod:
     level: RulesClass
   case_collides_with:
   - Droppod
+DropPod.Maximum:
+  key: DropPod.Maximum
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DropPodMaximum
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+DropPod.Minimum:
+  key: DropPod.Minimum
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DropPodMinimum
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+DropPod.Types:
+  key: DropPod.Types
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+DropPod.Veterancy:
+  key: DropPod.Veterancy
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DropPodVeterancy
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 DropPodAngle:
   key: DropPodAngle
   scopes:
@@ -13108,6 +13329,91 @@ EMP.Threshold:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EMPulse.Cannons:
+  key: EMPulse.Cannons
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EMPulse.Linked:
+  key: EMPulse.Linked
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.EMPulseLinked
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EMPulse.PulseBall:
+  key: EMPulse.PulseBall
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EMPulse.PulseDelay:
+  key: EMPulse.PulseDelay
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.EMPulsePulseDelay
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EMPulse.TargetSelf:
+  key: EMPulse.TargetSelf
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.EMPulseTargetSelf
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 EMPulseCannon:
   key: EMPulseCannon
   scopes:
@@ -13191,6 +13497,108 @@ EMPulseWarhead:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EVA.Activated:
+  key: EVA.Activated
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EVA.Detected:
+  key: EVA.Detected
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EVA.Impatient:
+  key: EVA.Impatient
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EVA.InsufficientFunds:
+  key: EVA.InsufficientFunds
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EVA.Ready:
+  key: EVA.Ready
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+EVA.SelectTarget:
+  key: EVA.SelectTarget
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 EWGates:
   key: EWGates
   scopes:
@@ -18142,6 +18550,57 @@ HunterSeeker:
       source: code/side.cpp
       guard: null
     level: SideClass
+HunterSeeker.Buildings:
+  key: HunterSeeker.Buildings
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+HunterSeeker.RandomOnly:
+  key: HunterSeeker.RandomOnly
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.HunterSeekerRandomOnly
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+HunterSeeker.Type:
+  key: HunterSeeker.Type
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 HunterSeekerAscentSpeed:
   key: HunterSeekerAscentSpeed
   scopes:
@@ -19523,6 +19982,23 @@ InfiniteMindControl:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+InhibitorRange:
+  key: InhibitorRange
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: InhibitorRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 InitTime:
   key: InitTime
   scopes:
@@ -22238,6 +22714,91 @@ Lifetime:
       source: code/psystype.cpp
       guard: null
     level: ParticleSystemTypeClass
+Light.Ambient:
+  key: Light.Ambient
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightAmbient
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Light.Blue:
+  key: Light.Blue
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightBlue
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Light.Enabled:
+  key: Light.Enabled
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightEnabled
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Light.Green:
+  key: Light.Green
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightGreen
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Light.Red:
+  key: Light.Red
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightRed
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 LightBlueTint:
   key: LightBlueTint
   scopes:
@@ -23859,6 +24420,142 @@ MenuTheme:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+Message.Abort:
+  key: Message.Abort
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.Activate:
+  key: Message.Activate
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.CannotFire:
+  key: Message.CannotFire
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.Detected:
+  key: Message.Detected
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.FirerColor:
+  key: Message.FirerColor
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MessageFirerColor
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.InsufficientFunds:
+  key: Message.InsufficientFunds
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.Launch:
+  key: Message.Launch
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Message.Ready:
+  key: Message.Ready
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 MessageDelay:
   key: MessageDelay
   scopes:
@@ -24418,6 +25115,23 @@ Money:
       applies_to: *id082
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+Money.Amount:
+  key: Money.Amount
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MoneyAmount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 MonorailSlopes:
   key: MonorailSlopes
   scopes:
@@ -25612,6 +26326,23 @@ NoAutoFire:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+NoCursor:
+  key: NoCursor
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 NoMovingFire:
   key: NoMovingFire
   scopes:
@@ -26106,6 +26837,40 @@ NotWorkingSound:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Nuke.Payload:
+  key: Nuke.Payload
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Nuke.SiloLaunch:
+  key: Nuke.SiloLaunch
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.NukeSiloLaunch
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 NukeAmbientChangeRate:
   key: NukeAmbientChangeRate
   scopes:
@@ -27173,6 +27938,74 @@ PadAircraft:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ParaDrop.Aircraft:
+  key: ParaDrop.Aircraft
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+ParaDrop.Count:
+  key: ParaDrop.Count
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ParaDropCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+ParaDrop.Num:
+  key: ParaDrop.Num
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ParaDefault.Num
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+ParaDrop.Types:
+  key: ParaDrop.Types
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Parachute:
   key: Parachute
   scopes:
@@ -29489,6 +30322,57 @@ PropulsionSoundEffect:
       source: code/levitate.cpp
       guard: null
     level: LevitateLocomotionClass
+Protect.Duration:
+  key: Protect.Duration
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectDuration
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Protect.PlayFadeSoundTime:
+  key: Protect.PlayFadeSoundTime
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectFadeSoundTime
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Protect.PowerOutage:
+  key: Protect.PowerOutage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ProtectPowerOutage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 ProtectWithWall:
   key: ProtectWithWall
   scopes:
@@ -31842,6 +32726,686 @@ SBarrelThickness:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SW.AIRequiresHouse:
+  key: SW.AIRequiresHouse
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AIRequiresTarget:
+  key: SW.AIRequiresTarget
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AITargeting:
+  key: SW.AITargeting
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AITargeting.Constraints:
+  key: SW.AITargeting.Constraints
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.ActivationSound:
+  key: SW.ActivationSound
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ActivationSound
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AffectsHouse:
+  key: SW.AffectsHouse
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AffectsTarget:
+  key: SW.AffectsTarget
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AllowAI:
+  key: SW.AllowAI
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AllowAI
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AllowPlayer:
+  key: SW.AllowPlayer
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AllowPlayer
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Animation:
+  key: SW.Animation
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AnimationHeight:
+  key: SW.AnimationHeight
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AnimationHeight
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AnyDesignator:
+  key: SW.AnyDesignator
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AnyDesignator
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AnyInhibitor:
+  key: SW.AnyInhibitor
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AnyInhibitor
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AutoFire:
+  key: SW.AutoFire
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AutoFire
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.AuxBuildings:
+  key: SW.AuxBuildings
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.ChargeToDrainRatio:
+  key: SW.ChargeToDrainRatio
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChargeToDrainRatio
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.CreateRadarEvent:
+  key: SW.CreateRadarEvent
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.CreateRadarEvent
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Damage:
+  key: SW.Damage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Damage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Deferment:
+  key: SW.Deferment
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Deferment
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Designators:
+  key: SW.Designators
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.FireIntoShroud:
+  key: SW.FireIntoShroud
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.FireIntoShroud
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.ForbiddenHouses:
+  key: SW.ForbiddenHouses
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: house list
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ForbiddenHouses
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Group:
+  key: SW.Group
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Group
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Inhibitors:
+  key: SW.Inhibitors
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.InitialReady:
+  key: SW.InitialReady
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.InitialReady
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.ManualFire:
+  key: SW.ManualFire
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ManualFire
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.MaxCount:
+  key: SW.MaxCount
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MaxCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.NegBuildings:
+  key: SW.NegBuildings
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Range:
+  key: SW.Range
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.RangeMaximum:
+  key: SW.RangeMaximum
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.RangeMaximum
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.RangeMinimum:
+  key: SW.RangeMinimum
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.RangeMinimum
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.RequiredHouses:
+  key: SW.RequiredHouses
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: house list
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.RequiredHouses
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.RequiresHouse:
+  key: SW.RequiresHouse
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.RequiresTarget:
+  key: SW.RequiresTarget
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Shots:
+  key: SW.Shots
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Shots
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.ShowCameo:
+  key: SW.ShowCameo
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ShowCameo
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Sound:
+  key: SW.Sound
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Sound
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Unstoppable:
+  key: SW.Unstoppable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.Unstoppable
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.UseAITargeting:
+  key: SW.UseAITargeting
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.UseAITargeting
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.Warhead:
+  key: SW.Warhead
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SandTile:
   key: SandTile
   scopes:
@@ -34239,6 +35803,23 @@ SoloCrateMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SonarPulse.Delay:
+  key: SonarPulse.Delay
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.SonarPulseDelay
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Sonic:
   key: Sonic
   scopes:
@@ -36060,6 +37641,40 @@ SpyMoneyStealPercent:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SpyPlane.Count:
+  key: SpyPlane.Count
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.SpyPlaneCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SpyPlane.Type:
+  key: SpyPlane.Type
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SpyPlaneCamera:
   key: SpyPlaneCamera
   scopes:
@@ -38864,6 +40479,91 @@ TeslaZap:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Text.Active:
+  key: Text.Active
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Text.Charging:
+  key: Text.Charging
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Text.Hold:
+  key: Text.Hold
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Text.Preparing:
+  key: Text.Preparing
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Text.Ready:
+  key: Text.Ready
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 TextBackgroundColor:
   key: TextBackgroundColor
   scopes:

@@ -4,6 +4,10 @@ Sources: the Ares documentation pages under `new/superweapons/` (December 2020 b
 
 Scope: the Ares `SW.*` framework and its per-`Type=` keys, plus the ten Phobos additions listed under "Super Weapons". `Convert.*` on a superweapon is specified in `phobos-autodeath-convert-animunit.md`, and `SpyEffect.*` superweapon keys in `ui-and-spy-small-flags.md`; this file only notes where they meet. Phobos keys outside that list (`ShowTimer.*`, `SuperWeaponSidebar.*`, `UIDescription`, `CameoPriority`, `UseWeeds*`, `ShowDesignatorRange`, the warhead `LaunchSW*` keys) are not covered. Phobos needs Ares for most of this (it patches Ares functions and calls Ares type conversion), so a mod written for both sees the Ares behaviour with the Phobos additions on top. OpenYR has neither, so it must supply both layers.
 
+## Status
+
+The `ares-sw` branch implements build-order steps 1, 2 (the shared `Action=` click), 3 (without the Phobos recipient keys, `TabIndex` and `SW.TimerVisibility`), 4 (without `SW.AlwaysGranted`, `SuperWeapons=` and `SW.VirtualCharge`), 5 (`Money.Amount`, `SW.Deferment`, `SW.Warhead`, `SW.Damage` and `GenericWarhead`; `SW.Range`, `SW.AffectsHouse` and `SW.AffectsTarget` for the iron curtain, psychic reveal and sonar pulse only), 6 (range limits, designators, inhibitors, `SW.AITargeting` modes, `SW.AutoFire`, `SW.UseAITargeting`, `SW.ManualFire`) and the `UnitDelivery`, `SonarPulse`, `Battery`, `DropPod`, `HunterSeeker`, `EMPulse` (cannon list, count, target self), `SpyPlane`, `ParaDrop` and `Nuke.Payload` / `Nuke.SiloLaunch` parts of step 8 and 9. The Phobos keys, `Lightning.*`, `Dominator.*`, `Chronosphere.*`, `Protect.*`, `Mutate.*`, `Light.*`, `EMPulse.PulseBall`, `EMPulse.PulseDelay` and `EMPulse.Linked` are not implemented. The [superweapons page](../../../manual/content/systems/superweapons.md) describes the behaviour that exists.
+
 ## Keys
 
 All keys are in a `[SuperWeaponType]` section of `rules(md).ini` unless a table says otherwise. The Source column is `A` for Ares (documentation only) and `P` for Phobos (read from its code).
