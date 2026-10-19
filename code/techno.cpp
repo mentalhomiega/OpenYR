@@ -6580,8 +6580,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 	}
 
+	// The effects of the warhead reach an object whose armor has a nonzero Verses, and that the hit damages when
+	// EffectsRequireDamage is set (Ares); EffectsRequireVerses=no lifts the Verses test.
+	bool const effects_apply = warhead != NULL && WarheadRules::Warhead_Effects_Apply(warhead->IsEffectsRequireVerses, warhead->IsEffectsRequireDamage,
+		warhead->Versus(TClass->Armor), warhead->IsEffectsRequireDamage && !negative ? Modify_Damage(damage, warhead, TClass->Armor, distance) : 1);
+
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
-	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && effects_apply
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
 		AttachedEffects.Attach(this, warhead);
 	}
@@ -6595,7 +6600,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
-	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && effects_apply
 		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
 		damage = 0;
 		return(RESULT_NONE);

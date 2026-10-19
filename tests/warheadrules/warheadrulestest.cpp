@@ -117,6 +117,18 @@ void Test_Urban_Combat(void)
 }
 
 
+void Test_Warhead_Effects(void)
+{
+	Check(!WarheadRules::Warhead_Effects_Apply(true, false, 0.0, 10), "a 0% Verses stops the effects by default");
+	Check(WarheadRules::Warhead_Effects_Apply(true, false, 0.5, 0), "a nonzero Verses lets the effects through by default");
+	Check(WarheadRules::Warhead_Effects_Apply(false, false, 0.0, 0), "EffectsRequireVerses=no lets the effects reach 0% Verses");
+	Check(!WarheadRules::Warhead_Effects_Apply(true, true, 1.0, 0), "EffectsRequireDamage stops the effects when no damage lands");
+	Check(WarheadRules::Warhead_Effects_Apply(true, true, 1.0, 1), "EffectsRequireDamage lets one point of damage through");
+	Check(!WarheadRules::Warhead_Effects_Apply(false, true, 0.0, 0), "EffectsRequireDamage still stops zero damage at 0% Verses");
+	Check(WarheadRules::Warhead_Effects_Apply(true, true, -1.0, 5), "a negative Verses is not zero");
+}
+
+
 void Test_Abduction_Health(void)
 {
 	Check(WarheadRules::Abducts_At(125, 125, 1.0), "a full-strength target passes at 100%");
@@ -138,6 +150,7 @@ int main(void)
 	Test_Driver_Kill_Threshold();
 	Test_Iron_Curtain_Duration();
 	Test_Abduction_Health();
+	Test_Warhead_Effects();
 	Test_Urban_Combat();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);

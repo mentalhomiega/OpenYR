@@ -84,6 +84,14 @@ namespace WarheadRules
 		return(max_strength > 0 && (double)strength / (double)max_strength <= below_percent);
 	}
 
+	// Whether the effects of a warhead (KillDriver, AttachEffect) apply to an object. EffectsRequireVerses (the default)
+	// asks for a nonzero Verses against the object's armor, and EffectsRequireDamage for at least one point of damage
+	// after armor.
+	inline bool Warhead_Effects_Apply(bool require_verses, bool require_damage, double versus, int damage)
+	{
+		return((!require_verses || versus != 0.0) && (!require_damage || damage >= 1));
+	}
+
 	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
 	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
 	// ProtectedDriver.MinHealth.
