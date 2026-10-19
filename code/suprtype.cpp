@@ -23,7 +23,11 @@
 #include "savestream.h"
 #include "sun.h"
 #include "swizzle.h"
+#include "dbgprint.h"
 #include "weapon.h"
+
+#include <set>
+#include <string>
 
 
 /// <summary>
@@ -33,6 +37,9 @@
 /// </summary>
 /// <returns>Returns with the super weapon type named. Otherwise, SUPER_NONE is
 /// returned.</returns>
+bool SuperWeaponTypeClass::BatteryTypesExist = false;
+
+
 SuperWeaponType Special_From_Name(char const * name)
 {
 	static const char * _names[SUPER_COUNT] = {
@@ -53,7 +60,11 @@ SuperWeaponType Special_From_Name(char const * name)
 		"SpyPlane",
 		"GeneticConverter",
 		"ForceShield",
-		"PsychicReveal"
+		"PsychicReveal",
+		"GenericWarhead",
+		"UnitDelivery",
+		"SonarPulse",
+		"Battery"
 	};
 
 	for (int i = SUPER_FIRST; i < SUPER_COUNT; i++) {
@@ -174,6 +185,9 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPostClick);
 	stream.Serialize(IsShowTimer);
 	stream.Serialize(PreDependent);
+	stream.Serialize(Range);
+	stream.Serialize(LineMultiplier);
+	stream.Serialize(Keys);
 }
 
 
@@ -211,6 +225,7 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsPreClick);
 	crc(IsPostClick);
 	crc(PreDependent);
+	Keys.Compute_CRC(crc);
 }
 
 
@@ -251,7 +266,15 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		ini.Get_String(IniName, "Type", "", buffer, sizeof(buffer));
 		if (strlen(buffer) != 0) {
 			SuperWeaponType type = Special_From_Name(buffer);
-			if (type != SUPER_NONE) Type = type;
+			if (type != SUPER_NONE) {
+				Type = type;
+			} else {
+				// A name no behavior answers to leaves the weapon inert: it charges, shows and discharges without an effect.
+				static std::set<std::string> reported;
+				if (reported.insert(std::string(Name())).second) {
+					DebugString("SuperWeaponType %s: Type=%s is not a behavior this engine implements; firing it does nothing.\n", Name(), buffer);
+				}
+			}
 		}
 
 		AuxBuilding = TGet_Class(ini, IniName, "AuxBuilding", AuxBuilding);
@@ -270,6 +293,11 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		CameoSortOrder = ini.Get_Int(IniName, "CameoSortOrder", CameoSortOrder);
 		Range = (float)ini.Get_Float(IniName, "Range", Range);
 		LineMultiplier = ini.Get_Int(IniName, "LineMultiplier", LineMultiplier);
+
+		Keys.Read_INI(ini, IniName);
+		if (Type == SUPER_BATTERY) {
+			BatteryTypesExist = true;
+		}
 
 		float recharge = ini.Get_Float(IniName, "RechargeTime");
 		if (recharge != 0.0) {
@@ -352,7 +380,7 @@ SuperWeaponTypeClass * SuperWeaponTypeClass::Find_Or_Make(const char *name)
 /// target.</param>
 /// <returns>Returns with the action to perform, which the caller turns into a mouse
 /// shape.</returns>
-ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * object)
+ActionType SuperWeaponTypeClass::Stock_Action(Cell const & cell, ObjectClass * object)
 {
 	// A force shield offers its own cursor only over a structure of the player or an ally; elsewhere
 	// it is the no-shield cursor (SuperWeaponTypeClass::MouseOverObject, 0x6CEF80).
@@ -383,7 +411,7 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * building = Buildings[i];
-		if (building->Class->IsEMPulseCannon && building->House == PlayerPtr && building->Is_Powered_On()) {
+		if (building->Class->IsEMPulseCannon && building->House == PlayerPtr && building->Is_Powered_On() && Keys.Allows_Cannon(building->Class)) {
 			if (building->Distance(target) < mindist) {
 				mindist = building->Distance(target);
 				cannon = building;
@@ -396,7 +424,7 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 	}
 
 	WeaponTypeClass *weap = cannon->Get_Class_Weapon_Data()->Weapon;
-	int range = weap->Range / CELL_LEPTON;
+	int range = Keys.RangeMaximum >= 0.0f ? (int)Keys.RangeMaximum : weap->Range / CELL_LEPTON;
 	Cell cannon_cell = cannon->PositionCell;
 	Cell dist(target_cell - cannon_cell);
 	if (dist.X * dist.X + dist.Y * dist.Y < range * range) {

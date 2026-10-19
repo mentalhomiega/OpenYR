@@ -183,6 +183,7 @@
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
+#include "swrules.h"
 #include "surface.h"
 #include "tactical.h"
 #include "tag.h"
@@ -1972,6 +1973,16 @@ void HouseClass::Super_Weapon_Handler(void)
 	for (SuperWeaponType special = SUPER_FIRST; special < SuperWeapon.Count(); special++) {
 		SuperClass * super = SuperWeapon[special];
 
+		super->Update_Deferred();
+
+		// SW.AutoFire fires a ready weapon of a player's as the computer would aim it, checked twice a second.
+		if (super->Is_Ready() && super->Class->Keys.AutoFire && Is_Human_Player() && (Frame + HeapID) % (TICKS_PER_SECOND / 2) == 0) {
+			Cell chosen = CELL_NONE;
+			if (Pick_Super_Target(super, chosen)) {
+				Place_Special_Blast(special, chosen);
+			}
+		}
+
 		if (super->Is_Present()) {
 
 			/*
@@ -3147,6 +3158,19 @@ void HouseClass::Special_Weapon_AI(SuperWeaponType id)
  *=============================================================================================*/
 bool HouseClass::Place_Special_Blast(SuperWeaponType id, Cell const & cell)
 {
+	// SW.UseAITargeting lets a player's click choose the target the way the computer would.
+	if (SuperWeapon[id]->Class->Keys.UseAITargeting && Is_Human_Player()) {
+		Cell chosen = CELL_NONE;
+		if (!Pick_Super_Target(SuperWeapon[id], chosen)) {
+			if (this == PlayerPtr && SuperWeapon[id]->Is_Ready()) {
+				SuperWeapon[id]->Show_Message(SuperWeapon[id]->Class->Keys.MessageCannotFire.empty() ? std::string("MSG:CannotFire") : SuperWeapon[id]->Class->Keys.MessageCannotFire);
+			}
+			return(true);
+		}
+		SuperWeapon[id]->Discharged(this == PlayerPtr, chosen);
+		return(true);
+	}
+
 	SuperWeapon[id]->Discharged(this == PlayerPtr, cell);
 
 	// Every computer house gets to react to a strike, as HouseClass::Fire_SW (0x4FAE50) lets it.
@@ -9530,6 +9554,9 @@ void HouseClass::Recalc_Power_Drain(void)
 		Power = 0;
 	}
 
+	// A running Battery superweapon adds its power whatever the base is doing.
+	Power += Battery_Power();
+
 	Adjust_House_Power(this);
 	Recalc_House_Factories(this);
 
@@ -9900,6 +9927,15 @@ void HouseClass::AI_Super_Weapons(void)
 			SuperClass * super = SuperWeapon[i];
 
 			if (super != NULL && super->Is_Ready()) {
+
+				// A weapon that names its own targeting rules (SW.AITargeting), and the Ares behaviors, pick their target by them.
+				if (Super_Weapon_Uses_Chosen_Target(super)) {
+					Cell chosen = CELL_NONE;
+					if (Pick_Super_Target(super, chosen)) {
+						Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), chosen);
+					}
+					continue;
+				}
 
 				/*
 				**	A trigger action can aim the missile, the storm and the support powers at a cell of
@@ -10807,6 +10843,11 @@ void HouseClass::Update_Present_Super_Weapons(void)
 					enabled = false;
 				}
 
+				// SW.Shots, SW.AllowPlayer, SW.AllowAI, the country lists and the building lists can take a weapon away.
+				if (present && !Super_Weapon_Allowed(SuperWeapon[s])) {
+					present = false;
+				}
+
 				if (present && !IsDefeated) {
 					if (!enabled && SuperWeapon[s]->Is_Powered() && SuperWeapon[s]->Suspend(true)) {
 						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
@@ -10854,7 +10895,7 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 {
 	if (!IsDefeated) {
 		for (int s = 0; s < SuperWeapon.Count(); s++) {
-			bool const withheld = !Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell;
+			bool const withheld = (!Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell) || !Super_Weapon_Allowed(SuperWeapon[s]);
 			if (!withheld && (!SuperWeapon[s]->Is_Present() || SuperWeapon[s]->Is_One_Time())) {
 				bool from_upgrade = false;
 				int j = Buildings.Count() - 1;
@@ -10871,7 +10912,7 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 							}
 							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s || from_upgrade) {
 								SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
-								if (this == PlayerPtr) {
+								if (this == PlayerPtr && SuperWeaponTypes[s]->Keys.ShowCameo) {
 									Map.Add(RTTI_SPECIAL, s);
 									Map.Flag_Strips_To_Redraw();
 								}
@@ -11131,4 +11172,258 @@ RTTIType HouseClass::Fetch_RTTI(void) const
 int HouseClass::Fetch_Heap_ID(void) const
 {
 	return(HeapID);
+}
+
+
+/// <summary>
+/// Does the house meet the conditions a superweapon sets for being offered to it: it has shots left,
+/// its controller and country are allowed (SW.AllowPlayer, SW.AllowAI, SW.RequiredHouses,
+/// SW.ForbiddenHouses), it owns one of the SW.AuxBuildings when the weapon lists any, and none of the
+/// SW.NegBuildings? A weapon that sets none of these is always allowed.
+/// </summary>
+bool HouseClass::Super_Weapon_Allowed(SuperClass const * super) const
+{
+	SuperWeaponKeys const & keys = super->Class->Keys;
+
+	if (super->Is_Exhausted()) {
+		return(false);
+	}
+	if (Is_Human_Player() ? !keys.AllowPlayer : !keys.AllowAI) {
+		return(false);
+	}
+	if (keys.RequiredHouses.Count() > 0 && !keys.RequiredHouses.Is_In_List(Class->HeapID)) {
+		return(false);
+	}
+	if (keys.ForbiddenHouses.Count() > 0 && keys.ForbiddenHouses.Is_In_List(Class->HeapID)) {
+		return(false);
+	}
+	if (keys.AuxBuildings.Count() > 0) {
+		bool owned = false;
+		for (int index = 0; index < keys.AuxBuildings.Count() && !owned; index++) {
+			owned = keys.AuxBuildings[index] != NULL && BQuantity.Value(keys.AuxBuildings[index]->Fetch_Heap_ID()) > 0;
+		}
+		if (!owned) {
+			return(false);
+		}
+	}
+	for (int index = 0; index < keys.NegBuildings.Count(); index++) {
+		if (keys.NegBuildings[index] != NULL && BQuantity.Value(keys.NegBuildings[index]->Fetch_Heap_ID()) > 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// The power that the house's running Battery superweapons add to its output.
+/// </summary>
+int HouseClass::Battery_Power(void) const
+{
+	if (!SuperWeaponTypeClass::BatteryTypesExist) {
+		return(0);
+	}
+	int power = 0;
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass const * super = SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == SUPER_BATTERY && super->Is_Drain_Active()) {
+			power += super->Class->Keys.BatteryPower;
+		}
+	}
+	return(power);
+}
+
+
+/// <summary>
+/// Does a running Battery superweapon of the house overpower, or keep online, structures of the type?
+/// </summary>
+bool HouseClass::Battery_Affects(BuildingTypeClass const * type, bool overpower) const
+{
+	if (!SuperWeaponTypeClass::BatteryTypesExist) {
+		return(false);
+	}
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass const * super = SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == SUPER_BATTERY && super->Is_Drain_Active()) {
+			TypeList<BuildingTypeClass const *> const & list = overpower ? super->Class->Keys.BatteryOverpower : super->Class->Keys.BatteryKeepOnline;
+			if (list.Is_In_List(type)) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+namespace {
+
+SuperRules::AITarget Default_AI_Mode(SuperWeaponType type)
+{
+	switch (type) {
+		case SUPER_GENERIC_WARHEAD: return(SuperRules::AITarget::Offensive);
+		case SUPER_UNIT_DELIVERY: return(SuperRules::AITarget::ParaDrop);
+		case SUPER_SONAR_PULSE: return(SuperRules::AITarget::Stealth);
+		case SUPER_BATTERY: return(SuperRules::AITarget::LowPower);
+		case SUPER_EM_PULSE: return(SuperRules::AITarget::None);
+		case SUPER_DROP_PODS: return(SuperRules::AITarget::DropPod);
+		case SUPER_HUNTER_SEEKER: return(SuperRules::AITarget::HunterSeeker);
+		default: return(SuperRules::AITarget::None);
+	}
+}
+
+}
+
+
+/// <summary>
+/// Does this superweapon choose its own target (SW.AITargeting) or belong to a behavior that has no
+/// stock computer rule? The computer's stock rules handle the others.
+/// </summary>
+bool HouseClass::Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const
+{
+	SuperWeaponKeys const & keys = super->Class->Keys;
+	if ((SuperRules::AITarget)keys.AITargeting != SuperRules::AITarget::Default) {
+		return(true);
+	}
+	switch (super->Class->Type) {
+		case SUPER_GENERIC_WARHEAD:
+		case SUPER_UNIT_DELIVERY:
+		case SUPER_SONAR_PULSE:
+		case SUPER_BATTERY:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+/// <summary>
+/// Chooses where this house fires a superweapon by the rules SW.AITargeting names (or the behavior's
+/// default), as the computer does and as SW.AutoFire and SW.UseAITargeting do for a player.
+/// </summary>
+/// <param name="cell">Receives the cell to aim at, CELL_NONE for a weapon that needs no cell.</param>
+/// <returns>Returns true when the weapon should fire now. A mode that finds no target, a constraint
+/// that does not hold, or a target the weapon's rules refuse gives false.</returns>
+bool HouseClass::Pick_Super_Target(SuperClass const * super, Cell & cell)
+{
+	using namespace SuperRules;
+
+	SuperWeaponKeys const & keys = super->Class->Keys;
+	AITarget mode = (AITarget)keys.AITargeting;
+	if (mode == AITarget::Default) {
+		mode = Default_AI_Mode(super->Class->Type);
+	}
+	cell = CELL_NONE;
+
+	unsigned const need = keys.AIConstraints;
+	bool const attacked = LATime != 0 && LATime + TICKS_PER_MINUTE > Frame;
+	bool const low_power = Power_Fraction() < 1.0;
+	if ((need & CONSTRAINT_ENEMY) && Enemy == HOUSE_NONE) return(false);
+	if ((need & CONSTRAINT_STORM_INACTIVE) && LightningStormClass::Is_Active_Or_Pending()) return(false);
+	if ((need & CONSTRAINT_DOMINATOR_INACTIVE) && PsychicDominatorClass::Is_Active()) return(false);
+	if ((need & CONSTRAINT_ATTACKED) && !attacked) return(false);
+	if ((need & CONSTRAINT_LOW_POWER) && !low_power) return(false);
+	if ((need & CONSTRAINT_OFFENSIVE_SET) && PreferredTargetCell == CELL_NONE) return(false);
+	if ((need & CONSTRAINT_OFFENSIVE_CLEAR) && PreferredTargetCell != CELL_NONE) return(false);
+	if ((need & CONSTRAINT_DEFENSIVE_SET) && PreferredDefensiveCell == CELL_NONE) return(false);
+	if ((need & CONSTRAINT_DEFENSIVE_CLEAR) && PreferredDefensiveCell != CELL_NONE) return(false);
+
+	bool needs_cell = true;
+	switch (mode) {
+		case AITarget::Default:
+		case AITarget::None:
+		case AITarget::IronCurtain:
+		case AITarget::ForceShield:
+			return(false);
+
+		case AITarget::Nuke:
+		case AITarget::MultiMissile:
+		case AITarget::LightningStorm:
+		case AITarget::Offensive:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Pick_Strike_Target();
+			break;
+
+		case AITarget::PsychicDominator:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Pick_Dominator_Target();
+			break;
+
+		case AITarget::GeneticMutator:
+			cell = Pick_Mutator_Target();
+			break;
+
+		case AITarget::ParaDrop:
+			cell = Pick_Drop_Target();
+			break;
+
+		case AITarget::DropPod:
+		case AITarget::LightningRandom: {
+			Cell const random_cell = Random_Cell_In_Zone(Random_Pick(ZONE_NORTH, ZONE_WEST));
+			cell = Map.Nearby_Location(random_cell, SPEED_FOOT);
+			break;
+		}
+
+		case AITarget::Self:
+			for (int index = 0; index < Buildings.Count(); index++) {
+				BuildingClass const * building = Buildings[index];
+				if (building->House == this && building->IsActive && !building->IsInLimbo && building->Strength > 0 && building->Is_Powered_On()
+						&& (building->Fetch_Super_Weapon() == super->Class->HeapID || building->Fetch_Super_Weapon2() == super->Class->HeapID)) {
+					cell = building->Center_Coord().As_Cell();
+					break;
+				}
+			}
+			break;
+
+		case AITarget::Base:
+			cell = ConYards.Count() > 0 ? ConYards[0]->Center_Coord().As_Cell() : Starting_Cell_Or_Default();
+			break;
+
+		case AITarget::EnemyBase:
+			if (Enemy == HOUSE_NONE) return(false);
+			cell = Map.Nearby_Location(Houses[Enemy]->Starting_Cell_Or_Default(), SPEED_FOOT);
+			break;
+
+		case AITarget::Stealth:
+			for (int index = 0; index < Technos.Count(); index++) {
+				TechnoClass const * techno = Technos[index];
+				if (techno->IsActive && !techno->IsInLimbo && techno->Strength > 0 && (techno->Cloak == CLOAKED) && !Is_Ally(techno)) {
+					cell = techno->Center_Coord().As_Cell();
+					break;
+				}
+			}
+			break;
+
+		case AITarget::HunterSeeker:
+			if (Enemy == HOUSE_NONE) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::NoTarget:
+			needs_cell = false;
+			break;
+
+		case AITarget::Attack:
+			if (!attacked) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::LowPower:
+			if (!low_power) return(false);
+			needs_cell = false;
+			break;
+
+		case AITarget::LowPowerAttack:
+			if (!low_power || !attacked) return(false);
+			needs_cell = false;
+			break;
+	}
+
+	if (!needs_cell) {
+		return(true);
+	}
+	if (cell == CELL_NONE || !Map.In_Radar(cell)) {
+		return(false);
+	}
+	return(super->Class->Fits_AI_Target(this, cell));
 }

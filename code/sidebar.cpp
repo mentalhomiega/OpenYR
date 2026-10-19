@@ -2806,7 +2806,9 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 
 			if ((unsigned)spc < (unsigned)PlayerPtr->SuperWeapon.Count()) {
 				if (PlayerPtr->SuperWeapon[spc]->Can_Place()) {
-					if (PlayerPtr->SuperWeapon[spc]->Class->Action == ACTION_NONE) {
+					if (PlayerPtr->SuperWeapon[spc]->Class->Keys.AutoFire && !PlayerPtr->SuperWeapon[spc]->Class->Keys.ManualFire) {
+						// The weapon fires on its own when it is ready.
+					} else if (!PlayerPtr->SuperWeapon[spc]->Class->Needs_Target()) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, PlayerPtr->SuperWeapon[spc]->Class->HeapID, Cell(0, 0)));
 					} else {
 						Map.Place_Beacon_Mode_Control(0);

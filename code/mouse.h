@@ -33,9 +33,13 @@
 #pragma once
 
 class ShapeSet;
+class CCINIClass;
 
 #include "scroll.h"
 #include "stage.h"
+
+#include <string>
+#include <vector>
 
 class MouseClass: public ScrollClass
 {
@@ -71,6 +75,14 @@ class MouseClass: public ScrollClass
 		int Get_Mouse_Frame_Count(MouseType mouse) const;
 
 		/*
+		**	Cursors that rules files name. Find_Cursor answers a name from [MouseCursors] or one
+		**	of the stock cursors, and -1 when there is none; a named cursor from a rules file has a
+		**	number from MOUSE_COUNT on.
+		*/
+		static MouseType Find_Cursor(char const * name);
+		static void Read_Cursors(CCINIClass const & ini);
+
+		/*
 		**	This allows the tactical map input gadget access to change the
 		**	mouse shapes.
 		*/
@@ -102,6 +114,14 @@ class MouseClass: public ScrollClass
 		**	in this static array.
 		*/
 		static MouseStruct MouseControl[MOUSE_COUNT];
+
+		/*
+		**	Cursors that [MouseCursors] defines follow the stock ones; the cursor numbered
+		**	MOUSE_COUNT + n is element n.
+		*/
+		static std::vector<MouseStruct> CustomControl;
+		static std::vector<std::string> CustomNames;
+		static MouseStruct const & Control_For(MouseType mouse);
 
 	public:
 		/*

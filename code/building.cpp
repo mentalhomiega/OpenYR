@@ -1792,6 +1792,10 @@ void BuildingClass::AI(void)
 		int const count = Overpowerer_Count();
 		IsOverpowered = count >= 3 || (count >= 1 && House->Power_Fraction() >= 1.0 && IsPoweredOn);
 	}
+	if (SuperWeaponTypeClass::BatteryTypesExist) {
+		// A Battery superweapon can overpower the types it lists, with or without Overpowerable.
+		IsOverpowered = IsOverpowered || House->Battery_Affects(Class, true);
+	}
 
 	if (Class->IsSAM && TarCom != NULL && !TarCom->In_Air()) {
 		Assign_Target(NULL);
@@ -11347,7 +11351,7 @@ bool BuildingClass::Is_Powered_On(void) const
 	**	short of power, stays down unless two infantry overpower it (BuildingClass::IsPowerOnline,
 	**	0x4555D0). The rule applies to every structure with a drain, whatever its TogglePower.
 	*/
-	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0;
+	bool const short_of_power = Class->IsPowered && Class->Drain > 0 && House->Power_Fraction() < 1.0 && !House->Battery_Affects(Class, false);
 	if ((!IsOn || short_of_power) && Overpowerer_Count() < 2) {
 		return(false);
 	}

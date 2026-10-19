@@ -37,6 +37,9 @@
 #include "super.hh"
 #include "timer.h"
 
+#include <string>
+#include <vector>
+
 class AnimClass;
 class SuperWeaponTypeClass;
 class HouseClass;
@@ -91,6 +94,31 @@ class SuperClass : public AbstractClass
 
 		char const * State_String(void) const;
 
+		/*
+		**	The Ares superweapon rules. Check_Launch is the test every shot passes before it is
+		**	spent: the target rules, then the cost. Fire_Deferred runs the effect of a shot whose
+		**	SW.Deferment ran out.
+		*/
+		bool Check_Launch(Cell const & cell, bool player) const;
+		void Begin_Launch(Cell const & cell, bool player);
+		void Update_Deferred(void);
+		int Pending_Count(void) const {return((int)Pending.size());}
+		int Shots_Fired(void) const {return(ShotsFired);}
+		bool Is_Drain_Active(void) const;
+		double Drain_Ratio(void) const;
+		bool Is_Exhausted(void) const;
+		void Note_Enabled(bool player);
+		char const * Caption(void) const;
+		void Speak_Activated(char const * builtin) const;
+		void Speak_Ready_Line(void) const;
+		void Show_Message(std::string const & label) const;
+		void Play_Target_Effects(Cell const & cell) const;
+		void Generic_Warhead(Cell const & cell) const;
+		void Unit_Delivery(Cell const & cell) const;
+		void Sonar_Pulse(Cell const & cell) const;
+		void Hunter_Seeker_Launch(void) const;
+		void EM_Pulse_Launch(Cell const & cell) const;
+
 	public:
 		/*
 		 * This points to the type class that describes this super weapon -- its recharge
@@ -128,7 +156,24 @@ class SuperClass : public AbstractClass
 
 		// The charge time a trigger action gave this weapon, in frames, or -1 for the type's own.
 		int CustomRechargeTime = -1;
+
+		// A shot whose effect waits for SW.Deferment frames to pass.
+		struct PendingShot
+		{
+			void Serialize(SaveStreamClass & stream);
+
+			int FramesLeft = 0;
+			int CellX = 0;
+			int CellY = 0;
+		};
+
 	private:
+		std::vector<PendingShot> Pending;
+
+		// How many times the house has fired this weapon (SW.Shots), and whether it was ever enabled (SW.InitialReady).
+		int ShotsFired = 0;
+		bool WasEnabled = false;
+
 		bool IsPresent;
 		bool IsOneTime;
 		bool IsReady;
