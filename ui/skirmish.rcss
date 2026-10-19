@@ -10,6 +10,11 @@
 /* The player list stands on the left and the map and its settings on the right. The size
    below fits the classic style's 800x600; the modern style widens the panel and the list. */
 
+#title
+{
+	display: none;
+}
+
 #reveal
 {
 	width: 780dp;

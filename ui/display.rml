@@ -18,6 +18,9 @@
 	<div id="page">
 		<div id="list">
 			<p class="section">Screen</p>
+			<div class="setting" id="modes-select-row" desc="The screen size the game switches to. You are asked to keep it before it stays."><span class="caption">Resolution</span><select id="modes-select" data-value="selected" data-event-change="queue('select', ev.value)">
+				<option data-for="mode : modes" data-attr-value="it_index">{{mode.label}}</option>
+			</select></div>
 			<div class="setting tall" id="modes-row" desc="The screen size the game switches to. You are asked to keep it before it stays."><span class="caption">Resolution</span><div id="modes" class="list"><div class="rows">
 				<div class="item" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
 			</div></div></div>
@@ -52,10 +55,10 @@
 		</div>
 	</div>
 	<div id="footer">
-		<button id="footer-reset" data-event-click="queue('reset')">Reset to defaults</button>
+		<button id="footer-reset" class="big" data-event-click="queue('reset')">Reset to defaults</button>
 		<span id="footer-spacer"></span>
-		<button id="footer-cancel" data-event-click="queue('cancel')">Back</button>
-		<button id="footer-ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="footer-cancel" class="big" data-event-click="queue('cancel')">Back</button>
+		<button id="footer-ok" class="big primary" data-event-click="queue('ok')">[[TXT_OK]]</button>
 	</div>
 </body>
 </rml>

@@ -15,6 +15,7 @@
 	<link type="text/rcss" href="colorpick.rcss"/>
 </head>
 <body class="lobby" template="dialog" data-model="skirmish">
+	<p id="title">Skirmish</p>
 	<div id="columns">
 		<div id="left">
 			<div id="players" class="frame">
@@ -70,7 +71,7 @@
 				<span id="preview-caption">Preview</span>
 			</div>
 			<span class="caption" id="mapname">{{mapname}}</span>
-			<button id="pick" data-event-click="queue('map')">Multiplay Map</button>
+			<button id="pick" class="big" data-event-click="queue('map')">Multiplay Map</button>
 			<div id="settings" class="frame">
 				<div class="setting" id="setting-units">
 					<span class="caption">Unit Count:</span>
@@ -91,8 +92,8 @@
 			</div>
 			<span id="notice">{{notice}}</span>
 			<div id="buttons">
-				<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
-				<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+				<button id="ok" class="big primary" data-event-click="queue('ok')">[[TXT_OK]]</button>
+				<button id="cancel" class="big" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
 			</div>
 		</div>
 	</div>

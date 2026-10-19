@@ -5543,7 +5543,7 @@ static void Check_Skirmish_Layout(Rml::Context & context, CountingSystemInterfac
 void Test_Skirmish_Layouts(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	Check_Skirmish_Layout(context, system, "classic", 800, 600, Rml::Vector2f(780.0f, 472.0f));
-	Check_Skirmish_Layout(context, system, "modern", 1280, 720, Rml::Vector2f(1040.0f, 572.0f));
+	Check_Skirmish_Layout(context, system, "modern", 1280, 720, Rml::Vector2f(1040.0f, 640.0f));
 }
 
 

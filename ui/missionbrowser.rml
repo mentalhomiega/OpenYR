@@ -43,8 +43,8 @@
 			<select id="difficulty" data-event-change="queue('difficulty', ev.value)"><option data-for="entry : difficulties" data-attr-value="it_index" data-attrif-selected="it_index == difficulty">{{entry.label}}</option></select>
 		</div>
 		<div id="actions">
-			<button id="back" data-event-click="queue('cancel')">Back</button>
-			<button id="play" data-attrif-disabled="!playable" data-event-click="queue('ok')">Play</button>
+			<button id="back" class="big" data-event-click="queue('cancel')">Back</button>
+			<button id="play" class="big primary" data-attrif-disabled="!playable" data-event-click="queue('ok')">Play</button>
 		</div>
 	</div>
 </body>

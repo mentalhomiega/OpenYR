@@ -197,19 +197,19 @@ bool LoadOptionsClass::Dialog(void)
 		switch (Style) {
 			case SAVE:
 				state.Mode = UI_SAVE_GAME_SAVE;
-				state.Title = "SAVE";
+				state.Title = "Save";
 				state.AcceptCaption = "Save";
 				break;
 
 			case WWDELETE:
 				state.Mode = UI_SAVE_GAME_DELETE;
-				state.Title = "DELETE";
+				state.Title = "Delete";
 				state.AcceptCaption = "Delete";
 				break;
 
 			default:
 				state.Mode = UI_SAVE_GAME_LOAD;
-				state.Title = "LOAD";
+				state.Title = "Load";
 				state.AcceptCaption = "Load";
 				break;
 		}
