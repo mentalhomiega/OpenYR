@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 232 entries
+- [Rules](#rules): 233 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -118,6 +118,7 @@ Bounty.Value=200
 | [`Crashable`](../manual/content/keys/crashable--aircrafttype.md) | `yes` | Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed. | Ares, Phobos |
 | [`EMP.Modifier`](../manual/content/keys/emp.modifier.md) | 1.0, so the stun lasts the pulse's full duration | Scales how long an EM pulse stuns this object. | Ares |
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
+| [`ForceShield.Modifier`](../manual/content/keys/forceshield.modifier.md) | `1` | Multiplies the length of a Force Shield put on an object of this type; 0 or less makes it immune. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
 | [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | With yes, an Abductor weapon cannot take this object aboard and deals its ordinary damage instead. | Ares |

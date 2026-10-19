@@ -11506,12 +11506,12 @@ void TechnoClass::Iron_Tint_AI(void)
 
 
 /// <summary>
-/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0 (Ares)? The Force
-/// Shield is not affected by that key.
+/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0, or by the Force Shield,
+/// because its type sets ForceShield.Modifier to 0 or less (Ares)?
 /// </summary>
 bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
 {
-	return(!force_shield && TClass->IronCurtainModifier == 0.0);
+	return(force_shield ? TClass->ForceShieldModifier <= 0.0 : TClass->IronCurtainModifier == 0.0);
 }
 
 
@@ -11525,9 +11525,7 @@ bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
-	if (!force_shield) {
-		duration = WarheadRules::Iron_Curtain_Duration(duration, TClass->IronCurtainModifier);
-	}
+	duration = WarheadRules::Iron_Curtain_Duration(duration, force_shield ? TClass->ForceShieldModifier : TClass->IronCurtainModifier);
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

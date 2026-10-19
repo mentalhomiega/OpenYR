@@ -367,6 +367,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		// object is immune to it.
 		double IronCurtainModifier;
 
+		// ForceShield.Modifier (Ares): the multiplier on the length of a Force Shield put on an object of this type. At 0 or
+		// less the object cannot be shielded.
+		double ForceShieldModifier;
+
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 

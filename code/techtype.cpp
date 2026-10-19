@@ -194,6 +194,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsProtectedDriver(false),
 	ProtectedDriverMinHealth(1.0),
 	IronCurtainModifier(1.0),
+	ForceShieldModifier(1.0),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
 	BombSight(0),
@@ -857,6 +858,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
+		ForceShieldModifier = ini.Get_Float(Name(), "ForceShield.Modifier", ForceShieldModifier);
 		IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
 		IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
 		ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
@@ -1677,6 +1679,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProtectedDriver);
 	stream.Serialize(ProtectedDriverMinHealth);
 	stream.Serialize(IronCurtainModifier);
+	stream.Serialize(ForceShieldModifier);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(BombSight);

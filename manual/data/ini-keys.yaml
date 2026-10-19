@@ -16596,6 +16596,23 @@ ForceBigCraters:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ForceShield.Modifier:
+  key: ForceShield.Modifier
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: ForceShieldModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ForceShieldBlackoutDuration:
   key: ForceShieldBlackoutDuration
   scopes:
