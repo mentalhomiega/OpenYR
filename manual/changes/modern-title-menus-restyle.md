@@ -1,6 +1,6 @@
 ---
 title: Restyle the modern title menus
-category: change
+category: feature
 release: 0.2.0
 targets:
 - type: system
