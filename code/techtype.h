@@ -520,6 +520,25 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SurvivorPilotChance[3];
 		int SurvivorPassengerChance[3];
 
+		// The sounds played as this object cloaks and decloaks, each with whether the type sets it; VOC_NONE with the flag set is silent (Ares CloakSound, DecloakSound).
+		VocType CloakSound;
+		VocType DecloakSound;
+		bool IsCloakSoundSet;
+		bool IsDecloakSoundSet;
+
+		// How many stages this object passes through as it cloaks and decloaks, or 0 for [General] CloakingStages (Ares Cloakable.Stages).
+		int CloakStages;
+
+		// Whether an object on the guard mission picks targets on its own, and whether a cloakable one does (Ares CanPassiveAquire.Guard, CanPassiveAquire.Cloak).
+		bool IsCanPassiveAquireGuard;
+		bool IsCanPassiveAquireCloak;
+
+		// Whether the player's orders cannot name this object's targets (Ares NoManualFire).
+		bool IsNoManualFire;
+
+		// Whether a gattling weapon that finishes its last stage starts again at the first (Ares Gattling.Cycle).
+		bool IsGattlingCycle;
+
 		// The EVA event announced when the owner's object of this type is promoted to veteran and to elite, or empty for EVA_UnitPromoted (Ares EVA.VeteranPromoted, EVA.ElitePromoted).
 		std::string EvaPromoted[2];
 

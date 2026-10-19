@@ -3926,6 +3926,8 @@ void Run(StepType const & step)
 				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
 				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
 				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+			DebugString("AUTOTEST   gattlingtype %s gattling %d stages %d thresholds %d,%d,%d rateup %d ratedown %d cycle %d\n", techno->TClass->Name(), (int)techno->TClass->IsGattling,
+				techno->TClass->WeaponStages, techno->TClass->WeaponStage[0], techno->TClass->WeaponStage[1], techno->TClass->WeaponStage[2], techno->TClass->RateUp, techno->TClass->RateDown, (int)techno->TClass->IsGattlingCycle);
 		}
 	} else if (step.Command == "animlog") {
 		// animlog <TypeID>: the animation state of each object of that type, whoever owns it. The body draws the voxel frame

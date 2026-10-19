@@ -241,6 +241,15 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SurvivorPilots(-1),
 	SurvivorPilotChance{-1, -1, -1},
 	SurvivorPassengerChance{-1, -1, -1},
+	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsCloakSoundSet(false),
+	IsDecloakSoundSet(false),
+	CloakStages(0),
+	IsCanPassiveAquireGuard(true),
+	IsCanPassiveAquireCloak(true),
+	IsNoManualFire(false),
+	IsGattlingCycle(false),
 	EvaPromoted{},
 	EvaLost(),
 	IsEvaLostSet(false),
@@ -977,6 +986,19 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
 		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
 		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+		if (ini.Is_Present(Name(), "CloakSound")) {
+			CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
+			IsCloakSoundSet = true;
+		}
+		if (ini.Is_Present(Name(), "DecloakSound")) {
+			DecloakSound = ini.Get_VocType(Name(), "DecloakSound", VOC_NONE);
+			IsDecloakSoundSet = true;
+		}
+		CloakStages = ini.Get_Int(Name(), "Cloakable.Stages", CloakStages);
+		IsCanPassiveAquireGuard = ini.Get_Bool(Name(), "CanPassiveAquire.Guard", IsCanPassiveAquireGuard);
+		IsCanPassiveAquireCloak = ini.Get_Bool(Name(), "CanPassiveAquire.Cloak", IsCanPassiveAquireCloak);
+		IsNoManualFire = ini.Get_Bool(Name(), "NoManualFire", IsNoManualFire);
+		IsGattlingCycle = ini.Get_Bool(Name(), "Gattling.Cycle", IsGattlingCycle);
 		if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
 			EvaPromoted[0] = value;
 		}
@@ -1774,6 +1796,15 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilots);
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsCloakSoundSet);
+	stream.Serialize(IsDecloakSoundSet);
+	stream.Serialize(CloakStages);
+	stream.Serialize(IsCanPassiveAquireGuard);
+	stream.Serialize(IsCanPassiveAquireCloak);
+	stream.Serialize(IsNoManualFire);
+	stream.Serialize(IsGattlingCycle);
 	stream.Serialize(EvaPromoted[0]);
 	stream.Serialize(EvaPromoted[1]);
 	stream.Serialize(EvaLost);

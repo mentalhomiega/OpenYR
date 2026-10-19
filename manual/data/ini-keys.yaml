@@ -7364,6 +7364,40 @@ CanPassiveAquire:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanPassiveAquire.Cloak:
+  key: CanPassiveAquire.Cloak
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanPassiveAquireCloak
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+CanPassiveAquire.Guard:
+  key: CanPassiveAquire.Guard
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanPassiveAquireGuard
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 CanRecalcApproachTarget:
   key: CanRecalcApproachTarget
   scopes:
@@ -8498,6 +8532,20 @@ CloakRadiusInCells:
 CloakSound:
   key: CloakSound
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: CloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -8505,7 +8553,7 @@ CloakSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -8544,6 +8592,23 @@ Cloakable:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
       member: IsCloakable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+Cloakable.Stages:
+  key: Cloakable.Stages
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: CloakStages
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -10920,6 +10985,38 @@ Decay:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+DecloakSound:
+  key: DecloakSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: DecloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: DecloakSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DecloakToFire:
   key: DecloakToFire
   scopes:
@@ -17359,6 +17456,23 @@ GateUp:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Gattling.Cycle:
+  key: Gattling.Cycle
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsGattlingCycle
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 GenericBeep:
   key: GenericBeep
   scopes:
@@ -26700,6 +26814,23 @@ NoCursor:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+NoManualFire:
+  key: NoManualFire
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsNoManualFire
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 NoMovingFire:
   key: NoMovingFire
   scopes:

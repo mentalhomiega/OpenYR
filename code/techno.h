@@ -921,6 +921,10 @@ class TechnoClass :	public RadioClass,
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Do_Uncloak(bool silent=false);
+
+		// The number of stages this object passes through as it cloaks and decloaks, and the sound it makes doing so.
+		int Cloaking_Stages(void) const;
+		void Play_Cloak_Sound(bool decloaking) const;
 		virtual void Do_Cloak(bool silent=false);
 		virtual void Do_Shimmer(void) override;
 		int Get_Predator_Offset(void) const;
