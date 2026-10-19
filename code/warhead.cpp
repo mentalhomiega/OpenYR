@@ -55,6 +55,7 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "vector.h"
+#include "warheadrules.h"
 
 
 /// <summary>
@@ -402,7 +403,7 @@ bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 	if (armor >= 0 && armor < (int)ForceFire.size() && ForceFire[armor] >= 0) {
 		return(ForceFire[armor] != 0);
 	}
-	return(Versus(armor) != 0.0);
+	return(WarheadRules::Force_Fire_Default(Versus(armor)));
 }
 
 
@@ -412,7 +413,7 @@ bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 	if (armor >= 0 && armor < (int)Retaliate.size() && Retaliate[armor] >= 0) {
 		return(Retaliate[armor] != 0);
 	}
-	return(Versus(armor) >= 0.0099999997);
+	return(WarheadRules::Retaliate_Default(Versus(armor)));
 }
 
 
@@ -422,7 +423,7 @@ bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
 	if (armor >= 0 && armor < (int)PassiveAcquire.size() && PassiveAcquire[armor] >= 0) {
 		return(PassiveAcquire[armor] != 0);
 	}
-	return(Versus(armor) > 0.019999999552965164);
+	return(WarheadRules::Passive_Acquire_Default(Versus(armor)));
 }
 
 
