@@ -81,7 +81,7 @@ ModSettingsType Read_Mod_Settings(ModPlaceType const & place);
 // given, and leaves every other byte as it is. On failure, error says why and the file is unchanged.
 bool Write_Mod_Settings(ModPlaceType const & place, std::optional<std::string> const & list, std::optional<bool> const & ask_for_mod, std::string & error);
 
-// Whether a text value of a yes/no key reads as no: no, 0, off or false.
+// Whether the value of a yes/no key reads as no the way the game reads it: it starts with N, F or 0.
 bool Text_Means_No(std::string const & value);
 
 // What the picker offers.

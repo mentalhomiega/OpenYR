@@ -320,8 +320,9 @@ std::string Ini_Write_Text(std::string const & text, char const * section, char 
 
 bool Text_Means_No(std::string const & value)
 {
-	std::string const word = Lower(Trim(value));
-	return word == "no" || word == "0" || word == "off" || word == "false";
+	// The game's INIClass::Get_Bool reads the first letter: N, F or 0 is no, and anything unreadable keeps the default.
+	char const first = value.empty() ? '\0' : static_cast<char>(std::toupper(static_cast<unsigned char>(value[0])));
+	return first == 'N' || first == 'F' || first == '0';
 }
 
 

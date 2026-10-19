@@ -188,6 +188,7 @@ void Test_Settings(void)
 	settings = launcher::Read_Mod_Settings(place);
 	Check(settings.List == "Player" && settings.ReadPath == game / "user" / "RA2MD.INI", "the user folder's file is read first");
 	Check(!settings.AskForMod, "[Launcher] ModPicker=no turns the picker off");
+	Check(launcher::Text_Means_No("false") && launcher::Text_Means_No("0") && !launcher::Text_Means_No("yes") && !launcher::Text_Means_No("off") && !launcher::Text_Means_No(""), "the picker setting reads as the game's INIClass reads a boolean: N, F or 0 is no");
 
 	Write_File(game / "user" / "RA2MD.INI", "[Options]\r\nMods=,\r\n");
 	settings = launcher::Read_Mod_Settings(place);

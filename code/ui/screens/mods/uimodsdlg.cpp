@@ -23,24 +23,9 @@
 #include "ui/uisettings.h"
 #include "ui/uiview.h"
 
-#include <cctype>
-
 
 namespace
 {
-
-// The launcher's own reading of [Launcher] ModPicker=, so the launcher and this screen agree.
-bool Means_No(std::string const & value)
-{
-	std::string word;
-	for (char const ch : value) {
-		if (ch != ' ' && ch != '	') {
-			word += (char)std::tolower((unsigned char)ch);
-		}
-	}
-	return(word == "no" || word == "0" || word == "off" || word == "false");
-}
-
 
 class UIModsEngineServiceClass : public UIModsServiceClass
 {
@@ -66,23 +51,24 @@ class UIModsEngineServiceClass : public UIModsServiceClass
 
 		virtual bool Ask_For_Mod(void) override
 		{
-			return(!Means_No(ConfigINI.Get_String("Launcher", "ModPicker", "yes")));
+			return(ConfigINI.Get_Bool("Launcher", "ModPicker", true));
 		}
 
 		virtual bool Save_Ask_For_Mod(bool ask) override
 		{
-			std::string const before = ConfigINI.Get_String("Launcher", "ModPicker", "");
-			ConfigINI.Put_String("Launcher", "ModPicker", ask ? "yes" : "no");
+			bool const present = ConfigINI.Is_Present("Launcher", "ModPicker");
+			bool const before = ConfigINI.Get_Bool("Launcher", "ModPicker", true);
+			ConfigINI.Put_Bool("Launcher", "ModPicker", ask);
 
 			CCFileClass file(DeploymentConfig.SettingsFile.c_str());
 			if (ConfigINI.Save(file, false) > 0) {
 				return(true);
 			}
 
-			if (before.empty()) {
-				ConfigINI.Clear("Launcher", "ModPicker");
+			if (present) {
+				ConfigINI.Put_Bool("Launcher", "ModPicker", before);
 			} else {
-				ConfigINI.Put_String("Launcher", "ModPicker", before.c_str());
+				ConfigINI.Clear("Launcher", "ModPicker");
 			}
 			return(false);
 		}
