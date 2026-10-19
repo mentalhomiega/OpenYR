@@ -185,6 +185,7 @@ class SidebarClass : public PowerClass
 		void Add_Tool_Tips(void);
 		void Fit_Panel_To_Strip(void);
 		void Flash_Ready_Tabs(void);
+		static unsigned Tab_Flash_Mask(void);
 		void Use_Hud_Icons(void);
 
 		/*

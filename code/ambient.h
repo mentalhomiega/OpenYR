@@ -31,7 +31,8 @@ class AmbientSoundTable
 		void Detach(ObjectClass const * object);
 		VocType Attached(ObjectClass const * object) const;
 
-		// Once per game tick. An object in limbo falls silent until it returns.
+		// Once per game tick. An object in limbo falls silent until it returns. A sound that is not a loop
+		// starts again each time it ends.
 		void AI(void);
 
 		void Clear(void);
