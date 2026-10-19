@@ -380,6 +380,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsNODBarracks(false),
 	IsYuriBarracks(false),
 	RefinerySmokeFrames(25),
+	CaptureEvaEvent(),
+	LostEvaEvent(),
+	MessageCapture(),
+	MessageLost(),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1455,6 +1459,21 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
+		{
+			char text[128];
+			if (ini.Get_String(Name(), "CaptureEvaEvent", "", text, sizeof(text)) > 0) {
+				CaptureEvaEvent = text;
+			}
+			if (ini.Get_String(Name(), "LostEvaEvent", "", text, sizeof(text)) > 0) {
+				LostEvaEvent = text;
+			}
+			if (ini.Get_String(Name(), "Message.Capture", "", text, sizeof(text)) > 0) {
+				MessageCapture = text;
+			}
+			if (ini.Get_String(Name(), "Message.Lost", "", text, sizeof(text)) > 0) {
+				MessageLost = text;
+			}
+		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);
@@ -2569,6 +2588,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNODBarracks);
 	stream.Serialize(IsYuriBarracks);
 	stream.Serialize(RefinerySmokeFrames);
+	stream.Serialize(CaptureEvaEvent);
+	stream.Serialize(LostEvaEvent);
+	stream.Serialize(MessageCapture);
+	stream.Serialize(MessageLost);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(GateStages);

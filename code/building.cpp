@@ -124,6 +124,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "classids.h"
 #include "combat.h"
@@ -4971,6 +4972,22 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			if (announce && Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
 				Speak(VOX_BUILDING_CAPTURED);
 			}
+
+			// The capturer of a NeedsEngineer structure hears and sees its capture lines, and the loser its loss lines.
+			if (announce && Class->IsNeedsEngineer) {
+				bool const captured = newowner->Is_Player_Control();
+				std::string const & text = captured ? Class->MessageCapture : Class->MessageLost;
+				std::string const & line = captured ? Class->CaptureEvaEvent : Class->LostEvaEvent;
+				if (!text.empty() && !ObjectKeyRules::Names_Nothing(text)) {
+					std::string const shown = Fetch_String_UTF8(text.c_str());
+					Session.Messages.Add_Message(NULL, 0, shown.c_str(), House_Display_Scheme(captured ? newowner : House), TextPrintType(TPF_USE_GRAD_PAL | TPF_FULLSHADOW | TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
+				}
+				if (!line.empty() && !ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				} else if (!captured && line.empty() && !text.empty()) {
+					Speak_Eva("EVA_TechBuildingLost");
+				}
+			}
 			Map.PowerClass::IsToRedraw = true;
 			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 		}
@@ -7059,6 +7076,13 @@ int BuildingClass::Pip_Count(void) const
  *=============================================================================================*/
 void BuildingClass::Death_Announcement(TechnoClass const * source) const
 {
+	if (Class->IsEvaLostSet) {
+		// An EVA.Lost line replaces the stock announcement, which only an attacked structure makes.
+		if (House->Is_Player_Control() && !Class->IsInsignificant && !Class->IsSpawned && !Class->IsDontScore && !Class->EvaLost.empty() && !ObjectKeyRules::Names_Nothing(Class->EvaLost)) {
+			Speak_Eva(Class->EvaLost.c_str());
+		}
+		return;
+	}
 	if (source != NULL && House->Is_Player_Control()) {
 		Push_Radar_Event_Cell(Destination_Coord().As_Cell());
 		Speak(VOX_STRUCTURE_DESTROYED);

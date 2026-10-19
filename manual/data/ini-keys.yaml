@@ -7415,6 +7415,23 @@ Capturable:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CaptureEvaEvent:
+  key: CaptureEvaEvent
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: text
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CaptureTheFlag:
   key: CaptureTheFlag
   scopes:
@@ -13599,6 +13616,23 @@ EVA.Detected:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+EVA.ElitePromoted:
+  key: EVA.ElitePromoted
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EVA.Impatient:
   key: EVA.Impatient
   scopes:
@@ -13633,6 +13667,23 @@ EVA.InsufficientFunds:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+EVA.Lost:
+  key: EVA.Lost
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EVA.Ready:
   key: EVA.Ready
   scopes:
@@ -13667,6 +13718,23 @@ EVA.SelectTarget:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+EVA.VeteranPromoted:
+  key: EVA.VeteranPromoted
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: value
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 EWGates:
   key: EWGates
   scopes:
@@ -23628,6 +23696,23 @@ Lose:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+LostEvaEvent:
+  key: LostEvaEvent
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: text
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 LowPower:
   key: LowPower
   scopes:
@@ -24709,6 +24794,23 @@ Message.CannotFire:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Message.Capture:
+  key: Message.Capture
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: text
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Message.Detected:
   key: Message.Detected
   scopes:
@@ -24777,6 +24879,23 @@ Message.Launch:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Message.Lost:
+  key: Message.Lost
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: text
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Message.Ready:
   key: Message.Ready
   scopes:

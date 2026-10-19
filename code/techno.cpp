@@ -157,6 +157,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "_mixfile.h"
 #include "mixfile.h"
@@ -3825,7 +3826,12 @@ void TechnoClass::AI(void)
 			if (House->Is_Player_Control()) {
 				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
 				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
-				Speak_Eva("EVA_UnitPromoted");
+				std::string const & line = TClass->EvaPromoted[rank == 2 ? 1 : 0];
+				if (line.empty()) {
+					Speak_Eva("EVA_UnitPromoted");
+				} else if (!ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				}
 			}
 			if (rank == 2) {
 				FlashCount = Rule->EliteFlashTimer;

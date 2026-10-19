@@ -241,6 +241,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SurvivorPilots(-1),
 	SurvivorPilotChance{-1, -1, -1},
 	SurvivorPassengerChance{-1, -1, -1},
+	EvaPromoted{},
+	EvaLost(),
+	IsEvaLostSet(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -974,6 +977,16 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
 		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
 		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+		if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
+			EvaPromoted[0] = value;
+		}
+		if (ini.Get_String(Name(), "EVA.ElitePromoted", "", value, sizeof(value)) > 0) {
+			EvaPromoted[1] = value;
+		}
+		if (ini.Get_String(Name(), "EVA.Lost", "", value, sizeof(value)) > 0) {
+			EvaLost = value;
+			IsEvaLostSet = true;
+		}
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -1761,6 +1774,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilots);
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(EvaPromoted[0]);
+	stream.Serialize(EvaPromoted[1]);
+	stream.Serialize(EvaLost);
+	stream.Serialize(IsEvaLostSet);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

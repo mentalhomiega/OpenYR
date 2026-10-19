@@ -230,7 +230,7 @@ Promotion bonuses apply the next time the object fires, takes damage, or moves. 
 
 Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
 
-When one of the player's objects becomes a veteran or elite, the player hears the type's [`Promote.VeteranSound`](/keys/promote.veteransound/) or [`Promote.EliteSound`](/keys/promote.elitesound/) at the object, or [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) when the type sets none, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
+When one of the player's objects becomes a veteran or elite, the player hears the type's [`Promote.VeteranSound`](/keys/promote.veteransound/) or [`Promote.EliteSound`](/keys/promote.elitesound/) at the object, or [`UpgradeVeteranSound`](/keys/upgradeveteransound/) or [`UpgradeEliteSound`](/keys/upgradeelitesound/) when the type sets none, and with [EVAMD.INI](/formats/eva-ini/), `EVA_UnitPromoted`, or the line [`EVA.VeteranPromoted`](/keys/eva.veteranpromoted/) or [`EVA.ElitePromoted`](/keys/eva.elitepromoted/) names. Any object that becomes elite, whoever owns it, flashes for [`EliteFlashTimer`](/keys/eliteflashtimer/) frames. An object created at a rank is not announced.
 
 ## Carrying rank between objects
 

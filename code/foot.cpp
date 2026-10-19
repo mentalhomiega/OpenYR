@@ -99,6 +99,7 @@
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "convert.h"
 #include "ddist.h"
@@ -3222,7 +3223,11 @@ void FootClass::Death_Announcement(TechnoClass const * ) const
 {
 	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
 		if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {
-			Speak(VOX_UNIT_LOST);
+			if (!TClass->IsEvaLostSet) {
+				Speak(VOX_UNIT_LOST);
+			} else if (!TClass->IsDontScore && !ObjectKeyRules::Names_Nothing(TClass->EvaLost) && !TClass->EvaLost.empty()) {
+				Speak_Eva(TClass->EvaLost.c_str());
+			}
 		}
 	}
 }

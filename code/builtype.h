@@ -827,6 +827,14 @@ class BuildingTypeClass : public TechnoTypeClass
 		// The frames each smoke system a harvester's payout starts at a refinery lives for.
 		int RefinerySmokeFrames;
 
+		// The EVA events announced to the player who captures a NeedsEngineer structure of this type and to the one who loses it, as event names; empty for none (CaptureEvaEvent, Ares LostEvaEvent).
+		std::string CaptureEvaEvent;
+		std::string LostEvaEvent;
+
+		// The string table labels shown to the player who captures and to the one who loses such a structure (Ares Message.Capture, Message.Lost).
+		std::string MessageCapture;
+		std::string MessageLost;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.

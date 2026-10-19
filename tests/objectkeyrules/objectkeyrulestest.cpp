@@ -53,12 +53,22 @@ void Test_Survivors(void)
 	Check(ObjectKeyRules::Passenger_Survives(50, 49) && !ObjectKeyRules::Passenger_Survives(50, 50), "a chance of 50 saves rolls below 50");
 }
 
+
+void Test_None_Text(void)
+{
+	Check(ObjectKeyRules::Names_Nothing("none"), "none names nothing");
+	Check(ObjectKeyRules::Names_Nothing("NONE"), "none is read in any case");
+	Check(!ObjectKeyRules::Names_Nothing(""), "an empty text is not none");
+	Check(!ObjectKeyRules::Names_Nothing("nonexistent"), "a longer word is not none");
+}
+
 }
 
 
 int main(void)
 {
 	Test_Survivors();
+	Test_None_Text();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

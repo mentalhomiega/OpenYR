@@ -131,6 +131,7 @@
 **	counts <House>			writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read
 **	listhouse <House>		writes every object the house has, limbo'd ones too, with its limbo and transport state, cargo, team, occupants and visibility, then the counts the land-units event reads
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
+**	lose <TypeID>			gives the first object of that type the player owns to the first computer house with a construction yard through Set_Owning_House
 **	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
 **	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
 **	kill <TypeID>			destroys the objects of that type other houses own
@@ -2589,6 +2590,27 @@ void Run(StepType const & step)
 				HouseClass * from = techno->House;
 				bool const given = techno->Set_Owning_House(PlayerPtr, true);
 				DebugString("AUTOTEST transfer %s at %d,%d from %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, from->Class->Name(), given ? "given" : "refused");
+				break;
+			}
+		}
+		return;
+	}
+
+	if (step.Command == "lose") {
+		// lose <TypeID>: gives the first live object of that type the player owns to a computer house through
+		// TechnoClass::Set_Owning_House, as an enemy capture does.
+		HouseClass * enemy = NULL;
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
+				enemy = Houses[index];
+				break;
+			}
+		}
+		for (int index = 0; enemy != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				bool const given = techno->Set_Owning_House(enemy, true);
+				DebugString("AUTOTEST lose %s at %d,%d to %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, enemy->Class->Name(), given ? "given" : "refused");
 				break;
 			}
 		}

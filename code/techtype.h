@@ -520,6 +520,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SurvivorPilotChance[3];
 		int SurvivorPassengerChance[3];
 
+		// The EVA event announced when the owner's object of this type is promoted to veteran and to elite, or empty for EVA_UnitPromoted (Ares EVA.VeteranPromoted, EVA.ElitePromoted).
+		std::string EvaPromoted[2];
+
+		// The EVA event announced when an object of this type is lost, and whether the type names one; "none" is silent (Ares EVA.Lost).
+		std::string EvaLost;
+		bool IsEvaLostSet;
+
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
 

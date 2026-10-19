@@ -9,6 +9,9 @@
 
 #pragma once
 
+#include <cctype>
+#include <string>
+
 
 /*
  * Decisions behind the Ares object and presentation keys that depend on numbers and flags only,
@@ -16,6 +19,21 @@
  */
 namespace ObjectKeyRules
 {
+	// Whether an INI text says none, as a sound, EVA event or message key does, in any case and with no other text.
+	inline bool Names_Nothing(std::string const & text)
+	{
+		if (text.size() != 4) {
+			return(false);
+		}
+		std::string const word = "none";
+		for (size_t index = 0; index < 4; index++) {
+			if (std::tolower((unsigned char)text[index]) != word[index]) {
+				return(false);
+			}
+		}
+		return(true);
+	}
+
 	// The place of a veteran level among the three per-rank keys: 0 rookie, 1 veteran, 2 elite.
 	inline int Rank_Index(bool veteran, bool elite)
 	{

@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 237 entries
+- [Rules](#rules): 243 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -69,6 +69,9 @@ Bounty.Value=200
 | --- | --- | --- | --- |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
+| [`LostEvaEvent`](../manual/content/keys/lostevaevent.md) | EVA_TechBuildingLost when the type sets Message.Lost, otherwise nothing | The EVA line the player hears on losing a structure of this type that needs an engineer to a capture. | Ares |
+| [`Message.Capture`](../manual/content/keys/message.capture.md) | `none` | The text shown to the player who captures a structure of this type that needs an engineer. | Ares |
+| [`Message.Lost`](../manual/content/keys/message.lost.md) | `none` | The text shown to the player who loses a structure of this type that needs an engineer to a capture. | Ares |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
 | [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
@@ -120,6 +123,9 @@ Bounty.Value=200
 | [`Crew.TechnicianChance`](../manual/content/keys/crew.technicianchance.md) | An armed object has 15 percent odds, and an unarmed one none | The odds in percent that a survivor of this type is its owner's technician rather than its side's crew. | Ares |
 | [`EMP.Modifier`](../manual/content/keys/emp.modifier.md) | 1.0, so the stun lasts the pulse's full duration | Scales how long an EM pulse stuns this object. | Ares |
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
+| [`EVA.ElitePromoted`](../manual/content/keys/eva.elitepromoted.md) | `EVA_UnitPromoted` | The EVA line announced when the player's object of this type is promoted to elite. | Ares |
+| [`EVA.Lost`](../manual/content/keys/eva.lost.md) | Computed; see the page | The EVA line announced when the player loses an object of this type, or "none" for silence. | Ares |
+| [`EVA.VeteranPromoted`](../manual/content/keys/eva.veteranpromoted.md) | `EVA_UnitPromoted` | The EVA line announced when the player's object of this type is promoted to veteran. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
 | [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | Parsed marker that an Abductor weapon would not take this object aboard; no weapon in the engine abducts yet. | Ares |
