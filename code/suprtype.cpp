@@ -92,6 +92,7 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	IsPowered(true),
 	IsManualControl(false),
 	IsDisableableFromShell(false),
+	FlashSidebarTabFrames(-1),
 	IsPreClick(false),
 	IsPostClick(false),
 	IsShowTimer(false),
@@ -170,6 +171,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsManualControl);
 	stream.Serialize(IsDisableableFromShell);
+	stream.Serialize(FlashSidebarTabFrames);
 	stream.Serialize(IsPreClick);
 	stream.Serialize(IsPostClick);
 	stream.Serialize(IsShowTimer);
@@ -208,6 +210,7 @@ void SuperWeaponTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(AIDefendAgainst);
 	crc(IsManualControl);
 	crc(IsDisableableFromShell);
+	crc(FlashSidebarTabFrames);
 	crc(IsPreClick);
 	crc(IsPostClick);
 	crc(PreDependent);
@@ -259,6 +262,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AIDefendAgainst = ini.Get_Bool(IniName, "AIDefendAgainst", AIDefendAgainst);
 		IsManualControl = ini.Get_Bool(IniName, "ManualControl", IsManualControl);
 		IsDisableableFromShell = ini.Get_Bool(IniName, "DisableableFromShell", IsDisableableFromShell);
+		FlashSidebarTabFrames = ini.Get_Int(IniName, "FlashSidebarTabFrames", FlashSidebarTabFrames);
 		IsPreClick = ini.Get_Bool(IniName, "PreClick", IsPreClick);
 		IsPostClick = ini.Get_Bool(IniName, "PostClick", IsPostClick);
 		IsShowTimer = ini.Get_Bool(IniName, "ShowTimer", IsShowTimer);

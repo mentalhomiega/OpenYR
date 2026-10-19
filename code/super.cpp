@@ -573,6 +573,7 @@ bool SuperClass::AI(bool player)
 					return(true);
 				} else {
 					IsReady = true;
+					ReadyFrame = Frame;
 					if (player) {
 						Speak_Ready(Class);
 					}
@@ -1484,6 +1485,35 @@ ClassID SuperClass::Class_ID(void) const
 
 
 /// <summary>
+/// Tells whether the sidebar tab that holds this super weapon should flash.
+/// A suspended weapon never flashes. A charge drain weapon flashes unless it is charging; any
+/// other weapon flashes only while it is ready. FlashSidebarTabFrames of -1 keeps it flashing,
+/// and a positive count keeps it flashing only before ReadyFrame plus that count. ReadyFrame is
+/// set when a recharge finishes, not when the charge is set or forced.
+/// </summary>
+bool SuperClass::Should_Flash_Tab(void) const
+{
+	if (IsSuspended) {
+		return(false);
+	}
+
+	if (Class->UseChargeDrain) {
+		if (ChargeDrainState == CHARGING) {
+			return(false);
+		}
+	} else if (!IsReady) {
+		return(false);
+	}
+
+	int const frames = Class->FlashSidebarTabFrames;
+	if (frames == -1) {
+		return(true);
+	}
+	return(frames != 0 && Frame < ReadyFrame + frames);
+}
+
+
+/// <summary>
 /// Lists the members this super weapon carries.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -1507,6 +1537,7 @@ void SuperClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PreClickAnim);
 	stream.Serialize(ChargeDrainState);
 	stream.Serialize(CustomRechargeTime);
+	stream.Serialize(ReadyFrame);
 }
 
 

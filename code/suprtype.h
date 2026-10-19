@@ -154,6 +154,13 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		bool IsDisableableFromShell;
 
 		/*
+		 * How long the sidebar tab of this super weapon flashes once it is ready. -1 flashes it for
+		 * as long as the weapon is ready, and 0 never flashes it. A positive count is measured from
+		 * the frame a recharge finished (SuperClass::Should_Flash_Tab).
+		 */
+		int FlashSidebarTabFrames;
+
+		/*
 		 * A PreClick weapon's shot only picks the cells for the PostClick weapon whose
 		 * PreDependent names its Type, and stays ready until that weapon fires. A PostClick
 		 * weapon fires whether or not it is present or charged.

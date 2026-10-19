@@ -3510,6 +3510,15 @@ void SidebarClass::Add_Tool_Tips(void)
 
 
 /// <summary>
+/// Which tabs the modern panel is flashing now, one bit per tab; for the autotests.
+/// </summary>
+unsigned SidebarClass::Tab_Flash_Mask(void)
+{
+	return(TabFlashMask);
+}
+
+
+/// <summary>
 /// Makes the modern panel's tabs blink while they hold a finished item and are not the tab shown.
 /// </summary>
 void SidebarClass::Flash_Ready_Tabs(void)
@@ -3519,6 +3528,14 @@ void SidebarClass::Flash_Ready_Tabs(void)
 		for (int index = 0; index < COLUMNS; index++) {
 			StripClass const & strip = Column[index];
 			for (int item = 0; index != ActiveTab && item < strip.BuildableCount; item++) {
+				if (strip.Buildables[item].BuildableType == RTTI_SPECIAL) {
+					int const spc = strip.Buildables[item].BuildableID;
+					if (spc >= 0 && spc < PlayerPtr->SuperWeapon.Count() && PlayerPtr->SuperWeapon[spc]->Should_Flash_Tab()) {
+						mask |= 1u << index;
+						break;
+					}
+					continue;
+				}
 				FactoryClass * factory = strip.Buildables[item].Factory;
 				if (factory != NULL && factory->Has_Completed()) {
 					mask |= 1u << index;
