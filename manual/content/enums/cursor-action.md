@@ -78,8 +78,9 @@ values:
   - { constant: ACTION_NO_IVAN_BOMB, value: 66, input: "NoIvanBomb", meaning: "Indicate that the object cannot take an Ivan bomb; the click gives no order." }
   - { constant: ACTION_DISARM_BOMB, value: 67, input: "DisarmBomb", meaning: "Send an engineer to disarm the bomb on the object." }
   - { constant: ACTION_DETONATE, value: 68, input: "Detonate", meaning: "Set off the Ivan bomb the selected unit carries." }
-  - { constant: ACTION_CUSTOM, value: 69, input: "Custom", meaning: "Aim a superweapon with the cursor its Cursor key names.", note: "A superweapon takes this action over a cell it may fire at; the NoCustom action marks a cell it may not." }
-  - { constant: ACTION_NO_CUSTOM, value: 70, input: "NoCustom", meaning: "Refuse the cell for a superweapon with the cursor its NoCursor key names.", note: "No rules file writes this value; a superweapon reports it over a cell its aiming rules refuse." }
+  - { constant: ACTION_DEMOLISH, value: 69, input: "Demolish", meaning: "Attack the target under the cursor, shown with the demolition cursor. An infantryman gets it over a target for which the selected weapon sets SabotageCursor=yes." }
+  - { constant: ACTION_CUSTOM, value: 70, input: "Custom", meaning: "Aim a superweapon with the cursor its Cursor key names.", note: "A superweapon takes this action over a cell it may fire at; the NoCustom action marks a cell it may not." }
+  - { constant: ACTION_NO_CUSTOM, value: 71, input: "NoCustom", meaning: "Refuse the cell for a superweapon with the cursor its NoCursor key names.", note: "No rules file writes this value; a superweapon reports it over a cell its aiming rules refuse." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.

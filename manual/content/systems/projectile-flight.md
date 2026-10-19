@@ -38,7 +38,9 @@ keys:
   - RetargetAccuracy
   - ROT
   - Rotates
+  - Scalable
   - Shadow
+  - SpawnDelay
   - Speed
   - Splits
   - Trailer
@@ -134,7 +136,7 @@ Each turn runs these steps in order:
 
 1. A [`Dropping=yes`](/keys/dropping/) projectile is marked to detonate.
 2. When [`AnimLow`](/keys/animlow/) or [`AnimHigh`](/keys/animhigh/) is not zero, the flight animation counts down toward its next frame.
-3. On every third frame of the game clock, a [`Trailer`](/keys/trailer/) puff is left at the position the projectile is about to leave.
+3. On every frame of the game clock that is a multiple of the trail delay, a [`Trailer`](/keys/trailer/) puff is left at the position the projectile is about to leave. The delay is [`SpawnDelay`](/keys/spawndelay/#scope-bullettype), 3 unless the art sets it, or the longer delay a [`Scalable=yes`](/keys/scalable/) type has been given.
 4. One of the two flight models moves the projectile, and may mark it to detonate.
 5. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
 6. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
@@ -269,10 +271,10 @@ Every object type reads [`Image=`](/keys/image/) with its current image name as 
 The art settings read after that point are affected:
 
 - The shape artwork survives, because it was already loaded under the earlier name and a failed load keeps it.
-- [`Trailer`](/keys/trailer/) and [`Rotates`](/keys/rotates/) are not read at all.
+- [`Trailer`](/keys/trailer/), [`SpawnDelay`](/keys/spawndelay/#scope-bullettype) and [`Rotates`](/keys/rotates/) are not read at all.
 - [`AnimLow`](/keys/animlow/), [`AnimHigh`](/keys/animhigh/), [`AnimRate`](/keys/animrate/) and [`AnimPalette`](/keys/animpalette/) are looked up in an art section with an empty name, so they are not found.
 
-These six settings keep their defaults, or the values an earlier file gave them. An art section named after the projectile does not supply them either. Each of their key pages records the effect on that setting.
+These seven settings keep their defaults, or the values an earlier file gave them. An art section named after the projectile does not supply them either. Each of their key pages records the effect on that setting.
 
 :::danger[Give every voxel projectile an `Image=` in every rules file]
 The voxel model is loaded after the image name has been cleared, so the load fails, and a failed voxel load discards any model the projectile already had. The projectile stays [`Voxel=yes`](/keys/voxel/) with no model behind it. The game crashes the first time it draws such a projectile, which happens once the projectile is on screen, not under fog, and not [`Inviso=yes`](/keys/inviso/).

@@ -5459,6 +5459,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}
 
+				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
+					RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
+				}
+
 				/*
 				 * Laser zap animation.
 				 */

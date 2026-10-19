@@ -183,6 +183,7 @@ char const * const ActionName[ACTION_COUNT] = {
 	"NoIvanBomb",
 	"DisarmBomb",
 	"Detonate",
+	"Demolish",
 	"Custom",
 	"NoCustom"
 };

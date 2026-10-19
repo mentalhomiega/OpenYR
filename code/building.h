@@ -734,6 +734,7 @@ class BuildingClass : public TechnoClass
 		void Update_Temporal_Anims(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
+		void Update_Refinery_Smoke_Systems(void);
 		void Start_Psi_Warning(void);
 
 		/*

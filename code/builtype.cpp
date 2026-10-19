@@ -379,6 +379,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsGDIBarracks(false),
 	IsNODBarracks(false),
 	IsYuriBarracks(false),
+	RefinerySmokeFrames(25),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1453,6 +1454,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
+		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);
@@ -2566,6 +2568,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsGDIBarracks);
 	stream.Serialize(IsNODBarracks);
 	stream.Serialize(IsYuriBarracks);
+	stream.Serialize(RefinerySmokeFrames);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(GateStages);
