@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 224 entries
+- [Rules](#rules): 261 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -71,6 +71,7 @@ Bounty.Value=200
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
+| [`SuperWeapons`](../manual/content/keys/superweapons--buildingtype.md) | `none` | The superweapons a structure grants, or the house intelligence level at which a computer house fires them. | Ares |
 | [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
 | [`UC.FatalRate`](../manual/content/keys/uc.fatalrate.md) | `0%` | The share of passed-through shots that kill one occupant of the structure outright. | Ares |
 | [`UC.PassThrough`](../manual/content/keys/uc.passthrough.md) | `0%` | The share of shots at an occupied structure that hit one of its occupants instead of the structure. | Ares |
@@ -177,11 +178,30 @@ Bounty.Value=200
 | [`Battery.Overpower`](../manual/content/keys/battery.overpower--superweapontype.md) | `none` | Lists the structures a running battery overpowers. | Ares |
 | [`Battery.Power`](../manual/content/keys/battery.power--superweapontype.md) | `0` | Sets the power a running battery adds. | Ares |
 | [`CameoSortOrder`](../manual/content/keys/cameosortorder--superweapontype.md) | `0` | Orders a type's sidebar cameo among the cameos of the same kind. | OpenTS |
+| [`Chronosphere.AffectsIronCurtain`](../manual/content/keys/chronosphere.affectsironcurtain--superweapontype.md) | `no` | Chooses whether a chronoshift moves units under the Iron Curtain. | Ares |
+| [`Chronosphere.AffectsUnwarpable`](../manual/content/keys/chronosphere.affectsunwarpable--superweapontype.md) | `yes` | Chooses whether a chronoshift moves units that cannot be warped. | Ares |
+| [`Chronosphere.BlastDest`](../manual/content/keys/chronosphere.blastdest--superweapontype.md) | [General] ChronoBlastDest | Names the animation that plays over the target cell when units are chronoshifted. | Ares |
+| [`Chronosphere.BlastSrc`](../manual/content/keys/chronosphere.blastsrc--superweapontype.md) | [General] ChronoBlast | Names the animation that plays over the picked cell when units are chronoshifted. | Ares |
+| [`Chronosphere.KillCargo`](../manual/content/keys/chronosphere.killcargo--superweapontype.md) | `no` | Chooses whether a chronoshift destroys the passengers of the units it moves. | Ares |
+| [`Chronosphere.KillOrganic`](../manual/content/keys/chronosphere.killorganic--superweapontype.md) | `yes` | Chooses whether a chronoshift destroys organic units. | Ares |
+| [`Chronosphere.KillTeleporters`](../manual/content/keys/chronosphere.killteleporters--superweapontype.md) | `no` | Chooses whether a chronoshift destroys units that can teleport. | Ares |
 | [`Cursor`](../manual/content/keys/cursor--superweapontype.md) | the cursor for the Action | Names the cursor shown over cells where the weapon may be aimed. | Ares |
 | [`Deliver.BaseNormal`](../manual/content/keys/deliver.basenormal--superweapontype.md) | `yes` | Reads whether delivered structures count as part of the base; it has no effect yet. | Ares |
 | [`Deliver.Buildups`](../manual/content/keys/deliver.buildups--superweapontype.md) | `no` | Whether delivered structures play their construction animation. | Ares |
 | [`Deliver.Owner`](../manual/content/keys/deliver.owner--superweapontype.md) | Invoker | Chooses who owns the objects a unit delivery brings in. | Ares |
 | [`Deliver.Types`](../manual/content/keys/deliver.types--superweapontype.md) | `none` | Lists the objects a unit delivery brings in. | Ares |
+| [`Dominator.Capture`](../manual/content/keys/dominator.capture--superweapontype.md) | `yes` | Chooses whether a psychic dominator takes units over. | Ares |
+| [`Dominator.CaptureImmuneToPsionics`](../manual/content/keys/dominator.captureimmunetopsionics--superweapontype.md) | `no` | Chooses whether a psychic dominator takes over units that are immune to psionics. | Ares |
+| [`Dominator.CaptureMindControlled`](../manual/content/keys/dominator.capturemindcontrolled--superweapontype.md) | `yes` | Chooses whether a psychic dominator takes over units that are mind controlled. | Ares |
+| [`Dominator.CapturePermaMindControlled`](../manual/content/keys/dominator.capturepermamindcontrolled--superweapontype.md) | `yes` | Chooses whether a psychic dominator takes over units that are permanently mind controlled. | Ares |
+| [`Dominator.ControlAnim`](../manual/content/keys/dominator.controlanim--superweapontype.md) | [CombatDamage] PermaControlledAnimationType | Names the animation shown over a unit a psychic dominator takes over. | Ares |
+| [`Dominator.FireAtPercentage`](../manual/content/keys/dominator.fireatpercentage--superweapontype.md) | [General] DominatorFireAtPercentage | Sets how far through its first animation a psychic dominator fires. | Ares |
+| [`Dominator.FirstAnim`](../manual/content/keys/dominator.firstanim--superweapontype.md) | [General] DominatorFirstAnim | Names the animation that plays over a psychic dominator's target before it fires. | Ares |
+| [`Dominator.FirstAnimHeight`](../manual/content/keys/dominator.firstanimheight--superweapontype.md) | `0` | Sets how high above the ground the first dominator animation plays. | Ares |
+| [`Dominator.PermanentCapture`](../manual/content/keys/dominator.permanentcapture--superweapontype.md) | `yes` | Chooses whether a unit a psychic dominator takes over is held for good. | Ares |
+| [`Dominator.Ripple`](../manual/content/keys/dominator.ripple--superweapontype.md) | `yes` | Chooses whether a psychic dominator sends out its shockwave. | Ares |
+| [`Dominator.SecondAnim`](../manual/content/keys/dominator.secondanim--superweapontype.md) | [General] DominatorSecondAnim | Names the animation that plays when a psychic dominator fires. | Ares |
+| [`Dominator.SecondAnimHeight`](../manual/content/keys/dominator.secondanimheight--superweapontype.md) | `0` | Sets how high above the ground the second dominator animation plays. | Ares |
 | [`DropPod.Maximum`](../manual/content/keys/droppod.maximum--superweapontype.md) | [General] DropPodInfantryMaximum | Sets the most pods a drop pod weapon lands. | Ares |
 | [`DropPod.Minimum`](../manual/content/keys/droppod.minimum--superweapontype.md) | [General] DropPodInfantryMinimum | Sets the fewest pods a drop pod weapon lands. | Ares |
 | [`DropPod.Types`](../manual/content/keys/droppod.types--superweapontype.md) | E1 and E2, equally likely | Lists the infantry a drop pod weapon lands. | Ares |
@@ -200,11 +220,27 @@ Bounty.Value=200
 | [`HunterSeeker.Buildings`](../manual/content/keys/hunterseeker.buildings--superweapontype.md) | [SpecialWeapons] HSBuilding | Lists the structures that launch a hunter seeker. | Ares |
 | [`HunterSeeker.RandomOnly`](../manual/content/keys/hunterseeker.randomonly--superweapontype.md) | `no` | Reads a targeting flag for hunter seekers; it has no effect yet. | Ares |
 | [`HunterSeeker.Type`](../manual/content/keys/hunterseeker.type--superweapontype.md) | The side's HunterSeeker | Names the vehicle a hunter seeker launch sends out. | Ares |
-| [`Light.Ambient`](../manual/content/keys/light.ambient--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
-| [`Light.Blue`](../manual/content/keys/light.blue--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
-| [`Light.Enabled`](../manual/content/keys/light.enabled--superweapontype.md) | `no` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
-| [`Light.Green`](../manual/content/keys/light.green--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
-| [`Light.Red`](../manual/content/keys/light.red--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Light.Ambient`](../manual/content/keys/light.ambient--superweapontype.md) | The scenario's IonAmbient (storm), DominatorAmbient (dominator); 200 (missile) | Sets the ambient light of the lighting a nuclear missile, lightning storm or psychic dominator gives the map. | Ares |
+| [`Light.Blue`](../manual/content/keys/light.blue--superweapontype.md) | The scenario's IonBlue or DominatorBlue (storm, dominator); 125 (missile) | Sets the blue tint of the lighting a nuclear missile, lightning storm or psychic dominator gives the map. | Ares |
+| [`Light.Enabled`](../manual/content/keys/light.enabled--superweapontype.md) | `yes` | Chooses whether a nuclear missile, lightning storm or psychic dominator lights the map. | Ares |
+| [`Light.Green`](../manual/content/keys/light.green--superweapontype.md) | The scenario's IonGreen or DominatorGreen (storm, dominator); 150 (missile) | Sets the green tint of the lighting a nuclear missile, lightning storm or psychic dominator gives the map. | Ares |
+| [`Light.Red`](../manual/content/keys/light.red--superweapontype.md) | The scenario's IonRed or DominatorRed (storm, dominator); 175 (missile) | Sets the red tint of the lighting a nuclear missile, lightning storm or psychic dominator gives the map. | Ares |
+| [`Lightning.BoltExplosion`](../manual/content/keys/lightning.boltexplosion--superweapontype.md) | The explosion that the bolt's damage and warhead pick | Names the animation each lightning bolt leaves where it strikes. | Ares |
+| [`Lightning.Bolts`](../manual/content/keys/lightning.bolts--superweapontype.md) | [General] WeatherConBolts | Lists the bolt animations a lightning storm can use. | Ares |
+| [`Lightning.CloudHeight`](../manual/content/keys/lightning.cloudheight--superweapontype.md) | `-1` | Sets the height of a lightning storm's clouds above the ground. | Ares |
+| [`Lightning.Clouds`](../manual/content/keys/lightning.clouds--superweapontype.md) | [General] WeatherConClouds | Lists the cloud animations a lightning storm can use. | Ares |
+| [`Lightning.Debris`](../manual/content/keys/lightning.debris--superweapontype.md) | [AudioVisual] MetallicDebris | Lists the debris animations a lightning bolt can throw up. | Ares |
+| [`Lightning.DebrisMax`](../manual/content/keys/lightning.debrismax--superweapontype.md) | `4` | Sets the most debris a lightning bolt throws up. | Ares |
+| [`Lightning.DebrisMin`](../manual/content/keys/lightning.debrismin--superweapontype.md) | `2` | Sets the least debris a lightning bolt throws up. | Ares |
+| [`Lightning.Duration`](../manual/content/keys/lightning.duration--superweapontype.md) | [General] LightningStormDuration | Sets how many frames a lightning storm rages. | Ares |
+| [`Lightning.HitDelay`](../manual/content/keys/lightning.hitdelay--superweapontype.md) | [General] LightningHitDelay | Sets how often a cloud gathers over the center of a lightning storm. | Ares |
+| [`Lightning.PrintText`](../manual/content/keys/lightning.printtext--superweapontype.md) | [General] LightningPrintText | Chooses whether a lightning storm warns the players. | Ares |
+| [`Lightning.RadarOutage`](../manual/content/keys/lightning.radaroutage--superweapontype.md) | [General] LightningStormDuration | Sets how many frames a lightning storm jams radar. | Ares |
+| [`Lightning.RadarOutageAffects`](../manual/content/keys/lightning.radaroutageaffects--superweapontype.md) | `enemies` | Chooses which houses a lightning storm jams radar for. | Ares |
+| [`Lightning.ScatterCount`](../manual/content/keys/lightning.scattercount--superweapontype.md) | `1` | Sets how many clouds gather around a lightning storm each time. | Ares |
+| [`Lightning.ScatterDelay`](../manual/content/keys/lightning.scatterdelay--superweapontype.md) | [General] LightningScatterDelay | Sets how often clouds gather around the center of a lightning storm. | Ares |
+| [`Lightning.Separation`](../manual/content/keys/lightning.separation--superweapontype.md) | [General] LightningSeparation | Sets how far apart the random clouds of a lightning storm must be. | Ares |
+| [`Lightning.Sounds`](../manual/content/keys/lightning.sounds--superweapontype.md) | [AudioVisual] LightningSounds | Lists the sounds a lightning bolt can play. | Ares |
 | [`Message.Abort`](../manual/content/keys/message.abort--superweapontype.md) | The stock refusal message | Replaces the refusal message of a lightning storm or psychic dominator. | Ares |
 | [`Message.Activate`](../manual/content/keys/message.activate--superweapontype.md) | `none` | Prints a message to every player when the effect starts. | Ares |
 | [`Message.CannotFire`](../manual/content/keys/message.cannotfire--superweapontype.md) | `MSG:CannotFire` | Names the message shown when cameo-click targeting finds no target. | Ares |
@@ -229,14 +265,15 @@ Bounty.Value=200
 | [`SpyPlane.Count`](../manual/content/keys/spyplane.count--superweapontype.md) | `1` | Sets how many aircraft a spy plane weapon sends. | Ares |
 | [`SpyPlane.Type`](../manual/content/keys/spyplane.type--superweapontype.md) | SPYP, one for each AllyParaDropInf entry | Names the aircraft a spy plane weapon sends. | Ares |
 | [`SW.ActivationSound`](../manual/content/keys/sw.activationsound--superweapontype.md) | `none` | Plays a second sound at the target cell when the effect starts. | Ares |
-| [`SW.AffectsHouse`](../manual/content/keys/sw.affectshouse--superweapontype.md) | All houses; enemies for a sonar pulse | Chooses whose objects an iron curtain or sonar pulse affects. | Ares |
-| [`SW.AffectsTarget`](../manual/content/keys/sw.affectstarget--superweapontype.md) | Everything | Chooses which cells and objects an iron curtain covers. | Ares |
+| [`SW.AffectsHouse`](../manual/content/keys/sw.affectshouse--superweapontype.md) | All houses; enemies for a sonar pulse | Chooses whose objects an iron curtain, chronosphere, genetic mutator, psychic dominator, force shield or sonar pulse affects. | Ares |
+| [`SW.AffectsTarget`](../manual/content/keys/sw.affectstarget--superweapontype.md) | Everything; infantry and units for a chronosphere or psychic dominator | Chooses which cells and objects an iron curtain, chronosphere, genetic mutator or psychic dominator affects. | Ares |
 | [`SW.AIRequiresHouse`](../manual/content/keys/sw.airequireshouse--superweapontype.md) | No limit | Limits the cells the computer may aim this superweapon at by who owns their contents. | Ares |
 | [`SW.AIRequiresTarget`](../manual/content/keys/sw.airequirestarget--superweapontype.md) | No limit | Limits the cells the computer may aim this superweapon at by their contents. | Ares |
 | [`SW.AITargeting`](../manual/content/keys/sw.aitargeting--superweapontype.md) | Each behavior has its own rule | Chooses how the computer, automatic fire and cameo-click targeting pick a target. | Ares |
 | [`SW.AITargeting.Constraints`](../manual/content/keys/sw.aitargeting.constraints--superweapontype.md) | `none` | Names conditions that must hold before the computer fires this superweapon. | Ares |
 | [`SW.AllowAI`](../manual/content/keys/sw.allowai--superweapontype.md) | `yes` | Whether a house the computer controls may hold this superweapon. | Ares |
 | [`SW.AllowPlayer`](../manual/content/keys/sw.allowplayer--superweapontype.md) | `yes` | Whether a house a person controls may hold this superweapon. | Ares |
+| [`SW.AlwaysGranted`](../manual/content/keys/sw.alwaysgranted--superweapontype.md) | `no` | Gives every house the weapon without a structure. | Ares |
 | [`SW.Animation`](../manual/content/keys/sw.animation--superweapontype.md) | `none` | Plays an animation on the target cell when the effect starts. | Ares |
 | [`SW.AnimationHeight`](../manual/content/keys/sw.animationheight--superweapontype.md) | `5` | Sets how high above the ground `SW.Animation=` plays. | Ares |
 | [`SW.AnyDesignator`](../manual/content/keys/sw.anydesignator--superweapontype.md) | `no` | Accepts any of the player's objects as a designator. | Ares |
@@ -245,7 +282,7 @@ Bounty.Value=200
 | [`SW.AuxBuildings`](../manual/content/keys/sw.auxbuildings--superweapontype.md) | `none` | Holds this superweapon only while the house owns one of the listed structures. | Ares |
 | [`SW.ChargeToDrainRatio`](../manual/content/keys/sw.chargetodrainratio--superweapontype.md) | [General] ChargeToDrainRatio | Sets how long a charge-draining weapon runs compared with its charge time. | Ares |
 | [`SW.CreateRadarEvent`](../manual/content/keys/sw.createradarevent--superweapontype.md) | `no` | Flashes a superweapon event on every player's radar at the target. | Ares |
-| [`SW.Damage`](../manual/content/keys/sw.damage--superweapontype.md) | `-1` | Sets the damage a generic warhead or missile strike deals. | Ares |
+| [`SW.Damage`](../manual/content/keys/sw.damage--superweapontype.md) | `-1` | Sets the damage a generic warhead, missile strike, lightning bolt or dominator blast deals. | Ares |
 | [`SW.Deferment`](../manual/content/keys/sw.deferment--superweapontype.md) | 0, or 20 for UnitDelivery | Delays the weapon's effect after the shot. | Ares |
 | [`SW.Designators`](../manual/content/keys/sw.designators--superweapontype.md) | `none` | Requires one of the player's objects of the listed types near the target. | Ares |
 | [`SW.FireIntoShroud`](../manual/content/keys/sw.fireintoshroud--superweapontype.md) | `yes` | Whether the weapon may be aimed at unexplored shroud. | Ares |
@@ -256,7 +293,7 @@ Bounty.Value=200
 | [`SW.ManualFire`](../manual/content/keys/sw.manualfire--superweapontype.md) | `yes` | Whether clicking the cameo fires or aims the weapon. | Ares |
 | [`SW.MaxCount`](../manual/content/keys/sw.maxcount--superweapontype.md) | `1` | Sets how many launch structures a hunter seeker or EM pulse shot uses. | Ares |
 | [`SW.NegBuildings`](../manual/content/keys/sw.negbuildings--superweapontype.md) | `none` | Withdraws this superweapon while the house owns any of the listed structures. | Ares |
-| [`SW.Range`](../manual/content/keys/sw.range--superweapontype.md) | 3,3 for an iron curtain, PsychicRevealRadius for a psychic reveal, 10 for a sonar pulse | Sets the area an iron curtain, psychic reveal or sonar pulse covers. | Ares |
+| [`SW.Range`](../manual/content/keys/sw.range--superweapontype.md) | Computed; see the page | Sets the area an iron curtain, chronosphere, genetic mutator, psychic dominator, psychic reveal, sonar pulse or lightning storm covers. | Ares |
 | [`SW.RangeMaximum`](../manual/content/keys/sw.rangemaximum--superweapontype.md) | No limit | Sets how far from its launch structure this superweapon may be aimed. | Ares |
 | [`SW.RangeMinimum`](../manual/content/keys/sw.rangeminimum--superweapontype.md) | No limit | Sets how close to its launch structure this superweapon may be aimed. | Ares |
 | [`SW.RequiredHouses`](../manual/content/keys/sw.requiredhouses--superweapontype.md) | All countries | Limits this superweapon to the listed countries. | Ares |
@@ -267,7 +304,7 @@ Bounty.Value=200
 | [`SW.Sound`](../manual/content/keys/sw.sound--superweapontype.md) | `none` | Plays a sound at the target cell when the effect starts. | Ares |
 | [`SW.Unstoppable`](../manual/content/keys/sw.unstoppable--superweapontype.md) | `no` | Reads a flag that is meant to keep a running weapon from being switched off; it has no effect yet. | Ares |
 | [`SW.UseAITargeting`](../manual/content/keys/sw.useaitargeting--superweapontype.md) | `no` | Fires at the cell the computer's rules pick, when a player clicks the cameo. | Ares |
-| [`SW.Warhead`](../manual/content/keys/sw.warhead--superweapontype.md) | `none` | Names the warhead a generic warhead or missile strike detonates. | Ares |
+| [`SW.Warhead`](../manual/content/keys/sw.warhead--superweapontype.md) | `none` | Names the warhead a generic warhead, missile strike, lightning bolt or dominator blast detonates. | Ares |
 | [`Text.Active`](../manual/content/keys/text.active--superweapontype.md) | `Activated` | Names the cameo caption of a charge-draining weapon while it runs. | Ares |
 | [`Text.Charging`](../manual/content/keys/text.charging--superweapontype.md) | Charging | Names the cameo caption of a charge-draining weapon while it charges. | Ares |
 | [`Text.Hold`](../manual/content/keys/text.hold--superweapontype.md) | On Hold | Names the cameo caption shown while the weapon is suspended. | Ares |
