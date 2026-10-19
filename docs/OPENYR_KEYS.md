@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 110 entries
+- [Rules](#rules): 111 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -175,6 +175,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AffectsEnemies`](../manual/content/keys/affectsenemies.md) | `yes` | With no, the warhead does nothing to objects whose owner is not an ally of its attacker. | Ares |
 | [`AttachEffect.Animation`](../manual/content/keys/attacheffect.animation--warheadtype.md) | `none` | The animation shown on an object while an attached effect lasts. | Ares |
 | [`AttachEffect.AnimResetOnReapply`](../manual/content/keys/attacheffect.animresetonreapply--warheadtype.md) | `no` | `AttachEffect.AnimResetOnReapply=yes` restarts the effect animation when a hit restarts an effect the object already carries. | Ares |
 | [`AttachEffect.ArmorMultiplier`](../manual/content/keys/attacheffect.armormultiplier--warheadtype.md) | `1.0` | Divides the damage an object takes while an attached effect lasts. | Ares |

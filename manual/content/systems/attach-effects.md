@@ -51,7 +51,7 @@ An effect needs an [`AttachEffect.Duration`](/keys/attacheffect.duration/) other
 A warhead attaches its effect to every object its detonation damages, including the objects in its `CellSpread`. The effect is attached before the hit's damage is applied, so the hit that attaches it is not changed by its own armor multiplier. No effect is attached to an object when any of these holds:
 
 - the warhead's `Verses` value against the object's armor is `0%`;
-- the warhead does nothing to the object because of `AffectsAllies=no`, radiation, psionic or poison immunity, or a tank bunker;
+- the warhead does nothing to the object because of `AffectsAllies=no`, `AffectsEnemies=no`, radiation, psionic or poison immunity, or a tank bunker;
 - the object is under the Iron Curtain or a Force Shield, unless the warhead sets [`AttachEffect.PenetratesIronCurtain=yes`](/keys/attacheffect.penetratesironcurtain/#scope-warheadtype).
 
 A weapon whose `Damage` is `0` does not detonate its warhead on anything, so it attaches nothing. A weapon with negative `Damage` attaches its effect as it heals.

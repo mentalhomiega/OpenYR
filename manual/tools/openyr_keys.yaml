@@ -75,6 +75,7 @@ records:
   stacking-crate-upgrades: OpenTS
   ui-documents-replace-dialogs: OpenTS
   # Keys we read as the Ares or Phobos documentation describes them.
+  added-affectsenemies: Ares
   attach-effects: Ares
   bounty: Ares
   cameo-pcx: Ares

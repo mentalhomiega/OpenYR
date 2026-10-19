@@ -117,6 +117,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCulling(false),
 	IsIvanBomb(false),
 	IsAffectsAllies(true),
+	IsAffectsEnemies(true),
 	IsPsychedelic(false),
 	IsPsychicDamage(false),
 	IsElectricAssault(false),
@@ -231,6 +232,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsCulling = ini.Get_Bool(Name(), "Culling", IsCulling);
 		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
 		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
+		IsAffectsEnemies = ini.Get_Bool(Name(), "AffectsEnemies", IsAffectsEnemies);
 		IsPsychedelic = ini.Get_Bool(Name(), "Psychedelic", IsPsychedelic);
 		IsPsychicDamage = ini.Get_Bool(Name(), "PsychicDamage", IsPsychicDamage);
 		IsElectricAssault = ini.Get_Bool(Name(), "ElectricAssault", IsElectricAssault);
@@ -343,6 +345,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(ProneDamage);
 	crc(IsVeinhole);
 	crc(IsCulling);
+	crc(IsAffectsEnemies);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -464,6 +467,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCulling);
 	stream.Serialize(IsIvanBomb);
 	stream.Serialize(IsAffectsAllies);
+	stream.Serialize(IsAffectsEnemies);
 	stream.Serialize(IsPsychedelic);
 	stream.Serialize(IsPsychicDamage);
 	stream.Serialize(IsElectricAssault);

@@ -2018,6 +2018,23 @@ AffectsAllies:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+AffectsEnemies:
+  key: AffectsEnemies
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WarheadTypeClass
+      member: IsAffectsEnemies
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Agent:
   key: Agent
   scopes:

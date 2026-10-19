@@ -6560,6 +6560,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// An AffectsEnemies=no warhead does nothing to an object whose owner is no ally of the firer's house, which an explosion with no firer takes from the house it is credited to (Ares).
+	if (warhead != NULL && !warhead->IsAffectsEnemies) {
+		HouseClass const * const attacker = source != NULL ? source->House : sourcehouse;
+		if (attacker != NULL && !House->Is_Ally(attacker)) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+	}
+
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
 	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {

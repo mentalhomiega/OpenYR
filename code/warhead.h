@@ -224,6 +224,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// With AffectsAllies=no, the warhead does nothing to objects of its firer's allies.
 		bool IsAffectsAllies;
 
+		// With AffectsEnemies=no, the warhead does nothing to objects of a house that is not an ally of its firer's (Ares).
+		bool IsAffectsEnemies;
+
 		// A Psychedelic warhead drives what it hits berzerk for as many frames as the damage it would have done.
 		bool IsPsychedelic;
 
