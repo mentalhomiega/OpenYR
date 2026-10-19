@@ -39,7 +39,7 @@ The From column says where a key comes from:
 - [Rules](#rules): 288 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
-- [UI.INI](#uiini): 31 entries
+- [UI.INI](#uiini): 32 entries
 - [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
 - [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 34 entries
@@ -530,6 +530,12 @@ SystemCursor=no
 | [`WindowWidth`](../manual/content/keys/windowwidth.md) | `-1` | The width of the drawable area of the game window, in pixels. | OpenTS |
 
 ## UI.INI
+
+### [Colors]
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`Count`](../manual/content/keys/count--ui-controls.md) | `8` | The number of player colors the lobbies offer, set in the UI file's `[Colors]` section. | Ares |
 
 ### [Ingame]
 

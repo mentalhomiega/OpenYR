@@ -9399,6 +9399,24 @@ CostUnitsMult:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
+Count:
+  key: Count
+  scopes:
+  - applies_to:
+    - UI controls
+    file: ui.ini
+    section:
+      kind: literal
+      name: Colors
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: UIControlsClass
+      member: null
+      source: code/uicontrol.cpp
+      guard: null
+    level: UIControlsClass
 Country:
   key: Country
   scopes:

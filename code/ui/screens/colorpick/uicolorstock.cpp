@@ -9,7 +9,7 @@
 
 #include "ui/screens/colorpick/uicolorpick.h"
 
-#include "netshare.h"
+#include "lobbycolor.h"
 #include "session.h"
 
 #include <algorithm>
@@ -17,12 +17,29 @@
 static_assert(PLAYER_COLOR_SEATS == MAX_MPLAYER_COLORS, "the picker and the lobby count the same stock colors");
 
 /// <summary>
-/// Gives the color a stock lobby index draws in, as the lobby list shows it.
+/// Gives the color a lobby index draws in, as the lobby list shows it.
 /// </summary>
 /// <param name="index">The color index. Out-of-range indexes are clamped.</param>
-/// <returns>Returns with the RGB value of the stock color.</returns>
+/// <returns>Returns with the RGB value of the color.</returns>
 RGBClass UI_Stock_Color_RGB(int index)
 {
-	COLORREF const value = PlayerColorTable[std::clamp(index, 0, MAX_MPLAYER_COLORS - 1)];
-	return(RGBClass((unsigned char)(value & 0xFF), (unsigned char)((value >> 8) & 0xFF), (unsigned char)((value >> 16) & 0xFF)));
+	return(Lobby_Color_RGB(index));
+}
+
+
+/// <summary>
+/// Gives the number of colors the lobby offers.
+/// </summary>
+int UI_Stock_Color_Count(void)
+{
+	return(Lobby_Color_Count());
+}
+
+
+/// <summary>
+/// Gives the name the UI file gives a lobby color, or an empty string for a stock color it leaves unnamed.
+/// </summary>
+std::string UI_Stock_Color_Name(int index)
+{
+	return(Lobby_Color_Name(index));
 }

@@ -53,14 +53,41 @@ void Place_Marker(UIColorPickState & state)
 	state.MarkerStyle = "left: " + std::to_string(x) + "dp; top: " + std::to_string(y) + "dp";
 }
 
+// A preset as the picker lists it. A stock preset takes the lobby's color of that index, whose
+// name the UI file may set, and the rest are the free-color presets of the colors module.
+struct ShownPreset
+{
+	std::string Name;
+	int Stock;
+	unsigned int RGB;
+};
+
+int Shown_Count(void)
+{
+	return(UI_Stock_Color_Count() + Player_Color_Preset_Count() - PLAYER_COLOR_SEATS);
+}
+
+ShownPreset Shown_At(int index)
+{
+	if (index < UI_Stock_Color_Count()) {
+		std::string name = UI_Stock_Color_Name(index);
+		if (name.empty() && index < PLAYER_COLOR_SEATS) {
+			name = Player_Color_Preset_At(index).Name;
+		}
+		return(ShownPreset{name, index, 0});
+	}
+	PlayerColorPreset const & preset = Player_Color_Preset_At(index - UI_Stock_Color_Count() + PLAYER_COLOR_SEATS);
+	return(ShownPreset{preset.Name, preset.Stock, preset.RGB});
+}
+
 // The color a preset's RGB value names, before the picker packs it.
-RGBClass Preset_RGB(PlayerColorPreset const & preset)
+RGBClass Preset_RGB(ShownPreset const & preset)
 {
 	return(RGBClass((unsigned char)((preset.RGB >> 16) & 0xFF), (unsigned char)((preset.RGB >> 8) & 0xFF), (unsigned char)(preset.RGB & 0xFF)));
 }
 
 // The color a preset gives a seat: the stock color, or the custom color it packs to, whose value may be raised.
-RGBClass Preset_Applied(PlayerColorPreset const & preset)
+RGBClass Preset_Applied(ShownPreset const & preset)
 {
 	return(preset.Stock >= 0 ? UI_Stock_Color_RGB(preset.Stock) : Player_Color_Preview(Player_Color_From_RGB(Preset_RGB(preset))));
 }
@@ -68,8 +95,8 @@ RGBClass Preset_Applied(PlayerColorPreset const & preset)
 // The index of the custom preset whose packed color is exactly this one, or -1.
 int Exact_Preset(unsigned int custom)
 {
-	for (int index = 0; index < Player_Color_Preset_Count(); index++) {
-		PlayerColorPreset const & preset = Player_Color_Preset_At(index);
+	for (int index = 0; index < Shown_Count(); index++) {
+		ShownPreset const preset = Shown_At(index);
 		if (preset.Stock < 0 && Player_Color_From_RGB(Preset_RGB(preset)) == custom) {
 			return(index);
 		}
@@ -130,20 +157,20 @@ std::string UI_Color_Name(std::string const & stock_label, unsigned int custom)
 
 	int const exact = Exact_Preset(custom);
 	if (exact >= 0) {
-		return(Player_Color_Preset_At(exact).Name);
+		return(Shown_At(exact).Name);
 	}
 
 	RGBClass const chosen = Player_Color_Preview(custom);
 	int nearest = 0;
 	double nearest_distance = 0.0;
-	for (int index = 0; index < Player_Color_Preset_Count(); index++) {
-		double const distance = Player_Color_Distance(chosen, Preset_Applied(Player_Color_Preset_At(index)));
+	for (int index = 0; index < Shown_Count(); index++) {
+		double const distance = Player_Color_Distance(chosen, Preset_Applied(Shown_At(index)));
 		if (index == 0 || distance < nearest_distance) {
 			nearest = index;
 			nearest_distance = distance;
 		}
 	}
-	return(std::string("Custom (near ") + Player_Color_Preset_At(nearest).Name + ")");
+	return(std::string("Custom (near ") + Shown_At(nearest).Name + ")");
 }
 
 
@@ -169,8 +196,8 @@ std::string UI_Color_Button_Name(std::string const & stock_label, unsigned int c
 void UI_Color_Pick_Build_Presets(UIColorPickState & state)
 {
 	state.Presets.clear();
-	for (int index = 0; index < Player_Color_Preset_Count(); index++) {
-		PlayerColorPreset const & preset = Player_Color_Preset_At(index);
+	for (int index = 0; index < Shown_Count(); index++) {
+		ShownPreset const preset = Shown_At(index);
 		RGBClass const rgb = preset.Stock >= 0 ? UI_Stock_Color_RGB(preset.Stock) : Preset_RGB(preset);
 
 		UIColorPresetOption option;
@@ -192,7 +219,7 @@ void UI_Color_Pick_Build_Presets(UIColorPickState & state)
 void UI_Color_Pick_Mark_Taken(UIColorPickState & state, std::vector<UIColorPickRival> const & rivals)
 {
 	for (UIColorPresetOption & option : state.Presets) {
-		PlayerColorPreset const & preset = Player_Color_Preset_At(option.Value);
+		ShownPreset const preset = Shown_At(option.Value);
 		option.Taken = Clashes_With(Preset_Applied(preset), preset.Stock < 0, rivals);
 		option.Caption = option.Taken ? option.Label + " (in use)" : option.Label;
 	}
@@ -216,7 +243,7 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 
 	state.Open = true;
 	state.Row = row;
-	state.Seat = Clamp(seat, 0, PLAYER_COLOR_SEATS - 1);
+	state.Seat = Clamp(seat, 0, UI_Stock_Color_Count() - 1);
 	state.Notice.clear();
 	state.Custom = Player_Color_Is_Custom(custom) ? custom : 0;
 	Load_HSV(state, state.Custom != 0 ? state.Custom : Player_Color_From_RGB(UI_Stock_Color_RGB(state.Seat)));
@@ -269,11 +296,11 @@ void UI_Color_Pick_Value(UIColorPickState & state, int value)
 /// <param name="index">The index in the state's preset list.</param>
 void UI_Color_Pick_Preset(UIColorPickState & state, int index)
 {
-	if (index < 0 || index >= Player_Color_Preset_Count()) {
+	if (index < 0 || index >= Shown_Count()) {
 		return;
 	}
 
-	PlayerColorPreset const & preset = Player_Color_Preset_At(index);
+	ShownPreset const preset = Shown_At(index);
 	if (preset.Stock >= 0) {
 		state.Seat = preset.Stock;
 		state.Custom = 0;

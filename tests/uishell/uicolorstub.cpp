@@ -26,3 +26,15 @@ RGBClass UI_Stock_Color_RGB(int index)
 	};
 	return(CLASSIC[index < 0 ? 0 : (index >= PLAYER_COLOR_SEATS ? PLAYER_COLOR_SEATS - 1 : index)]);
 }
+
+
+int UI_Stock_Color_Count(void)
+{
+	return(PLAYER_COLOR_SEATS);
+}
+
+
+std::string UI_Stock_Color_Name(int)
+{
+	return(std::string());
+}

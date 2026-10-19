@@ -59,6 +59,8 @@
 
 #include "always.h"
 
+#include "lobbycolor.h"
+
 #include "playerdisplay.h"
 #include "scenario.h"
 #include "shellmap.h"
@@ -2726,7 +2728,7 @@ void Assign_Houses(void)
 		// Pick a color for this house; keep looping until we find one.
 		int color = -1;
 		for (;;) {
-			color = Random_Pick(0, 7);
+			color = Random_Pick(0, Lobby_Color_Count() - 1);
 			if (color_used[color] == false) {
 				break;
 			}

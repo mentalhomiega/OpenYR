@@ -64,6 +64,19 @@ enum UIMenuActionType {
 
 
 /*
+ * One slot of a UI file's [Colors] section, which lists the lobby's player colors. An empty name
+ * or a false flag leaves that part of the slot to the default for its position.
+ */
+struct UILobbyColorType
+{
+	std::string Scheme;
+	bool HasDisplay = false;
+	RGBClass Display;
+	std::string Tooltip;
+};
+
+
+/*
  * The presentation settings UI.INI carries. Every value has a default, so the file is
  * optional and may name only what it changes.
  */
@@ -125,6 +138,11 @@ class UIControlsClass
 		RGBClass ColorBlindSafeColors[PLAYER_COLOR_SEATS] = {
 			RGBClass(240, 228, 66), RGBClass(213, 94, 0), RGBClass(0, 114, 178), RGBClass(0, 158, 115),
 			RGBClass(230, 159, 0), RGBClass(86, 180, 233), RGBClass(204, 121, 167), RGBClass(240, 240, 240)};
+
+		// The lobby's player colors: how many the lobby lists, from 8 to 16, and what each slot sets.
+		int LobbyColorCount = PLAYER_COLOR_SEATS;
+		UILobbyColorType LobbyColors[PLAYER_COLOR_LISTED_MAX];
+		UILobbyColorType ObserverColor;
 
 		// What [UISettings] says each title menu button does, UI_ACTION_DEFAULT when it says nothing.
 		UIMenuActionType MenuButtonActions[UI_BUTTON_COUNT] = {};

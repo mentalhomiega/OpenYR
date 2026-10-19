@@ -34,7 +34,7 @@ A row that holds nobody has its country, color, start and team boxes disabled. T
 ## Country, color and start
 
 - The country box offers Random and the countries whose [`Multiplay=`](/keys/multiplay/) entry is on. A computer player given Random draws its country as it does in a game started from a launch file; the person's Random is settled when the game starts.
-- The color box offers the eight lobby colors listed under [`Color`](/keys/color/). Colors never repeat: choosing one that another row holds hands that row the color this row had.
+- The color box offers the eight lobby colors listed under [`Color`](/keys/color/), or the colors that the UI file's [`[Colors]` section](/formats/ui-ini/#lobby-colors) lists, up to sixteen. Colors never repeat: choosing one that another row holds hands that row the color this row had.
 - The start box offers Random and the numbers of the map's start positions, as the map editor numbers its waypoints from 1. A numbered start is held by one row at a time, and choosing a start another playing row holds swaps the two. Rows set to Random draw from the positions nobody named.
 
 ## Teams

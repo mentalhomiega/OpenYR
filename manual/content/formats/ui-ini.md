@@ -1,7 +1,7 @@
 ---
 format_id: ui-ini
 title: UI.INI
-summary: Sets how a selected object's order lines, a firing vehicle's sighting laser and a control group number are drawn, and which title menu buttons are shown.
+summary: Sets how a selected object's order lines, a firing vehicle's sighting laser and a control group number are drawn, which title menu buttons are shown, and which player colors the lobbies offer.
 kind: file
 source_files:
   - code/uicontrol.cpp
@@ -72,6 +72,29 @@ ViewCreditsButton=message
 ```
 
 The menus read the actions each time the player enters them, from the file read last. A mod's [`FollowMenuButtons=no`](/formats/mod-ini/) makes the menus ignore them. The CnCNet button has no key, and a key for the Westwood Online button, `WWOnlineButton`, is read but there is no such button to change.
+
+## Lobby colors
+
+`[Colors]` lists the colors the skirmish and network lobbies offer. Without the section the lobbies offer the eight stock colors. `Count` is the number of colors listed, from 8 to 16, and a value outside that range is held to it. Slot `N`, from 1 to `Count`, takes three keys:
+
+| Key | Effect |
+| --- | --- |
+| `SlotN.ColorScheme` | The scheme from the rules' `[Colors]` that a player who picks the slot is drawn in. |
+| `SlotN.DisplayColor` | The swatch the lobby shows, as red, green and blue from 0 to 255. |
+| `SlotN.Tooltip` | A string table label for the name the lobby shows. |
+
+`Observer.ColorScheme` sets the scheme of a spectator. A key left out keeps the default for its slot. The first eight slots default to the stock colors, their swatches and their names. Slots 9 to 14 default to the schemes `NeonBlue`, `LightBlue`, `Yellow`, `Green`, `Red` and `Grey`, and slots 15 and 16 to `LightGrey`. A slot with a scheme and no tooltip is named after the scheme, with its words apart, so `LightBlue` shows as Light Blue. A scheme the rules do not define leaves the slot in the stock scheme for its position.
+
+```ini title="UIMD.INI"
+[Colors]
+Count=14
+Slot1.ColorScheme=Teal
+Slot1.DisplayColor=0,128,128
+Slot2.ColorScheme=Red
+Slot2.DisplayColor=255,0,0
+```
+
+The lobbies, the color picker and the game use the same list, so a color index means the same slot everywhere. The color-blind safe view replaces only the first eight slots; a later slot keeps its own scheme.
 
 ## Control group numbers
 
