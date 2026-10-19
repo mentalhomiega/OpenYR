@@ -29763,6 +29763,23 @@ PreDependent:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+PreImpactAnim:
+  key: PreImpactAnim
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: PreImpactAnim
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 PreMapSelect:
   key: PreMapSelect
   scopes:

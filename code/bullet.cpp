@@ -951,6 +951,8 @@ void BulletClass::AI(void)
 					if (Start_Nuke_Blast()) {
 						break;
 					}
+				} else if (Warhead->PreImpactAnim != NULL && Start_Pre_Impact_Anim()) {
+					break;
 				}
 				Bullet_Explodes(forced);
 				Delete_Me();
@@ -1925,8 +1927,8 @@ ObjectTypeClass const * BulletClass::Class_Of(void) const
 
 /// <summary>
 /// Starts the build-up of a nuclear blast, as BulletClass::Update (0x4666E0) does when a projectile
-/// with the warhead named NUKE goes off. The map flashes, and the projectile settles on the ground and plays NUKEBALL
-/// where it is; the blast itself goes off when that animation ends.
+/// with the warhead named NUKE goes off. The map flashes, and the projectile settles on the ground and plays NUKEBALL, or
+/// the warhead's PreImpactAnim, where it is; the blast itself goes off when that animation ends.
 /// </summary>
 /// <returns>bool; Is the projectile waiting for the animation? False when there is no NUKEBALL animation, so the blast goes off at once.</returns>
 bool BulletClass::Start_Nuke_Blast(void)
@@ -1940,14 +1942,33 @@ bool BulletClass::Start_Nuke_Blast(void)
 
 	NukeFlashClass::Start();
 
-	AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
-	if (type == ANIM_NONE) {
-		return(false);
+	AnimTypeClass const * build_up = Warhead->PreImpactAnim;
+	if (build_up == NULL) {
+		AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
+		if (type == ANIM_NONE) {
+			return(false);
+		}
+		build_up = AnimTypes[type];
 	}
-	NextAnim = new AnimClass(AnimTypes[type], PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
+	NextAnim = new AnimClass(build_up, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
 	SpawnNextAnim = true;
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST nuke blast builds up at frame %d\n", Frame);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Plays the warhead's PreImpactAnim where the projectile hit; the blast goes off when it ends (Ares).
+/// </summary>
+/// <returns>bool; Is the projectile waiting for the animation?</returns>
+bool BulletClass::Start_Pre_Impact_Anim(void)
+{
+	NextAnim = new AnimClass(Warhead->PreImpactAnim, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
+	SpawnNextAnim = true;
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST pre-impact %s plays %s at frame %d\n", Warhead->Name(), Warhead->PreImpactAnim->Name(), Frame);
 	}
 	return(true);
 }

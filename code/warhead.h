@@ -394,4 +394,8 @@ class WarheadTypeClass : public AbstractTypeClass
 		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.
 		AnimTypeClass const * InfDeathAnim;
 
+		// PreImpactAnim (Ares): played where a projectile with this warhead hits. The blast and its damage follow when it ends. The
+		// NUKE warhead plays NUKEBALL when this is not set.
+		AnimTypeClass const * PreImpactAnim;
+
 };
