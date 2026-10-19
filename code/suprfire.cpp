@@ -655,6 +655,10 @@ bool Place_Delivered(TechnoClass * object, Cell const & target, bool quiet_build
 			if (object->Is_Foot() && ((FootClass *)object)->Can_Enter_Cell(&Map[where]) != MOVE_OK) {
 				continue;
 			}
+			// A structure's foundation must be clear, which Unlimbo does not test when the structure appears complete.
+			if (is_building && ((BuildingClass *)object)->Can_Enter_Cell(&Map[where], FACING_NONE) != MOVE_OK) {
+				continue;
+			}
 			if (is_building && quiet_building) ScenarioInit++;
 			bool const placed = object->Unlimbo(Map[where].Center_Coord(), DIR_N);
 			if (is_building && quiet_building) ScenarioInit--;
