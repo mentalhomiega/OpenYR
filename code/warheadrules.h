@@ -39,4 +39,23 @@ namespace WarheadRules
 	{
 		return(std::fabs(versus) > 0.019999999552965164);
 	}
+
+	// ProtectedDriver.MinHealth of a type: the rules' value when it sets one, else 0 for a protected driver, which no
+	// KillDriver hit reaches, and 1 for an unprotected one.
+	inline double Protected_Driver_Min_Health(bool protected_driver, bool is_set, double value)
+	{
+		if (is_set) {
+			return(value);
+		}
+		return(protected_driver ? 0.0 : 1.0);
+	}
+
+	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
+	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
+	// ProtectedDriver.MinHealth.
+	inline bool Kills_Driver_At(double health_ratio, double kill_below, double min_health)
+	{
+		double const limit = kill_below < min_health ? kill_below : min_health;
+		return(health_ratio <= limit);
+	}
 }

@@ -43,6 +43,13 @@
 class AnimTypeClass;
 class ParticleSystemTypeClass;
 
+// The house a vehicle goes to when a KillDriver warhead takes its driver.
+enum KillDriverOwnerType {
+	KILLDRIVER_OWNER_SPECIAL,
+	KILLDRIVER_OWNER_CIVILIAN,
+	KILLDRIVER_OWNER_NEUTRAL
+};
+
 /**********************************************************************
 **	Each of the warhead types has specific characteristics. This structure
 **	holds these characteristics.
@@ -353,5 +360,14 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
 		AttachEffectTypeClass AttachEffect;
+
+		// A KillDriver warhead takes the driver of a vehicle it hits instead of damaging it (Ares). The vehicle goes to
+		// the KillDriver.Owner house, and loses its rank with KillDriver.RemoveVeterancy. KillDriver.KillBelowPercent
+		// limits the effect to vehicles at or below that share of their health, and KillDriver.Chance is the chance per hit.
+		bool IsKillDriver;
+		KillDriverOwnerType KillDriverOwner;
+		double KillDriverBelowPercent;
+		double KillDriverChance;
+		bool IsKillDriverRemoveVeterancy;
 
 };

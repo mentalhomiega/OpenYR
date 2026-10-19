@@ -60,6 +60,30 @@ void Test_Healing_Multipliers(void)
 	Check(WarheadRules::Passive_Acquire_Default(-0.03), "a -3% multiplier allows automatic targeting");
 }
 
+
+void Test_Driver_Protection(void)
+{
+	Check(WarheadRules::Protected_Driver_Min_Health(false, false, 0.0) == 1.0, "an unprotected type defaults to a minimum of 1");
+	Check(WarheadRules::Protected_Driver_Min_Health(true, false, 0.0) == 0.0, "a protected type defaults to a minimum of 0");
+	Check(WarheadRules::Protected_Driver_Min_Health(true, true, 0.3) == 0.3, "a minimum the rules set replaces the default");
+	Check(WarheadRules::Protected_Driver_Min_Health(false, true, 0.5) == 0.5, "a minimum applies without ProtectedDriver=yes");
+}
+
+
+void Test_Driver_Kill_Threshold(void)
+{
+	Check(WarheadRules::Kills_Driver_At(1.0, 1.0, 1.0), "a full-health vehicle loses its driver at the defaults");
+	Check(!WarheadRules::Kills_Driver_At(0.5, 1.0, 0.0), "a protected driver is not taken at 50% health");
+	Check(!WarheadRules::Kills_Driver_At(0.01, 1.0, 0.0), "a protected driver is not taken at 1% health");
+	Check(WarheadRules::Kills_Driver_At(0.3, 1.0, 0.3), "the driver goes at exactly the minimum health");
+	Check(!WarheadRules::Kills_Driver_At(0.31, 1.0, 0.3), "the driver stays just above the minimum health");
+	Check(WarheadRules::Kills_Driver_At(0.34, 0.34, 1.0), "the driver goes at exactly KillBelowPercent");
+	Check(!WarheadRules::Kills_Driver_At(0.5, 0.34, 1.0), "the driver stays above KillBelowPercent");
+	Check(!WarheadRules::Kills_Driver_At(0.4, 0.5, 0.3), "the lower of the two limits applies when the minimum is lower");
+	Check(!WarheadRules::Kills_Driver_At(0.4, 0.3, 0.5), "the lower of the two limits applies when the warhead's is lower");
+	Check(WarheadRules::Kills_Driver_At(0.25, 0.5, 0.3), "a vehicle under both limits loses its driver");
+}
+
 }
 
 
@@ -67,6 +91,8 @@ int main(void)
 {
 	Test_Targeting_Switches();
 	Test_Healing_Multipliers();
+	Test_Driver_Protection();
+	Test_Driver_Kill_Threshold();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

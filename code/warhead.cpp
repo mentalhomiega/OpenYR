@@ -150,7 +150,12 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCLDisableGreen(false),
 	IsCLDisableBlue(false),
 	IsEMEffect(false),
-	IsVeinhole(false)
+	IsVeinhole(false),
+	IsKillDriver(false),
+	KillDriverOwner(KILLDRIVER_OWNER_SPECIAL),
+	KillDriverBelowPercent(1.0),
+	KillDriverChance(1.0),
+	IsKillDriverRemoveVeterancy(false)
 {
 	Create_ID();
 
@@ -260,6 +265,22 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
+		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
+		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
+		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
+		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
+		{
+			char owner[32];
+			if (ini.Get_String(Name(), "KillDriver.Owner", "", owner, sizeof(owner)) && owner[0] != '\0') {
+				if (stricmp(owner, "civilian") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_CIVILIAN;
+				} else if (stricmp(owner, "neutral") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_NEUTRAL;
+				} else if (stricmp(owner, "special") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_SPECIAL;
+				}
+			}
+		}
 		AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
 		AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
 		AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
@@ -346,6 +367,11 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsVeinhole);
 	crc(IsCulling);
 	crc(IsAffectsEnemies);
+	crc(IsKillDriver);
+	crc(int(KillDriverOwner));
+	crc(KillDriverBelowPercent);
+	crc(KillDriverChance);
+	crc(IsKillDriverRemoveVeterancy);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -502,6 +528,11 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEMEffect);
 	stream.Serialize(IsVeinhole);
 	stream.Serialize(AttachEffect);
+	stream.Serialize(IsKillDriver);
+	stream.Serialize_Bytes(&KillDriverOwner, sizeof(KillDriverOwner));
+	stream.Serialize(KillDriverBelowPercent);
+	stream.Serialize(KillDriverChance);
+	stream.Serialize(IsKillDriverRemoveVeterancy);
 }
 
 

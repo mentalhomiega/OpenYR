@@ -39,6 +39,7 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "pip.hh"
@@ -183,6 +184,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	IsProtectedDriver(false),
+	ProtectedDriverMinHealth(1.0),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
 	BombSight(0),
@@ -819,6 +822,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+		IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
+		ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
@@ -1606,6 +1611,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(IsProtectedDriver);
+	stream.Serialize(ProtectedDriverMinHealth);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(BombSight);

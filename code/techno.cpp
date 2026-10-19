@@ -6583,6 +6583,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
+	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
 	if (IsBeingWarpedOut && !forced) {
 		damage = 0;

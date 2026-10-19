@@ -5,6 +5,13 @@ category: weapons-projectiles
 keys:
   - AffectsAllies
   - AffectsEnemies
+  - KillDriver
+  - KillDriver.Owner
+  - KillDriver.KillBelowPercent
+  - KillDriver.Chance
+  - KillDriver.RemoveVeterancy
+  - ProtectedDriver
+  - ProtectedDriver.MinHealth
   - PsychicDamage
   - Poison
   - ImmuneToPsionicWeapons
@@ -213,6 +220,22 @@ A weapon with a negative [`Damage=`](/keys/damage/#scope-weapontype) heals. A he
 No trigger event springs from a heal, and the healed object does not fire back at the healer.
 
 Healing also clears every [limpet](/keys/limpetfactor/) mark from a vehicle, infantryman, aircraft or structure. This happens to every such object within the blast's reach, before the 8-lepton and immunity tests. A healing blast therefore strips limpet marks from everything around it but repairs only what it hits.
+
+## Taking a vehicle's driver
+
+A [`KillDriver=yes`](/keys/killdriver/) warhead takes a vehicle's driver in place of damaging it. A hit takes the driver when the target meets **all of:**
+
+- it is a vehicle, and the hit is not a heal;
+- the warhead's `Verses` entry against its armor is not `0%`;
+- it passed the allies and enemies check of step 8 and is not under the [Iron Curtain](/systems/superweapons/#iron-curtain);
+- its type is neither [`Organic=yes`](/keys/organic/) nor [`Natural=yes`](/keys/natural/), and it has no `PROTECTED_DRIVER` [ability](/systems/veterancy/#abilities);
+- its strength is at or below its maximum strength times the lower of the warhead's [`KillDriver.KillBelowPercent`](/keys/killdriver.killbelowpercent/) and its type's [`ProtectedDriver.MinHealth`](/keys/protecteddriver.minhealth/);
+- the house named by [`KillDriver.Owner`](/keys/killdriver.owner/) exists and does not already own it;
+- it wins the [`KillDriver.Chance`](/keys/killdriver.chance/) roll.
+
+The hit then lets each passenger out onto a free cell beside the vehicle, leaving aboard any passenger that finds none, and gives the vehicle to that house as a mind-controlled vehicle is given over: it drops its orders and target and guards. With [`KillDriver.RemoveVeterancy=yes`](/keys/killdriver.removeveterancy/) it returns to the rookie rank. The hit does no damage.
+
+A vehicle that does not meet every condition takes the hit's damage as it does from any warhead.
 
 ## What one blast does besides damage
 

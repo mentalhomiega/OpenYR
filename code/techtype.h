@@ -349,6 +349,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// ProtectedDriver and ProtectedDriver.MinHealth (Ares): a KillDriver hit takes the driver only while the vehicle's
+		// health ratio is at or below the minimum, which is 0 for a protected driver and 1 otherwise unless the rules set it.
+		bool IsProtectedDriver;
+		double ProtectedDriverMinHealth;
+
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 

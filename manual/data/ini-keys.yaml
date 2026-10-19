@@ -21567,6 +21567,91 @@ KeepAlive:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+KillDriver:
+  key: KillDriver
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsKillDriver
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.Chance:
+  key: KillDriver.Chance
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: KillDriverChance
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.KillBelowPercent:
+  key: KillDriver.KillBelowPercent
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: KillDriverBelowPercent
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.Owner:
+  key: KillDriver.Owner
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: owner
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.RemoveVeterancy:
+  key: KillDriver.RemoveVeterancy
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsKillDriverRemoveVeterancy
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Land:
   key: Land
   scopes:
@@ -29412,6 +29497,40 @@ ProtectWithWall:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ProtectedDriver:
+  key: ProtectedDriver
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsProtectedDriver
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ProtectedDriver.MinHealth:
+  key: ProtectedDriver.MinHealth
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Proximity:
   key: Proximity
   scopes:
