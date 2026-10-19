@@ -36,13 +36,13 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 205 entries
+- [Rules](#rules): 208 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
-- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 31 entries
+- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 33 entries
 
 ## Rules
 
@@ -208,6 +208,9 @@ Bounty.Value=200
 | [`ParaDrop.Count`](../manual/content/keys/paradrop.count--superweapontype.md) | `1` | Sets how many planes a paradrop weapon sends. | Ares |
 | [`ParaDrop.Num`](../manual/content/keys/paradrop.num--superweapontype.md) | The side's paradrop lists | Lists how many of each type a paradrop plane carries. | Ares |
 | [`ParaDrop.Types`](../manual/content/keys/paradrop.types--superweapontype.md) | The side's paradrop lists | Lists the infantry a paradrop weapon carries. | Ares |
+| [`Protect.Duration`](../manual/content/keys/protect.duration--superweapontype.md) | [CombatDamage] IronCurtainDuration; [General] ForceShieldDuration | Sets how many frames an iron curtain or force shield protects. | Ares |
+| [`Protect.PlayFadeSoundTime`](../manual/content/keys/protect.playfadesoundtime--superweapontype.md) | [General] ForceShieldPlayFadeSoundTime | Sets how many frames before a force shield ends its `SpecialSound=` plays. | Ares |
+| [`Protect.PowerOutage`](../manual/content/keys/protect.poweroutage--superweapontype.md) | [General] ForceShieldBlackoutDuration | Sets how many frames a force shield shuts off its house's power. | Ares |
 | [`SidebarPCX`](../manual/content/keys/sidebarpcx.md) | (none) | The PCX picture drawn as a superweapon's sidebar cameo instead of its `SidebarImage=` shape. | Ares |
 | [`SonarPulse.Delay`](../manual/content/keys/sonarpulse.delay--superweapontype.md) | `60` | Sets how long a sonar pulse keeps decloaked objects visible. | Ares |
 | [`SpyPlane.Count`](../manual/content/keys/spyplane.count--superweapontype.md) | `1` | Sets how many aircraft a spy plane weapon sends. | Ares |
@@ -625,6 +628,7 @@ Check=yes
 | [`[Paths] DataDirectory`](../manual/content/formats/opents-ini.md#the-data-and-user-directories) | (the game's own directory) | The game data directory, in place of `-DATADIR`. |
 | [`[Paths] UserDirectory`](../manual/content/formats/opents-ini.md#the-data-and-user-directories) | (none; the game's own directory) | The user data directory, in place of `-USERDIR`. |
 | [`[Saves] CarryScenarioFile`](../manual/content/formats/opents-ini.md#what-a-save-carries) | `no` | `yes` stores a copy of the scenario file in every saved game, and a restart reads that copy. |
+| [`[Files] Settings`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `RA2MD.INI` | The file a player's options are read from and saved to. |
 | [`[Files] Rules`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `RULESMD.INI` | The rules file. |
 | [`[Files] RulesExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
 | [`[Files] Art`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `ARTMD.INI` | The artwork definitions. |
@@ -645,10 +649,11 @@ Check=yes
 | [`[Files] MultiplayerRulesExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
 | [`[Files] Tutorial`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `TUTORIAL.INI` | The numbered text lines. |
 | [`[Files] UI`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `UIMD.INI` | The interface settings. |
-| [`[Files] Settings`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `RA2MD.INI` | The file a player's options are read from and saved to. |
 | [`[Files] Keyboard`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `KEYBOARDMD.INI` | The hotkey file, read at startup and saved by the keyboard dialog. |
 | [`[Palettes] Scheme`](../manual/content/formats/opents-ini.md#the-palettes-it-starts-with) | `UNITSNO.PAL` | The palette player colors are built against until a theater loads. |
 | [`[Palettes] Game`](../manual/content/formats/opents-ini.md#the-palettes-it-starts-with) | `TEMPERAT.PAL` | The palette the game is drawn with until a theater loads. |
+| [`[Archives] ExpandPrefix`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `EXPANDMD` | Comma separated prefixes of the numbered expansion archives. Each prefix mounts the archives numbered 99 down to 00, and an earlier prefix is searched first. |
+| [`[Archives] CachePrefix`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `ECACHE` | The same for the cached archives. |
 | [`[Update] FeedURL`](LAUNCHER.md#settings-in-opentsini) | the GitHub latest release | The release feed. An `https://` address, or an absolute local path for tests. A plain `http://` address is refused. |
 | [`[Update] Check`](LAUNCHER.md#settings-in-opentsini) | yes | `no`, `0`, `off` or `false` turns update checks off. The game still starts. |
 

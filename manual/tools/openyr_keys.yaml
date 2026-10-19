@@ -96,6 +96,7 @@ records:
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
+  - migattackcursor-and-floatbeach-figures
   - anim-sounds-and-frame-rate
   - added-aircraft-trailer
   - added-airportbound
@@ -374,3 +375,9 @@ opents_ini:
   Palettes/Game:
     effect: "The palette the game is drawn with until a theater loads."
     anchor: the-palettes-it-starts-with
+  Archives/ExpandPrefix:
+    effect: "Comma separated prefixes of the numbered expansion archives. Each prefix mounts the archives numbered 99 down to 00, and an earlier prefix is searched first."
+    anchor: the-files-it-reads
+  Archives/CachePrefix:
+    effect: "The same for the cached archives."
+    anchor: the-files-it-reads
