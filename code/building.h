@@ -527,6 +527,7 @@ class BuildingClass : public TechnoClass
 		virtual char const * Full_Name(void) const override;
 		virtual DirType Fire_Direction(void) const override;
 		virtual bool Considered_Vehicle(void) const override;
+		bool Extends_Base_Area(void) const;
 		virtual bool Is_Radar_Visible(DetectedType & detected) const override;
 		int Set_Turret_Frame(void);
 		void Set_Turret_Index(int index);

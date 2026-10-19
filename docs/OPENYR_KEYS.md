@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 332 entries
+- [Rules](#rules): 336 entries
 - [Art](#art): 7 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -67,6 +67,9 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AIBaseNormal`](../manual/content/keys/aibasenormal.md) | Depends; see the page | Whether the structure extends the base space in which its owner's computer-controlled buildings are placed. | Ares |
+| [`AIBuildCounts`](../manual/content/keys/aibuildcounts.md) | `1,1,1`, one copy | How many copies of the BuildingType a computer house plans, per difficulty slot. | Ares |
+| [`AIExtraCounts`](../manual/content/keys/aiextracounts.md) | `0,0,0`, no extra copies | The most extra copies of the BuildingType a computer house may add to its plan at random, per difficulty slot. | Ares |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
 | [`Chronoshift.IsVehicle`](../manual/content/keys/chronoshift.isvehicle--buildingtype.md) | `no` | Marks a structure as a deployed vehicle for the chronosphere. | Ares |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
@@ -94,6 +97,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AI.PowerPlants`](../manual/content/keys/ai.powerplants.md) | The country's side decides, through its regular and advanced power plants | The structures a computer house of the country builds when it is short of power. | Ares |
 | [`File.Flag`](../manual/content/keys/file.flag.md) | Computed; see the page | The PCX file shown as the country's flag beside a player's name on the loading screen. | Ares |
 | [`File.LoadScreen`](../manual/content/keys/file.loadscreen.md) | Computed; see the page | The shape drawn as the loading screen of a skirmish or multiplayer match for a player of the country. | Ares |
 | [`File.LoadScreenPAL`](../manual/content/keys/file.loadscreenpal.md) | Computed; see the page | The palette the country's loading screen is drawn with. | Ares |

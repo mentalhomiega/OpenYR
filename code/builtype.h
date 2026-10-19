@@ -1048,6 +1048,17 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool CanAIBuildThis;
 
+		// AIBuildCounts and AIExtraCounts (Ares): how many of this building the computer plans, and how many more it may add at
+		// random, for each difficulty from hard to easy. An empty list plans one and adds none.
+		TypeList<int> AIBuildCounts;
+		TypeList<int> AIExtraCounts;
+		int AI_Build_Count(int difficulty) const {return(difficulty >= 0 && difficulty < AIBuildCounts.Count() && AIBuildCounts[difficulty] > 1 ? AIBuildCounts[difficulty] : 1);}
+		int AI_Extra_Count(int difficulty) const {return(difficulty >= 0 && difficulty < AIExtraCounts.Count() && AIExtraCounts[difficulty] > 0 ? AIExtraCounts[difficulty] : 0);}
+
+		// AIBaseNormal (Ares): does the building extend its owner's base space? -1 follows the building: yes unless it is a
+		// vehicle in a building's form, and never a deployed miner.
+		int AIBaseNormal;
+
 		/*
 		 * If this building counts as a base defense, then this flag will be true. The
 		 * computer plans its defenses in a pass of their own and rates each one against
