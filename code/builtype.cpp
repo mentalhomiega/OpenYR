@@ -384,6 +384,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	LostEvaEvent(),
 	MessageCapture(),
 	MessageLost(),
+	CursorSpy(),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1472,6 +1473,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			}
 			if (ini.Get_String(Name(), "Message.Lost", "", text, sizeof(text)) > 0) {
 				MessageLost = text;
+			}
+			if (ini.Get_String(Name(), "Cursor.Spy", "", text, sizeof(text)) > 0) {
+				CursorSpy = text;
 			}
 		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
@@ -2592,6 +2596,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LostEvaEvent);
 	stream.Serialize(MessageCapture);
 	stream.Serialize(MessageLost);
+	stream.Serialize(CursorSpy);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(GateStages);

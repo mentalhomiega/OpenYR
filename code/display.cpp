@@ -107,6 +107,7 @@
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
+#include "infantry.h"
 #include "bullettype.h"
 #include "cctooltip.h"
 #include "cell.h"
@@ -1765,6 +1766,56 @@ static MouseType Stock_Super_Weapon_Mouse(ActionType action)
 
 
 /// <summary>
+/// The cursor a type names for an action in place of the stock one. A deploy, move or no-move cursor comes from
+/// the first selected object's type, an enter or no-enter cursor from the object under the pointer, and a spy's
+/// infiltration cursor from the structure under the pointer.
+/// </summary>
+/// <returns>Returns with the cursor the type names, or the stock one when the type names none that exists.</returns>
+static MouseType Type_Cursor(MouseType stock, ActionType action, ObjectClass const * over)
+{
+	if (CurrentObject.Count() == 0 || CurrentObject[0] == NULL || !CurrentObject[0]->Is_Techno()) {
+		return(stock);
+	}
+	TechnoClass const * selected = static_cast<TechnoClass const *>(CurrentObject[0]);
+	TechnoTypeClass const * overtype = (over != NULL && over->Is_Techno()) ? static_cast<TechnoClass const *>(over)->TClass : NULL;
+
+	std::string const * name = NULL;
+	switch (action) {
+		case ACTION_SELF:
+			name = &selected->TClass->CursorDeploy;
+			break;
+		case ACTION_NO_DEPLOY:
+			name = &selected->TClass->CursorNoDeploy;
+			break;
+		case ACTION_MOVE:
+			name = &selected->TClass->CursorMove;
+			break;
+		case ACTION_NOMOVE:
+			name = &selected->TClass->CursorNoMove;
+			break;
+		case ACTION_ENTER:
+			if (overtype != NULL) name = &overtype->CursorEnter;
+			break;
+		case ACTION_NO_ENTER:
+			if (overtype != NULL) name = &overtype->CursorNoEnter;
+			break;
+		case ACTION_CAPTURE:
+			if (selected->RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(selected)->Class->IsAgent && over != NULL && over->RTTI == RTTI_BUILDING) {
+				name = &static_cast<BuildingClass const *>(over)->Class->CursorSpy;
+			}
+			break;
+		default:
+			break;
+	}
+	if (name == NULL || name->empty()) {
+		return(stock);
+	}
+	MouseType const named = MouseClass::Find_Cursor(name->c_str());
+	return((int)named >= 0 ? named : stock);
+}
+
+
+/// <summary>
 /// The cursor for a super weapon targeting action. While a weapon is being aimed, its Cursor and
 /// NoCursor keys decide; otherwise the stock cursor for the action stands.
 /// </summary>
@@ -1952,7 +2003,7 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 					Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
 					break;
 				}
-				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_CAN_MOVE, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_RALLY_TO_POINT:
@@ -1960,17 +2011,17 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				break;
 
 			case ACTION_NOMOVE:
-				Set_Default_Mouse(MOUSE_NO_MOVE, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_NO_MOVE, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_ENTER:
 			case ACTION_CAPTURE:
 			case ACTION_ENTER_TUNNEL:
-				Set_Default_Mouse(MOUSE_ENTER, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_ENTER, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_SELF:
-				Set_Default_Mouse(MOUSE_DEPLOY, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_DEPLOY, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_ATTACK:
@@ -2052,11 +2103,11 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				break;
 
 			case ACTION_NO_DEPLOY:
-				Set_Default_Mouse(MOUSE_NO_DEPLOY, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_NO_DEPLOY, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_NO_ENTER:
-				Set_Default_Mouse(MOUSE_NO_ENTER, wsmall);
+				Set_Default_Mouse(Type_Cursor(MOUSE_NO_ENTER, waypoint_action, object), wsmall);
 				break;
 
 			case ACTION_TOTE:

@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 251 entries
+- [Rules](#rules): 258 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -68,6 +68,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
+| [`Cursor.Spy`](../manual/content/keys/cursor.spy.md) | `Enter` | The cursor shown over a structure of this type when a spy could infiltrate it. | Ares |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`LostEvaEvent`](../manual/content/keys/lostevaevent.md) | EVA_TechBuildingLost when the type sets Message.Lost, otherwise nothing | The EVA line the player hears on losing a structure of this type that needs an engineer to a capture. | Ares |
 | [`Message.Capture`](../manual/content/keys/message.capture.md) | `none` | The text shown to the player who captures a structure of this type that needs an engineer. | Ares |
@@ -125,6 +126,12 @@ Bounty.Value=200
 | [`Crashable`](../manual/content/keys/crashable--aircrafttype.md) | `yes` | Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed. | Ares, Phobos |
 | [`Crew.EngineerChance`](../manual/content/keys/crew.engineerchance.md) | 25 for a structure that builds buildings, otherwise 0 | The odds in percent that a survivor of this structure type is an engineer. | Ares |
 | [`Crew.TechnicianChance`](../manual/content/keys/crew.technicianchance.md) | An armed object has 15 percent odds, and an unarmed one none | The odds in percent that a survivor of this type is its owner's technician rather than its side's crew. | Ares |
+| [`Cursor.Deploy`](../manual/content/keys/cursor.deploy.md) | `Deploy` | The cursor shown over a selected object of this type when a click would deploy it. | Ares |
+| [`Cursor.Enter`](../manual/content/keys/cursor.enter.md) | `Enter` | The cursor shown over an object of this type when a selected object could enter it. | Ares |
+| [`Cursor.Move`](../manual/content/keys/cursor.move.md) | `Move` | The cursor shown when a click would order a selected object of this type to move. | Ares |
+| [`Cursor.NoDeploy`](../manual/content/keys/cursor.nodeploy.md) | `NoDeploy` | The cursor shown over a selected object of this type when a deploy click is refused. | Ares |
+| [`Cursor.NoEnter`](../manual/content/keys/cursor.noenter.md) | `NoEnter` | The cursor shown over an object of this type when a selected object cannot enter it. | Ares |
+| [`Cursor.NoMove`](../manual/content/keys/cursor.nomove.md) | `NoMove` | The cursor shown when a selected object of this type cannot move to the cell under the pointer. | Ares |
 | [`DecloakSound`](../manual/content/keys/decloaksound--aircrafttype.md) | The type's own CloakSound, then [AudioVisual] DecloakSound, then [AudioVisual] CloakSound | The sound played at an object's position as it starts to reappear from cloaking. | Ares |
 | [`EMP.Modifier`](../manual/content/keys/emp.modifier.md) | 1.0, so the stun lasts the pulse's full duration | Scales how long an EM pulse stuns this object. | Ares |
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |

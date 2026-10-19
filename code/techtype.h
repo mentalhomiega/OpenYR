@@ -520,6 +520,14 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SurvivorPilotChance[3];
 		int SurvivorPassengerChance[3];
 
+		// The cursors shown for this type, as names of stock cursors or [MouseCursors] entries, or empty for the stock cursor (Ares Cursor.Move, Cursor.NoMove, Cursor.Deploy, Cursor.NoDeploy, Cursor.Enter, Cursor.NoEnter).
+		std::string CursorMove;
+		std::string CursorNoMove;
+		std::string CursorDeploy;
+		std::string CursorNoDeploy;
+		std::string CursorEnter;
+		std::string CursorNoEnter;
+
 		// The sounds played as this object cloaks and decloaks, each with whether the type sets it; VOC_NONE with the flag set is silent (Ares CloakSound, DecloakSound).
 		VocType CloakSound;
 		VocType DecloakSound;

@@ -241,6 +241,12 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SurvivorPilots(-1),
 	SurvivorPilotChance{-1, -1, -1},
 	SurvivorPassengerChance{-1, -1, -1},
+	CursorMove(),
+	CursorNoMove(),
+	CursorDeploy(),
+	CursorNoDeploy(),
+	CursorEnter(),
+	CursorNoEnter(),
 	CloakSound(VOC_NONE),
 	DecloakSound(VOC_NONE),
 	IsCloakSoundSet(false),
@@ -986,6 +992,24 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
 		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
 		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+		if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
+			CursorMove = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoMove", "", value, sizeof(value)) > 0) {
+			CursorNoMove = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.Deploy", "", value, sizeof(value)) > 0) {
+			CursorDeploy = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoDeploy", "", value, sizeof(value)) > 0) {
+			CursorNoDeploy = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.Enter", "", value, sizeof(value)) > 0) {
+			CursorEnter = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoEnter", "", value, sizeof(value)) > 0) {
+			CursorNoEnter = value;
+		}
 		if (ini.Is_Present(Name(), "CloakSound")) {
 			CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
 			IsCloakSoundSet = true;
@@ -1796,6 +1820,12 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilots);
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(CursorMove);
+	stream.Serialize(CursorNoMove);
+	stream.Serialize(CursorDeploy);
+	stream.Serialize(CursorNoDeploy);
+	stream.Serialize(CursorEnter);
+	stream.Serialize(CursorNoEnter);
 	stream.Serialize(CloakSound);
 	stream.Serialize(DecloakSound);
 	stream.Serialize(IsCloakSoundSet);

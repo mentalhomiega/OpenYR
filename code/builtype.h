@@ -835,6 +835,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		std::string MessageCapture;
 		std::string MessageLost;
 
+		// The cursor shown over this structure when a spy could infiltrate it, or empty for the stock enter cursor (Ares Cursor.Spy).
+		std::string CursorSpy;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.
