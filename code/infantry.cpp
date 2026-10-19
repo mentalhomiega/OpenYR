@@ -546,8 +546,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				int const index = (infdeath >= 0 && infdeath < Class->DeathAnims.Count()) ? infdeath : 0;
 				if (Class->DeathAnims[index] != NULL) {
 					AnimClass * death = new AnimClass(Class->DeathAnims[index], PositionCoord);
-					// The soldier a DeathAnims animation makes belongs to the victim's house, unless MakeInfantryOwner says otherwise (Ares).
-					if (death != NULL && Class->DeathAnims[index]->MakeInfantry != -1) {
+					// gamemd starts a DeathAnims animation with no owner, so its soldier goes to the civilian house unless MakeInfantryOwner names another (Ares).
+					if (death != NULL && Class->DeathAnims[index]->MakeInfantry != -1 && Class->DeathAnims[index]->MakeInfantryOwner != AnimTypeClass::MAKE_OWNER_INVOKER) {
 						HouseClass const * killer_house = source != NULL ? source->House : sourcehouse;
 						death->OwnerHouse = AnimClass::Make_Infantry_Owner(Class->DeathAnims[index], House, killer_house, House);
 					}
