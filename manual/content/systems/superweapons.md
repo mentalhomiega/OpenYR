@@ -496,11 +496,11 @@ The drone type is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of the si
 
 ### Iron curtain
 
-A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind:
+A `Type=IronCurtain` weapon plays [`IronCurtainInvokeAnim`](/keys/ironcurtaininvokeanim/) over the target cell, then covers every object on that cell and the eight cells around it. On a cell with a bridge, only the objects on the bridge are covered. What happens to each covered object depends on its kind. An object whose type sets `IronCurtain.Modifier=0` is left as it was, whatever its kind:
 
 - Infantry die, and the firing house is credited with the kill.
 - A vehicle or aircraft with [`Organic=yes`](/keys/organic/) takes damage equal to its full strength, which its armor can reduce.
-- Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames. A structure's demolition charge is also defused. A vehicle or aircraft also loses its paralysis, and a parasite inside it dies.
+- Anything else is protected for [`IronCurtainDuration`](/keys/ironcurtainduration/) frames, multiplied by the object's [`IronCurtain.Modifier`](/keys/ironcurtain.modifier/). A structure's demolition charge is also defused. A vehicle or aircraft also loses its paralysis, and a parasite inside it dies.
 
 A protected object takes no damage, except from damage that ignores armor, such as a demolition charge going off. Healing still reaches it. Infantry cannot plant a demolition charge on a protected structure or walk into one, so an engineer cannot capture it.
 

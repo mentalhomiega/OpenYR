@@ -12546,6 +12546,9 @@ Coord BuildingClass::Render_Coord(void) const
 /// </summary>
 void BuildingClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
 {
+	if (Is_Immune_To_Iron_Curtain(force_shield)) {
+		return;
+	}
 	if (IsGoingToBlow) {
 		IsGoingToBlow = false;
 		IsC4Applied = false;

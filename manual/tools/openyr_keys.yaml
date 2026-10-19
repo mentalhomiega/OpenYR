@@ -76,6 +76,7 @@ records:
   ui-documents-replace-dialogs: OpenTS
   # Keys we read as the Ares or Phobos documentation describes them.
   added-affectsenemies: Ares
+  added-ironcurtain-modifier: Ares
   added-killdriver: Ares
   added-preventscatter: Ares
   attach-effects: Ares

@@ -20315,6 +20315,23 @@ IonStorms:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+IronCurtain.Modifier:
+  key: IronCurtain.Modifier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: IronCurtainModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IronCurtainColor:
   key: IronCurtainColor
   scopes:

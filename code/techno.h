@@ -935,6 +935,7 @@ class TechnoClass :	public RadioClass,
 		void Iron_Tint_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
+		bool Is_Immune_To_Iron_Curtain(bool force_shield) const;
 		virtual bool Is_Ready_To_Random_Animate(void) const;
 		virtual bool Random_Animate(void) {return(false);}
 		virtual void Assign_Destination(AbstractClass * target, bool = true);

@@ -85,6 +85,8 @@
 **	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
 **	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
 **	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
+**	ironcurtain <TypeID> <frames>	puts the player's objects of that type under the Iron Curtain for that many frames, as the superweapon does,
+**							and writes the frames each has left
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
@@ -3143,6 +3145,15 @@ void Run(StepType const & step)
 				if (diffuse_hist[shade] != 0 || specular_hist[shade] != 0) {
 					DebugString("AUTOTEST   shade %d diffuse %d specular %d\n", shade, diffuse_hist[shade], specular_hist[shade]);
 				}
+			}
+		}
+	} else if (step.Command == "ironcurtain") {
+		// ironcurtain <TypeID> <frames>: the Iron Curtain's effect on the player's objects of that type, and the frames each has left.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Iron_Curtain(step.X, PlayerPtr, false);
+				DebugString("AUTOTEST   ironcurtain %s at %d,%d for %d: %d frames left, strength %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->Strength);
 			}
 		}
 	} else if (step.Command == "hurt") {

@@ -84,6 +84,18 @@ void Test_Driver_Kill_Threshold(void)
 	Check(WarheadRules::Kills_Driver_At(0.25, 0.5, 0.3), "a vehicle under both limits loses its driver");
 }
 
+
+void Test_Iron_Curtain_Duration(void)
+{
+	Check(WarheadRules::Iron_Curtain_Duration(600, 1.0) == 600, "a modifier of 1 leaves the duration alone");
+	Check(WarheadRules::Iron_Curtain_Duration(600, 0.5) == 300, "a modifier of 0.5 halves the duration");
+	Check(WarheadRules::Iron_Curtain_Duration(600, 1.2) == 720, "a modifier of 1.2 lengthens the duration");
+	Check(WarheadRules::Iron_Curtain_Duration(600, 0.0) == 0, "a modifier of 0 leaves no duration");
+	Check(WarheadRules::Iron_Curtain_Duration(7, 0.5) == 3, "a fractional frame is cut");
+	Check(WarheadRules::Iron_Curtain_Duration(-50, 0.5) == -50, "a negative duration is not multiplied");
+	Check(WarheadRules::Iron_Curtain_Duration(0, 2.0) == 0, "a zero duration stays zero");
+}
+
 }
 
 
@@ -93,6 +105,7 @@ int main(void)
 	Test_Healing_Multipliers();
 	Test_Driver_Protection();
 	Test_Driver_Kill_Threshold();
+	Test_Iron_Curtain_Duration();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

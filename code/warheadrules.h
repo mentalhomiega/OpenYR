@@ -50,6 +50,13 @@ namespace WarheadRules
 		return(protected_driver ? 0.0 : 1.0);
 	}
 
+	// The length of an Iron Curtain a type with this IronCurtain.Modifier receives: a positive duration is multiplied
+	// and cut to a whole number of frames, and any other duration is left alone.
+	inline int Iron_Curtain_Duration(int duration, double modifier)
+	{
+		return(duration > 0 ? (int)(duration * modifier) : duration);
+	}
+
 	// Whether a KillDriver hit takes the driver of a vehicle at this health ratio (strength over maximum strength).
 	// The driver goes at or below the lower of the warhead's KillDriver.KillBelowPercent and the type's
 	// ProtectedDriver.MinHealth.

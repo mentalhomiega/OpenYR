@@ -5437,6 +5437,9 @@ void FootClass::Delete_Me(void)
 /// </summary>
 void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shield)
 {
+	if (Is_Immune_To_Iron_Curtain(force_shield)) {
+		return;
+	}
 	if (TClass->IsOrganic) {
 		int damage = TClass->MaxStrength;
 		Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);

@@ -218,6 +218,7 @@
 #include "vox.h"
 #include "voxdrsys.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "wave.h"
 #include "weapon.h"
 
@@ -11427,6 +11428,16 @@ void TechnoClass::Iron_Tint_AI(void)
 
 
 /// <summary>
+/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0 (Ares)? The Force
+/// Shield is not affected by that key.
+/// </summary>
+bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
+{
+	return(!force_shield && TClass->IronCurtainModifier == 0.0);
+}
+
+
+/// <summary>
 /// Puts this object under the Iron Curtain (or the Force Shield) for the number of frames
 /// given, as TechnoClass::IronCurtain (0x70E2B0) does. Kinds of object that cannot be
 /// protected override this.
@@ -11436,6 +11447,9 @@ void TechnoClass::Iron_Tint_AI(void)
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
+	if (!force_shield) {
+		duration = WarheadRules::Iron_Curtain_Duration(duration, TClass->IronCurtainModifier);
+	}
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

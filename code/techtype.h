@@ -354,6 +354,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsProtectedDriver;
 		double ProtectedDriverMinHealth;
 
+		// IronCurtain.Modifier (Ares): the multiplier on the length of an Iron Curtain put on an object of this type. At 0 the
+		// object is immune to it.
+		double IronCurtainModifier;
+
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
