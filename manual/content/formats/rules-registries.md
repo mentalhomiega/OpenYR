@@ -77,4 +77,4 @@ Projectiles have no registration section. A projectile is created the first time
 
 A weapon that `[Weapons]` does not list is created the same way, the first time one of these keys names it: [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) or [`AirburstWeapon=`](/keys/airburstweapon/).
 
-Register in `[Weapons]` any weapon that only a projectile's `AirburstWeapon=` names. Each rules file reads its weapon sections in one pass, and `AirburstWeapon=` is read after that pass. A weapon it creates therefore misses its section in that file, and keeps the built-in defaults unless a later rules file contains its section.
+A weapon that only a projectile's `AirburstWeapon=` names is created while the projectiles are read, and its section is read right after them, in the same rules file. The same holds for a projectile that such a weapon names.
