@@ -79,6 +79,8 @@ records:
   ares-superweapon-keys: Ares
   added-abductor: Ares
   added-ai-powerplants: Ares
+  added-hunterseeker-ignore: Ares
+  added-sonar-duration: Ares
   added-aibasenormal: Ares
   added-aibuildcounts: Ares
   added-affectsenemies: Ares

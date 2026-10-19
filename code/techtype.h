@@ -14,6 +14,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 class ShapeSet;
 
@@ -935,9 +936,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponDataStruct Weapons[WEAPON_SLOT_COUNT];
 		WeaponDataStruct EliteWeapons[WEAPON_SLOT_COUNT];
 
-		// The passenger seats of an open-topped transport, AlternateFLH1 to AlternateFLH5. Weapon index
-		// -1 to -5 reads seat 1 to 5 in TechnoClass::Weapon_FLH.
-		TPoint3D<int> AlternativeFLH[5];
+		// The passenger seats of an open-topped transport, AlternateFLH0 to AlternateFLH4, and one more for each seat
+		// beyond five that Passengers allows (Ares). Weapon index -1 reads seat 1, the first entry, in TechnoClass::Weapon_FLH.
+		std::vector<TPoint3D<int>> AlternativeFLH;
 
 		/*
 		 * If this object cannot be harmed by another object of its own type and house, then
@@ -1223,6 +1224,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * through an ion storm unhindered -- it exists only to reach something and die on it.
 		 */
 		bool IsHunterSeeker;
+
+		// A Hunter Seeker never picks an object of this type as its target (Ares HunterSeeker.Ignore).
+		bool IsHunterSeekerIgnored;
 
 		/*
 		**	Can this unit squash infantry?  If it can then if the player selects

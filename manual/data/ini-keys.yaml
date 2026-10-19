@@ -19568,6 +19568,23 @@ HunterSeeker.Buildings:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+HunterSeeker.Ignore:
+  key: HunterSeeker.Ignore
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsHunterSeekerIgnored
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 HunterSeeker.RandomOnly:
   key: HunterSeeker.RandomOnly
   scopes:
@@ -38012,6 +38029,23 @@ SoloCrateMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Sonar.Duration:
+  key: Sonar.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: SonarDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 SonarPulse.Delay:
   key: SonarPulse.Delay
   scopes:

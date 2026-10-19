@@ -387,6 +387,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		int EMPDuration;
 		int EMPCap;
 
+		// Sonar.Duration (Ares): the frames an object the warhead hits is kept from cloaking, as a sonar pulse does. 0 does nothing.
+		int SonarDuration;
+
 		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?
 		bool Is_EM_Pulse(void) const {return(IsEMEffect && EMPDuration == 0);}
 

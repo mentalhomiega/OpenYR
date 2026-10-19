@@ -160,6 +160,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsEffectsRequireVerses(true),
 	EMPDuration(0),
 	EMPCap(-1),
+	SonarDuration(0),
 	IsPreventScatter(false),
 	InfDeathAnim(NULL),
 	PreImpactAnim(NULL)
@@ -280,6 +281,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
 		EMPDuration = ini.Get_Int(Name(), "EMP.Duration", EMPDuration);
 		EMPCap = ini.Get_Int(Name(), "EMP.Cap", EMPCap);
+		SonarDuration = ini.Get_Int(Name(), "Sonar.Duration", SonarDuration);
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
@@ -390,6 +392,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsEffectsRequireDamage);
 	crc(IsEffectsRequireVerses);
 	crc(EMPDuration);
+	crc(SonarDuration);
 	crc(EMPCap);
 	crc(InfDeathAnim != NULL);
 	crc(PreImpactAnim != NULL);
@@ -560,6 +563,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEffectsRequireDamage);
 	stream.Serialize(IsEffectsRequireVerses);
 	stream.Serialize(EMPDuration);
+	stream.Serialize(SonarDuration);
 	stream.Serialize(EMPCap);
 }
 

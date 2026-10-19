@@ -4142,6 +4142,14 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "seatflh") {
+		// seatflh <TypeID>: the passenger seat offsets the type reads from AlternateFLH0 on.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			for (size_t seat = 0; seat < type->AlternativeFLH.size(); seat++) {
+				DebugString("AUTOTEST   seatflh %s seat %d (AlternateFLH%d) %d,%d,%d\n", type->Name(), (int)seat + 1, (int)seat, type->AlternativeFLH[seat].X, type->AlternativeFLH[seat].Y, type->AlternativeFLH[seat].Z);
+			}
+		}
 	} else if (step.Command == "turretcoord") {
 		// turretcoord <TypeID>: the body and turret facings, TurretOffset and mounting that Turret_Coord(0) is built from.
 		for (int index = 0; index < Technos.Count(); index++) {
