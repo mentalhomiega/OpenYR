@@ -157,6 +157,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "empulse.h"
 #include "cell.h"
 #include "_mixfile.h"
 #include "mixfile.h"
@@ -6604,6 +6605,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
 		damage = 0;
 		return(RESULT_NONE);
+	}
+
+	// A warhead with an EMP.Duration changes the EMP counter of an object whose armor has a nonzero Verses (Ares). A hit that
+	// destroys the object becomes a lethal hit that skips armor.
+	if (warhead != NULL && warhead->EMPDuration != 0 && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0 && !forced
+		&& EMPulseClass::Hit(this, warhead, source)) {
+		damage = TClass->MaxStrength;
+		warhead = Rule->C4Warhead;
+		forced = true;
 	}
 
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).

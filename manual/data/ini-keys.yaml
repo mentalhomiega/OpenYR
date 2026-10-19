@@ -13397,6 +13397,40 @@ EMEffect:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+EMP.Cap:
+  key: EMP.Cap
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: EMPCap
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+EMP.Duration:
+  key: EMP.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: EMPDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 EMP.Modifier:
   key: EMP.Modifier
   scopes:

@@ -616,7 +616,7 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 	}
 
 	if (warhead->ExplosionSet.Count()) {
-		if (warhead->IsEMEffect) {
+		if (warhead->Is_EM_Pulse()) {
 			return(warhead->ExplosionSet[Random_Pick(0, warhead->ExplosionSet.Count() - 1)]);
 		}
 		int val = std::max(0, std::min(damage, DAMAGE_PER_EXPLOSION_ANIM * warhead->ExplosionSet.Count() - 1));

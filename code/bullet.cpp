@@ -1372,7 +1372,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 		}
 	}
 
-	if (!Warhead->IsEMEffect) {
+	if (!Warhead->Is_EM_Pulse()) {
 		if (!Class->IsSplits) {
 			// Airburst and Inaccurate shells blast where they stand (BulletClass::Explode, 0x468DC7 and 0x468EB9).
 			if (!forced && !Class->IsArcing && !Is_Homing() && !Class->IsAirburst && !Class->IsInaccurate && Fuse.Fuse_Target() != COORD_NONE) {
@@ -1474,7 +1474,7 @@ void BulletClass::Detonate(Coord const & coord)
 		Nuke_Maker();
 	}
 
-	else if (warhead->IsEMEffect) {
+	else if (warhead->Is_EM_Pulse()) {
 		new EMPulseClass(coord.As_Cell(), Warhead->SpreadFactor, Strength, Payback);
 	}
 

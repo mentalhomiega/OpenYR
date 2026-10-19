@@ -136,7 +136,7 @@
 **	kill <TypeID>			destroys the objects of that type other houses own
 **	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
 **	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
-**							warhead, fired by one of the player's objects of another type, or of the named type
+**							warhead, fired by one of the player's objects of another type, or of the named type, and writes each one's strength, berzerk and stun
 **	infiltrate barracks|warfactory	marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans
 **	occupy <TypeID> x y	puts the player's infantry of that type inside the structure on that cell, without walking there
 **	rank <TypeID> <0|1|2>	makes every object of that type, whoever owns it, rookie, veteran or elite
@@ -3475,7 +3475,7 @@ void Run(StepType const & step)
 			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
-				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none");
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s stun %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none", (int)techno->StunDuration);
 			}
 		}
 	} else if (step.Command == "clickcell") {
