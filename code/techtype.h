@@ -349,6 +349,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// An ImmuneToAbduction type (Ares) is never taken aboard by an Abductor weapon, which damages it as any other weapon does.
+		bool IsImmuneToAbduction;
+
 		// ProtectedDriver and ProtectedDriver.MinHealth (Ares): a KillDriver hit takes the driver only while the vehicle's
 		// health ratio is at or below the minimum, which is 0 for a protected driver and 1 otherwise unless the rules set it.
 		bool IsProtectedDriver;

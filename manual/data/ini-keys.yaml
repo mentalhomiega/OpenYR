@@ -18854,6 +18854,23 @@ Immune:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+ImmuneToAbduction:
+  key: ImmuneToAbduction
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToAbduction
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToEMP:
   key: ImmuneToEMP
   scopes:
