@@ -96,6 +96,8 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	AbductBelowPercent(1.0),
 	AbductAnim(NULL),
 	IsAbductChangeOwner(false),
+	AbductMaxHealth(0),
+	IsAbductTemporal(false),
 	HasIvanDelay(false),
 	IvanDelay(0),
 	IvanWarhead(NULL),
@@ -264,6 +266,8 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AbductBelowPercent = ini.Get_Float(IniName, "Abductor.AbductBelowPercent", AbductBelowPercent);
 		AbductAnim = TGet_Class(ini, IniName, "Abductor.Anim", AbductAnim);
 		IsAbductChangeOwner = ini.Get_Bool(IniName, "Abductor.ChangeOwner", IsAbductChangeOwner);
+		AbductMaxHealth = ini.Get_Int(IniName, "Abductor.MaxHealth", AbductMaxHealth);
+		IsAbductTemporal = ini.Get_Bool(IniName, "Abductor.Temporal", IsAbductTemporal);
 		if (ini.Is_Present(IniName, "IvanBomb.Delay")) {
 			IvanDelay = ini.Get_Int(IniName, "IvanBomb.Delay", IvanDelay);
 			HasIvanDelay = true;
@@ -589,6 +593,8 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AbductBelowPercent);
 	stream.Serialize(AbductAnim);
 	stream.Serialize(IsAbductChangeOwner);
+	stream.Serialize(AbductMaxHealth);
+	stream.Serialize(IsAbductTemporal);
 	stream.Serialize(HasIvanDelay);
 	stream.Serialize(IvanDelay);
 	stream.Serialize(IvanWarhead);

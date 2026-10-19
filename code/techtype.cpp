@@ -412,6 +412,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsVisibleLoad(false),
 	IsLightningRod(false),
 	IsHunterSeeker(false),
+	IsHunterSeekerIgnored(false),
 	IsCrusher(false),
 	IsOmniCrusher(false),
 	IsOmniCrushResistant(false),
@@ -440,9 +441,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 		TurretWeapon[i] = -1;
 	}
 
-	for (int seat = 0; seat < 5; seat++) {
-		AlternativeFLH[seat] = TPoint3D<int>(0, 0, 0);
-	}
+	AlternativeFLH.assign(5, TPoint3D<int>(0, 0, 0));
 
 	AbstractTypePtrTracker.Add(this);
 	TechnoTypes.Add(this);
@@ -1350,6 +1349,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsAllowedToStartInMultiplayer = ini.Get_Bool(Name(), "AllowedToStartInMultiplayer", IsAllowedToStartInMultiplayer);
 		IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
 		IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
+		IsHunterSeekerIgnored = ini.Get_Bool(Name(), "HunterSeeker.Ignore", IsHunterSeekerIgnored);
 		IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
 		IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
 		IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
@@ -1434,11 +1434,16 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 
-		// Each passenger seat of an open-topped transport has its own mounting. A seat with no entry uses the primary mounting.
-		for (int seat = 0; seat < 5; seat++) {
-			char buf[32];
-			sprintf(buf, "AlternateFLH%d", seat + 1);
-			AlternativeFLH[seat] = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[0].FireFLH);
+		// Each passenger seat of an open-topped transport has its own mounting. A seat among the first five with no entry
+		// uses the primary mounting, and one beyond them (Ares) has none.
+		{
+			int const seats = std::max<int>(5, std::min<int>(MaxPassengers, 255));
+			AlternativeFLH.assign((size_t)seats, TPoint3D<int>(0, 0, 0));
+			for (int seat = 0; seat < seats; seat++) {
+				char buf[32];
+				sprintf(buf, "AlternateFLH%d", seat);
+				AlternativeFLH[(size_t)seat] = ArtINI.Get_Point(Graphic_Name(), buf, seat < 5 ? Weapons[0].FireFLH : Point3D(0, 0, 0));
+			}
 		}
 
 		TurretNotExportedOnGround = ArtINI.Get_Bool(Graphic_Name(), "TurretNotExportedOnGround", TurretNotExportedOnGround);
@@ -2091,6 +2096,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsVisibleLoad);
 	stream.Serialize(IsLightningRod);
 	stream.Serialize(IsHunterSeeker);
+	stream.Serialize(IsHunterSeekerIgnored);
 	stream.Serialize(IsCrusher);
 	stream.Serialize(IsOmniCrusher);
 	stream.Serialize(IsOmniCrushResistant);
@@ -2103,6 +2109,17 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ZFudgeTunnel);
 	stream.Serialize(ZFudgeBridge);
 }
+
+bool TechnoTypeClass::Has_Abductor_Weapon(void) const
+{
+	for (int slot = 0; slot < WEAPON_SLOT_COUNT; slot++) {
+		if ((Weapons[slot].Weapon != NULL && Weapons[slot].Weapon->IsAbductor) || (EliteWeapons[slot].Weapon != NULL && EliteWeapons[slot].Weapon->IsAbductor)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
 
 
 /// <summary>
@@ -2231,7 +2248,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(RadialFireSegments);
 	crc(IsOmniCrusher);
 	crc(IsOmniCrushResistant);
-	for (int seat = 0; seat < 5; seat++) {
+	crc(IsHunterSeekerIgnored);
+	for (size_t seat = 0; seat < AlternativeFLH.size(); seat++) {
 		crc(AlternativeFLH[seat].X);
 		crc(AlternativeFLH[seat].Y);
 		crc(AlternativeFLH[seat].Z);

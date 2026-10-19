@@ -44,6 +44,7 @@
 #include "houstype.h"
 
 #include "airctype.h"
+#include "builtype.h"
 #include "ccini.h"
 #include "crc.h"
 #include "dbgprint.h"
@@ -295,6 +296,7 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		VeteranInfantry = TGet_TypeList<InfantryTypeClass>(ini, Name(), "VeteranInfantry", VeteranInfantry, 128);
 		VeteranUnits = TGet_TypeList<UnitTypeClass>(ini, Name(), "VeteranUnits", VeteranUnits, 128);
 		VeteranAircraft = TGet_TypeList<AircraftTypeClass>(ini, Name(), "VeteranAircraft", VeteranAircraft, 128);
+		AIPowerPlants = TGet_TypeList<BuildingTypeClass>(ini, Name(), "AI.PowerPlants", AIPowerPlants);
 		return(true);
 	}
 	return(false);
@@ -448,6 +450,7 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(VeteranInfantry.Count());
 	crc(VeteranUnits.Count());
 	crc(VeteranAircraft.Count());
+	crc(AIPowerPlants.Count());
 }
 
 
@@ -501,6 +504,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranInfantry);
 	stream.Serialize(VeteranUnits);
 	stream.Serialize(VeteranAircraft);
+	stream.Serialize(AIPowerPlants);
 }
 
 

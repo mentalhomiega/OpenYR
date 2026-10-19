@@ -427,6 +427,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCanPlaceAnywhere(false),
 	IsExtraDamageStage(true),
 	CanAIBuildThis(false),
+	AIBuildCounts(),
+	AIExtraCounts(),
+	AIBaseNormal(-1),
 	IsBaseDefense(false),
 	IsSortCameoAsBaseDefense(false),
 	CloakRadiusInCells(20),
@@ -1573,6 +1576,11 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
 
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
+		AIBuildCounts = ini.Get_IntList(Name(), "AIBuildCounts", AIBuildCounts);
+		AIExtraCounts = ini.Get_IntList(Name(), "AIExtraCounts", AIExtraCounts);
+		if (ini.Is_Present(Name(), "AIBaseNormal")) {
+			AIBaseNormal = ini.Get_Bool(Name(), "AIBaseNormal", false) ? 1 : 0;
+		}
 		IsBaseDefense = ini.Get_Bool(Name(), "IsBaseDefense", IsBaseDefense);
 		IsSortCameoAsBaseDefense = ini.Get_Bool(Name(), "SortCameoAsBaseDefense", IsBaseDefense);
 		IsThreatRatingNode = ini.Get_Bool(Name(), "IsThreatRatingNode", IsThreatRatingNode);
@@ -2701,6 +2709,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanPlaceAnywhere);
 	stream.Serialize(IsExtraDamageStage);
 	stream.Serialize(CanAIBuildThis);
+	stream.Serialize(AIBuildCounts);
+	stream.Serialize(AIExtraCounts);
+	stream.Serialize(AIBaseNormal);
 	stream.Serialize(IsBaseDefense);
 	stream.Serialize(IsSortCameoAsBaseDefense);
 	stream.Serialize(CloakRadiusInCells);

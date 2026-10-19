@@ -796,15 +796,15 @@ bool TechnoClass::Can_Heal(ObjectClass const * object) const
 
 /// <summary>
 /// Fetches the point a weapon is mounted at, or a passenger seat of an open-topped transport when the index is negative.
-/// Index -1 to -5 is seat 1 to 5 (AlternateFLH1 to AlternateFLH5). Any other negative index is zero.
+/// Index -1 is seat 1 (AlternateFLH0), -2 is seat 2 (AlternateFLH1), and so on. A seat the type has no entry for is zero.
 /// </summary>
 /// <param name="which">The weapon slot, or a negative seat index.</param>
 /// <returns>The offset from the object's center in the turret frame, before the body and turret rotation apply.</returns>
 TPoint3D<int> TechnoClass::Weapon_FLH(int which) const
 {
 	if (which < 0) {
-		int const seat = -which - 1;
-		if (seat < 5) {
+		size_t const seat = (size_t)(-which - 1);
+		if (seat < TClass->AlternativeFLH.size()) {
 			return(TClass->AlternativeFLH[seat]);
 		}
 		return(TPoint3D<int>(0, 0, 0));
@@ -4161,7 +4161,10 @@ void TechnoClass::Cloaking_AI(bool)
 						CloakingDevice.Set_Rate(0);
 						CloakingDevice.Set_Stage(0);	// re-start the stage counter
 						Cloak = UNCLOAKED;
-						CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+						// A longer delay that a Sonar.Duration hit or a sonar pulse set stays.
+						if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
+							CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+						}
 						Mark(MARK_CHANGE);
 						break;
 
@@ -6635,6 +6638,17 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// A Sonar.Duration warhead decloaks an object it hits and keeps it from cloaking for that many frames, at least as long as
+	// the delay it already has (Ares).
+	if (warhead != NULL && warhead->SonarDuration > 0 && !negative && Strength > 0 && effects_apply) {
+		if (Cloak == CLOAKED || Cloak == CLOAKING) {
+			Do_Uncloak();
+		}
+		if ((int)CloakDelay < warhead->SonarDuration) {
+			CloakDelay = warhead->SonarDuration;
+		}
+	}
+
 	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
 	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && effects_apply
 		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
@@ -7334,7 +7348,9 @@ Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
  *=============================================================================================*/
 void TechnoClass::Do_Uncloak(bool silent)
 {
-	CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+	if ((int)CloakDelay < Rule->CloakDelay * TICKS_PER_MINUTE) {
+		CloakDelay = Rule->CloakDelay * TICKS_PER_MINUTE;
+	}
 
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
@@ -8897,6 +8913,7 @@ bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
 	if (victim->RTTI != RTTI_INFANTRY && victim->RTTI != RTTI_UNIT) return(false);
 	if (victim->TClass->IsImmuneToAbduction || victim->Is_Iron_Curtained()) return(false);
 	if (!WarheadRules::Abducts_At(victim->Strength, victim->TClass->MaxStrength, weapon->AbductBelowPercent)) return(false);
+	if (weapon->AbductMaxHealth > 0 && victim->Strength > weapon->AbductMaxHealth) return(false);
 	if (!Can_Fit_Passenger(victim)) return(false);
 
 	if (weapon->AbductAnim != NULL) {

@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 401 entries
+- [Rules](#rules): 409 entries
 - [Art](#art): 7 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 32 entries
@@ -75,6 +75,9 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AIBaseNormal`](../manual/content/keys/aibasenormal.md) | Depends; see the page | Whether the structure extends the base space in which its owner's computer-controlled buildings are placed. | Ares |
+| [`AIBuildCounts`](../manual/content/keys/aibuildcounts.md) | `1,1,1`, one copy | How many copies of the BuildingType a computer house plans, per difficulty slot. | Ares |
+| [`AIExtraCounts`](../manual/content/keys/aiextracounts.md) | `0,0,0`, no extra copies | The most extra copies of the BuildingType a computer house may add to its plan at random, per difficulty slot. | Ares |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
 | [`Chronoshift.IsVehicle`](../manual/content/keys/chronoshift.isvehicle--buildingtype.md) | `no` | Marks a structure as a deployed vehicle for the chronosphere. | Ares |
 | [`Cursor.Spy`](../manual/content/keys/cursor.spy.md) | `Enter` | The cursor shown over a structure of this type when a spy could infiltrate it. | Ares |
@@ -109,7 +112,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
-| [`AirburstSpread`](../manual/content/keys/airburstspread.md) | not set, so an Airburst projectile splits as `Splits` describes | Makes an Airburst projectile fire its AirburstWeapon at every cell within this many cells of the burst. | Ares |
+| [`AirburstSpread`](../manual/content/keys/airburstspread.md) | `1.5` for the stock launch, which fills the three-by-three block | Sets which cells an Airburst projectile fires its AirburstWeapon at: every cell within this many cells of the burst. | Ares |
 | [`AroundTarget`](../manual/content/keys/aroundtarget.md) | Depends; see the page | Whether the bomblets of a splitting or spreading projectile are placed around its target or around the point it burst at. | Ares |
 | [`BallisticScatter.Max`](../manual/content/keys/ballisticscatter.max.md) | the `[CombatDamage]` `BallisticScatter` value | The most a projectile type moves the aim point of an inaccurate arcing shot, in cells. | Ares |
 | [`BallisticScatter.Min`](../manual/content/keys/ballisticscatter.min.md) | Depends; see the page | The least a projectile type moves the aim point of an inaccurate arcing shot, in cells. | Ares |
@@ -120,6 +123,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AI.PowerPlants`](../manual/content/keys/ai.powerplants.md) | The country's side decides, through its regular and advanced power plants | The structures a computer house of the country builds when it is short of power. | Ares |
 | [`File.Flag`](../manual/content/keys/file.flag.md) | Computed; see the page | The PCX file shown as the country's flag beside a player's name on the loading screen. | Ares |
 | [`File.LoadScreen`](../manual/content/keys/file.loadscreen.md) | Computed; see the page | The shape drawn as the loading screen of a skirmish or multiplayer match for a player of the country. | Ares |
 | [`File.LoadScreenPAL`](../manual/content/keys/file.loadscreenpal.md) | Computed; see the page | The palette the country's loading screen is drawn with. | Ares |
@@ -190,6 +194,7 @@ Bounty.Value=200
 | [`Gattling.Cycle`](../manual/content/keys/gattling.cycle.md) | `no` | With yes, a gattling weapon that finishes its last stage starts again at the first. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
+| [`HunterSeeker.Ignore`](../manual/content/keys/hunterseeker.ignore.md) | `no` | Keeps a hunter-seeker drone from choosing objects of this type as its target. | Ares |
 | [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | With yes, an Abductor weapon cannot take this object aboard and deals its ordinary damage instead. | Ares |
 | [`ImmuneToEMP`](../manual/content/keys/immunetoemp.md) | A BuildingType or UnitType uses its `IsCoreDefender=` value. Every other type uses `no` | Stops an EM pulse from stunning, powering off, downing or destroying objects of this type. | OpenTS |
 | [`Insignia`](../manual/content/keys/insignia.md) | `PIPS.SHP` | The shape file that supplies the rank insignia frames of an object type, for all three ranks at once. | Ares, Phobos |
@@ -467,6 +472,7 @@ Bounty.Value=200
 | [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
 | [`PreImpactAnim`](../manual/content/keys/preimpactanim.md) | `NUKEBALL` for the warhead named `NUKE`, otherwise none, so the blast goes off at once | An animation played where a projectile with this warhead hits, before the blast goes off. | Ares |
 | [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
+| [`Sonar.Duration`](../manual/content/keys/sonar.duration.md) | 0, which has no effect | The frames an object hit by the warhead is kept from cloaking. | Ares |
 
 ### WeaponType
 
@@ -476,6 +482,8 @@ Bounty.Value=200
 | [`Abductor.AbductBelowPercent`](../manual/content/keys/abductor.abductbelowpercent.md) | `100%` | The largest share of its strength a target may have left for an Abductor weapon to take it. | Ares |
 | [`Abductor.Anim`](../manual/content/keys/abductor.anim.md) | `none` | The animation an Abductor weapon plays where it takes its target from. | Ares |
 | [`Abductor.ChangeOwner`](../manual/content/keys/abductor.changeowner.md) | `no` | With yes, an object an Abductor weapon takes aboard changes to the firer's house. | Ares |
+| [`Abductor.MaxHealth`](../manual/content/keys/abductor.maxhealth.md) | 0, which sets no limit | The most strength a target may have left to be taken aboard by an Abductor weapon. | Ares |
+| [`Abductor.Temporal`](../manual/content/keys/abductor.temporal.md) | `no` | Makes an Abductor weapon with a Temporal warhead take its target aboard when the warp finishes. | Ares |
 | [`Beam.Color`](../manual/content/keys/beam.color.md) | `ChronoBeamColor` for a weapon whose warhead is `Temporal=yes`, otherwise `RadColor` | The colour of the radiation beam of this weapon. | Ares |
 | [`Bolt.Color1`](../manual/content/keys/bolt.color1.md) | Depends; see the page | The colour of the first strand of this weapon's electric bolt. | Ares |
 | [`Bolt.Color2`](../manual/content/keys/bolt.color2.md) | Depends; see the page | The colour of the second strand of this weapon's electric bolt. | Ares |

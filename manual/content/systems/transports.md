@@ -105,7 +105,7 @@ Ordering the transport to attack gives every passenger aboard the same target, a
 
 A passenger that gets out behaves as any other object again. A [gunner vehicle](/systems/gunner-vehicles/) works differently: it fires a weapon its first passenger chooses, and the passenger does not fire.
 
-Yuri's Revenge also gives each passenger its own firing position on the transport, from the art's `AlternateFLH1` to `AlternateFLH5` keys. Seat 1 is the passenger that boarded last. A seat without its own key uses the transport's [`PrimaryFireFLH`](/keys/primaryfireflh/). A passenger in seat 6 or later has no seat offset and fires from the transport's position, moved only by its [`TurretOffset`](/keys/turretoffset/).
+Yuri's Revenge also gives each passenger its own firing position on the transport, from the art's `AlternateFLH0` to `AlternateFLH4` keys. Seat 1 is the passenger that boarded last and reads `AlternateFLH0`. A seat among the first five without its own key uses the transport's [`PrimaryFireFLH`](/keys/primaryfireflh/). A transport whose [`Passengers`](/keys/passengers/) is above 5 also reads `AlternateFLH5` and on, one key per seat up to `Passengers` and at most 255 seats, and a seat past the fifth without a key has no seat offset. A passenger in a seat with no offset fires from the transport's position, moved only by its [`TurretOffset`](/keys/turretoffset/).
 
 ## Losing the transport
 
@@ -113,7 +113,7 @@ When a vehicle transport is destroyed, each passenger gets out onto the transpor
 
 Every passenger is killed, and none gets out, when the destroying damage was forced, when the vehicle was falling (for example when a bridge collapsed under it), when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
 
-An aircraft transport's passengers always die with it, whether it falls or is removed where it stands.
+An aircraft transport's passengers always die with it, whether it falls or is removed where it stands. A vehicle with an [`Abductor=yes`](/keys/abductor/) weapon is the exception to the rules above: its passengers get out whatever destroyed it.
 
 A passenger killed with a vehicle transport, or with an aircraft transport shot down in the air, counts as a kill for the attacker and can earn it [experience](/systems/veterancy/#earning-experience). A passenger of a `Crashable=yes` vehicle that was not above 208 leptons, or of an aircraft removed on the ground, is killed with no attacker credited.
 

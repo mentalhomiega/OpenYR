@@ -2218,7 +2218,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			}
 		}
 
-		if (!Considered_Vehicle()) {
+		if (Extends_Base_Area()) {
 			Reserve_Base_Area();
 		}
 
@@ -3840,7 +3840,7 @@ bool BuildingClass::Limbo(void)
 			if (Class->IsDetectDisguise) {
 				Disguise_Detector(false);
 			}
-			if (!Considered_Vehicle()) {
+			if (Extends_Base_Area()) {
 				Release_Base_Area();
 			}
 		}
@@ -12467,6 +12467,23 @@ bool BuildingClass::Considered_Vehicle(void) const
 		return(false);
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Does this building extend the base space its owner places new structures in?
+/// A building whose type sets AIBaseNormal (Ares) follows it. Any other extends the space unless it is considered a
+/// vehicle or is the deployed form of a miner.
+/// </summary>
+bool BuildingClass::Extends_Base_Area(void) const
+{
+	if (Class->AIBaseNormal >= 0) {
+		return(Class->AIBaseNormal != 0);
+	}
+	if (Class->UndeploysInto != NULL && Class->IsResourceGatherer) {
+		return(false);
+	}
+	return(!Considered_Vehicle());
 }
 
 

@@ -5317,6 +5317,15 @@ int HouseClass::AI_Building(void)
 		BuildingTypeClass const * turbine = side != NULL ? side->PowerTurbine : NULL;
 		BuildingTypeClass const * choice = NULL;
 
+		// The country's AI.PowerPlants (Ares) replace the side's pair: the first is the regular plant and the computer
+		// builds the last one it has the prerequisites for.
+		TypeList<BuildingTypeClass const *> const * listed = NULL;
+		if (ActLike >= HOUSE_FIRST && ActLike < HouseTypes.Count() && HouseTypes[ActLike]->AIPowerPlants.Count() > 0) {
+			listed = &HouseTypes[ActLike]->AIPowerPlants;
+			regular = (*listed)[0];
+			advanced = NULL;
+		}
+
 		if (turbine != NULL && regular != NULL) {
 			bool can_build_turbine = false;
 			for (int i = 0; i < Buildings.Count(); i++) {
@@ -5343,6 +5352,21 @@ int HouseClass::AI_Building(void)
 
 			if (AI_Has_Prerequisites(advanced, owned_buildings, owned_buildings.Count())) {
 				choice = advanced;
+			}
+		}
+
+		if (choice == NULL && listed != NULL) {
+			DynamicVectorClass<BuildingTypeClass const *> owned_buildings;
+			for (int i = 0; i < Buildings.Count(); i++) {
+				if (Buildings[i]->House == this) {
+					owned_buildings.Add(Buildings[i]->Class);
+				}
+			}
+			for (int i = 0; i < listed->Count(); i++) {
+				BuildingTypeClass const * plant = (*listed)[i];
+				if (plant != NULL && AI_Has_Prerequisites(plant, owned_buildings, owned_buildings.Count())) {
+					choice = plant;
+				}
 			}
 		}
 
@@ -8231,6 +8255,11 @@ static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
 			return(true);
 		}
 	}
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		if (HouseTypes[index]->AIPowerPlants.Is_In_List(type)) {
+			return(true);
+		}
+	}
 	return(false);
 }
 
@@ -8536,6 +8565,35 @@ void HouseClass::Make_Base_Nodes(void)
 			break;
 		}
 		refpos++;
+	}
+
+	// AIBuildCounts and AIExtraCounts (Ares): each planned type gains copies of itself, placed at random behind its first
+	// node so that its prerequisites still come first.
+	{
+		DynamicVectorClass<BuildingTypeClass const *> planned = startingqueue;
+		for (index = 0; index < planned.Count(); index++) {
+			BuildingTypeClass const * type = planned[index];
+			bool first = true;
+			for (int before = 0; before < index; before++) {
+				if (planned[before] == type) {
+					first = false;
+					break;
+				}
+			}
+			if (!first) continue;
+
+			int copies = type->AI_Build_Count(Difficulty) - 1;
+			if (type->AI_Extra_Count(Difficulty) > 0) {
+				copies += Random_Pick(0, type->AI_Extra_Count(Difficulty));
+			}
+			for (int copy = 0; copy < copies; copy++) {
+				int position = 0;
+				while (position < startingqueue.Count() - 1 && startingqueue[position] != type) {
+					position++;
+				}
+				startingqueue.Insert_After(Random_Pick(position, startingqueue.Count() - 1), type);
+			}
+		}
 	}
 
 	// A queue too short to weave defenses into is the whole plan.

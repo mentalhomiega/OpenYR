@@ -21,6 +21,10 @@ keys:
   - AIBuildsWalls
   - AINavalYardAdjacency
   - AIBuildThis
+  - AIBuildCounts
+  - AIExtraCounts
+  - AIBaseNormal
+  - AI.PowerPlants
   - AIUseTurbineUpgradeProbability
   - AirstripLimit
   - AirstripRatio
@@ -161,7 +165,8 @@ Several steps take "the first entry the country may own" from a rules list. That
 
    A [`Helipad=yes`](/keys/helipad/) type is queued one to three extra times. The hard-coded `GAPLUG` waits until a pass queues nothing else. Passes stop when one queues nothing, and a candidate whose prerequisites were never met stays out of the plan.
 4. **Refineries.** When the queue holds the first [`BuildRefinery`](/keys/buildrefinery/) entry the acted country may own, `2 - Difficulty` more copies of it are inserted at random positions after it.
-5. **Defenses.** A queue of fewer than three entries becomes the plan unchanged, with no defenses and no wall node from step 6. Otherwise the first three entries are copied as they stand. Before copying each later entry, the plan adds base-defense placeholders:
+5. **Copies.** Each type in the queue gains `AIBuildCounts - 1` copies of itself, plus a random number from `0` to its [`AIExtraCounts`](/keys/aiextracounts/) entry, using the entries for the house's slot. Each copy is inserted after a random entry from the type's first appearance on. Types that set neither key gain nothing.
+6. **Defenses.** A queue of fewer than three entries becomes the plan unchanged, with no defenses and no wall node from step 7. Otherwise the first three entries are copied as they stand. Before copying each later entry, the plan adds base-defense placeholders:
    - The wanted count is `(C - 2000) / 1500`, truncated to a whole number, times the acted side's [`AIBaseDefenseCoefficient`](/keys/aibasedefensecoefficient/), truncated again. `C` is the combined cost, at this house's prices, of the queue entries copied so far, not counting the first. Towers and placeholders add nothing to `C`.
    - When the wanted count exceeds the number of placeholders added so far, the difference is added as `-1` placeholders. Each is preceded by the first [`AIWallTowers`](/keys/aiwalltowers/) entry the acted country may own, when there is one.
 
@@ -170,9 +175,9 @@ Several steps take "the first entry the country may own" from a rules list. That
    After the last entry, `(3 - Difficulty) * `[`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/) further placeholders follow, each preceded by that tower, in either of these cases:
    - the side will not build a wall, because the side's [`AIBuildsWalls`](/keys/aibuildswalls/#scope-side) or the global [`AIBuildsWalls`](/keys/aibuildswalls/#scope-global-rules) is `no`;
    - the side sets [`AIBaseDefensesWithWalls=yes`](/keys/aibasedefenseswithwalls/).
-6. **Wall.** A `-3` node closes the list when both the global `AIBuildsWalls` and the side's are `yes`.
+7. **Wall.** A `-3` node closes the list when both the global `AIBuildsWalls` and the side's are `yes`.
 
-`Difficulty` in steps 4 and 5 is the house's [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot): `[Easy]` is 0, `[Normal]` 1 and `[Difficult]` 2. A computer house normally holds the inverse of the setting the player chose, so a harder game gives the plan more extra refineries and more placeholders. The table assumes that inverse. In a game with more than one human player, [`CompEasyBonus`](/keys/compeasybonus/) can move a computer house [one slot lower](/systems/difficulty/#the-computers-bonus-with-more-than-one-human), and a launch file's [`[HouseHandicaps]`](/formats/spawn-ini/) entry sets a seat's slot directly.
+`Difficulty` in steps 4 to 6 is the house's [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot): `[Easy]` is 0, `[Normal]` 1 and `[Difficult]` 2. A computer house normally holds the inverse of the setting the player chose, so a harder game gives the plan more extra refineries and more placeholders. The table assumes that inverse. In a game with more than one human player, [`CompEasyBonus`](/keys/compeasybonus/) can move a computer house [one slot lower](/systems/difficulty/#the-computers-bonus-with-more-than-one-human), and a launch file's [`[HouseHandicaps]`](/formats/spawn-ini/) entry sets a seat's slot directly.
 
 | Setting chosen | Slot the computer house holds | `2 - Difficulty`, the extra refineries | `3 - Difficulty`, the placeholder multiplier |
 | --- | --- | --- | --- |
@@ -188,8 +193,8 @@ A house whose own country is on the first, second or third side in `[Sides]` use
 
 - Step 3 queues no extra copies of a `Helipad=yes` type.
 - Step 4 inserts the [`AIExtraRefineries`](/keys/aiextrarefineries/) entry for the house's slot as the number of extra refineries, when the acted country may own any [`HarvesterUnit`](/keys/harvesterunit/) entry. Otherwise it inserts one fewer than the [`AISlaveMinerNumber`](/keys/aislaveminernumber/) entry.
-- Step 5 takes the count list's entry for the slot as the number of `-1` placeholders. Each is inserted after a random entry from the fourth on, so placeholders spread through the plan. Cost, `AIBaseDefenseCoefficient`, `AIWallTowers` and `AIBaseDefensePlaceholders` play no part.
-- Step 6 adds no wall node, so the house plans no perimeter wall and has no threat ring.
+- Step 6 takes the count list's entry for the slot as the number of `-1` placeholders. Each is inserted after a random entry from the fourth on, so placeholders spread through the plan. Cost, `AIBaseDefenseCoefficient`, `AIWallTowers` and `AIBaseDefensePlaceholders` play no part.
+- Step 7 adds no wall node, so the house plans no perimeter wall and has no threat ring.
 
 A queue of fewer than three entries still becomes the plan unchanged. A slot past the end of a list counts as `0`.
 
@@ -280,7 +285,7 @@ Abandoning a structure refunds its cost and deletes it. A wall or gate node is t
 After a `WallTower` is placed, the next node after it whose type is [`IsBaseDefense=yes`](/keys/isbasedefense/) moves onto the tower's cell.
 
 :::caution[Adjacency does not limit computer placement]
-[`Adjacent`](/keys/adjacent/) and [`BaseNormal`](/keys/basenormal/) govern player-controlled placement only. The computer's search uses the tests above and never checks [base adjacency](/systems/base-adjacency/). Raising `Adjacent` does not loosen a computer base, and `BaseNormal=no` does not stop the computer building next to a structure.
+[`Adjacent`](/keys/adjacent/) and [`BaseNormal`](/keys/basenormal/) govern player-controlled placement only. The computer's search uses the tests above and never checks [base adjacency](/systems/base-adjacency/). Raising `Adjacent` does not loosen a computer base, and `BaseNormal=no` does not stop the computer building next to a structure. What decides where the computer may build is the base space its structures extend, which [`AIBaseNormal=no`](/keys/aibasenormal/) takes a structure out of.
 :::
 
 ## Base defenses
@@ -370,7 +375,7 @@ A house that is not following a map plan checks power before it starts a structu
 - the node's type drains power;
 - the house is not in a power blackout, and none of its power plants is being drained by an enemy.
 
-The plant comes from the acted side. The house takes the first of these that applies:
+The plant comes from the acted side. When the country the house acts as sets [`AI.PowerPlants`](/keys/ai.powerplants/), the list replaces steps 2 to 4 below: the house takes the last listed type whose prerequisites its structures meet, or the first listed type when none does. Otherwise the house takes the first of these that applies:
 
 1. The side's [`PowerTurbine`](/keys/powerturbine/), when the house owns one of the side's [`RegularPowerPlant`](/keys/regularpowerplant/) structures with a free upgrade slot and a random draw passes [`AIUseTurbineUpgradeProbability`](/keys/aiuseturbineupgradeprobability/). That probability is a fraction of 1. At its default, the turbine is chosen whenever a slot is free.
 2. The side's [`AdvancedPowerPlant`](/keys/advancedpowerplant/), when the structures the house owns meet its prerequisites.

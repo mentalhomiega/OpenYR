@@ -43,6 +43,13 @@ namespace ProjectileRules
 		return(solid_leptons > 0 && projectile_height < solid_leptons);
 	}
 
+	// The cells an Airburst projectile without AirburstSpread targets with its AirburstWeapon, in the order the stock game
+	// does: the eight neighbours of the cell it burst over from north clockwise, then that cell.
+	inline std::vector<std::pair<int, int>> Airburst_Stock_Offsets()
+	{
+		return(std::vector<std::pair<int, int>>{{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, 0}});
+	}
+
 	// The cell offsets an Airburst projectile with this AirburstSpread targets with its AirburstWeapon (Ares): every cell
 	// whose centre is within the spread, in cells, of the cell at the centre of the burst. A spread under 1 targets the
 	// centre cell alone.

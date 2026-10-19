@@ -340,6 +340,13 @@ class WeaponTypeClass : public AbstractTypeClass
 		// Abductor.ChangeOwner (Ares): does the target change to the firer's house?
 		bool IsAbductChangeOwner;
 
+		// Abductor.MaxHealth (Ares): the most strength a target may have to be abducted. 0 sets no limit.
+		int AbductMaxHealth;
+
+		// Abductor.Temporal (Ares): does a temporal warhead of this weapon abduct its target when the warp finishes, rather
+		// than the hit abducting it?
+		bool IsAbductTemporal;
+
 		// IvanBomb.* (Ares): what a bomb this weapon plants does, in place of the [CombatDamage] and [AudioVisual] settings. A
 		// setting the weapon does not write is -1 (IVAN_SOUND_UNSET for a sound, NULL or empty for the rest, and a flag for a number) and leaves that
 		// setting in charge.

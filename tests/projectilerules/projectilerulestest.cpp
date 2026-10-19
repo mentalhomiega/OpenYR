@@ -74,6 +74,10 @@ void Test_Airburst_Offsets(void)
 	Check(ProjectileRules::Airburst_Offsets(1.5).size() == 9, "a spread of 1.5 targets the three-by-three block");
 	Check(ProjectileRules::Airburst_Offsets(2.0).size() == 13, "a spread of 2 targets thirteen cells");
 	Check(ProjectileRules::Airburst_Offsets(3.0).size() == 29, "a spread of 3 targets twenty-nine cells");
+
+	auto const stock = ProjectileRules::Airburst_Stock_Offsets();
+	Check(stock.size() == 9, "the stock airburst targets nine cells");
+	Check(stock.front() == std::make_pair(0, -1) && stock.back() == std::make_pair(0, 0), "the stock airburst runs from the north neighbour to the centre cell");
 }
 
 }

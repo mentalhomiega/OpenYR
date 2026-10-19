@@ -79,6 +79,13 @@ records:
   # Keys we read as the Ares or Phobos documentation describes them.
   ares-superweapon-keys: Ares
   added-abductor: Ares
+  added-abductor-maxhealth: Ares
+  added-abductor-temporal: Ares
+  added-ai-powerplants: Ares
+  added-hunterseeker-ignore: Ares
+  added-sonar-duration: Ares
+  added-aibasenormal: Ares
+  added-aibuildcounts: Ares
   added-affectsenemies: Ares
   added-airburstspread: Ares
   added-anim-damage-delay: Ares

@@ -23,6 +23,7 @@
 #include <vector>
 
 class AircraftTypeClass;
+class BuildingTypeClass;
 class InfantryTypeClass;
 class UnitTypeClass;
 
@@ -181,6 +182,9 @@ class HouseTypeClass : public AbstractTypeClass
 		TypeList<InfantryTypeClass const *> VeteranInfantry;
 		TypeList<UnitTypeClass const *> VeteranUnits;
 		TypeList<AircraftTypeClass const *> VeteranAircraft;
+
+		// The power plants the computer builds for a house of this country (Ares AI.PowerPlants). Empty follows the side.
+		TypeList<BuildingTypeClass const *> AIPowerPlants;
 
 		//------------------------------------------------------------------------
 		HouseTypeClass(char const * ininame = NULL);

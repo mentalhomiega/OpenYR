@@ -1506,7 +1506,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	// An Abductor weapon pulls a target it can take into the firer's hold instead of hurting it.
-	if (Weapon != NULL && Weapon->IsAbductor && Payback != NULL && Payback->Abduct(TarCom, Weapon)) {
+	if (Weapon != NULL && Weapon->IsAbductor && !(Weapon->IsAbductTemporal && warhead->IsTemporal) && Payback != NULL && Payback->Abduct(TarCom, Weapon)) {
 		return;
 	}
 
@@ -1720,18 +1720,20 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
-	// An Airburst projectile with AirburstSpread fires its AirburstWeapon once at every cell within the spread of the cell it burst
-	// over, or of its original target with AroundTarget=yes (Ares).
+	// An Airburst projectile fires its AirburstWeapon once at each of nine cells, the one it burst over and its eight neighbours.
+	// With AirburstSpread (Ares) it fires at every cell within the spread of that cell, or of its original target with
+	// AroundTarget=yes.
 	if (Class->IsAirburstSpread) {
 		WeaponTypeClass * weapon = Class->AirburstWeapon;
 		if (weapon == NULL || weapon->Bullet == NULL) {
 			DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
 		} else {
+			bool const stock = Class->AirburstSpread < 0;
 			Cell center = Center_Coord().As_Cell();
-			if (TarCom != NULL && Class->AroundTarget == 1) {
+			if (!stock && TarCom != NULL && Class->AroundTarget == 1) {
 				center = TarCom->As_Coord().As_Cell();
 			}
-			auto const offsets = ProjectileRules::Airburst_Offsets((double)Class->AirburstSpread / CELL_LEPTON_W);
+			auto const offsets = stock ? ProjectileRules::Airburst_Stock_Offsets() : ProjectileRules::Airburst_Offsets((double)Class->AirburstSpread / CELL_LEPTON_W);
 			if (AutoTest_Active()) {
 				DebugString("AUTOTEST airburst %s over %d,%d aimed at %d,%d around %d,%d: %d cells\n", Class->Name(), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y,
 					TarCom != NULL ? TarCom->As_Coord().As_Cell().X : -1, TarCom != NULL ? TarCom->As_Coord().As_Cell().Y : -1, center.X, center.Y, (int)offsets.size());
@@ -1741,7 +1743,8 @@ void BulletClass::Detonate(Coord const & coord)
 				if (!Map.In_Radar(cell)) {
 					continue;
 				}
-				BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
+				// The stock burst launches every bomblet at a speed of 50 without a lighting flash (BulletClass::Detonate, 0x4690B0).
+				BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, stock ? 50 : weapon->MaxSpeed, stock ? false : weapon->IsBright);
 				if (bullet != NULL) {
 					bullet->Weapon = weapon;
 					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
