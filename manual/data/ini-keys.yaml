@@ -2125,7 +2125,7 @@ Agent:
 Aggressive:
   key: Aggressive
   scopes:
-  - applies_to: &id010
+  - applies_to: &id011
     - TeamType
     file: ai.ini or map file
     section:
@@ -2870,7 +2870,7 @@ AllyReveal:
 AlphaImage:
   key: AlphaImage
   scopes:
-  - applies_to: &id011
+  - applies_to: &id009
     - AircraftType
     - BuildingType
     - BulletType
@@ -3122,6 +3122,37 @@ AmbientDamage:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+AmbientSound:
+  key: AmbientSound
+  scopes:
+  - applies_to: *id009
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: ObjectTypeClass
+      member: AmbientSound
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
+  - applies_to: *id008
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: ObjectTypeClass
+      member: AmbientSound
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
 AmerParaDropInf:
   key: AmerParaDropInf
   scopes:
@@ -3398,7 +3429,7 @@ AnimationFires:
 AnimationProbability:
   key: AnimationProbability
   scopes:
-  - applies_to: &id009
+  - applies_to: &id010
     - TerrainType
     file: rules.ini
     section:
@@ -3416,7 +3447,7 @@ AnimationProbability:
 AnimationRate:
   key: AnimationRate
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -3433,7 +3464,7 @@ AnimationRate:
 Annoyance:
   key: Annoyance
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -3536,7 +3567,7 @@ Arcing:
 AreTeamMembersRecruitable:
   key: AreTeamMembersRecruitable
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -3587,7 +3618,7 @@ Arm:
 Armor:
   key: Armor
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -4489,7 +4520,7 @@ AutoScroll:
 Autocreate:
   key: Autocreate
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -4575,7 +4606,7 @@ AuxSound2:
 AvoidThreats:
   key: AvoidThreats
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -5528,7 +5559,7 @@ BombTickingSound:
 Bombable:
   key: Bombable
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -6900,6 +6931,23 @@ BuildupTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Bullets:
+  key: Bullets
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsBullets
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Bunker:
   key: Bunker
   scopes:
@@ -10641,7 +10689,7 @@ Crush:
 CrushSound:
   key: CrushSound
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -10690,7 +10738,7 @@ CrushWarhead:
 Crushable:
   key: Crushable
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -13039,6 +13087,40 @@ DirtTunnels:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+DisableShadowCache:
+  key: DisableShadowCache
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsDisableShadowCache
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+DisableVoxelCache:
+  key: DisableVoxelCache
+  scopes:
+  - applies_to: *id004
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsDisableVoxelCache
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Disableable:
   key: Disableable
   scopes:
@@ -14222,7 +14304,7 @@ Dropping:
 Droppod:
   key: Droppod
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -15990,6 +16072,23 @@ EmissiveDebugView:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+EmptyReload:
+  key: EmptyReload
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: EmptyReloadDelay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 End:
   key: End
   scopes:
@@ -17534,6 +17633,23 @@ FlashFrameTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+FlashSidebarTabFrames:
+  key: FlashSidebarTabFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: SuperWeaponTypeClass
+      member: FlashSidebarTabFrames
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Flat:
   key: Flat
   scopes:
@@ -17898,7 +18014,7 @@ Foundation:
       applies_to: *id006
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: BuildingTypeClass
-  - applies_to: *id009
+  - applies_to: *id010
     file: art.ini
     section:
       kind: image
@@ -18057,7 +18173,7 @@ FreeUnit:
 Full:
   key: Full
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -18754,7 +18870,7 @@ Groundspeed:
 Group:
   key: Group
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -18926,7 +19042,7 @@ GuardRange:
 GuardSlower:
   key: GuardSlower
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -19346,7 +19462,7 @@ HarvestersPerRefinery:
 HasRadialIndicator:
   key: HasRadialIndicator
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -19716,7 +19832,7 @@ Hospital:
 House:
   key: House
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -20555,7 +20671,7 @@ IgnoreGlobalAITriggers:
 IgnoresFirestorm:
   key: IgnoresFirestorm
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -20586,7 +20702,7 @@ IgnoresFirestorm:
 Image:
   key: Image
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -20664,7 +20780,7 @@ ImageLetter:
 Immune:
   key: Immune
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -21562,7 +21678,7 @@ InsigniaFrames:
 Insignificant:
   key: Insignificant
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -21980,7 +22096,7 @@ IonGround:
 IonImmune:
   key: IonImmune
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -22346,7 +22462,7 @@ IsAnimDelayedFire:
 IsAnimated:
   key: IsAnimated
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -22411,7 +22527,7 @@ IsBaseDefense:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -22561,7 +22677,7 @@ IsFlamingGuy:
 IsFlammable:
   key: IsFlammable
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -23118,7 +23234,7 @@ IsVehicleTransport:
 IsVeinhole:
   key: IsVeinhole
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -24240,7 +24356,7 @@ LeaveWaterSound:
 LegalTarget:
   key: LegalTarget
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -25202,6 +25318,70 @@ LineMultiplier:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+LineTrailColor:
+  key: LineTrailColor
+  scopes:
+  - applies_to: &id076
+    - AircraftType
+    - AnimType
+    - BuildingType
+    - BulletType
+    - InfantryType
+    - OverlayType
+    - ParticleSystemType
+    - ParticleType
+    - SmudgeType
+    - TerrainType
+    - UnitType
+    - VoxelAnimType
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 128,128,128
+      declared_in: ObjectTypeClass
+      member: LineTrailColor
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
+LineTrailColorDecrement:
+  key: LineTrailColorDecrement
+  scopes:
+  - applies_to: *id076
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '16'
+      declared_in: ObjectTypeClass
+      member: LineTrailColorDecrement
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
+LineTrailColorOverride:
+  key: LineTrailColorOverride
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: RulesClass
+      member: LineTrailColorOverride
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ListIndex:
   key: ListIndex
   scopes:
@@ -25290,7 +25470,7 @@ LoadScreenText.SpecialName:
 Loadable:
   key: Loadable
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -25460,7 +25640,7 @@ LoopStart:
 LooseRecruit:
   key: LooseRecruit
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -25752,10 +25932,10 @@ MCVDeploy:
 MCVRedeploys:
   key: MCVRedeploys
   scopes:
-  - applies_to: &id076
+  - applies_to: &id077
     - global rules
     file: rules.ini
-    section: &id077
+    section: &id078
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -25772,11 +25952,11 @@ MCVRedeploys:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id076
+      applies_to: *id077
     - file: rules.ini
-      section: *id077
+      section: *id078
       value_type: boolean
-      applies_to: *id076
+      applies_to: *id077
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MMRampBase:
@@ -25955,7 +26135,7 @@ MasterMindOverloadDeathSound:
 Max:
   key: Max
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -26146,10 +26326,10 @@ MaxLowPowerProductionSpeed:
 MaxMoney:
   key: MaxMoney
   scopes:
-  - applies_to: &id078
+  - applies_to: &id079
     - global rules
     file: rules.ini
-    section: &id079
+    section: &id080
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -26166,11 +26346,11 @@ MaxMoney:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id078
+      applies_to: *id079
     - file: rules.ini
-      section: *id079
+      section: *id080
       value_type: integer
-      applies_to: *id078
+      applies_to: *id079
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MaxNumberOccupants:
@@ -26747,10 +26927,10 @@ MessageTextColor:
 MetallicDebris:
   key: MetallicDebris
   scopes:
-  - applies_to: &id080
+  - applies_to: &id081
     - global rules
     file: rules.ini
-    section: &id081
+    section: &id082
       kind: literal
       name: General
     value_type: typelist
@@ -26767,11 +26947,11 @@ MetallicDebris:
         kind: literal
         name: AudioVisual
       value_type: typelist
-      applies_to: *id080
+      applies_to: *id081
     - file: rules.ini
-      section: *id081
+      section: *id082
       value_type: typelist
-      applies_to: *id080
+      applies_to: *id081
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Meteorites:
@@ -27065,7 +27245,7 @@ MindControlAttackLineFrames:
 MindControlDecision:
   key: MindControlDecision
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -27258,10 +27438,10 @@ Mods:
 Money:
   key: Money
   scopes:
-  - applies_to: &id082
+  - applies_to: &id083
     - global rules
     file: rules.ini
-    section: &id083
+    section: &id084
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -27278,11 +27458,11 @@ Money:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id082
+      applies_to: *id083
     - file: rules.ini
-      section: *id083
+      section: *id084
       value_type: integer
-      applies_to: *id082
+      applies_to: *id083
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Money.Amount:
@@ -27552,10 +27732,10 @@ MovieTime:
 MultiEngineer:
   key: MultiEngineer
   scopes:
-  - applies_to: &id084
+  - applies_to: &id085
     - global rules
     file: rules.ini
-    section: &id085
+    section: &id086
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -27572,11 +27752,11 @@ MultiEngineer:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id084
+      applies_to: *id085
     - file: rules.ini
-      section: *id085
+      section: *id086
       value_type: boolean
-      applies_to: *id084
+      applies_to: *id085
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 MultiMCV:
@@ -28171,7 +28351,7 @@ NSGates:
 Name:
   key: Name
   scopes:
-  - applies_to: &id100
+  - applies_to: &id101
     - AITriggerType
     - AircraftType
     - AnimType
@@ -28523,7 +28703,7 @@ NewINIFormat:
 NewTheater:
   key: NewTheater
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: art.ini
     section:
       kind: image
@@ -28539,7 +28719,7 @@ NewTheater:
     level: ObjectTypeClass
   - applies_to: *id008
     file: art.ini
-    section: &id086
+    section: &id087
       kind: identifier
       source: object-type
     value_type: boolean
@@ -28558,7 +28738,7 @@ NewTheater:
       value_type: boolean
       applies_to: *id008
     - file: art.ini
-      section: *id086
+      section: *id087
       value_type: boolean
       applies_to: *id008
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -28738,7 +28918,7 @@ NoShadow:
 NoSpawnAlt:
   key: NoSpawnAlt
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -29712,7 +29892,7 @@ OnFire:
 OnTransOnly:
   key: OnTransOnly
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -29764,7 +29944,7 @@ OneTimeOnly:
 OnlyTargetHouseEnemy:
   key: OnlyTargetHouseEnemy
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -30349,10 +30529,10 @@ ParaDrop.Types:
 Parachute:
   key: Parachute
   scopes:
-  - applies_to: &id087
+  - applies_to: &id088
     - global rules
     file: rules.ini
-    section: &id088
+    section: &id089
       kind: literal
       name: General
     value_type: class
@@ -30369,11 +30549,11 @@ Parachute:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     - file: rules.ini
-      section: *id088
+      section: *id089
       value_type: class
-      applies_to: *id087
+      applies_to: *id088
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 Parachute.Anim:
@@ -30932,6 +31112,23 @@ PipScale:
       default_candidate: none
       declared_in: TechnoTypeClass
       member: PipScale
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+PipWrap:
+  key: PipWrap
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: PipWrap
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -31834,7 +32031,7 @@ PreProductionAnimZAdjust:
 Prebuild:
   key: Prebuild
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -32201,7 +32398,7 @@ PrintCRC:
 Priority:
   key: Priority
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -33352,7 +33549,7 @@ Radar:
 RadarColor:
   key: RadarColor
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -33513,7 +33710,7 @@ RadarEventVisibilityDurations:
 RadarInvisible:
   key: RadarInvisible
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -33597,7 +33794,7 @@ RadarVisible:
 RadialColor:
   key: RadialColor
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -34093,7 +34290,7 @@ Recruitable:
 Recruiter:
   key: Recruiter
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -34336,7 +34533,7 @@ RegularPowerPlant:
 Reinforce:
   key: Reinforce
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -34385,6 +34582,40 @@ RelaxedStray:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Reload:
+  key: Reload
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: ReloadDelay
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ReloadIncrement:
+  key: ReloadIncrement
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: ReloadIncrement
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ReloadRate:
   key: ReloadRate
   scopes:
@@ -36458,7 +36689,7 @@ ScreenWidth:
 Script:
   key: Script
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -36768,7 +36999,7 @@ Seed:
 Selectable:
   key: Selectable
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: rules.ini
     section:
       kind: identifier
@@ -37183,10 +37414,10 @@ ShadowCaster:
 ShadowGrow:
   key: ShadowGrow
   scopes:
-  - applies_to: &id089
+  - applies_to: &id090
     - global rules
     file: rules.ini
-    section: &id090
+    section: &id091
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -37203,11 +37434,11 @@ ShadowGrow:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id089
+      applies_to: *id090
     - file: rules.ini
-      section: *id090
+      section: *id091
       value_type: boolean
-      applies_to: *id089
+      applies_to: *id090
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 ShadowIndex:
@@ -37490,10 +37721,10 @@ ShorePieces:
 ShortGame:
   key: ShortGame
   scopes:
-  - applies_to: &id091
+  - applies_to: &id092
     - global rules
     file: rules.ini
-    section: &id092
+    section: &id093
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -37510,11 +37741,11 @@ ShortGame:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id091
+      applies_to: *id092
     - file: rules.ini
-      section: *id092
+      section: *id093
       value_type: boolean
-      applies_to: *id091
+      applies_to: *id092
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 ShouldFogRemove:
@@ -38502,7 +38733,7 @@ SniperTurretWeapon:
 SnowOccupationBits:
   key: SnowOccupationBits
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -39178,7 +39409,7 @@ SpawnsParticle:
 SpawnsTiberium:
   key: SpawnsTiberium
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -41562,7 +41793,7 @@ Suicide:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -42597,10 +42828,10 @@ SuperWeapons:
 SuperWeaponsAllowed:
   key: SuperWeaponsAllowed
   scopes:
-  - applies_to: &id093
+  - applies_to: &id094
     - global rules
     file: rules.ini
-    section: &id094
+    section: &id095
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -42617,11 +42848,11 @@ SuperWeaponsAllowed:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id093
+      applies_to: *id094
     - file: rules.ini
-      section: *id094
+      section: *id095
       value_type: boolean
-      applies_to: *id093
+      applies_to: *id094
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 SuppressionThreshold:
@@ -43007,7 +43238,7 @@ SystemError:
 Tag:
   key: Tag
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -43415,7 +43646,7 @@ TargetStrengthCoefficientDefault:
 TaskForce:
   key: TaskForce
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -43464,7 +43695,7 @@ TechLevel:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -43478,10 +43709,10 @@ TechLevel:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
-  - applies_to: &id095
+  - applies_to: &id096
     - global rules
     file: rules.ini
-    section: &id096
+    section: &id097
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -43498,11 +43729,11 @@ TechLevel:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id095
+      applies_to: *id096
     - file: rules.ini
-      section: *id096
+      section: *id097
       value_type: integer
-      applies_to: *id095
+      applies_to: *id096
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
   - applies_to:
@@ -43573,7 +43804,7 @@ Teleporter:
 TemperateOccupationBits:
   key: TemperateOccupationBits
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -43850,7 +44081,7 @@ TextBackgroundColor:
 Theater:
   key: Theater
   scopes:
-  - applies_to: *id011
+  - applies_to: *id009
     file: art.ini
     section:
       kind: image
@@ -43866,7 +44097,7 @@ Theater:
     level: ObjectTypeClass
   - applies_to: *id008
     file: art.ini
-    section: &id097
+    section: &id098
       kind: identifier
       source: object-type
     value_type: boolean
@@ -43885,7 +44116,7 @@ Theater:
       value_type: boolean
       applies_to: *id008
     - file: art.ini
-      section: *id097
+      section: *id098
       value_type: boolean
       applies_to: *id008
     precedence: accepted under more than one entry heading; the last one the engine reads wins
@@ -44237,10 +44468,10 @@ TiberiumExplosive:
 TiberiumGrows:
   key: TiberiumGrows
   scopes:
-  - applies_to: &id098
+  - applies_to: &id099
     - global rules
     file: rules.ini
-    section: &id099
+    section: &id100
       kind: literal
       name: MultiplayerDialogSettings
     value_type: boolean
@@ -44257,11 +44488,11 @@ TiberiumGrows:
         kind: literal
         name: MultiplayerDefaults
       value_type: boolean
-      applies_to: *id098
+      applies_to: *id099
     - file: rules.ini
-      section: *id099
+      section: *id100
       value_type: boolean
-      applies_to: *id098
+      applies_to: *id099
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
   - applies_to:
@@ -44473,7 +44704,7 @@ TiberiumStrength:
 TiberiumToSpawn:
   key: TiberiumToSpawn
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -45156,7 +45387,7 @@ Translucent50State:
 TransportWaypoint:
   key: TransportWaypoint
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -45173,7 +45404,7 @@ TransportWaypoint:
 TransportsReturnOnUnload:
   key: TransportsReturnOnUnload
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -45869,7 +46100,7 @@ UC.PassThrough:
 UIName:
   key: UIName
   scopes:
-  - applies_to: *id100
+  - applies_to: *id101
     file: rules.ini
     section:
       kind: identifier
@@ -46071,10 +46302,10 @@ UnitActionLines:
 UnitCount:
   key: UnitCount
   scopes:
-  - applies_to: &id101
+  - applies_to: &id102
     - global rules
     file: rules.ini
-    section: &id102
+    section: &id103
       kind: literal
       name: MultiplayerDialogSettings
     value_type: integer
@@ -46091,11 +46322,11 @@ UnitCount:
         kind: literal
         name: MultiplayerDefaults
       value_type: integer
-      applies_to: *id101
+      applies_to: *id102
     - file: rules.ini
-      section: *id102
+      section: *id103
       value_type: integer
-      applies_to: *id101
+      applies_to: *id102
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 UnitCrateType:
@@ -46430,6 +46661,23 @@ UseIonStorms:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+UseLineTrail:
+  key: UseLineTrail
+  scopes:
+  - applies_to: *id076
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: ObjectTypeClass
+      member: IsUseLineTrail
+      source: code/objtype.cpp
+      guard: null
+    level: ObjectTypeClass
 UseMPAIBaseNodes:
   key: UseMPAIBaseNodes
   scopes:
@@ -46483,6 +46731,23 @@ UseNormalLight:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+UseOwnName:
+  key: UseOwnName
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsUseOwnName
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 UseSparkParticles:
   key: UseSparkParticles
   scopes:
@@ -46521,7 +46786,7 @@ UseTransitions:
 UseTransportOrigin:
   key: UseTransportOrigin
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -47100,7 +47365,7 @@ VeteranInfantry:
 VeteranLevel:
   key: VeteranLevel
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -47650,19 +47915,7 @@ Volume:
 Voxel:
   key: Voxel
   scopes:
-  - applies_to:
-    - AircraftType
-    - AnimType
-    - BuildingType
-    - BulletType
-    - InfantryType
-    - OverlayType
-    - ParticleSystemType
-    - ParticleType
-    - SmudgeType
-    - TerrainType
-    - UnitType
-    - VoxelAnimType
+  - applies_to: *id076
     file: art.ini
     section:
       kind: image
@@ -47852,10 +48105,10 @@ VoxelSpecularStrength:
 Wake:
   key: Wake
   scopes:
-  - applies_to: &id103
+  - applies_to: &id104
     - global rules
     file: rules.ini
-    section: &id104
+    section: &id105
       kind: literal
       name: General
     value_type: class
@@ -47872,11 +48125,11 @@ Wake:
         kind: literal
         name: AudioVisual
       value_type: class
-      applies_to: *id103
+      applies_to: *id104
     - file: rules.ini
-      section: *id104
+      section: *id105
       value_type: class
-      applies_to: *id103
+      applies_to: *id104
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
 WalkFrames:
@@ -48247,7 +48500,7 @@ WaterBound:
       guard: null
     note: when the key is absent the building stays land-bound -- the effective default is no
     level: BuildingTypeClass
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier
@@ -48479,7 +48732,7 @@ WaterfallWest:
 Waypoint:
   key: Waypoint
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -49454,7 +49707,7 @@ WheeledUphill:
 Whiner:
   key: Whiner
   scopes:
-  - applies_to: *id010
+  - applies_to: *id011
     file: ai.ini or map file
     section:
       kind: identifier
@@ -49768,7 +50021,7 @@ XVelocity:
 YDrawFudge:
   key: YDrawFudge
   scopes:
-  - applies_to: *id009
+  - applies_to: *id010
     file: rules.ini
     section:
       kind: identifier

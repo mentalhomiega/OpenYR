@@ -11,7 +11,7 @@ when_omitted:
 
 When the vehicle halts, its firing delay is replaced by a quarter of its secondary weapon's delay. [`NoMovingFire=yes`](/keys/nomovingfire/) describes that delay and its rounding. The replacement discards any delay still running.
 
-`MobileFire=no` does not let the vehicle reload by itself. That is the other effect of `NoMovingFire=yes`. The key has no effect on infantry, buildings, or aircraft.
+A vehicle with `MobileFire=no` also holds its [`Reload`](/keys/reload/) countdown while it moves, so a shot comes back only after the vehicle has been still for the full delay. The key has no effect on infantry, buildings, or aircraft.
 
 ```ini title="rules.ini"
 [MYTANK] ; a UnitType registered in [VehicleTypes]

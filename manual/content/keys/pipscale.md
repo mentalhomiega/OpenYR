@@ -13,7 +13,7 @@ The row appears under a selected object and under the object beneath the mouse. 
 
 | Value | Row length | What fills it |
 | --- | --- | --- |
-| `Ammo` | [`Ammo`](/keys/ammo/), at most 5 | remaining ammunition as a share of `Ammo`, drawn as filled markers with no empty ones behind them; at least one marker shows while any ammunition is left |
+| `Ammo` | [`Ammo`](/keys/ammo/), at most 5; the whole `Ammo` when [`PipWrap`](/keys/pipwrap/) is set | remaining ammunition as a share of `Ammo`, drawn as filled markers with no empty ones behind them; at least one marker shows while any ammunition is left. [`PipWrap`](/keys/pipwrap/) arranges the markers in columns instead |
 | `Tiberium` | 5 on a vehicle | stored Tiberium as a share of [`Storage`](/keys/storage/) |
 | `Passengers` | [`Passengers`](/keys/passengers/), at most 5 | the passengers on board |
 | `Power` | 10 | nothing is drawn |
