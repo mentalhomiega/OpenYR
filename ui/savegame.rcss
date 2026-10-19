@@ -23,6 +23,7 @@
 
 #title
 {
+	text-transform: uppercase;
 	height: 14dp;
 	padding-right: 1dp;
 	line-height: 17dp;

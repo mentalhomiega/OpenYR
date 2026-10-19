@@ -13,14 +13,14 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="movies.rcss"/>
 </head>
-<body template="dialog" data-model="movies">
+<body class="dlg dlg-movies" template="dialog" data-model="movies">
 	<p id="title">{{title}}</p>
 	<div id="movies" class="list"><div class="rows">
 		<div class="item" data-for="row : rows" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)" data-event-dblclick="queue('open')">{{row.name}}</div>
 	</div></div>
 	<div id="buttons">
-		<button id="play" data-class-disabled="selected &lt; 0" data-event-click="queue('play')">{{playcaption}}</button>
-		<button id="back" data-event-click="queue('cancel')">{{backcaption}}</button>
+		<button id="play" class="big primary" data-class-disabled="selected &lt; 0" data-event-click="queue('play')">{{playcaption}}</button>
+		<button id="back" class="big" data-event-click="queue('cancel')">{{backcaption}}</button>
 	</div>
 </body>
 </rml>
