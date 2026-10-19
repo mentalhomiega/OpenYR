@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 258 entries
+- [Rules](#rules): 269 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -62,6 +62,14 @@ WreckReleasesPassengers=yes
 Bounty=yes
 Bounty.Value=200
 ```
+
+### AircraftType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`Smoke.Anim`](../manual/content/keys/smoke.anim.md) | `SGRYSMK1` | The animation a badly damaged or crashing aircraft of this type leaves behind it. | Ares |
+| [`Smoke.ChanceDead`](../manual/content/keys/smoke.chancedead.md) | `80` | The odds in percent each frame that a crashing aircraft of this type creates a smoke animation. | Ares |
+| [`Smoke.ChanceRed`](../manual/content/keys/smoke.chancered.md) | `10` | The odds in percent each frame that a badly damaged aircraft of this type creates a smoke animation. | Ares |
 
 ### BuildingType
 
@@ -123,6 +131,7 @@ Bounty.Value=200
 | [`Chronoshift.Crushable`](../manual/content/keys/chronoshift.crushable.md) | `yes` | Stops a unit the chronosphere sets down on this object from destroying it; the arriving unit is destroyed instead. | Ares |
 | [`Cloakable.Stages`](../manual/content/keys/cloakable.stages.md) | [General] CloakingStages | How many steps this object type takes to hide and to reappear. | Ares |
 | [`CloakSound`](../manual/content/keys/cloaksound--aircrafttype.md) | [AudioVisual] CloakSound | The sound played at an object's position as it starts to hide or to reappear. | Ares |
+| [`Cloneable`](../manual/content/keys/cloneable.md) | `yes` | With no, a cloning structure does not copy a soldier of this type. | Ares |
 | [`Crashable`](../manual/content/keys/crashable--aircrafttype.md) | `yes` | Whether a destroyed object of this type falls, or what happens to its passengers when it is destroyed. | Ares, Phobos |
 | [`Crew.EngineerChance`](../manual/content/keys/crew.engineerchance.md) | 25 for a structure that builds buildings, otherwise 0 | The odds in percent that a survivor of this structure type is an engineer. | Ares |
 | [`Crew.TechnicianChance`](../manual/content/keys/crew.technicianchance.md) | An armed object has 15 percent odds, and an unarmed one none | The odds in percent that a survivor of this type is its owner's technician rather than its side's crew. | Ares |
@@ -138,6 +147,8 @@ Bounty.Value=200
 | [`EVA.ElitePromoted`](../manual/content/keys/eva.elitepromoted.md) | `EVA_UnitPromoted` | The EVA line announced when the player's object of this type is promoted to elite. | Ares |
 | [`EVA.Lost`](../manual/content/keys/eva.lost.md) | Computed; see the page | The EVA line announced when the player loses an object of this type, or "none" for silence. | Ares |
 | [`EVA.VeteranPromoted`](../manual/content/keys/eva.veteranpromoted.md) | `EVA_UnitPromoted` | The EVA line announced when the player's object of this type is promoted to veteran. | Ares |
+| [`FactoryOwners`](../manual/content/keys/factoryowners.md) | `none` | The countries whose factories may build objects of this type. | Ares |
+| [`FactoryOwners.Forbidden`](../manual/content/keys/factoryowners.forbidden.md) | `none` | The countries whose factories alone cannot build objects of this type. | Ares |
 | [`Gattling.Cycle`](../manual/content/keys/gattling.cycle.md) | `no` | With yes, a gattling weapon that finishes its last stage starts again at the first. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
@@ -158,15 +169,18 @@ Bounty.Value=200
 | [`OpenTopped.WarpDistance`](../manual/content/keys/opentopped.warpdistance--aircrafttype.md) | The [CombatDamage] OpenToppedWarpDistance= value | `OpenTopped.WarpDistance` sets how far, in cells, a temporal firer riding this `OpenTopped=yes` transport can hold its target before it lets go. | Phobos |
 | [`OpenTransport.DamageMultiplier`](../manual/content/keys/opentransport.damagemultiplier--aircrafttype.md) | The [CombatDamage] OpenTransport.DamageMultiplier= value | `OpenTransport.DamageMultiplier` multiplies the damage of each shot this object fires from any `OpenTopped=yes` transport. | Phobos |
 | [`OpenTransport.RangeBonus`](../manual/content/keys/opentransport.rangebonus--aircrafttype.md) | The [CombatDamage] OpenTransport.RangeBonus= value | `OpenTransport.RangeBonus` adds whole cells to this object's weapon range while it fires from any `OpenTopped=yes` transport. | Phobos |
+| [`Parachute.Anim`](../manual/content/keys/parachute.anim.md) | [General] Parachute | The canopy animation drawn above a paradropped object of this type. | Ares |
 | [`Promote.EliteSound`](../manual/content/keys/promote.elitesound.md) | [AudioVisual] UpgradeEliteSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes elite. | Ares, Phobos |
 | [`Promote.VeteranSound`](../manual/content/keys/promote.veteransound.md) | [AudioVisual] UpgradeVeteranSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes a veteran. | Ares, Phobos |
 | [`ProtectedDriver`](../manual/content/keys/protecteddriver.md) | `no` | With yes, KillDriver warheads leave this vehicle's driver alone. | Ares |
 | [`ProtectedDriver.MinHealth`](../manual/content/keys/protecteddriver.minhealth.md) | Depends; see the page | The share of its health at or below which a KillDriver warhead can take this vehicle's driver. | Ares |
+| [`RadialIndicatorRadius`](../manual/content/keys/radialindicatorradius.md) | For a sensor array or cloak generator, CloakRadiusInCells; otherwise no ring | The radius in cells of the ring drawn around a selected object of this type. | Ares |
 | [`ReversedAs`](../manual/content/keys/reversedas.md) | none; grinding teaches the object's own type | Names the type that grinding up an object of this type teaches in place of its own. | Ares |
 | [`ScrapExplosion`](../manual/content/keys/scrapexplosion.md) | (none) | The animations a destroyed object leaves behind while scrap wreckage is switched on. | OpenTS |
 | [`SelfHealingCap`](../manual/content/keys/selfhealingcap.md) | `-1` | The share of maximum strength at which this type stops healing itself. | OpenTS |
 | [`SelfHealingRate`](../manual/content/keys/selfhealingrate.md) | `-1` | The interval between this type's self-healing ticks. | OpenTS |
 | [`SelfHealingStep`](../manual/content/keys/selfhealingstep.md) | `-1` | The strength one self-healing tick restores to this type. | OpenTS |
+| [`SlamSound`](../manual/content/keys/slamsound.md) | [AudioVisual] BuildingSlam | The sound played to the owner when a structure of this type is placed on the map. | Ares |
 | [`Survivor.ElitePassengerChance`](../manual/content/keys/survivor.elitepassengerchance.md) | `-1` | The odds in percent that each passenger of this elite transport survives its destruction. | Ares |
 | [`Survivor.ElitePilotChance`](../manual/content/keys/survivor.elitepilotchance.md) | [General] CrewEscape, as a fraction | The odds in percent that each pilot of a destroyed elite vehicle of this type escapes. | Ares |
 | [`Survivor.Pilots`](../manual/content/keys/survivor.pilots.md) | One for a Crewed=yes type that declares no Passengers capacity, otherwise none | How many pilots try to step out of this vehicle type when it is destroyed. | Ares |
@@ -179,6 +193,7 @@ Bounty.Value=200
 | [`Survivor.VeteranPassengerChance`](../manual/content/keys/survivor.veteranpassengerchance.md) | `-1` | The odds in percent that each passenger of this veteran transport survives its destruction. | Ares |
 | [`Survivor.VeteranPilotChance`](../manual/content/keys/survivor.veteranpilotchance.md) | [General] CrewEscape, as a fraction | The odds in percent that each pilot of a destroyed veteran vehicle of this type escapes. | Ares |
 | [`VehicleThief.Allowed`](../manual/content/keys/vehiclethief.allowed.md) | `yes` | Whether a vehicle thief can take vehicles of this type. | Ares, Phobos |
+| [`WaterImage`](../manual/content/keys/waterimage.md) | `none` | The vehicle type a vehicle of this type is drawn as while it is on water. | Ares |
 
 ### OverlayType
 
@@ -333,6 +348,7 @@ Bounty.Value=200
 | [`AttachEffect.ROFMultiplier`](../manual/content/keys/attacheffect.rofmultiplier--warheadtype.md) | `1.0` | Multiplies the reload time of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.SpeedMultiplier`](../manual/content/keys/attacheffect.speedmultiplier--warheadtype.md) | `1.0` | Multiplies the movement speed of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.TemporalHidesAnim`](../manual/content/keys/attacheffect.temporalhidesanim--warheadtype.md) | `no` | Whether an attached effect's animation is hidden while a temporal weapon warps the object out. | Ares |
+| [`DamageAirThreshold`](../manual/content/keys/damageairthreshold.md) | `0` | How far above the ground a blast of this warhead must be to damage objects in the air. | Ares |
 | [`InfDeathAnim`](../manual/content/keys/infdeathanim.md) | (none) | The animation an infantryman dies with when this warhead kills him, in place of InfDeath. | Ares |
 | [`KillDriver`](../manual/content/keys/killdriver.md) | `no` | With yes, a hit takes the driver of a vehicle in place of damaging it. | Ares |
 | [`KillDriver.Chance`](../manual/content/keys/killdriver.chance.md) | `100%` | The chance that a hit takes the driver of a vehicle that has met every other condition. | Ares |

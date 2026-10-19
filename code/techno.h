@@ -915,6 +915,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;
 		virtual void Draw_Insignia(Point2D const & bottomleft, Point2D const & center, Rect const & rect) const;
+		virtual void Draw_Radial_Indicator(void) const override;
 		virtual void Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & rect) const;
 		virtual void Hidden(void) override;
 		void Forget_Human_Discovery(void);

@@ -62,6 +62,30 @@ void Test_None_Text(void)
 	Check(!ObjectKeyRules::Names_Nothing("nonexistent"), "a longer word is not none");
 }
 
+
+void Test_Factory_Owners(void)
+{
+	std::vector<std::string> const list = ObjectKeyRules::Split_List(" Americans ,Russians,, French");
+	Check(list.size() == 3, "a list drops empty entries");
+	Check(list[0] == "Americans" && list[1] == "Russians" && list[2] == "French", "a list drops the spaces around each name");
+	Check(ObjectKeyRules::Split_List("").empty(), "an empty text names nothing");
+	Check(ObjectKeyRules::Names_Contain(list, "russians"), "a name is found in any case");
+	Check(!ObjectKeyRules::Names_Contain(list, "Koreans"), "a name that is not listed is not found");
+
+	std::vector<std::string> const none;
+	std::vector<std::string> const american = {"Americans"};
+	std::vector<std::string> const russian = {"Russians"};
+	std::vector<std::string> const both = {"Americans", "Russians"};
+	Check(ObjectKeyRules::Factory_Owners_Allow(none, none, none), "no lists allow a house with no factory");
+	Check(!ObjectKeyRules::Factory_Owners_Allow(american, none, none), "an owner list needs a factory");
+	Check(ObjectKeyRules::Factory_Owners_Allow(american, none, american), "a factory of a listed country allows the type");
+	Check(!ObjectKeyRules::Factory_Owners_Allow(american, none, russian), "a factory of an unlisted country does not");
+	Check(ObjectKeyRules::Factory_Owners_Allow(american, none, both), "one factory of a listed country is enough");
+	Check(!ObjectKeyRules::Factory_Owners_Allow(none, american, american), "a house with only forbidden factories is refused");
+	Check(ObjectKeyRules::Factory_Owners_Allow(none, american, both), "a factory of another country allows the type");
+	Check(ObjectKeyRules::Factory_Owners_Allow(none, american, none), "a house with no factory is left to the other rules");
+}
+
 }
 
 
@@ -69,6 +93,7 @@ int main(void)
 {
 	Test_Survivors();
 	Test_None_Text();
+	Test_Factory_Owners();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

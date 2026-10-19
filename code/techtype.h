@@ -520,6 +520,26 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SurvivorPilotChance[3];
 		int SurvivorPassengerChance[3];
 
+		// The animation this object hangs from while it parachutes, or NULL for [AudioVisual] Parachute (Ares Parachute.Anim).
+		AnimTypeClass const * ParachuteAnim;
+
+		// The sound played to the owner when a structure of this type is placed, and whether the type sets it; VOC_NONE with the flag set is silent (Ares SlamSound).
+		VocType SlamSound;
+		bool IsSlamSoundSet;
+
+		// The radius in cells of the ring drawn around this object while it is selected, or 0 for none (Ares RadialIndicatorRadius).
+		double RadialIndicatorRadius;
+
+		// The vehicle type this object is drawn as while it is on water, or NULL (Ares WaterImage).
+		UnitTypeClass const * WaterImage;
+
+		// Whether a cloning vat copies this soldier (Ares Cloneable).
+		bool IsCloneable;
+
+		// The countries whose factories may, and may not, build this type; empty for any (Ares FactoryOwners, FactoryOwners.Forbidden).
+		std::vector<std::string> FactoryOwners;
+		std::vector<std::string> FactoryOwnersForbidden;
+
 		// The cursors shown for this type, as names of stock cursors or [MouseCursors] entries, or empty for the stock cursor (Ares Cursor.Move, Cursor.NoMove, Cursor.Deploy, Cursor.NoDeploy, Cursor.Enter, Cursor.NoEnter).
 		std::string CursorMove;
 		std::string CursorNoMove;

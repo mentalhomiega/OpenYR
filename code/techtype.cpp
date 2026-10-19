@@ -31,6 +31,7 @@
 #include "globals.h"
 #include "infatype.h"
 #include "mixfile.h"
+#include "objectkeyrules.h"
 #include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
@@ -241,6 +242,14 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SurvivorPilots(-1),
 	SurvivorPilotChance{-1, -1, -1},
 	SurvivorPassengerChance{-1, -1, -1},
+	ParachuteAnim(NULL),
+	SlamSound(VOC_NONE),
+	IsSlamSoundSet(false),
+	RadialIndicatorRadius(0.0),
+	WaterImage(NULL),
+	IsCloneable(true),
+	FactoryOwners(),
+	FactoryOwnersForbidden(),
 	CursorMove(),
 	CursorNoMove(),
 	CursorDeploy(),
@@ -992,6 +1001,20 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
 		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
 		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+		ParachuteAnim = TGet_Class(ini, Name(), "Parachute.Anim", ParachuteAnim);
+		if (ini.Is_Present(Name(), "SlamSound")) {
+			SlamSound = ini.Get_VocType(Name(), "SlamSound", VOC_NONE);
+			IsSlamSoundSet = true;
+		}
+		RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
+		WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
+		IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
+		if (ini.Is_Present(Name(), "FactoryOwners")) {
+			FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
+		}
+		if (ini.Is_Present(Name(), "FactoryOwners.Forbidden")) {
+			FactoryOwnersForbidden = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners.Forbidden"));
+		}
 		if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
 			CursorMove = value;
 		}
@@ -1820,6 +1843,14 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilots);
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(ParachuteAnim);
+	stream.Serialize(SlamSound);
+	stream.Serialize(IsSlamSoundSet);
+	stream.Serialize(RadialIndicatorRadius);
+	stream.Serialize(WaterImage);
+	stream.Serialize(IsCloneable);
+	stream.Serialize(FactoryOwners);
+	stream.Serialize(FactoryOwnersForbidden);
 	stream.Serialize(CursorMove);
 	stream.Serialize(CursorNoMove);
 	stream.Serialize(CursorDeploy);

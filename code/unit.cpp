@@ -3482,6 +3482,9 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		if (IsSimpleDeployed && Class->UnloadingClass != NULL && Class->UnloadingClass->RTTI == RTTI_UNITTYPE) {
 			((UnitClass *)this)->Class = (UnitTypeClass *)Class->UnloadingClass;
 		}
+		if (Class->WaterImage != NULL && Class->WaterImage->RTTI == RTTI_UNITTYPE && !IsOnBridge && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+			((UnitClass *)this)->Class = (UnitTypeClass *)Class->WaterImage;
+		}
 		if (IsDumping && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
 
 			// The rules default has only ever covered Tiberium harvesters, so a weeder

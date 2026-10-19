@@ -156,6 +156,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	KillDriverBelowPercent(1.0),
 	KillDriverChance(1.0),
 	IsKillDriverRemoveVeterancy(false),
+	DamageAirThreshold(0),
 	IsPreventScatter(false),
 	InfDeathAnim(NULL)
 {
@@ -273,6 +274,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
+		DamageAirThreshold = ini.Get_Int(Name(), "DamageAirThreshold", DamageAirThreshold);
 		{
 			char owner[32];
 			if (ini.Get_String(Name(), "KillDriver.Owner", "", owner, sizeof(owner)) && owner[0] != '\0') {
@@ -376,6 +378,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(KillDriverBelowPercent);
 	crc(KillDriverChance);
 	crc(IsKillDriverRemoveVeterancy);
+	crc(DamageAirThreshold);
 	crc(IsPreventScatter);
 	crc(InfDeathAnim != NULL);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
@@ -539,6 +542,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(KillDriverBelowPercent);
 	stream.Serialize(KillDriverChance);
 	stream.Serialize(IsKillDriverRemoveVeterancy);
+	stream.Serialize(DamageAirThreshold);
 	stream.Serialize(IsPreventScatter);
 	stream.Serialize(InfDeathAnim);
 }

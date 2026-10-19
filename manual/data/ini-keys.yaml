@@ -8647,6 +8647,23 @@ CloakingStages:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Cloneable:
+  key: Cloneable
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCloneable
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Cloning:
   key: Cloning
   scopes:
@@ -10613,6 +10630,23 @@ Damage:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+DamageAirThreshold:
+  key: DamageAirThreshold
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: DamageAirThreshold
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DamageDelay:
   key: DamageDelay
   scopes:
@@ -15804,6 +15838,40 @@ Factory:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+FactoryOwners:
+  key: FactoryOwners
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+FactoryOwners.Forbidden:
+  key: FactoryOwners.Forbidden
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 FactoryPlant:
   key: FactoryPlant
   scopes:
@@ -28643,6 +28711,23 @@ Parachute:
       applies_to: *id087
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+Parachute.Anim:
+  key: Parachute.Anim
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: ParachuteAnim
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ParachuteMaxFallRate:
   key: ParachuteMaxFallRate
   scopes:
@@ -31855,6 +31940,23 @@ RadialFireSegments:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: RadialFireSegments
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RadialIndicatorRadius:
+  key: RadialIndicatorRadius
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RadialIndicatorRadius
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -36179,6 +36281,23 @@ SkipScore:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+SlamSound:
+  key: SlamSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: SlamSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SlaveMinerKickFrameDelay:
   key: SlaveMinerKickFrameDelay
   scopes:
@@ -36511,6 +36630,57 @@ Smoke:
       guard: null
     note: the engine reads this key twice into two internal slots; both receive the same animation
     level: RulesClass
+Smoke.Anim:
+  key: Smoke.Anim
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: AircraftTypeClass
+      member: SmokeAnim
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Smoke.ChanceDead:
+  key: Smoke.ChanceDead
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '80'
+      declared_in: AircraftTypeClass
+      member: SmokeChanceDead
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Smoke.ChanceRed:
+  key: Smoke.ChanceRed
+  scopes:
+  - applies_to: *id036
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '10'
+      declared_in: AircraftTypeClass
+      member: SmokeChanceRed
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 SniperTurretIndex:
   key: SniperTurretIndex
   scopes:
@@ -46063,6 +46233,23 @@ WaterCrateImg:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+WaterImage:
+  key: WaterImage
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: WaterImage
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 WaterSet:
   key: WaterSet
   scopes:

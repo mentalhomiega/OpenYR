@@ -12,6 +12,8 @@ when_omitted:
 BuildingSlam=PLACE2 ; a sound ID registered in SOUND.INI
 ```
 
+A structure type that sets [`SlamSound`](/keys/slamsound/) plays its own sound in place of this one.
+
 The sound plays once when the local player places a finished structure from the sidebar, a wall or firestorm wall section included. Structures placed by other players or by computer houses make no sound on this machine.
 
 The sound has no map position, so it plays at the same volume wherever the view is.

@@ -682,8 +682,11 @@ void AircraftClass::AI(void)
 	Airborne_Look();
 
 	if (HealthRatio < Rule->ConditionRed && HeightAGL > 0) {
-		if (Percent_Chance(Strength != 0 ? 10 : 80)) {
-			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")], PositionCoord);
+		if (Percent_Chance(Strength != 0 ? Class->SmokeChanceRed : Class->SmokeChanceDead)) {
+			AnimTypeClass const * smoke = Class->IsSmokeAnimSet ? Class->SmokeAnim : AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")];
+			if (smoke != NULL) {
+				new AnimClass(smoke, PositionCoord);
+			}
 		}
 	}
 

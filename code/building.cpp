@@ -3429,7 +3429,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
 					 * get out is discarded.
 					 */
-					if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
+					if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY && base->TClass->IsCloneable) {
 						for (int index = 0; index < Buildings.Count(); index++) {
 							BuildingClass * vat = Buildings[index];
 							if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
@@ -12043,9 +12043,9 @@ void BuildingClass::Plot_On_Radar(void) const
 /// </summary>
 void BuildingClass::Draw_Radial_Indicator(void) const
 {
-	if (Class->IsSensorArray || Class->IsCloakGenerator) {
+	if (Class->IsSensorArray || Class->IsCloakGenerator || Class->RadialIndicatorRadius > 0.0) {
 
-		int radius = Tactical::Radial_Ring_Radius(Class->CloakRadiusInCells);
+		int radius = Tactical::Radial_Ring_Radius(Class->RadialIndicatorRadius > 0.0 ? Class->RadialIndicatorRadius : (double)Class->CloakRadiusInCells);
 
 		if (radius != 0) {
 			if (IsOn && House->Is_Player_Control()) {

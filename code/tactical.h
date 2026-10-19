@@ -234,8 +234,8 @@ class Tactical : public AbstractClass
 		void Draw_Placement(bool drawtrans);
 		void Draw_Placement_Range(void);
 		void Draw_Super_Range(void);
-		void Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color);
-		static int Radial_Ring_Radius(int cells);
+		void Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color);
+		static int Radial_Ring_Radius(double cells);
 		void Draw_Fence_Placement(bool drawtrans, Cell cell);
 		void Draw_Firestorm_Wall_Placement(bool drawtrans, Cell cell);
 		void Draw_Wall_Placement(bool drawtrans, Cell cell);

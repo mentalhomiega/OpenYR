@@ -9980,6 +9980,23 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Draws the ring of a selected vehicle, soldier or aircraft whose type sets RadialIndicatorRadius, in the
+/// type's RadialColor or, when that is black, the owner's color. A structure draws its own.
+/// </summary>
+void TechnoClass::Draw_Radial_Indicator(void) const
+{
+	if (RTTI == RTTI_BUILDING || TClass->RadialIndicatorRadius <= 0.0 || !House->Is_Player_Control()) {
+		return;
+	}
+	RGBClass color = TClass->RadialColor;
+	if (color.Get_Red() == 0 && color.Get_Green() == 0 && color.Get_Blue() == 0) {
+		color = House_Display_RGB(House);
+	}
+	TacticalMap->Draw_Range_Ring(Center_Coord(), TClass->RadialIndicatorRadius, color);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.

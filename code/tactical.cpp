@@ -1513,7 +1513,7 @@ void Tactical::Draw_Placement(bool drawtrans)
 /// </summary>
 /// <param name="cells">The radius in cells.</param>
 /// <returns>Returns with the radius in pixels, which is 0 or less for a radius under one cell.</returns>
-int Tactical::Radial_Ring_Radius(int cells)
+int Tactical::Radial_Ring_Radius(double cells)
 {
 	static const int _iso_tile_edge = 34;
 
@@ -1524,7 +1524,7 @@ int Tactical::Radial_Ring_Radius(int cells)
 	 * half cell. The final tile edge comes back off to cancel the half cell that
 	 * was added to the radius.
 	 */
-	double leptons = (double)cells * CELL_LEPTON + CELL_LEPTON / 2;
+	double leptons = cells * CELL_LEPTON + CELL_LEPTON / 2;
 	double xspan = std::sqrt(leptons * leptons * (16.0 / 17.0));
 	double yspan = xspan * 0.25;
 	double spansq = 0.25 * (4.0 * yspan * yspan + xspan * xspan);
@@ -1539,7 +1539,7 @@ int Tactical::Radial_Ring_Radius(int cells)
 /// <param name="center">The world coordinate at the centre of the ring.</param>
 /// <param name="cells">The radius of the ring, in cells.</param>
 /// <param name="color">The colour of the outline.</param>
-void Tactical::Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color)
+void Tactical::Draw_Range_Ring(Coord const & center, double cells, RGBClass const & color)
 {
 	int radius = Radial_Ring_Radius(cells);
 	if (cells < 1 || radius < 1) {
