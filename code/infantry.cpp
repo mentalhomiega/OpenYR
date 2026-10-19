@@ -3326,9 +3326,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		return(obj->Class->Can_Plant_C4() ? ACTION_SABOTAGE : ACTION_ATTACK);
 	}
 
-	/*
-	**	A weapon with MigAttackCursor shows the airstrike cursor over a structure that allows C4 (InfantryClass::MouseOverObject, 0x51E3B0).
-	*/
+	// Over a C4-capable structure, the selected weapon's MigAttackCursor gives the airstrike action (InfantryClass::MouseOverObject, 0x51E3B0).
 	if (action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING) {
 		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
 		if (weapon != NULL && weapon->IsMigAttackCursor && ((BuildingClass const *)object)->Class->Can_Plant_C4()) {
