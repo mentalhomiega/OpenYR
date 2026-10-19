@@ -6961,7 +6961,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = dynamic_cast<FootClass *>(this);
 				if (foot != NULL) {
-					if (TarCom == NULL && foot->NavCom == NULL) {
+					if (TarCom == NULL && foot->NavCom == NULL && !warhead->IsPreventScatter) {
 						if (Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
 							Scatter(COORD_NONE, true, false);
 						}
@@ -6972,7 +6972,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = dynamic_cast<FootClass *>(this);
 				if (foot != NULL) {
-					if (Current_Mission_Control().IsScatter) {
+					if (Current_Mission_Control().IsScatter && !warhead->IsPreventScatter) {
 						if (!IsTethered) {
 							if (!foot->Locomotion->Is_Moving() && TarCom == NULL && foot->NavCom == NULL && Fetch_RTTI() != RTTI_AIRCRAFT) {
 								if (!House->Is_Human_Player() || Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {

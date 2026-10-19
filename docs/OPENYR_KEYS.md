@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 118 entries
+- [Rules](#rules): 119 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -196,6 +196,7 @@ Bounty.Value=200
 | [`KillDriver.KillBelowPercent`](../manual/content/keys/killdriver.killbelowpercent.md) | `100%` | The share of its health a vehicle must be at or below for the warhead to take its driver. | Ares |
 | [`KillDriver.Owner`](../manual/content/keys/killdriver.owner.md) | `special` | The house that takes a vehicle whose driver a KillDriver warhead killed. | Ares |
 | [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
+| [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
 
 ### WeaponType
 

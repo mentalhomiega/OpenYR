@@ -435,6 +435,8 @@ An object refused retaliation scatters when **all of** these hold:
 - it is not an aircraft;
 - **any of:** the object is computer-owned; `PlayerScatter=yes` is set; it holds the `SCATTER` ability.
 
+A hit from a [`PreventScatter=yes`](/keys/preventscatter/) warhead causes none of this scattering. An infantryman it hits does not step away from the attacker either.
+
 ## Threat ratings that are not target selection
 
 Two settings named for threat play no part in choosing a target.

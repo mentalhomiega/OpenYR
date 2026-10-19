@@ -624,7 +624,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			Assign_Mission(MISSION_HUNT);
 		}
 
-		if (source != NULL) {
+		if (source != NULL && !(warhead != NULL && warhead->IsPreventScatter)) {
 			Scatter(source_coord);
 		}
 

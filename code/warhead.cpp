@@ -155,7 +155,8 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	KillDriverOwner(KILLDRIVER_OWNER_SPECIAL),
 	KillDriverBelowPercent(1.0),
 	KillDriverChance(1.0),
-	IsKillDriverRemoveVeterancy(false)
+	IsKillDriverRemoveVeterancy(false),
+	IsPreventScatter(false)
 {
 	Create_ID();
 
@@ -266,6 +267,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
 		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
+		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
@@ -372,6 +374,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(KillDriverBelowPercent);
 	crc(KillDriverChance);
 	crc(IsKillDriverRemoveVeterancy);
+	crc(IsPreventScatter);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -533,6 +536,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(KillDriverBelowPercent);
 	stream.Serialize(KillDriverChance);
 	stream.Serialize(IsKillDriverRemoveVeterancy);
+	stream.Serialize(IsPreventScatter);
 }
 
 

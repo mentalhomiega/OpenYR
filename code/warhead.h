@@ -370,4 +370,7 @@ class WarheadTypeClass : public AbstractTypeClass
 		double KillDriverChance;
 		bool IsKillDriverRemoveVeterancy;
 
+		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
+		bool IsPreventScatter;
+
 };
