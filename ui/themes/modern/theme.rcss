@@ -196,15 +196,40 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
 	border-color: var(--t-accent-strong, #d29bff);
 }
 
+.list > .rows
+{
+	background-color: transparent;
+}
+
 .list .item, select option
 {
 	color: var(--t-text, #ece6f7);
+}
+
+/* A row of a list keeps a 3dp edge at its left; the picked row's edge shows the accent, so the pick
+   reads without its colour. */
+.list .item
+{
+	height: 26dp;
+	padding-left: 8dp;
+	border-left: 3dp transparent;
+	line-height: 24dp;
+}
+
+.list .item:hover
+{
+	background-color: #ffffff12;
 }
 
 .list .item:checked, .list .item.selected, select option:checked
 {
 	background-color: var(--t-select, #4a2f78);
 	color: var(--t-text-hot, #ffffff);
+}
+
+.list .item:checked, .list .item.selected
+{
+	border-left-color: var(--t-accent, #b46bff);
 }
 
 select selectbox
@@ -224,8 +249,9 @@ input[type='checkbox']
 
 input[type='checkbox']:checked
 {
+	border-color: var(--t-accent-strong, #d29bff);
 	background-color: var(--t-accent, #b46bff);
-	decorator: none;
+	decorator: image(check.png fill);
 }
 
 input[type='checkbox']:disabled
@@ -239,7 +265,7 @@ input[type='checkbox']:checked:disabled
 {
 	border-color: var(--t-disabled-edge, #2c2638);
 	background-color: var(--t-disabled-check, #5f4a80);
-	decorator: none;
+	decorator: image(check.png fill);
 }
 
 /* Sliders */
@@ -488,7 +514,7 @@ body.titlemenu.main #backdrop #reveal
 	margin-top: -164dp;
 }
 
-body.titlemenu #wallpaper
+body.titlemenu #wallpaper, body.lobby #wallpaper, body.missionbrowser #wallpaper, body.dlg #wallpaper
 {
 	border-width: 1dp 1dp 1dp 3dp;
 	border-color: var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-accent, #b46bff);
@@ -559,14 +585,28 @@ body.titlemenu.main #title
 body.lobby #backdrop #reveal
 {
 	width: 1040dp;
-	height: 572dp;
+	height: 640dp;
 	top: 50%;
-	margin-top: -286dp;
+	margin-top: -320dp;
 }
 
 body.lobby #content
 {
-	padding: 24dp 28dp 0 28dp;
+	padding: 22dp 28dp 0 28dp;
+}
+
+body.lobby #title, body.dlg #title, body.missionbrowser #list-caption, body.page-mods #title
+{
+	display: block;
+	height: 28dp;
+	margin: 0 0 14dp 0;
+	padding: 0;
+	font-size: 16dp;
+	line-height: 26dp;
+	text-align: left;
+	text-transform: none;
+	color: var(--t-muted, #a99bc9);
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
 }
 
 body.lobby #left
@@ -633,7 +673,22 @@ body.lobby .colour-name
 body.lobby #switches
 {
 	margin-top: 12dp;
-	padding: 12dp 14dp 6dp 14dp;
+	padding: 12dp 14dp 8dp 14dp;
+	background-color: var(--t-field-list, #0b0812a0);
+	border-radius: 4dp;
+}
+
+body.lobby #switches > label.check
+{
+	height: 30dp;
+	margin-bottom: 0;
+	line-height: 26dp;
+}
+
+body.lobby #switches > label.check > input
+{
+	margin-right: 8dp;
+	vertical-align: middle;
 }
 
 body.lobby #map
@@ -673,6 +728,8 @@ body.lobby #settings
 	width: 288dp;
 	margin-top: 12dp;
 	padding: 10dp 0 4dp 12dp;
+	background-color: var(--t-field-list, #0b0812a0);
+	border-radius: 4dp;
 }
 
 body.lobby .setting
@@ -690,11 +747,28 @@ body.lobby #notice
 	height: 20dp;
 	margin-top: 8dp;
 	line-height: 20dp;
+	color: var(--t-accent-strong, #d29bff);
+}
+
+body.lobby #buttons
+{
+	margin-top: 6dp;
 }
 
 body.lobby #ok, body.lobby #cancel
 {
 	width: 136dp;
+}
+
+body.lobby #ok
+{
+	margin-right: 16dp;
+}
+
+body.lobby #pick
+{
+	height: 36dp;
+	padding-top: 9dp;
 }
 
 /* The Settings screen: a column of tabs down the left, with the page to its right. The whole screen is one
@@ -823,4 +897,638 @@ body.waitbox.nobar #content
 body.waitbox.nobar #text
 {
 	height: 20dp;
+}
+
+
+/* Large and medium buttons. A big button is 40dp tall, as on the title menus, and a medium one 32dp.
+   The primary button of a screen has a thick left edge and an accent border, so it reads without its colour. */
+button.big, button.mid
+{
+	text-align: center;
+	border-radius: 2dp;
+}
+
+button.big
+{
+	height: 40dp;
+	padding: 11dp 12dp 0 12dp;
+	font-size: 16dp;
+}
+
+button.mid
+{
+	height: 32dp;
+	padding: 7dp 10dp 0 10dp;
+}
+
+button.big:active
+{
+	padding: 12dp 12dp 0 12dp;
+}
+
+button.mid:active
+{
+	padding: 8dp 10dp 0 10dp;
+}
+
+button.big.disabled, button.big:disabled, button.big.disabled:active, button.big:disabled:active
+{
+	padding: 11dp 12dp 0 12dp;
+}
+
+button.mid.disabled, button.mid:disabled, button.mid.disabled:active, button.mid:disabled:active
+{
+	padding: 7dp 10dp 0 10dp;
+}
+
+button.primary
+{
+	border-color: var(--t-accent, #b46bff);
+	border-left-width: 4dp;
+	color: var(--t-text-hot, #ffffff);
+	decorator: vertical-gradient(var(--t-hover-top, #3d2f57) var(--t-hover-bottom, #1f1829));
+}
+
+button.primary:hover
+{
+	border-color: var(--t-accent-strong, #d29bff);
+	decorator: vertical-gradient(var(--t-hover-top, #3d2f57) var(--t-face-bottom, #18131f));
+}
+
+button.primary:active
+{
+	border-color: var(--t-accent-strong, #d29bff);
+	decorator: vertical-gradient(var(--t-press-top, #1a1424) var(--t-press-bottom, #2a203a));
+}
+
+button.primary.disabled, button.primary:disabled, button.primary.disabled:active, button.primary:disabled:active
+{
+	border-color: var(--t-disabled-edge, #2c2638);
+	border-left-width: 1dp;
+	color: var(--t-disabled-text, #5f5873);
+	decorator: vertical-gradient(var(--t-disabled-top, #1c1825) var(--t-disabled-bottom, #141119));
+}
+
+/* The Settings pages. The page sits in from the tab column and the screen edge, its rows are 44dp tall with a
+   thin rule between them, and a section heading is a quiet caption over a rule, as on the title menus. A
+   row holds its label at the left and its control at the right; a check box comes first, beside its label. */
+body.page-settings #list
+{
+	justify-content: space-between;
+	padding: 20dp 20dp 24dp 32dp;
+}
+
+body.page-settings #extras, body.page-settings #music
+{
+	justify-content: space-between;
+}
+
+body.page-settings #side
+{
+	padding: 20dp 28dp 20dp 24dp;
+	border-left: 1dp var(--t-rule, #2e2640);
+}
+
+body.page-settings #side-title, body.page-settings #editor-name
+{
+	display: block;
+	height: 30dp;
+	margin: 0 0 12dp 0;
+	font-size: 16dp;
+	line-height: 28dp;
+	color: var(--t-muted, #a99bc9);
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
+}
+
+body.page-settings #description
+{
+	color: var(--t-text, #ece6f7);
+}
+
+body.page-settings .side-note
+{
+	color: var(--t-muted, #a99bc9);
+}
+
+body.page-settings .section
+{
+	height: 30dp;
+	margin: 24dp 0 6dp 0;
+	padding: 0 13dp;
+	font-size: 16dp;
+	line-height: 28dp;
+	text-align: left;
+	color: var(--t-muted, #a99bc9);
+	background-color: transparent;
+	border-top: 0dp transparent;
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
+}
+
+body.page-settings #list > .section:first-child
+{
+	margin-top: 0;
+}
+
+body.page-settings #extras > .section:first-child, body.page-settings #music > .section:first-child
+{
+	margin-top: 24dp;
+}
+
+body.page-settings .setting
+{
+	flex-wrap: nowrap;
+	width: 48.5%;
+	height: 44dp;
+	margin: 0;
+	padding: 0 8dp 0 10dp;
+	border-left: 3dp transparent;
+	border-bottom: 1dp var(--t-rule, #2e2640);
+	border-radius: 0;
+}
+
+body.page-settings .setting:hover
+{
+	background-color: #ffffff12;
+	border-left-color: var(--t-accent, #b46bff);
+}
+
+body.page-settings .setting > .caption
+{
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	margin-right: 12dp;
+	line-height: 20dp;
+	color: var(--t-text, #ece6f7);
+}
+
+body.page-settings .setting.disabled > .caption
+{
+	color: var(--t-disabled-text, #5f5873);
+}
+
+body.page-settings .setting > select
+{
+	flex: 0 0 auto;
+	width: 168dp;
+	height: 26dp;
+	margin: 0;
+}
+
+body.page-settings .setting > input[type='range']
+{
+	flex: 0 0 auto;
+	width: 98dp;
+	height: 22dp;
+	margin: 0;
+}
+
+body.page-settings .setting > .value
+{
+	flex: 0 0 auto;
+	width: 62dp;
+	margin: 0 0 0 10dp;
+	line-height: 20dp;
+	color: var(--t-caption, #d9c8ff);
+}
+
+body.page-settings label.check.setting
+{
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	line-height: 20dp;
+}
+
+body.page-settings label.check.setting > .caption
+{
+	margin-right: 0;
+}
+
+body.page-settings label.check.setting > input[type='checkbox']
+{
+	flex: 0 0 auto;
+	margin: 0 12dp 0 0;
+}
+
+body.page-settings #modes-row
+{
+	display: none;
+}
+
+body.page-settings #modes-select-row
+{
+	display: flex;
+}
+
+body.page-settings #music-buttons button
+{
+	width: 84dp;
+	height: 32dp;
+	margin-left: 8dp;
+}
+
+body.page-settings #tracks
+{
+	width: 100%;
+	height: 200dp;
+	margin-top: 12dp;
+}
+
+body.page-settings #footer
+{
+	flex: 0 0 auto;
+	height: 64dp;
+	padding: 0 28dp 0 32dp;
+	background-color: var(--t-column, #0a0814e6);
+	border-top: 1dp var(--t-column-edge, #3b2f55);
+}
+
+body.page-settings #footer button
+{
+	width: 120dp;
+	margin-left: 12dp;
+}
+
+body.page-settings #footer #footer-reset
+{
+	width: 180dp;
+	margin-left: 0;
+}
+
+body.page-settings #footer #footer-ok
+{
+	width: 140dp;
+}
+
+/* The Keyboard page keeps its own columns; its buttons are medium. */
+body.page-settings #list-footer button, body.page-settings #editor-buttons button, body.page-settings #conflict-buttons button
+{
+	height: 32dp;
+	padding: 7dp 10dp 0 10dp;
+}
+
+body.page-settings #list-footer button:active, body.page-settings #editor-buttons button:active, body.page-settings #conflict-buttons button:active
+{
+	padding: 8dp 10dp 0 10dp;
+}
+
+body.page-settings .head-row
+{
+	padding: 0 28dp 0 11dp;
+}
+
+body.page-settings #capture .prompt
+{
+	color: var(--t-muted, #a99bc9);
+}
+
+/* The Mods page is its own panel to the right of the tab column. */
+body.page-mods #reveal
+{
+	position: absolute;
+	left: 200dp;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: auto;
+	height: auto;
+	margin: 0;
+}
+
+body.page-mods #content
+{
+	width: 800dp;
+	padding: 24dp 32dp 0 32dp;
+}
+
+body.page-mods #mods
+{
+	margin-top: 0;
+	height: 270dp;
+}
+
+body.page-mods #mods .item
+{
+	height: 30dp;
+	line-height: 28dp;
+}
+
+body.page-mods #about
+{
+	margin-top: 28dp;
+	height: 110dp;
+	background-color: var(--t-field-list, #0b0812a0);
+}
+
+body.page-mods #status
+{
+	margin-top: 10dp;
+	height: 36dp;
+	line-height: 18dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+body.page-mods #status.problem
+{
+	color: var(--t-accent-strong, #d29bff);
+	border-left: 3dp var(--t-accent, #b46bff);
+	padding-left: 8dp;
+}
+
+body.page-mods #buttons
+{
+	margin-top: 14dp;
+}
+
+body.page-mods #toggle, body.page-mods #up, body.page-mods #down
+{
+	width: 120dp;
+}
+
+body.page-mods #up, body.page-mods #down
+{
+	margin-left: 8dp;
+}
+
+body.page-mods #ok, body.page-mods #cancel
+{
+	width: 110dp;
+}
+
+body.page-mods #ok
+{
+	margin-left: auto;
+}
+
+body.page-mods #cancel
+{
+	margin-left: 8dp;
+}
+
+/* The small dialogs: Movies, Load, Save and Delete, Confirm and the message boxes. Each is a panel with the
+   accent edge, a caption over a rule and big buttons at its lower right, the primary one rightmost. */
+body.dlg #content
+{
+	padding: 24dp 32dp 0 32dp;
+}
+
+body.dlg #buttons
+{
+	flex-direction: row-reverse;
+	justify-content: flex-start;
+}
+
+body.dlg #buttons button
+{
+	width: 120dp;
+	margin: 0 0 0 12dp;
+}
+
+body.dlg #buttons button:first-child
+{
+	margin-left: 0;
+}
+
+body.dlg-movies #reveal
+{
+	width: 480dp;
+	height: 424dp;
+	margin-top: -212dp;
+}
+
+body.dlg-movies #movies
+{
+	margin-top: 0;
+	height: 270dp;
+}
+
+body.dlg-movies #buttons
+{
+	margin-top: 16dp;
+}
+
+body.dlg-savegame #reveal
+{
+	width: 560dp;
+	height: 452dp;
+	margin-top: -226dp;
+}
+
+body.dlg-savegame #headings
+{
+	margin-top: 0;
+	height: 24dp;
+	line-height: 24dp;
+	font-size: 13dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+body.dlg-savegame #heading-description
+{
+	width: 300dp;
+	padding-left: 11dp;
+}
+
+body.dlg-savegame #heading-stamp, body.dlg-savegame.save #heading-stamp, body.dlg-savegame.delete #heading-stamp
+{
+	width: 150dp;
+	margin-left: 0;
+	padding-right: 0;
+	text-align: left;
+}
+
+body.dlg-savegame #files, body.dlg-savegame.save #files, body.dlg-savegame.delete #files
+{
+	margin-top: 4dp;
+	height: 268dp;
+}
+
+body.dlg-savegame.save #files
+{
+	height: 224dp;
+}
+
+body.dlg-savegame #files .item
+{
+	height: 30dp;
+	line-height: 28dp;
+}
+
+body.dlg-savegame .cell-description
+{
+	left: 11dp;
+	width: 280dp;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+body.dlg-savegame .cell-date
+{
+	left: 311dp;
+}
+
+body.dlg-savegame .cell-time
+{
+	left: 411dp;
+}
+
+body.dlg-savegame #files .item.unloadable
+{
+	color: var(--t-disabled-text, #5f5873);
+	text-decoration: line-through;
+}
+
+body.dlg-savegame #description
+{
+	display: block;
+	margin-top: 12dp;
+	width: 490dp;
+	height: 26dp;
+	padding: 3dp 6dp;
+}
+
+body.dlg-savegame #buttons, body.dlg-savegame.save #buttons, body.dlg-savegame.delete #buttons
+{
+	margin-top: 16dp;
+}
+
+body.dlg-savegame #accept, body.dlg-savegame #cancel
+{
+	margin-left: 12dp;
+	margin-right: 0;
+}
+
+body.dlg-savegame #accept
+{
+	margin-left: 0;
+}
+
+body.dlg-confirm #reveal
+{
+	width: 460dp;
+	height: 188dp;
+	margin-top: -94dp;
+}
+
+body.dlg-confirm #text
+{
+	height: 66dp;
+	font-size: 15dp;
+	line-height: 22dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.dlg-confirm #buttons
+{
+	margin-top: 16dp;
+}
+
+body.dlg-confirm #ok, body.dlg-confirm #cancel
+{
+	margin-left: 12dp;
+	margin-right: 0;
+}
+
+body.dlg-confirm #ok
+{
+	margin-left: 0;
+}
+
+body.dlg-message #reveal, body.dlg-message.net #reveal
+{
+	width: 480dp;
+	height: 200dp;
+	margin-top: -100dp;
+}
+
+body.dlg-message #text, body.dlg-message.net #text
+{
+	height: 88dp;
+}
+
+body.dlg-message #text p
+{
+	text-align: left;
+	font-size: 15dp;
+	line-height: 22dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.dlg-message #buttons, body.dlg-message #buttons.alone, body.dlg-message.net #buttons, body.dlg-message.net #buttons.alone
+{
+	flex-direction: row-reverse;
+	justify-content: flex-start;
+	margin-top: 16dp;
+}
+
+body.dlg-message #buttons button, body.dlg-message.net #buttons button, body.dlg-message.net #buttons.alone button
+{
+	width: 120dp;
+	margin: 0 0 0 12dp;
+}
+
+body.dlg-message #buttons button:first-child, body.dlg-message.net #buttons button:first-child
+{
+	margin-left: 0;
+}
+
+/* The mission browser. */
+body.missionbrowser #list-caption
+{
+	margin: 0;
+}
+
+body.missionbrowser #missions
+{
+	margin-top: 10dp;
+	height: 438dp;
+}
+
+body.missionbrowser #missions .item.header
+{
+	color: var(--t-text-hot, #ffffff);
+	border-left-color: var(--t-edge-dim, #4d3d6b);
+}
+
+body.missionbrowser #missions .item.disabled
+{
+	color: var(--t-disabled-text, #5f5873);
+}
+
+body.missionbrowser #briefing
+{
+	background-color: var(--t-field-list, #0b0812a0);
+}
+
+body.missionbrowser #title
+{
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.missionbrowser #buttons
+{
+	height: 40dp;
+}
+
+body.missionbrowser #difficulty-row
+{
+	display: flex;
+	align-items: center;
+	height: 40dp;
+	line-height: 20dp;
+}
+
+body.missionbrowser #difficulty
+{
+	height: 26dp;
+}
+
+body.missionbrowser #back, body.missionbrowser #play
+{
+	height: 40dp;
+}
+
+body.lobby .trough
+{
+	z-index: 0;
 }

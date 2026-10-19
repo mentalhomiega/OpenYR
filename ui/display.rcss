@@ -9,6 +9,11 @@
 
 /* The display, graphics and accessibility pages share this sheet. The layout is in settings.rcss. */
 
+#modes-select-row
+{
+	display: none;
+}
+
 selectbox
 {
 	background-color: #0a0615;
