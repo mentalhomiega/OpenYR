@@ -1,0 +1,46 @@
+; Superweapons that use the Ares keys, defined by the mod in tests/autotest/ares-superweapons/. Each weapon is granted a few
+; frames before it is fired, because a granted weapon with no structure behind it is withdrawn at the next recalculation.
+; Expected log lines, in order:
+;   swaim TestBlast 52,40 gives action NoCustom and the MyNo cursor (SW.FireIntoShroud=no over shroud).
+;   SUPER TestBlast fired, then the enemy infantryman on 52,36 dies 30 frames later (SW.Deferment=30, HE 400 damage); the
+;   player's money drops from 10000 to 9500 (Money.Amount=-500).
+;   SUPER TestDeliver fired, then "delivered 3 of 3 objects near 52,40" 20 frames later (the unit delivery's default deferment).
+;   SUPER TestPod fired, then four E2 of the player land (DropPod.Types, Minimum and Maximum).
+;   TestUnknown (Type=NoSuchBehavior) is never reported as fired and stays charged.
+;   SUPER TestIC and TestSonar fire with no error.
+;   With the structures from line 400 on, TestAuto fires by itself every 90 frames near the power plant, and TestBattery raises
+;   the house power by 500 for 180 frames after "fire TestBattery".
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons.txt -Mods src-agent17/tests/autotest/ares-superweapons -Seconds 240 -Filter "AUTOTEST   swaim|AUTOTEST   house Am|SUPER|Exception"
+30 command CenterBase
+40 grant TestBlast
+41 grant TestDeliver
+55 spawn E1 52 36
+56 spawn E1 54 44
+60 swaim TestBlast 52 40
+61 swaim TestBlast 0 0
+62 swaim TestDeliver 52 40
+63 swaim TestUnknown 52 40
+64 swaim TestIC 52 40
+70 fire TestBlast 52 40
+110 where E1
+120 grant TestDeliver
+121 fire TestDeliver 52 40
+150 where E1
+160 grant TestPod
+161 fire TestPod 52 40
+200 where E2
+230 grant TestUnknown
+231 fire TestUnknown 52 40
+250 grant TestIC
+251 fire TestIC 52 40
+260 grant TestSonar
+261 fire TestSonar 52 40
+300 houses
+400 own GAPOWR 56 40
+420 own GAWEAP 60 40
+600 supers
+640 fire TestBattery 0 0
+660 houses
+900 supers
+960 quit
