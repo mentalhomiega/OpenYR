@@ -1737,6 +1737,59 @@ void RadarClass::Radar_Pixel(Point2D const & point)
 }
 
 
+static void Compute_Foundation(FOUNDATION_LIST & foundation, int bwidth, int bheight, float ZoomFactor)
+{
+	foundation.Clear();
+
+	int zw;
+	if (bwidth == 1) {
+		zw = std::max(1.0, ZoomFactor + 0.5);
+	} else {
+		zw = std::max(2.0, bwidth * ZoomFactor + 0.5);
+	}
+
+	int zh;
+	if (bheight == 1) {
+		zh = std::max(1.0, ZoomFactor + 0.5);
+	} else {
+		zh = std::max(2.0, bheight * ZoomFactor + 0.5);
+	}
+
+	int fy = 0;
+	int zs = zh + zw - 1;
+
+	if (zs > 0) {
+		int left_edge = 0;
+		while (true) {
+			int xbegin;
+			if (fy < zh) {
+				xbegin = left_edge;
+			} else {
+				xbegin = fy - 2 * zh + 2;
+			}
+			int xend;
+			if (fy < zw) {
+				xend = fy;
+			} else {
+				xend = 2 * zw - fy - 2;
+			}
+			int fx = xbegin;
+
+			while ( fx <= xend )
+			{
+				foundation.Add(Point2D(fx, fy));
+				++fx;
+			}
+			++fy;
+			--left_edge;
+			if (fy >= zs) {
+				break;
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Computes the radar footprint of every building size.
 /// This routine works out the diamond of radar pixels that a building of each size covers, so
@@ -1746,61 +1799,10 @@ void RadarClass::Radar_Pixel(Point2D const & point)
 /// whenever the radar zoom changes.</remarks>
 void RadarClass::Compute_Foundations(void)
 {
-	int i;
-	for (i = 0; i < BSIZE_COUNT; i++) {
-		Foundation[i].Clear();
-
-		int bwidth = BuildingTypeClass::SizeWidth[i];
-		int bheight = BuildingTypeClass::SizeHeight[i];
-
-		int zw;
-		if (bwidth == 1) {
-			zw = std::max(1.0, ZoomFactor + 0.5);
-		} else {
-			zw = std::max(2.0, bwidth * ZoomFactor + 0.5);
-		}
-
-		int zh;
-		if (bheight == 1) {
-			zh = std::max(1.0, ZoomFactor + 0.5);
-		} else {
-			zh = std::max(2.0, bheight * ZoomFactor + 0.5);
-		}
-
-		int fy = 0;
-		int zs = zh + zw - 1;
-
-		if (zs > 0) {
-			int left_edge = 0;
-			while (true) {
-				int xbegin;
-				if (fy < zh) {
-					xbegin = left_edge;
-				} else {
-					xbegin = fy - 2 * zh + 2;
-				}
-				int xend;
-				if (fy < zw) {
-					xend = fy;
-				} else {
-					xend = 2 * zw - fy - 2;
-				}
-				int fx = xbegin;
-
-				while ( fx <= xend )
-				{
-					Foundation[i].Add(Point2D(fx, fy));
-					++fx;
-				}
-				++fy;
-				--left_edge;
-				if (fy >= zs) {
-					break;
-				}
-			}
-		}
-
+	for (int i = 0; i < BSIZE_COUNT; i++) {
+		Compute_Foundation(Foundation[i], BuildingTypeClass::SizeWidth[i], BuildingTypeClass::SizeHeight[i], ZoomFactor);
 	}
+	CustomFoundation.clear();
 }
 
 
@@ -1811,6 +1813,15 @@ void RadarClass::Compute_Foundations(void)
 /// covers.</returns>
 FOUNDATION_LIST const& RadarClass::Get_Foundation(BuildingTypeClass * btype)
 {
+	if (btype->IsCustomFoundation) {
+		std::pair<int, int> key(btype->CustomWidth, btype->CustomHeight);
+		auto found = CustomFoundation.find(key);
+		if (found == CustomFoundation.end()) {
+			found = CustomFoundation.emplace(key, FOUNDATION_LIST()).first;
+			Compute_Foundation(found->second, key.first, key.second, ZoomFactor);
+		}
+		return(found->second);
+	}
 	return(Foundation[btype->Size]);
 }
 

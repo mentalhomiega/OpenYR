@@ -15,6 +15,13 @@ reader_exclusions:
     reason: The overlay pack fields are compressed scenario payloads, not authored scalar settings.
 
 site_exclusions:
+  - path: code/builtype.cpp
+    function: BuildingTypeClass::Read_Custom_Foundation
+    keys: [Foundation.X, Foundation.Y, FoundationOutline.Length]
+    classification: duplicate
+    canonical_key: Foundation
+    reason: These Ares keys describe the cells of Foundation=Custom and are documented in the custom footprint table of the Foundation page.
+
   - path: code/loadscreen.cpp
     function: Campaign_Is_Allied
     keys: [Player]

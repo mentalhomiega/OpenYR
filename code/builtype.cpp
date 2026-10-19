@@ -58,6 +58,7 @@
 #include "always.h"
 
 #include "builtype.h"
+#include "foundation.h"
 
 #include "_map.h"
 #include "_mixfile.h"
@@ -257,6 +258,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Power(0),
 	Drain(0),
 	Size(BSIZE_11),
+	IsCustomFoundation(false),
+	CustomWidth(0),
+	CustomHeight(0),
 	ZHeight(1),
 	MidPoint(0),
 	DoorStages(0),
@@ -820,6 +824,9 @@ Cell const * BuildingTypeClass::Occupy_List(bool placement) const
  *=============================================================================================*/
 int BuildingTypeClass::Width(void) const
 {
+	if (IsCustomFoundation) {
+		return(CustomWidth);
+	}
 	return(SizeWidth[Size]);
 }
 
@@ -840,7 +847,8 @@ int BuildingTypeClass::Width(void) const
  *=============================================================================================*/
 int BuildingTypeClass::Height(bool bib) const
 {
-	return(SizeHeight[Size] + ((bib && IsBibbed) ? 1 : 0));
+	int height = IsCustomFoundation ? CustomHeight : SizeHeight[Size];
+	return(height + ((bib && IsBibbed) ? 1 : 0));
 }
 
 
@@ -1543,6 +1551,13 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		if (size != BSIZE_FIRST) {
 			Size = size;
 		}
+		if (Is_Custom_Foundation_Text(ArtINI.Get_String(Name(), "Foundation"))) {
+			Read_Custom_Foundation(ArtINI, Name());
+		} else if (Is_Custom_Foundation_Text(ArtINI.Get_String(Graphic_Name(), "Foundation"))) {
+			Read_Custom_Foundation(ArtINI, Graphic_Name());
+		} else if (ArtINI.Is_Present(Graphic_Name(), "Foundation") || ArtINI.Is_Present(Name(), "Foundation")) {
+			Clear_Custom_Foundation();
+		}
 
 		MidPoint = ArtINI.Get_Int(Graphic_Name(), "MidPoint", MidPoint);
 		DoorStages = ArtINI.Get_Int(Graphic_Name(), "DoorStages", DoorStages);
@@ -1578,8 +1593,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			BuildupData = NULL;
 		}
 
-		OccupyList = OccupyLists[Size];
-		ExitList = ExitLists[Size];
+		Attach_Foundation_Lists();
 
 		/*
 		 * Graphics.
@@ -2376,8 +2390,7 @@ void BuildingTypeClass::Post_Load(void)
 	}
 
 	ToTile = NULL;
-	OccupyList = OccupyLists[Size];
-	ExitList = ExitLists[Size];
+	Attach_Foundation_Lists();
 
 	Fetch_Building_Voxel_Image();
 	Fetch_Building_Normal_Image(Scen->Theater);
@@ -2413,6 +2426,11 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PowersUpBuilding);
 	stream.Serialize(FreeUnit);
 	stream.Serialize(FoundationFace);
+	stream.Serialize(IsCustomFoundation);
+	stream.Serialize(CustomWidth);
+	stream.Serialize(CustomHeight);
+	stream.Serialize(CustomOccupy);
+	stream.Serialize(CustomOutline);
 	stream.Serialize(Adjacent);
 	stream.Serialize(ToBuild);
 	stream.Serialize(ExitCoordinate);
@@ -2639,12 +2657,107 @@ void BuildingTypeClass::Post_Load_Game(void)
 
 
 /// <summary>
+/// Reads an Ares custom foundation from an art section that sets Foundation=Custom.
+/// Foundation.X and Foundation.Y give the width and height in cells, Foundation.0 onward list
+/// the occupied cells, and FoundationOutline.Length cells from FoundationOutline.0 list the
+/// cells around the building, which also serve as its exit cells. A missing cell list
+/// defaults to the full rectangle, and a missing outline to the ring of cells around the
+/// occupied ones. A section without a positive width and height leaves the stock size.
+/// </summary>
+void BuildingTypeClass::Read_Custom_Foundation(CCINIClass const & ini, char const * section)
+{
+	int width = ini.Get_Int(section, "Foundation.X", 0);
+	int height = ini.Get_Int(section, "Foundation.Y", 0);
+	if (width <= 0 || height <= 0) {
+		return;
+	}
+
+	std::vector<FoundationCell> occupy;
+	for (int index = 0; index < width * height; index++) {
+		char entry[32];
+		std::snprintf(entry, sizeof(entry), "Foundation.%d", index);
+		if (!ini.Is_Present(section, entry)) {
+			break;
+		}
+		Point2D point = ini.Get_Point(section, entry, Point2D(0, 0));
+		occupy.push_back(FoundationCell{point.X, point.Y});
+	}
+
+	std::vector<FoundationCell> outline;
+	int length = ini.Get_Int(section, "FoundationOutline.Length", 0);
+	for (int index = 0; index < length; index++) {
+		char entry[48];
+		std::snprintf(entry, sizeof(entry), "FoundationOutline.%d", index);
+		if (!ini.Is_Present(section, entry)) {
+			break;
+		}
+		Point2D point = ini.Get_Point(section, entry, Point2D(0, 0));
+		outline.push_back(FoundationCell{point.X, point.Y});
+	}
+
+	Foundation_Complete(width, height, occupy, outline);
+
+	IsCustomFoundation = true;
+	CustomWidth = width;
+	CustomHeight = height;
+	CustomOccupy.clear();
+	for (FoundationCell const & cell : occupy) {
+		CustomOccupy.push_back(Cell(cell.X, cell.Y));
+	}
+	CustomOccupy.push_back(REFRESH_EOL);
+
+	// War factories read the eleventh exit cell directly, so a shorter outline is padded with list ends.
+	CustomOutline.clear();
+	for (FoundationCell const & cell : outline) {
+		CustomOutline.push_back(Cell(cell.X, cell.Y));
+	}
+	do {
+		CustomOutline.push_back(REFRESH_EOL);
+	} while (CustomOutline.size() < 12);
+
+	Size = BSIZE_FIRST;
+	for (int index = BSIZE_FIRST; index < BSIZE_COUNT; index++) {
+		if (SizeWidth[index] == width && SizeHeight[index] == height && index != BSIZE_33_REF) {
+			Size = (BSizeType)index;
+			break;
+		}
+	}
+}
+
+
+void BuildingTypeClass::Clear_Custom_Foundation(void)
+{
+	IsCustomFoundation = false;
+	CustomWidth = 0;
+	CustomHeight = 0;
+	CustomOccupy.clear();
+	CustomOutline.clear();
+}
+
+
+void BuildingTypeClass::Attach_Foundation_Lists(void)
+{
+	if (IsCustomFoundation && !CustomOccupy.empty() && !CustomOutline.empty()) {
+		OccupyList = CustomOccupy.data();
+		ExitList = CustomOutline.data();
+	} else {
+		IsCustomFoundation = false;
+		OccupyList = OccupyLists[Size];
+		ExitList = ExitLists[Size];
+	}
+}
+
+
+/// <summary>
 /// Fetches the list of cells that objects leave this building through.
 /// </summary>
 /// <returns>Returns with a pointer to the exit cell list that suits this building's
 /// size.</returns>
 Cell const * BuildingTypeClass::Exit_List(void) const
 {
+	if (IsCustomFoundation) {
+		return(CustomOutline.data());
+	}
 	BSizeType size = Size;
 	if (size == BSIZE_33_REF) {
 		size = BSIZE_33;
