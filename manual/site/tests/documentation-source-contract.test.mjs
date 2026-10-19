@@ -167,10 +167,9 @@ test('Drop pod superweapon placement draws on one shared 3-per-passenger attempt
 		source('code/super.cpp'),
 		'void SuperClass::Drop_Pods(Cell const & cell) const',
 	);
-	assert.match(
-		dropPods,
-		/int count = Random_Pick\(Rule->DropPodInfantryMinimum, Rule->DropPodInfantryMaximum\);/,
-	);
+	assert.match(dropPods, /keys\.DropPodMinimum >= 0 \? keys\.DropPodMinimum : Rule->DropPodInfantryMinimum;/);
+	assert.match(dropPods, /: Rule->DropPodInfantryMaximum;/);
+	assert.match(dropPods, /int count = Random_Pick\(minimum, maximum\);/);
 	assert.match(dropPods, /int attempts = 3 \* count;/);
 	assert.match(dropPods, /while \(toplace && attempts--\)/);
 });
@@ -947,7 +946,7 @@ test('An AI trigger names its side by its position', () => {
 });
 
 test('The hunter-seeker comes from the acted side', () => {
-	const superweapon = source('code/super.cpp');
+	const superweapon = source('code/super.cpp') + source('code/suprfire.cpp');
 
 	assert.match(superweapon, /side->HunterSeeker/, 'the acted side names the drone');
 	assert.doesNotMatch(superweapon, /GDIHunterSeeker|NodHunterSeeker/, 'the legacy pair is not consulted');
@@ -1132,6 +1131,9 @@ test('The deployment names the files the game reads', () => {
 	const config = functionBody(
 		source('code/deploymentconfig.cpp'),
 		'void DeploymentConfigClass::Read_INI(INIClass const & ini)',
+	) + functionBody(
+		source('code/deploymentconfig.cpp'),
+		'void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)',
 	);
 
 	for (const [key, member] of [
