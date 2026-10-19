@@ -126,6 +126,9 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	UseFireParticles(false),
 	UseSparkParticles(false),
 	IsRailgun(false),
+	IsDetachedRailgun(false),
+	BoltColorMask(0),
+	HasBeamColor(false),
 	IsLobber(false),
 	IsBright(false),
 	LaserDuration(10),
@@ -262,6 +265,23 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		UseFireParticles = ini.Get_Bool(IniName, "UseFireParticles", UseFireParticles);
 		UseSparkParticles = ini.Get_Bool(IniName, "UseSparkParticles", UseSparkParticles);
 		IsRailgun = ini.Get_Bool(IniName, "IsRailgun", IsRailgun);
+		IsDetachedRailgun = ini.Get_Bool(IniName, "IsDetachedRailgun", IsDetachedRailgun);
+		if (ini.Is_Present(IniName, "Bolt.Color1")) {
+			BoltColor[0] = ini.Get_RGBClass(IniName, "Bolt.Color1", BoltColor[0]);
+			BoltColorMask |= 1;
+		}
+		if (ini.Is_Present(IniName, "Bolt.Color2")) {
+			BoltColor[1] = ini.Get_RGBClass(IniName, "Bolt.Color2", BoltColor[1]);
+			BoltColorMask |= 2;
+		}
+		if (ini.Is_Present(IniName, "Bolt.Color3")) {
+			BoltColor[2] = ini.Get_RGBClass(IniName, "Bolt.Color3", BoltColor[2]);
+			BoltColorMask |= 4;
+		}
+		if (ini.Is_Present(IniName, "Beam.Color")) {
+			BeamColor = ini.Get_RGBClass(IniName, "Beam.Color", BeamColor);
+			HasBeamColor = true;
+		}
 		IsLobber = ini.Get_Bool(IniName, "Lobber", IsLobber);
 
 		LaserInnerColor = ini.Get_RGBClass(IniName, "LaserInnerColor", LaserInnerColor);
@@ -432,6 +452,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc((char)LaserDuration);
 	crc(IsBigLaser);
 	crc(IsRailgun);
+	crc(IsDetachedRailgun);
 	crc(IsElectric);
 	crc(IsBright);
 	crc(UseSparkParticles);
@@ -514,6 +535,13 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AbductBelowPercent);
 	stream.Serialize(AbductAnim);
 	stream.Serialize(IsAbductChangeOwner);
+	stream.Serialize(IsDetachedRailgun);
+	stream.Serialize(BoltColorMask);
+	stream.Serialize(BoltColor[0]);
+	stream.Serialize(BoltColor[1]);
+	stream.Serialize(BoltColor[2]);
+	stream.Serialize(HasBeamColor);
+	stream.Serialize(BeamColor);
 }
 
 

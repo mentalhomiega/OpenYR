@@ -19,6 +19,8 @@ AttachedParticleSystem=LargeRailgunSys ; a ParticleSystemType registered in [Par
 ROF=60
 ```
 
+A weapon with [`IsDetachedRailgun=yes`](/keys/isdetachedrailgun/) fires the same beam without the wait for the particle system described under Firing rate.
+
 ## What the beam hits
 
 The beam damages:

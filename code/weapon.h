@@ -209,6 +209,18 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsRailgun;
 
+		// IsDetachedRailgun (Ares): the weapon draws the railgun beam but may fire again before the beam has faded.
+		bool IsDetachedRailgun;
+
+		// Bolt.Color1 to Bolt.Color3 (Ares): the colours of the three strands of an electric bolt. Bit n of the mask is set when
+		// Bolt.Color(n+1) is written; a strand without one keeps the palette colour.
+		int BoltColorMask;
+		RGBClass BoltColor[3];
+
+		// Beam.Color (Ares): the colour of the radiation beam, in place of the chrono or radiation colour.
+		bool HasBeamColor;
+		RGBClass BeamColor;
+
 		/*
 		 * If this weapon always lobs its shot in a high arc, then this flag will be true.
 		 * Other weapons resort to an arc only when the target sits high enough overhead that

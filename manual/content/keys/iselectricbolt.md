@@ -15,7 +15,7 @@ IsElectricBolt=yes
 Projectile=InvisibleLow ; a BulletType, registered by a weapon naming it as its Projectile
 ```
 
-The bolt is three jagged strands that arc upward between the two ends. Two strands use color 10 of `PALETTE.PAL`, or color 5 with [`IsAlternateColor=yes`](/keys/isalternatecolor/), and the third uses color 15. The strands take a new shape every frame, and the bolt lasts 17 frames. Objects and terrain in front of the bolt hide it.
+The bolt is three jagged strands that arc upward between the two ends. Two strands use color 10 of `PALETTE.PAL`, or color 5 with [`IsAlternateColor=yes`](/keys/isalternatecolor/), and the third uses color 15. [`Bolt.Color1`](/keys/bolt.color1/), [`Bolt.Color2`](/keys/bolt.color2/) and [`Bolt.Color3`](/keys/bolt.color3/) set the colour of each strand in place of its palette colour. The strands take a new shape every frame, and the bolt lasts 17 frames. Objects and terrain in front of the bolt hide it.
 
 When a vehicle fires, the start of its bolt follows the vehicle's mounting while the bolt lasts. Only one bolt follows a vehicle at a time; a vehicle that fires again before its bolt fades leaves the second bolt where it started. The end of a bolt never moves.
 

@@ -4844,6 +4844,10 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 
 	EBoltClass * bolt = new EBoltClass;
 	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->ColorMask = weapon->BoltColorMask;
+	for (int strand = 0; strand < 3; strand++) {
+		bolt->Colors[strand] = weapon->BoltColor[strand];
+	}
 	bolt->Fire(source, target->Center_Coord(), zadjust);
 	bolt->Set_Owner(this, which);
 }
@@ -5369,10 +5373,17 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
 					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 				}
-				if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
+				if ((weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) || weapon->IsDetachedRailgun) {
 					Coord start = fire_coord;
 					Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
-					ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+					ParticleSystemClass * beam = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST railgun %s fires %s at frame %d, detached %d\n", TClass->Name(), weapon->Name(), Frame, (int)weapon->IsDetachedRailgun);
+					}
+					// A detached beam is not remembered, so it does not hold up the next shot.
+					if (weapon->IsRailgun) {
+						ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = beam;
+					}
 				}
 
 				LastFireFrame = Frame;
@@ -5460,7 +5471,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
 				if (weapon->IsRadBeam) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), weapon->HasBeamColor ? weapon->BeamColor : (temporal ? Rule->ChronoBeamColor : Rule->RadColor));
 				}
 
 				/*

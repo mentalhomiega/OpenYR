@@ -5056,6 +5056,23 @@ Battery.Power:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Beam.Color:
+  key: Beam.Color
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: BeamColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 BehavesLike:
   key: BehavesLike
   scopes:
@@ -5357,6 +5374,57 @@ BlueMoldTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Bolt.Color1:
+  key: Bolt.Color1
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: BoltColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+Bolt.Color2:
+  key: Bolt.Color2
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: BoltColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+Bolt.Color3:
+  key: Bolt.Color3
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WeaponTypeClass
+      member: BoltColor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 BombAttachSound:
   key: BombAttachSound
   scopes:
@@ -21427,6 +21495,23 @@ IsCoreDefender:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+IsDetachedRailgun:
+  key: IsDetachedRailgun
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsDetachedRailgun
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 IsDropship:
   key: IsDropship
   scopes:

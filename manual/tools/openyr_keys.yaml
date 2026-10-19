@@ -80,7 +80,9 @@ records:
   added-affectsenemies: Ares
   added-airburstspread: Ares
   added-anim-damage-delay: Ares
+  added-bolt-beam-colors: Ares
   added-ballisticscatter-range: Ares
+  added-railgun-detached: Ares
   added-subjecttobuildings: Ares
   added-effectsrequire: Ares
   added-emp-duration: Ares
