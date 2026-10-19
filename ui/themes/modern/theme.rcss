@@ -1162,3 +1162,162 @@ body.cncnet .label
 	font-weight: normal;
 	color: var(--t-text-hot, #ffffff);
 }
+
+/* The network lobby: the chat and the say field on the left, the games and the players on the right, and the
+   buttons below. Every element keeps its place by an absolute position inside the panel. */
+body.netlobby #backdrop #reveal
+{
+	width: 760dp;
+	height: 536dp;
+	top: 50%;
+	margin-top: -268dp;
+}
+
+body.netlobby #wallpaper
+{
+	border-width: 1dp 1dp 1dp 3dp;
+	border-color: var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-accent, #b46bff);
+	border-radius: 2dp;
+}
+
+body.netlobby #title
+{
+	display: block;
+	left: 28dp;
+	top: 22dp;
+	width: 704dp;
+	height: 28dp;
+	font-size: 16dp;
+	line-height: 26dp;
+	color: var(--t-muted, #a99bc9);
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
+}
+
+body.netlobby .caption
+{
+	height: 20dp;
+	line-height: 20dp;
+	font-size: 14dp;
+	color: var(--t-caption, #d9c8ff);
+}
+
+body.netlobby #cap-chat
+{
+	display: block;
+}
+
+body.netlobby #cap-name { left: 28dp; top: 66dp; height: 32dp; line-height: 32dp; }
+body.netlobby #cap-chat { left: 28dp; top: 112dp; }
+body.netlobby #cap-games { left: 492dp; top: 112dp; }
+body.netlobby #cap-players { left: 492dp; top: 280dp; }
+
+body.netlobby #handle
+{
+	left: 112dp;
+	top: 66dp;
+	width: 220dp;
+	height: 32dp;
+	padding: 0 10dp;
+	font-size: 15dp;
+	line-height: 30dp;
+}
+
+body.netlobby #say
+{
+	left: 28dp;
+	top: 424dp;
+	width: 440dp;
+	height: 32dp;
+	padding: 0 10dp;
+	font-size: 14dp;
+	line-height: 30dp;
+}
+
+body.netlobby #chat { left: 28dp; top: 136dp; width: 440dp; height: 280dp; }
+body.netlobby #games { left: 492dp; top: 136dp; width: 240dp; height: 136dp; }
+body.netlobby #players { left: 492dp; top: 304dp; width: 240dp; height: 152dp; }
+
+body.netlobby .list
+{
+	background-color: var(--t-field, #0b0812d0);
+	border-color: var(--t-edge-dim, #4d3d6b);
+}
+
+body.netlobby .list > .rows
+{
+	background-color: transparent;
+}
+
+body.netlobby .list .item
+{
+	height: 28dp;
+	padding: 0 10dp;
+	border-left: 3dp transparent;
+	font-size: 14dp;
+	line-height: 28dp;
+}
+
+body.netlobby #games .item:hover
+{
+	background-color: var(--t-face-bottom, #18131f);
+}
+
+body.netlobby #games .item.selected
+{
+	padding-left: 7dp;
+	border-left: 3dp var(--t-accent, #b46bff);
+}
+
+body.netlobby #chat .line
+{
+	padding: 0 12dp;
+	font-size: 14dp;
+	line-height: 20dp;
+}
+
+body.netlobby #nogames
+{
+	display: block;
+	margin: 6dp 10dp 0 10dp;
+	font-size: 13dp;
+	line-height: 18dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+body.netlobby #cancel, body.netlobby #join, body.netlobby #new
+{
+	top: 482dp;
+	width: 132dp;
+	height: 40dp;
+	padding: 11dp 8dp 0 8dp;
+	font-size: 16dp;
+	text-align: center;
+}
+
+body.netlobby #cancel:active, body.netlobby #join:active, body.netlobby #new:active
+{
+	padding: 12dp 8dp 0 8dp;
+}
+
+body.netlobby #cancel { left: 28dp; }
+body.netlobby #new { left: 456dp; }
+body.netlobby #join { left: 600dp; }
+
+body.netlobby #join
+{
+	color: var(--t-ink, #05040a);
+	border-color: var(--t-accent-strong, #d29bff);
+	decorator: vertical-gradient(var(--t-accent-strong, #d29bff) var(--t-accent, #b46bff));
+}
+
+body.netlobby #join:hover
+{
+	color: var(--t-ink, #05040a);
+	border-color: var(--t-text-hot, #ffffff);
+	decorator: vertical-gradient(var(--t-text-hot, #ffffff) var(--t-accent-strong, #d29bff));
+}
+
+body.netlobby #join:active
+{
+	decorator: vertical-gradient(var(--t-accent, #b46bff) var(--t-accent-strong, #d29bff));
+}

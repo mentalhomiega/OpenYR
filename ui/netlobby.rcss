@@ -68,3 +68,10 @@
 {
 	width: 94dp;
 }
+
+/* The page title, the chat caption and the empty-list hint belong to the modern style, whose sheet
+   shows them. */
+#title, #cap-chat, #nogames
+{
+	display: none;
+}
