@@ -22,7 +22,7 @@ when_omitted:
 
 `Custom` and `NoCustom` are the actions behind [`Cursor=`](/keys/cursor/) and [`NoCursor=`](/keys/nocursor/): a weapon with `Action=Custom` is aimed over cells it may fire at, and a weapon whose aiming rules refuse a cell reports `NoCustom` there. `NoCustom` is not a value to write in a rules file.
 
-[`Type=`](/keys/type/#scope-superweapontype) alone decides what the weapon does when it fires; `Action=` changes only the cursor and the click. A `Type=EMPulse` weapon is the exception. Once its targeting mode is armed, its cursor is always one of the [EM pulse](/systems/emp-pulse/#em-pulse-cannon-superweapon) cursors, and an in-range click fires the first section with `Action=EMPulse`. Give a `Type=EMPulse` section `Action=EMPulse`.
+[`Type=`](/keys/type/#scope-superweapontype) alone decides what the weapon does when it fires; `Action=` changes only the cursor and the click. A `Type=EMPulse` weapon is the exception. Once its targeting mode is armed, its cursor is always one of the [EM pulse](/systems/emp-pulse/#em-pulse-cannon-superweapon) cursors, and an in-range click fires the first section with `Action=EMPulse`. Give a `Type=EMPulse` section `Action=EMPulse`. With `Action=Custom`, the weapon keeps `Custom` in range and takes `NoCustom` out of range, so [`Cursor=`](/keys/cursor/) and [`NoCursor=`](/keys/nocursor/) choose the cursors.
 
 The [missile crate](/systems/superweapons/#one-shot-at-a-time) also picks its weapon by this key. When some section has `Type=MultiMissile`, the crate grants the first section with `Action=Nuke`.
 

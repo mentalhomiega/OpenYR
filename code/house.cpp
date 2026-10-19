@@ -11281,7 +11281,8 @@ SuperRules::AITarget Default_AI_Mode(SuperWeaponType type)
 bool HouseClass::Super_Weapon_Uses_Chosen_Target(SuperClass const * super) const
 {
 	SuperWeaponKeys const & keys = super->Class->Keys;
-	if ((SuperRules::AITarget)keys.AITargeting != SuperRules::AITarget::Default) {
+	SuperRules::AITarget const mode = (SuperRules::AITarget)keys.AITargeting;
+	if (mode != SuperRules::AITarget::Default && mode != SuperRules::AITarget::IronCurtain && mode != SuperRules::AITarget::ForceShield) {
 		return(true);
 	}
 	switch (super->Class->Type) {

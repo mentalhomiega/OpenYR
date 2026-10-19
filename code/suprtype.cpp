@@ -504,7 +504,7 @@ ActionType SuperWeaponTypeClass::Stock_Action(Cell const & cell, ObjectClass * o
 	// it is the no-shield cursor (SuperWeaponTypeClass::MouseOverObject, 0x6CEF80).
 	if (Type == SUPER_FORCE_SHIELD) {
 		if (object == NULL || object->RTTI != RTTI_BUILDING || !((BuildingClass *)object)->House->Is_Ally(PlayerPtr)) {
-			return(ACTION_NO_FORCE_SHIELD);
+			return(Action == ACTION_CUSTOM ? ACTION_NO_CUSTOM : ACTION_NO_FORCE_SHIELD);
 		}
 		return(Action);
 	}
@@ -537,17 +537,25 @@ ActionType SuperWeaponTypeClass::Stock_Action(Cell const & cell, ObjectClass * o
 		}
 	}
 
+	// A weapon with Action=Custom keeps that action in range, and takes NoCustom out of range.
+	ActionType const in_range = Action == ACTION_CUSTOM ? ACTION_CUSTOM : ACTION_EMPULSE;
+	ActionType const out_of_range = Action == ACTION_CUSTOM ? ACTION_NO_CUSTOM : ACTION_EMPULSE_RANGE;
+
 	if (cannon == NULL) {
-		return(ACTION_EMPULSE_RANGE);
+		return(out_of_range);
 	}
 
-	WeaponTypeClass *weap = cannon->Get_Class_Weapon_Data()->Weapon;
+	auto const * data = cannon->Get_Class_Weapon_Data();
+	WeaponTypeClass * weap = data != NULL ? data->Weapon : NULL;
+	if (Keys.RangeMaximum < 0.0f && weap == NULL) {
+		return(out_of_range);
+	}
 	int range = Keys.RangeMaximum >= 0.0f ? (int)Keys.RangeMaximum : weap->Range / CELL_LEPTON;
 	Cell cannon_cell = cannon->PositionCell;
 	Cell dist(target_cell - cannon_cell);
 	if (dist.X * dist.X + dist.Y * dist.Y < range * range) {
-		return(ACTION_EMPULSE);
+		return(in_range);
 	}
 
-	return(ACTION_EMPULSE_RANGE);
+	return(out_of_range);
 }
