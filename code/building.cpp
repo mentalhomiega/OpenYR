@@ -180,6 +180,7 @@
 #include "unittype.h"
 #include "vox.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "color.hh"
@@ -2597,6 +2598,11 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					return(RESULT_NONE);
 				}
 			}
+		}
+
+		if (!forced && Pass_Damage_To_Occupant(damage, distance, warhead, source, sourcehouse)) {
+			damage = 0;
+			return(RESULT_NONE);
 		}
 
 		if (Strength != 0) {
@@ -9858,6 +9864,40 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 		occupant->Delete_Me();
 	}
 	Mark(MARK_CHANGE);
+}
+
+
+/// <summary>
+/// Lets a shot at this structure hit one of its occupants instead (Ares UC.PassThrough). A structure with occupants and a
+/// UC.PassThrough above zero passes that share of the unforced, damaging shots through, or all of them from a projectile with
+/// SubjectToTrenches=no. A passed shot kills one occupant outright at the UC.FatalRate share, and otherwise damages one by the
+/// shot's damage times UC.DamageMultiplier through the occupant's own damage rules. The structure takes none of a passed shot.
+/// </summary>
+/// <returns>bool; Did the shot pass through to an occupant, so the structure takes no damage from it?</returns>
+bool BuildingClass::Pass_Damage_To_Occupant(int damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse)
+{
+	if (warhead == NULL || damage <= 0 || Occupants.Count() == 0 || Class->UCPassThrough <= 0.0) {
+		return(false);
+	}
+
+	BulletTypeClass const * const projectile = Exploding_Projectile();
+	double const pass_through = WarheadRules::Urban_Combat_Pass_Through(Class->UCPassThrough, projectile == NULL || projectile->IsSubjectToTrenches);
+	if (!WarheadRules::Chance_Succeeds(pass_through, Random_Pick(0, 9999))) {
+		return(false);
+	}
+
+	InfantryClass * const occupant = Occupants[Random_Pick(0, Occupants.Count() - 1)];
+	bool const fatal = Class->UCFatalRate > 0.0 && WarheadRules::Chance_Succeeds(Class->UCFatalRate, Random_Pick(0, 9999));
+	int hit = fatal ? occupant->Class->MaxStrength : WarheadRules::Urban_Combat_Damage(damage, Class->UCDamageMultiplier);
+	occupant->Take_Damage(hit, distance, warhead, source, fatal, true, sourcehouse);
+
+	// An occupant that died stays in the list and in limbo unless it is removed here.
+	if (occupant->IsActive && occupant->Strength <= 0) {
+		occupant->Delete_Me();
+	}
+	Update_Threat_In_Cell();
+	Mark(MARK_CHANGE);
+	return(true);
 }
 
 

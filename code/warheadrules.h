@@ -50,6 +50,26 @@ namespace WarheadRules
 		return(protected_driver ? 0.0 : 1.0);
 	}
 
+	// The share of shots at an occupied building that pass through to an occupant (Ares UC.PassThrough). A projectile with
+	// SubjectToTrenches=no passes every shot into a building that has any pass-through at all.
+	inline double Urban_Combat_Pass_Through(double pass_through, bool subject_to_trenches)
+	{
+		return(pass_through > 0.0 && !subject_to_trenches ? 1.0 : pass_through);
+	}
+
+	// Whether a roll from 0 to 9999 falls inside a chance given as a fraction, to a hundredth of a percent. A chance of 1
+	// or more always succeeds, and one of 0 or less never does.
+	inline bool Chance_Succeeds(double chance, int roll)
+	{
+		return(roll < (int)(chance * 10000.0 + 0.5));
+	}
+
+	// The damage a shot that is not fatal deals to the occupant it passes through to (Ares UC.DamageMultiplier).
+	inline int Urban_Combat_Damage(int damage, double multiplier)
+	{
+		return((int)(damage * multiplier));
+	}
+
 	// The length of an Iron Curtain a type with this IronCurtain.Modifier receives: a positive duration is multiplied
 	// and cut to a whole number of frames, and any other duration is left alone.
 	inline int Iron_Curtain_Duration(int duration, double modifier)

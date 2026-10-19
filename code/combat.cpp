@@ -75,6 +75,7 @@
 #include "unittype.h"
 #include "vanim.h"
 #include "vein.h"
+#include "bullettype.h"
 #include "warhead.h"
 
 #include "mph.hh"
@@ -212,8 +213,23 @@ Cell Cell_Spread_Offset(int index)
  *   06/20/1994 JLB : Source is a pointer.                                                     *
  *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
  *=============================================================================================*/
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of)
+static BulletTypeClass const * ExplodingProjectile = NULL;
+
+
+BulletTypeClass const * Exploding_Projectile(void)
 {
+	return(ExplodingProjectile);
+}
+
+
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of, BulletTypeClass const * projectile)
+{
+	struct ProjectileScope {
+		BulletTypeClass const * Saved;
+		explicit ProjectileScope(BulletTypeClass const * now) : Saved(ExplodingProjectile) { ExplodingProjectile = now; }
+		~ProjectileScope() { ExplodingProjectile = Saved; }
+	} const scope(projectile);
+
 	Cell								cell;		// Cell number under explosion.
 	ObjectClass *						object;		// Working object pointer.
 	DynamicVectorClass<ObjectClass *>	objects;	// Maximum number of objects that can be damaged.

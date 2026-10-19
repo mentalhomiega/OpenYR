@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 121 entries
+- [Rules](#rules): 125 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -71,6 +71,15 @@ Bounty.Value=200
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
+| [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
+| [`UC.FatalRate`](../manual/content/keys/uc.fatalrate.md) | `0%` | The share of passed-through shots that kill one occupant of the structure outright. | Ares |
+| [`UC.PassThrough`](../manual/content/keys/uc.passthrough.md) | `0%` | The share of shots at an occupied structure that hit one of its occupants instead of the structure. | Ares |
+
+### BulletType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`SubjectToTrenches`](../manual/content/keys/subjecttotrenches.md) | `yes` | With no, every shot of this projectile at a structure with UC.PassThrough passes through to its occupants. | Ares |
 
 ### HouseType
 

@@ -293,6 +293,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsCanOccupyFire(false),
 	IsShowOccupantPips(true),
 	MaxNumberOccupants(0),
+	UCPassThrough(0.0),
+	UCFatalRate(0.0),
+	UCDamageMultiplier(1.0),
 	MuzzleFlash(),
 	IsPowered(false),
 	IsPoweredSpecial(false),
@@ -1328,6 +1331,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanOccupyFire = ini.Get_Bool(Name(), "CanOccupyFire", IsCanOccupyFire);
 		IsShowOccupantPips = ini.Get_Bool(Name(), "ShowOccupantPips", IsShowOccupantPips);
 		MaxNumberOccupants = ini.Get_Int(Name(), "MaxNumberOccupants", MaxNumberOccupants);
+		UCPassThrough = ini.Get_Float(Name(), "UC.PassThrough", UCPassThrough);
+		UCFatalRate = ini.Get_Float(Name(), "UC.FatalRate", UCFatalRate);
+		UCDamageMultiplier = ini.Get_Float(Name(), "UC.DamageMultiplier", UCDamageMultiplier);
 		IsPowered = ini.Get_Bool(Name(), "Powered", IsPowered);
 		IsPoweredSpecial = ini.Get_Bool(Name(), "PoweredSpecial", IsPoweredSpecial);
 		IsBibbed = ini.Get_Bool(Name(), "Bib", IsBibbed);
@@ -2459,6 +2465,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanOccupyFire);
 	stream.Serialize(IsShowOccupantPips);
 	stream.Serialize(MaxNumberOccupants);
+	stream.Serialize(UCPassThrough);
+	stream.Serialize(UCFatalRate);
+	stream.Serialize(UCDamageMultiplier);
 	stream.Serialize(MuzzleFlash);
 	stream.Serialize(IsPowered);
 	stream.Serialize(IsPoweredSpecial);

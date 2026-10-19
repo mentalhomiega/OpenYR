@@ -96,6 +96,26 @@ void Test_Iron_Curtain_Duration(void)
 	Check(WarheadRules::Iron_Curtain_Duration(0, 2.0) == 0, "a zero duration stays zero");
 }
 
+
+void Test_Urban_Combat(void)
+{
+	Check(WarheadRules::Urban_Combat_Pass_Through(0.25, true) == 0.25, "a projectile subject to trenches keeps the structure's chance");
+	Check(WarheadRules::Urban_Combat_Pass_Through(0.25, false) == 1.0, "a projectile not subject to trenches passes every shot");
+	Check(WarheadRules::Urban_Combat_Pass_Through(0.0, false) == 0.0, "a structure with no pass-through passes none whatever the projectile");
+
+	Check(!WarheadRules::Chance_Succeeds(0.0, 0), "a chance of 0 never succeeds");
+	Check(WarheadRules::Chance_Succeeds(1.0, 9999), "a chance of 100% always succeeds");
+	Check(WarheadRules::Chance_Succeeds(0.01, 99), "1% succeeds at roll 99");
+	Check(!WarheadRules::Chance_Succeeds(0.01, 100), "1% fails at roll 100");
+	Check(WarheadRules::Chance_Succeeds(0.0001, 0), "a hundredth of a percent succeeds at roll 0");
+	Check(!WarheadRules::Chance_Succeeds(0.0001, 1), "a hundredth of a percent fails at roll 1");
+
+	Check(WarheadRules::Urban_Combat_Damage(100, 0.02) == 2, "a 2% multiplier takes 2 from 100");
+	Check(WarheadRules::Urban_Combat_Damage(30, 0.5) == 15, "a 50% multiplier halves the damage");
+	Check(WarheadRules::Urban_Combat_Damage(15, 0.5) == 7, "a fraction of a point is cut");
+	Check(WarheadRules::Urban_Combat_Damage(10, 1.5) == 15, "a multiplier above 100% raises the damage");
+}
+
 }
 
 
@@ -106,6 +126,7 @@ int main(void)
 	Test_Driver_Protection();
 	Test_Driver_Kill_Threshold();
 	Test_Iron_Curtain_Duration();
+	Test_Urban_Combat();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);
