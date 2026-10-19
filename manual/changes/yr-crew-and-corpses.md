@@ -4,9 +4,6 @@ category: fix
 release: 0.2.0
 targets:
 - type: key
-  id: Crew
-  effect: removed
-- type: key
   id: AlliedCrew
   effect: added
 - type: key
@@ -29,4 +26,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-Survivors now take their side's crew type from `AlliedCrew`, `SovietCrew` or `ThirdCrew`, and the shared `DeadBodies` list is read from `[General]`. An InfantryType can name its own `DeadBodies`, and `NotHuman=yes` keeps it from leaving a shared corpse. Selling or losing a structure no longer crashes for want of a crew type, and an infantry death no longer crashes on an empty corpse list.
+Survivors now take their side's crew type from `AlliedCrew`, `SovietCrew` or `ThirdCrew`, and `Crew` has no effect under `[General]`, and the shared `DeadBodies` list is read from `[General]`. An InfantryType can name its own `DeadBodies`, and `NotHuman=yes` keeps it from leaving a shared corpse. Selling or losing a structure no longer crashes for want of a crew type, and an infantry death no longer crashes on an empty corpse list.

@@ -9,12 +9,12 @@ when_omitted:
 
 Only a [`Crewed=yes`](/keys/crewed/) structure or vehicle produces survivors. [Survivors](/systems/capture/#survivors) covers how many a structure produces, and [`CrewEscape`](/keys/crewescape/) covers a vehicle's crew. The type of each survivor is chosen separately, by these tests in order:
 
-1. A structure that has never been captured and whose type builds structures produces the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type on a one-in-four roll.
+1. A structure that has never been captured and whose type builds structures produces the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type, or the side's own [`Engineer`](/keys/engineer/#scope-side), on a one-in-four roll.
 2. An object whose house belongs to no side produces the [`Technician`](/keys/technician/) type.
-3. An armed object whose house has a side produces the `Technician` type on a 15% roll.
-4. Any other survivor is of the crew type for the side of the object's own country: `AlliedCrew` for the first side in `[Sides]`, `SovietCrew` for the second and `ThirdCrew` for the third. A house of a later side leaves the `Technician` type.
+3. An armed object whose house has a side produces the `Technician` type, or the side's own [`Technician`](/keys/technician/#scope-side), on a 15% roll.
+4. Any other survivor is of the crew type for the side of the object's own country: the side's own [`Crew`](/keys/crew/) when its section sets one, otherwise `AlliedCrew` for the first side in `[Sides]`, `SovietCrew` for the second and `ThirdCrew` for the third. A house of a later side that sets no `Crew` leaves the `Technician` type.
 
-A structure whose house is on no side, or on a side after the third, releases no survivors. Step 2 and the later-side case of step 4 therefore apply only to vehicles.
+A structure whose house is on no side, or on a side after the third that sets no [`SurvivorDivisor`](/keys/survivordivisor/), releases no survivors. Step 2 and the later-side case of step 4 therefore apply only to vehicles, unless the side sets a divisor.
 
 ```ini title="rulesmd.ini"
 [General]

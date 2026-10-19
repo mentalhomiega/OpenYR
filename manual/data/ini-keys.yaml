@@ -7108,6 +7108,57 @@ CameraRange:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CampaignScore.Animation:
+  key: CampaignScore.Animation
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: CampaignScoreAnimation
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+CampaignScore.Background:
+  key: CampaignScore.Background
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: CampaignScoreBackground
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+CampaignScore.Palette:
+  key: CampaignScore.Palette
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: CampaignScorePalette
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 CanApproachTarget:
   key: CanApproachTarget
   scopes:
@@ -9819,6 +9870,23 @@ Credits:
       source: code/house.cpp
       guard: null
     level: HouseClass
+Crew:
+  key: Crew
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: Crew
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 CrewEscape:
   key: CrewEscape
   scopes:
@@ -10802,6 +10870,23 @@ DefaultDebrisSmokeSystem:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+DefaultDisguise:
+  key: DefaultDisguise
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: DefaultDisguise
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 DefaultFireStreamSystem:
   key: DefaultFireStreamSystem
   scopes:
@@ -13191,6 +13276,23 @@ EMPulseWarhead:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EVA.Tag:
+  key: EVA.Tag
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: buffer
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 EWGates:
   key: EWGates
   scopes:
@@ -14538,6 +14640,20 @@ Engineer:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: Engineer
+      source: code/side.cpp
+      guard: null
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -15113,6 +15229,57 @@ Fighter:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
+File.Flag:
+  key: File.Flag
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: FlagFile
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+File.LoadScreen:
+  key: File.LoadScreen
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenFile
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+File.LoadScreenPAL:
+  key: File.LoadScreenPAL
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenPalette
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 FileName:
   key: FileName
   scopes:
@@ -22624,6 +22791,91 @@ LineMultiplier:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+ListIndex:
+  key: ListIndex
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '100'
+      declared_in: HouseTypeClass
+      member: ListIndex
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+LoadScreenText.Brief:
+  key: LoadScreenText.Brief
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenBrief
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+LoadScreenText.Color:
+  key: LoadScreenText.Color
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenColor
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+LoadScreenText.Name:
+  key: LoadScreenText.Name
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenName
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+LoadScreenText.SpecialName:
+  key: LoadScreenText.SpecialName
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadScreenSpecialName
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 Loadable:
   key: Loadable
   scopes:
@@ -23877,6 +24129,23 @@ MessageDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MessageTextColor:
+  key: MessageTextColor
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: buffer
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 MetallicDebris:
   key: MetallicDebris
   scopes:
@@ -24783,6 +25052,91 @@ MultiplayerOnly:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+MultiplayerScore.Background:
+  key: MultiplayerScore.Background
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: MultiplayerScoreBackground
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+MultiplayerScore.Bars:
+  key: MultiplayerScore.Bars
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: MultiplayerScoreBars
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+MultiplayerScore.LoseTheme:
+  key: MultiplayerScore.LoseTheme
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: MultiplayerScoreLoseTheme
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+MultiplayerScore.Palette:
+  key: MultiplayerScore.Palette
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: MultiplayerScorePalette
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+MultiplayerScore.WinTheme:
+  key: MultiplayerScore.WinTheme
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: MultiplayerScoreWinTheme
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 MultipleFactory:
   key: MultipleFactory
   scopes:
@@ -33563,6 +33917,40 @@ Side:
       source: code/themeini.cpp
       guard: null
     level: ThemeControl
+Sidebar.MixFileIndex:
+  key: Sidebar.MixFileIndex
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: SideClass
+      member: SidebarMixFileIndex
+      source: code/side.cpp
+      guard: null
+    level: SideClass
+Sidebar.YuriFileNames:
+  key: Sidebar.YuriFileNames
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: SideClass
+      member: SidebarYuriFileNames
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 SidebarCameoText:
   key: SidebarCameoText
   scopes:
@@ -38013,6 +38401,23 @@ Surface:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+SurvivorDivisor:
+  key: SurvivorDivisor
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: SurvivorDivisor
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 SuspendDelay:
   key: SuspendDelay
   scopes:
@@ -38658,6 +39063,20 @@ TechLevel:
 Technician:
   key: Technician
   scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: Technician
+      source: code/side.cpp
+      guard: null
+    level: SideClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -38665,7 +39084,7 @@ Technician:
       kind: literal
       name: General
     value_type: class
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -39820,6 +40239,23 @@ TooBigToFitUnderBridge:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+ToolTipColor:
+  key: ToolTipColor
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: color
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 ToolTips:
   key: ToolTips
   scopes:

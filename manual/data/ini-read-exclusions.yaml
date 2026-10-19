@@ -70,6 +70,24 @@ site_exclusions:
     keys: ["1"]
     classification: excluded
     reason: The map digest is an editor-written checksum used to match scenarios between players, not an authored setting.
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [MultiplayerOnly]
+    classification: duplicate
+    canonical_key: MultiplayerOnly
+    reason: The skirmish map list reads the Basic section of a loose .MAP file to see whether the scenario reader would take it as a multiplayer map.
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [Official]
+    classification: duplicate
+    canonical_key: Official
+    reason: The skirmish map list reads the Basic section of a loose .MAP file for the flag the scenario reader owns.
+  - path: code/session.cpp
+    function: Loose_Map_Info
+    keys: [Name]
+    classification: duplicate
+    canonical_key: Name
+    reason: The skirmish map list shows the Basic section's Name of a loose .MAP file as the scenario reader holds it.
   - path: code/sendfile.cpp
     function: Find_Local_Scenario
     keys: ["1"]
@@ -173,7 +191,7 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_Mod_INI
-    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix]
+    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix, FollowMenuButtons]
     classification: excluded
     reason: Each is a setting of the deployment's own file or a mod's mod.ini, documented as those formats rather than as game data.
 

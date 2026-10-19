@@ -17,6 +17,8 @@ related:
 
 The skirmish setup screen lists one row for each start position the chosen map has, up to eight. A map with fewer than two start positions still shows two rows. Choosing another map with the Multiplay Map button changes the number of rows.
 
+The map list holds the maps that the packet files list, the maps in map packs, the loose `.YRM` and `.MPR` files, and each loose `.MAP` file whose `[Basic]` section sets [`MultiplayerOnly=yes`](/keys/multiplayeronly/), under its `Name=`. A packet entry whose `Description=` is a string table label that no string resolves, such as a placeholder a mod adds to keep its packet from being empty, is left out. The country list holds the countries that set [`Multiplay=yes`](/keys/multiplay/), in the order of their [`ListIndex`](/keys/listindex/).
+
 The first row is the person at the keyboard: the name field, a country, a color, a start position and a team. Every other row starts with one of five choices:
 
 | Choice | Effect |

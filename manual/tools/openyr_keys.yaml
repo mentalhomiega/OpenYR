@@ -84,6 +84,11 @@ records:
   group-and-keep-alive: Ares
   reverse-engineering: Ares
   object-type-keys: Ares, Phobos
+  ares-side-interface-keys: Ares
+  ares-side-survivor-keys: Ares
+  ares-side-score-screen-keys: Ares
+  ares-country-interface-keys: Ares
+  menu-buttons-follow-uimd: Ares
   rank-insignia-keys: Ares, Phobos
   phobos-opentopped-values: Phobos
   # Added keys that the original gamemd.exe has no string for, checked on 2026-10-16.
@@ -95,6 +100,7 @@ records:
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
+  - migattackcursor-and-floatbeach-figures
   - anim-sounds-and-frame-rate
   - added-aircraft-trailer
   - added-airportbound
@@ -322,6 +328,16 @@ opents_ini:
   Saves/CarryScenarioFile:
     effect: "`yes` stores a copy of the scenario file in every saved game, and a restart reads that copy."
     anchor: what-a-save-carries
+  Archives/ExpandPrefix:
+    effect: "The prefixes of the numbered expansion archives a mod mounts."
+    anchor: ""
+  Archives/CachePrefix:
+    effect: "The prefixes of the numbered cache archives a mod mounts."
+    anchor: ""
+  Menu/FollowMenuButtons:
+    effect: "`no` keeps every title menu button, whatever `[UISettings]` in the UI file says."
+    default: "yes"
+    anchor: ""
   Files/Rules:
     effect: "The rules file."
     anchor: the-files-it-reads
