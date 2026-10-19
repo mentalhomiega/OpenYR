@@ -355,6 +355,18 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// An ImmuneToAbduction type (Ares) is never taken aboard by an Abductor weapon, which damages it as any other weapon does.
+		bool IsImmuneToAbduction;
+
+		// ProtectedDriver and ProtectedDriver.MinHealth (Ares): a KillDriver hit takes the driver only while the vehicle's
+		// health ratio is at or below the minimum, which is 0 for a protected driver and 1 otherwise unless the rules set it.
+		bool IsProtectedDriver;
+		double ProtectedDriverMinHealth;
+
+		// IronCurtain.Modifier (Ares): the multiplier on the length of an Iron Curtain put on an object of this type. At 0 the
+		// object is immune to it.
+		double IronCurtainModifier;
+
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
@@ -820,6 +832,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).
 		const void * AltCameoData;
 
+		// The PCX picture drawn in place of the alternate cameo (Ares AltCameoPCX in the art).
+		std::string AltCameoPCX;
+
 		/*
 		 * Where this type's cameo sorts among the others of its kind on the sidebar, lowest
 		 * first.
@@ -1273,6 +1288,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		double Self_Heal_Cap(void) const;
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
+		std::string const & Get_Cameo_PCX(void) const;
+		bool Is_Alt_Cameo_Shown(void) const;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;
 		int Refund(HouseClass const * house, bool unscaled) const;
 		virtual int Time_To_Build(void) const override;

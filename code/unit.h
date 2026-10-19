@@ -303,9 +303,12 @@ class UnitClass : public FootClass
 		static void Read_INI(CCINIClass const & ini);
 		static void Write_INI(CCINIClass & ini);
 
+		bool Kill_Driver(WarheadTypeClass const * warhead);
+
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		void Eject_Passengers(void);
 		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);
 		void Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select);
 

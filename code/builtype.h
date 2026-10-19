@@ -491,6 +491,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsCanOccupyFire;
 		bool IsShowOccupantPips;
 		int MaxNumberOccupants;
+
+		// Ares UC.PassThrough, UC.FatalRate and UC.DamageMultiplier: the share of shots at an occupied structure that hit one
+		// occupant instead, the share of those that kill the occupant, and the multiplier on the damage of the rest.
+		double UCPassThrough;
+		double UCFatalRate;
+		double UCDamageMultiplier;
 		Point2D MuzzleFlash[MUZZLE_FLASH_COUNT];
 
 		/*

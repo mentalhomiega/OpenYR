@@ -163,6 +163,7 @@
 #include "voc.h"
 #include "vox.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "bench.hh"
@@ -1403,6 +1404,101 @@ bool UnitClass::Unlimbo(Coord const & coord, Dir256 dir)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Puts every passenger on a free cell beside this vehicle. A passenger with no free cell to go to stays aboard.
+/// </summary>
+void UnitClass::Eject_Passengers(void)
+{
+	for (int remaining = Cargo.How_Many(); remaining > 0; remaining--) {
+		FootClass * passenger = Cargo.Detach_Object();
+		if (passenger == NULL) {
+			break;
+		}
+
+		bool placed = false;
+		for (FacingType face = FACING_N; face < FACING_COUNT && !placed; face++) {
+			Cell const cell = Adjacent_Cell(PositionCell, face);
+			if (!Map.In_Radar(cell) || Map[cell].IsUnderBridge) {
+				continue;
+			}
+			if (passenger->Can_Enter_Cell(&Map[cell], face, Get_Cell_Height()) == MOVE_OK) {
+				Coord coord = cell.As_Coord();
+				if (passenger->RTTI == RTTI_INFANTRY) {
+					coord = Map.Closest_Free_Spot(coord);
+				}
+				ScenarioInit++;
+				placed = passenger->Unlimbo(coord, DirType(face).As_Dir256());
+				ScenarioInit--;
+			}
+		}
+
+		if (placed) {
+			if (Class->IsGunner && Cargo.How_Many() == 0) {
+				Remove_Gunner(passenger);
+			}
+			passenger->Assign_Mission(MISSION_GUARD);
+		} else {
+			Cargo.Attach(passenger);
+			passenger->Hidden();
+		}
+	}
+}
+
+
+/// <summary>
+/// Takes the driver of this vehicle for a KillDriver warhead: the passengers climb out, and the vehicle goes to the
+/// warhead's KillDriver.Owner house, dropping its rank with KillDriver.RemoveVeterancy. An Organic or Natural type, a
+/// type with the PROTECTED_DRIVER ability, and a vehicle healthier than the lower of KillDriver.KillBelowPercent and
+/// the type's ProtectedDriver.MinHealth keep their driver, as does one that wins the KillDriver.Chance roll.
+/// </summary>
+/// <param name="warhead">The warhead that hit the vehicle.</param>
+/// <returns>bool; Was the driver taken? When false, the vehicle is left as it was and takes the hit's damage.</returns>
+bool UnitClass::Kill_Driver(WarheadTypeClass const * warhead)
+{
+	if (warhead == NULL || Class->IsOrganic || Class->IsNatural || Has_Ability(ABILITY_PROTECTED_DRIVER)) {
+		return(false);
+	}
+	if (!WarheadRules::Kills_Driver_At(HealthRatio, warhead->KillDriverBelowPercent, Class->ProtectedDriverMinHealth)) {
+		return(false);
+	}
+
+	HouseClass * owner = NULL;
+	switch (warhead->KillDriverOwner) {
+		case KILLDRIVER_OWNER_NEUTRAL:
+			owner = House_From_Name("Neutral");
+			break;
+
+		case KILLDRIVER_OWNER_CIVILIAN:
+			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+				if (Houses[index]->Class->Side == SIDE_CIVILIAN) {
+					owner = Houses[index];
+				}
+			}
+			break;
+
+		default:
+			owner = House_From_Name("Special");
+			break;
+	}
+	if (owner == NULL || owner == House) {
+		return(false);
+	}
+
+	if (warhead->KillDriverChance < 1.0 && Random_Pick(0, 99) >= (int)(warhead->KillDriverChance * 100.0 + 0.5)) {
+		return(false);
+	}
+
+	Eject_Passengers();
+	if (!Set_Owning_House(owner, false)) {
+		return(false);
+	}
+	if (warhead->IsKillDriverRemoveVeterancy) {
+		Veterancy.Set_Rookie(true);
+	}
+	return(true);
 }
 
 

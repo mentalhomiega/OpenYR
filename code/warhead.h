@@ -43,6 +43,13 @@
 class AnimTypeClass;
 class ParticleSystemTypeClass;
 
+// The house a vehicle goes to when a KillDriver warhead takes its driver.
+enum KillDriverOwnerType {
+	KILLDRIVER_OWNER_SPECIAL,
+	KILLDRIVER_OWNER_CIVILIAN,
+	KILLDRIVER_OWNER_NEUTRAL
+};
+
 /**********************************************************************
 **	Each of the warhead types has specific characteristics. This structure
 **	holds these characteristics.
@@ -224,6 +231,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// With AffectsAllies=no, the warhead does nothing to objects of its firer's allies.
 		bool IsAffectsAllies;
 
+		// With AffectsEnemies=no, the warhead does nothing to objects of a house that is not an ally of its firer's (Ares).
+		bool IsAffectsEnemies;
+
 		// A Psychedelic warhead drives what it hits berzerk for as many frames as the damage it would have done.
 		bool IsPsychedelic;
 
@@ -350,5 +360,21 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
 		AttachEffectTypeClass AttachEffect;
+
+		// A KillDriver warhead takes the driver of a vehicle it hits instead of damaging it (Ares). The vehicle goes to
+		// the KillDriver.Owner house, and loses its rank with KillDriver.RemoveVeterancy. KillDriver.KillBelowPercent
+		// limits the effect to vehicles at or below that share of their health, and KillDriver.Chance is the chance per hit.
+		bool IsKillDriver;
+		KillDriverOwnerType KillDriverOwner;
+		double KillDriverBelowPercent;
+		double KillDriverChance;
+		bool IsKillDriverRemoveVeterancy;
+
+		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
+		bool IsPreventScatter;
+
+		// The animation an infantryman not marked NotHuman=yes dies with when this warhead kills him, in place of InfDeath (Ares
+		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.
+		AnimTypeClass const * InfDeathAnim;
 
 };

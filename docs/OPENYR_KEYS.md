@@ -36,8 +36,8 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 208 entries
-- [Art](#art): 5 entries
+- [Rules](#rules): 224 entries
+- [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
@@ -71,6 +71,15 @@ Bounty.Value=200
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
+| [`UC.DamageMultiplier`](../manual/content/keys/uc.damagemultiplier.md) | `100%` | Multiplies the damage of a passed-through shot that is not fatal, before the occupant's own damage rules. | Ares |
+| [`UC.FatalRate`](../manual/content/keys/uc.fatalrate.md) | `0%` | The share of passed-through shots that kill one occupant of the structure outright. | Ares |
+| [`UC.PassThrough`](../manual/content/keys/uc.passthrough.md) | `0%` | The share of shots at an occupied structure that hit one of its occupants instead of the structure. | Ares |
+
+### BulletType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`SubjectToTrenches`](../manual/content/keys/subjecttotrenches.md) | `yes` | With no, every shot of this projectile at a structure with UC.PassThrough passes through to its occupants. | Ares |
 
 ### HouseType
 
@@ -111,11 +120,13 @@ Bounty.Value=200
 | [`EMP.Threshold`](../manual/content/keys/emp.threshold.md) | no; a stun never destroys the object | The longest EM pulse stun this object survives; a longer stun destroys it. | Ares |
 | [`GroupAs`](../manual/content/keys/groupas.md) | none; the type is grouped under its own ID | Names the group the Select Same Type command puts this type in. | Ares |
 | [`HealthBar.Hide`](../manual/content/keys/healthbar.hide.md) | `no` | Stops the health bar from being drawn over objects of this type. | Ares, Phobos |
+| [`ImmuneToAbduction`](../manual/content/keys/immunetoabduction.md) | `no` | Parsed marker that an Abductor weapon would not take this object aboard; no weapon in the engine abducts yet. | Ares |
 | [`ImmuneToEMP`](../manual/content/keys/immunetoemp.md) | A BuildingType or UnitType uses its `IsCoreDefender=` value. Every other type uses `no` | Stops an EM pulse from stunning, powering off, downing or destroying objects of this type. | OpenTS |
 | [`Insignia`](../manual/content/keys/insignia.md) | `PIPS.SHP` | The shape file that supplies the rank insignia frames of an object type, for all three ranks at once. | Ares, Phobos |
 | [`Insignia.ShowEnemy`](../manual/content/keys/insignia.showenemy.md) | [General] EnemyInsignia, which is yes when it is also absent | Whether a player not allied with the owner sees this object type's rank insignia. | Ares, Phobos |
 | [`InsigniaFrame`](../manual/content/keys/insigniaframe.md) | `-1` | The insignia frame an object type shows for all three ranks, or for one rank through the rank keys. | Ares, Phobos |
 | [`InsigniaFrames`](../manual/content/keys/insigniaframes.md) | `none` | The insignia frames of an object type's rookie, veteran and elite ranks, as a comma-separated list. | Ares, Phobos |
+| [`IronCurtain.Modifier`](../manual/content/keys/ironcurtain.modifier.md) | `1` | Multiplies the length of an Iron Curtain put on an object of this type; 0 makes it immune. | Ares |
 | [`KeepAlive`](../manual/content/keys/keepalive.md) | Depends; see the page | Whether owning an object of this type keeps a player in a short game. | Ares |
 | [`MaxPips`](../manual/content/keys/maxpips.md) | Depends; see the page | How many pips a selected object's pip row holds. | OpenYR |
 | [`Mechanic`](../manual/content/keys/mechanic.md) | `no` | Turns a healing weapon away from infantry and onto vehicles. | OpenYR |
@@ -127,6 +138,8 @@ Bounty.Value=200
 | [`OpenTransport.RangeBonus`](../manual/content/keys/opentransport.rangebonus--aircrafttype.md) | The [CombatDamage] OpenTransport.RangeBonus= value | `OpenTransport.RangeBonus` adds whole cells to this object's weapon range while it fires from any `OpenTopped=yes` transport. | Phobos |
 | [`Promote.EliteSound`](../manual/content/keys/promote.elitesound.md) | [AudioVisual] UpgradeEliteSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes elite. | Ares, Phobos |
 | [`Promote.VeteranSound`](../manual/content/keys/promote.veteransound.md) | [AudioVisual] UpgradeVeteranSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes a veteran. | Ares, Phobos |
+| [`ProtectedDriver`](../manual/content/keys/protecteddriver.md) | `no` | With yes, KillDriver warheads leave this vehicle's driver alone. | Ares |
+| [`ProtectedDriver.MinHealth`](../manual/content/keys/protecteddriver.minhealth.md) | Depends; see the page | The share of its health at or below which a KillDriver warhead can take this vehicle's driver. | Ares |
 | [`ReversedAs`](../manual/content/keys/reversedas.md) | none; grinding teaches the object's own type | Names the type that grinding up an object of this type teaches in place of its own. | Ares |
 | [`ScrapExplosion`](../manual/content/keys/scrapexplosion.md) | (none) | The animations a destroyed object leaves behind while scrap wreckage is switched on. | OpenTS |
 | [`SelfHealingCap`](../manual/content/keys/selfhealingcap.md) | `-1` | The share of maximum strength at which this type stops healing itself. | OpenTS |
@@ -273,6 +286,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AffectsEnemies`](../manual/content/keys/affectsenemies.md) | `yes` | With no, the warhead does nothing to objects whose owner is not an ally of its attacker. | Ares |
 | [`AttachEffect.Animation`](../manual/content/keys/attacheffect.animation--warheadtype.md) | `none` | The animation shown on an object while an attached effect lasts. | Ares |
 | [`AttachEffect.AnimResetOnReapply`](../manual/content/keys/attacheffect.animresetonreapply--warheadtype.md) | `no` | `AttachEffect.AnimResetOnReapply=yes` restarts the effect animation when a hit restarts an effect the object already carries. | Ares |
 | [`AttachEffect.ArmorMultiplier`](../manual/content/keys/attacheffect.armormultiplier--warheadtype.md) | `1.0` | Divides the damage an object takes while an attached effect lasts. | Ares |
@@ -286,6 +300,13 @@ Bounty.Value=200
 | [`AttachEffect.ROFMultiplier`](../manual/content/keys/attacheffect.rofmultiplier--warheadtype.md) | `1.0` | Multiplies the reload time of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.SpeedMultiplier`](../manual/content/keys/attacheffect.speedmultiplier--warheadtype.md) | `1.0` | Multiplies the movement speed of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.TemporalHidesAnim`](../manual/content/keys/attacheffect.temporalhidesanim--warheadtype.md) | `no` | Whether an attached effect's animation is hidden while a temporal weapon warps the object out. | Ares |
+| [`InfDeathAnim`](../manual/content/keys/infdeathanim.md) | (none) | The animation an infantryman dies with when this warhead kills him, in place of InfDeath. | Ares |
+| [`KillDriver`](../manual/content/keys/killdriver.md) | `no` | With yes, a hit takes the driver of a vehicle in place of damaging it. | Ares |
+| [`KillDriver.Chance`](../manual/content/keys/killdriver.chance.md) | `100%` | The chance that a hit takes the driver of a vehicle that has met every other condition. | Ares |
+| [`KillDriver.KillBelowPercent`](../manual/content/keys/killdriver.killbelowpercent.md) | `100%` | The share of its health a vehicle must be at or below for the warhead to take its driver. | Ares |
+| [`KillDriver.Owner`](../manual/content/keys/killdriver.owner.md) | `special` | The house that takes a vehicle whose driver a KillDriver warhead killed. | Ares |
+| [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
+| [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
 
 ### WeaponType
 
@@ -354,6 +375,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AltCameoPCX`](../manual/content/keys/altcameopcx.md) | (none) | The PCX picture drawn as an object's sidebar cameo in place of its alternate cameo. | Ares |
 | [`CameoPCX`](../manual/content/keys/cameopcx.md) | (none) | The PCX picture drawn as an object's sidebar cameo instead of its `Cameo=` shape. | Ares |
 
 ### UnitType

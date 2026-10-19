@@ -85,6 +85,9 @@
 **	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
 **	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
 **	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
+**	cameopcx <TypeID>		writes the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing
+**	ironcurtain <TypeID> <frames>	puts the player's objects of that type under the Iron Curtain for that many frames, as the superweapon does,
+**							and writes the frames each has left
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
@@ -3168,6 +3171,15 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "ironcurtain") {
+		// ironcurtain <TypeID> <frames>: the Iron Curtain's effect on the player's objects of that type, and the frames each has left.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Iron_Curtain(step.X, PlayerPtr, false);
+				DebugString("AUTOTEST   ironcurtain %s at %d,%d for %d: %d frames left, strength %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, (int)techno->IronCurtainTimer, (int)techno->Strength);
+			}
+		}
 	} else if (step.Command == "hurt") {
 		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.
 		int percent = step.X;
@@ -3309,6 +3321,12 @@ void Run(StepType const & step)
 			Rule->Addition(ini);
 		} else {
 			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "cameopcx") {
+		// cameopcx <TypeID>: the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   cameopcx %s name '%s' alternate %d\n", type->Name(), type->Get_Cameo_PCX().c_str(), (int)type->Is_Alt_Cameo_Shown());
 		}
 	} else if (step.Command == "pcxcameo") {
 		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.

@@ -218,6 +218,7 @@
 #include "vox.h"
 #include "voxdrsys.h"
 #include "warhead.h"
+#include "warheadrules.h"
 #include "wave.h"
 #include "weapon.h"
 
@@ -6570,6 +6571,15 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
+	// An AffectsEnemies=no warhead does nothing to an object whose owner is no ally of the firer's house, which an explosion with no firer takes from the house it is credited to (Ares).
+	if (warhead != NULL && !warhead->IsAffectsEnemies) {
+		HouseClass const * const attacker = source != NULL ? source->House : sourcehouse;
+		if (attacker != NULL && !House->Is_Ally(attacker)) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+	}
+
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
 	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
@@ -6580,6 +6590,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
+		damage = 0;
+		return(RESULT_NONE);
+	}
+
+	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
+	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -6955,7 +6972,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = dynamic_cast<FootClass *>(this);
 				if (foot != NULL) {
-					if (TarCom == NULL && foot->NavCom == NULL) {
+					if (TarCom == NULL && foot->NavCom == NULL && !warhead->IsPreventScatter) {
 						if (Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
 							Scatter(COORD_NONE, true, false);
 						}
@@ -6966,7 +6983,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				FootClass * foot = dynamic_cast<FootClass *>(this);
 				if (foot != NULL) {
-					if (Current_Mission_Control().IsScatter) {
+					if (Current_Mission_Control().IsScatter && !warhead->IsPreventScatter) {
 						if (!IsTethered) {
 							if (!foot->Locomotion->Is_Moving() && TarCom == NULL && foot->NavCom == NULL && Fetch_RTTI() != RTTI_AIRCRAFT) {
 								if (!House->Is_Human_Player() || Rule->IsScatter || Has_Ability(ABILITY_SCATTER)) {
@@ -11426,6 +11443,16 @@ void TechnoClass::Iron_Tint_AI(void)
 
 
 /// <summary>
+/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0 (Ares)? The Force
+/// Shield is not affected by that key.
+/// </summary>
+bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
+{
+	return(!force_shield && TClass->IronCurtainModifier == 0.0);
+}
+
+
+/// <summary>
 /// Puts this object under the Iron Curtain (or the Force Shield) for the number of frames
 /// given, as TechnoClass::IronCurtain (0x70E2B0) does. Kinds of object that cannot be
 /// protected override this.
@@ -11435,6 +11462,9 @@ void TechnoClass::Iron_Tint_AI(void)
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
+	if (!force_shield) {
+		duration = WarheadRules::Iron_Curtain_Duration(duration, TClass->IronCurtainModifier);
+	}
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

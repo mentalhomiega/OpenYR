@@ -55,6 +55,7 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "vector.h"
+#include "warheadrules.h"
 
 
 /// <summary>
@@ -116,6 +117,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCulling(false),
 	IsIvanBomb(false),
 	IsAffectsAllies(true),
+	IsAffectsEnemies(true),
 	IsPsychedelic(false),
 	IsPsychicDamage(false),
 	IsElectricAssault(false),
@@ -148,7 +150,14 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCLDisableGreen(false),
 	IsCLDisableBlue(false),
 	IsEMEffect(false),
-	IsVeinhole(false)
+	IsVeinhole(false),
+	IsKillDriver(false),
+	KillDriverOwner(KILLDRIVER_OWNER_SPECIAL),
+	KillDriverBelowPercent(1.0),
+	KillDriverChance(1.0),
+	IsKillDriverRemoveVeterancy(false),
+	IsPreventScatter(false),
+	InfDeathAnim(NULL)
 {
 	Create_ID();
 
@@ -211,6 +220,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		ExplosionSet = TGet_TypeList<AnimTypeClass>(ini, Name(), "AnimList", ExplosionSet);
 
 		InfantryDeath = ini.Get_Int(Name(), "InfDeath", InfantryDeath);
+		InfDeathAnim = TGet_Class(ini, Name(), "InfDeathAnim", InfDeathAnim);
 
 		Deform = ini.Get_Float(Name(), "Deform", Deform);
 		DeformThreshhold = ini.Get_Int(Name(), "DeformThreshhold", DeformThreshhold);
@@ -230,6 +240,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsCulling = ini.Get_Bool(Name(), "Culling", IsCulling);
 		IsIvanBomb = ini.Get_Bool(Name(), "IvanBomb", IsIvanBomb);
 		IsAffectsAllies = ini.Get_Bool(Name(), "AffectsAllies", IsAffectsAllies);
+		IsAffectsEnemies = ini.Get_Bool(Name(), "AffectsEnemies", IsAffectsEnemies);
 		IsPsychedelic = ini.Get_Bool(Name(), "Psychedelic", IsPsychedelic);
 		IsPsychicDamage = ini.Get_Bool(Name(), "PsychicDamage", IsPsychicDamage);
 		IsElectricAssault = ini.Get_Bool(Name(), "ElectricAssault", IsElectricAssault);
@@ -257,6 +268,23 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
+		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
+		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
+		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
+		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
+		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
+		{
+			char owner[32];
+			if (ini.Get_String(Name(), "KillDriver.Owner", "", owner, sizeof(owner)) && owner[0] != '\0') {
+				if (stricmp(owner, "civilian") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_CIVILIAN;
+				} else if (stricmp(owner, "neutral") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_NEUTRAL;
+				} else if (stricmp(owner, "special") == 0) {
+					KillDriverOwner = KILLDRIVER_OWNER_SPECIAL;
+				}
+			}
+		}
 		AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
 		AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
 		AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
@@ -342,6 +370,14 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(ProneDamage);
 	crc(IsVeinhole);
 	crc(IsCulling);
+	crc(IsAffectsEnemies);
+	crc(IsKillDriver);
+	crc(int(KillDriverOwner));
+	crc(KillDriverBelowPercent);
+	crc(KillDriverChance);
+	crc(IsKillDriverRemoveVeterancy);
+	crc(IsPreventScatter);
+	crc(InfDeathAnim != NULL);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -402,7 +438,7 @@ bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 	if (armor >= 0 && armor < (int)ForceFire.size() && ForceFire[armor] >= 0) {
 		return(ForceFire[armor] != 0);
 	}
-	return(Versus(armor) != 0.0);
+	return(WarheadRules::Force_Fire_Default(Versus(armor)));
 }
 
 
@@ -412,7 +448,7 @@ bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 	if (armor >= 0 && armor < (int)Retaliate.size() && Retaliate[armor] >= 0) {
 		return(Retaliate[armor] != 0);
 	}
-	return(Versus(armor) >= 0.0099999997);
+	return(WarheadRules::Retaliate_Default(Versus(armor)));
 }
 
 
@@ -422,7 +458,7 @@ bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
 	if (armor >= 0 && armor < (int)PassiveAcquire.size() && PassiveAcquire[armor] >= 0) {
 		return(PassiveAcquire[armor] != 0);
 	}
-	return(Versus(armor) > 0.019999999552965164);
+	return(WarheadRules::Passive_Acquire_Default(Versus(armor)));
 }
 
 
@@ -463,6 +499,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCulling);
 	stream.Serialize(IsIvanBomb);
 	stream.Serialize(IsAffectsAllies);
+	stream.Serialize(IsAffectsEnemies);
 	stream.Serialize(IsPsychedelic);
 	stream.Serialize(IsPsychicDamage);
 	stream.Serialize(IsElectricAssault);
@@ -497,6 +534,13 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEMEffect);
 	stream.Serialize(IsVeinhole);
 	stream.Serialize(AttachEffect);
+	stream.Serialize(IsKillDriver);
+	stream.Serialize_Bytes(&KillDriverOwner, sizeof(KillDriverOwner));
+	stream.Serialize(KillDriverBelowPercent);
+	stream.Serialize(KillDriverChance);
+	stream.Serialize(IsKillDriverRemoveVeterancy);
+	stream.Serialize(IsPreventScatter);
+	stream.Serialize(InfDeathAnim);
 }
 
 

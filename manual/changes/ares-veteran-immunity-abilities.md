@@ -13,4 +13,4 @@ credit:
 - MentalHomiega
 ---
 
-`VeteranAbilities` and `EliteAbilities` now accept the Ares values `EMPIMMUNE`, `RADIMMUNE`, `UNWARPABLE`, `POISONIMMUNE`, `PSIONICWEAPONIMMUNE` and `PSIONICSIMMUNE`. Each gives a veteran or elite object the immunity of the matching key, such as `ImmuneToPsionics=yes`. The Ares value `PROTECTED_DRIVER` is not read yet, since no weapon kills drivers.
+`VeteranAbilities` and `EliteAbilities` now accept the Ares values `EMPIMMUNE`, `RADIMMUNE`, `UNWARPABLE`, `POISONIMMUNE`, `PSIONICWEAPONIMMUNE` and `PSIONICSIMMUNE`. Each gives a veteran or elite object the immunity of the matching key, such as `ImmuneToPsionics=yes`.

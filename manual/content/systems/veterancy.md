@@ -156,7 +156,7 @@ EliteAbilities=SELF_HEAL,FEARLESS
 
 A veteran `MYINF` deals more damage and reloads faster. At elite rank it also heals itself and becomes immune to fear.
 
-Ability names are case-insensitive. The table lists all eighteen abilities and their effects.
+Ability names are case-insensitive. The table lists every ability and its effect.
 
 | Token | Effect on a qualifying object |
 | --- | --- |
@@ -184,6 +184,7 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `POISONIMMUNE` | `Poison=yes` warheads do not harm the object, as with [`ImmuneToPoison=yes`](/keys/immunetopoison/) (Ares). |
 | `PSIONICWEAPONIMMUNE` | `PsychicDamage=yes` warheads do not harm the object, as with [`ImmuneToPsionicWeapons=yes`](/keys/immunetopsionicweapons/) (Ares). |
 | `PSIONICSIMMUNE` | Mind control, `Psychedelic=yes` warheads and the Psychic Dominator treat the object as they treat [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) (Ares). |
+| `PROTECTED_DRIVER` | [`KillDriver=yes`](/keys/killdriver/) warheads never take the object's driver, whatever its health, as with [`ProtectedDriver=yes`](/keys/protecteddriver/) (Ares). |
 
 Unknown or misspelled ability names are ignored without a warning.
 

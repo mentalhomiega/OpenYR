@@ -64,6 +64,9 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsSubjectToCliffs;
 		bool IsSubjectToWalls;
 
+		// With SubjectToTrenches=no, every shot at a structure with UC.PassThrough above 0 passes through to an occupant (Ares).
+		bool IsSubjectToTrenches;
+
 		/*
 		 * If this homing projectile cruises at extra altitude, then this flag will be true. It
 		 * holds ten terrain levels of clearance instead of five and does not begin its dive

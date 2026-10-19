@@ -39,6 +39,7 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
+#include "warheadrules.h"
 #include "weapon.h"
 
 #include "pip.hh"
@@ -189,6 +190,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	IsImmuneToAbduction(false),
+	IsProtectedDriver(false),
+	ProtectedDriverMinHealth(1.0),
+	IronCurtainModifier(1.0),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
 	BombSight(0),
@@ -563,16 +568,36 @@ int TechnoTypeClass::Refund(HouseClass const * house, bool unscaled) const
  *=============================================================================================*/
 void const * TechnoTypeClass::Get_Cameo_Data(void) const
 {
-	// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
-	if (AltCameoData != NULL && PlayerPtr != NULL && IsTrainable) {
+	if (AltCameoData != NULL && Is_Alt_Cameo_Shown()) {
+		return(AltCameoData);
+	}
+	return(CameoData);
+}
+
+
+/// <summary>
+/// The PCX picture to draw as this type's sidebar cameo, or an empty name when the cameo shape is drawn. The alternate
+/// picture replaces the plain one while the alternate cameo is shown, if the type has one.
+/// </summary>
+std::string const & TechnoTypeClass::Get_Cameo_PCX(void) const
+{
+	if (!AltCameoPCX.empty() && Is_Alt_Cameo_Shown()) {
+		return(AltCameoPCX);
+	}
+	return(CameoPCX);
+}
+
+
+// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
+bool TechnoTypeClass::Is_Alt_Cameo_Shown(void) const
+{
+	if (PlayerPtr != NULL && IsTrainable) {
 		RTTIType const rtti = Fetch_RTTI();
 		bool const barracks = PlayerPtr->IsBarracksInfiltrated && rtti == RTTI_INFANTRYTYPE;
 		bool const factory = PlayerPtr->IsWarFactoryInfiltrated && (rtti == RTTI_UNITTYPE || (rtti == RTTI_BUILDINGTYPE && UndeploysInto != NULL));
-		if (barracks || factory) {
-			return(AltCameoData);
-		}
+		return(barracks || factory);
 	}
-	return(CameoData);
+	return(false);
 }
 
 
@@ -831,6 +856,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+		IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
+		IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
+		IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
+		ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
@@ -1225,6 +1254,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		char pcx[64];
 		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
 		CameoPCX = pcx;
+		ArtINI.Get_String(Graphic_Name(), "AltCameoPCX", "", pcx, sizeof(pcx));
+		AltCameoPCX = pcx;
 
 		TStringID<24> cameo;
 		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
@@ -1510,6 +1541,8 @@ void TechnoTypeClass::Post_Load(void)
 
 		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
 		CameoPCX = buffer;
+		ArtINI.Get_String((const char *)GraphicName, "AltCameoPCX", "", buffer, sizeof(buffer));
+		AltCameoPCX = buffer;
 
 		AltCameoData = NULL;
 		if (ArtINI.Get_String((const char *)GraphicName, "AltCameo", "", buffer, sizeof(buffer)) > 0) {
@@ -1640,6 +1673,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(IsImmuneToAbduction);
+	stream.Serialize(IsProtectedDriver);
+	stream.Serialize(ProtectedDriverMinHealth);
+	stream.Serialize(IronCurtainModifier);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(BombSight);

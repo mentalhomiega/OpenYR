@@ -2018,6 +2018,23 @@ AffectsAllies:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+AffectsEnemies:
+  key: AffectsEnemies
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WarheadTypeClass
+      member: IsAffectsEnemies
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Agent:
   key: Agent
   scopes:
@@ -2803,6 +2820,23 @@ AltCameo:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: altcameo
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+AltCameoPCX:
+  key: AltCameoPCX
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: pcx
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -19339,6 +19373,23 @@ Immune:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+ImmuneToAbduction:
+  key: ImmuneToAbduction
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToAbduction
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToEMP:
   key: ImmuneToEMP
   scopes:
@@ -19624,6 +19675,23 @@ InfDeath:
       default_candidate: '0'
       declared_in: WarheadTypeClass
       member: InfantryDeath
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+InfDeathAnim:
+  key: InfDeathAnim
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: InfDeathAnim
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
@@ -20834,6 +20902,23 @@ IonStorms:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+IronCurtain.Modifier:
+  key: IronCurtain.Modifier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: TechnoTypeClass
+      member: IronCurtainModifier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IronCurtainColor:
   key: IronCurtainColor
   scopes:
@@ -22086,6 +22171,91 @@ KeepAlive:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+KillDriver:
+  key: KillDriver
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsKillDriver
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.Chance:
+  key: KillDriver.Chance
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: KillDriverChance
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.KillBelowPercent:
+  key: KillDriver.KillBelowPercent
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: WarheadTypeClass
+      member: KillDriverBelowPercent
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.Owner:
+  key: KillDriver.Owner
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: owner
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+KillDriver.RemoveVeterancy:
+  key: KillDriver.RemoveVeterancy
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsKillDriverRemoveVeterancy
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Land:
   key: Land
   scopes:
@@ -29704,6 +29874,23 @@ PreventAttackMove:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+PreventScatter:
+  key: PreventScatter
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsPreventScatter
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Primary:
   key: Primary
   scopes:
@@ -30390,6 +30577,40 @@ ProtectWithWall:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ProtectedDriver:
+  key: ProtectedDriver
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsProtectedDriver
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ProtectedDriver.MinHealth:
+  key: ProtectedDriver.MinHealth
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Proximity:
   key: Proximity
   scopes:
@@ -38464,6 +38685,23 @@ SubjectToElevation:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+SubjectToTrenches:
+  key: SubjectToTrenches
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: BulletTypeClass
+      member: IsSubjectToTrenches
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 SubjectToWalls:
   key: SubjectToWalls
   scopes:
@@ -42533,6 +42771,57 @@ TypeImmune:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+UC.DamageMultiplier:
+  key: UC.DamageMultiplier
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: BuildingTypeClass
+      member: UCDamageMultiplier
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+UC.FatalRate:
+  key: UC.FatalRate
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: BuildingTypeClass
+      member: UCFatalRate
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+UC.PassThrough:
+  key: UC.PassThrough
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: BuildingTypeClass
+      member: UCPassThrough
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 UIName:
   key: UIName
   scopes:

@@ -21,6 +21,7 @@
 #include "mph.hh"
 
 class WarheadTypeClass;
+class BulletTypeClass;
 class AnimTypeClass;
 class HouseClass;
 class TechnoClass;
@@ -29,7 +30,10 @@ class DirType;
 
 int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor, int distance);
 // Returns whether the blast struck an Iron Curtained object at its center, which nullifies it.
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL, HouseClass const * spare_infantry_of=NULL);
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction=true, HouseClass * sourcehouse=NULL, HouseClass const * spare_infantry_of=NULL, BulletTypeClass const * projectile=NULL);
+
+// The projectile type of the shot whose blast Explosion_Damage is dealing out now, or NULL when the blast has no projectile.
+BulletTypeClass const * Exploding_Projectile(void);
 
 // The cells within a radius of up to CELL_SPREAD_MAX, nearest first, as gamemd's CellSpreadTable lists them.
 int Cell_Spread_Count(int radius);

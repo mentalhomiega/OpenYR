@@ -1617,7 +1617,7 @@ void BulletClass::Detonate(Coord const & coord)
 	**	Non-aircraft targets apply damage to the ground.
 	*/
 	else {
-		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : NULL);
+		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : NULL, NULL, Class);
 		if (!IsActive) return;
 	}
 

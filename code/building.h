@@ -657,6 +657,7 @@ class BuildingClass : public TechnoClass
 		void Occupy(InfantryClass * infantry);
 		void Eject_Occupants(bool const keep_unplaced = false);
 		void Kill_Occupants(TechnoClass * assaulter);
+		bool Pass_Damage_To_Occupant(int damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse);
 		void Grind(FootClass * object);
 		bool Can_Absorb(FootClass const * object) const;
 		void Absorb(FootClass * object);

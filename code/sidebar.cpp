@@ -2329,7 +2329,7 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 						}
 
 						shapefile = (ShapeSet const *)obj->Get_Cameo_Data();
-						pcx = PCX_Cameo(obj->CameoPCX);
+						pcx = PCX_Cameo(obj->Get_Cameo_PCX());
 						factory = Buildables[index].Factory;
 						if (factory != NULL) {
 							production	= true;
