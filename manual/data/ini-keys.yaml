@@ -17684,6 +17684,23 @@ HasStupidGuardMode:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+HasTurretTooltips:
+  key: HasTurretTooltips
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsHasTurretTooltips
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 HealCrateSound:
   key: HealCrateSound
   scopes:
@@ -25678,6 +25695,23 @@ NoParachuteMaxFallRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+NoShadow:
+  key: NoShadow
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsNoShadow
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 NoSpawnAlt:
   key: NoSpawnAlt
   scopes:
@@ -28868,6 +28902,23 @@ PrerequisiteTech:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+PreventAttackMove:
+  key: PreventAttackMove
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsPreventAttackMove
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Primary:
   key: Primary
   scopes:
@@ -30832,6 +30883,23 @@ RefineryRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+RefinerySmokeParticleSystem:
+  key: RefinerySmokeParticleSystem
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RefinerySmokeParticleSystem
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RefundPercent:
   key: RefundPercent
   scopes:
@@ -30902,6 +30970,23 @@ Reinforce:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+RejoinTeamIfLimboed:
+  key: RejoinTeamIfLimboed
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsRejoinTeamIfLimboed
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RelaxedStray:
   key: RelaxedStray
   scopes:
@@ -36779,6 +36864,23 @@ StretchMovies:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+StupidHunt:
+  key: StupidHunt
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsStupidHunt
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SubjectToCliffs:
   key: SubjectToCliffs
   scopes:
@@ -39574,6 +39676,23 @@ TilesInSet:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+TiltCrashJumpjet:
+  key: TiltCrashJumpjet
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsTiltCrashJumpjet
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 TiltsWhenCrushes:
   key: TiltsWhenCrushes
   scopes:
@@ -42491,6 +42610,23 @@ VoiceSinking:
       default_candidate: null
       declared_in: TechnoTypeClass
       member: VoiceSinking
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+VoiceSpecialAttack:
+  key: VoiceSpecialAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: VoiceSpecialAttack
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
