@@ -66,6 +66,9 @@ AudioHandle Voice_Sound_Effect(VocType voc, float volume = 1.0f);
 // comes back, and without its attack.
 AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle, bool start = false);
 
+// Does the sound loop until it is stopped?
+bool Voc_Never_Ends(VocType voc);
+
 // The level, 0..1, a sound of this type has at the place, and its pan.
 float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & type, int & pan);
 

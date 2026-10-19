@@ -105,7 +105,8 @@ void AmbientSoundTable::AI(void)
 			}
 			continue;
 		}
-		Play_If_In_Range(entry.Voc, entry.Object->Center_Coord(), &entry.Handle, !entry.Started);
+		// A sound that is not a loop starts again each time it ends, as VocClass::PlayAt (0x7509E0) does every frame.
+		Play_If_In_Range(entry.Voc, entry.Object->Center_Coord(), &entry.Handle, !entry.Started || !Voc_Never_Ends(entry.Voc));
 		entry.Started = true;
 	}
 }

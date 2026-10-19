@@ -356,6 +356,12 @@ AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * h
 }
 
 
+bool Voc_Never_Ends(VocType voc)
+{
+	return(voc != VOC_NONE && voc < Vocs.Count() && Vocs[voc]->Type_Data().Never_Ends());
+}
+
+
 AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle, bool start)
 {
 	if (handle == nullptr || voc == VOC_NONE || voc >= Vocs.Count()) {
