@@ -34,6 +34,7 @@
 #include "unittype.h"
 #include "warhead.h"
 #include "warheadrules.h"
+#include "_warhead.h"
 
 DynamicVectorClass<EMPulseClass *> EMPulseClass::EMPulses;
 
@@ -137,6 +138,27 @@ void EMPulseClass::Stun(TechnoClass * techno, DynamicVectorClass<TechnoClass *> 
 
 
 /// <summary>
+/// Is this animation one an EMP stun shows on an object: the [General] EMPulseSparkles one, or one a warhead names with
+/// EMP.Sparkles?
+/// </summary>
+bool EMPulseClass::Is_Sparkles(AnimTypeClass const * type)
+{
+	if (type == NULL) {
+		return(false);
+	}
+	if (type == Rule->EMPulseSparkles) {
+		return(true);
+	}
+	for (int index = 0; index < Warheads.Count(); index++) {
+		if (Warheads[index]->EMPSparkles == type) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Changes the EMP counter of an object a blast has damaged, as a warhead with a nonzero EMP.Duration does (Ares). The
 /// kinds of object are those a pulse stuns. An immune object only springs its paralyzed event, and a positive duration
 /// is scaled by the type's EMP.Modifier. The blast's firer is spared a positive duration.
@@ -210,7 +232,7 @@ bool EMPulseClass::Hit(TechnoClass * techno, WarheadTypeClass const * warhead, T
 				coord.X += CELL_LEPTON_W / 4;
 				coord.Y += CELL_LEPTON_H / 4;
 				coord.Z += LEVEL_LEPTON_H / 2;
-				AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, coord, Random_Pick(0, 25));
+				AnimClass * sparks = new AnimClass(warhead->EMPSparkles != NULL ? warhead->EMPSparkles : Rule->EMPulseSparkles, coord, Random_Pick(0, 25));
 				if (sparks != NULL) {
 					sparks->Attach_To(building);
 				}
@@ -221,7 +243,7 @@ bool EMPulseClass::Hit(TechnoClass * techno, WarheadTypeClass const * warhead, T
 			if (foot->Locomotion->Is_Moving()) {
 				foot->Locomotion->Stop_Moving();
 			}
-			AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
+			AnimClass * sparks = new AnimClass(warhead->EMPSparkles != NULL ? warhead->EMPSparkles : Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
 			if (sparks != NULL) {
 				sparks->Attach_To(foot);
 			}

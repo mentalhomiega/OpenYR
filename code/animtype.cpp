@@ -64,6 +64,7 @@
 #include "truecolour.h"
 #include "emissive.h"
 #include "warhead.h"
+#include "weapon.h"
 
 
 /// <summary>
@@ -152,6 +153,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	MaxZVel(3.5),
 	MaxXYVel(15.0),
 	Warhead(NULL),
+	Weapon(NULL),
 	DamageRadius(0),
 	TiberiumSpawnType(NULL),
 	TiberiumSpreadRadius(0),
@@ -175,6 +177,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 	IsAltPalette(false),
 	IsNormalized(false),
 	MakeInfantry(-1),
+	MakeInfantryOwner(MAKE_OWNER_INVOKER),
 	IsGroundLayer(false),
 	IsFlat(false),
 	IsDoubleThick(false),
@@ -453,6 +456,17 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		IsFlameThrower = ini.Get_Bool(Name(), "Flamer", IsFlameThrower);
 		IsNormalized = ini.Get_Bool(Name(), "Normalized", IsNormalized);
 		MakeInfantry = ini.Get_Int(Name(), "MakeInfantry", MakeInfantry);
+		{
+			char owner[24];
+			if (ini.Get_String(Name(), "MakeInfantryOwner", "", owner, sizeof(owner)) > 0) {
+				static char const * const names[] = {"invoker", "killer", "victim", "civilian", "special", "neutral", "random"};
+				for (int index = 0; index < 7; index++) {
+					if (stricmp(owner, names[index]) == 0) {
+						MakeInfantryOwner = index;
+					}
+				}
+			}
+		}
 		IsGroundLayer = ini.Get_Bool(Name(), "Surface", IsGroundLayer);
 
 		// Yuri's Revenge names the layer instead; only the ground and the layer above are kept apart here.
@@ -555,6 +569,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		TrailerSeperation = ini.Get_Int(Name(), "TrailerSeperation", TrailerSeperation);
 		DamageRadius = ini.Get_Int(Name(), "DamageRadius", DamageRadius);
 		Warhead = TGet_Class(ini, Name(), "Warhead", Warhead);
+		Weapon = TGet_Class(ini, Name(), "Weapon", Weapon);
 
 		IsBouncer = ini.Get_Bool(Name(), "Bouncer", IsBouncer);
 		IsTiled = ini.Get_Bool(Name(), "Tiled", IsTiled);
@@ -650,6 +665,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxZVel);
 	stream.Serialize(MaxXYVel);
 	stream.Serialize(Warhead);
+	stream.Serialize(Weapon);
 	stream.Serialize(DamageRadius);
 	stream.Serialize(TiberiumSpawnType);
 	stream.Serialize(TiberiumSpreadRadius);
@@ -674,6 +690,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CustomPalette);
 	stream.Serialize(IsNormalized);
 	stream.Serialize(MakeInfantry);
+	stream.Serialize(MakeInfantryOwner);
 	stream.Serialize(IsGroundLayer);
 	stream.Serialize(IsFlat);
 	stream.Serialize(IsDoubleThick);
@@ -766,6 +783,9 @@ void AnimTypeClass::Detach(AbstractClass const * target, bool all)
 {
 	if (ChainTo == target) {
 		ChainTo = NULL;
+	}
+	if (Weapon == (WeaponTypeClass *)target) {
+		Weapon = NULL;
 	}
 }
 

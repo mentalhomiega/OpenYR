@@ -10,6 +10,7 @@
 #pragma once
 
 #include <cctype>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -168,6 +169,30 @@ namespace ObjectKeyRules
 		return((stolen & need) == need);
 	}
 
+	// Three integers written as "64,0,96", each in decimal or as hexadecimal with a trailing h ("40h"). Reports false, and
+	// leaves the result alone, when fewer than three numbers are written.
+	inline bool Parse_Triplet(std::string const & text, int (&result)[3])
+	{
+		std::vector<std::string> const parts = Split_List(text);
+		if (parts.size() < 3) {
+			return(false);
+		}
+		int values[3];
+		for (int index = 0; index < 3; index++) {
+			std::string part = parts[index];
+			int base = 10;
+			if (!part.empty() && (part.back() == 'h' || part.back() == 'H')) {
+				part.pop_back();
+				base = 16;
+			}
+			values[index] = (int)std::strtol(part.c_str(), NULL, base);
+		}
+		for (int index = 0; index < 3; index++) {
+			result[index] = values[index];
+		}
+		return(true);
+	}
+
 	// The place of a veteran level among the three per-rank keys: 0 rookie, 1 veteran, 2 elite.
 	inline int Rank_Index(bool veteran, bool elite)
 	{
@@ -196,5 +221,69 @@ namespace ObjectKeyRules
 	inline bool Passenger_Survives(int rank_percent, int roll)
 	{
 		return(rank_percent < 0 || roll < rank_percent);
+	}
+	// Whether a transport takes a passenger of this type name. A non-empty allowed list admits only the names in it, and
+	// a name in the disallowed list is always refused (Ares Passengers.Allowed and Passengers.Disallowed). Names compare
+	// without regard to case.
+	inline bool Passenger_Allowed(std::string const & name, std::vector<std::string> const & allowed, std::vector<std::string> const & disallowed)
+	{
+		auto same = [](std::string const & a, std::string const & b) {
+			if (a.size() != b.size()) {
+				return(false);
+			}
+			for (size_t index = 0; index < a.size(); index++) {
+				if (std::tolower((unsigned char)a[index]) != std::tolower((unsigned char)b[index])) {
+					return(false);
+				}
+			}
+			return(true);
+		};
+		for (std::string const & entry : disallowed) {
+			if (same(entry, name)) {
+				return(false);
+			}
+		}
+		if (allowed.empty()) {
+			return(true);
+		}
+		for (std::string const & entry : allowed) {
+			if (same(entry, name)) {
+				return(true);
+			}
+		}
+		return(false);
+	}
+
+	// Whether a type with limited ammunition has run low enough to fire only its NoAmmoWeapon (Ares): it names a weapon,
+	// carries ammunition at all, and has this much or less left. A type with unlimited ammunition never does.
+	inline bool No_Ammo_Weapon_Active(int weapon, int max_ammo, int ammo, int amount)
+	{
+		return(weapon >= 0 && max_ammo > 0 && ammo >= 0 && ammo <= amount);
+	}
+
+	// How many of each InitialPayload.Types entry an object starts with (Ares). A missing count after the last given one
+	// repeats it, and with no counts every entry is one.
+	inline std::vector<int> Payload_Counts(size_t types, std::vector<int> const & nums)
+	{
+		std::vector<int> counts(types, 1);
+		for (size_t index = 0; index < types && !nums.empty(); index++) {
+			counts[index] = index < nums.size() ? nums[index] : nums.back();
+		}
+		return(counts);
+	}
+
+	// Which of the objects a drag selection caught stay in it. Objects flagged LowSelectionPriority drop out when at least
+	// one object without the flag was caught, and all stay otherwise (Phobos).
+	inline std::vector<bool> Selection_Kept(std::vector<bool> const & low_priority)
+	{
+		bool normal = false;
+		for (bool low : low_priority) {
+			normal = normal || !low;
+		}
+		std::vector<bool> kept(low_priority.size(), true);
+		for (size_t index = 0; normal && index < low_priority.size(); index++) {
+			kept[index] = !low_priority[index];
+		}
+		return(kept);
 	}
 }

@@ -79,6 +79,7 @@
 #include "sun.h"
 #include "tactical.h"
 #include "terrtype.h"
+#include "custompalette.h"
 #include "tracker.h"
 #include "warhead.h"
 
@@ -430,6 +431,12 @@ void TerrainClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		} else {
 			drawer = cellptr.Drawer;
 			tint = cellptr.TileBrightness;
+			// A Palette of the type replaces the palette of the tile (Phobos).
+			if (!Class->PaletteName.empty()) {
+				if (ConvertClass * custom = Custom_Palette_Drawer(Palette_File_Name(Class->PaletteName))) {
+					drawer = custom;
+				}
+			}
 		}
 
 		ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA);
@@ -492,6 +499,11 @@ void TerrainClass::Editor_Draw_It(Point2D const & point, Rect const & cliprect) 
 		} else {
 			drawer = cellptr.Drawer;
 			tint = cellptr.TileBrightness;
+			if (!Class->PaletteName.empty()) {
+				if (ConvertClass * custom = Custom_Palette_Drawer(Palette_File_Name(Class->PaletteName))) {
+					drawer = custom;
+				}
+			}
 		}
 
 		ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA);

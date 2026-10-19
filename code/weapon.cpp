@@ -59,8 +59,11 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "emissive.h"
+#include "objectkeyrules.h"
+#include "rtti.hh"
 #include "warhead.h"
 
+#include <algorithm>
 #include <cstring>
 
 
@@ -147,6 +150,16 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsDetachedRailgun(false),
 	BoltColorMask(0),
 	HasBeamColor(false),
+	BeamDuration(-1),
+	BeamAmplitude(-1.0),
+	LaserThickness(1),
+	HasWaveColor(false),
+	HasWaveIntensity(false),
+	WaveReverseVehicles(-1),
+	WaveReverseBuildings(-1),
+	WaveReverseInfantry(-1),
+	WaveReverseAircraft(-1),
+	WaveReverseOthers(-1),
 	IsLobber(false),
 	IsBright(false),
 	LaserDuration(10),
@@ -343,6 +356,23 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		LaserOuterSpread = ini.Get_RGBClass(IniName, "LaserOuterSpread", LaserOuterSpread);
 		LaserDuration = ini.Get_Int(IniName, "LaserDuration", LaserDuration);
 		IsBigLaser = ini.Get_Bool(IniName, "IsBigLaser", IsBigLaser);
+		IsBigLaser = ini.Get_Bool(IniName, "Wave.IsBigLaser", IsBigLaser);
+		LaserThickness = std::max(1, ini.Get_Int(IniName, "LaserThickness", LaserThickness));
+		BeamDuration = ini.Get_Int(IniName, "Beam.Duration", BeamDuration);
+		BeamAmplitude = ini.Get_Float(IniName, "Beam.Amplitude", BeamAmplitude);
+		if (ini.Is_Present(IniName, "Wave.Color")) {
+			HasWaveColor = ObjectKeyRules::Parse_Triplet(ini.Get_String(IniName, "Wave.Color"), WaveColor);
+		}
+		if (ini.Is_Present(IniName, "Wave.Intensity")) {
+			HasWaveIntensity = ObjectKeyRules::Parse_Triplet(ini.Get_String(IniName, "Wave.Intensity"), WaveIntensity);
+		}
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstVehicles")) WaveReverseVehicles = ini.Get_Bool(IniName, "Wave.ReverseAgainstVehicles", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstBuildings")) WaveReverseBuildings = ini.Get_Bool(IniName, "Wave.ReverseAgainstBuildings", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstInfantry")) WaveReverseInfantry = ini.Get_Bool(IniName, "Wave.ReverseAgainstInfantry", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstAircraft")) WaveReverseAircraft = ini.Get_Bool(IniName, "Wave.ReverseAgainstAircraft", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Wave.ReverseAgainstOthers")) WaveReverseOthers = ini.Get_Bool(IniName, "Wave.ReverseAgainstOthers", false) ? 1 : 0;
+		if (ini.Is_Present(IniName, "Cursor.Attack")) CursorAttack = ini.Get_String(IniName, "Cursor.Attack");
+		if (ini.Is_Present(IniName, "Cursor.AttackOutOfRange")) CursorAttackOutOfRange = ini.Get_String(IniName, "Cursor.AttackOutOfRange");
 
 		IsBright = ini.Get_Bool(IniName, "Bright", IsBright);
 		IsIonSensitive = ini.Get_Bool(IniName, "IonSensitive", IsIonSensitive);
@@ -613,6 +643,50 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BoltColor[2]);
 	stream.Serialize(HasBeamColor);
 	stream.Serialize(BeamColor);
+	stream.Serialize(BeamDuration);
+	stream.Serialize(BeamAmplitude);
+	stream.Serialize(LaserThickness);
+	stream.Serialize(HasWaveColor);
+	stream.Serialize(WaveColor);
+	stream.Serialize(HasWaveIntensity);
+	stream.Serialize(WaveIntensity);
+	stream.Serialize(WaveReverseVehicles);
+	stream.Serialize(WaveReverseBuildings);
+	stream.Serialize(WaveReverseInfantry);
+	stream.Serialize(WaveReverseAircraft);
+	stream.Serialize(WaveReverseOthers);
+	stream.Serialize(CursorAttack);
+	stream.Serialize(CursorAttackOutOfRange);
+}
+
+
+/// <summary>
+/// Is a wave this weapon draws between the firer and a target of this kind drawn from the target back to the firer? A
+/// weapon that sets no Wave.ReverseAgainst key for the kind does so only against a vehicle, and only when it is a magnetron.
+/// </summary>
+bool WeaponTypeClass::Wave_Is_Reversed_Against(int rtti) const
+{
+	int setting = -1;
+	bool by_default = false;
+	switch (rtti) {
+		case RTTI_UNIT:
+			setting = WaveReverseVehicles;
+			by_default = IsMagBeam;
+			break;
+		case RTTI_BUILDING:
+			setting = WaveReverseBuildings;
+			break;
+		case RTTI_INFANTRY:
+			setting = WaveReverseInfantry;
+			break;
+		case RTTI_AIRCRAFT:
+			setting = WaveReverseAircraft;
+			break;
+		default:
+			setting = WaveReverseOthers;
+			break;
+	}
+	return(setting < 0 ? by_default : setting != 0);
 }
 
 

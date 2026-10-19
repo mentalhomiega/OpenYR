@@ -281,6 +281,8 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	if (Class != NULL && Class->IsGunner) {
 		Set_Turret_Weapon(0);
 	}
+
+	Create_Initial_Payload();
 }
 
 
@@ -4524,7 +4526,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 				/*
 				 * Various special-purpose buildings do not block movement.
 				 */
-				if (bptr->Class->IsInvisibleInGame) {
+				if (bptr->Class->IsInvisibleInGame || bptr->Class->IsPassable) {
 					obj = obj->Next;
 					continue;
 				}
@@ -4825,7 +4827,10 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 			**	perform any self action.
 			*/
 			if (Class->Max_Passengers() > 0) {
-				if (Cargo.How_Many() == 0) {
+				if (Class->IsNoManualUnload) {
+					// A NoManualUnload transport shows no deploy cursor and cannot be told to unload (Ares).
+					action = ACTION_SELECT;
+				} else if (Cargo.How_Many() == 0) {
 					action = ACTION_NO_DEPLOY;
 				} else {
 					bool can_deploy = false;
@@ -5700,7 +5705,7 @@ void UnitClass::Approach_Target(void)
 	/*
 	**	An OmniCrusher drives at its target to flatten it, for a human house too (UnitClass::ApproachTarget, 0x7414E0).
 	*/
-	if (Class->IsOmniCrusher && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
+	if (Class->IsOmniCrusher && Class->IsOmniCrusherAggressive && TarCom != NULL && NavCom == NULL && Is_Omni_Crushable(Dynamic_Cast<TechnoClass *>(TarCom))) {
 		Assign_Destination(TarCom);
 		return;
 	}

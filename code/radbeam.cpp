@@ -48,7 +48,7 @@ double const EruptionStep = 20.0;
 /// <summary>
 /// Starts a beam from start to end in the color given (TechnoClass::CreateRadBeam, 0x6FD620).
 /// </summary>
-void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const & color)
+void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const & color, int duration, double amplitude)
 {
 	RadBeamClass * beam = new RadBeamClass;
 	beam->Kind = KIND_WAVE;
@@ -56,8 +56,8 @@ void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const &
 	beam->End = end;
 	beam->Color = color;
 	beam->Age = 0;
-	beam->Duration = WaveDuration;
-	beam->Amplitude = WaveAmplitude;
+	beam->Duration = duration >= 0 ? duration : WaveDuration;
+	beam->Amplitude = amplitude >= 0.0 ? amplitude : WaveAmplitude;
 	beam->IsVisible = true;
 	Beams.Add(beam);
 }
@@ -69,7 +69,7 @@ void RadBeamClass::Fire(Coord const & start, Coord const & end, RGBClass const &
 /// center of its cell, lasts 5 to 20 frames and arches 100 to 500 leptons high. The cells are taken
 /// column by column, and a cell off the map still gets a beam.
 /// </summary>
-void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass const & color)
+void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass const & color, int duration, double amplitude)
 {
 	short const column = (short)(origin.X / CELL_LEPTON_W);
 	short const row = (short)(origin.Y / CELL_LEPTON_H);
@@ -93,6 +93,12 @@ void RadBeamClass::Fire_Eruption(Coord const & origin, int spread, RGBClass cons
 			beam->Age = 0;
 			beam->Duration = Sim_Random_Pick(5, 20);
 			beam->Amplitude = Sim_Random_Pick(100, 500);
+			if (duration >= 0) {
+				beam->Duration = duration;
+			}
+			if (amplitude >= 0.0) {
+				beam->Amplitude = amplitude;
+			}
 			// gamemd also draws a random value from 0 to 20 here and stores it, and no later step uses it.
 			Sim_Random_Pick(0, 20);
 			beam->IsVisible = true;

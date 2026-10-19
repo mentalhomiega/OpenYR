@@ -26,6 +26,17 @@ namespace VeteranRules
 		return(double(float(cap > total ? total : cap)));
 	}
 
+	// The experience a unit has after a kill whose share, as Experience_After_Kill computes it, is scaled by modifier (the
+	// Ares Experience.*Modifier keys). A modifier of 1 gives the same total as Experience_After_Kill.
+	inline double Experience_After_Scaled_Kill(double experience, int cost, int value, double ratio, double cap, double modifier)
+	{
+		if (modifier == 1.0) {
+			return(Experience_After_Kill(experience, cost, value, ratio, cap));
+		}
+		double const total = experience + value / (cost * ratio) * modifier;
+		return(double(float(cap > total ? total : cap)));
+	}
+
 	// What a kill is worth to its killer and to the score: the victim's cost for a rookie, double
 	// for a veteran, triple for an elite, and nothing when killer and victim are allies, whatever
 	// the victim's rank.

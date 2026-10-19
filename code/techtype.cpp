@@ -47,6 +47,7 @@
 #include "voc.hh"
 
 #include <algorithm>
+#include <climits>
 #include <new.h>
 
 
@@ -423,7 +424,28 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ZFudgeCliff(10),
 	ZFudgeColumn(5),
 	ZFudgeTunnel(10),
-	ZFudgeBridge(0)
+	ZFudgeBridge(0),
+	NoAmmoWeapon(-1),
+	NoAmmoAmount(0),
+	IsNoManualEnter(false),
+	IsNoManualUnload(false),
+	IsPassengersBySize(true),
+	FallRateParachute(INT_MIN),
+	FallRateNoParachute(INT_MIN),
+	FallRateParachuteMax(INT_MIN),
+	FallRateNoParachuteMax(INT_MIN),
+	IsCivilianEnemy(false),
+	IsOmniCrusherAggressive(true),
+	IsExperienceFromPassengers(true),
+	IsExperiencePromotePassengers(false),
+	ExperiencePassengerModifier(1.0),
+	IsExperienceFromAirstrike(false),
+	ExperienceAirstrikeModifier(1.0),
+	ExperienceMindControlSelfModifier(0.0),
+	ExperienceMindControlVictimModifier(1.0),
+	ExperienceSpawnOwnerModifier(0.0),
+	ExperienceSpawnModifier(1.0),
+	IsLowSelectionPriority(false)
 {
 	IsSentient = true;
 
@@ -1328,6 +1350,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsSelfHealing = ini.Get_Bool(Name(), "SelfHealing", IsSelfHealing);
 		SelfHealingStep = ini.Get_Int(Name(), "SelfHealingStep", SelfHealingStep);
 		SelfHealingRate = ini.Get_Float(Name(), "SelfHealingRate", SelfHealingRate);
+		SelfHealingRate = ini.Get_Float(Name(), "SelfHealing.Rate", SelfHealingRate);
 		SelfHealingCap = ini.Get_Float(Name(), "SelfHealingCap", SelfHealingCap);
 		IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
 		IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
@@ -1352,6 +1375,49 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsHunterSeekerIgnored = ini.Get_Bool(Name(), "HunterSeeker.Ignore", IsHunterSeekerIgnored);
 		IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
 		IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
+		IsOmniCrusherAggressive = ini.Get_Bool(Name(), "OmniCrusher.Aggressive", IsOmniCrusherAggressive);
+		NoAmmoWeapon = ini.Get_Int(Name(), "NoAmmoWeapon", NoAmmoWeapon);
+		NoAmmoAmount = ini.Get_Int(Name(), "NoAmmoAmount", NoAmmoAmount);
+		IsNoManualEnter = ini.Get_Bool(Name(), "NoManualEnter", IsNoManualEnter);
+		IsNoManualUnload = ini.Get_Bool(Name(), "NoManualUnload", IsNoManualUnload);
+		IsCivilianEnemy = ini.Get_Bool(Name(), "CivilianEnemy", IsCivilianEnemy);
+		IsLowSelectionPriority = ini.Get_Bool(Name(), "LowSelectionPriority", IsLowSelectionPriority);
+		IsPassengersBySize = ini.Get_Bool(Name(), "Passengers.BySize", IsPassengersBySize);
+		if (ini.Is_Present(Name(), "Passengers.Allowed")) {
+			PassengersAllowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Allowed"));
+		}
+		if (ini.Is_Present(Name(), "Passengers.Disallowed")) {
+			PassengersDisallowed = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Passengers.Disallowed"));
+		}
+		if (ini.Is_Present(Name(), "InitialPayload.Types")) {
+			InitialPayloadTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Types"));
+		}
+		if (ini.Is_Present(Name(), "InitialPayload.Nums")) {
+			InitialPayloadNums.clear();
+			for (std::string const & count : ObjectKeyRules::Split_List(ini.Get_String(Name(), "InitialPayload.Nums"))) {
+				InitialPayloadNums.push_back(atoi(count.c_str()));
+			}
+		}
+		FallRateParachute = ini.Get_Int(Name(), "FallRate.Parachute", FallRateParachute);
+		FallRateNoParachute = ini.Get_Int(Name(), "FallRate.NoParachute", FallRateNoParachute);
+		FallRateParachuteMax = ini.Get_Int(Name(), "FallRate.ParachuteMax", FallRateParachuteMax);
+		FallRateNoParachuteMax = ini.Get_Int(Name(), "FallRate.NoParachuteMax", FallRateNoParachuteMax);
+		IsExperienceFromPassengers = ini.Get_Bool(Name(), "Experience.FromPassengers", IsExperienceFromPassengers);
+		IsExperiencePromotePassengers = ini.Get_Bool(Name(), "Experience.PromotePassengers", IsExperiencePromotePassengers);
+		ExperiencePassengerModifier = ini.Get_Float(Name(), "Experience.PassengerModifier", ExperiencePassengerModifier);
+		IsExperienceFromAirstrike = ini.Get_Bool(Name(), "Experience.FromAirstrike", IsExperienceFromAirstrike);
+		ExperienceAirstrikeModifier = ini.Get_Float(Name(), "Experience.AirstrikeModifier", ExperienceAirstrikeModifier);
+		ExperienceMindControlSelfModifier = ini.Get_Float(Name(), "Experience.MindControlSelfModifier", ExperienceMindControlSelfModifier);
+		ExperienceMindControlVictimModifier = ini.Get_Float(Name(), "Experience.MindControlVictimModifier", ExperienceMindControlVictimModifier);
+		ExperienceSpawnOwnerModifier = ini.Get_Float(Name(), "Experience.SpawnOwnerModifier", ExperienceSpawnOwnerModifier);
+		ExperienceSpawnModifier = ini.Get_Float(Name(), "Experience.SpawnModifier", ExperienceSpawnModifier);
+		if (ini.Is_Present(Name(), "FakeOf")) {
+			FakeOf = ini.Get_String(Name(), "FakeOf");
+		}
+		if (ini.Is_Present(Name(), "EnemyUIName")) {
+			EnemyUIName = ini.Get_String(Name(), "EnemyUIName");
+			EnemyUINameText.clear();
+		}
 		IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
 		IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
 		IsTiltsWhenCrushes = ini.Get_Bool(Name(), "TiltsWhenCrushes", IsTiltsWhenCrushes);
@@ -1387,6 +1453,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
 		IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
 		IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
+		if (ArtINI.Is_Present(Graphic_Name(), "Palette")) {
+			PaletteName = ArtINI.Get_String(Graphic_Name(), "Palette");
+		}
 
 		char pcx[64];
 		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
@@ -1706,6 +1775,15 @@ bool TechnoTypeClass::Can_Attack_Move(void) const
 }
 
 
+/// <summary>
+/// The name an enemy sees on an object of this type: the text EnemyUIName names, or NULL when the type sets none.
+/// </summary>
+char const * TechnoTypeClass::Enemy_Full_Name(void) const
+{
+	return(Label_Text(EnemyUIName, EnemyUINameText));
+}
+
+
 std::string TechnoTypeClass::Select_Group(void) const
 {
 	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
@@ -1873,6 +1951,34 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorPilotChance);
 	stream.Serialize(SurvivorPassengerChance);
 	stream.Serialize(PrerequisiteStolenTechs);
+	stream.Serialize(NoAmmoWeapon);
+	stream.Serialize(NoAmmoAmount);
+	stream.Serialize(InitialPayloadTypes);
+	stream.Serialize(InitialPayloadNums);
+	stream.Serialize(IsNoManualEnter);
+	stream.Serialize(IsNoManualUnload);
+	stream.Serialize(PassengersAllowed);
+	stream.Serialize(PassengersDisallowed);
+	stream.Serialize(IsPassengersBySize);
+	stream.Serialize(FallRateParachute);
+	stream.Serialize(FallRateNoParachute);
+	stream.Serialize(FallRateParachuteMax);
+	stream.Serialize(FallRateNoParachuteMax);
+	stream.Serialize(IsCivilianEnemy);
+	stream.Serialize(IsOmniCrusherAggressive);
+	stream.Serialize(IsExperienceFromPassengers);
+	stream.Serialize(IsExperiencePromotePassengers);
+	stream.Serialize(ExperiencePassengerModifier);
+	stream.Serialize(IsExperienceFromAirstrike);
+	stream.Serialize(ExperienceAirstrikeModifier);
+	stream.Serialize(ExperienceMindControlSelfModifier);
+	stream.Serialize(ExperienceMindControlVictimModifier);
+	stream.Serialize(ExperienceSpawnOwnerModifier);
+	stream.Serialize(ExperienceSpawnModifier);
+	stream.Serialize(EnemyUIName);
+	stream.Serialize(FakeOf);
+	stream.Serialize(IsLowSelectionPriority);
+	stream.Serialize(PaletteName);
 	stream.Serialize(ParachuteAnim);
 	stream.Serialize(SlamSound);
 	stream.Serialize(IsSlamSoundSet);
@@ -2131,6 +2237,17 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(IsDontScore);
+	crc(NoAmmoWeapon);
+	crc(NoAmmoAmount);
+	crc((int)InitialPayloadTypes.size());
+	crc((int)PassengersAllowed.size());
+	crc((int)PassengersDisallowed.size());
+	crc(FallRateParachute);
+	crc(FallRateNoParachute);
+	crc(FallRateParachuteMax);
+	crc(FallRateNoParachuteMax);
+	crc(ExperienceSpawnOwnerModifier);
+	crc(ExperienceMindControlSelfModifier);
 	crc(ThreatAvoidanceCoefficient);
 	crc(SlowdownDistance);
 	crc(DeaccelerationFactor);

@@ -59,10 +59,10 @@ class TechnoTypeClass : public ObjectTypeClass
 
 	public:
 
-		// A type carries up to eighteen weapons, each with an elite counterpart, and a gattling
+		// A type carries up to sixty-four weapons, each with an elite counterpart, and a gattling
 		// type up to six stages.
 		enum {
-			WEAPON_SLOT_COUNT = 18,
+			WEAPON_SLOT_COUNT = 64,
 			WEAPON_STAGE_COUNT = 6
 		};
 
@@ -1406,6 +1406,62 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A weapon position outside the list is ignored.
 		void Map_Turret_Weapon(int turret, int weapon) { if (weapon >= 0 && weapon < WEAPON_SLOT_COUNT) TurretWeapon[weapon] = turret; }
+
+		// NoAmmoWeapon and NoAmmoAmount (Ares): a type with limited ammo fires only this weapon, 0 or 1, once its ammo is at or below the amount. -1 uses the weapons as usual.
+		int NoAmmoWeapon;
+		int NoAmmoAmount;
+
+		// InitialPayload.Types and InitialPayload.Nums (Ares): the types an object carries when it is created, with how many of each.
+		std::vector<std::string> InitialPayloadTypes;
+		std::vector<int> InitialPayloadNums;
+
+		// NoManualEnter and NoManualUnload (Ares): no enter cursor over this transport, and no deploy cursor on it.
+		bool IsNoManualEnter;
+		bool IsNoManualUnload;
+
+		// Passengers.Allowed, Passengers.Disallowed and Passengers.BySize (Ares): the type names a transport takes or refuses, and whether a passenger uses room by its Size.
+		std::vector<std::string> PassengersAllowed;
+		std::vector<std::string> PassengersDisallowed;
+		bool IsPassengersBySize;
+
+		// FallRate.Parachute, FallRate.NoParachute and their Max keys (Ares); INT_MIN leaves the engine default.
+		int FallRateParachute;
+		int FallRateNoParachute;
+		int FallRateParachuteMax;
+		int FallRateNoParachuteMax;
+
+		// CivilianEnemy (Ares): an object of this type is a target for passive acquisition even when its owner is a neutral house.
+		bool IsCivilianEnemy;
+
+		// OmniCrusher.Aggressive (Ares): an OmniCrusher=yes vehicle drives at its target to flatten it.
+		bool IsOmniCrusherAggressive;
+
+		// The Experience.* keys (Ares): who gains from a kill and how much.
+		bool IsExperienceFromPassengers;
+		bool IsExperiencePromotePassengers;
+		double ExperiencePassengerModifier;
+		bool IsExperienceFromAirstrike;
+		double ExperienceAirstrikeModifier;
+		double ExperienceMindControlSelfModifier;
+		double ExperienceMindControlVictimModifier;
+		double ExperienceSpawnOwnerModifier;
+		double ExperienceSpawnModifier;
+
+		// EnemyUIName (Ares): the name label an enemy sees on this object, or empty for the generic enemy text.
+		std::string EnemyUIName;
+		char const * Enemy_Full_Name(void) const;
+	private:
+		mutable std::string EnemyUINameText;
+	public:
+
+		// FakeOf (Ares): the type whose price stands for this type in the health and veterancy selection commands, so a decoy cannot be told apart by them. Empty for none.
+		std::string FakeOf;
+
+		// LowSelectionPriority (Phobos): a drag selection leaves this object out when it also catches one without the flag.
+		bool IsLowSelectionPriority;
+
+		// The art Palette: a palette file (without extension) the object is drawn with in place of its house colour scheme palette; empty for none.
+		std::string PaletteName;
 
 		/*
 		**	This is a pointer to the wake shape (as needed by the gunboat).

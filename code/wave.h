@@ -16,12 +16,14 @@
 
 #include "wave.hh"
 
+class WeaponTypeClass;
+
 class WaveClass : public ObjectClass
 {
 		typedef ObjectClass BASECLASS;
 
 	public:
-		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target);
+		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target, WeaponTypeClass const * weapon = NULL);
 		WaveClass(void);
 		virtual ~WaveClass(void) override;
 
@@ -50,6 +52,7 @@ class WaveClass : public ObjectClass
 	private:
 		void Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned short * buffer, Rect const & cliprect) const;
 		void Set_Laser_Pixel(unsigned short * buffer, int mult) const;
+		bool Tint_Pixel(unsigned short * buffer, int mult) const;
 
 		void Laser_AI(void);
 
@@ -182,6 +185,16 @@ class WaveClass : public ObjectClass
 		 * from zero to three pixels along the wave's direction of travel.
 		 */
 		int WaveIntensityTable[13];
+
+		/*
+		 * These come from the weapon that made the wave: whether the wave runs from its target back to the
+		 * firer (Wave.ReverseAgainst*), and the colour it adds to the pixels it covers (Wave.Color and
+		 * Wave.Intensity, both in 256ths). A wave of a weapon that sets neither colour key draws as stock.
+		 */
+		bool IsReversed;
+		bool HasCustomColor;
+		int ColorAdd[3];
+		int ColorScale[3];
 };
 
 Coord Lerp(Coord const & a, Coord const & b, float t);

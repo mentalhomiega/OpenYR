@@ -56,6 +56,7 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown
 	ZAdjust(zadjust),
 	UnusedBool1(unknown),
 	EmissiveStrength(EmissiveDefaults[EMISSIVE_LASER].Strength),
+	Thickness(1),
 	InnerColor(),
 	OuterColor(),
 	OuterSpread(),
@@ -250,6 +251,22 @@ void LaserDrawClass::Draw_It(void)
 			}
 
 			if (Options.DetailLevel != 0) {
+				// A wider core is the core line repeated side by side across the beam.
+				if (Thickness > 1 && !Blinks) {
+					double const length = std::sqrt((double)(end_pixel.X - start_pixel.X) * (end_pixel.X - start_pixel.X) + (double)(end_pixel.Y - start_pixel.Y) * (end_pixel.Y - start_pixel.Y));
+					if (length > 0.0) {
+						double const across_x = -(end_pixel.Y - start_pixel.Y) / length;
+						double const across_y = (end_pixel.X - start_pixel.X) / length;
+						for (int line = 0; line < Thickness; line++) {
+							double const shift = line - (Thickness - 1) / 2.0;
+							if (shift == 0.0) {
+								continue;
+							}
+							Point2D const offset((int)std::floor(across_x * shift + 0.5), (int)std::floor(across_y * shift + 0.5));
+							LogicalSurface->Draw_Depth_Antialiased_Line(TacticalRect, start_pixel + offset, end_pixel + offset, InnerColor, start_z, end_z, false, has_r, has_g, has_b, current_intensity);
+						}
+					}
+				}
 				if (Blinks) {
 					LogicalSurface->Draw_Depth_Antialiased_Line(TacticalRect, start_pixel, end_pixel, InnerColor, start_z, end_z, false, true, true, true, current_intensity);
 					if (has_outer_glow) {

@@ -69,6 +69,7 @@
 #include "bench.h"
 #include "building.h"
 #include "bullet.h"
+#include "weapon.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
@@ -1043,7 +1044,17 @@ void AnimClass::AI(void)
 					if (AutoTest_Active()) {
 						DebugString("AUTOTEST animdamage %s stage %d damage %d at %d,%d\n", Class->Name(), stage, damage, Center_Coord().X, Center_Coord().Y);
 					}
-					if (strcmp(Class->IniName, "INVISO") == 0) {
+					if (Class->Weapon != NULL && Class->Weapon->Bullet != NULL) {
+						// A Weapon makes the animation's projectile detonate where it is, owned by the animation's house (Phobos).
+						HouseClass * const owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
+						BulletClass * const bullet = Create_Bullet(Class->Weapon->Bullet, &Map[Center_Coord().As_Cell()], NULL, Class->Weapon->Attack, Class->Weapon->WarheadPtr, 0, Class->Weapon->IsBright);
+						if (bullet != NULL) {
+							bullet->Weapon = Class->Weapon;
+							bullet->CreditedHouse = owner;
+							bullet->Detonate(Center_Coord());
+							delete bullet;
+						}
+					} else if (strcmp(Class->IniName, "INVISO") == 0) {
 						Explosion_Damage(Center_Coord(), damage, NULL, Rule->C4Warhead);
 					} else {
 						Explosion_Damage(Center_Coord(), damage, NULL, Rule->FlameDamage2);
@@ -1943,6 +1954,48 @@ ClassID AnimClass::Class_ID(void) const
 RTTIType AnimClass::Fetch_RTTI(void) const
 {
 	return(RTTI_ANIM);
+}
+
+
+/// <summary>
+/// The house that owns the soldier an animation type with MakeInfantry makes, as its MakeInfantryOwner says: the invoker (the
+/// house passed as invoker), the killer, the victim, the Civilian, Special or Neutral house, or any house at random (Ares).
+/// </summary>
+/// <returns>Returns with the house, or HOUSE_NONE when the choice names no house the game has.</returns>
+HousesType AnimClass::Make_Infantry_Owner(AnimTypeClass const * type, HouseClass const * invoker, HouseClass const * killer, HouseClass const * victim)
+{
+	HouseClass const * chosen = invoker;
+	auto named = [](char const * name) -> HouseClass const * {
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (stricmp(Houses[index]->Class->Name(), name) == 0) {
+				return(Houses[index]);
+			}
+		}
+		return(NULL);
+	};
+	switch (type->MakeInfantryOwner) {
+		case AnimTypeClass::MAKE_OWNER_KILLER:
+			chosen = killer;
+			break;
+		case AnimTypeClass::MAKE_OWNER_VICTIM:
+			chosen = victim;
+			break;
+		case AnimTypeClass::MAKE_OWNER_CIVILIAN:
+			chosen = named("Civilian");
+			break;
+		case AnimTypeClass::MAKE_OWNER_SPECIAL:
+			chosen = named("Special");
+			break;
+		case AnimTypeClass::MAKE_OWNER_NEUTRAL:
+			chosen = named("Neutral");
+			break;
+		case AnimTypeClass::MAKE_OWNER_RANDOM:
+			chosen = Houses.Count() > 0 ? Houses[Random_Pick(0, Houses.Count() - 1)] : NULL;
+			break;
+		default:
+			break;
+	}
+	return(chosen != NULL ? (HousesType)chosen->HeapID : HOUSE_NONE);
 }
 
 

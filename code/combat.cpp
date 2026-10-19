@@ -76,6 +76,9 @@
 #include "vanim.h"
 #include "vein.h"
 #include "bullettype.h"
+#include "warheadrules.h"
+#include <map>
+#include <vector>
 #include "warhead.h"
 
 #include "mph.hh"
@@ -354,6 +357,34 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 				hits.push_back({veinhole, (veinhole->Target_Coord() - coord).Gamemd_Length()});
 			}
 		}
+	}
+
+	// CellSpread.MaxAffect keeps only the nearest hits an object would take from this blast (Ares).
+	if (warhead->CellSpreadMaxAffect >= 0 && hits.size() > 1) {
+		std::map<ObjectClass *, std::vector<size_t>> by_object;
+		for (size_t index = 0; index < hits.size(); index++) {
+			by_object[hits[index].Object].push_back(index);
+		}
+		std::vector<bool> dropped(hits.size(), false);
+		for (auto const & entry : by_object) {
+			if (entry.second.size() > (size_t)warhead->CellSpreadMaxAffect) {
+				std::vector<int> distances;
+				for (size_t index : entry.second) {
+					distances.push_back(hits[index].Distance);
+				}
+				std::vector<bool> const kept = WarheadRules::Hits_Kept(distances, warhead->CellSpreadMaxAffect);
+				for (size_t slot = 0; slot < kept.size(); slot++) {
+					dropped[entry.second[slot]] = !kept[slot];
+				}
+			}
+		}
+		std::vector<HitStruct> remaining;
+		for (size_t index = 0; index < hits.size(); index++) {
+			if (!dropped[index]) {
+				remaining.push_back(hits[index]);
+			}
+		}
+		hits.swap(remaining);
 	}
 
 	/*

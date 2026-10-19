@@ -82,7 +82,7 @@ static bool Is_Within_Wave_Minimum(Coord const & source_coord, Coord const & tar
 /// </summary>
 /// <param name="source">The object that is firing the wave.</param>
 /// <param name="target">The object that the wave is aimed at.</param>
-WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target) :
+WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target, WeaponTypeClass const * weapon) :
 	BASECLASS(),
 	Target(target),
 	Type(type),
@@ -92,8 +92,36 @@ WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, Tec
 	FadeProgress(0),
 	LaserEC(0),
 	Source(source),
-	AffectedCells(5)
+	AffectedCells(5),
+	IsReversed(type == WAVE_MAGNETRON && target != NULL && target->RTTI == RTTI_UNIT),
+	HasCustomColor(false),
+	ColorAdd{0, 0, 0},
+	ColorScale{0, 0, 0}
 {
+	if (weapon != NULL) {
+		if (target != NULL && (type == WAVE_SONIC || type == WAVE_MAGNETRON)) {
+			IsReversed = weapon->Wave_Is_Reversed_Against(target->RTTI);
+		}
+		if (weapon->HasWaveColor || weapon->HasWaveIntensity) {
+			// A colour the weapon leaves unset takes the wave kind's stock value, and with Wave.Color set the stock intensity is dropped.
+			HasCustomColor = true;
+			int const stock_color[3] = {type == WAVE_LASER || type == WAVE_BIG_LASER ? 64 : 0, 0, type == WAVE_LASER || type == WAVE_BIG_LASER ? 96 : 0};
+			int stock_scale[3] = {0, 256, 256};
+			if (type == WAVE_MAGNETRON) {
+				stock_scale[0] = 128;
+				stock_scale[1] = 0;
+				stock_scale[2] = 1024;
+			} else if (type == WAVE_LASER || type == WAVE_BIG_LASER) {
+				stock_scale[1] = 0;
+				stock_scale[2] = 0;
+			}
+			for (int channel = 0; channel < 3; channel++) {
+				ColorAdd[channel] = weapon->HasWaveColor ? weapon->WaveColor[channel] : stock_color[channel];
+				ColorScale[channel] = weapon->HasWaveIntensity ? weapon->WaveIntensity[channel] : (weapon->HasWaveColor ? 0 : stock_scale[channel]);
+			}
+		}
+	}
+
 	// gamemd never places a sonic or magnetron wave fired from under 240 leptons, yet the firer
 	// keeps its Wave pointer until the deferred deletion runs (WaveClass::WaveClass, 0x75EA7E).
 	// Laser waves are exempt because gamemd builds none (TechnoClass::CreateLaser, 0x6FD210).
@@ -147,7 +175,11 @@ WaveClass::WaveClass(void) :
 	FadeProgress(0),
 	LaserEC(0),
 	Source(NULL),
-	AffectedCells(5)
+	AffectedCells(5),
+	IsReversed(false),
+	HasCustomColor(false),
+	ColorAdd{0, 0, 0},
+	ColorScale{0, 0, 0}
 {
 	Waves.Add(this);
 
@@ -197,6 +229,12 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 	}
 	int mult = IntensityTable[amplitude];
 
+	if (HasCustomColor) {
+		*buffer = color;
+		Tint_Pixel(buffer, mult);
+		return;
+	}
+
 	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(color);
 	int red = rgb.Get_Red();
 	int green = rgb.Get_Green();
@@ -218,6 +256,25 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 
 
 /// <summary>
+/// Colours one screen pixel with the weapon's Wave.Color and Wave.Intensity (Ares): each channel gains its constant and a
+/// share of its own value, both in proportion to the wave's strength at the pixel.
+/// </summary>
+/// <param name="buffer">Pointer to the screen pixel to colour.</param>
+/// <param name="mult">The strength of the wave at the pixel, out of 256.</param>
+bool WaveClass::Tint_Pixel(unsigned short * buffer, int mult) const
+{
+	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(*buffer);
+	int channel[3] = {rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue()};
+	for (int index = 0; index < 3; index++) {
+		int value = channel[index] + ((channel[index] * mult * ColorScale[index]) >> 16) + ((ColorAdd[index] * mult) >> 8);
+		channel[index] = std::max(0, std::min(255, value));
+	}
+	*buffer = DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]);
+	return(true);
+}
+
+
+/// <summary>
 /// Brightens one screen pixel for the laser wave.
 /// Only the red component of the pixel is raised, which is what gives the laser its color
 /// over whatever terrain happens to lie underneath it.
@@ -227,6 +284,10 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 /// over its life.</param>
 void WaveClass::Set_Laser_Pixel(unsigned short * buffer, int mult) const
 {
+	if (HasCustomColor) {
+		Tint_Pixel(buffer, mult);
+		return;
+	}
 	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(*buffer);
 	int red = rgb.Get_Red();
 	int green = rgb.Get_Green();
@@ -471,6 +532,10 @@ void WaveClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Source);
 	stream.Serialize(Facing);
 	stream.Serialize(AffectedCells);
+	stream.Serialize(IsReversed);
+	stream.Serialize(HasCustomColor);
+	stream.Serialize(ColorAdd);
+	stream.Serialize(ColorScale);
 	// WaveIntensityTable -- the rasterized wave, which belongs to the surface being drawn to and
 	// is rebuilt before every draw.
 	// WaveShape.Vertices
@@ -1197,8 +1262,8 @@ void WaveClass::Wave_Shape_AI(void)
 	}
 
 	if (IsWaveActive) {
-		// A magnetron beam on a vehicle runs from the vehicle back to the firer.
-		if (Type == WAVE_MAGNETRON && Target->RTTI == RTTI_UNIT) {
+		// A wave reversed against its target's kind runs from the target back to the firer; a magnetron beam does so at a vehicle.
+		if (IsReversed) {
 			Build_Wave_Shape(Target->Center_Coord(), Source->Turret_Coord(0));
 		} else {
 			Build_Wave_Shape(Source->Turret_Coord(0), Target->As_Coord());

@@ -658,6 +658,13 @@ class TechnoClass :	public RadioClass,
 		 */
 		int StunDuration;
 
+		// The frames left before this object may fire again after a DisableWeapons.Duration hit (Ares). It reloads, picks
+		// targets and acquires them meanwhile.
+		int WeaponsDisabledFrames;
+
+		// The warhead of the hit this object is taking, for the death announcement that follows the hit; NULL outside one.
+		WarheadTypeClass const * DamageWarhead;
+
 		// A PoweredUnit object without a working control structure is shut down: it cannot move or fire.
 		bool IsDeactivated;
 
@@ -950,6 +957,9 @@ class TechnoClass :	public RadioClass,
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
 		bool Is_Immune_To_Iron_Curtain(bool force_shield) const;
+		bool Uses_No_Ammo_Weapon(void) const;
+		void Create_Initial_Payload(void);
+		void Apply_Iron_Curtain_Warhead(WarheadTypeClass const * warhead, TechnoClass * source, HouseClass * sourcehouse);
 		virtual bool Is_Ready_To_Random_Animate(void) const;
 		virtual bool Random_Animate(void) {return(false);}
 		virtual void Assign_Destination(AbstractClass * target, bool = true);

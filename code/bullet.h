@@ -147,6 +147,9 @@ class BulletClass : public ObjectClass
 		 */
 		int FirerHouse;
 
+		// The house credited with a blast of a projectile that has no firer, such as one an animation's Weapon makes. Not saved: that projectile detonates as it is made.
+		HouseClass * CreditedHouse = NULL;
+
 	private:
 		/*
 		 * This is the fuse that decides when a homing projectile has arrived. It is armed

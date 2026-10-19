@@ -10,6 +10,7 @@
 #pragma once
 
 #include "objtype.h"
+#include <string>
 #include "rgb.h"
 #include "typelist.h"
 
@@ -187,6 +188,9 @@ class ParticleTypeClass : public ObjectTypeClass
 		 * that the sequence runs out just as the particle arrives at its target.
 		 */
 		bool IsNormalized;
+
+		// Palette (Ares): the palette file a gas, smoke or fire particle's image is drawn with, in place of the animation palette. Empty for the stock one.
+		std::string PaletteName;
 
 		/*
 		 * This is the particle type spawned in this particle's place when it expires. It

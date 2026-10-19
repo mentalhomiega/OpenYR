@@ -92,6 +92,12 @@
 **							and writes the frames each has left
 **	plantbomb <TypeID>:<Weapon>	the player's first infantryman plants the weapon's Ivan bomb on the player's objects of that type
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
+**	ammo <TypeID> <n>		sets the ammunition of the player's objects of that type
+**	link <kind>:<TypeA>:<TypeB>	ties the player's objects for a test: spawn (TypeA is TypeB's spawner), mindcontrol (TypeA controls TypeB),
+**							passenger (TypeB fires from inside TypeA, an open-topped transport) or airstrike (TypeB is a plane of TypeA's air strike)
+**	exp <TypeID>			writes the experience of the player's objects of that type
+**	fall <TypeID> <height>	puts the player's objects of that type that high in the air, falling, with or without a parachute as the type's animations decide
+**	maphelp					writes the help text of the object under the pointer (windowmove puts the pointer there)
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
 **	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
@@ -3251,6 +3257,72 @@ void Run(StepType const & step)
 				techno->Plant_Bomb(planter, weapon);
 			}
 		}
+	} else if (step.Command == "ammo") {
+		// ammo <TypeID> <n>: sets the ammunition of the player's objects of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Ammo = step.X;
+				DebugString("AUTOTEST   ammo %s set to %d, uses no-ammo weapon %d\n", techno->TClass->Name(), step.X, (int)techno->Uses_No_Ammo_Weapon());
+			}
+		}
+	} else if (step.Command == "link") {
+		// link <kind>:<TypeA>:<TypeB>: see the list of commands above.
+		std::string kind;
+		std::string first;
+		std::string second;
+		{
+			size_t const one = step.Argument.find(':');
+			size_t const two = one != std::string::npos ? step.Argument.find(':', one + 1) : std::string::npos;
+			if (two != std::string::npos) {
+				kind = step.Argument.substr(0, one);
+				first = step.Argument.substr(one + 1, two - one - 1);
+				second = step.Argument.substr(two + 1);
+			}
+		}
+		TechnoClass * a = NULL;
+		TechnoClass * b = NULL;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->IsInLimbo || techno->House != PlayerPtr) continue;
+			if (a == NULL && stricmp(techno->TClass->Name(), first.c_str()) == 0) a = techno;
+			if (b == NULL && stricmp(techno->TClass->Name(), second.c_str()) == 0) b = techno;
+		}
+		if (a != NULL && b != NULL) {
+			if (kind == "spawn") {
+				b->SpawnOwner = a;
+			} else if (kind == "mindcontrol") {
+				b->MindControlledBy = a;
+			} else if (kind == "passenger") {
+				b->IsInOpenToppedTransport = true;
+				b->Transporter = a;
+			} else if (kind == "airstrike" && b->RTTI == RTTI_AIRCRAFT) {
+				a->AirstrikePlanes.push_back(static_cast<AircraftClass *>(b));
+			}
+			DebugString("AUTOTEST   link %s %s to %s\n", kind.c_str(), first.c_str(), second.c_str());
+		} else {
+			DebugString("AUTOTEST   link %s: %s %s, %s %s\n", kind.c_str(), first.c_str(), a != NULL ? "found" : "missing", second.c_str(), b != NULL ? "found" : "missing");
+		}
+	} else if (step.Command == "exp") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   exp %s at %d,%d: %.4f\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->Veterancy.Experience);
+			}
+		}
+	} else if (step.Command == "fall") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Height = step.X;
+				techno->IsFalling = true;
+				techno->Riser.Z = 0;
+				DebugString("AUTOTEST   fall %s from %d\n", techno->TClass->Name(), step.X);
+			}
+		}
+	} else if (step.Command == "maphelp") {
+		char const * text = Map.Help_Text(600);
+		DebugString("AUTOTEST   maphelp '%s'\n", text != NULL ? text : "(none)");
 	} else if (step.Command == "hurt") {
 		// hurt <TypeID> <percent>: sets the strength of the player's objects of that type to that share.
 		int percent = step.X;
@@ -3559,7 +3631,7 @@ void Run(StepType const & step)
 			if (!techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), typename_.c_str()) == 0) {
 				int damage = step.X;
 				techno->Take_Damage(damage, 0, warhead, firer, false);
-				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s stun %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none", (int)techno->StunDuration);
+				DebugString("AUTOTEST   hit %s of %s took %d strength %d berzerk %d for %d firer %s stun %d curtain %d disabled %d\n", techno->TClass->Name(), techno->House->Class->Name(), damage, (int)techno->Strength, (int)techno->IsBerzerk, techno->BerzerkDuration, firer != NULL ? firer->TClass->Name() : "none", (int)techno->StunDuration, (int)techno->IronCurtainTimer, techno->WeaponsDisabledFrames);
 			}
 		}
 	} else if (step.Command == "clickcell") {

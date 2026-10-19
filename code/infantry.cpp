@@ -514,6 +514,11 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 						AnimClass * mutate_anim = new AnimClass(mutate_type, PositionCoord);
 						HouseClass const * owner = source != NULL ? source->House : sourcehouse;
 						if (mutate_anim != NULL) {
+							// MakeInfantryOwner can give the soldier to another house than the killer's (Ares).
+							HousesType const chosen = AnimClass::Make_Infantry_Owner(mutate_type, owner, owner, House);
+							if (chosen != HOUSE_NONE && chosen < Houses.Count()) {
+								owner = Houses[chosen];
+							}
 							if (owner != NULL) {
 								mutate_anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(owner)]->Converter;
 								mutate_anim->OwnerHouse = (HousesType)owner->HeapID;
@@ -540,7 +545,12 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			} else if (Class->DeathAnims.Count() > 0) {
 				int const index = (infdeath >= 0 && infdeath < Class->DeathAnims.Count()) ? infdeath : 0;
 				if (Class->DeathAnims[index] != NULL) {
-					new AnimClass(Class->DeathAnims[index], PositionCoord);
+					AnimClass * death = new AnimClass(Class->DeathAnims[index], PositionCoord);
+					// gamemd starts a DeathAnims animation with no owner, so its soldier goes to the civilian house unless MakeInfantryOwner names another (Ares).
+					if (death != NULL && Class->DeathAnims[index]->MakeInfantry != -1 && Class->DeathAnims[index]->MakeInfantryOwner != AnimTypeClass::MAKE_OWNER_INVOKER) {
+						HouseClass const * killer_house = source != NULL ? source->House : sourcehouse;
+						death->OwnerHouse = AnimClass::Make_Infantry_Owner(Class->DeathAnims[index], House, killer_house, House);
+					}
 				}
 				delthis = true;
 			} else {
@@ -1005,7 +1015,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					**	badly damaged the enemy building is.
 					*/
 					else if (House->Is_Ally(tech) || (tech->RTTI == RTTI_BUILDING && Is_Passive_Occupiable_Building((BuildingClass *)tech))) {
-						tech->Renovate();
+						if (tech->RTTI != RTTI_BUILDING || ((BuildingClass *)tech)->Class->IsEngineerRepairable || ((BuildingClass *)tech)->Class->IsMobileWar) {
+							tech->Renovate();
+						}
 					} else {
 						bool iscapturable = false;
 						if (tech->RTTI == RTTI_BUILDING) {
@@ -1948,7 +1960,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			*/
 			if (obj->RTTI == RTTI_BUILDING) {
 				BuildingClass *building = (BuildingClass *)obj;
-				if (building->Class->IsInvisibleInGame) {
+				if (building->Class->IsInvisibleInGame || building->Class->IsPassable) {
 					obj = obj->Next;
 					continue;
 				}
@@ -3221,6 +3233,10 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
 				if (House->Is_Ally(bldg) || (Is_Passive_Occupiable_Building(bldg) && !bldg->IsBeingWarpedOut)) {
+					// An engineer cannot restore a structure with EngineerRepairable=no (Ares).
+					if (!bldg->Class->IsEngineerRepairable && !bldg->Class->IsMobileWar) {
+						return(ACTION_SELECT);
+					}
 					if (bldg->HealthRatio == Rule->ConditionGreen) {
 						return(ACTION_NO_GREPAIR);
 					}
