@@ -939,6 +939,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsCoreDefender;
 
+		// SolidHeight (Ares): how many cells of its height stop a SubjectToBuildings projectile; negative for the whole height,
+		// 0 for none.
+		int SolidHeight;
+
 		/*
 		 * If this building's gun barrel is a voxel model rather than a shape animation,
 		 * then this flag will be true. The barrel is loaded as a voxel of its own, separate

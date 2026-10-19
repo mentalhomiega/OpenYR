@@ -218,6 +218,7 @@
 #include "voc.h"
 #include "vox.h"
 #include "voxdrsys.h"
+#include "projectilerules.h"
 #include "warhead.h"
 #include "warheadrules.h"
 #include "wave.h"
@@ -5231,13 +5232,15 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			int spread = 0;
 			int distance = 0;
 			int range = 0;
-			if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
-				spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
+			bool const ground_path = !bullet->Class->FlakScatter || bullet->Class->IsInvisible;
+			auto const bounds = ProjectileRules::Ballistic_Scatter_Bounds(Rule->BallisticScatter, bullet->Class->BallisticScatterMin, bullet->Class->BallisticScatterMax, ground_path);
+			if (ground_path) {
+				spread = Scen->RandomNumber(bounds.first, bounds.second);
 			} else {
 				path = "B";
 				distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
 				range = Weapon_Range(which);
-				int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+				int const share = Scen->RandomNumber(bounds.first, bounds.second);
 				spread = range > 0 ? (share * distance) / range : 0;
 			}
 			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);

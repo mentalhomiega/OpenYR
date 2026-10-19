@@ -2174,6 +2174,23 @@ Airburst:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+AirburstSpread:
+  key: AirburstSpread
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BulletTypeClass
+      member: spread
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 AirburstWeapon:
   key: AirburstWeapon
   scopes:
@@ -2558,6 +2575,24 @@ AlliedDisguise:
       default_candidate: none
       declared_in: RulesClass
       member: AlliedDisguise
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+AlliedSolidTransparency:
+  key: AlliedSolidTransparency
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsAlliedSolidTransparency
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -3729,6 +3764,23 @@ Armory:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+AroundTarget:
+  key: AroundTarget
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: BulletTypeClass
+      member: AroundTarget
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 Artillary:
   key: Artillary
   scopes:
@@ -4555,6 +4607,40 @@ BallisticScatter:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BallisticScatter.Max:
+  key: BallisticScatter.Max
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BulletTypeClass
+      member: scatter_max
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
+BallisticScatter.Min:
+  key: BallisticScatter.Min
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BulletTypeClass
+      member: scatter_min
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 BalloonHover:
   key: BalloonHover
   scopes:
@@ -10446,6 +10532,23 @@ Damage:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Damage.Delay:
+  key: Damage.Delay
+  scopes:
+  - applies_to: *id008
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: AnimTypeClass
+      member: DamageDelay
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
 DamageDelay:
   key: DamageDelay
   scopes:
@@ -36159,6 +36262,23 @@ SnowOccupationBits:
       source: code/terrtype.cpp
       guard: null
     level: TerrainTypeClass
+SolidHeight:
+  key: SolidHeight
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: SolidHeight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SoloCrateMoney:
   key: SoloCrateMoney
   scopes:
@@ -38804,6 +38924,23 @@ StupidHunt:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SubjectToBuildings:
+  key: SubjectToBuildings
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsSubjectToBuildings
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 SubjectToCliffs:
   key: SubjectToCliffs
   scopes:

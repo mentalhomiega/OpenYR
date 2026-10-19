@@ -78,6 +78,10 @@ records:
   ares-superweapon-keys: Ares
   added-abductor: Ares
   added-affectsenemies: Ares
+  added-airburstspread: Ares
+  added-anim-damage-delay: Ares
+  added-ballisticscatter-range: Ares
+  added-subjecttobuildings: Ares
   added-effectsrequire: Ares
   added-emp-duration: Ares
   added-forceshield-modifier: Ares

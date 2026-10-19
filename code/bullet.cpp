@@ -94,6 +94,7 @@
 #include "tracker.h"
 #include "unit.h"
 #include "voxdrsys.h"
+#include "projectilerules.h"
 #include "warhead.h"
 #include "dbgprint.h"
 #include "ebolt.h"
@@ -1317,6 +1318,17 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 		}
 	}
 
+	// A SubjectToBuildings projectile stops in a cell whose building is solid up to the projectile's height. The building that
+	// fired it never stops it, nor does an ally's building under AlliedSolidTransparency, nor an open gate (Ares).
+	if (Class->IsSubjectToBuildings) {
+		BuildingClass const * building = cellptr->Cell_Building();
+		if (building != NULL && building != Payback && building->Class->SolidHeight != 0 && !(building->Class->IsGate && building->Is_Gate_Open())
+			&& !(Rule->IsAlliedSolidTransparency && Payback != NULL && Payback->House->Is_Ally(building->House))
+			&& ProjectileRules::Building_Stops(ProjectileRules::Solid_Height(building->Class->SolidHeight, building->Class->ZHeight, LEVEL_LEPTON_H), height)) {
+			return(true);
+		}
+	}
+
 	if (height < 0) {
 		return(true);
 	}
@@ -1373,7 +1385,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 	}
 
 	if (!Warhead->Is_EM_Pulse()) {
-		if (!Class->IsSplits) {
+		if (!Class->Detonates_Once()) {
 			// Airburst and Inaccurate shells blast where they stand (BulletClass::Explode, 0x468DC7 and 0x468EB9).
 			if (!forced && !Class->IsArcing && !Is_Homing() && !Class->IsAirburst && !Class->IsInaccurate && Fuse.Fuse_Target() != COORD_NONE) {
 				coord = Fuse.Fuse_Target();
@@ -1393,7 +1405,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 		}
 	}
 
-	if (!Class->IsSplits) {
+	if (!Class->Detonates_Once()) {
 		Coord newcoord = coord;
 		for (int i = 0; i < Class->Cluster; i++) {
 			Detonate(coord);
@@ -1675,18 +1687,54 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
+	// An Airburst projectile with AirburstSpread fires its AirburstWeapon once at every cell within the spread of the cell it burst
+	// over, or of its original target with AroundTarget=yes (Ares).
+	if (Class->IsAirburstSpread) {
+		WeaponTypeClass * weapon = Class->AirburstWeapon;
+		if (weapon == NULL || weapon->Bullet == NULL) {
+			DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
+		} else {
+			Cell center = Center_Coord().As_Cell();
+			if (TarCom != NULL && Class->AroundTarget == 1) {
+				center = TarCom->As_Coord().As_Cell();
+			}
+			auto const offsets = ProjectileRules::Airburst_Offsets((double)Class->AirburstSpread / CELL_LEPTON_W);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST airburst %s over %d,%d aimed at %d,%d around %d,%d: %d cells\n", Class->Name(), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y,
+					TarCom != NULL ? TarCom->As_Coord().As_Cell().X : -1, TarCom != NULL ? TarCom->As_Coord().As_Cell().Y : -1, center.X, center.Y, (int)offsets.size());
+			}
+			for (auto const & offset : offsets) {
+				Cell const cell(center.X + offset.first, center.Y + offset.second);
+				if (!Map.In_Radar(cell)) {
+					continue;
+				}
+				BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
+				if (bullet != NULL) {
+					bullet->Weapon = weapon;
+					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+					bullet->Unlimbo(PositionCoord, velocity);
+				}
+			}
+		}
+	}
+
 	if (Class->IsSplits) {
 		DynamicVectorClass<AbstractClass *> targets;
 
 		Coord split_coord = PositionCoord;
 		Cell split_cell = Center_Coord().As_Cell();
 
-		if (TarCom != NULL) {
+		// The bomblets look for targets around the original target unless AroundTarget=no puts the search where the projectile burst.
+		if (TarCom != NULL && Class->AroundTarget != 0) {
 			ObjectClass * object = TarCom->As_ObjectClass();
 			if (object != NULL) {
 				split_coord = object->PositionCoord;
 				split_cell = object->Center_Coord().As_Cell();
 			}
+		}
+
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST split %s over %d,%d searches around %d,%d\n", Class->Name(), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y, split_cell.X, split_cell.Y);
 		}
 
 		int i;

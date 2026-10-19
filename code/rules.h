@@ -1051,6 +1051,9 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
+		// AlliedSolidTransparency (Ares): a SubjectToBuildings shot flies through solid buildings its owner's allies own.
+		bool IsAlliedSolidTransparency;
+
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
 		int NoParachuteMaxFallRate;

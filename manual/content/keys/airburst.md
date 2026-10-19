@@ -21,6 +21,8 @@ An airburst projectile is also exempt from the check that detonates a homing pro
 
 A projectile chasing an aircraft never follows the terrain; it flies straight at its target. On that shot the clearance above does not apply, but the horizontal distance measure, the detonation changes and the exemption from the stall check all do.
 
+A projectile that also sets [`AirburstSpread`](/keys/airburstspread/) does not split: it fires its `AirburstWeapon` at every cell within the spread instead, unless it writes `Splits=yes`.
+
 :::danger[This setting also switches splitting on, and a splitting projectile with no weapon crashes the game]
 [`Splits`](/keys/splits/) takes its value from this key whenever the projectile's section does not set `Splits` itself, so `Airburst=yes` alone makes the projectile a splitting one. A splitting projectile with a [`Cluster`](/keys/cluster/) above `0` crashes the game when it detonates unless it names a usable [`AirburstWeapon`](/keys/airburstweapon/). Name that weapon in the same section, or write `Splits=no` there; the `Splits` page explains why that line must be repeated in every rules file that declares the section.
 :::
