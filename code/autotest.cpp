@@ -191,6 +191,10 @@
 **	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
 **	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
 **	count <TypeID>			writes how many live objects of that type each house has
+**	load <TypeID>			fills the player's objects of that type, a harvester for one, with ore to capacity
+**	partsys					writes each live particle system with its type, the frames it has left and the object it rides on
+**	bullets					writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays
+**	radbeams				writes how many radiation beams of each kind are live and how many eruption beams are visible
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
 **							reload countdown of every live object of that type
 **	price <TypeID>			writes what the player pays for the type
@@ -238,6 +242,7 @@
 #include "factory.h"
 #include "ccfile.h"
 #include "builtype.h"
+#include "bullet.h"
 #include "bullettype.h"
 #include "cell.h"
 #include "command.h"
@@ -305,6 +310,8 @@
 #include "motlib.h"
 #include "mixfile.h"
 #include "_pk.h"
+#include "partsys.h"
+#include "psystype.h"
 #include "pcx.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
@@ -313,6 +320,7 @@ extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
+#include "radbeam.h"
 #include "rawfile.h"
 #include "armortypes.h"
 #include "cameopcx.h"
@@ -3523,6 +3531,14 @@ void Run(StepType const & step)
 				techno->Veterancy.Set_Elite(true);
 			}
 		}
+	} else if (step.Command == "load") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Storage.Increase_Amount(techno->TClass->Capacity, 0);
+				DebugString("AUTOTEST   load %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+			}
+		}
 	} else if (step.Command == "canrepair") {
 		BuildingClass const * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
 		if (building != NULL) {
@@ -4259,6 +4275,27 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
 			}
 		}
+	} else if (step.Command == "partsys") {
+		// partsys: each live particle system, with the object it rides on.
+		for (int index = 0; index < ParticleSystems.Count(); index++) {
+			ParticleSystemClass const * system = ParticleSystems[index];
+			AbstractClass const * source = system->Source_Object();
+			ObjectClass const * object = source != NULL ? source->As_ObjectClass() : NULL;
+			DebugString("AUTOTEST   partsys frame %d %s lifetime %d at %d,%d,%d on %s\n", Frame, system->Class != NULL ? system->Class->Name() : "-", system->Lifetime,
+				system->Get_Coord().X, system->Get_Coord().Y, system->Get_Coord().Z, object != NULL ? object->Class_Of()->Name() : "-");
+		}
+	} else if (step.Command == "bullets") {
+		// bullets: each live projectile.
+		for (int index = 0; index < Bullets.Count(); index++) {
+			BulletClass const * bullet = Bullets[index];
+			if (bullet->Class != NULL) {
+				DebugString("AUTOTEST   bullet frame %d %s firerhouse %d scalable %d firerspalette %d spawndelay %d scaled %d\n", Frame, bullet->Class->Name(), bullet->FirerHouse,
+					(int)bullet->Class->IsScalable, (int)bullet->Class->IsFirersPalette, bullet->Class->SpawnDelay, bullet->Class->ScaledSpawnDelay);
+			}
+		}
+	} else if (step.Command == "radbeams") {
+		// radbeams: how many beams of each kind are live.
+		DebugString("AUTOTEST   radbeams frame %d wave %d eruption %d visible %d\n", Frame, RadBeamClass::Count(false), RadBeamClass::Count(true), RadBeamClass::Count_Visible_Eruptions());
 	} else if (step.Command == "quantity") {
 		// quantity <TypeID>: how many of that type each house is counted as having, owned and active. A
 		// structure uses the building counts, and a unit, infantry or aircraft type its own counts.

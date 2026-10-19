@@ -6894,6 +6894,30 @@ void BuildingClass::Start_Psi_Warning(void)
 }
 
 
+/// <summary>
+/// Starts the refinery smoke at each of the type's four RefinerySmokeOffset positions that is set
+/// (BuildingClass::UpdateRefinerySmokeSystems, 0x459900). Each system lives for the type's
+/// RefinerySmokeFrames, and nothing is started when the type names no RefinerySmokeParticleSystem.
+/// </summary>
+void BuildingClass::Update_Refinery_Smoke_Systems(void)
+{
+	ParticleSystemTypeClass const * const smoke = Class->RefinerySmokeParticleSystem;
+	if (smoke == NULL) {
+		return;
+	}
+
+	for (int index = 0; index < 4; index++) {
+		TPoint3D<int> const & offset = Class->RefinerySmokeOffset[index];
+		// An offset of 0,0,0 is unset, and gamemd also leaves 128,128,0 unused.
+		if ((offset.X == 0 && offset.Y == 0 && offset.Z == 0) || (offset.X == 128 && offset.Y == 128 && offset.Z == 0)) {
+			continue;
+		}
+		ParticleSystemClass * system = new ParticleSystemClass(smoke, Get_Coord() + Coord(offset.X, offset.Y, offset.Z), NULL, this, Coord(0, 0, 0));
+		system->Lifetime = Class->RefinerySmokeFrames;
+	}
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Revealed -- Reveals the building to the specified house.                     *
  *                                                                                             *

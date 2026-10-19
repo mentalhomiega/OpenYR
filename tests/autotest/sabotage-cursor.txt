@@ -1,0 +1,16 @@
+; SabotageCursor. The sabotage-cursor-rules mod gives the GI (E1) the Sapper weapon, which sets SabotageCursor=yes.
+; A player GI at 66,24 and a computer Grizzly (MTNK) at 70,24.
+; Expected: "action E1 on MTNK" and the clickon line report Demolish, where stock rules report Attack. A
+; target the weapon cannot hit, such as the computer GI or the power plant, still reports NoMove.
+; Run (with -Mods tests/autotest/sabotage-cursor-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/sabotage-cursor.txt -Mods src-agent4/tests/autotest/sabotage-cursor-rules -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+41 spawn MTNK 70 24
+42 spawn E1 72 26
+43 spawn GAPOWR 72 20
+100 action E1 70 24
+101 action E1 72 26
+102 action E1 72 20
+110 clickon E1 70 24
+300 quit

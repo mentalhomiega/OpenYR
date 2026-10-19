@@ -78,6 +78,7 @@ values:
   - { constant: ACTION_NO_IVAN_BOMB, value: 66, input: "NoIvanBomb", meaning: "Indicate that the object cannot take an Ivan bomb; the click gives no order." }
   - { constant: ACTION_DISARM_BOMB, value: 67, input: "DisarmBomb", meaning: "Send an engineer to disarm the bomb on the object." }
   - { constant: ACTION_DETONATE, value: 68, input: "Detonate", meaning: "Set off the Ivan bomb the selected unit carries." }
+  - { constant: ACTION_DEMOLISH, value: 69, input: "Demolish", meaning: "Attack the target under the cursor, shown with the demolition cursor. An infantryman gets it over a target for which the selected weapon sets SabotageCursor=yes." }
 ---
 
 These are the actions a left click on the map can carry. The action under the cursor picks the mouse shape and decides what a click does. The trigger actions that a map's triggers run are a separate list.

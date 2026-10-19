@@ -864,8 +864,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		ParticleSystemTypeClass const * NaturalParticleSystem;
 
-		// Read from the rules key RefinerySmokeParticleSystem; nothing in this engine spawns the smoke it names yet.
+		/*
+		 * This is the particle system a refinery building gives off each time a harvester pays out
+		 * at it, once for each of the four offsets that is set. An offset of 0,0,0 is unused.
+		 */
 		ParticleSystemTypeClass const * RefinerySmokeParticleSystem;
+		TPoint3D<int> RefinerySmokeOffset[4];
 		TPoint3D<int> NaturalParticleLocation;
 
 		/*

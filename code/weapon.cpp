@@ -88,6 +88,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsFireInTransport(true),
 	IsFireWhileMoving(true),
 	IsRadBeam(false),
+	IsRadEruption(false),
 	RadLevel(0),
 	IsLimboLaunch(false),
 	IsFireOnce(false),
@@ -97,6 +98,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsElectric(false),
 	IsLaser(false),
 	IsMigAttackCursor(false),
+	IsSabotageCursor(false),
 	IsElectricBolt(false),
 	EmissiveStrength(0),
 	IsSpawner(false),
@@ -235,6 +237,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		IsFireInTransport = ini.Get_Bool(IniName, "FireInTransport", IsFireInTransport);
 		IsFireWhileMoving = ini.Get_Bool(IniName, "FireWhileMoving", IsFireWhileMoving);
 		IsRadBeam = ini.Get_Bool(IniName, "IsRadBeam", IsRadBeam);
+		IsRadEruption = ini.Get_Bool(IniName, "IsRadEruption", IsRadEruption);
 		RadLevel = ini.Get_Int(IniName, "RadLevel", RadLevel);
 		IsLimboLaunch = ini.Get_Bool(IniName, "LimboLaunch", IsLimboLaunch);
 		IsFireOnce = ini.Get_Bool(IniName, "FireOnce", IsFireOnce);
@@ -243,6 +246,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
 		IsMigAttackCursor = ini.Get_Bool(IniName, "MigAttackCursor", IsMigAttackCursor);
+		IsSabotageCursor = ini.Get_Bool(IniName, "SabotageCursor", IsSabotageCursor);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
 		EmissiveStrength = Emissive_Parse_Strength(ini.Get_String(IniName, "Emissive", "").c_str(), IsLaser ? EmissiveDefaults[EMISSIVE_LASER].Strength : (IsElectricBolt ? EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Strength : 0));
 		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
@@ -418,11 +422,13 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsInfiniteMindControl);
 	crc(IsFireInTransport);
 	crc(IsRadBeam);
+	crc(IsRadEruption);
 	crc(RadLevel);
 	crc(IsLimboLaunch);
 	crc(IsFireOnce);
 	crc(IsLaser);
 	crc(IsMigAttackCursor);
+	crc(IsSabotageCursor);
 	crc(IsElectricBolt);
 	crc(IsAlternateColor);
 	crc(Burst);
@@ -502,6 +508,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsInfiniteMindControl);
 	stream.Serialize(IsFireInTransport);
 	stream.Serialize(IsRadBeam);
+	stream.Serialize(IsRadEruption);
 	stream.Serialize(RadLevel);
 	stream.Serialize(IsLimboLaunch);
 	stream.Serialize(IsFireOnce);
@@ -511,6 +518,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
 	stream.Serialize(IsMigAttackCursor);
+	stream.Serialize(IsSabotageCursor);
 	stream.Serialize(IsElectricBolt);
 	stream.Serialize(IsSpawner);
 	stream.Serialize(IsSuicide);

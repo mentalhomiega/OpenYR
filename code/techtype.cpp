@@ -325,6 +325,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	ScrapExplosion(),
 	NaturalParticleSystem(NULL),
 	RefinerySmokeParticleSystem(NULL),
+	RefinerySmokeOffset{TPoint3D<int>(0,0,0), TPoint3D<int>(0,0,0), TPoint3D<int>(0,0,0), TPoint3D<int>(0,0,0)},
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
 	DamageSmokeOffset(0,0,0),
@@ -1125,6 +1126,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
 		NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
 		RefinerySmokeParticleSystem = TGet_Class(ini, Name(), "RefinerySmokeParticleSystem", RefinerySmokeParticleSystem);
+		RefinerySmokeOffset[0] = ini.Get_Offset(Name(), "RefinerySmokeOffsetOne", RefinerySmokeOffset[0]);
+		RefinerySmokeOffset[1] = ini.Get_Offset(Name(), "RefinerySmokeOffsetTwo", RefinerySmokeOffset[1]);
+		RefinerySmokeOffset[2] = ini.Get_Offset(Name(), "RefinerySmokeOffsetThree", RefinerySmokeOffset[2]);
+		RefinerySmokeOffset[3] = ini.Get_Offset(Name(), "RefinerySmokeOffsetFour", RefinerySmokeOffset[3]);
 		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
 		DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
@@ -1809,6 +1814,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ScrapExplosion);
 	stream.Serialize(NaturalParticleSystem);
 	stream.Serialize(RefinerySmokeParticleSystem);
+	for (int index = 0; index < 4; index++) {
+		stream.Serialize(RefinerySmokeOffset[index]);
+	}
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
 	stream.Serialize(DamageSmokeOffset);

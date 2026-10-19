@@ -806,6 +806,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// YuriBarracks=yes gives the structure an extra exit cell, two cells right and one down from its origin.
 		bool IsYuriBarracks;
 
+		// The frames each smoke system a harvester's payout starts at a refinery lives for.
+		int RefinerySmokeFrames;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.

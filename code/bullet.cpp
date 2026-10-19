@@ -82,6 +82,7 @@
 #include "revent.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "playerdisplay.h"
 #include "radsite.h"
 #include "rules.h"
 #include "savestream.h"
@@ -137,6 +138,7 @@ BulletClass::BulletClass(void) :
 	Weapon(NULL),
 	NextAnim(NULL),
 	SpawnNextAnim(false),
+	FirerHouse(-1),
 	IsInaccurate(false),
 	Fuse(),
 	IsBright(false),
@@ -178,6 +180,22 @@ void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *ta
 	Strength = strength;
 	AnimFrame = 0;
 	AnimRate = Class->AnimRate;
+	FirerHouse = (Class->IsFirersPalette && payback != NULL && payback->House != NULL) ? (int)payback->House->HeapID : -1;
+}
+
+
+DynamicVectorClass<BulletClass *> BulletClass::ScalableBullets;
+
+
+/// <summary>
+/// Counts this projectile among the Scalable projectiles in flight and sets its type's trail delay
+/// to the type's SpawnDelay plus one frame for every three projectiles beyond five
+/// (BulletClass::InitScalable, 0x46B280). Callers pass only projectiles of a Scalable=yes type.
+/// </summary>
+void BulletClass::Init_Scalable(void)
+{
+	ScalableBullets.Add(this);
+	Class->ScaledSpawnDelay = Class->SpawnDelay + std::max(ScalableBullets.Count() - 5, 0) / 3;
 }
 
 
@@ -199,6 +217,7 @@ void BulletClass::Set_Bullet_Data(BulletTypeClass const *type, AbstractClass *ta
  *=============================================================================================*/
 BulletClass::~BulletClass(void)
 {
+	ScalableBullets.Delete(this);
 	AnimPtrTracker.Delete(this);
 	Detach_This_From_All(this, true);
 
@@ -403,11 +422,12 @@ void BulletClass::AI(void)
 	coord = PositionCoord;
 
 	/*
-	 * Projectiles that leave a trail behind them drop one puff of it every
-	 * third frame.
+	 * Projectiles that leave a trail behind them drop one puff of it on every
+	 * frame that is a multiple of their type's SpawnDelay.
 	 */
 	if (Class->Trailer != NULL) {
-		if (!(Frame % 3)) {
+		int const delay = Class->ScaledSpawnDelay != 0 ? Class->ScaledSpawnDelay : Class->SpawnDelay;
+		if (delay > 0 && !(Frame % delay)) {
 			new AnimClass(Class->Trailer, coord, 1, 1);
 		}
 	}
@@ -1065,6 +1085,11 @@ void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		ConvertClass * drawer = NormalDrawer;
 		if (Class->IsAnimPalette) {
 			drawer = AnimDrawer;
+		} else if (Class->IsFirersPalette) {
+			HouseClass const * firer = FirerHouse >= 0 && FirerHouse < Houses.Count() ? Houses[FirerHouse] : PlayerPtr;
+			if (firer != NULL) {
+				drawer = ColorSchemes[House_Display_Scheme(firer)]->Converter;
+			}
 		}
 		Draw_Shape(*LogicalSurface, *drawer, shapeptr, shapenum, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|SHAPE_ZGRAD), 0, -30 - TacticalMap->Z_Lepton_To_Pixel(Height));
 	}
@@ -1822,6 +1847,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Weapon);
 	stream.Serialize(NextAnim);
 	stream.Serialize(SpawnNextAnim);
+	stream.Serialize(FirerHouse);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);

@@ -1997,6 +1997,7 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				break;
 
 			case ACTION_SABOTAGE:
+			case ACTION_DEMOLISH:
 				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
 				break;
 

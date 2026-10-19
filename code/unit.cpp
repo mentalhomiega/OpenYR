@@ -3724,6 +3724,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 						return(1);
 					}
 					if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
+						building->Update_Refinery_Smoke_Systems();
 						if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
 							building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
 						}
@@ -5432,6 +5433,10 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 
 			if (!sync && Class->FiringFrames > 0) {
 				FiringSyncDelay = 2 * Class->FiringFrames - 1;
+			}
+
+			if (bullet->Class != NULL && bullet->Class->IsScalable) {
+				bullet->Init_Scalable();
 			}
 
 			// Firing opens a DisguiseWhenStill vehicle to computer targeting for the weapon's blink time.

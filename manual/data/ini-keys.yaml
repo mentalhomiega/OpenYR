@@ -15542,6 +15542,23 @@ FirepowerCrateStacks:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+FirersPalette:
+  key: FirersPalette
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsFirersPalette
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 FirestormActiveAnim:
   key: FirestormActiveAnim
   scopes:
@@ -20998,6 +21015,23 @@ IsRadBeam:
       default_candidate: 'no'
       declared_in: WeaponTypeClass
       member: IsRadBeam
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
+IsRadEruption:
+  key: IsRadEruption
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsRadEruption
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
@@ -30900,6 +30934,91 @@ RefineryRatio:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+RefinerySmokeFrames:
+  key: RefinerySmokeFrames
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: RefinerySmokeFrames
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+RefinerySmokeOffsetFour:
+  key: RefinerySmokeOffsetFour
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: offset (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RefinerySmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RefinerySmokeOffsetOne:
+  key: RefinerySmokeOffsetOne
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: offset (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RefinerySmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RefinerySmokeOffsetThree:
+  key: RefinerySmokeOffsetThree
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: offset (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RefinerySmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+RefinerySmokeOffsetTwo:
+  key: RefinerySmokeOffsetTwo
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: offset (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: RefinerySmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RefinerySmokeParticleSystem:
   key: RefinerySmokeParticleSystem
   scopes:
@@ -31925,6 +32044,23 @@ SBarrelThickness:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+SabotageCursor:
+  key: SabotageCursor
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsSabotageCursor
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 SandTile:
   key: SandTile
   scopes:
@@ -31961,6 +32097,23 @@ SavourDelay:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Scalable:
+  key: Scalable
+  scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsScalable
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 ScaleMode:
   key: ScaleMode
   scopes:
@@ -34662,7 +34815,7 @@ SpawnDelay:
       kind: image
       fallback: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '3'
       declared_in: AircraftTypeClass
@@ -34670,6 +34823,19 @@ SpawnDelay:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
+  - applies_to: *id001
+    file: art.ini
+    section:
+      kind: image
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '3'
+      declared_in: BulletTypeClass
+      member: SpawnDelay
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
 SpawnDirection:
   key: SpawnDirection
   scopes:

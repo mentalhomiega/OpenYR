@@ -308,6 +308,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		// Does this weapon draw a wavy beam from its muzzle to its target as it fires?
 		bool IsRadBeam;
 
+		// With IsRadEruption=yes, each shot also throws an arching radiation beam to each cell around the firer.
+		bool IsRadEruption;
+
 		// The radiation this weapon leaves where it goes off, reaching its warhead's CellSpread.
 		int RadLevel;
 
@@ -340,6 +343,9 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		// With MigAttackCursor=yes, an infantryman shows the airstrike cursor over a structure that allows C4.
 		bool IsMigAttackCursor;
+
+		// With SabotageCursor=yes, an infantryman shows the demolition cursor over anything this weapon would attack.
+		bool IsSabotageCursor;
 
 		// An electric bolt is drawn from the muzzle to the target, in the alternate color when set.
 		bool IsElectricBolt;

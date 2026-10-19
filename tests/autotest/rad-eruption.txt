@@ -1,0 +1,19 @@
+; IsRadEruption. The rad-eruption-rules mod turns the key on for the Desolator's RadEruptionWeapon, which the deployed
+; Desolator (DESO) fires at the nearby GI (E1). RadEruptionWarhead has CellSpread=10.
+; Expected: every shot adds eight eruption beams (radbeams eruption 8 visible 8), and they are gone after at most 20 frames.
+; The windowshot images show green arches running ten cells out from the Desolator toward the four corners and four sides.
+; Run (with -Mods tests/autotest/rad-eruption-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/rad-eruption.txt -Mods src-agent4/tests/autotest/rad-eruption-rules -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own DESO 68 24
+41 spawn E1 70 24
+50 view 68 24
+60 select DESO
+65 command DeployObject
+70 radbeams
+76 radbeams
+82 radbeams
+88 radbeams
+72 windowshot erupt-a
+75 windowshot erupt-b
+300 quit
