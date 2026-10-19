@@ -345,12 +345,55 @@ MixFileClass::~MixFileClass(void)
 void const * MixFileClass::Retrieve(char const * filename)
 {
 	void * ptr = NULL;
-	if (!Offset(filename, &ptr)) {
+	MixFileClass * mixfile = NULL;
+	int offset = 0;
+	int size = 0;
+	if (!Offset(filename, &ptr, &mixfile, &offset, &size)) {
 		return(TrueColour_Png_Only_Shape(filename));
+	}
+	if (ptr == NULL && mixfile != NULL && mixfile->ResidentMembers) {
+		ptr = (void *)mixfile->Resident_Member(offset, size);
 	}
 	TrueColour_Note_Shape(ptr, filename);
 	return(ptr);
 };
+
+
+/// <summary>
+/// Reads one member of an archive that is not cached into memory kept until the archive is
+/// destroyed.
+/// </summary>
+/// <param name="position">The member's position in the archive file, from Offset.</param>
+/// <param name="size">The member's size in bytes.</param>
+/// <returns>The member's bytes, or NULL when it cannot be read.</returns>
+void const * MixFileClass::Resident_Member(int position, int size)
+{
+	auto found = Members.find(position);
+	if (found != Members.end()) {
+		return(found->second.get());
+	}
+
+	if (size <= 0) {
+		return(NULL);
+	}
+
+	CCFileClass file(Filename);
+	if (!file.Open(FileClass::READ)) {
+		return(NULL);
+	}
+	file.Bias(0);
+	file.Bias(DataStart);
+
+	std::unique_ptr<char[]> data(new char[size]);
+	file.Seek(position - DataStart, SEEK_SET);
+	if (file.Read(data.get(), size) != size) {
+		return(NULL);
+	}
+
+	char const * result = data.get();
+	Members[position] = std::move(data);
+	return(result);
+}
 
 
 /***********************************************************************************************

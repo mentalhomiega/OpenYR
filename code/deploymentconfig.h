@@ -58,6 +58,13 @@ class DeploymentConfigClass
 		std::string TutorialFile = "TUTORIAL.INI";
 		std::string UIFile = "UIMD.INI";
 
+		// The archives that add to or replace the game's own, as the prefixes of numbered files:
+		// "EXPANDMD" probes EXPANDMD99.MIX down to EXPANDMD00.MIX. Prefixes are comma separated; the
+		// files of an earlier prefix are searched before those of a later one. Cache archives are
+		// found anywhere in the game's file system, expansion archives only loose.
+		std::string ExpandPrefixes = "EXPANDMD";
+		std::string CachePrefixes = "ECACHE";
+
 		// The file a player's own settings are read from and written back to.
 		std::string SettingsFile = "RA2MD.INI";
 
@@ -73,6 +80,12 @@ class DeploymentConfigClass
 		std::string FileName = "";
 
 		void Read_INI(INIClass const & ini);
+
+		/*
+		 * Reads the keys a mod's mod.ini may replace: [Files], [Palettes] and [Archives]. A key the
+		 * mod does not write keeps its present value, so each active mod is applied in turn.
+		 */
+		void Read_Mod_INI(INIClass const & ini);
 
 		/*
 		 * Returns every setting to its default and reads the file from the directory named,

@@ -167,9 +167,15 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
-    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
+    keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Settings]
     classification: excluded
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
+
+  - path: code/deploymentconfig.cpp
+    function: DeploymentConfigClass::Read_Mod_INI
+    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix]
+    classification: excluded
+    reason: Each is a setting of the deployment's own file or a mod's mod.ini, documented as those formats rather than as game data.
 
   - path: code/mods.cpp
     function: Read_Manifest

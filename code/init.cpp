@@ -347,6 +347,33 @@ static bool Read_INI_And_Expansion(CCINIClass & ini, char const * basename, char
 }
 
 
+/// <summary>
+/// Makes an [#include] section in any INI file read from here on find its files as the game
+/// finds data files, loose in the search folders or inside any mounted archive.
+/// </summary>
+static void Install_INI_Include_Reader(void)
+{
+	INIClass::Set_Include_Reader([](char const * name, std::string & text) {
+		CCFileClass file(name);
+		if (!file.Is_Available()) {
+			return(false);
+		}
+
+		FileStraw straw(file);
+		char block[4096];
+		text.clear();
+		for (;;) {
+			int const got = straw.Get(block, sizeof(block));
+			if (got <= 0) {
+				break;
+			}
+			text.append(block, (std::size_t)got);
+		}
+		return(true);
+	});
+}
+
+
 /***********************************************************************************************
  * Init_Game -- Main game initialization routine.                                              *
  *                                                                                             *
@@ -2200,26 +2227,34 @@ static void Init_Expand_Mixfiles(void)
 	char name[64];
 	MFCD * expand;
 
-	for (index = 99; index >= 0; index--) {
-		sprintf(name, "EXPANDMD%02d.MIX", index);
-		// Searched for as a loose file wherever the game's files are kept, but never
-		// inside another archive.
-		if (CDFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
+	// The prefixes come from the deployment and from the active mods, so a mod can bring
+	// archives such as EXPANDMO99.MIX ahead of the game's EXPANDMD01.MIX.
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.ExpandPrefixes.c_str())) {
+		for (index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			// Searched for as a loose file wherever the game's files are kept, but never
+			// inside another archive.
+			if (CDFileClass(name).Is_Available()) {
+				expand = new MFCD(name, &FastKey);
 
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
+				// A mod's archives are too big to cache, yet its files are fetched from memory.
+				expand->Set_Resident_Members(!Active_Mods().empty());
+				ExpandMix.Add(expand);
+				DebugStringNoPrefix(" %s", name);
+			}
 		}
 	}
 
-	for (index = 99; index >= 0; index--) {
-		sprintf(name, "ECACHE%02d.MIX", index);
-		if (CCFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.CachePrefixes.c_str())) {
+		for (index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			if (CCFileClass(name).Is_Available()) {
+				expand = new MFCD(name, &FastKey);
 
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-			expand->Cache();
+				ExpandMix.Add(expand);
+				DebugStringNoPrefix(" %s", name);
+				expand->Cache();
+			}
 		}
 	}
 }
@@ -2357,8 +2392,19 @@ static bool Init_Bootstrap_Mixfiles(void)
 	//char name[64];
 	//MFCD * expand;
 
+	Install_INI_Include_Reader();
+
+	// With a mod active its archives are mounted ahead of the language archives, so that the main
+	// string table and the other language files can come from the mod. Without one the language
+	// archives are searched ahead of every other startup archive.
+	bool const modded = !Active_Mods().empty();
+	if (modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
+
 	// The language archives hold localised content such as CAMEOMD.MIX, which the secondary
-	// archives need, and are searched ahead of every other startup archive.
+	// archives need.
 	LanguageMix = new MFCD("LANGMD.MIX", &FastKey);
 	BaseLanguageMix = new MFCD("LANGUAGE.MIX", &FastKey);
 
@@ -2367,8 +2413,10 @@ static bool Init_Bootstrap_Mixfiles(void)
 		return(false);
 	}
 
-	Init_Patch_Mixfiles();
-	Init_Expand_Mixfiles();
+	if (!modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
 
 
 #ifndef _DEMO

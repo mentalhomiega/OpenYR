@@ -12,6 +12,7 @@
 #include "mods.h"
 
 #include "cdfile.h"
+#include "deploymentconfig.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "ini.h"
@@ -134,6 +135,8 @@ static void Read_Manifest(ModClass & mod)
 	if (!file.Is_Available()) {
 		return;
 	}
+
+	mod.ManifestFile = manifest;
 
 	INIClass ini;
 	ini.Load(file, false);
@@ -345,6 +348,34 @@ void Init_Mods(char const * list)
 
 	if (!names.empty()) {
 		DebugString("[Mods] %d mods active.\n", (int)Mods.size());
+	}
+}
+
+
+/// <summary>
+/// Applies each active mod's [Files], [Palettes] and [Archives] to the configuration, in mod
+/// order. A key a mod does not write leaves the value an earlier mod or the deployment gave.
+/// </summary>
+void Apply_Mod_Files(DeploymentConfigClass & config)
+{
+	for (ModClass const & mod : Mods) {
+		if (mod.ManifestFile.empty()) {
+			continue;
+		}
+
+		RawFileClass file(mod.ManifestFile.c_str());
+		if (!file.Is_Available()) {
+			continue;
+		}
+
+		INIClass ini;
+		ini.Load(file, false);
+		config.Read_Mod_INI(ini);
+	}
+
+	if (!Mods.empty()) {
+		DebugString("[Mods] Files: rules %s, art %s, AI %s; archives %s, caches %s.\n",
+			config.RulesFile.c_str(), config.ArtFile.c_str(), config.AIFile.c_str(), config.ExpandPrefixes.c_str(), config.CachePrefixes.c_str());
 	}
 }
 

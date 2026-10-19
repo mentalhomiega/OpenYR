@@ -88,6 +88,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string_view>
 
 /***********************************************************************************************
  * INIClass::Clear -- Clears out a section (or all sections) of the INI data.                  *
@@ -205,6 +206,84 @@ int INIClass::Load(Straw & file, bool keepcomments)
 }
 
 
+static INIClass::IncludeReader Reader;
+
+// Files being read through [#include] on this thread, innermost last, so that a file that
+// includes itself, directly or through others, is read once.
+static thread_local std::vector<std::string> IncludeStack;
+static int const MAX_INCLUDE_DEPTH = 8;
+
+
+void INIClass::Set_Include_Reader(IncludeReader reader)
+{
+	Reader = std::move(reader);
+}
+
+
+static bool IncludeReader_Set(void)
+{
+	return((bool)Reader);
+}
+
+
+static std::string Include_Key(char const * name)
+{
+	std::string key = name != NULL ? name : "";
+	std::size_t const slash = key.find_last_of("\\/");
+	if (slash != std::string::npos) {
+		key.erase(0, slash + 1);
+	}
+	for (char & c : key) {
+		c = (char)toupper((unsigned char)c);
+	}
+	return(key);
+}
+
+
+/// <summary>
+/// Merges the files an [#include] section named into the database, in the order listed and
+/// after the including file, each over what is already there. A file that is not found is
+/// logged and passed over, and a file already being read through [#include], the including
+/// file among them, is not read again.
+/// </summary>
+void INIClass::Load_Includes(std::vector<std::string> const & names, char const * source)
+{
+	if (names.empty()) {
+		return;
+	}
+
+	bool const outermost = IncludeStack.empty();
+	if (outermost && source != NULL) {
+		IncludeStack.push_back(Include_Key(source));
+	}
+	std::size_t const base = IncludeStack.size();
+
+	for (std::string const & name : names) {
+		std::string const key = Include_Key(name.c_str());
+
+		if (std::find(IncludeStack.begin(), IncludeStack.end(), key) != IncludeStack.end() || IncludeStack.size() >= (std::size_t)MAX_INCLUDE_DEPTH) {
+			DebugString("INI: %s includes %s again; skipped.\n", source != NULL ? source : "", name.c_str());
+			continue;
+		}
+
+		std::string text;
+		if (!Reader || !Reader(name.c_str(), text)) {
+			DebugString("INI: %s includes %s, which was not found.\n", source != NULL ? source : "", name.c_str());
+			continue;
+		}
+
+		IncludeStack.push_back(key);
+		BufferStraw straw(text.data(), (int)text.size());
+		Load(straw, false, name.c_str());
+		IncludeStack.resize(base);
+	}
+
+	if (outermost) {
+		IncludeStack.clear();
+	}
+}
+
+
 /// <summary>
 /// Builds the database from the INI text of a straw, or merges the text into what the
 /// database already holds.
@@ -243,6 +322,8 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 	INICommentBlock pending;
 	INISection * current = NULL;
 	std::string currentname;
+	std::vector<std::string> includes;
+	bool inincludes = false;
 	bool sawsection = false;
 	bool first = true;
 
@@ -272,6 +353,14 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 
 			sawsection = true;
 			currentname = name;
+
+			// The names in an [#include] section are read once this file is, not stored.
+			inincludes = IncludeReader_Set() && stricmp(name, "#include") == 0;
+			if (inincludes) {
+				current = NULL;
+				pending.clear();
+				continue;
+			}
 
 			// Without comments a section is only created once it has an entry, so that an
 			// empty section never exists.
@@ -339,6 +428,12 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 		strtrim(divider);
 		if (divider[0] == '\0') continue;
 
+		if (inincludes) {
+			includes.push_back(divider);
+			pending.clear();
+			continue;
+		}
+
 		if (current == NULL) {
 			current = &Find_Or_Add_Section(currentname);
 			current->Generation = LoadGeneration;
@@ -374,6 +469,8 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 	if (keepcomments) {
 		TailComment = std::move(pending);
 	}
+
+	Load_Includes(includes, source);
 	return(true);
 }
 
