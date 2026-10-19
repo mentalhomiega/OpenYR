@@ -33,6 +33,8 @@ credit: [MentalHomiega]
 
 `VoiceSpecialAttack` supplies the voice for guard, area guard, patrol and sabotage orders. Before, those orders played `VoiceMove`. Now they play a random `VoiceSpecialAttack` entry, or nothing when that list is empty.
 
-`StupidHunt=yes` stops an infantryman or vehicle searching for a target during its hunt mission, so it stays where it is. The walk toward a starting cell that the original game makes such an object take is not implemented.
+`StupidHunt=yes` stops an infantryman or vehicle searching for a target during its hunt mission. In a campaign game, an object owned by a computer player then walks to its house's starting cell, as the original game does. Other objects with the key stay where they are.
 
-`TiltCrashJumpjet`, `HasTurretTooltips` and `RejoinTeamIfLimboed` are read and stored. They have no effect in this build.
+`RejoinTeamIfLimboed=yes` makes a parasite that fires a LimboLaunch weapon at an infantryman rejoin its team when it comes out of its victim. Before, the key had no effect.
+
+`TiltCrashJumpjet` and `HasTurretTooltips` are read and stored. They have no effect in this build.

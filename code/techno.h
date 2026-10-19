@@ -272,6 +272,9 @@ class TechnoClass :	public RadioClass,
 		std::optional<ParasiteClass> ParasiteImUsing;
 		TechnoClass * ParasiteEatingMe;
 
+		// The team this object was on when a LimboLaunch shot took it off the map (RejoinTeamIfLimboed). Cleared when that team is deleted.
+		TeamClass * OldTeam;
+
 		// The soldier and house this object looks like to houses that are not its owner's allies.
 		InfantryTypeClass const * DisguiseType;
 		HouseClass * DisguiseHouse;

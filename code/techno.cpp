@@ -323,6 +323,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsBeingWarpedOut(false),
 	ParasiteImUsing(),
 	ParasiteEatingMe(NULL),
+	OldTeam(NULL),
 	DisguiseType(NULL),
 	DisguiseHouse(NULL),
 	BombOwner(NULL),
@@ -5505,6 +5506,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		if (ParasiteImUsing) {
 			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
 		}
+
+		// A shot that fails this test leaves OldTeam as it was (TechnoClass::Fire, 0x6FDD50).
+		if (TClass->IsRejoinTeamIfLimboed && ((FootClass *)this)->Team != NULL && target != NULL && target->What_Am_I() == RTTI_INFANTRY) {
+			OldTeam = ((FootClass *)this)->Team;
+		}
 		Limbo();
 
 		// Leaving the map detached the shot from its firer; the firer still rides it.
@@ -8557,6 +8563,9 @@ void TechnoClass::Gattling_Rate_Down(int frames)
 void TechnoClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
+	if (OldTeam == target) {
+		OldTeam = NULL;
+	}
 
 	// The managers this object owns name it as their owner; its own departure from the map leaves them intact.
 	if (all && target != this) {
@@ -10691,6 +10700,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsBeingWarpedOut);
 	stream.Serialize(ParasiteImUsing);
 	stream.Serialize(ParasiteEatingMe);
+	stream.Serialize(OldTeam);
 	stream.Serialize(DisguiseType);
 	stream.Serialize(DisguiseHouse);
 	stream.Serialize(BombOwner);
@@ -10788,6 +10798,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)IdleTimer);
 	crc((int)TargetingTimer);
 	SpiedBy.Compute_CRC(crc);
+	if (OldTeam != NULL) crc(OldTeam->Fetch_ID());
 	crc(Cloak);
 	crc((int)CloakDelay);
 	crc(PredatorOffset);

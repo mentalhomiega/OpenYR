@@ -588,6 +588,26 @@ void Computer_Move(std::string const & name, int x, int y)
 
 
 /// <summary>
+/// Puts the computer players' foot objects of that type on the hunt mission, with no target or destination.
+/// </summary>
+void Computer_Hunt(std::string const & name)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->Is_Foot() && techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+			FootClass * foot = static_cast<FootClass *>(techno);
+			foot->Assign_Target(NULL);
+			foot->Assign_Destination(NULL);
+			foot->Assign_Mission(MISSION_HUNT);
+			if (foot->Ready_To_Commence()) {
+				foot->Commence();
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
 /// </summary>
 void Stop_Objects(std::string const & name)
@@ -2715,6 +2735,9 @@ void Run(StepType const & step)
 		} else {
 			Computer_Move(step.Argument, step.X, step.Y);
 		}
+	} else if (step.Command == "hunt") {
+		// hunt <TypeID>: puts the computer players' objects of that type on the hunt mission (Computer_Hunt).
+		Computer_Hunt(step.Argument);
 	} else if (step.Command == "attack") {
 		Attack(step.Argument);
 	} else if (step.Command == "strike") {

@@ -384,7 +384,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		int SuppressionThreshold;
 		bool IsReselectIfLimboed;
 
-		// Read from the rules key RejoinTeamIfLimboed; nothing in this engine rejoins a team on unlimbo yet.
+		// Rules key RejoinTeamIfLimboed: a LimboLaunch shot at an infantryman saves the firer's team, which the firer is added back to on unlimbo (TechnoClass::OldTeam).
 		bool IsRejoinTeamIfLimboed;
 
 		// Can a disguise warhead fired by this object disguise it?
@@ -590,7 +590,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A CanRecalcApproachTarget=no object keeps the spot it chose to fire from even when its target moves far from it.
 		bool IsCanRecalcApproachTarget;
 
-		// A StupidHunt=yes object skips the target scan of its hunt mission; the walk to its house's starting cell that follows is not ported.
+		// A StupidHunt=yes object skips the target scan of its hunt mission and, when a computer player owns it in a campaign game (GAME_NORMAL), walks to its house's starting cell instead.
 		bool IsStupidHunt;
 
 		// A mobile Sensors=yes object reveals its owner the cloaked objects within this many cells.

@@ -37,6 +37,7 @@ class SlaveManagerClass
 		void Wake_Up(void);
 		void Set_Owner(TechnoClass * owner);
 		void Free_All(TechnoClass * killer);
+		void All_Guard(void);
 		void Detach(AbstractClass const * target);
 		bool Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const;
 		void Serialize(SaveStreamClass & stream);
