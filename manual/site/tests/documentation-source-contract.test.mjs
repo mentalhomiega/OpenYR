@@ -1457,7 +1457,7 @@ test('A type can set how many pips its row has', () => {
 		functionBody(techtype, 'int TechnoTypeClass::Max_Pips(void) const'),
 		[
 			'return(MaxPips.value_or(10));',
-			'return(std::min(MaxAmmo, MaxPips.value_or(5)));',
+			'return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));',
 			'return(MaxPips.value_or(5));',
 			'return(std::min(MaxPassengers, MaxPips.value_or(5)));',
 			'return(MaxPips.value_or(8));',
