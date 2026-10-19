@@ -2237,6 +2237,8 @@ static void Init_Expand_Mixfiles(void)
 			if (CDFileClass(name).Is_Available()) {
 				expand = new MFCD(name, &FastKey);
 
+				// A mod's archives are too big to cache, yet its files are fetched from memory.
+				expand->Set_Resident_Members(!Active_Mods().empty());
 				ExpandMix.Add(expand);
 				DebugStringNoPrefix(" %s", name);
 			}
