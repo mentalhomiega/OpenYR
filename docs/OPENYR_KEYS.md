@@ -206,7 +206,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
-| [`AnimationFires`](../manual/content/keys/animationfires.md) | `no` | Whether Flamer and Scorch animations light fires at their middle frame. | OpenYR |
+| [`AnimationFires`](../manual/content/keys/animationfires.md) | `no` | Whether Flamer and Scorch animations, and damaged or destroyed structures, light SmallFire and LargeFire fires. | OpenYR |
 | [`BountyDisplay`](../manual/content/keys/bountydisplay.md) | `no` | Whether bounty payments are shown over the destroyed object, for destroyers that do not set Bounty.Display. | Ares |
 | [`VoxelShadeScale`](../manual/content/keys/voxelshadescale--global-rules.md) | `16` | Sets how many palette shade rows a voxel's diffuse and highlight brightness spans. | OpenYR |
 | [`VoxelSpecularFromView`](../manual/content/keys/voxelspecularfromview--global-rules.md) | `no` | Takes the viewer direction for the voxel highlight from the isometric view alone, not from the voxel's own transform. | OpenYR |
