@@ -28,7 +28,7 @@ enum SpeedType {
 	SPEED_WINGED,				// Lifter's, 'thopters, and rockets.
 	SPEED_FLOAT,				// Ships.
 	SPEED_AMPHIBIOUS,
-	SPEED_CREEP,
+	SPEED_FLOATBEACH,			// Float units that can also cross beaches; the land key is FloatBeach.
 
 	SPEED_COUNT,
 	SPEED_FIRST=SPEED_FOOT
