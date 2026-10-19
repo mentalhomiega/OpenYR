@@ -2104,6 +2104,23 @@ AffectsEnemies:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+AffectsOwner:
+  key: AffectsOwner
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: WarheadTypeClass
+      member: IsAffectsOwner
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Agent:
   key: Agent
   scopes:
@@ -7942,6 +7959,23 @@ CellSpread:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+CellSpread.MaxAffect:
+  key: CellSpread.MaxAffect
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: CellSpreadMaxAffect
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 ChainReaction:
   key: ChainReaction
   scopes:
@@ -12842,6 +12876,23 @@ DieSound:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DieSound.Override:
+  key: DieSound.Override
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: DieSoundOverride
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Difficulty:
   key: Difficulty
   scopes:
@@ -13039,6 +13090,23 @@ DirtTunnels:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+DisableWeapons.Duration:
+  key: DisableWeapons.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: DisableWeaponsDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 Disableable:
   key: Disableable
   scopes:
@@ -14413,6 +14481,23 @@ EMP.Modifier:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EMP.Sparkles:
+  key: EMP.Sparkles
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: EMPSparkles
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 EMP.Threshold:
   key: EMP.Threshold
   scopes:
@@ -22221,6 +22306,40 @@ IonStorms:
       source: code/special.cpp
       guard: null
     level: SpecialClass
+IronCurtain.Cap:
+  key: IronCurtain.Cap
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WarheadTypeClass
+      member: IronCurtainCap
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+IronCurtain.Duration:
+  key: IronCurtain.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: IronCurtainDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 IronCurtain.Modifier:
   key: IronCurtain.Modifier
   scopes:
@@ -46134,6 +46253,23 @@ UnitGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+UnitLost.Suppress:
+  key: UnitLost.Suppress
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsUnitLostSuppress
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 UnitReload:
   key: UnitReload
   scopes:
@@ -47374,6 +47510,23 @@ VoiceDie:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceDie.Override:
+  key: VoiceDie.Override
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: WarheadTypeClass
+      member: VoiceDieOverride
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 VoiceEnter:
   key: VoiceEnter
   scopes:

@@ -380,6 +380,8 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsOnWaypointPatrol(false),
 	NearbyObject(NULL),
 	StunDuration(0),
+	WeaponsDisabledFrames(0),
+	DamageWarhead(NULL),
 	IsDeactivated(false),
 	LimpetType()
 {
@@ -4063,6 +4065,10 @@ void TechnoClass::AI(void)
 
 	Update_Radar_Position();
 
+	if (WeaponsDisabledFrames > 0) {
+		WeaponsDisabledFrames--;
+	}
+
 	if (StunDuration > 0) {
 		StunDuration--;
 		if (StunDuration == 0) {
@@ -4076,7 +4082,7 @@ void TechnoClass::AI(void)
 				}
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
-					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
+					if (anim != NULL && anim->xObject == this && EMPulseClass::Is_Sparkles(anim->Class)) {
 						anim->Loops = 0;
 					}
 				}
@@ -4094,7 +4100,7 @@ void TechnoClass::AI(void)
 				}
 				for (int i = 0; i < Anims.Count(); i++) {
 					AnimClass * anim = Anims[i];
-					if (anim != NULL && anim->xObject == this && anim->Class == Rule->EMPulseSparkles) {
+					if (anim != NULL && anim->xObject == this && EMPulseClass::Is_Sparkles(anim->Class)) {
 						anim->Loops = 0;
 					}
 				}
@@ -4433,6 +4439,11 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	**	A falling object is too busy falling to fire.
 	*/
 	if (IsFalling) {
+		goto CANT_FIRE;
+	}
+
+	// DisableWeapons.Duration keeps the object from firing while the jam lasts (Ares).
+	if (WeaponsDisabledFrames > 0) {
 		goto CANT_FIRE;
 	}
 
@@ -6548,6 +6559,7 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
 ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
 	bool negative = damage < 0;
+	DamageWarhead = warhead;
 
 	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
 	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
@@ -6601,8 +6613,9 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		return(RESULT_NONE);
 	}
 
-	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not (TechnoClass::ReceiveDamage, 0x701900).
-	if (warhead != NULL && !warhead->IsAffectsAllies && source != NULL && House->Is_Ally(source->House)) {
+	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not
+	// (TechnoClass::ReceiveDamage, 0x701900). An object of the firer's own house follows AffectsOwner instead (Ares).
+	if (warhead != NULL && source != NULL && WarheadRules::Warhead_Spares_House(House == source->House, House->Is_Ally(source->House), warhead->IsAffectsOwner, warhead->IsAffectsAllies)) {
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -6627,10 +6640,18 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		AttachedEffects.Attach(this, warhead);
 	}
 
+	// A DisableWeapons.Duration warhead jams the weapons of an object that is not under the Iron Curtain (Ares).
+	if (warhead != NULL && warhead->DisableWeaponsDuration > 0 && Strength > 0 && effects_apply && !Is_Iron_Curtained()) {
+		WeaponsDisabledFrames = std::max(WeaponsDisabledFrames, warhead->DisableWeaponsDuration);
+	}
+
 	/*
 	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
+		if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && effects_apply) {
+			Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
+		}
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -6714,6 +6735,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew, sourcehouse);
+
+	// An IronCurtain.Duration warhead acts once the conventional damage has landed, on an object that survived it (Ares).
+	if (warhead != NULL && warhead->IronCurtainDuration != 0 && Strength > 0 && result != RESULT_DESTROYED && result != RESULT_ALREADY_DESTROYED && effects_apply) {
+		Apply_Iron_Curtain_Warhead(warhead, source, sourcehouse);
+	}
 
 	/*
 	 * Inform the owning house of the anger level this damage produced.
@@ -6804,13 +6830,22 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Play the death voice response, heard only for an object the local player controls
 			 * (TechnoClass::ReceiveDamage, 0x701900).
 			 */
-			if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
+			// A warhead's VoiceDie.Override and DieSound.Override replace the ones of the type, and VOC_NONE silences them (Ares).
+			if (warhead != NULL && warhead->IsVoiceDieOverridden) {
+				if (warhead->VoiceDieOverride != VOC_NONE && House->Is_Player_Control()) {
+					Sound_Effect(warhead->VoiceDieOverride, Get_Coord());
+				}
+			} else if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
 				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Get_Coord());
 			}
 
 			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
-			if (TClass->DieSound.Count() > 0) {
+			if (warhead != NULL && warhead->IsDieSoundOverridden) {
+				if (warhead->DieSoundOverride != VOC_NONE) {
+					Sound_Effect(warhead->DieSoundOverride, Get_Coord());
+				}
+			} else if (TClass->DieSound.Count() > 0) {
 				VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Get_Coord());
 			}
@@ -10976,6 +11011,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOnWaypointPatrol);
 	stream.Serialize(NearbyObject);
 	stream.Serialize(StunDuration);
+	stream.Serialize(WeaponsDisabledFrames);
 	stream.Serialize(IsDeactivated);
 	stream.Serialize(LimpetType);
 	stream.Serialize(LimpetSpeedFactor);
@@ -11038,6 +11074,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
 	crc(StunDuration);
+	crc(WeaponsDisabledFrames);
 	crc(UnusedCooldown);
 	crc(Unused1);
 	crc(SightIncrease);
@@ -11640,6 +11677,32 @@ void TechnoClass::Iron_Tint_AI(void)
 		default:
 			IronTintStage = 10;
 			break;
+	}
+}
+
+
+/// <summary>
+/// Puts this object under the Iron Curtain for the time an IronCurtain.Duration warhead gives, or shortens the curtain it
+/// is under when the duration is negative (Ares). The type's IronCurtain.Modifier scales a positive duration, and a type
+/// immune to the curtain is left alone.
+/// </summary>
+void TechnoClass::Apply_Iron_Curtain_Warhead(WarheadTypeClass const * warhead, TechnoClass *, HouseClass * sourcehouse)
+{
+	int const duration = warhead->IronCurtainDuration;
+	int const before = IronCurtainTimer;
+	if (duration < 0) {
+		if (before > 0) {
+			IronCurtainTimer = WarheadRules::Iron_Curtain_Counter(before, duration, warhead->IronCurtainCap);
+		}
+		return;
+	}
+	if (Is_Immune_To_Iron_Curtain(false)) {
+		return;
+	}
+	bool const was_forced = IsForceShielded;
+	Iron_Curtain(duration, sourcehouse, false);
+	if (IsActive && Strength > 0 && before > 0 && !was_forced) {
+		IronCurtainTimer = WarheadRules::Iron_Curtain_Counter(before, (int)IronCurtainTimer, warhead->IronCurtainCap);
 	}
 }
 

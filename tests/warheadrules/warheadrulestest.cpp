@@ -161,6 +161,42 @@ void Test_Abduction_Health(void)
 	Check(!WarheadRules::Abducts_At(10, 0, 1.0), "a target with no maximum strength is never taken");
 }
 
+void Test_Iron_Curtain_Counter(void)
+{
+	Check(WarheadRules::Iron_Curtain_Counter(0, 300, -1) == 300, "a hit with the default cap starts a curtain of its duration");
+	Check(WarheadRules::Iron_Curtain_Counter(500, 300, -1) == 500, "a hit with the default cap does not shorten a longer curtain");
+	Check(WarheadRules::Iron_Curtain_Counter(100, 300, 0) == 400, "a cap of 0 adds the duration");
+	Check(WarheadRules::Iron_Curtain_Counter(100, 300, 250) == 250, "a positive cap limits the total");
+	Check(WarheadRules::Iron_Curtain_Counter(100, -30, -1) == 70, "a negative duration shortens the curtain");
+	Check(WarheadRules::Iron_Curtain_Counter(100, -99999, -1) == 0, "a large negative duration ends the curtain");
+	Check(WarheadRules::Iron_Curtain_Counter(100, -1, 0) == 0, "a negative duration with cap 0 removes the curtain");
+}
+
+
+void Test_House_Spare(void)
+{
+	Check(!WarheadRules::Warhead_Spares_House(true, true, true, true), "a default warhead hits the firer's own objects");
+	Check(WarheadRules::Warhead_Spares_House(true, true, false, true), "AffectsOwner=no spares the firer's own objects");
+	Check(!WarheadRules::Warhead_Spares_House(true, true, true, false), "AffectsOwner=yes with AffectsAllies=no still hits the firer's own objects");
+	Check(WarheadRules::Warhead_Spares_House(false, true, true, false), "AffectsAllies=no spares an ally's objects");
+	Check(!WarheadRules::Warhead_Spares_House(false, false, false, false), "an enemy's objects are left to AffectsEnemies");
+}
+
+
+void Test_Hits_Kept(void)
+{
+	std::vector<int> const distances = {300, 0, 256, 0};
+	std::vector<bool> kept = WarheadRules::Hits_Kept(distances, -1);
+	Check(kept[0] && kept[1] && kept[2] && kept[3], "no limit keeps every hit");
+	kept = WarheadRules::Hits_Kept(distances, 1);
+	Check(!kept[0] && kept[1] && !kept[2] && !kept[3], "a limit of 1 keeps the first nearest hit");
+	kept = WarheadRules::Hits_Kept(distances, 3);
+	Check(!kept[0] && kept[1] && kept[2] && kept[3], "a limit of 3 drops the farthest hit");
+	kept = WarheadRules::Hits_Kept(distances, 9);
+	Check(kept[0] && kept[3], "a limit above the number of hits keeps them all");
+}
+
+
 }
 
 
@@ -175,6 +211,9 @@ int main(void)
 	Test_Warhead_Effects();
 	Test_Emp_Counter();
 	Test_Urban_Combat();
+	Test_Iron_Curtain_Counter();
+	Test_House_Spare();
+	Test_Hits_Kept();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);

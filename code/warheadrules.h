@@ -9,7 +9,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cmath>
+#include <numeric>
+#include <vector>
 
 
 /*
@@ -114,6 +117,42 @@ namespace WarheadRules
 			return(cap > 0 && lowered > cap ? cap : lowered);
 		}
 		return(counter);
+	}
+
+	// The Iron Curtain time left on an object after a hit of an IronCurtain.Duration warhead with this IronCurtain.Cap
+	// (Ares). It combines like the EMP counter: a positive duration adds to the time up to a positive cap, without limit
+	// at cap 0 and raising it to the duration at a negative cap, and a negative duration shortens it.
+	inline int Iron_Curtain_Counter(int remaining, int duration, int cap)
+	{
+		return(Emp_Counter(remaining, duration, cap));
+	}
+
+	// Whether a warhead is turned away from an object because of whose it is (Ares AffectsOwner and AffectsAllies): an
+	// object of the firer's own house follows AffectsOwner, an ally's follows AffectsAllies, and any other object is left to
+	// AffectsEnemies.
+	inline bool Warhead_Spares_House(bool same_house, bool allied, bool affects_owner, bool affects_allies)
+	{
+		if (same_house) {
+			return(!affects_owner);
+		}
+		return(allied && !affects_allies);
+	}
+
+	// Which of one object's hits a blast with this CellSpread.MaxAffect keeps, given the distance of each hit: the nearest
+	// ones, earlier hits first among equals. A negative limit keeps them all.
+	inline std::vector<bool> Hits_Kept(std::vector<int> const & distances, int max_affect)
+	{
+		std::vector<bool> kept(distances.size(), true);
+		if (max_affect < 0 || (size_t)max_affect >= distances.size()) {
+			return(kept);
+		}
+		std::vector<size_t> order(distances.size());
+		std::iota(order.begin(), order.end(), (size_t)0);
+		std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {return(distances[a] < distances[b]);});
+		for (size_t index = (size_t)max_affect; index < order.size(); index++) {
+			kept[order[index]] = false;
+		}
+		return(kept);
 	}
 
 	// Whether a counter that has reached this size destroys an object whose EMP.Threshold is as given (0 never). A negative

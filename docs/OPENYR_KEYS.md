@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 393 entries
+- [Rules](#rules): 402 entries
 - [Art](#art): 7 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -433,6 +433,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`AffectsEnemies`](../manual/content/keys/affectsenemies.md) | `yes` | With no, the warhead does nothing to objects whose owner is not an ally of its attacker. | Ares |
+| [`AffectsOwner`](../manual/content/keys/affectsowner--warheadtype.md) | The value of AffectsAllies | Whether a warhead affects the objects of the house that fired it. | Ares |
 | [`AttachEffect.Animation`](../manual/content/keys/attacheffect.animation--warheadtype.md) | `none` | The animation shown on an object while an attached effect lasts. | Ares |
 | [`AttachEffect.AnimResetOnReapply`](../manual/content/keys/attacheffect.animresetonreapply--warheadtype.md) | `no` | `AttachEffect.AnimResetOnReapply=yes` restarts the effect animation when a hit restarts an effect the object already carries. | Ares |
 | [`AttachEffect.ArmorMultiplier`](../manual/content/keys/attacheffect.armormultiplier--warheadtype.md) | `1.0` | Divides the damage an object takes while an attached effect lasts. | Ares |
@@ -446,12 +447,18 @@ Bounty.Value=200
 | [`AttachEffect.ROFMultiplier`](../manual/content/keys/attacheffect.rofmultiplier--warheadtype.md) | `1.0` | Multiplies the reload time of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.SpeedMultiplier`](../manual/content/keys/attacheffect.speedmultiplier--warheadtype.md) | `1.0` | Multiplies the movement speed of an object while an attached effect lasts. | Ares |
 | [`AttachEffect.TemporalHidesAnim`](../manual/content/keys/attacheffect.temporalhidesanim--warheadtype.md) | `no` | Whether an attached effect's animation is hidden while a temporal weapon warps the object out. | Ares |
+| [`CellSpread.MaxAffect`](../manual/content/keys/cellspread.maxaffect--warheadtype.md) | -1, so an object takes every hit | The most hits one object takes from one blast of this warhead. | Ares |
 | [`DamageAirThreshold`](../manual/content/keys/damageairthreshold.md) | `0` | How far above the ground a blast of this warhead must be to damage objects in the air. | Ares |
+| [`DieSound.Override`](../manual/content/keys/diesound.override--warheadtype.md) | none, so the type's DieSound= plays | The sound played where this warhead destroys an object, in place of the object type's DieSound. | Ares |
+| [`DisableWeapons.Duration`](../manual/content/keys/disableweapons.duration--warheadtype.md) | 0, so the warhead jams nothing | Keeps the objects a warhead hits from firing for this many frames. | Ares |
 | [`EffectsRequireDamage`](../manual/content/keys/effectsrequiredamage.md) | `no` | With yes, the extra effects of a warhead reach an object only when the hit damages it by at least one point. | Ares |
 | [`EffectsRequireVerses`](../manual/content/keys/effectsrequireverses.md) | `yes` | With no, the extra effects of a warhead reach an object whose armor has a Verses of 0%. | Ares |
 | [`EMP.Cap`](../manual/content/keys/emp.cap.md) | -1, so a hit sets the stun to its duration unless the object already has more | How an EMP.Duration hit combines with the stun frames an object already has. | Ares |
 | [`EMP.Duration`](../manual/content/keys/emp.duration.md) | 0, so the warhead stuns nothing through this key | Makes a warhead stun the objects its blast damages for this many frames, or reactivate them when negative. | Ares |
+| [`EMP.Sparkles`](../manual/content/keys/emp.sparkles--warheadtype.md) | The [General] EMPulseSparkles animation | The animation shown on an object this warhead stuns, in place of EMPulseSparkles. | Ares |
 | [`InfDeathAnim`](../manual/content/keys/infdeathanim.md) | (none) | The animation an infantryman dies with when this warhead kills him, in place of InfDeath. | Ares |
+| [`IronCurtain.Cap`](../manual/content/keys/ironcurtain.cap--warheadtype.md) | -1, so a hit sets the curtain to its duration unless the object already has more | How an IronCurtain.Duration hit combines with the curtain time an object already has. | Ares |
+| [`IronCurtain.Duration`](../manual/content/keys/ironcurtain.duration--warheadtype.md) | 0, so the warhead puts nothing under the Iron Curtain | Puts the objects a warhead hits under the Iron Curtain for this many frames, or shortens their curtain when negative. | Ares |
 | [`KillDriver`](../manual/content/keys/killdriver.md) | `no` | With yes, a hit takes the driver of a vehicle in place of damaging it. | Ares |
 | [`KillDriver.Chance`](../manual/content/keys/killdriver.chance.md) | `100%` | The chance that a hit takes the driver of a vehicle that has met every other condition. | Ares |
 | [`KillDriver.KillBelowPercent`](../manual/content/keys/killdriver.killbelowpercent.md) | `100%` | The share of its health a vehicle must be at or below for the warhead to take its driver. | Ares |
@@ -459,6 +466,8 @@ Bounty.Value=200
 | [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
 | [`PreImpactAnim`](../manual/content/keys/preimpactanim.md) | `NUKEBALL` for the warhead named `NUKE`, otherwise none, so the blast goes off at once | An animation played where a projectile with this warhead hits, before the blast goes off. | Ares |
 | [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
+| [`UnitLost.Suppress`](../manual/content/keys/unitlost.suppress--warheadtype.md) | no, so a killed unit is announced | Stops the unit-lost announcement for a unit this warhead kills. | Ares |
+| [`VoiceDie.Override`](../manual/content/keys/voicedie.override--warheadtype.md) | none, so the type's VoiceDie= plays | The voice played where this warhead destroys an object, in place of the object type's VoiceDie. | Ares |
 
 ### WeaponType
 

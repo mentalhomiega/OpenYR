@@ -160,6 +160,18 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsEffectsRequireVerses(true),
 	EMPDuration(0),
 	EMPCap(-1),
+	EMPSparkles(NULL),
+	IronCurtainDuration(0),
+	IronCurtainCap(-1),
+	DisableWeaponsDuration(0),
+	CellSpreadMaxAffect(-1),
+	IsUnitLostSuppress(false),
+	IsDieSoundOverridden(false),
+	DieSoundOverride(VOC_NONE),
+	IsVoiceDieOverridden(false),
+	VoiceDieOverride(VOC_NONE),
+	IsAffectsOwner(true),
+	IsAffectsOwnerSet(false),
 	DamageAirThreshold(0),
 	IsPreventScatter(false),
 	InfDeathAnim(NULL),
@@ -281,6 +293,22 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
 		EMPDuration = ini.Get_Int(Name(), "EMP.Duration", EMPDuration);
 		EMPCap = ini.Get_Int(Name(), "EMP.Cap", EMPCap);
+		EMPSparkles = TGet_Class(ini, Name(), "EMP.Sparkles", EMPSparkles);
+		IronCurtainDuration = ini.Get_Int(Name(), "IronCurtain.Duration", IronCurtainDuration);
+		IronCurtainCap = ini.Get_Int(Name(), "IronCurtain.Cap", IronCurtainCap);
+		DisableWeaponsDuration = ini.Get_Int(Name(), "DisableWeapons.Duration", DisableWeaponsDuration);
+		CellSpreadMaxAffect = ini.Get_Int(Name(), "CellSpread.MaxAffect", CellSpreadMaxAffect);
+		IsUnitLostSuppress = ini.Get_Bool(Name(), "UnitLost.Suppress", IsUnitLostSuppress);
+		if (ini.Is_Present(Name(), "DieSound.Override")) {
+			IsDieSoundOverridden = true;
+			DieSoundOverride = ini.Get_VocType(Name(), "DieSound.Override", VOC_NONE);
+		}
+		if (ini.Is_Present(Name(), "VoiceDie.Override")) {
+			IsVoiceDieOverridden = true;
+			VoiceDieOverride = ini.Get_VocType(Name(), "VoiceDie.Override", VOC_NONE);
+		}
+		IsAffectsOwnerSet = ini.Is_Present(Name(), "AffectsOwner");
+		IsAffectsOwner = IsAffectsOwnerSet ? ini.Get_Bool(Name(), "AffectsOwner", IsAffectsOwner) : IsAffectsAllies;
 		KillDriverBelowPercent = ini.Get_Float(Name(), "KillDriver.KillBelowPercent", KillDriverBelowPercent);
 		KillDriverChance = ini.Get_Float(Name(), "KillDriver.Chance", KillDriverChance);
 		IsKillDriverRemoveVeterancy = ini.Get_Bool(Name(), "KillDriver.RemoveVeterancy", IsKillDriverRemoveVeterancy);
@@ -394,6 +422,12 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsEffectsRequireVerses);
 	crc(EMPDuration);
 	crc(EMPCap);
+	crc(IronCurtainDuration);
+	crc(IronCurtainCap);
+	crc(DisableWeaponsDuration);
+	crc(CellSpreadMaxAffect);
+	crc(IsUnitLostSuppress);
+	crc(IsAffectsOwner);
 	crc(InfDeathAnim != NULL);
 	crc(PreImpactAnim != NULL);
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
@@ -565,6 +599,18 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEffectsRequireVerses);
 	stream.Serialize(EMPDuration);
 	stream.Serialize(EMPCap);
+	stream.Serialize(EMPSparkles);
+	stream.Serialize(IronCurtainDuration);
+	stream.Serialize(IronCurtainCap);
+	stream.Serialize(DisableWeaponsDuration);
+	stream.Serialize(CellSpreadMaxAffect);
+	stream.Serialize(IsUnitLostSuppress);
+	stream.Serialize(IsDieSoundOverridden);
+	stream.Serialize(DieSoundOverride);
+	stream.Serialize(IsVoiceDieOverridden);
+	stream.Serialize(VoiceDieOverride);
+	stream.Serialize(IsAffectsOwner);
+	stream.Serialize(IsAffectsOwnerSet);
 }
 
 
@@ -592,6 +638,9 @@ void WarheadTypeClass::Detach(AbstractClass const * target, bool all)
 		Particle = NULL;
 	}
 	ExplosionSet.Delete((AnimTypeClass *)target);
+	if (target == (AbstractClass *)EMPSparkles) {
+		EMPSparkles = NULL;
+	}
 	if (target == (AbstractClass *)AttachEffect.Animation) {
 		AttachEffect.Animation = NULL;
 	}

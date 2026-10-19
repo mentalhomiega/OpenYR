@@ -3221,6 +3221,10 @@ int FootClass::Rescue_Mission(AbstractClass * tarcom)
  *=============================================================================================*/
 void FootClass::Death_Announcement(TechnoClass const * ) const
 {
+	// A UnitLost.Suppress warhead kills without the announcement (Ares).
+	if (DamageWarhead != NULL && DamageWarhead->IsUnitLostSuppress) {
+		return;
+	}
 	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
 		if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) {
 			if (!TClass->IsEvaLostSet) {

@@ -37,6 +37,7 @@
 #include "typelist.h"
 
 #include "armor.hh"
+#include "voc.hh"
 
 #include <vector>
 
@@ -389,6 +390,36 @@ class WarheadTypeClass : public AbstractTypeClass
 		// the cap decides how repeated hits combine.
 		int EMPDuration;
 		int EMPCap;
+
+		// EMP.Sparkles (Ares): the animation an object this warhead stuns shows while it is stunned, in place of the one its type
+		// or [General] EMPulseSparkles names. NULL leaves it to them.
+		AnimTypeClass const * EMPSparkles;
+
+		// IronCurtain.Duration and IronCurtain.Cap (Ares): a warhead with a nonzero IronCurtain.Duration puts each object it hits
+		// under the Iron Curtain for that many frames, or shortens the curtain it is under if the duration is negative. The cap
+		// decides how repeated hits combine.
+		int IronCurtainDuration;
+		int IronCurtainCap;
+
+		// DisableWeapons.Duration (Ares): the frames an object this warhead hits cannot fire.
+		int DisableWeaponsDuration;
+
+		// CellSpread.MaxAffect (Ares): the most hits one object takes from one blast of this warhead, the nearest ones; -1 for no limit.
+		int CellSpreadMaxAffect;
+
+		// UnitLost.Suppress (Ares): a unit this warhead kills does not make EVA announce a lost unit.
+		bool IsUnitLostSuppress;
+
+		// DieSound.Override and VoiceDie.Override (Ares): the sound and voice an object this warhead kills plays instead of its
+		// own; VOC_NONE when set is silence.
+		bool IsDieSoundOverridden;
+		VocType DieSoundOverride;
+		bool IsVoiceDieOverridden;
+		VocType VoiceDieOverride;
+
+		// AffectsOwner (Ares): whether the warhead affects objects of the house that fired it. Without the key it follows AffectsAllies.
+		bool IsAffectsOwner;
+		bool IsAffectsOwnerSet;
 
 		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?
 		bool Is_EM_Pulse(void) const {return(IsEMEffect && EMPDuration == 0);}
