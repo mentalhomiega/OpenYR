@@ -87,8 +87,10 @@ class SuperClass : public AbstractClass
 		bool Can_Place(void) const;
 		bool Is_Charging(void) const;
 		bool Is_Powered(void) const;
-		bool Is_Ready(void) const {return(IsReady);}
+		bool Is_Ready(void) const {return(IsReady && IsPresent);}
 		bool Is_Present(void) const {return(IsPresent);}
+		bool Is_Virtual_Charging(void) const {return(IsVirtualCharging);}
+		bool Is_Charged(void) const {return(IsReady);}
 		bool Is_Suspended(void) const {return(IsSuspended);}
 		bool Is_One_Time(void) const {return(IsOneTime && IsPresent);}
 
@@ -173,6 +175,9 @@ class SuperClass : public AbstractClass
 		// How many times the house has fired this weapon (SW.Shots), and whether it was ever enabled (SW.InitialReady).
 		int ShotsFired = 0;
 		bool WasEnabled = false;
+
+		// SW.VirtualCharge: the weapon lost its cameo but keeps its charge, and the cameo takes it back when it returns.
+		bool IsVirtualCharging = false;
 
 		bool IsPresent;
 		bool IsOneTime;

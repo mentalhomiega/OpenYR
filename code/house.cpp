@@ -1996,7 +1996,7 @@ void HouseClass::Super_Weapon_Handler(void)
 			}
 		}
 
-		if (super->Is_Present()) {
+		if (super->Is_Present() || super->Is_Virtual_Charging()) {
 
 			/*
 			**	Perform any charge-up logic for the super weapon. If the super

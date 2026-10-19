@@ -278,6 +278,9 @@ class RulesClass
 		int LightningHitDelay;
 		int LightningScatterDelay;
 		int LightningCellSpread;
+
+		// How many cells away from a randomly placed storm cloud a structure with LightningRod=yes still draws it in.
+		int LightningRodRange;
 		int LightningSeparation;
 		bool LightningPrintText;
 		TypeList<AnimTypeClass const *> WeatherConClouds;

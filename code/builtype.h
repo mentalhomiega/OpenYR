@@ -710,6 +710,15 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsEMPulseCannon;
 
 		/*
+		 * If this building is a deployed vehicle, then this flag will be true. A chronosphere whose
+		 * Chronosphere.ReconsiderBuildings is on shifts it as a unit rather than as a structure.
+		 */
+		bool IsChronoshiftVehicle;
+
+		// The share of a lightning storm bolt's damage that this building takes while LightningRod=yes.
+		float LightningRodModifier;
+
+		/*
 		 * If this building is the deployed form of a Tick Tank, then this flag will be true.
 		 * It faces east when it deploys and may pack itself up again.
 		 */

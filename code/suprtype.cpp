@@ -447,6 +447,19 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.ChronoAffectsIronCurtain = ini.Get_Bool(IniName, "Chronosphere.AffectsIronCurtain", Keys.ChronoAffectsIronCurtain);
 		Keys.ChronoAffectsUnwarpable = ini.Get_Bool(IniName, "Chronosphere.AffectsUnwarpable", Keys.ChronoAffectsUnwarpable);
 		Keys.ChronoKillCargo = ini.Get_Bool(IniName, "Chronosphere.KillCargo", Keys.ChronoKillCargo);
+		Keys.ChronoReconsiderBuildings = ini.Get_Bool(IniName, "Chronosphere.ReconsiderBuildings", Keys.ChronoReconsiderBuildings);
+		Keys.ChronoAffectsUndeployable = ini.Get_Bool(IniName, "Chronosphere.AffectsUndeployable", Keys.ChronoAffectsUndeployable);
+		Keys.ChronoBlowUnplaceable = ini.Get_Bool(IniName, "Chronosphere.BlowUnplaceable", Keys.ChronoBlowUnplaceable);
+		Keys.PostDependent = SuperKeyParse::Text_Or(ini.Get_String(IniName, "SW.PostDependent"), Keys.PostDependent);
+
+		if (ini.Is_Present(IniName, "Mutate.Explosion")) {
+			Keys.MutateExplosion = ini.Get_Bool(IniName, "Mutate.Explosion", false) ? 1 : 0;
+		}
+		Keys.MutateIgnoreCyborg = ini.Get_Bool(IniName, "Mutate.IgnoreCyborg", Keys.MutateIgnoreCyborg);
+		Keys.MutateIgnoreNotHuman = ini.Get_Bool(IniName, "Mutate.IgnoreNotHuman", Keys.MutateIgnoreNotHuman);
+		Keys.MutateKillNatural = ini.Get_Bool(IniName, "Mutate.KillNatural", Keys.MutateKillNatural);
+		Keys.LightningIgnoreRod = ini.Get_Bool(IniName, "Lightning.IgnoreLightningRod", Keys.LightningIgnoreRod);
+		Keys.VirtualCharge = ini.Get_Bool(IniName, "SW.VirtualCharge", Keys.VirtualCharge);
 
 		Keys.SonarPulseDelay = ini.Get_Int(IniName, "SonarPulse.Delay", Keys.SonarPulseDelay);
 

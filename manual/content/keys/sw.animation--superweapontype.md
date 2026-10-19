@@ -8,7 +8,7 @@ when_omitted:
   value: "none"
 ---
 
-Every machine creates the animation, so every player sees it. [`SW.AnimationHeight=`](/keys/sw.animationheight/) sets how high above the ground it plays. An iron curtain with this key set skips `IronCurtainInvokeAnim`.
+Every machine creates the animation, so every player sees it. [`SW.AnimationHeight=`](/keys/sw.animationheight/) sets how high above the ground it plays. An iron curtain with this key set skips `IronCurtainInvokeAnim`, and a genetic mutator skips `IonBlast`.
 
 ```ini title="rulesmd.ini"
 [MySpecial] ; example SuperWeaponType

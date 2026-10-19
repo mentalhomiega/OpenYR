@@ -145,6 +145,7 @@
 #include "infatype.h"
 #include "inline.h"
 #include "ion.h"
+#include "lstorm.h"
 #include "ipiggy.h"
 #include "isotile.h"
 #include "isotype.h"
@@ -2567,6 +2568,10 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
  *=============================================================================================*/
 ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
 {
+	if (LightningStormClass::Is_Bolting() && Class->IsLightningRod && Class->LightningRodModifier != 1.0f && !LightningStormClass::Rods_Ignored()) {
+		damage = (int)(damage * Class->LightningRodModifier);
+	}
+
 	ResultType res = RESULT_NONE;
 	int i;
 

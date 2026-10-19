@@ -62,6 +62,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	MaxCount(1),
 	Group(0),
 	InitialReady(false),
+	VirtualCharge(false),
 	AlwaysGranted(false),
 	AllowPlayer(true),
 	AllowAI(true),
@@ -138,6 +139,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	LightningCloudsSet(false),
 	LightningBoltsSet(false),
 	LightningDebrisSet(false),
+	LightningIgnoreRod(false),
 	DominatorFirstAnim(NULL),
 	DominatorSecondAnim(NULL),
 	DominatorControlAnim(NULL),
@@ -157,6 +159,13 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	ChronoAffectsIronCurtain(false),
 	ChronoAffectsUnwarpable(true),
 	ChronoKillCargo(false),
+	ChronoReconsiderBuildings(true),
+	ChronoAffectsUndeployable(false),
+	ChronoBlowUnplaceable(true),
+	MutateExplosion(-1),
+	MutateIgnoreCyborg(false),
+	MutateIgnoreNotHuman(false),
+	MutateKillNatural(true),
 	SonarPulseDelay(60),
 	BatteryPower(0),
 	SpyPlaneType(NULL),
@@ -388,6 +397,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxCount);
 	stream.Serialize(Group);
 	stream.Serialize(InitialReady);
+	stream.Serialize(VirtualCharge);
 	stream.Serialize(AlwaysGranted);
 	stream.Serialize(AllowPlayer);
 	stream.Serialize(AllowAI);
@@ -498,6 +508,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningCloudsSet);
 	stream.Serialize(LightningBoltsSet);
 	stream.Serialize(LightningDebrisSet);
+	stream.Serialize(LightningIgnoreRod);
 	stream.Serialize(DominatorFirstAnim);
 	stream.Serialize(DominatorSecondAnim);
 	stream.Serialize(DominatorControlAnim);
@@ -517,6 +528,14 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoAffectsIronCurtain);
 	stream.Serialize(ChronoAffectsUnwarpable);
 	stream.Serialize(ChronoKillCargo);
+	stream.Serialize(ChronoReconsiderBuildings);
+	stream.Serialize(ChronoAffectsUndeployable);
+	stream.Serialize(ChronoBlowUnplaceable);
+	stream.Serialize(PostDependent);
+	stream.Serialize(MutateExplosion);
+	stream.Serialize(MutateIgnoreCyborg);
+	stream.Serialize(MutateIgnoreNotHuman);
+	stream.Serialize(MutateKillNatural);
 	stream.Serialize(SonarPulseDelay);
 	stream.Serialize(BatteryPower);
 	stream.Serialize(BatteryOverpower);
@@ -541,6 +560,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(MaxCount);
 	crc(Group);
 	crc(InitialReady);
+	crc(VirtualCharge);
 	crc(AlwaysGranted);
 	crc(AllowPlayer);
 	crc(AllowAI);
@@ -597,6 +617,14 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(ChronoAffectsIronCurtain);
 	crc(ChronoAffectsUnwarpable);
 	crc(ChronoKillCargo);
+	crc(ChronoReconsiderBuildings);
+	crc(ChronoAffectsUndeployable);
+	crc(ChronoBlowUnplaceable);
+	crc(MutateExplosion);
+	crc(MutateIgnoreCyborg);
+	crc(MutateIgnoreNotHuman);
+	crc(MutateKillNatural);
+	crc(LightningIgnoreRod);
 	crc(BatteryPower);
 	crc(SpyPlaneCount);
 	crc(ParaDropCount);

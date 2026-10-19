@@ -8,7 +8,7 @@ when_omitted:
   value: "none"
 ---
 
-A sound from the sound list, played at the target cell. [`SW.ActivationSound=`](/keys/sw.activationsound/) plays at the same moment.
+A sound from the sound list, played at the target cell. [`SW.ActivationSound=`](/keys/sw.activationsound/) plays at the same moment. A genetic mutator with this key set skips `GeneticMutatorActivateSound`.
 
 ```ini title="rulesmd.ini"
 [MySpecial] ; example SuperWeaponType

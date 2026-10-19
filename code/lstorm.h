@@ -63,6 +63,8 @@ class LightningStormClass
 		static bool Is_Active(void) {return(IsActive);}
 		static SuperWeaponTypeClass const * Active_Type(void);
 		static bool Is_Active_Or_Pending(void) {return(IsActive || Deferment > 0);}
+		static bool Is_Bolting(void) {return(IsBolting);}
+		static bool Rods_Ignored(void);
 		static void Print_Refusal(void);
 		static void Detach(AbstractClass const * target);
 		static void Serialize(SaveStreamClass & stream);
@@ -76,7 +78,10 @@ class LightningStormClass
 		static int Scatter_Delay(void);
 		static int Separation(void);
 
+		static Cell Rod_Target(Cell const & cell);
+
 		static bool IsActive;
+		static bool IsBolting;
 		static bool IsTimeToEnd;
 		static int StartTime;
 		static int Duration;
