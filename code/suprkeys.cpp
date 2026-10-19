@@ -52,47 +52,6 @@ T const * Find_Named(DynamicVectorClass<T *> const & vector, char const * name)
 }
 
 
-template<class T>
-void Read_Type_List(CCINIClass const & ini, char const * section, char const * key, DynamicVectorClass<T *> const & source, TypeList<T const *> & list)
-{
-	if (!ini.Is_Present(section, key)) {
-		return;
-	}
-	list.Clear();
-	for (std::string const & name : Split_List(ini.Get_String(section, key))) {
-		T const * type = Find_Named(source, name.c_str());
-		if (type != NULL) {
-			list.Add(type);
-		} else if (!Same(name, "none")) {
-			DebugString("[%s] %s names no such type: %s; skipped.\n", section, key, name.c_str());
-		}
-	}
-}
-
-
-void Read_Techno_List(CCINIClass const & ini, char const * section, char const * key, TypeList<TechnoTypeClass const *> & list)
-{
-	Read_Type_List<TechnoTypeClass>(ini, section, key, TechnoTypes, list);
-}
-
-
-void Read_Text(CCINIClass const & ini, char const * section, char const * key, std::string & text)
-{
-	if (ini.Is_Present(section, key)) {
-		std::string const value = ini.Get_String(section, key);
-		text = std::string(Trim(value));
-	}
-}
-
-
-void Read_Mask(CCINIClass const & ini, char const * section, char const * key, bool houses, unsigned & mask)
-{
-	if (ini.Is_Present(section, key)) {
-		std::string const value = ini.Get_String(section, key);
-		mask = houses ? Parse_Houses(value, mask) : Parse_Targets(value, mask);
-	}
-}
-
 }
 
 
@@ -167,184 +126,152 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 }
 
 
-/// <summary>
-/// Reads the Ares superweapon keys from the section. A key the section leaves out keeps the value the
-/// weapon already has, so a rules file read over another changes only the keys it names.
-/// </summary>
-void SuperWeaponKeys::Read_INI(CCINIClass const & ini, char const * section)
+namespace SuperKeyParse {
+
+std::string Text_Or(std::string const & value, std::string const & old)
 {
-	MoneyAmount = ini.Get_Int(section, "Money.Amount", MoneyAmount);
-	Deferment = ini.Get_Int(section, "SW.Deferment", Deferment);
-	Shots = ini.Get_Int(section, "SW.Shots", Shots);
-	MaxCount = ini.Get_Int(section, "SW.MaxCount", MaxCount);
-	Group = ini.Get_Int(section, "SW.Group", Group);
-	InitialReady = ini.Get_Bool(section, "SW.InitialReady", InitialReady);
-	AllowPlayer = ini.Get_Bool(section, "SW.AllowPlayer", AllowPlayer);
-	AllowAI = ini.Get_Bool(section, "SW.AllowAI", AllowAI);
-	Unstoppable = ini.Get_Bool(section, "SW.Unstoppable", Unstoppable);
-	ChargeToDrainRatio = float(ini.Get_Float(section, "SW.ChargeToDrainRatio", ChargeToDrainRatio));
+	std::string_view const trimmed = Trim(value);
+	return(trimmed.empty() ? old : std::string(trimmed));
+}
 
-	Read_Type_List<BuildingTypeClass>(ini, section, "SW.AuxBuildings", BuildingTypes, AuxBuildings);
-	Read_Type_List<BuildingTypeClass>(ini, section, "SW.NegBuildings", BuildingTypes, NegBuildings);
-	RequiredHouses = ini.Get_House_List(section, "SW.RequiredHouses", RequiredHouses);
-	ForbiddenHouses = ini.Get_House_List(section, "SW.ForbiddenHouses", ForbiddenHouses);
 
-	Read_Mask(ini, section, "SW.AffectsHouse", true, AffectsHouse);
-	AffectsHouseSet = AffectsHouseSet || ini.Is_Present(section, "SW.AffectsHouse");
-	Read_Mask(ini, section, "SW.AffectsTarget", false, AffectsTarget);
-	Read_Mask(ini, section, "SW.RequiresTarget", false, RequiresTarget);
-	Read_Mask(ini, section, "SW.RequiresHouse", true, RequiresHouse);
-	FireIntoShroud = ini.Get_Bool(section, "SW.FireIntoShroud", FireIntoShroud);
-	RangeMinimum = float(ini.Get_Float(section, "SW.RangeMinimum", RangeMinimum));
-	RangeMaximum = float(ini.Get_Float(section, "SW.RangeMaximum", RangeMaximum));
-	if (ini.Is_Present(section, "SW.Range")) {
-		Area const area = Parse_Area(ini.Get_String(section, "SW.Range"));
-		if (area.IsSet) {
-			AreaIsSet = true;
-			AreaIsBlock = area.IsBlock;
-			AreaRadius = area.Radius;
-			AreaWidth = area.Width;
-			AreaHeight = area.Height;
+void Building_List(std::string const & value, TypeList<BuildingTypeClass const *> & list)
+{
+	if (Trim(value).empty()) {
+		return;
+	}
+	list.Clear();
+	for (std::string const & name : Split_List(value)) {
+		BuildingTypeClass const * type = Find_Named(BuildingTypes, name.c_str());
+		if (type != NULL) {
+			list.Add(type);
+		} else if (!Same(name, "none")) {
+			DebugString("A superweapon key names no such building type: %s; skipped.\n", name.c_str());
 		}
 	}
-	Read_Techno_List(ini, section, "SW.Designators", Designators);
-	Read_Techno_List(ini, section, "SW.Inhibitors", Inhibitors);
-	AnyDesignator = ini.Get_Bool(section, "SW.AnyDesignator", AnyDesignator);
-	AnyInhibitor = ini.Get_Bool(section, "SW.AnyInhibitor", AnyInhibitor);
+}
 
-	if (ini.Is_Present(section, "SW.AITargeting")) {
-		AITarget const mode = Parse_AI_Target(ini.Get_String(section, "SW.AITargeting"));
-		if (mode != AITarget::Default) {
-			AITargeting = int(mode);
+
+void Techno_List(std::string const & value, TypeList<TechnoTypeClass const *> & list)
+{
+	if (Trim(value).empty()) {
+		return;
+	}
+	list.Clear();
+	for (std::string const & name : Split_List(value)) {
+		TechnoTypeClass const * type = Find_Named(TechnoTypes, name.c_str());
+		if (type != NULL) {
+			list.Add(type);
+		} else if (!Same(name, "none")) {
+			DebugString("A superweapon key names no such object type: %s; skipped.\n", name.c_str());
 		}
 	}
-	if (ini.Is_Present(section, "SW.AIRequiresTarget")) {
-		AIRequiresTarget = Parse_Targets(ini.Get_String(section, "SW.AIRequiresTarget"), AIRequiresTarget);
+}
+
+
+WarheadTypeClass const * Warhead_Named(std::string const & value, WarheadTypeClass const * old)
+{
+	std::string const name(Trim(value));
+	return(name.empty() ? old : Find_Named(Warheads, name.c_str()));
+}
+
+
+AnimTypeClass const * Anim_Named(std::string const & value, AnimTypeClass const * old)
+{
+	std::string const name(Trim(value));
+	return(name.empty() ? old : Find_Named(AnimTypes, name.c_str()));
+}
+
+
+UnitTypeClass const * Unit_Named(std::string const & value, UnitTypeClass const * old)
+{
+	std::string const name(Trim(value));
+	return(name.empty() ? old : Find_Named(UnitTypes, name.c_str()));
+}
+
+
+AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old)
+{
+	std::string const name(Trim(value));
+	return(name.empty() ? old : Find_Named(AircraftTypes, name.c_str()));
+}
+
+
+WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old)
+{
+	std::string const name(Trim(value));
+	return(name.empty() ? old : Find_Named(Weapons, name.c_str()));
+}
+
+
+int Deliver_Owner(std::string const & value, int old)
+{
+	return(Trim(value).empty() ? old : (int)Parse_Deliver_Owner(value));
+}
+
+}
+
+
+void SuperWeaponKeys::Set_Area(SuperRules::Area const & area)
+{
+	if (area.IsSet) {
+		AreaIsSet = true;
+		AreaIsBlock = area.IsBlock;
+		AreaRadius = area.Radius;
+		AreaWidth = area.Width;
+		AreaHeight = area.Height;
 	}
-	if (ini.Is_Present(section, "SW.AIRequiresHouse")) {
-		std::string const value = ini.Get_String(section, "SW.AIRequiresHouse");
-		unsigned flags = 0;
-		bool found = false;
-		for (std::string const & name : Split_List(value)) {
-			if (Same(name, "others")) { flags |= HOUSE_ALLIES | HOUSE_ENEMIES; found = true; }
-			else {
-				unsigned const one = Parse_Houses(name, UNSET_MASK);
-				if (one != UNSET_MASK) { flags |= one; found = true; }
+}
+
+
+void SuperWeaponKeys::Set_AI_Targeting(std::string const & value)
+{
+	AITarget const mode = Parse_AI_Target(value);
+	if (mode != AITarget::Default) {
+		AITargeting = int(mode);
+	}
+}
+
+
+void SuperWeaponKeys::Set_AI_Requires_House(std::string const & value)
+{
+	unsigned flags = 0;
+	bool found = false;
+	for (std::string const & name : Split_List(value)) {
+		if (Same(name, "others")) {
+			flags |= HOUSE_ALLIES | HOUSE_ENEMIES;
+			found = true;
+		} else {
+			unsigned const one = Parse_Houses(name, UNSET_MASK);
+			if (one != UNSET_MASK) {
+				flags |= one;
+				found = true;
 			}
 		}
-		if (found) AIRequiresHouse = flags;
 	}
-	if (ini.Is_Present(section, "SW.AITargeting.Constraints")) {
-		AIConstraints = Parse_Constraints(ini.Get_String(section, "SW.AITargeting.Constraints"));
+	if (found) {
+		AIRequiresHouse = flags;
 	}
-	UseAITargeting = ini.Get_Bool(section, "SW.UseAITargeting", UseAITargeting);
-	AutoFire = ini.Get_Bool(section, "SW.AutoFire", AutoFire);
-	ManualFire = ini.Get_Bool(section, "SW.ManualFire", ManualFire);
-	ShowCameo = ini.Get_Bool(section, "SW.ShowCameo", ShowCameo);
+}
 
-	if (ini.Is_Present(section, "SW.Warhead")) {
-		Warhead = Find_Named(Warheads, ini.Get_String(section, "SW.Warhead").c_str());
+
+void SuperWeaponKeys::Set_Pulse_Ball(std::string const & value)
+{
+	std::string const name(Trim(value));
+	if (name.empty()) {
+		return;
 	}
-	Damage = ini.Get_Int(section, "SW.Damage", Damage);
-	if (ini.Is_Present(section, "SW.Animation")) {
-		Animation = Find_Named(AnimTypes, ini.Get_String(section, "SW.Animation").c_str());
-	}
-	AnimationHeight = ini.Get_Int(section, "SW.AnimationHeight", AnimationHeight);
-	Sound = ini.Get_VocType(section, "SW.Sound", Sound);
-	ActivationSound = ini.Get_VocType(section, "SW.ActivationSound", ActivationSound);
-	CreateRadarEvent = ini.Get_Bool(section, "SW.CreateRadarEvent", CreateRadarEvent);
+	EMPulseNoPulseBall = Same(name, "none");
+	EMPulsePulseBall = EMPulseNoPulseBall ? NULL : Find_Named(AnimTypes, name.c_str());
+}
 
-	Read_Text(ini, section, "EVA.Ready", EvaReady);
-	Read_Text(ini, section, "EVA.Detected", EvaDetected);
-	Read_Text(ini, section, "EVA.Activated", EvaActivated);
-	Read_Text(ini, section, "EVA.Impatient", EvaImpatient);
-	Read_Text(ini, section, "EVA.SelectTarget", EvaSelectTarget);
-	Read_Text(ini, section, "EVA.InsufficientFunds", EvaInsufficientFunds);
-	Read_Text(ini, section, "Message.Detected", MessageDetected);
-	Read_Text(ini, section, "Message.Ready", MessageReady);
-	Read_Text(ini, section, "Message.Launch", MessageLaunch);
-	Read_Text(ini, section, "Message.Activate", MessageActivate);
-	Read_Text(ini, section, "Message.Abort", MessageAbort);
-	Read_Text(ini, section, "Message.InsufficientFunds", MessageInsufficientFunds);
-	Read_Text(ini, section, "Message.CannotFire", MessageCannotFire);
-	MessageFirerColor = ini.Get_Bool(section, "Message.FirerColor", MessageFirerColor);
-	Read_Text(ini, section, "Text.Hold", TextHold);
-	Read_Text(ini, section, "Text.Ready", TextReady);
-	Read_Text(ini, section, "Text.Charging", TextCharging);
-	Read_Text(ini, section, "Text.Active", TextActive);
-	Read_Text(ini, section, "Text.Preparing", TextPreparing);
-	Read_Text(ini, section, "Cursor", Cursor);
-	Read_Text(ini, section, "NoCursor", NoCursor);
 
-	LightEnabled = ini.Get_Bool(section, "Light.Enabled", LightEnabled);
-	LightAmbient = ini.Get_Int(section, "Light.Ambient", LightAmbient);
-	LightRed = ini.Get_Int(section, "Light.Red", LightRed);
-	LightGreen = ini.Get_Int(section, "Light.Green", LightGreen);
-	LightBlue = ini.Get_Int(section, "Light.Blue", LightBlue);
-
-	Read_Techno_List(ini, section, "Deliver.Types", DeliverTypes);
-	if (ini.Is_Present(section, "Deliver.Owner")) {
-		DeliverOwnerMode = int(Parse_Deliver_Owner(ini.Get_String(section, "Deliver.Owner")));
-	}
-	DeliverBaseNormal = ini.Get_Bool(section, "Deliver.BaseNormal", DeliverBaseNormal);
-	DeliverBuildups = ini.Get_Bool(section, "Deliver.Buildups", DeliverBuildups);
-
-	Read_Techno_List(ini, section, "DropPod.Types", DropPodTypes);
-	DropPodMinimum = ini.Get_Int(section, "DropPod.Minimum", DropPodMinimum);
-	DropPodMaximum = ini.Get_Int(section, "DropPod.Maximum", DropPodMaximum);
-	DropPodVeterancy = float(ini.Get_Float(section, "DropPod.Veterancy", DropPodVeterancy));
-
-	Read_Type_List<BuildingTypeClass>(ini, section, "HunterSeeker.Buildings", BuildingTypes, HunterSeekerBuildings);
-	if (ini.Is_Present(section, "HunterSeeker.Type")) {
-		HunterSeekerType = Find_Named(UnitTypes, ini.Get_String(section, "HunterSeeker.Type").c_str());
-	}
-	HunterSeekerRandomOnly = ini.Get_Bool(section, "HunterSeeker.RandomOnly", HunterSeekerRandomOnly);
-
-	Read_Type_List<BuildingTypeClass>(ini, section, "EMPulse.Cannons", BuildingTypes, EMPulseCannons);
-	EMPulseTargetSelf = ini.Get_Bool(section, "EMPulse.TargetSelf", EMPulseTargetSelf);
-	EMPulseLinked = ini.Get_Bool(section, "EMPulse.Linked", EMPulseLinked);
-	if (ini.Is_Present(section, "EMPulse.PulseBall")) {
-		std::string const name = ini.Get_String(section, "EMPulse.PulseBall");
-		EMPulseNoPulseBall = Same(Trim(name), "none");
-		EMPulsePulseBall = EMPulseNoPulseBall ? NULL : Find_Named(AnimTypes, std::string(Trim(name)).c_str());
-	}
-	EMPulsePulseDelay = ini.Get_Int(section, "EMPulse.PulseDelay", EMPulsePulseDelay);
-
-	if (ini.Is_Present(section, "Nuke.Payload")) {
-		NukePayload = Find_Named(Weapons, ini.Get_String(section, "Nuke.Payload").c_str());
-	}
-	NukeSiloLaunch = ini.Get_Bool(section, "Nuke.SiloLaunch", NukeSiloLaunch);
-
-	SonarPulseDelay = ini.Get_Int(section, "SonarPulse.Delay", SonarPulseDelay);
-
-	BatteryPower = ini.Get_Int(section, "Battery.Power", BatteryPower);
-	Read_Type_List<BuildingTypeClass>(ini, section, "Battery.Overpower", BuildingTypes, BatteryOverpower);
-	Read_Type_List<BuildingTypeClass>(ini, section, "Battery.KeepOnline", BuildingTypes, BatteryKeepOnline);
-
-	if (ini.Is_Present(section, "SpyPlane.Type")) {
-		SpyPlaneType = Find_Named(AircraftTypes, ini.Get_String(section, "SpyPlane.Type").c_str());
-	}
-	SpyPlaneCount = ini.Get_Int(section, "SpyPlane.Count", SpyPlaneCount);
-
-	ParaDropCount = ini.Get_Int(section, "ParaDrop.Count", ParaDropCount);
-	auto read_group = [&](ParaGroup & group, std::string const & prefix) {
-		std::string const types_key = prefix + "Types";
-		std::string const num_key = prefix + "Num";
-		std::string const aircraft_key = prefix + "Aircraft";
-		if (ini.Is_Present(section, types_key.c_str())) {
-			Read_Techno_List(ini, section, types_key.c_str(), group.Types);
-			group.IsSet = true;
-		}
-		if (ini.Is_Present(section, num_key.c_str())) {
-			group.Num = ini.Get_IntList(section, num_key.c_str(), group.Num);
-			group.IsSet = true;
-		}
-		if (ini.Is_Present(section, aircraft_key.c_str())) {
-			group.Aircraft = Find_Named(AircraftTypes, ini.Get_String(section, aircraft_key.c_str()).c_str());
-			group.IsSet = true;
-		}
-	};
-	read_group(ParaDefault, "ParaDrop.");
+/// <summary>
+/// Reads the ParaDrop.<country>.* and ParaDrop.<side>.* keys, whose names depend on the countries and sides
+/// the rules declare, into one group for each name that sets any of them.
+/// </summary>
+void SuperWeaponKeys::Read_Para_Owners(CCINIClass const & ini, char const * section)
+{
 	auto read_owner = [&](char const * name) {
 		std::string const prefix = std::string("ParaDrop.") + name + ".";
 		ParaGroup group;
@@ -352,7 +279,21 @@ void SuperWeaponKeys::Read_INI(CCINIClass const & ini, char const * section)
 		for (ParaGroup const & old : ParaByOwner) {
 			if (Same(old.Owner, name)) group = old;
 		}
-		read_group(group, prefix);
+		std::string const types = ini.Get_String(section, (prefix + "Types").c_str());
+		if (!Trim(types).empty()) {
+			SuperKeyParse::Techno_List(types, group.Types);
+			group.IsSet = true;
+		}
+		std::string const nums = prefix + "Num";
+		if (ini.Is_Present(section, nums.c_str())) {
+			group.Num = ini.Get_IntList(section, nums.c_str(), group.Num);
+			group.IsSet = true;
+		}
+		std::string const plane = ini.Get_String(section, (prefix + "Aircraft").c_str());
+		if (!Trim(plane).empty()) {
+			group.Aircraft = SuperKeyParse::Aircraft_Named(plane, group.Aircraft);
+			group.IsSet = true;
+		}
 		if (!group.IsSet) return;
 		for (ParaGroup & old : ParaByOwner) {
 			if (Same(old.Owner, name)) { old = group; return; }

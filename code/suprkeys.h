@@ -29,6 +29,25 @@ class CRCEngine;
 
 
 /*
+ * Conversions from a key's text to the value a superweapon keeps. Each returns the value to keep: the old one
+ * when the text is empty, so a key a section leaves out changes nothing. A list replaces the old one whenever
+ * the text is not empty, and "none" empties it.
+ */
+namespace SuperKeyParse
+{
+	std::string Text_Or(std::string const & value, std::string const & old);
+	void Building_List(std::string const & value, TypeList<BuildingTypeClass const *> & list);
+	void Techno_List(std::string const & value, TypeList<TechnoTypeClass const *> & list);
+	WarheadTypeClass const * Warhead_Named(std::string const & value, WarheadTypeClass const * old);
+	AnimTypeClass const * Anim_Named(std::string const & value, AnimTypeClass const * old);
+	UnitTypeClass const * Unit_Named(std::string const & value, UnitTypeClass const * old);
+	AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old);
+	WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old);
+	int Deliver_Owner(std::string const & value, int old);
+}
+
+
+/*
  * The superweapon keys that Ares adds (SW.*, Money.Amount, EVA.*, Message.*, Text.* and the
  * per-behavior keys such as Deliver.Types), as one superweapon type reads them from its rules
  * section. A weapon keeps the defaults below for a key its section leaves out.
@@ -37,7 +56,11 @@ struct SuperWeaponKeys
 {
 	SuperWeaponKeys(void);
 
-	void Read_INI(CCINIClass const & ini, char const * section);
+	void Set_Area(SuperRules::Area const & area);
+	void Set_AI_Targeting(std::string const & value);
+	void Set_AI_Requires_House(std::string const & value);
+	void Set_Pulse_Ball(std::string const & value);
+	void Read_Para_Owners(CCINIClass const & ini, char const * section);
 	void Serialize(SaveStreamClass & stream);
 	void Compute_CRC(CRCEngine & crc) const;
 

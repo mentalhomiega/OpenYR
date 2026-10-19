@@ -342,6 +342,13 @@ namespace SuperRules
 	}
 
 
+	// The constraints a value names, or the old set when the value is empty.
+	inline unsigned Parse_Constraints_Or(std::string_view text, unsigned old)
+	{
+		return(Trim(text).empty() ? old : Parse_Constraints(text));
+	}
+
+
 	// Deliver.Owner. An unknown name gives the default, the house that fired the weapon.
 	inline DeliverOwner Parse_Deliver_Owner(std::string_view text)
 	{

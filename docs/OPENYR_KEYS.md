@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 110 entries
+- [Rules](#rules): 205 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -160,8 +160,103 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Battery.KeepOnline`](../manual/content/keys/battery.keeponline--superweapontype.md) | `none` | Lists the structures a running battery keeps powered on. | Ares |
+| [`Battery.Overpower`](../manual/content/keys/battery.overpower--superweapontype.md) | `none` | Lists the structures a running battery overpowers. | Ares |
+| [`Battery.Power`](../manual/content/keys/battery.power--superweapontype.md) | `0` | Sets the power a running battery adds. | Ares |
 | [`CameoSortOrder`](../manual/content/keys/cameosortorder--superweapontype.md) | `0` | Orders a type's sidebar cameo among the cameos of the same kind. | OpenTS |
+| [`Cursor`](../manual/content/keys/cursor--superweapontype.md) | the cursor for the Action | Names the cursor shown over cells where the weapon may be aimed. | Ares |
+| [`Deliver.BaseNormal`](../manual/content/keys/deliver.basenormal--superweapontype.md) | `yes` | Reads whether delivered structures count as part of the base; it has no effect yet. | Ares |
+| [`Deliver.Buildups`](../manual/content/keys/deliver.buildups--superweapontype.md) | `no` | Whether delivered structures play their construction animation. | Ares |
+| [`Deliver.Owner`](../manual/content/keys/deliver.owner--superweapontype.md) | Invoker | Chooses who owns the objects a unit delivery brings in. | Ares |
+| [`Deliver.Types`](../manual/content/keys/deliver.types--superweapontype.md) | `none` | Lists the objects a unit delivery brings in. | Ares |
+| [`DropPod.Maximum`](../manual/content/keys/droppod.maximum--superweapontype.md) | [General] DropPodInfantryMaximum | Sets the most pods a drop pod weapon lands. | Ares |
+| [`DropPod.Minimum`](../manual/content/keys/droppod.minimum--superweapontype.md) | [General] DropPodInfantryMinimum | Sets the fewest pods a drop pod weapon lands. | Ares |
+| [`DropPod.Types`](../manual/content/keys/droppod.types--superweapontype.md) | E1 and E2, equally likely | Lists the infantry a drop pod weapon lands. | Ares |
+| [`DropPod.Veterancy`](../manual/content/keys/droppod.veterancy--superweapontype.md) | `2.0` | Sets the rank the pod infantry land with. | Ares |
+| [`EMPulse.Cannons`](../manual/content/keys/empulse.cannons--superweapontype.md) | Every EMPulseCannon=yes structure | Lists the structures that fire this EM pulse. | Ares |
+| [`EMPulse.Linked`](../manual/content/keys/empulse.linked--superweapontype.md) | `no` | Reads a flag for EM pulse cannons; it has no effect yet. | Ares |
+| [`EMPulse.PulseBall`](../manual/content/keys/empulse.pulseball--superweapontype.md) | `PULSBALL` | Reads the animation a cannon plays before it fires; it has no effect yet. | Ares |
+| [`EMPulse.PulseDelay`](../manual/content/keys/empulse.pulsedelay--superweapontype.md) | `32` | Reads how long a cannon waits before it fires; it has no effect yet. | Ares |
+| [`EMPulse.TargetSelf`](../manual/content/keys/empulse.targetself--superweapontype.md) | `no` | Makes each firing cannon detonate its weapon on itself. | Ares |
+| [`EVA.Activated`](../manual/content/keys/eva.activated--superweapontype.md) | The behavior's own line | Names the announcer line played when the weapon fires. | Ares |
+| [`EVA.Detected`](../manual/content/keys/eva.detected--superweapontype.md) | The behavior's own line | Names the announcer line played when an enemy builds the structure that grants the weapon. | Ares |
+| [`EVA.Impatient`](../manual/content/keys/eva.impatient--superweapontype.md) | `ImpatientVoice` | Names the announcer line played when the cameo is clicked before the weapon is ready. | Ares |
+| [`EVA.InsufficientFunds`](../manual/content/keys/eva.insufficientfunds--superweapontype.md) | `EVA_InsufficientFunds` | Names the announcer line played when a shot is refused for lack of money. | Ares |
+| [`EVA.Ready`](../manual/content/keys/eva.ready--superweapontype.md) | The behavior's own line | Names the announcer line played when the weapon is charged. | Ares |
+| [`EVA.SelectTarget`](../manual/content/keys/eva.selecttarget--superweapontype.md) | The select-target line | Names the announcer line played when the cameo starts aiming. | Ares |
+| [`HunterSeeker.Buildings`](../manual/content/keys/hunterseeker.buildings--superweapontype.md) | [SpecialWeapons] HSBuilding | Lists the structures that launch a hunter seeker. | Ares |
+| [`HunterSeeker.RandomOnly`](../manual/content/keys/hunterseeker.randomonly--superweapontype.md) | `no` | Reads a targeting flag for hunter seekers; it has no effect yet. | Ares |
+| [`HunterSeeker.Type`](../manual/content/keys/hunterseeker.type--superweapontype.md) | The side's HunterSeeker | Names the vehicle a hunter seeker launch sends out. | Ares |
+| [`Light.Ambient`](../manual/content/keys/light.ambient--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Light.Blue`](../manual/content/keys/light.blue--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Light.Enabled`](../manual/content/keys/light.enabled--superweapontype.md) | `no` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Light.Green`](../manual/content/keys/light.green--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Light.Red`](../manual/content/keys/light.red--superweapontype.md) | `-1` | Reads a lighting setting for the weapon; it has no effect yet. | Ares |
+| [`Message.Abort`](../manual/content/keys/message.abort--superweapontype.md) | The stock refusal message | Replaces the refusal message of a lightning storm or psychic dominator. | Ares |
+| [`Message.Activate`](../manual/content/keys/message.activate--superweapontype.md) | `none` | Prints a message to every player when the effect starts. | Ares |
+| [`Message.CannotFire`](../manual/content/keys/message.cannotfire--superweapontype.md) | `MSG:CannotFire` | Names the message shown when cameo-click targeting finds no target. | Ares |
+| [`Message.Detected`](../manual/content/keys/message.detected--superweapontype.md) | `none` | Prints a message when an enemy builds the structure that grants the weapon. | Ares |
+| [`Message.FirerColor`](../manual/content/keys/message.firercolor--superweapontype.md) | `no` | Prints the weapon's messages in the firing house's color. | Ares |
+| [`Message.InsufficientFunds`](../manual/content/keys/message.insufficientfunds--superweapontype.md) | `none` | Prints a message when a shot is refused for lack of money. | Ares |
+| [`Message.Launch`](../manual/content/keys/message.launch--superweapontype.md) | `none` | Prints a message to every player when the weapon fires. | Ares |
+| [`Message.Ready`](../manual/content/keys/message.ready--superweapontype.md) | `none` | Prints a message to the owner when the weapon is charged. | Ares |
+| [`Money.Amount`](../manual/content/keys/money.amount--superweapontype.md) | `0` | Charges or pays the house each time the weapon fires. | Ares |
+| [`NoCursor`](../manual/content/keys/nocursor--superweapontype.md) | `Disallowed` | Names the cursor shown over cells where the weapon may not be aimed. | Ares |
+| [`Nuke.Payload`](../manual/content/keys/nuke.payload--superweapontype.md) | The section's WeaponType | Names the weapon a missile weapon launches. | Ares |
+| [`Nuke.SiloLaunch`](../manual/content/keys/nuke.silolaunch--superweapontype.md) | `yes` | Chooses whether a silo launches the missile. | Ares |
+| [`ParaDrop.Aircraft`](../manual/content/keys/paradrop.aircraft--superweapontype.md) | `PDPLANE` | Names the aircraft that carries the paratroopers. | Ares |
+| [`ParaDrop.Count`](../manual/content/keys/paradrop.count--superweapontype.md) | `1` | Sets how many planes a paradrop weapon sends. | Ares |
+| [`ParaDrop.Num`](../manual/content/keys/paradrop.num--superweapontype.md) | The side's paradrop lists | Lists how many of each type a paradrop plane carries. | Ares |
+| [`ParaDrop.Types`](../manual/content/keys/paradrop.types--superweapontype.md) | The side's paradrop lists | Lists the infantry a paradrop weapon carries. | Ares |
 | [`SidebarPCX`](../manual/content/keys/sidebarpcx.md) | (none) | The PCX picture drawn as a superweapon's sidebar cameo instead of its `SidebarImage=` shape. | Ares |
+| [`SonarPulse.Delay`](../manual/content/keys/sonarpulse.delay--superweapontype.md) | `60` | Sets how long a sonar pulse keeps decloaked objects visible. | Ares |
+| [`SpyPlane.Count`](../manual/content/keys/spyplane.count--superweapontype.md) | `1` | Sets how many aircraft a spy plane weapon sends. | Ares |
+| [`SpyPlane.Type`](../manual/content/keys/spyplane.type--superweapontype.md) | SPYP, one for each AllyParaDropInf entry | Names the aircraft a spy plane weapon sends. | Ares |
+| [`SW.ActivationSound`](../manual/content/keys/sw.activationsound--superweapontype.md) | `none` | Plays a second sound at the target cell when the effect starts. | Ares |
+| [`SW.AffectsHouse`](../manual/content/keys/sw.affectshouse--superweapontype.md) | All houses; enemies for a sonar pulse | Chooses whose objects an iron curtain or sonar pulse affects. | Ares |
+| [`SW.AffectsTarget`](../manual/content/keys/sw.affectstarget--superweapontype.md) | Everything | Chooses which cells and objects an iron curtain covers. | Ares |
+| [`SW.AIRequiresHouse`](../manual/content/keys/sw.airequireshouse--superweapontype.md) | No limit | Limits the cells the computer may aim this superweapon at by who owns their contents. | Ares |
+| [`SW.AIRequiresTarget`](../manual/content/keys/sw.airequirestarget--superweapontype.md) | No limit | Limits the cells the computer may aim this superweapon at by their contents. | Ares |
+| [`SW.AITargeting`](../manual/content/keys/sw.aitargeting--superweapontype.md) | Each behavior has its own rule | Chooses how the computer, automatic fire and cameo-click targeting pick a target. | Ares |
+| [`SW.AITargeting.Constraints`](../manual/content/keys/sw.aitargeting.constraints--superweapontype.md) | `none` | Names conditions that must hold before the computer fires this superweapon. | Ares |
+| [`SW.AllowAI`](../manual/content/keys/sw.allowai--superweapontype.md) | `yes` | Whether a house the computer controls may hold this superweapon. | Ares |
+| [`SW.AllowPlayer`](../manual/content/keys/sw.allowplayer--superweapontype.md) | `yes` | Whether a house a person controls may hold this superweapon. | Ares |
+| [`SW.Animation`](../manual/content/keys/sw.animation--superweapontype.md) | `none` | Plays an animation on the target cell when the effect starts. | Ares |
+| [`SW.AnimationHeight`](../manual/content/keys/sw.animationheight--superweapontype.md) | `5` | Sets how high above the ground `SW.Animation=` plays. | Ares |
+| [`SW.AnyDesignator`](../manual/content/keys/sw.anydesignator--superweapontype.md) | `no` | Accepts any of the player's objects as a designator. | Ares |
+| [`SW.AnyInhibitor`](../manual/content/keys/sw.anyinhibitor--superweapontype.md) | `no` | Lets any enemy object inhibit this superweapon. | Ares |
+| [`SW.AutoFire`](../manual/content/keys/sw.autofire--superweapontype.md) | `no` | Fires the weapon as soon as it is ready, at the cell the computer's rules pick. | Ares |
+| [`SW.AuxBuildings`](../manual/content/keys/sw.auxbuildings--superweapontype.md) | `none` | Holds this superweapon only while the house owns one of the listed structures. | Ares |
+| [`SW.ChargeToDrainRatio`](../manual/content/keys/sw.chargetodrainratio--superweapontype.md) | [General] ChargeToDrainRatio | Sets how long a charge-draining weapon runs compared with its charge time. | Ares |
+| [`SW.CreateRadarEvent`](../manual/content/keys/sw.createradarevent--superweapontype.md) | `no` | Flashes a superweapon event on every player's radar at the target. | Ares |
+| [`SW.Damage`](../manual/content/keys/sw.damage--superweapontype.md) | `-1` | Sets the damage a generic warhead or missile strike deals. | Ares |
+| [`SW.Deferment`](../manual/content/keys/sw.deferment--superweapontype.md) | 0, or 20 for UnitDelivery | Delays the weapon's effect after the shot. | Ares |
+| [`SW.Designators`](../manual/content/keys/sw.designators--superweapontype.md) | `none` | Requires one of the player's objects of the listed types near the target. | Ares |
+| [`SW.FireIntoShroud`](../manual/content/keys/sw.fireintoshroud--superweapontype.md) | `yes` | Whether the weapon may be aimed at unexplored shroud. | Ares |
+| [`SW.ForbiddenHouses`](../manual/content/keys/sw.forbiddenhouses--superweapontype.md) | No country | Withholds this superweapon from the listed countries. | Ares |
+| [`SW.Group`](../manual/content/keys/sw.group--superweapontype.md) | `0` | Reads a group number for the weapon; the number has no effect yet. | Ares |
+| [`SW.Inhibitors`](../manual/content/keys/sw.inhibitors--superweapontype.md) | `none` | Blocks this superweapon near enemy objects of the listed types. | Ares |
+| [`SW.InitialReady`](../manual/content/keys/sw.initialready--superweapontype.md) | `no` | Makes the weapon fully charged the first time the house holds it. | Ares |
+| [`SW.ManualFire`](../manual/content/keys/sw.manualfire--superweapontype.md) | `yes` | Whether clicking the cameo fires or aims the weapon. | Ares |
+| [`SW.MaxCount`](../manual/content/keys/sw.maxcount--superweapontype.md) | `1` | Sets how many launch structures a hunter seeker or EM pulse shot uses. | Ares |
+| [`SW.NegBuildings`](../manual/content/keys/sw.negbuildings--superweapontype.md) | `none` | Withdraws this superweapon while the house owns any of the listed structures. | Ares |
+| [`SW.Range`](../manual/content/keys/sw.range--superweapontype.md) | 3,3 for an iron curtain, PsychicRevealRadius for a psychic reveal, 10 for a sonar pulse | Sets the area an iron curtain, psychic reveal or sonar pulse covers. | Ares |
+| [`SW.RangeMaximum`](../manual/content/keys/sw.rangemaximum--superweapontype.md) | No limit | Sets how far from its launch structure this superweapon may be aimed. | Ares |
+| [`SW.RangeMinimum`](../manual/content/keys/sw.rangeminimum--superweapontype.md) | No limit | Sets how close to its launch structure this superweapon may be aimed. | Ares |
+| [`SW.RequiredHouses`](../manual/content/keys/sw.requiredhouses--superweapontype.md) | All countries | Limits this superweapon to the listed countries. | Ares |
+| [`SW.RequiresHouse`](../manual/content/keys/sw.requireshouse--superweapontype.md) | No limit | Limits where this superweapon may be aimed by who owns the object on the cell. | Ares |
+| [`SW.RequiresTarget`](../manual/content/keys/sw.requirestarget--superweapontype.md) | No limit | Limits where this superweapon may be aimed by what is on the cell. | Ares |
+| [`SW.Shots`](../manual/content/keys/sw.shots--superweapontype.md) | `-1` | Limits how many times each house may fire this superweapon. | Ares |
+| [`SW.ShowCameo`](../manual/content/keys/sw.showcameo--superweapontype.md) | `yes` | Hides this superweapon's sidebar cameo when set to no. | Ares |
+| [`SW.Sound`](../manual/content/keys/sw.sound--superweapontype.md) | `none` | Plays a sound at the target cell when the effect starts. | Ares |
+| [`SW.Unstoppable`](../manual/content/keys/sw.unstoppable--superweapontype.md) | `no` | Reads a flag that is meant to keep a running weapon from being switched off; it has no effect yet. | Ares |
+| [`SW.UseAITargeting`](../manual/content/keys/sw.useaitargeting--superweapontype.md) | `no` | Fires at the cell the computer's rules pick, when a player clicks the cameo. | Ares |
+| [`SW.Warhead`](../manual/content/keys/sw.warhead--superweapontype.md) | `none` | Names the warhead a generic warhead or missile strike detonates. | Ares |
+| [`Text.Active`](../manual/content/keys/text.active--superweapontype.md) | `Activated` | Names the cameo caption of a charge-draining weapon while it runs. | Ares |
+| [`Text.Charging`](../manual/content/keys/text.charging--superweapontype.md) | Charging | Names the cameo caption of a charge-draining weapon while it charges. | Ares |
+| [`Text.Hold`](../manual/content/keys/text.hold--superweapontype.md) | On Hold | Names the cameo caption shown while the weapon is suspended. | Ares |
+| [`Text.Preparing`](../manual/content/keys/text.preparing--superweapontype.md) | `none` | Reads a caption label for the weapon; it has no effect yet. | Ares |
+| [`Text.Ready`](../manual/content/keys/text.ready--superweapontype.md) | `Ready` | Names the cameo caption shown while the weapon is ready. | Ares |
 
 ### UnitType
 
