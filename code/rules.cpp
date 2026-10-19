@@ -2642,16 +2642,21 @@ bool RulesClass::Land_Types(CCINIClass const & ini)
 			"Winged",
 			"Float",
 			"Amphibious",
-			"Creep",
+			"FloatBeach",
 		};
 
 		GroundType * gptr = &Ground[land];
 
+		// In a present land section, Winged is always 1.0 and an absent cost key is 1.0 (RulesClass::Read_LandCharacteristics, 0x674000).
 		if (ini.Is_Present(_lands[land])) {
 			for (int speed = 0; speed < SPEED_COUNT; speed++) {
-				gptr->Cost[speed] = std::min(ini.Get_Float(_lands[land], _speeds[speed], gptr->Cost[speed]), 1.0);
+				if (speed == SPEED_WINGED) {
+					gptr->Cost[speed] = 1.0f;
+					continue;
+				}
+				gptr->Cost[speed] = std::min(ini.Get_Float(_lands[land], _speeds[speed], 1.0), 1.0);
 			}
-			gptr->Build = ini.Get_Bool(_lands[land], "Buildable", gptr->Build);
+			gptr->Build = ini.Get_Bool(_lands[land], "Buildable", false);
 		}
 	}
 	return(true);

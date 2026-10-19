@@ -62,7 +62,7 @@ char const * SpeedName[SPEED_COUNT] = {
 	"Winged",
 	"Float",
 	"Amphibious",
-	"Creep"
+	"FloatBeach"
 };
 
 
