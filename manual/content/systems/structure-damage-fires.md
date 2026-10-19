@@ -38,7 +38,7 @@ DamageFireOffset0=0,-20
 DamageFireOffset1=40,-10
 ```
 
-The points are read in order and stop at the first one that is missing, so numbers after a gap are ignored. A type with no `DamageFireOffset0` has no points.
+The points are read in order and stop at the first one that is missing, so numbers after a gap are ignored. When the fires start, they stop at the first point set to `0,0` as well, so that point and the ones after it burn nothing. A type with no `DamageFireOffset0` has no points.
 
 ## What each fire is
 

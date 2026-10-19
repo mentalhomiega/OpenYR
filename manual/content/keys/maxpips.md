@@ -19,6 +19,7 @@ MaxPips=12
 Some rows stay capped by another value:
 
 - Under `PipScale=Ammo` or `PipScale=Passengers`, the row holds at most the type's [`Ammo`](/keys/ammo/) or [`Passengers`](/keys/passengers/) value. `MaxPips=20` on a transport with `Passengers=6` draws six pips.
+- Under `PipScale=Ammo` with [`PipWrap`](/keys/pipwrap/) set, `MaxPips` is ignored and the pips number the type's `Ammo`.
 - On a structure under `PipScale=Tiberium`, the row holds at most the structure's [`Storage`](/keys/storage/), or [`[General] WeedCapacity`](/keys/weedcapacity/) on a [`Weeder=yes`](/keys/weeder/#scope-buildingtype) structure.
 
 On a structure under `PipScale=Tiberium` or `PipScale=Power`, the key replaces the default of six pips per cell of footprint width.
