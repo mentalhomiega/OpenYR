@@ -341,8 +341,12 @@ void TeleportLocomotionClass::Land_Chrono_Warp(void)
 	if (!Chrono_Land(LinkedTo)) {
 		return;
 	}
-	LinkedTo->Per_Cell_Process(PCP_END);
-	LinkedTo->Look();
+	// An infantryman's arrival can end the piggyback and destroy this locomotor, so the unit is kept in a local.
+	FootClass * const foot = LinkedTo;
+	foot->Per_Cell_Process(PCP_END);
+	if (foot->IsActive && !foot->IsInLimbo) {
+		foot->Look();
+	}
 }
 
 
