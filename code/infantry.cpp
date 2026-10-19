@@ -3327,6 +3327,16 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	}
 
 	/*
+	**	A weapon with MigAttackCursor shows the airstrike cursor over a structure that allows C4 (InfantryClass::MouseOverObject, 0x51E3B0).
+	*/
+	if (action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING) {
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		if (weapon != NULL && weapon->IsMigAttackCursor && ((BuildingClass const *)object)->Class->Can_Plant_C4()) {
+			action = ACTION_AIR_STRIKE;
+		}
+	}
+
+	/*
 	**	Only a soldier that can deploy does anything when clicked on itself.
 	*/
 	if (action == ACTION_SELF && !Class->IsDeployer) {
@@ -3462,6 +3472,8 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 		case ACTION_HEAL:
 		case ACTION_IVAN_BOMB:
 		case ACTION_DISARM_BOMB:
+		// An airstrike click is an ordinary attack mission (FootClass::ObjectClickedAction, 0x4D74E0).
+		case ACTION_AIR_STRIKE:
 			action = ACTION_ATTACK;
 			break;
 

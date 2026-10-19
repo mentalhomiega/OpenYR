@@ -338,6 +338,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		 */
 		bool IsLaser;
 
+		// With MigAttackCursor=yes, an infantryman shows the airstrike cursor over a structure that allows C4.
+		bool IsMigAttackCursor;
+
 		// An electric bolt is drawn from the muzzle to the target, in the alternate color when set.
 		bool IsElectricBolt;
 

@@ -96,6 +96,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	AssaultAnim(NULL),
 	IsElectric(false),
 	IsLaser(false),
+	IsMigAttackCursor(false),
 	IsElectricBolt(false),
 	EmissiveStrength(0),
 	IsSpawner(false),
@@ -241,6 +242,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		OccupantAnim = TGet_Class(ini, IniName, "OccupantAnim", OccupantAnim);
 		AssaultAnim = TGet_Class(ini, IniName, "AssaultAnim", AssaultAnim);
 		IsLaser = ini.Get_Bool(IniName, "IsLaser", IsLaser);
+		IsMigAttackCursor = ini.Get_Bool(IniName, "MigAttackCursor", IsMigAttackCursor);
 		IsElectricBolt = ini.Get_Bool(IniName, "IsElectricBolt", IsElectricBolt);
 		EmissiveStrength = Emissive_Parse_Strength(ini.Get_String(IniName, "Emissive", "").c_str(), IsLaser ? EmissiveDefaults[EMISSIVE_LASER].Strength : (IsElectricBolt ? EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Strength : 0));
 		IsSpawner = ini.Get_Bool(IniName, "Spawner", IsSpawner);
@@ -420,6 +422,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IsLimboLaunch);
 	crc(IsFireOnce);
 	crc(IsLaser);
+	crc(IsMigAttackCursor);
 	crc(IsElectricBolt);
 	crc(IsAlternateColor);
 	crc(Burst);
@@ -507,6 +510,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AssaultAnim);
 	stream.Serialize(IsElectric);
 	stream.Serialize(IsLaser);
+	stream.Serialize(IsMigAttackCursor);
 	stream.Serialize(IsElectricBolt);
 	stream.Serialize(IsSpawner);
 	stream.Serialize(IsSuicide);

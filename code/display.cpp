@@ -2000,6 +2000,10 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				Set_Default_Mouse(MOUSE_DEMOLITIONS, wsmall);
 				break;
 
+			case ACTION_AIR_STRIKE:
+				Set_Default_Mouse(MOUSE_AIR_STRIKE, wsmall);
+				break;
+
 			case ACTION_IVAN_BOMB:
 				Set_Default_Mouse(MOUSE_IVAN_BOMB, wsmall);
 				break;
