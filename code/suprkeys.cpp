@@ -62,6 +62,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	MaxCount(1),
 	Group(0),
 	InitialReady(false),
+	AlwaysGranted(false),
 	AllowPlayer(true),
 	AllowAI(true),
 	Unstoppable(false),
@@ -69,6 +70,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	AffectsHouse(HOUSE_ALL),
 	AffectsHouseSet(false),
 	AffectsTarget(0),
+	AffectsTargetSet(false),
 	RequiresTarget(0),
 	RequiresHouse(0),
 	FireIntoShroud(true),
@@ -97,7 +99,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	ActivationSound(VOC_NONE),
 	CreateRadarEvent(false),
 	MessageFirerColor(false),
-	LightEnabled(false),
+	LightEnabled(true),
 	LightAmbient(-1),
 	LightRed(-1),
 	LightGreen(-1),
@@ -120,6 +122,41 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	ProtectFadeSoundTime(-1),
 	NukePayload(NULL),
 	NukeSiloLaunch(true),
+	LightningDuration(UNSET_INT),
+	LightningRadarOutage(UNSET_INT),
+	LightningRadarOutageAffects(HOUSE_ENEMIES),
+	LightningHitDelay(UNSET_INT),
+	LightningScatterDelay(UNSET_INT),
+	LightningScatterCount(1),
+	LightningSeparation(UNSET_INT),
+	LightningPrintText(-1),
+	LightningDebrisMin(2),
+	LightningDebrisMax(4),
+	LightningCloudHeight(-1),
+	LightningBoltExplosion(NULL),
+	LightningSoundsSet(false),
+	LightningCloudsSet(false),
+	LightningBoltsSet(false),
+	LightningDebrisSet(false),
+	DominatorFirstAnim(NULL),
+	DominatorSecondAnim(NULL),
+	DominatorControlAnim(NULL),
+	DominatorFirstAnimHeight(0),
+	DominatorSecondAnimHeight(0),
+	DominatorFireAtPercentage(UNSET_INT),
+	DominatorCapture(true),
+	DominatorRipple(true),
+	DominatorCaptureMindControlled(true),
+	DominatorCapturePermaMindControlled(true),
+	DominatorCaptureImmuneToPsionics(false),
+	DominatorPermanentCapture(true),
+	ChronoBlastSrc(NULL),
+	ChronoBlastDest(NULL),
+	ChronoKillOrganic(true),
+	ChronoKillTeleporters(false),
+	ChronoAffectsIronCurtain(false),
+	ChronoAffectsUnwarpable(true),
+	ChronoKillCargo(false),
 	SonarPulseDelay(60),
 	BatteryPower(0),
 	SpyPlaneType(NULL),
@@ -204,6 +241,24 @@ WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass 
 {
 	std::string const name(Trim(value));
 	return(name.empty() ? old : Find_Named(Weapons, name.c_str()));
+}
+
+
+void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list, bool & is_set)
+{
+	if (Trim(value).empty()) {
+		return;
+	}
+	list.Clear();
+	is_set = true;
+	for (std::string const & name : Split_List(value)) {
+		AnimTypeClass const * type = Find_Named(AnimTypes, name.c_str());
+		if (type != NULL) {
+			list.Add(type);
+		} else if (!Same(name, "none")) {
+			DebugString("A superweapon key names no such animation: %s; skipped.\n", name.c_str());
+		}
+	}
 }
 
 
@@ -333,6 +388,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxCount);
 	stream.Serialize(Group);
 	stream.Serialize(InitialReady);
+	stream.Serialize(AlwaysGranted);
 	stream.Serialize(AllowPlayer);
 	stream.Serialize(AllowAI);
 	stream.Serialize(Unstoppable);
@@ -344,6 +400,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AffectsHouse);
 	stream.Serialize(AffectsHouseSet);
 	stream.Serialize(AffectsTarget);
+	stream.Serialize(AffectsTargetSet);
 	stream.Serialize(RequiresTarget);
 	stream.Serialize(RequiresHouse);
 	stream.Serialize(FireIntoShroud);
@@ -421,6 +478,45 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProtectFadeSoundTime);
 	stream.Serialize(NukePayload);
 	stream.Serialize(NukeSiloLaunch);
+	stream.Serialize(LightningDuration);
+	stream.Serialize(LightningRadarOutage);
+	stream.Serialize(LightningRadarOutageAffects);
+	stream.Serialize(LightningHitDelay);
+	stream.Serialize(LightningScatterDelay);
+	stream.Serialize(LightningScatterCount);
+	stream.Serialize(LightningSeparation);
+	stream.Serialize(LightningPrintText);
+	stream.Serialize(LightningDebrisMin);
+	stream.Serialize(LightningDebrisMax);
+	stream.Serialize(LightningCloudHeight);
+	stream.Serialize(LightningBoltExplosion);
+	stream.Serialize(LightningSounds);
+	stream.Serialize(LightningClouds);
+	stream.Serialize(LightningBolts);
+	stream.Serialize(LightningDebris);
+	stream.Serialize(LightningSoundsSet);
+	stream.Serialize(LightningCloudsSet);
+	stream.Serialize(LightningBoltsSet);
+	stream.Serialize(LightningDebrisSet);
+	stream.Serialize(DominatorFirstAnim);
+	stream.Serialize(DominatorSecondAnim);
+	stream.Serialize(DominatorControlAnim);
+	stream.Serialize(DominatorFirstAnimHeight);
+	stream.Serialize(DominatorSecondAnimHeight);
+	stream.Serialize(DominatorFireAtPercentage);
+	stream.Serialize(DominatorCapture);
+	stream.Serialize(DominatorRipple);
+	stream.Serialize(DominatorCaptureMindControlled);
+	stream.Serialize(DominatorCapturePermaMindControlled);
+	stream.Serialize(DominatorCaptureImmuneToPsionics);
+	stream.Serialize(DominatorPermanentCapture);
+	stream.Serialize(ChronoBlastSrc);
+	stream.Serialize(ChronoBlastDest);
+	stream.Serialize(ChronoKillOrganic);
+	stream.Serialize(ChronoKillTeleporters);
+	stream.Serialize(ChronoAffectsIronCurtain);
+	stream.Serialize(ChronoAffectsUnwarpable);
+	stream.Serialize(ChronoKillCargo);
 	stream.Serialize(SonarPulseDelay);
 	stream.Serialize(BatteryPower);
 	stream.Serialize(BatteryOverpower);
@@ -445,6 +541,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(MaxCount);
 	crc(Group);
 	crc(InitialReady);
+	crc(AlwaysGranted);
 	crc(AllowPlayer);
 	crc(AllowAI);
 	crc((int)AffectsHouse);
@@ -467,6 +564,39 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(ProtectPowerOutage);
 	crc(ProtectFadeSoundTime);
 	crc(SonarPulseDelay);
+	crc(LightEnabled);
+	crc(LightAmbient);
+	crc(LightRed);
+	crc(LightGreen);
+	crc(LightBlue);
+	crc(LightningDuration);
+	crc(LightningRadarOutage);
+	crc((int)LightningRadarOutageAffects);
+	crc(LightningHitDelay);
+	crc(LightningScatterDelay);
+	crc(LightningScatterCount);
+	crc(LightningSeparation);
+	crc(LightningPrintText);
+	crc(LightningDebrisMin);
+	crc(LightningDebrisMax);
+	crc(LightningCloudHeight);
+	crc(LightningSounds.Count());
+	crc(LightningClouds.Count());
+	crc(LightningBolts.Count());
+	crc(LightningDebris.Count());
+	crc(DominatorFirstAnimHeight);
+	crc(DominatorSecondAnimHeight);
+	crc(DominatorFireAtPercentage);
+	crc(DominatorCapture);
+	crc(DominatorCaptureMindControlled);
+	crc(DominatorCapturePermaMindControlled);
+	crc(DominatorCaptureImmuneToPsionics);
+	crc(DominatorPermanentCapture);
+	crc(ChronoKillOrganic);
+	crc(ChronoKillTeleporters);
+	crc(ChronoAffectsIronCurtain);
+	crc(ChronoAffectsUnwarpable);
+	crc(ChronoKillCargo);
 	crc(BatteryPower);
 	crc(SpyPlaneCount);
 	crc(ParaDropCount);
@@ -491,6 +621,25 @@ SuperRules::Area SuperWeaponKeys::Target_Area(void) const
 	area.Width = AreaWidth;
 	area.Height = AreaHeight;
 	return(area);
+}
+
+
+SuperRules::Area SuperWeaponKeys::Target_Area_Or_Block(int width, int height) const
+{
+	SuperRules::Area area = Target_Area();
+	if (!area.IsSet) {
+		area.IsSet = true;
+		area.IsBlock = true;
+		area.Width = width;
+		area.Height = height;
+	}
+	return(area);
+}
+
+
+unsigned SuperWeaponKeys::Affected_Targets(unsigned fallback) const
+{
+	return(AffectsTargetSet ? AffectsTarget : fallback);
 }
 
 

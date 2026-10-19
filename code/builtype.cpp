@@ -88,6 +88,8 @@
 #include "swizzle.h"
 #include "tracker.h"
 #include "truecolour.h"
+#include "suprtype.h"
+#include "swrules.h"
 #include "unittype.h"
 #include "warhead.h"
 #include "weapon.h"
@@ -1459,6 +1461,15 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);
 		SuperWeapon2 = ini.Get_SuperWeaponType(Name(), "SuperWeapon2", SuperWeapon2);
+		if (ini.Is_Present(Name(), "SuperWeapons")) {
+			SuperWeaponList.Clear();
+			for (std::string const & entry : SuperRules::Split_List(ini.Get_String(Name(), "SuperWeapons"))) {
+				SuperWeaponType const found = SuperWeaponTypeClass::From_Name(entry.c_str());
+				if (found != SUPER_NONE) {
+					SuperWeaponList.Add(found);
+				}
+			}
+		}
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
 		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
@@ -2571,6 +2582,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RefinerySmokeFrames);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
+	stream.Serialize(SuperWeaponList);
 	stream.Serialize(GateStages);
 	stream.Serialize(PowersUpToLevel);
 	stream.Serialize(VoxelBarrelFile);

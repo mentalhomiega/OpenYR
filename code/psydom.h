@@ -15,6 +15,8 @@ class AbstractClass;
 class AnimClass;
 class HouseClass;
 class SaveStreamClass;
+struct SuperWeaponKeys;
+class SuperWeaponTypeClass;
 class TechnoClass;
 
 /*
@@ -26,17 +28,19 @@ class PsychicDominatorClass
 {
 	public:
 		static void Clear(void);
-		static void Start(Cell const & cell, HouseClass * owner);
+		static void Start(Cell const & cell, HouseClass * owner, SuperWeaponTypeClass const * type = nullptr);
 		static void AI(void);
 		static bool Is_Active(void) {return(Status != INACTIVE);}
 		static bool Is_Lit(void) {return(Status != INACTIVE && Status != OVER);}
+		static SuperWeaponTypeClass const * Active_Type(void);
 		static void Print_Refusal(void);
 		static void Detach(AbstractClass const * target);
 		static void Serialize(SaveStreamClass & stream);
-		static bool Can_Be_Dominated(TechnoClass const * techno);
+		static bool Can_Be_Dominated(TechnoClass const * techno, SuperWeaponKeys const * keys = nullptr);
 
 	private:
 		static void Fire(void);
+		static SuperWeaponKeys const * Keys(void);
 
 		enum StatusType {
 			INACTIVE,
@@ -51,4 +55,5 @@ class PsychicDominatorClass
 		static Cell Center;
 		static HouseClass * Owner;
 		static AnimClass * Anim;
+		static int Type;
 };

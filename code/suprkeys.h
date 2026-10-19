@@ -43,6 +43,7 @@ namespace SuperKeyParse
 	UnitTypeClass const * Unit_Named(std::string const & value, UnitTypeClass const * old);
 	AircraftTypeClass const * Aircraft_Named(std::string const & value, AircraftTypeClass const * old);
 	WeaponTypeClass const * Weapon_Named(std::string const & value, WeaponTypeClass const * old);
+	void Anim_List(std::string const & value, TypeList<AnimTypeClass const *> & list, bool & is_set);
 	int Deliver_Owner(std::string const & value, int old);
 }
 
@@ -74,6 +75,7 @@ struct SuperWeaponKeys
 	int MaxCount;
 	int Group;
 	bool InitialReady;
+	bool AlwaysGranted;
 	bool AllowPlayer;
 	bool AllowAI;
 	bool Unstoppable;
@@ -93,6 +95,7 @@ struct SuperWeaponKeys
 	unsigned AffectsHouse;
 	bool AffectsHouseSet;
 	unsigned AffectsTarget;
+	bool AffectsTargetSet;
 	unsigned RequiresTarget;
 	unsigned RequiresHouse;
 	bool FireIntoShroud;
@@ -155,7 +158,10 @@ struct SuperWeaponKeys
 	std::string Cursor;
 	std::string NoCursor;
 
-	// Screen lighting while the weapon acts; -1 keeps the scenario value.
+	/*
+	 * Screen lighting while a nuclear missile, lightning storm or psychic dominator acts; -1 keeps the
+	 * value the behavior would use without the key. Light.Enabled=no leaves the map unlit by the weapon.
+	 */
 	bool LightEnabled;
 	int LightAmbient;
 	int LightRed;
@@ -196,6 +202,54 @@ struct SuperWeaponKeys
 	int ProtectPowerOutage;
 	int ProtectFadeSoundTime;
 
+	/*
+	 * LightningStorm. A number holds UNSET_INT, a switch holds -1, and a list holds is_set false until its
+	 * key is read, where the rules value applies. An empty list that is set replaces the rules list with nothing.
+	 */
+	int LightningDuration;
+	int LightningRadarOutage;
+	unsigned LightningRadarOutageAffects;
+	int LightningHitDelay;
+	int LightningScatterDelay;
+	int LightningScatterCount;
+	int LightningSeparation;
+	int LightningPrintText;
+	int LightningDebrisMin;
+	int LightningDebrisMax;
+	int LightningCloudHeight;
+	AnimTypeClass const * LightningBoltExplosion;
+	TypeList<int> LightningSounds;
+	TypeList<AnimTypeClass const *> LightningClouds;
+	TypeList<AnimTypeClass const *> LightningBolts;
+	TypeList<AnimTypeClass const *> LightningDebris;
+	bool LightningSoundsSet;
+	bool LightningCloudsSet;
+	bool LightningBoltsSet;
+	bool LightningDebrisSet;
+
+	// PsychicDominator. A null animation and UNSET_INT keep the rules value.
+	AnimTypeClass const * DominatorFirstAnim;
+	AnimTypeClass const * DominatorSecondAnim;
+	AnimTypeClass const * DominatorControlAnim;
+	int DominatorFirstAnimHeight;
+	int DominatorSecondAnimHeight;
+	int DominatorFireAtPercentage;
+	bool DominatorCapture;
+	bool DominatorRipple;
+	bool DominatorCaptureMindControlled;
+	bool DominatorCapturePermaMindControlled;
+	bool DominatorCaptureImmuneToPsionics;
+	bool DominatorPermanentCapture;
+
+	// ChronoSphere. A null animation keeps the rules value.
+	AnimTypeClass const * ChronoBlastSrc;
+	AnimTypeClass const * ChronoBlastDest;
+	bool ChronoKillOrganic;
+	bool ChronoKillTeleporters;
+	bool ChronoAffectsIronCurtain;
+	bool ChronoAffectsUnwarpable;
+	bool ChronoKillCargo;
+
 	// SonarPulse.
 	int SonarPulseDelay;
 
@@ -233,4 +287,10 @@ struct SuperWeaponKeys
 	bool Has_Target_Rules(void) const;
 
 	SuperRules::Area Target_Area(void) const;
+
+	// The area the weapon names, or a block of this many cells when it names none.
+	SuperRules::Area Target_Area_Or_Block(int width, int height) const;
+
+	// The target kinds the weapon names, or these when it names none.
+	unsigned Affected_Targets(unsigned fallback) const;
 };

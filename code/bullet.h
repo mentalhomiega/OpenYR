@@ -126,6 +126,9 @@ class BulletClass : public ObjectClass
 		AnimClass * NextAnim;
 		bool SpawnNextAnim;
 
+		// The heap number of the superweapon that launched this projectile, or -1. Its Light.* keys light the nuclear flash.
+		int NukeSuper = -1;
+
 	private:
 		// Every projectile of a Scalable=yes type that a vehicle has fired and that is still in flight.
 		static DynamicVectorClass<BulletClass *> ScalableBullets;

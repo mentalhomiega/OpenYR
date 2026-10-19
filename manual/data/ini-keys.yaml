@@ -8123,6 +8123,125 @@ Chronoshift.Crushable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Chronosphere.AffectsIronCurtain:
+  key: Chronosphere.AffectsIronCurtain
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoAffectsIronCurtain
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.AffectsUnwarpable:
+  key: Chronosphere.AffectsUnwarpable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoAffectsUnwarpable
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.BlastDest:
+  key: Chronosphere.BlastDest
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.BlastSrc:
+  key: Chronosphere.BlastSrc
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.KillCargo:
+  key: Chronosphere.KillCargo
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoKillCargo
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.KillOrganic:
+  key: Chronosphere.KillOrganic
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoKillOrganic
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.KillTeleporters:
+  key: Chronosphere.KillTeleporters
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoKillTeleporters
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 ChuteSound:
   key: ChuteSound
   scopes:
@@ -12452,6 +12571,210 @@ Doggie:
       source: code/infatype.cpp
       guard: null
     level: InfantryTypeClass
+Dominator.Capture:
+  key: Dominator.Capture
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorCapture
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.CaptureImmuneToPsionics:
+  key: Dominator.CaptureImmuneToPsionics
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorCaptureImmuneToPsionics
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.CaptureMindControlled:
+  key: Dominator.CaptureMindControlled
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorCaptureMindControlled
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.CapturePermaMindControlled:
+  key: Dominator.CapturePermaMindControlled
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorCapturePermaMindControlled
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.ControlAnim:
+  key: Dominator.ControlAnim
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.FireAtPercentage:
+  key: Dominator.FireAtPercentage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorFireAtPercentage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.FirstAnim:
+  key: Dominator.FirstAnim
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.FirstAnimHeight:
+  key: Dominator.FirstAnimHeight
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorFirstAnimHeight
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.PermanentCapture:
+  key: Dominator.PermanentCapture
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorPermanentCapture
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.Ripple:
+  key: Dominator.Ripple
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorRipple
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.SecondAnim:
+  key: Dominator.SecondAnim
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Dominator.SecondAnimHeight:
+  key: Dominator.SecondAnimHeight
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.DominatorSecondAnimHeight
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 DominatorAmbient:
   key: DominatorAmbient
   scopes:
@@ -23105,6 +23428,278 @@ LightVisibility:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Lightning.BoltExplosion:
+  key: Lightning.BoltExplosion
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Bolts:
+  key: Lightning.Bolts
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.CloudHeight:
+  key: Lightning.CloudHeight
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningCloudHeight
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Clouds:
+  key: Lightning.Clouds
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Debris:
+  key: Lightning.Debris
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.DebrisMax:
+  key: Lightning.DebrisMax
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningDebrisMax
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.DebrisMin:
+  key: Lightning.DebrisMin
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningDebrisMin
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Duration:
+  key: Lightning.Duration
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningDuration
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.HitDelay:
+  key: Lightning.HitDelay
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningHitDelay
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.PrintText:
+  key: Lightning.PrintText
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningPrintText
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.RadarOutage:
+  key: Lightning.RadarOutage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningRadarOutage
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.RadarOutageAffects:
+  key: Lightning.RadarOutageAffects
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.ScatterCount:
+  key: Lightning.ScatterCount
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningScatterCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.ScatterDelay:
+  key: Lightning.ScatterDelay
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningScatterDelay
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Separation:
+  key: Lightning.Separation
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningSeparation
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Lightning.Sounds:
+  key: Lightning.Sounds
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 LightningCellSpread:
   key: LightningCellSpread
   scopes:
@@ -33219,6 +33814,23 @@ SW.AllowPlayer:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SW.AlwaysGranted:
+  key: SW.AlwaysGranted
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.AlwaysGranted
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SW.Animation:
   key: SW.Animation
   scopes:
@@ -39936,6 +40548,20 @@ SuperWeapon2:
 SuperWeapons:
   key: SuperWeapons
   scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -39943,7 +40569,7 @@ SuperWeapons:
       kind: literal
       name: IQ
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '4'
       declared_in: RulesClass

@@ -301,6 +301,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.MaxCount = ini.Get_Int(IniName, "SW.MaxCount", Keys.MaxCount);
 		Keys.Group = ini.Get_Int(IniName, "SW.Group", Keys.Group);
 		Keys.InitialReady = ini.Get_Bool(IniName, "SW.InitialReady", Keys.InitialReady);
+		Keys.AlwaysGranted = ini.Get_Bool(IniName, "SW.AlwaysGranted", Keys.AlwaysGranted);
 		Keys.AllowPlayer = ini.Get_Bool(IniName, "SW.AllowPlayer", Keys.AllowPlayer);
 		Keys.AllowAI = ini.Get_Bool(IniName, "SW.AllowAI", Keys.AllowAI);
 		Keys.Unstoppable = ini.Get_Bool(IniName, "SW.Unstoppable", Keys.Unstoppable);
@@ -314,6 +315,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Keys.AffectsHouse = SuperRules::Parse_Houses(ini.Get_String(IniName, "SW.AffectsHouse"), Keys.AffectsHouse);
 		Keys.AffectsHouseSet = Keys.AffectsHouseSet || ini.Is_Present(IniName, "SW.AffectsHouse");
 		Keys.AffectsTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.AffectsTarget"), Keys.AffectsTarget);
+		Keys.AffectsTargetSet = Keys.AffectsTargetSet || ini.Is_Present(IniName, "SW.AffectsTarget");
 		Keys.RequiresTarget = SuperRules::Parse_Targets(ini.Get_String(IniName, "SW.RequiresTarget"), Keys.RequiresTarget);
 		Keys.RequiresHouse = SuperRules::Parse_Houses(ini.Get_String(IniName, "SW.RequiresHouse"), Keys.RequiresHouse);
 		Keys.FireIntoShroud = ini.Get_Bool(IniName, "SW.FireIntoShroud", Keys.FireIntoShroud);
@@ -396,6 +398,55 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		Keys.NukePayload = SuperKeyParse::Weapon_Named(ini.Get_String(IniName, "Nuke.Payload"), Keys.NukePayload);
 		Keys.NukeSiloLaunch = ini.Get_Bool(IniName, "Nuke.SiloLaunch", Keys.NukeSiloLaunch);
+
+		Keys.LightningDuration = ini.Get_Int(IniName, "Lightning.Duration", Keys.LightningDuration);
+		Keys.LightningRadarOutage = ini.Get_Int(IniName, "Lightning.RadarOutage", Keys.LightningRadarOutage);
+		Keys.LightningRadarOutageAffects = SuperRules::Parse_Houses(ini.Get_String(IniName, "Lightning.RadarOutageAffects"), Keys.LightningRadarOutageAffects);
+		Keys.LightningHitDelay = ini.Get_Int(IniName, "Lightning.HitDelay", Keys.LightningHitDelay);
+		Keys.LightningScatterDelay = ini.Get_Int(IniName, "Lightning.ScatterDelay", Keys.LightningScatterDelay);
+		Keys.LightningScatterCount = ini.Get_Int(IniName, "Lightning.ScatterCount", Keys.LightningScatterCount);
+		Keys.LightningSeparation = ini.Get_Int(IniName, "Lightning.Separation", Keys.LightningSeparation);
+		if (ini.Is_Present(IniName, "Lightning.PrintText")) {
+			Keys.LightningPrintText = ini.Get_Bool(IniName, "Lightning.PrintText", Keys.LightningPrintText > 0) ? 1 : 0;
+		}
+		Keys.LightningDebrisMin = ini.Get_Int(IniName, "Lightning.DebrisMin", Keys.LightningDebrisMin);
+		Keys.LightningDebrisMax = ini.Get_Int(IniName, "Lightning.DebrisMax", Keys.LightningDebrisMax);
+		Keys.LightningCloudHeight = ini.Get_Int(IniName, "Lightning.CloudHeight", Keys.LightningCloudHeight);
+		Keys.LightningBoltExplosion = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Lightning.BoltExplosion"), Keys.LightningBoltExplosion);
+		if (ini.Is_Present(IniName, "Lightning.Sounds")) {
+			TypeList<int> const sounds = CCINIClass::Get_VocType_List(ini, IniName, "Lightning.Sounds", TypeList<int>());
+			Keys.LightningSounds.Clear();
+			for (int index = 0; index < sounds.Count(); index++) {
+				if (sounds[index] != VOC_NONE) {
+					Keys.LightningSounds.Add(sounds[index]);
+				}
+			}
+			Keys.LightningSoundsSet = true;
+		}
+		SuperKeyParse::Anim_List(ini.Get_String(IniName, "Lightning.Clouds"), Keys.LightningClouds, Keys.LightningCloudsSet);
+		SuperKeyParse::Anim_List(ini.Get_String(IniName, "Lightning.Bolts"), Keys.LightningBolts, Keys.LightningBoltsSet);
+		SuperKeyParse::Anim_List(ini.Get_String(IniName, "Lightning.Debris"), Keys.LightningDebris, Keys.LightningDebrisSet);
+
+		Keys.DominatorFirstAnim = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Dominator.FirstAnim"), Keys.DominatorFirstAnim);
+		Keys.DominatorSecondAnim = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Dominator.SecondAnim"), Keys.DominatorSecondAnim);
+		Keys.DominatorControlAnim = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Dominator.ControlAnim"), Keys.DominatorControlAnim);
+		Keys.DominatorFirstAnimHeight = ini.Get_Int(IniName, "Dominator.FirstAnimHeight", Keys.DominatorFirstAnimHeight);
+		Keys.DominatorSecondAnimHeight = ini.Get_Int(IniName, "Dominator.SecondAnimHeight", Keys.DominatorSecondAnimHeight);
+		Keys.DominatorFireAtPercentage = ini.Get_Int(IniName, "Dominator.FireAtPercentage", Keys.DominatorFireAtPercentage);
+		Keys.DominatorCapture = ini.Get_Bool(IniName, "Dominator.Capture", Keys.DominatorCapture);
+		Keys.DominatorRipple = ini.Get_Bool(IniName, "Dominator.Ripple", Keys.DominatorRipple);
+		Keys.DominatorCaptureMindControlled = ini.Get_Bool(IniName, "Dominator.CaptureMindControlled", Keys.DominatorCaptureMindControlled);
+		Keys.DominatorCapturePermaMindControlled = ini.Get_Bool(IniName, "Dominator.CapturePermaMindControlled", Keys.DominatorCapturePermaMindControlled);
+		Keys.DominatorCaptureImmuneToPsionics = ini.Get_Bool(IniName, "Dominator.CaptureImmuneToPsionics", Keys.DominatorCaptureImmuneToPsionics);
+		Keys.DominatorPermanentCapture = ini.Get_Bool(IniName, "Dominator.PermanentCapture", Keys.DominatorPermanentCapture);
+
+		Keys.ChronoBlastSrc = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Chronosphere.BlastSrc"), Keys.ChronoBlastSrc);
+		Keys.ChronoBlastDest = SuperKeyParse::Anim_Named(ini.Get_String(IniName, "Chronosphere.BlastDest"), Keys.ChronoBlastDest);
+		Keys.ChronoKillOrganic = ini.Get_Bool(IniName, "Chronosphere.KillOrganic", Keys.ChronoKillOrganic);
+		Keys.ChronoKillTeleporters = ini.Get_Bool(IniName, "Chronosphere.KillTeleporters", Keys.ChronoKillTeleporters);
+		Keys.ChronoAffectsIronCurtain = ini.Get_Bool(IniName, "Chronosphere.AffectsIronCurtain", Keys.ChronoAffectsIronCurtain);
+		Keys.ChronoAffectsUnwarpable = ini.Get_Bool(IniName, "Chronosphere.AffectsUnwarpable", Keys.ChronoAffectsUnwarpable);
+		Keys.ChronoKillCargo = ini.Get_Bool(IniName, "Chronosphere.KillCargo", Keys.ChronoKillCargo);
 
 		Keys.SonarPulseDelay = ini.Get_Int(IniName, "SonarPulse.Delay", Keys.SonarPulseDelay);
 

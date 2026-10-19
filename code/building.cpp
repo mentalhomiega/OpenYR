@@ -4250,7 +4250,7 @@ void BuildingClass::Grand_Opening(bool captured)
 		}
 
 		// Outside a campaign, an enemy superweapon structure is announced (BuildingClass::Place, 0x445F80).
-		SuperWeaponType const super = Fetch_Super_Weapon();
+		SuperWeaponType const super = Fetch_First_Super_Weapon();
 		if (Session.Type != GAME_NORMAL && super != SUPER_NONE && PlayerPtr != NULL && !House->Is_Player_Control() && !House->Is_Ally(PlayerPtr)) {
 			SuperWeaponKeys const & announce = SuperWeaponTypes[super]->Keys;
 			if (!announce.EvaDetected.empty()) {
@@ -6726,6 +6726,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 						bullet = Create_Bullet(weap->Bullet, targ, this, strike_damage, warhead, MPH_LIGHT_SPEED, true);
 					}
 					if (bullet) {
+						bullet->NukeSuper = launched->HeapID;
 						// The warning passes to the missile bullet and stays up until that bullet is removed.
 						if (PsiWarnAnim != NULL) {
 							PsiWarnAnim->AttachedBullet = bullet;
@@ -8891,7 +8892,7 @@ bool BuildingClass::Remove_Upgrade(void)
 	}
 
 	bool super = false;
-	if (Upgrades[UpgradeLevel-1] != NULL && Upgrades[UpgradeLevel-1]->SuperWeapon != SUPER_NONE) {
+	if (Upgrades[UpgradeLevel-1] != NULL && (Upgrades[UpgradeLevel-1]->SuperWeapon != SUPER_NONE || Upgrades[UpgradeLevel-1]->SuperWeaponList.Count() > 0)) {
 		super = true;
 	}
 
@@ -9056,13 +9057,15 @@ void BuildingClass::Update_Absorber_Anims(void)
 /// </summary>
 void BuildingClass::Update_Super_Anims(void)
 {
-	if (Class->SuperWeapon == SUPER_NONE || Class->SuperWeapon >= House->SuperWeapon.Count() || Class->ChargedAnimTime > 990.0f) {
+	// A structure with no SuperWeapon= follows the first weapon of SuperWeapons= it grants.
+	SuperWeaponType const primary = Class->SuperWeapon != SUPER_NONE ? Class->SuperWeapon : Fetch_First_Super_Weapon();
+	if (primary == SUPER_NONE || primary >= House->SuperWeapon.Count() || Class->ChargedAnimTime > 990.0f) {
 		return;
 	}
 	if (IsInLimbo || !HasOpened || Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION) {
 		return;
 	}
-	SuperClass const * super = House->SuperWeapon[Class->SuperWeapon];
+	SuperClass const * super = House->SuperWeapon[primary];
 	if (super == NULL || !super->Is_Present()) {
 		return;
 	}
@@ -12358,6 +12361,42 @@ SuperWeaponType BuildingClass::Fetch_Super_Weapon2(void) const
 		}
 	}
 	return(Class->SuperWeapon2);
+}
+
+
+/// <summary>
+/// Does this building grant the superweapon right now? SuperWeapon=, SuperWeapon2= and SuperWeapons= all count, and a
+/// weapon that names an auxiliary building is only granted while the owner has one.
+/// </summary>
+bool BuildingClass::Grants_Super_Weapon(int super) const
+{
+	if (!Class->Grants_Super_Weapon(super)) {
+		return(false);
+	}
+	BuildingTypeClass const * aux = SuperWeapons[super]->Class->AuxBuilding;
+	return(aux == NULL || House->ABQuantity.Value(aux->HeapID) != 0);
+}
+
+
+/// <summary>
+/// Fetches the first superweapon this building grants, in the order SuperWeapon=, SuperWeapon2=, SuperWeapons=.
+/// It decides which announcement plays when the building is placed.
+/// </summary>
+/// <returns>Returns with the superweapon, or SUPER_NONE if the building grants none.</returns>
+SuperWeaponType BuildingClass::Fetch_First_Super_Weapon(void) const
+{
+	if (Fetch_Super_Weapon() != SUPER_NONE) {
+		return(Fetch_Super_Weapon());
+	}
+	if (Fetch_Super_Weapon2() != SUPER_NONE) {
+		return(Fetch_Super_Weapon2());
+	}
+	for (int index = 0; index < Class->SuperWeaponList.Count(); index++) {
+		if (Grants_Super_Weapon(Class->SuperWeaponList[index])) {
+			return((SuperWeaponType)Class->SuperWeaponList[index]);
+		}
+	}
+	return(SUPER_NONE);
 }
 
 
