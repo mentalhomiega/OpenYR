@@ -47,7 +47,6 @@ class ModClass
 		std::string const & Overlay(ModOverlayType type) const;
 };
 
-std::vector<std::string> Parse_Mod_List(char const * list);
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory);
 
 ModClass Read_Mod(std::string const & folder);

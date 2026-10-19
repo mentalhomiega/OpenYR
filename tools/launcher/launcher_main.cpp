@@ -22,6 +22,9 @@
  *   /NOGAME              do not start Game.exe (for the tests)
  *   /QUIET               no message boxes; the log still has the text (for the tests)
  *   /NOSHORTCUTS         the setup writes no shortcuts or registry entries (for the tests)
+ *   /NOPICKER            do not show the mod picker this time
+ *   /PICKER              show the mod picker even when the player turned it off
+ *   /SETMOD=<list>       set the player's Mods= to the list without asking ("" for no mods), then go on
  *
  * Other arguments are passed to Game.exe, and so is anything after "--". The update copy takes its own
  * switches, /UPDATE=, /SETUPURL=, /SUMURL=, /FOLDER=, /YR= and /WAITFOR=, which the launcher writes
@@ -32,11 +35,13 @@
 
 #include "dll_search.h"
 #include "launcher_core.h"
+#include "launcher_mods.h"
 #include "launcher_system.h"
 
 #include <commctrl.h>
 #include <shellapi.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -56,6 +61,9 @@ struct OptionsType
 	bool NoGame = false;
 	bool Quiet = false;
 	bool NoShortcuts = false;
+	bool NoPicker = false;
+	bool Picker = false;
+	std::optional<std::wstring> SetMod;
 	std::vector<std::wstring> GameArgs;
 
 	// Set in an update copy, which the launcher starts with these switches.
@@ -106,6 +114,12 @@ OptionsType Parse_Command_Line(int argc, wchar_t ** argv)
 			options.Quiet = true;
 		} else if (_wcsicmp(arg.c_str(), L"/NOSHORTCUTS") == 0) {
 			options.NoShortcuts = true;
+		} else if (_wcsicmp(arg.c_str(), L"/NOPICKER") == 0) {
+			options.NoPicker = true;
+		} else if (_wcsicmp(arg.c_str(), L"/PICKER") == 0) {
+			options.Picker = true;
+		} else if (Switch_Value(arg, L"/SETMOD=", value)) {
+			options.SetMod = value;
 		} else if (Switch_Value(arg, L"/UPDATE=", value)) {
 			options.Update = true;
 			options.Tag = value;
@@ -272,6 +286,127 @@ int Start_Update(OptionsType const & options, std::wstring const & folder, std::
 }
 
 
+// True when the game would take its mods or its folders from an argument the picker cannot see.
+bool Arguments_Decide_Mods(OptionsType const & options, std::wstring & which)
+{
+	for (std::wstring const & arg : options.GameArgs) {
+		for (wchar_t const * name : {L"-MOD=", L"-DATADIR=", L"-USERDIR="}) {
+			if (_wcsnicmp(arg.c_str(), name, wcslen(name)) == 0) {
+				which = name;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+std::wstring Mods_Text(std::string const & list)
+{
+	return list.empty() ? std::wstring(L"no mods") : launcher::Ansi_To_Wide(list);
+}
+
+
+// Writes the choice and logs it; false, after telling the player, when the settings file cannot be written.
+bool Store_Mod_Settings(OptionsType const & options, std::wstring const & log, launcher::ModPlaceType const & place, std::optional<std::string> const & list, std::optional<bool> const & ask)
+{
+	std::string error;
+	if (launcher::Write_Mod_Settings(place, list, ask, error)) {
+		return true;
+	}
+
+	Tell(options, log, L"OpenYR could not save your mod choice. " + launcher::Ansi_To_Wide(error) + L" The game starts with the mods it had.", true);
+	return false;
+}
+
+
+/*
+ * Lets the player pick the mod before the game starts, or applies /SETMOD. The choice goes to the
+ * player's settings file, where the game's Mods screen reads and writes it. Returns false when the
+ * player cancelled and nothing should start.
+ */
+bool Choose_Mod(OptionsType const & options, std::wstring const & folder, std::wstring const & log)
+{
+	std::wstring which;
+	if (Arguments_Decide_Mods(options, which)) {
+		Say(options, log, L"The mod picker is skipped: the arguments for the game contain " + which + L".");
+		return true;
+	}
+
+	if (!options.SetMod && (options.NoPicker || options.Quiet)) {
+		Say(options, log, options.NoPicker ? L"The mod picker is skipped (/NOPICKER)." : L"The mod picker is skipped (/QUIET).");
+		return true;
+	}
+
+	std::string ini;
+	launcher::Read_Bytes(folder + L"\\OPENTS.INI", ini, IniLimit);
+	launcher::ModPlaceType const place = launcher::Mod_Place(ini, std::filesystem::path(folder));
+	launcher::ModSettingsType const settings = launcher::Read_Mod_Settings(place);
+
+	if (options.SetMod) {
+		std::string const list = launcher::Wide_To_Ansi(*options.SetMod);
+		if (options.CheckOnly) {
+			Say(options, log, L"CHECKONLY: would set Mods= to " + Mods_Text(list) + L" in " + place.Install.wstring() + L".");
+			return true;
+		}
+		if (Store_Mod_Settings(options, log, place, list, std::nullopt)) {
+			Say(options, log, L"Mods= is set to " + Mods_Text(list) + L" in " + settings.WritePath.wstring() + L".");
+		}
+		return true;
+	}
+
+	if (!options.Picker && !settings.AskForMod) {
+		Say(options, log, L"The mod picker is off ([Launcher] ModPicker=no in the player's settings).");
+		return true;
+	}
+
+	launcher::ModPickerType const picker = launcher::Build_Mod_Picker(place, settings.List);
+	if (!picker.Worth_Showing()) {
+		Say(options, log, L"The mod picker is skipped: there is no mod folder in " + (place.Data / "Mods").wstring() + L".");
+		return true;
+	}
+
+	if (options.CheckOnly) {
+		Say(options, log, L"CHECKONLY: would show the mod picker with " + std::to_wstring(picker.Options.size()) + L" choices.");
+		return true;
+	}
+
+	launcher::ModPickerRequestType request;
+	for (launcher::ModOptionType const & option : picker.Options) {
+		request.Names.push_back(launcher::Ansi_To_Wide(option.Name));
+		request.Descriptions.push_back(launcher::Ansi_To_Wide(option.Description));
+	}
+	request.Selected = picker.Selected;
+
+	if (!launcher::Show_Mod_Picker(request)) {
+		Say(options, log, L"The mod picker was cancelled. Nothing is started.");
+		return false;
+	}
+
+	std::string const list = launcher::Option_Mod_List(picker, request.Selected, settings.List);
+	bool const keep = picker.Options[request.Selected].Kind == launcher::ModOptionType::KindType::Keep;
+	bool const ask_changed = request.DontAskAgain == settings.AskForMod;
+
+	std::optional<std::string> new_list;
+	if (!keep) {
+		new_list = list;
+	}
+	std::optional<bool> new_ask;
+	if (ask_changed) {
+		new_ask = !request.DontAskAgain;
+	}
+
+	if (new_list || new_ask) {
+		if (Store_Mod_Settings(options, log, place, new_list, new_ask)) {
+			Say(options, log, L"Mods= is " + Mods_Text(list) + (request.DontAskAgain ? L"; the picker is off." : L"."));
+		}
+	} else {
+		Say(options, log, L"The mods stay as they were: " + Mods_Text(list) + L".");
+	}
+	return true;
+}
+
+
 int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::wstring const & log, ConfigType const & config)
 {
 	Say(options, log, L"Launcher in " + folder + L".");
@@ -279,6 +414,10 @@ int Run_Launcher(OptionsType const & options, std::wstring const & folder, std::
 	if (launcher::Game_Running(folder)) {
 		Say(options, log, L"Game.exe from this install is running. Nothing is started and no update is checked.");
 		Tell(options, log, L"OpenYR is already running. Close it, then start OpenYR again to check for updates.", false);
+		return 0;
+	}
+
+	if (!Choose_Mod(options, folder, log)) {
 		return 0;
 	}
 

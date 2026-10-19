@@ -75,43 +75,6 @@ static std::string Terminate_Folder(std::string const & path)
 
 
 /// <summary>
-/// Splits a configured mod list into the mods it names, in the order written, with the
-/// whitespace around each name dropped and empty entries passed over. Names are separated by
-/// commas, since a semicolon opens a comment in the file the list is written in.
-/// </summary>
-std::vector<std::string> Parse_Mod_List(char const * list)
-{
-	std::vector<std::string> names;
-
-	if (list == NULL) {
-		return(names);
-	}
-
-	std::string const text = list;
-	std::string::size_type start = 0;
-
-	for (;;) {
-		std::string::size_type end = text.find(',', start);
-		if (end == std::string::npos) {
-			end = text.length();
-		}
-
-		std::string const name = Trim(text.substr(start, end - start));
-		if (!name.empty()) {
-			names.push_back(name);
-		}
-
-		if (end == text.length()) {
-			break;
-		}
-		start = end + 1;
-	}
-
-	return(names);
-}
-
-
-/// <summary>
 /// Names the folder a mod is read from. A path with a drive or a root is used as written;
 /// anything else names a folder inside the Mods folder of the data directory.
 /// </summary>
@@ -295,7 +258,7 @@ std::string Configured_Mod_List(INIClass const & settings, char const * deployme
 /// </summary>
 void Put_Mod_List(INIClass & settings, std::string const & list)
 {
-	settings.Put_String(SettingsSection, SettingsKey, list.empty() ? "," : list.c_str());
+	settings.Put_String(SettingsSection, SettingsKey, Mod_List_Setting(list).c_str());
 }
 
 
