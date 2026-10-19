@@ -41,13 +41,17 @@ keys:
   - ChronoPlacement
   - Chronoshift.Allow
   - Chronoshift.Crushable
+  - Chronoshift.IsVehicle
   - Chronosphere.AffectsIronCurtain
+  - Chronosphere.AffectsUndeployable
   - Chronosphere.AffectsUnwarpable
   - Chronosphere.BlastDest
   - Chronosphere.BlastSrc
+  - Chronosphere.BlowUnplaceable
   - Chronosphere.KillCargo
   - Chronosphere.KillOrganic
   - Chronosphere.KillTeleporters
+  - Chronosphere.ReconsiderBuildings
   - Cursor
   - DamageToFirestormDamageCoefficient
   - Deliver.BaseNormal
@@ -125,6 +129,7 @@ keys:
   - Lightning.DebrisMin
   - Lightning.Duration
   - Lightning.HitDelay
+  - Lightning.IgnoreLightningRod
   - Lightning.PrintText
   - Lightning.RadarOutage
   - Lightning.RadarOutageAffects
@@ -137,6 +142,9 @@ keys:
   - LightningDeferment
   - LightningHitDelay
   - LightningPrintText
+  - LightningRod
+  - LightningRod.Modifier
+  - LightningRodRange
   - LightningScatterDelay
   - LightningSeparation
   - LightningSounds
@@ -154,6 +162,10 @@ keys:
   - Message.Ready
   - MindControlRingOffset
   - Money.Amount
+  - Mutate.Explosion
+  - Mutate.IgnoreCyborg
+  - Mutate.IgnoreNotHuman
+  - Mutate.KillNatural
   - MutateExplosion
   - MutateExplosionWarhead
   - MutateWarhead
@@ -228,6 +240,7 @@ keys:
   - SW.ManualFire
   - SW.MaxCount
   - SW.NegBuildings
+  - SW.PostDependent
   - SW.Range
   - SW.RangeMaximum
   - SW.RangeMinimum
@@ -239,6 +252,7 @@ keys:
   - SW.Sound
   - SW.Unstoppable
   - SW.UseAITargeting
+  - SW.VirtualCharge
   - SW.Warhead
   - Teleporter
   - Text.Active
@@ -412,6 +426,10 @@ Two states change what a full pool does:
 
 - A ready weapon leaves the pool full. The countdown restarts as soon as the weapon fires.
 - A suspended weapon still empties the pool, but its countdown does not start.
+
+### Keeping the charge
+
+A weapon the house stops holding normally loses its charge, and starts over when the house holds it again. With [`SW.VirtualCharge=yes`](/keys/sw.virtualcharge/), a repeating weapon that is not charge-draining keeps its countdown running while the house does not hold it, and stays charged once the countdown ends. When the house holds the weapon again, it is ready if the countdown ended and otherwise continues from where it was. While the house does not hold it, the weapon has no cameo and cannot be fired.
 
 ### Countdown timers
 
@@ -589,9 +607,11 @@ PostClick=yes
 PreDependent=ChronoSphere
 ```
 
-For the player, the first click arms targeting mode again, now for the first `PostClick=yes` section whose `PreDependent=` names `ChronoSphere`. The first section stays charged. A right click cancels the second click and leaves it ready for a new first click.
+For the player, the first click arms targeting mode again, now for the section [`SW.PostDependent=`](/keys/sw.postdependent/) names, or without it for the first `PostClick=yes` section whose `PreDependent=` names `ChronoSphere`. The first section stays charged. A right click cancels the second click and leaves it ready for a new first click.
 
-The second section needs no structure, charge or cameo of its own. It fires only while its house holds a weapon of the `PreDependent=` behavior, fully charged, and it acts on the cells that weapon last picked. That weapon's charge is then spent, as the [charging table](#charging) shows. When a house holds several weapons of that behavior, the first in `[SuperWeaponTypes]` is used.
+The second section needs no structure, charge or cameo of its own. It fires only while its house holds a weapon of the `PreDependent=` behavior, fully charged, and it acts on the cells that weapon last picked. That weapon's charge is then spent, as the [charging table](#charging) shows. When a house holds several weapons of that behavior, the one whose `SW.PostDependent=` names this section is used. A weapon that names another section is passed over, and of the rest the first in `[SuperWeaponTypes]` is used.
+
+The second click is tested against the second section's [aiming rules](#aiming-rules) as well, and a refused click fires nothing and keeps the charge.
 
 ### The computer's use
 
@@ -781,9 +801,12 @@ A weapon's own keys replace these rules for its storm:
 - [`SW.Damage=`](/keys/sw.damage/) and [`SW.Warhead=`](/keys/sw.warhead/) replace `LightningDamage` and `LightningWarhead` for every bolt.
 - [`Lightning.Clouds=`](/keys/lightning.clouds/), [`Lightning.Bolts=`](/keys/lightning.bolts/), [`Lightning.Sounds=`](/keys/lightning.sounds/), [`Lightning.BoltExplosion=`](/keys/lightning.boltexplosion/), [`Lightning.Debris=`](/keys/lightning.debris/), [`Lightning.DebrisMin=`](/keys/lightning.debrismin/), [`Lightning.DebrisMax=`](/keys/lightning.debrismax/) and [`Lightning.CloudHeight=`](/keys/lightning.cloudheight/) replace the animations, the sounds, the debris and the height of the clouds.
 - [`Lightning.PrintText=`](/keys/lightning.printtext/) replaces `LightningPrintText`.
+- [`Lightning.IgnoreLightningRod=yes`](/keys/lightning.ignorelightningrod/) turns off the pull of lightning rods described below.
 - [`Lightning.RadarOutage=`](/keys/lightning.radaroutage/) and [`Lightning.RadarOutageAffects=`](/keys/lightning.radaroutageaffects/) choose how long radar is jammed and for which houses, in place of every house that is not an ally of the firing house.
 
 A storm that the weapon does not set a key for uses the rules value, so a section with none of these keys behaves as before.
+
+A structure with [`LightningRod=yes`](/keys/lightningrod/) pulls the scattered clouds. When a scattered cloud is placed, the storm looks for the nearest such structure within [`LightningRodRange`](/keys/lightningrodrange/) cells of the chosen cell, measured to the structure's center, and gathers the cloud over that cell instead. The cloud over the target cell stays where it is. A bolt does the structure [`LightningRod.Modifier=`](/keys/lightningrod.modifier/) times its damage, rounded down. Both effects end with `Lightning.IgnoreLightningRod=yes`. `LightningRodRange` is an OpenYR key that Yuri's Revenge does not read.
 
 ```ini title="rulesmd.ini"
 [General]
@@ -809,6 +832,14 @@ A `Type=GeneticConverter` weapon plays [`IonBlast`](/keys/ionblast/) over the ta
 - Otherwise, every infantryman in the area takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor. The area is the target cell and the eight cells around it, or the area [`SW.Range=`](/keys/sw.range/) names. [`SW.AffectsHouse=`](/keys/sw.affectshouse/) limits it to the infantry of the houses listed, and the `land` and `water` entries of [`SW.AffectsTarget=`](/keys/sw.affectstarget/) limit it to those cells.
 
 A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes. The firing house is credited with every infantryman killed. [MutateFriendly](/keys/mutatefriendly/) decides whether infantry of the firing house and its allies are mutated too. It defaults to yes, which matches Yuri's Revenge.
+
+A weapon's own keys change its mutator:
+
+- [`Mutate.Explosion=`](/keys/mutate.explosion/) replaces `MutateExplosion`.
+- [`SW.Warhead=`](/keys/sw.warhead/) replaces `MutateExplosionWarhead` or `MutateWarhead`, and [`SW.Damage=`](/keys/sw.damage/) replaces the blast's 10000 damage.
+- [`SW.Animation=`](/keys/sw.animation/) and [`SW.Sound=`](/keys/sw.sound/) replace `IonBlast` and `GeneticMutatorActivateSound`.
+- [`Mutate.IgnoreCyborg=yes`](/keys/mutate.ignorecyborg/) and [`Mutate.IgnoreNotHuman=yes`](/keys/mutate.ignorenothuman/) leave [`Cyborg=yes`](/keys/cyborg/) and [`NotHuman=yes`](/keys/nothuman/) infantry out of the area.
+- A weapon that sets `SW.Damage=` or `SW.Warhead=` damages each infantryman in the area through that warhead, so its `Verses` apply, instead of dealing full strength ignoring armor. [`Natural=yes`](/keys/natural/) infantry still take their full strength and die, unless [`Mutate.KillNatural=no`](/keys/mutate.killnatural/).
 
 ### Force shield
 
@@ -918,6 +949,16 @@ The keys of the `Type=ChronoSphere` weapon that picked the cells decide who move
 - [`Chronosphere.KillCargo=yes`](/keys/chronosphere.killcargo/) destroys the passengers of each unit that moves.
 - [`Chronosphere.BlastSrc=`](/keys/chronosphere.blastsrc/) and [`Chronosphere.BlastDest=`](/keys/chronosphere.blastdest/) replace `ChronoBlast` and `ChronoBlastDest`, and [`SW.Animation=`](/keys/sw.animation/) replaces `ChronoPlacement` as the marker over the picked cell.
 
+A chronosphere moves structures only when its keys ask for it. A structure with any cell in the picked area is moved when its owner is listed in `SW.AffectsHouse=`, its type does not set [`Chronoshift.Allow=no`](/keys/chronoshift.allow/), and one of these holds:
+
+- [`Chronosphere.AffectsUndeployable=yes`](/keys/chronosphere.affectsundeployable/) and the type sets [`UndeploysInto=`](/keys/undeploysinto/). The structure moves like a vehicle, whatever `SW.AffectsTarget=` says.
+- The type sets [`Chronoshift.IsVehicle=yes`](/keys/chronoshift.isvehicle/), [`Chronosphere.ReconsiderBuildings`](/keys/chronosphere.reconsiderbuildings/) is on (the default) and `SW.AffectsTarget=` allows units. The structure moves like a vehicle. When `SW.AffectsTarget=` does not allow units, the structure is left alone.
+- Any other structure, and every structure when `Chronosphere.ReconsiderBuildings=no`, when `SW.AffectsTarget=` lists `buildings`.
+
+A structure under the Iron Curtain stays unless `Chronosphere.AffectsIronCurtain=yes`, and a [`Warpable=no`](/keys/warpable/) structure stays when `Chronosphere.AffectsUnwarpable=no`. `Chronosphere.KillCargo=yes` destroys the garrison of each structure before it moves.
+
+The structures move after the units, by the same offset, and appear complete with no build-up animation. [`ChronoOutSound`](/keys/chronooutsound/) plays where a structure leaves and [`ChronoInSound`](/keys/chronoinsound/) where it lands. Every structure leaves the map before any lands, so a structure may land where another one stood. A structure moved as a structure needs its whole foundation on the map and on clear ground. One moved like a vehicle takes the first such foundation within six cells of that place, searched ring by ring outward. A structure that fits nowhere returns to its place and is destroyed when [`Chronosphere.BlowUnplaceable`](/keys/chronosphere.blowunplaceable/) is on, which is the default; with `no` it stays.
+
 A unit landing on a cell with a bridge lands on the bridge. A unit whose landing spot is off the map is destroyed. A vehicle set down on water it cannot cross sinks, and any other unit set down where it cannot move, such as on a cliff, is destroyed.
 
 A unit destroyed at its landing spot credits no house.
@@ -964,7 +1005,7 @@ The [Preferred target](/mapping/actions/taction-preferred-target/) action change
 
 ## Parsed settings without effect
 
-These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Mutate.*` and `Nuke.PsiWarning`/`Nuke.TakeOff` keys are not read. Neither are `Lightning.IgnoreLightningRod=` and `SW.PostDependent=`, nor the three `Chronosphere.` keys about structures (`ReconsiderBuildings`, `AffectsUndeployable` and `BlowUnplaceable`), because the chronosphere moves no structures.
+These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Nuke.PsiWarning` and `Nuke.TakeOff` keys are not read.
 
 
 [`NukeProjectile`](/keys/nukeprojectile/) and [`NukeDown`](/keys/nukedown/) in `[SpecialWeapons]` are read but have no effect; a silo takes its projectile from a section's `WeaponType=` instead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in the same section have no effect either. [The EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) covers them.

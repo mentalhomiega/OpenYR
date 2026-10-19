@@ -18,6 +18,7 @@ records:
   # Our own keys.
   animation-fires-key: OpenYR
   added-barrelanimzadjust: OpenYR
+  added-lightningrodrange: OpenYR
   added-synclog: OpenYR
   added-turretbob: OpenYR
   added-voxelshadescale: OpenYR

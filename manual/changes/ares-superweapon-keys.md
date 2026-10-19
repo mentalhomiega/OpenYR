@@ -415,6 +415,63 @@ targets:
 - type: enum
   id: ActionType
   effect: changed
+- type: key
+  id: Chronoshift.IsVehicle
+  effect: added
+- type: key
+  id: Chronosphere.AffectsUndeployable
+  effect: added
+- type: key
+  id: Chronosphere.BlowUnplaceable
+  effect: added
+- type: key
+  id: Chronosphere.ReconsiderBuildings
+  effect: added
+- type: key
+  id: Lightning.IgnoreLightningRod
+  effect: added
+- type: key
+  id: LightningRod.Modifier
+  effect: added
+- type: key
+  id: Mutate.Explosion
+  effect: added
+- type: key
+  id: Mutate.IgnoreCyborg
+  effect: added
+- type: key
+  id: Mutate.IgnoreNotHuman
+  effect: added
+- type: key
+  id: Mutate.KillNatural
+  effect: added
+- type: key
+  id: SW.PostDependent
+  effect: added
+- type: key
+  id: SW.VirtualCharge
+  effect: added
+- type: key
+  id: Chronoshift.Allow
+  effect: changed
+- type: key
+  id: LightningRod
+  effect: changed
+- type: key
+  id: MutateExplosion
+  effect: changed
+- type: key
+  id: SW.Animation
+  effect: changed
+- type: key
+  id: SW.Damage
+  effect: changed
+- type: key
+  id: SW.Sound
+  effect: changed
+- type: key
+  id: SW.Warhead
+  effect: changed
 - type: system
   id: superweapons
   effect: changed
@@ -426,3 +483,5 @@ Superweapon sections read the generic Ares keys: `SW.*`, `Money.Amount`, `EVA.*`
 The cameo that was clicked now fires its own weapon when two sections share an `Action=`. A silo launches the payload of the weapon that ordered the launch, whatever the order of `[SuperWeaponTypes]`.
 
 `Light.*` now light the map for a nuclear missile, a lightning storm and a psychic dominator, and `Light.Enabled=no` leaves the map unlit. The `Lightning.*` and `Dominator.*` keys customise the lightning storm and psychic dominator, and the `Chronosphere.*` keys the chronoshift. `SW.Range=`, `SW.AffectsHouse=` and `SW.AffectsTarget=` also size and filter a chronosphere, a psychic dominator and the area form of the genetic mutator. A structure can grant weapons through `SuperWeapons=`, and `SW.AlwaysGranted=yes` needs no structure. A cameo shows a weapon's price in its tooltip and darkens while the house cannot pay it.
+
+A chronosphere moves structures when `SW.AffectsTarget=`, `Chronosphere.ReconsiderBuildings=`, `Chronosphere.AffectsUndeployable=` and `Chronoshift.IsVehicle=` allow it, and `SW.PostDependent=` pairs it with its own second click. `SW.VirtualCharge=yes` keeps the charge of a weapon whose house loses it. The `Mutate.*` keys filter the genetic mutator and `Lightning.IgnoreLightningRod=` and `LightningRod.Modifier=` handle lightning rods.

@@ -8123,6 +8123,23 @@ Chronoshift.Crushable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Chronoshift.IsVehicle:
+  key: Chronoshift.IsVehicle
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsChronoshiftVehicle
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Chronosphere.AffectsIronCurtain:
   key: Chronosphere.AffectsIronCurtain
   scopes:
@@ -8137,6 +8154,23 @@ Chronosphere.AffectsIronCurtain:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.ChronoAffectsIronCurtain
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.AffectsUndeployable:
+  key: Chronosphere.AffectsUndeployable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoAffectsUndeployable
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
@@ -8191,6 +8225,23 @@ Chronosphere.BlastSrc:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Chronosphere.BlowUnplaceable:
+  key: Chronosphere.BlowUnplaceable
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoBlowUnplaceable
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Chronosphere.KillCargo:
   key: Chronosphere.KillCargo
   scopes:
@@ -8239,6 +8290,23 @@ Chronosphere.KillTeleporters:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.ChronoKillTeleporters
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Chronosphere.ReconsiderBuildings:
+  key: Chronosphere.ReconsiderBuildings
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.ChronoReconsiderBuildings
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
@@ -23581,6 +23649,23 @@ Lightning.HitDelay:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+Lightning.IgnoreLightningRod:
+  key: Lightning.IgnoreLightningRod
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.LightningIgnoreRod
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Lightning.PrintText:
   key: Lightning.PrintText
   scopes:
@@ -23807,6 +23892,41 @@ LightningRod:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+LightningRod.Modifier:
+  key: LightningRod.Modifier
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: LightningRodModifier
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+LightningRodRange:
+  key: LightningRodRange
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '4'
+      declared_in: RulesClass
+      member: LightningRodRange
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 LightningScatterDelay:
   key: LightningScatterDelay
   scopes:
@@ -26332,6 +26452,74 @@ MultipleFactoryCap:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Mutate.Explosion:
+  key: Mutate.Explosion
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MutateExplosion
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Mutate.IgnoreCyborg:
+  key: Mutate.IgnoreCyborg
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MutateIgnoreCyborg
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Mutate.IgnoreNotHuman:
+  key: Mutate.IgnoreNotHuman
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MutateIgnoreNotHuman
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+Mutate.KillNatural:
+  key: Mutate.KillNatural
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.MutateKillNatural
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 MutateExplosion:
   key: MutateExplosion
   scopes:
@@ -34154,6 +34342,23 @@ SW.NegBuildings:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SW.PostDependent:
+  key: SW.PostDependent
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: null
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 SW.Range:
   key: SW.Range
   scopes:
@@ -34338,6 +34543,23 @@ SW.UseAITargeting:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.UseAITargeting
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SW.VirtualCharge:
+  key: SW.VirtualCharge
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: Keys.VirtualCharge
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass

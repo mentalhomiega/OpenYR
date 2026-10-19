@@ -14,4 +14,4 @@ With `MutateExplosion=yes`, the genetic mutator sets off a 10000-damage blast th
 MutateExplosion=yes
 ```
 
-Either way, a warhead with `InfDeath=9` is what turns the dead into brutes.
+Either way, a warhead with `InfDeath=9` is what turns the dead into brutes. A genetic mutator weapon with [`Mutate.Explosion=`](/keys/mutate.explosion/) overrides the value for itself.

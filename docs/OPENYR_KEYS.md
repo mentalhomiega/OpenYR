@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 261 entries
+- [Rules](#rules): 274 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -68,7 +68,9 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
+| [`Chronoshift.IsVehicle`](../manual/content/keys/chronoshift.isvehicle--buildingtype.md) | `no` | Marks a structure as a deployed vehicle for the chronosphere. | Ares |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
+| [`LightningRod.Modifier`](../manual/content/keys/lightningrod.modifier--buildingtype.md) | `1.0` | Scales the damage a lightning storm bolt does to a structure with LightningRod=yes. | Ares |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
 | [`SuperWeapons`](../manual/content/keys/superweapons--buildingtype.md) | `none` | The superweapons a structure grants, or the house intelligence level at which a computer house fires them. | Ares |
@@ -179,12 +181,15 @@ Bounty.Value=200
 | [`Battery.Power`](../manual/content/keys/battery.power--superweapontype.md) | `0` | Sets the power a running battery adds. | Ares |
 | [`CameoSortOrder`](../manual/content/keys/cameosortorder--superweapontype.md) | `0` | Orders a type's sidebar cameo among the cameos of the same kind. | OpenTS |
 | [`Chronosphere.AffectsIronCurtain`](../manual/content/keys/chronosphere.affectsironcurtain--superweapontype.md) | `no` | Chooses whether a chronoshift moves units under the Iron Curtain. | Ares |
+| [`Chronosphere.AffectsUndeployable`](../manual/content/keys/chronosphere.affectsundeployable--superweapontype.md) | `no` | Makes the chronosphere move every structure that can undeploy, as if it were a vehicle. | Ares |
 | [`Chronosphere.AffectsUnwarpable`](../manual/content/keys/chronosphere.affectsunwarpable--superweapontype.md) | `yes` | Chooses whether a chronoshift moves units that cannot be warped. | Ares |
 | [`Chronosphere.BlastDest`](../manual/content/keys/chronosphere.blastdest--superweapontype.md) | [General] ChronoBlastDest | Names the animation that plays over the target cell when units are chronoshifted. | Ares |
 | [`Chronosphere.BlastSrc`](../manual/content/keys/chronosphere.blastsrc--superweapontype.md) | [General] ChronoBlast | Names the animation that plays over the picked cell when units are chronoshifted. | Ares |
+| [`Chronosphere.BlowUnplaceable`](../manual/content/keys/chronosphere.blowunplaceable--superweapontype.md) | `yes` | Chooses whether a structure that cannot land at the target is destroyed or stays where it was. | Ares |
 | [`Chronosphere.KillCargo`](../manual/content/keys/chronosphere.killcargo--superweapontype.md) | `no` | Chooses whether a chronoshift destroys the passengers of the units it moves. | Ares |
 | [`Chronosphere.KillOrganic`](../manual/content/keys/chronosphere.killorganic--superweapontype.md) | `yes` | Chooses whether a chronoshift destroys organic units. | Ares |
 | [`Chronosphere.KillTeleporters`](../manual/content/keys/chronosphere.killteleporters--superweapontype.md) | `no` | Chooses whether a chronoshift destroys units that can teleport. | Ares |
+| [`Chronosphere.ReconsiderBuildings`](../manual/content/keys/chronosphere.reconsiderbuildings--superweapontype.md) | `yes` | Chooses whether a structure flagged as a deployed vehicle counts as a vehicle for the chronosphere. | Ares |
 | [`Cursor`](../manual/content/keys/cursor--superweapontype.md) | the cursor for the Action | Names the cursor shown over cells where the weapon may be aimed. | Ares |
 | [`Deliver.BaseNormal`](../manual/content/keys/deliver.basenormal--superweapontype.md) | `yes` | Reads whether delivered structures count as part of the base; it has no effect yet. | Ares |
 | [`Deliver.Buildups`](../manual/content/keys/deliver.buildups--superweapontype.md) | `no` | Whether delivered structures play their construction animation. | Ares |
@@ -234,6 +239,7 @@ Bounty.Value=200
 | [`Lightning.DebrisMin`](../manual/content/keys/lightning.debrismin--superweapontype.md) | `2` | Sets the least debris a lightning bolt throws up. | Ares |
 | [`Lightning.Duration`](../manual/content/keys/lightning.duration--superweapontype.md) | [General] LightningStormDuration | Sets how many frames a lightning storm rages. | Ares |
 | [`Lightning.HitDelay`](../manual/content/keys/lightning.hitdelay--superweapontype.md) | [General] LightningHitDelay | Sets how often a cloud gathers over the center of a lightning storm. | Ares |
+| [`Lightning.IgnoreLightningRod`](../manual/content/keys/lightning.ignorelightningrod--superweapontype.md) | `no` | Stops a lightning storm from favoring structures with LightningRod=yes. | Ares |
 | [`Lightning.PrintText`](../manual/content/keys/lightning.printtext--superweapontype.md) | [General] LightningPrintText | Chooses whether a lightning storm warns the players. | Ares |
 | [`Lightning.RadarOutage`](../manual/content/keys/lightning.radaroutage--superweapontype.md) | [General] LightningStormDuration | Sets how many frames a lightning storm jams radar. | Ares |
 | [`Lightning.RadarOutageAffects`](../manual/content/keys/lightning.radaroutageaffects--superweapontype.md) | `enemies` | Chooses which houses a lightning storm jams radar for. | Ares |
@@ -250,6 +256,10 @@ Bounty.Value=200
 | [`Message.Launch`](../manual/content/keys/message.launch--superweapontype.md) | `none` | Prints a message to every player when the weapon fires. | Ares |
 | [`Message.Ready`](../manual/content/keys/message.ready--superweapontype.md) | `none` | Prints a message to the owner when the weapon is charged. | Ares |
 | [`Money.Amount`](../manual/content/keys/money.amount--superweapontype.md) | `0` | Charges or pays the house each time the weapon fires. | Ares |
+| [`Mutate.Explosion`](../manual/content/keys/mutate.explosion--superweapontype.md) | The rules' MutateExplosion | Chooses for one genetic mutator whether it strikes as a blast or mutates the infantry in an area. | Ares |
+| [`Mutate.IgnoreCyborg`](../manual/content/keys/mutate.ignorecyborg--superweapontype.md) | `no` | Spares infantry with Cyborg=yes from a genetic mutator that works on an area. | Ares |
+| [`Mutate.IgnoreNotHuman`](../manual/content/keys/mutate.ignorenothuman--superweapontype.md) | `no` | Spares infantry with NotHuman=yes from a genetic mutator that works on an area. | Ares |
+| [`Mutate.KillNatural`](../manual/content/keys/mutate.killnatural--superweapontype.md) | `yes` | Kills infantry with Natural=yes outright when a genetic mutator deals damage through its warhead. | Ares |
 | [`NoCursor`](../manual/content/keys/nocursor--superweapontype.md) | `Disallowed` | Names the cursor shown over cells where the weapon may not be aimed. | Ares |
 | [`Nuke.Payload`](../manual/content/keys/nuke.payload--superweapontype.md) | The section's WeaponType | Names the weapon a missile weapon launches. | Ares |
 | [`Nuke.SiloLaunch`](../manual/content/keys/nuke.silolaunch--superweapontype.md) | `yes` | Chooses whether a silo launches the missile. | Ares |
@@ -293,6 +303,7 @@ Bounty.Value=200
 | [`SW.ManualFire`](../manual/content/keys/sw.manualfire--superweapontype.md) | `yes` | Whether clicking the cameo fires or aims the weapon. | Ares |
 | [`SW.MaxCount`](../manual/content/keys/sw.maxcount--superweapontype.md) | `1` | Sets how many launch structures a hunter seeker or EM pulse shot uses. | Ares |
 | [`SW.NegBuildings`](../manual/content/keys/sw.negbuildings--superweapontype.md) | `none` | Withdraws this superweapon while the house owns any of the listed structures. | Ares |
+| [`SW.PostDependent`](../manual/content/keys/sw.postdependent--superweapontype.md) | the first PostClick=yes weapon whose PreDependent= names ChronoSphere | Names the weapon whose second click completes a chronosphere shot. | Ares |
 | [`SW.Range`](../manual/content/keys/sw.range--superweapontype.md) | Computed; see the page | Sets the area an iron curtain, chronosphere, genetic mutator, psychic dominator, psychic reveal, sonar pulse or lightning storm covers. | Ares |
 | [`SW.RangeMaximum`](../manual/content/keys/sw.rangemaximum--superweapontype.md) | No limit | Sets how far from its launch structure this superweapon may be aimed. | Ares |
 | [`SW.RangeMinimum`](../manual/content/keys/sw.rangeminimum--superweapontype.md) | No limit | Sets how close to its launch structure this superweapon may be aimed. | Ares |
@@ -304,6 +315,7 @@ Bounty.Value=200
 | [`SW.Sound`](../manual/content/keys/sw.sound--superweapontype.md) | `none` | Plays a sound at the target cell when the effect starts. | Ares |
 | [`SW.Unstoppable`](../manual/content/keys/sw.unstoppable--superweapontype.md) | `no` | Reads a flag that is meant to keep a running weapon from being switched off; it has no effect yet. | Ares |
 | [`SW.UseAITargeting`](../manual/content/keys/sw.useaitargeting--superweapontype.md) | `no` | Fires at the cell the computer's rules pick, when a player clicks the cameo. | Ares |
+| [`SW.VirtualCharge`](../manual/content/keys/sw.virtualcharge--superweapontype.md) | `no` | Keeps a weapon's charge while its house does not hold it. | Ares |
 | [`SW.Warhead`](../manual/content/keys/sw.warhead--superweapontype.md) | `none` | Names the warhead a generic warhead, missile strike, lightning bolt or dominator blast detonates. | Ares |
 | [`Text.Active`](../manual/content/keys/text.active--superweapontype.md) | `Activated` | Names the cameo caption of a charge-draining weapon while it runs. | Ares |
 | [`Text.Charging`](../manual/content/keys/text.charging--superweapontype.md) | Charging | Names the cameo caption of a charge-draining weapon while it charges. | Ares |
@@ -392,6 +404,7 @@ Bounty.Value=200
 | [`ChronoInfantryCrush`](../manual/content/keys/chronoinfantrycrush.md) | `yes` | Sets whether a chronoshifted infantryman destroys a vehicle or aircraft on its landing cell, or dies instead. | Ares |
 | [`EnemyInsignia`](../manual/content/keys/enemyinsignia.md) | `yes` | Whether players not allied with an object's owner see its rank insignia, unless the type decides. | Ares, Phobos |
 | [`LargeSidebarStrips`](../manual/content/keys/largesidebarstrips--global-rules.md) | `no` | Lets each sidebar strip hold 225 cameos instead of 75. | OpenYR |
+| [`LightningRodRange`](../manual/content/keys/lightningrodrange.md) | `4` | How many cells away a lightning storm cloud is drawn to a structure with LightningRod=yes. | OpenYR |
 | [`MultipleFactoryCap`](../manual/content/keys/multiplefactorycap--global-rules.md) | `0` | The most factories of one category that count toward the MultipleFactory build-time adjustment. | OpenTS |
 | [`MutateFriendly`](../manual/content/keys/mutatefriendly.md) | `yes` | Whether the genetic mutator also mutates infantry of the firing house and its allies. | OpenYR |
 | [`RecheckPrerequisites`](../manual/content/keys/recheckprerequisites--global-rules.md) | `yes` | Removes a type's sidebar cameo and cancels its production once the house no longer meets the type's prerequisites, tech level or ownership rules. | OpenTS |
