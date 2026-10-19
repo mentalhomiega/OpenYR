@@ -275,6 +275,9 @@ class RadarClass: public DisplayClass
 		 */
 		FOUNDATION_LIST Foundation[BSIZE_COUNT];
 
+		// Footprints of custom foundation sizes, keyed by width and height, made when first needed.
+		std::map<std::pair<int, int>, FOUNDATION_LIST> CustomFoundation;
+
 		/*
 		**	This is the zoom factor to use. This value is the number of pixels wide
 		**	each cell will occupy on the radar map. Completely zoomed out would be a

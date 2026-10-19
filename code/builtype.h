@@ -198,6 +198,18 @@ class BuildingTypeClass : public TechnoTypeClass
 		BSizeType Size;
 
 		/*
+		 * An Ares custom foundation (art Foundation=Custom) gives its own size and cell lists.
+		 * Size then holds the stock size of the same width and height, or BSIZE_FIRST when no
+		 * stock size matches, for the code that only knows the stock sizes. Both lists end with
+		 * REFRESH_EOL.
+		 */
+		bool IsCustomFoundation;
+		int CustomWidth;
+		int CustomHeight;
+		std::vector<Cell> CustomOccupy;
+		std::vector<Cell> CustomOutline;
+
+		/*
 		 * This is the height of the building, expressed in cells of elevation. It sets the
 		 * building's lepton dimensions and how far above it a missile is launched.
 		 */
@@ -1143,6 +1155,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		virtual int Raw_Cost(void) const override;
 
 		Cell const * Exit_List(void) const;
+		void Read_Custom_Foundation(CCINIClass const & ini, char const * section);
+		void Clear_Custom_Foundation(void);
+		void Attach_Foundation_Lists(void);
 		Rect Get_Draw_Rect(void);
 
 		static int Get_Max_Drain(DynamicVectorClass<BuildingTypeClass *> const & list);
