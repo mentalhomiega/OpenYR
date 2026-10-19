@@ -24,6 +24,7 @@
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "side.h"
 #include "houstype.h"
 #include "incdec.h"
 #include "keyboard.h"
@@ -291,7 +292,18 @@ bool MultiScore::Multi_Presentation(void)
 
 		Stage.Clear_Screen();
 		Theme.Stop();
-		Theme.Play_Song(Theme.From_Name("SCORE"));
+
+		// The side may name a different theme for a win and for a loss; each defaults to SCORE.
+		char const * theme_name = "SCORE";
+		SideClass const * own = ScoreStageClass::Player_Side();
+		if (own != NULL) {
+			bool const won = PlayerPtr != NULL && !PlayerPtr->IsDefeated;
+			std::string const & chosen = won ? own->MultiplayerScoreWinTheme : own->MultiplayerScoreLoseTheme;
+			if (!chosen.empty() && Theme.From_Name(chosen.c_str()) != THEME_NONE) {
+				theme_name = chosen.c_str();
+			}
+		}
+		Theme.Play_Song(Theme.From_Name(theme_name));
 
 		Tally_Score();
 		Process_Scores();
@@ -396,6 +408,26 @@ bool MultiScore::User_Input(void)
 }
 
 
+// Names the file of the numbered band behind the table. The side's Bars pattern replaces each ~~ with the number, and
+// a pattern without ~~ names one file that every band shares.
+static void Band_Name(char * name, size_t size, char letter, int number)
+{
+	SideClass const * own = ScoreStageClass::Player_Side();
+	if (own != NULL && !own->MultiplayerScoreBars.empty()) {
+		std::string pattern = own->MultiplayerScoreBars;
+		size_t const at = pattern.find("~~");
+		if (at != std::string::npos) {
+			char digits[8];
+			snprintf(digits, sizeof(digits), "%02d", number);
+			pattern.replace(at, 2, digits);
+		}
+		snprintf(name, size, "%s", pattern.c_str());
+		return;
+	}
+	snprintf(name, size, "MP%cSCRNLBAR%02d.PCX", letter, number);
+}
+
+
 /// <summary>
 /// Draws the side's picture into its box on the stage.
 /// </summary>
@@ -416,6 +448,15 @@ void MultiScore::Draw_Picture(void)
 
 	char palname[32];
 	sprintf(palname, "MP%cSCRN.PAL", ScoreStageClass::Side_Letter());
+
+	// The side's own section may name a picture and palette in place of the stock ones.
+	SideClass const * own = ScoreStageClass::Player_Side();
+	if (own != NULL && !own->MultiplayerScoreBackground.empty()) {
+		snprintf(name, sizeof(name), "%s", own->MultiplayerScoreBackground.c_str());
+	}
+	if (own != NULL && !own->MultiplayerScorePalette.empty()) {
+		snprintf(palname, sizeof(palname), "%s", own->MultiplayerScorePalette.c_str());
+	}
 	Stage.Load_Palette(palname);
 
 	ShapeSet * shapes = Stage.Load_Shape(name);
@@ -438,14 +479,11 @@ void MultiScore::Draw_Static(void)
 	Draw_Picture();
 
 	char const side = ScoreStageClass::Side_Letter();
-	char name[32];
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 1);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(TOP_BAND_Y));
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 2);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(HEADING_BAND_Y));
-	for (int row = 0; row < MAX_ROWS; row++) {
-		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 3 + row);
-		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(PLAYER_BAND_Y + BAND_HEIGHT * row));
+	char name[64];
+	for (int band = 0; band < MAX_ROWS + 2; band++) {
+		Band_Name(name, sizeof(name), side, band + 1);
+		int const y = band == 0 ? TOP_BAND_Y : (band == 1 ? HEADING_BAND_Y : PLAYER_BAND_Y + BAND_HEIGHT * (band - 2));
+		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(y));
 	}
 
 	std::string title = Fetch_String_UTF8(Skirmish ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");

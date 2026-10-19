@@ -28,6 +28,7 @@
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "side.h"
 #include "houstype.h"
 #include "keyboard.h"
 #include "mixfile.h"
@@ -178,10 +179,14 @@ void ScoreClass::Presentation(void)
 	/*
 	 * The side's palette, background and emblem animation.
 	 */
-	Stage.Load_Palette(Palette_Name());
+	SideClass const * own = ScoreStageClass::Player_Side();
+	Stage.Load_Palette(own != NULL && !own->CampaignScorePalette.empty() ? own->CampaignScorePalette.c_str() : Palette_Name());
 
-	char name[32];
+	char name[64];
 	sprintf(name, "%sBK%s.SHP", Art_Prefix(), Stage.Is_Small() ? "SM" : "MD");
+	if (own != NULL && !own->CampaignScoreBackground.empty()) {
+		snprintf(name, sizeof(name), "%s", own->CampaignScoreBackground.c_str());
+	}
 	ShapeSet * background = Stage.Load_Shape(name);
 	if (background != NULL) {
 		Stage.Draw_Shape_Frame(background, 0, Rect(0, 0, 632, 568));
@@ -189,6 +194,9 @@ void ScoreClass::Presentation(void)
 	}
 
 	sprintf(name, "%sAMD.SHP", Art_Prefix());
+	if (own != NULL && !own->CampaignScoreAnimation.empty()) {
+		snprintf(name, sizeof(name), "%s", own->CampaignScoreAnimation.c_str());
+	}
 	ShapeSet * animation = Stage.Load_Shape(name);
 
 	/*

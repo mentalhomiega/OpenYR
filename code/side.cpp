@@ -55,7 +55,15 @@ SideClass::SideClass(char const * ininame) :
 	Engineer(NULL),
 	Technician(NULL),
 	DefaultDisguise(NULL),
-	SurvivorDivisor(-1)
+	SurvivorDivisor(-1),
+	MultiplayerScoreBackground(),
+	MultiplayerScorePalette(),
+	MultiplayerScoreBars(),
+	MultiplayerScoreWinTheme(),
+	MultiplayerScoreLoseTheme(),
+	CampaignScoreBackground(),
+	CampaignScoreAnimation(),
+	CampaignScorePalette()
 {
 	Create_ID();
 	Sides.Add(this);
@@ -288,6 +296,14 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	Technician = TGet_Class(ini, Name(), "Technician", Technician);
 	DefaultDisguise = TGet_Class(ini, Name(), "DefaultDisguise", DefaultDisguise);
 	SurvivorDivisor = ini.Get_Int(Name(), "SurvivorDivisor", SurvivorDivisor);
+	MultiplayerScoreBackground = ini.Get_String(Name(), "MultiplayerScore.Background", MultiplayerScoreBackground.c_str());
+	MultiplayerScorePalette = ini.Get_String(Name(), "MultiplayerScore.Palette", MultiplayerScorePalette.c_str());
+	MultiplayerScoreBars = ini.Get_String(Name(), "MultiplayerScore.Bars", MultiplayerScoreBars.c_str());
+	MultiplayerScoreWinTheme = ini.Get_String(Name(), "MultiplayerScore.WinTheme", MultiplayerScoreWinTheme.c_str());
+	MultiplayerScoreLoseTheme = ini.Get_String(Name(), "MultiplayerScore.LoseTheme", MultiplayerScoreLoseTheme.c_str());
+	CampaignScoreBackground = ini.Get_String(Name(), "CampaignScore.Background", CampaignScoreBackground.c_str());
+	CampaignScoreAnimation = ini.Get_String(Name(), "CampaignScore.Animation", CampaignScoreAnimation.c_str());
+	CampaignScorePalette = ini.Get_String(Name(), "CampaignScore.Palette", CampaignScorePalette.c_str());
 	return(true);
 }
 
@@ -330,4 +346,12 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Technician);
 	stream.Serialize(DefaultDisguise);
 	stream.Serialize(SurvivorDivisor);
+	stream.Serialize(MultiplayerScoreBackground);
+	stream.Serialize(MultiplayerScorePalette);
+	stream.Serialize(MultiplayerScoreBars);
+	stream.Serialize(MultiplayerScoreWinTheme);
+	stream.Serialize(MultiplayerScoreLoseTheme);
+	stream.Serialize(CampaignScoreBackground);
+	stream.Serialize(CampaignScoreAnimation);
+	stream.Serialize(CampaignScorePalette);
 }

@@ -56,6 +56,9 @@ class ScoreStageClass
 		bool Is_Small(void) const;
 		static char Side_Letter(void);
 
+		// The side the local player plays, or NULL when there is none.
+		static class SideClass const * Player_Side(void);
+
 		static int Dialog_X(int units);
 		static int Dialog_Y(int units);
 		static Rect Dialog_Rect(int x, int y, int width, int height);

@@ -135,4 +135,17 @@ class SideClass : public AbstractTypeClass
 		InfantryTypeClass const * Technician;
 		InfantryTypeClass const * DefaultDisguise;
 		int SurvivorDivisor;
+
+		/*
+		 * The score screens' art and music from the side's own section. An empty name leaves the
+		 * side's stock art, or the SCORE theme.
+		 */
+		std::string MultiplayerScoreBackground;
+		std::string MultiplayerScorePalette;
+		std::string MultiplayerScoreBars;
+		std::string MultiplayerScoreWinTheme;
+		std::string MultiplayerScoreLoseTheme;
+		std::string CampaignScoreBackground;
+		std::string CampaignScoreAnimation;
+		std::string CampaignScorePalette;
 };
