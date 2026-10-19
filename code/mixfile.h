@@ -20,6 +20,8 @@
 #include "listnode.h"
 
 #include <cstdlib>
+#include <memory>
+#include <unordered_map>
 
 class PKey;
 
@@ -47,6 +49,11 @@ class MixFileClass : public Node<MixFileClass *>
 		MixFileClass * Next_Attached(void) {MixFileClass * next = Next(); return(next->Is_Valid() ? next : NULL);}
 		int Member_Count(void) const {return(Count);}
 
+		// Makes Retrieve of a member of this archive return memory even though the archive is not
+		// cached: the member is read from the file on its first Retrieve and kept until the
+		// archive is destroyed. Meant for archives too big to cache whole.
+		void Set_Resident_Members(bool resident) {ResidentMembers = resident;}
+
 		struct SubBlock {
 			int CRC;				// CRC code for embedded file.
 			int Offset;			// Offset from start of data section.
@@ -60,6 +67,7 @@ class MixFileClass : public Node<MixFileClass *>
 
 	private:
 		static MixFileClass * Finder(char const * filename);
+		void const * Resident_Member(int position, int size);
 		int Offset(int crc, int * size = 0) const;
 
 		/*
@@ -120,6 +128,9 @@ class MixFileClass : public Node<MixFileClass *>
 		**	If the mixfile has been cached, then this points to the cached data.
 		*/
 		void * Data;						// Pointer to raw data.
+
+		bool ResidentMembers = false;
+		std::unordered_map<int, std::unique_ptr<char[]>> Members;
 
 		static ::List<MixFileClass *> List;
 };
