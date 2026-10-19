@@ -9179,6 +9179,23 @@ Conventional:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
+Convert.Deploy:
+  key: Convert.Deploy
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertDeploy
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
 Coord:
   key: Coord
   scopes:

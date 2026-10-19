@@ -7458,6 +7458,44 @@ int UnitClass::Sort_Y(void) const
 
 
 /// <summary>
+/// Turns this vehicle into another vehicle type where it stands. It keeps its owner, rank and place, and the same
+/// share of its health. A type with another locomotor is refused, because the locomotor of a vehicle is built with it.
+/// </summary>
+/// <returns>bool; Did the vehicle change type?</returns>
+bool UnitClass::Convert_To(UnitTypeClass const * type)
+{
+	if (type == NULL || type == Class) {
+		return(false);
+	}
+	if (std::memcmp(&type->Locomotor, &Class->Locomotor, sizeof(type->Locomotor)) != 0) {
+		DebugString("Convert: %s cannot become %s, which has another locomotor\n", Class->Name(), type->Name());
+		return(false);
+	}
+
+	DebugString("Convert: %s becomes %s\n", Class->Name(), type->Name());
+	int const old_maximum = Class->MaxStrength;
+	if (House != NULL) {
+		House->Tracking_Remove(this);
+	}
+	Class = const_cast<UnitTypeClass *>(type);
+	if (House != NULL) {
+		House->Tracking_Add(this);
+	}
+	Strength = ObjectKeyRules::Converted_Strength(Strength, old_maximum, Class->MaxStrength);
+	EstimatedHealth = Strength;
+	if (Class->MaxAmmo >= 0 && Ammo > Class->MaxAmmo) {
+		Ammo = Class->MaxAmmo;
+	}
+	IsCloakable = Class->IsCloakable || IsCloakable;
+	Mark(MARK_CHANGE);
+	if (IsSelected && House != NULL && House->Is_Player_Control()) {
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Deploys or packs up a simple deployer where it stands (the unload mission of an
 /// IsSimpleDeployer unit): a DeployToLand unit in the air lands first, the DeployingAnim plays
 /// in the unit's place, backward when it packs up, and the unit then returns to guard.
@@ -7503,6 +7541,10 @@ int UnitClass::Simple_Deploy_AI(void)
 			IsSimpleDeployed = !IsSimpleDeployed;
 			DebugString("Deploy: %s %s\n", Class->Name(), IsSimpleDeployed ? "deploys" : "packs up");
 			Mark(MARK_CHANGE);
+			// A vehicle with Convert.Deploy becomes that type as it finishes deploying, and stands undeployed as the new type.
+			if (IsSimpleDeployed && Class->ConvertDeploy != NULL && Convert_To(Class->ConvertDeploy)) {
+				IsSimpleDeployed = false;
+			}
 			Assign_Mission(MISSION_GUARD);
 			// As UnitClass::Undeploy (0x739CD0): a DeployToLand unit that packs up moves to a nearby cell, which takes it off the ground.
 			if (!IsSimpleDeployed && Class->IsDeployToLand) {

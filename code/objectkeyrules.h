@@ -115,6 +115,20 @@ namespace ObjectKeyRules
 		return(true);
 	}
 
+	// The strength an object keeps when it becomes a type with another maximum: the same share of the new maximum, rounded
+	// down, and at least 1 for an object that was alive.
+	inline int Converted_Strength(int strength, int old_maximum, int new_maximum)
+	{
+		if (strength <= 0) {
+			return(strength);
+		}
+		if (old_maximum <= 0 || new_maximum <= 0) {
+			return(strength);
+		}
+		long long const scaled = (long long)strength * new_maximum / old_maximum;
+		return(scaled < 1 ? 1 : (int)scaled);
+	}
+
 	// The place of a veteran level among the three per-rank keys: 0 rookie, 1 veteran, 2 elite.
 	inline int Rank_Index(bool veteran, bool elite)
 	{

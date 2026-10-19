@@ -86,6 +86,17 @@ void Test_Factory_Owners(void)
 	Check(ObjectKeyRules::Factory_Owners_Allow(none, american, none), "a house with no factory is left to the other rules");
 }
 
+
+void Test_Converted_Strength(void)
+{
+	Check(ObjectKeyRules::Converted_Strength(150, 300, 400) == 200, "half of 300 becomes half of 400");
+	Check(ObjectKeyRules::Converted_Strength(300, 300, 400) == 400, "full strength stays full");
+	Check(ObjectKeyRules::Converted_Strength(1, 1000, 100) == 1, "a living object keeps at least 1 strength");
+	Check(ObjectKeyRules::Converted_Strength(0, 300, 400) == 0, "a dead object stays at 0");
+	Check(ObjectKeyRules::Converted_Strength(100, 0, 400) == 100, "a type with no maximum leaves the strength alone");
+	Check(ObjectKeyRules::Converted_Strength(2000000000, 2000000000, 2000000000) == 2000000000, "a large strength does not overflow");
+}
+
 }
 
 
@@ -94,6 +105,7 @@ int main(void)
 	Test_Survivors();
 	Test_None_Text();
 	Test_Factory_Owners();
+	Test_Converted_Strength();
 
 	std::printf("%d of %d checks passed\n", Checked - Failures, Checked);
 	return(Failures == 0 ? 0 : 1);
