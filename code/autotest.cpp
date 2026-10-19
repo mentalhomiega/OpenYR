@@ -151,6 +151,11 @@
 **	unload x y				orders the structure on that cell to unload
 **	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
 **							the structure on that cell
+**	tabflash				writes which tabs of the modern sidebar panel flash, one bit per tab
+**	ambient <TypeID>		writes the ambient sound each object of that type has attached
+**	trails					writes how many line trails exist and how many of their places still show
+**	ammo <TypeID>			writes the ammunition and reload countdown of each vehicle of that type
+**	enable <SuperWeaponTypeID>	gives the player that super weapon to charge from empty, as a structure does
 **	houses					writes each house's money, power, spy effects, resource gatherers and powered unit centres
 **	defeat <house>			runs the defeat a house gets once it has nothing left, on that house: its objects are destroyed
 **							(HouseClass::Destroy_All), then MPlayer_Defeated runs. The house is named as the waits name one; "player" is the local player
@@ -275,6 +280,9 @@
 #include "scenario.h"
 #include "script.h"
 #include "super.h"
+#include "sidebar.h"
+#include "linetrail.h"
+#include "ambient.h"
 #include "suprtype.h"
 #include "taskforc.h"
 #include "teamtype.h"
@@ -3308,6 +3316,13 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST   grant %s: no such super weapon\n", step.Argument.c_str());
 		}
+	} else if (step.Command == "enable") {
+		// enable <SuperWeaponTypeID>: gives the player that super weapon the way a structure does, to charge from empty.
+		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
+		if (id != SUPER_NONE && id < PlayerPtr->SuperWeapon.Count()) {
+			PlayerPtr->SuperWeapon[id]->Enable(false, true, false);
+			DebugString("AUTOTEST   enable %s ready %d\n", step.Argument.c_str(), (int)PlayerPtr->SuperWeapon[id]->Is_Ready());
+		}
 	} else if (step.Command == "grantai") {
 		// grantai <SuperWeaponTypeID>: gives the first computer house with a construction yard that super weapon, fully charged.
 		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
@@ -4160,8 +4175,28 @@ void Run(StepType const & step)
 			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 				SuperClass * super = house->SuperWeapon[s];
 				if (super == NULL || !super->Is_Present()) continue;
-				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime);
+				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d flashtab %d suspended %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Should_Flash_Tab(), (int)super->Is_Suspended());
 			}
+		}
+	} else if (step.Command == "tabflash") {
+		// tabflash: the tabs the modern sidebar panel flashes now, one bit per tab.
+		DebugString("AUTOTEST   tabflash mask %u frame %d\n", SidebarClass::Tab_Flash_Mask(), Frame);
+	} else if (step.Command == "ambient") {
+		// ambient <TypeID>: the sound the ambient table keeps on each object of that type, and how many objects it serves.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   ambient %s type sound %d attached %d limbo %d table %d frame %d\n", techno->TClass->Name(), (int)techno->TClass->AmbientSound, (int)AmbientSounds.Attached(techno), (int)techno->IsInLimbo, AmbientSounds.Count(), Frame);
+		}
+	} else if (step.Command == "trails") {
+		// trails: how many line trails exist and how many of their places still show.
+		DebugString("AUTOTEST   trails lines %d lit %d frame %d\n", LineTrailClass::Count(), LineTrailClass::Lit_Places(), Frame);
+	} else if (step.Command == "ammo") {
+		// ammo <TypeID>: each unit of that type with its ammunition and the frames left before it regains a shot.
+		for (int index = 0; index < Units.Count(); index++) {
+			UnitClass const * unit = Units[index];
+			if (stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   ammo %s of %s ammo %d of %d reload %d trail type %d art %d graphic %s line %d frame %d\n", unit->Class->Name(), unit->House->Class->Name(), unit->Ammo, unit->Class->MaxAmmo, (int)unit->Reload, (int)unit->Class->IsUseLineTrail, (int)ArtINI.Get_Bool(unit->Class->Graphic_Name(), "UseLineTrail", false), unit->Class->Graphic_Name(), (int)(unit->LineTrailer != NULL), Frame);
 		}
 	} else if (step.Command == "houses") {
 		// houses: each house's money, power and spy effects, then a "seat" line for who plays it. The

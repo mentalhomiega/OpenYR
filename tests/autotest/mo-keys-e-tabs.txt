@@ -1,0 +1,38 @@
+; FlashSidebarTabFrames. The mod (tests/autotest/mo-keys-e/rules.ini) gives the Lightning Storm a 90-frame recharge (RechargeTime=0.1), no power
+; need and FlashSidebarTabFrames=40. A Weather Control Device is placed at frame 100, so the weapon charges from empty and is ready 90 frames
+; later. In gamemd (SuperClass::ShouldFlashTab, 0x6CE1A0) the weapon asks its sidebar tab to flash for 40 frames after it became ready and
+; not before or after. "super ... flashtab" is that question, and "tabflash mask" shows the modern panel flashing its tab (bit 1, the
+; defenses tab that holds superweapons) on the frames of its blink that are lit: flashtab 1 at the first samples after it is ready, then 0.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e-tabs.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\mo-keys-e" -Seconds 100 -Filter "AUTOTEST   (super house Americans|tabflash)|Exception"
+30 command CenterBase
+90 own GAPOWR 50 44
+91 own GAPOWR 54 44
+92 own GAPOWR 58 44
+93 own GAPOWR 62 44
+100 own GAWEAT 56 40
+110 supers
+180 supers
+190 supers
+196 supers
+196 tabflash
+200 tabflash
+204 tabflash
+208 tabflash
+212 tabflash
+216 tabflash
+220 tabflash
+226 supers
+230 tabflash
+234 tabflash
+238 tabflash
+242 tabflash
+246 tabflash
+250 tabflash
+254 tabflash
+258 tabflash
+262 tabflash
+270 supers
+300 supers
+330 tabflash
+500 quit

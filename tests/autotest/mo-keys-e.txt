@@ -1,0 +1,45 @@
+; Reload, EmptyReload, ReloadIncrement, PipWrap, UseLineTrail and AmbientSound, defined by the mod in tests/autotest/mo-keys-e/.
+; The Grizzly has 4 shots, Reload=40, EmptyReload=100, ReloadIncrement=10 and PipWrap=2. In gamemd a shot taken with n shots left
+; starts a reload of Reload + ReloadIncrement * (n / PipWrap)^2 frames (n=3 gives 50, n=2 gives 50, n=1 gives 40), and a tank with none
+; uses EmptyReload (100); the tank takes one shot back each time the countdown ends.
+; "ammo" lines show the shots and the countdown; "trails" shows lines lit behind the moving tank (art UseLineTrail=yes, LineTrailColor,
+; LineTrailColorDecrement=8), and none a few frames after it stops; "ambient COW" shows the stock COW with its AmbientSound attached.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/mo-keys-e.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\mo-keys-e" -Seconds 200 -Filter "AUTOTEST   (ammo|trails|ambient|where)|Exception"
+30 command CenterBase
+300 own MTNK 60 36
+301 spawn COW 58 38
+310 ammo MTNK
+320 ambient COW
+330 follow MTNK
+340 move MTNK 60 30
+350 trails
+360 trails
+370 windowshot mo-keys-trail
+400 trails
+460 trails
+480 spawn NACNST 66 36
+500 strikeobj NACNST 66 36 2
+510 ammo MTNK
+530 ammo MTNK
+550 ammo MTNK
+570 ammo MTNK
+590 ammo MTNK
+610 ammo MTNK
+612 windowshot mo-keys-ammo2
+630 ammo MTNK
+650 ammo MTNK
+652 windowshot mo-keys-ammo0
+670 ammo MTNK
+690 ammo MTNK
+710 ammo MTNK
+730 ammo MTNK
+750 ammo MTNK
+770 ammo MTNK
+800 ambient COW
+810 own HTNK 62 36
+815 follow HTNK
+820 select HTNK
+830 windowshot mo-keys-htnk
+820 ammo MTNK
+900 quit
