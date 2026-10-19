@@ -353,6 +353,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsHospital(false),
 	IsArmory(false),
 	IsEMPulseCannon(false),
+	IsChronoshiftVehicle(false),
+	LightningRodModifier(1.0f),
 	IsTickTank(false),
 	IsTurretAnimAVoxel(false),
 	IsCloakGenerator(false),
@@ -1458,6 +1460,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
+		IsChronoshiftVehicle = ini.Get_Bool(Name(), "Chronoshift.IsVehicle", IsChronoshiftVehicle);
+		LightningRodModifier = (float)ini.Get_Float(Name(), "LightningRod.Modifier", LightningRodModifier);
 		IsTickTank = ini.Get_Bool(Name(), "TickTank", IsTickTank);
 		SuperWeapon = ini.Get_SuperWeaponType(Name(), "SuperWeapon", SuperWeapon);
 		SuperWeapon2 = ini.Get_SuperWeaponType(Name(), "SuperWeapon2", SuperWeapon2);
@@ -2550,6 +2554,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHospital);
 	stream.Serialize(IsArmory);
 	stream.Serialize(IsEMPulseCannon);
+	stream.Serialize(IsChronoshiftVehicle);
+	stream.Serialize(LightningRodModifier);
 	stream.Serialize(IsTickTank);
 	stream.Serialize(IsTurretAnimAVoxel);
 	stream.Serialize(IsCloakGenerator);

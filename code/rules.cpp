@@ -429,6 +429,7 @@ RulesClass::RulesClass(void) :
 	LightningHitDelay(90),
 	LightningScatterDelay(10),
 	LightningCellSpread(10),
+	LightningRodRange(4),
 	LightningSeparation(3),
 	LightningPrintText(true),
 	WeatherConClouds(),
@@ -1609,6 +1610,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LightningHitDelay = ini.Get_Int(GENERAL, "LightningHitDelay", LightningHitDelay);
 		LightningScatterDelay = ini.Get_Int(GENERAL, "LightningScatterDelay", LightningScatterDelay);
 		LightningCellSpread = ini.Get_Int(GENERAL, "LightningCellSpread", LightningCellSpread);
+		LightningRodRange = ini.Get_Int(GENERAL, "LightningRodRange", LightningRodRange);
 		LightningSeparation = ini.Get_Int(GENERAL, "LightningSeparation", LightningSeparation);
 		LightningPrintText = ini.Get_Bool(GENERAL, "LightningPrintText", LightningPrintText);
 		WeatherConClouds = TGet_TypeList<AnimTypeClass>(ini, GENERAL, "WeatherConClouds", WeatherConClouds);
@@ -2893,6 +2895,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LightningHitDelay);
 	stream.Serialize(LightningScatterDelay);
 	stream.Serialize(LightningCellSpread);
+	stream.Serialize(LightningRodRange);
 	stream.Serialize(LightningSeparation);
 	stream.Serialize(LightningPrintText);
 	stream.Serialize(WeatherConClouds);

@@ -1753,7 +1753,7 @@ static void SW_Aim_Probe(std::string const & section, int x, int y)
 	Map.IsTargettingMode = id;
 	ActionType const action = SuperWeaponTypes[id]->What_Action(cell, target);
 	Map.Mouse_Left_Up(cell, shadow, target, action, false);
-	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier);
+	DebugString("AUTOTEST   swaim %s cell %d,%d shroud %d object %s action %s mouse %d range %d line %d designators %d inhibitors %d min %.1f max %.1f\n", section.c_str(), x, y, (int)shadow, target != NULL ? target->Class_Of()->Name() : "none", ActionName[action], (int)Map.Get_Mouse_Shape(), (int)SuperWeaponTypes[id]->Range, SuperWeaponTypes[id]->LineMultiplier, SuperWeaponTypes[id]->Keys.Designators.Count(), SuperWeaponTypes[id]->Keys.Inhibitors.Count(), SuperWeaponTypes[id]->Keys.RangeMinimum, SuperWeaponTypes[id]->Keys.RangeMaximum);
 }
 
 
@@ -4153,8 +4153,8 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   aim house %s target %d,%d base center %d,%d defensive cell %d,%d since frame %d\n", house->Class->Name(), (int)house->PreferredTargetCell.X, (int)house->PreferredTargetCell.Y, (int)house->Center.As_Cell().X, (int)house->Center.As_Cell().Y, (int)house->PreferredDefensiveCell.X, (int)house->PreferredDefensiveCell.Y, house->PreferredDefensiveCellStartTime);
 			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 				SuperClass * super = house->SuperWeapon[s];
-				if (super == NULL || !super->Is_Present()) continue;
-				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime);
+				if (super == NULL || (!super->Is_Present() && !super->Is_Virtual_Charging())) continue;
+				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d present %d virtual %d charged %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Is_Present(), (int)super->Is_Virtual_Charging(), (int)super->Is_Charged());
 			}
 		}
 	} else if (step.Command == "houses") {

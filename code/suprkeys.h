@@ -75,6 +75,7 @@ struct SuperWeaponKeys
 	int MaxCount;
 	int Group;
 	bool InitialReady;
+	bool VirtualCharge;
 	bool AlwaysGranted;
 	bool AllowPlayer;
 	bool AllowAI;
@@ -226,6 +227,7 @@ struct SuperWeaponKeys
 	bool LightningCloudsSet;
 	bool LightningBoltsSet;
 	bool LightningDebrisSet;
+	bool LightningIgnoreRod;
 
 	// PsychicDominator. A null animation and UNSET_INT keep the rules value.
 	AnimTypeClass const * DominatorFirstAnim;
@@ -249,6 +251,18 @@ struct SuperWeaponKeys
 	bool ChronoAffectsIronCurtain;
 	bool ChronoAffectsUnwarpable;
 	bool ChronoKillCargo;
+	bool ChronoReconsiderBuildings;
+	bool ChronoAffectsUndeployable;
+	bool ChronoBlowUnplaceable;
+
+	// The weapon that follows a ChronoSphere: the section the key names, or empty for the first PostClick weapon that depends on the behavior.
+	std::string PostDependent;
+
+	// GeneticConverter. MutateExplosion is -1 until the section sets it, which keeps the rules value; MutateKillNatural is true by default.
+	int MutateExplosion;
+	bool MutateIgnoreCyborg;
+	bool MutateIgnoreNotHuman;
+	bool MutateKillNatural;
 
 	// SonarPulse.
 	int SonarPulseDelay;

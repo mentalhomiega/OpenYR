@@ -17,6 +17,8 @@
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "building.h"
+#include "builtype.h"
 #include "animtype.h"
 #include "ccrand.h"
 #include "cell.h"
@@ -39,10 +41,12 @@
 #include "tactical.h"
 #include "techno.h"
 #include "voc.h"
+#include <cmath>
 #include "vox.h"
 
 
 bool LightningStormClass::IsActive = false;
+bool LightningStormClass::IsBolting = false;
 bool LightningStormClass::IsTimeToEnd = false;
 int LightningStormClass::StartTime = 0;
 int LightningStormClass::Duration = -1;
@@ -410,12 +414,54 @@ void LightningStormClass::AI(void)
 					}
 				}
 				if (Map.In_Radar(cell) && !crowded) {
-					Strike(cell);
+					Strike(Rod_Target(cell));
 					break;
 				}
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Does the active storm's weapon switch off the pull of structures with LightningRod=yes
+/// (Lightning.IgnoreLightningRod)?
+/// </summary>
+bool LightningStormClass::Rods_Ignored(void)
+{
+	SuperWeaponKeys const * keys = Keys();
+	return(keys != nullptr && keys->LightningIgnoreRod);
+}
+
+
+/// <summary>
+/// The cell a randomly placed cloud forms over: the cell of the nearest structure with LightningRod=yes within
+/// LightningRodRange cells of it, or the cell itself when no rod is that close or the storm ignores rods.
+/// </summary>
+Cell LightningStormClass::Rod_Target(Cell const & cell)
+{
+	if (Rule->LightningRodRange <= 0 || Rods_Ignored()) {
+		return(cell);
+	}
+	Cell best = cell;
+	double nearest = (double)Rule->LightningRodRange;
+	bool found = false;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (!building->IsActive || building->IsInLimbo || !building->Class->IsLightningRod) {
+			continue;
+		}
+		Cell const at = building->Center_Coord().As_Cell();
+		double const dx = at.X - cell.X;
+		double const dy = at.Y - cell.Y;
+		double const distance = std::sqrt(dx * dx + dy * dy);
+		if (distance <= nearest && (!found || distance < nearest)) {
+			nearest = distance;
+			best = at;
+			found = true;
+		}
+	}
+	return(best);
 }
 
 
@@ -520,7 +566,9 @@ void LightningStormClass::Bolt(Coord const & from)
 		DebugString("AUTOTEST storm bolt on %d,%d at frame %d damage %d\n", cell.X, cell.Y, Frame, damage);
 	}
 	Combat_Lighting(coord, damage, warhead);
+	IsBolting = true;
 	Explosion_Damage(coord, damage, NULL, warhead, true, Owner);
+	IsBolting = false;
 
 	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
 		debris = true;
