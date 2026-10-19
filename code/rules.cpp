@@ -4029,18 +4029,10 @@ bool RulesClass::Objects(CCINIClass const & ini)
 		InfantryTypes[iindex]->Read_INI(ini);
 	}
 
-	int windex;
-	for (windex = 0; windex < Weapons.Count(); windex++) {
-		Weapons[windex]->Read_INI(ini);
-	}
-
-	int proj;
-	for (proj = 0; proj < BulletTypes.Count(); proj++) {
-		BulletTypes[proj]->Read_INI(ini);
-	}
-
 	// A projectile's AirburstWeapon can create a weapon that nothing else named, and a weapon
-	// can create a projectile, after their own turn to be read has passed.
+	// can create a projectile, so the lists are read again from where they stood until neither grows.
+	int windex = 0;
+	int proj = 0;
 	while (windex < Weapons.Count() || proj < BulletTypes.Count()) {
 		for (; windex < Weapons.Count(); windex++) {
 			Weapons[windex]->Read_INI(ini);
