@@ -22,7 +22,14 @@ read added to objtype.cpp reaches these tests without an edit here."""
 
 # Read from art.ini alone, under the section the Image= value names, rather than
 # through the rules-and-art caller pair every other ObjectTypeClass read takes.
-ART_QUALIFIED_KEYS = ('Theater', 'NewTheater', 'Voxel')
+ART_QUALIFIED_KEYS = (
+    'Theater',
+    'NewTheater',
+    'Voxel',
+    'UseLineTrail',
+    'LineTrailColor',
+    'LineTrailColorDecrement',
+)
 
 RULES_OBJECT_TYPES = (
     'AircraftType',
