@@ -1,0 +1,30 @@
+; EVA.VeteranPromoted, EVA.ElitePromoted, EVA.Lost, Message.Capture, Message.Lost and CaptureEvaEvent. The eva-keys-rules mod
+; gives the GI (E1) EVA.VeteranPromoted=EVA_TechBuildingLost and EVA.Lost=EVA_TechBuildingCaptured, the Conscript (E2)
+; EVA.ElitePromoted=none and EVA.Lost=none, and the power plant (GAPOWR) NeedsEngineer, CaptureEvaEvent and both messages.
+; Expected "Speech: request" lines: EVA_TechBuildingLost when the GI is promoted, none for the elite Conscript, EVA_UnitPromoted
+; for the veteran Guardian GI (stock); then EVA_TechBuildingCaptured when the GI dies. The game makes one unit lost
+; announcement per several minutes, so the Conscript and Guardian GI deaths are in eva-keys-lost-none.txt and eva-keys-lost-stock.txt,
+; which expect no line and EVA_UnitLost. The captured power plant prints "TEST: the power plant was captured" and speaks
+; EVA_TechBuildingCaptured; losing it prints "TEST: the power plant was lost" and speaks EVA_TechBuildingLost (the default line).
+; Run (with -Mods tests/autotest/eva-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys.txt -Mods <absolute path of tests/autotest/eva-keys-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+41 own E2 68 24
+42 own GGI 70 24
+43 own FV 74 24
+44 spawn GAPOWR 62 30
+60 log promote
+62 rank E1 1
+80 rank E2 2
+100 rank GGI 1
+130 log lost
+132 hit E1:HE@FV 9999
+340 log capture
+342 transfer GAPOWR
+344 view 62 30
+360 windowshot eva-capture
+400 log lose
+402 lose GAPOWR
+420 windowshot eva-lose
+500 quit

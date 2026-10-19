@@ -84,6 +84,10 @@ void const * AircraftTypeClass::RRotorData = NULL;
 AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	BASECLASS(ininame, SPEED_WINGED),
 	IsLandable(false),
+	SmokeAnim(NULL),
+	IsSmokeAnimSet(false),
+	SmokeChanceRed(10),
+	SmokeChanceDead(80),
 	IsFighter(false),
 	IsAirportBound(false),
 	IsFlyBy(false),
@@ -287,6 +291,12 @@ bool AircraftTypeClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 
 		IsLandable = ini.Get_Bool(Name(), "Landable", IsLandable);
+		if (ini.Is_Present(Name(), "Smoke.Anim")) {
+			SmokeAnim = TGet_Class(ini, Name(), "Smoke.Anim", SmokeAnim);
+			IsSmokeAnimSet = true;
+		}
+		SmokeChanceRed = ini.Get_Int(Name(), "Smoke.ChanceRed", SmokeChanceRed);
+		SmokeChanceDead = ini.Get_Int(Name(), "Smoke.ChanceDead", SmokeChanceDead);
 		IsFighter = ini.Get_Bool(Name(), "Fighter", IsFighter);
 		IsAirportBound = ini.Get_Bool(Name(), "AirportBound", IsAirportBound);
 		IsFlyBy = ini.Get_Bool(Name(), "FlyBy", IsFlyBy);
@@ -352,6 +362,10 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRotorEquipped);
 	stream.Serialize(IsRotorCustom);
 	stream.Serialize(IsLandable);
+	stream.Serialize(SmokeAnim);
+	stream.Serialize(IsSmokeAnimSet);
+	stream.Serialize(SmokeChanceRed);
+	stream.Serialize(SmokeChanceDead);
 	stream.Serialize(IsFighter);
 	stream.Serialize(IsAirportBound);
 	stream.Serialize(IsFlyBy);

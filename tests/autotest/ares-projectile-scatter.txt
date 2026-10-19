@@ -1,0 +1,15 @@
+; BallisticScatter.Min and BallisticScatter.Max, with the mods in tests/autotest/ares-projectile-keys and ares-projectile-units-scatter. A Grizzly (shell with
+; Min=Max=1 cell) and a Rhino (shell with Max=0.5 cell only, so Min is half the global value) fire at two enemy power plants.
+; Expected "scatter fire" lines:
+;   ScatterShell path A ... spread 256 (one cell, the same every shot)
+;   ScatterShell2 path A ... spread 128 (Min defaults to half the global 1 cell, and Max is 0.5 cell)
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-projectile-scatter.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-keys,E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-projectile-units-scatter" -Seconds 60 -Filter "AUTOTEST scatter fire|AUTOTEST strike|Exception"
+30 command CenterBase
+100 own MTNK 60 36
+101 own HTNK 60 44
+102 spawn GAPOWR 68 36
+103 spawn GAPOWR 68 44
+200 strike MTNK 68 36
+201 strike HTNK 68 44
+400 quit

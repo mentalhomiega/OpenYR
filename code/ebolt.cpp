@@ -45,6 +45,7 @@ EBoltClass::EBoltClass(void) :
 	WeaponSlot(0),
 	Lifetime(0x10000),
 	IsAlternateColor(false),
+	ColorMask(0),
 	EmissiveStrength(EmissiveDefaults[EMISSIVE_ELECTRIC_BOLT].Strength)
 {
 }
@@ -267,7 +268,11 @@ void EBoltClass::Draw_It(void) const
 			TacticalMap->Coord_To_Pixel(b, pb);
 			int za = from_z - Tactical::Z_Lepton_To_Pixel(a.Z) - 2;
 			int zb = to_z - Tactical::Z_Lepton_To_Pixel(b.Z) - 2;
-			LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, pa, pb, strand == 2 ? core_color : outer_color, za, zb);
+			unsigned color = strand == 2 ? core_color : outer_color;
+			if (ColorMask & (1 << strand)) {
+				color = DSurface::Build_Hicolor_Pixel(Colors[strand]);
+			}
+			LogicalSurface->Draw_Depth_Shaded_Line(TacticalRect, pa, pb, color, za, zb);
 			if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
 				Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, pa, pb, EmissiveStrength);
 			}

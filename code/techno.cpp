@@ -157,6 +157,8 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "empulse.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "_mixfile.h"
 #include "mixfile.h"
@@ -217,6 +219,8 @@
 #include "voc.h"
 #include "vox.h"
 #include "voxdrsys.h"
+#include "ivanrules.h"
+#include "projectilerules.h"
 #include "warhead.h"
 #include "warheadrules.h"
 #include "wave.h"
@@ -331,6 +335,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BombHouse(NULL),
 	BombPlantFrame(0),
 	BombDetonateFrame(-1),
+	BombWeapon(NULL),
 	IsBerzerk(false),
 	BerzerkDuration(0),
 	BombSound(),
@@ -1508,15 +1513,22 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
 	if (Is_Bomb_Visible()) {
 		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		if (_bombcurs != NULL) {
-			int frame = 0;
-			if (Rule->IvanTimedDelay >= 6) {
-				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+		ShapeSet const * icons = _bombcurs;
+		// A weapon's IvanBomb.Image replaces the icon file when the file can be loaded.
+		if (BombWeapon != NULL && !BombWeapon->IvanImage.empty()) {
+			if (!BombWeapon->IvanImageLooked) {
+				BombWeapon->IvanImageLooked = true;
+				BombWeapon->IvanImageData = (ShapeSet const *)MFCD::Retrieve((BombWeapon->IvanImage + ".SHP").c_str());
 			}
-			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
-				frame++;
+			if (BombWeapon->IvanImageData != NULL) {
+				icons = BombWeapon->IvanImageData;
 			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (icons != NULL) {
+			int const frame = IvanBombRules::Icon_Frame(Frame - BombPlantFrame, Bomb_Delay(), IvanBombRules::Icon_Blocks(icons->Get_Count()), Rule->IvanIconFlickerRate, Frame);
+			if (frame >= 0) {
+				Draw_Shape(*LogicalSurface, *NormalDrawer, icons, frame, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
 		}
 	}
 
@@ -3786,7 +3798,8 @@ void TechnoClass::AI(void)
 	// As TechnoClass::Update (0x6F9E50) and BombListClass::Update (0x438BF0): the bomb ticks where the planter's player can hear it, and goes off on time.
 	if (BombDetonateFrame != -1) {
 		if (BombHouse != NULL && BombHouse->Is_Player_Control()) {
-			Play_If_In_Range(Rule->BombTickingSound, Center_Coord(), &BombSound, true);
+			int const sound = BombWeapon != NULL && BombWeapon->IvanTickingSound != WeaponTypeClass::IVAN_SOUND_UNSET ? BombWeapon->IvanTickingSound : Rule->BombTickingSound;
+			Play_If_In_Range((VocType)sound, Center_Coord(), &BombSound, true);
 		}
 		if (Frame > BombDetonateFrame) {
 			Detonate_Bomb();
@@ -3825,7 +3838,12 @@ void TechnoClass::AI(void)
 			if (House->Is_Player_Control()) {
 				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
 				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
-				Speak_Eva("EVA_UnitPromoted");
+				std::string const & line = TClass->EvaPromoted[rank == 2 ? 1 : 0];
+				if (line.empty()) {
+					Speak_Eva("EVA_UnitPromoted");
+				} else if (!ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				}
 			}
 			if (rank == 2) {
 				FlashCount = Rule->EliteFlashTimer;
@@ -4842,6 +4860,10 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 
 	EBoltClass * bolt = new EBoltClass;
 	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->ColorMask = weapon->BoltColorMask;
+	for (int strand = 0; strand < 3; strand++) {
+		bolt->Colors[strand] = weapon->BoltColor[strand];
+	}
 	bolt->Fire(source, target->Center_Coord(), zadjust);
 	bolt->Set_Owner(this, which);
 }
@@ -5230,13 +5252,15 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 			int spread = 0;
 			int distance = 0;
 			int range = 0;
-			if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
-				spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
+			bool const ground_path = !bullet->Class->FlakScatter || bullet->Class->IsInvisible;
+			auto const bounds = ProjectileRules::Ballistic_Scatter_Bounds(Rule->BallisticScatter, bullet->Class->BallisticScatterMin, bullet->Class->BallisticScatterMax, ground_path);
+			if (ground_path) {
+				spread = Scen->RandomNumber(bounds.first, bounds.second);
 			} else {
 				path = "B";
 				distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
 				range = Weapon_Range(which);
-				int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+				int const share = Scen->RandomNumber(bounds.first, bounds.second);
 				spread = range > 0 ? (share * distance) / range : 0;
 			}
 			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
@@ -5365,10 +5389,17 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
 					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
 				}
-				if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
+				if ((weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) || weapon->IsDetachedRailgun) {
 					Coord start = fire_coord;
 					Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
-					ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+					ParticleSystemClass * beam = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST railgun %s fires %s at frame %d, detached %d\n", TClass->Name(), weapon->Name(), Frame, (int)weapon->IsDetachedRailgun);
+					}
+					// A detached beam is not remembered, so it does not hold up the next shot.
+					if (weapon->IsRailgun) {
+						ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = beam;
+					}
 				}
 
 				LastFireFrame = Frame;
@@ -5456,7 +5487,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
 				if (weapon->IsRadBeam) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), weapon->HasBeamColor ? weapon->BeamColor : (temporal ? Rule->ChronoBeamColor : Rule->RadColor));
 				}
 
 				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
@@ -5679,7 +5710,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		**	the no action flag.
 		*/
 		// The player sets off their own bomb by clicking the vehicle or soldier carrying it (TechnoClass::MouseOverObject, 0x6FFEC0).
-		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Rule->IsCanDetonateTimeBomb) {
+		if (object == this && CurrentObject.Count() == 1 && Is_Foot() && BombDetonateFrame != -1 && BombHouse != NULL && BombHouse->Is_Player_Control() && Can_Detonate_Bomb()) {
 			return(ACTION_DETONATE);
 		}
 
@@ -5750,7 +5781,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
-			if (Is_Weapon_Equipped() ||
+			if ((Is_Weapon_Equipped() && !TClass->IsNoManualFire) ||
 					(RTTI == RTTI_INFANTRY &&
 					(/// ((InfantryTypeClass const *)ttype)->IsBomber ||
 					((InfantryTypeClass const *)ttype)->IsCapture)
@@ -5869,7 +5900,7 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 	/*
 	**	If firing is possible and legal, then return this action potential.
 	*/
-	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL) {
+	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL && !TClass->IsNoManualFire) {
 
 		bool destroyable = Map[cell].Is_Tile_Destroyable_Cliff();
 		if (destroyable) {
@@ -6585,8 +6616,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 	}
 
+	// The effects of the warhead reach an object whose armor has a nonzero Verses, and that the hit damages when
+	// EffectsRequireDamage is set (Ares); EffectsRequireVerses=no lifts the Verses test.
+	bool const effects_apply = warhead != NULL && WarheadRules::Warhead_Effects_Apply(warhead->IsEffectsRequireVerses, warhead->IsEffectsRequireDamage,
+		warhead->Versus(TClass->Armor), warhead->IsEffectsRequireDamage && !negative ? Modify_Damage(damage, warhead, TClass->Armor, distance) : 1);
+
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
-	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && effects_apply
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
 		AttachedEffects.Attach(this, warhead);
 	}
@@ -6600,10 +6636,19 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	}
 
 	// A KillDriver warhead with a nonzero Verses against the armor takes a vehicle's driver instead of damaging it (Ares).
-	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0
+	if (warhead != NULL && warhead->IsKillDriver && !negative && RTTI == RTTI_UNIT && Strength > 0 && effects_apply
 		&& static_cast<UnitClass *>(this)->Kill_Driver(warhead)) {
 		damage = 0;
 		return(RESULT_NONE);
+	}
+
+	// A warhead with an EMP.Duration changes the EMP counter of an object whose armor has a nonzero Verses (Ares). A hit that
+	// destroys the object becomes a lethal hit that skips armor.
+	if (warhead != NULL && warhead->EMPDuration != 0 && Strength > 0 && warhead->Versus(TClass->Armor) != 0.0 && !forced
+		&& EMPulseClass::Hit(this, warhead, source)) {
+		damage = TClass->MaxStrength;
+		warhead = Rule->C4Warhead;
+		forced = true;
 	}
 
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
@@ -7293,13 +7338,46 @@ void TechnoClass::Do_Uncloak(bool silent)
 
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
-		CloakingDevice.Set_Stage(Rule->CloakingStages - 1);
+		CloakingDevice.Set_Stage(Cloaking_Stages() - 1);
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(-1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(true);
 		}
 	}
+}
+
+
+/// <summary>
+/// The number of stages this object passes through as it cloaks and decloaks: the type's Cloakable.Stages
+/// when that is above 0, else [General] CloakingStages.
+/// </summary>
+int TechnoClass::Cloaking_Stages(void) const
+{
+	return(TClass->CloakStages > 0 ? TClass->CloakStages : Rule->CloakingStages);
+}
+
+
+/// <summary>
+/// Plays the sound of this object cloaking or decloaking at its position. The type's own sound wins, and
+/// "none" on it is silent; otherwise a decloak uses [AudioVisual] DecloakSound when that is set, and both
+/// fall back to [AudioVisual] CloakSound.
+/// </summary>
+void TechnoClass::Play_Cloak_Sound(bool decloaking) const
+{
+	VocType sound = Rule->CloakSound;
+	if (decloaking) {
+		if (TClass->IsDecloakSoundSet) {
+			sound = TClass->DecloakSound;
+		} else if (TClass->IsCloakSoundSet) {
+			sound = TClass->CloakSound;
+		} else if (Rule->IsDecloakSoundSet) {
+			sound = Rule->DecloakSound;
+		}
+	} else if (TClass->IsCloakSoundSet) {
+		sound = TClass->CloakSound;
+	}
+	Sound_Effect(sound, PositionCoord);
 }
 
 
@@ -7326,7 +7404,7 @@ void TechnoClass::Do_Cloak(bool silent)
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(false);
 		}
 	}
 }
@@ -7400,7 +7478,7 @@ VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) con
 		return(VISUAL_NORMAL);
 	}
 
-	stage = double(stage) / Rule->CloakingStages * 256;
+	stage = double(stage) / Cloaking_Stages() * 256;
 
 	if (stage < 0x0040) return(VISUAL_INDISTINCT);
 	if (stage < 0x0080) return(VISUAL_DARKEN);
@@ -8358,10 +8436,11 @@ void TechnoClass::Delete_Me(void)
 
 /// <summary>
 /// Fixes an Ivan bomb to this object (BombListClass::Plant, 0x438E70). Only a soldier plants
-/// one, and an object holds one bomb at a time. BombAttachSound plays when the planter is the
-/// player's.
+/// one, and an object holds one bomb at a time. The attach sound plays when the planter is the
+/// player's. The bomb takes its delay, sounds and other settings from the weapon's IvanBomb keys
+/// where it writes them, and from the rules otherwise.
 /// </summary>
-void TechnoClass::Plant_Bomb(TechnoClass * planter)
+void TechnoClass::Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon)
 {
 	if (planter == NULL || planter->RTTI != RTTI_INFANTRY || BombDetonateFrame != -1) {
 		return;
@@ -8369,10 +8448,33 @@ void TechnoClass::Plant_Bomb(TechnoClass * planter)
 	BombOwner = planter;
 	BombHouse = planter->House;
 	BombPlantFrame = Frame;
-	BombDetonateFrame = Frame + Rule->IvanTimedDelay;
-	if (BombHouse->Is_Player_Control()) {
-		Sound_Effect(Rule->BombAttachSound, Center_Coord());
+	BombWeapon = weapon;
+	BombDetonateFrame = Frame + Bomb_Delay();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb planted on %s by %s with %s at frame %d, goes off at frame %d\n", TClass->Name(), planter->TClass->Name(), weapon != NULL ? weapon->Name() : "no weapon", Frame, BombDetonateFrame);
 	}
+	if (BombHouse->Is_Player_Control()) {
+		int const sound = weapon != NULL && weapon->IvanAttachSound != WeaponTypeClass::IVAN_SOUND_UNSET ? weapon->IvanAttachSound : Rule->BombAttachSound;
+		Sound_Effect((VocType)sound, Center_Coord());
+	}
+}
+
+
+/// <summary>
+/// The frames the bomb on this object runs before it goes off: the planting weapon's IvanBomb.Delay, or IvanTimedDelay.
+/// </summary>
+int TechnoClass::Bomb_Delay(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->HasIvanDelay ? BombWeapon->IvanDelay : Rule->IvanTimedDelay);
+}
+
+
+/// <summary>
+/// Can the player set off the bomb on this object by hand: the planting weapon's IvanBomb.CanDetonateTimeBomb, or CanDetonateTimeBomb?
+/// </summary>
+bool TechnoClass::Can_Detonate_Bomb(void) const
+{
+	return(BombWeapon != NULL && BombWeapon->IvanCanDetonateTimeBomb >= 0 ? BombWeapon->IvanCanDetonateTimeBomb != 0 : Rule->IsCanDetonateTimeBomb);
 }
 
 
@@ -8387,24 +8489,30 @@ void TechnoClass::Detonate_Bomb(void)
 		return;
 	}
 	TechnoClass * planter = BombOwner;
+	WeaponTypeClass const * const weapon = BombWeapon;
 	bool const harmless = IsInLimbo;
 	Disarm_Bomb();
-	if (harmless || Rule->IvanWarhead == NULL) {
+	WarheadTypeClass const * const warhead = weapon != NULL && weapon->IvanWarhead != NULL ? weapon->IvanWarhead : Rule->IvanWarhead;
+	int const damage = weapon != NULL && weapon->HasIvanDamage ? weapon->IvanDamage : Rule->IvanDamage;
+	if (harmless || warhead == NULL) {
 		return;
 	}
 
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST bomb on %s goes off at frame %d: damage %d, warhead %s\n", TClass->Name(), Frame, damage, warhead->Name());
+	}
 	Coord const coord = PositionCoord;
-	AnimTypeClass const * anim = Combat_Anim(Rule->IvanDamage, Rule->IvanWarhead, Map[coord].Land_Type(), coord);
+	AnimTypeClass const * anim = Combat_Anim(damage, warhead, Map[coord].Land_Type(), coord);
 	if (anim != NULL) {
 		new AnimClass(anim, coord);
 	}
-	Explosion_Damage(coord, Rule->IvanDamage, planter, Rule->IvanWarhead, true);
+	Explosion_Damage(coord, damage, planter, warhead, true);
 
 	/*
 	 * A bridge repair hut that carries the bomb also runs the bridge search beside it once the
 	 * bomb has gone off (BombClass::Detonate, 0x438720).
 	 */
-	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut) {
+	if (IsActive && RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->IsBridgeRepairHut && (weapon == NULL || weapon->IvanDestroysBridges != 0)) {
 		Map.Destroy_Bridge_At(Get_Cell());
 	}
 }
@@ -8414,6 +8522,7 @@ void TechnoClass::Disarm_Bomb(void)
 {
 	BombOwner = NULL;
 	BombHouse = NULL;
+	BombWeapon = NULL;
 	BombDetonateFrame = -1;
 	BombSound.Stop();
 	BombSound.Clear();
@@ -8539,6 +8648,12 @@ void TechnoClass::Gattling_Rate_Up(int frames)
 	}
 	if (CurrentGattlingStage >= 0 && CurrentGattlingStage < last && stages[CurrentGattlingStage] <= value) {
 		CurrentGattlingStage++;
+		GattlingSound.Stop();
+		IsGattlingSoundPlaying = false;
+	} else if (TClass->IsGattlingCycle && last > 0 && CurrentGattlingStage == last && stages[last] <= value) {
+		// A cycling weapon that has finished its last stage starts over at the first, with its target kept.
+		CurrentGattlingStage = 0;
+		GattlingValue = 0;
 		GattlingSound.Stop();
 		IsGattlingSoundPlaying = false;
 	}
@@ -8764,6 +8879,54 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 
 
 /// <summary>
+/// Pulls the target into this transport's hold instead of damaging it, as an Abductor=yes weapon does
+/// (Ares). The target must be infantry or a vehicle that is not ImmuneToAbduction, is not under the
+/// Iron Curtain, has no more strength left than Abductor.AbductBelowPercent allows, and fits the hold
+/// under the same rules as a loading passenger. A target that cannot be taken is left alone, so the
+/// shot deals its ordinary damage.
+/// </summary>
+/// <param name="target">The object the shot hit.</param>
+/// <param name="weapon">The Abductor weapon that was fired.</param>
+/// <returns>bool; Is the target now a passenger of this transport?</returns>
+bool TechnoClass::Abduct(AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	FootClass * victim = dynamic_cast<FootClass *>(target);
+	if (weapon == NULL || !weapon->IsAbductor || victim == NULL || victim == this) return(false);
+	if (!IsActive || IsInLimbo || (RTTI != RTTI_UNIT && RTTI != RTTI_AIRCRAFT) || TClass->Max_Passengers() <= 0) return(false);
+	if (!victim->IsActive || victim->IsInLimbo || victim->Strength <= 0) return(false);
+	if (victim->RTTI != RTTI_INFANTRY && victim->RTTI != RTTI_UNIT) return(false);
+	if (victim->TClass->IsImmuneToAbduction || victim->Is_Iron_Curtained()) return(false);
+	if (!WarheadRules::Abducts_At(victim->Strength, victim->TClass->MaxStrength, weapon->AbductBelowPercent)) return(false);
+	if (!Can_Fit_Passenger(victim)) return(false);
+
+	if (weapon->AbductAnim != NULL) {
+		new AnimClass(weapon->AbductAnim, victim->Center_Coord());
+	}
+	if (weapon->IsAbductChangeOwner && !victim->Is_Immune_To_Psionics()) {
+		victim->Set_Owning_House(House, false);
+	}
+
+	victim->Remove_From_Team();
+	victim->Assign_Target(NULL);
+	victim->Assign_Destination(NULL);
+	if (victim->In_Radio_Contact()) {
+		victim->Transmit_Message(RADIO_OVER_OUT);
+	}
+	victim->Limbo();
+	Cargo.Attach(victim);
+	if (TClass->IsGunner && Cargo.How_Many() == 1) {
+		Receive_Gunner(victim);
+	}
+	Play_Transport_Sound(true);
+	victim->Hidden();
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST abducted %s into %s, owner %s, %d of %d room used\n", victim->TClass->Name(), TClass->Name(), victim->House->Class->Name(), Cargo.Total_Size(), TClass->Max_Passengers());
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Whether this transport accepts the passenger: not one under mind control, as in Yuri's
 /// Revenge; its kind against IsVehicleTransport; and its Size against both the room left in
 /// the hold and this transport's SizeLimit.
@@ -8821,9 +8984,24 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	if (side != SIDE_NONE && side < Sides.Count()) {
 		infantry = Sides[side]->Crew_Type();
 	}
+
+	// A type's own survivor for the owner's side stands in for the side's crew, and the technician roll does not replace it.
+	int const place = SideClass::Place_In_Sides(side);
+	if (side != SIDE_NONE && place >= 0 && place < 4 && !TClass->SurvivorSide[place].empty()) {
+		InfantryType const named = InfantryTypeClass::From_Name(TClass->SurvivorSide[place].c_str());
+		if (named != INFANTRY_NONE) {
+			return(InfantryTypes[named]);
+		}
+	}
+
 	if (side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
+		InfantryTypeClass const * technician = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
+		if (TClass->CrewTechnicianChance >= 0) {
+			if (Percent_Chance(TClass->CrewTechnicianChance)) {
+				infantry = technician;
+			}
+		} else if (Is_Weapon_Equipped() && Percent_Chance(15)) {
+			infantry = technician;
 		}
 	} else {
 		infantry = Rule->Technician;
@@ -9799,6 +9977,14 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 	if (!Can_Passive_Acquire_Targets()) {
 		return(false);
 	}
+	if (Mission == MISSION_GUARD) {
+		if (!TClass->IsCanPassiveAquireGuard) {
+			return(false);
+		}
+		if (!TClass->IsCanPassiveAquireCloak && (TClass->IsCloakable || IsCloakable || Has_Ability(ABILITY_CLOAK))) {
+			return(false);
+		}
+	}
 	if (!TClass->IsOpportunityFire) {
 		if (Mission != MISSION_GUARD) {
 			return(false);
@@ -9914,6 +10100,23 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Draws the ring of a selected vehicle, soldier or aircraft whose type sets RadialIndicatorRadius, in the
+/// type's RadialColor or, when that is black, the owner's color. A structure draws its own.
+/// </summary>
+void TechnoClass::Draw_Radial_Indicator(void) const
+{
+	if (RTTI == RTTI_BUILDING || TClass->RadialIndicatorRadius <= 0.0 || !House->Is_Player_Control()) {
+		return;
+	}
+	RGBClass color = TClass->RadialColor;
+	if (color.Get_Red() == 0 && color.Get_Green() == 0 && color.Get_Blue() == 0) {
+		color = House_Display_RGB(House);
+	}
+	TacticalMap->Draw_Range_Ring(Center_Coord(), TClass->RadialIndicatorRadius, color);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.
@@ -9945,11 +10148,13 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 		rank = -1;
 	}
 	if (rank >= 0) {
-		if (TClass->InsigniaFrame[rank] >= 0) {
-			veterancy_shape = TClass->InsigniaFrame[rank];
-		}
+		// A custom file without a frame number shows its first frame, which also gives a rookie an insignia.
 		if (TClass->InsigniaShapes[rank] != NULL) {
 			pips1 = TClass->InsigniaShapes[rank];
+			veterancy_shape = 0;
+		}
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
 		}
 	}
 	if (veterancy_shape != PIP_NONE) {
@@ -10736,6 +10941,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BombHouse);
 	stream.Serialize(BombPlantFrame);
 	stream.Serialize(BombDetonateFrame);
+	stream.Serialize(BombWeapon);
 	stream.Serialize(IsBerzerk);
 	stream.Serialize(BerzerkDuration);
 	stream.Serialize(IsForceShielded);
@@ -11467,12 +11673,12 @@ void TechnoClass::Iron_Tint_AI(void)
 
 
 /// <summary>
-/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0 (Ares)? The Force
-/// Shield is not affected by that key.
+/// Is this object untouched by the Iron Curtain, because its type sets IronCurtain.Modifier to 0, or by the Force Shield,
+/// because its type sets ForceShield.Modifier to 0 or less (Ares)?
 /// </summary>
 bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
 {
-	return(!force_shield && TClass->IronCurtainModifier == 0.0);
+	return(force_shield ? TClass->ForceShieldModifier <= 0.0 : TClass->IronCurtainModifier == 0.0);
 }
 
 
@@ -11486,9 +11692,7 @@ bool TechnoClass::Is_Immune_To_Iron_Curtain(bool force_shield) const
 /// <param name="force_shield">Is this the Force Shield rather than the Iron Curtain?</param>
 void TechnoClass::Iron_Curtain(int duration, HouseClass *, bool force_shield)
 {
-	if (!force_shield) {
-		duration = WarheadRules::Iron_Curtain_Duration(duration, TClass->IronCurtainModifier);
-	}
+	duration = WarheadRules::Iron_Curtain_Duration(duration, force_shield ? TClass->ForceShieldModifier : TClass->IronCurtainModifier);
 	IronCurtainTimer = duration;
 	IronTintStage = 0;
 	IsForceShielded = force_shield;

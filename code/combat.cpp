@@ -261,7 +261,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
 	 * spends itself there and spares everything else.
 	 */
-	if (Map.Get_Height_GL(cell) < coord.Z) {
+	if (coord.Z - Map.Get_Height_GL(cell) > warhead->DamageAirThreshold) {
 		DynamicVectorClass<FootClass *> flyers;
 		for (int index = 0; index < Aircraft.Count(); index++) {
 			flyers.Add(Aircraft[index]);
@@ -616,7 +616,7 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 	}
 
 	if (warhead->ExplosionSet.Count()) {
-		if (warhead->IsEMEffect) {
+		if (warhead->Is_EM_Pulse()) {
 			return(warhead->ExplosionSet[Random_Pick(0, warhead->ExplosionSet.Count() - 1)]);
 		}
 		int val = std::max(0, std::min(damage, DAMAGE_PER_EXPLOSION_ANIM * warhead->ExplosionSet.Count() - 1));

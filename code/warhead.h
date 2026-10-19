@@ -373,11 +373,35 @@ class WarheadTypeClass : public AbstractTypeClass
 		double KillDriverChance;
 		bool IsKillDriverRemoveVeterancy;
 
+		// How many leptons above the ground a blast must be to damage objects in the air; -1 damages them for a blast on the ground too (Ares DamageAirThreshold).
+		int DamageAirThreshold;
+
 		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
 		bool IsPreventScatter;
+
+		// EffectsRequireDamage (Ares): the KillDriver and AttachEffect effects of this warhead apply only to an object the hit
+		// damages by at least one point.
+		bool IsEffectsRequireDamage;
+
+		// EffectsRequireVerses (Ares): those effects apply only to an object whose armor has a nonzero Verses. With no, they
+		// also apply at 0%.
+		bool IsEffectsRequireVerses;
+
+		// EMP.Duration and EMP.Cap (Ares): a warhead with a nonzero EMP.Duration changes the EMP counter of each object its blast
+		// damages, instead of creating a pulse. A positive duration disables the object and a negative one reactivates it;
+		// the cap decides how repeated hits combine.
+		int EMPDuration;
+		int EMPCap;
+
+		// Does this warhead make a pulse at the blast point, as EMEffect=yes does without EMP.Duration?
+		bool Is_EM_Pulse(void) const {return(IsEMEffect && EMPDuration == 0);}
 
 		// The animation an infantryman not marked NotHuman=yes dies with when this warhead kills him, in place of InfDeath (Ares
 		// InfDeathAnim). An animation with MakeInfantry mutates him into that infantry type for the killer's house.
 		AnimTypeClass const * InfDeathAnim;
+
+		// PreImpactAnim (Ares): played where a projectile with this warhead hits. The blast and its damage follow when it ends. The
+		// NUKE warhead plays NUKEBALL when this is not set.
+		AnimTypeClass const * PreImpactAnim;
 
 };

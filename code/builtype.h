@@ -836,6 +836,34 @@ class BuildingTypeClass : public TechnoTypeClass
 		// The frames each smoke system a harvester's payout starts at a refinery lives for.
 		int RefinerySmokeFrames;
 
+		// The EVA events announced to the player who captures a NeedsEngineer structure of this type and to the one who loses it, as event names; empty for none (CaptureEvaEvent, Ares LostEvaEvent).
+		std::string CaptureEvaEvent;
+		std::string LostEvaEvent;
+
+		// The string table labels shown to the player who captures and to the one who loses such a structure (Ares Message.Capture, Message.Lost).
+		std::string MessageCapture;
+		std::string MessageLost;
+
+		// What a spy that infiltrates this structure does when SpyEffect.Custom is yes: the keys SpyEffect.ResetRadar,
+		// PowerOutageDuration, StolenMoneyPercentage, StolenMoneyAmount, ResetSuperweapons, StolenTechIndex,
+		// UndoReverseEngineer and the five veterancy keys (UnitVeterancy is read as VehicleVeterancy).
+		bool IsSpyEffectCustom;
+		bool IsSpyResetRadar;
+		int SpyPowerOutage;
+		double SpyStolenMoneyPercentage;
+		int SpyStolenMoneyAmount;
+		bool IsSpyResetSuperweapons;
+		std::vector<int> SpyStolenTechIndex;
+		bool IsSpyUndoReverseEngineer;
+		bool IsSpyInfantryVeterancy;
+		bool IsSpyVehicleVeterancy;
+		bool IsSpyNavalVeterancy;
+		bool IsSpyAircraftVeterancy;
+		bool IsSpyBuildingVeterancy;
+
+		// The cursor shown over this structure when a spy could infiltrate it, or empty for the stock enter cursor (Ares Cursor.Spy).
+		std::string CursorSpy;
+
 		/*
 		 * This is the super weapon this building grants its owner while it stands, or
 		 * SUPER_NONE if it grants none.
@@ -956,6 +984,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * true. It also supplies the default for IsImmuneToEMP.
 		 */
 		bool IsCoreDefender;
+
+		// SolidHeight (Ares): how many cells of its height stop a SubjectToBuildings projectile; negative for the whole height,
+		// 0 for none.
+		int SolidHeight;
 
 		/*
 		 * If this building's gun barrel is a voxel model rather than a shape animation,

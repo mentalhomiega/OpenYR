@@ -9,6 +9,8 @@ when_omitted:
 
 An EM pulse that stuns this object sets its stun to the pulse's duration multiplied by this value, rounded down to whole frames. Write the value as a fraction, as in `0.5`, or as a percentage, as in `50%`. A value above `1` lengthens the stun and a value below `1` shortens it.
 
+The setting also scales a positive [`EMP.Duration`](/keys/emp.duration/) before it joins the stun counter.
+
 The setting applies wherever a pulse stuns an object: structures, vehicles, aircraft standing on the ground, cyborgs, and objects traveling underground. An aircraft in the air is crashed or destroyed by the pulse and is not stunned, so the value does not affect it. A type that is [immune](/keys/immunetoemp/) is not stunned at all.
 
 A stun that the value makes long enough can also destroy the object, as [`EMP.Threshold`](/keys/emp.threshold/) describes.

@@ -15,6 +15,7 @@
 
 class Cell;
 class TechnoClass;
+class WarheadTypeClass;
 template<class T> class DynamicVectorClass;
 
 class EMPulseClass : public AbstractClass
@@ -35,6 +36,8 @@ class EMPulseClass : public AbstractClass
 		virtual void Serialize(SaveStreamClass & stream) override;
 
 		static void Update_All(void);
+
+		static bool Hit(TechnoClass * techno, WarheadTypeClass const * warhead, TechnoClass * source);
 		static void Reset(void);
 
 		/*

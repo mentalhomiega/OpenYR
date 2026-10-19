@@ -77,11 +77,23 @@ records:
   ui-documents-replace-dialogs: OpenTS
   # Keys we read as the Ares or Phobos documentation describes them.
   ares-superweapon-keys: Ares
+  added-abductor: Ares
   added-affectsenemies: Ares
+  added-airburstspread: Ares
+  added-anim-damage-delay: Ares
+  added-bolt-beam-colors: Ares
+  added-ballisticscatter-range: Ares
+  added-preimpactanim: Ares
+  added-railgun-detached: Ares
+  added-subjecttobuildings: Ares
+  added-effectsrequire: Ares
+  added-emp-duration: Ares
+  added-forceshield-modifier: Ares
   added-altcameopcx: Ares
   added-immunetoabduction: Ares
   added-infdeathanim: Ares
   added-ironcurtain-modifier: Ares
+  added-ivanbomb-keys: Ares
   added-killdriver: Ares
   added-preventscatter: Ares
   added-urban-combat: Ares
@@ -100,6 +112,13 @@ records:
   ares-country-interface-keys: Ares
   menu-buttons-follow-uimd: Ares
   rank-insignia-keys: Ares, Phobos
+  ares-survivor-keys: Ares
+  ares-eva-keys: Ares
+  ares-spy-effect-keys: Ares
+  ares-convert-deploy: Ares
+  ares-type-presentation-keys: Ares
+  ares-type-cursor-keys: Ares
+  ares-cloak-guard-and-gattling-keys: Ares
   phobos-opentopped-values: Phobos
   # Added keys that the original gamemd.exe has no string for, checked on 2026-10-16.
   healer-target-kinds: OpenYR

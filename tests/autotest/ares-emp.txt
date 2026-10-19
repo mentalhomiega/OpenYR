@@ -1,0 +1,29 @@
+; EMP.Duration and EMP.Cap, with the warheads of tests/autotest/ares-weapon-keys. Each "hit" line ends with the stun counter of
+; the object. The MTNK is stunned in turn by:
+;   EmpSet (duration 100, cap -1): stun 100; the same hit 10 frames later keeps 100 (the larger of counter and duration).
+;   EmpStack (duration 60, cap 100): 60, then 100 (capped), after the counter has run down.
+;   EmpUncapped (duration 60, cap 0): adds 60 to the counter without a limit.
+;   EmpHeal (duration -100, cap -1): lowers the counter by 100 and the stun ends (a counter of 1 is left for the next frame).
+;   EmpHealCap0 (duration -5, cap 0): sets the counter to zero.
+; The Rhino has EMP.Modifier=50% and EMP.Threshold=40: EmpSet gives it a stun of 50, above 40, and it is destroyed.
+; EmpNoVerses (0% Verses) leaves the Grizzly's counter alone. EmpPulse (EMEffect=yes with EMP.Duration) stuns only the one it hits.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-emp.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-weapon-keys" -Seconds 60 -Filter "AUTOTEST   hit|Exception"
+30 command CenterBase
+100 own E1 56 36
+101 spawn MTNK 64 36
+102 spawn HTNK 64 40
+104 spawn SREF 64 48
+150 hit MTNK:EmpSet 1
+160 hit MTNK:EmpSet 1
+161 hit MTNK:EmpNoVerses 1
+170 hit HTNK:EmpSet 1
+300 hit MTNK:EmpHeal 1
+301 hit MTNK:EmpHealCap0 1
+320 hit MTNK:EmpStack 1
+321 hit MTNK:EmpStack 1
+322 hit MTNK:EmpUncapped 1
+323 hit MTNK:EmpHeal 1
+324 hit MTNK:EmpHealCap0 1
+350 hit SREF:EmpPulse 1
+360 quit

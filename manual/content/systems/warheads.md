@@ -5,6 +5,8 @@ category: weapons-projectiles
 keys:
   - AffectsAllies
   - AffectsEnemies
+  - EffectsRequireDamage
+  - EffectsRequireVerses
   - KillDriver
   - KillDriver.Owner
   - KillDriver.KillBelowPercent
@@ -226,7 +228,7 @@ Healing also clears every [limpet](/keys/limpetfactor/) mark from a vehicle, inf
 A [`KillDriver=yes`](/keys/killdriver/) warhead takes a vehicle's driver in place of damaging it. A hit takes the driver when the target meets **all of:**
 
 - it is a vehicle, and the hit is not a heal;
-- the warhead's `Verses` entry against its armor is not `0%`;
+- the warhead's `Verses` entry against its armor is not `0%`, unless the warhead sets [`EffectsRequireVerses=no`](/keys/effectsrequireverses/), and the hit does at least one point of damage after armor when the warhead sets [`EffectsRequireDamage=yes`](/keys/effectsrequiredamage/);
 - it passed the allies and enemies check of step 8 and is not under the [Iron Curtain](/systems/superweapons/#iron-curtain);
 - its type is neither [`Organic=yes`](/keys/organic/) nor [`Natural=yes`](/keys/natural/), and it has no `PROTECTED_DRIVER` [ability](/systems/veterancy/#abilities);
 - its strength is at or below its maximum strength times the lower of the warhead's [`KillDriver.KillBelowPercent`](/keys/killdriver.killbelowpercent/) and its type's [`ProtectedDriver.MinHealth`](/keys/protecteddriver.minhealth/);

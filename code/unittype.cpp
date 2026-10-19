@@ -106,6 +106,7 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsPassive(false),
 	IsCrateGoodie(false),
 	IsSimpleDeployer(false),
+	ConvertDeploy(NULL),
 	IsDeployer(false),
 	IsDeployToLand(false),
 	IsDeployFire(false),
@@ -376,6 +377,7 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 	if (BASECLASS::Read_INI(ini)) {
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
 		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
+		ConvertDeploy = TGet_Class(ini, Name(), "Convert.Deploy", ConvertDeploy);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
@@ -613,6 +615,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPassive);
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsSimpleDeployer);
+	stream.Serialize(ConvertDeploy);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployToLand);
 	stream.Serialize(IsDeployFire);

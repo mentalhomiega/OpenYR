@@ -284,6 +284,9 @@ class TechnoClass :	public RadioClass,
 		HouseClass * BombHouse;
 		int BombPlantFrame;
 		int BombDetonateFrame;
+
+		// The weapon that planted the bomb, whose IvanBomb keys it follows. NULL for a bomb that follows the rules' settings alone.
+		WeaponTypeClass const * BombWeapon;
 		AudioHandle BombSound;
 
 		/*
@@ -720,7 +723,9 @@ class TechnoClass :	public RadioClass,
 		 * Is a chrono teleport holding this object? Its AI waits while the teleport runs.
 		 */
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
-		void Plant_Bomb(TechnoClass * planter);
+		void Plant_Bomb(TechnoClass * planter, WeaponTypeClass const * weapon = NULL);
+		int Bomb_Delay(void) const;
+		bool Can_Detonate_Bomb(void) const;
 		bool Is_Disguised_To_Player(void) const;
 		bool Looks_Friendly_To(HouseClass const * viewer) const;
 		bool Is_Bomb_Visible(void) const;
@@ -807,6 +812,7 @@ class TechnoClass :	public RadioClass,
 		double Area_Modify(Cell const & cell) const;
 		void Base_Is_Attacked(TechnoClass const * enemy);
 		void Kill_Cargo(TechnoClass * source);
+		bool Abduct(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;
@@ -915,12 +921,17 @@ class TechnoClass :	public RadioClass,
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;
 		virtual void Draw_Insignia(Point2D const & bottomleft, Point2D const & center, Rect const & rect) const;
+		virtual void Draw_Radial_Indicator(void) const override;
 		virtual void Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & rect) const;
 		virtual void Hidden(void) override;
 		void Forget_Human_Discovery(void);
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Do_Uncloak(bool silent=false);
+
+		// The number of stages this object passes through as it cloaks and decloaks, and the sound it makes doing so.
+		int Cloaking_Stages(void) const;
+		void Play_Cloak_Sound(bool decloaking) const;
 		virtual void Do_Cloak(bool silent=false);
 		virtual void Do_Shimmer(void) override;
 		int Get_Predator_Offset(void) const;

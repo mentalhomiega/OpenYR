@@ -1,0 +1,73 @@
+; Smoke.Anim, Smoke.ChanceRed and Smoke.ChanceDead. The type-keys-c-rules mod makes the Harrier (ORCA) leave PARACH animations as
+; smoke on every frame while it is badly damaged or crashing.
+; Expected: with no airfield to land on, the Harrier takes off and crashes. While it crashes, stock rules show SGRYSMK1 animations
+; (liveanims SGRYSMK1 rises to about 31 and falls back to 0), and with -Mods PARACH rises to 39 and SGRYSMK1 stays 0.
+; Run (with -Mods tests/autotest/type-keys-c-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/aircraft-smoke.txt -Mods <absolute path of tests/autotest/type-keys-c-rules> -Seconds 120 -Filter "AUTOTEST   liveanims|Exception"
+30 command CenterBase
+40 own ORCA 64 24
+50 move ORCA 70 28
+100 liveanims PARACH
+100 liveanims SGRYSMK1
+110 liveanims PARACH
+110 liveanims SGRYSMK1
+120 liveanims PARACH
+120 liveanims SGRYSMK1
+130 liveanims PARACH
+130 liveanims SGRYSMK1
+140 liveanims PARACH
+140 liveanims SGRYSMK1
+150 liveanims PARACH
+150 liveanims SGRYSMK1
+160 liveanims PARACH
+160 liveanims SGRYSMK1
+170 liveanims PARACH
+170 liveanims SGRYSMK1
+180 liveanims PARACH
+180 liveanims SGRYSMK1
+190 liveanims PARACH
+190 liveanims SGRYSMK1
+200 liveanims PARACH
+200 liveanims SGRYSMK1
+210 liveanims PARACH
+210 liveanims SGRYSMK1
+220 liveanims PARACH
+220 liveanims SGRYSMK1
+230 liveanims PARACH
+230 liveanims SGRYSMK1
+240 liveanims PARACH
+240 liveanims SGRYSMK1
+250 liveanims PARACH
+250 liveanims SGRYSMK1
+260 liveanims PARACH
+260 liveanims SGRYSMK1
+270 liveanims PARACH
+270 liveanims SGRYSMK1
+280 liveanims PARACH
+280 liveanims SGRYSMK1
+290 liveanims PARACH
+290 liveanims SGRYSMK1
+300 liveanims PARACH
+300 liveanims SGRYSMK1
+310 liveanims PARACH
+310 liveanims SGRYSMK1
+320 liveanims PARACH
+320 liveanims SGRYSMK1
+330 liveanims PARACH
+330 liveanims SGRYSMK1
+340 liveanims PARACH
+340 liveanims SGRYSMK1
+350 liveanims PARACH
+350 liveanims SGRYSMK1
+360 liveanims PARACH
+360 liveanims SGRYSMK1
+370 liveanims PARACH
+370 liveanims SGRYSMK1
+380 liveanims PARACH
+380 liveanims SGRYSMK1
+390 liveanims PARACH
+390 liveanims SGRYSMK1
+400 liveanims PARACH
+400 liveanims SGRYSMK1
+410 liveanims PARACH
+410 liveanims SGRYSMK1
+450 quit

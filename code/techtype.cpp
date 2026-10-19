@@ -31,6 +31,7 @@
 #include "globals.h"
 #include "infatype.h"
 #include "mixfile.h"
+#include "objectkeyrules.h"
 #include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
@@ -200,6 +201,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsProtectedDriver(false),
 	ProtectedDriverMinHealth(1.0),
 	IronCurtainModifier(1.0),
+	ForceShieldModifier(1.0),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
 	BombSight(0),
@@ -241,6 +243,38 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsDefaultToGuardArea(false),
 	IsSelectableCombatant(false),
 	BuildTimeMultiplier(1.0),
+	SurvivorSide{},
+	CrewTechnicianChance(-1),
+	CrewEngineerChance(-1),
+	SurvivorPilots(-1),
+	SurvivorPilotChance{-1, -1, -1},
+	SurvivorPassengerChance{-1, -1, -1},
+	ParachuteAnim(NULL),
+	SlamSound(VOC_NONE),
+	IsSlamSoundSet(false),
+	RadialIndicatorRadius(0.0),
+	WaterImage(NULL),
+	IsCloneable(true),
+	FactoryOwners(),
+	FactoryOwnersForbidden(),
+	CursorMove(),
+	CursorNoMove(),
+	CursorDeploy(),
+	CursorNoDeploy(),
+	CursorEnter(),
+	CursorNoEnter(),
+	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsCloakSoundSet(false),
+	IsDecloakSoundSet(false),
+	CloakStages(0),
+	IsCanPassiveAquireGuard(true),
+	IsCanPassiveAquireCloak(true),
+	IsNoManualFire(false),
+	IsGattlingCycle(false),
+	EvaPromoted{},
+	EvaLost(),
+	IsEvaLostSet(false),
 	ChronoInSound(VOC_NONE),
 	ChronoOutSound(VOC_NONE),
 	CreateSound(VOC_NONE),
@@ -864,6 +898,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
 		IronCurtainModifier = ini.Get_Float(Name(), "IronCurtain.Modifier", IronCurtainModifier);
+		ForceShieldModifier = ini.Get_Float(Name(), "ForceShield.Modifier", ForceShieldModifier);
 		IsImmuneToAbduction = ini.Get_Bool(Name(), "ImmuneToAbduction", IsImmuneToAbduction);
 		IsProtectedDriver = ini.Get_Bool(Name(), "ProtectedDriver", IsProtectedDriver);
 		ProtectedDriverMinHealth = WarheadRules::Protected_Driver_Min_Health(IsProtectedDriver, ini.Is_Present(Name(), "ProtectedDriver.MinHealth"), ini.Get_Float(Name(), "ProtectedDriver.MinHealth", 0.0));
@@ -953,6 +988,82 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsSelectableCombatant = ini.Get_Bool(Name(), "IsSelectableCombatant", IsSelectableCombatant);
 		// gamemd multiplies build time by this float32, truncated from the INI value (TechnoClass::TimeToBuild, 0x6F47A0, fmul dword [type+0x608]).
 		BuildTimeMultiplier = Truncate_To_Single(ini.Get_Double(Name(), "BuildTimeMultiplier", BuildTimeMultiplier));
+		if (ini.Get_String(Name(), "Survivor.Side0", "", value, sizeof(value)) > 0) {
+			SurvivorSide[0] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side1", "", value, sizeof(value)) > 0) {
+			SurvivorSide[1] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side2", "", value, sizeof(value)) > 0) {
+			SurvivorSide[2] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		if (ini.Get_String(Name(), "Survivor.Side3", "", value, sizeof(value)) > 0) {
+			SurvivorSide[3] = strcmpi(value, "<none>") == 0 ? "" : value;
+		}
+		CrewTechnicianChance = ini.Get_Int(Name(), "Crew.TechnicianChance", CrewTechnicianChance);
+		CrewEngineerChance = ini.Get_Int(Name(), "Crew.EngineerChance", CrewEngineerChance);
+		SurvivorPilots = ini.Get_Int(Name(), "Survivor.Pilots", SurvivorPilots);
+		SurvivorPilotChance[0] = ini.Get_Int(Name(), "Survivor.RookiePilotChance", SurvivorPilotChance[0]);
+		SurvivorPilotChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPilotChance", SurvivorPilotChance[1]);
+		SurvivorPilotChance[2] = ini.Get_Int(Name(), "Survivor.ElitePilotChance", SurvivorPilotChance[2]);
+		SurvivorPassengerChance[0] = ini.Get_Int(Name(), "Survivor.RookiePassengerChance", SurvivorPassengerChance[0]);
+		SurvivorPassengerChance[1] = ini.Get_Int(Name(), "Survivor.VeteranPassengerChance", SurvivorPassengerChance[1]);
+		SurvivorPassengerChance[2] = ini.Get_Int(Name(), "Survivor.ElitePassengerChance", SurvivorPassengerChance[2]);
+		ParachuteAnim = TGet_Class(ini, Name(), "Parachute.Anim", ParachuteAnim);
+		if (ini.Is_Present(Name(), "SlamSound")) {
+			SlamSound = ini.Get_VocType(Name(), "SlamSound", VOC_NONE);
+			IsSlamSoundSet = true;
+		}
+		RadialIndicatorRadius = ini.Get_Float(Name(), "RadialIndicatorRadius", RadialIndicatorRadius);
+		WaterImage = TGet_Class(ini, Name(), "WaterImage", WaterImage);
+		IsCloneable = ini.Get_Bool(Name(), "Cloneable", IsCloneable);
+		if (ini.Is_Present(Name(), "FactoryOwners")) {
+			FactoryOwners = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners"));
+		}
+		if (ini.Is_Present(Name(), "FactoryOwners.Forbidden")) {
+			FactoryOwnersForbidden = ObjectKeyRules::Split_List(ini.Get_String(Name(), "FactoryOwners.Forbidden"));
+		}
+		if (ini.Get_String(Name(), "Cursor.Move", "", value, sizeof(value)) > 0) {
+			CursorMove = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoMove", "", value, sizeof(value)) > 0) {
+			CursorNoMove = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.Deploy", "", value, sizeof(value)) > 0) {
+			CursorDeploy = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoDeploy", "", value, sizeof(value)) > 0) {
+			CursorNoDeploy = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.Enter", "", value, sizeof(value)) > 0) {
+			CursorEnter = value;
+		}
+		if (ini.Get_String(Name(), "Cursor.NoEnter", "", value, sizeof(value)) > 0) {
+			CursorNoEnter = value;
+		}
+		if (ini.Is_Present(Name(), "CloakSound")) {
+			CloakSound = ini.Get_VocType(Name(), "CloakSound", VOC_NONE);
+			IsCloakSoundSet = true;
+		}
+		if (ini.Is_Present(Name(), "DecloakSound")) {
+			DecloakSound = ini.Get_VocType(Name(), "DecloakSound", VOC_NONE);
+			IsDecloakSoundSet = true;
+		}
+		CloakStages = ini.Get_Int(Name(), "Cloakable.Stages", CloakStages);
+		IsCanPassiveAquireGuard = ini.Get_Bool(Name(), "CanPassiveAquire.Guard", IsCanPassiveAquireGuard);
+		IsCanPassiveAquireCloak = ini.Get_Bool(Name(), "CanPassiveAquire.Cloak", IsCanPassiveAquireCloak);
+		IsNoManualFire = ini.Get_Bool(Name(), "NoManualFire", IsNoManualFire);
+		IsGattlingCycle = ini.Get_Bool(Name(), "Gattling.Cycle", IsGattlingCycle);
+		if (ini.Get_String(Name(), "EVA.VeteranPromoted", "", value, sizeof(value)) > 0) {
+			EvaPromoted[0] = value;
+		}
+		if (ini.Get_String(Name(), "EVA.ElitePromoted", "", value, sizeof(value)) > 0) {
+			EvaPromoted[1] = value;
+		}
+		if (ini.Get_String(Name(), "EVA.Lost", "", value, sizeof(value)) > 0) {
+			EvaLost = value;
+			IsEvaLostSet = true;
+		}
 		if (ini.Get_String(Name(), "GroupAs", "", value, sizeof(value)) > 0) {
 			GroupAs = value;
 		}
@@ -1174,6 +1285,15 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
 		}
 		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
+		if (ini.Is_Present(Name(), "Prerequisite.StolenTechs")) {
+			PrerequisiteStolenTechs.clear();
+			for (std::string const & index : ObjectKeyRules::Split_List(ini.Get_String(Name(), "Prerequisite.StolenTechs"))) {
+				int const value = atoi(index.c_str());
+				if (value >= 0) {
+					PrerequisiteStolenTechs.push_back(value);
+				}
+			}
+		}
 		PrerequisiteOverride = ini.Get_BuildingType_List(ini, IniName, "PrerequisiteOverride", PrerequisiteOverride);
 		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
 		DesignatorRange = ini.Get_Int(Name(), "DesignatorRange", DesignatorRange);
@@ -1694,6 +1814,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProtectedDriver);
 	stream.Serialize(ProtectedDriverMinHealth);
 	stream.Serialize(IronCurtainModifier);
+	stream.Serialize(ForceShieldModifier);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(BombSight);
@@ -1738,6 +1859,42 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDefaultToGuardArea);
 	stream.Serialize(IsSelectableCombatant);
 	stream.Serialize(BuildTimeMultiplier);
+	for (std::string & side : SurvivorSide) {
+		stream.Serialize(side);
+	}
+	stream.Serialize(CrewTechnicianChance);
+	stream.Serialize(CrewEngineerChance);
+	stream.Serialize(SurvivorPilots);
+	stream.Serialize(SurvivorPilotChance);
+	stream.Serialize(SurvivorPassengerChance);
+	stream.Serialize(PrerequisiteStolenTechs);
+	stream.Serialize(ParachuteAnim);
+	stream.Serialize(SlamSound);
+	stream.Serialize(IsSlamSoundSet);
+	stream.Serialize(RadialIndicatorRadius);
+	stream.Serialize(WaterImage);
+	stream.Serialize(IsCloneable);
+	stream.Serialize(FactoryOwners);
+	stream.Serialize(FactoryOwnersForbidden);
+	stream.Serialize(CursorMove);
+	stream.Serialize(CursorNoMove);
+	stream.Serialize(CursorDeploy);
+	stream.Serialize(CursorNoDeploy);
+	stream.Serialize(CursorEnter);
+	stream.Serialize(CursorNoEnter);
+	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsCloakSoundSet);
+	stream.Serialize(IsDecloakSoundSet);
+	stream.Serialize(CloakStages);
+	stream.Serialize(IsCanPassiveAquireGuard);
+	stream.Serialize(IsCanPassiveAquireCloak);
+	stream.Serialize(IsNoManualFire);
+	stream.Serialize(IsGattlingCycle);
+	stream.Serialize(EvaPromoted[0]);
+	stream.Serialize(EvaPromoted[1]);
+	stream.Serialize(EvaLost);
+	stream.Serialize(IsEvaLostSet);
 	stream.Serialize(ChronoInSound);
 	stream.Serialize(ChronoOutSound);
 	stream.Serialize(CreateSound);

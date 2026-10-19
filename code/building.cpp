@@ -124,6 +124,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "classids.h"
 #include "combat.h"
@@ -325,6 +326,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 
 	// A house that has spied on a war factory also gets its trainable deployable structures as veterans, except naval ones.
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval && Class->UndeploysInto != NULL) {
+		Veterancy.Set_Veteran(true);
+	}
+	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);
 	}
 
@@ -3433,7 +3437,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
 					 * get out is discarded.
 					 */
-					if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
+					if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY && base->TClass->IsCloneable) {
 						for (int index = 0; index < Buildings.Count(); index++) {
 							BuildingClass * vat = Buildings[index];
 							if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
@@ -4391,6 +4395,13 @@ void BuildingClass::Sell_Back(int control)
 		**	appropriate action.
 		*/
 		if (decon) {
+			// A bomb planted by a weapon with IvanBomb.DetonateOnSell=yes goes off when the sale starts.
+			if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+				Detonate_Bomb();
+				if (!IsActive) {
+					return;
+				}
+			}
 			Assign_Mission(MISSION_DECONSTRUCTION);
 			Commence();
 			//if (House->Is_Player_Control()) {
@@ -4433,6 +4444,12 @@ void BuildingClass::Assign_Planning_Path(void)
 		return;
 	}
 
+	if (BombDetonateFrame != -1 && BombWeapon != NULL && BombWeapon->IvanDetonateOnSell == 1) {
+		Detonate_Bomb();
+		if (!IsActive) {
+			return;
+		}
+	}
 	Assign_Mission(MISSION_DECONSTRUCTION);
 	Commence();
 	if (House->Is_Player_Control()) {
@@ -4975,6 +4992,22 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
 			if (announce && Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
 				Speak(VOX_BUILDING_CAPTURED);
+			}
+
+			// The capturer of a NeedsEngineer structure hears and sees its capture lines, and the loser its loss lines.
+			if (announce && Class->IsNeedsEngineer) {
+				bool const captured = newowner->Is_Player_Control();
+				std::string const & text = captured ? Class->MessageCapture : Class->MessageLost;
+				std::string const & line = captured ? Class->CaptureEvaEvent : Class->LostEvaEvent;
+				if (!text.empty() && !ObjectKeyRules::Names_Nothing(text)) {
+					std::string const shown = Fetch_String_UTF8(text.c_str());
+					Session.Messages.Add_Message(NULL, 0, shown.c_str(), House_Display_Scheme(captured ? newowner : House), TextPrintType(TPF_USE_GRAD_PAL | TPF_FULLSHADOW | TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
+				}
+				if (!line.empty() && !ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				} else if (!captured && line.empty() && !text.empty()) {
+					Speak_Eva("EVA_TechBuildingLost");
+				}
 			}
 			Map.PowerClass::IsToRedraw = true;
 			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
@@ -5729,8 +5762,10 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						**	construction yard.
 						*/
 						const InfantryTypeClass * typ = Crew_Type();
+						int attempts = 0;
 						while (typ != NULL && typ->IsEngineer && engineer) {
-							typ = Crew_Type();
+							// Crew.EngineerChance=100 would otherwise never name a second survivor.
+							typ = ++attempts < 100 ? Crew_Type() : NULL;
 						}
 						if (typ == NULL) {
 							// A survivor with no type is left out, and the rest still come out, as the destroyed-structure path does.
@@ -7063,6 +7098,13 @@ int BuildingClass::Pip_Count(void) const
  *=============================================================================================*/
 void BuildingClass::Death_Announcement(TechnoClass const * source) const
 {
+	if (Class->IsEvaLostSet) {
+		// An EVA.Lost line replaces the stock announcement, which only an attacked structure makes.
+		if (House->Is_Player_Control() && !Class->IsInsignificant && !Class->IsSpawned && !Class->IsDontScore && !Class->EvaLost.empty() && !ObjectKeyRules::Names_Nothing(Class->EvaLost)) {
+			Speak_Eva(Class->EvaLost.c_str());
+		}
+		return;
+	}
 	if (source != NULL && House->Is_Player_Control()) {
 		Push_Radar_Event_Cell(Destination_Coord().As_Cell());
 		Speak(VOX_STRUCTURE_DESTROYED);
@@ -7565,9 +7607,14 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 InfantryTypeClass const * BuildingClass::Crew_Type(void) const
 {
-	if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
-		SideType const side = House->Class->Side;
-		return(side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Engineer_Type() : Rule->Engineer);
+	SideType const side = House->Class->Side;
+	InfantryTypeClass const * engineer = side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Engineer_Type() : Rule->Engineer;
+	if (Class->CrewEngineerChance >= 0) {
+		if (!IsCaptured && Percent_Chance(Class->CrewEngineerChance)) {
+			return(engineer);
+		}
+	} else if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
+		return(engineer);
 	}
 	return(BASECLASS::Crew_Type());
 }
@@ -12012,9 +12059,9 @@ void BuildingClass::Plot_On_Radar(void) const
 /// </summary>
 void BuildingClass::Draw_Radial_Indicator(void) const
 {
-	if (Class->IsSensorArray || Class->IsCloakGenerator) {
+	if (Class->IsSensorArray || Class->IsCloakGenerator || Class->RadialIndicatorRadius > 0.0) {
 
-		int radius = Tactical::Radial_Ring_Radius(Class->CloakRadiusInCells);
+		int radius = Tactical::Radial_Ring_Radius(Class->RadialIndicatorRadius > 0.0 ? Class->RadialIndicatorRadius : (double)Class->CloakRadiusInCells);
 
 		if (radius != 0) {
 			if (IsOn && House->Is_Player_Control()) {
@@ -12172,6 +12219,98 @@ static void Speak_Stolen_Tech(bool victim, bool spy)
 
 
 /// <summary>
+/// Applies the SpyEffect keys of this structure's type to the house that infiltrated it and to its owner.
+/// </summary>
+/// <param name="house">The house that infiltrated the structure.</param>
+/// <param name="victim">Does the structure's owner hear the lines?</param>
+/// <param name="spy">Does the infiltrating house hear the lines?</param>
+void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
+{
+	bool spoke = false;
+
+	if (Class->IsSpyResetRadar && !House->IsSpySatActive) {
+		if (House == PlayerPtr) {
+			Map.Shroud_The_Map(House);
+		} else {
+			House->IsVisionary = false;
+		}
+		if (victim) Speak_Eva("EVA_RadarSabotaged");
+		if (spy) Speak_Eva("EVA_BuildingInfRadarSabotaged");
+		spoke = true;
+	}
+
+	if (Class->SpyPowerOutage > 0) {
+		House->PowerBlackout = Class->SpyPowerOutage;
+		House->IsPowerBlackout = true;
+		House->RecalcPower = true;
+		if (victim) {
+			Speak_Eva("EVA_PowerSabotaged");
+		} else if (spy) {
+			Speak_Eva("EVA_BuildingInfiltrated");
+			Speak_Eva("EVA_EnemyBasePoweredDown");
+		}
+		spoke = true;
+	}
+
+	int const stolen = ObjectKeyRules::Spy_Money_Taken(House->Available_Money(), Class->SpyStolenMoneyPercentage, Class->SpyStolenMoneyAmount);
+	if (stolen > 0) {
+		House->Spend_Money(stolen);
+		house->Refund_Money(stolen);
+		if (victim) Speak_Eva("EVA_CashStolen");
+		if (spy) Speak_Eva("EVA_BuildingInfCashStolen");
+		spoke = true;
+	}
+
+	if (Class->IsSpyResetSuperweapons) {
+		SuperWeaponType const weapons[2] = {Class->SuperWeapon, Class->SuperWeapon2};
+		for (SuperWeaponType weapon : weapons) {
+			if (weapon != SUPER_NONE && weapon < House->SuperWeapon.Count()) {
+				SuperClass * super = House->SuperWeapon[weapon];
+				if (super != NULL) {
+					super->Reset();
+				}
+			}
+		}
+	}
+
+	if (!Class->SpyStolenTechIndex.empty()) {
+		house->StolenTechs |= ObjectKeyRules::Stolen_Tech_Mask(Class->SpyStolenTechIndex);
+		house->IsRecalcNeeded = true;
+		Speak_Stolen_Tech(victim, spy);
+		spoke = true;
+	}
+
+	if (Class->IsSpyUndoReverseEngineer && !House->ReversedTypes.empty()) {
+		House->ReversedTypes.clear();
+		House->IsRecalcNeeded = true;
+		House->Production_Status_Changed();
+	}
+
+	if (Class->IsSpyInfantryVeterancy) {
+		house->IsBarracksInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyVehicleVeterancy) {
+		house->IsWarFactoryInfiltrated = true;
+		house->IsRecalcNeeded = true;
+	}
+	if (Class->IsSpyNavalVeterancy) {
+		house->IsNavalSpied = true;
+	}
+	if (Class->IsSpyAircraftVeterancy) {
+		house->IsAircraftSpied = true;
+	}
+	if (Class->IsSpyBuildingVeterancy) {
+		house->IsBuildingSpied = true;
+	}
+
+	if (!spoke && (victim || spy)) {
+		Speak_Eva("EVA_BuildingInfiltrated");
+	}
+}
+
+
+/// <summary>
 /// Records that a spy has infiltrated this building.
 /// This routine is called when a spy makes it inside. The spying house is handed whatever
 /// intelligence this building type is worth -- radar coverage and power plant readings.
@@ -12192,6 +12331,13 @@ void BuildingClass::Spied_By(HouseClass * house)
 	if (!((victim || spy) && Submit_Radar_Event(RADAREVENT_INFILTRATED, Center_Coord().As_Cell()))) {
 		victim = false;
 		spy = false;
+	}
+
+	// SpyEffect.Custom replaces the stock effect of the structure with the effects its keys list.
+	if (Class->IsSpyEffectCustom) {
+		Custom_Spy_Effect(house, victim, spy);
+		Mark(MARK_CHANGE);
+		return;
 	}
 
 	/*

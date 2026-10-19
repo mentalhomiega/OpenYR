@@ -19,6 +19,6 @@ Every passenger dropped from an aircraft falls with this animation attached abov
 
 If the ground below will not take the passenger, it goes back into the hold and no canopy is created.
 
-The key is read from `[General]` and then from `[AudioVisual]`, so an `[AudioVisual]` entry wins. Every paradropped passenger uses this canopy; [`BombParachute`](/keys/bombparachute/) is never used.
+The key is read from `[General]` and then from `[AudioVisual]`, so an `[AudioVisual]` entry wins. Every paradropped passenger whose type sets no [`Parachute.Anim`](/keys/parachute.anim/) uses this canopy; [`BombParachute`](/keys/bombparachute/) is never used.
 
 The passenger falls at the slow parachute rate only while the animation lasts. Give it a [`LoopCount=`](/keys/loopcount/) long enough to play until landing; if it ends early, or the key is unset, the passenger falls faster.

@@ -616,6 +616,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Is_Turret_Equipped() const override;
 		void Update_Radar_Spied(void);
 		void Spied_By(HouseClass * house);
+		void Custom_Spy_Effect(HouseClass * house, bool victim, bool spy);
 
 		void Update_FS_Wall_State(void);
 		bool Crossing_Firestorm(ObjectClass * object, bool do_damage);

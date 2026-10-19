@@ -61,6 +61,9 @@ class AnimTypeClass : public ObjectTypeClass
 		 */
 		double Damage;
 
+		// Damage.Delay (Ares): the animation frames between two applications of Damage. 0 applies it on every frame.
+		int DamageDelay;
+
 		/*
 		**	Simple animation delay value between advancing of frames. This can
 		**	be overridden by the control list.

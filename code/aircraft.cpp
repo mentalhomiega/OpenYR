@@ -231,6 +231,9 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->Class != NULL && Class != NULL && House->Class->VeteranAircraft.Is_In_List(Class)) {
 		Veterancy.Set_Veteran(true);
 	}
+	if (House != NULL && House->IsAircraftSpied && Class != NULL && Class->IsTrainable) {
+		Veterancy.Set_Veteran(true);
+	}
 
 	Aircraft.Add(this);
 
@@ -682,8 +685,11 @@ void AircraftClass::AI(void)
 	Airborne_Look();
 
 	if (HealthRatio < Rule->ConditionRed && HeightAGL > 0) {
-		if (Percent_Chance(Strength != 0 ? 10 : 80)) {
-			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")], PositionCoord);
+		if (Percent_Chance(Strength != 0 ? Class->SmokeChanceRed : Class->SmokeChanceDead)) {
+			AnimTypeClass const * smoke = Class->IsSmokeAnimSet ? Class->SmokeAnim : AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")];
+			if (smoke != NULL) {
+				new AnimClass(smoke, PositionCoord);
+			}
 		}
 	}
 

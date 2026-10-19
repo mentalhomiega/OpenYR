@@ -641,6 +641,7 @@ RulesClass::RulesClass(void) :
 	IceBreakingWeight(4),
 	ShipSinkingWeight(3),
 	IsAlliedWallTransparency(false),
+	IsAlliedSolidTransparency(false),
 	ParachuteMaxFallRate(-3),
 	NoParachuteMaxFallRate(-100),
 	IceCrackSounds(),
@@ -653,6 +654,8 @@ RulesClass::RulesClass(void) :
 	VeteranROF(1),
 	VeteranCap(1),
 	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsDecloakSoundSet(false),
 	SellSound(VOC_NONE),
 	GameClosed(VOC_NONE),
 	IncomingMessage(VOC_NONE),
@@ -1193,6 +1196,10 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		VoxelSpecularFromView = ini.Get_Bool(AUDIOVISUAL, "VoxelSpecularFromView", VoxelSpecularFromView);
 		ShakeScreen = ini.Get_Int(AUDIOVISUAL, "ShakeScreen", ShakeScreen);
 		CloakSound = ini.Get_VocType(AUDIOVISUAL, "CloakSound", CloakSound);
+		if (ini.Is_Present(AUDIOVISUAL, "DecloakSound")) {
+			DecloakSound = ini.Get_VocType(AUDIOVISUAL, "DecloakSound", DecloakSound);
+			IsDecloakSoundSet = true;
+		}
 		SellSound = ini.Get_VocType(AUDIOVISUAL, "SellSound", SellSound);
 		GameClosed = ini.Get_VocType(AUDIOVISUAL, "GameClosed", GameClosed);
 		IncomingMessage = ini.Get_VocType(AUDIOVISUAL, "IncomingMessage", IncomingMessage);
@@ -1701,6 +1708,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
 		IsAlliedWallTransparency = ini.Get_Bool("WallModel", "AlliedWallTransparency", IsAlliedWallTransparency);
+		IsAlliedSolidTransparency = ini.Get_Bool("CombatDamage", "AlliedSolidTransparency", IsAlliedSolidTransparency);
 		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
 		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);
@@ -3110,6 +3118,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IceBreakingWeight);
 	stream.Serialize(ShipSinkingWeight);
 	stream.Serialize(IsAlliedWallTransparency);
+	stream.Serialize(IsAlliedSolidTransparency);
 	stream.Serialize(ParachuteMaxFallRate);
 	stream.Serialize(NoParachuteMaxFallRate);
 	stream.Serialize(IceCrackSounds);
@@ -3122,6 +3131,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranROF);
 	stream.Serialize(VeteranCap);
 	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsDecloakSoundSet);
 	stream.Serialize(SellSound);
 	stream.Serialize(GameClosed);
 	stream.Serialize(IncomingMessage);

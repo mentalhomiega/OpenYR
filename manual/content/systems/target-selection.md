@@ -139,6 +139,8 @@ Three more conditions stop a scan before it starts. **Any of** them is enough, a
 - the object is in Guard, and it can cloak (from its type or a cloaking crate) or holds the `CLOAK` ability;
 - [`DeployToFire=yes`](/keys/deploytofire/) on a vehicle.
 
+[`CanPassiveAquire.Guard=no`](/keys/canpassiveaquire.guard/) stops the scan of an object of that type on the Guard mission, and [`CanPassiveAquire.Cloak=no`](/keys/canpassiveaquire.cloak/) does the same for an object that can cloak. Neither stops the Guard area scan.
+
 ### The targeting timer
 
 The Guard, Move and Harvest opportunity scans and the Guard area scan wait for the targeting timer. The timer starts at 45 frames when the object is created. Each of those scans that runs restarts it, and so does each Hunt scan: an area scan with [`GuardAreaTargetingDelay`](/keys/guardareatargetingdelay/) frames, and the others with [`NormalTargetingDelay`](/keys/normaltargetingdelay/) frames, each plus a random 0 to 2, whether or not the scan finds a target. When the object's target is removed or changes owner while more than 10 frames remain, the timer restarts with a random 4 to 8 frames, so the next area scan comes soon.
