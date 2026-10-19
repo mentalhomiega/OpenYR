@@ -53,16 +53,16 @@ A mod that is a complete conversion, rather than a set of changes, can name its 
 
 ```ini title="mod.ini"
 [Files]
-Rules=RULESMO.INI
-Art=ARTMO.INI
-AI=AIMO.INI
-Sound=SOUNDMO.INI
-Theme=THEMEMO.INI
-Eva=EVAMO.INI
-Battle=BATTLEMO.INI
+Rules=RULESCV.INI
+Art=ARTCV.INI
+AI=AICV.INI
+Sound=SOUNDCV.INI
+Theme=THEMECV.INI
+Eva=EVACV.INI
+Battle=BATTLECV.INI
 
 [Archives]
-ExpandPrefix=EXPANDMO,EXPANDMD
+ExpandPrefix=EXPANDCV,EXPANDMD
 CachePrefix=ECACHE
 ```
 
@@ -70,12 +70,12 @@ CachePrefix=ECACHE
 | --- | --- |
 | `[Files]` `Rules`, `Art`, `RA2Art`, `AI`, `Sound`, `Theme`, `Eva`, `Battle`, `LanguageRules`, `MultiplayerRules`, `Tutorial`, `UI`, `Keyboard`, and each one's `Expansion` key | The name of the file the game reads in place of the deployment's. The game looks for it in the usual [search order](/formats/opents-ini/#the-order-files-are-searched-for-in), so the file may sit in the mod's folder or in one of its archives. |
 | `[Palettes]` `Scheme`, `Game` | The palettes in force until a theater is loaded |
-| `[Archives]` `ExpandPrefix` | Comma separated prefixes of the numbered expansion archives. `EXPANDMO` mounts `EXPANDMO99.MIX` down to `EXPANDMO00.MIX`, and the archives of an earlier prefix are searched before those of a later one. The default is `EXPANDMD`. |
+| `[Archives]` `ExpandPrefix` | Comma separated prefixes of the numbered expansion archives. `EXPANDCV` mounts `EXPANDCV99.MIX` down to `EXPANDCV00.MIX`, and the archives of an earlier prefix are searched before those of a later one. The default is `EXPANDMD`. |
 | `[Archives]` `CachePrefix` | The same for the cached archives. The default is `ECACHE`. |
 
 A key the mod leaves out keeps the value the deployment or an earlier mod gave, and where two mods write the same key the later mod's value is used. These keys replace a file's name, so they differ from `Rules=`, `Art=` and `AI=` under `[Mod]`, which name an overlay that is read over the base file. `Settings` cannot be set here: the player's settings file is read before any mod is installed.
 
-While a mod is active, the game mounts the patch and expansion archives ahead of the language archives. `RA2MD.CSF`, and any other file the language archives hold, can then come from the mod's `EXPANDMO` archive. Without a mod the language archives stay first. A file the game reads into memory, such as a shape or a palette, is read from a mod's expansion archive on first use and kept until the game exits, so a mod's large expansion archives need not be cached.
+While a mod is active, the game mounts the patch and expansion archives ahead of the language archives. `RA2MD.CSF`, and any other file the language archives hold, can then come from the mod's `EXPANDCV` archive. Without a mod the language archives stay first. A file the game reads into memory, such as a shape or a palette, is read from a mod's expansion archive on first use and kept until the game exits, so a mod's large expansion archives need not be cached.
 
 ## How overlays are read
 
