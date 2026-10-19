@@ -153,6 +153,12 @@ class SideClass : public AbstractTypeClass
 		int HudColor[3];
 
 		/*
+		 * The theme a multiplayer match plays while it loads for a player of this side, from the
+		 * side's own section. Empty leaves the loading screen as it was.
+		 */
+		std::string LoadingTheme;
+
+		/*
 		 * The score screens' art and music from the side's own section. An empty name leaves the
 		 * side's stock art, or the SCORE theme.
 		 */

@@ -61,6 +61,7 @@ SideClass::SideClass(char const * ininame) :
 	SurvivorDivisor(-1),
 	IsHudColor(false),
 	HudColor{0, 0, 0},
+	LoadingTheme(),
 	MultiplayerScoreBackground(),
 	MultiplayerScorePalette(),
 	MultiplayerScoreBars(),
@@ -333,6 +334,7 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 		HudColor[1] = color.Get_Green();
 		HudColor[2] = color.Get_Blue();
 	}
+	LoadingTheme = ini.Get_String(Name(), "LoadingTheme", LoadingTheme.c_str());
 	MultiplayerScoreBackground = ini.Get_String(Name(), "MultiplayerScore.Background", MultiplayerScoreBackground.c_str());
 	MultiplayerScorePalette = ini.Get_String(Name(), "MultiplayerScore.Palette", MultiplayerScorePalette.c_str());
 	MultiplayerScoreBars = ini.Get_String(Name(), "MultiplayerScore.Bars", MultiplayerScoreBars.c_str());
@@ -385,6 +387,7 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SurvivorDivisor);
 	stream.Serialize(IsHudColor);
 	stream.Serialize(HudColor);
+	stream.Serialize(LoadingTheme);
 	stream.Serialize(MultiplayerScoreBackground);
 	stream.Serialize(MultiplayerScorePalette);
 	stream.Serialize(MultiplayerScoreBars);

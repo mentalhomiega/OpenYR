@@ -37,6 +37,7 @@ UINetLobbyPresenterClass::UINetLobbyPresenterClass(UINetLobbyServiceClass & serv
 /// </summary>
 static void Settle_Colour(UINetLobbyState & state)
 {
+	state.SideTip = state.Side >= 0 && state.Side < (int)state.Sides.size() ? state.Sides[state.Side].Tip : std::string();
 	bool const listed = state.Color >= 0 && state.Color < (int)state.Colors.size();
 	std::string const stock = listed ? state.Colors[state.Color].Label : std::string();
 	state.ColorName = UI_Color_Button_Name(stock, state.CustomColor);
@@ -100,6 +101,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 		if (intent.Value >= 0 && intent.Value < (int)State.Sides.size()) {
 			State.Side = intent.Value;
 			Service.Set_Side(State.Side);
+			Settle_Colour(State);
 		}
 	} else if (intent.Name == "pickopen") {
 		UI_Color_Pick_Open(State.Picker, 0, State.CustomColor, State.Color, State.Rivals);
@@ -355,6 +357,7 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			option.RegisterMember("label", &UINetOption::Label);
 			option.RegisterMember("value", &UINetOption::Value);
 			option.RegisterMember("color", &UINetOption::Color);
+			option.RegisterMember("tip", &UINetOption::Tip);
 			line.RegisterMember("text", &UINetChatLine::Text);
 			line.RegisterMember("color", &UINetChatLine::Color);
 			row.RegisterMember("name", &UINetPlayerRow::Name);
@@ -526,6 +529,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Sync_Shared();
 			Model.DirtyVariable("host");
 			Model.DirtyVariable("side");
+			Model.DirtyVariable("sidetip");
 			Model.DirtyVariable("colorname");
 			Model.DirtyVariable("colortip");
 			Model.DirtyVariable("colorstyle");
@@ -561,6 +565,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 				&& model.Bind("host", &state.Host)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
+				&& model.Bind("sidetip", &state.SideTip)
 				&& model.Bind("colorname", &state.ColorName)
 				&& model.Bind("colortip", &state.ColorTip)
 				&& model.Bind("colorstyle", &state.ColorStyle)

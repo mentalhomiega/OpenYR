@@ -11,6 +11,7 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "csf.h"
 #include "lobbycolor.h"
 #include "autotest.h"
 #include "ccfile.h"
@@ -437,6 +438,9 @@ void UI_Skirmish_State(UISkirmishState & state)
 		UISkirmishOption option;
 		option.Label = house->Full_Name();
 		option.Value = index;
+		if (!house->StatusText.empty()) {
+			option.Tip = Fetch_String_UTF8(house->StatusText.c_str());
+		}
 		state.Sides.push_back(option);
 	}
 

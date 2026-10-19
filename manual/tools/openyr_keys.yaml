@@ -98,6 +98,7 @@ records:
   ares-side-survivor-keys: Ares
   ares-side-score-screen-keys: Ares
   ares-lobby-colors: Ares
+  ares-country-lobby-keys: Ares
   ares-country-interface-keys: Ares
   menu-buttons-follow-uimd: Ares
   rank-insignia-keys: Ares, Phobos

@@ -34,7 +34,7 @@
 						</select>
 					</div>
 					<div class="cell col-side">
-						<select class="pick side" data-attr-id="'side' + row" data-attrif-disabled="!slot.active" data-event-change="queue('slotside', row, ev.value)">
+						<select class="pick side" data-attr-id="'side' + row" data-attrif-disabled="!slot.active" data-attr-tip="sides[slot.side].tip" data-event-change="queue('slotside', row, ev.value)">
 							<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == slot.side">{{entry.label}}</option>
 						</select>
 					</div>

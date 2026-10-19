@@ -16063,6 +16063,74 @@ File.LoadScreenPAL:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
+File.ObserverBackground:
+  key: File.ObserverBackground
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: ObserverBackgroundFile
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+File.ObserverFlag:
+  key: File.ObserverFlag
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: ObserverFlagFile
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+File.ObserverFlagAltPalette:
+  key: File.ObserverFlagAltPalette
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: HouseTypeClass
+      member: IsObserverFlagAltPalette
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+File.Taunt:
+  key: File.Taunt
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: TauntFile
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 FileName:
   key: FileName
   scopes:
@@ -24288,6 +24356,37 @@ Loadable:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
+LoadingTheme:
+  key: LoadingTheme
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: LoadingTheme
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: LoadingTheme
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 Lobber:
   key: Lobber
   scopes:
@@ -25488,6 +25587,23 @@ MenuStyle:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+MenuText.Status:
+  key: MenuText.Status
+  scopes:
+  - applies_to: *id012
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: HouseTypeClass
+      member: StatusText
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 MenuTheme:
   key: MenuTheme
   scopes:

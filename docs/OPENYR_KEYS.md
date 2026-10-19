@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 288 entries
+- [Rules](#rules): 295 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 32 entries
@@ -89,12 +89,18 @@ Bounty.Value=200
 | [`File.Flag`](../manual/content/keys/file.flag.md) | Computed; see the page | The PCX file shown as the country's flag beside a player's name on the loading screen. | Ares |
 | [`File.LoadScreen`](../manual/content/keys/file.loadscreen.md) | Computed; see the page | The shape drawn as the loading screen of a skirmish or multiplayer match for a player of the country. | Ares |
 | [`File.LoadScreenPAL`](../manual/content/keys/file.loadscreenpal.md) | Computed; see the page | The palette the country's loading screen is drawn with. | Ares |
+| [`File.ObserverBackground`](../manual/content/keys/file.observerbackground.md) | `none` | The 121 by 96 picture Ares shows behind the country's flag in observer mode. | Ares |
+| [`File.ObserverFlag`](../manual/content/keys/file.observerflag.md) | `none` | The flag file Ares shows for the country in observer mode. | Ares |
+| [`File.ObserverFlagAltPalette`](../manual/content/keys/file.observerflagaltpalette.md) | `no` | Chooses the palette Ares draws a SHP observer flag with. | Ares |
+| [`File.Taunt`](../manual/content/keys/file.taunt.md) | `none` | The sound files the country's taunt commands are meant to play, in Ares's naming. | Ares |
 | [`GivesBounty`](../manual/content/keys/givesbounty.md) | `yes` | Whether destroying this country's objects pays bounty to the destroyer's owner. | Ares |
 | [`ListIndex`](../manual/content/keys/listindex.md) | `100` | Where the country stands in the lists of countries that the lobbies offer. | Ares |
+| [`LoadingTheme`](../manual/content/keys/loadingtheme--housetype.md) | The loading theme of the country's side | The value names a theme from the theme file, such as `FoehnLoad`. | Ares |
 | [`LoadScreenText.Brief`](../manual/content/keys/loadscreentext.brief.md) | Computed; see the page | The string table label of the description printed on the country's loading screen. | Ares |
 | [`LoadScreenText.Color`](../manual/content/keys/loadscreentext.color.md) | Computed; see the page | The color scheme of the text on the country's loading screen. | Ares |
 | [`LoadScreenText.Name`](../manual/content/keys/loadscreentext.name.md) | Computed; see the page | The string table label of the country name printed on its loading screen. | Ares |
 | [`LoadScreenText.SpecialName`](../manual/content/keys/loadscreentext.specialname.md) | Computed; see the page | The string table label of the special unit's name printed on the country's loading screen. | Ares |
+| [`MenuText.Status`](../manual/content/keys/menutext.status.md) | `none` | The text shown for a country in the lobby's country list. | Ares |
 
 ### Object types
 
@@ -183,6 +189,7 @@ Bounty.Value=200
 | [`EVA.Tag`](../manual/content/keys/eva.tag.md) | Computed; see the page | The announcer voice a side hears, named by one of the voices EVAMD.INI offers. | Ares |
 | [`Hud.Color`](../manual/content/keys/hud.color.md) | Computed; see the page | The color the modern in-game interface frames its panels and accents in for a side. | OpenYR |
 | [`HunterSeeker`](../manual/content/keys/hunterseeker--side.md) | Computed; see the page | Marks a type as a hunter-seeker drone, or names the drone a side's hunter-seeker superweapon launches. | OpenTS |
+| [`LoadingTheme`](../manual/content/keys/loadingtheme--side.md) | `none` | The value names a theme from the theme file. | Ares |
 | [`MessageTextColor`](../manual/content/keys/messagetextcolor.md) | `none` | The color scheme of the text a map's text action prints for a player of the side. | Ares |
 | [`MultiplayerScore.Background`](../manual/content/keys/multiplayerscore.background.md) | Computed; see the page | The shape drawn as the side's picture on the multiplayer score screen. | Ares |
 | [`MultiplayerScore.Bars`](../manual/content/keys/multiplayerscore.bars.md) | Computed; see the page | The PCX files drawn behind the title, the headings and each player row of the multiplayer score screen. | Ares |

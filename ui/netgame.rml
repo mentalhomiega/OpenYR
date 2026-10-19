@@ -16,7 +16,7 @@
 </head>
 <body template="dialog" data-model="netlobby">
 	<span class="caption" id="cap-side">Your Side:</span>
-	<select id="side" data-event-change="queue('side', ev.value)">
+	<select id="side" data-attr-tip="sidetip" data-event-change="queue('side', ev.value)">
 		<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
 	</select>
 	<span class="caption" id="cap-color">Your Color:</span>

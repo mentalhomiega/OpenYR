@@ -143,6 +143,19 @@ class HouseTypeClass : public AbstractTypeClass
 		std::string LoadScreenBrief;
 		std::string LoadScreenColor;
 		std::string FlagFile;
+
+		/*
+		 * More interface keys of the country: the music a multiplayer match plays while it loads,
+		 * the label of the status text for the lobby's country list, and the files for taunts and
+		 * for the observer's flag and background. An empty name means the key is unset. The taunt
+		 * and observer files are read but nothing draws or plays them.
+		 */
+		std::string LoadingTheme;
+		std::string StatusText;
+		std::string TauntFile;
+		std::string ObserverFlagFile;
+		std::string ObserverBackgroundFile;
+		bool IsObserverFlagAltPalette;
 		int ListIndex;
 
 		// Whether destroying this country's objects pays bounty (Ares GivesBounty).

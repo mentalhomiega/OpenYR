@@ -11,6 +11,7 @@
 
 #include "_rules.h"
 #include "_ui.h"
+#include "csf.h"
 #include "lobbycolor.h"
 #include "conquer.h"
 #include "data.h"
@@ -167,6 +168,9 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		UINetOption option;
 		option.Label = house->Full_Name();
 		option.Value = index;
+		if (!house->StatusText.empty()) {
+			option.Tip = Fetch_String_UTF8(house->StatusText.c_str());
+		}
 		if (index == Session.House) {
 			state.Side = (int)state.Sides.size();
 		}

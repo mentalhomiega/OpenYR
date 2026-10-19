@@ -2108,6 +2108,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	*/
 	DebugString("Initializeing Rules\n");
 	Rule->Initialize(*RuleINI);
+	LoadScreen.Play_Theme();
 	Session.Update_Progress(35);
 	Call_Back();
 

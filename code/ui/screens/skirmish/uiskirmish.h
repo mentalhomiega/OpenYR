@@ -62,6 +62,8 @@ struct UISkirmishOption
 	std::string Label;
 	int Value = 0;
 	std::string Color;
+	/// The tip shown while the pointer rests on the box that holds the option; empty for none.
+	std::string Tip;
 };
 
 
