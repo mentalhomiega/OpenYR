@@ -45,6 +45,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "linetrail.h"
 #include "radbeam.h"
 #include "fog.h"
 #include "font.h"
@@ -1315,6 +1316,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		SpotLightClass::Draw_All();
 		LaserDrawClass::Draw_All();
 		EBoltClass::Draw_All();
+		LineTrailClass::Update_And_Draw_All();
 		RadBeamClass::Draw_All();
 		Draw_Mind_Control_Links();
 		Draw_Psychic_Lines();

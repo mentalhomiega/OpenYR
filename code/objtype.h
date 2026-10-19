@@ -84,6 +84,20 @@ class ObjectTypeClass : public AbstractTypeClass
 		VocType CrushSound;
 
 		/*
+		 * This is the looping sound that plays while an object of this type is on the map and
+		 * not in limbo. VOC_NONE means the type has no ambient loop.
+		 */
+		VocType AmbientSound;
+
+		/*
+		 * With UseLineTrail=yes (art), an object of this type trails a fading line in LineTrailColor behind
+		 * its movement. The line loses LineTrailColorDecrement of its 255 opacity each frame.
+		 */
+		bool IsUseLineTrail;
+		RGBClass LineTrailColor;
+		int LineTrailColorDecrement;
+
+		/*
 		**	This is the base name of the graphic data associated with this object
 		**	type. If the graphic name is a null string, then there is no graphic
 		**	associated with this object type.

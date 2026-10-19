@@ -207,6 +207,12 @@ class ObjectClass : public AbstractClass
 		*/
 		Coord Position;
 
+		/*
+		**	The fading line this object leaves behind it when its type has UseLineTrail=yes, or
+		**	NULL. The line is not saved and is not made again when a save is loaded.
+		*/
+		class LineTrailClass * LineTrailer;
+
 		/*-----------------------------------------------------------------------------------
 		**	Constructor & destructors.
 		*/

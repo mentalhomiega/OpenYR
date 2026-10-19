@@ -108,6 +108,7 @@
 #include "anim.h"
 #include "animtype.h"
 #include "building.h"
+#include "linetrail.h"
 #include "builtype.h"
 #include "cell.h"
 #include "combat.h"
@@ -176,7 +177,8 @@ ObjectClass::ObjectClass(void) :
 	Tag(NULL),
 	Strength(255),
 	EstimatedHealth(255),
-	Position(COORD_NONE)
+	Position(COORD_NONE),
+	LineTrailer(NULL)
 {
 	Objects.Add(this);
 	ObjectPtrTracker.Add(this);
@@ -193,6 +195,10 @@ ObjectClass::ObjectClass(void) :
 ObjectClass::~ObjectClass(void)
 {
 	AmbientSounds.Detach(this);
+	if (LineTrailer != NULL) {
+		LineTrailer->Detach_Owner();
+		LineTrailer = NULL;
+	}
 	ObjectsToDelete.Delete(this);
 	Objects.Delete(this);
 	ObjectPtrTracker.Delete(this);
@@ -276,6 +282,17 @@ bool ObjectClass::Is_Foot(void) const
 void ObjectClass::AI(void)
 {
 	assert(this != NULL);
+
+	/*
+	**	A type with an ambient sound keeps its loop attached while the object is on the map.
+	**	Attaching the sound the table already holds does nothing.
+	*/
+	if (!IsInLimbo) {
+		ObjectTypeClass const * type = Class_Of();
+		if (type != NULL && type->AmbientSound != VOC_NONE) {
+			AmbientSounds.Attach(this, type->AmbientSound);
+		}
+	}
 
 	/*
 	**	Falling logic is handled here.
@@ -1457,6 +1474,13 @@ bool ObjectClass::Unlimbo(Coord const & coord, Dir256 )
 								list++;
 							}
 						}
+					}
+
+					// An object of a UseLineTrail=yes type starts its line here, in the rules' override color when that is set (ObjectClass::Unlimbo, 0x5F3B90).
+					if (objclass != NULL && objclass->IsUseLineTrail && LineTrailer == NULL) {
+						LineTrailer = new LineTrailClass(this);
+						LineTrailer->Set_Color(Rule->LineTrailColorOverride != RGBClass(0, 0, 0) ? Rule->LineTrailColorOverride : objclass->LineTrailColor);
+						LineTrailer->Set_Decrement(objclass->LineTrailColorDecrement);
 					}
 				}
 				return(true);

@@ -119,6 +119,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "linetrail.h"
 #include "hotkeytiming.h"
 #include "keybindings.h"
 #include "keybinddefaults.h"
@@ -7622,6 +7623,7 @@ void Delete_All_Objects(void)
 
 	LaserDrawClass::All_Clear();
 	EBoltClass::All_Clear();
+	LineTrailClass::All_Clear();
 	RadBeamClass::All_Clear();
 
 	while (AbstractTypes.Count()) {

@@ -73,6 +73,10 @@ ObjectTypeClass::ObjectTypeClass(char const * ininame) :
 	BASECLASS(ininame),
 	MaxSize(0),
 	CrushSound(VOC_NONE),
+	AmbientSound(VOC_NONE),
+	IsUseLineTrail(false),
+	LineTrailColor(128, 128, 128),
+	LineTrailColorDecrement(16),
 	GraphicName(),
 	AlphaGraphicName(),
 	IsTheater(false),
@@ -708,6 +712,7 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 		ini.Get_String(IniName, "AlphaImage", AlphaGraphicName);
 
 		CrushSound = ini.Get_VocType(IniName, "CrushSound", CrushSound);
+		AmbientSound = ini.Get_VocType(IniName, "AmbientSound", AmbientSound);
 
 		IsCrushable = ini.Get_Bool(IniName, "Crushable", IsCrushable);
 		IsNoSpawnAlt = ini.Get_Bool(IniName, "NoSpawnAlt", IsNoSpawnAlt);
@@ -725,6 +730,9 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsIgnoresFirestorm = ini.Get_Bool(IniName, "IgnoresFirestorm", IsIgnoresFirestorm);
 		IsTheater = ArtINI.Get_Bool(GraphicName, "Theater", IsTheater);
+		IsUseLineTrail = ArtINI.Get_Bool(GraphicName, "UseLineTrail", IsUseLineTrail);
+		LineTrailColor = ArtINI.Get_RGBClass(GraphicName, "LineTrailColor", LineTrailColor);
+		LineTrailColorDecrement = ArtINI.Get_Int(GraphicName, "LineTrailColorDecrement", LineTrailColorDecrement);
 		IsNewTheater = ArtINI.Get_Bool(GraphicName, "NewTheater", IsNewTheater);
 
 		IsVoxel = ArtINI.Get_Bool(GraphicName, "Voxel", IsVoxel);
@@ -803,6 +811,10 @@ void ObjectTypeClass::Serialize(SaveStreamClass & stream)
 	// AuxVoxel2
 	stream.Serialize(MaxSize);
 	stream.Serialize(CrushSound);
+	stream.Serialize(AmbientSound);
+	stream.Serialize(IsUseLineTrail);
+	stream.Serialize(LineTrailColor);
+	stream.Serialize(LineTrailColorDecrement);
 	stream.Serialize(GraphicName);
 	stream.Serialize(AlphaGraphicName);
 	stream.Serialize(IsTheater);

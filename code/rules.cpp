@@ -494,6 +494,7 @@ RulesClass::RulesClass(void) :
 	RadTintFactor(0.0),
 	RadSiteWarhead(NULL),
 	ChronoBeamColor(0, 0, 0),
+	LineTrailColorOverride(0, 0, 0),
 	LaserTargetColor(0),
 	IronCurtainColor(0),
 	BerserkColor(0),
@@ -1264,6 +1265,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		CrateUnitSound = ini.Get_VocType(AUDIOVISUAL, "CrateUnitSound", CrateUnitSound);
 		CratePromoteSound = ini.Get_VocType(AUDIOVISUAL, "CratePromoteSound", CratePromoteSound);
 		ChronoBeamColor = ini.Get_RGBClass(AUDIOVISUAL, "ChronoBeamColor", ChronoBeamColor);
+		LineTrailColorOverride = ini.Get_RGBClass(AUDIOVISUAL, "LineTrailColorOverride", LineTrailColorOverride);
 		LaserTargetColor = ini.Get_Int(AUDIOVISUAL, "LaserTargetColor", LaserTargetColor);
 		IronCurtainColor = ini.Get_Int(AUDIOVISUAL, "IronCurtainColor", IronCurtainColor);
 		BerserkColor = ini.Get_Int(AUDIOVISUAL, "BerserkColor", BerserkColor);
@@ -2960,6 +2962,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RadTintFactor);
 	stream.Serialize(RadSiteWarhead);
 	stream.Serialize(ChronoBeamColor);
+	stream.Serialize(LineTrailColorOverride);
 	stream.Serialize(ColorAdd);
 	stream.Serialize(LaserTargetColor);
 	stream.Serialize(MindClearedSound);
