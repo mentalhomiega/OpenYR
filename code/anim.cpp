@@ -80,6 +80,7 @@
 #include "incdec.h"
 #include "inline.h"
 #include "lightcon.h"
+#include "logic.h"
 #include "overlay.h"
 #include "overtype.h"
 #include "particle.h"
@@ -505,6 +506,30 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 }
 
 
+// The frame rate threshold for detail-gated animations, with gamemd's hysteresis (Detail::GetMinFrameRate, 0x55AF60).
+// Once the rate falls below the minimum, it must regain the minimum plus the buffer before the threshold drops back.
+// Draw calls update the state; a negative rules value counts as 0.
+static unsigned Detail_Min_Frame_Rate(void)
+{
+	static bool reduced = false;
+	unsigned const minimum = Rule->DetailMinFrameRateNormal > 0 ? (unsigned)Rule->DetailMinFrameRateNormal : 0;
+	unsigned const buffer = Rule->DetailBufferZoneWidth > 0 ? (unsigned)Rule->DetailBufferZoneWidth : 0;
+
+	if (reduced) {
+		if (minimum + buffer <= LastFramesPerSecond) {
+			reduced = false;
+			return(minimum);
+		}
+		return(minimum + buffer);
+	}
+	if (LastFramesPerSecond < minimum) {
+		reduced = true;
+		return(minimum + buffer);
+	}
+	return(minimum);
+}
+
+
 /***********************************************************************************************
  * AnimClass::Draw_It -- Draws the animation at the location specified.                        *
  *                                                                                             *
@@ -525,7 +550,8 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
  *=============================================================================================*/
 void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (!IsInvisible && !IsPsychicHidden && Class->DetailLevel <= Options.DetailLevel && (!IsFogged || !Class->IsShouldFogRemove)) {
+	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
+	if (!IsInvisible && !IsPsychicHidden && Class->DetailLevel <= Options.DetailLevel && (Class->DetailLevel <= 1 || LastFramesPerSecond >= min_frame_rate) && (!IsFogged || !Class->IsShouldFogRemove)) {
 		BStart(BENCH_ANIMS);
 		ShapeSet const * shapefile = (ShapeSet const *)Get_Image_Data();
 
@@ -1639,6 +1665,11 @@ void AnimClass::Vein_Attack_AI(void)
 void AnimClass::Delete_Me(void)
 {
 	Attach_To(NULL);
+
+	// Attach_To(NULL) runs first, so the sound plays at the position the animation has once detached.
+	if (!IsInert && Class->StopSound != VOC_NONE) {
+		Sound_Effect(Class->StopSound, Center_Coord());
+	}
 	BASECLASS::Delete_Me();
 }
 

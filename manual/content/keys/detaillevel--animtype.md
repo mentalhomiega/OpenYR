@@ -10,6 +10,8 @@ when_omitted:
 
 The animation is drawn only when the player's [detail setting](/keys/detaillevel/#scope-client-settings) is at least this value. The detail setting runs from `0`, the lowest, to `2`, the highest. A value of `1` hides the animation at the lowest setting, `2` shows it only at the highest, and any value above `2` hides it at every setting. At `0` or below, the animation is always drawn. Give purely decorative animations a higher value so that they are the first to disappear on a slow machine.
 
+An animation with a value above `1` is also hidden while the frame rate is low. [`DetailMinFrameRateNormal`](/keys/detailminframeratenormal/#scope-global-rules) sets the rate below which it is hidden, and [`DetailBufferZoneWidth`](/keys/detailbufferzonewidth/#scope-global-rules) sets how far the rate must recover before it returns. A value of `1` or lower ignores the frame rate.
+
 The setting controls drawing only. A hidden animation is still created, still advances through its frames and loops, and still deals its damage, leaves craters and scorch marks, and spreads Tiberium.
 
 The picture of a structure's animation remembered under the fog of war uses the same test, so an animation this setting hides is missing there as well.

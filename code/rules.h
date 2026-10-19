@@ -1279,6 +1279,12 @@ class RulesClass
 		// How many frames an object that has just become elite flashes.
 		int EliteFlashTimer;
 
+		// Frames per second below which detail-gated animations are skipped (DetailMinFrameRateNormal=).
+		int DetailMinFrameRateNormal;
+
+		// Frames per second above that minimum the rate must regain before those animations return (DetailBufferZoneWidth=).
+		int DetailBufferZoneWidth;
+
 		// Played when the player garrisons a structure, and when the player's garrison empties.
 		VocType BuildingGarrisonedSound;
 		VocType BuildingAbandonedSound;

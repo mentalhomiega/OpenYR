@@ -684,6 +684,8 @@ RulesClass::RulesClass(void) :
 	UpgradeVeteranSound(VOC_NONE),
 	UpgradeEliteSound(VOC_NONE),
 	EliteFlashTimer(100),
+	DetailMinFrameRateNormal(15),
+	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
 	BuildingAbandonedSound(VOC_NONE),
 	ScatterSound(VOC_NONE),
@@ -1223,6 +1225,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
 		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
 		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
+		DetailMinFrameRateNormal = ini.Get_Int(AUDIOVISUAL, "DetailMinFrameRateNormal", DetailMinFrameRateNormal);
+		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
 		BuildingAbandonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingAbandonedSound", BuildingAbandonedSound);
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
@@ -3139,6 +3143,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UpgradeVeteranSound);
 	stream.Serialize(UpgradeEliteSound);
 	stream.Serialize(EliteFlashTimer);
+	stream.Serialize(DetailMinFrameRateNormal);
+	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
 	stream.Serialize(BuildingAbandonedSound);
 	stream.Serialize(ScatterSound);

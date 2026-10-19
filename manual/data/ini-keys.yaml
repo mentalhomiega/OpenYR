@@ -11673,6 +11673,24 @@ DestroyableCliffs:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+DetailBufferZoneWidth:
+  key: DetailBufferZoneWidth
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5'
+      declared_in: RulesClass
+      member: DetailBufferZoneWidth
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DetailLevel:
   key: DetailLevel
   scopes:
@@ -11705,6 +11723,24 @@ DetailLevel:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+DetailMinFrameRateNormal:
+  key: DetailMinFrameRateNormal
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '15'
+      declared_in: RulesClass
+      member: DetailMinFrameRateNormal
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 DetectDisguise:
   key: DetectDisguise
   scopes:
@@ -36461,6 +36497,20 @@ Sticky:
 StopSound:
   key: StopSound
   scopes:
+  - applies_to: *id007
+    file: art.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: needs_review
+    _provenance:
+      default_candidate: none
+      declared_in: AnimTypeClass
+      member: StopSound
+      source: code/animtype.cpp
+      guard: null
+    level: AnimTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -36468,7 +36518,7 @@ StopSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: none
       declared_in: RulesClass
