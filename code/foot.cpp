@@ -1078,7 +1078,8 @@ int FootClass::Do_MISSION_GUARD(void)
 int FootClass::Do_MISSION_HUNT(void)
 {
 	// The hunt scan restarts the targeting timer, as FootClass::Mission_Hunt (0x4D5350) does through TargetAndEstimateDamage.
-	if (!Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
+	// A StupidHunt=yes type skips the scan (FootClass::Mission_Hunt, 0x4D5350).
+	if (TClass->IsStupidHunt || !Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
 		Random_Animate();
 	} else {
 		InfantryClass * infantry = RTTI == RTTI_INFANTRY ? (InfantryClass *)this : NULL;

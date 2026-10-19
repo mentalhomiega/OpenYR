@@ -108,6 +108,15 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 
 
 /// <summary>
+/// Aircraft never take an attack-move order, whatever weapons they carry.
+/// </summary>
+bool AircraftTypeClass::Can_Attack_Move(void) const
+{
+	return(false);
+}
+
+
+/// <summary>
 /// Destroys the aircraft type.
 /// Any object still pointing at this type is told to forget it, and the type is removed
 /// from the aircraft type heap so that nothing can find it again.

@@ -5579,11 +5579,12 @@ bool Attack_Move_Key_Held(void)
  *=============================================================================================*/
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held.
+	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held,
+	// and only for a type that can attack-move (TechnoClass::ClickedMission, 0x6FFBE0).
 	bool const ground_move = (mission == MISSION_MOVE && target == NULL && destination != NULL && destination->What_Am_I() == RTTI_CELL);
 	bool const ground_attack = (mission == MISSION_ATTACK && target != NULL && target->What_Am_I() == RTTI_CELL);
 	bool const ctrlshift = (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
-	if ((ground_move || ground_attack) && Is_Foot() && (AttackMoveOrdering || ctrlshift)) {
+	if ((ground_move || ground_attack) && Is_Foot() && (AttackMoveOrdering || ctrlshift) && TClass->Can_Attack_Move()) {
 		destination = (mission == MISSION_MOVE) ? destination : target;
 		target = NULL;
 		mission = MISSION_ATTACK_MOVE;
@@ -5592,7 +5593,8 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 	/*
 	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
 	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
-	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest).
+	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest). Any other order, such as guard,
+	 * plays a VoiceSpecialAttack entry, or nothing when that list is empty.
 	 */
 	if (AllowVoice) {
 		VocType voice = VOC_NONE;
@@ -5615,8 +5617,10 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 			Response_Attack();
 		} else if (voice != VOC_NONE) {
 			Play_Unit_Voice(voice);
-		} else {
+		} else if (mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE || mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_HARVEST) {
 			Response_Move();
+		} else if (TClass->VoiceSpecialAttack.Count() > 0) {
+			Play_Unit_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
 		}
 	}
 
@@ -8080,7 +8084,7 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 /// <param name="force_cache">Force rendering even when a cache key is supplied.</param>
 void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const
 {
-	if (Cloak != UNCLOAKED || voxeldata.VoxLib->Load_Failed()) {
+	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
 		return;
 	}
 

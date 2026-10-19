@@ -262,6 +262,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<int> VoiceAttack;
 		TypeList<int> VoiceDie;
 
+		// The responses picked at random for an order other than move, attack, harvest, enter, capture or deploy.
+		TypeList<int> VoiceSpecialAttack;
+
 		// The sounds, one picked at random, played where the object is destroyed (TechnoTypeClass::DieSound).
 		TypeList<int> DieSound;
 
@@ -337,6 +340,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Does this type fly on a jump jet? (Rules key JumpJet.) A moving jumpjet's shot is not inaccurate.
 		bool IsJumpJet;
 
+		// Read from the rules key TiltCrashJumpjet; nothing in this engine uses it yet.
+		bool IsTiltCrashJumpjet;
+
 		// How a scan by this type weighs targets by their estimated health. (Rules key VHPScan.)
 		int VHPScan;
 
@@ -367,6 +373,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		int Initial_Ammo(void) const { return(InitialAmmo == -1 ? MaxAmmo : InitialAmmo); }
 
+		// Whether an object of this type can take an attack-move order: it needs a primary weapon and no PreventAttackMove=yes.
+		virtual bool Can_Attack_Move(void) const;
+
 		/*
 		 * Parasites: can one get into this object, how much damage to its victim from others it
 		 * shrugs off, and is it selected again after a weapon with LimboLaunch takes it off the map?
@@ -374,6 +383,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsParasiteable;
 		int SuppressionThreshold;
 		bool IsReselectIfLimboed;
+
+		// Read from the rules key RejoinTeamIfLimboed; nothing in this engine rejoins a team on unlimbo yet.
+		bool IsRejoinTeamIfLimboed;
 
 		// Can a disguise warhead fired by this object disguise it?
 		bool IsCanDisguise;
@@ -578,6 +590,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A CanRecalcApproachTarget=no object keeps the spot it chose to fire from even when its target moves far from it.
 		bool IsCanRecalcApproachTarget;
 
+		// A StupidHunt=yes object skips the target scan of its hunt mission; the walk to its house's starting cell that follows is not ported.
+		bool IsStupidHunt;
+
 		// A mobile Sensors=yes object reveals its owner the cloaked objects within this many cells.
 		int SensorsSight;
 
@@ -634,6 +649,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// MobileFire=no stops a unit with a destination from firing and quarters its firing delay when it halts.
 		bool IsMobileFire;
+
+		// PreventAttackMove=yes stops a move or attack order from becoming an attack-move (see Can_Attack_Move).
+		bool IsPreventAttackMove;
 
 		/*
 		 * A gattling type fires the weapon pair for its current stage. Firing raises its spin by
@@ -845,6 +863,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * smokestack exhaust, refinery steam -- anchored at the given offset from its center.
 		 */
 		ParticleSystemTypeClass const * NaturalParticleSystem;
+
+		// Read from the rules key RefinerySmokeParticleSystem; nothing in this engine spawns the smoke it names yet.
+		ParticleSystemTypeClass const * RefinerySmokeParticleSystem;
 		TPoint3D<int> NaturalParticleLocation;
 
 		/*
@@ -1072,6 +1093,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsTurretEquipped;
 
+		// Read from the rules key HasTurretTooltips; nothing in this engine uses it yet.
+		bool IsHasTurretTooltips;
+
 		/*
 		**	Certain objects can be repaired. For buildings, they repair "in place". For units,
 		**	they must travel to a repair center to be repaired. If this flag is true, then
@@ -1097,6 +1121,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	Is the unit capable of cloaking?  Only Stealth Tank can do so now.
 		*/
 		bool IsCloakable;
+
+		// NoShadow=yes gives a voxel object of this type no ground shadow.
+		bool IsNoShadow;
 
 		/*
 		**	Can this object self heal? Mammoth tanks from C&C had this feature.

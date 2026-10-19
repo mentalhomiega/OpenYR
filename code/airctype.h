@@ -85,6 +85,7 @@ class AircraftTypeClass : public TechnoTypeClass
 
 		AircraftTypeClass(char const * ininame = NULL);
 		virtual ~AircraftTypeClass(void) override;
+		virtual bool Can_Attack_Move(void) const override;
 
 		virtual ClassID Class_ID(void) const override;
 
