@@ -207,16 +207,12 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsAirburst = ini.Get_Bool(Name(), "Airburst", IsAirburst);
 		Cluster = ini.Get_Int(Name(), "Cluster", Cluster);
 		IsAntiVehicle = ini.Get_Bool(Name(), "AV", IsAntiVehicle);
-		IsSplits = ini.Get_Bool(Name(), "Splits", IsAirburst);
+		IsSplits = ini.Get_Bool(Name(), "Splits", IsSplits);
 		{
 			double const spread = ini.Get_Float(Name(), "AirburstSpread", AirburstSpread >= 0 ? (double)AirburstSpread / CELL_LEPTON_W : -1.0);
 			AirburstSpread = spread >= 0.0 ? (int)(spread * CELL_LEPTON_W) : -1;
-			// Splits=yes written out wins over the spread; an Airburst projectile otherwise takes Splits from Airburst.
-			bool const splits_written = ini.Is_Present(Name(), "Splits") && IsSplits;
-			IsAirburstSpread = IsAirburst && AirburstSpread >= 0 && !splits_written;
-			if (IsAirburstSpread) {
-				IsSplits = false;
-			}
+			// An Airburst projectile bursts over the cells around it unless Splits=yes makes it split.
+			IsAirburstSpread = IsAirburst && !IsSplits;
 			if (ini.Is_Present(Name(), "AroundTarget")) {
 				AroundTarget = ini.Get_Bool(Name(), "AroundTarget", false) ? 1 : 0;
 			}

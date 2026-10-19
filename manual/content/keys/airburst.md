@@ -1,7 +1,7 @@
 ---
 key: Airburst
 summary: Holds a homing projectile at cruising height so that it goes off above its target rather than diving onto it.
-see_also: [Splits, AirburstWeapon, Cluster, VeryHigh, ROT]
+see_also: [AirburstSpread, Splits, AirburstWeapon, Cluster, VeryHigh, ROT]
 when_omitted:
   kind: value
   value: "no"
@@ -21,18 +21,15 @@ An airburst projectile is also exempt from the check that detonates a homing pro
 
 A projectile chasing an aircraft never follows the terrain; it flies straight at its target. On that shot the clearance above does not apply, but the horizontal distance measure, the detonation changes and the exemption from the stall check all do.
 
-A projectile that also sets [`AirburstSpread`](/keys/airburstspread/) does not split: it fires its `AirburstWeapon` at every cell within the spread instead, unless it writes `Splits=yes`.
+When an airburst projectile goes off it fires its [`AirburstWeapon`](/keys/airburstweapon/) once at each of nine cells: the cell it burst over and its eight neighbours. [`AirburstSpread`](/keys/airburstspread/) changes which cells. [`Cluster`](/keys/cluster/) is not used, and the projectile detonates once. An airburst projectile that writes `Splits=yes` splits into `Cluster` bomblets instead, as [`Splits`](/keys/splits/) describes.
 
-:::danger[This setting also switches splitting on, and a splitting projectile with no weapon crashes the game]
-[`Splits`](/keys/splits/) takes its value from this key whenever the projectile's section does not set `Splits` itself, so `Airburst=yes` alone makes the projectile a splitting one. A splitting projectile with a [`Cluster`](/keys/cluster/) above `0` crashes the game when it detonates unless it names a usable [`AirburstWeapon`](/keys/airburstweapon/). Name that weapon in the same section, or write `Splits=no` there; the `Splits` page explains why that line must be repeated in every rules file that declares the section.
-:::
+An airburst projectile whose `AirburstWeapon` is missing, or whose weapon has no [`Projectile`](/keys/projectile/), detonates but releases no bomblets.
 
 ```ini title="rules.ini"
-[MYCLUSTERMISSILE] ; a BulletType, registered by a weapon naming it as its Projectile
+[MYBURSTMISSILE] ; a BulletType, registered by a weapon naming it as its Projectile
 Image=MISLMLTI
 ROT=4
 Airburst=yes
-Cluster=6                ; six bomblets
 AirburstWeapon=MyBomblet ; a WeaponType that must also be listed in [Weapons]
 ```
 
