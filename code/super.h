@@ -92,6 +92,7 @@ class SuperClass : public AbstractClass
 		bool Is_Virtual_Charging(void) const {return(IsVirtualCharging);}
 		bool Is_Charged(void) const {return(IsReady);}
 		bool Is_Suspended(void) const {return(IsSuspended);}
+		bool Should_Flash_Tab(void) const;
 		bool Is_One_Time(void) const {return(IsOneTime && IsPresent);}
 
 		char const * State_String(void) const;
@@ -185,6 +186,8 @@ class SuperClass : public AbstractClass
 		bool IsSuspended;
 
 		int OldStage;
+		// The frame the last recharge finished, or -100 before any did; see Should_Flash_Tab.
+		int ReadyFrame = -100;
 
 		// The force shield's SpecialSound plays here once the timer runs out.
 		CDTimerClass<FrameTimerClass> SpecialSoundTimer;
