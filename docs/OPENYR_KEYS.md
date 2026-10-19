@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 287 entries
+- [Rules](#rules): 288 entries
 - [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -181,6 +181,7 @@ Bounty.Value=200
 | [`DefaultDisguise`](../manual/content/keys/defaultdisguise.md) | Computed; see the page | The InfantryType that an object with PermaDisguise shows for a house of the side when it has no other disguise. | Ares |
 | [`Engineer`](../manual/content/keys/engineer--side.md) | The `[General]` `Engineer` type | Whether a soldier restores and captures structures, or which InfantryType a destroyed or sold structure can hand back as an engineer. | Ares |
 | [`EVA.Tag`](../manual/content/keys/eva.tag.md) | Computed; see the page | The announcer voice a side hears, named by one of the voices EVAMD.INI offers. | Ares |
+| [`Hud.Color`](../manual/content/keys/hud.color.md) | Computed; see the page | The color the modern in-game interface frames its panels and accents in for a side. | OpenYR |
 | [`HunterSeeker`](../manual/content/keys/hunterseeker--side.md) | Computed; see the page | Marks a type as a hunter-seeker drone, or names the drone a side's hunter-seeker superweapon launches. | OpenTS |
 | [`MessageTextColor`](../manual/content/keys/messagetextcolor.md) | `none` | The color scheme of the text a map's text action prints for a player of the side. | Ares |
 | [`MultiplayerScore.Background`](../manual/content/keys/multiplayerscore.background.md) | Computed; see the page | The shape drawn as the side's picture on the multiplayer score screen. | Ares |

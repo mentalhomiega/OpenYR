@@ -16,6 +16,7 @@
 #include "abstype.h"
 #include "typelist.h"
 
+#include "rgb.h"
 #include "side.hh"
 
 #include <string>
@@ -88,6 +89,14 @@ class SideClass : public AbstractTypeClass
 		 */
 		std::string Eva_Voice_Name(void) const;
 
+		/*
+		 * The colour the modern in-game interface frames this side's panel in: the side's own
+		 * Hud.Color, else the hue of the colour scheme of the side's first country. Returns false,
+		 * leaving the colour untouched, when the side sets none and has no country with a coloured
+		 * scheme.
+		 */
+		bool Hud_Color(RGBClass & color) const;
+
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
 	public:
@@ -135,6 +144,13 @@ class SideClass : public AbstractTypeClass
 		InfantryTypeClass const * Technician;
 		InfantryTypeClass const * DefaultDisguise;
 		int SurvivorDivisor;
+
+		/*
+		 * The interface colour from the side's own Hud.Color key; IsHudColor is false until the
+		 * section sets it.
+		 */
+		bool IsHudColor;
+		int HudColor[3];
 
 		/*
 		 * The score screens' art and music from the side's own section. An empty name leaves the

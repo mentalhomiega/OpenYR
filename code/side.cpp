@@ -16,6 +16,9 @@
 #include "unittype.h"
 #include "crc.h"
 #include "findmake.h"
+#include "houstype.h"
+#include "hsv.h"
+#include "scheme.h"
 #include "globals.h"
 #include "infatype.h"
 #include "rules.h"
@@ -56,6 +59,8 @@ SideClass::SideClass(char const * ininame) :
 	Technician(NULL),
 	DefaultDisguise(NULL),
 	SurvivorDivisor(-1),
+	IsHudColor(false),
+	HudColor{0, 0, 0},
 	MultiplayerScoreBackground(),
 	MultiplayerScorePalette(),
 	MultiplayerScoreBars(),
@@ -197,6 +202,31 @@ int SideClass::Survivor_Divisor(void) const
 }
 
 
+bool SideClass::Hud_Color(RGBClass & color) const
+{
+	if (IsHudColor) {
+		color = RGBClass(HudColor[0], HudColor[1], HudColor[2]);
+		return(true);
+	}
+
+	// The saturation and brightness of the frame colors the three stock sides have, with the
+	// hue of the country's color scheme. A scheme close to grey gives a grey frame.
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index] < 0 || Houses[index] >= HouseTypes.Count()) {
+			continue;
+		}
+		HouseTypeClass const * house = HouseTypes[Houses[index]];
+		if (house != NULL && house->Scheme >= 0 && house->Scheme < ColorSchemes.Count()) {
+			HSVClass const & hsv = ColorSchemes[house->Scheme]->HSV;
+			int const saturation = hsv.Get_Saturation() < 48 ? hsv.Get_Saturation() / 2 : 178;
+			color = HSVClass((unsigned char)hsv.Get_Hue(), (unsigned char)saturation, 199);
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 std::string SideClass::Eva_Voice_Name(void) const
 {
 	if (!EvaTag.empty()) {
@@ -296,6 +326,13 @@ bool SideClass::Read_INI(CCINIClass const & ini)
 	Technician = TGet_Class(ini, Name(), "Technician", Technician);
 	DefaultDisguise = TGet_Class(ini, Name(), "DefaultDisguise", DefaultDisguise);
 	SurvivorDivisor = ini.Get_Int(Name(), "SurvivorDivisor", SurvivorDivisor);
+	if (ini.Is_Present(Name(), "Hud.Color")) {
+		RGBClass const color = ini.Get_RGBClass(Name(), "Hud.Color", RGBClass(0, 0, 0));
+		IsHudColor = true;
+		HudColor[0] = color.Get_Red();
+		HudColor[1] = color.Get_Green();
+		HudColor[2] = color.Get_Blue();
+	}
 	MultiplayerScoreBackground = ini.Get_String(Name(), "MultiplayerScore.Background", MultiplayerScoreBackground.c_str());
 	MultiplayerScorePalette = ini.Get_String(Name(), "MultiplayerScore.Palette", MultiplayerScorePalette.c_str());
 	MultiplayerScoreBars = ini.Get_String(Name(), "MultiplayerScore.Bars", MultiplayerScoreBars.c_str());
@@ -346,6 +383,8 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Technician);
 	stream.Serialize(DefaultDisguise);
 	stream.Serialize(SurvivorDivisor);
+	stream.Serialize(IsHudColor);
+	stream.Serialize(HudColor);
 	stream.Serialize(MultiplayerScoreBackground);
 	stream.Serialize(MultiplayerScorePalette);
 	stream.Serialize(MultiplayerScoreBars);

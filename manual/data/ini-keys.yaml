@@ -19060,6 +19060,23 @@ HoverPad:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+Hud.Color:
+  key: Hud.Color
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: color (R,G,B)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SideClass
+      member: color
+      source: code/side.cpp
+      guard: null
+    level: SideClass
 HunterSeeker:
   key: HunterSeeker
   scopes:
