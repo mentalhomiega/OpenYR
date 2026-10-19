@@ -2465,6 +2465,10 @@ bool MapClass::Read_Binary_5(Straw & straw)
 				body = Take_Cell_Field(body, cellptr->ITType);
 				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
 				body = Take_Cell_Field(body, cellptr->SubTile);
+				// A cell with no tile has no sub-tile to look up.
+				if (cellptr->ITType == ISOTILE_NONE) {
+					cellptr->SubTile = 0;
+				}
 				body = Take_Cell_Field(body, cellptr->Height);
 				Take_Cell_Field(body, cellptr->IsIceGrowthAllowed);
 			}
