@@ -369,6 +369,10 @@ void UICNCNetPresenterClass::Show(void)
 	State.ShowProgress = busy;
 	State.CanCancel = busy && Session.Copying;
 	State.CopyPresent = status.Copy_Present;
+	State.InstallFound = !Session.Install.empty();
+	State.CopyRepair = status.Copy_Present && (!status.Edits_Intact || !status.Copy_Game_Present);
+	State.CopyOutdated = status.Copy_Present && !State.CopyRepair && !status.Engine_Matches;
+	State.CopyCurrent = status.Copy_Present && !State.CopyRepair && !State.CopyOutdated;
 	State.CanCreate = !busy && !Session.Install.empty() && plan.Problem.empty();
 	State.CanStart = !busy && status.Copy_Present && status.Edits_Intact && status.Copy_Game_Present;
 	State.CanRemove = !busy && status.Copy_Present;
@@ -422,6 +426,11 @@ class UICNCNetViewClass : public UIRmlViewClass
 				&& model.Bind("canremove", &state.CanRemove)
 				&& model.Bind("confirming", &state.Confirming)
 				&& model.Bind("copypresent", &state.CopyPresent)
+				&& model.Bind("installfound", &state.InstallFound)
+				&& model.Bind("copyrepair", &state.CopyRepair)
+				&& model.Bind("copyoutdated", &state.CopyOutdated)
+				&& model.Bind("copycurrent", &state.CopyCurrent)
+				&& model.Bind("details", &state.ShowDetails)
 				&& model.Bind("percent", &state.Percent));
 		}
 

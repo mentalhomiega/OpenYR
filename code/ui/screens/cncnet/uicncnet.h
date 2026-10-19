@@ -112,6 +112,11 @@ struct UICNCNetState
 	bool CanRemove = false;
 	bool Confirming = false;
 	bool CopyPresent = false;
+	bool InstallFound = false;
+	bool CopyRepair = false;
+	bool CopyOutdated = false;
+	bool CopyCurrent = false;
+	bool ShowDetails = false;
 	int Percent = 0;
 };
 

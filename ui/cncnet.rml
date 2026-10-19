@@ -13,8 +13,34 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="cncnet.rcss"/>
 </head>
-<body template="dialog" data-model="cncnet">
+<body class="cncnet" template="dialog" data-model="cncnet">
 	<p id="title">CnCNet</p>
+	<div id="card">
+		<div class="stat" data-if="installfound">
+			<div class="mark ok"><div class="tick"></div></div>
+			<div class="stat-body"><p class="stat-head">CnCNet client found</p><p class="stat-sub">OpenYR works from a copy of it, so the original stays unchanged.</p></div>
+		</div>
+		<div class="stat" data-if="!installfound">
+			<div class="mark bad">X</div>
+			<div class="stat-body"><p class="stat-head">CnCNet client not found</p><p class="stat-sub">Find install searches again. Choose folder points to it.</p></div>
+		</div>
+		<div class="stat" data-if="installfound &amp;&amp; !copypresent">
+			<div class="mark todo">!</div>
+			<div class="stat-body"><p class="stat-head">No OpenYR copy yet</p><p class="stat-sub">Create copy makes one at the destination shown under Details.</p></div>
+		</div>
+		<div class="stat" data-if="copyrepair">
+			<div class="mark todo">!</div>
+			<div class="stat-body"><p class="stat-head">OpenYR copy needs repair</p><p class="stat-sub">Client edits or Game.exe are missing. Repair copy puts them back.</p></div>
+		</div>
+		<div class="stat" data-if="copyoutdated">
+			<div class="mark todo">!</div>
+			<div class="stat-body"><p class="stat-head">OpenYR copy is out of date</p><p class="stat-sub">Its Game.exe differs from this build's. Update copy replaces it.</p></div>
+		</div>
+		<div class="stat" data-if="copycurrent">
+			<div class="mark ok"><div class="tick"></div></div>
+			<div class="stat-body"><p class="stat-head">OpenYR copy is up to date</p><p class="stat-sub">Start CnCNet to play.</p></div>
+		</div>
+	</div>
 	<div id="install">
 		<p id="installtext" class="line">{{installtext}}</p>
 		<p id="copytext" class="line">{{copytext}}</p>
@@ -22,11 +48,11 @@
 		<p id="versiontext" class="line" data-if="copypresent">{{versiontext}}</p>
 	</div>
 	<div id="actions" class="row">
-		<button id="find" data-class-disabled="busy" data-event-click="queue('find')">Find install</button>
+		<button id="find" data-class-disabled="busy" data-class-primary="!installfound" data-event-click="queue('find')">Find install</button>
 		<button id="choose" data-class-disabled="busy" data-event-click="queue('choose')">Choose folder...</button>
 		<button id="destination" data-class-disabled="busy" data-event-click="queue('destination')">Change destination...</button>
-		<button id="create" data-class-disabled="!cancreate" data-event-click="queue('create')">{{createcaption}}</button>
-		<button id="cancelcopy" data-if="cancancel" data-event-click="queue('cancelcopy')">Cancel copy</button>
+		<button id="create" data-class-disabled="!cancreate" data-class-primary="cancreate &amp;&amp; installfound &amp;&amp; !copycurrent" data-event-click="queue('create')">{{createcaption}}</button>
+		<button id="cancelcopy" class="primary" data-if="cancancel" data-event-click="queue('cancelcopy')">Cancel copy</button>
 	</div>
 	<div id="progress" data-if="showprogress">
 		<progress id="bar" max="100" direction="right" data-attr-value="percent"/>
@@ -35,11 +61,25 @@
 	<div id="plan" class="list"><div class="rows">
 		<div class="item" data-for="row : rows"><span class="line">{{row.text}}</span></div>
 	</div></div>
-	<p id="status" data-class-problem="problem">{{status}}</p>
+	<div id="status-row" data-class-has="status != ''">
+		<div class="mark todo" data-if="problem">!</div>
+		<p id="status" data-class-problem="problem">{{status}}</p>
+	</div>
 	<div id="confirm" class="row" data-if="confirming">
 		<p id="confirmtext">{{confirmtext}}</p>
 		<button id="removeyes" data-event-click="queue('removeyes')">Remove copy</button>
 		<button id="keep" data-event-click="queue('keep')">Keep copy</button>
+	</div>
+	<div id="details-block">
+		<button id="details-toggle" data-event-click="details = !details">{{details ? 'Hide details' : 'Show details'}}</button>
+		<div id="details" data-if="details">
+			<p class="line">{{installtext}}</p>
+			<p class="line">{{copytext}}</p>
+			<p class="line" data-if="copypresent">{{edittext}}</p>
+			<p class="line" data-if="copypresent">{{versiontext}}</p>
+			<p class="d-head">What Create copy changes</p>
+			<p class="line d-row" data-for="row : rows">{{row.text}}</p>
+		</div>
 	</div>
 	<div id="notes">
 		<p class="line"><span class="label">Safe play:</span> leave Red Alert 2 mode, Lock Game Speed and Crates Appear off.</p>
@@ -47,7 +87,7 @@
 		<p class="line">After each match, send the Debug folder beside Game.exe from every player.</p>
 	</div>
 	<div id="buttons">
-		<button id="start" data-class-disabled="!canstart" data-event-click="queue('start')">Start CnCNet</button>
+		<button id="start" data-class-disabled="!canstart" data-class-primary="copycurrent" data-event-click="queue('start')">Start CnCNet</button>
 		<button id="remove" data-class-disabled="!canremove" data-event-click="queue('remove')">Remove OpenYR copy</button>
 		<button id="ok" data-class-disabled="busy" data-event-click="queue('ok')">[[TXT_OK]]</button>
 	</div>

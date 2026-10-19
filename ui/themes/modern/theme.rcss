@@ -824,3 +824,341 @@ body.waitbox.nobar #text
 {
 	height: 20dp;
 }
+
+/* The CnCNet page: a status card, one highlighted action, and the paths and edits folded under Details. The
+   panel is as tall as its content. A state shows by its shape and its words: a filled circle with a tick is
+   good, a square with "!" needs a step, a circle with "X" is missing. */
+body.cncnet #backdrop
+{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+body.cncnet #reveal
+{
+	width: 640dp;
+	height: auto;
+	top: auto;
+	margin: 0;
+}
+
+body.cncnet #chrome
+{
+	height: auto;
+}
+
+body.cncnet #wallpaper
+{
+	border-width: 1dp 1dp 1dp 3dp;
+	border-color: var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-edge-dim, #4d3d6b) var(--t-accent, #b46bff);
+	border-radius: 2dp;
+}
+
+body.cncnet #content
+{
+	padding: 22dp 28dp 22dp 28dp;
+}
+
+body.cncnet #title
+{
+	height: 28dp;
+	margin: 0 0 14dp 0;
+	font-size: 16dp;
+	line-height: 26dp;
+	text-align: left;
+	color: var(--t-muted, #a99bc9);
+	border-bottom: 1dp var(--t-edge-dim, #4d3d6b);
+}
+
+body.cncnet .line
+{
+	font-size: 13dp;
+	line-height: 18dp;
+	margin: 0 0 4dp 0;
+	white-space: normal;
+}
+
+body.cncnet #install, body.cncnet #plan
+{
+	display: none;
+}
+
+/* The status card */
+body.cncnet #card
+{
+	display: block;
+	margin-bottom: 10dp;
+}
+
+body.cncnet .stat
+{
+	display: flex;
+	align-items: flex-start;
+	padding: 6dp 0;
+}
+
+body.cncnet .stat-body
+{
+	flex: 1;
+}
+
+body.cncnet .stat-head
+{
+	font-size: 18dp;
+	line-height: 26dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.cncnet .stat-sub
+{
+	font-size: 14dp;
+	line-height: 19dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+body.cncnet .mark
+{
+	display: block;
+	position: relative;
+	flex: none;
+	box-sizing: border-box;
+	width: 28dp;
+	height: 28dp;
+	margin: 0 14dp 0 0;
+	border: 2dp var(--t-accent, #b46bff);
+	text-align: center;
+	font-size: 15dp;
+	line-height: 24dp;
+	color: var(--t-accent-strong, #d29bff);
+}
+
+body.cncnet .mark.ok
+{
+	border-radius: 14dp;
+	background-color: var(--t-accent, #b46bff);
+}
+
+body.cncnet .mark.todo
+{
+	border-radius: 4dp;
+}
+
+body.cncnet .mark.bad
+{
+	border-radius: 14dp;
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.cncnet .tick
+{
+	position: absolute;
+	left: 8dp;
+	top: 3dp;
+	width: 6dp;
+	height: 12dp;
+	border-width: 0 3dp 3dp 0;
+	border-color: var(--t-ink, #05040a);
+	transform: rotate(45deg);
+}
+
+/* Buttons: small ones in a row, and the highlighted one across the full width */
+body.cncnet #actions
+{
+	margin-top: 4dp;
+}
+
+body.cncnet #actions button, body.cncnet #buttons button, body.cncnet #confirm button
+{
+	height: 32dp;
+	margin: 0 8dp 8dp 0;
+	padding: 8dp 16dp 0 16dp;
+	font-size: 14dp;
+	white-space: nowrap;
+}
+
+body.cncnet #actions button:active, body.cncnet #buttons button:active, body.cncnet #confirm button:active,
+body.cncnet #actions button.disabled, body.cncnet #buttons button.disabled
+{
+	padding: 8dp 16dp 0 16dp;
+}
+
+body.cncnet #actions button.primary, body.cncnet #buttons button.primary
+{
+	width: 100%;
+	height: 44dp;
+	margin: 0 0 10dp 0;
+	padding: 13dp 16dp 0 16dp;
+	font-size: 17dp;
+	color: var(--t-ink, #05040a);
+	border-color: var(--t-accent-strong, #d29bff);
+	decorator: vertical-gradient(var(--t-accent-strong, #d29bff) var(--t-accent, #b46bff));
+}
+
+body.cncnet #actions button.primary:hover, body.cncnet #buttons button.primary:hover
+{
+	color: var(--t-ink, #05040a);
+	border-color: var(--t-text-hot, #ffffff);
+	border-left-width: 1dp;
+	padding-left: 16dp;
+	decorator: vertical-gradient(var(--t-text-hot, #ffffff) var(--t-accent-strong, #d29bff));
+}
+
+body.cncnet #actions button.primary:active, body.cncnet #buttons button.primary:active
+{
+	padding: 14dp 16dp 0 16dp;
+	decorator: vertical-gradient(var(--t-accent, #b46bff) var(--t-accent-strong, #d29bff));
+}
+
+body.cncnet #actions button.primary.disabled, body.cncnet #buttons button.primary.disabled
+{
+	padding: 13dp 16dp 0 16dp;
+	color: var(--t-disabled-text, #5f5873);
+	border-color: var(--t-disabled-edge, #2c2638);
+	decorator: vertical-gradient(var(--t-disabled-top, #1c1825) var(--t-disabled-bottom, #141119));
+}
+
+body.cncnet #buttons
+{
+	flex-wrap: wrap;
+	align-items: center;
+	margin-top: 14dp;
+}
+
+body.cncnet #ok
+{
+	width: 88dp;
+	margin: 0 0 8dp auto;
+}
+
+/* Progress and the status line */
+body.cncnet #progress
+{
+	margin: 4dp 0 8dp 0;
+}
+
+body.cncnet progress
+{
+	height: 10dp;
+}
+
+body.cncnet #progresstext
+{
+	margin-top: 4dp;
+	font-size: 13dp;
+	line-height: 18dp;
+	color: var(--t-muted, #a99bc9);
+}
+
+body.cncnet #status-row
+{
+	display: none;
+	align-items: flex-start;
+	margin: 4dp 0 8dp 0;
+	padding: 8dp 12dp;
+	border-left: 3dp var(--t-edge-dim, #4d3d6b);
+	background-color: var(--t-field-list, #0b0812a0);
+}
+
+body.cncnet #status-row.has
+{
+	display: flex;
+}
+
+body.cncnet #status-row .mark
+{
+	width: 22dp;
+	height: 22dp;
+	margin-right: 12dp;
+	font-size: 14dp;
+	line-height: 18dp;
+}
+
+body.cncnet #status
+{
+	flex: 1;
+	margin: 0;
+	font-size: 14dp;
+	line-height: 22dp;
+	color: var(--t-text, #ece6f7);
+}
+
+body.cncnet #status.problem
+{
+	color: var(--t-text-hot, #ffffff);
+}
+
+body.cncnet #confirm
+{
+	margin: 0 0 8dp 0;
+}
+
+body.cncnet #confirmtext
+{
+	font-size: 14dp;
+	line-height: 19dp;
+}
+
+/* Details */
+body.cncnet #details-block
+{
+	display: block;
+	margin-top: 4dp;
+}
+
+body.cncnet #details-toggle
+{
+	height: 28dp;
+	margin: 0;
+	padding: 6dp 14dp 0 14dp;
+	font-size: 14dp;
+}
+
+body.cncnet #details-toggle:active
+{
+	padding: 6dp 14dp 0 14dp;
+}
+
+body.cncnet #details
+{
+	max-height: 150dp;
+	margin-top: 8dp;
+	padding: 8dp 12dp 4dp 12dp;
+	overflow-y: auto;
+	border: 1dp var(--t-edge-dim, #4d3d6b);
+	background-color: var(--t-field, #0b0812d0);
+}
+
+body.cncnet .d-head
+{
+	margin: 6dp 0 4dp 0;
+	font-size: 13dp;
+	line-height: 18dp;
+	color: var(--t-caption, #d9c8ff);
+}
+
+body.cncnet .d-row
+{
+	padding-left: 10dp;
+	border-left: 2dp var(--t-rule, #2e2640);
+}
+
+/* The safe-play note */
+body.cncnet #notes
+{
+	margin-top: 12dp;
+	padding: 8dp 12dp 4dp 12dp;
+	border-left: 3dp var(--t-edge-dim, #4d3d6b);
+	background-color: var(--t-field-list, #0b0812a0);
+}
+
+body.cncnet #notes .line
+{
+	color: var(--t-muted, #a99bc9);
+}
+
+body.cncnet .label
+{
+	font-weight: normal;
+	color: var(--t-text-hot, #ffffff);
+}

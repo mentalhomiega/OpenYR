@@ -147,3 +147,15 @@
 	margin-right: 0;
 	width: 76dp;
 }
+
+/* The status card, the Details section and the status marker belong to the modern style, whose
+   sheet shows them. */
+#card, #details-block, .mark
+{
+	display: none;
+}
+
+#status-row
+{
+	display: block;
+}
