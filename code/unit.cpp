@@ -764,8 +764,8 @@ bool UnitClass::Edge_Of_World_AI(void)
 /***********************************************************************************************
  * UnitClass::Reload_AI -- Perform reload logic for this unit.                                 *
  *                                                                                             *
- *    Some units require special reload logic. The V2 rocket launcher in particular. Perform   *
- *    this reload logic with this routine.                                                     *
+ *    A unit with ammunition regains one shot each time its reload timer runs out. The timer   *
+ *    is set by Start_Reloading when the unit fires.                                           *
  *                                                                                             *
  * INPUT:   none                                                                               *
  *                                                                                             *
@@ -778,19 +778,37 @@ bool UnitClass::Edge_Of_World_AI(void)
  *=============================================================================================*/
 void UnitClass::Reload_AI(void)
 {
-	if (Class->MaxAmmo != -1 && Class->IsNoFireWhileMoving && Ammo < Class->MaxAmmo) {
-		if (Locomotion->Is_Moving()) {
-			Reload = Reload + 1;
-		} else {
-			if (Reload == 0) {
-				Ammo++;
-				if (Ammo < Class->MaxAmmo) {
-					Reload = TICKS_PER_SECOND*30;
-				}
-				Mark(MARK_CHANGE);
-			}
-		}
+	// A unit that cannot fire on the move does not count its timer down while its locomotor moves (UnitClass::Reload, 0x736CA0).
+	if (!Class->IsMobileFire && Locomotion->Is_Moving() && Reload > 0) {
+		Reload = Reload + 1;
 	}
+
+	// A shot of ammunition returns once the timer runs out, and the timer starts again (TechnoClass::Reload, 0x6FB010).
+	if (Class->MaxAmmo == -1 || Class->MaxAmmo <= Ammo || Reload != 0) {
+		return;
+	}
+	Ammo++;
+	Mark(MARK_CHANGE);
+	Start_Reloading();
+}
+
+
+/// <summary>
+/// Starts the countdown to the next shot of ammunition. A unit with no ammunition left uses EmptyReload when
+/// the type sets it. Otherwise the delay is Reload plus ReloadIncrement for each PipWrap shots held, squared
+/// (TechnoClass::StartReloading, 0x6FB080). A unit already full is left alone.
+/// </summary>
+void UnitClass::Start_Reloading(void)
+{
+	if (Ammo >= Class->MaxAmmo) {
+		return;
+	}
+	if (Ammo == 0 && Class->EmptyReloadDelay != -1) {
+		Reload = Class->EmptyReloadDelay;
+		return;
+	}
+	int const steps = Class->PipWrap == 0 ? 1 : Ammo / Class->PipWrap;
+	Reload = Class->ReloadDelay + Class->ReloadIncrement * steps * steps;
 }
 
 
@@ -5425,10 +5443,10 @@ BulletClass * UnitClass::Fire_At(AbstractClass * target, int which)
 		if (bullet != NULL) {
 
 			/*
-			**	Possible reload timer set.
+			**	Every shot of a unit with ammunition to spare restarts its reload timer (UnitClass::Fire, 0x741340).
 			*/
-			if (Class->MaxAmmo > 0 && !Class->IsManualReload && Reload == 0) {
-				Reload = TICKS_PER_SECOND * 30;
+			if (Class->MaxAmmo > 0 && Ammo < Class->MaxAmmo && !Class->IsManualReload) {
+				Start_Reloading();
 			}
 
 			if (!sync && Class->FiringFrames > 0) {

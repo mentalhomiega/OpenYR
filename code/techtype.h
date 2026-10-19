@@ -786,6 +786,17 @@ class TechnoTypeClass : public ObjectTypeClass
 		int MaxAmmo;
 
 		/*
+		**	Reload= is the number of frames a unit with ammunition takes to regain one shot, and
+		**	EmptyReload= replaces it when the unit has none left (-1 keeps Reload=). Each shot the
+		**	unit already holds divided by PipWrap= (squared) adds ReloadIncrement= frames more.
+		**	PipWrap= also arranges the ammunition pips in columns.
+		*/
+		int ReloadDelay;
+		int EmptyReloadDelay;
+		int ReloadIncrement;
+		int PipWrap;
+
+		/*
 		**	This is a bit field representing the houses that are allowed to
 		**	own (by normal means) this particular object type. This value is
 		**	typically used in production contexts. It is possible for a side
@@ -1128,6 +1139,11 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// NoShadow=yes gives a voxel object of this type no ground shadow.
 		bool IsNoShadow;
+
+		// DisableVoxelCache=yes and DisableShadowCache=yes (art) draw the body or the shadow of a voxel
+		// object of this type afresh every frame instead of from the cached image for its facing.
+		bool IsDisableVoxelCache;
+		bool IsDisableShadowCache;
 
 		/*
 		**	Can this object self heal? Mammoth tanks from C&C had this feature.

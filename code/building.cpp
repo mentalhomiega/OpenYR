@@ -9164,7 +9164,7 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 
 /// <summary>
 /// Starts a fire, of the types in DamageFireTypes taken in turn from a random first one, at each
-/// of the structure's DamageFireOffset points up to the first that already has one burning
+/// of the structure's DamageFireOffset points up to the first that is 0,0 or already has one burning
 /// (FUN_0043C0D0). Each fire starts on a random frame.
 /// </summary>
 void BuildingClass::Create_Damage_Fires(void)
@@ -9175,10 +9175,10 @@ void BuildingClass::Create_Damage_Fires(void)
 	}
 	int pick = Random_Pick(0, count - 1);
 	for (int index = 0; index < 8; index++) {
-		if (index >= Class->DamageFireOffsetCount || DamageFireAnims[index] != NULL) {
+		Point2D const offset = Class->DamageFireOffset[index];
+		if (index >= Class->DamageFireOffsetCount || (offset.X == 0 && offset.Y == 0) || DamageFireAnims[index] != NULL) {
 			return;
 		}
-		Point2D const offset = Class->DamageFireOffset[index];
 		Point2D const lepton = TacticalMap->Pixel_To_Lepton(offset);
 		Coord coord = Render_Coord();
 		coord.X += lepton.X;

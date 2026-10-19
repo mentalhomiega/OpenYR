@@ -7984,6 +7984,11 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 /// character choose the flags.</param>
 void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int key, VoxelIndexClass * cache, Rect const & xcliprect, Point2D const & point, Matrix3D const & matrix, int brightness, ShapeFlags_Type negflags) const
 {
+	// TechnoClass::DrawVoxel (0x706640) renders without the cache for a type with DisableVoxelCache=yes.
+	if (key != -1 && (cache == NULL || TClass->IsDisableVoxelCache)) {
+		key = -1;
+	}
+
 	ShapeFlags_Type flags = SHAPE_ZGRAD;
 	if (negflags == SHAPE_NORMAL) {
 		bool visible = false;
@@ -8097,6 +8102,11 @@ void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, in
 {
 	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
 		return;
+	}
+
+	// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
+	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
+		key = -1;
 	}
 
 	if (key != -1) {
@@ -10067,11 +10077,29 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**
 		*/
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
-			int _pips = pips;
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				if (_pips > 0) {
-					_pips--;
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 6, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
+			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
+			int const wrap = TClass->PipWrap;
+			int const count = Class_Of()->Max_Pips();
+			if (wrap == 0) {
+				int _pips = pips;
+				for (int index = 0; index < count; index++) {
+					if (_pips > 0) {
+						_pips--;
+						Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+					}
+				}
+			} else if (wrap > 0) {
+				int const rows = count / wrap;
+				for (int column = 0; column < wrap; column++) {
+					int frame = 14;
+					for (int row = rows - 1; row >= 0; row--) {
+						if (row * wrap + column < Ammo) {
+							frame = row + 15;
+							break;
+						}
+					}
+					Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 				}
 			}
 

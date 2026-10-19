@@ -118,6 +118,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	UndeploySound(VOC_NONE),
 	IsDoggie(false),
 	IsNotHuman(false),
+	IsUseOwnName(false),
 	DeadBodies(),
 	DeathAnims(),
 	IsWebImmune(false),
@@ -455,6 +456,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		EliteOccupyWeapon.Weapon = TGet_Class(ini, Name(), "EliteOccupyWeapon", EliteOccupyWeapon.Weapon);
 		IsDoggie = ini.Get_Bool(Name(), "Doggie", IsDoggie);
 		IsNotHuman = ini.Get_Bool(Name(), "NotHuman", IsNotHuman);
+		IsUseOwnName = ini.Get_Bool(Name(), "UseOwnName", IsUseOwnName);
 		DeadBodies = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeadBodies", DeadBodies);
 		DeathAnims = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeathAnims", DeathAnims, 0x80);
 		if (IsBomber) IsCapture = true;
@@ -622,6 +624,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(OccupyPip);
 	stream.Serialize(IsDoggie);
 	stream.Serialize(IsNotHuman);
+	stream.Serialize(IsUseOwnName);
 	stream.Serialize(DeadBodies);
 	stream.Serialize(DeathAnims);
 	stream.Serialize(IsWebImmune);
