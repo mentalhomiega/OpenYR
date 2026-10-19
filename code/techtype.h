@@ -804,6 +804,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).
 		const void * AltCameoData;
 
+		// The PCX picture drawn in place of the alternate cameo (Ares AltCameoPCX in the art).
+		std::string AltCameoPCX;
+
 		/*
 		 * Where this type's cameo sorts among the others of its kind on the sidebar, lowest
 		 * first.
@@ -1248,6 +1251,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		double Self_Heal_Cap(void) const;
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
+		std::string const & Get_Cameo_PCX(void) const;
+		bool Is_Alt_Cameo_Shown(void) const;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;
 		int Refund(HouseClass const * house, bool unscaled) const;
 		virtual int Time_To_Build(void) const override;

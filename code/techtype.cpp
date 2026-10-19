@@ -556,16 +556,36 @@ int TechnoTypeClass::Refund(HouseClass const * house, bool unscaled) const
  *=============================================================================================*/
 void const * TechnoTypeClass::Get_Cameo_Data(void) const
 {
-	// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
-	if (AltCameoData != NULL && PlayerPtr != NULL && IsTrainable) {
+	if (AltCameoData != NULL && Is_Alt_Cameo_Shown()) {
+		return(AltCameoData);
+	}
+	return(CameoData);
+}
+
+
+/// <summary>
+/// The PCX picture to draw as this type's sidebar cameo, or an empty name when the cameo shape is drawn. The alternate
+/// picture replaces the plain one while the alternate cameo is shown, if the type has one.
+/// </summary>
+std::string const & TechnoTypeClass::Get_Cameo_PCX(void) const
+{
+	if (!AltCameoPCX.empty() && Is_Alt_Cameo_Shown()) {
+		return(AltCameoPCX);
+	}
+	return(CameoPCX);
+}
+
+
+// Once the local player has spied on a barracks or war factory, the trainable types it can make show their alternate cameo.
+bool TechnoTypeClass::Is_Alt_Cameo_Shown(void) const
+{
+	if (PlayerPtr != NULL && IsTrainable) {
 		RTTIType const rtti = Fetch_RTTI();
 		bool const barracks = PlayerPtr->IsBarracksInfiltrated && rtti == RTTI_INFANTRYTYPE;
 		bool const factory = PlayerPtr->IsWarFactoryInfiltrated && (rtti == RTTI_UNITTYPE || (rtti == RTTI_BUILDINGTYPE && UndeploysInto != NULL));
-		if (barracks || factory) {
-			return(AltCameoData);
-		}
+		return(barracks || factory);
 	}
-	return(CameoData);
+	return(false);
 }
 
 
@@ -1210,6 +1230,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		char pcx[64];
 		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
 		CameoPCX = pcx;
+		ArtINI.Get_String(Graphic_Name(), "AltCameoPCX", "", pcx, sizeof(pcx));
+		AltCameoPCX = pcx;
 
 		TStringID<24> cameo;
 		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
@@ -1495,6 +1517,8 @@ void TechnoTypeClass::Post_Load(void)
 
 		ArtINI.Get_String((const char *)GraphicName, "CameoPCX", "", buffer, sizeof(buffer));
 		CameoPCX = buffer;
+		ArtINI.Get_String((const char *)GraphicName, "AltCameoPCX", "", buffer, sizeof(buffer));
+		AltCameoPCX = buffer;
 
 		AltCameoData = NULL;
 		if (ArtINI.Get_String((const char *)GraphicName, "AltCameo", "", buffer, sizeof(buffer)) > 0) {

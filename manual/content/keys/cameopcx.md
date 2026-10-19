@@ -23,4 +23,4 @@ When the file is missing or cannot be read, the sidebar draws the `Cameo=` shape
 
 A loaded saved game reads the key again from the Image ID's section only.
 
-`AltCameoPCX=` is not supported.
+[`AltCameoPCX=`](/keys/altcameopcx/) sets the picture drawn while the alternate cameo is shown.

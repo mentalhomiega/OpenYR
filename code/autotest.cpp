@@ -85,6 +85,7 @@
 **	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
 **	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
 **	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
+**	cameopcx <TypeID>		writes the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing
 **	ironcurtain <TypeID> <frames>	puts the player's objects of that type under the Iron Curtain for that many frames, as the superweapon does,
 **							and writes the frames each has left
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
@@ -3297,6 +3298,12 @@ void Run(StepType const & step)
 			Rule->Addition(ini);
 		} else {
 			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+		}
+	} else if (step.Command == "cameopcx") {
+		// cameopcx <TypeID>: the PCX cameo name the sidebar draws for the type, and whether its alternate cameo is showing.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   cameopcx %s name '%s' alternate %d\n", type->Name(), type->Get_Cameo_PCX().c_str(), (int)type->Is_Alt_Cameo_Shown());
 		}
 	} else if (step.Command == "pcxcameo") {
 		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.

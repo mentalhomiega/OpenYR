@@ -37,7 +37,7 @@ The From column says where a key comes from:
 ## Contents
 
 - [Rules](#rules): 121 entries
-- [Art](#art): 5 entries
+- [Art](#art): 6 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
@@ -267,6 +267,7 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AltCameoPCX`](../manual/content/keys/altcameopcx.md) | (none) | The PCX picture drawn as an object's sidebar cameo in place of its alternate cameo. | Ares |
 | [`CameoPCX`](../manual/content/keys/cameopcx.md) | (none) | The PCX picture drawn as an object's sidebar cameo instead of its `Cameo=` shape. | Ares |
 
 ### UnitType
