@@ -23,9 +23,24 @@
 #include "ui/uisettings.h"
 #include "ui/uiview.h"
 
+#include <cctype>
+
 
 namespace
 {
+
+// The launcher's own reading of [Launcher] ModPicker=, so the launcher and this screen agree.
+bool Means_No(std::string const & value)
+{
+	std::string word;
+	for (char const ch : value) {
+		if (ch != ' ' && ch != '	') {
+			word += (char)std::tolower((unsigned char)ch);
+		}
+	}
+	return(word == "no" || word == "0" || word == "off" || word == "false");
+}
+
 
 class UIModsEngineServiceClass : public UIModsServiceClass
 {
@@ -45,6 +60,29 @@ class UIModsEngineServiceClass : public UIModsServiceClass
 				Put_Mod_List(ConfigINI, before);
 			} else {
 				Clear_Mod_List(ConfigINI);
+			}
+			return(false);
+		}
+
+		virtual bool Ask_For_Mod(void) override
+		{
+			return(!Means_No(ConfigINI.Get_String("Launcher", "ModPicker", "yes")));
+		}
+
+		virtual bool Save_Ask_For_Mod(bool ask) override
+		{
+			std::string const before = ConfigINI.Get_String("Launcher", "ModPicker", "");
+			ConfigINI.Put_String("Launcher", "ModPicker", ask ? "yes" : "no");
+
+			CCFileClass file(DeploymentConfig.SettingsFile.c_str());
+			if (ConfigINI.Save(file, false) > 0) {
+				return(true);
+			}
+
+			if (before.empty()) {
+				ConfigINI.Clear("Launcher", "ModPicker");
+			} else {
+				ConfigINI.Put_String("Launcher", "ModPicker", before.c_str());
 			}
 			return(false);
 		}

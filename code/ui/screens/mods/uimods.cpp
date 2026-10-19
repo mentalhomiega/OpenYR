@@ -15,6 +15,7 @@
 
 
 static char const * const UI_MODS_HINT = "Each mod overrides the ones above it. Changes take effect after a restart.";
+static char const * const UI_MODS_CHANGED_HINT = "Press OK to save the list. It takes effect when the game starts again.";
 
 
 UIModsPresenterClass::UIModsPresenterClass(UIModsServiceClass & service, ModChoiceClass choice) :
@@ -24,13 +25,15 @@ UIModsPresenterClass::UIModsPresenterClass(UIModsServiceClass & service, ModChoi
 	if (!Choice.Mods().empty()) {
 		State.Selected = Choice.Mods().front().Id;
 	}
+	AskedOriginally = Service.Ask_For_Mod();
+	State.AskForMod = AskedOriginally;
 	Show();
 }
 
 
 /// <summary>
-/// Carries out a request from the screen. Turning mods on and off and moving them changes
-/// only the choice; OK writes the list when it differs from the one the screen opened with,
+/// Carries out a request from the screen. Turning mods on and off, moving them and the launcher
+/// check box change only the choice; OK writes what differs from what the screen opened with,
 /// and stays open with the reason shown when it cannot be written.
 /// </summary>
 void UIModsPresenterClass::Execute(UIIntent const & intent)
@@ -51,11 +54,15 @@ void UIModsPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "move") {
 		Choice.Move(State.Selected, intent.Value);
 
+	} else if (intent.Name == "ask") {
+		State.AskForMod = !State.AskForMod;
+
 	} else if (intent.Name == "ok") {
-		if (!Choice.Is_Changed()) {
-			Result = UI_RESULT_ACCEPTED;
-		} else if (Service.Save(Choice.List())) {
-			Saved = true;
+		bool const list_changed = Choice.Is_Changed();
+		bool const ask_changed = State.AskForMod != AskedOriginally;
+
+		if ((!list_changed || Service.Save(Choice.List())) && (!ask_changed || Service.Save_Ask_For_Mod(State.AskForMod))) {
+			Saved = list_changed;
 			Result = UI_RESULT_ACCEPTED;
 		} else {
 			State.Problem = true;
@@ -119,7 +126,7 @@ void UIModsPresenterClass::Show(void)
 	} else if (selected != nullptr && !State.CanToggle) {
 		State.Status = "Mods= cannot list a folder whose name holds a comma or semicolon or starts or ends with a space.";
 	} else {
-		State.Status = UI_MODS_HINT;
+		State.Status = Choice.Is_Changed() ? UI_MODS_CHANGED_HINT : UI_MODS_HINT;
 	}
 }
 
@@ -167,7 +174,8 @@ class UIModsViewClass : public UIRmlViewClass
 				&& model.Bind("togglecaption", &state.ToggleCaption)
 				&& model.Bind("cantoggle", &state.CanToggle)
 				&& model.Bind("canraise", &state.CanRaise)
-				&& model.Bind("canlower", &state.CanLower));
+				&& model.Bind("canlower", &state.CanLower)
+				&& model.Bind("askformod", &state.AskForMod));
 		}
 
 	private:

@@ -377,6 +377,7 @@ bool Choose_Mod(OptionsType const & options, std::wstring const & folder, std::w
 		request.Descriptions.push_back(launcher::Ansi_To_Wide(option.Description));
 	}
 	request.Selected = picker.Selected;
+	request.DontAskAgain = !settings.AskForMod;
 
 	if (!launcher::Show_Mod_Picker(request)) {
 		Say(options, log, L"The mod picker was cancelled. Nothing is started.");

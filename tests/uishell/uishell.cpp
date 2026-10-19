@@ -1402,8 +1402,12 @@ class RecordingModsServiceClass : public UIModsServiceClass
 	public:
 		std::vector<std::string> Saved;
 		bool Writable = true;
+		bool Asked = true;
+		std::vector<bool> SavedAsk;
 
 		virtual bool Save(std::string const & list) override { Saved.push_back(list); return(Writable); }
+		virtual bool Ask_For_Mod(void) override { return(Asked); }
+		virtual bool Save_Ask_For_Mod(bool ask) override { SavedAsk.push_back(ask); return(Writable); }
 		virtual std::string File_Name(void) override { return("D:\\Users\\Player\\RA2MD.INI"); }
 };
 
@@ -1520,6 +1524,35 @@ void Test_Mods_Presenter(void)
 		Check(presenter.State.Status == "The list could not be saved to D:\\Users\\Player\\RA2MD.INI.", "and names the file");
 		Drive(presenter, "select", presenter.State.Rows[0].Id);
 		Check(!presenter.State.Problem && presenter.State.Status != "The list could not be saved to D:\\Users\\Player\\RA2MD.INI.", "the next step clears the message");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		service.Asked = false;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Check(!presenter.State.AskForMod, "the launcher check box starts as the settings have it");
+		Drive(presenter, "ask");
+		Check(presenter.State.AskForMod && service.SavedAsk.empty(), "clicking it changes the choice only");
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.Saved && service.Saved.empty() && service.SavedAsk == std::vector<bool>{ true }, "OK saves the launcher setting alone, which needs no restart");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Drive(presenter, "ask");
+		Drive(presenter, "ask");
+		Drive(presenter, "ok");
+		Check(service.SavedAsk.empty() && service.Saved.empty(), "turning the check box back saves nothing");
+	}
+
+	{
+		RecordingModsServiceClass service;
+		service.Writable = false;
+		UIModsPresenterClass presenter(service, Mods_Fixture());
+		Drive(presenter, "ask");
+		Drive(presenter, "ok");
+		Check(!presenter.Result.has_value() && presenter.State.Problem, "a launcher setting that cannot be saved keeps the screen open");
 	}
 
 	{

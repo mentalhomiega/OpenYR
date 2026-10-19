@@ -24,6 +24,7 @@
 		<div id="folder">{{folder}}</div>
 	</div>
 	<p id="status" data-class-problem="problem">{{status}}</p>
+	<label class="check setting" id="ask"><span class="caption">Ask which mod to use when OpenYR starts</span><input type="checkbox" id="askbox" data-attrif-checked="askformod" data-event-click="queue('ask')"/></label>
 	<div id="buttons">
 		<button id="toggle" class="big" data-class-disabled="!cantoggle" data-event-click="queue('toggle', selected)">{{togglecaption}}</button>
 		<button id="up" class="big" data-class-disabled="!canraise" data-event-click="queue('move', -1)">Move Up</button>

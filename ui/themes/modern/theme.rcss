@@ -1235,6 +1235,18 @@ body.page-mods #status.problem
 	padding-left: 8dp;
 }
 
+body.page-mods #ask
+{
+	height: 24dp;
+	margin-top: 8dp;
+	line-height: 22dp;
+}
+
+body.page-mods #ask input
+{
+	margin: 0 12dp 0 0;
+}
+
 body.page-mods #buttons
 {
 	margin-top: 14dp;
