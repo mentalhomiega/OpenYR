@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "cdfile.h"
+#include "deploymentconfig.h"
 #include "gamedirs.h"
 #include "ini.h"
 #include "mods.h"
@@ -156,7 +157,7 @@ void Make_Tree(void)
 	Write_File(Root + "\\SHARED.TXT", "current");
 
 	std::string const first = data + "Mods\\First\\";
-	Write_File(first + "mod.ini", "[Mod]\nName=First Mod\nDescription=Changes the tank.\nRules=rules.ini\nArt= art.ini \n");
+	Write_File(first + "mod.ini", "[Mod]\nName=First Mod\nDescription=Changes the tank.\nRules=rules.ini\nArt= art.ini \n[Files]\nRules=RULESFIRST.INI\nSound=SOUNDFIRST.INI\n[Archives]\nExpandPrefix=EXPANDFI, EXPANDMD\n");
 	Write_File(first + "rules.ini", "[MTNK]\nCost=1234\n[InfantryTypes]\n900=NEWGI\n");
 	Write_File(first + "art.ini", "[NEWGI]\nSequence=NEWGISequence\n");
 	Write_File(first + "SHARED.TXT", "first");
@@ -168,7 +169,7 @@ void Make_Tree(void)
 
 	// Names an overlay it does not have, which the data directory does.
 	std::string const third = data + "Mods\\Third\\";
-	Write_File(third + "mod.ini", "[Mod]\nRules=MISSING.INI\n");
+	Write_File(third + "mod.ini", "[Mod]\nRules=MISSING.INI\n[Files]\nRules=RULESTHIRD.INI\n");
 
 	// Listed by no test, and sorted ahead of the others without regard to case.
 	Make_Directory(Root + "\\Data\\Mods\\alpha");
@@ -240,6 +241,26 @@ void Test_Search_Order(void)
 
 	CDFileClass named((Root + "\\Data\\SHARED.TXT").c_str());
 	Check_Text(named.File_Name(), Root + "\\Data\\SHARED.TXT", "a name with its own directory is left as given");
+}
+
+
+void Test_Mod_Files(void)
+{
+	Start_Mods();
+
+	DeploymentConfigClass config;
+	Apply_Mod_Files(config);
+
+	Check_Text(config.RulesFile, "RULESTHIRD.INI", "the last mod naming a file supplies it");
+	Check_Text(config.SoundFile, "SOUNDFIRST.INI", "an earlier mod's file name stands when later mods do not name one");
+	Check_Text(config.ArtFile, "ARTMD.INI", "a file no mod names keeps the deployment's");
+	Check_Text(config.ExpandPrefixes, "EXPANDFI, EXPANDMD", "a mod's archive prefixes replace the deployment's");
+	Check_Text(config.CachePrefixes, "ECACHE", "archive prefixes no mod names keep the deployment's");
+
+	Reset();
+	DeploymentConfigClass plain;
+	Apply_Mod_Files(plain);
+	Check_Text(plain.RulesFile, "RULESMD.INI", "without mods the deployment's file names stand");
 }
 
 
@@ -523,6 +544,7 @@ int main(void)
 	Test_Folder_Names();
 	Test_Manifests();
 	Test_Search_Order();
+	Test_Mod_Files();
 	Test_Overlays();
 	Test_Finding();
 	Test_Choices();

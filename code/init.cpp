@@ -2227,26 +2227,32 @@ static void Init_Expand_Mixfiles(void)
 	char name[64];
 	MFCD * expand;
 
-	for (index = 99; index >= 0; index--) {
-		sprintf(name, "EXPANDMD%02d.MIX", index);
-		// Searched for as a loose file wherever the game's files are kept, but never
-		// inside another archive.
-		if (CDFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
+	// The prefixes come from the deployment and from the active mods, so a mod can bring
+	// archives such as EXPANDMO99.MIX ahead of the game's EXPANDMD01.MIX.
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.ExpandPrefixes.c_str())) {
+		for (index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			// Searched for as a loose file wherever the game's files are kept, but never
+			// inside another archive.
+			if (CDFileClass(name).Is_Available()) {
+				expand = new MFCD(name, &FastKey);
 
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
+				ExpandMix.Add(expand);
+				DebugStringNoPrefix(" %s", name);
+			}
 		}
 	}
 
-	for (index = 99; index >= 0; index--) {
-		sprintf(name, "ECACHE%02d.MIX", index);
-		if (CCFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
+	for (std::string const & prefix : Parse_Mod_List(DeploymentConfig.CachePrefixes.c_str())) {
+		for (index = 99; index >= 0; index--) {
+			snprintf(name, sizeof(name), "%s%02d.MIX", prefix.c_str(), index);
+			if (CCFileClass(name).Is_Available()) {
+				expand = new MFCD(name, &FastKey);
 
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-			expand->Cache();
+				ExpandMix.Add(expand);
+				DebugStringNoPrefix(" %s", name);
+				expand->Cache();
+			}
 		}
 	}
 }
@@ -2386,8 +2392,17 @@ static bool Init_Bootstrap_Mixfiles(void)
 
 	Install_INI_Include_Reader();
 
+	// With a mod active its archives are mounted ahead of the language archives, so that the main
+	// string table and the other language files can come from the mod. Without one the language
+	// archives are searched ahead of every other startup archive.
+	bool const modded = !Active_Mods().empty();
+	if (modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
+
 	// The language archives hold localised content such as CAMEOMD.MIX, which the secondary
-	// archives need, and are searched ahead of every other startup archive.
+	// archives need.
 	LanguageMix = new MFCD("LANGMD.MIX", &FastKey);
 	BaseLanguageMix = new MFCD("LANGUAGE.MIX", &FastKey);
 
@@ -2396,8 +2411,10 @@ static bool Init_Bootstrap_Mixfiles(void)
 		return(false);
 	}
 
-	Init_Patch_Mixfiles();
-	Init_Expand_Mixfiles();
+	if (!modded) {
+		Init_Patch_Mixfiles();
+		Init_Expand_Mixfiles();
+	}
 
 
 #ifndef _DEMO
