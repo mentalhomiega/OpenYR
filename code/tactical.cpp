@@ -72,6 +72,7 @@
 #include "csf.h"
 #include "scheme.h"
 #include "session.h"
+#include "shellmap.h"
 #include "shapeset.h"
 #include "sidebar.h"
 #include "stimer.h"
@@ -2693,7 +2694,8 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
 	Tactical_Position_Limits(minimum, maximum);
 
 	// The modern build panel covers the right of the view, so the view may scroll that far past the map's edge.
-	if (Modern_Interface()) {
+	// The menu battle has no panel, so its view stops at the edge.
+	if (Modern_Interface() && !Shellmap_Running()) {
 		maximum.X += Screen_To_View_Offset(Point2D(HUD_PANEL_WIDTH, 0)).X;
 	}
 
