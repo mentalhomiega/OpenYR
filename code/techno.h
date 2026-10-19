@@ -921,12 +921,17 @@ class TechnoClass :	public RadioClass,
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;
 		virtual void Draw_Insignia(Point2D const & bottomleft, Point2D const & center, Rect const & rect) const;
+		virtual void Draw_Radial_Indicator(void) const override;
 		virtual void Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & rect) const;
 		virtual void Hidden(void) override;
 		void Forget_Human_Discovery(void);
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Do_Uncloak(bool silent=false);
+
+		// The number of stages this object passes through as it cloaks and decloaks, and the sound it makes doing so.
+		int Cloaking_Stages(void) const;
+		void Play_Cloak_Sound(bool decloaking) const;
 		virtual void Do_Cloak(bool silent=false);
 		virtual void Do_Shimmer(void) override;
 		int Get_Predator_Offset(void) const;

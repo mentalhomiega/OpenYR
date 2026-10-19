@@ -271,6 +271,13 @@ class HouseClass : public AbstractClass
 		bool IsBarracksInfiltrated;
 		bool IsWarFactoryInfiltrated;
 
+		// Set by a spy on a structure with SpyEffect.Custom: the new ships, aircraft or structures this house builds start
+		// as veterans, and the bits of the kinds of technology it has stolen (SpyEffect.StolenTechIndex).
+		bool IsNavalSpied;
+		bool IsAircraftSpied;
+		bool IsBuildingSpied;
+		unsigned int StolenTechs;
+
 		// While the blackout runs, this house's structures make no power.
 		CDTimerClass<FrameTimerClass> PowerBlackout;
 		bool IsPowerBlackout;

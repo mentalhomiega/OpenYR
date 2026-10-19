@@ -55,7 +55,7 @@ CloakingSpeed=5        ; how many frames it spends on each fade stage
 
 An object is fully visible, fading out, hidden, or fading back in. Only the hidden state changes what other houses may do with it.
 
-A vehicle, infantryman or aircraft fades in steps. [`CloakingSpeed`](/keys/cloakingspeed/) sets how many frames it spends on each step. [`CloakingStages`](/keys/cloakingstages/) sets how many steps make a complete fade, and the object's appearance depends on the fraction of them it has passed. The rest of this page uses the names in the table.
+A vehicle, infantryman or aircraft fades in steps. [`CloakingSpeed`](/keys/cloakingspeed/) sets how many frames it spends on each step. [`CloakingStages`](/keys/cloakingstages/), or the type's [`Cloakable.Stages`](/keys/cloakable.stages/), sets how many steps make a complete fade, and the object's appearance depends on the fraction of them it has passed. The rest of this page uses the names in the table.
 
 | Steps passed, as a fraction of `CloakingStages` | How the object is drawn |
 | --- | --- |
@@ -70,7 +70,7 @@ The two fades differ in length:
 - **Fading out** ends early. The object becomes hidden as soon as it reaches the shadowy band, at the first step at or above half of `CloakingStages`. It never shows the ripple on the way out.
 - **Fading back in** starts one step below the whole, so it opens with the ripple, and runs all the way down to fully visible.
 
-With the stock `CloakingStages=9` and the stealth tank's `CloakingSpeed=5` from the example above, the tank disappears after about 25 frames and takes about 40 to reappear. [`CloakSound`](/keys/cloaksound/) plays at the object's position as each fade begins.
+With the stock `CloakingStages=9` and the stealth tank's `CloakingSpeed=5` from the example above, the tank disappears after about 25 frames and takes about 40 to reappear. [`CloakSound`](/keys/cloaksound/) plays at the object's position as each fade begins, and a type can set its own [`CloakSound`](/keys/cloaksound/#scope-aircrafttype) and [`DecloakSound`](/keys/decloaksound/).
 
 A structure ignores both settings. It steps through fifteen fixed levels of translucency, one level per frame in either direction, and is hidden at the fifteenth.
 

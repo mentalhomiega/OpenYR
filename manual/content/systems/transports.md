@@ -109,7 +109,7 @@ Yuri's Revenge also gives each passenger its own firing position on the transpor
 
 ## Losing the transport
 
-When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water. A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team when it has one.
+When a vehicle transport is destroyed, each passenger gets out onto the transport's cell if it could enter that cell. Passengers that cannot are killed with it, so a transport destroyed over water kills every passenger that cannot enter water. A type that sets [`Survivor.RookiePassengerChance`](/keys/survivor.rookiepassengerchance/) or its veteran or elite form first rolls that chance for each passenger, kills those that fail, and puts those that succeed on the nearest free cell when the transport's own is taken. A passenger that gets out of a computer player's vehicle hunts, or joins the vehicle's team when it has one.
 
 Every passenger is killed, and none gets out, when the destroying damage was forced, when the vehicle was falling (for example when a bridge collapsed under it), when it stood more than 208 leptons above the ground, or when its type sets [`Crashable=yes`](/keys/crashable/). Forced damage ignores armor and [`Immune=yes`](/keys/immune/). [Destruction and debris](/systems/destruction-and-debris/#a-vehicle) gives the full order of what a destroyed vehicle does.
 

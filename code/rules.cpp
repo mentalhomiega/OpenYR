@@ -654,6 +654,8 @@ RulesClass::RulesClass(void) :
 	VeteranROF(1),
 	VeteranCap(1),
 	CloakSound(VOC_NONE),
+	DecloakSound(VOC_NONE),
+	IsDecloakSoundSet(false),
 	SellSound(VOC_NONE),
 	GameClosed(VOC_NONE),
 	IncomingMessage(VOC_NONE),
@@ -1194,6 +1196,10 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		VoxelSpecularFromView = ini.Get_Bool(AUDIOVISUAL, "VoxelSpecularFromView", VoxelSpecularFromView);
 		ShakeScreen = ini.Get_Int(AUDIOVISUAL, "ShakeScreen", ShakeScreen);
 		CloakSound = ini.Get_VocType(AUDIOVISUAL, "CloakSound", CloakSound);
+		if (ini.Is_Present(AUDIOVISUAL, "DecloakSound")) {
+			DecloakSound = ini.Get_VocType(AUDIOVISUAL, "DecloakSound", DecloakSound);
+			IsDecloakSoundSet = true;
+		}
 		SellSound = ini.Get_VocType(AUDIOVISUAL, "SellSound", SellSound);
 		GameClosed = ini.Get_VocType(AUDIOVISUAL, "GameClosed", GameClosed);
 		IncomingMessage = ini.Get_VocType(AUDIOVISUAL, "IncomingMessage", IncomingMessage);
@@ -3125,6 +3131,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(VeteranROF);
 	stream.Serialize(VeteranCap);
 	stream.Serialize(CloakSound);
+	stream.Serialize(DecloakSound);
+	stream.Serialize(IsDecloakSoundSet);
 	stream.Serialize(SellSound);
 	stream.Serialize(GameClosed);
 	stream.Serialize(IncomingMessage);

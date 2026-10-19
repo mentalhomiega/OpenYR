@@ -1974,6 +1974,9 @@ bool ObjectClass::Paradrop(Coord const & coord)
 		**	(0x5F5940) places it. A dropped bomb's chute starts at the bomb itself.
 		*/
 		AnimTypeClass const * chute = RTTI == RTTI_BULLET ? Rule->BombParachute : Rule->Parachute;
+		if (Is_Techno() && static_cast<TechnoClass const *>(this)->TClass->ParachuteAnim != NULL) {
+			chute = static_cast<TechnoClass const *>(this)->TClass->ParachuteAnim;
+		}
 		if (chute != NULL) {
 			Coord canopy = coord;
 			if (RTTI != RTTI_BULLET) {

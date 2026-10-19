@@ -67,6 +67,9 @@ class UnitTypeClass : public TechnoTypeClass
 		// while deployed draws as its UnloadingClass and fires DeployFireWeapon when DeployFire is set.
 		bool IsSimpleDeployer;
 
+		// The vehicle type an IsSimpleDeployer vehicle of this type becomes when it finishes deploying, or NULL for none (Ares Convert.Deploy).
+		UnitTypeClass const * ConvertDeploy;
+
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		bool IsDeployToLand;

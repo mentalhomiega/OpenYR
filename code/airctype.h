@@ -55,6 +55,15 @@ class AircraftTypeClass : public TechnoTypeClass
 		bool IsLandable;
 
 		/*
+		 * The animation a badly damaged or crashing aircraft leaves behind it, and the odds in percent each frame that
+		 * it does so (Ares Smoke.Anim, Smoke.ChanceRed, Smoke.ChanceDead). Without Smoke.Anim the stock smoke shows.
+		 */
+		AnimTypeClass const * SmokeAnim;
+		bool IsSmokeAnimSet;
+		int SmokeChanceRed;
+		int SmokeChanceDead;
+
+		/*
 		 * Is this aircraft a fighter? A fighter that attacks with a guided weapon fires as it
 		 * passes the target and flies on, where other aircraft stop and hover to fire.
 		 * (Rules key Fighter.)

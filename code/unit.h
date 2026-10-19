@@ -105,6 +105,7 @@ class UnitClass : public FootClass
 		bool IsLandingToDeploy;
 		int SimpleDeployFrame;
 		int Simple_Deploy_AI(void);
+		bool Convert_To(UnitTypeClass const * type);
 
 		// The passenger count a gunner vehicle last acted on.
 		int GunnerPassengers;

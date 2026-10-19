@@ -510,6 +510,74 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The multiplier on this type's build time (TechnoTypeClass::BuildTimeMultiplier).
 		double BuildTimeMultiplier;
 
+		// The infantry type that survives this object for an owner on each place in [Sides], or empty for the side's crew (Ares Survivor.Side).
+		std::string SurvivorSide[4];
+
+		// The odds in percent that a survivor of this object is its owner's technician or engineer, or -1 for the stock odds (Ares Crew.TechnicianChance, Crew.EngineerChance).
+		int CrewTechnicianChance;
+		int CrewEngineerChance;
+
+		// How many pilots try to leave a destroyed vehicle, or -1 for the stock rule (Ares Survivor.Pilots).
+		int SurvivorPilots;
+
+		// The odds in percent that a pilot escapes, or a passenger survives, by rank, or -1 for the stock rule (Ares Survivor.*PilotChance and Survivor.*PassengerChance).
+		int SurvivorPilotChance[3];
+		int SurvivorPassengerChance[3];
+
+		// The animation this object hangs from while it parachutes, or NULL for [AudioVisual] Parachute (Ares Parachute.Anim).
+		AnimTypeClass const * ParachuteAnim;
+
+		// The sound played to the owner when a structure of this type is placed, and whether the type sets it; VOC_NONE with the flag set is silent (Ares SlamSound).
+		VocType SlamSound;
+		bool IsSlamSoundSet;
+
+		// The radius in cells of the ring drawn around this object while it is selected, or 0 for none (Ares RadialIndicatorRadius).
+		double RadialIndicatorRadius;
+
+		// The vehicle type this object is drawn as while it is on water, or NULL (Ares WaterImage).
+		UnitTypeClass const * WaterImage;
+
+		// Whether a cloning vat copies this soldier (Ares Cloneable).
+		bool IsCloneable;
+
+		// The countries whose factories may, and may not, build this type; empty for any (Ares FactoryOwners, FactoryOwners.Forbidden).
+		std::vector<std::string> FactoryOwners;
+		std::vector<std::string> FactoryOwnersForbidden;
+
+		// The cursors shown for this type, as names of stock cursors or [MouseCursors] entries, or empty for the stock cursor (Ares Cursor.Move, Cursor.NoMove, Cursor.Deploy, Cursor.NoDeploy, Cursor.Enter, Cursor.NoEnter).
+		std::string CursorMove;
+		std::string CursorNoMove;
+		std::string CursorDeploy;
+		std::string CursorNoDeploy;
+		std::string CursorEnter;
+		std::string CursorNoEnter;
+
+		// The sounds played as this object cloaks and decloaks, each with whether the type sets it; VOC_NONE with the flag set is silent (Ares CloakSound, DecloakSound).
+		VocType CloakSound;
+		VocType DecloakSound;
+		bool IsCloakSoundSet;
+		bool IsDecloakSoundSet;
+
+		// How many stages this object passes through as it cloaks and decloaks, or 0 for [General] CloakingStages (Ares Cloakable.Stages).
+		int CloakStages;
+
+		// Whether an object on the guard mission picks targets on its own, and whether a cloakable one does (Ares CanPassiveAquire.Guard, CanPassiveAquire.Cloak).
+		bool IsCanPassiveAquireGuard;
+		bool IsCanPassiveAquireCloak;
+
+		// Whether the player's orders cannot name this object's targets (Ares NoManualFire).
+		bool IsNoManualFire;
+
+		// Whether a gattling weapon that finishes its last stage starts again at the first (Ares Gattling.Cycle).
+		bool IsGattlingCycle;
+
+		// The EVA event announced when the owner's object of this type is promoted to veteran and to elite, or empty for EVA_UnitPromoted (Ares EVA.VeteranPromoted, EVA.ElitePromoted).
+		std::string EvaPromoted[2];
+
+		// The EVA event announced when an object of this type is lost, and whether the type names one; "none" is silent (Ares EVA.Lost).
+		std::string EvaLost;
+		bool IsEvaLostSet;
+
 		// The group type select matches: GroupAs, or the type's own name, upper case.
 		std::string Select_Group(void) const;
 
@@ -776,6 +844,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	of this type can be produced.
 		*/
 		TypeList<int> Prerequisite;
+
+		// The kinds of stolen technology a house must have stolen before it can build this type, as indexes from 0 to 31 (Ares Prerequisite.StolenTechs).
+		std::vector<int> PrerequisiteStolenTechs;
 
 		// A house that owns one of these buildings skips the Prerequisite, tech level, stolen tech
 		// and house checks. The Unbuildable flag and the build limit still apply.

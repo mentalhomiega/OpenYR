@@ -1,0 +1,10 @@
+; EVA.Lost on a destroyed Conscript with the eva-keys-rules mod. Expected: no EVA_UnitLost line (stock rules speak one).
+; Run (with -Mods tests/autotest/eva-keys-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/eva-keys-lost-none.txt -Mods <absolute path of tests/autotest/eva-keys-rules> -Seconds 120 -Filter "AUTOTEST|Speech|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 66 24
+41 own E2 68 24
+42 own GGI 70 24
+43 own FV 74 24
+130 hit E2:HE@FV 9999
+200 quit

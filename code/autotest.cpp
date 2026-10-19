@@ -135,6 +135,7 @@
 **	counts <House>			writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read
 **	listhouse <House>		writes every object the house has, limbo'd ones too, with its limbo and transport state, cargo, team, occupants and visibility, then the counts the land-units event reads
 **	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
+**	lose <TypeID>			gives the first object of that type the player owns to the first computer house with a construction yard through Set_Owning_House
 **	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
 **	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
 **	kill <TypeID>			destroys the objects of that type other houses own
@@ -2601,6 +2602,27 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "lose") {
+		// lose <TypeID>: gives the first live object of that type the player owns to a computer house through
+		// TechnoClass::Set_Owning_House, as an enemy capture does.
+		HouseClass * enemy = NULL;
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
+				enemy = Houses[index];
+				break;
+			}
+		}
+		for (int index = 0; enemy != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				bool const given = techno->Set_Owning_House(enemy, true);
+				DebugString("AUTOTEST lose %s at %d,%d to %s: %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, enemy->Class->Name(), given ? "given" : "refused");
+				break;
+			}
+		}
+		return;
+	}
+
 	// planning <0|1>: turns planning mode on or off without the Z key. No hold key is set, so the mode stays on until planning 0.
 	if (step.Command == "planning") {
 		Map.Planning_Mode_Control(std::atoi(step.Argument.c_str()) != 0 ? 1 : 0, -1);
@@ -3943,6 +3965,8 @@ void Run(StepType const & step)
 				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
 				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
 				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+			DebugString("AUTOTEST   gattlingtype %s gattling %d stages %d thresholds %d,%d,%d rateup %d ratedown %d cycle %d\n", techno->TClass->Name(), (int)techno->TClass->IsGattling,
+				techno->TClass->WeaponStages, techno->TClass->WeaponStage[0], techno->TClass->WeaponStage[1], techno->TClass->WeaponStage[2], techno->TClass->RateUp, techno->TClass->RateDown, (int)techno->TClass->IsGattlingCycle);
 		}
 	} else if (step.Command == "animlog") {
 		// animlog <TypeID>: the animation state of each object of that type, whoever owns it. The body draws the voxel frame
@@ -4216,6 +4240,7 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
 			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f credits %d stored %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
 				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction(), house->Credits, house->Tiberium.Get_Total_Value());
+			DebugString("AUTOTEST   spied %s stolen techs %08x naval %d aircraft %d building %d reversed %d\n", house->Class->Name(), house->StolenTechs, (int)house->IsNavalSpied, (int)house->IsAircraftSpied, (int)house->IsBuildingSpied, (int)house->ReversedTypes.size());
 			DebugString("AUTOTEST   gatherers %s %d powered %d\n", house->Class->Name(), house->Count_Resource_Gatherers(), house->PoweredUnitCenters);
 		}
 		for (int index = 0; index < Buildings.Count(); index++) {

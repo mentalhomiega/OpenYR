@@ -1121,6 +1121,10 @@ class RulesClass
 		 */
 		VocType CloakSound;
 
+		// The sound played as an object decloaks, and whether [AudioVisual] DecloakSound sets it; when not, CloakSound plays (Ares DecloakSound).
+		VocType DecloakSound;
+		bool IsDecloakSoundSet;
+
 		/*
 		 * This is the sound effect played when a building or unit is sold back for a
 		 * refund.

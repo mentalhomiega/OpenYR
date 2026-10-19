@@ -261,7 +261,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
 	 * spends itself there and spares everything else.
 	 */
-	if (Map.Get_Height_GL(cell) < coord.Z) {
+	if (coord.Z - Map.Get_Height_GL(cell) > warhead->DamageAirThreshold) {
 		DynamicVectorClass<FootClass *> flyers;
 		for (int index = 0; index < Aircraft.Count(); index++) {
 			flyers.Add(Aircraft[index]);

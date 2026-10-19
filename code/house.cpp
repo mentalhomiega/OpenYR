@@ -145,6 +145,7 @@
 #include "building.h"
 #include "builtype.h"
 #include "ccrand.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "conquer.h"
 #include "data.h"
@@ -259,6 +260,10 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	IsSide2TechStolen(false),
 	IsBarracksInfiltrated(false),
 	IsWarFactoryInfiltrated(false),
+	IsNavalSpied(false),
+	IsAircraftSpied(false),
+	IsBuildingSpied(false),
+	StolenTechs(0),
 	PowerBlackout(0),
 	IsPowerBlackout(false),
 	PoweredUnitCenters(0),
@@ -1151,6 +1156,20 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (required != -1 && (required & Own_Mask()) == 0) return(0);
 		if (forbidden != -1 && (forbidden & Own_Mask()) != 0) return(0);
 
+		// FactoryOwners and FactoryOwners.Forbidden look at the countries that first owned the factories this house has; the computer ignores them for structures.
+		TechnoTypeClass const * const owned_by = (TechnoTypeClass const *)type;
+		if ((!owned_by->FactoryOwners.empty() || !owned_by->FactoryOwnersForbidden.empty()) && (Is_Human_Player() || type->RTTI != RTTI_BUILDINGTYPE)) {
+			std::vector<std::string> countries;
+			for (int index = 0; index < Buildings.Count(); index++) {
+				BuildingClass const * factory = Buildings[index];
+				if (factory->House == this && !factory->IsInLimbo && factory->Class->ToBuild == type->RTTI) {
+					HouseClass const * first = factory->OriginallyOwnedByHouse != NULL ? factory->OriginallyOwnedByHouse : factory->House;
+					countries.push_back(first->Class->Name());
+				}
+			}
+			if (!ObjectKeyRules::Factory_Owners_Allow(owned_by->FactoryOwners, owned_by->FactoryOwnersForbidden, countries)) return(0);
+		}
+
 		// The unlock cheat skips the stolen tech, prerequisite and tech level gates.
 		bool const unlocked = Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this);
 
@@ -1158,6 +1177,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (!unlocked && techno->IsRequiresStolenAlliedTech && !IsSide0TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenSovietTech && !IsSide1TechStolen) return(0);
 		if (!unlocked && techno->IsRequiresStolenThirdTech && !IsSide2TechStolen) return(0);
+		if (!unlocked && !ObjectKeyRules::Stolen_Techs_Satisfied(StolenTechs, techno->PrerequisiteStolenTechs)) return(0);
 
 		TypeList<int> pre = ((TechnoTypeClass const *)type)->Prerequisite;
 		if (unlocked) pre.Clear();
@@ -3339,7 +3359,11 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 						}
 
 						if (PlayerPtr == this) {
-							Sound_Effect(Rule->BuildingSlam);
+							if (tech->TClass->IsSlamSoundSet) {
+								Sound_Effect(tech->TClass->SlamSound);
+							} else {
+								Sound_Effect(Rule->BuildingSlam);
+							}
 							Map.Set_Cursor_Shape(0);
 							Map.PendingObjectPtr = 0;
 							Map.PendingObject = 0;
@@ -7748,6 +7772,10 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ReversedTypes);
 	stream.Serialize(IsBarracksInfiltrated);
 	stream.Serialize(IsWarFactoryInfiltrated);
+	stream.Serialize(IsNavalSpied);
+	stream.Serialize(IsAircraftSpied);
+	stream.Serialize(IsBuildingSpied);
+	stream.Serialize(StolenTechs);
 	stream.Serialize(PowerBlackout);
 	stream.Serialize(IsPowerBlackout);
 	stream.Serialize(PoweredUnitCenters);

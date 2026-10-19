@@ -125,6 +125,7 @@
 #include "combat.h"
 #include "conquer.h"
 #include "dbgprint.h"
+#include "objectkeyrules.h"
 #include "draw.h"
 #include "drive.h"
 #include "fog.h"
@@ -271,6 +272,9 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 
 	// A house that has spied on a war factory gets its trainable land vehicles as veterans.
 	if (House != NULL && House->IsWarFactoryInfiltrated && Class != NULL && Class->IsTrainable && !Class->IsNaval) {
+		Veterancy.Set_Veteran(true);
+	}
+	if (House != NULL && House->IsNavalSpied && Class != NULL && Class->IsTrainable && Class->IsNaval) {
 		Veterancy.Set_Veteran(true);
 	}
 
@@ -1551,13 +1555,26 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
 		**	Only a clear cell, or one blocked for a moment, lets the passenger out.
 		*/
-		MoveType const reach = (forced || IsToExplode) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
+		int const chance = Class->SurvivorPassengerChance[ObjectKeyRules::Rank_Index(Veterancy.Is_Veteran(), Veterancy.Is_Elite())];
+		bool const survives = ObjectKeyRules::Passenger_Survives(chance, chance >= 0 ? Scen->RandomNumber(0, 99) : 0);
+		MoveType const reach = (forced || IsToExplode || !survives) ? MOVE_NO : object->Can_Enter_Cell(&Map[Get_Coord()]);
 		object->IsOnBridge = IsOnBridge;
 
 		bool placed = false;
 		if (reach == MOVE_OK || reach == MOVE_MOVING_BLOCK) {
 			Coord const where = IsOnBridge ? Center_Coord() : Map[Get_Coord()].Center_Coord();
 			placed = object->Unlimbo(where, PrimaryFacing.Current().As_Dir256());
+		}
+
+		// A type with a survival chance puts a passenger that survives on a cell near the wreck when the wreck's own is taken.
+		if (!placed && chance >= 0 && survives && !forced && !IsToExplode) {
+			Cell const nearby = Map.Nearby_Location(PositionCell, object->RTTI == RTTI_INFANTRY ? SPEED_FOOT : SPEED_TRACK);
+			if (nearby != CELL_NONE) {
+				MoveType const there = object->Can_Enter_Cell(&Map[nearby]);
+				if (there == MOVE_OK || there == MOVE_MOVING_BLOCK) {
+					placed = object->Unlimbo(Map[nearby].Center_Coord(), PrimaryFacing.Current().As_Dir256());
+				}
+			}
 		}
 
 		if (placed) {
@@ -1598,17 +1615,16 @@ void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
 	/*
 	**	Possibly have the crew member run away.
 	*/
-	bool make_crew = false;
 	bool make_infiltrator = false;
-	InfantryClass * i = NULL;
+	int pilots = 0;
 
 	if (EnteredByInfType == INFANTRY_NONE) {
-		if (!no_crew && Class->IsCrew && Class->Max_Passengers() == 0) {
-			if (Rule->CrewEscape > Random_Double(0.0, 1.0)) {
-				if (EnteredByInfType != INFANTRY_NONE) {
-					make_infiltrator = true;
-				} else {
-					make_crew = true;
+		if (!no_crew && Class->IsCrew) {
+			int const count = ObjectKeyRules::Pilot_Count(Class->SurvivorPilots, Class->Max_Passengers() == 0);
+			double const escape = ObjectKeyRules::Pilot_Escape_Fraction(Class->SurvivorPilotChance[ObjectKeyRules::Rank_Index(Veterancy.Is_Veteran(), Veterancy.Is_Elite())], Rule->CrewEscape);
+			for (int pilot = 0; pilot < count; pilot++) {
+				if (escape > Random_Double(0.0, 1.0)) {
+					pilots++;
 				}
 			}
 		}
@@ -1616,31 +1632,35 @@ void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
 		make_infiltrator = true;
 	}
 
-	if (make_infiltrator) {
-		i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
-	}
-
-	if (make_crew) {
-		InfantryTypeClass const * crew = Crew_Type();
-		if (crew) {
-			i = new InfantryClass(crew, House);
-		}
-	}
-
-	if (i != NULL) {
-		i->IsOnBridge = IsOnBridge;
-		if (i->Unlimbo(PositionCoord, DIR_N)) {
-			i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
-			i->Scatter(COORD_NONE, true);
-			if (!House->Is_Human_Player()) {
-				i->Assign_Mission(MISSION_HUNT);
-			} else {
-				i->Assign_Mission(MISSION_GUARD);
-			}
-			if (select) i->Select();
-			if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
+	for (int index = 0; index < (make_infiltrator ? 1 : pilots); index++) {
+		InfantryClass * i = NULL;
+		if (make_infiltrator) {
+			i = new InfantryClass(InfantryTypes[EnteredByInfType], House);
 		} else {
-			delete i;
+			InfantryTypeClass const * crew = Crew_Type();
+			if (crew) {
+				i = new InfantryClass(crew, House);
+			}
+		}
+
+		if (i != NULL) {
+			i->IsOnBridge = IsOnBridge;
+
+			// A second and later pilot stands on the nearest free spot, as the first takes the wreck's own.
+			Coord const where = index == 0 ? PositionCoord : Map[PositionCoord].Closest_Free_Spot(PositionCoord);
+			if (where != COORD_NONE && i->Unlimbo(where, DIR_N)) {
+				i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
+				i->Scatter(COORD_NONE, true);
+				if (!House->Is_Human_Player()) {
+					i->Assign_Mission(MISSION_HUNT);
+				} else {
+					i->Assign_Mission(MISSION_GUARD);
+				}
+				if (select) i->Select();
+				if (Tag != NULL && Tag->Is_To_Inherit()) i->Attach_Tag(Tag);
+			} else {
+				delete i;
+			}
 		}
 	}
 
@@ -3464,6 +3484,9 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		UnitTypeClass * oldclass = Class;
 		if (IsSimpleDeployed && Class->UnloadingClass != NULL && Class->UnloadingClass->RTTI == RTTI_UNITTYPE) {
 			((UnitClass *)this)->Class = (UnitTypeClass *)Class->UnloadingClass;
+		}
+		if (Class->WaterImage != NULL && Class->WaterImage->RTTI == RTTI_UNITTYPE && !IsOnBridge && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+			((UnitClass *)this)->Class = (UnitTypeClass *)Class->WaterImage;
 		}
 		if (IsDumping && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
 
@@ -7438,6 +7461,44 @@ int UnitClass::Sort_Y(void) const
 
 
 /// <summary>
+/// Turns this vehicle into another vehicle type where it stands. It keeps its owner, rank and place, and the same
+/// share of its health. A type with another locomotor is refused, because the locomotor of a vehicle is built with it.
+/// </summary>
+/// <returns>bool; Did the vehicle change type?</returns>
+bool UnitClass::Convert_To(UnitTypeClass const * type)
+{
+	if (type == NULL || type == Class) {
+		return(false);
+	}
+	if (std::memcmp(&type->Locomotor, &Class->Locomotor, sizeof(type->Locomotor)) != 0) {
+		DebugString("Convert: %s cannot become %s, which has another locomotor\n", Class->Name(), type->Name());
+		return(false);
+	}
+
+	DebugString("Convert: %s becomes %s\n", Class->Name(), type->Name());
+	int const old_maximum = Class->MaxStrength;
+	if (House != NULL) {
+		House->Tracking_Remove(this);
+	}
+	Class = const_cast<UnitTypeClass *>(type);
+	if (House != NULL) {
+		House->Tracking_Add(this);
+	}
+	Strength = ObjectKeyRules::Converted_Strength(Strength, old_maximum, Class->MaxStrength);
+	EstimatedHealth = Strength;
+	if (Class->MaxAmmo >= 0 && Ammo > Class->MaxAmmo) {
+		Ammo = Class->MaxAmmo;
+	}
+	IsCloakable = Class->IsCloakable || IsCloakable;
+	Mark(MARK_CHANGE);
+	if (IsSelected && House != NULL && House->Is_Player_Control()) {
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Deploys or packs up a simple deployer where it stands (the unload mission of an
 /// IsSimpleDeployer unit): a DeployToLand unit in the air lands first, the DeployingAnim plays
 /// in the unit's place, backward when it packs up, and the unit then returns to guard.
@@ -7483,6 +7544,10 @@ int UnitClass::Simple_Deploy_AI(void)
 			IsSimpleDeployed = !IsSimpleDeployed;
 			DebugString("Deploy: %s %s\n", Class->Name(), IsSimpleDeployed ? "deploys" : "packs up");
 			Mark(MARK_CHANGE);
+			// A vehicle with Convert.Deploy becomes that type as it finishes deploying, and stands undeployed as the new type.
+			if (IsSimpleDeployed && Class->ConvertDeploy != NULL && Convert_To(Class->ConvertDeploy)) {
+				IsSimpleDeployed = false;
+			}
 			Assign_Mission(MISSION_GUARD);
 			// As UnitClass::Undeploy (0x739CD0): a DeployToLand unit that packs up moves to a nearby cell, which takes it off the ground.
 			if (!IsSimpleDeployed && Class->IsDeployToLand) {

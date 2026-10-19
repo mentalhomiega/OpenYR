@@ -158,6 +158,7 @@
 #include "bullettype.h"
 #include "ccrand.h"
 #include "empulse.h"
+#include "objectkeyrules.h"
 #include "cell.h"
 #include "_mixfile.h"
 #include "mixfile.h"
@@ -3837,7 +3838,12 @@ void TechnoClass::AI(void)
 			if (House->Is_Player_Control()) {
 				VocType const sound = rank == 2 ? TClass->PromoteEliteSound : TClass->PromoteVeteranSound;
 				Sound_Effect(sound != VOC_NONE ? sound : (rank == 2 ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound), PositionCoord);
-				Speak_Eva("EVA_UnitPromoted");
+				std::string const & line = TClass->EvaPromoted[rank == 2 ? 1 : 0];
+				if (line.empty()) {
+					Speak_Eva("EVA_UnitPromoted");
+				} else if (!ObjectKeyRules::Names_Nothing(line)) {
+					Speak_Eva(line.c_str());
+				}
 			}
 			if (rank == 2) {
 				FlashCount = Rule->EliteFlashTimer;
@@ -5775,7 +5781,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
-			if (Is_Weapon_Equipped() ||
+			if ((Is_Weapon_Equipped() && !TClass->IsNoManualFire) ||
 					(RTTI == RTTI_INFANTRY &&
 					(/// ((InfantryTypeClass const *)ttype)->IsBomber ||
 					((InfantryTypeClass const *)ttype)->IsCapture)
@@ -5894,7 +5900,7 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 	/*
 	**	If firing is possible and legal, then return this action potential.
 	*/
-	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL) {
+	if (House->Is_Player_Control() && Get_Class_Weapon_Data(0)->Weapon != NULL && !TClass->IsNoManualFire) {
 
 		bool destroyable = Map[cell].Is_Tile_Destroyable_Cliff();
 		if (destroyable) {
@@ -7332,13 +7338,46 @@ void TechnoClass::Do_Uncloak(bool silent)
 
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
-		CloakingDevice.Set_Stage(Rule->CloakingStages - 1);
+		CloakingDevice.Set_Stage(Cloaking_Stages() - 1);
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(-1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(true);
 		}
 	}
+}
+
+
+/// <summary>
+/// The number of stages this object passes through as it cloaks and decloaks: the type's Cloakable.Stages
+/// when that is above 0, else [General] CloakingStages.
+/// </summary>
+int TechnoClass::Cloaking_Stages(void) const
+{
+	return(TClass->CloakStages > 0 ? TClass->CloakStages : Rule->CloakingStages);
+}
+
+
+/// <summary>
+/// Plays the sound of this object cloaking or decloaking at its position. The type's own sound wins, and
+/// "none" on it is silent; otherwise a decloak uses [AudioVisual] DecloakSound when that is set, and both
+/// fall back to [AudioVisual] CloakSound.
+/// </summary>
+void TechnoClass::Play_Cloak_Sound(bool decloaking) const
+{
+	VocType sound = Rule->CloakSound;
+	if (decloaking) {
+		if (TClass->IsDecloakSoundSet) {
+			sound = TClass->DecloakSound;
+		} else if (TClass->IsCloakSoundSet) {
+			sound = TClass->CloakSound;
+		} else if (Rule->IsDecloakSoundSet) {
+			sound = Rule->DecloakSound;
+		}
+	} else if (TClass->IsCloakSoundSet) {
+		sound = TClass->CloakSound;
+	}
+	Sound_Effect(sound, PositionCoord);
 }
 
 
@@ -7365,7 +7404,7 @@ void TechnoClass::Do_Cloak(bool silent)
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Play_Cloak_Sound(false);
 		}
 	}
 }
@@ -7439,7 +7478,7 @@ VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) con
 		return(VISUAL_NORMAL);
 	}
 
-	stage = double(stage) / Rule->CloakingStages * 256;
+	stage = double(stage) / Cloaking_Stages() * 256;
 
 	if (stage < 0x0040) return(VISUAL_INDISTINCT);
 	if (stage < 0x0080) return(VISUAL_DARKEN);
@@ -8601,6 +8640,12 @@ void TechnoClass::Gattling_Rate_Up(int frames)
 		CurrentGattlingStage++;
 		GattlingSound.Stop();
 		IsGattlingSoundPlaying = false;
+	} else if (TClass->IsGattlingCycle && last > 0 && CurrentGattlingStage == last && stages[last] <= value) {
+		// A cycling weapon that has finished its last stage starts over at the first, with its target kept.
+		CurrentGattlingStage = 0;
+		GattlingValue = 0;
+		GattlingSound.Stop();
+		IsGattlingSoundPlaying = false;
 	}
 
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(CurrentGattlingStage * 2)->Weapon;
@@ -8929,9 +8974,24 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	if (side != SIDE_NONE && side < Sides.Count()) {
 		infantry = Sides[side]->Crew_Type();
 	}
+
+	// A type's own survivor for the owner's side stands in for the side's crew, and the technician roll does not replace it.
+	int const place = SideClass::Place_In_Sides(side);
+	if (side != SIDE_NONE && place >= 0 && place < 4 && !TClass->SurvivorSide[place].empty()) {
+		InfantryType const named = InfantryTypeClass::From_Name(TClass->SurvivorSide[place].c_str());
+		if (named != INFANTRY_NONE) {
+			return(InfantryTypes[named]);
+		}
+	}
+
 	if (side != SIDE_NONE) {
-		if (Is_Weapon_Equipped() && Percent_Chance(15)) {
-			infantry = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
+		InfantryTypeClass const * technician = side < Sides.Count() ? Sides[side]->Technician_Type() : Rule->Technician;
+		if (TClass->CrewTechnicianChance >= 0) {
+			if (Percent_Chance(TClass->CrewTechnicianChance)) {
+				infantry = technician;
+			}
+		} else if (Is_Weapon_Equipped() && Percent_Chance(15)) {
+			infantry = technician;
 		}
 	} else {
 		infantry = Rule->Technician;
@@ -9907,6 +9967,14 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 	if (!Can_Passive_Acquire_Targets()) {
 		return(false);
 	}
+	if (Mission == MISSION_GUARD) {
+		if (!TClass->IsCanPassiveAquireGuard) {
+			return(false);
+		}
+		if (!TClass->IsCanPassiveAquireCloak && (TClass->IsCloakable || IsCloakable || Has_Ability(ABILITY_CLOAK))) {
+			return(false);
+		}
+	}
 	if (!TClass->IsOpportunityFire) {
 		if (Mission != MISSION_GUARD) {
 			return(false);
@@ -10022,6 +10090,23 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Draws the ring of a selected vehicle, soldier or aircraft whose type sets RadialIndicatorRadius, in the
+/// type's RadialColor or, when that is black, the owner's color. A structure draws its own.
+/// </summary>
+void TechnoClass::Draw_Radial_Indicator(void) const
+{
+	if (RTTI == RTTI_BUILDING || TClass->RadialIndicatorRadius <= 0.0 || !House->Is_Player_Control()) {
+		return;
+	}
+	RGBClass color = TClass->RadialColor;
+	if (color.Get_Red() == 0 && color.Get_Green() == 0 && color.Get_Blue() == 0) {
+		color = House_Display_RGB(House);
+	}
+	TacticalMap->Draw_Range_Ring(Center_Coord(), TClass->RadialIndicatorRadius, color);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.
@@ -10053,11 +10138,13 @@ void TechnoClass::Draw_Insignia(Point2D const & bottomleft, Point2D const & cent
 		rank = -1;
 	}
 	if (rank >= 0) {
-		if (TClass->InsigniaFrame[rank] >= 0) {
-			veterancy_shape = TClass->InsigniaFrame[rank];
-		}
+		// A custom file without a frame number shows its first frame, which also gives a rookie an insignia.
 		if (TClass->InsigniaShapes[rank] != NULL) {
 			pips1 = TClass->InsigniaShapes[rank];
+			veterancy_shape = 0;
+		}
+		if (TClass->InsigniaFrame[rank] >= 0) {
+			veterancy_shape = TClass->InsigniaFrame[rank];
 		}
 	}
 	if (veterancy_shape != PIP_NONE) {

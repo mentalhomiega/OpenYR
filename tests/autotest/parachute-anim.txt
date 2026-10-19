@@ -1,0 +1,30 @@
+; Parachute.Anim. The type-keys-c-rules mod gives the GI (E1) Parachute.Anim=SGRYSMK1. The American paratroopers drop from a plane.
+; Expected: while the GIs fall, liveanims shows SGRYSMK1 above 0 and PARACH 0 with -Mods (the first samples show 5 and 1);
+; without -Mods every chute is PARACH (5 to 8) and SGRYSMK1 stays 0.
+; Run (with -Mods tests/autotest/type-keys-c-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/parachute-anim.txt -Mods <absolute path of tests/autotest/type-keys-c-rules> -Seconds 200 -Filter "AUTOTEST   liveanims|Exception"
+30 command CenterBase
+100 grant AmericanParaDropSpecial
+120 fire AmericanParaDropSpecial 60 60
+400 liveanims SGRYSMK1
+400 liveanims PARACH
+450 liveanims SGRYSMK1
+450 liveanims PARACH
+500 liveanims SGRYSMK1
+500 liveanims PARACH
+550 liveanims SGRYSMK1
+550 liveanims PARACH
+600 liveanims SGRYSMK1
+600 liveanims PARACH
+650 liveanims SGRYSMK1
+650 liveanims PARACH
+700 liveanims SGRYSMK1
+700 liveanims PARACH
+750 liveanims SGRYSMK1
+750 liveanims PARACH
+800 liveanims SGRYSMK1
+800 liveanims PARACH
+850 liveanims SGRYSMK1
+850 liveanims PARACH
+900 liveanims SGRYSMK1
+900 liveanims PARACH
+950 quit

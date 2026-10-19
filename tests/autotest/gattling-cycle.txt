@@ -1,0 +1,104 @@
+; Gattling.Cycle. The gattling-cycle-rules mod makes the Gattling Cannon (YAGGUN) start over at its first stage once it finishes its
+; last, as the stock cannon does not. A player YAGGUN at 62,62 with a power plant fires at a computer HARV 4 cells away.
+; Each gattling line gives the spin and the stage (see gattling-facings.txt for the fields). The mod also sets RateUp=100 so the cannon
+; reaches its last stage quickly, and gives the target a very large strength.
+; Expected: with the key the stage climbs to 2 and falls back to 0 over and over while the target lives (stage values 2,0,2,0 and
+; 1,0 in the lines). Without the key, the same mod with Gattling.Cycle removed, the stage stays at 2 once reached.
+; Run (with -Mods tests/autotest/gattling-cycle-rules): scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/gattling-cycle.txt -Mods <absolute path of tests/autotest/gattling-cycle-rules> -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   gattling|Exception"
+
+
+60 view 62 62
+70 reveal
+90 own GAPOWR 50 50
+100 own YAGGUN 62 62
+200 spawn HARV 66 62
+230 gattling YAGGUN
+250 gattling YAGGUN
+270 gattling YAGGUN
+290 gattling YAGGUN
+310 gattling YAGGUN
+330 gattling YAGGUN
+350 gattling YAGGUN
+370 gattling YAGGUN
+390 gattling YAGGUN
+410 gattling YAGGUN
+430 gattling YAGGUN
+450 gattling YAGGUN
+470 gattling YAGGUN
+490 gattling YAGGUN
+510 gattling YAGGUN
+530 gattling YAGGUN
+550 gattling YAGGUN
+570 gattling YAGGUN
+590 gattling YAGGUN
+610 gattling YAGGUN
+630 gattling YAGGUN
+650 gattling YAGGUN
+670 gattling YAGGUN
+690 gattling YAGGUN
+710 gattling YAGGUN
+730 gattling YAGGUN
+750 gattling YAGGUN
+770 gattling YAGGUN
+790 gattling YAGGUN
+810 gattling YAGGUN
+830 gattling YAGGUN
+850 gattling YAGGUN
+870 gattling YAGGUN
+890 gattling YAGGUN
+910 gattling YAGGUN
+930 gattling YAGGUN
+950 gattling YAGGUN
+970 gattling YAGGUN
+990 gattling YAGGUN
+1010 gattling YAGGUN
+1030 gattling YAGGUN
+1050 gattling YAGGUN
+1070 gattling YAGGUN
+1090 gattling YAGGUN
+1110 gattling YAGGUN
+1130 gattling YAGGUN
+1150 gattling YAGGUN
+1170 gattling YAGGUN
+1190 gattling YAGGUN
+1210 gattling YAGGUN
+1230 gattling YAGGUN
+1250 gattling YAGGUN
+1270 gattling YAGGUN
+1290 gattling YAGGUN
+1310 gattling YAGGUN
+1330 gattling YAGGUN
+1350 gattling YAGGUN
+1370 gattling YAGGUN
+1390 gattling YAGGUN
+1410 gattling YAGGUN
+1430 gattling YAGGUN
+1450 gattling YAGGUN
+1470 gattling YAGGUN
+1490 gattling YAGGUN
+1510 gattling YAGGUN
+1530 gattling YAGGUN
+1550 gattling YAGGUN
+1570 gattling YAGGUN
+1590 gattling YAGGUN
+1610 gattling YAGGUN
+1630 gattling YAGGUN
+1650 gattling YAGGUN
+1670 gattling YAGGUN
+1690 gattling YAGGUN
+1710 gattling YAGGUN
+1730 gattling YAGGUN
+1750 gattling YAGGUN
+1770 gattling YAGGUN
+1790 gattling YAGGUN
+1810 gattling YAGGUN
+1830 gattling YAGGUN
+1850 gattling YAGGUN
+1870 gattling YAGGUN
+1890 gattling YAGGUN
+1910 gattling YAGGUN
+1930 gattling YAGGUN
+1950 gattling YAGGUN
+1970 gattling YAGGUN
+1990 gattling YAGGUN
+2100 quit

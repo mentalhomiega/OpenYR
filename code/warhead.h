@@ -370,6 +370,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		double KillDriverChance;
 		bool IsKillDriverRemoveVeterancy;
 
+		// How many leptons above the ground a blast must be to damage objects in the air; -1 damages them for a blast on the ground too (Ares DamageAirThreshold).
+		int DamageAirThreshold;
+
 		// A PreventScatter warhead does not make the units it hits scatter, whatever their type or abilities allow (Ares).
 		bool IsPreventScatter;
 
