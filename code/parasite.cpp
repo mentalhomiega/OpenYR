@@ -455,6 +455,11 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 		Owner->Select();
 	}
 	IsReselect = false;
+
+	// A unit a LimboLaunch shot took off its team is added back to it here; the team may refuse (ParasiteClass::ExitUnit, 0x62A4A0).
+	if (Owner->OldTeam != nullptr && Owner->Is_Foot()) {
+		Owner->OldTeam->Add((FootClass *)Owner);
+	}
 	Owner->Assign_Target(NULL);
 	Owner->Assign_Destination(NULL);
 	Owner->Assign_Mission(MISSION_GUARD);

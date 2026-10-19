@@ -1078,8 +1078,22 @@ int FootClass::Do_MISSION_GUARD(void)
 int FootClass::Do_MISSION_HUNT(void)
 {
 	// The hunt scan restarts the targeting timer, as FootClass::Mission_Hunt (0x4D5350) does through TargetAndEstimateDamage.
-	// A StupidHunt=yes type skips the scan (FootClass::Mission_Hunt, 0x4D5350).
-	if (TClass->IsStupidHunt || !Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
+	// A StupidHunt=yes type skips the scan. In a campaign game (GAME_NORMAL), a computer player's object walks to its house's starting cell and any other idles (FootClass::Mission_Hunt, 0x4D5350).
+	if (TClass->IsStupidHunt) {
+		Cell const home = House->Starting_Cell_Or_Default();
+		if (!House->Is_Human_Player() && Session.Type == GAME_NORMAL && home != CELL_NONE) {
+			if (SlaveManager) {
+				SlaveManager->All_Guard();
+			}
+			Assign_Destination(&Map[home]);
+			Assign_Mission(MISSION_MOVE);
+			if (Ready_To_Commence()) {
+				Commence();
+			}
+		} else {
+			Random_Animate();
+		}
+	} else if (!Target_And_Estimate_Damage(PositionCoord, THREAT_NORMAL)) {
 		Random_Animate();
 	} else {
 		InfantryClass * infantry = RTTI == RTTI_INFANTRY ? (InfantryClass *)this : NULL;

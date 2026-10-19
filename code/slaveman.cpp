@@ -601,6 +601,23 @@ void SlaveManagerClass::Miner_AI(void)
 
 
 /// <summary>
+/// Sends each slave still in the field to guard where it stands, last node first (SlaveManagerClass::AllGuard,
+/// 0x6B0C80). This port has no Ready or Working state for the miner, so only the slaves change.
+/// </summary>
+void SlaveManagerClass::All_Guard(void)
+{
+	for (int index = (int)Nodes.size() - 1; index >= 0; index--) {
+		NodeType & node = Nodes[index];
+		if (node.Status != NODE_DEAD && node.Slave != NULL) {
+			node.Slave->Assign_Destination(NULL);
+			node.Slave->Assign_Target(NULL);
+			node.Slave->Assign_Mission(MISSION_GUARD);
+		}
+	}
+}
+
+
+/// <summary>
 /// Frees the slaves when their miner is destroyed or removed (SlaveManagerClass::Killed, 0x6B0AE0).
 /// A slave docked in the miner dies, credited to the killer. With no killer and no Civilian-side
 /// house, each slave in the field takes C4 damage. Otherwise a slave in the field goes to the
