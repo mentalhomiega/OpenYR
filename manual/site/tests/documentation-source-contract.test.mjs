@@ -1587,7 +1587,7 @@ test('An insignificant unit dies without announcing it', () => {
 			.replace(/\/\/[^\n]*/g, '')
 			.replace(/[\s]+/g, ' ')
 			.trim(),
-		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { Speak(VOX_UNIT_LOST); } }',
+		'if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) { if (Submit_Radar_Event(RADAREVENT_UNIT_LOST, Get_Coord().As_Cell())) { if (!TClass->IsEvaLostSet) { Speak(VOX_UNIT_LOST); } else if (!TClass->IsDontScore && !ObjectKeyRules::Names_Nothing(TClass->EvaLost) && !TClass->EvaLost.empty()) { Speak_Eva(TClass->EvaLost.c_str()); } } }',
 		'the event and the voice are refused together',
 	);
 
