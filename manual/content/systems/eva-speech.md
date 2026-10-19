@@ -9,7 +9,7 @@ Every line spoken during a game goes through one queue and plays one at a time. 
 
 ## Where the lines come from
 
-The announcer's lines are listed in [EVAMD.INI](/formats/eva-ini/), which names each line's sample for the Allied, Russian and Yuri voices and sets how the line waits. The voice follows the player's side. The game asks for each announcement by its name in that file, such as `EVA_ConstructionComplete`.
+The announcer's lines are listed in [EVAMD.INI](/formats/eva-ini/), which names each line's sample for the Allied, Russian and Yuri voices, and for each voice that `[EVATypes]` adds, and sets how the line waits. The voice follows the player's side, and a side's [`EVA.Tag`](/keys/eva.tag/) can name another. The game asks for each announcement by its name in that file, such as `EVA_ConstructionComplete`.
 
 Some announcements the game makes have no line in Yuri's Revenge, such as Tiberian Sun's "silos needed" and "cloaked unit detected", and say nothing.
 

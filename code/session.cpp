@@ -85,6 +85,9 @@
 #include <algorithm>
 #include <ctime> // for station ID computation
 #include <dos.h> // for station ID computation
+#include <map>
+#include <string>
+#include <vector>
 #include <winsock.h> // for ntohl
 
 
@@ -94,6 +97,9 @@ Min & Max unit count values; index0 = bases OFF, index1 = bases ON
 ---------------------------------------------------------------------------*/
 int SessionClass::CountMin[2] = {1,1};
 int SessionClass::CountMax[2] = {50,10};
+
+// How much of a loose .MAP file is searched for its Basic section.
+static int const MAP_HEAD_BYTES = 262144;
 
 static char const MAIN_SCENARIO_PACKET[] = "MISSIONSMD.PKT";
 
@@ -964,6 +970,66 @@ void Mount_Map_Packs(void)
 }
 
 
+// What the list needs from a loose .MAP file's Basic section.
+struct LooseMapInfo {
+	bool IsMultiplayer = false;
+	bool IsOfficial = false;
+	std::string Name;
+};
+
+
+// Reads a loose .MAP file's Basic section. Only the start of the file is read, from where the Basic section
+// begins, which keeps a list of hundreds of maps quick to build; the answer is kept for the rest of the session.
+static LooseMapInfo const & Loose_Map_Info(std::string const & file_name)
+{
+	static std::map<std::string, LooseMapInfo> cache;
+	auto found = cache.find(file_name);
+	if (found != cache.end()) {
+		return(found->second);
+	}
+
+	LooseMapInfo & info = cache[file_name];
+	static std::vector<char> head(MAP_HEAD_BYTES + 1);
+	CCFileClass file(file_name.c_str());
+	int length = 0;
+	if (file.Open()) {
+		length = file.Read(head.data(), MAP_HEAD_BYTES);
+		file.Close();
+	}
+	if (length <= 0) {
+		return(info);
+	}
+	head[length] = '\0';
+	char const * basic = strstr(head.data(), "[Basic]");
+	if (basic == NULL) {
+		return(info);
+	}
+
+	BufferStraw straw((void *)basic, std::min((int)(head.data() + length - basic), 4096));
+	CCINIClass section;
+	section.Load(straw, false, false);
+	info.IsMultiplayer = section.Get_Bool("Basic", "MultiplayerOnly", false);
+	info.IsOfficial = section.Get_Bool("Basic", "Official", false);
+	char name[128];
+	section.Get_String("Basic", "Name", "No Name", name, sizeof(name));
+	info.Name = name;
+	return(info);
+}
+
+
+// Adds a mission from a packet file to the list, or drops it when its description is a string table label
+// that no entry resolves, which a mod uses to keep the packet from being empty while it lists its maps itself.
+static void Add_Listed_Scenario(DynamicVectorClass<MultiMission *> & list, MultiMission * mission)
+{
+	if (mission->Is_Placeholder()) {
+		DebugString("Scenario %s is a placeholder and is not listed\n", mission->Get_Filename());
+		delete mission;
+		return;
+	}
+	list.Add(mission);
+}
+
+
 /***************************************************************************
  * SessionClass::Read_Scenario_Descriptions -- reads scen. descriptions    *
  *                                                                         *
@@ -1002,7 +1068,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 //DebugString( "Found %i missions in Missions.pkt\n", count );
 		for (int index = 0; index < count; index++) {
 			if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-				Scenarios.Add(new MultiMission(ini, name_buffer));
+				Add_Listed_Scenario(Scenarios, new MultiMission(ini, name_buffer));
 			}
 		}
 /*		//	ajw Copy file for viewing.
@@ -1030,7 +1096,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 				int count = ini.Entry_Count("MultiMaps");
 				for (int index = 0; index < count; index++) {
 					if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-						Scenarios.Add(new MultiMission(ini, name_buffer));
+						Add_Listed_Scenario(Scenarios, new MultiMission(ini, name_buffer));
 					}
 				}
 			}
@@ -1047,7 +1113,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 			int count = ini.Entry_Count("MultiMaps");
 			for (int index = 0; index < count; index++) {
 				if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-					Scenarios.Add(new MultiMission(ini, name_buffer));
+					Add_Listed_Scenario(Scenarios, new MultiMission(ini, name_buffer));
 				}
 			}
 		}
@@ -1091,9 +1157,22 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	// Alert 2 lists them.
 	char digest_buffer[32];
 
-	for (char const * pattern : {"*.YRM", "*.MPR"}) {
+	for (char const * pattern : {"*.YRM", "*.MPR", "*.MAP"}) {
+		bool const plain = stricmp(pattern, "*.MAP") == 0;
 		for (std::string const & file_name : Search_Files(pattern)) {
 			file.Set_Name(file_name.c_str());
+
+			// A loose .MAP file is a campaign mission unless its Basic section marks it multiplayer only,
+			// as the maps a mod ships for skirmish do.
+			if (plain) {
+				LooseMapInfo const & info = Loose_Map_Info(file_name);
+				if (info.IsMultiplayer) {
+					DebugString("Loose map %s: %s\n", file_name.c_str(), info.Name.c_str());
+					Scenarios.Add(new MultiMission(file_name.c_str(), info.Name.c_str(), "No Digest", info.IsOfficial, false));
+				}
+				continue;
+			}
+
 			ini.Clear();
 			ini.Load(file);
 
@@ -1439,6 +1518,7 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 	Digest[0] = '\0';
 	Set_Digest(NULL);
 	IsOfficial = true;
+	IsPlaceholder = false;
 	MinPlayers = 2;
 	MaxPlayers = 4;
 
@@ -1457,6 +1537,12 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 			ini.Get_String(name, "Description", "", description, sizeof(description));
 			std::string const text = StringTable.Find_UTF8(description);
 			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.empty() ? description : text.c_str());
+
+			// A label is one word, a prefix and a name around a colon, as in NAME:DUMMY.
+			if (text.empty() && description[0] != '\0') {
+				char const * colon = strchr(description, ':');
+				IsPlaceholder = colon != NULL && colon != description && colon[1] != '\0' && strpbrk(description, " \t") == NULL;
+			}
 		}
 
 		MinPlayers = ini.Get_Int(name, "MinPlayers", MinPlayers);
@@ -1499,18 +1585,20 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 /// <param name="description">The description to show in the scenario list.</param>
 /// <param name="digest">The digest the other players' copies are checked against.</param>
 /// <param name="official">Is this one of the missions that shipped with the game?</param>
-MultiMission::MultiMission(char const * filename, char const * description, char const * digest, bool official)
+/// <param name="read_file">Should the map be read for its own description? A caller that has the description passes false.</param>
+MultiMission::MultiMission(char const * filename, char const * description, char const * digest, bool official, bool read_file)
 {
 	Set_Filename(filename);
 	Set_Description(description);
 	Set_Digest(digest);
 	Set_Official(official);
+	IsPlaceholder = false;
 	MinPlayers = 2;
 	MaxPlayers = 4;
 
 	CCFileClass file(filename);
 
-	if (file.Is_Available() == true) {
+	if (read_file && file.Is_Available() == true) {
 		char buffer[256];
 
 		CCINIClass ccini;

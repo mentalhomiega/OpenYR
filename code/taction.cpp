@@ -77,6 +77,8 @@
 #include "reinf.h"
 #include "revent.h"
 #include "rules.h"
+#include "scheme.h"
+#include "side.h"
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
@@ -1413,7 +1415,16 @@ bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerCl
 	} else {
 		message = TutorialText.Fetch(Data.Value);
 	}
-	Session.Messages.Add_Message(NULL, 0, message, 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	// The player's side may name the color scheme of this text with MessageTextColor.
+	int color = 0;
+	SideType const side = PlayerPtr != NULL ? PlayerPtr->Class->Side : SIDE_NONE;
+	if (side != SIDE_NONE && side < Sides.Count() && !Sides[side]->MessageTextColor.empty()) {
+		int const scheme = Fetch_Scheme_Index_By_Name(Sides[side]->MessageTextColor.c_str());
+		if (scheme >= 0) {
+			color = scheme;
+		}
+	}
+	Session.Messages.Add_Message(NULL, 0, message, color, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 	return(true);
 }
 

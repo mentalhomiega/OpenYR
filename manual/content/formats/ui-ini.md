@@ -1,7 +1,7 @@
 ---
 format_id: ui-ini
 title: UI.INI
-summary: Sets how a selected object's order lines, a firing vehicle's sighting laser and a control group number are drawn.
+summary: Sets how a selected object's order lines, a firing vehicle's sighting laser and a control group number are drawn, and which title menu buttons are shown.
 kind: file
 source_files:
   - code/uicontrol.cpp
@@ -40,6 +40,38 @@ UnitWithPipGroupNumberOffset=-4,-15
 ```
 
 Write a color as three numbers from 0 to 255 for red, green and blue, separated by commas. A color value that does not start with three comma-separated numbers keeps the default. Anything after the third number is ignored. [Action lines](/systems/action-lines/) explains what each line is and when it is drawn.
+
+## Title menu buttons
+
+`[UISettings]` changes what the title menu buttons do. Each key names one button and takes an action. A key that is absent, or any other value, leaves the button as it is.
+
+| Key | Menu | Button |
+| --- | --- | --- |
+| `SinglePlayerButton` | Main | Single Player |
+| `NetworkButton` | Main | Network |
+| `MoviesAndCreditsButton` | Main | Movies & Credits |
+| `CampaignButton` | Single Player | New Campaign |
+| `SkirmishButton` | Single Player | Skirmish |
+| `SneakPeeksButton` | Movies & Credits | Sneak Peeks |
+| `PlayMoviesButton` | Movies & Credits | Play Movies |
+| `ViewCreditsButton` | Movies & Credits | View Credits |
+
+| Action | Effect |
+| --- | --- |
+| `default` | The button works as usual. |
+| `disable` | The button stays in the menu and cannot be clicked. |
+| `hide` | The button is left out of the menu. |
+| `message` | A click shows a message box with the string table text `TXT_<KEY>_MSG`, where the key is the button's key in capitals, such as `TXT_VIEWCREDITSBUTTON_MSG`, and the menu shows again. |
+| `credits` | A click starts the credits. |
+| `sneakpeek` | A click starts the sneak peek movie. |
+
+```ini title="UIMD.INI"
+[UISettings]
+CampaignButton=hide
+ViewCreditsButton=message
+```
+
+The menus read the actions each time the player enters them, from the file read last. A mod's [`FollowMenuButtons=no`](/formats/mod-ini/) makes the menus ignore them. The CnCNet button has no key, and a key for the Westwood Online button, `WWOnlineButton`, is read but there is no such button to change.
 
 ## Control group numbers
 

@@ -37,6 +37,33 @@ struct UILineStyleType
 
 
 /*
+ * The title menu buttons that [UISettings] of the UI file can change, and what a button can be
+ * changed to.
+ */
+enum UIMenuButtonType {
+	UI_BUTTON_SINGLE_PLAYER,
+	UI_BUTTON_NETWORK,
+	UI_BUTTON_WW_ONLINE,
+	UI_BUTTON_MOVIES_AND_CREDITS,
+	UI_BUTTON_CAMPAIGN,
+	UI_BUTTON_SKIRMISH,
+	UI_BUTTON_SNEAK_PEEKS,
+	UI_BUTTON_PLAY_MOVIES,
+	UI_BUTTON_VIEW_CREDITS,
+	UI_BUTTON_COUNT
+};
+
+enum UIMenuActionType {
+	UI_ACTION_DEFAULT,
+	UI_ACTION_DISABLE,
+	UI_ACTION_HIDE,
+	UI_ACTION_MESSAGE,
+	UI_ACTION_CREDITS,
+	UI_ACTION_SNEAK_PEEK
+};
+
+
+/*
  * The presentation settings UI.INI carries. Every value has a default, so the file is
  * optional and may name only what it changes.
  */
@@ -98,6 +125,9 @@ class UIControlsClass
 		RGBClass ColorBlindSafeColors[PLAYER_COLOR_SEATS] = {
 			RGBClass(240, 228, 66), RGBClass(213, 94, 0), RGBClass(0, 114, 178), RGBClass(0, 158, 115),
 			RGBClass(230, 159, 0), RGBClass(86, 180, 233), RGBClass(204, 121, 167), RGBClass(240, 240, 240)};
+
+		// What [UISettings] says each title menu button does, UI_ACTION_DEFAULT when it says nothing.
+		UIMenuActionType MenuButtonActions[UI_BUTTON_COUNT] = {};
 
 		// The ButtonList names of [AdvancedCommandBar] and [MultiplayerAdvancedCommandBar], in order.
 		std::vector<std::string> CommandBarButtons;

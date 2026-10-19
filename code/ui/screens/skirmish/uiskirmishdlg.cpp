@@ -430,11 +430,8 @@ void UI_Skirmish_State(UISkirmishState & state)
 	random.Label = "Random";
 	random.Value = -1;
 	state.Sides.push_back(random);
-	for (int index = 0; index < HouseTypes.Count(); index++) {
+	for (int index : HouseTypeClass::Lobby_Countries()) {
 		HouseTypeClass * house = HouseTypes[index];
-		if (!house->IsMultiplay) {
-			continue;
-		}
 
 		UISkirmishOption option;
 		option.Label = house->Full_Name();

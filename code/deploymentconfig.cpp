@@ -62,6 +62,7 @@ void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)
 	GamePaletteFile = ini.Get_String("Palettes", "Game", GamePaletteFile.c_str());
 	ExpandPrefixes = ini.Get_String("Archives", "ExpandPrefix", ExpandPrefixes.c_str());
 	CachePrefixes = ini.Get_String("Archives", "CachePrefix", CachePrefixes.c_str());
+	FollowMenuButtons = ini.Get_Bool("Menu", "FollowMenuButtons", FollowMenuButtons);
 }
 
 

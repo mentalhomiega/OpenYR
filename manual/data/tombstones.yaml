@@ -53,15 +53,6 @@
     type: key
     id: TiberiumLongScan
 - type: key
-  id: Crew
-  route: /keys/crew/
-  search_aliases:
-    - Crew
-  summary: Named the survivor type for every side. Yuri's Revenge names one per side with AlliedCrew, SovietCrew and ThirdCrew.
-  replacement:
-    type: key
-    id: AlliedCrew
-- type: key
   id: ModemName
   route: /keys/modemname/
   search_aliases:
@@ -265,12 +256,6 @@
   search_aliases:
     - SurvivorRate
   summary: Set the fraction of a structure's cost that its survivor count came from. The count now comes from the sale refund and the side divisor, so the key is no longer read.
-- type: key
-  id: SurvivorDivisor
-  route: /keys/survivordivisor/
-  search_aliases:
-    - SurvivorDivisor
-  summary: Set the credits per survivor for every side, applied to a structure's cost after SurvivorRate. Each side now has its own divisor, AlliedSurvivorDivisor, SovietSurvivorDivisor or ThirdSurvivorDivisor, applied to the sale refund.
 - type: key
   id: MinProductionSpeed
   route: /keys/minproductionspeed/

@@ -276,6 +276,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `POWERP.SHP` | The power bar's pips |
 | `TOP.SHP` | The piece between the credit readout and the radar |
 | `RADAR.SHP` | The radar frame and its open and close animation |
+| `RADARY.SHP`, `RADARYURI.PAL` | The same animation and its palette, for a side with [`Sidebar.YuriFileNames=yes`](/keys/sidebar.yurifilenames/) |
 | `TABS.SHP` | The mission timer's backdrop, and the credit readout's when `CREDITS.SHP` is missing |
 | `CREDITS.SHP` | The credit readout's backdrop, redrawn under each new figure |
 | `LSPACER.SHP`, `LENDCAP.SHP`, `RENDCAP.SHP` | The command bar's strip and its left and right end caps |
@@ -283,7 +284,7 @@ The art filenames are fixed as well. The table lists each file the panel draws.
 | `BUTTON00.SHP` to `BUTTON10.SHP` | The command bar's buttons, in the order of the table above |
 | `SIDEBAR.PAL`, `CAMEO.PAL` | The palettes for the panel's art and for the cameos |
 
-Each side has its own numbered set of archives, and they give the panel its per-side look; no key is involved. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock, credit backdrop, diplomacy and options buttons and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
+Each side has its own numbered set of archives, and they give the panel its per-side look. The number is the side's position in `[Sides]`, except that the third side shares the second's, and [`Sidebar.MixFileIndex`](/keys/sidebar.mixfileindex/) in the side's section sets it. When the player's side is set up, the engine unmounts the previous side's archives, mounts the new side's, and loads the backdrop, mode buttons, tab buttons, scroll arrows, `SIDEBAR.PAL`, power pips, radar frame, the piece above it, build clock, credit backdrop, diplomacy and options buttons and tab art again. Every cameo, including the `XXICON.SHP` fallback, is also fetched again after the new side's archives are mounted. A copy of any of these files in a side's archives therefore changes the panel for that side.
 
 The darken and `CAMEO.PAL` art is loaded once at startup and does not change with the side.
 

@@ -97,6 +97,7 @@
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
+#include "side.h"
 #include "language/language.h"
 #include "lightcon.h"
 #include "mixfile.h"
@@ -118,6 +119,7 @@
 RadarClass::RTacticalClass RadarClass::RadarButton;
 
 void const * RadarClass::RadarAnim  = NULL;
+ConvertClass * RadarClass::RadarAnimDrawer = NULL;
 void const * RadarClass::TopShape  = NULL;
 
 
@@ -252,7 +254,7 @@ void RadarClass::Draw_Open_Housing(void)
 	if (Modern_Interface()) {
 		Draw_Hud_Well(*SidebarSurface, Hud_Layout().Radar);
 	} else {
-		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+		Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 	}
 }
 
@@ -297,7 +299,29 @@ void RadarClass::Init_Clear(void)
 void RadarClass::Init_For_House(void)
 {
 	DebugString("RadarClass::Init_For_House()\n");
-	RadarAnim = MFCD::Retrieve("RADAR.SHP");
+	RadarAnim = NULL;
+	delete RadarAnimDrawer;
+	RadarAnimDrawer = NULL;
+
+	// A side that uses the Yuri file names draws its radar logo from RADARY.SHP in the colors of
+	// RADARYURI.PAL; one whose archives lack either file keeps the RADAR.SHP logo.
+	SideType const side = Prepared_Side();
+	if (side >= 0 && side < Sides.Count() && Sides[side]->Uses_Yuri_File_Names()) {
+		void const * shape = MFCD::Retrieve("RADARY.SHP");
+		void const * colors = MFCD::Retrieve("RADARYURI.PAL");
+		if (shape != NULL && colors != NULL) {
+			PaletteClass pal;
+			memmove(&pal, colors, sizeof(pal));
+			for (int i = 0; i < PaletteClass::COLOR_COUNT; i++) {
+				pal[i] = RGBClass(pal[i].Get_Red() * 4, pal[i].Get_Green() * 4, pal[i].Get_Blue() * 4);
+			}
+			RadarAnim = shape;
+			RadarAnimDrawer = new ConvertClass(pal, pal, *VisibleSurface, 1, false);
+		}
+	}
+	if (RadarAnim == NULL) {
+		RadarAnim = MFCD::Retrieve("RADAR.SHP");
+	}
 	TopShape = MFCD::Retrieve("TOP.SHP");
 }
 
@@ -309,6 +333,8 @@ void RadarClass::Init_For_House(void)
 void RadarClass::Clear_For_House(void)
 {
 	RadarAnim = NULL;
+	delete RadarAnimDrawer;
+	RadarAnimDrawer = NULL;
 	TopShape = NULL;
 }
 
@@ -371,7 +397,7 @@ void RadarClass::Draw_It(bool forced)
 
 		if (IsToRedraw == true) {
 			IsToRedraw = (FullRedraw == true);
-			Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, RadarAnimFrame, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+			Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, RadarAnimFrame, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 			LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 		}
 	}
@@ -405,7 +431,7 @@ void RadarClass::Draw_It(bool forced)
 			default:
 				if (IsToRedraw == true) {
 					IsToRedraw = false;
-					Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, 0, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+					Draw_Shape(*SidebarSurface, RadarAnimDrawer != NULL ? *RadarAnimDrawer : *SidebarDrawer, (ShapeSet const *)RadarAnim, 0, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
 					LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 				}
 				break;

@@ -19,6 +19,9 @@
 #include "side.hh"
 #include "typelist.h"
 
+#include <string>
+#include <vector>
+
 class AircraftTypeClass;
 class InfantryTypeClass;
 class UnitTypeClass;
@@ -126,6 +129,22 @@ class HouseTypeClass : public AbstractTypeClass
 		 */
 		bool IsMultiplayPassive;
 
+		/*
+		 * Interface files and labels of the country, from its own section: the loading screen's
+		 * picture, palette, text labels and text color scheme, the flag shown beside its player's
+		 * name, and where the country sits in the lobby's country list. An empty name or a
+		 * ListIndex of 100 means the country takes the loading screen, flag and place the stock
+		 * rules give it.
+		 */
+		std::string LoadScreenFile;
+		std::string LoadScreenPalette;
+		std::string LoadScreenName;
+		std::string LoadScreenSpecialName;
+		std::string LoadScreenBrief;
+		std::string LoadScreenColor;
+		std::string FlagFile;
+		int ListIndex;
+
 		// Whether destroying this country's objects pays bounty (Ares GivesBounty).
 		bool IsGivesBounty;
 
@@ -164,6 +183,13 @@ class HouseTypeClass : public AbstractTypeClass
 		virtual int Fetch_Heap_ID(void) const override;
 
 		static HousesType From_Name(char const * name);
+
+		/*
+		 * The countries a lobby offers, in the order it lists them: the countries a player can pick
+		 * (Multiplay=yes), by ListIndex and then by place in the rules, without any whose ListIndex is
+		 * negative. Each entry is an index into HouseTypes.
+		 */
+		static std::vector<int> Lobby_Countries(void);
 		static void One_Time(void);
 		static HouseTypeClass * Find_Or_Make(char const * ininame);
 

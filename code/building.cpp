@@ -7561,7 +7561,8 @@ void BuildingClass::Detach(AbstractClass const * target, bool all)
 InfantryTypeClass const * BuildingClass::Crew_Type(void) const
 {
 	if (!IsCaptured && Percent_Chance(25) && Class->ToBuild == RTTI_BUILDINGTYPE) {
-		return(Rule->Engineer);
+		SideType const side = House->Class->Side;
+		return(side != SIDE_NONE && side < Sides.Count() ? Sides[side]->Engineer_Type() : Rule->Engineer);
 	}
 	return(BASECLASS::Crew_Type());
 }
@@ -8786,22 +8787,12 @@ int BuildingClass::How_Many_Survivors(void) const
 
 	/*
 	**	The divisor follows the house's place in [Sides], as BuildingClass::GetCrewCount (0x451330)
-	**	reads its SideIndex. Civilians hold the third place in the stock rules, so they use the
-	**	third divisor; a house on the fourth place or on no side releases no survivors.
+	**	reads its SideIndex, unless the side's own section sets SurvivorDivisor. A house on a place
+	**	the rules give no divisor, or on no side, releases no survivors.
 	*/
-	int divisor;
-	switch (SideClass::Place_In_Sides(House->Class->Side)) {
-		case 0:
-			divisor = Rule->AlliedSurvivorDivisor;
-			break;
-		case 1:
-			divisor = Rule->SovietSurvivorDivisor;
-			break;
-		case 2:
-			divisor = Rule->ThirdSurvivorDivisor;
-			break;
-		default:
-			return(0);
+	int divisor = 0;
+	if (House->Class->Side != SIDE_NONE && House->Class->Side < Sides.Count()) {
+		divisor = Sides[House->Class->Side]->Survivor_Divisor();
 	}
 	if (divisor == 0) return(0);
 	if (IsCaptured) divisor *= 2;

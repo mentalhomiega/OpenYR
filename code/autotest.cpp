@@ -3264,6 +3264,12 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "scenarios") {
+		// scenarios: the multiplayer list the skirmish setup offers, with each file's description and availability.
+		DebugString("AUTOTEST   scenarios: %d listed, number %d is selected\n", Session.Scenarios.Count(), Session.Options.ScenarioIndex);
+		for (int index = 0; index < Session.Scenarios.Count(); index++) {
+			DebugString("AUTOTEST   scenario %d: %s \"%s\" official %d on hand %d\n", index, Session.Scenarios[index]->Get_Filename(), Session.Scenarios[index]->Description(), (int)Session.Scenarios[index]->Get_Official(), (int)CCFileClass(Session.Scenarios[index]->Get_Filename()).Is_Available());
+		}
 	} else if (step.Command == "inifile") {
 		// inifile <FILE.INI>: every section and entry of that file, as the game's file system finds it.
 		CCINIClass ini;
@@ -4178,8 +4184,8 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   seat %d %s name %s human %d scheme %d start %d difficulty %d allies %x\n", index, house->Class->Name(), (char const *)house->IniName, (int)house->IsHuman, house->Scheme, house->SpawnWaypoint, (int)house->Difficulty, allies);
 			DebugString("AUTOTEST   counts %s buildings %d units %d infantry %d aircraft %d lost %d/%d\n", house->Class->Name(), house->CurBuildings, house->CurUnits, house->CurInfantry, house->CurAircraft, house->BuildingsLost, house->UnitsLost);
-			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
-				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction());
+			DebugString("AUTOTEST   house %s money %d power %d drain %d blackout %d stolen %d%d%d barracks %d factory %d fraction %.2f credits %d stored %d\n", house->Class->Name(), house->Available_Money(), house->Power, house->Drain,
+				(int)house->PowerBlackout, (int)house->IsSide0TechStolen, (int)house->IsSide1TechStolen, (int)house->IsSide2TechStolen, (int)house->IsBarracksInfiltrated, (int)house->IsWarFactoryInfiltrated, house->Power_Fraction(), house->Credits, house->Tiberium.Get_Total_Value());
 			DebugString("AUTOTEST   gatherers %s %d powered %d\n", house->Class->Name(), house->Count_Resource_Gatherers(), house->PoweredUnitCenters);
 		}
 		for (int index = 0; index < Buildings.Count(); index++) {

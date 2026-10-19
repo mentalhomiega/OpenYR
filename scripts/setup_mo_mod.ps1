@@ -6,6 +6,8 @@
 #   expandmo*.mix, ecachemo*.mix, thememo.mix   the mod's archives (-Link links them instead of copying)
 #   rules, art, AI, sound, eva, theme and battle INI files, ra2md.csf and stringtable*.csf, when they sit loose in the install
 #   with -Maps, the .map files under MapsMO, flat into the folder, so a skirmish can name them
+# The mod's uimd.ini hides the Single Player and Skirmish buttons, which suits the launcher the mod is played through, so mod.ini
+# sets FollowMenuButtons=no to keep them. Remove that line to follow the mod's menu.
 # It never copies a DLL, an EXE, a client file or a save. The base game's archives (ra2md.mix, langmd.mix and so on)
 # stay in the data directory; the mod needs its own copy of the game, as Mental Omega does.
 #
@@ -85,6 +87,9 @@ Battle=BATTLEMO.INI
 
 [Archives]
 ExpandPrefix=EXPANDMO,EXPANDMD
+
+[Menu]
+FollowMenuButtons=no
 "@
 Set-Content -LiteralPath (Join-Path $destFull 'mod.ini') -Value $manifest -Encoding ascii
 

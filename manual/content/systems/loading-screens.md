@@ -57,7 +57,9 @@ A skirmish or multiplayer match shows a picture for the local player's country, 
 | 9 | YuriCountry | `LS800YURI.SHP` | `MPYLS.PAL` | `YRII.PCX` |
 | An observer | | `LS800OBS.SHP` | `MPLSOBS.PAL` | `OBSI.PCX` |
 
-The 640 by 480 layout uses the pictures named `LS640` instead of `LS800`. A player whose country is past place 9, or whose picture or palette the game cannot find or read, gets the older loading screen, with a picture picked for the player's side.
+The 640 by 480 layout uses the pictures named `LS640` instead of `LS800`. A player whose country is past place 9 and sets no [`File.LoadScreen`](/keys/file.loadscreen/), or whose picture or palette the game cannot find or read, gets the older loading screen, with a picture picked for the player's side.
+
+A country can replace the picture, palette, texts, text color and flag of its place with [`File.LoadScreen`](/keys/file.loadscreen/), [`File.LoadScreenPAL`](/keys/file.loadscreenpal/), [`LoadScreenText.Name`](/keys/loadscreentext.name/), [`LoadScreenText.SpecialName`](/keys/loadscreentext.specialname/), [`LoadScreenText.Brief`](/keys/loadscreentext.brief/), [`LoadScreenText.Color`](/keys/loadscreentext.color/) and [`File.Flag`](/keys/file.flag/). A country with its own picture prints only the texts it sets, and uses the same 800 by 600 picture on a 640 by 480 screen.
 
 The screen prints three texts from the string table over the picture, taken from labels fixed for each place:
 
@@ -75,7 +77,7 @@ The screen prints three texts from the string table over the picture, taken from
 | 9 | `Name:YuriCountry` | `Name:YURI` | `LoadBrief:YuriCountry` |
 | An observer | `Name:Observer` | | |
 
-The country name and the description are printed in `AlliedLoad` for a country of the first side in the rules `[Sides]` list, in `SovietLoad` for any other side, and in `LightGrey` for an observer. The special unit's name is printed in black capitals. The text of `GUI:LoadingEx` is printed in the country name's color. The picture is darkened behind the country name, the description and `GUI:LoadingEx`, as behind a campaign briefing, and the description's box is as wide as its wrapping width.
+The country name and the description are printed in `AlliedLoad` for a country of the first side in the rules `[Sides]` list, in `SovietLoad` for any other side, and in `LightGrey` for an observer, unless the country sets `LoadScreenText.Color`. The special unit's name is printed in black capitals. The text of `GUI:LoadingEx` is printed in the country name's color. The picture is darkened behind the country name, the description and `GUI:LoadingEx`, as behind a campaign briefing, and the description's box is as wide as its wrapping width.
 
 | Item | 800 by 600 | 640 by 480 |
 | --- | --- | --- |
