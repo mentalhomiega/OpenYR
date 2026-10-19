@@ -830,6 +830,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		SuperWeaponType SuperWeapon2;
 
+		// The heap numbers of the further superweapons that SuperWeapons= grants.
+		TypeList<int> SuperWeaponList;
+
+		// Does this structure grant the superweapon through SuperWeapon=, SuperWeapon2= or SuperWeapons=?
+		bool Grants_Super_Weapon(int super) const {return(super != SUPER_NONE && ((int)SuperWeapon == super || (int)SuperWeapon2 == super || SuperWeaponList.Is_In_List(super)));}
+
 		/*
 		 * This is the number of frames in this gate's opening animation, across which the
 		 * door timer is interpolated. The damaged frames follow immediately after them.

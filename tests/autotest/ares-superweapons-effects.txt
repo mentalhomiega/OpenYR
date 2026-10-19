@@ -1,0 +1,110 @@
+; Superweapons that use the Ares lightning, dominator, chronosphere, lighting, price and availability keys, defined by the
+; mod in tests/autotest/ares-superweapons-effects/. Expected log lines, in order:
+;   supers at frame 45 lists TestAlways and TestPricey for the player without a structure (SW.AlwaysGranted), TestListed once GAPOWR stands
+;   and TestNukeLit and TestNukeDark once NAMISL stands (SuperWeapons=).
+;   cameos writes the tooltip "Test pricey/$99999" for TestPricey with unaffordable 1, and plain names with unaffordable 0 for the others.
+;   lighting after TestStorm fires shows the storm lit with wanted ambient 50 and tint 300,400,2000; "storm bolt" lines follow with damage 300
+;   (SW.Damage), and the enemy E1 on 52,30 is gone from the where lines (Lightning.HitDelay=10, SW.Warhead=HE).
+;   lighting during TestDom shows the dominator lit with wanted ambient 60 and tint 1500,500,500. The enemy MTNK on 52,38 changes owner;
+;   the enemy E1 beside it (SW.AffectsTarget=units) and the enemy MTNK on 52,46, outside SW.Range=3, do not.
+;   TestNukeLit raises a flash with ambient 70 and tint 100,200,300 when "nuke blast builds up" is logged; TestNukeDark (Light.Enabled=no)
+;   raises none, so its lighting lines keep ambient 100 and special 0.
+;   TestChrono (SW.Range=1,1, units only) moves the MTNK from 50,44 to 60,44 and leaves the E1 on 51,44; TestChronoB
+;   (Chronosphere.KillOrganic=no) moves that E1 toward 60,46, to 59,45 because the silo stands on 60,46.
+;   TestGene (SW.Range=1,1, SW.AffectsHouse=enemies, MutateExplosion=no) kills only the enemy E1 on 54,26.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent17 -Script src-agent17/tests/autotest/ares-superweapons-effects.txt -Mods "E:\Claude ra2 decomp\src-agent17\tests\autotest\ares-superweapons-effects" -Seconds 400 -Filter "AUTOTEST   (lighting|where|super |cameo)|AUTOTEST (nuke|storm)|SUPER Test(Storm|Dom|Nuke|Chrono|Warp|Gene)|Exception"
+30 command CenterBase
+40 own GAPOWR 56 40
+41 own NAMISL 60 46
+45 supers
+46 cameos
+50 lighting
+60 spawn E1 52 30
+61 grant TestStorm
+70 fire TestStorm 52 30
+75 lighting
+100 lighting
+110 where E1
+140 lighting
+260 lighting
+300 lighting
+400 spawn MTNK 52 38
+401 spawn E1 53 38
+402 spawn MTNK 52 46
+410 grant TestDom
+411 fire TestDom 52 38
+430 lighting
+470 lighting
+500 where MTNK
+501 where E1
+600 lighting
+650 grant TestNukeLit
+651 fire TestNukeLit 42 50
+680 lighting
+700 lighting
+720 lighting
+740 lighting
+760 lighting
+780 lighting
+800 lighting
+820 lighting
+840 lighting
+860 lighting
+880 lighting
+900 lighting
+920 lighting
+940 lighting
+960 lighting
+980 lighting
+1000 lighting
+1020 lighting
+1040 lighting
+1060 lighting
+1080 lighting
+1100 grant TestNukeDark
+1101 fire TestNukeDark 42 50
+1140 lighting
+1160 lighting
+1180 lighting
+1200 lighting
+1220 lighting
+1240 lighting
+1260 lighting
+1280 lighting
+1300 lighting
+1320 lighting
+1340 lighting
+1360 lighting
+1380 lighting
+1400 lighting
+1420 lighting
+1440 lighting
+1460 lighting
+1480 lighting
+1500 lighting
+1520 lighting
+1540 lighting
+1560 lighting
+1580 lighting
+1600 lighting
+1650 kill MTNK
+1651 kill E1
+1700 own MTNK 50 44
+1701 own E1 51 44
+1710 grant TestChrono
+1711 grant TestWarp
+1720 fire TestChrono 50 44
+1730 fire TestWarp 60 44
+1800 where MTNK
+1801 where E1
+1900 grant TestChronoB
+1910 fire TestChronoB 51 44
+1920 fire TestWarp 60 46
+2000 where E1
+2100 spawn E1 54 26
+2101 spawn E1 55 26
+2110 grant TestGene
+2120 fire TestGene 54 26
+2160 where E1
+2200 quit

@@ -77,6 +77,7 @@
 #include "inline.h"
 #include "lightcon.h"
 #include "lstorm.h"
+#include "suprtype.h"
 #include "map.h"
 #include "missile.h"
 #include "revent.h"
@@ -1751,6 +1752,7 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Weapon);
 	stream.Serialize(NextAnim);
 	stream.Serialize(SpawnNextAnim);
+	stream.Serialize(NukeSuper);
 	stream.Serialize(IsInaccurate);
 	stream.Serialize(Fuse);
 	stream.Serialize(IsBright);
@@ -1885,7 +1887,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 		PositionCoord = settled;
 	}
 
-	NukeFlashClass::Start();
+	NukeFlashClass::Start(NukeSuper >= 0 && NukeSuper < SuperWeaponTypes.Count() ? SuperWeaponTypes[NukeSuper] : nullptr);
 
 	AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
 	if (type == ANIM_NONE) {
@@ -1922,6 +1924,7 @@ void BulletClass::Nuke_Maker(void)
 	if (bullet != NULL) {
 		// The payload keeps its weapon, so its blast leaves the weapon's RadLevel behind (0x46B310).
 		bullet->Weapon = weapon;
+		bullet->NukeSuper = NukeSuper;
 		if (AutoTest_Active()) {
 			DebugString("AUTOTEST nuke payload released at frame %d from height %d\n", Frame, coord.Z);
 		}

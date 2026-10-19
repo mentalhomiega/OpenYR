@@ -1900,6 +1900,19 @@ void HouseClass::AI(void)
 	*/
 	bool recalc_supers = false;
 	if (PlayerPtr == this) {
+		// A cameo darkens while its weapon costs more than the house holds, so the strip redraws when that changes.
+		static unsigned unaffordable_signature = 0;
+		unsigned signature = 0;
+		for (int s = 0; s < SuperWeapon.Count(); s++) {
+			if (SuperWeapon[s]->Is_Present() && !SuperRules::Can_Afford(Available_Money(), SuperWeaponTypes[s]->Keys.MoneyAmount)) {
+				signature = signature * 31 + (unsigned)s + 1;
+			}
+		}
+		if (signature != unaffordable_signature) {
+			unaffordable_signature = signature;
+			Map.Flag_Strips_To_Redraw();
+		}
+
 		if (IsRecalcNeeded) {
 			recalc_supers = true;
 			IsRecalcNeeded = false;
@@ -10823,12 +10836,12 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (!b->IsInLimbo && b->IsActive && b->House->Fetch_ID() == Fetch_ID()) {
 							for (int k = 0; k < 3; k++) {
 								BuildingTypeClass const * upgrade = b->Upgrades[k];
-								if (upgrade != NULL && (upgrade->SuperWeapon == s || upgrade->SuperWeapon2 == s)) {
+								if (upgrade != NULL && upgrade->Grants_Super_Weapon(s)) {
 									present = true;
 									if (!enabled) enabled = b->IsOn;
 								}
 							}
-							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s) {
+							if (b->Grants_Super_Weapon(s)) {
 								present = true;
 								if (enabled) break;
 								enabled = b->IsOn;
@@ -10836,6 +10849,12 @@ void HouseClass::Update_Present_Super_Weapons(void)
 							if (enabled && present) break;
 						}
 					}
+				}
+
+				// SW.AlwaysGranted needs no building: the weapon is there for as long as the house lives.
+				if (!IsDefeated && SuperWeapon[s]->Class->Keys.AlwaysGranted) {
+					present = true;
+					enabled = true;
 				}
 
 				// Power_Fraction, not the raw Power and Drain, so that the full power cheat keeps these weapons available.
@@ -10897,32 +10916,24 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 		for (int s = 0; s < SuperWeapon.Count(); s++) {
 			bool const withheld = (!Session.Options.SWAllowed && SuperWeaponTypes[s]->IsDisableableFromShell) || !Super_Weapon_Allowed(SuperWeapon[s]);
 			if (!withheld && (!SuperWeapon[s]->Is_Present() || SuperWeapon[s]->Is_One_Time())) {
-				bool from_upgrade = false;
-				int j = Buildings.Count() - 1;
-				if (j >= 0) {
-					while (true) {
-						BuildingClass * b = Buildings[j];
-						if (b->IsActive && b->House == this && !b->IsInLimbo) {
-							for (int k = 0; k < BUILDING_UPGRADE_MAX; k++) {
-								BuildingTypeClass const * upgrade = b->Upgrades[k];
-								if (upgrade != NULL && (upgrade->SuperWeapon == s || upgrade->SuperWeapon2 == s)) {
-									from_upgrade = true;
-									break;
-								}
-							}
-							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s || from_upgrade) {
-								SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
-								if (this == PlayerPtr && SuperWeaponTypes[s]->Keys.ShowCameo) {
-									Map.Add(RTTI_SPECIAL, s);
-									Map.Flag_Strips_To_Redraw();
-								}
-								break;
-							}
-						}
-						j--;
-						if (j < 0) {
-							break;
-						}
+				// SW.AlwaysGranted needs no building.
+				bool granted = SuperWeapon[s]->Class->Keys.AlwaysGranted;
+				for (int j = Buildings.Count() - 1; j >= 0 && !granted; j--) {
+					BuildingClass * b = Buildings[j];
+					if (!b->IsActive || b->House != this || b->IsInLimbo) {
+						continue;
+					}
+					for (int k = 0; k < BUILDING_UPGRADE_MAX && !granted; k++) {
+						BuildingTypeClass const * upgrade = b->Upgrades[k];
+						granted = upgrade != NULL && upgrade->Grants_Super_Weapon(s);
+					}
+					granted = granted || b->Grants_Super_Weapon(s);
+				}
+				if (granted) {
+					SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
+					if (this == PlayerPtr && SuperWeaponTypes[s]->Keys.ShowCameo) {
+						Map.Add(RTTI_SPECIAL, s);
+						Map.Flag_Strips_To_Redraw();
 					}
 				}
 			}
@@ -11369,7 +11380,7 @@ bool HouseClass::Pick_Super_Target(SuperClass const * super, Cell & cell)
 			for (int index = 0; index < Buildings.Count(); index++) {
 				BuildingClass const * building = Buildings[index];
 				if (building->House == this && building->IsActive && !building->IsInLimbo && building->Strength > 0 && building->Is_Powered_On()
-						&& (building->Fetch_Super_Weapon() == super->Class->HeapID || building->Fetch_Super_Weapon2() == super->Class->HeapID)) {
+						&& building->Grants_Super_Weapon(super->Class->HeapID)) {
 					cell = building->Center_Coord().As_Cell();
 					break;
 				}

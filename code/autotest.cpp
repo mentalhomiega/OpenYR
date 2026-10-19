@@ -118,6 +118,7 @@
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
+**	lighting		writes the ambient light now and wanted, whether a storm or dominator blast lights the map, and the tint the tile palette wears
 **	dumpfile <name>	copies a file the game can read to dump-<name> in the working directory
 **	stockcheck		reads every VXL, HVA, SHP and PCX that the art and rules files name, through the loaders, and logs each one refused
 **	previewtime		reads the preview of each map on the multiplayer list three times and logs how long each pass took
@@ -272,7 +273,9 @@
 #include "teamtype.h"
 #include "terrain.h"
 #include "taction.h"
+#include "ion.h"
 #include "lstorm.h"
+#include "psydom.h"
 #include "lightcon.h"
 #include "_convert.h"
 #include "trigger.h"
@@ -4104,6 +4107,10 @@ void Run(StepType const & step)
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
 		DebugString("AUTOTEST   statics %d\n", Static_Sounds_Active(STATIC_SOUND_TRIGGER));
+	} else if (step.Command == "lighting") {
+		// lighting: the ambient light now and wanted, whether a lightning storm, a dominator blast or an ion storm is on, and the tint the first tile drawer wears.
+		DebugString("AUTOTEST   lighting ambient %d wanted %d storm %d dominator %d ion %d tint %d,%d,%d special %d\n", Scen->CurrentAmbientLight, Scen->DesiredAmbientLight, (int)LightningStormClass::Is_Active(), (int)PsychicDominatorClass::Is_Lit(), (int)IonStormClass::Is_Ion_Storm_Active(),
+			TileDrawers.Count() > 0 ? TileDrawers[0]->IonRedTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->IonGreenTint : -1, TileDrawers.Count() > 0 ? TileDrawers[0]->IonBlueTint : -1, TileDrawers.Count() > 0 ? (int)TileDrawers[0]->UseIonLighting : -1);
 	} else if (step.Command == "supers") {
 		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
 		DebugString("AUTOTEST   super defense frames %d distance %d probability %d,%d,%d\n", Rule->AISuperDefenseFrames, (int)Rule->AISuperDefenseDistance, Rule->AISuperDefenseProbability.Count() > 0 ? Rule->AISuperDefenseProbability[0] : -1, Rule->AISuperDefenseProbability.Count() > 1 ? Rule->AISuperDefenseProbability[1] : -1, Rule->AISuperDefenseProbability.Count() > 2 ? Rule->AISuperDefenseProbability[2] : -1);
@@ -4419,6 +4426,14 @@ void Run(StepType const & step)
 				TechnoTypeClass const * tech = Fetch_Techno_Type(entry.BuildableType, entry.BuildableID);
 				DebugString("AUTOTEST   cameo column %d slot %d %s id %d can %d\n", column, index, tech != NULL ? tech->Name() : "(superweapon)",
 					entry.BuildableID, tech != NULL ? PlayerPtr->Can_Build(tech, false, true) : -2);
+				if (tech == NULL) {
+					// A superweapon cameo also writes its tooltip, with a line break shown as a slash, and whether it is darkened as unaffordable.
+					char const * text = Map.Column[column].Help_Text(index - Map.Column[column].TopIndex);
+					std::string help = text != NULL ? text : "";
+					std::replace(help.begin(), help.end(), '\n', '/');
+					DebugString("AUTOTEST   cameo column %d slot %d %s tooltip '%s' unaffordable %d\n", column, index, SuperWeaponTypes[entry.BuildableID]->Name(), help.c_str(),
+						(int)!SuperRules::Can_Afford(PlayerPtr->Available_Money(), SuperWeaponTypes[entry.BuildableID]->Keys.MoneyAmount));
+				}
 			}
 		}
 	} else if (step.Command == "clickcameo") {

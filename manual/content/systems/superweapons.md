@@ -41,6 +41,13 @@ keys:
   - ChronoPlacement
   - Chronoshift.Allow
   - Chronoshift.Crushable
+  - Chronosphere.AffectsIronCurtain
+  - Chronosphere.AffectsUnwarpable
+  - Chronosphere.BlastDest
+  - Chronosphere.BlastSrc
+  - Chronosphere.KillCargo
+  - Chronosphere.KillOrganic
+  - Chronosphere.KillTeleporters
   - Cursor
   - DamageToFirestormDamageCoefficient
   - Deliver.BaseNormal
@@ -49,6 +56,18 @@ keys:
   - Deliver.Types
   - DesignatorRange
   - DisableableFromShell
+  - Dominator.Capture
+  - Dominator.CaptureImmuneToPsionics
+  - Dominator.CaptureMindControlled
+  - Dominator.CapturePermaMindControlled
+  - Dominator.ControlAnim
+  - Dominator.FireAtPercentage
+  - Dominator.FirstAnim
+  - Dominator.FirstAnimHeight
+  - Dominator.PermanentCapture
+  - Dominator.Ripple
+  - Dominator.SecondAnim
+  - Dominator.SecondAnimHeight
   - DominatorCaptureRange
   - DominatorDamage
   - DominatorFireAtPercentage
@@ -97,6 +116,22 @@ keys:
   - Light.Enabled
   - Light.Green
   - Light.Red
+  - Lightning.BoltExplosion
+  - Lightning.Bolts
+  - Lightning.CloudHeight
+  - Lightning.Clouds
+  - Lightning.Debris
+  - Lightning.DebrisMax
+  - Lightning.DebrisMin
+  - Lightning.Duration
+  - Lightning.HitDelay
+  - Lightning.PrintText
+  - Lightning.RadarOutage
+  - Lightning.RadarOutageAffects
+  - Lightning.ScatterCount
+  - Lightning.ScatterDelay
+  - Lightning.Separation
+  - Lightning.Sounds
   - LightningCellSpread
   - LightningDamage
   - LightningDeferment
@@ -173,6 +208,7 @@ keys:
   - SW.AITargeting.Constraints
   - SW.AllowAI
   - SW.AllowPlayer
+  - SW.AlwaysGranted
   - SW.Animation
   - SW.AnimationHeight
   - SW.AnyDesignator
@@ -281,7 +317,7 @@ While the match's superweapons option is off, the second pass does not grant a w
 
 ### From a structure or a plug
 
-A house gains a weapon it does not already hold when it owns a structure that grants the weapon and is active and out of [limbo](/glossary/#limbo). A structure grants the weapons its type names in [`SuperWeapon=`](/keys/superweapon/) and [`SuperWeapon2=`](/keys/superweapon2/), and the weapons named the same way by a plug fitted to it. For the local player, the cameo appears on the sidebar at the same time.
+A house gains a weapon it does not already hold when it owns a structure that grants the weapon and is active and out of [limbo](/glossary/#limbo). A structure grants the weapons its type names in [`SuperWeapon=`](/keys/superweapon/), [`SuperWeapon2=`](/keys/superweapon2/) and the Ares list [`SuperWeapons=`](/keys/superweapons/#scope-buildingtype), and the weapons named the same way by a plug fitted to it. For the local player, the cameo appears on the sidebar at the same time.
 
 ```ini title="rules.ini"
 [NAMISL]        ; Missile Silo
@@ -294,7 +330,7 @@ PowersUpBuilding=GAPLUG
 SuperWeapon=IonCannonSpecial
 ```
 
-[`AuxBuilding=`](/keys/auxbuilding/) adds a condition to the grant that comes from a structure's type. A weapon that names an `AuxBuilding=` is granted by a structure's `SuperWeapon=` or `SuperWeapon2=` only while its house owns at least one standing structure of that BuildingType.
+[`AuxBuilding=`](/keys/auxbuilding/) adds a condition to the grant that comes from a structure's type. A weapon that names an `AuxBuilding=` is granted by a structure's `SuperWeapon=`, `SuperWeapon2=` or `SuperWeapons=` only while its house owns at least one standing structure of that BuildingType.
 
 :::caution[A plug ignores `AuxBuilding=`]
 A plug grants its weapon without the `AuxBuilding=` check, and the house keeps the weapon on the same terms. In the shipped rules the ion cannon and the drop pods come only from plugs, so an `AuxBuilding=` on either has no effect. The hunter seeker comes both from a plug and from the Nod temple, and the check applies to the temple's grant.
@@ -312,6 +348,10 @@ The Ares keys add conditions to both passes. A house holds a structure-granted w
 - [`SW.Shots=`](/keys/sw.shots/) withdraws the weapon once the house has launched it that many times. The count is the number of launches, so a weapon granted again by a trigger keeps its count.
 
 [`SW.InitialReady=yes`](/keys/sw.initialready/) charges the weapon at once the first time the house holds it. [`SW.ShowCameo=no`](/keys/sw.showcameo/) leaves the cameo off the sidebar while the house still holds, charges and fires the weapon.
+
+### Always granted
+
+[`SW.AlwaysGranted=yes`](/keys/sw.alwaysgranted/) gives every house that is not defeated the weapon without a structure. The second pass grants it as soon as the game starts, and the first pass keeps it. The availability rules above still apply, so a house that fails one does not hold it. A weapon with `IsPowered=yes` is suspended while the house is short of power, and the cameo appears on the player's sidebar like any other.
 
 ### One shot at a time
 
@@ -417,6 +457,8 @@ The caption depends on the weapon's state. A charge-draining weapon has a captio
 
 The clock is drawn while the weapon is not fully charged, and on every charge-draining weapon. It uses the charge-up art while the weapon cannot be fired and the discharge art once it can.
 
+A weapon with a negative [`Money.Amount=`](/keys/money.amount/) shows its price under its name in the cameo's tooltip. The cameo is darkened while the house holds fewer credits than that price, and the sidebar redraws as soon as the credits cross it.
+
 Clicking a cameo that cannot be fired plays [`SuspendVoice=`](/keys/suspendvoice/) when its countdown is stopped and [`ImpatientVoice=`](/keys/impatientvoice/) otherwise. A `ManualControl=yes` weapon waiting for its next start has a stopped countdown, so it plays `SuspendVoice=`.
 
 ### Aiming and the click
@@ -455,7 +497,7 @@ These keys decide which cells a shot may target. The cursor tests them, and ever
 
 `DesignatorRange=` and `InhibitorRange=` are keys of any vehicle, infantry, aircraft or structure type. Both count cells and default to the type's `Sight=`. A structure inhibits only while it is powered on.
 
-The area keys shape the effect rather than the target. [`SW.Range=`](/keys/sw.range/) sets the area of an iron curtain, a psychic reveal and a sonar pulse; [`SW.AffectsHouse=`](/keys/sw.affectshouse/) and [`SW.AffectsTarget=`](/keys/sw.affectstarget/) choose whose objects an iron curtain covers, and [`SW.AffectsHouse=`](/keys/sw.affectshouse/) also chooses whose a sonar pulse decloaks. Other behaviors ignore them.
+The area keys shape the effect rather than the target. [`SW.Range=`](/keys/sw.range/) sets the area of an iron curtain, a chronosphere, a genetic mutator, a psychic dominator, a psychic reveal, a sonar pulse and a lightning storm. [`SW.AffectsHouse=`](/keys/sw.affectshouse/) and [`SW.AffectsTarget=`](/keys/sw.affectstarget/) choose whose objects, and which kinds, an iron curtain, a chronosphere and a psychic dominator affect, and a genetic mutator that mutates an area. [`SW.AffectsHouse=`](/keys/sw.affectshouse/) also chooses whose objects a sonar pulse decloaks and a force shield shields. Other behaviors ignore them.
 
 ### Cost and timing
 
@@ -504,6 +546,22 @@ An accepted shot takes or pays `Money.Amount=`, counts toward [`SW.Shots=`](/key
 [`SW.Animation=`](/keys/sw.animation/) plays an animation [`SW.AnimationHeight=`](/keys/sw.animationheight/) leptons above the target cell when the effect starts, and [`SW.Sound=`](/keys/sw.sound/) and [`SW.ActivationSound=`](/keys/sw.activationsound/) play sounds there. [`SW.CreateRadarEvent=yes`](/keys/sw.createradarevent/) adds a radar event at the cell. [`Message.Activate=`](/keys/message.activate/) prints when the effect starts.
 
 The cameo caption comes from the state table above, and [`Text.Hold=`](/keys/text.hold/), [`Text.Ready=`](/keys/text.ready/), [`Text.Charging=`](/keys/text.charging/) and [`Text.Active=`](/keys/text.active/) replace the matching captions with string table labels. `Text.Hold` replaces "On Hold", `Text.Ready` replaces "Ready" and "Release", and a charge-draining weapon uses `Text.Charging` while it charges and `Text.Active` while it runs.
+
+### Lighting
+
+A nuclear missile, a lightning storm and a psychic dominator light the map while their effect shows. The missile does so with a flash that starts when its payload's blast begins to build up; the flash fades in over 30 frames and out over 15. The storm does so while it rages, and the dominator from the moment the blast starts until its second animation has played. When several show at once, the flash wins over the storm, and the storm over the dominator.
+
+Without any `Light.*` key, the effect uses the lighting below. The scenario's `[Lighting]` section sets the storm and dominator values.
+
+| Effect | Ambient light | Red, green, blue tint |
+| --- | --- | --- |
+| Nuclear flash | 200 | 175, 150, 125 |
+| Lightning storm | `IonAmbient` | `IonRed`, `IonGreen`, `IonBlue` |
+| Psychic dominator | `DominatorAmbient` | `DominatorRed`, `DominatorGreen`, `DominatorBlue` |
+
+The weapon that started the effect replaces a value with [`Light.Ambient=`](/keys/light.ambient/), [`Light.Red=`](/keys/light.red/), [`Light.Green=`](/keys/light.green/) or [`Light.Blue=`](/keys/light.blue/) when it sets one of 0 or more. Ambient light is in percent of daylight, and each tint in percent, where 100 leaves the colors alone. The keys do not change the ground and height lighting. [`Light.Enabled=no`](/keys/light.enabled/) keeps the effect from lighting the map at all, and a missile with it raises no flash.
+
+A missile uses the keys of the weapon that launched it. A nuclear blast that no weapon launched uses the values above. Other behaviors ignore the `Light.*` keys.
 
 ### Named cursors
 
@@ -717,6 +775,16 @@ A cloud is one of [`WeatherConClouds`](/keys/weatherconclouds/), hung high enoug
 
 The lighting returns to normal once the duration is over and the last cloud has gone.
 
+A weapon's own keys replace these rules for its storm:
+
+- [`Lightning.Duration=`](/keys/lightning.duration/), [`Lightning.HitDelay=`](/keys/lightning.hitdelay/), [`Lightning.ScatterDelay=`](/keys/lightning.scatterdelay/), [`Lightning.ScatterCount=`](/keys/lightning.scattercount/) and [`Lightning.Separation=`](/keys/lightning.separation/) replace the timing and the placement of the clouds, and [`SW.Range=`](/keys/sw.range/) replaces `LightningCellSpread` as the diameter of the area the scattered clouds fall in.
+- [`SW.Damage=`](/keys/sw.damage/) and [`SW.Warhead=`](/keys/sw.warhead/) replace `LightningDamage` and `LightningWarhead` for every bolt.
+- [`Lightning.Clouds=`](/keys/lightning.clouds/), [`Lightning.Bolts=`](/keys/lightning.bolts/), [`Lightning.Sounds=`](/keys/lightning.sounds/), [`Lightning.BoltExplosion=`](/keys/lightning.boltexplosion/), [`Lightning.Debris=`](/keys/lightning.debris/), [`Lightning.DebrisMin=`](/keys/lightning.debrismin/), [`Lightning.DebrisMax=`](/keys/lightning.debrismax/) and [`Lightning.CloudHeight=`](/keys/lightning.cloudheight/) replace the animations, the sounds, the debris and the height of the clouds.
+- [`Lightning.PrintText=`](/keys/lightning.printtext/) replaces `LightningPrintText`.
+- [`Lightning.RadarOutage=`](/keys/lightning.radaroutage/) and [`Lightning.RadarOutageAffects=`](/keys/lightning.radaroutageaffects/) choose how long radar is jammed and for which houses, in place of every house that is not an ally of the firing house.
+
+A storm that the weapon does not set a key for uses the rules value, so a section with none of these keys behaves as before.
+
 ```ini title="rulesmd.ini"
 [General]
 LightningDeferment=250     ; frames of warning
@@ -738,7 +806,7 @@ A `Type=PsychicReveal` weapon uncovers the map for the firing house, shroud and 
 A `Type=GeneticConverter` weapon plays [`IonBlast`](/keys/ionblast/) over the target and [`GeneticMutatorActivateSound`](/keys/geneticmutatoractivatesound/). What it hits depends on [`MutateExplosion`](/keys/mutateexplosion/):
 
 - With `MutateExplosion=yes`, a blast of 10000 damage goes off through [`MutateExplosionWarhead`](/keys/mutateexplosionwarhead/), so that warhead's [`CellSpread`](/keys/cellspread/) and `Verses` decide who is caught.
-- Otherwise, every infantryman on the target cell and the eight cells around it takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor.
+- Otherwise, every infantryman in the area takes its full strength as damage through [`MutateWarhead`](/keys/mutatewarhead/), ignoring armor. The area is the target cell and the eight cells around it, or the area [`SW.Range=`](/keys/sw.range/) names. [`SW.AffectsHouse=`](/keys/sw.affectshouse/) limits it to the infantry of the houses listed, and the `land` and `water` entries of [`SW.AffectsTarget=`](/keys/sw.affectstarget/) limit it to those cells.
 
 A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: each leaves [`InfantryMutate`](/keys/infantrymutate/), which becomes a new infantryman of the firing house when it ends, as [`MakeInfantry`](/keys/makeinfantry/) describes. The firing house is credited with every infantryman killed. [MutateFriendly](/keys/mutatefriendly/) decides whether infantry of the firing house and its allies are mutated too. It defaults to yes, which matches Yuri's Revenge.
 
@@ -759,6 +827,14 @@ Once the first animation has played [`DominatorFireAtPercentage`](/keys/dominato
 - a shockwave ripples out from the target, and `DominatorSecondAnim` plays there;
 - [`DominatorDamage`](/keys/dominatordamage/) goes off through [`DominatorWarhead`](/keys/dominatorwarhead/), credited to the firing house;
 - every vehicle, infantryman and aircraft within [`DominatorCaptureRange`](/keys/dominatorcapturerange/) cells joins the firing house for good, the firing house's own included, with [`PermaControlledAnimationType`](/keys/permacontrolledanimationtype/) shown [`MindControlRingOffset`](/keys/mindcontrolringoffset/) leptons above it. A computer house sends its new units, and its own units in range, hunting. A unit under [mind control](/systems/mind-control/#letting-go) is let go first, and nothing can take a dominated unit over afterwards. Taking a unit over springs no [`Entered by...`](/mapping/events/tevent-player-entered/) trigger. An infantryman or aircraft taken over this way also springs the [destroyed-any](/mapping/events/tevent-destroyed-any/) trigger events. Every unit taken over counts as lost for its old house and as a kill for the dominator's house, unless its type is [`DontScore=yes`](/keys/dontscore/); a `DontScore` type still springs those events.
+
+A weapon's own keys replace these rules for its blast:
+
+- [`Dominator.FirstAnim=`](/keys/dominator.firstanim/), [`Dominator.SecondAnim=`](/keys/dominator.secondanim/), [`Dominator.FireAtPercentage=`](/keys/dominator.fireatpercentage/) and [`Dominator.ControlAnim=`](/keys/dominator.controlanim/) replace `DominatorFirstAnim`, `DominatorSecondAnim`, `DominatorFireAtPercentage` and `PermaControlledAnimationType`. [`Dominator.FirstAnimHeight=`](/keys/dominator.firstanimheight/) and [`Dominator.SecondAnimHeight=`](/keys/dominator.secondanimheight/) lift the two animations above the ground.
+- [`SW.Damage=`](/keys/sw.damage/) and [`SW.Warhead=`](/keys/sw.warhead/) replace `DominatorDamage` and `DominatorWarhead`. A `SW.Damage=0` deals no damage.
+- [`SW.Range=`](/keys/sw.range/) replaces `DominatorCaptureRange`. It is a radius in cells, or two numbers for a block of cells, with no limit of 10 cells.
+- [`SW.AffectsHouse=`](/keys/sw.affectshouse/) and [`SW.AffectsTarget=`](/keys/sw.affectstarget/) choose whose units, and which kinds, the blast takes over. Without them it takes over infantry and vehicles of every house, the firing house's own included.
+- [`Dominator.Capture=no`](/keys/dominator.capture/) takes over nothing, and [`Dominator.Ripple=no`](/keys/dominator.ripple/) draws no shockwave. [`Dominator.CaptureMindControlled=`](/keys/dominator.capturemindcontrolled/), [`Dominator.CapturePermaMindControlled=`](/keys/dominator.capturepermamindcontrolled/) and [`Dominator.CaptureImmuneToPsionics=`](/keys/dominator.captureimmunetopsionics/) choose which units are taken. [`Dominator.PermanentCapture=no`](/keys/dominator.permanentcapture/) leaves a taken unit unmarked as permanently controlled.
 
 Structures, objects in the air or under the Iron Curtain, and types with [`ImmuneToPsionics=yes`](/keys/immunetopsionics/) or [`BalloonHover=yes`](/keys/balloonhover/) are not taken over. Only one blast runs at a time: a shot while one runs is refused, and the weapon stays charged. A shot the player fires then prints that the dominator is already active, as Yuri's Revenge does. A computer house's shot prints nothing. From the moment the blast starts, the map takes the lighting that [`DominatorAmbient`](/keys/dominatorambient/), [`DominatorRed`](/keys/dominatorred/), [`DominatorGreen`](/keys/dominatorgreen/), [`DominatorBlue`](/keys/dominatorblue/), [`DominatorGround`](/keys/dominatorground/) and [`DominatorLevel`](/keys/dominatorlevel/) set in the scenario's `[Lighting]` section, and it returns to normal when the second animation has played. The weapon is not free for another shot until the light has settled back.
 
@@ -833,6 +909,15 @@ What stands where a unit lands decides what happens to it:
 - Anything under the Iron Curtain or the force shield destroys the arriving unit instead.
 - A structure or a terrain object, such as a tree, sends the arriving unit to the nearest cell it could stand on. With no such cell, the unit is destroyed.
 
+The keys of the `Type=ChronoSphere` weapon that picked the cells decide who moves:
+
+- [`SW.Range=`](/keys/sw.range/) sets the area picked, a 3 by 3 block of cells by default. The warp moves every unit in the area, and each keeps its place relative to the target.
+- [`SW.AffectsHouse=`](/keys/sw.affectshouse/) and [`SW.AffectsTarget=`](/keys/sw.affectstarget/) choose whose units, and which kinds, move. Without the second, infantry and vehicles move. A unit these keys exclude stays where it is and is not destroyed.
+- [`Chronosphere.KillOrganic=no`](/keys/chronosphere.killorganic/) moves organic units instead of destroying them, and [`Chronosphere.KillTeleporters=yes`](/keys/chronosphere.killteleporters/) destroys teleporters instead of moving them.
+- [`Chronosphere.AffectsIronCurtain=yes`](/keys/chronosphere.affectsironcurtain/) also moves units under the Iron Curtain, and [`Chronosphere.AffectsUnwarpable=no`](/keys/chronosphere.affectsunwarpable/) leaves [`Warpable=no`](/keys/warpable/) units where they are.
+- [`Chronosphere.KillCargo=yes`](/keys/chronosphere.killcargo/) destroys the passengers of each unit that moves.
+- [`Chronosphere.BlastSrc=`](/keys/chronosphere.blastsrc/) and [`Chronosphere.BlastDest=`](/keys/chronosphere.blastdest/) replace `ChronoBlast` and `ChronoBlastDest`, and [`SW.Animation=`](/keys/sw.animation/) replaces `ChronoPlacement` as the marker over the picked cell.
+
 A unit landing on a cell with a bridge lands on the bridge. A unit whose landing spot is off the map is destroyed. A vehicle set down on water it cannot cross sinks, and any other unit set down where it cannot move, such as on a cliff, is destroyed.
 
 A unit destroyed at its landing spot credits no house.
@@ -879,7 +964,7 @@ The [Preferred target](/mapping/actions/taction-preferred-target/) action change
 
 ## Parsed settings without effect
 
-These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), the `Light.*` keys, [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Lightning.*`, `Dominator.*`, `Chronosphere.*`, `Mutate.*` and `Nuke.PsiWarning`/`Nuke.TakeOff` keys are not read.
+These Ares keys are read and stored, and nothing uses them: [`SW.Group=`](/keys/sw.group/), [`SW.Unstoppable=`](/keys/sw.unstoppable/), [`Text.Preparing=`](/keys/text.preparing/), [`Deliver.BaseNormal=`](/keys/deliver.basenormal/), [`HunterSeeker.RandomOnly=`](/keys/hunterseeker.randomonly/), [`EMPulse.Linked=`](/keys/empulse.linked/), [`EMPulse.PulseBall=`](/keys/empulse.pulseball/) and [`EMPulse.PulseDelay=`](/keys/empulse.pulsedelay/). The `Mutate.*` and `Nuke.PsiWarning`/`Nuke.TakeOff` keys are not read. Neither are `Lightning.IgnoreLightningRod=` and `SW.PostDependent=`, nor the three `Chronosphere.` keys about structures (`ReconsiderBuildings`, `AffectsUndeployable` and `BlowUnplaceable`), because the chronosphere moves no structures.
 
 
 [`NukeProjectile`](/keys/nukeprojectile/) and [`NukeDown`](/keys/nukedown/) in `[SpecialWeapons]` are read but have no effect; a silo takes its projectile from a section's `WeaponType=` instead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in the same section have no effect either. [The EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) covers them.

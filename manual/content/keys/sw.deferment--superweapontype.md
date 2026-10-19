@@ -8,7 +8,7 @@ when_omitted:
   note: "0, or 20 for UnitDelivery"
 ---
 
-The number of frames between the launch and the effect. The cost, the charge restart and [`Message.Launch=`](/keys/message.launch/) happen at the launch; the effect, [`Message.Activate=`](/keys/message.activate/) and the target sound and animation wait. A `Type=LightningStorm` weapon uses the value in place of `LightningStormDeferment`. Chronosphere, chrono warp, firestorm, battery and force shield weapons ignore it.
+The number of frames between the launch and the effect. The cost, the charge restart and [`Message.Launch=`](/keys/message.launch/) happen at the launch; the effect, [`Message.Activate=`](/keys/message.activate/) and the target sound and animation wait. A `Type=LightningStorm` weapon uses the value in place of `LightningStormDeferment`, and a `Type=PsychicDominator` weapon waits that long before its first animation starts. Chronosphere, chrono warp, firestorm, battery and force shield weapons ignore it.
 
 ```ini title="rulesmd.ini"
 [MySpecial] ; example SuperWeaponType

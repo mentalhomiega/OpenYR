@@ -235,7 +235,7 @@ bool SuperWeaponTypeClass::Can_Fire_At(HouseClass const * house, Cell const & ce
 			if (building->House != house || !building->IsActive || building->IsInLimbo || building->Strength <= 0) {
 				continue;
 			}
-			if (building->Fetch_Super_Weapon() != HeapID && building->Fetch_Super_Weapon2() != HeapID) {
+			if (!building->Grants_Super_Weapon(HeapID)) {
 				continue;
 			}
 			providers = true;

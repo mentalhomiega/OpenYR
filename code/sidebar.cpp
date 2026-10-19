@@ -2200,7 +2200,24 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 	if (GameActive) {
 		if (i < BuildableCount) {
 			if (Buildables[i].BuildableType == RTTI_SPECIAL) {
-				return(SuperWeaponTypes[Buildables[i].BuildableID]->Full_Name());
+				// A weapon that costs credits to fire shows the cost, as a build cameo does.
+				SuperWeaponTypeClass const * special = SuperWeaponTypes[Buildables[i].BuildableID];
+				int const price = -special->Keys.MoneyAmount;
+				if (price <= 0) {
+					return(special->Full_Name());
+				}
+				if (Modern_Interface()) {
+					static std::string _special_text;
+					_special_text = special->Full_Name();
+					_special_text += "\n$" + std::to_string(price);
+					return(_special_text.c_str());
+				}
+				if (Map.IsCameoText) {
+					sprintf(_buffer, Fetch_String(TXT_MONEY_FORMAT_1), price);
+				} else {
+					sprintf(_buffer, Fetch_String(TXT_MONEY_FORMAT_2), special->Full_Name(), price);
+				}
+				return(_buffer);
 			}
 
 			TechnoTypeClass const * choice = Fetch_Techno_Type(Buildables[i].BuildableType, Buildables[i].BuildableID);
@@ -2365,7 +2382,9 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					isready = PlayerPtr->SuperWeapon[spc]->Can_Place();
 					state = PlayerPtr->SuperWeapon[spc]->Caption();
 					stage = PlayerPtr->SuperWeapon[spc]->Anim_Stage();
-					darken = false;
+
+					// A weapon the house cannot pay for is darkened like a build cameo that cannot be started.
+					darken = !SuperRules::Can_Afford(PlayerPtr->Available_Money(), SuperWeaponTypes[spc]->Keys.MoneyAmount);
 				}
 
 				if (obj != NULL || spc != SUPER_NONE) {

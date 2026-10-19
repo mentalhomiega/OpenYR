@@ -22,6 +22,9 @@
  */
 namespace SuperRules
 {
+	// A number key a section has not set, where every integer is a valid setting.
+	constexpr int UNSET_INT = -2147483647 - 1;
+
 	// Which houses a key names, relative to the house that fires the weapon.
 	enum HouseFlags : unsigned {
 		HOUSE_OWNER = 1,
