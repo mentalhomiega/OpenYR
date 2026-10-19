@@ -6848,7 +6848,10 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 				return(1);
 
 			case EM_PULSE:
-				new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Turret_Coord(0));
+				// A mod that defines no PULSBALL animation gets no charge-up effect.
+				if (Anim_From_Name("PULSBALL") != ANIM_NONE) {
+					new AnimClass(AnimTypes[Anim_From_Name("PULSBALL")], Turret_Coord(0));
+				}
 				Status = FIRE;
 				return(32);
 
