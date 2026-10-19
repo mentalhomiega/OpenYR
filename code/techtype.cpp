@@ -90,6 +90,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsRemappable(false),
 	IsCloakable(false),
 	IsNoShadow(false),
+	IsDisableVoxelCache(false),
+	IsDisableShadowCache(false),
 	IsSelfHealing(false),
 	SelfHealingStep(-1),
 	SelfHealingRate(-1),
@@ -116,6 +118,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MaxSpeed(MPH_IMMOBILE),
 	Speed(speed),
 	MaxAmmo(-1),
+	ReloadDelay(0),
+	EmptyReloadDelay(-1),
+	ReloadIncrement(0),
+	PipWrap(0),
 	Ownable(0),
 	CameoData(NULL),
 	AltCameoData(NULL),
@@ -1180,6 +1186,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Cost = ini.Get_Int(Name(), "Cost", Cost);
 		Soylent = ini.Get_Int(Name(), "Soylent", Soylent);
 		MaxAmmo = ini.Get_Int(Name(), "Ammo", MaxAmmo);
+		ReloadDelay = ini.Get_Int(Name(), "Reload", ReloadDelay);
+		EmptyReloadDelay = ini.Get_Int(Name(), "EmptyReload", EmptyReloadDelay);
+		ReloadIncrement = ini.Get_Int(Name(), "ReloadIncrement", ReloadIncrement);
+		PipWrap = ini.Get_Int(Name(), "PipWrap", PipWrap);
 		Reward = Points = ini.Get_Int(Name(), "Points", Points);
 		Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);
 		Ownable = ini.Get_Owners(Name(), "Owner", Ownable);
@@ -1255,6 +1265,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsRegulated = ArtINI.Get_Bool(Graphic_Name(), "Normalized", IsRegulated);
 		IsVisibleLoad = ArtINI.Get_Bool(Graphic_Name(), "VisibleLoad", IsVisibleLoad);
 		ShadowIndex = ArtINI.Get_Int(Graphic_Name(), "ShadowIndex", ShadowIndex);
+		IsDisableVoxelCache = ArtINI.Get_Bool(Graphic_Name(), "DisableVoxelCache", IsDisableVoxelCache);
+		IsDisableShadowCache = ArtINI.Get_Bool(Graphic_Name(), "DisableShadowCache", IsDisableShadowCache);
 
 		char pcx[64];
 		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
@@ -1399,7 +1411,7 @@ int TechnoTypeClass::Max_Pips(void) const
 			return(MaxPips.value_or(10));
 
 		case PIPSCALE_AMMO:
-			return(std::min(MaxAmmo, MaxPips.value_or(5)));
+			return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));
 
 		case PIPSCALE_TIBERIUM:
 			return(MaxPips.value_or(5));
@@ -1839,6 +1851,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxSpeed);
 	stream.Serialize(Speed);
 	stream.Serialize(MaxAmmo);
+	stream.Serialize(ReloadDelay);
+	stream.Serialize(EmptyReloadDelay);
+	stream.Serialize(ReloadIncrement);
+	stream.Serialize(PipWrap);
 	stream.Serialize(Ownable);
 	stream.Serialize(IsAllowedToStartInMultiplayer);
 	stream.Serialize(CameoFilename);
@@ -1902,6 +1918,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
 	stream.Serialize(IsNoShadow);
+	stream.Serialize(IsDisableVoxelCache);
+	stream.Serialize(IsDisableShadowCache);
 	stream.Serialize(IsSelfHealing);
 	stream.Serialize(SelfHealingStep);
 	stream.Serialize(SelfHealingRate);
@@ -1993,6 +2011,10 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(MaxSpeed);
 	crc(Speed);
 	crc(MaxAmmo);
+	crc(ReloadDelay);
+	crc(EmptyReloadDelay);
+	crc(ReloadIncrement);
+	crc(PipWrap);
 	crc((int)Ownable);
 	crc(Rotation);
 	crc(ROT);
@@ -2021,6 +2043,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsRemappable);
 	crc(IsCloakable);
 	crc(IsNoShadow);
+	crc(IsDisableVoxelCache);
+	crc(IsDisableShadowCache);
 	crc(IsSelfHealing);
 	crc(SelfHealingStep);
 	crc(SelfHealingRate);
