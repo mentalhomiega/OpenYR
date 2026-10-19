@@ -9,7 +9,7 @@ when_omitted:
 
 Moves the animation's artwork down the screen by this many pixels; a negative value moves it up. Use it to line up artwork that is not centered on the animation's position without editing the shape file.
 
-The offset applies to every live draw of the animation: the ordinary and [`Flat=yes`](/keys/flat/#scope-animtype) draws, each copy of a [`Tiled=yes`](/keys/tiled/) animation, the shadow under a thrown animation, and the shadow of an [`IsFlamingGuy=yes`](/keys/isflamingguy/) animation.
+The offset applies to every live draw of the animation: the ordinary and [`Flat=yes`](/keys/flat/#scope-animtype) draws, each copy of a [`Tiled=yes`](/keys/tiled/) animation, the shadow under a thrown animation, and the shadow of an [`IsFlamingGuy=yes`](/keys/isflamingguy/) animation. The [`Shadow=yes`](/keys/shadow/#scope-animtype) frames of an upright animation ignore it.
 
 The copy of a structure's animation that the fog of war draws in its place ignores the offset. An animation with a large offset jumps by that many pixels when the fog closes over its structure, and jumps back when the fog lifts.
 

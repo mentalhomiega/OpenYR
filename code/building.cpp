@@ -2457,7 +2457,8 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 		**	If the building is destroyed, then lots of
 		**	explosions occur.
 		*/
-		if (Percent_Chance(50)) {
+		// Yuri's Revenge leaves no fire behind a destroyed structure; AnimationFires=yes enables it.
+		if (Rule->IsAnimationFires && Percent_Chance(50)) {
 			coord.Z = PositionCoord.Z;
 			Coord ccoord = cell;
 			pos = coord + Coord_Scatter(ccoord, CELL_LEPTON / 2);
@@ -2715,7 +2716,8 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 								default:
 									break;
 							}
-						} else {
+						} else if (Rule->IsAnimationFires) {
+							// Yuri's Revenge sets no fire on a damaged structure unless the warhead is sparky.
 							if (Percent_Chance(50)) {
 								/*
 								**	Building may catch on fire, but only if it wasn't a
