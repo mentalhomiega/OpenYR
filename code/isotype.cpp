@@ -582,6 +582,15 @@ IsometricTileType IsometricTileTypeClass::Fixup_Tile_Type(IsometricTileType curr
 		 */
 		new_type += tileinsert->Offset;
 	}
+
+	// A map naming a tile the theater does not have draws a clear cell.
+	if (new_type < 0 || new_type >= IsometricTileTypes.Count()) {
+		static int reported = 0;
+		if (reported++ < 4) {
+			DebugString("Map tile type %d is beyond the %d tile types of the theater; using a clear tile.\n", (int)new_type, IsometricTileTypes.Count());
+		}
+		return(ISOTILE_NONE);
+	}
 	return(new_type);
 }
 
