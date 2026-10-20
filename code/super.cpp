@@ -1003,7 +1003,7 @@ void SuperClass::Paradrop(Cell const & cell) const
 	if (Class->Type == SUPER_SPY_PLANE && keys.SpyPlaneType != NULL) {
 		// SpyPlane.Type and SpyPlane.Count replace the stock one plane for each ally paradrop entry.
 		for (int index = 0; index < keys.SpyPlaneCount; index++) {
-			House->Send_Plane(keys.SpyPlaneType, MISSION_SPYPLANE_APPROACH, cell);
+			House->Send_Plane(keys.SpyPlaneType, (MissionType)keys.SpyPlaneMission, cell);
 		}
 		return;
 	}
@@ -1011,7 +1011,7 @@ void SuperClass::Paradrop(Cell const & cell) const
 		AircraftType const plane = AircraftTypeClass::From_Name("SPYP");
 		if (plane != AIRCRAFT_NONE && Rule->AllyParaDropInf.Count() == Rule->AllyParaDropNum.Count()) {
 			for (int index = 0; index < Rule->AllyParaDropInf.Count(); index++) {
-				House->Send_Plane(AircraftTypes[plane], MISSION_SPYPLANE_APPROACH, cell);
+				House->Send_Plane(AircraftTypes[plane], (MissionType)keys.SpyPlaneMission, cell);
 			}
 		}
 		return;

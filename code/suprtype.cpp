@@ -19,6 +19,7 @@
 #include "findmake.h"
 #include "globals.h"
 #include "mixfile.h"
+#include "mission.h"
 #include "mouse.h"
 #include "savestream.h"
 #include "sun.h"
@@ -473,6 +474,13 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		Keys.SpyPlaneType = SuperKeyParse::Aircraft_Named(ini.Get_String(IniName, "SpyPlane.Type"), Keys.SpyPlaneType);
 		Keys.SpyPlaneCount = ini.Get_Int(IniName, "SpyPlane.Count", Keys.SpyPlaneCount);
+		{
+			std::string const name = ini.Get_String(IniName, "SpyPlane.Mission");
+			MissionType const mission = name.empty() ? MISSION_NONE : MissionClass::Mission_From_Name(name.c_str());
+			if (mission != MISSION_NONE) {
+				Keys.SpyPlaneMission = mission;
+			}
+		}
 
 		Keys.ParaDropCount = ini.Get_Int(IniName, "ParaDrop.Count", Keys.ParaDropCount);
 		SuperKeyParse::Techno_List(ini.Get_String(IniName, "ParaDrop.Types"), Keys.ParaDefault.Types);

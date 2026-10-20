@@ -22,6 +22,7 @@
 #include "globals.h"
 #include "houstype.h"
 #include "infatype.h"
+#include "mission.hh"
 #include "savestream.h"
 #include "side.h"
 #include "techtype.h"
@@ -170,6 +171,7 @@ SuperWeaponKeys::SuperWeaponKeys(void) :
 	BatteryPower(0),
 	SpyPlaneType(NULL),
 	SpyPlaneCount(1),
+	SpyPlaneMission(MISSION_SPYPLANE_APPROACH),
 	ParaDropCount(1)
 {
 }
@@ -542,6 +544,7 @@ void SuperWeaponKeys::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BatteryKeepOnline);
 	stream.Serialize(SpyPlaneType);
 	stream.Serialize(SpyPlaneCount);
+	stream.Serialize(SpyPlaneMission);
 	stream.Serialize(ParaDefault);
 	stream.Serialize(ParaByOwner);
 	stream.Serialize(ParaDropCount);
@@ -627,6 +630,7 @@ void SuperWeaponKeys::Compute_CRC(CRCEngine & crc) const
 	crc(LightningIgnoreRod);
 	crc(BatteryPower);
 	crc(SpyPlaneCount);
+	crc(SpyPlaneMission);
 	crc(ParaDropCount);
 	crc(DeliverTypes.Count());
 	crc(Designators.Count());
