@@ -110,6 +110,8 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	aistrike <TypeID> x y	the computer players' objects of that type attack what stands on that cell, as strike does for the player's
+**	graphic <TypeID>		writes the art name the type draws and reads its art keys from
 **	maps					writes every XMP multiplayer map the file system finds
 **	cratesounds				writes the sound numbers the crate pickup sounds resolved to
 **	elite <TypeID>			makes the player's objects of that type elite
@@ -2776,6 +2778,17 @@ void Run(StepType const & step)
 					techno->Assign_Target(target);
 					techno->Assign_Mission(MISSION_ATTACK);
 				}
+			}
+		}
+	} else if (step.Command == "aistrike") {
+		// aistrike <TypeID> x y: the computer players' objects of that type attack what stands on that cell.
+		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+		DebugString("AUTOTEST aistrike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Target(target);
+				techno->Assign_Mission(MISSION_ATTACK);
 			}
 		}
 	} else if (step.Command == "planmove") {

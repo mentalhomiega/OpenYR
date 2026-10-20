@@ -141,6 +141,8 @@
 #include "bench.hh"
 #include "color.hh"
 #include "tube.hh"
+#include "autotest.h"
+#include "dbgprint.h"
 
 #include <algorithm>
 #include <cstring>
@@ -3223,6 +3225,9 @@ void FootClass::Death_Announcement(TechnoClass const * ) const
 {
 	// A UnitLost.Suppress warhead kills without the announcement (Ares).
 	if (DamageWarhead != NULL && DamageWarhead->IsUnitLostSuppress) {
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST unitlost %s suppressed\n", TClass->Name());
+		}
 		return;
 	}
 	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
