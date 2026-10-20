@@ -70,6 +70,11 @@ class UnitTypeClass : public TechnoTypeClass
 		// The vehicle type an IsSimpleDeployer vehicle of this type becomes when it finishes deploying, or NULL for none (Ares Convert.Deploy).
 		UnitTypeClass const * ConvertDeploy;
 
+		// The vehicle types a vehicle of this type becomes on entering a beach or water cell, and on entering any other cell (Ares
+		// Convert.Water and Convert.Land); NULL for none.
+		UnitTypeClass const * ConvertWater;
+		UnitTypeClass const * ConvertLand;
+
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		bool IsDeployToLand;

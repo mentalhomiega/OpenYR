@@ -2415,6 +2415,15 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	BStart(BENCH_PCP);
 	if (why == PCP_END) {
 
+		// A vehicle with Convert.Water or Convert.Land changes type as it drives onto a cell of the other kind (Ares).
+		if (Class->ConvertWater != NULL || Class->ConvertLand != NULL) {
+			LandType const land = Get_Cell_Ptr()->Land_Type();
+			UnitTypeClass const * const converted = (land == LAND_WATER || land == LAND_BEACH) ? Class->ConvertWater : Class->ConvertLand;
+			if (converted != NULL) {
+				Convert_To(converted);
+			}
+		}
+
 		if (Class->IsSmallVisceroid) {
 			if (NavCom != NULL && NavCom->RTTI == RTTI_UNIT) {
 				UnitClass * unit = static_cast<UnitClass*>(NavCom);

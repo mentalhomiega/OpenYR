@@ -107,6 +107,8 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsCrateGoodie(false),
 	IsSimpleDeployer(false),
 	ConvertDeploy(NULL),
+	ConvertWater(NULL),
+	ConvertLand(NULL),
 	IsDeployer(false),
 	IsDeployToLand(false),
 	IsDeployFire(false),
@@ -378,6 +380,8 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
 		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
 		ConvertDeploy = TGet_Class(ini, Name(), "Convert.Deploy", ConvertDeploy);
+		ConvertWater = TGet_Class(ini, Name(), "Convert.Water", ConvertWater);
+		ConvertLand = TGet_Class(ini, Name(), "Convert.Land", ConvertLand);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
@@ -567,6 +571,8 @@ void UnitTypeClass::Compute_CRC(CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(MovementRestrictedTo);
 	crc(IsPassive);
+	crc(ConvertWater != NULL);
+	crc(ConvertLand != NULL);
 	crc(IsCrateGoodie);
 	crc(WreckReleasesPassengers);
 	crc(IsToHarvest);
@@ -616,6 +622,8 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsSimpleDeployer);
 	stream.Serialize(ConvertDeploy);
+	stream.Serialize(ConvertWater);
+	stream.Serialize(ConvertLand);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployToLand);
 	stream.Serialize(IsDeployFire);
