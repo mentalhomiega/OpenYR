@@ -388,6 +388,7 @@ RulesClass::RulesClass(void) :
 	IvanTimedDelay(0),
 	IsCanDetonateTimeBomb(false),
 	IsChronoInfantryCrush(true),
+	DisplayCreditsDelay(0.02),
 	IsBountyDisplay(false),
 	IsEnemyInsignia(true),
 	IsKeepAliveSet(false),
@@ -1145,6 +1146,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 	if (ini.Is_Present(AUDIOVISUAL)) {
 		UnloadingHarvester = TGet_Class(ini, AUDIOVISUAL, "UnloadingHarvester", UnloadingHarvester);
 		IsBountyDisplay = ini.Get_Bool(AUDIOVISUAL, "BountyDisplay", IsBountyDisplay);
+		DisplayCreditsDelay = ini.Get_Float(AUDIOVISUAL, "DisplayCreditsDelay", DisplayCreditsDelay);
 		PoseDir = (Dir256)ini.Get_Int(AUDIOVISUAL, "PoseDir", PoseDir);
 		DeployDir = (Dir256)((ini.Get_Int(AUDIOVISUAL, "DeployDir", DeployDir >> 5) << 5) & 0xFF);
 		DropPodPuff = TGet_Class(ini, AUDIOVISUAL, "DropPodPuff", DropPodPuff);
@@ -2998,6 +3000,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumHeal);
 	stream.Serialize(HSBuilding);
 	stream.Serialize(BountyEnablers);
+	stream.Serialize(DisplayCreditsDelay);
 	stream.Serialize(IsBountyDisplay);
 	stream.Serialize(IsEnemyInsignia);
 	stream.Serialize(IsKeepAliveSet);

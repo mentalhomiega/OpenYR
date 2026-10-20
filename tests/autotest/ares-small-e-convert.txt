@@ -1,0 +1,18 @@
+; Convert.Water and Convert.Land with the ares-small-e-keys mod, which gives the Amphibious Transport (LCRF) Convert.Water=LCRF2 and its
+; copy LCRF2 Convert.Land=LCRF. On XMP08T2 the cell 87,65 is rough ground and 85,65 is water. A transport drives from the ground to the
+; water and the log shows "Convert: LCRF becomes LCRF2" (counts: LCRF 0, LCRF2 1). It then drives back to 87,65 and the log shows
+; "Convert: LCRF2 becomes LCRF". Without -Mods no conversion happens.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Map XMP08T2.MAP -Script src-agent9/tests/autotest/ares-small-e-convert.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 150 -Filter "AUTOTEST   (count|where)|Convert:|Exception"
+30 command CenterBase
+35 reveal
+40 own LCRF 87 65
+60 move LCRF 85 65
+300 count LCRF
+301 count LCRF2
+302 where LCRF2
+310 move LCRF2 87 65
+600 count LCRF
+601 count LCRF2
+602 where LCRF
+650 quit

@@ -165,6 +165,7 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	LaserDuration(10),
 	IsBigLaser(false),
 	IsSonic(false),
+	ApplyDamage(-1),
 	IsMagBeam(false),
 	IsDecloakToFire(true),
 	IsAreaFire(false),
@@ -234,6 +235,9 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 	if (ini.Is_Present(IniName)) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
+		if (ini.Is_Present(IniName, "ApplyDamage")) {
+			ApplyDamage = ini.Get_Bool(IniName, "ApplyDamage", false) ? 1 : 0;
+		}
 		IsMagBeam = ini.Get_Bool(IniName, "IsMagBeam", IsMagBeam);
 		IsDecloakToFire = ini.Get_Bool(IniName, "DecloakToFire", IsDecloakToFire);
 		IsAreaFire = ini.Get_Bool(IniName, "AreaFire", IsAreaFire);
@@ -501,6 +505,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(AmbientDamage);
 	crc(IsSonic);
+	crc(ApplyDamage);
 	crc(IsCellRangefinding);
 	crc(IsOmniFire);
 	crc(IsRevealOnFire);
@@ -584,6 +589,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LaserDuration);
 	stream.Serialize(IsBigLaser);
 	stream.Serialize(IsSonic);
+	stream.Serialize(ApplyDamage);
 	stream.Serialize(IsMagBeam);
 	stream.Serialize(IsDecloakToFire);
 	stream.Serialize(IsAreaFire);

@@ -32,6 +32,8 @@
 #include "techno.h"
 #include "wave.h"
 #include "xsurface.h"
+#include "autotest.h"
+#include "dbgprint.h"
 
 const char * LightBehaviorNames[LIGHT_BEHAVIOR_COUNT] =
 {
@@ -142,14 +144,14 @@ void BuildingLightClass::Draw_It(Point2D const & point, Rect const & cliprect) c
 		Point2D caster_px;
 		TacticalMap->Coord_To_Pixel(arc1, arc1_px);
 		TacticalMap->Coord_To_Pixel(arc2, arc2_px);
-		TacticalMap->Coord_To_Pixel(Coord(there.X, there.Y, there.Z + 430), caster_px);
+		TacticalMap->Coord_To_Pixel(Coord(there.X, there.Y, there.Z + building->Class->SpotlightStartHeight), caster_px);
 
 		arc1_px += TacticalRect.TopLeft;
 		arc2_px += TacticalRect.TopLeft;
 		caster_px += TacticalRect.TopLeft;
 		Point2D caster_px2 = caster_px;
 
-		int zstart = -Tactical::Z_Lepton_To_Pixel(there.Z + 400);
+		int zstart = -Tactical::Z_Lepton_To_Pixel(there.Z + building->Class->SpotlightStartHeight - 30);
 		int zend = -Tactical::Z_Lepton_To_Pixel(PositionCoord.Z + 250);
 
 		if (Clip_Line_To_Rect(caster_px, arc1_px, TacticalRect)) {
@@ -351,7 +353,14 @@ void BuildingLightClass::Detach(AbstractClass const * target, bool all)
 /// <param name="owner">The object that this light is mounted upon.</param>
 void BuildingLightClass::Init_Rotation_Arc(TechnoClass * owner)
 {
-	Coord target = Move_Coord(owner->PositionCoord, owner->PrimaryFacing.Current(), Rule->SpotlightLocationRadius);
+	int distance = Rule->SpotlightLocationRadius;
+	if (owner->RTTI == RTTI_BUILDING && ((BuildingClass *)owner)->Class->SpotlightDistance >= 0) {
+		distance = ((BuildingClass *)owner)->Class->SpotlightDistance;
+	}
+	Coord target = Move_Coord(owner->PositionCoord, owner->PrimaryFacing.Current(), distance);
+	if (AutoTest_Active() && owner->RTTI == RTTI_BUILDING) {
+		DebugString("AUTOTEST spotlight %s start height %d distance %d\n", owner->TClass->Name(), ((BuildingClass *)owner)->Class->SpotlightStartHeight, distance);
+	}
 	RotationTarget = target;
 
 	RotationPivot = Move_Coord(owner->PositionCoord, owner->PrimaryFacing.Current(), -Rule->SpotlightMovementRadius);

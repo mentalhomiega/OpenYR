@@ -513,6 +513,23 @@ AIHateDelays:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIInnerBase:
+  key: AIInnerBase
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsAIInnerBase
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 AIIonCannonAPCValue:
   key: AIIonCannonAPCValue
   scopes:
@@ -1170,6 +1187,108 @@ Abductor.Temporal:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Academy.AircraftVeterancy:
+  key: Academy.AircraftVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyAircraftVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.BuildingVeterancy:
+  key: Academy.BuildingVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyBuildingVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.Ignore:
+  key: Academy.Ignore
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.InfantryVeterancy:
+  key: Academy.InfantryVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyInfantryVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.Types:
+  key: Academy.Types
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.VehicleVeterancy:
+  key: Academy.VehicleVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyVehicleVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Accelerates:
   key: Accelerates
   scopes:
@@ -2277,6 +2396,23 @@ AirRangeBonus:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+AirRate:
+  key: AirRate
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: AirRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Airburst:
   key: Airburst
   scopes:
@@ -2861,6 +2997,23 @@ AllowToPlace:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+AllowZeroDamage:
+  key: AllowZeroDamage
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsAllowZeroDamage
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 AllowableUnitMaximums:
   key: AllowableUnitMaximums
   scopes:
@@ -3152,6 +3305,23 @@ AltToRally:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+AlternateTheaterArt:
+  key: AlternateTheaterArt
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsAlternateTheaterArt
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AlwaysShowActionLines:
   key: AlwaysShowActionLines
   scopes:
@@ -3648,6 +3818,23 @@ AntiInfantryValue:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ApplyDamage:
+  key: ApplyDamage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: ApplyDamage
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 ApproachTargetResetMultiplier:
   key: ApproachTargetResetMultiplier
   scopes:
@@ -7684,6 +7871,37 @@ CanApproachTarget:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanBeDriven:
+  key: CanBeDriven
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeDriven
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: '-1'
+      declared_in: HouseTypeClass
+      member: CanBeDriven
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 CanBeHidden:
   key: CanBeHidden
   scopes:
@@ -7787,6 +8005,23 @@ CanDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanDrive:
+  key: CanDrive
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsCanDrive
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 CanHideThings:
   key: CanHideThings
   scopes:
@@ -9888,6 +10123,40 @@ Convert.Deploy:
       default_candidate: none
       declared_in: UnitTypeClass
       member: ConvertDeploy
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
+Convert.Land:
+  key: Convert.Land
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertLand
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
+Convert.Water:
+  key: Convert.Water
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertWater
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
@@ -13547,6 +13816,24 @@ DiskLaserChargeUp:
       default_candidate: none
       declared_in: RulesClass
       member: DiskLaserChargeUp
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DisplayCreditsDelay:
+  key: DisplayCreditsDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.02'
+      declared_in: RulesClass
+      member: DisplayCreditsDelay
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -17935,6 +18222,23 @@ FirersPalette:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Firestorm.Wall:
+  key: Firestorm.Wall
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsFirestormWall
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 FirestormActiveAnim:
   key: FirestormActiveAnim
   scopes:
@@ -18245,6 +18549,23 @@ FlamingInfantry:
       applies_to: *id051
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+Flash.Duration:
+  key: Flash.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: FlashDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 FlashFrameTime:
   key: FlashFrameTime
   scopes:
@@ -19253,6 +19574,23 @@ GateDown:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GateDownSound:
+  key: GateDownSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: GateDownSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 GateStages:
   key: GateStages
   scopes:
@@ -19288,6 +19626,23 @@ GateUp:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GateUpSound:
+  key: GateUpSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: GateUpSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Gattling.Cycle:
   key: Gattling.Cycle
   scopes:
@@ -33632,6 +33987,23 @@ ProduceCashDelay:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ProduceCashDisplay:
+  key: ProduceCashDisplay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsProduceCashDisplay
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ProduceCashResetOnCapture:
   key: ProduceCashResetOnCapture
   scopes:
@@ -34802,6 +35174,23 @@ RadarInvisible:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+RadarJamRadius:
+  key: RadarJamRadius
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: RadarJamRadius
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RadarOff:
   key: RadarOff
   scopes:
@@ -35628,6 +36017,91 @@ RejoinTeamIfLimboed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+RelativeDamage:
+  key: RelativeDamage
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsRelativeDamage
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Aircraft:
+  key: RelativeDamage.Aircraft
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageAircraft
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Buildings:
+  key: RelativeDamage.Buildings
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageBuildings
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Infantry:
+  key: RelativeDamage.Infantry
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageInfantry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Vehicles:
+  key: RelativeDamage.Vehicles
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageVehicles
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 RelaxedStray:
   key: RelaxedStray
   scopes:
@@ -41557,6 +42031,40 @@ Splits:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Spotlight.Distance:
+  key: Spotlight.Distance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: BuildingTypeClass
+      member: SpotlightDistance
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Spotlight.StartHeight:
+  key: Spotlight.StartHeight
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '430'
+      declared_in: BuildingTypeClass
+      member: SpotlightStartHeight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpotlightAcceleration:
   key: SpotlightAcceleration
   scopes:
@@ -41849,6 +42357,23 @@ SpyEffect.ResetSuperweapons:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpyEffect.RevealProduction:
+  key: SpyEffect.RevealProduction
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyRevealProduction
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpyEffect.StolenMoneyAmount:
   key: SpyEffect.StolenMoneyAmount
   scopes:
@@ -41983,6 +42508,23 @@ SpyPlane.Count:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.SpyPlaneCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SpyPlane.Mission:
+  key: SpyPlane.Mission
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: name
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
@@ -44930,6 +45472,23 @@ Temporal:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsTemporal
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+Temporal.HealthFactor:
+  key: Temporal.HealthFactor
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: WarheadTypeClass
+      member: TemporalHealthFactor
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
@@ -48107,6 +48666,23 @@ VehicleThief.Allowed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VehicleThief.EnterSound:
+  key: VehicleThief.EnterSound
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: VehicleThiefEnterSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 VeinAttack:
   key: VeinAttack
   scopes:

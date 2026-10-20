@@ -167,6 +167,13 @@ class InfantryTypeClass : public TechnoTypeClass
 		 */
 		bool IsVehicleThief;
 
+		// CanDrive (Ares): this soldier can take over a vehicle whose owner may be driven from (HouseTypeClass::Can_Be_Driven)
+		// and that is itself CanBeDriven, entering it as its driver.
+		bool IsCanDrive;
+
+		// VehicleThief.EnterSound (Ares): played where this soldier takes a vehicle over.
+		VocType VehicleThiefEnterSound;
+
 		// An Occupier=yes soldier can garrison a CanBeOccupied structure and fires OccupyWeapon,
 		// or EliteOccupyWeapon at elite rank, from inside it.
 		bool IsOccupier;

@@ -1,0 +1,16 @@
+; Temporal.HealthFactor with the ares-small-e-keys mod. A Rhino Tank (HTNK, temporal gun with a plain temporal warhead) and a Heavy Tank
+; (HTK, temporal gun whose warhead has Temporal.HealthFactor=1) each warp a Grizzly (MTNK, 300 strength) of the computer house that was
+; hit down to 150. Expected "warp start" lines: warp 3000 for the plain gun (10 times the full 300 strength) and warp 1500 for the
+; health-factor gun (10 times the 150 strength left).
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-temporal.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST warp|Exception"
+30 command CenterBase
+35 reveal
+40 own HTNK 60 36
+41 own HTK 60 44
+42 spawn MTNK 66 36
+43 spawn MTNK 66 44
+50 hit MTNK:PlainWH 150
+60 strike HTNK 66 36
+61 strike HTK 66 44
+250 quit

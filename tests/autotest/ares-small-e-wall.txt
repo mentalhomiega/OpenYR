@@ -1,0 +1,13 @@
+; Firestorm.Wall. A Grizzly is ordered onto the cell of a Pillbox 2 cells away. With the ares-small-e-keys mod the pillbox has
+; Firestorm.Wall=yes, so the Grizzly drives onto its cell (where reports cell 64,30 at the end). Without the mod the Pillbox blocks the cell
+; and the Grizzly stops short of it.
+; Run from the repository root, with and without -Mods:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-wall.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 60 -Filter "AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPILL 64 30
+41 own MTNK 61 30
+60 move MTNK 64 30
+300 where MTNK
+301 where GAPILL
+320 quit

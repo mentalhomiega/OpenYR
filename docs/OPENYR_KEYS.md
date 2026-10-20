@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 464 entries
+- [Rules](#rules): 498 entries
 - [Art](#art): 11 entries
 - [Client settings](#client-settings): 39 entries
 - [UI.INI](#uiini): 32 entries
@@ -75,23 +75,36 @@ Bounty.Value=200
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`Academy.AircraftVeterancy`](../manual/content/keys/academy.aircraftveterancy--buildingtype.md) | 0, so the structure gives no veterancy | The veterancy levels a structure gives new aircraft of its house. | Ares |
+| [`Academy.BuildingVeterancy`](../manual/content/keys/academy.buildingveterancy--buildingtype.md) | 0, so the structure gives no veterancy | The veterancy levels a structure gives new structures of its house. | Ares |
+| [`Academy.Ignore`](../manual/content/keys/academy.ignore--buildingtype.md) | `none` | The types a structure's Academy levels never reach. | Ares |
+| [`Academy.InfantryVeterancy`](../manual/content/keys/academy.infantryveterancy--buildingtype.md) | 0, so the structure gives no veterancy | The veterancy levels a structure gives new soldiers and Organic vehicles of its house. | Ares |
+| [`Academy.Types`](../manual/content/keys/academy.types--buildingtype.md) | none, so the levels reach every type | The types a structure's Academy levels are limited to. | Ares |
+| [`Academy.VehicleVeterancy`](../manual/content/keys/academy.vehicleveterancy--buildingtype.md) | 0, so the structure gives no veterancy | The veterancy levels a structure gives new vehicles of its house. | Ares |
 | [`AIBaseNormal`](../manual/content/keys/aibasenormal.md) | Depends; see the page | Whether the structure extends the base space in which its owner's computer-controlled buildings are placed. | Ares |
 | [`AIBuildCounts`](../manual/content/keys/aibuildcounts.md) | `1,1,1`, one copy | How many copies of the BuildingType a computer house plans, per difficulty slot. | Ares |
 | [`AIExtraCounts`](../manual/content/keys/aiextracounts.md) | `0,0,0`, no extra copies | The most extra copies of the BuildingType a computer house may add to its plan at random, per difficulty slot. | Ares |
+| [`AIInnerBase`](../manual/content/keys/aiinnerbase--buildingtype.md) | the value of CloakGenerator | Makes the computer place the structure near the center of its base. | Ares |
 | [`BarrelAnimZAdjust`](../manual/content/keys/barrelanimzadjust--buildingtype.md) | `-21` | Sets the depth bias, in pixels, of a building's voxel barrel. | OpenYR |
 | [`Chronoshift.IsVehicle`](../manual/content/keys/chronoshift.isvehicle--buildingtype.md) | `no` | Marks a structure as a deployed vehicle for the chronosphere. | Ares |
 | [`Cursor.Spy`](../manual/content/keys/cursor.spy.md) | `Enter` | The cursor shown over a structure of this type when a spy could infiltrate it. | Ares |
 | [`EligibileForAllyBuilding`](../manual/content/keys/eligibileforallybuilding.md) | `no` | Whether an ally's placements may anchor on a building of this type. | OpenTS |
 | [`EngineerRepairable`](../manual/content/keys/engineerrepairable--buildingtype.md) | The value of Repairable | With no, an engineer cannot restore this structure to full strength. | Ares |
+| [`Firestorm.Wall`](../manual/content/keys/firestorm.wall--buildingtype.md) | the value of FirestormWall | Another name for FirestormWall. | Ares |
+| [`GateDownSound`](../manual/content/keys/gatedownsound--buildingtype.md) | the GateDown sound of the AudioVisual section | The sound a gate plays as it opens. | Ares |
+| [`GateUpSound`](../manual/content/keys/gateupsound--buildingtype.md) | the GateUp sound of the AudioVisual section | The sound a gate plays as it closes. | Ares |
 | [`IsPassable`](../manual/content/keys/ispassable--buildingtype.md) | `no` | With yes, vehicles and soldiers can enter the cells of this structure. | Ares |
 | [`LightningRod.Modifier`](../manual/content/keys/lightningrod.modifier--buildingtype.md) | `1.0` | Scales the damage a lightning storm bolt does to a structure with LightningRod=yes. | Ares |
 | [`LostEvaEvent`](../manual/content/keys/lostevaevent.md) | EVA_TechBuildingLost when the type sets Message.Lost, otherwise nothing | The EVA line the player hears on losing a structure of this type that needs an engineer to a capture. | Ares |
 | [`MassSelectable`](../manual/content/keys/massselectable--buildingtype.md) | Computed; see the page | Whether a drag selection includes this structure. | Ares |
 | [`Message.Capture`](../manual/content/keys/message.capture.md) | `none` | The text shown to the player who captures a structure of this type that needs an engineer. | Ares |
 | [`Message.Lost`](../manual/content/keys/message.lost.md) | `none` | The text shown to the player who loses a structure of this type that needs an engineer to a capture. | Ares |
+| [`ProduceCashDisplay`](../manual/content/keys/producecashdisplay--buildingtype.md) | no, so a payment is not shown | Shows the cash this structure pays as floating text over it. | Ares |
 | [`ReverseEngineersVictims`](../manual/content/keys/reverseengineersvictims.md) | `no` | Makes this grinding structure teach its owner to build the types it grinds up. | Ares |
 | [`SolidHeight`](../manual/content/keys/solidheight.md) | 0, so the building is not solid | How many cells of a building's height stop a SubjectToBuildings projectile. | Ares |
 | [`SortCameoAsBaseDefense`](../manual/content/keys/sortcameoasbasedefense.md) | Follows `IsBaseDefense=` | Sorts a BuildingType's cameo into the base-defense group of the structures strip. | OpenTS |
+| [`Spotlight.Distance`](../manual/content/keys/spotlight.distance--buildingtype.md) | SpotlightLocationRadius from the General section | How far in front of a structure its spotlight lights the ground. | Ares |
+| [`Spotlight.StartHeight`](../manual/content/keys/spotlight.startheight--buildingtype.md) | 430 leptons | How high above the ground a structure's spotlight beam starts. | Ares |
 | [`SpyEffect.AircraftVeterancy`](../manual/content/keys/spyeffect.aircraftveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable aircraft veterans. | Ares |
 | [`SpyEffect.BuildingVeterancy`](../manual/content/keys/spyeffect.buildingveterancy.md) | `no` | With yes, infiltrating this structure makes the infiltrator's new trainable structures veterans. | Ares |
 | [`SpyEffect.Custom`](../manual/content/keys/spyeffect.custom.md) | `no` | With yes, a spy that infiltrates this structure does what the other SpyEffect keys say, instead of the stock effect. | Ares |
@@ -100,6 +113,7 @@ Bounty.Value=200
 | [`SpyEffect.PowerOutageDuration`](../manual/content/keys/spyeffect.poweroutageduration.md) | `0` | How many frames infiltrating this structure cuts the owner's power. | Ares |
 | [`SpyEffect.ResetRadar`](../manual/content/keys/spyeffect.resetradar.md) | `no` | With yes, infiltrating this structure shrouds the owner's map again. | Ares |
 | [`SpyEffect.ResetSuperweapons`](../manual/content/keys/spyeffect.resetsuperweapons.md) | `no` | With yes, infiltrating this structure restarts the charge of its owner's super weapons. | Ares |
+| [`SpyEffect.RevealProduction`](../manual/content/keys/spyeffect.revealproduction--buildingtype.md) | `no` | Lets the house that spied on a SpyEffect.Custom structure see its production, power and money. | Ares |
 | [`SpyEffect.StolenMoneyAmount`](../manual/content/keys/spyeffect.stolenmoneyamount.md) | `0` | The number of credits a spy steals from this structure. | Ares |
 | [`SpyEffect.StolenMoneyPercentage`](../manual/content/keys/spyeffect.stolenmoneypercentage.md) | `0` | The share of the owner's credits a spy steals from this structure. | Ares |
 | [`SpyEffect.StolenTechIndex`](../manual/content/keys/spyeffect.stolentechindex.md) | `none` | The kinds of technology infiltrating this structure steals, as a list of numbers from 0 to 31. | Ares |
@@ -128,6 +142,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`AI.PowerPlants`](../manual/content/keys/ai.powerplants.md) | The country's side decides, through its regular and advanced power plants | The structures a computer house of the country builds when it is short of power. | Ares |
+| [`CanBeDriven`](../manual/content/keys/canbedriven--housetype.md) | the value of MultiplayPassive | Whether CanDrive soldiers can take over vehicles that this country owns. | Ares |
 | [`File.Flag`](../manual/content/keys/file.flag.md) | Computed; see the page | The PCX file shown as the country's flag beside a player's name on the loading screen. | Ares |
 | [`File.LoadScreen`](../manual/content/keys/file.loadscreen.md) | Computed; see the page | The shape drawn as the loading screen of a skirmish or multiplayer match for a player of the country. | Ares |
 | [`File.LoadScreenPAL`](../manual/content/keys/file.loadscreenpal.md) | Computed; see the page | The palette the country's loading screen is drawn with. | Ares |
@@ -144,10 +159,19 @@ Bounty.Value=200
 | [`LoadScreenText.SpecialName`](../manual/content/keys/loadscreentext.specialname.md) | Computed; see the page | The string table label of the special unit's name printed on the country's loading screen. | Ares |
 | [`MenuText.Status`](../manual/content/keys/menutext.status.md) | `none` | The text shown for a country in the lobby's country list. | Ares |
 
+### InfantryType
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`CanDrive`](../manual/content/keys/candrive--infantrytype.md) | `no` | Lets a soldier take over a vehicle that belongs to a house that can be driven from. | Ares |
+| [`VehicleThief.EnterSound`](../manual/content/keys/vehiclethief.entersound--infantrytype.md) | none, so the capture is silent | The sound a soldier plays where it takes over a vehicle. | Ares |
+
 ### Object types
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
+| [`AirRate`](../manual/content/keys/airrate--aircrafttype.md) | 0, so the walk and idle rates apply in the air as well | The frames between animation steps while the object is off the ground. | Ares |
+| [`AlternateTheaterArt`](../manual/content/keys/alternatetheaterart--aircrafttype.md) | no, so the type always draws its own art section | Makes the type draw the art section that carries its theater's image letter. | Ares |
 | [`AttachEffect.Animation`](../manual/content/keys/attacheffect.animation--aircrafttype.md) | `none` | The animation shown on an object while an attached effect lasts. | Ares |
 | [`AttachEffect.ArmorMultiplier`](../manual/content/keys/attacheffect.armormultiplier--aircrafttype.md) | `1.0` | Divides the damage an object takes while an attached effect lasts. | Ares |
 | [`AttachEffect.Cloakable`](../manual/content/keys/attacheffect.cloakable--aircrafttype.md) | `no` | Whether an object can cloak while an attached effect lasts. | Ares |
@@ -169,6 +193,7 @@ Bounty.Value=200
 | [`Bounty.VeteranValue`](../manual/content/keys/bounty.veteranvalue.md) | Bounty.Value from the same section, or 0 when that is also absent | The bounty this object pays when it is destroyed as a veteran, overriding Bounty.Value. | Ares |
 | [`BuildTime.MultipleFactory`](../manual/content/keys/buildtime.multiplefactory.md) | [General] MultipleFactory | The build-time multiplier each factory past the first applies to production of this type, in place of MultipleFactory. | Ares, Phobos |
 | [`CameoSortOrder`](../manual/content/keys/cameosortorder--aircrafttype.md) | `0` | Orders a type's sidebar cameo among the cameos of the same kind. | OpenTS |
+| [`CanBeDriven`](../manual/content/keys/canbedriven--aircrafttype.md) | `yes` | Whether a CanDrive soldier can take over vehicles of this type. | Ares |
 | [`CanBeReversed`](../manual/content/keys/canbereversed.md) | `yes` | Whether grinding up an object of this type in a reverse engineering structure teaches its owner anything. | Ares |
 | [`CanPassiveAquire.Cloak`](../manual/content/keys/canpassiveaquire.cloak.md) | `yes` | With no, a cloakable object of this type on the Guard mission never picks a target on its own. | Ares |
 | [`CanPassiveAquire.Guard`](../manual/content/keys/canpassiveaquire.guard.md) | `yes` | With no, an object of this type on the Guard mission never picks a target on its own. | Ares |
@@ -249,6 +274,7 @@ Bounty.Value=200
 | [`Promote.VeteranSound`](../manual/content/keys/promote.veteransound.md) | [AudioVisual] UpgradeVeteranSound, which is none when it is also absent | The sound played at one of the player's objects of this type as it becomes a veteran. | Ares, Phobos |
 | [`ProtectedDriver`](../manual/content/keys/protecteddriver.md) | `no` | With yes, KillDriver warheads leave this vehicle's driver alone. | Ares |
 | [`ProtectedDriver.MinHealth`](../manual/content/keys/protecteddriver.minhealth.md) | Depends; see the page | The share of its health at or below which a KillDriver warhead can take this vehicle's driver. | Ares |
+| [`RadarJamRadius`](../manual/content/keys/radarjamradius--aircrafttype.md) | 0, so the object jams nothing | The cells around an object within which it jams enemy radar structures. | Ares |
 | [`RadialIndicatorRadius`](../manual/content/keys/radialindicatorradius.md) | For a sensor array or cloak generator, CloakRadiusInCells; otherwise no ring | The radius in cells of the ring drawn around a selected object of this type. | Ares |
 | [`ReversedAs`](../manual/content/keys/reversedas.md) | none; grinding teaches the object's own type | Names the type that grinding up an object of this type teaches in place of its own. | Ares |
 | [`ScrapExplosion`](../manual/content/keys/scrapexplosion.md) | (none) | The animations a destroyed object leaves behind while scrap wreckage is switched on. | OpenTS |
@@ -420,6 +446,7 @@ Bounty.Value=200
 | [`SidebarPCX`](../manual/content/keys/sidebarpcx.md) | (none) | The PCX picture drawn as a superweapon's sidebar cameo instead of its `SidebarImage=` shape. | Ares |
 | [`SonarPulse.Delay`](../manual/content/keys/sonarpulse.delay--superweapontype.md) | `60` | Sets how long a sonar pulse keeps decloaked objects visible. | Ares |
 | [`SpyPlane.Count`](../manual/content/keys/spyplane.count--superweapontype.md) | `1` | Sets how many aircraft a spy plane weapon sends. | Ares |
+| [`SpyPlane.Mission`](../manual/content/keys/spyplane.mission--superweapontype.md) | Spyplane Approach, the stock photographing flight | The mission the planes of a spy plane weapon fly. | Ares |
 | [`SpyPlane.Type`](../manual/content/keys/spyplane.type--superweapontype.md) | SPYP, one for each AllyParaDropInf entry | Names the aircraft a spy plane weapon sends. | Ares |
 | [`SW.ActivationSound`](../manual/content/keys/sw.activationsound--superweapontype.md) | `none` | Plays a second sound at the target cell when the effect starts. | Ares |
 | [`SW.AffectsHouse`](../manual/content/keys/sw.affectshouse--superweapontype.md) | All houses; enemies for a sonar pulse | Chooses whose objects an iron curtain, chronosphere, genetic mutator, psychic dominator, force shield or sonar pulse affects. | Ares |
@@ -475,6 +502,8 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`Convert.Deploy`](../manual/content/keys/convert.deploy.md) | `none` | The vehicle type a simple deployer of this type becomes when it finishes deploying. | Ares |
+| [`Convert.Land`](../manual/content/keys/convert.land--unittype.md) | none, so the vehicle keeps its type on land | The vehicle type this vehicle becomes on a cell that is not beach or water. | Ares |
+| [`Convert.Water`](../manual/content/keys/convert.water--unittype.md) | none, so the vehicle keeps its type on water | The vehicle type this vehicle becomes on a beach or water cell. | Ares |
 | [`Totable`](../manual/content/keys/totable.md) | `yes` | Whether a carryall may pick this vehicle up. | OpenYR |
 | [`TurretBob`](../manual/content/keys/turretbob--unittype.md) | `no` | With `yes`, the turret and barrel of a voxel vehicle shift up by the hull's frame number. | OpenYR |
 | [`WreckReleasesPassengers`](../manual/content/keys/wreckreleasespassengers--unittype.md) | `yes` | A vehicle whose artwork sets `DeathFrames` above `0` becomes a wreck when it is destroyed, and stays on the map until its `MaxDeathCounter` passes. | OpenYR |
@@ -485,6 +514,7 @@ Bounty.Value=200
 | --- | --- | --- | --- |
 | [`AffectsEnemies`](../manual/content/keys/affectsenemies.md) | `yes` | With no, the warhead does nothing to objects whose owner is not an ally of its attacker. | Ares |
 | [`AffectsOwner`](../manual/content/keys/affectsowner--warheadtype.md) | The value of AffectsAllies | Whether a warhead affects the objects of the house that fired it. | Ares |
+| [`AllowZeroDamage`](../manual/content/keys/allowzerodamage--warheadtype.md) | no, so a blast with no damage does nothing | Lets a blast with no damage still reach the objects in its spread. | Ares |
 | [`AttachEffect.Animation`](../manual/content/keys/attacheffect.animation--warheadtype.md) | `none` | The animation shown on an object while an attached effect lasts. | Ares |
 | [`AttachEffect.AnimResetOnReapply`](../manual/content/keys/attacheffect.animresetonreapply--warheadtype.md) | `no` | `AttachEffect.AnimResetOnReapply=yes` restarts the effect animation when a hit restarts an effect the object already carries. | Ares |
 | [`AttachEffect.ArmorMultiplier`](../manual/content/keys/attacheffect.armormultiplier--warheadtype.md) | `1.0` | Divides the damage an object takes while an attached effect lasts. | Ares |
@@ -507,6 +537,7 @@ Bounty.Value=200
 | [`EMP.Cap`](../manual/content/keys/emp.cap.md) | -1, so a hit sets the stun to its duration unless the object already has more | How an EMP.Duration hit combines with the stun frames an object already has. | Ares |
 | [`EMP.Duration`](../manual/content/keys/emp.duration.md) | 0, so the warhead stuns nothing through this key | Makes a warhead stun the objects its blast damages for this many frames, or reactivate them when negative. | Ares |
 | [`EMP.Sparkles`](../manual/content/keys/emp.sparkles--warheadtype.md) | The [General] EMPulseSparkles animation | The animation shown on an object this warhead stuns, in place of EMPulseSparkles. | Ares |
+| [`Flash.Duration`](../manual/content/keys/flash.duration--warheadtype.md) | 0, so the warhead causes no flash | The frames an object flashes after this warhead hits it. | Ares |
 | [`InfDeathAnim`](../manual/content/keys/infdeathanim.md) | (none) | The animation an infantryman dies with when this warhead kills him, in place of InfDeath. | Ares |
 | [`IronCurtain.Cap`](../manual/content/keys/ironcurtain.cap--warheadtype.md) | -1, so a hit sets the curtain to its duration unless the object already has more | How an IronCurtain.Duration hit combines with the curtain time an object already has. | Ares |
 | [`IronCurtain.Duration`](../manual/content/keys/ironcurtain.duration--warheadtype.md) | 0, so the warhead puts nothing under the Iron Curtain | Puts the objects a warhead hits under the Iron Curtain for this many frames, or shortens their curtain when negative. | Ares |
@@ -517,7 +548,13 @@ Bounty.Value=200
 | [`KillDriver.RemoveVeterancy`](../manual/content/keys/killdriver.removeveterancy.md) | `no` | With yes, a vehicle whose driver was killed goes back to the rookie rank. | Ares |
 | [`PreImpactAnim`](../manual/content/keys/preimpactanim.md) | `NUKEBALL` for the warhead named `NUKE`, otherwise none, so the blast goes off at once | An animation played where a projectile with this warhead hits, before the blast goes off. | Ares |
 | [`PreventScatter`](../manual/content/keys/preventscatter.md) | `no` | With yes, an object this warhead damages does not scatter because of the hit. | Ares |
+| [`RelativeDamage`](../manual/content/keys/relativedamage--warheadtype.md) | no, so the warhead hurts by the damage its shot carries | Makes the warhead hurt by a share of the victim's strength. | Ares |
+| [`RelativeDamage.Aircraft`](../manual/content/keys/relativedamage.aircraft--warheadtype.md) | 0, so a aircraft takes no damage | The percentage a RelativeDamage warhead takes from a aircraft. | Ares |
+| [`RelativeDamage.Buildings`](../manual/content/keys/relativedamage.buildings--warheadtype.md) | 0, so a structure takes no damage | The percentage a RelativeDamage warhead takes from a structure. | Ares |
+| [`RelativeDamage.Infantry`](../manual/content/keys/relativedamage.infantry--warheadtype.md) | 0, so a soldier or Organic vehicle takes no damage | The percentage a RelativeDamage warhead takes from a soldier or Organic vehicle. | Ares |
+| [`RelativeDamage.Vehicles`](../manual/content/keys/relativedamage.vehicles--warheadtype.md) | 0, so a vehicle that is neither Organic nor ConsideredAircraft takes no damage | The percentage a RelativeDamage warhead takes from a vehicle that is neither Organic nor ConsideredAircraft. | Ares |
 | [`Sonar.Duration`](../manual/content/keys/sonar.duration.md) | 0, which has no effect | The frames an object hit by the warhead is kept from cloaking. | Ares |
+| [`Temporal.HealthFactor`](../manual/content/keys/temporal.healthfactor--warheadtype.md) | 0, so the warp does not depend on health | How far the health an object has lost shortens the warp it takes to erase it. | Ares |
 | [`UnitLost.Suppress`](../manual/content/keys/unitlost.suppress--warheadtype.md) | no, so a killed unit is announced | Stops the unit-lost announcement for a unit this warhead kills. | Ares |
 | [`VoiceDie.Override`](../manual/content/keys/voicedie.override--warheadtype.md) | none, so the type's VoiceDie= plays | The voice played where this warhead destroys an object, in place of the object type's VoiceDie. | Ares |
 
@@ -531,6 +568,7 @@ Bounty.Value=200
 | [`Abductor.ChangeOwner`](../manual/content/keys/abductor.changeowner.md) | `no` | With yes, an object an Abductor weapon takes aboard changes to the firer's house. | Ares |
 | [`Abductor.MaxHealth`](../manual/content/keys/abductor.maxhealth.md) | 0, which sets no limit | The most strength a target may have left to be taken aboard by an Abductor weapon. | Ares |
 | [`Abductor.Temporal`](../manual/content/keys/abductor.temporal.md) | `no` | Makes an Abductor weapon with a Temporal warhead take its target aboard when the warp finishes. | Ares |
+| [`ApplyDamage`](../manual/content/keys/applydamage--weapontype.md) | no for a weapon with IsSonic=yes or UseFireParticles=yes, otherwise yes | Whether the weapon's shots carry its Damage. | Ares |
 | [`Beam.Amplitude`](../manual/content/keys/beam.amplitude--weapontype.md) | 40 for a beam, and a random 100 to 500 for each arc of an eruption | How high the radiation beam of this weapon arches. | Ares |
 | [`Beam.Color`](../manual/content/keys/beam.color.md) | `ChronoBeamColor` for a weapon whose warhead is `Temporal=yes`, otherwise `RadColor` | The colour of the radiation beam of this weapon. | Ares |
 | [`Beam.Duration`](../manual/content/keys/beam.duration--weapontype.md) | 15 frames for a beam, and a random 5 to 20 frames for each arc of an eruption | How many frames the radiation beam of this weapon shows. | Ares |
@@ -575,6 +613,7 @@ Bounty.Value=200
 | [`AnimationFires`](../manual/content/keys/animationfires.md) | `no` | Whether Flamer and Scorch animations, and damaged or destroyed structures, light SmallFire and LargeFire fires. | OpenYR |
 | [`BountyDisplay`](../manual/content/keys/bountydisplay.md) | `no` | Whether bounty payments are shown over the destroyed object, for destroyers that do not set Bounty.Display. | Ares |
 | [`DecloakSound`](../manual/content/keys/decloaksound--global-rules.md) | [AudioVisual] CloakSound | The sound played at an object's position as it starts to reappear from cloaking. | Ares |
+| [`DisplayCreditsDelay`](../manual/content/keys/displaycreditsdelay--global-rules.md) | 0.02, about 18 game frames | The minutes between the floating cash texts of one structure. | Ares |
 | [`VoxelShadeScale`](../manual/content/keys/voxelshadescale--global-rules.md) | `16` | Sets how many palette shade rows a voxel's diffuse and highlight brightness spans. | OpenYR |
 | [`VoxelSpecularFromView`](../manual/content/keys/voxelspecularfromview--global-rules.md) | `no` | Takes the viewer direction for the voxel highlight from the isometric view alone, not from the voxel's own transform. | OpenYR |
 | [`VoxelSpecularStrength`](../manual/content/keys/voxelspecularstrength--global-rules.md) | `3` | Sets the strength of the highlight that units, aircraft and buildings drawn as voxels take from the viewer's direction. | OpenYR |

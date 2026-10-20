@@ -165,6 +165,8 @@
 #include "side.h"
 #include "savestream.h"
 #include "scheme.h"
+#include "dialog.h"
+#include "flyingtext.h"
 #include "session.h"
 #include "shapeset.h"
 #include "smudtype.h"
@@ -299,6 +301,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
+	ProduceCashShownPending(0),
+	ProduceCashShownFrame(-1000000),
 	HasEngineer(false),
 	SecretProduct(NULL)
 {
@@ -331,6 +335,11 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	}
 	if (House != NULL && House->IsBuildingSpied && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);
+	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
 	}
 
 	if (Class != NULL) {
@@ -1236,15 +1245,25 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 		}
 	}
 
-	if (IsSelected && (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr])) {
+	// A structure with SpyEffect.Custom=yes shows its owner's figures to a spy's house only when it has SpyEffect.RevealProduction (Ares).
+	bool const spied_reveal = SpiedBy[PlayerPtr] && (!Class->IsSpyEffectCustom || Class->IsSpyRevealProduction);
+
+	if (IsSelected && (House->Shares_View_With(PlayerPtr) || spied_reveal)) {
 		Draw_Text_Overlay(point + Point2D(-10, 10), point, cliprect);
+	}
+
+	// A RevealProduction structure that stores resources also shows its owner's money to the house that spied on it.
+	if (IsSelected && spied_reveal && Class->IsSpyRevealProduction && Class->Capacity > 0 && !House->Shares_View_With(PlayerPtr)) {
+		char money[32];
+		snprintf(money, sizeof(money), "$%d", House->Available_Money());
+		Plain_Text_Print(money, *LogicalSurface, cliprect, point + Point2D(0, 28), WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
 	}
 
 	/*
 	**	If this is a factory that we're spying on, or the player has the whole map, show what
 	**	it's producing
 	*/
-	if ((SpiedBy[PlayerPtr] || Session.ObiWan) && IsSelected) {
+	if ((spied_reveal || Session.ObiWan) && IsSelected) {
 
 		/*
 		**	Fetch the factory that is associate with this building. For computer controlled buildings, the
@@ -7397,7 +7416,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 						Door.Reverse();
 					} else {
 						Door.Open_Door(Class->DeployTime);
-						Sound_Effect(Rule->GateDownSound, PositionCoord);
+						Sound_Effect(Class->IsGateDownSoundSet ? Class->GateDownSound : Rule->GateDownSound, PositionCoord);
 						Rect redrawrect = Get_Render_Rect();
 						TacticalMap->Register_Dirty_Area(redrawrect);
 					}
@@ -7409,7 +7428,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 			case START_CLOSING:
 				Door.Close_Door(Class->DeployTime);
 				Status = CLOSING;
-				Sound_Effect(Rule->GateUpSound, PositionCoord);
+				Sound_Effect(Class->IsGateUpSoundSet ? Class->GateUpSound : Rule->GateUpSound, PositionCoord);
 				return(0);
 
 			case OPEN:
@@ -8658,6 +8677,39 @@ void BuildingClass::Produce_Cash_AI(void)
 	} else {
 		House->Spend_Money(-amount);
 	}
+	Show_Produced_Cash(amount);
+}
+
+
+/// <summary>
+/// Shows the cash this building paid as floating text when its type has ProduceCashDisplay=yes and the local
+/// player owns it or is allied with its owner. Cash paid sooner than DisplayCreditsDelay after the last text is
+/// added to the next one. A gain shows in green with a plus sign, a loss in red with a minus sign.
+/// </summary>
+/// <param name="amount">The credits paid to the owner, negative for credits taken.</param>
+void BuildingClass::Show_Produced_Cash(int amount)
+{
+	if (!Class->IsProduceCashDisplay || amount == 0 || PlayerPtr == NULL || (House != PlayerPtr && !House->Is_Ally(PlayerPtr))) {
+		return;
+	}
+
+	ProduceCashShownPending += amount;
+	if (Frame - ProduceCashShownFrame < (int)(Rule->DisplayCreditsDelay * TICKS_PER_MINUTE) || ProduceCashShownPending == 0) {
+		return;
+	}
+
+	int const shown = ProduceCashShownPending;
+	ProduceCashShownPending = 0;
+	ProduceCashShownFrame = Frame;
+	int const scheme = Fetch_Scheme_Index_By_Name(shown > 0 ? "Green" : "Red", NUM_INTENSITY_LEVELS);
+	if (scheme >= 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", shown > 0 ? '+' : '-', shown > 0 ? shown : -shown);
+		Add_Flying_Text(text, Center_Coord(), scheme);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST producecash frame %d %s shows %s\n", Frame, Class->Name(), text);
+		}
+	}
 }
 
 
@@ -8682,6 +8734,7 @@ void BuildingClass::Produce_Cash_Startup(void)
 
 	IsProduceCashStartupPaid = true;
 	House->Refund_Money(Class->ProduceCashStartup);
+	Show_Produced_Cash(Class->ProduceCashStartup);
 }
 
 
@@ -12325,6 +12378,27 @@ void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
 	if (!spoke && (victim || spy)) {
 		Speak_Eva("EVA_BuildingInfiltrated");
 	}
+}
+
+
+/// <summary>
+/// Tells whether an object with RadarJamRadius (Ares) that is not allied with this structure's owner is close enough to jam it. A jammed
+/// radar or spy satellite structure stays on but gives its owner no radar or map.
+/// </summary>
+bool BuildingClass::Is_Radar_Jammed(void) const
+{
+	if (!TechnoTypeClass::RadarJammersExist) {
+		return(false);
+	}
+	Coord const where = Center_Coord();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * const jammer = Technos[index];
+		if (jammer->TClass->RadarJamRadius > 0 && jammer->IsActive && !jammer->IsInLimbo && !jammer->House->Is_Ally(House)
+			&& (jammer->Center_Coord() - where).Gamemd_Length() <= jammer->TClass->RadarJamRadius * CELL_LEPTON_W) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

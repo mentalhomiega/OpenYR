@@ -1042,6 +1042,7 @@ class HouseClass : public AbstractClass
 		bool Does_Enemy_Building_Exist(StructType) const;
 		void Harvested(int tiberium, TiberiumType slot);
 		void Purified(int tiberium, TiberiumType slot);
+		void Apply_Academy(TechnoClass * techno) const;
 		int Self_Heal_Points(bool infantry) const;
 		double Cost_Multiplier(TechnoTypeClass const * type) const;
 		double Country_Armor_Multiplier(TechnoTypeClass const * type) const;

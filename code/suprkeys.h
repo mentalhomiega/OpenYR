@@ -276,6 +276,9 @@ struct SuperWeaponKeys
 	AircraftTypeClass const * SpyPlaneType;
 	int SpyPlaneCount;
 
+	// SpyPlane.Mission: the MissionType the planes fly, MISSION_SPYPLANE_APPROACH unless the key names another.
+	int SpyPlaneMission;
+
 	/*
 	 * ParaDrop and AmerParaDrop. A group holds the types, counts and plane for one country or
 	 * side; Default holds the plain ParaDrop.* keys.

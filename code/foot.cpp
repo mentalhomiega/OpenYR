@@ -141,6 +141,8 @@
 #include "bench.hh"
 #include "color.hh"
 #include "tube.hh"
+#include "autotest.h"
+#include "dbgprint.h"
 
 #include <algorithm>
 #include <cstring>
@@ -1112,7 +1114,7 @@ int FootClass::Do_MISSION_HUNT(void)
 				if (Ready_To_Commence()) {
 					Commence();
 				}
-			} else if (infantry != NULL && infantry->Class->IsVehicleThief) {
+			} else if (infantry != NULL && infantry->Is_Vehicle_Captor(TarCom)) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_CAPTURE);
 				if (Ready_To_Commence()) {
@@ -1600,7 +1602,7 @@ void FootClass::Approach_Target(void)
 			*/
 			if (found) {
 				Assign_Destination(&Map[trycell]);
-			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief)) {
+			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Is_Vehicle_Captor(TarCom))) {
 				Assign_Destination(TarCom);
 			} else {
 				trycell = Map.Nearby_Location(trycell,
@@ -3223,6 +3225,9 @@ void FootClass::Death_Announcement(TechnoClass const * ) const
 {
 	// A UnitLost.Suppress warhead kills without the announcement (Ares).
 	if (DamageWarhead != NULL && DamageWarhead->IsUnitLostSuppress) {
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST unitlost %s suppressed\n", TClass->Name());
+		}
 		return;
 	}
 	if (House->Is_Player_Control() && !TClass->IsInsignificant && !TClass->IsSpawned) {
@@ -4061,6 +4066,10 @@ void FootClass::AI(void)
 				if (!step) {
 					step = deploy_to_land && HeightAGL >= 1 && !busy;
 				}
+			}
+			// An AirRate object off the ground steps on its air rate alone, whether it moves or hovers.
+			if (TClass->AirRate > 0 && (HeightAGL > 0 || In_Air())) {
+				step = (Frame % TClass->AirRate) == 0 && !busy;
 			}
 			if (step) {
 				TotalFramesWalked++;

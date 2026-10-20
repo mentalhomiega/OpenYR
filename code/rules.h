@@ -485,6 +485,9 @@ class RulesClass
 		// A house earns bounty only while it owns one of these, or always when the list is empty (Ares BountyEnablers).
 		TypeList<BuildingTypeClass const *> BountyEnablers;
 
+		// The minutes between the floating texts of a ProduceCashDisplay=yes structure; cash paid in between is shown with the next (Ares DisplayCreditsDelay).
+		double DisplayCreditsDelay;
+
 		// Whether bounty earned is shown where the victim died, for types that do not say (Ares BountyDisplay).
 		bool IsBountyDisplay;
 

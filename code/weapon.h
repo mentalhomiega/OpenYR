@@ -79,6 +79,7 @@ class WeaponTypeClass : public AbstractTypeClass
 		bool Read_INI(CCINIClass const & ini);
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
+		bool Applies_Damage(void) const {return(ApplyDamage < 0 ? !IsSonic && !UseFireParticles : ApplyDamage != 0);}
 
 		void Init_Max_Speed(void);
 
@@ -281,6 +282,9 @@ class WeaponTypeClass : public AbstractTypeClass
 		 * the firer cannot fire again until it has arrived.
 		 */
 		bool IsSonic;
+
+		// ApplyDamage (Ares): 1 or 0 as the weapon says, or -1 for yes unless the weapon is IsSonic or UseFireParticles.
+		signed char ApplyDamage;
 
 		// The weapon draws a magnetron beam to its target.
 		bool IsMagBeam;

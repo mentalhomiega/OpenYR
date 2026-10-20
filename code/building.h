@@ -472,6 +472,10 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		// ProduceCashDisplay text state: cash paid since the last text and the frame that text was shown. Display only, so not saved.
+		int ProduceCashShownPending;
+		int ProduceCashShownFrame;
+
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
 
@@ -537,6 +541,7 @@ class BuildingClass : public TechnoClass
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
 		bool Is_Powered_On(void) const;
+		bool Is_Radar_Jammed(void) const;
 		SuperWeaponType Fetch_Super_Weapon(void) const;
 		SuperWeaponType Fetch_Super_Weapon2(void) const;
 		bool Grants_Super_Weapon(int super) const;
@@ -634,6 +639,7 @@ class BuildingClass : public TechnoClass
 		void Factory_AI(void);
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
+		void Show_Produced_Cash(int amount);
 		TechnoTypeClass const * Secret_Item(void) const;
 		void Animation_AI(void);
 		virtual bool Revealed(HouseClass * house) override;

@@ -84,6 +84,14 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A non-zero IdleRate makes a stopped unit step its walk animation once every IdleRate frames.
 		int IdleRate;
 
+		// AirRate (Ares): above 0, an object off the ground steps its animation once every AirRate frames, in place of WalkRate and IdleRate.
+		int AirRate;
+
+		// RadarJamRadius (Ares): the cells around this object within which it jams the radar and spy satellite structures of houses
+		// that are not allied with its owner.
+		int RadarJamRadius;
+		static bool RadarJammersExist;
+
 		// A PipsDrawForAll=yes object shows its pips to every player, not only its owner's allies.
 		bool IsPipsDrawForAll;
 
@@ -456,6 +464,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// Whether a vehicle thief may take this vehicle (Ares VehicleThief.Allowed).
 		bool IsVehicleThiefAllowed;
+
+		// Whether a CanDrive soldier may take this vehicle over (Ares CanBeDriven).
+		bool IsCanBeDriven;
 
 		// The build time factor per extra factory, or below 0 for [General] MultipleFactory (Ares BuildTime.MultipleFactory).
 		double BuildTimeMultipleFactory;

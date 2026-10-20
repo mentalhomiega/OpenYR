@@ -416,6 +416,11 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool HasSpotlight;
 
+		// Spotlight.StartHeight and Spotlight.Distance (Ares): the beam leaves this high above the ground, and its
+		// pool of light lies this many leptons in front of the structure; a negative distance uses SpotlightLocationRadius.
+		int SpotlightStartHeight;
+		int SpotlightDistance;
+
 		/*
 		 * If this building is the Temple of Nod, then this flag will be true. The computer
 		 * rates one as a class of ion cannon target in its own right.
@@ -636,6 +641,13 @@ class BuildingTypeClass : public TechnoTypeClass
 		 * friendly approaches and closes again after the GateCloseDelay.
 		 */
 		bool IsGate;
+
+		// GateUpSound and GateDownSound (Ares): the sound this gate makes as it closes and as it opens. Without the key the gate
+		// plays the [AudioVisual] GateUp or GateDown sound.
+		bool IsGateUpSoundSet;
+		VocType GateUpSound;
+		bool IsGateDownSoundSet;
+		VocType GateDownSound;
 
 		/*
 		 * If this building is a surface to air missile launcher, then this flag will be true.
@@ -860,6 +872,19 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsSpyNavalVeterancy;
 		bool IsSpyAircraftVeterancy;
 		bool IsSpyBuildingVeterancy;
+
+		// SpyEffect.RevealProduction (Ares): with SpyEffect.Custom=yes, a spy's house sees this structure's production, power and the
+		// owner's money only when the key is set.
+		bool IsSpyRevealProduction;
+
+		// Academy.* (Ares): the veterancy levels this structure gives a new trainable object of its house, by kind, limited to
+		// the AcademyTypes when that list is not empty and never given to the AcademyIgnore types.
+		double AcademyInfantryVeterancy;
+		double AcademyAircraftVeterancy;
+		double AcademyVehicleVeterancy;
+		double AcademyBuildingVeterancy;
+		std::vector<std::string> AcademyTypes;
+		std::vector<std::string> AcademyIgnore;
 
 		// EngineerRepairable (Ares): an engineer can restore this structure to full strength. Follows Repairable.
 		bool IsEngineerRepairable;
@@ -1099,6 +1124,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// vehicle in a building's form, and never a deployed miner.
 		int AIBaseNormal;
 
+		// AIInnerBase (Ares): the computer places this structure near the center of its base. Follows CloakGenerator.
+		bool IsAIInnerBase;
+
 		/*
 		 * If this building counts as a base defense, then this flag will be true. The
 		 * computer plans its defenses in a pass of their own and rates each one against
@@ -1168,6 +1196,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		int ProduceCashBudget;
 		bool IsProduceCashResetOnCapture;
+
+		// ProduceCashDisplay (Ares): the cash this structure pays shows as floating text over it.
+		bool IsProduceCashDisplay;
 
 		// A SecretLab=yes structure offers one item, named by the first type below that is set or else drawn at game start.
 		bool IsSecretLab;

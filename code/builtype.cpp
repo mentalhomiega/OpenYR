@@ -285,6 +285,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ExtraLight(0),
 	IsCanTogglePower(true),
 	HasSpotlight(false),
+	SpotlightStartHeight(430),
+	SpotlightDistance(-1),
 	IsTemple(false),
 	IsPlug(false),
 	IsHoverPad(false),
@@ -342,6 +344,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsHasStupidGuardMode(true),
 	IsBridgeRepairHut(false),
 	IsGate(false),
+	IsGateUpSoundSet(false),
+	GateUpSound(VOC_NONE),
+	IsGateDownSoundSet(false),
+	GateDownSound(VOC_NONE),
 	IsSAM(false),
 	IsConstructionYard(false),
 	IsNukeSilo(false),
@@ -407,6 +413,11 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpyNavalVeterancy(false),
 	IsSpyAircraftVeterancy(false),
 	IsSpyBuildingVeterancy(false),
+	IsSpyRevealProduction(false),
+	AcademyInfantryVeterancy(0.0),
+	AcademyAircraftVeterancy(0.0),
+	AcademyVehicleVeterancy(0.0),
+	AcademyBuildingVeterancy(0.0),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -434,6 +445,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	AIBuildCounts(),
 	AIExtraCounts(),
 	AIBaseNormal(-1),
+	IsAIInnerBase(false),
 	IsBaseDefense(false),
 	IsSortCameoAsBaseDefense(false),
 	CloakRadiusInCells(20),
@@ -447,6 +459,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ProduceCashDelay(0),
 	ProduceCashBudget(0),
 	IsProduceCashResetOnCapture(false),
+	IsProduceCashDisplay(false),
 	IsSecretLab(false),
 	SecretInfantry(NULL),
 	SecretUnit(NULL),
@@ -1360,6 +1373,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
+		SpotlightStartHeight = std::max(0, ini.Get_Int(Name(), "Spotlight.StartHeight", SpotlightStartHeight));
+		SpotlightDistance = ini.Get_Int(Name(), "Spotlight.Distance", SpotlightDistance);
 		HalfDamageSmokeLocation1 = ini.Get_Point(Name(), "HalfDamageSmokeLocation1", HalfDamageSmokeLocation1);
 		HalfDamageSmokeLocation2 = ini.Get_Point(Name(), "HalfDamageSmokeLocation2", HalfDamageSmokeLocation2);
 		IsRadar = ini.Get_Bool(Name(), "Radar", IsRadar);
@@ -1479,6 +1494,14 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		DefensesCostBonus = ini.Get_Float(Name(), "DefensesCostBonus", DefensesCostBonus);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
+		if (ini.Is_Present(Name(), "GateUpSound")) {
+			IsGateUpSoundSet = true;
+			GateUpSound = ini.Get_VocType(Name(), "GateUpSound", GateUpSound);
+		}
+		if (ini.Is_Present(Name(), "GateDownSound")) {
+			IsGateDownSoundSet = true;
+			GateDownSound = ini.Get_VocType(Name(), "GateDownSound", GateDownSound);
+		}
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
 		IsConstructionYard = ini.Get_Bool(Name(), "ConstructionYard", IsConstructionYard);
 		IsNukeSilo = ini.Get_Bool(Name(), "NukeSilo", IsNukeSilo);
@@ -1487,6 +1510,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsLaserFencePost = ini.Get_Bool(Name(), "LaserFencePost", IsLaserFencePost);
 		IsLaserFence = ini.Get_Bool(Name(), "LaserFence", IsLaserFence);
 		IsFirestormWall = ini.Get_Bool(Name(), "FirestormWall", IsFirestormWall);
+		IsFirestormWall = ini.Get_Bool(Name(), "Firestorm.Wall", IsFirestormWall);
 		IsHospital = ini.Get_Bool(Name(), "Hospital", IsHospital);
 		IsArmory = ini.Get_Bool(Name(), "Armory", IsArmory);
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
@@ -1528,6 +1552,17 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			IsSpyNavalVeterancy = ini.Get_Bool(Name(), "SpyEffect.NavalVeterancy", IsSpyNavalVeterancy);
 			IsSpyAircraftVeterancy = ini.Get_Bool(Name(), "SpyEffect.AircraftVeterancy", IsSpyAircraftVeterancy);
 			IsSpyBuildingVeterancy = ini.Get_Bool(Name(), "SpyEffect.BuildingVeterancy", IsSpyBuildingVeterancy);
+			IsSpyRevealProduction = ini.Get_Bool(Name(), "SpyEffect.RevealProduction", IsSpyRevealProduction);
+		}
+		AcademyInfantryVeterancy = ini.Get_Float(Name(), "Academy.InfantryVeterancy", AcademyInfantryVeterancy);
+		AcademyAircraftVeterancy = ini.Get_Float(Name(), "Academy.AircraftVeterancy", AcademyAircraftVeterancy);
+		AcademyVehicleVeterancy = ini.Get_Float(Name(), "Academy.VehicleVeterancy", AcademyVehicleVeterancy);
+		AcademyBuildingVeterancy = ini.Get_Float(Name(), "Academy.BuildingVeterancy", AcademyBuildingVeterancy);
+		if (ini.Is_Present(Name(), "Academy.Types")) {
+			AcademyTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Types"));
+		}
+		if (ini.Is_Present(Name(), "Academy.Ignore")) {
+			AcademyIgnore = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Ignore"));
 		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsChronoshiftVehicle = ini.Get_Bool(Name(), "Chronoshift.IsVehicle", IsChronoshiftVehicle);
@@ -1588,6 +1623,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
 		AIBuildCounts = ini.Get_IntList(Name(), "AIBuildCounts", AIBuildCounts);
 		AIExtraCounts = ini.Get_IntList(Name(), "AIExtraCounts", AIExtraCounts);
+		IsAIInnerBase = ini.Get_Bool(Name(), "AIInnerBase", IsCloakGenerator);
 		if (ini.Is_Present(Name(), "AIBaseNormal")) {
 			AIBaseNormal = ini.Get_Bool(Name(), "AIBaseNormal", false) ? 1 : 0;
 		}
@@ -1601,6 +1637,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ProduceCashDelay = ini.Get_Int(Name(), "ProduceCashDelay", ProduceCashDelay);
 		ProduceCashBudget = ini.Get_Int(Name(), "ProduceCashBudget", ProduceCashBudget);
 		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
+		IsProduceCashDisplay = ini.Get_Bool(Name(), "ProduceCashDisplay", IsProduceCashDisplay);
 		IsSecretLab = ini.Get_Bool(Name(), "SecretLab", IsSecretLab);
 		SecretInfantry = TGet_Class(ini, Name(), "SecretInfantry", SecretInfantry);
 		SecretUnit = TGet_Class(ini, Name(), "SecretUnit", SecretUnit);
@@ -2416,6 +2453,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsConstructionYard);
 	crc(IsNukeSilo);
 	crc(IsRefinery);
+	crc(IsAIInnerBase);
 	crc(IsWeaponsFactory);
 	crc(IsLaserFencePost);
 	crc(IsLaserFence);
@@ -2561,6 +2599,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ExtraLight);
 	stream.Serialize(IsCanTogglePower);
 	stream.Serialize(HasSpotlight);
+	stream.Serialize(SpotlightStartHeight);
+	stream.Serialize(SpotlightDistance);
 	stream.Serialize(IsTemple);
 	stream.Serialize(IsPlug);
 	stream.Serialize(IsHoverPad);
@@ -2618,6 +2658,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHasStupidGuardMode);
 	stream.Serialize(IsBridgeRepairHut);
 	stream.Serialize(IsGate);
+	stream.Serialize(IsGateUpSoundSet);
+	stream.Serialize(GateUpSound);
+	stream.Serialize(IsGateDownSoundSet);
+	stream.Serialize(GateDownSound);
 	stream.Serialize(IsSAM);
 	stream.Serialize(IsConstructionYard);
 	stream.Serialize(IsNukeSilo);
@@ -2684,6 +2728,13 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpyNavalVeterancy);
 	stream.Serialize(IsSpyAircraftVeterancy);
 	stream.Serialize(IsSpyBuildingVeterancy);
+	stream.Serialize(IsSpyRevealProduction);
+	stream.Serialize(AcademyInfantryVeterancy);
+	stream.Serialize(AcademyAircraftVeterancy);
+	stream.Serialize(AcademyVehicleVeterancy);
+	stream.Serialize(AcademyBuildingVeterancy);
+	stream.Serialize(AcademyTypes);
+	stream.Serialize(AcademyIgnore);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(SuperWeaponList);
@@ -2726,6 +2777,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIBuildCounts);
 	stream.Serialize(AIExtraCounts);
 	stream.Serialize(AIBaseNormal);
+	stream.Serialize(IsAIInnerBase);
 	stream.Serialize(IsBaseDefense);
 	stream.Serialize(IsSortCameoAsBaseDefense);
 	stream.Serialize(CloakRadiusInCells);
@@ -2739,6 +2791,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashDelay);
 	stream.Serialize(ProduceCashBudget);
 	stream.Serialize(IsProduceCashResetOnCapture);
+	stream.Serialize(IsProduceCashDisplay);
 	stream.Serialize(IsSecretLab);
 	stream.Serialize(SecretInfantry);
 	stream.Serialize(SecretUnit);

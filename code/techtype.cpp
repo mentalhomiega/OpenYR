@@ -78,6 +78,9 @@ void const * TechnoTypeClass::WakeShapes = NULL;
  *   03/19/1995 JLB : Created.                                                                 *
  *   05/11/1996 JLB : Moderated risk calc so range doesn't dominate.                           *
  *=============================================================================================*/
+bool TechnoTypeClass::RadarJammersExist = false;
+
+
 TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BASECLASS(ininame),
 	IsDoubleOwned(false),
@@ -134,6 +137,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CollateralDamageCoefficient(.33f),
 	WalkRate(1),
 	IdleRate(0),
+	AirRate(0),
+	RadarJamRadius(0),
 	IsPipsDrawForAll(false),
 	SpecialThreatValue(0),
 	MyEffectivenessCoefficient(0),
@@ -229,6 +234,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	InsigniaFrame{-1, -1, -1},
 	InsigniaShowEnemy(-1),
 	IsVehicleThiefAllowed(true),
+	IsCanBeDriven(true),
 	BuildTimeMultipleFactory(-1.0),
 	IsCrashable(false),
 	IsConsideredAircraft(false),
@@ -849,6 +855,9 @@ static inline int _Scale_To_256(int val)
  *=============================================================================================*/
 bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 {
+	// The art section the base class reads depends on this flag.
+	IsAlternateTheaterArt = ini.Get_Bool(Name(), "AlternateTheaterArt", IsAlternateTheaterArt);
+
 	if (BASECLASS::Read_INI(ini)) {
 
 		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
@@ -858,6 +867,11 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
 		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
 		IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
+		AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
+		RadarJamRadius = ini.Get_Int(Name(), "RadarJamRadius", RadarJamRadius);
+		if (RadarJamRadius > 0) {
+			RadarJammersExist = true;
+		}
 		IsPipsDrawForAll = ini.Get_Bool(Name(), "PipsDrawForAll", IsPipsDrawForAll);
 		IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
 		IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
@@ -982,6 +996,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Load_Insignia_Shapes();
 
 		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+		IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
 		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
 		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
 		IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
@@ -1818,6 +1833,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Unused1);
 	stream.Serialize(WalkRate);
 	stream.Serialize(IdleRate);
+	stream.Serialize(AirRate);
+	stream.Serialize(RadarJamRadius);
 	stream.Serialize(IsPipsDrawForAll);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);
@@ -1924,6 +1941,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InsigniaFrame);
 	stream.Serialize(InsigniaShowEnemy);
 	stream.Serialize(IsVehicleThiefAllowed);
+	stream.Serialize(IsCanBeDriven);
 	stream.Serialize(BuildTimeMultipleFactory);
 	stream.Serialize(IsCrashable);
 	stream.Serialize(IsConsideredAircraft);
@@ -2237,6 +2255,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(IsDontScore);
+	crc(IsCanBeDriven);
+	crc(RadarJamRadius);
 	crc(NoAmmoWeapon);
 	crc(NoAmmoAmount);
 	crc((int)InitialPayloadTypes.size());

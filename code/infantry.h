@@ -225,6 +225,8 @@ class InfantryClass : public FootClass
 		void Movement_AI(void);
 		void Tunnel_AI(void);
 		bool Theft_AI(void);
+		bool Can_Drive(AbstractClass const * object) const;
+		bool Is_Vehicle_Captor(AbstractClass const * object) const;
 
 		/*
 		**	Scenario and debug support.

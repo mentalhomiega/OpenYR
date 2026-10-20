@@ -39,7 +39,8 @@
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
 **	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
-**	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
+**	blast <Warhead|ion>[:damage] x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage) with that damage at ground zero (1000 without one); a wood low bridge there takes one hit
+**	flash <TypeID>			writes the flash count of each object of that type, whoever owns it
 **	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
 **	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
@@ -110,6 +111,8 @@
 **	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
 **							with it selected
 **	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
+**	aistrike <TypeID> x y	the computer players' objects of that type attack what stands on that cell, as strike does for the player's
+**	graphic <TypeID>		writes the art name the type draws and reads its art keys from
 **	maps					writes every XMP multiplayer map the file system finds
 **	cratesounds				writes the sound numbers the crate pickup sounds resolved to
 **	elite <TypeID>			makes the player's objects of that type elite
@@ -2778,6 +2781,17 @@ void Run(StepType const & step)
 				}
 			}
 		}
+	} else if (step.Command == "aistrike") {
+		// aistrike <TypeID> x y: the computer players' objects of that type attack what stands on that cell.
+		TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+		DebugString("AUTOTEST aistrike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Assign_Target(target);
+				techno->Assign_Mission(MISSION_ATTACK);
+			}
+		}
 	} else if (step.Command == "planmove") {
 		// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
 		// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
@@ -3657,6 +3671,18 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d primaryattack %d secondaryattack %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound, (int)type->VoicePrimaryWeaponAttack, (int)type->VoiceSecondaryWeaponAttack);
 		}
+	} else if (step.Command == "flash") {
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   flash %s of %s count %u\n", techno->TClass->Name(), techno->House->Class->Name(), techno->FlashCount);
+			}
+		}
+	} else if (step.Command == "graphic") {
+		ObjectTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   graphic %s art %s alternate %d has shape %d\n", type->Name(), type->Graphic_Name(), (int)type->IsAlternateTheaterArt, (int)(type->Get_Image_Data() != NULL));
+		}
 	} else if (step.Command == "cratesounds") {
 		DebugString("AUTOTEST   cratesounds money %d reveal %d fire %d armour %d speed %d unit %d promote %d\n", (int)Rule->CrateMoneySound, (int)Rule->CrateRevealSound, (int)Rule->CrateFireSound, (int)Rule->CrateArmourSound, (int)Rule->CrateSpeedSound, (int)Rule->CrateUnitSound, (int)Rule->CratePromoteSound);
 	} else if (step.Command == "elite") {
@@ -3706,10 +3732,14 @@ void Run(StepType const & step)
 	} else if (step.Command == "blast") {
 		// blast <Warhead|ion> x y: explodes that warhead (ion is the ion cannon warhead) on the centre of the cell, as a weapon impact does (Explosion_Damage,
 		// the call a wood low bridge takes its hit in). Strength is high enough that the bridge roll always passes.
-		WarheadTypeClass const * warhead = stricmp(step.Argument.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(step.Argument.c_str());
+		// A ":amount" after the warhead name sets the damage at ground zero, 1000 otherwise.
+		size_t const colon = step.Argument.find(':');
+		std::string const warhead_name = step.Argument.substr(0, colon);
+		int const blast_damage = colon == std::string::npos ? 1000 : std::atoi(step.Argument.c_str() + colon + 1);
+		WarheadTypeClass const * warhead = stricmp(warhead_name.c_str(), "ion") == 0 ? Rule->IonCannonWarhead : WarheadTypeClass::From_Name(warhead_name.c_str());
 		if (warhead != NULL) {
-			DebugString("AUTOTEST   blast %s at %d,%d\n", warhead->Name(), step.X, step.Y);
-			Explosion_Damage(Map[Cell(step.X, step.Y)].Center_Coord(), 1000, NULL, warhead, false, NULL);
+			DebugString("AUTOTEST   blast %s at %d,%d damage %d\n", warhead->Name(), step.X, step.Y, blast_damage);
+			Explosion_Damage(Map[Cell(step.X, step.Y)].Center_Coord(), blast_damage, NULL, warhead, false, NULL);
 		} else {
 			DebugString("AUTOTEST   blast %s: no such warhead\n", step.Argument.c_str());
 		}

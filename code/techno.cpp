@@ -5029,7 +5029,7 @@ static void Reveal_Firer_On_Fire(TechnoClass * firer, AbstractClass * target, We
 int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 {
 	int firepower = weapon->Attack;
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		firepower = 0;
 	}
 	if (firepower > 0) {
@@ -5067,7 +5067,7 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 	if (target == NULL) {
 		return(0);
 	}
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		return(0);
 	}
 
@@ -6577,6 +6577,26 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	bool negative = damage < 0;
 	DamageWarhead = warhead;
 
+	// A RelativeDamage warhead hurts by a share of the victim's strength in place of the damage the shot carries; a kind of victim
+	// with no percentage takes none (Ares). An Organic vehicle counts as infantry and a ConsideredAircraft one as an aircraft.
+	if (warhead != NULL && warhead->IsRelativeDamage && !forced) {
+		int percent = warhead->RelativeDamageVehicles;
+		if (RTTI == RTTI_BUILDING) {
+			percent = warhead->RelativeDamageBuildings;
+		} else if (RTTI == RTTI_AIRCRAFT || TClass->IsConsideredAircraft) {
+			percent = warhead->RelativeDamageAircraft;
+		} else if (RTTI == RTTI_INFANTRY || TClass->IsOrganic) {
+			percent = warhead->RelativeDamageInfantry;
+		}
+		if (percent == 0) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+		int const basis = percent > 0 ? TClass->MaxStrength : Strength;
+		int const share = (int)((double)basis * (percent < 0 ? -percent : percent) / 100.0);
+		damage = negative ? -share : share;
+	}
+
 	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
 	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
 	if (BunkerLinkedItem != NULL && !forced && warhead != NULL) {
@@ -6593,7 +6613,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * to one point even when it is zero (TechnoClass::ReceiveDamage, 0x701900); a Webby hit
 	 * carries no damage and stays at zero.
 	 */
-	if (!forced && !negative && !(damage == 0 && warhead != NULL && warhead->IsWebby)) {
+	if (!forced && !negative && !(damage == 0 && warhead != NULL && (warhead->IsWebby || warhead->IsAllowZeroDamage))) {
 		damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * AttachedEffects.Armor_Multiplier()));
 
 		if (Has_Ability(ABILITY_STRONGER)) {
@@ -6654,6 +6674,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && effects_apply
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
 		AttachedEffects.Attach(this, warhead);
+	}
+
+	// A Flash.Duration warhead makes an object whose armor it affects flash for that many frames (Ares).
+	if (warhead != NULL && warhead->FlashDuration > 0 && Strength > 0 && effects_apply) {
+		FlashCount = std::max(FlashCount, (unsigned)warhead->FlashDuration);
 	}
 
 	// A DisableWeapons.Duration warhead jams the weapons of an object that is not under the Iron Curtain (Ares).

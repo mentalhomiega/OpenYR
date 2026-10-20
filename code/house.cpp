@@ -1518,6 +1518,10 @@ void HouseClass::AI(void)
 		Recalc_Power_Drain();
 		RecalcRadar = true;
 	}
+	// Jammers move, so a world with some is checked again every second (Ares RadarJamRadius).
+	if (TechnoTypeClass::RadarJammersExist && (Frame % TICKS_PER_SECOND) == 0) {
+		RecalcRadar = true;
+	}
 	if (RecalcRadar) {
 		Recalc_Radar_Availability();
 	}
@@ -2102,6 +2106,51 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 
 	// Delivered ore is paid out at once with no storage limit, as HouseClass::GiveTiberium (0x4F9610) does.
 	Credits += (int)(Tiberiums[slot]->CreditValue * Class->IncomeMult * tiberium);
+}
+
+
+/// <summary>
+/// Raises the veterancy of a new trainable object to the best Academy.* level that a structure of this house offers its kind
+/// (Ares). The level is the highest one on offer, not the sum, and an object that already has more keeps it. Levels run from
+/// 1 for veteran to 2 for elite, with fractions counting as part of a promotion.
+/// </summary>
+/// <param name="techno">The object just made for this house.</param>
+void HouseClass::Apply_Academy(TechnoClass * techno) const
+{
+	TechnoTypeClass const * const type = techno->TClass;
+	if (type == NULL || !type->IsTrainable) {
+		return;
+	}
+	auto const listed = [type](std::vector<std::string> const & names) {
+		for (std::string const & name : names) {
+			if (stricmp(name.c_str(), type->Name()) == 0) {
+				return(true);
+			}
+		}
+		return(false);
+	};
+
+	double best = 0.0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * const academy = Buildings[index];
+		if (academy->House != this || academy->IsInLimbo || !academy->IsActive) {
+			continue;
+		}
+		BuildingTypeClass const * const data = academy->Class;
+		double bonus = data->AcademyVehicleVeterancy;
+		if (techno->RTTI == RTTI_BUILDING) {
+			bonus = data->AcademyBuildingVeterancy;
+		} else if (techno->RTTI == RTTI_AIRCRAFT || type->IsConsideredAircraft) {
+			bonus = data->AcademyAircraftVeterancy;
+		} else if (techno->RTTI == RTTI_INFANTRY || type->IsOrganic) {
+			bonus = data->AcademyInfantryVeterancy;
+		}
+		if (bonus <= best || (!data->AcademyTypes.empty() && !listed(data->AcademyTypes)) || listed(data->AcademyIgnore)) {
+			continue;
+		}
+		best = bonus;
+	}
+	techno->Veterancy.Experience = std::max(techno->Veterancy.Experience, std::min(best, 2.0));
 }
 
 
@@ -8775,7 +8824,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	for (i = 0; i < Base.InnerCells.Count(); i++) {
 		Cell cell = Base.InnerCells[i];
 		int score;
-		if (!buildingtype->IsCloakGenerator) {
+		if (!buildingtype->IsAIInnerBase) {
 			score = func(*this, cell, i, context);
 		} else {
 			score = i + 1000 * (start - Coord(cell)).Gamemd_Length();
@@ -9687,7 +9736,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 			} else {
 				for (int i = 0; i < Buildings.Count(); i++) {
 					BuildingClass * b = Buildings[i];
-					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown) {
+					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown && !b->Is_Radar_Jammed()) {
 						if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 						if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 							if (b->StunDuration == 0) {
@@ -9702,6 +9751,9 @@ void HouseClass::Recalc_Radar_Availability(void)
 
 		if (Map.Is_Radar_Existing() != radar_on) {
 			Map.Toggle_Radar(radar_on);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST radar frame %d is now %s\n", Frame, radar_on ? "on" : "off");
+			}
 		}
 	}
 
@@ -9712,7 +9764,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 	bool spysat = false;
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * b = Buildings[i];
-		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On()) {
+		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On() && !b->Is_Radar_Jammed()) {
 			if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 			if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 				spysat = true;
