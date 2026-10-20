@@ -1,10 +1,7 @@
 ---
 key: MaxDebris
-summary: The number of pieces of wreckage a destroyed object may throw.
+summary: The number of pieces of wreckage a destroyed object, or a shot from a warhead, may throw.
 see_also: [DebrisTypes, DebrisMaximums, MetallicDebris, ExplosiveVoxelDebris]
-when_omitted:
-  kind: value
-  value: "0"
 ---
 
 ```ini title="rules.ini"
@@ -23,3 +20,5 @@ At `0`, a destroyed object throws no wreckage, whatever its debris lists say. Ab
 In the example, the tank throws up to five pieces: each turn `MYSCRAP` throws zero to four and `MYTIRE` zero to two, until the count is used up.
 
 Wreckage is thrown after the death voice and before any [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) blast. An object that has fallen from a height, for example off a bridge, and dies over water within 10 leptons of the ground throws no wreckage and does not explode.
+
+A warhead's `MaxDebris` sets the debris its shot throws instead. The [warhead page](/keys/maxdebris/#scope-warheadtype) gives its default and details.

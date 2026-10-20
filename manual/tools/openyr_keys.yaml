@@ -179,6 +179,7 @@ gamemd_records:
   - threat-per-occupant
   - unloading-class
   - water-crate-setting
+  - warhead-debris
 
 # Records whose keys we could not place. The index leaves them out until
 # someone with the gamemd rules decides.

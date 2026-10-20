@@ -2,9 +2,6 @@
 key: DebrisMaximums
 summary: The largest number of pieces each debris type may contribute, one figure per entry.
 see_also: [DebrisTypes, MaxDebris, MetallicDebris]
-when_omitted:
-  kind: value
-  value: ""
 ---
 
 ```ini title="rules.ini"
@@ -23,3 +20,5 @@ The engine does not check that this list is as long as `DebrisTypes`. A type wit
 
 A figure of `-1` divides by zero and crashes the game when the object is destroyed.
 :::
+
+A warhead's `DebrisMaximums` caps the pieces its shot throws. The [warhead page](/keys/debrismaximums/#scope-warheadtype) gives its default and details.

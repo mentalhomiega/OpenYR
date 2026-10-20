@@ -10689,7 +10689,7 @@ DebrisMaximums:
       kind: identifier
       source: object-type
     value_type: list of integers
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: ''
       declared_in: TechnoTypeClass
@@ -10697,6 +10697,20 @@ DebrisMaximums:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of integers
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: DebrisMaximums
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DebrisTypes:
   key: DebrisTypes
   scopes:
@@ -10706,7 +10720,7 @@ DebrisTypes:
       kind: identifier
       source: object-type
     value_type: list of VoxelAnimTypes
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: ''
       declared_in: TechnoTypeClass
@@ -10714,6 +10728,20 @@ DebrisTypes:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of VoxelAnimTypes
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: WarheadTypeClass
+      member: DebrisTypes
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 DebugMode:
   key: DebugMode
   scopes:
@@ -23359,7 +23387,7 @@ MaxDebris:
       kind: identifier
       source: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '0'
       declared_in: TechnoTypeClass
@@ -23367,6 +23395,20 @@ MaxDebris:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: MaxDebris
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 MaxEC:
   key: MaxEC
   scopes:
@@ -23943,7 +23985,7 @@ MinDebris:
       kind: identifier
       source: object-type
     value_type: integer
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '0'
       declared_in: TechnoTypeClass
@@ -23951,6 +23993,20 @@ MinDebris:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: MinDebris
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 MinLowPowerProductionSpeed:
   key: MinLowPowerProductionSpeed
   scopes:
