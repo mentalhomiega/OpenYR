@@ -42,6 +42,7 @@
 
 class AnimTypeClass;
 class ParticleSystemTypeClass;
+class VoxelAnimTypeClass;
 
 /**********************************************************************
 **	Each of the warhead types has specific characteristics. This structure
@@ -347,6 +348,17 @@ class WarheadTypeClass : public AbstractTypeClass
 		 * retaliates against the veinhole that owns the veins it is standing in.
 		 */
 		bool IsVeinhole;
+
+		/*
+		 * The debris a shot from this warhead throws where it detonates, when MaxDebris is above zero.
+		 * The piece count is drawn from MinDebris up to one less than MaxDebris.
+		 */
+		int MaxDebris;
+		int MinDebris;
+
+		// The voxel pieces thrown in list order, each type up to its DebrisMaximums figure.
+		TypeList<VoxelAnimTypeClass const *> DebrisTypes;
+		TypeList<int> DebrisMaximums;
 
 		// The effect this warhead attaches to the objects it hits (Ares AttachEffect).
 		AttachEffectTypeClass AttachEffect;

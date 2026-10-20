@@ -54,6 +54,7 @@
 #include "sun.h"
 #include "swizzle.h"
 #include "tracker.h"
+#include "vanimtype.h"
 #include "vector.h"
 
 
@@ -148,7 +149,9 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IsCLDisableGreen(false),
 	IsCLDisableBlue(false),
 	IsEMEffect(false),
-	IsVeinhole(false)
+	IsVeinhole(false),
+	MaxDebris(0),
+	MinDebris(0)
 {
 	Create_ID();
 
@@ -257,6 +260,16 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 
 		ProneDamage = ini.Get_Float(Name(), "ProneDamage", ProneDamage);
 		IsVeinhole = ini.Get_Bool(Name(), "Veinhole", IsVeinhole);
+		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
+		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
+		if (MinDebris < 0) {
+			MinDebris = 0;
+		}
+		if (MaxDebris < MinDebris) {
+			MaxDebris = MinDebris;
+		}
+		DebrisTypes = TGet_TypeList<VoxelAnimTypeClass>(ini, Name(), "DebrisTypes", DebrisTypes);
+		DebrisMaximums = ini.Get_IntList(Name(), "DebrisMaximums", DebrisMaximums);
 		AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
 		AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
 		AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
@@ -342,6 +355,10 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(ProneDamage);
 	crc(IsVeinhole);
 	crc(IsCulling);
+	crc(MaxDebris);
+	crc(MinDebris);
+	crc(DebrisTypes.Count());
+	crc(DebrisMaximums.Count());
 	for (int armor = ARMOR_FIRST; armor < (int)Modifier.size(); armor++) {
 		crc(Modifier[armor]);
 		crc(int(ForceFire[armor]));
@@ -496,6 +513,10 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCLDisableBlue);
 	stream.Serialize(IsEMEffect);
 	stream.Serialize(IsVeinhole);
+	stream.Serialize(MaxDebris);
+	stream.Serialize(MinDebris);
+	stream.Serialize(DebrisTypes);
+	stream.Serialize(DebrisMaximums);
 	stream.Serialize(AttachEffect);
 }
 
@@ -524,6 +545,7 @@ void WarheadTypeClass::Detach(AbstractClass const * target, bool all)
 		Particle = NULL;
 	}
 	ExplosionSet.Delete((AnimTypeClass *)target);
+	DebrisTypes.Delete((VoxelAnimTypeClass const *)target);
 	if (target == (AbstractClass *)AttachEffect.Animation) {
 		AttachEffect.Animation = NULL;
 	}

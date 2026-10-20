@@ -93,6 +93,7 @@
 #include "techno.h"
 #include "tracker.h"
 #include "unit.h"
+#include "vanim.h"
 #include "voxdrsys.h"
 #include "warhead.h"
 #include "dbgprint.h"
@@ -1408,6 +1409,63 @@ void BulletClass::Bullet_Explodes(bool forced)
 }
 
 
+/*
+ * Throws the debris of a warhead with MaxDebris above zero at origin. The random draws and their
+ * order follow BulletClass::Detonate (0x469D06): the piece count, one draw per step through the
+ * voxel types, then one per metallic piece. A different order changes which pieces appear and
+ * desynchronizes the simulation.
+ */
+static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const & origin)
+{
+	int const types = warhead->DebrisTypes.Count();
+	int remaining = Scen->RandomNumber(warhead->MinDebris, warhead->MaxDebris - 1);
+	int voxels = 0;
+	int metallic = 0;
+
+	if (types > 0) {
+		// A missing or non-positive figure throws nothing. With no figure above zero, gamemd's loop never ends,
+		// so this port throws nothing.
+		auto figure_of = [warhead](int type) {
+			return type < warhead->DebrisMaximums.Count() ? std::max(warhead->DebrisMaximums[type], 0) : 0;
+		};
+		bool can_throw = false;
+		for (int type = 0; type < types; type++) {
+			can_throw = can_throw || figure_of(type) > 0;
+		}
+
+		int type = 0;
+		while (remaining > 0 && can_throw) {
+			int const draw = Scen->RandomNumber();
+			long long const magnitude = draw < 0 ? -(long long)draw : (long long)draw;
+			int count = (int)(magnitude % (figure_of(type) + 1));
+			if (remaining <= count) {
+				count = remaining;
+			}
+			for (int piece = 0; piece < count; piece++) {
+				new VoxelAnimClass(warhead->DebrisTypes[type], origin, NULL);
+			}
+			voxels += count;
+			remaining -= count;
+			type = (type + 1) % types;
+		}
+	}
+
+	// Metallic pieces come from the rules list only when the warhead names no voxel type, and sit 20 leptons up.
+	if (types == 0 && remaining > 0 && Rule->MetallicDebris.Count() > 0) {
+		Coord const piece_origin = origin + Coord(0, 0, 20);
+		for (; remaining > 0; remaining--) {
+			int const pick = Scen->RandomNumber(0, Rule->MetallicDebris.Count() - 1);
+			new AnimClass(Rule->MetallicDebris[pick], piece_origin, 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			metallic++;
+		}
+	}
+
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST debris %s voxel %d metallic %d at %d,%d,%d\n", warhead->Name(), voxels, metallic, origin.X, origin.Y, origin.Z);
+	}
+}
+
+
 /// <summary>
 /// Performs the projectile's damage effect at the location specified.
 /// This routine applies whatever the warhead calls for -- an electromagnetic pulse, a
@@ -1668,6 +1726,11 @@ void BulletClass::Detonate(Coord const & coord)
 			}
 			AnimClass::Do_Atom_Damage(house, blast_coord);
 		}
+	}
+
+	// Debris follows the blast; a nullified shot returns before it (BulletClass::Detonate, 0x46A2A1 and 0x469D06).
+	if (!nullified && warhead->MaxDebris > 0) {
+		Throw_Warhead_Debris(warhead, PositionCoord);
 	}
 
 	if (Class->IsSplits) {
