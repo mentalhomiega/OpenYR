@@ -15,6 +15,7 @@
 #include "animtype.h"
 #include "crc.h"
 #include "dbgprint.h"
+#include "globals.h"
 #include "savestream.h"
 #include "techno.h"
 #include "techtype.h"
@@ -303,7 +304,11 @@ void AttachedEffectsClass::Update_Anim(TechnoClass * owner, EffectStruct & effec
 void AttachedEffectsClass::Remove_Anim(EffectStruct & effect)
 {
 	if (effect.Anim != nullptr) {
-		effect.Anim->Delete_Me();
+		if (Anims.ID(effect.Anim) < 0) {
+			DebugString("AttachEffect: an animation that no longer exists was still attached.\n");
+		} else {
+			effect.Anim->Delete_Me();
+		}
 		effect.Anim = nullptr;
 	}
 }

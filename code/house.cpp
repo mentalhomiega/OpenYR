@@ -9530,6 +9530,12 @@ void HouseClass::AI_Build_Wall(void)
 	BuildingTypeClass const * ewgate = Get_First_Acted(Rule->EWGates);
 	BuildingTypeClass const * nsgate = Get_First_Acted(Rule->NSGates);
 
+	// A rule set that lists no wall for this house leaves nothing to plan; with no gate, the run keeps a three-cell gap.
+	if (wall == NULL) {
+		Base.BaseAreaRect = Base.LastBaseAreaRect;
+		return;
+	}
+
 	BuildingTypeClass const * gates[] = { ewgate, ewgate, nsgate, nsgate };
 	static const FacingType _step_facings[] = { FACING_E, FACING_E, FACING_S, FACING_S };
 	static const FacingType _adjacent_facings[] = { FACING_N, FACING_S, FACING_W, FACING_E };
@@ -9585,7 +9591,9 @@ void HouseClass::AI_Build_Wall(void)
 					Cell prev_cell = run_start;
 					for (int gate_index = run_length / 2 - 1; placed < run_length; prev_cell = node_cell) {
 						if (placed == gate_index && hard_blocked) {
-							gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+							if (gates[index] != NULL) {
+								gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+							}
 							placed += 3;
 							Cell step1 = Adjacent_Cell(prev_cell, dir);
 							Cell step2 = Adjacent_Cell(step1, dir);
@@ -9611,7 +9619,9 @@ void HouseClass::AI_Build_Wall(void)
 			Cell prev_cell = run_start;
 			for (int gate_index = run_length / 2 - 1; placed < run_length; prev_cell = node_cell) {
 				if (placed == gate_index) {
-					gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+					if (gates[index] != NULL) {
+						gate_nodes.Add(BaseNodeClass(gates[index]->HeapID, node_cell));
+					}
 					placed += 3;
 					Cell step1 = Adjacent_Cell(prev_cell, dir);
 					Cell step2 = Adjacent_Cell(step1, dir);

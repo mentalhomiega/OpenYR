@@ -1841,7 +1841,7 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 		}
 
 		if (dx > 1) {
-			DebugString("Regular findpath failure: (%d,%d) to (%d, %d)\n", hs_from.X, hs_from.Y, hs_to.X, hs_to.Y);
+			DebugString("Regular findpath failure: (%d,%d) to (%d, %d) %s %s %s zones %d %d\n", hs_from.X, hs_from.Y, hs_to.X, hs_to.Y, foot->TClass->Name(), (char const *)foot->House->IniName, MissionClass::Mission_Name(foot->Get_Mission()), from_zone, to_zone);
 		}
 
 		i++;
