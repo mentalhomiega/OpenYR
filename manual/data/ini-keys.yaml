@@ -3152,6 +3152,23 @@ AltToRally:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+AlternateTheaterArt:
+  key: AlternateTheaterArt
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsAlternateTheaterArt
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 AlwaysShowActionLines:
   key: AlwaysShowActionLines
   scopes:
@@ -3648,6 +3665,23 @@ AntiInfantryValue:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ApplyDamage:
+  key: ApplyDamage
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: WeaponTypeClass
+      member: ApplyDamage
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 ApproachTargetResetMultiplier:
   key: ApproachTargetResetMultiplier
   scopes:
@@ -7684,6 +7718,37 @@ CanApproachTarget:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanBeDriven:
+  key: CanBeDriven
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsCanBeDriven
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: needs_review
+    _provenance:
+      default_candidate: '-1'
+      declared_in: HouseTypeClass
+      member: CanBeDriven
+      source: code/houstype.cpp
+      guard: null
+    level: HouseTypeClass
 CanBeHidden:
   key: CanBeHidden
   scopes:
@@ -7787,6 +7852,23 @@ CanDisguise:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CanDrive:
+  key: CanDrive
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: InfantryTypeClass
+      member: IsCanDrive
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 CanHideThings:
   key: CanHideThings
   scopes:
@@ -9888,6 +9970,40 @@ Convert.Deploy:
       default_candidate: none
       declared_in: UnitTypeClass
       member: ConvertDeploy
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
+Convert.Land:
+  key: Convert.Land
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertLand
+      source: code/unittype.cpp
+      guard: null
+    level: UnitTypeClass
+Convert.Water:
+  key: Convert.Water
+  scopes:
+  - applies_to: *id025
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: class
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: UnitTypeClass
+      member: ConvertWater
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
@@ -13547,6 +13663,24 @@ DiskLaserChargeUp:
       default_candidate: none
       declared_in: RulesClass
       member: DiskLaserChargeUp
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+DisplayCreditsDelay:
+  key: DisplayCreditsDelay
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.02'
+      declared_in: RulesClass
+      member: DisplayCreditsDelay
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -17935,6 +18069,23 @@ FirersPalette:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Firestorm.Wall:
+  key: Firestorm.Wall
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsFirestormWall
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 FirestormActiveAnim:
   key: FirestormActiveAnim
   scopes:
@@ -33632,6 +33783,23 @@ ProduceCashDelay:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+ProduceCashDisplay:
+  key: ProduceCashDisplay
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsProduceCashDisplay
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ProduceCashResetOnCapture:
   key: ProduceCashResetOnCapture
   scopes:
@@ -41557,6 +41725,40 @@ Splits:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Spotlight.Distance:
+  key: Spotlight.Distance
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: BuildingTypeClass
+      member: SpotlightDistance
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Spotlight.StartHeight:
+  key: Spotlight.StartHeight
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '430'
+      declared_in: BuildingTypeClass
+      member: SpotlightStartHeight
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpotlightAcceleration:
   key: SpotlightAcceleration
   scopes:
@@ -41983,6 +42185,23 @@ SpyPlane.Count:
       default_candidate: null
       declared_in: SuperWeaponTypeClass
       member: Keys.SpyPlaneCount
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
+SpyPlane.Mission:
+  key: SpyPlane.Mission
+  scopes:
+  - applies_to: *id006
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SuperWeaponTypeClass
+      member: name
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
@@ -48107,6 +48326,23 @@ VehicleThief.Allowed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VehicleThief.EnterSound:
+  key: VehicleThief.EnterSound
+  scopes:
+  - applies_to: *id013
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: InfantryTypeClass
+      member: VehicleThiefEnterSound
+      source: code/infatype.cpp
+      guard: null
+    level: InfantryTypeClass
 VeinAttack:
   key: VeinAttack
   scopes:
