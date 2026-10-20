@@ -445,6 +445,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	AIBuildCounts(),
 	AIExtraCounts(),
 	AIBaseNormal(-1),
+	IsAIInnerBase(false),
 	IsBaseDefense(false),
 	IsSortCameoAsBaseDefense(false),
 	CloakRadiusInCells(20),
@@ -1622,6 +1623,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
 		AIBuildCounts = ini.Get_IntList(Name(), "AIBuildCounts", AIBuildCounts);
 		AIExtraCounts = ini.Get_IntList(Name(), "AIExtraCounts", AIExtraCounts);
+		IsAIInnerBase = ini.Get_Bool(Name(), "AIInnerBase", IsCloakGenerator);
 		if (ini.Is_Present(Name(), "AIBaseNormal")) {
 			AIBaseNormal = ini.Get_Bool(Name(), "AIBaseNormal", false) ? 1 : 0;
 		}
@@ -2451,6 +2453,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsConstructionYard);
 	crc(IsNukeSilo);
 	crc(IsRefinery);
+	crc(IsAIInnerBase);
 	crc(IsWeaponsFactory);
 	crc(IsLaserFencePost);
 	crc(IsLaserFence);
@@ -2774,6 +2777,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AIBuildCounts);
 	stream.Serialize(AIExtraCounts);
 	stream.Serialize(AIBaseNormal);
+	stream.Serialize(IsAIInnerBase);
 	stream.Serialize(IsBaseDefense);
 	stream.Serialize(IsSortCameoAsBaseDefense);
 	stream.Serialize(CloakRadiusInCells);

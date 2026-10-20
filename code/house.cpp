@@ -8820,7 +8820,7 @@ Cell HouseClass::Where_To_Place_Building(BuildingTypeClass *buildingtype, int (*
 	for (i = 0; i < Base.InnerCells.Count(); i++) {
 		Cell cell = Base.InnerCells[i];
 		int score;
-		if (!buildingtype->IsCloakGenerator) {
+		if (!buildingtype->IsAIInnerBase) {
 			score = func(*this, cell, i, context);
 		} else {
 			score = i + 1000 * (start - Coord(cell)).Gamemd_Length();

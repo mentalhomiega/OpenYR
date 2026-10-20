@@ -1124,6 +1124,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// vehicle in a building's form, and never a deployed miner.
 		int AIBaseNormal;
 
+		// AIInnerBase (Ares): the computer places this structure near the center of its base. Follows CloakGenerator.
+		bool IsAIInnerBase;
+
 		/*
 		 * If this building counts as a base defense, then this flag will be true. The
 		 * computer plans its defenses in a pass of their own and rates each one against
