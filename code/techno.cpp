@@ -11450,7 +11450,7 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 		if (IsInLimbo) {
 			return(false);
 		}
-		if (ttype->IsRadarVisible) {
+		if (ttype->IsRadarVisible && !(Map.Is_Shrouded(Get_Coord()) && MainWindow)) {
 			return(true);
 		}
 

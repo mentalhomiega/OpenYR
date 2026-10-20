@@ -12042,7 +12042,7 @@ bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 		if (IsInLimbo) {
 			return(false);
 		}
-		if (Class->IsRadarVisible) {
+		if (Class->IsRadarVisible && !(Map.Is_Shrouded(PositionCoord) && MainWindow)) {
 			return(true);
 		}
 		if (House->Is_Player_Control()) {
