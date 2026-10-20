@@ -292,11 +292,11 @@ The exception is a structure of an allied computer house in a campaign while `Al
 
 The radar's background is a picture of every cell in the playable area. Each cell takes the first color that applies:
 
-1. the radar color of a terrain object on the cell;
+1. a fixed light tan for a terrain object on the cell, whatever its artwork or RadarColor says;
 2. the bridge color, for a cell under a bridge;
 3. the radar color of an overlay that is not Tiberium;
 4. the color of the Tiberium growing there;
-5. otherwise, the tile's low and high colors, adjusted for the theater and brightened by the cell's height.
+5. otherwise, the tile's low color, scaled by the theater's [`LowRadarBrightness`](/keys/lowradarbrightness/) and halved. Both halves of the cell take that color, whatever its height. A cell with no tile record draws gray.
 
 Objects appear as blips over that picture, in the owning house's color. Disguised infantry use the local player's color instead.
 

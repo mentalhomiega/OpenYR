@@ -383,6 +383,18 @@ int CellClass::Preview_Cell_Color(unsigned char & unknown, bool terrainonly) con
 }
 
 
+// Gamemd scales each channel of a tile's radar color by the theater brightness, rounds it, and then halves it.
+static RGBClass Radar_Tile_Color(RGBStruct const & color, float brightness)
+{
+	int channels[3] = {color.Red, color.Green, color.Blue};
+	for (int & channel : channels) {
+		int scaled = (int)(channel * brightness + 0.5f);
+		channel = std::min(255, std::max(0, scaled)) >> 1;
+	}
+	return(RGBClass(channels[0], channels[1], channels[2]));
+}
+
+
 /***********************************************************************************************
  * CellClass::Cell_Color   -- Determine what radar color to use for this cell.                 *
  *                                                                                             *
@@ -404,11 +416,12 @@ int CellClass::Preview_Cell_Color(unsigned char & unknown, bool terrainonly) con
 void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 {
 	/*
-	 * A terrain object (tree, etc.) overrides the cell color with its own radar color.
+	 * A terrain object (tree, etc.) draws in one fixed light tan, whatever its artwork or RadarColor
+	 * says, as gamemd's CellClass::GetMinimapColor (0x47C060) does.
 	 */
 	TerrainClass * tptr = Cell_Terrain();
 	if (tptr != NULL) {
-		highcolor = lowcolor = tptr->Class->RadarColor;
+		highcolor = lowcolor = RGBClass(200, 200, 160);
 		return;
 	}
 
@@ -478,8 +491,8 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 	}
 
 	/*
-	 * No object or overlay color applies. Use the iso tile's stored low/high terrain
-	 * colors, scaled by theater and interpolated toward a brighter shade by cell height.
+	 * No object or overlay color applies. The iso tile's low color is the one the radar uses, for both
+	 * halves of the cell, and it does not vary with cell height. A missing sub-tile record draws gray.
 	 */
 	int tile = 0;
 	if (ITType != ISOTILE_NONE) {
@@ -499,26 +512,12 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		next->Load_Tile_Image();
 	}
 
-	if (((IsoTileSet *)next->ImageData)->Fetch_Record_Pointer_Unsafe(SubTile) != NULL) {
-		IsoTileRecord const * record = ((IsoTileSet *)next->ImageData)->Fetch_Record_Pointer_Unsafe(SubTile);
-		RGBClass lowest(record->LowColor.Red, record->LowColor.Green, record->LowColor.Blue);
-		RGBClass highest(record->HighColor.Red, record->HighColor.Green, record->HighColor.Blue);
-
+	IsoTileRecord const * record = ((IsoTileSet *)next->ImageData)->Fetch_Record_Pointer_Unsafe(SubTile);
+	if (record != NULL) {
 		TheaterClass const & theater = TheaterClass::As_Reference(Scen->Theater);
-
-		lowest = RGBClass().Set(lowest, theater.LowRadarBrightness);
-		highest = RGBClass().Set(highest, theater.LowRadarBrightness);
-
-		RGBClass lowres;
-		RGBClass hires;
-		lowres.Set(lowest, theater.HighRadarBrightness);
-		hires.Set(highest, theater.HighRadarBrightness);
-
-		lowcolor = RGBClass().Lerp(lowest, lowres, (double)Height / 12.0);
-		highcolor = RGBClass().Lerp(highest, hires, (double)Height / 12.0);
+		lowcolor = highcolor = Radar_Tile_Color(record->LowColor, theater.LowRadarBrightness);
 	} else {
-		lowcolor = RGBClass(0, 0, 0);
-		highcolor = RGBClass(0, 0, 0);
+		lowcolor = highcolor = RGBClass(60, 60, 60);
 	}
 }
 
