@@ -169,6 +169,11 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	TemporalHealthFactor(0.0),
 	FlashDuration(0),
 	IsAllowZeroDamage(false),
+	IsRelativeDamage(false),
+	RelativeDamageBuildings(0),
+	RelativeDamageAircraft(0),
+	RelativeDamageInfantry(0),
+	RelativeDamageVehicles(0),
 	IsUnitLostSuppress(false),
 	IsDieSoundOverridden(false),
 	DieSoundOverride(VOC_NONE),
@@ -297,6 +302,11 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
 		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
 		IsEffectsRequireDamage = ini.Get_Bool(Name(), "EffectsRequireDamage", IsEffectsRequireDamage);
+		IsRelativeDamage = ini.Get_Bool(Name(), "RelativeDamage", IsRelativeDamage);
+		RelativeDamageBuildings = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Buildings", RelativeDamageBuildings), -100, 100);
+		RelativeDamageAircraft = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Aircraft", RelativeDamageAircraft), -100, 100);
+		RelativeDamageInfantry = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Infantry", RelativeDamageInfantry), -100, 100);
+		RelativeDamageVehicles = std::clamp(ini.Get_Int(Name(), "RelativeDamage.Vehicles", RelativeDamageVehicles), -100, 100);
 		FlashDuration = ini.Get_Int(Name(), "Flash.Duration", FlashDuration);
 		IsAllowZeroDamage = ini.Get_Bool(Name(), "AllowZeroDamage", IsAllowZeroDamage);
 		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
@@ -440,6 +450,11 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(TemporalHealthFactor);
 	crc(FlashDuration);
 	crc(IsAllowZeroDamage);
+	crc(IsRelativeDamage);
+	crc(RelativeDamageBuildings);
+	crc(RelativeDamageAircraft);
+	crc(RelativeDamageInfantry);
+	crc(RelativeDamageVehicles);
 	crc(IsUnitLostSuppress);
 	crc(IsAffectsOwner);
 	crc(InfDeathAnim != NULL);
@@ -623,6 +638,11 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TemporalHealthFactor);
 	stream.Serialize(FlashDuration);
 	stream.Serialize(IsAllowZeroDamage);
+	stream.Serialize(IsRelativeDamage);
+	stream.Serialize(RelativeDamageBuildings);
+	stream.Serialize(RelativeDamageAircraft);
+	stream.Serialize(RelativeDamageInfantry);
+	stream.Serialize(RelativeDamageVehicles);
 	stream.Serialize(IsUnitLostSuppress);
 	stream.Serialize(IsDieSoundOverridden);
 	stream.Serialize(DieSoundOverride);

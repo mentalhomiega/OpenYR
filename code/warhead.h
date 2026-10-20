@@ -422,6 +422,14 @@ class WarheadTypeClass : public AbstractTypeClass
 		// AllowZeroDamage (Ares): a blast of this warhead with no damage still reaches the objects in its spread.
 		bool IsAllowZeroDamage;
 
+		// RelativeDamage and its per-kind percentages (Ares), each from -100 to 100: a hit takes that share of the victim's full
+		// strength, or of its current health when negative, in place of the damage the shot carries.
+		bool IsRelativeDamage;
+		int RelativeDamageBuildings;
+		int RelativeDamageAircraft;
+		int RelativeDamageInfantry;
+		int RelativeDamageVehicles;
+
 		// UnitLost.Suppress (Ares): a unit this warhead kills does not make EVA announce a lost unit.
 		bool IsUnitLostSuppress;
 

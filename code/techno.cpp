@@ -6577,6 +6577,26 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	bool negative = damage < 0;
 	DamageWarhead = warhead;
 
+	// A RelativeDamage warhead hurts by a share of the victim's strength in place of the damage the shot carries; a kind of victim
+	// with no percentage takes none (Ares). An Organic vehicle counts as infantry and a ConsideredAircraft one as an aircraft.
+	if (warhead != NULL && warhead->IsRelativeDamage && !forced) {
+		int percent = warhead->RelativeDamageVehicles;
+		if (RTTI == RTTI_BUILDING) {
+			percent = warhead->RelativeDamageBuildings;
+		} else if (RTTI == RTTI_AIRCRAFT || TClass->IsConsideredAircraft) {
+			percent = warhead->RelativeDamageAircraft;
+		} else if (RTTI == RTTI_INFANTRY || TClass->IsOrganic) {
+			percent = warhead->RelativeDamageInfantry;
+		}
+		if (percent == 0) {
+			damage = 0;
+			return(RESULT_NONE);
+		}
+		int const basis = percent > 0 ? TClass->MaxStrength : Strength;
+		int const share = (int)((double)basis * (percent < 0 ? -percent : percent) / 100.0);
+		damage = negative ? -share : share;
+	}
+
 	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
 	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
 	if (BunkerLinkedItem != NULL && !forced && warhead != NULL) {
