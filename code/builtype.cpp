@@ -449,6 +449,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsProduceCashResetOnCapture(false),
 	IsSecretLab(false),
 	SecretInfantry(NULL),
+	IsProduceCashDisplay(false),
 	SecretUnit(NULL),
 	SecretBuilding(NULL)
 {
@@ -1606,6 +1607,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		SecretUnit = TGet_Class(ini, Name(), "SecretUnit", SecretUnit);
 		SecretBuilding = TGet_Class(ini, Name(), "SecretBuilding", SecretBuilding);
 
+		IsProduceCashDisplay = ini.Get_Bool(Name(), "ProduceCashDisplay", IsProduceCashDisplay);
 		Rotation = IsTurretEquipped ? 32 : 1;
 
 		Power = ini.Get_Int(Name(), "Power", (Power > 0) ? Power : -Drain);
@@ -2746,6 +2748,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TheaterImageFile);
 }
 
+	stream.Serialize(IsProduceCashDisplay);
 
 ClassID BuildingTypeClass::Class_ID(void) const
 {

@@ -165,6 +165,7 @@
 #include "side.h"
 #include "savestream.h"
 #include "scheme.h"
+#include "flyingtext.h"
 #include "session.h"
 #include "shapeset.h"
 #include "smudtype.h"
@@ -299,6 +300,8 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
+	ProduceCashShownPending(0),
+	ProduceCashShownFrame(-1000000),
 	HasEngineer(false),
 	SecretProduct(NULL)
 {
@@ -8658,6 +8661,39 @@ void BuildingClass::Produce_Cash_AI(void)
 	} else {
 		House->Spend_Money(-amount);
 	}
+	Show_Produced_Cash(amount);
+}
+
+
+/// <summary>
+/// Shows the cash this building paid as floating text when its type has ProduceCashDisplay=yes and the local
+/// player owns it or is allied with its owner. Cash paid sooner than DisplayCreditsDelay after the last text is
+/// added to the next one. A gain shows in green with a plus sign, a loss in red with a minus sign.
+/// </summary>
+/// <param name="amount">The credits paid to the owner, negative for credits taken.</param>
+void BuildingClass::Show_Produced_Cash(int amount)
+{
+	if (!Class->IsProduceCashDisplay || amount == 0 || PlayerPtr == NULL || (House != PlayerPtr && !House->Is_Ally(PlayerPtr))) {
+		return;
+	}
+
+	ProduceCashShownPending += amount;
+	if (Frame - ProduceCashShownFrame < (int)(Rule->DisplayCreditsDelay * TICKS_PER_MINUTE) || ProduceCashShownPending == 0) {
+		return;
+	}
+
+	int const shown = ProduceCashShownPending;
+	ProduceCashShownPending = 0;
+	ProduceCashShownFrame = Frame;
+	int const scheme = Fetch_Scheme_Index_By_Name(shown > 0 ? "Green" : "Red", NUM_INTENSITY_LEVELS);
+	if (scheme >= 0) {
+		char text[32];
+		snprintf(text, sizeof(text), "%c$%d", shown > 0 ? '+' : '-', shown > 0 ? shown : -shown);
+		Add_Flying_Text(text, Center_Coord(), scheme);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST producecash frame %d %s shows %s\n", Frame, Class->Name(), text);
+		}
+	}
 }
 
 
@@ -8682,6 +8718,7 @@ void BuildingClass::Produce_Cash_Startup(void)
 
 	IsProduceCashStartupPaid = true;
 	House->Refund_Money(Class->ProduceCashStartup);
+	Show_Produced_Cash(Class->ProduceCashStartup);
 }
 
 

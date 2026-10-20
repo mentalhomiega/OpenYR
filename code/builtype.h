@@ -1174,6 +1174,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		InfantryTypeClass const * SecretInfantry;
 		UnitTypeClass const * SecretUnit;
 		BuildingTypeClass const * SecretBuilding;
+		// ProduceCashDisplay (Ares): the cash this structure pays shows as floating text over it.
+		bool IsProduceCashDisplay;
+
 
 		/*
 		 * This is the theater qualified name of the building's shape file, recorded as the
