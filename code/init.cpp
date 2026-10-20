@@ -2444,8 +2444,11 @@ static bool Init_Secondary_Mixfiles(void)
 	GenericMix->Cache();
 	BaseGenericMix = new MFCD("GENERIC.MIX", &FastKey);
 	BaseGenericMix->Cache();
+	// Building art is read with Retrieve, which returns nothing from an uncached archive unless resident.
 	IsoGenericMix = new MFCD("ISOGENMD.MIX", &FastKey);
+	IsoGenericMix->Set_Resident_Members(true);
 	BaseIsoGenericMix = new MFCD("ISOGEN.MIX", &FastKey);
+	BaseIsoGenericMix->Set_Resident_Members(true);
 
 	if (CCFileClass("CONQUER.MIX").Is_Available()) {
 		BaseConquerMix = new MFCD("CONQUER.MIX", &FastKey);
@@ -7730,12 +7733,15 @@ void Init_Theater(TheaterType theater)
 
 		delete IsometricExpansionData;
 		snprintf(expansion, sizeof(expansion), "ISO%sMD.MIX", data.Suffix.c_str());
+		// Building art is read with Retrieve, which returns nothing from an uncached archive unless resident.
 		IsometricExpansionData = new MFCD(expansion, &FastKey);
+		IsometricExpansionData->Set_Resident_Members(true);
 
 		if (IsometricTheaterData != NULL) {
 			delete IsometricTheaterData;
 		}
 		IsometricTheaterData = new MFCD(isofullname, &FastKey);
+		IsometricTheaterData->Set_Resident_Members(true);
 
 		Session.Update_Progress(12);
 
