@@ -68,7 +68,8 @@ CachePrefix=ECACHE
 
 | Key | Meaning |
 | --- | --- |
-| `[Files]` `Rules`, `Art`, `RA2Art`, `AI`, `Sound`, `Theme`, `Eva`, `Battle`, `LanguageRules`, `MultiplayerRules`, `Tutorial`, `UI`, `Keyboard`, and each one's `Expansion` key | The name of the file the game reads in place of the deployment's. The game looks for it in the usual [search order](/formats/opents-ini/#the-order-files-are-searched-for-in), so the file may sit in the mod's folder or in one of its archives. |
+| `[Files]` `Rules`, `Art`, `RA2Art`, `AI`, `Sound`, `Theme`, `Eva`, `Battle`, `LanguageRules`, `MultiplayerRules`, `Tutorial`, `UI`, `Keyboard`, `Mission`, `MapSelect`, and the `Expansion` keys | The name of the file the game reads in place of the deployment's. The game looks for it in the usual [search order](/formats/opents-ini/#the-order-files-are-searched-for-in), so the file may sit in the mod's folder or in one of its archives. |
+| `[Files]` `TheaterSuffix` | The suffix of each theater's tile set file. `MO` reads `TEMPERATMO.INI` in place of `TEMPERATMD.INI`, and a theater without such a file falls back to its `MD` file. |
 | `[Palettes]` `Scheme`, `Game` | The palettes in force until a theater is loaded |
 | `[Archives]` `ExpandPrefix` | Comma separated prefixes of the numbered expansion archives. `EXPANDCV` mounts `EXPANDCV99.MIX` down to `EXPANDCV00.MIX`, and the archives of an earlier prefix are searched before those of a later one. The default is `EXPANDMD`. |
 | `[Archives]` `CachePrefix` | The same for the cached archives. The default is `ECACHE`. |

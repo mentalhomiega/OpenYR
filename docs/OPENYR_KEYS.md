@@ -42,7 +42,7 @@ The From column says where a key comes from:
 - [UI.INI](#uiini): 32 entries
 - [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
-- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 34 entries
+- [OPENTS.INI and the launcher](#opentsini-and-the-launcher): 37 entries
 
 ## Rules
 
@@ -977,6 +977,9 @@ Check=yes
 | [`[Files] MultiplayerRulesExpansion`](../manual/content/formats/opents-ini.md#the-files-it-reads) | (none) | The expansion's copy of the matching base file, read after it. |
 | [`[Files] Tutorial`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `TUTORIAL.INI` | The numbered text lines. |
 | [`[Files] UI`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `UIMD.INI` | The interface settings. |
+| [`[Files] Mission`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `MISSIONMD.INI` | The campaign mission list, which names each mission's briefing and loading screen. |
+| [`[Files] MapSelect`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `MAPSELMD.INI` | The campaign map selection file. |
+| [`[Files] TheaterSuffix`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `MD` | The suffix of each theater's tile set file, such as `MD` for TEMPERATMD.INI. |
 | [`[Files] Keyboard`](../manual/content/formats/opents-ini.md#the-files-it-reads) | `KEYBOARDMD.INI` | The hotkey file, read at startup and saved by the keyboard dialog. |
 | [`[Palettes] Scheme`](../manual/content/formats/opents-ini.md#the-palettes-it-starts-with) | `UNITSNO.PAL` | The palette player colors are built against until a theater loads. |
 | [`[Palettes] Game`](../manual/content/formats/opents-ini.md#the-palettes-it-starts-with) | `TEMPERAT.PAL` | The palette the game is drawn with until a theater loads. |

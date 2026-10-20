@@ -66,6 +66,9 @@ Tutorial=TUTORIAL.INI
 UI=UIMD.INI
 Settings=RA2MD.INI
 Keyboard=KEYBOARDMD.INI
+Mission=MISSIONMD.INI
+MapSelect=MAPSELMD.INI
+TheaterSuffix=MD
 ```
 
 Each key names one file, and a key left out keeps the name shown above.
@@ -86,6 +89,10 @@ Each key names one file, and a key left out keeps the name shown above.
 | `UI` | The [interface settings](/formats/ui-ini/) |
 | `Settings` | The file a player's options are read from and saved to |
 | `Keyboard` | The [hotkey file](/formats/keyboard-ini/), read at startup and saved by the keyboard dialog |
+| `Mission` | The campaign mission list, which names each mission's briefing and loading screen |
+| `MapSelect` | The campaign map selection file |
+
+`TheaterSuffix` names no file. A theater's tile sets are read from its root name followed by this suffix, such as `TEMPERATMD.INI` with the default `MD`. When that file is missing, the game reads the `MD` file, and then the file with no suffix, such as `TEMPERAT.INI`.
 
 The eight `Expansion` keys, such as `RulesExpansion` and `ArtExpansion`, name no file unless written. Each names an expansion's copy of the matching base file, which is read after the base file. The expansion's rules, AI and multiplayer rules files are used only while Firestorm is enabled, and so is its art file, except for that file's `[Movies]` list. Its sound, music, campaign and translated rules files are read whether or not Firestorm is enabled.
 

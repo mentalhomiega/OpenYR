@@ -1,6 +1,6 @@
 ---
 title: Keep radar-visible objects off the radar under shroud
-category: change
+category: fix
 release: 0.2.0
 targets:
 - type: key

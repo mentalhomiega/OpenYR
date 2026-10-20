@@ -424,6 +424,15 @@ opents_ini:
   Files/Keyboard:
     effect: "The hotkey file, read at startup and saved by the keyboard dialog."
     anchor: the-files-it-reads
+  Files/Mission:
+    effect: "The campaign mission list, which names each mission's briefing and loading screen."
+    anchor: the-files-it-reads
+  Files/MapSelect:
+    effect: "The campaign map selection file."
+    anchor: the-files-it-reads
+  Files/TheaterSuffix:
+    effect: "The suffix of each theater's tile set file, such as `MD` for TEMPERATMD.INI."
+    anchor: the-files-it-reads
   Files/*Expansion:
     effect: "The expansion's copy of the matching base file, read after it."
     anchor: the-files-it-reads

@@ -198,7 +198,7 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_Mod_INI
-    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix, FollowMenuButtons]
+    keys: [Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, TheaterSuffix, Mission, MapSelect, Keyboard, Scheme, Game, ExpandPrefix, CachePrefix, FollowMenuButtons]
     classification: excluded
     reason: Each is a setting of the deployment's own file or a mod's mod.ini, documented as those formats rather than as game data.
 
