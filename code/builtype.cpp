@@ -413,6 +413,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpyNavalVeterancy(false),
 	IsSpyAircraftVeterancy(false),
 	IsSpyBuildingVeterancy(false),
+	IsSpyRevealProduction(false),
 	AcademyInfantryVeterancy(0.0),
 	AcademyAircraftVeterancy(0.0),
 	AcademyVehicleVeterancy(0.0),
@@ -1550,6 +1551,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			IsSpyNavalVeterancy = ini.Get_Bool(Name(), "SpyEffect.NavalVeterancy", IsSpyNavalVeterancy);
 			IsSpyAircraftVeterancy = ini.Get_Bool(Name(), "SpyEffect.AircraftVeterancy", IsSpyAircraftVeterancy);
 			IsSpyBuildingVeterancy = ini.Get_Bool(Name(), "SpyEffect.BuildingVeterancy", IsSpyBuildingVeterancy);
+			IsSpyRevealProduction = ini.Get_Bool(Name(), "SpyEffect.RevealProduction", IsSpyRevealProduction);
 		}
 		AcademyInfantryVeterancy = ini.Get_Float(Name(), "Academy.InfantryVeterancy", AcademyInfantryVeterancy);
 		AcademyAircraftVeterancy = ini.Get_Float(Name(), "Academy.AircraftVeterancy", AcademyAircraftVeterancy);
@@ -2723,6 +2725,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpyNavalVeterancy);
 	stream.Serialize(IsSpyAircraftVeterancy);
 	stream.Serialize(IsSpyBuildingVeterancy);
+	stream.Serialize(IsSpyRevealProduction);
 	stream.Serialize(AcademyInfantryVeterancy);
 	stream.Serialize(AcademyAircraftVeterancy);
 	stream.Serialize(AcademyVehicleVeterancy);

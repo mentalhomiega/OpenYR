@@ -1,0 +1,22 @@
+; SpyEffect.RevealProduction with the ares-small-e-keys mod. The computer house owns two power plants: GAPOWR, which has SpyEffect.Custom=yes and
+; SpyEffect.RevealProduction=yes, and NAPOWR, which has SpyEffect.Custom=yes only. An American spy (SPY) infiltrates each, and the player selects
+; the plant with a click. The screenshots reveal-a and reveal-b show a selected plant: the Allied plant (reveal-a, which also has Storage=100)
+; carries the power figures "Power = 500" and "Drain = 0" over the building and the computer house's money below them, the Soviet plant
+; (reveal-b) carries no text.
+; Run from the repository root; the screenshots go to the user folder's Screenshots folder:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-reveal.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 120 -Filter "AUTOTEST   (spy|spied)|AUTOTEST spy|Exception"
+30 command CenterBase
+35 reveal
+40 enemy GAPOWR 76 24
+41 enemy NAPOWR 76 34
+110 own SPY 72 26
+120 spy SPY 76 24
+300 own SPY 72 36
+310 spy SPY 76 34
+500 view 76 24
+510 windowclick 320 245
+530 windowshot reveal-a
+540 view 76 34
+550 windowclick 320 245
+570 windowshot reveal-b
+600 quit

@@ -873,6 +873,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsSpyAircraftVeterancy;
 		bool IsSpyBuildingVeterancy;
 
+		// SpyEffect.RevealProduction (Ares): with SpyEffect.Custom=yes, a spy's house sees this structure's production, power and the
+		// owner's money only when the key is set.
+		bool IsSpyRevealProduction;
+
 		// Academy.* (Ares): the veterancy levels this structure gives a new trainable object of its house, by kind, limited to
 		// the AcademyTypes when that list is not empty and never given to the AcademyIgnore types.
 		double AcademyInfantryVeterancy;

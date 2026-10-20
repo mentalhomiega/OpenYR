@@ -165,6 +165,7 @@
 #include "side.h"
 #include "savestream.h"
 #include "scheme.h"
+#include "dialog.h"
 #include "flyingtext.h"
 #include "session.h"
 #include "shapeset.h"
@@ -1244,15 +1245,25 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 		}
 	}
 
-	if (IsSelected && (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr])) {
+	// A structure with SpyEffect.Custom=yes shows its owner's figures to a spy's house only when it has SpyEffect.RevealProduction (Ares).
+	bool const spied_reveal = SpiedBy[PlayerPtr] && (!Class->IsSpyEffectCustom || Class->IsSpyRevealProduction);
+
+	if (IsSelected && (House->Shares_View_With(PlayerPtr) || spied_reveal)) {
 		Draw_Text_Overlay(point + Point2D(-10, 10), point, cliprect);
+	}
+
+	// A RevealProduction structure that stores resources also shows its owner's money to the house that spied on it.
+	if (IsSelected && spied_reveal && Class->IsSpyRevealProduction && Class->Capacity > 0 && !House->Shares_View_With(PlayerPtr)) {
+		char money[32];
+		snprintf(money, sizeof(money), "$%d", House->Available_Money());
+		Plain_Text_Print(money, *LogicalSurface, cliprect, point + Point2D(0, 28), WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
 	}
 
 	/*
 	**	If this is a factory that we're spying on, or the player has the whole map, show what
 	**	it's producing
 	*/
-	if ((SpiedBy[PlayerPtr] || Session.ObiWan) && IsSelected) {
+	if ((spied_reveal || Session.ObiWan) && IsSelected) {
 
 		/*
 		**	Fetch the factory that is associate with this building. For computer controlled buildings, the
