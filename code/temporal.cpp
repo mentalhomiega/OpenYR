@@ -14,6 +14,8 @@
 #include "_map.h"
 #include "_rules.h"
 #include "anim.h"
+#include "autotest.h"
+#include "dbgprint.h"
 #include "building.h"
 #include "builtype.h"
 #include "cell.h"
@@ -27,6 +29,7 @@
 #include "unit.h"
 #include "unittype.h"
 #include "vox.h"
+#include "warhead.h"
 #include "weapon.h"
 
 #include <cmath>
@@ -102,6 +105,16 @@ void TemporalClass::Fire(TechnoClass * target)
 	if (head == nullptr) {
 		target->WarpedBy = Owner;
 		WarpRemaining = target->TClass->MaxStrength * 10;
+
+		// Temporal.HealthFactor (Ares) takes that share of the warp from the health the target has already lost.
+		WeaponTypeClass const * const fired = Owner->Get_Class_Weapon_Data(Owner->What_Weapon_Should_I_Use(target))->Weapon;
+		if (fired != nullptr && fired->WarheadPtr != nullptr && fired->WarheadPtr->TemporalHealthFactor > 0.0) {
+			double const factor = fired->WarheadPtr->TemporalHealthFactor;
+			WarpRemaining = (int)(((1.0 - factor) * target->TClass->MaxStrength + factor * target->Strength) * 10.0);
+		}
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST warp start %s strength %d warp %d\n", target->TClass->Name(), target->Strength, WarpRemaining);
+		}
 		if (target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->House == PlayerPtr) {
 			if (Submit_Radar_Event(RADAREVENT_HARVESTER_ATTACKED, ((UnitClass *)target)->Destination_Coord().As_Cell())) {
 				Speak(VOX_HARVESTER_UNDER_ATTACK);

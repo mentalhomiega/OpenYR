@@ -413,6 +413,9 @@ class WarheadTypeClass : public AbstractTypeClass
 		// CellSpread.MaxAffect (Ares): the most hits one object takes from one blast of this warhead, the nearest ones; -1 for no limit.
 		int CellSpreadMaxAffect;
 
+		// Temporal.HealthFactor (Ares), 0 to 1: how far a warped object's lost health shortens the warp that is left.
+		double TemporalHealthFactor;
+
 		// UnitLost.Suppress (Ares): a unit this warhead kills does not make EVA announce a lost unit.
 		bool IsUnitLostSuppress;
 

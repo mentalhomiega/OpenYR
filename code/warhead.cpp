@@ -166,6 +166,7 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	IronCurtainCap(-1),
 	DisableWeaponsDuration(0),
 	CellSpreadMaxAffect(-1),
+	TemporalHealthFactor(0.0),
 	IsUnitLostSuppress(false),
 	IsDieSoundOverridden(false),
 	DieSoundOverride(VOC_NONE),
@@ -256,6 +257,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsNukeMaker = ini.Get_Bool(Name(), "NukeMaker", IsNukeMaker);
 		IsMindControl = ini.Get_Bool(Name(), "MindControl", IsMindControl);
 		IsTemporal = ini.Get_Bool(Name(), "Temporal", IsTemporal);
+		TemporalHealthFactor = std::clamp(ini.Get_Float(Name(), "Temporal.HealthFactor", TemporalHealthFactor), 0.0, 1.0);
 		IsRadiation = ini.Get_Bool(Name(), "Radiation", IsRadiation);
 		IsParasite = ini.Get_Bool(Name(), "Parasite", IsParasite);
 		IsCulling = ini.Get_Bool(Name(), "Culling", IsCulling);
@@ -431,6 +433,7 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(IronCurtainCap);
 	crc(DisableWeaponsDuration);
 	crc(CellSpreadMaxAffect);
+	crc(TemporalHealthFactor);
 	crc(IsUnitLostSuppress);
 	crc(IsAffectsOwner);
 	crc(InfDeathAnim != NULL);
@@ -611,6 +614,7 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IronCurtainCap);
 	stream.Serialize(DisableWeaponsDuration);
 	stream.Serialize(CellSpreadMaxAffect);
+	stream.Serialize(TemporalHealthFactor);
 	stream.Serialize(IsUnitLostSuppress);
 	stream.Serialize(IsDieSoundOverridden);
 	stream.Serialize(DieSoundOverride);
