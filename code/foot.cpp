@@ -1114,7 +1114,7 @@ int FootClass::Do_MISSION_HUNT(void)
 				if (Ready_To_Commence()) {
 					Commence();
 				}
-			} else if (infantry != NULL && infantry->Class->IsVehicleThief) {
+			} else if (infantry != NULL && infantry->Is_Vehicle_Captor(TarCom)) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_CAPTURE);
 				if (Ready_To_Commence()) {
@@ -1602,7 +1602,7 @@ void FootClass::Approach_Target(void)
 			*/
 			if (found) {
 				Assign_Destination(&Map[trycell]);
-			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief)) {
+			} else if (TClass->IsHunterSeeker || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Is_Vehicle_Captor(TarCom))) {
 				Assign_Destination(TarCom);
 			} else {
 				trycell = Map.Nearby_Location(trycell,

@@ -130,6 +130,9 @@ class HouseTypeClass : public AbstractTypeClass
 		 */
 		bool IsMultiplayPassive;
 
+		// CanBeDriven (Ares): 1 or 0 as the country says, or -1 to follow MultiplayPassive.
+		signed char CanBeDriven;
+
 		/*
 		 * Interface files and labels of the country, from its own section: the loading screen's
 		 * picture, palette, text labels and text color scheme, the flag shown beside its player's
@@ -194,6 +197,8 @@ class HouseTypeClass : public AbstractTypeClass
 
 
 		virtual void Serialize(SaveStreamClass & stream) override;
+
+		bool Can_Be_Driven(void) const {return(CanBeDriven < 0 ? IsMultiplayPassive : CanBeDriven != 0);}
 
 		virtual RTTIType Fetch_RTTI(void) const override;
 		virtual void Compute_CRC(CRCEngine &) const override;

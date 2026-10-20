@@ -113,6 +113,7 @@ HouseTypeClass::HouseTypeClass(char const * ininame) :
 	ListIndex(100),
 	IsMultiplay(false),
 	IsMultiplayPassive(false),
+	CanBeDriven(-1),
 	IsGivesBounty(true),
 	IsWallOwner(true),
 	IsSmartAI(false),
@@ -270,6 +271,9 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsMultiplay = ini.Get_Bool(Name(), "Multiplay", IsMultiplay);
 		IsMultiplayPassive = ini.Get_Bool(Name(), "MultiplayPassive", IsMultiplayPassive);
+		if (ini.Is_Present(Name(), "CanBeDriven")) {
+			CanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", false) ? 1 : 0;
+		}
 		IsGivesBounty = ini.Get_Bool(Name(), "GivesBounty", IsGivesBounty);
 		IsWallOwner = ini.Get_Bool(Name(), "WallOwner", IsWallOwner);
 		IsSmartAI = ini.Get_Bool(Name(), "SmartAI", IsSmartAI);
@@ -375,6 +379,7 @@ void HouseTypeClass::Inherit_Country(HouseTypeClass const & parent)
 	strcpy(Suffix, parent.Suffix);
 	Prefix = parent.Prefix;
 	IsMultiplayPassive = parent.IsMultiplayPassive;
+	CanBeDriven = parent.CanBeDriven;
 	IsGivesBounty = parent.IsGivesBounty;
 	IsWallOwner = parent.IsWallOwner;
 	IsSmartAI = parent.IsSmartAI;
@@ -415,6 +420,7 @@ void HouseTypeClass::Inherit_Side(HouseTypeClass const & parent)
 void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
+	crc(Can_Be_Driven());
 	crc(House);
 	crc(Side);
 	crc(Scheme);
@@ -498,6 +504,7 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Prefix);
 	stream.Serialize(IsMultiplay);
 	stream.Serialize(IsMultiplayPassive);
+	stream.Serialize(CanBeDriven);
 	stream.Serialize(IsGivesBounty);
 	stream.Serialize(IsWallOwner);
 	stream.Serialize(IsSmartAI);

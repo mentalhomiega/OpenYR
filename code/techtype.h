@@ -457,6 +457,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Whether a vehicle thief may take this vehicle (Ares VehicleThief.Allowed).
 		bool IsVehicleThiefAllowed;
 
+		// Whether a CanDrive soldier may take this vehicle over (Ares CanBeDriven).
+		bool IsCanBeDriven;
+
 		// The build time factor per extra factory, or below 0 for [General] MultipleFactory (Ares BuildTime.MultipleFactory).
 		double BuildTimeMultipleFactory;
 

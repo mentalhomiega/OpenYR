@@ -937,6 +937,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 						}
 						tech->Detach_All(false);
+						if (Class->VehicleThiefEnterSound != VOC_NONE && Is_Vehicle_Captor(tech)) {
+							Sound_Effect(Class->VehicleThiefEnterSound, tech->PositionCoord);
+						}
 						tech->Captured(House);
 						tech->EnteredByInfType = Class->HeapID;
 						tech->Scatter_Incoming_Infantry();
@@ -1951,7 +1954,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				return(MOVE_NO);
 			}
 
-			if (Class->IsVehicleThief && Is_Strange_For_Thief(obj) && NavCom == obj && !obj->TClass->IsTrain) {
+			if (Is_Vehicle_Captor(obj) && Is_Strange_For_Thief(obj) && NavCom == obj && !obj->TClass->IsTrain) {
 				return(MOVE_OK);
 			}
 
@@ -3294,6 +3297,11 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	}
 
+	// A CanDrive soldier takes over a vehicle that its owner may be driven from (Ares).
+	if (House->Is_Player_Control() && !Class->IsVehicleThief && Can_Drive(object)) {
+		return(ACTION_CAPTURE);
+	}
+
 	if (object->RTTI == RTTI_BUILDING && House->Is_Ally(object) && House->Is_Player_Control()) {
 		BuildingClass const * bldg = (BuildingClass *)object;
 		if (bldg->Class->IsHospital) {
@@ -4040,6 +4048,34 @@ bool InfantryClass::Edge_Of_World_AI(void)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Tells whether this soldier can drive off the vehicle (Ares CanDrive): the soldier's type has CanDrive=yes, and the
+/// vehicle belongs to another house whose country can be driven from and is itself CanBeDriven. A train cannot be driven.
+/// </summary>
+/// <param name="object">The object under consideration.</param>
+bool InfantryClass::Can_Drive(AbstractClass const * object) const
+{
+	if (!Class->IsCanDrive || object == NULL || !object->Is_Techno() || object->RTTI == RTTI_BUILDING) {
+		return(false);
+	}
+	TechnoClass const * const vehicle = static_cast<TechnoClass const *>(object);
+	if (!vehicle->Considered_Vehicle()) {
+		return(false);
+	}
+	return(vehicle->House != House && vehicle->House->Class->Can_Be_Driven() && vehicle->TClass->IsCanBeDriven && !vehicle->TClass->IsTrain);
+}
+
+
+/// <summary>
+/// Tells whether this soldier takes the object over by entering it, as a vehicle thief or a CanDrive soldier does.
+/// </summary>
+/// <param name="object">The vehicle the soldier is sent to, or NULL.</param>
+bool InfantryClass::Is_Vehicle_Captor(AbstractClass const * object) const
+{
+	return(Class->IsVehicleThief || Can_Drive(object));
 }
 
 
