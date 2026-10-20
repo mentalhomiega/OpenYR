@@ -84,6 +84,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		// A non-zero IdleRate makes a stopped unit step its walk animation once every IdleRate frames.
 		int IdleRate;
 
+		// AirRate (Ares): above 0, an object off the ground steps its animation once every AirRate frames, in place of WalkRate and IdleRate.
+		int AirRate;
+
 		// A PipsDrawForAll=yes object shows its pips to every player, not only its owner's allies.
 		bool IsPipsDrawForAll;
 

@@ -134,6 +134,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CollateralDamageCoefficient(.33f),
 	WalkRate(1),
 	IdleRate(0),
+	AirRate(0),
 	IsPipsDrawForAll(false),
 	SpecialThreatValue(0),
 	MyEffectivenessCoefficient(0),
@@ -862,6 +863,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
 		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
 		IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
+		AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
 		IsPipsDrawForAll = ini.Get_Bool(Name(), "PipsDrawForAll", IsPipsDrawForAll);
 		IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
 		IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
@@ -1823,6 +1825,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Unused1);
 	stream.Serialize(WalkRate);
 	stream.Serialize(IdleRate);
+	stream.Serialize(AirRate);
 	stream.Serialize(IsPipsDrawForAll);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);

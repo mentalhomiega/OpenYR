@@ -4067,6 +4067,10 @@ void FootClass::AI(void)
 					step = deploy_to_land && HeightAGL >= 1 && !busy;
 				}
 			}
+			// An AirRate object off the ground steps on its air rate alone, whether it moves or hovers.
+			if (TClass->AirRate > 0 && (HeightAGL > 0 || In_Air())) {
+				step = (Frame % TClass->AirRate) == 0 && !busy;
+			}
 			if (step) {
 				TotalFramesWalked++;
 			}
