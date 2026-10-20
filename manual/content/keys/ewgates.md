@@ -11,6 +11,6 @@ When a computer house plans a perimeter wall, a long wall run along the north or
 
 The planner does not check that the entry is a gate. Any structure type listed here is planned into the three cells of the run that the gate takes.
 
-:::danger[List a gate every wall-building country may own]
-If the planner lays a gate on the north or south edge and this list holds no entry the country may own, the game crashes.
+:::caution[List a gate every wall-building country may own]
+If the planner needs a gate on the north or south edge and this list holds no entry the country may own, it plans no gate: the three cells the gate would take stay open.
 :::

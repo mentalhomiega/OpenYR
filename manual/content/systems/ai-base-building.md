@@ -343,7 +343,7 @@ Neighboring suitable cells along an edge form a run. What a run becomes depends 
 
 Walls use the first [`ConcreteWalls`](/keys/concretewalls/) entry the acted country may own. A gate takes three cells of its run: the first [`EWGates`](/keys/ewgates/) entry on the north and south edges, and the first [`NSGates`](/keys/nsgates/) entry on the east and west. All wall nodes are appended before any gate node.
 
-Make sure every country whose side builds walls may own a `ConcreteWalls`, an `EWGates` and an `NSGates` entry. The game crashes when the planner lays a wall or gate and the country may own no entry of that kind.
+Make sure every country whose side builds walls may own a `ConcreteWalls`, an `EWGates` and an `NSGates` entry. A country that may own no wall type gets no perimeter wall. One that may own no gate type gets its walls with the three-cell gap of each gate left open.
 
 For a side with an [`AIWallTowers`](/keys/aiwalltowers/) entry the acted country may own, the wall cells also become the [threat ring](#base-defenses). The planner then appends pairs of a tower node and a `-1` placeholder. It adds one pair per five wall nodes, capped at `(3 - Difficulty) * `[`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/)` + `[`AIWallDefense`](/keys/aiwalldefense/), rounded down to a whole number of pairs.
 

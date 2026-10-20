@@ -11,4 +11,4 @@ A computer house builds the walls of its [planned perimeter](/systems/ai-base-bu
 
 A wall of that type is removed from the plan when a base defense later takes its cell. Only a defense that [plugs into](/keys/powersupbuilding/) one of the side's wall towers removes a wall this way.
 
-Give every country whose side builds walls an entry it may own. The game crashes when the computer plans a wall for a country that may own none of the listed types.
+Give every country whose side builds walls an entry it may own. A country that may own none of the listed types gets no perimeter wall.
