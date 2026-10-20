@@ -1518,6 +1518,10 @@ void HouseClass::AI(void)
 		Recalc_Power_Drain();
 		RecalcRadar = true;
 	}
+	// Jammers move, so a world with some is checked again every second (Ares RadarJamRadius).
+	if (TechnoTypeClass::RadarJammersExist && (Frame % TICKS_PER_SECOND) == 0) {
+		RecalcRadar = true;
+	}
 	if (RecalcRadar) {
 		Recalc_Radar_Availability();
 	}
@@ -9732,7 +9736,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 			} else {
 				for (int i = 0; i < Buildings.Count(); i++) {
 					BuildingClass * b = Buildings[i];
-					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown) {
+					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown && !b->Is_Radar_Jammed()) {
 						if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 						if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 							if (b->StunDuration == 0) {
@@ -9747,6 +9751,9 @@ void HouseClass::Recalc_Radar_Availability(void)
 
 		if (Map.Is_Radar_Existing() != radar_on) {
 			Map.Toggle_Radar(radar_on);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST radar frame %d is now %s\n", Frame, radar_on ? "on" : "off");
+			}
 		}
 	}
 
@@ -9757,7 +9764,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 	bool spysat = false;
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * b = Buildings[i];
-		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On()) {
+		if (b != NULL && b->House == this && b->Class->IsSpySat && !b->IsInLimbo && b->IsDown && b->Is_Powered_On() && !b->Is_Radar_Jammed()) {
 			if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 			if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 				spysat = true;

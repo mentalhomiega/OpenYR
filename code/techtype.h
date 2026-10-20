@@ -87,6 +87,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		// AirRate (Ares): above 0, an object off the ground steps its animation once every AirRate frames, in place of WalkRate and IdleRate.
 		int AirRate;
 
+		// RadarJamRadius (Ares): the cells around this object within which it jams the radar and spy satellite structures of houses
+		// that are not allied with its owner.
+		int RadarJamRadius;
+		static bool RadarJammersExist;
+
 		// A PipsDrawForAll=yes object shows its pips to every player, not only its owner's allies.
 		bool IsPipsDrawForAll;
 

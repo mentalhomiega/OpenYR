@@ -78,6 +78,9 @@ void const * TechnoTypeClass::WakeShapes = NULL;
  *   03/19/1995 JLB : Created.                                                                 *
  *   05/11/1996 JLB : Moderated risk calc so range doesn't dominate.                           *
  *=============================================================================================*/
+bool TechnoTypeClass::RadarJammersExist = false;
+
+
 TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	BASECLASS(ininame),
 	IsDoubleOwned(false),
@@ -135,6 +138,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	WalkRate(1),
 	IdleRate(0),
 	AirRate(0),
+	RadarJamRadius(0),
 	IsPipsDrawForAll(false),
 	SpecialThreatValue(0),
 	MyEffectivenessCoefficient(0),
@@ -864,6 +868,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
 		IdleRate = ini.Get_Int(Name(), "IdleRate", IdleRate);
 		AirRate = ini.Get_Int(Name(), "AirRate", AirRate);
+		RadarJamRadius = ini.Get_Int(Name(), "RadarJamRadius", RadarJamRadius);
+		if (RadarJamRadius > 0) {
+			RadarJammersExist = true;
+		}
 		IsPipsDrawForAll = ini.Get_Bool(Name(), "PipsDrawForAll", IsPipsDrawForAll);
 		IsMoveToShroud = ini.Get_Bool(Name(), "MoveToShroud", IsMoveToShroud);
 		IsTrain = ini.Get_Bool(Name(), "IsTrain", IsTrain);
@@ -1826,6 +1834,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WalkRate);
 	stream.Serialize(IdleRate);
 	stream.Serialize(AirRate);
+	stream.Serialize(RadarJamRadius);
 	stream.Serialize(IsPipsDrawForAll);
 	stream.Serialize(VeteranAbilities);
 	stream.Serialize(EliteAbilities);
@@ -2247,6 +2256,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	BASECLASS::Compute_CRC(crc);
 	crc(IsDontScore);
 	crc(IsCanBeDriven);
+	crc(RadarJamRadius);
 	crc(NoAmmoWeapon);
 	crc(NoAmmoAmount);
 	crc((int)InitialPayloadTypes.size());

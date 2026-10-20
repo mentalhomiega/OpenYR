@@ -541,6 +541,7 @@ class BuildingClass : public TechnoClass
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
 		bool Is_Powered_On(void) const;
+		bool Is_Radar_Jammed(void) const;
 		SuperWeaponType Fetch_Super_Weapon(void) const;
 		SuperWeaponType Fetch_Super_Weapon2(void) const;
 		bool Grants_Super_Weapon(int super) const;

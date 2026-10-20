@@ -12382,6 +12382,27 @@ void BuildingClass::Custom_Spy_Effect(HouseClass * house, bool victim, bool spy)
 
 
 /// <summary>
+/// Tells whether an object with RadarJamRadius (Ares) that is not allied with this structure's owner is close enough to jam it. A jammed
+/// radar or spy satellite structure stays on but gives its owner no radar or map.
+/// </summary>
+bool BuildingClass::Is_Radar_Jammed(void) const
+{
+	if (!TechnoTypeClass::RadarJammersExist) {
+		return(false);
+	}
+	Coord const where = Center_Coord();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * const jammer = Technos[index];
+		if (jammer->TClass->RadarJamRadius > 0 && jammer->IsActive && !jammer->IsInLimbo && !jammer->House->Is_Ally(House)
+			&& (jammer->Center_Coord() - where).Gamemd_Length() <= jammer->TClass->RadarJamRadius * CELL_LEPTON_W) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Records that a spy has infiltrated this building.
 /// This routine is called when a spy makes it inside. The spying house is handed whatever
 /// intelligence this building type is worth -- radar coverage and power plant readings.
