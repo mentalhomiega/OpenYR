@@ -336,6 +336,11 @@ AnimClass::~AnimClass(void)
 		if (xObject != NULL) {
 			ObjectClass * to = xObject;
 
+			// A unit or infantryman does not hear of a deleted anim through the anim pointer tracker, so it drops an AttachEffect anim here.
+			if (to->Is_Techno()) {
+				to->As_TechnoClass()->AttachedEffects.Detach(this);
+			}
+
 			/*
 			**	Scan for any other animations that are attached to the object that
 			**	this animation is attached to. If there are no others, then inform the
@@ -1438,6 +1443,10 @@ void AnimClass::Detach(AbstractClass const * target, bool all)
 {
 	BASECLASS::Detach(target, all);
 	if (xObject == target) {
+		// An object about to leave the map or die keeps its AttachEffect pointers, which this deletion would leave dangling.
+		if (target->Is_Techno()) {
+			const_cast<TechnoClass *>(target->As_TechnoClass())->AttachedEffects.Detach(this);
+		}
 		Map.Remove(this);
 		xObject = NULL;
 		IsToDelete = true;
