@@ -1492,6 +1492,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsArmory = ini.Get_Bool(Name(), "Armory", IsArmory);
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
+		IsFirestormWall = ini.Get_Bool(Name(), "Firestorm.Wall", IsFirestormWall);
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
 		{
