@@ -76,6 +76,8 @@ When an `[IsoMapPack]`, `[IsoMapPack2]` or `[IsoMapPack3]` read ends early, the 
 - In `[IsoMapPack]`, every cell whose tile type was not reached.
 - In `[IsoMapPack2]` or `[IsoMapPack3]`, a cell whose record was cut off between its coordinates and its tile type.
 
+A cell whose tile type is higher than the number of tile types the theater's INI file defines is clear ground too, in every pack. Such a cell is logged and keeps no sub-tile.
+
 ## Overlay packs
 
 `[OverlayPack]` and `[OverlayDataPack]` store each cell's overlay type and overlay frame for the whole 512 by 512 cell grid. Each holds one byte per cell, in rows of increasing Y with X increasing within each row, compressed in LCW blocks and Base64-encoded as `[IsoMapPack]` is. In `[OverlayPack]`, `255` means no overlay, and so does a value that is not the index of an overlay type in the loaded rules.
