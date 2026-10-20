@@ -344,6 +344,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsHasStupidGuardMode(true),
 	IsBridgeRepairHut(false),
 	IsGate(false),
+	IsGateUpSoundSet(false),
+	GateUpSound(VOC_NONE),
+	IsGateDownSoundSet(false),
+	GateDownSound(VOC_NONE),
 	IsSAM(false),
 	IsConstructionYard(false),
 	IsNukeSilo(false),
@@ -1484,6 +1488,14 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		DefensesCostBonus = ini.Get_Float(Name(), "DefensesCostBonus", DefensesCostBonus);
 		IsDockUnload = ini.Get_Bool(Name(), "DockUnload", IsDockUnload);
 		IsGate = ini.Get_Bool(Name(), "Gate", IsGate);
+		if (ini.Is_Present(Name(), "GateUpSound")) {
+			IsGateUpSoundSet = true;
+			GateUpSound = ini.Get_VocType(Name(), "GateUpSound", GateUpSound);
+		}
+		if (ini.Is_Present(Name(), "GateDownSound")) {
+			IsGateDownSoundSet = true;
+			GateDownSound = ini.Get_VocType(Name(), "GateDownSound", GateDownSound);
+		}
 		IsSAM = ini.Get_Bool(Name(), "SAM", IsSAM);
 		IsConstructionYard = ini.Get_Bool(Name(), "ConstructionYard", IsConstructionYard);
 		IsNukeSilo = ini.Get_Bool(Name(), "NukeSilo", IsNukeSilo);
@@ -2627,6 +2639,10 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsHasStupidGuardMode);
 	stream.Serialize(IsBridgeRepairHut);
 	stream.Serialize(IsGate);
+	stream.Serialize(IsGateUpSoundSet);
+	stream.Serialize(GateUpSound);
+	stream.Serialize(IsGateDownSoundSet);
+	stream.Serialize(GateDownSound);
 	stream.Serialize(IsSAM);
 	stream.Serialize(IsConstructionYard);
 	stream.Serialize(IsNukeSilo);

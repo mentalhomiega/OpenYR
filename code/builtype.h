@@ -642,6 +642,13 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsGate;
 
+		// GateUpSound and GateDownSound (Ares): the sound this gate makes as it closes and as it opens. Without the key the gate
+		// plays the [AudioVisual] GateUp or GateDown sound.
+		bool IsGateUpSoundSet;
+		VocType GateUpSound;
+		bool IsGateDownSoundSet;
+		VocType GateDownSound;
+
 		/*
 		 * If this building is a surface to air missile launcher, then this flag will be true.
 		 * It runs an attack state machine of its own and only holds airborne targets.

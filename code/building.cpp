@@ -7400,7 +7400,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 						Door.Reverse();
 					} else {
 						Door.Open_Door(Class->DeployTime);
-						Sound_Effect(Rule->GateDownSound, PositionCoord);
+						Sound_Effect(Class->IsGateDownSoundSet ? Class->GateDownSound : Rule->GateDownSound, PositionCoord);
 						Rect redrawrect = Get_Render_Rect();
 						TacticalMap->Register_Dirty_Area(redrawrect);
 					}
@@ -7412,7 +7412,7 @@ int BuildingClass::Do_MISSION_OPEN(void)
 			case START_CLOSING:
 				Door.Close_Door(Class->DeployTime);
 				Status = CLOSING;
-				Sound_Effect(Rule->GateUpSound, PositionCoord);
+				Sound_Effect(Class->IsGateUpSoundSet ? Class->GateUpSound : Rule->GateUpSound, PositionCoord);
 				return(0);
 
 			case OPEN:
