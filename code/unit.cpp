@@ -278,6 +278,11 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 		Veterancy.Set_Veteran(true);
 	}
 
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
+
 	if (Class != NULL && Class->IsGunner) {
 		Set_Turret_Weapon(0);
 	}

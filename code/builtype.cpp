@@ -413,6 +413,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsSpyNavalVeterancy(false),
 	IsSpyAircraftVeterancy(false),
 	IsSpyBuildingVeterancy(false),
+	AcademyInfantryVeterancy(0.0),
+	AcademyAircraftVeterancy(0.0),
+	AcademyVehicleVeterancy(0.0),
+	AcademyBuildingVeterancy(0.0),
 	SuperWeapon(SUPER_NONE),
 	SuperWeapon2(SUPER_NONE),
 	GateStages(9),
@@ -1546,6 +1550,16 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			IsSpyNavalVeterancy = ini.Get_Bool(Name(), "SpyEffect.NavalVeterancy", IsSpyNavalVeterancy);
 			IsSpyAircraftVeterancy = ini.Get_Bool(Name(), "SpyEffect.AircraftVeterancy", IsSpyAircraftVeterancy);
 			IsSpyBuildingVeterancy = ini.Get_Bool(Name(), "SpyEffect.BuildingVeterancy", IsSpyBuildingVeterancy);
+		}
+		AcademyInfantryVeterancy = ini.Get_Float(Name(), "Academy.InfantryVeterancy", AcademyInfantryVeterancy);
+		AcademyAircraftVeterancy = ini.Get_Float(Name(), "Academy.AircraftVeterancy", AcademyAircraftVeterancy);
+		AcademyVehicleVeterancy = ini.Get_Float(Name(), "Academy.VehicleVeterancy", AcademyVehicleVeterancy);
+		AcademyBuildingVeterancy = ini.Get_Float(Name(), "Academy.BuildingVeterancy", AcademyBuildingVeterancy);
+		if (ini.Is_Present(Name(), "Academy.Types")) {
+			AcademyTypes = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Types"));
+		}
+		if (ini.Is_Present(Name(), "Academy.Ignore")) {
+			AcademyIgnore = ObjectKeyRules::Split_List(ini.Get_String(Name(), "Academy.Ignore"));
 		}
 		IsEMPulseCannon = ini.Get_Bool(Name(), "EMPulseCannon", IsEMPulseCannon);
 		IsChronoshiftVehicle = ini.Get_Bool(Name(), "Chronoshift.IsVehicle", IsChronoshiftVehicle);
@@ -2709,6 +2723,12 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSpyNavalVeterancy);
 	stream.Serialize(IsSpyAircraftVeterancy);
 	stream.Serialize(IsSpyBuildingVeterancy);
+	stream.Serialize(AcademyInfantryVeterancy);
+	stream.Serialize(AcademyAircraftVeterancy);
+	stream.Serialize(AcademyVehicleVeterancy);
+	stream.Serialize(AcademyBuildingVeterancy);
+	stream.Serialize(AcademyTypes);
+	stream.Serialize(AcademyIgnore);
 	stream.Serialize(SuperWeapon);
 	stream.Serialize(SuperWeapon2);
 	stream.Serialize(SuperWeaponList);

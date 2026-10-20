@@ -873,6 +873,15 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsSpyAircraftVeterancy;
 		bool IsSpyBuildingVeterancy;
 
+		// Academy.* (Ares): the veterancy levels this structure gives a new trainable object of its house, by kind, limited to
+		// the AcademyTypes when that list is not empty and never given to the AcademyIgnore types.
+		double AcademyInfantryVeterancy;
+		double AcademyAircraftVeterancy;
+		double AcademyVehicleVeterancy;
+		double AcademyBuildingVeterancy;
+		std::vector<std::string> AcademyTypes;
+		std::vector<std::string> AcademyIgnore;
+
 		// EngineerRepairable (Ares): an engineer can restore this structure to full strength. Follows Repairable.
 		bool IsEngineerRepairable;
 

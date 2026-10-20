@@ -2106,6 +2106,51 @@ void HouseClass::Harvested(int tiberium, TiberiumType slot)
 
 
 /// <summary>
+/// Raises the veterancy of a new trainable object to the best Academy.* level that a structure of this house offers its kind
+/// (Ares). The level is the highest one on offer, not the sum, and an object that already has more keeps it. Levels run from
+/// 1 for veteran to 2 for elite, with fractions counting as part of a promotion.
+/// </summary>
+/// <param name="techno">The object just made for this house.</param>
+void HouseClass::Apply_Academy(TechnoClass * techno) const
+{
+	TechnoTypeClass const * const type = techno->TClass;
+	if (type == NULL || !type->IsTrainable) {
+		return;
+	}
+	auto const listed = [type](std::vector<std::string> const & names) {
+		for (std::string const & name : names) {
+			if (stricmp(name.c_str(), type->Name()) == 0) {
+				return(true);
+			}
+		}
+		return(false);
+	};
+
+	double best = 0.0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * const academy = Buildings[index];
+		if (academy->House != this || academy->IsInLimbo || !academy->IsActive) {
+			continue;
+		}
+		BuildingTypeClass const * const data = academy->Class;
+		double bonus = data->AcademyVehicleVeterancy;
+		if (techno->RTTI == RTTI_BUILDING) {
+			bonus = data->AcademyBuildingVeterancy;
+		} else if (techno->RTTI == RTTI_AIRCRAFT || type->IsConsideredAircraft) {
+			bonus = data->AcademyAircraftVeterancy;
+		} else if (techno->RTTI == RTTI_INFANTRY || type->IsOrganic) {
+			bonus = data->AcademyInfantryVeterancy;
+		}
+		if (bonus <= best || (!data->AcademyTypes.empty() && !listed(data->AcademyTypes)) || listed(data->AcademyIgnore)) {
+			continue;
+		}
+		best = bonus;
+	}
+	techno->Veterancy.Experience = std::max(techno->Veterancy.Experience, std::min(best, 2.0));
+}
+
+
+/// <summary>
 /// Pays the ore purifier bonus on ore a harvester has just delivered, as UnitClass::Mission_Unload
 /// (0x73D630) does: PurifierBonus of the ore for every purifier the house has on the map, plus
 /// the AIVirtualPurifiers entry for a computer house outside a campaign. A purifier counts until

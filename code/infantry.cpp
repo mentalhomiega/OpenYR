@@ -293,6 +293,11 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	if (House != NULL && House->IsBarracksInfiltrated && Class != NULL && Class->IsTrainable) {
 		Veterancy.Set_Veteran(true);
 	}
+
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
 }
 
 

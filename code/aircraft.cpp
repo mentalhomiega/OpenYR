@@ -235,6 +235,11 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 		Veterancy.Set_Veteran(true);
 	}
 
+	// An Academy structure of the house raises the veterancy of its new trainable objects (Ares).
+	if (House != NULL) {
+		House->Apply_Academy(this);
+	}
+
 	Aircraft.Add(this);
 
 	TargetTracker.Add_Index(Fetch_ID(), this);

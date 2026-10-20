@@ -1,0 +1,17 @@
+; Academy.* with the ares-small-e-keys mod, which gives the Allied Barracks (GAPILE) Academy.InfantryVeterancy=1.0, Academy.VehicleVeterancy=0.5
+; and Academy.Ignore=E2. The player owns the barracks, then gets a Conscript (E1), a Flak Trooper (E2) and a Grizzly (MTNK). Expected veterancy lines:
+; E1 has experience 1 (veteran), E2 experience 0 (listed in Academy.Ignore) and MTNK experience 0.5 (rookie, part of a promotion). The player's
+; own Grizzly (own MTNK) made before the barracks has experience 0.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/ares-small-e-academy.txt -Mods "E:\Claude ra2 decomp\src-agent9\tests\autotest\ares-small-e-keys" -Seconds 90 -Filter "AUTOTEST   veterancy|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 60 30
+50 own GAPILE 66 40
+60 own E1 60 36
+61 own E2 60 38
+62 own MTNK 60 42
+70 veterancy E1
+71 veterancy E2
+72 veterancy MTNK
+100 quit
