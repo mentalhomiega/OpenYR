@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -210,7 +211,11 @@ class CacheProviderClass : public AudioClipProviderClass
 			if (sound >= type.SoundCount || type.Sounds[sound][0] == '\0') {
 				return(nullptr);
 			}
-			return(Cache.Acquire_Named(type.Sounds[sound], Reader));
+			AudioSampleClass * clip = Cache.Acquire_Named(type.Sounds[sound], Reader);
+			if (clip == nullptr && Missing.insert(std::string(type.Sounds[sound])).second) {
+				DebugString("Audio: sample %s not found\n", type.Sounds[sound]);
+			}
+			return(clip);
 		}
 
 		void Release(AudioSampleClass * clip) override
@@ -221,6 +226,8 @@ class CacheProviderClass : public AudioClipProviderClass
 	private:
 		AudioSampleCacheClass & Cache;
 		AudioAssetReaderClass & Reader;
+		// Names already reported as missing, so each is logged once.
+		std::set<std::string> Missing;
 };
 
 } // namespace
@@ -392,6 +399,10 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 		// keeps the announcer's lines.
 		std::vector<uint8_t> bytes;
 		if (Reader == nullptr || !Reader->Read(filename, bytes)) {
+			static std::set<std::string> reported;
+			if (reported.insert(std::string(filename)).second) {
+				DebugString("Audio: %s not found\n", filename);
+			}
 			return(AudioHandle());
 		}
 		source.reset(new MemoryByteSourceClass(std::move(bytes)));
