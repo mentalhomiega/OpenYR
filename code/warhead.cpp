@@ -167,6 +167,8 @@ WarheadTypeClass::WarheadTypeClass(char const * ininame) :
 	DisableWeaponsDuration(0),
 	CellSpreadMaxAffect(-1),
 	TemporalHealthFactor(0.0),
+	FlashDuration(0),
+	IsAllowZeroDamage(false),
 	IsUnitLostSuppress(false),
 	IsDieSoundOverridden(false),
 	DieSoundOverride(VOC_NONE),
@@ -295,6 +297,8 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		IsKillDriver = ini.Get_Bool(Name(), "KillDriver", IsKillDriver);
 		IsPreventScatter = ini.Get_Bool(Name(), "PreventScatter", IsPreventScatter);
 		IsEffectsRequireDamage = ini.Get_Bool(Name(), "EffectsRequireDamage", IsEffectsRequireDamage);
+		FlashDuration = ini.Get_Int(Name(), "Flash.Duration", FlashDuration);
+		IsAllowZeroDamage = ini.Get_Bool(Name(), "AllowZeroDamage", IsAllowZeroDamage);
 		IsEffectsRequireVerses = ini.Get_Bool(Name(), "EffectsRequireVerses", IsEffectsRequireVerses);
 		EMPDuration = ini.Get_Int(Name(), "EMP.Duration", EMPDuration);
 		EMPCap = ini.Get_Int(Name(), "EMP.Cap", EMPCap);
@@ -434,6 +438,8 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 	crc(DisableWeaponsDuration);
 	crc(CellSpreadMaxAffect);
 	crc(TemporalHealthFactor);
+	crc(FlashDuration);
+	crc(IsAllowZeroDamage);
 	crc(IsUnitLostSuppress);
 	crc(IsAffectsOwner);
 	crc(InfDeathAnim != NULL);
@@ -615,6 +621,8 @@ void WarheadTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DisableWeaponsDuration);
 	stream.Serialize(CellSpreadMaxAffect);
 	stream.Serialize(TemporalHealthFactor);
+	stream.Serialize(FlashDuration);
+	stream.Serialize(IsAllowZeroDamage);
 	stream.Serialize(IsUnitLostSuppress);
 	stream.Serialize(IsDieSoundOverridden);
 	stream.Serialize(DieSoundOverride);

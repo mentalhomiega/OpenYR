@@ -241,7 +241,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 	if (Scen->Special.IsInert || warhead == NULL) return(false);
 
-	if (!strength && !warhead->IsWebby) return(false);
+	if (!strength && !warhead->IsWebby && !warhead->IsAllowZeroDamage) return(false);
 
 	/*
 	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance

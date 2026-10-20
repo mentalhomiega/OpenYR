@@ -6593,7 +6593,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * to one point even when it is zero (TechnoClass::ReceiveDamage, 0x701900); a Webby hit
 	 * carries no damage and stays at zero.
 	 */
-	if (!forced && !negative && !(damage == 0 && warhead != NULL && warhead->IsWebby)) {
+	if (!forced && !negative && !(damage == 0 && warhead != NULL && (warhead->IsWebby || warhead->IsAllowZeroDamage))) {
 		damage = (int)((double)damage / (House->Country_Armor_Multiplier(TClass) * ArmorBias * AttachedEffects.Armor_Multiplier()));
 
 		if (Has_Ability(ABILITY_STRONGER)) {
@@ -6654,6 +6654,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	if (warhead != NULL && warhead->AttachEffect.Is_Defined() && Strength > 0 && effects_apply
 		&& (!Is_Iron_Curtained() || warhead->AttachEffect.IsPenetratesIronCurtain)) {
 		AttachedEffects.Attach(this, warhead);
+	}
+
+	// A Flash.Duration warhead makes an object whose armor it affects flash for that many frames (Ares).
+	if (warhead != NULL && warhead->FlashDuration > 0 && Strength > 0 && effects_apply) {
+		FlashCount = std::max(FlashCount, (unsigned)warhead->FlashDuration);
 	}
 
 	// A DisableWeapons.Duration warhead jams the weapons of an object that is not under the Iron Curtain (Ares).
