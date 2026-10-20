@@ -1,0 +1,23 @@
+; Top-layer animation over a flying aircraft. A Harrier (ORCA) is granted to the player, flown north, and stopped when it
+; reaches 60,12, so it hovers over its cell. The storm cloud WCCLOUD1 (Layer=Top, ARTMD.INI:14860) is then played on that
+; cell. Both are in the top layer, and the cloud is submitted later, so it should draw over the aircraft. The first shot
+; shows the aircraft alone. The lift line logs the Harrier's height above ground.
+; Read the where line first: if the Harrier stops on another cell, change the playanim cell to match.
+; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/anim-layer-top.txt -Seconds 120 -ShotDir "E:\Claude ra2 decomp\shots\anim-layer-top" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 grantunit ORCA 58 26
+50 move ORCA 58 10
+60 waitcell ORCA 60 12 2 200
+60 stop ORCA
+60 where ORCA
+60 lift ORCA
+60 view 60 13
+60 windowshot anim-top-harrier-alone
+60 playanim WCCLOUD1 60 13
+65 liveanims WCCLOUD1
+70 windowshot anim-top-over-harrier-a
+75 windowshot anim-top-over-harrier-b
+80 windowshot anim-top-over-harrier-c
+90 liveanims WCCLOUD1
+100 quit

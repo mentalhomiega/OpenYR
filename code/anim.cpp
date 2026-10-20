@@ -194,7 +194,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 
 	Set_Stage(0);
 
-	if (!Class->IsGroundLayer) {
+	if (Class->Layer == LAYER_AIR || Class->Layer == LAYER_TOP) {
 		Height = Rule->FlightLevel;
 	} else {
 		HeightAGL = 0;
@@ -1225,8 +1225,11 @@ void AnimClass::Attach_To(ObjectClass * obj)
  *=============================================================================================*/
 LayerType AnimClass::In_Which_Layer(void) const
 {
-	if (xObject != NULL || (Class != NULL && Class->IsGroundLayer)) {
+	if (xObject != NULL) {
 		return(LAYER_GROUND);
+	}
+	if (Class != NULL) {
+		return(Class->Layer);
 	}
 	return(LAYER_AIR);
 }

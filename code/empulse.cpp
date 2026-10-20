@@ -162,7 +162,12 @@ void EMPulseClass::Create(TechnoClass * source)
 		}
 
 		for (int j = 0; j < DisplayClass::Layer[LAYER_UNDERGROUND].Count(); j++) {
-			FootClass * foot = (FootClass *)DisplayClass::Layer[LAYER_UNDERGROUND][j];
+			// The underground layer also holds animations, which have no locomotor.
+			ObjectClass * object = DisplayClass::Layer[LAYER_UNDERGROUND][j];
+			if (!object->Is_Foot()) {
+				continue;
+			}
+			FootClass * foot = (FootClass *)object;
 			Cell center = foot->PositionCoord;
 			int x = center.X - CellID.X;
 			int y = center.Y - CellID.Y;

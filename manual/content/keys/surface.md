@@ -15,6 +15,6 @@ With `no`, the animation is in the layer above. That layer is drawn after the wh
 
 An animation attached to an object is always in the ground layer, so the flag matters only for an animation that stands on its own.
 
-The flag does not change the animation's height. The animation appears at the height the code that created it chose.
+The flag also sets the animation's starting height: `no` starts it at [`FlightLevel`](/keys/flightlevel/), and `yes` starts it on the ground.
 
 A recognised [`Layer`](/keys/layer/#scope-animtype) value on the same animation overrides this flag.

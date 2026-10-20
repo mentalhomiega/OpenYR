@@ -18,6 +18,7 @@
 #include "objtype.h"
 
 #include "anim.hh"
+#include "layer.hh"
 #include "particle.hh"
 
 class WarheadTypeClass;
@@ -393,12 +394,9 @@ class AnimTypeClass : public ObjectTypeClass
 		// When this animation ends, it becomes this entry of AnimToInfantry, owned by its house (-1 for none).
 		int MakeInfantry;
 
-		/*
-		**	If this animation should be rendered and sorted with the other ground
-		**	units, then this flag is true. Typical of this would be fire and other
-		**	low altitude animation effects.
-		*/
-		bool IsGroundLayer;
+		// The layer this animation is drawn in. Only the ground layer is sorted. An animation
+		// attached to an object is drawn in the ground layer whatever this says.
+		LayerType Layer;
 
 		/*
 		 * If this animation lies flat upon the ground rather than standing upright, then

@@ -21889,7 +21889,7 @@ Layer:
     _provenance:
       default_candidate: null
       declared_in: AnimTypeClass
-      member: layer
+      member: layer_name
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
@@ -37862,9 +37862,9 @@ Surface:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: null
       declared_in: AnimTypeClass
-      member: IsGroundLayer
+      member: null
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass

@@ -23,7 +23,7 @@ YSortAdjust=-64
 
 The value moves nothing on screen: the artwork is drawn in the same place, and only what covers what changes. [`YDrawOffset`](/keys/ydrawoffset/) moves the artwork.
 
-Only the ground layer is sorted, so the value affects only an animation that has [`Surface=yes`](/keys/surface/) or is attached to an object. Every other animation is in the air layer, where the value has no effect. A burning structure's fire is attached to the structure, and a weapon's firing animation to the vehicle, infantry or aircraft that fired it. A structure's firing animation is not attached.
+Only the ground layer is sorted, so the value affects only an animation in that layer: one with [`Surface=yes`](/keys/surface/) or [`Layer=ground`](/keys/layer/#scope-animtype), or one attached to an object. Every other animation is in a layer that is not sorted, so the value has no effect. A burning structure's fire is attached to the structure, and a weapon's firing animation to the vehicle, infantry or aircraft that fired it. A structure's firing animation is not attached.
 
 An animation that a structure runs in one of its animation slots uses the slot's value instead, which is `0` when the slot sets none. [Placement and draw order](/systems/building-animations/#placement-and-draw-order) covers that value and its range. The type's own value has no such range limit.
 
