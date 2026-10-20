@@ -850,6 +850,9 @@ static inline int _Scale_To_256(int val)
  *=============================================================================================*/
 bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 {
+	// The art section the base class reads depends on this flag.
+	IsAlternateTheaterArt = ini.Get_Bool(Name(), "AlternateTheaterArt", IsAlternateTheaterArt);
+
 	if (BASECLASS::Read_INI(ini)) {
 
 		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).

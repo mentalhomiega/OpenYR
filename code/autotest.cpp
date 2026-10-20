@@ -3670,6 +3670,11 @@ void Run(StepType const & step)
 		if (type != NULL) {
 			DebugString("AUTOTEST   typesounds %s create %d enter %d leave %d primaryattack %d secondaryattack %d\n", type->Name(), (int)type->CreateSound, (int)type->EnterTransportSound, (int)type->LeaveTransportSound, (int)type->VoicePrimaryWeaponAttack, (int)type->VoiceSecondaryWeaponAttack);
 		}
+	} else if (step.Command == "graphic") {
+		ObjectTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			DebugString("AUTOTEST   graphic %s art %s alternate %d has shape %d\n", type->Name(), type->Graphic_Name(), (int)type->IsAlternateTheaterArt, (int)(type->Get_Image_Data() != NULL));
+		}
 	} else if (step.Command == "cratesounds") {
 		DebugString("AUTOTEST   cratesounds money %d reveal %d fire %d armour %d speed %d unit %d promote %d\n", (int)Rule->CrateMoneySound, (int)Rule->CrateRevealSound, (int)Rule->CrateFireSound, (int)Rule->CrateArmourSound, (int)Rule->CrateSpeedSound, (int)Rule->CrateUnitSound, (int)Rule->CratePromoteSound);
 	} else if (step.Command == "elite") {
