@@ -930,6 +930,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsNaval;
 
+		// Places a vehicle or aircraft cameo with the aircraft, after the ground vehicles, in the classic sidebar order.
+		bool IsConsideredAircraft;
+
 		/*
 		 * The countries that may build this type, and those that may not, as Ownable bits. -1
 		 * places no limit.

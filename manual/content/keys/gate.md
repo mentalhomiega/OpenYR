@@ -13,4 +13,4 @@ The flag also changes placement. A gate may be placed on a cell holding one of i
 
 [`GateStages`](/keys/gatestages/) sets which frames the door and the buildup animation use. [Buildup](/systems/production/#buildup) covers the buildup animation's timing.
 
-On the sidebar, a gate's cameo sorts after walls and before base defenses that share its [`CameoSortOrder`](/keys/cameosortorder/), as [the order of the strips](/systems/sidebar/#the-order-of-the-strips) describes.
+On the sidebar, a gate's cameo sorts after walls and before base defenses that share its [`CameoSortOrder`](/keys/cameosortorder/), when [`UseCameoSortOrder=yes`](/keys/usecameosortorder/) is set, as [the order of the strips](/systems/sidebar/#the-order-of-the-strips) describes.

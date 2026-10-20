@@ -8857,6 +8857,23 @@ ConditionYellowSparkingProbability:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ConsideredAircraft:
+  key: ConsideredAircraft
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsConsideredAircraft
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Construction:
   key: Construction
   scopes:
@@ -41166,6 +41183,24 @@ UseBlueTiberium:
       source: code/mapgen.cpp
       guard: null
     level: MapSeedClass
+UseCameoSortOrder:
+  key: UseCameoSortOrder
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsUseCameoSortOrder
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 UseChargeDrain:
   key: UseChargeDrain
   scopes:

@@ -246,6 +246,7 @@ RulesClass::RulesClass(void) :
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(true),
 	IsLargeSidebarStrips(false),
+	IsUseCameoSortOrder(false),
 	AircraftWaypointReload(true),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
@@ -1756,6 +1757,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsRecheckPrerequisites = ini.Get_Bool(GENERAL, "RecheckPrerequisites", IsRecheckPrerequisites);
 		IsLargeSidebarStrips = ini.Get_Bool(GENERAL, "LargeSidebarStrips", IsLargeSidebarStrips);
+		IsUseCameoSortOrder = ini.Get_Bool(GENERAL, "UseCameoSortOrder", IsUseCameoSortOrder);
 		AircraftWaypointReload = ini.Get_Bool(GENERAL, "AircraftWaypointReload", AircraftWaypointReload);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
@@ -3510,6 +3512,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMultiMCV);
 	stream.Serialize(IsRecheckPrerequisites);
 	stream.Serialize(IsLargeSidebarStrips);
+	stream.Serialize(IsUseCameoSortOrder);
 	stream.Serialize(IsBlendedFog);
 	stream.Serialize(IsCompEasyBonus);
 	stream.Serialize(IsFineDifficulty);

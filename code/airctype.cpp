@@ -101,6 +101,7 @@ AircraftTypeClass::AircraftTypeClass(char const * ininame) :
 	HeapID = AircraftType(AircraftTypes.ID(this));
 
 	IsMoveToShroud = false;
+	IsConsideredAircraft = true;
 	Rotation = 32;
 	IsCrashable = true;
 }

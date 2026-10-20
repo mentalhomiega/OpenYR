@@ -331,6 +331,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsTrainable(true),
 	IsDontScore(false),
 	IsNaval(false),
+	IsConsideredAircraft(false),
 	RequiredHouses(-1),
 	ForbiddenHouses(-1),
 	AIBasePlanningSide(-1),
@@ -1130,6 +1131,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsTrainable = ini.Get_Bool(Name(), "Trainable", IsTrainable);
 		IsDontScore = ini.Get_Bool(Name(), "DontScore", IsDontScore);
 		IsNaval = ini.Get_Bool(Name(), "Naval", IsNaval);
+		IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
 		RequiredHouses = ini.Get_Owners(Name(), "RequiredHouses", RequiredHouses);
 		ForbiddenHouses = ini.Get_Owners(Name(), "ForbiddenHouses", ForbiddenHouses);
 		AIBasePlanningSide = ini.Get_Int(Name(), "AIBasePlanningSide", AIBasePlanningSide);
@@ -1786,6 +1788,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTrainable);
 	stream.Serialize(IsDontScore);
 	stream.Serialize(IsNaval);
+	stream.Serialize(IsConsideredAircraft);
 	stream.Serialize(RequiredHouses);
 	stream.Serialize(ForbiddenHouses);
 	stream.Serialize(AIBasePlanningSide);

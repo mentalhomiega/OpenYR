@@ -7,6 +7,7 @@ keys:
   - Cameo
   - CameoPCX
   - CameoSortOrder
+  - ConsideredAircraft
   - CreditTicks
   - LargeSidebarStrips
   - MaximumQueuedObjects
@@ -15,6 +16,7 @@ keys:
   - SidebarCameoText
   - SidebarSorting
   - SortCameoAsBaseDefense
+  - UseCameoSortOrder
 related:
   - type: system
     id: production
@@ -58,7 +60,18 @@ Each type goes to one tab:
 
 ### The order of the strips
 
-By default each strip is kept in a fixed order that depends only on the rules, so the same rules give the same strip whatever order the cameos were added in. Entries are compared on each of the following in turn, and the first difference decides. No two entries can tie on all four.
+Each new cameo is inserted before the first cameo on its strip that it sorts ahead of, so a strip stays in the same order whatever order its cameos were added in. Two cameos are compared on each of the following in turn, and the first difference decides:
+
+1. **Superweapons** come before everything else. Among superweapons, the shorter [`RechargeTime=`](/keys/rechargetime/) comes first.
+2. **The player's side.** A type whose [`AIBasePlanningSide=`](/keys/aibaseplanningside/) is the player's side comes before one whose value is not.
+3. **Ground, air, water**, on the vehicle strip: ground vehicles, then types with [`ConsideredAircraft=yes`](/keys/consideredaircraft/), then [`Naval=yes`](/keys/naval/) types. Every AircraftType counts as an aircraft unless it sets `ConsideredAircraft=no`.
+4. **[`TechLevel=`](/keys/techlevel/#scope-aircrafttype)**, lowest first.
+5. **Cost** to the player, after the country's cost modifiers, lowest first.
+6. **Name**, the name the player sees, in character-code order.
+
+When two cameos tie on all six, the one added later goes first.
+
+[`UseCameoSortOrder=yes`](/keys/usecameosortorder/) replaces this order with one set by the rules alone. Entries are then compared on each of the following in turn, and no two entries can tie on all four:
 
 1. **Kind.** Superweapons, then infantry, then aircraft, then vehicles, then structures. Only the second and fourth strips hold more than one kind.
 2. **[`CameoSortOrder=`](/keys/cameosortorder/)**, lowest first.
@@ -76,9 +89,9 @@ CameoSortOrder=10           ; where this type's cameo sits among the structures
 SortCameoAsBaseDefense=yes  ; group it with the base defenses
 ```
 
-[`SidebarSorting=no`](/keys/sidebarsorting/) turns this order off. Each new cameo then goes to the end of its strip, and types offered together by one structure keep their declaration order.
+[`SidebarSorting=no`](/keys/sidebarsorting/) turns ordering off. Each new cameo then goes to the end of its strip, and types offered together by one structure keep their declaration order.
 
-A strip is sorted again whenever a cameo is added to it, and after a saved game is loaded, because the rules or the sorting setting may have changed since the save. If the strip has been scrolled, the cameo on its top row stays on the top row. Sorting does not affect production in progress.
+A strip is sorted again after a saved game is loaded, because the rules or the sorting setting may have changed since the save; cameos that tie keep their saved order. With `UseCameoSortOrder=yes`, a strip is also sorted again whenever a cameo is added to it. If the strip has been scrolled, the cameo on its top row stays on the top row. Sorting does not affect production in progress.
 
 Adding a cameo plays the new-construction-options announcement. Superweapon cameos are added without it, and so is every cameo added while a scenario is still being set up.
 

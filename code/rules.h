@@ -2735,6 +2735,12 @@ class RulesClass
 		bool IsLargeSidebarStrips;
 
 		/*
+		 * If true, sidebar strips are ordered by CameoSortOrder, group and declaration order.
+		 * Otherwise they keep Yuri's Revenge's order.
+		 */
+		bool IsUseCameoSortOrder;
+
+		/*
 		 * If true, an ammunition-limited armed aircraft may take planned orders in planning mode, and
 		 * goes to a dock to rearm when its ammunition runs out, then carries on with the order it left.
 		 * If false, planning mode refuses every aircraft, as gamemd's AircraftTypeClass::CanUseWaypoint

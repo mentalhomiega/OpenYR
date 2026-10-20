@@ -322,6 +322,94 @@ static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & en
 
 
 /// <summary>
+/// Whether the left cameo goes before the right one in Yuri's Revenge's sidebar order
+/// (BuildType::SortsBefore, 0x6A8420). Superweapons come first by recharge time; then the
+/// player's own side's types; then ground types, aircraft and ships; then technology level,
+/// cost to the player and name. Two entries that tie on all of these return true both ways.
+/// </summary>
+static bool Classic_Sorts_Before(SidebarClass::StripClass::BuildType const & left, SidebarClass::StripClass::BuildType const & right)
+{
+	if (right.BuildableType == RTTI_NONE) {
+		return(true);
+	}
+
+	bool const left_special = left.BuildableType == RTTI_SPECIAL;
+	bool const right_special = right.BuildableType == RTTI_SPECIAL;
+
+	if (left_special || right_special) {
+		if (!left_special) {
+			return(false);
+		}
+		if (!right_special) {
+			return(true);
+		}
+		if ((unsigned)left.BuildableID >= (unsigned)SuperWeaponTypes.Count() || (unsigned)right.BuildableID >= (unsigned)SuperWeaponTypes.Count()) {
+			return(left.BuildableID <= right.BuildableID);
+		}
+		SuperWeaponTypeClass const * lsuper = SuperWeaponTypes[left.BuildableID];
+		SuperWeaponTypeClass const * rsuper = SuperWeaponTypes[right.BuildableID];
+		if (lsuper->RechargeTime != rsuper->RechargeTime) {
+			return(lsuper->RechargeTime < rsuper->RechargeTime);
+		}
+		return(strcmp(lsuper->Full_Name(), rsuper->Full_Name()) <= 0);
+	}
+
+	TechnoTypeClass const * ltech = Fetch_Techno_Type(left.BuildableType, left.BuildableID);
+	TechnoTypeClass const * rtech = Fetch_Techno_Type(right.BuildableType, right.BuildableID);
+	if (ltech == NULL || rtech == NULL) {
+		return(rtech == NULL);
+	}
+
+	if (PlayerPtr != NULL) {
+		int const side = (int)PlayerPtr->Class->Side;
+		bool const left_own = ltech->AIBasePlanningSide == side;
+		bool const right_own = rtech->AIBasePlanningSide == side;
+		if (left_own != right_own) {
+			return(left_own);
+		}
+	}
+
+	bool const left_mobile = left.BuildableType == RTTI_UNITTYPE || left.BuildableType == RTTI_AIRCRAFTTYPE;
+	bool const right_mobile = right.BuildableType == RTTI_UNITTYPE || right.BuildableType == RTTI_AIRCRAFTTYPE;
+	bool const left_air = left_mobile && ltech->IsConsideredAircraft;
+	bool const left_naval = left_mobile && ltech->IsNaval;
+	bool const right_air = right_mobile && rtech->IsConsideredAircraft;
+	bool const right_naval = right_mobile && rtech->IsNaval;
+	bool const right_ground = !right_air && !right_naval;
+
+	// A type that is both an aircraft and naval takes gamemd's mixed path through these tests.
+	if (!left_air && !left_naval) {
+		if (right_air || right_naval) {
+			return(true);
+		}
+	} else if (!left_air) {
+		if (right_ground || right_air) {
+			return(false);
+		}
+	} else {
+		if (right_ground) {
+			return(false);
+		}
+		if (right_naval) {
+			return(true);
+		}
+	}
+
+	if (ltech->Level != rtech->Level) {
+		return(ltech->Level < rtech->Level);
+	}
+
+	int const lcost = ltech->Cost_Of(PlayerPtr);
+	int const rcost = rtech->Cost_Of(PlayerPtr);
+	if (lcost != rcost) {
+		return(lcost < rcost);
+	}
+
+	return(strcmp(ltech->Full_Name(), rtech->Full_Name()) <= 0);
+}
+
+
+/// <summary>
 /// Default constructor for the sidebar background gadget.
 /// This gadget exists to cover the sidebar so that the mouse reverts to its normal shape
 /// whenever it strays over there. The sidebar gives the gadget its real position and size
@@ -1867,8 +1955,21 @@ bool SidebarClass::StripClass::Add(RTTIType type, int id)
 		if (!ScenarioInit && type != RTTI_SPECIAL) {
 			Speak(VOX_NEW_CONSTRUCT);
 		}
-		Buildables[BuildableCount].BuildableType = type;
-		Buildables[BuildableCount].BuildableID = id;
+		BuildType const entry(id, type);
+		int place = BuildableCount;
+
+		// Yuri's Revenge inserts a new cameo before the first one it sorts before (0x6A8710).
+		if (Options.SidebarSorting && !Rule->IsUseCameoSortOrder) {
+			for (place = 0; place < BuildableCount; place++) {
+				if (Classic_Sorts_Before(entry, Buildables[place])) {
+					break;
+				}
+			}
+			if (place < BuildableCount) {
+				memmove(&Buildables[place+1], &Buildables[place], sizeof(Buildables[0]) * (BuildableCount - place));
+			}
+		}
+		Buildables[place] = entry;
 		BuildableCount++;
 		IsToRedraw = true;
 		IsToSort = true;
@@ -2644,9 +2745,16 @@ void SidebarClass::StripClass::Sort(void)
 		sorted[index].Entry = Buildables[index];
 	}
 
-	std::sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
-		return(left.Order < right.Order);
-	});
+	if (Rule->IsUseCameoSortOrder) {
+		std::sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
+			return(left.Order < right.Order);
+		});
+	} else {
+		// Ties keep their order, so a strip that Add already ordered is left as it is.
+		std::stable_sort(&sorted[0], &sorted[BuildableCount], [](CameoSortType const & left, CameoSortType const & right) {
+			return(Classic_Sorts_Before(left.Entry, right.Entry) && !Classic_Sorts_Before(right.Entry, left.Entry));
+		});
+	}
 
 	bool moved = false;
 	for (int index = 0; index < BuildableCount; index++) {

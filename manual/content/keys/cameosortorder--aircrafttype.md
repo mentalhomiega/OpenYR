@@ -12,4 +12,4 @@ Lower numbers come first. Types with the same number are ordered by the remainin
 
 The number is compared only among cameos of the same kind, so no number moves a vehicle in among the infantry. Among structures it is compared before the wall, gate and base-defense groups. A wall with a lower number therefore sorts ahead of an ordinary building with a higher one.
 
-The key has an effect only while [`SidebarSorting`](/keys/sidebarsorting/) is on.
+The key has an effect only with [`UseCameoSortOrder=yes`](/keys/usecameosortorder/) and [`SidebarSorting`](/keys/sidebarsorting/) on.

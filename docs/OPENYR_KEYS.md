@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 110 entries
+- [Rules](#rules): 111 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -242,6 +242,7 @@ Bounty.Value=200
 | [`SelfHealCap`](../manual/content/keys/selfhealcap.md) | `-1` | The share of maximum strength at which self-healing stops. | OpenTS |
 | [`SelfHealRate`](../manual/content/keys/selfhealrate.md) | `-1` | The interval between self-healing ticks. | OpenTS |
 | [`SelfHealStep`](../manual/content/keys/selfhealstep.md) | `1` | The strength one self-healing tick restores. | OpenTS |
+| [`UseCameoSortOrder`](../manual/content/keys/usecameosortorder--global-rules.md) | `no` | Orders the sidebar strips by CameoSortOrder and declaration order instead of Yuri's Revenge's order. | OpenYR |
 
 ## Art
 
@@ -313,7 +314,7 @@ SystemCursor=no
 | [`Mods`](../manual/content/keys/mods--client-settings.md) | The list in `Mods=` under `[Paths]` in `OPENTS.INI`, or no mods when that file gives none | The mods this player starts the game with, in the order they are read. | OpenYR |
 | [`ScreenShake`](../manual/content/keys/screenshake--client-settings.md) | `yes` | `ScreenShake=yes` shakes the picture when a warhead or an ion blast detonates. | OpenYR |
 | [`SidebarRows`](../manual/content/keys/sidebarrows--client-settings.md) | `4` | `SidebarRows=` sets how many rows of cameos the modern build panel shows at once. | OpenYR |
-| [`SidebarSorting`](../manual/content/keys/sidebarsorting.md) | `yes` | Keeps each sidebar strip in a fixed order that depends only on the rules. | OpenTS |
+| [`SidebarSorting`](../manual/content/keys/sidebarsorting.md) | `yes` | Keeps each sidebar strip in a fixed order. | OpenTS |
 | [`SimulateWhileUnfocused`](../manual/content/keys/simulatewhileunfocused.md) | `no` | Keeps a campaign or skirmish running while another program has the focus. | OpenTS |
 | [`SyncLog`](../manual/content/keys/synclog--client-settings.md) | `no` | `SyncLog=yes` writes the frame check value to the debug log on every game frame, as the `-SYNCLOG` command-line switch does. | OpenYR |
 | [`TextBackgroundColor`](../manual/content/keys/textbackgroundcolor--client-settings.md) | `12` | `TextBackgroundColor` is the palette index drawn behind every character of the in-game message list and of the line being typed. | OpenTS |
