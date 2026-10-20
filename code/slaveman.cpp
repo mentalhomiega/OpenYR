@@ -664,6 +664,32 @@ void SlaveManagerClass::Detach(AbstractClass const * target)
 }
 
 
+/// <summary>
+/// Tells whether a slave of this manager may stand in a cell of its deployed miner's dock
+/// (SlaveManagerClass 0x6B0880): the dock cell itself, or the cell above it while the miner
+/// occupies that cell too. A miner on wheels has no such cells.
+/// </summary>
+bool SlaveManagerClass::Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const
+{
+	Cell const dock = Dock_Cell();
+	Cell above = CELL_NONE;
+	if (Owner->RTTI == RTTI_BUILDING && Map[dock + Cell(0, -1)].Cell_Building() == Owner) {
+		above = dock + Cell(0, -1);
+	}
+
+	if (cell != &Map[dock] && (above == CELL_NONE || cell != &Map[above])) {
+		return(false);
+	}
+
+	for (NodeType const & node : Nodes) {
+		if (node.Slave == slave) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 void SlaveManagerClass::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Owner);

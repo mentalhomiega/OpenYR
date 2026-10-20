@@ -127,6 +127,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "slaveman.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "syncrechook.h"
@@ -1883,6 +1884,13 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			// A parasite whose victim shares this cell lets the infantry through.
 			if (ParasiteImUsing.has_value() && ParasiteImUsing->Victim != NULL && ParasiteImUsing->Victim->Get_Cell() == obj->Get_Cell()) {
 				return(MOVE_OK);
+			}
+
+			// A slave may share its deployed miner's dock cell with the miner, which then does not block it as a vehicle.
+			if (SlaveOwner != NULL && SlaveOwner->SlaveManager.has_value() && obj == SlaveOwner && SlaveOwner->SlaveManager->Is_Dock_Cell_For(this, cellptr)) {
+				vehicleflag = false;
+				obj = obj->Next;
+				continue;
 			}
 
 			TechnoClass * techno = Dynamic_Cast<TechnoClass *>(obj);

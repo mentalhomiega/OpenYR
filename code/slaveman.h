@@ -15,6 +15,7 @@
 #include <vector>
 
 class AbstractClass;
+class CellClass;
 class HouseClass;
 class InfantryClass;
 class InfantryTypeClass;
@@ -37,6 +38,7 @@ class SlaveManagerClass
 		void Set_Owner(TechnoClass * owner);
 		void Free_All(TechnoClass * killer);
 		void Detach(AbstractClass const * target);
+		bool Is_Dock_Cell_For(InfantryClass const * slave, CellClass const * cell) const;
 		void Serialize(SaveStreamClass & stream);
 
 	private:
