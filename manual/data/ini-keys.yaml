@@ -513,6 +513,23 @@ AIHateDelays:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+AIInnerBase:
+  key: AIInnerBase
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsAIInnerBase
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 AIIonCannonAPCValue:
   key: AIIonCannonAPCValue
   scopes:
@@ -1170,6 +1187,108 @@ Abductor.Temporal:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+Academy.AircraftVeterancy:
+  key: Academy.AircraftVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyAircraftVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.BuildingVeterancy:
+  key: Academy.BuildingVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyBuildingVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.Ignore:
+  key: Academy.Ignore
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.InfantryVeterancy:
+  key: Academy.InfantryVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyInfantryVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.Types:
+  key: Academy.Types
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+Academy.VehicleVeterancy:
+  key: Academy.VehicleVeterancy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: AcademyVehicleVeterancy
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Accelerates:
   key: Accelerates
   scopes:
@@ -2277,6 +2396,23 @@ AirRangeBonus:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+AirRate:
+  key: AirRate
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: AirRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Airburst:
   key: Airburst
   scopes:
@@ -2861,6 +2997,23 @@ AllowToPlace:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+AllowZeroDamage:
+  key: AllowZeroDamage
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsAllowZeroDamage
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 AllowableUnitMaximums:
   key: AllowableUnitMaximums
   scopes:
@@ -18396,6 +18549,23 @@ FlamingInfantry:
       applies_to: *id051
     precedence: accepted under more than one entry heading; the last one the engine reads wins
     level: RulesClass
+Flash.Duration:
+  key: Flash.Duration
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: FlashDuration
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 FlashFrameTime:
   key: FlashFrameTime
   scopes:
@@ -19404,6 +19574,23 @@ GateDown:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GateDownSound:
+  key: GateDownSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: GateDownSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 GateStages:
   key: GateStages
   scopes:
@@ -19439,6 +19626,23 @@ GateUp:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+GateUpSound:
+  key: GateUpSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: GateUpSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Gattling.Cycle:
   key: Gattling.Cycle
   scopes:
@@ -34970,6 +35174,23 @@ RadarInvisible:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+RadarJamRadius:
+  key: RadarJamRadius
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: RadarJamRadius
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RadarOff:
   key: RadarOff
   scopes:
@@ -35796,6 +36017,91 @@ RejoinTeamIfLimboed:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+RelativeDamage:
+  key: RelativeDamage
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WarheadTypeClass
+      member: IsRelativeDamage
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Aircraft:
+  key: RelativeDamage.Aircraft
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageAircraft
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Buildings:
+  key: RelativeDamage.Buildings
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageBuildings
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Infantry:
+  key: RelativeDamage.Infantry
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageInfantry
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+RelativeDamage.Vehicles:
+  key: RelativeDamage.Vehicles
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: WarheadTypeClass
+      member: RelativeDamageVehicles
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
 RelaxedStray:
   key: RelaxedStray
   scopes:
@@ -42051,6 +42357,23 @@ SpyEffect.ResetSuperweapons:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+SpyEffect.RevealProduction:
+  key: SpyEffect.RevealProduction
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsSpyRevealProduction
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SpyEffect.StolenMoneyAmount:
   key: SpyEffect.StolenMoneyAmount
   scopes:
@@ -45149,6 +45472,23 @@ Temporal:
       default_candidate: 'no'
       declared_in: WarheadTypeClass
       member: IsTemporal
+      source: code/warhead.cpp
+      guard: null
+    level: WarheadTypeClass
+Temporal.HealthFactor:
+  key: Temporal.HealthFactor
+  scopes:
+  - applies_to: *id007
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '0.0'
+      declared_in: WarheadTypeClass
+      member: TemporalHealthFactor
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
