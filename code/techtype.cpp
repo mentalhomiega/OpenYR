@@ -986,10 +986,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Load_Insignia_Shapes();
 
 		IsVehicleThiefAllowed = ini.Get_Bool(Name(), "VehicleThief.Allowed", IsVehicleThiefAllowed);
+		IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
 		BuildTimeMultipleFactory = ini.Get_Float(Name(), "BuildTime.MultipleFactory", BuildTimeMultipleFactory);
 		IsCrashable = ini.Get_Bool(Name(), "Crashable", IsCrashable);
 		IsConsideredAircraft = ini.Get_Bool(Name(), "ConsideredAircraft", IsConsideredAircraft);
-		IsCanBeDriven = ini.Get_Bool(Name(), "CanBeDriven", IsCanBeDriven);
 		PromoteVeteranSound = ini.Get_VocType(Name(), "Promote.VeteranSound", PromoteVeteranSound);
 		PromoteEliteSound = ini.Get_VocType(Name(), "Promote.EliteSound", PromoteEliteSound);
 		IsHealthBarHidden = ini.Get_Bool(Name(), "HealthBar.Hide", IsHealthBarHidden);
@@ -1929,10 +1929,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InsigniaFrame);
 	stream.Serialize(InsigniaShowEnemy);
 	stream.Serialize(IsVehicleThiefAllowed);
+	stream.Serialize(IsCanBeDriven);
 	stream.Serialize(BuildTimeMultipleFactory);
 	stream.Serialize(IsCrashable);
 	stream.Serialize(IsConsideredAircraft);
-	stream.Serialize(IsCanBeDriven);
 	stream.Serialize(PromoteVeteranSound);
 	stream.Serialize(PromoteEliteSound);
 	stream.Serialize(IsHealthBarHidden);
@@ -2243,10 +2243,10 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(IsDontScore);
+	crc(IsCanBeDriven);
 	crc(NoAmmoWeapon);
 	crc(NoAmmoAmount);
 	crc((int)InitialPayloadTypes.size());
-	crc(IsCanBeDriven);
 	crc((int)PassengersAllowed.size());
 	crc((int)PassengersDisallowed.size());
 	crc(FallRateParachute);

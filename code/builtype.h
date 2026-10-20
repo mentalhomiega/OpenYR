@@ -1174,14 +1174,14 @@ class BuildingTypeClass : public TechnoTypeClass
 		int ProduceCashBudget;
 		bool IsProduceCashResetOnCapture;
 
+		// ProduceCashDisplay (Ares): the cash this structure pays shows as floating text over it.
+		bool IsProduceCashDisplay;
+
 		// A SecretLab=yes structure offers one item, named by the first type below that is set or else drawn at game start.
 		bool IsSecretLab;
 		InfantryTypeClass const * SecretInfantry;
 		UnitTypeClass const * SecretUnit;
 		BuildingTypeClass const * SecretBuilding;
-		// ProduceCashDisplay (Ares): the cash this structure pays shows as floating text over it.
-		bool IsProduceCashDisplay;
-
 
 		/*
 		 * This is the theater qualified name of the building's shape file, recorded as the

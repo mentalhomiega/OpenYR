@@ -449,9 +449,9 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ProduceCashDelay(0),
 	ProduceCashBudget(0),
 	IsProduceCashResetOnCapture(false),
+	IsProduceCashDisplay(false),
 	IsSecretLab(false),
 	SecretInfantry(NULL),
-	IsProduceCashDisplay(false),
 	SecretUnit(NULL),
 	SecretBuilding(NULL)
 {
@@ -1492,11 +1492,11 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsLaserFencePost = ini.Get_Bool(Name(), "LaserFencePost", IsLaserFencePost);
 		IsLaserFence = ini.Get_Bool(Name(), "LaserFence", IsLaserFence);
 		IsFirestormWall = ini.Get_Bool(Name(), "FirestormWall", IsFirestormWall);
+		IsFirestormWall = ini.Get_Bool(Name(), "Firestorm.Wall", IsFirestormWall);
 		IsHospital = ini.Get_Bool(Name(), "Hospital", IsHospital);
 		IsArmory = ini.Get_Bool(Name(), "Armory", IsArmory);
 		IsGDIBarracks = ini.Get_Bool(Name(), "GDIBarracks", IsGDIBarracks);
 		IsNODBarracks = ini.Get_Bool(Name(), "NODBarracks", IsNODBarracks);
-		IsFirestormWall = ini.Get_Bool(Name(), "Firestorm.Wall", IsFirestormWall);
 		IsYuriBarracks = ini.Get_Bool(Name(), "YuriBarracks", IsYuriBarracks);
 		RefinerySmokeFrames = ini.Get_Int(Name(), "RefinerySmokeFrames", RefinerySmokeFrames);
 		{
@@ -1607,12 +1607,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		ProduceCashDelay = ini.Get_Int(Name(), "ProduceCashDelay", ProduceCashDelay);
 		ProduceCashBudget = ini.Get_Int(Name(), "ProduceCashBudget", ProduceCashBudget);
 		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
+		IsProduceCashDisplay = ini.Get_Bool(Name(), "ProduceCashDisplay", IsProduceCashDisplay);
 		IsSecretLab = ini.Get_Bool(Name(), "SecretLab", IsSecretLab);
 		SecretInfantry = TGet_Class(ini, Name(), "SecretInfantry", SecretInfantry);
 		SecretUnit = TGet_Class(ini, Name(), "SecretUnit", SecretUnit);
 		SecretBuilding = TGet_Class(ini, Name(), "SecretBuilding", SecretBuilding);
 
-		IsProduceCashDisplay = ini.Get_Bool(Name(), "ProduceCashDisplay", IsProduceCashDisplay);
 		Rotation = IsTurretEquipped ? 32 : 1;
 
 		Power = ini.Get_Int(Name(), "Power", (Power > 0) ? Power : -Drain);
@@ -2748,6 +2748,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ProduceCashDelay);
 	stream.Serialize(ProduceCashBudget);
 	stream.Serialize(IsProduceCashResetOnCapture);
+	stream.Serialize(IsProduceCashDisplay);
 	stream.Serialize(IsSecretLab);
 	stream.Serialize(SecretInfantry);
 	stream.Serialize(SecretUnit);
@@ -2755,7 +2756,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TheaterImageFile);
 }
 
-	stream.Serialize(IsProduceCashDisplay);
 
 ClassID BuildingTypeClass::Class_ID(void) const
 {
