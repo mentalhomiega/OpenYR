@@ -5029,7 +5029,7 @@ static void Reveal_Firer_On_Fire(TechnoClass * firer, AbstractClass * target, We
 int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 {
 	int firepower = weapon->Attack;
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		firepower = 0;
 	}
 	if (firepower > 0) {
@@ -5067,7 +5067,7 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 	if (target == NULL) {
 		return(0);
 	}
-	if (weapon->IsSonic || weapon->UseFireParticles) {
+	if (!weapon->Applies_Damage()) {
 		return(0);
 	}
 
