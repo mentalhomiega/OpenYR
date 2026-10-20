@@ -18,6 +18,7 @@
 #include "random.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <set>
 #include <string>
@@ -156,7 +157,9 @@ class CCFileReaderClass : public AudioAssetReaderClass
 
 	private:
 		// A WAV that is not a file of its own is looked up in AUDIO.IDX and read from AUDIO.BAG,
-		// so a loose or archived WAV replaces the bag's sample of the same name.
+		// so a loose or archived WAV replaces the bag's sample of the same name. As in Ares,
+		// AUDIO01.IDX to AUDIO99.IDX are read after it, each with the bag of its own number,
+		// and a sample in a later index replaces one of the same name in an earlier one.
 		bool Read_From_Bag(char const * filename, std::vector<uint8_t> & bytes)
 		{
 			std::string name(filename);
@@ -167,36 +170,59 @@ class CCFileReaderClass : public AudioAssetReaderClass
 
 			if (!BagTried) {
 				BagTried = true;
-				CCFileClass index("AUDIO.IDX");
-				if (index.Is_Available() && index.Open(FileClass::READ)) {
+				for (int number = 0; number <= 99; number++) {
+					char stem[16];
+					if (number == 0) {
+						std::snprintf(stem, sizeof(stem), "AUDIO");
+					} else {
+						std::snprintf(stem, sizeof(stem), "AUDIO%02d", number);
+					}
+					CCFileClass index((std::string(stem) + ".IDX").c_str());
+					if (!index.Is_Available() || !index.Open(FileClass::READ)) {
+						continue;
+					}
+					BagFileType bag;
+					bag.BagName = std::string(stem) + ".BAG";
 					std::vector<uint8_t> data((size_t)std::max(index.Size(), 0));
 					if (!data.empty() && index.Read(data.data(), (int)data.size()) == (int)data.size()) {
-						Bag.Load_Index(data.data(), data.size());
+						bag.Index.Load_Index(data.data(), data.size());
 					}
 					index.Close();
+					DebugString("Audio: %s.IDX lists %d samples\n", stem, bag.Index.Count());
+					if (bag.Index.Count() > 0) {
+						Bags.push_back(std::move(bag));
+					}
 				}
-				DebugString("Audio: AUDIO.IDX lists %d samples\n", Bag.Count());
 			}
 
-			AudioBagClass::EntryType const * entry = Bag.Find(name.c_str());
-			if (entry == nullptr || entry->Size == 0) {
-				return(false);
+			for (auto it = Bags.rbegin(); it != Bags.rend(); ++it) {
+				AudioBagClass::EntryType const * entry = it->Index.Find(name.c_str());
+				if (entry == nullptr || entry->Size == 0) {
+					continue;
+				}
+				CCFileClass bag(it->BagName.c_str());
+				if (!bag.Is_Available() || !bag.Open(FileClass::READ)) {
+					return(false);
+				}
+				std::vector<uint8_t> data(entry->Size);
+				bag.Seek((int)entry->Offset, SEEK_SET);
+				bool const ok = bag.Read(data.data(), (int)entry->Size) == (int)entry->Size;
+				bag.Close();
+				if (ok) {
+					bytes = AudioBagClass::Make_Wav(*entry, data.data(), data.size());
+				}
+				return(ok);
 			}
-			CCFileClass bag("AUDIO.BAG");
-			if (!bag.Is_Available() || !bag.Open(FileClass::READ)) {
-				return(false);
-			}
-			std::vector<uint8_t> data(entry->Size);
-			bag.Seek((int)entry->Offset, SEEK_SET);
-			bool const ok = bag.Read(data.data(), (int)entry->Size) == (int)entry->Size;
-			bag.Close();
-			if (ok) {
-				bytes = AudioBagClass::Make_Wav(*entry, data.data(), data.size());
-			}
-			return(ok);
+			return(false);
 		}
 
-		AudioBagClass Bag;
+		struct BagFileType {
+			AudioBagClass Index;
+			std::string BagName;
+		};
+
+		// The indexes found, AUDIO.IDX first.
+		std::vector<BagFileType> Bags;
 		bool BagTried = false;
 };
 
