@@ -57,6 +57,8 @@ class DeploymentConfigClass
 		std::string MultiplayerRulesExpansionFile = "";
 		std::string TutorialFile = "TUTORIAL.INI";
 		std::string UIFile = "UIMD.INI";
+		// The tile set file of a theater is <Root><TheaterSuffix>.INI, such as TEMPERATMD.INI.
+		std::string TheaterSuffix = "MD";
 
 		// The archives that add to or replace the game's own, as the prefixes of numbered files:
 		// "EXPANDMD" probes EXPANDMD99.MIX down to EXPANDMD00.MIX. Prefixes are comma separated; the

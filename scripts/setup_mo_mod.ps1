@@ -84,6 +84,7 @@ Sound=SOUNDMO.INI
 Theme=THEMEMO.INI
 Eva=EVAMO.INI
 Battle=BATTLEMO.INI
+TheaterSuffix=MO
 
 [Archives]
 ExpandPrefix=EXPANDMO,EXPANDMD

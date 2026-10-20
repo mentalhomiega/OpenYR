@@ -17,6 +17,7 @@
 
 #include "_alpha.h"
 #include "_convert.h"
+#include "_deploymentconfig.h"
 #include "_map.h"
 #include "_mixfile.h"
 #include "_palette.h"
@@ -32,6 +33,7 @@
 #include "cell.h"
 #include "conquer.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "draw.h"
 #include "dsurface.h"
 #include "globals.h"
@@ -773,10 +775,15 @@ void IsometricTileTypeClass::Read_Control_File(TheaterType theater, bool from_cc
 	}
 	IsometricTileTypeClass::Init_Drawers();
 
-	// Yuri's Revenge reads only <Root>MD.INI; <Root>.INI is read when that file is missing.
+	// Yuri's Revenge reads only <Root>MD.INI. A mod's own suffix is tried before it, and <Root>.INI is
+	// read when neither file exists.
 	char ininame[_MAX_PATH];
-	sprintf(ininame, "%sMD.INI", data.Root.c_str());
+	sprintf(ininame, "%s%s.INI", data.Root.c_str(), DeploymentConfig.TheaterSuffix.c_str());
 	CCFileClass inifile(ininame);
+	if (!inifile.Is_Available()) {
+		sprintf(ininame, "%sMD.INI", data.Root.c_str());
+		inifile.Set_Name(ininame);
+	}
 	if (!inifile.Is_Available()) {
 		sprintf(ininame, "%s.INI", data.Root.c_str());
 		inifile.Set_Name(ininame);

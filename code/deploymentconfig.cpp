@@ -57,6 +57,7 @@ void DeploymentConfigClass::Read_Mod_INI(INIClass const & ini)
 	MultiplayerRulesExpansionFile = ini.Get_String("Files", "MultiplayerRulesExpansion", MultiplayerRulesExpansionFile.c_str());
 	TutorialFile = ini.Get_String("Files", "Tutorial", TutorialFile.c_str());
 	UIFile = ini.Get_String("Files", "UI", UIFile.c_str());
+	TheaterSuffix = ini.Get_String("Files", "TheaterSuffix", TheaterSuffix.c_str());
 	KeyboardFile = ini.Get_String("Files", "Keyboard", KeyboardFile.c_str());
 	SchemePaletteFile = ini.Get_String("Palettes", "Scheme", SchemePaletteFile.c_str());
 	GamePaletteFile = ini.Get_String("Palettes", "Game", GamePaletteFile.c_str());
