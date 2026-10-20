@@ -285,6 +285,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ExtraLight(0),
 	IsCanTogglePower(true),
 	HasSpotlight(false),
+	SpotlightStartHeight(430),
+	SpotlightDistance(-1),
 	IsTemple(false),
 	IsPlug(false),
 	IsHoverPad(false),
@@ -1361,6 +1363,8 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
+		SpotlightStartHeight = std::max(0, ini.Get_Int(Name(), "Spotlight.StartHeight", SpotlightStartHeight));
+		SpotlightDistance = ini.Get_Int(Name(), "Spotlight.Distance", SpotlightDistance);
 		HalfDamageSmokeLocation1 = ini.Get_Point(Name(), "HalfDamageSmokeLocation1", HalfDamageSmokeLocation1);
 		HalfDamageSmokeLocation2 = ini.Get_Point(Name(), "HalfDamageSmokeLocation2", HalfDamageSmokeLocation2);
 		IsRadar = ini.Get_Bool(Name(), "Radar", IsRadar);
@@ -2564,6 +2568,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ExtraLight);
 	stream.Serialize(IsCanTogglePower);
 	stream.Serialize(HasSpotlight);
+	stream.Serialize(SpotlightStartHeight);
+	stream.Serialize(SpotlightDistance);
 	stream.Serialize(IsTemple);
 	stream.Serialize(IsPlug);
 	stream.Serialize(IsHoverPad);

@@ -416,6 +416,11 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool HasSpotlight;
 
+		// Spotlight.StartHeight and Spotlight.Distance (Ares): the beam leaves this high above the ground, and its
+		// pool of light lies this many leptons in front of the structure; a negative distance uses SpotlightLocationRadius.
+		int SpotlightStartHeight;
+		int SpotlightDistance;
+
 		/*
 		 * If this building is the Temple of Nod, then this flag will be true. The computer
 		 * rates one as a class of ion cannon target in its own right.
