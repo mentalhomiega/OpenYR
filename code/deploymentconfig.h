@@ -57,6 +57,8 @@ class DeploymentConfigClass
 		std::string MultiplayerRulesExpansionFile = "";
 		std::string TutorialFile = "TUTORIAL.INI";
 		std::string UIFile = "UIMD.INI";
+		std::string MissionFile = "MISSIONMD.INI";
+		std::string MapSelectFile = "MAPSELMD.INI";
 		// The tile set file of a theater is <Root><TheaterSuffix>.INI, such as TEMPERATMD.INI.
 		std::string TheaterSuffix = "MD";
 

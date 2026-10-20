@@ -8,6 +8,8 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 
 #include "campaign.h"
 #include "campaignname.hh"
@@ -58,7 +60,7 @@ std::string Label_Text(char const * label)
 /// </summary>
 std::string Mission_Briefing(char const * map)
 {
-	CCFileClass database("MISSIONMD.INI");
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
 	bool const has_database = database.Is_Available();
 	if (has_database) {
 		CCINIClass missions;
@@ -275,7 +277,7 @@ bool Mission_Loading_Picture(CampaignClass const & campaign, char const * map, U
 	Point2D const size = LoadScreenClass::Campaign_Picture_Size(small);
 	DSurface picture_surface(size.X, size.Y);
 	picture_surface.Fill(0);
-	char const * const files[] = {"MISSIONMD.INI", "MISSION.INI"};
+	char const * const files[] = {DeploymentConfig.MissionFile.c_str(), "MISSION.INI"};
 	for (char const * file : files) {
 		std::string picture;
 		std::string palette;

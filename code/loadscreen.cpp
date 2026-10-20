@@ -8,6 +8,8 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 
 #include "loadscreen.h"
 
@@ -642,7 +644,7 @@ Point2D LoadScreenClass::Campaign_Picture_Size(bool small)
 
 bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * mission)
 {
-	CCFileClass database("MISSIONMD.INI");
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
 	if (!database.Is_Available()) {
 		return(false);
 	}

@@ -2387,7 +2387,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		}
 
 		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
-		CCFileClass database("MISSIONMD.INI");
+		CCFileClass database(DeploymentConfig.MissionFile.c_str());
 		if (database.Is_Available()) {
 			CCINIClass missions;
 			missions.Load(database, false);

@@ -85,6 +85,8 @@ Theme=THEMEMO.INI
 Eva=EVAMO.INI
 Battle=BATTLEMO.INI
 TheaterSuffix=MO
+Mission=MISSIONMO.INI
+MapSelect=MAPSELMO.INI
 
 [Archives]
 ExpandPrefix=EXPANDMO,EXPANDMD

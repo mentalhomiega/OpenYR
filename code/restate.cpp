@@ -12,6 +12,8 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 
 #include "_keyboar.h"
 #include "addon.h"
@@ -50,7 +52,7 @@ static std::string Label_Text(char const * label)
  */
 static std::string Briefing_Text(ScenarioClass * scen)
 {
-	CCFileClass database("MISSIONMD.INI");
+	CCFileClass database(DeploymentConfig.MissionFile.c_str());
 	bool const has_database = database.Is_Available();
 	if (has_database) {
 		CCINIClass ini;
