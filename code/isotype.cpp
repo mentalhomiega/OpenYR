@@ -1344,6 +1344,31 @@ void IsometricTileTypeClass::Load_Tiles(bool skipiteration, bool isrand)
 
 
 /// <summary>
+/// Checks that a tile file's header and every sub-tile record lie inside the bytes read.
+/// </summary>
+static bool Is_Tile_File_Valid(unsigned char const * data, int size)
+{
+	if (size < (int)sizeof(IsoTileSet)) {
+		return(false);
+	}
+
+	IsoTileSet const * tileset = (IsoTileSet const *)data;
+	int const count = tileset->Map_Width() * tileset->Map_Height();
+	if (tileset->Map_Width() <= 0 || tileset->Map_Height() <= 0 || count > 4096 || size < 16 + 4 * count) {
+		return(false);
+	}
+
+	int const * offsets = (int const *)(data + 16);
+	for (int index = 0; index < count; index++) {
+		if (offsets[index] != 0 && (offsets[index] < 16 + 4 * count || offsets[index] > size - (int)sizeof(IsoTileRecord))) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Loads this tile type's artwork from its file.
 /// This routine reads the tile set into memory and rebuilds the preview colors from it.
 /// Any artwork already resident is thrown away first, so a tile type never holds two
@@ -1357,9 +1382,17 @@ int IsometricTileTypeClass::Load_Tile_Data(void)
 	if (ImageData != NULL) {
 		delete [] (unsigned char *)ImageData;
 	}
-	unsigned char * data = new unsigned char[size];
+	unsigned char * data = new unsigned char[size > 0 ? size : 0];
 	ImageData = data;
 	file.Read(data, size);
+
+	if (!Is_Tile_File_Valid(data, size)) {
+		DebugString("Tile file %s is not a usable tile set (%d bytes); its cells use clear ground.\n", Filename.c_str(), size);
+		delete [] data;
+		ImageData = NULL;
+		IsFileLoaded = false;
+		return(0);
+	}
 
 	IsoTileSet * tileset = (IsoTileSet *)ImageData;
 
