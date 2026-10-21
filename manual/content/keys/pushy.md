@@ -1,7 +1,5 @@
 ---
 key: Pushy
-scope: aircrafttype
-label: Pushy
 summary: Keeps an object of this type taking click orders and moving while a direct rocker link holds it.
 see_also: [DirectRocker, FallBackCoefficient]
 when_omitted:

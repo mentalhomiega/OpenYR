@@ -19,7 +19,7 @@ Only a voxel-drawn vehicle rocks, as with [`Rocker`](/keys/rocker/). The vehicle
 
 A shot with no firer, or a vehicle under an Iron Curtain, is not rocked. Such a shot deals no damage to that vehicle either.
 
-The firer and the vehicle become linked to each other. While the link stands, a linked infantry, vehicle or aircraft that is not [`Pushy`](/keys/pushy/#scope-aircrafttype) takes no click orders and does not move. A linked vehicle cannot fire, whatever its type. A firer that is a structure does not link.
+The firer and the vehicle become linked to each other. While the link stands, a linked infantry, vehicle or aircraft that is not [`Pushy`](/keys/pushy/) takes no click orders and does not move. A linked vehicle cannot fire, whatever its type. A firer that is a structure does not link.
 
 The link ends when either object is taken off the map, which includes being destroyed, or when a soldier in the link is given a new target or a new destination.
 
