@@ -6242,11 +6242,17 @@ bool TechnoClass::Restore_Mission(void)
 void TechnoClass::Renovate(void)
 {
 	Mark(MARK_CHANGE);
+	bool const damaged = Strength < TClass->MaxStrength;
 	Strength = TClass->MaxStrength;
 	EstimatedHealth = Strength;
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->Repair(0);
 		((BuildingClass *)this)->Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
+
+		// An engineer reaching a structure that is already whole is not an OnFinishRepair call (0x701410), so it makes no sound.
+		if (damaged) {
+			Sound_Effect(Rule->BuildingRepairedSound, Center_Coord());
+		}
 	}
 }
 

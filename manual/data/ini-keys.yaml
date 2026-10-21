@@ -6488,6 +6488,24 @@ BuildingGroupNumberOffset:
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
+BuildingRepairedSound:
+  key: BuildingRepairedSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BuildingRepairedSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BuildingSlam:
   key: BuildingSlam
   scopes:

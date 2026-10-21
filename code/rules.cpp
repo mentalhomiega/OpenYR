@@ -689,6 +689,7 @@ RulesClass::RulesClass(void) :
 	DetailBufferZoneWidth(5),
 	BuildingGarrisonedSound(VOC_NONE),
 	BuildingAbandonedSound(VOC_NONE),
+	BuildingRepairedSound(VOC_NONE),
 	ScatterSound(VOC_NONE),
 	DeploySound(VOC_NONE),
 	CheerSound(VOC_NONE),
@@ -1231,6 +1232,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		DetailBufferZoneWidth = ini.Get_Int(AUDIOVISUAL, "DetailBufferZoneWidth", DetailBufferZoneWidth);
 		BuildingGarrisonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingGarrisonedSound", BuildingGarrisonedSound);
 		BuildingAbandonedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingAbandonedSound", BuildingAbandonedSound);
+		BuildingRepairedSound = ini.Get_VocType(AUDIOVISUAL, "BuildingRepairedSound", BuildingRepairedSound);
 		ScatterSound = ini.Get_VocType(AUDIOVISUAL, "ScatterSound", ScatterSound);
 		DeploySound = ini.Get_VocType(AUDIOVISUAL, "DeploySound", DeploySound);
 		CheerSound = ini.Get_VocType(AUDIOVISUAL, "CheerSound", CheerSound);
@@ -3151,6 +3153,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DetailBufferZoneWidth);
 	stream.Serialize(BuildingGarrisonedSound);
 	stream.Serialize(BuildingAbandonedSound);
+	stream.Serialize(BuildingRepairedSound);
 	stream.Serialize(ScatterSound);
 	stream.Serialize(DeploySound);
 	stream.Serialize(CheerSound);

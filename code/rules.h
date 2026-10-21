@@ -1289,6 +1289,9 @@ class RulesClass
 		VocType BuildingGarrisonedSound;
 		VocType BuildingAbandonedSound;
 
+		// Played where an engineer restores a structure (BuildingRepairedSound=).
+		VocType BuildingRepairedSound;
+
 		/*
 		 * This is the sound effect played when the player orders the current selection to
 		 * scatter.

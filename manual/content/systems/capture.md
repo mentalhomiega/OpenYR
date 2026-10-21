@@ -157,7 +157,7 @@ A deployed vehicle counts as a vehicle here, so this branch runs before any engi
 
 ### Restoring an allied structure
 
-An engineer that reaches an allied structure restores it to full strength at no cost. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength. Nothing else about the structure changes.
+An engineer that reaches an allied structure restores it to full strength at no cost. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes.
 
 ### Repairing a bridge
 
