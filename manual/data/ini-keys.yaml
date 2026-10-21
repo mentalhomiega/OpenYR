@@ -4610,7 +4610,7 @@ BarrelAnimZAdjust:
 BarrelCompressFrames:
   key: BarrelCompressFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -4619,11 +4619,11 @@ BarrelCompressFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: BarrelRecoilControl.CompressFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 BarrelDebris:
   key: BarrelDebris
   scopes:
@@ -4687,7 +4687,7 @@ BarrelExplode:
 BarrelHoldFrames:
   key: BarrelHoldFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -4696,11 +4696,11 @@ BarrelHoldFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: BarrelRecoilControl.HoldFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 BarrelParticle:
   key: BarrelParticle
   scopes:
@@ -4734,7 +4734,7 @@ BarrelParticle:
 BarrelRecoverFrames:
   key: BarrelRecoverFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -4743,15 +4743,15 @@ BarrelRecoverFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: BarrelRecoilControl.RecoverFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 BarrelTravel:
   key: BarrelTravel
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -4760,11 +4760,11 @@ BarrelTravel:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: BarrelRecoilControl.Travel
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 BaseBias:
   key: BaseBias
   scopes:
@@ -22501,6 +22501,20 @@ LetsDoTheTimeWarpOutAgain:
 Level:
   key: Level
   scopes:
+  - applies_to: *id001
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: reviewed
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BulletTypeClass
+      member: IsLevel
+      source: code/bullettype.cpp
+      guard: null
+    level: BulletTypeClass
   - applies_to:
     - scenarios
     file: map file
@@ -41260,7 +41274,7 @@ TurretChargeAnimRate:
 TurretCompressFrames:
   key: TurretCompressFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -41269,11 +41283,11 @@ TurretCompressFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: TurretRecoilControl.CompressFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 TurretCount:
   key: TurretCount
   scopes:
@@ -41311,7 +41325,7 @@ TurretFacings:
 TurretHoldFrames:
   key: TurretHoldFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -41320,11 +41334,11 @@ TurretHoldFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: TurretRecoilControl.HoldFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 TurretNotExportedOnGround:
   key: TurretNotExportedOnGround
   scopes:
@@ -41362,38 +41376,24 @@ TurretOffset:
 TurretRecoil:
   key: TurretRecoil
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: reviewed
-    _provenance:
-      default_candidate: null
-      declared_in: BuildingTypeClass
-      member: IsTurretRecoil
-      source: code/builtype.cpp
-      guard: null
-    level: BuildingTypeClass
-  - applies_to: *id025
-    file: rules.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: reviewed
+    status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: UnitTypeClass
+      declared_in: TechnoTypeClass
       member: IsTurretRecoil
-      source: code/unittype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 TurretRecoverFrames:
   key: TurretRecoverFrames
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -41402,11 +41402,11 @@ TurretRecoverFrames:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: TurretRecoilControl.RecoverFrames
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 TurretRotateSound:
   key: TurretRotateSound
   scopes:
@@ -41444,7 +41444,7 @@ TurretSpins:
 TurretTravel:
   key: TurretTravel
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -41453,11 +41453,11 @@ TurretTravel:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: BuildingTypeClass
+      declared_in: TechnoTypeClass
       member: TurretRecoilControl.Travel
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 Type:
   key: Type
   scopes:

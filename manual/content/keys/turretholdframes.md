@@ -1,6 +1,6 @@
 ---
 key: TurretHoldFrames
-summary: Game frames a structure's turret stays slid back before it recovers.
+summary: Game frames a turret stays slid back before it recovers, for a structure or SHP-bodied vehicle.
 see_also: ["TurretRecoil", "TurretTravel", "TurretCompressFrames", "TurretRecoverFrames"]
 when_omitted:
   kind: value

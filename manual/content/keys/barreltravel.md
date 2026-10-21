@@ -1,10 +1,10 @@
 ---
 key: BarrelTravel
-summary: How far a structure's barrel slides back along its axis when it fires, in leptons.
+summary: How far a barrel slides back along the turret's facing when a structure or SHP-bodied vehicle fires, in leptons.
 see_also: ["TurretRecoil", "TurretTravel", "BarrelCompressFrames"]
 when_omitted:
-  kind: value
-  value: "2"
+  kind: inherited
+  note: The TurretTravel of the same type, which is 2 when that is omitted too.
 ---
 
-`BarrelTravel` is the distance the barrel of a voxel turret slides back along its pitched axis when the structure fires, in leptons. It has an effect only when [`TurretRecoil=yes`](/keys/turretrecoil/) is set. Zero keeps the barrel still.
+`BarrelTravel` is the distance the barrel of a voxel turret slides back along the turret's facing, before the barrel pitches, when a structure or SHP-bodied vehicle fires, in leptons. It has an effect only when [`TurretRecoil=yes`](/keys/turretrecoil/) is set. Zero keeps the barrel still.
