@@ -77,7 +77,7 @@ An `IsMobileWar=yes` structure therefore always reaches these rules, and any oth
 | A non-allied [`Capturable=yes`](/keys/capturable/) structure whose strength fraction is above [`EngineerCaptureLevel`](/keys/engineercapturelevel/) | The damage action, which has no cursor art |
 | A non-allied `Capturable=yes` structure at or below that fraction | The enter cursor |
 
-Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point.
+Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point. An occupiable structure whose owner's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` country does, counts as allied in the table unless it is being warped out.
 
 Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. For an [`Agent=yes`](/keys/agent/) spy, the structure must be [`Spyable=yes`](/keys/spyable/) instead of `Capturable=yes`. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
 
@@ -157,7 +157,7 @@ A deployed vehicle counts as a vehicle here, so this branch runs before any engi
 
 ### Restoring an allied structure
 
-An engineer that reaches an allied structure restores it to full strength at no cost and is consumed. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes. A structure already at full strength is left alone, and the engineer lives and moves away from it.
+An engineer that reaches an allied structure, or an occupiable structure of a `MultiplayPassive=yes` country, restores it to full strength at no cost and is consumed. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes. A structure already at full strength is left alone, and the engineer lives and moves away from it.
 
 ### Repairing a bridge
 
@@ -167,7 +167,7 @@ The engineer's position decides the kind of repair. A rail bridge tile anywhere 
 
 ### Capturing a non-allied structure
 
-An engineer that reaches a non-allied `Capturable=yes` structure takes it, unless the structure can be occupied and its owner's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/), as the stock `Neutral` country does. The engineer leaves such a structure alone and is consumed, and the [damage](#damaging-it-instead) branch does not apply to it either. Otherwise the structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
+An engineer that reaches a non-allied `Capturable=yes` structure takes it. An occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country is [restored](#restoring-an-allied-structure) instead, and the [damage](#damaging-it-instead) branch does not apply to it. On a capture, the structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
 
 The robbed mark is what the [Thieved by...](/mapping/events/tevent-thieved/) trigger event tests. Only this capture sets it; a stolen vehicle does not. Nothing clears it, so once a house loses one structure to an engineer, the mark stays for the rest of the match. A trigger that uses this event still [never fires](/systems/trigger-springing/#three-events-that-cannot-be-reached), and no other part of the game reads the mark.
 
