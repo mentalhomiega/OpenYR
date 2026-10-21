@@ -4360,9 +4360,6 @@ static int ChronoEffectStart = -1;
 static int ChronoEffectFrames = 0;
 static int const CHRONO_EFFECT_HOLD = 45;
 
-// The bottom rows the swirl leaves untouched, as the original does with its status strip.
-static int const CHRONO_EFFECT_BOTTOM = 32;
-
 // The picture the swirl is drawn from: the scene before the white, then the scene after it.
 static std::unique_ptr<DSurface> ChronoPicture;
 static int ChronoPictureTaken = 0;
@@ -4440,7 +4437,8 @@ static void Take_Chrono_Picture(void)
 
 /// <summary>
 /// Draws the picture twirled into a swirl of the strength the count gives, with each pixel blended
-/// toward white by the count out of the total. Nothing is drawn when a surface is not 16 bits deep.
+/// toward white by the count out of the total. Only TacticalRect, the map view, is swirled; the rest of
+/// the surface keeps the scene drawn before the swirl. Nothing is drawn when a surface is not 16 bits deep.
 /// </summary>
 static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count, int total)
 {
@@ -4448,8 +4446,10 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 		return;
 	}
 
-	int const width = dest.Get_Width();
-	int const height = dest.Get_Height() - CHRONO_EFFECT_BOTTOM;
+	// The map surfaces share TacticalRect's coordinates while the map is zoomed, so one rect serves both.
+	Rect const area = Intersect(TacticalRect, dest.Get_Rect());
+	int const width = area.Width;
+	int const height = area.Height;
 	if (width <= 0 || height <= 0 || total <= 0) {
 		return;
 	}
@@ -4475,7 +4475,7 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < height; y++) {
 			double const dy = y - cy;
-			unsigned short * drow = (unsigned short *)(dpixels + y * dest.Stride());
+			unsigned short * drow = (unsigned short *)(dpixels + (area.Y + y) * dest.Stride()) + area.X;
 			for (int x = 0; x < width; x++) {
 				double const dx = x - cx;
 				double angle = (1.0 - (dx * dx + dy * dy) / radius2) * 5.0;
@@ -4485,7 +4485,7 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 
 				int const sx = std::clamp((int)std::floor(s * dx + c * dy + cx + 0.5), 0, width - 1);
 				int const sy = std::clamp((int)std::floor(s * dy - c * dx + cy + 0.5), 0, height - 1);
-				unsigned short const source = ((unsigned short const *)(spixels + sy * picture.Stride()))[sx];
+				unsigned short const source = ((unsigned short const *)(spixels + (area.Y + sy) * picture.Stride()))[area.X + sx];
 
 				int pixel = 0;
 				for (int index = 0; index < 3; index++) {
