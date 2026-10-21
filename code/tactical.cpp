@@ -2674,17 +2674,34 @@ void Tactical::Scroll_Map(FacingType facing, int distance)
 
 
 /// <summary>
+/// Returns the area of absolute pixels that the scroll limits keep a tactical view inside.
+/// A view no wider or taller than the area fits on the local map. Clamp_To_Tactical_Rect lets
+/// a modern-interface view reach past the right edge by the panel's width.
+/// </summary>
+Rect Tactical_Visible_Map_Area(void)
+{
+	int const left = -(ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
+	int const top = (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
+	int const width = ISO_TILE_PIXEL_W * Map.LocalRect.Width;
+	int const height = ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2;
+	return(Rect(left, top, width, height));
+}
+
+
+/// <summary>
 /// Works out the limits a tactical view position may take.
 /// An axis whose playable area is smaller than the view comes back with its maximum below its
 /// minimum.
 /// </summary>
 void Tactical::Tactical_Position_Limits(Point2D & minimum, Point2D & maximum)
 {
-	minimum.X = TacticalRect.Width / 2 - (ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
-	maximum.X = minimum.X + ISO_TILE_PIXEL_W * Map.LocalRect.Width - TacticalRect.Width;
+	Rect const area = Tactical_Visible_Map_Area();
 
-	minimum.Y = TacticalRect.Height / 2 + (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
-	maximum.Y = minimum.Y + ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2 - TacticalRect.Height;
+	minimum.X = area.X + TacticalRect.Width / 2;
+	maximum.X = minimum.X + area.Width - TacticalRect.Width;
+
+	minimum.Y = area.Y + TacticalRect.Height / 2;
+	maximum.Y = minimum.Y + area.Height - TacticalRect.Height;
 }
 
 

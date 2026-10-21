@@ -55,7 +55,7 @@ double const VIEW_ZOOM_MIN_MULTIPLAYER = 0.75;
 double View_Zoom_Native(void);
 
 // The furthest out and in the current game zooms, as ViewZoom values. The furthest out is
-// VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game.
+// VIEW_ZOOM_MIN_MULTIPLAYER in a multiplayer game, raised on a small map so the view stays on the map.
 double View_Zoom_Min(void);
 double View_Zoom_Max(void);
 

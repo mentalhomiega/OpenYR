@@ -2136,6 +2136,11 @@ bool TActionClass::TAction_CHANGE_ZOOM(HouseClass * , ObjectClass * , TriggerCla
 bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Map.LocalRect = TriggerRect;
+
+	// A smaller area can leave the view past its new edge, so the view is clamped to the new area.
+	if (TacticalMap != NULL) {
+		TacticalMap->Set_Tactical_Position(TacticalMap->Get_Tactical_Position());
+	}
 	Map.Reset_Radar();
 
 	Map.Reset_Iterator();

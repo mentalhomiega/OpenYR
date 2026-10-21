@@ -217,9 +217,22 @@ double View_Zoom_Native(void)
 }
 
 
+/// <summary>
+/// Returns the furthest out the view zooms. It is the game's limit, raised when the map's visible
+/// area is too small for the screen at that limit. It never exceeds the native zoom, so on a map
+/// smaller than the screen at native zoom the view is not zoomed in past native to fit.
+/// </summary>
 double View_Zoom_Min(void)
 {
-	return(((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native());
+	double const limit = ((Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) ? VIEW_ZOOM_MIN : VIEW_ZOOM_MIN_MULTIPLAYER) * View_Zoom_Native();
+
+	// The view is ScreenTacticalRect / zoom map pixels, so it fits the area once the zoom is at least the screen size over the area size.
+	Rect const area = Tactical_Visible_Map_Area();
+	if (area.Width <= 0 || area.Height <= 0) {
+		return(limit);
+	}
+	double const fit = std::max(ScreenTacticalRect.Width / double(area.Width), ScreenTacticalRect.Height / double(area.Height));
+	return(std::min(std::max(limit, fit), View_Zoom_Native()));
 }
 
 
@@ -300,7 +313,7 @@ void Apply_Pending_View_Zoom(void)
 		return;
 	}
 
-	// A zoom kept from an earlier skirmish is brought in to the multiplayer limit.
+	// A zoom kept from an earlier skirmish, or one the map's visible area no longer allows, is brought in to the limit.
 	if (!_Gliding && _TargetZoom < View_Zoom_Min() - 0.001) {
 		Set_View_Zoom(View_Zoom_Min() / View_Zoom_Native());
 	}
