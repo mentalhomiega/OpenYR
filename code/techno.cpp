@@ -158,6 +158,7 @@
 #include "bullettype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "custompalette.h"
 #include "_mixfile.h"
 #include "mixfile.h"
 #include "combat.h"
@@ -11566,6 +11567,34 @@ ConvertClass * TechnoClass::Effect_Converter(ColorScheme * scheme) const
 
 	ConvertClass * tinted = scheme->Designated_Converter(std::min(red, 255), std::min(green, 255), std::min(blue, 255));
 	return(tinted != NULL ? tinted : scheme->Converter);
+}
+
+
+/// <summary>
+/// Returns the converter that draws this object's animations through its type's Palette=, or null when
+/// the type names none or its palette file is missing. A null result means the house colour scheme applies.
+/// </summary>
+ConvertClass * TechnoClass::Palette_Converter(void) const
+{
+	TechnoTypeClass const * type = Techno_Type_Class();
+	if (type == NULL || type->PaletteFile.empty() || House == NULL) {
+		return(NULL);
+	}
+	return(Palette_Scheme_Drawer(type->PaletteFile, House_Display_Scheme(House)));
+}
+
+
+/// <summary>
+/// Returns the converter that draws this object's animations: its palette when its type names one,
+/// otherwise its house's colour scheme.
+/// </summary>
+ConvertClass * TechnoClass::Remap_Converter(void) const
+{
+	ConvertClass * palette = Palette_Converter();
+	if (palette != NULL) {
+		return(palette);
+	}
+	return(ColorSchemes[House_Display_Scheme(House)]->Converter);
 }
 
 

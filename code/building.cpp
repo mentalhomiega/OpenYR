@@ -2604,13 +2604,13 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 					Do_Destruction(tech, source, forced, offset);
 
-					// A random DestroyAnim plays where the structure stood, in its house's colors (BuildingClass::Destroy, 0x4415F0).
+					// A random DestroyAnim plays where the structure stood, in its house's colors or its Palette= (BuildingClass::Destroy, 0x4415F0).
 					if (Class->DestroyAnim.Count() > 0) {
 						AnimTypeClass const * type = Class->DestroyAnim.Pick(Scen->RandomNumber());
 						if (type != NULL) {
 							AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
 							if (anim != NULL) {
-								anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
+								anim->AlternativeDrawer = Remap_Converter();
 								anim->AlternativeBrightness = Apparent_Brightness();
 							}
 						}
@@ -9106,7 +9106,7 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		}
 
 		if (animptr->Class->IsShouldUseCellDrawer) {
-			animptr->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
+			animptr->AlternativeDrawer = Remap_Converter();
 			animptr->AlternativeBrightness = Apparent_Brightness();
 		}
 
@@ -9297,10 +9297,15 @@ void BuildingClass::Set_Anim_Drawer(ConvertClass * drawer, int brightness)
 void BuildingClass::Update_Anim_Appearance(void)
 {
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
-	ConvertClass * converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
+	// gamemd BuildingClass::UpdateAnimations (0x4509D0) draws these with GetRemapColour, which is the type's palette when it sets one.
+	ConvertClass * converter = Palette_Converter();
+	if (converter == NULL) {
+		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 
-	// The animations take the tint the body gets (AnimClass::Draw_It, 0x423340).
-	converter = Tinted_Converter(converter);
+		// The animations take the tint the body gets (AnimClass::Draw_It, 0x423340). A palette converter
+		// carries no such tint, so only house-coloured animations take it.
+		converter = Tinted_Converter(converter);
+	}
 
 	Set_Anim_Drawer(converter, Brightness);
 	Set_Anim_Translucency(TranslucencyLevel);

@@ -840,6 +840,9 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		// A PCX picture drawn as the sidebar cameo instead of the cameo shape (Ares CameoPCX in the art).
 		std::string CameoPCX;
+
+		// The palette name from Palette= in the art, without its theater suffix and extension. Empty when unset.
+		std::string PaletteFile;
 		const void * CameoData;
 
 		// The cameo drawn for a trainable type once the local player has spied on the barracks or war factory (AltCameo in the art).

@@ -1296,6 +1296,11 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		ArtINI.Get_String(Graphic_Name(), "CameoPCX", "", pcx, sizeof(pcx));
 		CameoPCX = pcx;
 
+		// gamemd TechnoTypeClass::LoadFromINI (0x712170) reads Palette= into PaletteFile, a 0x20-byte buffer.
+		char palette[32];
+		ArtINI.Get_String(Graphic_Name(), "Palette", "", palette, sizeof(palette));
+		PaletteFile = palette;
+
 		TStringID<24> cameo;
 		if (ArtINI.Get_String(Graphic_Name(), "Cameo", "", cameo) > 0) {
 			CameoFilename = cameo;
