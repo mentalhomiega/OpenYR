@@ -10,7 +10,7 @@ when_omitted:
 
 On a warhead, `MaxDebris` sets how much debris a shot throws where its bullet detonates. Above `0`, the count is drawn from [`MinDebris`](/keys/mindebris/) up to one less than `MaxDebris`; when the two are equal, the [`MinDebris` page](/keys/mindebris/#scope-warheadtype) gives the range. The pieces come from [`DebrisTypes`](/keys/debristypes/#scope-warheadtype) when that list is set. Otherwise they come from [`MetallicDebris`](/keys/metallicdebris/) animations, each 20 leptons above the bullet's position. At `0`, the shot throws none.
 
-A shot that an Iron Curtain turns away throws none. A warhead with [`Airstrike=yes`](/keys/airstrike/) throws none either, because it calls its planes instead of detonating.
+A shot that an Iron Curtain turns away throws none. A warhead with [`Airstrike=yes`](/keys/airstrike/) throws its debris too, at the point where its shot detonates, after its firer calls the planes.
 
 ```ini title="rulesmd.ini"
 [Smashing] ; a Warhead
