@@ -11,6 +11,8 @@ At `yes`, a weapon whose [`Anim`](/keys/anim/) list has `16`, `32` or `64` entri
 
 The list is divided into as many directions as it has entries. It starts at north-west and runs clockwise, as described on the [`Anim`](/keys/anim/) page.
 
+The key applies to a weapon's shots only. A [parasite](/systems/parasites/) bite picks its entry by eight directions whatever the key is set to.
+
 ```ini title="rulesmd.ini"
 [MyGatling] ; example WeaponType
 Anim=GUNFIRE01,GUNFIRE02,GUNFIRE03,GUNFIRE04,GUNFIRE05,GUNFIRE06,GUNFIRE07,GUNFIRE08,GUNFIRE09,GUNFIRE10,GUNFIRE11,GUNFIRE12,GUNFIRE13,GUNFIRE14,GUNFIRE15,GUNFIRE16 ; sixteen AnimTypes

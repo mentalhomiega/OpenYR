@@ -177,7 +177,7 @@ void ParasiteClass::Update(void)
 			new ParticleSystemClass(Rule->DefaultSparkSystem, where);
 		}
 		if (weapon->Anim.Count() > 0) {
-			AnimTypeClass const * anim = weapon->Anim[Shape_Facing_Index(victim->PrimaryFacing.Current(), weapon->Anim.Count())];
+			AnimTypeClass const * anim = weapon->Anim[Eight_Facing_Entry(victim->PrimaryFacing.Current(), weapon->Anim.Count())];
 			if (anim != nullptr) {
 				new AnimClass(anim, where);
 			}

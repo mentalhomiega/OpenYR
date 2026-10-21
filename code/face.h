@@ -299,3 +299,13 @@ inline int Shape_Facing_Index(DirType dir, int count)
 	}
 }
 
+// Index zero is north here, unlike Shape_Facing_Index. A list shorter than eight plays entry zero, where
+// gamemd.exe reads past the end of the list.
+inline int Eight_Facing_Entry(DirType dir, int count)
+{
+	if (count < 8) {
+		return(0);
+	}
+	return((int)(dir.Round_To_8() % 8));
+}
+

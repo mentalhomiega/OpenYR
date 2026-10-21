@@ -30,4 +30,6 @@ The animation appears at the weapon's mounting, or at the firer's center for a [
 
 `Anim=none` empties the list, and the weapon plays no firing animation. A `none` entry inside a longer list is dropped, which shortens the list and can change how entries are chosen. An empty value after the `=` keeps whatever an earlier rules file set. A name the game does not already know is registered as a new animation type, so a misspelled entry is not rejected and still takes its place in the list.
 
-The animation plays on an object's regular weapon shots. A weapon that goes off another way plays none. That includes the [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action, the EM pulse cannon's shot at its chosen cell, and a mobile EM pulse discharge.
+The animation plays on an object's regular weapon shots and on a parasite's bite. A weapon that goes off another way plays none. That includes the [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action, the EM pulse cannon's shot at its chosen cell, and a mobile EM pulse discharge.
+
+A parasite's bite plays the list on a victim that is not infantry, as described in [Parasites](/systems/parasites/). It picks by the victim's facing among eight directions, whatever the list's length, and [`ExtendedAnimFacings`](/keys/extendedanimfacings/) does not change this. The first entry is for north and the list runs clockwise from there, so entries past the eighth never play. A list of fewer than eight entries plays its first entry on every bite.
