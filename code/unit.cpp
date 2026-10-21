@@ -5328,6 +5328,11 @@ DirType UnitClass::Fire_Direction(void) const
  *=============================================================================================*/
 FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A DirectRocker-linked unit cannot fire, as UnitClass::GetFireError (0x740FD0) returns error 5 for it.
+	if (DirectRockerLinkedUnit != NULL) {
+		return(FIRE_ILLEGAL);
+	}
+
 	FireErrorType	fire = BASECLASS::Can_Fire(target, which);
 
 	if (fire == FIRE_OK || fire == FIRE_FACING) {

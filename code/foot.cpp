@@ -1948,6 +1948,11 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
 {
 	assert(object != NULL);
 
+	// A DirectRocker-linked unit that is not Pushy refuses the click (FootClass::ObjectClickedAction, 0x4D74E0).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(false);
+	}
+
 	switch (action) {
 		case ACTION_DETONATE:
 			if (BombHouse != NULL) {
@@ -2096,6 +2101,11 @@ bool FootClass::Active_Click_With(ActionType action, ObjectClass * object, bool 
  *=============================================================================================*/
 bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_waypoint)
 {
+	// A DirectRocker-linked unit that is not Pushy refuses the click (FootClass::CellClickedAction, 0x4D7D50).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(false);
+	}
+
 	action = What_Action(cell, false, is_waypoint);
 
 	if (!Map.In_Local_Radar(cell) && action != ACTION_NOMOVE) {
@@ -3959,7 +3969,7 @@ void FootClass::AI(void)
 	Update_Sensors(false);
 
 	// A moving object plays a sound from its MoveSound list and ends its loop three frames after it stops (FootClass::Update).
-	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now()) {
+	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now() && (DirectRockerLinkedUnit == NULL || TClass->IsPushy)) {
 		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
 			MoveSoundHandle.Stop();
 			Sound_Effect((VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber()), Center_Coord(), &MoveSoundHandle);
@@ -4017,7 +4027,8 @@ void FootClass::AI(void)
 			}
 		}
 
-		if (Locomotion != NULL && !IsSinking && !IsFalling) {
+		// A DirectRocker-linked unit that is not Pushy runs no locomotor step (FootClass::Update, 0x4DA530).
+		if (Locomotion != NULL && !IsSinking && !IsFalling && (DirectRockerLinkedUnit == NULL || TClass->IsPushy)) {
 			IsLocomotorProcessing = true;
 			Locomotion->Process();
 			IsLocomotorProcessing = false;

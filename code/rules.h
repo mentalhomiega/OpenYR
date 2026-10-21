@@ -947,6 +947,13 @@ class RulesClass
 		double DirectRockingCoefficient;
 
 		/*
+		 * This scales how fast a unit linked by a DirectRocker warhead settles back toward level
+		 * while it is tipped less than 90 degrees. The settling is this times 0.002 radians a frame,
+		 * so zero stops the settling and a tipped unit keeps tipping.
+		 */
+		float FallBackCoefficient;
+
+		/*
 		 * This is the strength of the highlight that a vehicle, infantry or building voxel
 		 * takes from the viewer's direction. Zero or less turns the highlight off, and bullets
 		 * and voxel animations never have one.

@@ -296,6 +296,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsAttackedByLocomotor(false),
 	IsLetGoByLocomotor(false),
 	IsCrashing(false),
+	DirectRockerLinkedUnit(NULL),
 	LetGoBy(NULL),
 	LetGoByHouse(NULL),
 	ThreatPosed(0),
@@ -5700,6 +5701,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		return(ACTION_NONE);
 	}
 
+	// A DirectRocker-linked unit that is not Pushy gets no action from a mouse over (TechnoClass::MouseOverObject, 0x6FFEC0).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
+		return(ACTION_NONE);
+	}
+
 	if (object != NULL) {
 
 		/*
@@ -5859,6 +5865,11 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disallow_force) const
 {
 	if (IsBerzerk) {
+		return(ACTION_NONE);
+	}
+
+	// A DirectRocker-linked unit that is not Pushy gets no action from a mouse over (TechnoClass::MouseOverCell, 0x700600).
+	if (DirectRockerLinkedUnit != NULL && !TClass->IsPushy) {
 		return(ACTION_NONE);
 	}
 
@@ -8684,6 +8695,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 				Release_Held_Vehicle(NULL);
 			}
 		}
+		if (DirectRockerLinkedUnit == target) {
+			Clear_Direct_Rocker_Link();
+		}
 		if (DrainTarget == target) {
 			Stop_Drain();
 		}
@@ -10541,6 +10555,29 @@ void TechnoClass::Rock(Coord const & coord, float force, bool direct)
 }
 
 
+// A DirectRocker-linked unit settles back by FallBackCoefficient * 0.002 a frame inside 90 degrees and falls outward by 0.002 beyond it.
+static float Linked_Rocking_Rate(float rate, bool was_positive, bool beyond_right_angle)
+{
+	double const settle = (double)Rule->FallBackCoefficient * 0.002;
+	if (was_positive) {
+		return((float)(rate + (beyond_right_angle ? 0.002 : -settle)));
+	}
+	return((float)(rate + (beyond_right_angle ? -0.002 : settle)));
+}
+
+
+/// <summary>
+/// Ends the DirectRocker link on both units, so neither keeps a pointer to the other.
+/// </summary>
+void TechnoClass::Clear_Direct_Rocker_Link(void)
+{
+	if (DirectRockerLinkedUnit != NULL) {
+		DirectRockerLinkedUnit->DirectRockerLinkedUnit = NULL;
+		DirectRockerLinkedUnit = NULL;
+	}
+}
+
+
 /// <summary>
 /// Handles the rocking of the object for one frame.
 /// This routine tips the object a little further along whatever rocking motion it was
@@ -10552,6 +10589,8 @@ void TechnoClass::Rocking_AI(void)
 {
 	bool sideways_was_positive = AngleRotatedSideways > 0.00002;
 	bool sideways_was_negative = AngleRotatedSideways < -0.00002;
+	bool sideways_beyond_right_angle = AngleRotatedSideways > DEG_TO_RAD(90) || AngleRotatedSideways < -DEG_TO_RAD(90);
+	bool const linked = DirectRockerLinkedUnit != NULL;
 
 	if (IsSinking) {
 		if (AngleRotatedForwards < (float)DEG_TO_RAD(45)) {
@@ -10572,15 +10611,19 @@ void TechnoClass::Rocking_AI(void)
 
 		float angle = (float)DEG_TO_RAD(45);
 
-		if (AngleRotatedSideways > angle) {
-			AngleRotatedSideways = angle;
-			RockingSidewaysPerFrame = 0.0f;
-		} else if (AngleRotatedSideways < -angle) {
-			AngleRotatedSideways = -angle;
-			RockingSidewaysPerFrame = 0.0f;
+		if (!linked) {
+			if (AngleRotatedSideways > angle) {
+				AngleRotatedSideways = angle;
+				RockingSidewaysPerFrame = 0.0f;
+			} else if (AngleRotatedSideways < -angle) {
+				AngleRotatedSideways = -angle;
+				RockingSidewaysPerFrame = 0.0f;
+			}
 		}
 
-		if (sideways_was_positive) {
+		if (linked) {
+			RockingSidewaysPerFrame = Linked_Rocking_Rate(RockingSidewaysPerFrame, sideways_was_positive, sideways_beyond_right_angle);
+		} else if (sideways_was_positive) {
 			if (RockingSidewaysPerFrame > 0.0f) {
 				RockingSidewaysPerFrame -= 0.002f;
 			} else {
@@ -10605,6 +10648,7 @@ void TechnoClass::Rocking_AI(void)
 
 	bool forwards_was_positive = AngleRotatedForwards > 0.00002;
 	bool forwards_was_negative = AngleRotatedForwards < -0.00002;
+	bool forwards_beyond_right_angle = AngleRotatedForwards > DEG_TO_RAD(90) || AngleRotatedForwards < -DEG_TO_RAD(90);
 
 	if (RockingForwardsPerFrame != 0.0f) {
 
@@ -10617,15 +10661,19 @@ void TechnoClass::Rocking_AI(void)
 			angle = (float)DEG_TO_RAD(18);
 		}
 
-		if (AngleRotatedForwards > angle) {
-			AngleRotatedForwards = angle;
-			RockingForwardsPerFrame = 0.0f;
-		} else if (AngleRotatedForwards < -angle) {
-			AngleRotatedForwards = -angle;
-			RockingForwardsPerFrame = 0.0f;
+		if (!linked) {
+			if (AngleRotatedForwards > angle) {
+				AngleRotatedForwards = angle;
+				RockingForwardsPerFrame = 0.0f;
+			} else if (AngleRotatedForwards < -angle) {
+				AngleRotatedForwards = -angle;
+				RockingForwardsPerFrame = 0.0f;
+			}
 		}
 
-		if (forwards_was_positive) {
+		if (linked) {
+			RockingForwardsPerFrame = Linked_Rocking_Rate(RockingForwardsPerFrame, forwards_was_positive, forwards_beyond_right_angle);
+		} else if (forwards_was_positive) {
 			if (RockingForwardsPerFrame > 0.0f) {
 				RockingForwardsPerFrame -= 0.002f;
 			} else {
@@ -10645,6 +10693,12 @@ void TechnoClass::Rocking_AI(void)
 	if ((forwards_was_positive && AngleRotatedForwards < 0.00002) || (forwards_was_negative && AngleRotatedForwards > -0.00002)) {
 		RockingForwardsPerFrame = 0.0f;
 		AngleRotatedForwards = 0.0f;
+	}
+
+	// A unit tipped past a half turn in either direction is destroyed (TechnoClass::vt_entry_41C, 0x70BC23). An unlinked unit is clamped to 45 degrees first, so only a linked unit reaches this.
+	if (AngleRotatedSideways > 3.1415927f || AngleRotatedSideways < -3.1415927f || AngleRotatedForwards > 3.1415927f || AngleRotatedForwards < -3.1415927f) {
+		int damage = TClass->MaxStrength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
 	}
 }
 
@@ -10762,6 +10816,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AttachedEffects);
 	stream.Serialize(LocomotorTarget);
 	stream.Serialize(LocomotorSource);
+	stream.Serialize(DirectRockerLinkedUnit);
 	stream.Serialize(IsAttackedByLocomotor);
 	stream.Serialize(IsLetGoByLocomotor);
 	stream.Serialize(IsCrashing);
@@ -10889,6 +10944,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc((int)TargetingTimer);
 	SpiedBy.Compute_CRC(crc);
 	if (OldTeam != NULL) crc(OldTeam->Fetch_ID());
+	if (DirectRockerLinkedUnit != NULL) crc(DirectRockerLinkedUnit->Fetch_ID());
 	crc(Cloak);
 	crc((int)CloakDelay);
 	crc(PredatorOffset);

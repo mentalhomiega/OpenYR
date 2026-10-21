@@ -1619,7 +1619,7 @@ void BulletClass::Detonate(Coord const & coord)
 	 * lies 10 leptons from the unit toward the firer, and the force is the damage times
 	 * [AudioVisual] DirectRockingCoefficient divided by 100, capped at 4 (BulletClass::Detonate,
 	 * 0x46978E to 0x4699BF). An owner-less shot or a unit under an Iron Curtain is not rocked.
-	 * gamemd also links the firer and the unit (DirectRockerLinkedUnit, 0x4699AD); this port does not.
+	 * The firer and the unit then link to each other (DirectRockerLinkedUnit, 0x4699AD).
 	 */
 	else if (direct_rocks) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
@@ -1632,6 +1632,14 @@ void BulletClass::Detonate(Coord const & coord)
 			// Strength stands for gamemd's (DamageMultiplier * Health) >> 8, which equals Strength while the multiplier is 256.
 			double const force = std::min((double)Strength * Rule->DirectRockingCoefficient / 100.0, 4.0);
 			target->Rock(rock_coord, (float)force, true);
+
+			// A building firer is not linked, because the link field is typed FootClass; gamemd links any firer.
+			if (Payback->Is_Foot()) {
+				FootClass * victim = (FootClass *)target;
+				FootClass * firer = (FootClass *)Payback;
+				victim->DirectRockerLinkedUnit = firer;
+				firer->DirectRockerLinkedUnit = victim;
+			}
 		}
 	}
 

@@ -4544,6 +4544,15 @@ void Run(StepType const & step)
 				(int)unit->Mission, (int)unit->MissionQueue, unit->Team != NULL ? unit->Team->Class->Name() : "-", unit->NavCom != NULL ? 1 : 0, (int)unit->Strength, fits);
 				DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), unit->Veterancy.Is_Elite() ? 2 : (unit->Veterancy.Is_Veteran() ? 1 : 0));
 		}
+	} else if (step.Command == "rockerlink") {
+		// rockerlink <TypeID>: for each object of that type, the house and cell of the unit it is DirectRocker-linked to (or "-"), and whether its type is Pushy.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			TechnoClass const * partner = techno->DirectRockerLinkedUnit;
+			DebugString("AUTOTEST   rockerlink %s house %s at %d,%d linked %s house %s at %d,%d pushy %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+				partner != NULL ? partner->TClass->Name() : "-", partner != NULL ? partner->House->Class->Name() : "-", partner != NULL ? partner->Get_Cell().X : -1, partner != NULL ? partner->Get_Cell().Y : -1, techno->TClass->IsPushy ? 1 : 0);
+		}
 	} else if (step.Command == "playanim") {
 		// playanim <AnimTypeID> x y: plays one loop of that animation over the cell.
 		AnimTypeClass const * type = AnimTypeClass::Find_Or_Make(step.Argument.c_str());

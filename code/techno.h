@@ -207,6 +207,10 @@ class TechnoClass :	public RadioClass,
 		bool IsLetGoByLocomotor;
 		bool IsCrashing;
 
+		// The unit this object tipped with a DirectRocker warhead, or the firer that tipped this one (DirectRockerLinkedUnit, 0x4699AD).
+		// While the link stands, a unit that is not Pushy takes no click orders and does not move, and a vehicle cannot fire.
+		FootClass * DirectRockerLinkedUnit;
+
 		// The object and house that held this one, as they are credited with what it crushes when it lands.
 		TechnoClass * LetGoBy;
 		HouseClass * LetGoByHouse;
@@ -218,6 +222,7 @@ class TechnoClass :	public RadioClass,
 		void Release_Held_Vehicle(TechnoClass * holder);
 		void Release_Locomotor(bool clear_target);
 		void Imbue_Locomotor(TechnoClass * source, ClassID const & locomotor);
+		void Clear_Direct_Rocker_Link(void);
 
 		// The frame this object can call its next airstrike, and the planes of the strike still out.
 		int AirstrikeReadyFrame;

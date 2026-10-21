@@ -1324,6 +1324,9 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 		return;
 	}
 
+	// A new destination ends a DirectRocker link on both units (InfantryClass::SetDestination, 0x51AA40).
+	Clear_Direct_Rocker_Link();
+
 	/*
 	**	Special flag so that infantry will start heading in the right direction immediately.
 	*/
@@ -1473,6 +1476,11 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 		} else {
 			Do_Action(DO_STAND_READY);
 		}
+	}
+
+	// Changing the target ends a DirectRocker link on both units (InfantryClass::SetTarget, 0x51B1F0).
+	if (target != TarCom) {
+		Clear_Direct_Rocker_Link();
 	}
 
 	Path[0] = FACING_NONE;
@@ -2211,6 +2219,14 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 	if (Combat_Damage() < 0) {
 		TechnoClass const * targ = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
 		if (!Can_Heal(targ) || targ->HealthRatio >= Rule->ConditionGreen) {
+			return(FIRE_ILLEGAL);
+		}
+	}
+
+	// A Pushy soldier cannot fire at a unit that is linked to a different unit (InfantryClass::GetFireError, 0x51C8B0).
+	if (Is_Target_Unit(target) && TClass->IsPushy) {
+		FootClass const * victim = (FootClass const *)target;
+		if (victim->DirectRockerLinkedUnit != NULL && victim->DirectRockerLinkedUnit != this) {
 			return(FIRE_ILLEGAL);
 		}
 	}

@@ -375,6 +375,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsLightningRod(false),
 	IsHunterSeeker(false),
 	IsCrusher(false),
+	IsPushy(false),
 	IsOmniCrusher(false),
 	IsOmniCrushResistant(false),
 	IsTiltsWhenCrushes(true),
@@ -1210,6 +1211,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
 		IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
 		IsCrusher = ini.Get_Bool(Name(), "Crusher", IsCrusher);
+		IsPushy = ini.Get_Bool(Name(), "Pushy", IsPushy);
 		IsOmniCrusher = ini.Get_Bool(Name(), "OmniCrusher", IsOmniCrusher);
 		IsOmniCrushResistant = ini.Get_Bool(Name(), "OmniCrushResistant", IsOmniCrushResistant);
 		IsAutoCrush = ini.Get_Bool(Name(), "AutoCrush", IsAutoCrush);
@@ -1907,6 +1909,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLightningRod);
 	stream.Serialize(IsHunterSeeker);
 	stream.Serialize(IsCrusher);
+	stream.Serialize(IsPushy);
 	stream.Serialize(IsOmniCrusher);
 	stream.Serialize(IsOmniCrushResistant);
 	stream.Serialize(IsTiltsWhenCrushes);
@@ -1948,6 +1951,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Is_Immune_To_EMP());
 	crc(IsTiberiumHeal);
 	crc(IsTargetLaser);
+	crc(IsPushy);
 	crc(RollAngle);
 	crc(PitchAngle);
 	crc(PitchSpeed);

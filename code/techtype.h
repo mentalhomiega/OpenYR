@@ -1234,6 +1234,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		*/
 		bool IsCrusher;
 
+		// A Pushy unit still takes click orders and moves while a DirectRocker link holds it (TechnoTypeClass::LoadFromINI, 0x712170).
+		bool IsPushy;
+
 		// An OmniCrusher flattens any non-building object it is not allied with, whatever that object's Crushable flag, unless the object is OmniCrushResistant.
 		bool IsOmniCrusher;
 		bool IsOmniCrushResistant;
