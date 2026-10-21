@@ -118,6 +118,8 @@
 **					ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact
 **	airborne <TypeID>		writes each object of the type with its height above ground, whether it is in the air,
 **							its render layer, and whether the ground or bridge occupier chain of its cell holds it
+**	rocket <TypeID>			writes each foot object of the type with its coordinate in leptons, its height above ground, its flat and
+**							vertical distance to the destination its locomotor flies to, and whether that locomotor is moving
 **	shake <Warhead>			starts the screen shake that warhead's detonation would
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
@@ -1736,6 +1738,19 @@ static void Air_Probe_Step(StepType const & step)
 				techno->TClass->Name(), techno->House->Class->Name(), cell.X, cell.Y, (int)techno->HeightAGL, (int)techno->In_Air(), (int)techno->In_Which_Layer(), (int)techno->Layer,
 				(int)techno->IsOnBridge, (int)techno->IsDown, (int)ground_chain, (int)bridge_chain);
 		}
+	} else if (step.Command == "rocket") {
+		// rocket <TypeID>: each foot object of the type with its coordinate in leptons, its height above ground, its flat and
+		// vertical distance to the destination its locomotor flies to, and whether that locomotor is moving.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0 || !techno->Is_Foot()) continue;
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			Coord const at = foot->Get_Coord();
+			Coord const to = foot->Locomotion->Destination();
+			DebugString("AUTOTEST   rocket %s of %s id %p frame %d at %d,%d,%d agl %d to %d,%d,%d flat %d above %d moving %d\n",
+				foot->TClass->Name(), foot->House->Class->Name(), (void const *)foot, Frame, at.X, at.Y, at.Z, (int)foot->HeightAGL, to.X, to.Y, to.Z,
+				(int)std::hypot(double(to.X - at.X), double(to.Y - at.Y)), (int)(at.Z - to.Z), (int)foot->Locomotion->Is_Moving());
+		}
 	}
 }
 
@@ -2222,8 +2237,8 @@ void Run(StepType const & step)
 		return;
 	}
 
-	// weapons and airborne: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
-	if (step.Command == "weapons" || step.Command == "airborne") {
+	// weapons, airborne and rocket: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "weapons" || step.Command == "airborne" || step.Command == "rocket") {
 		Air_Probe_Step(step);
 		return;
 	}
