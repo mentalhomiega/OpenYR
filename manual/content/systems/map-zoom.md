@@ -6,6 +6,10 @@ keys: []
 related:
   - type: key
     id: ZoomInFactor
+  - type: key
+    id: ScriptedCameraZoom
+  - type: key
+    id: ScriptedCameraHeight
   - type: command
     id: ScreenCapture
 ---
@@ -33,6 +37,21 @@ Zoom changes only how the map is drawn. A game played at a changed zoom througho
 When the game draws through its GPU presenter, the zoomed map is drawn as its own layer beneath the interface, at the window's resolution. With a game resolution of 1920 by 1080 on a 3840 by 2160 screen, the interface keeps its usual size and a zoom of 0.5 shows the map pixel for pixel. Without the presenter, the map is scaled into the game's picture at the game's resolution.
 
 The [`ScreenCapture`](/commands/screencapture/) command saves the zoomed map along with the rest of the frame.
+
+## Scripted scenes
+
+A scripted scene zooms the map view to [`ScriptedCameraHeight`](/keys/scriptedcameraheight/) map pixels tall, 900 by default, so the view shows the same height of map on any screen. The width follows the screen's aspect ratio. The change is made at once on the next frame, without the glide the wheel uses. Near the edge of the map the view slides to the nearest place the edge allows, as the wheel zoom does.
+
+The scene zoom applies when a trigger action takes the input away (Lock input), moves the camera (Center Camera at Waypoint, Center (Jump) Camera at Waypoint, or Jump Camera Home), or starts the Chrono Screen Effect. A team mission that centers the viewpoint applies it as well.
+
+How the player's zoom comes back depends on whether the action took the input:
+
+- When the input is taken, the player's zoom is kept. It comes back when Unlock input runs, when the chronoshift effect that took the input ends, or when Zoom out runs with the input free. A second lock while the input is still taken keeps the first zoom.
+- When the camera moves with the input free, the scene zoom stays. Nothing comes back, and the player zooms by hand.
+
+While the input is taken, the mouse wheel does not zoom the map. The Zoom in trigger action is a separate effect and does not change the scene zoom.
+
+[`ScriptedCameraZoom=no`](/keys/scriptedcamerazoom/) turns the scene zoom off. A save game does not hold the player's zoom. A game loaded in a locked scene keeps the zoom on screen when control returns.
 
 ## Trigger zoom
 

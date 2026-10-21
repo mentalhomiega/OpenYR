@@ -36,9 +36,9 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 113 entries
+- [Rules](#rules): 114 entries
 - [Art](#art): 5 entries
-- [Client settings](#client-settings): 38 entries
+- [Client settings](#client-settings): 39 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
@@ -241,6 +241,7 @@ Bounty.Value=200
 | [`MultipleFactoryCap`](../manual/content/keys/multiplefactorycap--global-rules.md) | `0` | The most factories of one category that count toward the MultipleFactory build-time adjustment. | OpenTS |
 | [`MutateFriendly`](../manual/content/keys/mutatefriendly.md) | `yes` | Whether the genetic mutator also mutates infantry of the firing house and its allies. | OpenYR |
 | [`RecheckPrerequisites`](../manual/content/keys/recheckprerequisites--global-rules.md) | `yes` | Removes a type's sidebar cameo and cancels its production once the house no longer meets the type's prerequisites, tech level or ownership rules. | OpenTS |
+| [`ScriptedCameraHeight`](../manual/content/keys/scriptedcameraheight.md) | `900` | The height, in map pixels, that a scripted scene's zoom shows. | OpenYR |
 | [`SelfHealCap`](../manual/content/keys/selfhealcap.md) | `-1` | The share of maximum strength at which self-healing stops. | OpenTS |
 | [`SelfHealRate`](../manual/content/keys/selfhealrate.md) | `-1` | The interval between self-healing ticks. | OpenTS |
 | [`SelfHealStep`](../manual/content/keys/selfhealstep.md) | `1` | The strength one self-healing tick restores. | OpenTS |
@@ -315,6 +316,7 @@ SystemCursor=no
 | [`MenuStyle`](../manual/content/keys/menustyle--client-settings.md) | `Modern` | `MenuStyle=` chooses how the menus look. | OpenYR |
 | [`Mods`](../manual/content/keys/mods--client-settings.md) | The list in `Mods=` under `[Paths]` in `OPENTS.INI`, or no mods when that file gives none | The mods this player starts the game with, in the order they are read. | OpenYR |
 | [`ScreenShake`](../manual/content/keys/screenshake--client-settings.md) | `yes` | `ScreenShake=yes` shakes the picture when a warhead or an ion blast detonates. | OpenYR |
+| [`ScriptedCameraZoom`](../manual/content/keys/scriptedcamerazoom.md) | `yes` | Zooms the map to the scene height while a scripted scene takes the input or moves the camera. | OpenYR |
 | [`SidebarRows`](../manual/content/keys/sidebarrows--client-settings.md) | `4` | `SidebarRows=` sets how many rows of cameos the modern build panel shows at once. | OpenYR |
 | [`SidebarSorting`](../manual/content/keys/sidebarsorting.md) | `yes` | Keeps each sidebar strip in a fixed order. | OpenTS |
 | [`SimulateWhileUnfocused`](../manual/content/keys/simulatewhileunfocused.md) | `no` | Keeps a campaign or skirmish running while another program has the focus. | OpenTS |

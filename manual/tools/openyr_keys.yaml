@@ -95,6 +95,7 @@ records:
   pip-row-length: OpenYR
   spawn-house-base-nodes: OpenYR
   totable: OpenYR
+  scripted-camera-zoom: OpenYR
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
