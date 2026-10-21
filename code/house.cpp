@@ -4072,10 +4072,11 @@ void HouseClass::MPlayer_Defeated(void)
 		IsToDie = false;
 
 		/*
-		 * In a Cooperative match a defeated player still wins when the last living house is a
-		 * person, as gamemd's HouseClass::AcceptDefeat (0x4FC0B0) gives the win to CurrentPlayer.
+		 * In a Cooperative match against other machines a defeated player still wins when a person
+		 * is still alive and the living houses are on one side, as gamemd's HouseClass::AcceptDefeat
+		 * (0x4FC0B0) gives the win to CurrentPlayer. Two living allied people count as well.
 		 */
-		bool const allies_win = MPMode_Allies_Win() && num_alive == 1 && num_humans == 1;
+		bool const allies_win = MPMode_Is_Cooperative_Match() && num_alive == 1 && num_humans > 0;
 
 		if (PlayerPtr->IsDefeated && !allies_win) {
 			DebugString("MPlayer_Defeated() - Flag_To_Lose\n");

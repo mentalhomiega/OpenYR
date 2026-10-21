@@ -155,7 +155,7 @@ The mode changes these parts of the match:
 
 - A mode whose rules forbid alliances turns `AlliesAllowed` off. FreeForAll and Cooperative forbid them.
 - `UnholyAlliance` turns `Bases` on, whatever the file says, and gives each house every base unit the rules list, not only its own.
-- In `Cooperative`, when the last house still alive is a person, the local player wins even if the local player was defeated.
+- In `Cooperative`, in a game against other machines, the local player wins even if defeated when every house still alive is allied with every other and at least one of them is a person. In a skirmish, a defeated local player loses.
 
 Battle, Megawealth, Duel, MeatGrinder, NavalWar and TeamGame add none of these changes.
 

@@ -12,6 +12,7 @@
 
 #include "ccfile.h"
 #include "ccini.h"
+#include "session.h"
 
 
 namespace {
@@ -94,12 +95,22 @@ MPModeType const & MPMode_Current(void)
 
 
 /// <summary>
-/// Is the running match a Cooperative match, whose game over lets the last living person win for
-/// the houses they fought with?
+/// Is the running match a Cooperative match, in a skirmish or against other machines? gamemd's
+/// MPGameMode query asks the mode alone.
 /// </summary>
-bool MPMode_Allies_Win(void)
+bool MPMode_Is_Cooperative(void)
 {
 	return(HasCurrent && Current.Kind == MPModeKind::Cooperative);
+}
+
+
+/// <summary>
+/// Is the running match a Cooperative match against other machines? gamemd's win, loss and
+/// briefing paths for Cooperative apply only to its network and online sessions, not a skirmish.
+/// </summary>
+bool MPMode_Is_Cooperative_Match(void)
+{
+	return(MPMode_Is_Cooperative() && (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET));
 }
 
 

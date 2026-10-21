@@ -70,8 +70,11 @@ bool MPMode_Has_Current(void);
 // Valid only when MPMode_Has_Current() is true.
 MPModeType const & MPMode_Current(void);
 
-// Cooperative's allies win at game over.
-bool MPMode_Allies_Win(void);
+// Is the running match Cooperative, in any kind of game?
+bool MPMode_Is_Cooperative(void);
+
+// Is the running match Cooperative and played against other machines, over a network or online?
+bool MPMode_Is_Cooperative_Match(void);
 
 // Unholy Alliance gives each starting house every base unit the rules list.
 bool MPMode_Spawns_All_Base_Units(void);
