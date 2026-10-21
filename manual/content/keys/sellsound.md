@@ -17,7 +17,7 @@ The sound plays when the local player sells a structure, a vehicle or aircraft, 
 A structure plays it from its position as its build-down begins, so it fades with distance from the view. It does not play in two cases:
 
 - Removing an upgrade. Selling an upgraded structure removes one upgrade per sale before the structure itself is sold.
-- Selling or undeploying a structure whose type sets [`UndeploysInto`](/keys/undeploysinto/), other than a construction yard.
+- Selling or undeploying a structure whose type sets [`UndeploysInto`](/keys/undeploysinto/), other than a construction yard. A construction yard that turns back into its vehicle in a multiplayer game with the MCV redeploy option plays the structure's [`DeploySound`](/keys/deploysound/#scope-buildingtype) instead, as every undeploying structure does.
 
 A vehicle or aircraft sale plays the sound at full volume, not from a map position, together with the spoken "unit sold" line.
 

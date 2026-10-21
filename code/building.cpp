@@ -5595,6 +5595,13 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 
 	bool selected = IsSelected;
 
+	// Whether this sale turns the structure back into its vehicle (BuildingClass::Mission_Selling, 0x449C30).
+	bool const undeploys = Class->UndeploysInto != NULL &&
+		(Class->Is_Mobile_Deployer() ||
+		Class->Can_Always_Undeploy() ||
+		(SlaveManager && ArchiveTarget != NULL) ||
+		(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)));
+
 	enum {
 		INITIAL,
 		HOLDING,
@@ -5605,6 +5612,14 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 
 			if (Can_Be_Undeployed() && Class->Is_Mobile_Deployer()) {
 				Assign_Target(NULL);
+			}
+
+			// A structure that packs up into its vehicle announces it when the sale begins.
+			if (undeploys) {
+				Sound_Effect(Class->AuxSound1, PositionCoord);
+				if (House->Is_Player_Control()) {
+					Sound_Effect(Class->VoiceDeploy);
+				}
 			}
 
 			// Selling an absorber lets everyone inside out first.
@@ -5757,7 +5772,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					}
 				}
 
-				if (House->Is_Player_Control() && !Considered_Vehicle()) {
+				if (House->Is_Player_Control() && !Considered_Vehicle() && !undeploys) {
 					Sound_Effect(Rule->SellSound, PositionCoord);
 				}
 				Status = DURING;
@@ -5785,12 +5800,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				**	to an MCV.
 				*/
 				// A deployed slave miner moving on to new ore packs up for any owner.
-				if (Class->UndeploysInto != NULL &&
-					(Class->Is_Mobile_Deployer() ||
-					Class->Can_Always_Undeploy() ||
-					(SlaveManager && ArchiveTarget != NULL) ||
-					(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)))
-				) {
+				if (undeploys) {
 
 					if (Class->IsArtillary && (BarrelPitch.Current() != Class->StartPitch || PrimaryFacing.Current() != Class->StartFace)) {
 						BarrelPitch.Set_Desired(Class->StartPitch);
@@ -5802,12 +5812,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					UnitClass * unit = new UnitClass(Class->UndeploysInto, House);
 					ScenarioInit--;
 					if (unit != NULL) {
-
-						// A structure turning back into its vehicle plays its DeploySound, and its VoiceDeploy for its owner.
-						Sound_Effect(Class->AuxSound1, PositionCoord);
-						if (House->Is_Player_Control()) {
-							Sound_Effect(Class->VoiceDeploy);
-						}
 
 						/*
 						**	Unlimbo the MCV onto the map. The MCV should start in the same

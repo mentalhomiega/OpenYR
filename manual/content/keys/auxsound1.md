@@ -15,7 +15,7 @@ AuxSound1=MYHELI_Takeoff ; a sound ID registered in SOUND.INI
 These events play this sound at the object's position, whichever house owns it:
 
 - A **vehicle** that [`DeploysInto`](/keys/deploysinto/) a structure plays it as it unpacks into the structure. An [`IsSimpleDeployer=yes`](/keys/issimpledeployer/) vehicle plays it as it starts to deploy.
-- A **structure** with [`UndeploysInto`](/keys/undeploysinto/) plays it as it turns back into that vehicle.
+- A **structure** with [`UndeploysInto`](/keys/undeploysinto/) plays it as its sale begins and it starts to turn back into that vehicle.
 - An object moved by the flyer [locomotor](/keys/locomotor/#scope-aircrafttype) plays it each time it takes off, unless it is stunned.
 
 On infantry types the key has no effect.
