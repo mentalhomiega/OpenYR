@@ -2011,6 +2011,14 @@ bool ObjectClass::Paradrop(Coord const & coord)
 		*/
 		if (anim != NULL) {
 			anim->Attach_To(this);
+
+			// gamemd ObjectClass::SpawnParachuted (0x5F5940) draws a unit's canopy through its own GetRemapColour,
+			// which is its Palette= drawer or its house colours, and tints it with the cell's brightness.
+			TechnoClass * techno = dynamic_cast<TechnoClass *>(this);
+			if (techno != NULL) {
+				anim->AlternativeDrawer = techno->Remap_Converter();
+				anim->AlternativeBrightness = Map[coord].Brightness;
+			}
 		}
 		return(true);
 	}

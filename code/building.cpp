@@ -9298,6 +9298,8 @@ void BuildingClass::Update_Anim_Appearance(void)
 {
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
 	// gamemd BuildingClass::UpdateAnimations (0x4509D0) draws these with GetRemapColour, which is the type's palette when it sets one.
+	// Mark (0x43F180), BuildingClass::Flash (0x456E00) and SetOwningHouse (0x448260) reach this routine as well, through
+	// MARK_CHANGE, Clicked_As_Target and Change_Owner.
 	ConvertClass * converter = Palette_Converter();
 	if (converter == NULL) {
 		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;

@@ -313,6 +313,13 @@ void ParasiteClass::Update_Squid(void)
 
 	if (GrappleAnim != nullptr && Owner != nullptr && Victim != nullptr && Victim != GrappleAnim->xObject) {
 		GrappleAnim->Attach_To(Victim);
+
+		// gamemd ParasiteClass::UpdateSquid (0x6297F0) draws the grapple through its owner's GetRemapColour,
+		// and tints it with the victim's cell brightness when the victim is on a cell.
+		GrappleAnim->AlternativeDrawer = Owner->Remap_Converter();
+		if (!Victim->IsInLimbo) {
+			GrappleAnim->AlternativeBrightness = Map[Victim->Center_Coord()].Brightness;
+		}
 	}
 }
 
