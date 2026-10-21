@@ -2283,6 +2283,378 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 
 
 /// <summary>
+/// Adds a light-weighted color to a hicolor pixel the way gamemd does when a beam brightens what it lies over.
+/// Each gun gains its addend. A gun that reaches 255 hands the amount it went over to the guns still
+/// below 255, halved when only one gun went over; when all three went over, nothing is handed on. A
+/// brightened pixel therefore drifts toward white instead of keeping its hue as it saturates.
+/// </summary>
+/// <param name="pixel">The hicolor pixel underneath.</param>
+/// <param name="red_add">The amount to add to the red gun.</param>
+/// <param name="green_add">The amount to add to the green gun.</param>
+/// <param name="blue_add">The amount to add to the blue gun.</param>
+/// <returns>The brightened pixel, in the surface format.</returns>
+/// <remarks>This is gamemd's routine at 0x4BE9D0.</remarks>
+static unsigned short Add_Beam_Light(unsigned short pixel, int red_add, int green_add, int blue_add)
+{
+	RGBClass const under = DSurface::Deconstruct_Hicolor_Pixel(pixel);
+	int red = under.Get_Red() + red_add;
+	int green = under.Get_Green() + green_add;
+	int blue = under.Get_Blue() + blue_add;
+
+	int overflowed = 0;
+	int excess = 0;
+	if (red >= 255) {
+		overflowed++;
+		excess = red - 255;
+	}
+	if (green >= 255) {
+		overflowed++;
+		excess += green - 255;
+	}
+	if (blue >= 255) {
+		overflowed++;
+		excess += blue - 255;
+	}
+
+	if (overflowed > 0 && overflowed < 3) {
+		if (overflowed == 1) {
+			excess >>= 1;
+		}
+		if (red < 255) {
+			red += excess;
+		}
+		if (green < 255) {
+			green += excess;
+		}
+		if (blue < 255) {
+			blue += excess;
+		}
+	}
+
+	return((unsigned short)DSurface::Build_Hicolor_Pixel(std::min(red, 255), std::min(green, 255), std::min(blue, 255)));
+}
+
+
+/// <summary>
+/// Draws a clipped, depth-tested line that adds its color to the pixels beneath it.
+/// This routine draws the thick house-colored laser and the glow of a laser beam that does not blink. Every
+/// pixel that passes the depth test gains the color scaled by the alpha buffer's brightness at that point
+/// (0..127 of 128), so a beam brightens what it crosses instead of replacing it. A beam whose color is
+/// below 8 on every gun at the given intensity draws nothing. The depth endpoints are re-interpolated
+/// across the portion of the line that survives clipping, then the line is rasterized with a 3-axis
+/// Bresenham whose major axis is max(dx, |dy|, |dz|).
+/// </summary>
+/// <param name="cliprect">Clipping rectangle (intersected with the surface rect).</param>
+/// <param name="startpoint">Line start point.</param>
+/// <param name="endpoint">Line end point.</param>
+/// <param name="color">The color added at full intensity.</param>
+/// <param name="intensity">The fraction of the color that is added.</param>
+/// <param name="start_depth">Depth value at the start point.</param>
+/// <param name="end_depth">Depth value at the end point.</param>
+/// <returns>True if any portion of the line was drawn, false otherwise.</returns>
+/// <remarks>
+/// This is gamemd's routine at 0x4BDF00. It never writes the depth buffer. The alpha buffer pointer follows
+/// the line down the rows but is never stepped along a row, so each pixel takes the alpha of the first pixel
+/// of its row of the line. gamemd does it that way and it is kept.
+/// </remarks>
+bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass const & color, float intensity, int start_depth, int end_depth)
+{
+	/*
+	**	The color at the strength asked for. A line too dim to change any gun draws nothing.
+	*/
+	int const red = (int)((double)color.Get_Red() * (double)intensity);
+	int const green = (int)((double)color.Get_Green() * (double)intensity);
+	int const blue = (int)((double)color.Get_Blue() * (double)intensity);
+	if (red < 8 && green < 8 && blue < 8) {
+		return(false);
+	}
+
+	/*
+	**	Ensure that the clipping rectangle is legal.
+	*/
+	Rect clipped_rect = Intersect(cliprect, Get_Rect());
+	if (clipped_rect.Width == 0 && clipped_rect.Height == 0) {
+		return(false);
+	}
+
+	/*
+	**	High-speed working variables for the clipping rectangle and clipping operation.
+	*/
+	Point2D start = Bias_To(startpoint, clipped_rect);
+	Point2D end = Bias_To(endpoint, clipped_rect);
+
+	/*
+	 * Sort the endpoints left-to-right, carrying the depth values with them.
+	 */
+	int zfirst = start_depth;
+	int zlast = end_depth;
+	if (start.X > end.X) {
+		std::swap(start, end);
+		zfirst = end_depth;
+		zlast = start_depth;
+	}
+
+	/*
+	 * Remember the pre-clip endpoints so the depth values can be re-interpolated
+	 * across the portion of the line that survives clipping.
+	 */
+	Point2D unclipped = end;
+	int px = start.X;
+	int py = start.Y;
+
+	if (!Clip_Line_To_Rect(start, end, clipped_rect)) {
+		return(false);
+	}
+
+	int zend = zlast;
+	int zstart = zfirst;
+
+	/*
+	 * Re-interpolate the far depth value if the far endpoint was clipped.
+	 */
+	if (end.X != unclipped.X || end.Y != unclipped.Y) {
+		Point2D clipped_point;
+		clipped_point.X = px - end.X;
+		double clipped_dx = (double)clipped_point.X;
+		clipped_point.Y = py - end.Y;
+		int clipped = (int)(int)std::sqrt((double)clipped_point.Y * (double)clipped_point.Y + clipped_dx * clipped_dx);
+		Point2D full_point;
+		full_point.X = px - unclipped.X;
+		double full_dx = (double)full_point.X;
+		full_point.Y = py - unclipped.Y;
+		int amount = abs((int)(int)((double)clipped
+			/ (double)(int)(int)std::sqrt((double)full_point.Y * (double)full_point.Y + full_dx * full_dx)
+			* (double)(zfirst - zlast)));
+		if (zfirst < zlast) {
+			zend = zfirst + amount;
+		} else {
+			zend = zfirst - amount;
+		}
+	}
+
+	/*
+	 * Re-interpolate the near depth value if the near endpoint was clipped.
+	 */
+	if (start.X != px || start.Y != py) {
+		Point2D clipped_point;
+		clipped_point.X = start.X - unclipped.X;
+		double clipped_dx = (double)clipped_point.X;
+		clipped_point.Y = start.Y - unclipped.Y;
+		int clipped = (int)(int)std::sqrt((double)clipped_point.Y * (double)clipped_point.Y + clipped_dx * clipped_dx);
+		Point2D full_point;
+		full_point.X = px - unclipped.X;
+		double full_dx = (double)full_point.X;
+		full_point.Y = py - unclipped.Y;
+		int amount = abs((int)(int)((double)clipped
+			/ (double)(int)(int)std::sqrt((double)full_point.Y * (double)full_point.Y + full_dx * full_dx)
+			* (double)(zfirst - zlast)));
+		if (zlast > zfirst) {
+			zstart = zlast - amount;
+		} else {
+			zstart = zlast + amount;
+		}
+	}
+
+	Bytes_Per_Pixel();
+	void * buffer = Lock(start);
+
+	if (DepthBuffer == NULL || AlphaBuffer == NULL) {
+		Unlock();
+		return(false);
+	}
+
+	Point2D point = start;
+	point.Y -= DepthBuffer->Get_Bounds().Y;
+	unsigned short * zbuffer = DepthBuffer->Get_Buffer_Offset(point);
+	point = start;
+	point.Y -= AlphaBuffer->Get_Bounds().Y;
+	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
+
+	int start_y = start.Y;
+	int zwrap = -1;
+	unsigned short z = (unsigned short)(zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
+	int zwidth = DepthBuffer->Get_Buffer_Width();
+
+	if (buffer == NULL) {
+		Unlock();
+		return(false);
+	}
+
+	/*
+	 * Distances to x, y and depth.
+	 */
+	int dy = end.Y - start.Y;
+	int dx = end.X - start.X;
+	int dz = zend - zstart;
+
+	int pitch = Stride();
+	if (dy < 0) {
+		pitch = -pitch;
+		zwidth = -zwidth;
+		zwrap = 1;
+	}
+
+	int zstep = 1;
+	int abs_dy = abs(dy);
+	if (dz < 0) {
+		zstep = -1;
+	}
+
+	int abs_dz = abs(dz);
+	int dx2 = 2 * dx;
+	int dy2 = 2 * abs_dy;
+	int dz2 = 2 * abs_dz;
+
+	/*
+	 * The pixel update shared by the three cases below.
+	 */
+	auto plot = [&](int offset) {
+		if (z < *zbuffer) {
+			int const alpha = *abuffer;
+			unsigned short * pixel = (unsigned short *)((char *)buffer + offset);
+			*pixel = Add_Beam_Light(*pixel, (alpha * red) >> 7, (alpha * green) >> 7, (alpha * blue) >> 7);
+		}
+	};
+
+	if (abs_dz > dx && abs_dz > abs_dy) {
+
+		/*
+		 * The depth axis changes fastest.
+		 */
+		int xdelta = dy2 - abs_dz;
+		int ydelta = dx2 - abs_dz;
+		if (abs_dz > 0) {
+			int offset = 0;
+			for (int i = abs_dz; i != 0; i--) {
+
+				plot(offset);
+
+				if (xdelta > 0) {
+					buffer = (unsigned char *)buffer + pitch;
+					xdelta -= dz2;
+					zbuffer += zwidth;
+					if (zwidth > 0) {
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+					} else {
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
+					}
+					abuffer += zwidth;
+					if (zwidth > 0) {
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
+					} else {
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
+					}
+					z += zwrap;
+				}
+
+				if (ydelta > 0) {
+					zbuffer++;
+					offset += 2;
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+					ydelta -= dz2;
+				}
+
+				z += zstep;
+				ydelta += dx2;
+				xdelta += dy2;
+			}
+		}
+	} else if (dx > abs_dy) {
+
+		/*
+		 * The slope is not steep -- plot a low line.
+		 */
+		int ydelta = dy2 - dx;
+		int zdelta = dz2 - dx;
+		if (dx > 0) {
+			for (int i = 0; i < dx; i++) {
+
+				plot(2 * i);
+
+				if (ydelta > 0) {
+					buffer = (unsigned char *)buffer + pitch;
+					ydelta -= 2 * dx;
+					zbuffer += zwidth;
+					if (zwidth > 0) {
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+					} else {
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
+					}
+					z += zwrap;
+					abuffer += zwidth;
+					if (zwidth > 0) {
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
+					} else {
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
+					}
+				}
+
+				if (zdelta > 0) {
+					z += zstep;
+					zdelta -= 2 * dx;
+				}
+
+				zbuffer++;
+				ydelta += dy2;
+				zdelta += dz2;
+				zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+			}
+		}
+	} else {
+
+		/*
+		 * The slope is steep -- plot a high line.
+		 */
+		int xdelta = dx2 - abs_dy;
+		int zdelta = dz2 - abs_dy;
+		if (abs_dy > 0) {
+			int i = abs_dy;
+			int offset = 0;
+			do {
+
+				plot(offset);
+
+				if (xdelta > 0) {
+					zbuffer++;
+					offset += 2;
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+					xdelta -= dy2;
+				}
+
+				if (zdelta > 0) {
+					z += zstep;
+					zdelta -= dy2;
+				}
+
+				xdelta += dx2;
+				zdelta += dz2;
+				buffer = (unsigned char *)buffer + pitch;
+
+				zbuffer += zwidth;
+				if (zwidth > 0) {
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+				} else {
+					zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
+				}
+				z += zwrap;
+				abuffer += zwidth;
+				if (zwidth > 0) {
+					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
+				} else {
+					abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
+				}
+
+				i--;
+			} while (i != 0);
+		}
+	}
+
+	Unlock();
+	return(true);
+}
+
+
+/// <summary>
 /// Draws a dashed line masked against the alpha buffer.
 /// This routine is used by the tactical map for rally point and waypoint path lines, which
 /// march along as the game runs. The dash pattern carries from one segment to the next, so a

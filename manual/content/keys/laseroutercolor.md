@@ -15,14 +15,10 @@ The glow is two extra lines drawn one pixel off the beam's core, both in this co
 [MyObeliskRay] ; example WeaponType
 IsLaser=yes
 LaserInnerColor=255,0,0
-LaserOuterColor=128,32,32 ; above the lowest detail only the red 128 shows
+LaserOuterColor=128,32,32
 ```
 
-:::caution[The glow shows only its red above the lowest detail]
-Above the lowest detail setting, the glow lines blend only the red of the pixels beneath them toward this color, so the green and blue written here have no effect. At the lowest setting both lines are drawn solid in the full color.
-:::
-
-The color always comes from the weapon in the object's [first weapon slot](/systems/firing-geometry/#what-each-part-of-a-shot-reads), even when a laser in the second slot fires.
+At the medium and high detail levels the glow adds its color to the pixels beneath it, dimming with the beam's age. At the lowest setting both lines are drawn solid in the full color.
 
 :::note[A partial triplet reads as the default]
 `LaserOuterColor=128` names one channel where three are needed, so the glow keeps its default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.

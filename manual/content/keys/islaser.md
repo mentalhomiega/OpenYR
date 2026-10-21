@@ -1,7 +1,7 @@
 ---
 key: IsLaser
 summary: Draws a beam from the mounting to the target as the weapon fires.
-see_also: ["LaserInnerColor", "LaserOuterColor", "LaserOuterSpread", "LaserDuration", "IsBigLaser", "Charges"]
+see_also: ["LaserInnerColor", "LaserOuterColor", "LaserOuterSpread", "LaserDuration", "IsHouseColor", "IsBigLaser", "Charges"]
 when_omitted:
   kind: value
   value: "no"
@@ -21,14 +21,11 @@ Projectile=LLine ; a BulletType, registered by a weapon naming it as its Project
 
 ## What is drawn
 
-A laser shot draws two effects along the line from the mounting to the target's aim point:
+A laser shot draws one beam along the line from the mounting to the target's aim point. The beam is a thin core line in [`LaserInnerColor`](/keys/laserinnercolor/), with two glow lines one pixel to either side of it in [`LaserOuterColor`](/keys/laseroutercolor/). [`LaserOuterSpread`](/keys/laserouterspread/) varies the glow color each frame. The beam lasts [`LaserDuration`](/keys/laserduration/) frames, and its strength falls evenly from full to nothing over them, so it dims as it ages. The lines add their colors to the pixels beneath them in proportion to that strength. At the lowest [detail level](/keys/detaillevel/#scope-client-settings) they are plain solid lines that do not dim.
 
-- The beam: a thin core line in [`LaserInnerColor`](/keys/laserinnercolor/), with two glow lines beside it in [`LaserOuterColor`](/keys/laseroutercolor/). [`LaserOuterSpread`](/keys/laserouterspread/) varies the glow color each frame, and the beam lasts [`LaserDuration`](/keys/laserduration/) frames. While the frame rate is below [`DetailMinFrameRateNormal`](/keys/detailminframeratenormal/#scope-global-rules), the beam is drawn as plain shaded lines, as at the lowest detail level.
-- A screen glow along the same line, drawn only at the high [detail level](/keys/detaillevel/#scope-client-settings). It brightens only the red of whatever lies beneath it, whatever colors the beam uses, and fades out over about 22 frames. [`IsBigLaser=yes`](/keys/isbiglaser/) widens it.
+No other effect is drawn with the beam, and [`IsBigLaser`](/keys/isbiglaser/) changes nothing. A weapon with [`IsHouseColor=yes`](/keys/ishousecolor/) draws a thick beam in the house color instead of this one.
 
-:::caution[The beam's settings come from the first weapon slot]
-Whichever slot fired, the beam's colors, spread, duration and glow width come from the weapon in the object's first slot. A laser weapon in the second slot therefore draws its beam in the first weapon's colors. If the first-slot weapon is not a laser, the beam uses that weapon's color and duration settings, which are usually the defaults.
-:::
+The beam takes its settings from the weapon that fired it.
 
 ## Effects on the shot
 

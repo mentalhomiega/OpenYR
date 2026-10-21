@@ -12,7 +12,7 @@ Animations whose [`DetailLevel`](/keys/detaillevel/#scope-animtype) is above `1`
 
 Once the rate falls below this value, those animations stay hidden until the rate reaches this value plus [`DetailBufferZoneWidth`](/keys/detailbufferzonewidth/#scope-global-rules). A rate that reaches this value but not the sum keeps them hidden. The count starts at `0`, so they stay hidden until the first 960 milliseconds of play have been counted.
 
-The same test hides a particle whose type deals no damage. A combat flash is not made while the rate is low, or at detail level `0`, unless its warhead disables a color channel; a flash that disables one is still drawn. A spot light that disables no channel is not drawn while the rate is low. A laser beam is drawn as a plain shaded line while the rate is low.
+The same test hides a particle whose type deals no damage. A combat flash is not made while the rate is low, or at detail level `0`, unless its warhead disables a color channel; a flash that disables one is still drawn. A spot light that disables no channel is not drawn while the rate is low. The thick beam of an [`IsHouseColor=yes`](/keys/ishousecolor/) laser is drawn as plain shaded lines while the rate is low. Other laser beams do not look at the rate.
 
 Apart from combat flashes, the test changes drawing only. A hidden animation is still created and advances through its frames. A combat flash the test rules out is never created.
 

@@ -16,7 +16,6 @@ keys:
   - ElitePrimary
   - EliteSecondary
   - FiringSyncFrame1
-  - IsBigLaser
   - IsLaser
   - IsRailgun
   - IsSonic
@@ -164,7 +163,7 @@ A weapon is affected only if its `Burst` is above `1` and its lateral offset is 
 
 ## What each part of a shot reads
 
-Several parts of a shot take their settings from the first slot, not from the slot that fired. This matters when a beam or wave weapon is in the second slot, or when the two slots have different offsets.
+Several parts of a shot take their settings from the first slot, not from the slot that fired. This matters when a wave weapon is in the second slot, or when the two slots have different offsets.
 
 | Part of the shot | Appears at | Settings from |
 | --- | --- | --- |
@@ -176,7 +175,7 @@ Several parts of a shot take their settings from the first slot, not from the sl
 | The railgun beam, its [`AmbientDamage`](/keys/ambientdamage/), warhead and [`AttachedParticleSystem`](/keys/attachedparticlesystem/) | The mounting | The firing slot |
 | The radiation beam | The mounting | The firing slot |
 | The sonic wave's `AmbientDamage` and warhead | The firing slot's mounting when created, then the first slot's mounting | The first slot |
-| The laser beam's [`LaserInnerColor`](/keys/laserinnercolor/), [`LaserOuterColor`](/keys/laseroutercolor/), [`LaserOuterSpread`](/keys/laserouterspread/), [`LaserDuration`](/keys/laserduration/) and [`IsBigLaser`](/keys/isbiglaser/) | The firing slot's mounting | The first slot |
+| The laser beam's colors, spread and duration | The firing slot's mounting | The firing slot |
 | The barrel elevation, including the high arc from `Lobber` | Not placed | The first slot |
 | The reload delay | Not placed | The firing slot |
 

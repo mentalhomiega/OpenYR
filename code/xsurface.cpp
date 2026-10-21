@@ -465,6 +465,17 @@ bool XSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 
 
 /// <summary>
+/// Draws a line that adds its color to the pixels beneath it, shaded between a start and an end depth.
+/// The plain surface has no depth buffer to work against, so it refuses the request.
+/// DSurface supplies the working version of this routine.
+/// </summary>
+bool XSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, RGBClass const & color, float intensity, int start_depth, int end_depth)
+{
+	return(false);
+}
+
+
+/// <summary>
 /// Walks a clipped line, handing each point to a callback.
 /// This routine is for callers that must do more at each step than store a color -- the
 /// radar event boxes stamp their edges through it. Points that fall outside the clipping

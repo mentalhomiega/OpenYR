@@ -26,11 +26,35 @@ class LaserDrawClass : public StageClass
 		void Draw_It(void);
 		void AI(void);
 
+	private:
+		void Draw_House_Color(void);
+
+	public:
+
 		static void Update_All(void);
 		static void All_Clear(void);
 		static void Draw_All(void);
 
 	public:
+		/*
+		 * This is how many pairs of lines a house colored beam is drawn with, counting out from its path.
+		 * The code that fires the beam sets it: 2 for a unit's house colored weapon, 3 for a Prism Tower
+		 * and 5 for a Prism Tower that is being supported. An ordinary beam does not read it.
+		 */
+		int Thickness;
+
+		/*
+		 * If the beam belongs to a house colored weapon, then this flag will be true. It is drawn thick,
+		 * as pairs of lines in the house's laser color, rather than as a thin core with a glow.
+		 */
+		bool IsHouseColor;
+
+		/*
+		 * If the beam is a Prism Tower's that other towers are supporting, then this flag will be true.
+		 * The beam starts at twice the house color instead of half of it.
+		 */
+		bool IsSupported;
+
 		/*
 		 * These are the world coordinates of the two ends of the beam. Neither end follows
 		 * the object that fired or the object that was hit, so the beam stays where it was

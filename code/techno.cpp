@@ -4910,8 +4910,24 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		inner = House->Laser_Color();
 		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
 	}
-	new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, false, 1.0, 0.0);
-	new WaveClass(source, dest, this, weapon->IsBigLaser ? WAVE_BIG_LASER : WAVE_LASER, (TechnoClass *)target);
+	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, true, 1.0, 0.0);
+	beam->IsHouseColor = weapon->IsHouseColor;
+
+	// A house colored beam is drawn thick. A Prism Tower's is 3 lines out, or 5 while other towers support it; any other
+	// structure's stays 1, and a unit's takes 2 (TechnoClass::Fire, 0x6FDD50). No wave is made for a laser; gamemd makes
+	// only sonic and magnetron waves.
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (Rule->PrismType != NULL && building->Class == Rule->PrismType) {
+			beam->Thickness = 3;
+			if (building->SupportingPrisms > 0) {
+				beam->IsSupported = true;
+				beam->Thickness = 5;
+			}
+		}
+	} else if (weapon->IsHouseColor) {
+		beam->Thickness = 2;
+	}
 }
 
 
@@ -5469,7 +5485,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				 */
 				if (weapon->IsLaser) {
 					BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-					Laser_Zap(target, which, PrimaryWeapon, COORD_NONE);
+					Laser_Zap(target, which, weapon, COORD_NONE);
 					if (building != NULL) {
 						building->BuildingStage.Set_Stage(0);
 						building->BuildingStage.Set_Rate(0);
