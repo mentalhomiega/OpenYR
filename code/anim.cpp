@@ -86,6 +86,7 @@
 #include "particle.h"
 #include "partsys.h"
 #include "playerdisplay.h"
+#include "ringglow.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -99,6 +100,7 @@
 #include "techno.h"
 #include "tiberium.h"
 #include "tracker.h"
+#include "zbuffer.h"
 
 #include "bench.hh"
 #include "houstype.h"
@@ -550,6 +552,17 @@ static unsigned Detail_Min_Frame_Rate(void)
  *=============================================================================================*/
 void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
+	// Yuri's Revenge draws a RING1 animation as a glow on the ground and not as its shape when Direct3D is
+	// usable (0x422CA0). The glow is queued here and drawn after the frame's other objects.
+	if (Rule->IsRing1Glow && DepthBuffer != NULL && stricmp(Class->Name(), "RING1") == 0) {
+		int const rate = Fetch_Rate();
+		int const elapsed = rate * Fetch_Stage() - Fetch_Time_Left() + rate;
+		Point2D const center = point + cliprect.Top_Left();
+		int const depth = (unsigned short)(DepthBuffer->Get_Scroll() + DepthBuffer->Bounds.Y - center.Y) + ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+		Ring_Glow_Add(center, elapsed, Class->Stages * rate, depth, cliprect);
+		return;
+	}
+
 	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
 	if (!IsInvisible && !IsPsychicHidden && Class->DetailLevel <= Options.DetailLevel && (Class->DetailLevel <= 1 || LastFramesPerSecond >= min_frame_rate) && (!IsFogged || !Class->IsShouldFogRemove)) {
 		BStart(BENCH_ANIMS);

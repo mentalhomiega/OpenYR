@@ -208,6 +208,7 @@ Bounty.Value=200
 | --- | --- | --- | --- |
 | [`AnimationFires`](../manual/content/keys/animationfires.md) | `no` | Whether Flamer and Scorch animations, and damaged or destroyed structures, light SmallFire and LargeFire fires. | OpenYR |
 | [`BountyDisplay`](../manual/content/keys/bountydisplay.md) | `no` | Whether bounty payments are shown over the destroyed object, for destroyers that do not set Bounty.Display. | Ares |
+| [`Ring1Glow`](../manual/content/keys/ring1glow.md) | `no` | Whether an animation of type RING1 is drawn as an expanding glow on the ground instead of its shape. | OpenYR |
 | [`VoxelShadeScale`](../manual/content/keys/voxelshadescale--global-rules.md) | `16` | Sets how many palette shade rows a voxel's diffuse and highlight brightness spans. | OpenYR |
 | [`VoxelSpecularFromView`](../manual/content/keys/voxelspecularfromview--global-rules.md) | `no` | Takes the viewer direction for the voxel highlight from the isometric view alone, not from the voxel's own transform. | OpenYR |
 | [`VoxelSpecularStrength`](../manual/content/keys/voxelspecularstrength--global-rules.md) | `3` | Sets the strength of the highlight that units, aircraft and buildings drawn as voxels take from the viewer's direction. | OpenYR |

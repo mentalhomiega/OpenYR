@@ -31529,6 +31529,24 @@ ReversedAs:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Ring1Glow:
+  key: Ring1Glow
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsRing1Glow
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Rocker:
   key: Rocker
   scopes:

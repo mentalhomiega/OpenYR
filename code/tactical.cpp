@@ -67,6 +67,7 @@
 #include "mouse.h"
 #include "overtype.h"
 #include "ovrlight.h"
+#include "ringglow.h"
 #include "rules.h"
 #include "savestream.h"
 #include "csf.h"
@@ -1347,6 +1348,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		}
 
 		Render_Outside_Map(*composite);
+		Ring_Glow_Flush(*composite);
 
 		LogicalSurface = savedlogical;
 		composite->Unlock();

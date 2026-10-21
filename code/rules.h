@@ -1715,6 +1715,13 @@ class RulesClass
 		 */
 		bool IsAnimationFires;
 
+		/*
+		 * When true, an animation of the type named RING1 is drawn as an expanding glow on the ground
+		 * instead of its shape. Yuri's Revenge draws the glow only when Direct3D is usable, which in
+		 * the shipped game it never is, so this is false by default.
+		 */
+		bool IsRing1Glow;
+
 		/// Unused
 		InfantryTypeClass const * Paratrooper;
 
