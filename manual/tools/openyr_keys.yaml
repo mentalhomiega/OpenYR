@@ -98,6 +98,7 @@ records:
 
 # Records whose keys gamemd reads. The index leaves them out.
 gamemd_records:
+  - migattackcursor-and-floatbeach-figures
   - anim-sounds-and-frame-rate
   - added-aircraft-trailer
   - added-airportbound
