@@ -6908,6 +6908,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			break;
 	}
 
+	// A destroyed object sets off the Ivan bomb it carries, whatever else its death did (TechnoClass::ReceiveDamage, 0x701900).
+	if (result == RESULT_DESTROYED) {
+		Detonate_Bomb();
+	}
+
 	if (result != RESULT_DESTROYED) {
 		/*
 		**	If some damage was received and this object is cloaked, shimmer

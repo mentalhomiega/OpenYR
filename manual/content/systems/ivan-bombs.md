@@ -41,7 +41,7 @@ The bomb goes off [`IvanTimedDelay`](/keys/ivantimeddelay/) frames after it is p
 
 ## Going off
 
-The bomb does [`IvanDamage`](/keys/ivandamage/) through [`IvanWarhead`](/keys/ivanwarhead/) where the object stands, with the warhead's explosion, credited to the soldier that planted it. A bomb whose object is off the map when the time comes, such as inside a transport, waits and goes off as soon as the object is back on the map. A bomb whose object is destroyed or removed first goes with it.
+The bomb does [`IvanDamage`](/keys/ivandamage/) through [`IvanWarhead`](/keys/ivanwarhead/) where the object stands, with the warhead's explosion, credited to the soldier that planted it. A bomb whose object is off the map when the time comes, such as inside a transport, waits and goes off as soon as the object is back on the map. A bomb on an object that is destroyed first goes off as the object dies, with the same damage and credit. A bomb on an object that leaves the game some other way goes with it.
 
 ## Ordering a bomb
 
