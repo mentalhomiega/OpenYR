@@ -13,7 +13,7 @@ DebrisMaximums=4,2
 
 At `0`, a destroyed object throws no wreckage, whatever its debris lists say. Above `0`, the object throws a random number of pieces from [`MinDebris`](/keys/mindebris/) up to one less than `MaxDebris`. Which pieces are thrown depends on the type's lists:
 
-- **With [`DebrisTypes`](/keys/debristypes/)**, the entries are taken in turn, starting again from the first after the last. Each turn throws a random number of pieces, from zero up to the entry's matching [`DebrisMaximums`](/keys/debrismaximums/) figure, until the count is used up. An entry with no matching figure throws none. When two whole passes throw nothing, the rest of the count goes unused. The pieces start at the object's center and belong to the object's owner.
+- **With [`DebrisTypes`](/keys/debristypes/)**, the entries are taken in turn, starting again from the first after the last. Each turn throws a random number of pieces, from zero up to the entry's matching [`DebrisMaximums`](/keys/debrismaximums/) figure, until the count is used up. An entry with no matching figure throws none. If no entry has a figure above `0`, no voxel piece is thrown, and the count goes to [`DebrisAnims`](/keys/debrisanims/) below, or is dropped when the type has none. The pieces start at the object's center and belong to the object's owner.
 - **With [`DebrisAnims`](/keys/debrisanims/)**, whatever count the voxel pieces left over is thrown as those animations, each picked at random, 20 leptons above the object's center.
 - **With neither list**, the whole count is thrown as [`MetallicDebris`](/keys/metallicdebris/) animations, picked the same way. If `MetallicDebris` is empty, nothing is thrown.
 

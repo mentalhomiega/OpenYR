@@ -6784,12 +6784,24 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
 
 				if (TClass->DebrisTypes.Count() > 0) {
+					int const types = TClass->DebrisTypes.Count();
+					TypeList<int> const & maximums = TClass->DebrisMaximums;
+
+					// A missing or negative figure throws nothing. When no figure is above zero, gamemd's loop never ends, so this port throws no voxel pieces.
+					auto figure_of = [&maximums](int type) {
+						return type < maximums.Count() ? std::max(maximums[type], 0) : 0;
+					};
+					bool can_throw = false;
+					for (int type = 0; type < types; type++) {
+						can_throw = can_throw || figure_of(type) > 0;
+					}
+
 					int index = 0;
-					int idlepasses = 0;
-					bool placed = false;
-					while (remaining > 0 && idlepasses < 2) {
-						int const maximum = index < TClass->DebrisMaximums.Count() ? TClass->DebrisMaximums[index] : 0;
-						int count = abs(Scen->RandomNumber) % (maximum + 1);
+					while (remaining > 0 && can_throw) {
+						// Two's complement absolute value, as gamemd computes it: a draw of INT_MIN stays negative, so it throws nothing and adds to the count.
+						int const draw = Scen->RandomNumber();
+						int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
+						int count = magnitude % (figure_of(index) + 1);
 						if (count >= remaining) {
 							count = remaining;
 						}
@@ -6797,14 +6809,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 							new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
 						}
 						remaining -= count;
-						placed = placed || count > 0;
-
-						// The original game loops forever when no entry can place any; this stops after two empty passes.
-						if (++index >= TClass->DebrisTypes.Count()) {
-							index = 0;
-							idlepasses = placed ? 0 : idlepasses + 1;
-							placed = false;
-						}
+						index = (index + 1) % types;
 					}
 				}
 

@@ -805,6 +805,12 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		PhysicalSize = ini.Get_Float(Name(), "PhysicalSize", PhysicalSize);
 		MaxDebris = ini.Get_Int(Name(), "MaxDebris", MaxDebris);
 		MinDebris = ini.Get_Int(Name(), "MinDebris", MinDebris);
+		if (MinDebris < 0) {
+			MinDebris = 0;
+		}
+		if (MaxDebris < MinDebris) {
+			MaxDebris = MinDebris;
+		}
 		PixelSelectionBracketDelta = ini.Get_Int(Name(), "PixelSelectionBracketDelta", PixelSelectionBracketDelta);
 		LeadershipRating = ini.Get_Int(Name(), "LeadershipRating", LeadershipRating);
 		IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);

@@ -16,9 +16,9 @@ Each figure caps the debris type in the same position of [`DebrisTypes`](/keys/d
 The list does nothing on a type that names no `DebrisTypes`.
 
 :::danger[Give every debris type a figure of 0 or more]
-The engine does not check that this list is as long as `DebrisTypes`. A type with `MaxDebris` above 0 that names debris types but no maximums crashes when it is destroyed. With fewer figures than debris types, each extra type reads its figure from past the end of the list. The piece count is then unpredictable, and the read can crash the game.
+Yuri's Revenge does not check that this list is as long as `DebrisTypes`. With fewer figures than debris types, each extra type reads its figure from past the end of the list, so the piece count is unpredictable and the read can crash the game. A figure of `-1` divides by zero and crashes the game when the object is destroyed.
 
-A figure of `-1` divides by zero and crashes the game when the object is destroyed.
+OpenYR reads a missing figure and a figure below `0` as `0`, so that debris type throws none.
 :::
 
 A warhead's `DebrisMaximums` caps the pieces its shot throws. The [warhead page](/keys/debrismaximums/#scope-warheadtype) gives its default and details.
