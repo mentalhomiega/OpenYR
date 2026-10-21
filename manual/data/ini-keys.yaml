@@ -11581,7 +11581,7 @@ DeployToFire:
 DeployToLand:
   key: DeployToLand
   scopes:
-  - applies_to: *id025
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -11590,11 +11590,11 @@ DeployToLand:
     status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: UnitTypeClass
+      declared_in: TechnoTypeClass
       member: IsDeployToLand
-      source: code/unittype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 DeployedCrushable:
   key: DeployedCrushable
   scopes:
@@ -12300,7 +12300,7 @@ DisguiseFakeBlinkTime:
 DisguiseWhenStill:
   key: DisguiseWhenStill
   scopes:
-  - applies_to: *id025
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -12309,11 +12309,11 @@ DisguiseWhenStill:
     status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: UnitTypeClass
+      declared_in: TechnoTypeClass
       member: IsDisguiseWhenStill
-      source: code/unittype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 Disguised:
   key: Disguised
   scopes:
@@ -34610,7 +34610,7 @@ SlaveReloadRate:
 Slaved:
   key: Slaved
   scopes:
-  - applies_to: *id013
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -34619,11 +34619,11 @@ Slaved:
     status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: InfantryTypeClass
+      declared_in: TechnoTypeClass
       member: IsSlaved
-      source: code/infatype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: InfantryTypeClass
+    level: TechnoTypeClass
 SlavesFreeSound:
   key: SlavesFreeSound
   scopes:
@@ -41532,7 +41532,7 @@ URepairRate:
 UndeployDelay:
   key: UndeployDelay
   scopes:
-  - applies_to: *id013
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -41541,11 +41541,11 @@ UndeployDelay:
     status: generated
     _provenance:
       default_candidate: '-1'
-      declared_in: InfantryTypeClass
+      declared_in: TechnoTypeClass
       member: UndeployDelay
-      source: code/infatype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: InfantryTypeClass
+    level: TechnoTypeClass
 UndeploySound:
   key: UndeploySound
   scopes:

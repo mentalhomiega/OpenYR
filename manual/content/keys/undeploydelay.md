@@ -1,7 +1,6 @@
 ---
 key: UndeployDelay
-scope: infantrytype
-label: 'Frames dug in'
+summary: "Sets how many frames a dug-in soldier stays dug in before it packs up on its own."
 see_also: [Deployer, DeployFire]
 when_omitted:
   kind: value
@@ -18,3 +17,5 @@ UndeployDelay=150 ; frames dug in before it packs up
 ```
 
 While it is dug in, neither the Deploy order nor a click on the soldier packs it up before the delay ends. The Deploy order still digs in a soldier that is not dug in.
+
+The key is read on every object type, but only soldiers use it.

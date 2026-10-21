@@ -22,7 +22,7 @@ Secondary=MyArtilleryGun ; fired while deployed
 
 The vehicle deploys in these steps:
 
-1. A [`DeployToLand=yes`](/keys/deploytoland/#scope-unittype) vehicle in the air drops its target and lands on its cell.
+1. A [`DeployToLand=yes`](/keys/deploytoland/) vehicle in the air drops its target and lands on its cell.
 2. The [`DeployingAnim`](/keys/deployinganim/#scope-unittype) plays in its place, and the vehicle is hidden until the animation starts its last frame.
 3. The vehicle becomes deployed and goes on guard.
 
