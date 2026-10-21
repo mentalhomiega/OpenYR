@@ -4749,17 +4749,27 @@ Coord BuildingClass::Destination_Coord_For(RadioClass const * docker) const
  *=============================================================================================*/
 FireErrorType BuildingClass::Can_Fire(AbstractClass * target, int which) const
 {
+	// A structure under a drain weapon is disabled until the drain ends (BuildingClass::GetFireError, 0x447F10).
+	if (DrainingMe != NULL) {
+		return(FIRE_ILLEGAL);
+	}
+
 	if (Class->IsEMPulseCannon) {
 		return(FIRE_CANT);
 	}
 
-	// A structure under a drain weapon is disabled until the drain ends (BuildingClass::GetFireError, 0x447F10).
-	if (DrainingMe != NULL) {
-		return(FIRE_CANT);
+	// A structure still building up or selling does not fire (0x447F10).
+	if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION) {
+		return(FIRE_ILLEGAL);
 	}
 
 	if (!Is_Powered_On()) {
 		return(FIRE_CANT);
+	}
+
+	// A tower that is charging a shot or a support beam waits for the charge to finish (0x447F10).
+	if (PrismDelay != 0) {
+		return(FIRE_REARM);
 	}
 
 	FireErrorType canfire = BASECLASS::Can_Fire(target, which);
@@ -6029,6 +6039,7 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 
 	if (TarCom == NULL) {
 		Assign_Target(NULL);
+		SupportingPrisms = 0;
 		Assign_Mission(MISSION_GUARD);
 		Commence();
 		return(1);
@@ -6104,15 +6115,13 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case FIRE_OK:
-			if (Class->IsAnimDelayedFire || (Class == Rule->PrismType && Rule->PrismType != NULL)) {
-				Prism_Charge(Class == Rule->PrismType ? 0 : primary);
-				return(1);
-			}
 			if (UpgradeLevel != 0 && Upgrades[0] != NULL) {
 				if (Upgrades[0]->Is_Two_Shooter()) {
 					Fire_At(TarCom, 0);
 					Fire_At(TarCom, 1);
 				}
+			} else if (Class->IsAnimDelayedFire || (Class == Rule->PrismType && Rule->PrismType != NULL)) {
+				Prism_Charge(Class == Rule->PrismType ? 0 : primary);
 			} else {
 				Fire_At(TarCom, primary);
 			}
@@ -12575,29 +12584,30 @@ void BuildingClass::Start_Delayed_Fire(PrismStageType stage)
 /// <summary>
 /// Readies a shot of a structure whose weapon waits for its charge animation
 /// (BuildingClass::Mission_Attack, 0x44ACF0), a Tesla coil or a prism tower. While fewer than
-/// PrismSupportMax towers support a prism tower, the nearest of its owner's idle, rested prism
-/// towers within its secondary weapon's range is recruited to beam it after its
-/// DelayedFireDelay; one tower is recruited per call. Once none is left, this structure charges
-/// for its own DelayedFireDelay and then fires.
+/// PrismSupportMax towers support a prism tower, the nearest of its owner's other prism towers
+/// within its secondary weapon's range that are rested, not charging, not drained and not
+/// attacking is recruited to beam it after its DelayedFireDelay; one tower is recruited per call.
+/// Once none is left, this structure charges for its own DelayedFireDelay and then fires.
 /// </summary>
 /// <param name="weapon">The weapon to fire when the charge is over.</param>
 /// <returns>bool; Was a supporting tower recruited?</returns>
 bool BuildingClass::Prism_Charge(int weapon)
 {
-	if (PrismStage != PRISM_IDLE) {
-		return(false);
-	}
-
 	if (Class == Rule->PrismType && SupportingPrisms < Rule->PrismSupportMax) {
 		BuildingClass * best = NULL;
 		int bestdist = INT_MAX;
 		int const range = Weapon_Range(1);
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * other = Buildings[index];
-			if (other == this || other->House != House || other->Class != Rule->PrismType || !other->IsActive || other->IsInLimbo) continue;
-			if (other->Arm > 0 || other->PrismStage != PRISM_IDLE || other->StunDuration > 0 || other->Mission == MISSION_ATTACK || !other->Is_Powered_On()) continue;
-			int const dist = Distance(other);
-			if (dist <= range && dist < bestdist) {
+			if (other == this || other->House != House || other->Class != Rule->PrismType || !other->IsActive) continue;
+			if (other->Arm > 0 || other->PrismDelay != 0 || other->DrainingMe != NULL || other->Mission == MISSION_ATTACK) continue;
+
+			// The tower's distance is the straight line between the two positions, without a building's radius taken off (0x44B3E4).
+			double const dx = (double)(PositionCoord.X - other->PositionCoord.X);
+			double const dy = (double)(PositionCoord.Y - other->PositionCoord.Y);
+			double const dz = (double)(PositionCoord.Z - other->PositionCoord.Z);
+			int const dist = (int)std::sqrt(dx * dx + dy * dy + dz * dz);
+			if (dist <= range && (best == NULL || dist < bestdist)) {
 				bestdist = dist;
 				best = other;
 			}
@@ -12638,11 +12648,14 @@ void BuildingClass::Prism_AI(void)
 		if (TarCom != NULL && Can_Fire(TarCom, weapon) == FIRE_OK) {
 			BulletClass * bullet = Fire_At(TarCom, weapon);
 			DebugString("Prism: tower at %d,%d fires with %d supporting\n", Get_Cell().X, Get_Cell().Y, SupportingPrisms);
-			if (bullet != NULL && SupportingPrisms > 0) {
-				bullet->Strength = bullet->Strength * (100 + Rule->PrismSupportModifier * SupportingPrisms) / 100;
+
+			// The count stays when nothing was fired, and is spent only on a bullet; the damage factor has 8 fraction bits (0x4504A0).
+			if (bullet != NULL && SupportingPrisms != 0) {
+				unsigned const factor = (unsigned)((100 + Rule->PrismSupportModifier * SupportingPrisms) * 256) / 100;
+				bullet->Strength = (bullet->Strength * (int)factor) >> 8;
+				SupportingPrisms = 0;
 			}
 		}
-		SupportingPrisms = 0;
 	} else if (stage == PRISM_SLAVE) {
 		// The support beam takes the house's laser color, as BuildingClass::FireLaser (0x44ABD0) does.
 		new LaserDrawClass(Turret_Coord(0), PrismTargetCoord, 0, true, House->Laser_Color(), RGBClass(0, 0, 0), RGBClass(0, 0, 0), Rule->PrismSupportDuration, false, true, 1.0f, 0.0f);
