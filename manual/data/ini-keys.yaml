@@ -27596,6 +27596,23 @@ PadAircraft:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Palette:
+  key: Palette
+  scopes:
+  - applies_to: *id003
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: palette
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Parachute:
   key: Parachute
   scopes:
