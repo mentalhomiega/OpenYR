@@ -1511,28 +1511,14 @@ void Tactical::Draw_Placement(bool drawtrans)
 
 
 /// <summary>
-/// Fetches the horizontal radius, in pixels, of a range ring that spans a number of cells.
-/// The vertical radius is half of it. The projection makes a sensor array's ring and a placement
-/// ring of the same radius the same size.
+/// Fetches the horizontal radius, in pixels, of a range ring that spans a number of cells, as
+/// Game::DrawRadialIndicator (0x456980) sizes it. The vertical radius is half of it.
 /// </summary>
 /// <param name="cells">The radius in cells.</param>
-/// <returns>Returns with the radius in pixels, which is 0 or less for a radius under one cell.</returns>
+/// <returns>Returns with the radius in pixels.</returns>
 int Tactical::Radial_Ring_Radius(int cells)
 {
-	static const int _iso_tile_edge = 34;
-
-	/*
-	 * Project the radius onto the isometric axes and express it in pixels. The
-	 * 16/17 factor is cos(atan(1/4)) squared, so the spans are the radius resolved
-	 * along the view axes, and 0.265625 is 34/128 -- one isometric tile edge per
-	 * half cell. The final tile edge comes back off to cancel the half cell that
-	 * was added to the radius.
-	 */
-	double leptons = (double)cells * CELL_LEPTON + CELL_LEPTON / 2;
-	double xspan = std::sqrt(leptons * leptons * (16.0 / 17.0));
-	double yspan = xspan * 0.25;
-	double spansq = 0.25 * (4.0 * yspan * yspan + xspan * xspan);
-	return((int)(std::sqrt(spansq) * 0.265625 - _iso_tile_edge));
+	return((int)(((double)cells + 0.5) / std::sqrt(2.0) * 60.0));
 }
 
 
@@ -1545,8 +1531,24 @@ int Tactical::Radial_Ring_Radius(int cells)
 /// <param name="color">The colour of the outline.</param>
 void Tactical::Draw_Range_Ring(Coord const & center, int cells, RGBClass const & color)
 {
-	int radius = Radial_Ring_Radius(cells);
-	if (cells < 1 || radius < 1) {
+	if (cells < 1) {
+		return;
+	}
+	Draw_Range_Ring_Pixels(center, Radial_Ring_Radius(cells), color);
+}
+
+
+/// <summary>
+/// Draws a range ring of a horizontal radius in pixels, two pixels thick, as
+/// Game::DrawRadialIndicator (0x456980) draws it. Nothing is drawn for a radius under one
+/// pixel, or a ring that lies wholly outside the tactical view.
+/// </summary>
+/// <param name="center">The world coordinate at the centre of the ring.</param>
+/// <param name="radius">The horizontal radius in pixels; the vertical radius is half of it.</param>
+/// <param name="color">The colour of the outline.</param>
+void Tactical::Draw_Range_Ring_Pixels(Coord const & center, int radius, RGBClass const & color)
+{
+	if (radius < 1) {
 		return;
 	}
 
@@ -1556,7 +1558,9 @@ void Tactical::Draw_Range_Ring(Coord const & center, int cells, RGBClass const &
 
 	Rect bounds = Rect(Point2D(point.X - radius, point.Y - radius / 2), 2 * radius, radius);
 	if (Intersect(bounds, TacticalRect).Is_Valid()) {
-		LogicalSurface->Draw_Ellipse(point, radius, radius / 2, TacticalRect, DSurface::Build_Hicolor_Pixel(color.Get_Red(), color.Get_Green(), color.Get_Blue()));
+		unsigned const pixel = DSurface::Build_Hicolor_Pixel(color.Get_Red(), color.Get_Green(), color.Get_Blue());
+		LogicalSurface->Draw_Ellipse(point, radius, radius / 2, TacticalRect, pixel);
+		LogicalSurface->Draw_Ellipse(point, radius - 1, radius / 2 - 1, TacticalRect, pixel);
 	}
 }
 

@@ -243,6 +243,7 @@ RulesClass::RulesClass(void) :
 	Diff(),
 	IsComputerParanoid(true),
 	AlliesAllowed(false),
+	AllyChangeAllowed(true),
 	IsCurleyShuffle(false),
 	IsMultiMCV(false),
 	IsRecheckPrerequisites(true),
@@ -498,6 +499,7 @@ RulesClass::RulesClass(void) :
 	LineTrailColorOverride(0, 0, 0),
 	LaserTargetColor(0),
 	IronCurtainColor(0),
+	ForceShieldColor(0),
 	BerserkColor(0),
 	MindClearedSound(VOC_NONE),
 	MasterMindOverloadDeathSound(VOC_NONE),
@@ -607,6 +609,7 @@ RulesClass::RulesClass(void) :
 	LowPowerPenaltyModifier(1.0),
 	MultipleFactory(1),
 	MultipleFactoryCap(0),
+	MaximumCheerRate(1),
 	CraterLevel(0),
 	TreeFlammability(.1),
 	MissileSpeedVar(.25),
@@ -1280,6 +1283,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		LineTrailColorOverride = ini.Get_RGBClass(AUDIOVISUAL, "LineTrailColorOverride", LineTrailColorOverride);
 		LaserTargetColor = ini.Get_Int(AUDIOVISUAL, "LaserTargetColor", LaserTargetColor);
 		IronCurtainColor = ini.Get_Int(AUDIOVISUAL, "IronCurtainColor", IronCurtainColor);
+		ForceShieldColor = ini.Get_Int(AUDIOVISUAL, "ForceShieldColor", ForceShieldColor);
 		BerserkColor = ini.Get_Int(AUDIOVISUAL, "BerserkColor", BerserkColor);
 		ColorAdd.clear();
 		for (int i = 0; i < ini.Entry_Count("ColorAdd"); i++) {
@@ -1677,6 +1681,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		LowPowerPenaltyModifier = ini.Get_Float(GENERAL, "LowPowerPenaltyModifier", LowPowerPenaltyModifier);
 		MultipleFactory = Truncate_To_Single(ini.Get_Double(GENERAL, "MultipleFactory", MultipleFactory));
 		MultipleFactoryCap = ini.Get_Int(GENERAL, "MultipleFactoryCap", MultipleFactoryCap);
+		MaximumCheerRate = ini.Get_Int(GENERAL, "MaximumCheerRate", MaximumCheerRate);
 		CraterLevel = ini.Get_Int(GENERAL, "CraterLevel", CraterLevel);
 		TreeFlammability = ini.Get_Float(GENERAL, "TreeFlammability", TreeFlammability);
 		MissileROTVar = ini.Get_Float(GENERAL, "MissileROTVar", MissileROTVar);
@@ -2005,6 +2010,7 @@ bool RulesClass::MPlayer(CCINIClass const & ini)
 		IsMPBuildOffAlly = ini.Get_Bool(MPLAYER, "BuildOffAlly", IsMPBuildOffAlly);
 		IsMPBuildOffAlly = ini.Get_Bool(MPDIALOG, "BuildOffAlly", IsMPBuildOffAlly);
 		AlliesAllowed = ini.Get_Bool(MPDIALOG, "AlliesAllowed", AlliesAllowed);
+		AllyChangeAllowed = ini.Get_Bool(MPDIALOG, "AllyChangeAllowed", AllyChangeAllowed);
 		IsMPFogOfWar = ini.Get_Bool(MPLAYER, "FogOfWar", IsMPFogOfWar);
 		IsMPFogOfWar = ini.Get_Bool(MPDIALOG, "FogOfWar", IsMPFogOfWar);
 		IsMPMCVRedeploys = ini.Get_Bool(MPLAYER, "MCVRedeploys", IsMPMCVRedeploys);
@@ -3089,6 +3095,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LowPowerPenaltyModifier);
 	stream.Serialize(MultipleFactory);
 	stream.Serialize(MultipleFactoryCap);
+	stream.Serialize(MaximumCheerRate);
 	stream.Serialize(CraterLevel);
 	stream.Serialize(TreeFlammability);
 	stream.Serialize(MissileSpeedVar);
@@ -3569,6 +3576,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPSuperWeapons);
 	stream.Serialize(MPGameSpeed);
 	stream.Serialize(AlliesAllowed);
+	stream.Serialize(AllyChangeAllowed);
 	stream.Serialize(NodAIBuildsWalls);
 	stream.Serialize(AIBuildsWalls);
 	stream.Serialize(UseMinDefenseRule);

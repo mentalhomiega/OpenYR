@@ -2674,6 +2674,24 @@ AllowedToStartInMultiplayer:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+AllyChangeAllowed:
+  key: AllyChangeAllowed
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: MultiplayerDialogSettings
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: AllyChangeAllowed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AllyColor:
   key: AllyColor
   scopes:
@@ -7396,6 +7414,23 @@ Capturable:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+CaptureEvaEvent:
+  key: CaptureEvaEvent
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: eva
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 CaptureTheFlag:
   key: CaptureTheFlag
   scopes:
@@ -8833,6 +8868,23 @@ ComputerBaseDefenseResponse:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ConcentricRadialIndicator:
+  key: ConcentricRadialIndicator
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: IsConcentricRadialIndicator
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 ConcreteWalls:
   key: ConcreteWalls
   scopes:
@@ -16229,6 +16281,24 @@ ForceShieldBlackoutDuration:
       default_candidate: '800'
       declared_in: RulesClass
       member: ForceShieldBlackoutDuration
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+ForceShieldColor:
+  key: ForceShieldColor
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: ForceShieldColor
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -24014,6 +24084,24 @@ MaximumBuildingPlacementFailures:
       default_candidate: '5'
       declared_in: RulesClass
       member: MaximumBuildingPlacementFailures
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+MaximumCheerRate:
+  key: MaximumCheerRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: MaximumCheerRate
       source: code/rules.cpp
       guard: null
     level: RulesClass

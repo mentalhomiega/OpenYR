@@ -148,6 +148,7 @@ extern bool							PlayerLoses;
 extern bool							PlayerRestarts;
 extern bool							PlayerAborts;
 extern int							Frame;
+extern int							LastCheerFrame;
 extern GameOptionsClass 			Options;
 extern ThemeClass 					Theme;
 extern SpecialClass 				Special;

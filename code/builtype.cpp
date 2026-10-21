@@ -58,6 +58,7 @@
 #include "always.h"
 
 #include "builtype.h"
+#include "vox.h"
 
 #include "_map.h"
 #include "_mixfile.h"
@@ -355,6 +356,8 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsEligibleForDelayKill(false),
 	BuildupSound(VOC_NONE),
 	PackupSound(VOC_NONE),
+	CaptureEvaEvent(-1),
+	IsConcentricRadialIndicator(false),
 	CreateUnitSound(VOC_NONE),
 	DelayedFireDelay(0),
 	IsAnimDelayedFire(false),
@@ -1377,6 +1380,14 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
 		BuildupSound = ini.Get_VocType(Name(), "BuildupSound", BuildupSound);
 		PackupSound = ini.Get_VocType(Name(), "PackupSound", PackupSound);
+		{
+			// A line the announcer file does not list reads as none (gamemd's reader, 0x474FA0).
+			char eva[100];
+			if (ini.Get_String(Name(), "CaptureEvaEvent", "", eva, sizeof(eva)) > 0) {
+				CaptureEvaEvent = Eva_Line(eva);
+			}
+		}
+		IsConcentricRadialIndicator = ini.Get_Bool(Name(), "ConcentricRadialIndicator", IsConcentricRadialIndicator);
 		CreateUnitSound = ini.Get_VocType(Name(), "CreateUnitSound", CreateUnitSound);
 		ToBuild = ini.Get_RTTIType(Name(), "Factory", ToBuild);
 		FreeUnit = ini.Get_Foot_Type(Name(), "FreeUnit", FreeUnit);
@@ -2357,6 +2368,7 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(ExtraPowerDrain);
 	crc(NumberImpassableRows);
 	crc(IsYuriBarracks);
+	crc(IsConcentricRadialIndicator);
 	if (SecretInfantry != NULL) crc(SecretInfantry->Fetch_ID());
 	if (SecretUnit != NULL) crc(SecretUnit->Fetch_ID());
 	if (SecretBuilding != NULL) crc(SecretBuilding->Fetch_ID());
@@ -2525,6 +2537,8 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsEligibleForDelayKill);
 	stream.Serialize(BuildupSound);
 	stream.Serialize(PackupSound);
+	stream.Serialize(CaptureEvaEvent);
+	stream.Serialize(IsConcentricRadialIndicator);
 	stream.Serialize(CreateUnitSound);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsAnimDelayedFire);

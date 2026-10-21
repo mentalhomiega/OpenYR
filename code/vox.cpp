@@ -717,6 +717,9 @@ VoiceEvaType const VoiceEva[] = {
 };
 
 
+} // namespace
+
+
 int Eva_Line(char const * name)
 {
 	if (name == NULL) {
@@ -729,6 +732,9 @@ int Eva_Line(char const * name)
 	}
 	return(-1);
 }
+
+
+namespace {
 
 
 bool Is_Critical_Line(VoxType voice)

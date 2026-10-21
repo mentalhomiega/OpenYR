@@ -7919,16 +7919,8 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			}
 		}
 
-		// A structure that an airstrike designator marks is drawn with the LaserTargetColor added (BuildingClass::Draw_It, 0x43D290).
-		if (RTTI == RTTI_BUILDING && AirstrikeMarkedBy != NULL && !((BuildingClass *)this)->Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
-			RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
-			if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
-				// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
-				ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 8, add.Get_Green() * 4, add.Get_Blue() * 8);
-				if (tinted != NULL) {
-					converter = tinted;
-				}
-			}
+		if (RTTI == RTTI_BUILDING) {
+			converter = ((BuildingClass const *)this)->Tinted_Converter(converter);
 		}
 
 		if (zgrad != ZGRAD_NONE) flags = ShapeFlags_Type(flags|SHAPE_ZGRAD);

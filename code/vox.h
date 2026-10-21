@@ -20,6 +20,8 @@
 void Speak(VoxType voice, bool now=false);
 void Speak_Eva(char const * name, bool now=false);
 void Speak_Eva_Index(int index, bool now=false);
+// The position of the named line in the announcer file's list, or -1 when the file does not list it.
+int Eva_Line(char const * name);
 void Load_Eva(void);
 void Set_Eva_Side(int side);
 bool Is_Eva_Loaded(void);

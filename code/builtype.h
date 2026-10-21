@@ -737,6 +737,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Played as the structure is sold or packs up into its vehicle.
 		VocType PackupSound;
 
+		// The announcer line the capturing player hears when an engineer takes this NeedsEngineer structure, or -1 for none.
+		int CaptureEvaEvent;
+
+		// A HasRadialIndicator structure with this set shows a blinking ring and a growing ring in place of the steady one.
+		bool IsConcentricRadialIndicator;
+
 		// Played where a unit this structure produces appears, after the unit's own CreateSound.
 		VocType CreateUnitSound;
 

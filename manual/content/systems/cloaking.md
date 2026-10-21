@@ -271,7 +271,7 @@ A structure goes through the same questions, with these differences. Step 1 does
 
 ### Radius rings
 
-A selected structure of a [`HasRadialIndicator=yes`](/keys/hasradialindicator/) type draws an ellipse showing how far its field reaches. The ellipse appears while the structure is switched on and its house is player-controlled. Only a cloak generator and a sensor array draw one; any other type with the key draws nothing. The ellipse is sized from `CloakRadiusInCells`, drawn in [`RadialColor`](/keys/radialcolor/), and has four spokes that sweep around it. Its proportions and sweep speed are fixed in the engine.
+A selected cloak generator or sensor array of a [`HasRadialIndicator=yes`](/keys/hasradialindicator/) type draws a ring sized from `CloakRadiusInCells`, showing how far its field reaches. The ring appears while the structure has power and only for the player who owns it, in that player's color. [The key's page](/keys/hasradialindicator/) covers the ring's size and look, and the other kinds of structure that draw one.
 
 ## Parsed settings without effect
 

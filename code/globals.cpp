@@ -253,6 +253,9 @@ bool AllowVoice = true;
 */
 int Frame = 0;
 
+// The frame of this machine's last all-cheer command; Clear_Scenario sets it to -100 as gamemd does (0x734210).
+int LastCheerFrame = -100;
+
 
 
 

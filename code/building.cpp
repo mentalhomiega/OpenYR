@@ -293,6 +293,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashTimer(0),
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
+	IsShieldTinted(false),
 	HasEngineer(false),
 	SecretProduct(NULL)
 {
@@ -1746,6 +1747,11 @@ bool BuildingClass::Mark(MarkType mark)
 void BuildingClass::AI(void)
 {
 	Update_Temporal_Anims();
+
+	if ((Is_Iron_Curtained() && IsForceShielded) != IsShieldTinted) {
+		IsShieldTinted = !IsShieldTinted;
+		Update_Anim_Appearance();
+	}
 
 	// The animations a structure had when its sale began keep running out of sight (BuildingClass::DrawIt, 0x43D290).
 	if (BState == BSTATE_CONSTRUCTION && Mission == MISSION_DECONSTRUCTION) {
@@ -4964,8 +4970,20 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 
 		if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
 			// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
-			if (announce && Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
-				Speak(VOX_BUILDING_CAPTURED);
+			// A NeedsEngineer structure has its own lines in place of the radar event, and a MultiplayPassive taker hears nothing.
+			if (announce && !newowner->Class->IsMultiplayPassive) {
+				if (!Class->IsNeedsEngineer) {
+					if (Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
+						Speak(VOX_BUILDING_CAPTURED);
+					}
+				} else if (House != newowner) {
+					if (House->Is_Player_Control()) {
+						Speak_Eva("EVA_TechBuildingLost");
+					}
+					if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
+						Speak_Eva_Index(Class->CaptureEvaEvent);
+					}
+				}
 			}
 			Map.PowerClass::IsToRedraw = true;
 			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
@@ -9342,19 +9360,49 @@ void BuildingClass::Update_Anim_Appearance(void)
 	Brightness = Apparent_Brightness(Get_Cell_Ptr()->Brightness);
 	ConvertClass * converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
 
-	// An airstrike-marked structure draws its animations with the LaserTargetColor tint its body gets (TechnoClass::Techno_Draw_Object).
-	if (AirstrikeMarkedBy != NULL && !Class->IsTerrainPalette && Rule->LaserTargetColor >= 0 && Rule->LaserTargetColor < (int)Rule->ColorAdd.size()) {
-		RGBClass const & add = Rule->ColorAdd[Rule->LaserTargetColor];
-		if (add.Get_Red() != 0 || add.Get_Green() != 0 || add.Get_Blue() != 0) {
-			ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(add.Get_Red() * 8, add.Get_Green() * 4, add.Get_Blue() * 8);
-			if (tinted != NULL) {
-				converter = tinted;
-			}
-		}
-	}
+	// The animations take the tint the body gets (AnimClass::Draw_It, 0x423340).
+	converter = Tinted_Converter(converter);
 
 	Set_Anim_Drawer(converter, Brightness);
 	Set_Anim_Translucency(TranslucencyLevel);
+}
+
+
+/// <summary>
+/// Returns the converter that draws this structure with the colours its state adds:
+/// LaserTargetColor while an airstrike marks it and ForceShieldColor while a Force Shield
+/// holds it, combined as BuildingClass::DrawIt (0x43D290) combines them. A structure in the
+/// terrain palette takes neither.
+/// </summary>
+/// <param name="converter">The converter to use when no colour is added.</param>
+ConvertClass * BuildingClass::Tinted_Converter(ConvertClass * converter) const
+{
+	if (Class->IsTerrainPalette) {
+		return(converter);
+	}
+	int red = 0;
+	int green = 0;
+	int blue = 0;
+	auto add_entry = [&red, &green, &blue](int index) {
+		if (index >= 0 && index < (int)Rule->ColorAdd.size()) {
+			RGBClass const & add = Rule->ColorAdd[index];
+			red |= add.Get_Red();
+			green |= add.Get_Green();
+			blue |= add.Get_Blue();
+		}
+	};
+	if (AirstrikeMarkedBy != NULL) {
+		add_entry(Rule->LaserTargetColor);
+	}
+	if (Is_Iron_Curtained() && IsForceShielded) {
+		add_entry(Rule->ForceShieldColor);
+	}
+	if (red == 0 && green == 0 && blue == 0) {
+		return(converter);
+	}
+	// The table's red and blue are 5-bit and green 6-bit; the scheme palette is 8-bit, so they are scaled up to it.
+	ConvertClass * tinted = ColorSchemes[House_Display_Scheme(House)]->Designated_Converter(red * 8, green * 4, blue * 8);
+	return(tinted != NULL ? tinted : converter);
 }
 
 
@@ -10899,6 +10947,9 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(HasEngineer);
 	stream.Serialize(SecretProduct);
 	stream.Serialize(PsiWarnAnim);
+	if (stream.Is_Loading()) {
+		IsShieldTinted = false;
+	}
 }
 
 
@@ -11963,75 +12014,44 @@ void BuildingClass::Plot_On_Radar(void) const
 
 
 /// <summary>
-/// Draws the radial range indicator for this building.
-/// Sensor arrays and cloak generators show the extent of their field as an ellipse on the
-/// tactical map, with a few spokes sweeping around it. Only the owning player sees it, and
-/// only while the building is switched on.
+/// Draws this structure's range ring in its house's colour while it is selected, as
+/// BuildingClass::DrawRadialIndicator (0x456750) does. Only the owning player sees it, and only
+/// while the structure has power. A ConcentricRadialIndicator structure's ring blinks, and a
+/// second ring grows out from the centre to meet it about every two seconds.
 /// </summary>
 void BuildingClass::Draw_Radial_Indicator(void) const
 {
-	if (Class->IsSensorArray || Class->IsCloakGenerator) {
+	int range = Class->Radial_Indicator_Range();
+	if (Class->PsychicDetectionRadius <= 0 && Class->IsGapGenerator && IsGapSuperCharged) {
+		range = Class->SuperGapRadiusInCells;
+	}
+	if (range <= 0 || !Is_Powered_On() || !House->Is_Player_Control()) {
+		return;
+	}
 
-		int radius = Tactical::Radial_Ring_Radius(Class->CloakRadiusInCells);
+	RGBClass const color = House_Display_RGB(House);
+	if (!Class->IsConcentricRadialIndicator) {
+		TacticalMap->Draw_Range_Ring(Center_Coord(), range, color);
+		return;
+	}
 
-		if (radius != 0) {
-			if (IsOn && House->Is_Player_Control()) {
-
-				Point2D center;
-				TacticalMap->Coord_To_Pixel(Center_Coord(), center);
-				center += TacticalRect.TopLeft;
-
-				Point2D top_left;
-				top_left.X = center.X - radius;
-				top_left.Y = center.Y - radius / 2;
-
-				Rect bounds = Rect(top_left, 2 * radius, radius);
-				Rect clipped = Intersect(bounds, TacticalRect);
-
-				if (clipped.Is_Valid()) {
-					LogicalSurface->Draw_Ellipse(center, radius, radius / 2, TacticalRect, DSurface::Build_Hicolor_Pixel(Class->RadialColor.Get_Red(), Class->RadialColor.Get_Green(), Class->RadialColor.Get_Blue()));
-
-					static double _transparencies[] = { 0.05, 0.2, 0.4, 1.0 };
-
-					double radius_x = radius;
-					double radius_y = radius / 2;
-
-					for (int i = 0; i < 4; i++) {
-
-						/// The subtracted term is (angle / (2 * PI)) truncated, so this wraps
-						/// the sweep angle back into a single revolution.
-						double angle = ((double)(i + Frame) * 0.005) - (double)(int)((double)((i + Frame) * 0.005) / DEG_TO_RAD(360)) * DEG_TO_RAD(360);
-						Point2D end;
-
-						if (fabs(angle - M_PI / 2) < 0.001) {
-							end = center + Point2D(0, -radius_y);
-						} else {
-							if (fabs(angle - 3 * M_PI / 2) < 0.001) {
-								end = center + Point2D(0, radius_y);
-							} else {
-
-								/// Intersect the spoke with the ellipse, then put the signs
-								/// back on according to which quadrant the angle lands in.
-								double slope = std::tan(angle);
-								double radius_y_sq = radius_y * radius_y;
-								double radius_x_sq = radius_x * radius_x;
-								double xdist = std::sqrt(1.0 / (slope * slope / radius_y_sq + 1.0 / radius_x_sq));
-								double ydist = std::sqrt((1.0 - xdist * xdist / radius_x_sq) * radius_y_sq);
-								double xoffset = angle > M_PI / 2 && angle < 3 * M_PI / 2 ? -xdist : xdist;
-
-								if (angle < M_PI) {
-									ydist = -ydist;
-								}
-
-								end = center + Point2D(xoffset, ydist);
-							}
-						}
-
-						LogicalSurface->Draw_Depth_Antialiased_Line(TacticalRect, center - TacticalRect.TopLeft, end - TacticalRect.TopLeft, Class->RadialColor, -500, -500, 0, 0, 1, 0, _transparencies[i]);
-					}
-				}
-			}
+	// The cycle counts 1024 steps of two milliseconds. The full ring shows for the first half, fading in from white over the first quarter.
+	unsigned const step = (timeGetTime() >> 1) & 0x3FF;
+	if ((step & 0x200) == 0) {
+		RGBClass shown = color;
+		if ((step & 0x100) == 0) {
+			unsigned const toward_white = ~step & 0xFF;
+			shown = RGBClass(
+				(unsigned char)(color.Get_Red() + (((255 - color.Get_Red()) * toward_white) >> 8)),
+				(unsigned char)(color.Get_Green() + (((255 - color.Get_Green()) * toward_white) >> 8)),
+				(unsigned char)(color.Get_Blue() + (((255 - color.Get_Blue()) * toward_white) >> 8)));
 		}
+		TacticalMap->Draw_Range_Ring(Center_Coord(), range, shown);
+	}
+
+	int const pulse = (int)(((unsigned)Tactical::Radial_Ring_Radius(range) * step) >> 10);
+	if (pulse > 32) {
+		TacticalMap->Draw_Range_Ring_Pixels(Center_Coord(), pulse, color);
 	}
 }
 

@@ -3707,12 +3707,13 @@ class AllToCheerCommandClass : public CommandClass
 			return(Fetch_String(TXT_ALL_TO_CHEER_DESC));
 		}
 
-		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together. A watching house sends nothing.</summary>
+		/// <summary>Sends the all-cheer event, so every machine in the game makes the player's infantry cheer together. A watching house sends nothing, and so does a player who cheered within the last MaximumCheerRate frames.</summary>
 		virtual void Execute(void) const {
-			if (PlayerPtr->Is_Watching()) {
+			if (PlayerPtr->Is_Watching() || Frame <= LastCheerFrame + Rule->MaximumCheerRate) {
 				return;
 			}
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALL_CHEER));
+			LastCheerFrame = Frame;
 		}
 };
 
@@ -3923,7 +3924,7 @@ class AllianceCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			if (Session.Type != GAME_NORMAL && !Scen->Special.IsAllianceFixed && Session.Options.AlliesAllowed) {
+			if (Session.Type != GAME_NORMAL && !Scen->Special.IsAllianceFixed && Session.Options.AlliesAllowed && Rule->AllyChangeAllowed) {
 				if (CurrentObject.Count() && !PlayerPtr->IsDefeated) {
 					if (CurrentObject[0]->Owner_HouseClass() != PlayerPtr && CurrentObject[0]->Owner_HouseClass()->IsHuman) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ALLY, CurrentObject[0]->Owner()));

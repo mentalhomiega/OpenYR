@@ -392,6 +392,9 @@ class RulesClass
 
 		// IronCurtainColor and BerserkColor pick the ColorAdd entries that tint a vehicle under the Iron Curtain and a berserk unit. 0 is the empty entry.
 		int IronCurtainColor;
+
+		// The ColorAdd entry that tints a structure, and its animations, while a Force Shield holds it.
+		int ForceShieldColor;
 		int BerserkColor;
 
 		/*
@@ -867,6 +870,9 @@ class RulesClass
 		 * This caps how many factories count toward that discount. Zero leaves it uncapped.
 		 */
 		int MultipleFactoryCap;
+
+		// The fewest frames between two all-cheer commands from this machine.
+		int MaximumCheerRate;
 
 		/*
 		 * This controls how widely a meteor impact deforms the terrain (0 - 4). Zero
@@ -2719,6 +2725,9 @@ class RulesClass
 		// Whether computer houses may ally with one another (gamemd's RulesClass::AlliesAllowed,
 		// read from [MultiplayerDialogSettings]). Not serialized; the rules INI sets it on every start.
 		bool AlliesAllowed;
+
+		// Whether a player may make or break an alliance during a match ([MultiplayerDialogSettings]).
+		bool AllyChangeAllowed;
 
 		/*
 		**	Should helicopters shuffle their position between firing on their

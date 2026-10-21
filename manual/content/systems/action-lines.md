@@ -110,7 +110,7 @@ Its end squares are two pixels wide, or four when thick (three when thick and dr
 
 A structure waiting to be placed draws its range as a ring around the cursor cell, while [`UnitActionLines`](/keys/unitactionlines/) is `yes` and the cursor is over the tactical view. The ring is the range of the structure's primary weapon in whole cells. A structure with a psychic detection radius, a gap generator, a sensor array or a cloak generator uses that radius instead. A structure with none of these shows no ring.
 
-The ring takes the owner's color and is drawn as a single outline. It is sized from the cell count with the same projection as the sensor and cloak rings.
+The ring takes the owner's color and is an outline two pixels thick, the same as the [radius ring](/keys/hasradialindicator/) of a selected structure. Its horizontal radius in pixels is (cells + 0.5) ÷ √2 × 60, rounded down, and its vertical radius is half that.
 
 The player's own structures of the same type also get a ring. Only the nearest ones draw one, and only when they lie within twice the range of the cursor cell. Ties at the nearest distance draw together. A structure without power draws none.
 

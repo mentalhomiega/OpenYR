@@ -1238,6 +1238,7 @@ void Clear_Scenario(void)
 	LightSourceClass::Reset();
 	IonStormClass::Init();
 	LightningStormClass::Clear();
+	LastCheerFrame = -100;
 	PsychicDominatorClass::Clear();
 	IonStormClass::Clear_Special_Lighting();
 	RadSiteClass::Clear_All();

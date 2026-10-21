@@ -472,6 +472,9 @@ class BuildingClass : public TechnoClass
 		int ProduceCashRemaining;			// Budget left to move; zero is spent and negative is unlimited.
 		bool IsProduceCashStartupPaid;
 
+		// Whether the animations were last drawn with the Force Shield tint. Not saved; a load clears it and the next AI sets it again.
+		bool IsShieldTinted;
+
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
 
@@ -730,6 +733,7 @@ class BuildingClass : public TechnoClass
 		void Set_Anim_Damage_State(bool damaged);
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);
+		ConvertClass * Tinted_Converter(ConvertClass * converter) const;
 		void Update_Temporal_Anims(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
