@@ -2440,6 +2440,17 @@ bool InfantryClass::Random_Animate(void)
 void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 {
 	/*
+	**	A soldier that is digging in or dug in climbs out of it when the scatter is forced and
+	**	insistent. A human player's soldier otherwise stays put (InfantryClass 0x51D0D0).
+	*/
+	bool const digging = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+	if (digging && forced && nokidding) {
+		Do_Action(DO_UNDEPLOY);
+	} else if (digging && House->Is_Human_Player()) {
+		return;
+	}
+
+	/*
 	**	A unit that is in the process of going somewhere will never scatter.
 	*/
 	if (Locomotion->Is_Moving()) forced = false;
@@ -2457,9 +2468,10 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 	if (!Class->IsFraidyCat && TarCom != NULL && !forced) return;
 
 	/*
-	**	Don't scatter if performing an action that can't be interrupted.
+	**	Don't scatter if performing an action that can't be interrupted. Packing up is the one
+	**	such action that does not stop it.
 	*/
-	if (Doing != DO_NOTHING && !MasterDoControls[Doing].Interrupt) return;
+	if (Doing != DO_NOTHING && Doing != DO_UNDEPLOY && !MasterDoControls[Doing].Interrupt) return;
 
 	/*
 	**	For human players, don't scatter the infantry, if the special

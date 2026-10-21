@@ -24,6 +24,9 @@
 **	attack <TypeID>			orders the player's objects of that type to attack the nearest
 **							structure of an enemy that has a base
 **	enemies					writes the structures of other houses and the count of their units
+**	scatter <TypeID> x y [forced] [nokidding]	calls Scatter on each live soldier of that type, whoever owns it, with the threat at the
+**							centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given
+**							and how many numbers the game's random generator handed out
 **	strikeobj <TypeID> x y [radius] [land|naval|all]	orders the player's armed units and infantry to attack the nearest
 **							live object of that type within radius cells (default 3) of the cell, looked up when the line runs;
 **							land or naval limits the orders to units that are not, or are, ships (default all)
@@ -723,6 +726,27 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 		}
 	}
 	DebugString("AUTOTEST strikeobj %s -> %s at %d,%d: %d orders\n", name.c_str(), target->TClass->Name(), target->Get_Cell().X, target->Get_Cell().Y, orders);
+}
+
+
+/*
+**	scatter: Scatter is called on each live soldier of the type with the given threat, and the result is written.
+**	Frames before and after the call show where it sent the soldier.
+*/
+void Scatter_Objects(std::string const & name, int x, int y, bool forced, bool nokidding)
+{
+	Coord const threat = x == -1 ? COORD_NONE : Cell(x, y).As_Coord();
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * soldier = Infantry[index];
+		if (soldier->IsInLimbo || !soldier->IsActive || soldier->Strength <= 0 || stricmp(soldier->Class->Name(), name.c_str()) != 0) continue;
+		Coord const from = soldier->PositionCoord;
+		int const before = Scen->RandomNumber.Index_1();
+		soldier->Scatter(threat, forced, nokidding);
+		int const draws = (Scen->RandomNumber.Index_1() - before + Random2Class::TABLE_SIZE) % Random2Class::TABLE_SIZE;
+		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		DebugString("AUTOTEST   scatter %s of %s at %d,%d (%d,%d) do %d threat %d,%d forced %d nokidding %d: mission %s nav %d,%d draws %d\n", soldier->Class->Name(), soldier->House->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
+			from.X & 255, from.Y & 255, (int)soldier->Doing, x, y, (int)forced, (int)nokidding, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, draws);
+	}
 }
 
 
@@ -2207,6 +2231,13 @@ void Run(StepType const & step)
 	if (step.Command == "strikeobj") {
 		std::vector<std::string> const words = Line_Words(step.Line);
 		Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6));
+		return;
+	}
+
+	// scatter <TypeID> x y [forced] [nokidding]: see Scatter_Objects. It sits before the chain below, which is nested too deeply to take another branch.
+	if (step.Command == "scatter") {
+		std::vector<std::string> const words = Line_Words(step.Line);
+		Scatter_Objects(step.Argument, step.X, step.Y, Number(words, 5, 0) != 0, Number(words, 6, 0) != 0);
 		return;
 	}
 

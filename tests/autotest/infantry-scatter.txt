@@ -1,0 +1,47 @@
+; Infantry scatter (InfantryClass 0x51D0D0). Calls Scatter on a cow, civilians and soldiers with and without a threat and
+; logs where each one is sent, the mission it is given and how many numbers the random generator handed out.
+; Expected: an unforced scatter with no threat draws once and sends only a Fraidycat soldier; a forced one sends any soldier.
+; A forced and insistent scatter pulls a dug-in Desolator out of its hole (the second DESO line); a plain forced one does not
+; when a human owns it (the third). Run: scripts/run_autotest.ps1 -Script tests/autotest/infantry-scatter.txt -Seconds 60 -Filter "AUTOTEST +(scatter|where|soldier)"
+1 view 62 62
+2 reveal
+50 spawn COW 60 62
+50 spawn CIV1 62 60
+50 spawn CIV2 64 62
+50 own E1 62 64
+50 own E2 58 60
+50 own DESO 66 64
+100 where COW
+100 where CIV1
+100 where E1
+110 scatter COW -1 -1
+110 scatter CIV1 62 58
+110 scatter CIV2 -1 -1 1
+110 scatter E1 62 66 0
+110 scatter E2 -1 -1 1
+130 where COW
+130 where CIV1
+130 where CIV2
+130 where E1
+130 where E2
+140 scatter COW 62 62
+140 scatter CIV1 64 62 1
+140 scatter E1 62 62 1
+140 scatter E2 58 62 1 1
+200 where COW
+200 where CIV1
+200 where E1
+200 where E2
+210 select DESO
+211 command DeployObject
+260 where DESO
+262 scatter DESO -1 -1 1 0
+264 where DESO
+266 scatter DESO -1 -1 1 1
+270 where DESO
+280 scatter COW -1 -1
+281 scatter COW -1 -1
+282 scatter COW -1 -1
+283 scatter COW 60 60
+300 where COW
+320 quit
