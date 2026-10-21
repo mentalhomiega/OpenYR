@@ -153,13 +153,14 @@ A nonzero `Seed` makes a launch repeatable: launching the same file again places
 
 The mode changes these parts of the match:
 
+- The mode's own rules file, named on its line in `MPModesMD.ini`, is read over the game's rules, before the map's own rules. The stock files change these modes: Megawealth stops ore growing and spreading and takes harvesters, refineries and ore purifiers out of production; Duel changes which units a house starts with; MeatGrinder and NavalWar take units out of production; UnholyAlliance and Megawealth change prerequisites; TeamGame sets [`AllyChangeAllowed=no`](/keys/allychangeallowed/). Every mode file except FreeForAll's and Cooperative's sets `AlliesAllowed=yes`, so computer players may ally with each other in those modes.
 - A mode whose rules forbid alliances turns `AlliesAllowed` off. FreeForAll and Cooperative forbid them.
 - `UnholyAlliance` turns `Bases` on, whatever the file says, and gives each house every base unit the rules list, not only its own.
 - In `Cooperative`, in a game against other machines, the local player wins even if defeated when every house still alive is allied with every other and at least one of them is a person. In a skirmish, a defeated local player loses.
 - In `Cooperative`, every person is allied with every other person, and every computer player with every other computer player, whatever the launch file's seats allow.
 - In `Cooperative`, a person starts at one of the map's first few start positions and a computer player starts after them; [starting forces](/systems/starting-forces/#the-start-position) owns the rule.
 
-Battle, Megawealth, Duel, MeatGrinder, NavalWar and TeamGame add none of these changes.
+Battle, Megawealth, Duel, MeatGrinder, NavalWar and TeamGame add only the changes their rules files make.
 
 ## Automatic saves
 

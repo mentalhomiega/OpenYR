@@ -53,6 +53,8 @@ The constructor (`0x5D5B60`) opens the overrides file named by field 3. It reads
 
 A file without the section keeps the defaults. The Team Game file also sets `AllyChangeAllowed=no`, which the constructor does not read.
 
+`RulesClass::Init` (`0x6686C0`) also reads the whole overrides file as rules, through `RulesClass::Read_File`, after the rules file and before the map. It does this in every game except a campaign mission. The port does the same at the end of `RulesClass::Initialize`.
+
 The overrides files in the shipped data set `AlliesAllowed=no` for FreeForAll and Cooperative, and `AlliesAllowed=yes` for the other modes. Only Team Game sets `MustAlly=yes`. Each file names its mode in a header comment, which is how the files map to modes above.
 
 ## Virtual slots

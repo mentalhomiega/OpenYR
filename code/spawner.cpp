@@ -282,7 +282,7 @@ static MPModeType Spawner_Resolve_Mode(char const * playing)
 
 /// <summary>
 /// Plays the multiplayer mode this launch resolved to. The mode can clear the file's AlliesAllowed
-/// and can turn Bases on, and it changes nothing else.
+/// and can turn Bases on, and RulesClass::Initialize reads the mode's own rules file over the rules.
 /// </summary>
 static void Spawner_Bind_Mode(void)
 {

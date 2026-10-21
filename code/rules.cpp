@@ -50,6 +50,7 @@
 
 #include "armortypes.h"
 #include "rules.h"
+#include "mpmode.h"
 
 #include "_bench.h"
 #include "_deploymentconfig.h"
@@ -1029,6 +1030,17 @@ void RulesClass::Initialize(CCINIClass const & ini)
 		if (Addon_Enabled(ADDON_FIRESTORM) == true && FSMPRuleINI.Section_Count() > 0) {
 			DebugString("Processing %s\n", DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
 			Addition(FSMPRuleINI);
+		}
+
+		// The game mode's own file, such as MPDuelMD.ini, is read as rules over everything above (RulesClass::Init, 0x6686C0).
+		if (MPMode_Has_Current() && !MPMode_Current().RulesOverride.empty()) {
+			CCFileClass modefile(MPMode_Current().RulesOverride.c_str());
+			if (modefile.Is_Available()) {
+				CCINIClass modeini;
+				modeini.Load(modefile, false);
+				DebugString("Processing %s\n", MPMode_Current().RulesOverride.c_str());
+				Addition(modeini);
+			}
 		}
 	}
 }
