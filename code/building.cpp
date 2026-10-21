@@ -8954,7 +8954,7 @@ int BuildingClass::Storage_Anim_Level(void) const
 
 /// <summary>
 /// Keeps a refinery's active animation in step with how full it is, as the refinery part of
-/// BuildingClass::UpdateAnimations (0x450BD0) does: when the ore level changes, the animation
+/// BuildingClass::UpdateAnimations (0x4509D0) does: when the ore level changes, the animation
 /// for the old level ends and the one for the new level begins.
 /// </summary>
 void BuildingClass::Update_Storage_Anims(void)
@@ -8995,8 +8995,8 @@ void BuildingClass::Update_Absorber_Anims(void)
 
 /// <summary>
 /// Plays the animations that show how charged a superweapon building is, after the
-/// superweapon parts of BuildingClass::Place (0x442D50) and BuildingClass::UpdateAnimations
-/// (0x450BD0). The first animation plays while the weapon charges. When it has less than
+/// superweapon parts of BuildingClass::Place (0x445F80) and BuildingClass::UpdateAnimations
+/// (0x4509D0). The first animation plays while the weapon charges. When it has less than
 /// ChargedAnimTime minutes left to charge, the second one takes over and plays through once.
 /// The third plays for as long as the weapon is ready, and when the weapon is fired and starts
 /// charging again, the fourth plays through once and the first begins again.
@@ -9125,13 +9125,6 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 
 
 /// <summary>
-/// Handles an attached animation being removed from the game.
-/// This routine is called as one of the building's animations expires so that the
-/// building forgets its pointer. A repair bay takes the opportunity to start the next
-/// stage of its repair animation.
-/// </summary>
-/// <param name="anim">The animation that is going away.</param>
-/// <summary>
 /// Starts a fire, of the types in DamageFireTypes taken in turn from a random first one, at each
 /// of the structure's DamageFireOffset points up to the first that already has one burning
 /// (FUN_0043C0D0). Each fire starts on a random frame.
@@ -9179,6 +9172,13 @@ void BuildingClass::Remove_Damage_Fires(void)
 }
 
 
+/// <summary>
+/// Drops every reference this building holds to an animation that is being removed. When the
+/// animation filled one of the building's slots, the animation that follows it starts: a repair
+/// bay starts the next stage of its repair animation, and a factory, grinder or repair bay
+/// returns to its active or idle animation.
+/// </summary>
+/// <param name="anim">The animation that is going away.</param>
 void BuildingClass::Detach_Anim(AnimClass * anim)
 {
 	for (AnimClass * & fire : DamageFireAnims) {
