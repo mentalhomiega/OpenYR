@@ -110,6 +110,7 @@
 #include "map.h"
 #include "mixfile.h"
 #include "movie.h"
+#include "mpmode.h"
 #include "queue.h"
 #include "rect.h"
 #include "rules.h"
@@ -1522,12 +1523,13 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 			Execute_Command("Options");
 		}
 
-		// gamemd's 0xF2 opens the mission briefing in a campaign (RadarClass::Update, 0x653850). Other
-		// games open diplomacy, which OpenTS does not have yet, so the button does nothing there.
+		// gamemd's 0xF2 opens the mission briefing in a campaign and in a Cooperative match against
+		// other machines (RadarClass::Update, 0x653850). Other games open diplomacy, which OpenTS does
+		// not have yet, so the button does nothing there.
 		if (input == (BUTTON_DIPLOMACY|KN_BUTTON)) {
 			DiplomacyButton.IsPressed = false;
 			input = KN_NONE;
-			if (Session.Type == GAME_NORMAL) {
+			if (Session.Type == GAME_NORMAL || MPMode_Is_Cooperative_Match()) {
 				SpecialDialog = SDLG_BRIEFING;
 			}
 		}
