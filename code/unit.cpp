@@ -3537,6 +3537,14 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 		return(Simple_Deploy_AI());
 	}
 
+	// A DeployFire=yes vehicle without IsSimpleDeployer or passenger seats fires its first weapon at its own cell
+	// and retries after 14 to 16 frames (UnitClass::Mission_Unload, 0x73D630). It never deploys, so it never uses DeployFireWeapon.
+	if (Class->IsDeployFire && Class->Max_Passengers() < 1 && BunkerLinkedItem == NULL) {
+		Assign_Target(&Map[Get_Cell()]);
+		Fire_At(&Map[Get_Cell()], 0);
+		return(14 + Random_Pick(0, 2));
+	}
+
 	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
 	if (Class->IsDeployer) {
 		Assign_Destination(NULL);
@@ -4704,7 +4712,8 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					if (Charge < Class->MaxCharge) {
 						action = ACTION_NO_DEPLOY;
 					}
-				} else if (!Class->IsSimpleDeployer && !Class->IsDeployer) {
+				} else if (!Class->IsSimpleDeployer && !Class->IsDeployer && !Class->IsDeployFire) {
+					// UnitClass::MouseOverObject (0x73FD50) offers the self action to a DeployFire=yes vehicle.
 					action = ACTION_NONE;
 				}
 			}

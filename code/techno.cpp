@@ -6146,7 +6146,8 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	if (unit != NULL) {
 		blocked = unit->Is_Immobilized() || unit->CurrentTube >= TUBE_FIRST;
-		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer) {
+		// A DeployFire=yes vehicle fires where it stands, so a vehicle with no seats is not blocked for it.
+		if (unit->Class->DeploysInto == NULL && unit->Class->Max_Passengers() == 0 && !unit->Class->IsMobileEMP && !unit->Class->IsSimpleDeployer && !unit->Class->IsDeployer && !unit->Class->IsDeployFire) {
 			blocked = true;
 		}
 		if (unit->Class->Max_Passengers() > 0) {
