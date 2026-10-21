@@ -200,6 +200,9 @@
 CDTimerClass<SystemTimerClass> ScenUnusedTimer;
 
 
+// How many of a map's first start positions the map keeps for people in a Cooperative match, from
+// [Header] NumCoopHumanStartSpots. The computer players start at the positions after them.
+static int CoopHumanStartSpots = 4;
 static void Assign_Start_Positions(bool official);
 static void Read_Spawn_Houses(CCINIClass const & ini);
 static void Create_Units(bool official);
@@ -2190,6 +2193,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	// Owners are resolved as objects are read, so start positions are settled ahead of them.
 	if (Session.Type != GAME_NORMAL && !is_mapgen && !Debug_Map) {
+		CoopHumanStartSpots = ini.Get_Int("Header", "NumCoopHumanStartSpots", 4);
 		Assign_Start_Positions(official);
 		Read_Spawn_Houses(ini);
 	}
@@ -2994,7 +2998,31 @@ static void Assign_Start_Positions(bool official)
 		}
 
 		int best = -1;
-		if (!anyone) {
+
+		/*
+		 * In a Cooperative match a person draws among the positions the map keeps for people, and a
+		 * computer player takes the first free position after them (gamemd's slot 49, 0x5C2DE0).
+		 */
+		if (MPMode_Is_Cooperative()) {
+			int const reserved = std::clamp(CoopHumanStartSpots, 1, MAX_PLAYERS);
+			if (housep->Is_Human_Player()) {
+				int const first = Random_Pick(0, reserved - 1);
+				for (int step = 0; step < reserved && best == -1; step++) {
+					int const spot = (first + step) % reserved;
+					if (open[spot]) {
+						best = spot;
+					}
+				}
+			} else {
+				for (int spot = reserved; spot < MAX_PLAYERS && best == -1; spot++) {
+					if (open[spot]) {
+						best = spot;
+					}
+				}
+			}
+		}
+
+		if (best == -1 && !anyone) {
 			int candidates[MAX_PLAYERS];
 			int count = 0;
 			for (int spot = 0; spot < MAX_PLAYERS; spot++) {
@@ -3005,7 +3033,7 @@ static void Assign_Start_Positions(bool official)
 			if (count > 0) {
 				best = candidates[Random_Pick(0, count - 1)];
 			}
-		} else {
+		} else if (best == -1) {
 			int bestvalue = 0;
 			for (int spot = 0; spot < MAX_PLAYERS; spot++) {
 				if (!open[spot]) {
