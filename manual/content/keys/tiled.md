@@ -15,6 +15,7 @@ A tiled animation is drawn differently from an ordinary one:
 
 - Every copy uses the shared animation palette. [`AltPalette=yes`](/keys/altpalette/), a [`CustomPalette`](/keys/custompalette/), the house colors that [`ShouldUseCellDrawer`](/keys/shouldusecelldrawer/) gives a structure's animation, and the tinted terrain palette of an animation that a terrain tile starts are ignored.
 - [`Flat=yes`](/keys/flat/#scope-animtype) has no effect.
+- Every copy is tested against the depth buffer, so a structure or unit in front of the column hides the part behind it. The lowest copy is drawn 50 pixels nearer the viewer than the animation's own depth, and each copy above it is a further one and a half frame-heights nearer.
 
 The animation's brightness and fade still apply, and every copy is drawn at the same fade level.
 

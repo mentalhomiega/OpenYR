@@ -688,11 +688,12 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Point2D origin = point;
 				Point2D drawpoint = origin - Point2D(0, frameheight / 2);
 				bool done = false;
-				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+				// Each tile is depth-tested and sits 50 pixels toward the camera, then a tile and a half farther for every tile up the screen (0x422CA0).
+				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 50;
 				while (!done) {
-					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, flags, NULL, height_offset, ZGRAD_90DEG, brightness);
+					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, height_offset, ZGRAD_90DEG, brightness);
 					if (drawpoint.Y < 0) done = true;
-					height_offset -= frameheight;
+					height_offset -= frameheight / 2 + frameheight;
 					drawpoint.Y -= frameheight;
 				}
 			} else if (Class->IsFlat) {
