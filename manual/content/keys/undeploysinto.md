@@ -16,14 +16,7 @@ A structure that names a vehicle type can pack up into one vehicle of that type.
 
 A structure whose type has no [construction artwork](/keys/buildup/#a-type-with-no-construction-artwork-cannot-be-sold) is never taken down, so a sale or a move order does nothing.
 
-The structure undeploys only if any of these holds:
-
-- It has one of these type flags: [`SensorArray=yes`](/keys/sensorarray/), [`TickTank=yes`](/keys/ticktank/), [`ICBMLauncher=yes`](/keys/icbmlauncher/), [`Artillary=yes`](/keys/artillary/), [`IsMobileStealth=yes`](/keys/ismobilestealth/), [`IsJuggernaut=yes`](/keys/isjuggernaut/), [`IsCoreDefender=yes`](/keys/iscoredefender/#scope-buildingtype) or [`IsLimpetMine=yes`](/keys/islimpetmine/).
-- It is an [`IsMobileWar=yes`](/keys/ismobilewar/) mobile war factory.
-- Outside a campaign, it belongs to a human player in a session with the MCV redeploy option on, and it has a destination. A move order gives it one, and so does a factory's [rally point](/systems/production/#rally-points).
-- It keeps [`Enslaves`](/keys/enslaves/#scope-aircrafttype) slaves and has a destination, as a deployed slave miner does when it [moves on to new ore](/systems/slave-miners/#moving-the-miner). This holds for any owner and in any game.
-
-A structure that meets none of these is sold for its refund. A move order therefore sells a structure outside the first two groups and without slaves in a campaign, or in a session with the MCV redeploy option off. It also sells one other than a construction yard when the game finds no reachable cell near the clicked point and the structure has no earlier destination.
+A structure whose type is not [`ConstructionYard=yes`](/keys/constructionyard/) always undeploys, so selling it or giving it a move order brings the vehicle back. A `ConstructionYard=yes` structure undeploys only outside a campaign, for a human player in a session with the MCV redeploy option on, when it has a destination and is not mind controlled. Otherwise it is sold for its refund.
 
 The vehicle appears on the structure's cell for a structure with one of those flags, and on the cell to the south-east for any other structure. It faces north for an artillery structure, east for a sensor array, tick tank or ICBM launcher, and south otherwise. If the vehicle cannot be placed, the house receives the structure's refund instead.
 

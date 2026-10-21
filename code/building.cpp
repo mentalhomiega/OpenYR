@@ -5598,10 +5598,8 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 
 	// Whether this sale turns the structure back into its vehicle (BuildingClass::Mission_Selling, 0x449C30).
 	bool const undeploys = Class->UndeploysInto != NULL &&
-		(Class->Is_Mobile_Deployer() ||
-		Class->Can_Always_Undeploy() ||
-		(SlaveManager && ArchiveTarget != NULL) ||
-		(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && (Session.Type == GAME_NORMAL || Session.Options.MCVRedeploy)));
+		(!Class->IsConstructionYard ||
+		(Session.Type != GAME_NORMAL && ArchiveTarget != NULL && House->Is_Human_Player() && Session.Options.MCVRedeploy && MindControlledBy == NULL));
 
 	enum {
 		INITIAL,
