@@ -9097,7 +9097,8 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 			AnimClass * oldanim = Anims[anim];
 			Anims[anim] = NULL;
 			// The old animation may be the one whose damage to this building caused the swap, so it is freed after the logic pass.
-			oldanim->Delete_Me();
+			// As in BuildingClass::PlayAnim (0x451890), the swap removes it without its StopSound.
+			oldanim->Delete_Me_Silently();
 		}
 
 		Anims[anim] = animptr;

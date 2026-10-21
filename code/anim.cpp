@@ -1694,6 +1694,17 @@ void AnimClass::Delete_Me(void)
 
 
 /// <summary>
+/// Removes this animation from the game without playing its StopSound.
+/// The removal is otherwise the same as Delete_Me.
+/// </summary>
+void AnimClass::Delete_Me_Silently(void)
+{
+	Attach_To(NULL);
+	BASECLASS::Delete_Me();
+}
+
+
+/// <summary>
 /// Fetches the vertical position of the animation.
 /// An animation attached to another object is carried at that object's height as well as
 /// its own.

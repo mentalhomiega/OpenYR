@@ -88,6 +88,7 @@ class AnimClass : public ObjectClass, public StageClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual bool Limbo(void) override;
 		virtual void Delete_Me(void) override;
+		void Delete_Me_Silently(void);
 		virtual int Get_Height(void) const override;
 
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
