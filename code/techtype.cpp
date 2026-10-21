@@ -2094,6 +2094,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsCrew);
 	crc(IsRemappable);
 	crc(IsCloakable);
+	crc(IsGapGenerator);
+	crc(GapRadiusInCells);
 	crc(IsNoShadow);
 	crc(IsDisableVoxelCache);
 	crc(IsDisableShadowCache);
