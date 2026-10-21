@@ -4785,8 +4785,8 @@ int TechnoClass::Rearm_Delay(int which) const
 
 	if (BurstIndex < weapon->Burst) {
 		int delay = -1;
-		if (BurstIndex > 0 && BurstIndex <= 4) {
-			delay = weapon->BurstDelay[BurstIndex - 1];
+		if (BurstIndex > 0 && BurstIndex <= 4 && What_Am_I() == RTTI_UNIT) {
+			delay = static_cast<UnitClass const *>(this)->Class->BurstDelay[BurstIndex - 1];
 		}
 		if (delay == -1) delay = Random_Pick(3, 5);
 		return(delay);

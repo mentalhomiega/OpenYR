@@ -6839,7 +6839,7 @@ Burst:
 BurstDelay0:
   key: BurstDelay0
   scopes:
-  - applies_to: *id009
+  - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
@@ -6848,15 +6848,15 @@ BurstDelay0:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: WeaponTypeClass
+      declared_in: UnitTypeClass
       member: BurstDelay
-      source: code/weapon.cpp
+      source: code/unittype.cpp
       guard: null
-    level: WeaponTypeClass
+    level: UnitTypeClass
 BurstDelay1:
   key: BurstDelay1
   scopes:
-  - applies_to: *id009
+  - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
@@ -6865,15 +6865,15 @@ BurstDelay1:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: WeaponTypeClass
+      declared_in: UnitTypeClass
       member: BurstDelay
-      source: code/weapon.cpp
+      source: code/unittype.cpp
       guard: null
-    level: WeaponTypeClass
+    level: UnitTypeClass
 BurstDelay2:
   key: BurstDelay2
   scopes:
-  - applies_to: *id009
+  - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
@@ -6882,15 +6882,15 @@ BurstDelay2:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: WeaponTypeClass
+      declared_in: UnitTypeClass
       member: BurstDelay
-      source: code/weapon.cpp
+      source: code/unittype.cpp
       guard: null
-    level: WeaponTypeClass
+    level: UnitTypeClass
 BurstDelay3:
   key: BurstDelay3
   scopes:
-  - applies_to: *id009
+  - applies_to: *id025
     file: rules.ini
     section:
       kind: identifier
@@ -6899,11 +6899,11 @@ BurstDelay3:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: WeaponTypeClass
+      declared_in: UnitTypeClass
       member: BurstDelay
-      source: code/weapon.cpp
+      source: code/unittype.cpp
       guard: null
-    level: WeaponTypeClass
+    level: UnitTypeClass
 ButtonList:
   key: ButtonList
   scopes:
@@ -15834,8 +15834,8 @@ FiringFrames:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
-FiringSyncFrame1:
-  key: FiringSyncFrame1
+FiringSyncFrame0:
+  key: FiringSyncFrame0
   scopes:
   - applies_to: *id025
     file: art.ini
@@ -15851,8 +15851,8 @@ FiringSyncFrame1:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
-FiringSyncFrame2:
-  key: FiringSyncFrame2
+FiringSyncFrame1:
+  key: FiringSyncFrame1
   scopes:
   - applies_to: *id025
     file: art.ini

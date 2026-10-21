@@ -158,6 +158,9 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	UnitTypes.Add(this);
 	HeapID = (UnitType)UnitTypes.ID(this);
 	FiringSyncFrame[0] = FiringSyncFrame[1] = -1;
+	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
+		BurstDelay[i] = -1;
+	}
 }
 
 
@@ -499,8 +502,13 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		StartDeathFrame = ArtINI.Get_Int(Graphic_Name(), "StartDeathFrame", StartDeathFrame);
 		MaxDeathCounter = ArtINI.Get_Int(Graphic_Name(), "MaxDeathCounter", MaxDeathCounter);
 
-		FiringSyncFrame[0] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame1", FiringSyncFrame[0]);
-		FiringSyncFrame[1] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame2", FiringSyncFrame[1]);
+		FiringSyncFrame[0] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame0", FiringSyncFrame[0]);
+		FiringSyncFrame[1] = ArtINI.Get_Int(Graphic_Name(), "FiringSyncFrame1", FiringSyncFrame[1]);
+		for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
+			char buf[20];
+			sprintf(buf, "BurstDelay%d", i);
+			BurstDelay[i] = ini.Get_Int(Name(), buf, BurstDelay[i]);
+		}
 
 		ini.Get_String(Name(), "AltImage", AltImageFile);
 
@@ -646,6 +654,7 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MaxCharge);
 	stream.Serialize(StartCharge);
 	stream.Serialize(FiringSyncFrame);
+	stream.Serialize(BurstDelay);
 	stream.Serialize(StartStandFrame);
 	stream.Serialize(StartWalkFrame);
 	stream.Serialize(StartFiringFrame);

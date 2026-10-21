@@ -15,7 +15,7 @@ keys:
   - Charges
   - ElitePrimary
   - EliteSecondary
-  - FiringSyncFrame1
+  - FiringSyncFrame0
   - IsLaser
   - IsRailgun
   - IsSonic
@@ -202,7 +202,7 @@ The object checks these effects in three places, with a different result each ti
 
 Each check asks only whether the hold is occupied, not what occupies it. This matters only for the spark hold, which a damaged object's sparks share with a spark weapon's spray. [Particle systems](/systems/particle-systems/#the-five-holds-an-object-keeps) covers the result.
 
-Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the first round of each burst to the firing animation, and [`FiringSyncFrame2`](/keys/firingsyncframe2/) times the second round. A weapon without a burst uses `FiringSyncFrame1` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
+Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame0`](/keys/firingsyncframe0/) times the first round of each burst to the firing animation, and [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the second round. A weapon without a burst uses `FiringSyncFrame0` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
 
 A vehicle also has to point at its target before it fires: its turret, or its body if it has no turret, must face nearly toward the target, and a homing projectile allows a wider angle. A vehicle that is off turns toward the target first. An [`OmniFire=yes`](/keys/omnifire/) weapon skips this test, so the vehicle fires in any direction without turning. Visceroids and jellyfish never need to turn.
 
@@ -214,7 +214,7 @@ The delay before the next shot comes from the first row that applies:
 | --- | --- |
 | A structure that had more than one round of [`Ammo`](/keys/ammo/) when it fired | 1 |
 | The weapon is [`IsSonic=yes`](/keys/issonic/), whether or not a wave is alive, or is a fire, spark or railgun weapon whose particle hold is occupied | Exactly [`ROF`](/keys/rof/) |
-| The burst has rounds left | [`BurstDelay0`](/keys/burstdelay0/) after the first round, up to [`BurstDelay3`](/keys/burstdelay3/) after the fourth. A random 3 to 5 when that entry is `-1`, or after the fifth or a later round |
+| The burst has rounds left | A random 3 to 5. A vehicle uses its own [`BurstDelay0`](/keys/burstdelay0/) after the first round, up to [`BurstDelay3`](/keys/burstdelay3/) after the fourth, when that entry is not `-1` |
 | Any other shot | `ROF` multiplied by the house's rate-of-fire bias, plus a random 0 to 2, then shortened by the veteran rate-of-fire ability |
 
 The third row sets the pace of the effect weapons. It skips the house bias, the burst delays and the random extra frames, and the effect blocks firing until it ends. The next shot therefore waits until both `ROF` has passed and the effect has ended. A structure with more than one round left matches the first row instead, so only the effect's lifetime paces it.

@@ -144,9 +144,6 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	Anim(),
 	IsExtendedAnimFacings(false)
 {
-	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
-		BurstDelay[i] = -1;
-	}
 
 	Create_ID();
 	Weapons.Add(this);
@@ -219,12 +216,6 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		ROF = ini.Get_Int(IniName, "ROF", ROF);
 		Range = ini.Get_Lepton(IniName, "Range", Range);
 		ProjectileRange = ini.Get_Lepton(IniName, "ProjectileRange", ProjectileRange);
-
-		for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
-			char buf[20];
-			sprintf(buf, "BurstDelay%d", i);
-			BurstDelay[i] = ini.Get_Int(IniName, buf, BurstDelay[i]);
-		}
 
 		MinimumRange = ini.Get_Lepton(IniName, "MinimumRange", MinimumRange);
 
@@ -474,7 +465,6 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ROF);
 	stream.Serialize(Range);
 	stream.Serialize(ProjectileRange);
-	stream.Serialize(BurstDelay);
 	stream.Serialize(MinimumRange);
 	stream.Serialize(Sound);
 	stream.Serialize(Anim);

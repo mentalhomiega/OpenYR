@@ -265,6 +265,13 @@ class UnitTypeClass : public TechnoTypeClass
 		int FiringSyncFrame[FIRING_SYNC_FRAME_MAX];
 
 		/*
+		 * These are the delays, in game frames, between the successive shots of a burst. The
+		 * entry used is chosen by which shot of the burst has just been fired, and an entry
+		 * of -1 leaves that gap to a short random delay instead.
+		 */
+		int BurstDelay[4];
+
+		/*
 		 * This is the frame that the standing animation begins at within the shape file.
 		 * It defaults to just past the walk frames, but the artwork may name it outright
 		 * when the blocks are not laid down in the usual order.

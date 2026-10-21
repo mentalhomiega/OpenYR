@@ -280,3 +280,12 @@
   replacement:
     type: key
     id: MinLowPowerProductionSpeed
+- type: key
+  id: FiringSyncFrame2
+  route: /keys/firingsyncframe2/
+  search_aliases:
+    - FiringSyncFrame2
+  summary: Timed the second round of a vehicle's burst to its firing animation. Yuri's Revenge reads FiringSyncFrame1 for that round instead.
+  replacement:
+    type: key
+    id: FiringSyncFrame1

@@ -142,13 +142,6 @@ class WeaponTypeClass : public AbstractTypeClass
 		LEPTON ProjectileRange;
 
 		/*
-		 * These are the delays, in game frames, between the successive shots of a burst. The
-		 * entry used is chosen by which shot of the burst has just been fired, and an entry
-		 * of -1 leaves that gap to a short random delay instead.
-		 */
-		int BurstDelay[4];
-
-		/*
 		 * This is the closest a target may be before this weapon refuses to fire upon it,
 		 * expressed in leptons. If zero, then the weapon has no minimum range.
 		 */

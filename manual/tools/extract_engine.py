@@ -203,7 +203,7 @@ RULES_OBJECTS_READ_RE = re.compile(
 # from the catalog entirely rather than merely misclassified.
 #
 # This is a declared supplement rather than a general format-string parser.
-# WeaponTypeClass::Read_INI formats "BurstDelay%d" once per element of
+# UnitTypeClass::Read_INI formats "BurstDelay%d" once per element of
 # BurstDelay[], and TechnoTypeClass::Read_INI formats its numbered weapon list
 # and gattling stages, counting from 1. Both the formatting call and the read
 # are matched below, so a change to either fails extraction instead of
@@ -213,15 +213,15 @@ def _numbered(names, count, start=1):
 
 
 COMPUTED_KEY_READS = {
-    ("weapon.cpp", "WeaponTypeClass"): [
+    ("unittype.cpp", "UnitTypeClass"): [
         {
             "format": r'sprintf\s*\(\s*buf\s*,\s*"BurstDelay%d"\s*,\s*i\s*\)',
-            "read": r'BurstDelay\[i\]\s*=\s*ini\.Get_Int\s*\(\s*IniName\s*,'
+            "read": r'BurstDelay\[i\]\s*=\s*ini\.Get_Int\s*\(\s*Name\(\)\s*,'
                     r'\s*buf\s*,\s*BurstDelay\[i\]\s*\)',
             "keys": ["BurstDelay0", "BurstDelay1", "BurstDelay2", "BurstDelay3"],
             "receiver": "ini",
             "suffix": "Int",
-            "section_expr": "IniName",
+            "section_expr": "Name()",
             "member": "BurstDelay",
             "value_type": "integer",
             "default_expr": "BurstDelay[i]",
