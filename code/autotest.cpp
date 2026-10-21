@@ -4165,6 +4165,15 @@ void Run(StepType const & step)
 				(int)building->TurretRecoil.CurrentPhase, building->TurretRecoil.FramesLeft, (double)building->TurretRecoil.TravelSoFar,
 				(int)building->BarrelRecoil.CurrentPhase, building->BarrelRecoil.FramesLeft, (double)building->BarrelRecoil.TravelSoFar);
 		}
+	} else if (step.Command == "unitrecoil") {
+		// unitrecoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each vehicle of that type.
+		for (int index = 0; index < Units.Count(); index++) {
+			UnitClass const * unit = Units[index];
+			if (unit->IsInLimbo || stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
+			DebugString("AUTOTEST   unitrecoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
+				(int)unit->TurretRecoil.CurrentPhase, unit->TurretRecoil.FramesLeft, (double)unit->TurretRecoil.TravelSoFar,
+				(int)unit->BarrelRecoil.CurrentPhase, unit->BarrelRecoil.FramesLeft, (double)unit->BarrelRecoil.TravelSoFar);
+		}
 	} else if (step.Command == "rock") {
 		// rock <TypeID>: the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it.
 		for (int index = 0; index < Technos.Count(); index++) {

@@ -3638,8 +3638,86 @@ void TechnoClass::Clear_Airstrike_Designation(void)
 }
 
 
+/// <summary>
+/// Begins the compressing phase of this part's recoil, if its type gives it any travel.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the object's type.</param>
+void TechnoRecoilState::Fire(TechnoTypeClass::RecoilControlType const & control)
+{
+	if (control.Travel != 0) {
+		CurrentPhase = PHASE_COMPRESSING;
+		FramesLeft = control.CompressFrames < 1 ? 1 : control.CompressFrames;
+		TravelPerFrame = (float)control.Travel / (float)FramesLeft;
+	}
+}
+
+
+/// <summary>
+/// Advances the recoil by one game frame, moving from compressing through holding to recovering.
+/// </summary>
+/// <param name="control">The travel and frame counts of the part, from the object's type.</param>
+void TechnoRecoilState::Update(TechnoTypeClass::RecoilControlType const & control)
+{
+	if (CurrentPhase == PHASE_IDLE) {
+		return;
+	}
+
+	FramesLeft--;
+	TravelSoFar += TravelPerFrame;
+	if (FramesLeft > 0) {
+		return;
+	}
+
+	if (CurrentPhase == PHASE_COMPRESSING) {
+		FramesLeft = control.HoldFrames;
+		CurrentPhase = PHASE_HOLDING;
+		TravelPerFrame = 0.0f;
+		if (FramesLeft > 1) {
+			return;
+		}
+
+	} else if (CurrentPhase != PHASE_HOLDING) {
+		if (CurrentPhase == PHASE_RECOVERING) {
+			CurrentPhase = PHASE_IDLE;
+			TravelSoFar = 0.0f;
+		}
+		return;
+	}
+
+	FramesLeft = control.RecoverFrames < 1 ? 1 : control.RecoverFrames;
+	CurrentPhase = PHASE_RECOVERING;
+	TravelPerFrame = -((float)control.Travel / (float)FramesLeft);
+}
+
+
+/// <summary>
+/// Starts the turret and barrel recoil after this object fires. Nothing moves unless its type sets TurretRecoil=yes.
+/// </summary>
+void TechnoClass::Start_Turret_Recoil(void)
+{
+	if (TClass->IsTurretRecoil) {
+		TurretRecoil.Fire(TClass->TurretRecoilControl);
+		BarrelRecoil.Fire(TClass->BarrelRecoilControl);
+	}
+}
+
+
+/// <summary>
+/// Advances the turret and barrel recoil by one game frame. Runs once per AI pass, as gamemd's TechnoClass::Update (0x6F9E50) does.
+/// </summary>
+void TechnoClass::Turret_Recoil_AI(void)
+{
+	if (TClass->IsTurretRecoil) {
+		TurretRecoil.Update(TClass->TurretRecoilControl);
+		BarrelRecoil.Update(TClass->BarrelRecoilControl);
+	}
+}
+
+
 void TechnoClass::AI(void)
 {
+	Turret_Recoil_AI();
+
 	Retire_Airstrike_Planes();
 
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
@@ -5372,13 +5450,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					bullet->IsOnBridge = true;
 				}
 
+				// gamemd starts the recoil of any object with a turret in TechnoClass::Fire (0x6FDD50), for units and buildings alike.
 				if (Is_Turret_Equipped()) {
-					if (RTTI == RTTI_BUILDING) {
-						((BuildingClass *)this)->Start_Turret_Recoil();
-						IsInRecoilState = ((BuildingClass *)this)->Class->IsTurretRecoil;
-					} else if (RTTI == RTTI_UNIT) {
-						IsInRecoilState = ((UnitClass *)this)->Class->IsTurretRecoil;
-					}
+					Start_Turret_Recoil();
+					IsInRecoilState = TClass->IsTurretRecoil;
 				}
 
 				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.

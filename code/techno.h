@@ -86,6 +86,34 @@ class WeaponTypeClass;
 class ShapeSet;
 struct WeaponDataStruct;
 
+/*
+ * The recoil of one part of a techno's turret, the turret body or the barrel. The part slides
+ * back while it compresses, stays back while it holds, and returns while it recovers. The state
+ * is not saved, so a save taken mid-recoil loads with the part at rest.
+ */
+struct TechnoRecoilState {
+	enum Phase {
+		PHASE_IDLE,
+		PHASE_COMPRESSING,
+		PHASE_HOLDING,
+		PHASE_RECOVERING
+	};
+
+	TechnoRecoilState(void) : CurrentPhase(PHASE_IDLE), FramesLeft(0), TravelPerFrame(0.0f), TravelSoFar(0.0f) {}
+
+	void Fire(TechnoTypeClass::RecoilControlType const & control);
+	void Update(TechnoTypeClass::RecoilControlType const & control);
+
+	Phase CurrentPhase;
+	int FramesLeft;
+	float TravelPerFrame;
+
+	/*
+	 * How far the part is back from its rest position, in leptons along its own axis.
+	 */
+	float TravelSoFar;
+};
+
 
 /****************************************************************************
 **	This is the common data between building and units.
@@ -555,10 +583,15 @@ class TechnoClass :	public RadioClass,
 		bool IsLocked;
 
 		/*
-		**	Buildings and units with turrets usually have a recoil animation when they
-		**	fire. If this flag is true, then the next rendering of the object will be
-		**	in the "recoil state". The flag will then be cleared pending the next
-		**	firing event.
+		**	The recoil of the turret body and of the barrel. Both start when the object fires,
+		**	if its type sets TurretRecoil=yes, and the draw moves each part by its travel.
+		*/
+		TechnoRecoilState TurretRecoil;
+		TechnoRecoilState BarrelRecoil;
+
+		/*
+		**	Set when this object fires with a turret recoil and cleared at the start of its next
+		**	AI pass. The draw does not read it. It only feeds the monochrome debug display.
 		*/
 		bool IsInRecoilState;
 
@@ -944,6 +977,8 @@ class TechnoClass :	public RadioClass,
 		int Iron_Curtain_Brightness(int brightness) const;
 		ConvertClass * Effect_Converter(ColorScheme * scheme) const;
 		void Iron_Tint_AI(void);
+		void Start_Turret_Recoil(void);
+		void Turret_Recoil_AI(void);
 		bool Is_Iron_Curtained(void) const {return(IronCurtainTimer > 0);}
 		virtual void Iron_Curtain(int duration, HouseClass * source, bool force_shield);
 		virtual bool Is_Ready_To_Random_Animate(void) const;

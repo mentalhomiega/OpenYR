@@ -63,34 +63,6 @@ class FoggedObjectClass;
 */
 class InfantryClass;
 
-/*
- * The recoil of one part of a building's voxel turret, the turret body or the barrel. The
- * part slides back while it compresses, stays back while it holds, and returns while it
- * recovers. The state is not saved, so a save taken mid-recoil loads with the part at rest.
- */
-struct BuildingRecoilState {
-	enum Phase {
-		PHASE_IDLE,
-		PHASE_COMPRESSING,
-		PHASE_HOLDING,
-		PHASE_RECOVERING
-	};
-
-	BuildingRecoilState(void) : CurrentPhase(PHASE_IDLE), FramesLeft(0), TravelPerFrame(0.0f), TravelSoFar(0.0f) {}
-
-	void Fire(BuildingTypeClass::RecoilControlType const & control);
-	void Update(BuildingTypeClass::RecoilControlType const & control);
-
-	Phase CurrentPhase;
-	int FramesLeft;
-	float TravelPerFrame;
-
-	/*
-	 * How far the part is back from its rest position, in leptons along its own axis.
-	 */
-	float TravelSoFar;
-};
-
 class BuildingClass : public TechnoClass
 {
 		typedef TechnoClass BASECLASS;
@@ -184,12 +156,6 @@ class BuildingClass : public TechnoClass
 		 * between them. If -1, then no turret is up at all.
 		 */
 		int TurretIndex;
-
-		/*
-		 * The recoil of the turret body and of the barrel, started when the building fires.
-		 */
-		BuildingRecoilState TurretRecoil;
-		BuildingRecoilState BarrelRecoil;
 
 		/*
 		 * If this building carries a spotlight, then this points to the light that sweeps the
@@ -533,7 +499,6 @@ class BuildingClass : public TechnoClass
 		virtual bool Is_Radar_Visible(DetectedType & detected) const override;
 		int Set_Turret_Frame(void);
 		void Set_Turret_Index(int index);
-		void Start_Turret_Recoil(void);
 		int Shape_Number(void) const;
 		int Power_Output(void) const;
 		int Power_Drain(void) const;

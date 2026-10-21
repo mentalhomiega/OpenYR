@@ -1423,71 +1423,6 @@ int BuildingClass::Set_Turret_Frame(void)
 
 
 /// <summary>
-/// Starts the recoil of the turret body and barrel after the building fires.
-/// Nothing moves unless the building type sets TurretRecoil=yes.
-/// </summary>
-void BuildingClass::Start_Turret_Recoil(void)
-{
-	if (Class->IsTurretRecoil) {
-		TurretRecoil.Fire(Class->TurretRecoilControl);
-		BarrelRecoil.Fire(Class->BarrelRecoilControl);
-	}
-}
-
-
-/// <summary>
-/// Begins a recoil of this part, if its travel is not zero.
-/// </summary>
-/// <param name="control">The travel and frame counts of the part, from the building type.</param>
-void BuildingRecoilState::Fire(BuildingTypeClass::RecoilControlType const & control)
-{
-	if (control.Travel != 0) {
-		CurrentPhase = PHASE_COMPRESSING;
-		FramesLeft = control.CompressFrames < 1 ? 1 : control.CompressFrames;
-		TravelPerFrame = (float)control.Travel / (float)FramesLeft;
-	}
-}
-
-
-/// <summary>
-/// Advances the recoil by one game frame, moving from compressing through holding to recovering.
-/// </summary>
-/// <param name="control">The travel and frame counts of the part, from the building type.</param>
-void BuildingRecoilState::Update(BuildingTypeClass::RecoilControlType const & control)
-{
-	if (CurrentPhase == PHASE_IDLE) {
-		return;
-	}
-
-	FramesLeft--;
-	TravelSoFar += TravelPerFrame;
-	if (FramesLeft > 0) {
-		return;
-	}
-
-	if (CurrentPhase == PHASE_COMPRESSING) {
-		FramesLeft = control.HoldFrames;
-		CurrentPhase = PHASE_HOLDING;
-		TravelPerFrame = 0.0f;
-		if (FramesLeft > 1) {
-			return;
-		}
-
-	} else if (CurrentPhase != PHASE_HOLDING) {
-		if (CurrentPhase == PHASE_RECOVERING) {
-			CurrentPhase = PHASE_IDLE;
-			TravelSoFar = 0.0f;
-		}
-		return;
-	}
-
-	FramesLeft = control.RecoverFrames < 1 ? 1 : control.RecoverFrames;
-	CurrentPhase = PHASE_RECOVERING;
-	TravelPerFrame = -((float)control.Travel / (float)FramesLeft);
-}
-
-
-/// <summary>
 /// Sets which turret animation the building displays.
 /// Buildings whose turret is drawn as an animation rather than a voxel carry a set of
 /// lettered variants, one per facing group. This routine takes down the turret currently
@@ -1772,9 +1707,6 @@ void BuildingClass::AI(void)
 	if (Temporal_AI()) {
 		return;
 	}
-
-	TurretRecoil.Update(Class->TurretRecoilControl);
-	BarrelRecoil.Update(Class->BarrelRecoilControl);
 
 	if (PrismStage != PRISM_IDLE) {
 		Prism_AI();

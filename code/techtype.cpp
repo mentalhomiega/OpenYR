@@ -84,6 +84,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsNominal(false),
 	IsTurretEquipped(false),
 	IsHasTurretTooltips(false),
+	IsTurretRecoil(false),
 	IsCrew(false),
 	IsRepairable(true),
 	IsRemappable(false),
@@ -752,6 +753,15 @@ static inline int _Scale_To_256(int val)
 }
 
 
+// A recoil part keeps at least one frame in each phase, as gamemd's frame setters do (0x717A50, 0x717A80, 0x717AB0).
+static void Keep_Recoil_Frames(int & frames)
+{
+	if (frames < 1) {
+		frames = 1;
+	}
+}
+
+
 /***********************************************************************************************
  * TechnoTypeClass::Read_INI -- Reads the techno type data from the INI database.              *
  *                                                                                             *
@@ -1135,6 +1145,25 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
 		IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
 		IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
+		IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
+		TurretRecoilControl.Travel = ini.Get_Int(Name(), "TurretTravel", TurretRecoilControl.Travel);
+		TurretRecoilControl.CompressFrames = ini.Get_Int(Name(), "TurretCompressFrames", TurretRecoilControl.CompressFrames);
+		Keep_Recoil_Frames(TurretRecoilControl.CompressFrames);
+		TurretRecoilControl.HoldFrames = ini.Get_Int(Name(), "TurretHoldFrames", TurretRecoilControl.HoldFrames);
+		Keep_Recoil_Frames(TurretRecoilControl.HoldFrames);
+		TurretRecoilControl.RecoverFrames = ini.Get_Int(Name(), "TurretRecoverFrames", TurretRecoilControl.RecoverFrames);
+		Keep_Recoil_Frames(TurretRecoilControl.RecoverFrames);
+
+		// gamemd copies the turret values into the barrel before it reads the barrel keys (TechnoTypeClass::LoadFromINI, 0x712170),
+		// so a barrel key that is absent keeps the turret's value rather than the constructor default.
+		BarrelRecoilControl = TurretRecoilControl;
+		BarrelRecoilControl.Travel = ini.Get_Int(Name(), "BarrelTravel", BarrelRecoilControl.Travel);
+		BarrelRecoilControl.CompressFrames = ini.Get_Int(Name(), "BarrelCompressFrames", BarrelRecoilControl.CompressFrames);
+		Keep_Recoil_Frames(BarrelRecoilControl.CompressFrames);
+		BarrelRecoilControl.HoldFrames = ini.Get_Int(Name(), "BarrelHoldFrames", BarrelRecoilControl.HoldFrames);
+		Keep_Recoil_Frames(BarrelRecoilControl.HoldFrames);
+		BarrelRecoilControl.RecoverFrames = ini.Get_Int(Name(), "BarrelRecoverFrames", BarrelRecoilControl.RecoverFrames);
+		Keep_Recoil_Frames(BarrelRecoilControl.RecoverFrames);
 		Explosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "Explosion", Explosion);
 		ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
 		NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
@@ -1887,6 +1916,15 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsNominal);
 	stream.Serialize(IsTurretEquipped);
 	stream.Serialize(IsHasTurretTooltips);
+	stream.Serialize(IsTurretRecoil);
+	stream.Serialize(TurretRecoilControl.Travel);
+	stream.Serialize(TurretRecoilControl.CompressFrames);
+	stream.Serialize(TurretRecoilControl.HoldFrames);
+	stream.Serialize(TurretRecoilControl.RecoverFrames);
+	stream.Serialize(BarrelRecoilControl.Travel);
+	stream.Serialize(BarrelRecoilControl.CompressFrames);
+	stream.Serialize(BarrelRecoilControl.HoldFrames);
+	stream.Serialize(BarrelRecoilControl.RecoverFrames);
 	stream.Serialize(IsRepairable);
 	stream.Serialize(IsCrew);
 	stream.Serialize(IsRemappable);
@@ -2017,6 +2055,15 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsNominal);
 	crc(IsTurretEquipped);
 	crc(IsHasTurretTooltips);
+	crc(IsTurretRecoil);
+	crc(TurretRecoilControl.Travel);
+	crc(TurretRecoilControl.CompressFrames);
+	crc(TurretRecoilControl.HoldFrames);
+	crc(TurretRecoilControl.RecoverFrames);
+	crc(BarrelRecoilControl.Travel);
+	crc(BarrelRecoilControl.CompressFrames);
+	crc(BarrelRecoilControl.HoldFrames);
+	crc(BarrelRecoilControl.RecoverFrames);
 	crc(IsRepairable);
 	crc(IsCrew);
 	crc(IsRemappable);

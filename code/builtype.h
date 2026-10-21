@@ -953,29 +953,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsTurretAnimExclusive;
 
-		/*
-		 * How one part of a building's voxel turret recoils when the building fires: the distance it
-		 * slides back in leptons, and the frames it spends compressing, holding and recovering. A
-		 * part with no travel does not move.
-		 */
-		struct RecoilControlType {
-			RecoilControlType(void) : Travel(2), CompressFrames(1), HoldFrames(1), RecoverFrames(1) {}
-
-			int Travel;
-			int CompressFrames;
-			int HoldFrames;
-			int RecoverFrames;
-		};
-
-		/*
-		 * If this building's turret recoils when it fires, then this flag will be true. Only then
-		 * do its turret body and barrel slide back, by the travel of each part.
-		 */
-		bool IsTurretRecoil;
-
-		RecoilControlType TurretRecoilControl;
-		RecoilControlType BarrelRecoilControl;
-
 		/// Unused
 		bool UnusedBTypeBool1;
 

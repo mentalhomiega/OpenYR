@@ -2882,13 +2882,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		main_matrix.Translate_X(Class->TurretOffset / 8);
 		main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
-		/*
-		**	A recoiling turret moves "backward" one pixel.
-		*/
-		if (IsInRecoilState) {
-			main_matrix.Translate_X(-2);
-		}
-
+		// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
 		Matrix3D barrel_matrix = main_matrix;
 		Vector3 vec2 = main_matrix.Get_Translation();
 		barrel_matrix.Translate(-vec2);
@@ -3068,17 +3062,13 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 			double pri = PrimaryFacing.Current().As_Radian32();
 			mtx.Rotate_Z(sec - pri);
 
-			/*
-			 * A recoiling turret moves "backward".
-			 */
-			if (IsInRecoilState) {
-				mtx.Translate_X(-2);
-			}
-
 			nmtx = mtx;
 
 			Vector3 trans = mtx.Get_Translation();
 			nmtx.Translate(-trans);
+
+			// The turret slides back after its pivot is removed, as gamemd's UnitClass::DrawAsSHP (0x73C5F0) does (0x73C9DE).
+			nmtx.Translate_X(-TurretRecoil.TravelSoFar);
 
 			Vector3 flh = Vector3(Get_Class_Weapon_Data()->FireFLH.X / -8, 0, Get_Class_Weapon_Data()->FireFLH.Z / -8);
 			nmtx.Translate(-flh);
@@ -3093,6 +3083,9 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 				}
 				face.Set(dir256);
 			}
+
+			// The barrel slides back by its recoil travel before it pitches, as gamemd's DrawAsSHP does (0x73CB5A).
+			nmtx.Translate_X(-BarrelRecoil.TravelSoFar);
 
 			DirType facing = face.Current();
 			nmtx.Rotate_Y(-facing.As_Radian32());
