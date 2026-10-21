@@ -107,7 +107,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsCrateGoodie(false),
 	IsSimpleDeployer(false),
 	IsDeployer(false),
-	IsDeployToLand(false),
 	DeployingAnim(NULL),
 	IsToHarvest(false),
 	IsToVeinHarvest(false),
@@ -127,7 +126,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	WreckReleasesPassengers(true),
 	AltImageData(NULL),
 	IsNonVehicle(false),
-	IsDisguiseWhenStill(false),
 	IsJellyfish(false),
 	IsLimpetDrone(false),
 	IsMobileEMP(false),
@@ -377,7 +375,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsCrateGoodie = ini.Get_Bool(Name(), "CrateGoodie", IsCrateGoodie);
 		IsSimpleDeployer = ini.Get_Bool(Name(), "IsSimpleDeployer", IsSimpleDeployer);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
-		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
 		DeployingAnim = TGet_Class(ini, Name(), "DeployingAnim", DeployingAnim);
@@ -417,7 +414,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsLargeVisceroid = ini.Get_Bool(Name(), "LargeVisceroid", IsLargeVisceroid);
 		IsJellyfish = ini.Get_Bool(Name(), "Jellyfish", IsJellyfish);
 		IsNonVehicle = ini.Get_Bool(Name(), "NonVehicle", IsNonVehicle);
-		IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
 
 		/*
 		 * As UnitTypeClass::LoadFromINI (0x747620): only the type named FV reads which turret each
@@ -615,7 +611,6 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCrateGoodie);
 	stream.Serialize(IsSimpleDeployer);
 	stream.Serialize(IsDeployer);
-	stream.Serialize(IsDeployToLand);
 	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);
 	stream.Serialize(IsToVeinHarvest);
@@ -633,7 +628,6 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WreckReleasesPassengers);
 	// AltImageData -- artwork, fetched from the mix files again as this loads.
 	stream.Serialize(IsNonVehicle);
-	stream.Serialize(IsDisguiseWhenStill);
 	stream.Serialize(IsJellyfish);
 	stream.Serialize(IsLimpetDrone);
 	stream.Serialize(IsMobileEMP);

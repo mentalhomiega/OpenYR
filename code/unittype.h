@@ -69,7 +69,6 @@ class UnitTypeClass : public TechnoTypeClass
 
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
-		bool IsDeployToLand;
 		AnimTypeClass * DeployingAnim;
 
 		/*
@@ -181,9 +180,6 @@ class UnitTypeClass : public TechnoTypeClass
 		 * vehicles as such.
 		 */
 		bool IsNonVehicle;
-
-		// Does this vehicle look like a tree to other houses while it stands still?
-		bool IsDisguiseWhenStill;
 
 		// The numbered turrets and barrels a multi-turret vehicle that is not a gattling type swaps between.
 		VoxelDataStruct ChargerTurrets[WEAPON_SLOT_COUNT];

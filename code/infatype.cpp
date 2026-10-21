@@ -106,9 +106,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	EliteOccupyWeapon(),
 	OccupyPip(PIP_PERSON_GREEN),
 	IsDeployer(false),
-	UndeployDelay(-1),
 	IsDeployedCrushable(true),
-	IsSlaved(false),
 	HarvestRate(0),
 	DeploySound(VOC_NONE),
 	EnterWaterSound(VOC_NONE),
@@ -440,9 +438,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsOccupier = ini.Get_Bool(Name(), "Occupier", IsOccupier);
 		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
-		UndeployDelay = ini.Get_Int(Name(), "UndeployDelay", UndeployDelay);
 		IsDeployedCrushable = ini.Get_Bool(Name(), "DeployedCrushable", IsDeployedCrushable);
-		IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
 		HarvestRate = ini.Get_Int(Name(), "HarvestRate", HarvestRate);
 		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
 		UndeploySound = ini.Get_VocType(Name(), "UndeploySound", UndeploySound);
@@ -605,9 +601,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOccupier);
 	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);
-	stream.Serialize(UndeployDelay);
 	stream.Serialize(IsDeployedCrushable);
-	stream.Serialize(IsSlaved);
 	stream.Serialize(HarvestRate);
 	stream.Serialize(DeploySound);
 	stream.Serialize(EnterWaterSound);

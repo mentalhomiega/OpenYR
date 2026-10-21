@@ -370,6 +370,18 @@ class TechnoTypeClass : public ObjectTypeClass
 		// The weapon slot an object with DeployFire fires while deployed. (Rules key DeployFireWeapon.)
 		int DeployFireWeapon;
 
+		// Does this object land before it deploys? (Rules key DeployToLand.) A flying object of any type also steps its walk counter every frame (FootClass::Update, 0x4DA530).
+		bool IsDeployToLand;
+
+		// Does this object hide as terrain while it stands still? (Rules key DisguiseWhenStill.) Only a vehicle does.
+		bool IsDisguiseWhenStill;
+
+		// Is this a slave? (Rules key Slaved.) Only an infantryman with a SlaveOwner uses it.
+		bool IsSlaved;
+
+		// Frames a deployed object stays deployed before it packs up, or a negative value to leave it to orders. (Rules key UndeployDelay.) Only soldiers use it.
+		int UndeployDelay;
+
 		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
 		int BombSight;
 

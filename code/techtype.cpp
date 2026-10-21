@@ -199,6 +199,10 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	SuperGapRadiusInCells(0),
 	IsDeployFire(false),
 	DeployFireWeapon(1),
+	IsDeployToLand(false),
+	IsDisguiseWhenStill(false),
+	IsSlaved(false),
+	UndeployDelay(-1),
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
@@ -867,6 +871,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
 		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
 		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
+		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
+		IsDisguiseWhenStill = ini.Get_Bool(Name(), "DisguiseWhenStill", IsDisguiseWhenStill);
+		IsSlaved = ini.Get_Bool(Name(), "Slaved", IsSlaved);
+		UndeployDelay = ini.Get_Int(Name(), "UndeployDelay", UndeployDelay);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
 		DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 		DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
@@ -1707,6 +1715,10 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SuperGapRadiusInCells);
 	stream.Serialize(IsDeployFire);
 	stream.Serialize(DeployFireWeapon);
+	stream.Serialize(IsDeployToLand);
+	stream.Serialize(IsDisguiseWhenStill);
+	stream.Serialize(IsSlaved);
+	stream.Serialize(UndeployDelay);
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);

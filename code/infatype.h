@@ -184,15 +184,10 @@ class InfantryTypeClass : public TechnoTypeClass
 		// weapon in slot DeployFireWeapon while dug in and its first weapon otherwise.
 		bool IsDeployer;
 
-		// Frames a dug-in soldier stays dug in before it packs up on its own. A negative value leaves
-		// it to the orders it is given, as the rules' default does (UndeployDelay=-1).
-		int UndeployDelay;
-
 		// A deployed soldier with DeployedCrushable=no cannot be crushed by a vehicle while dug in.
 		bool IsDeployedCrushable;
 
 		// A slave shovels one bail of ore every HarvestRate frames.
-		bool IsSlaved;
 		int HarvestRate;
 		VocType DeploySound;
 		VocType UndeploySound;
