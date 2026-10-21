@@ -2023,7 +2023,8 @@ void BuildingClass::AI(void)
 	if (Class->IsFirestormWall && (Frame & 7) == 0)  {
 		int frame = FirestormWallFrame & MAX_FIRESTORM_WALL_FRAMES;
 		if (House->FirestormDefenseActivated) {
-			if (frame != 10 && frame != 5 && Anims[BANIM_SPECIAL_TWO] == NULL && (Scen->RandomNumber() & MAX_FIRESTORM_WALL_FRAMES) == 0) {
+			// Yuri's Revenge has no idle animation for a wall, so rules that name none draw nothing and take no random number (BuildingClass::Update, 0x43FB20).
+			if (Rule->FirestormIdleAnim != NULL && frame != 10 && frame != 5 && Anims[BANIM_SPECIAL_TWO] == NULL && (Scen->RandomNumber() & MAX_FIRESTORM_WALL_FRAMES) == 0) {
 				Anims[BANIM_SPECIAL_TWO] = new AnimClass(Rule->FirestormIdleAnim, PositionCoord - Coord(740,740,0), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_TRANSLUCENT50), -10);
 			}
 		}
@@ -11539,7 +11540,7 @@ void BuildingClass::Update_FS_Wall_State(void)
 			delete Anims[BANIM_SPECIAL_ONE];
 			Anims[BANIM_SPECIAL_ONE] = NULL;
 		}
-	} else {
+	} else if (Rule->FirestormActiveAnim != NULL) {
 		Anims[BANIM_SPECIAL_ONE] = new AnimClass(Rule->FirestormActiveAnim, PositionCoord - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2, 0), 1, 0, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
 		Anims[BANIM_SPECIAL_ONE]->IsFogged = IsFogged;
 	}
@@ -11601,8 +11602,10 @@ bool BuildingClass::Crossing_Firestorm(ObjectClass * object, bool do_damage)
 			object->Take_Damage(object->Strength, 0, Rule->FirestormWarhead, NULL, true, true);
 		}
 		if (object->HeightAGL > 100) {
-			new AnimClass(Rule->FirestormAirAnim, object->PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
-		} else {
+			if (Rule->FirestormAirAnim != NULL) {
+				new AnimClass(Rule->FirestormAirAnim, object->PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
+			}
+		} else if (Rule->FirestormGroundAnim != NULL) {
 			new AnimClass(Rule->FirestormGroundAnim, PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), -10);
 		}
 		return(true);

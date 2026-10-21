@@ -19,6 +19,6 @@ The animation plays its type's [`LoopCount`](/keys/loopcount/), once if the type
 
 Each check removes an animation that is already playing, whatever the section's shape. While the wall is up, placing or removing a section beside a lit section therefore turns its animation off. The next such change turns it back on if the section still qualifies.
 
-:::danger[Set `FirestormActiveAnim` before a wall can be raised]
-If the key is missing or empty, the game crashes the first time a raised section needs the animation.
+:::note[A missing key shows nothing]
+If the key is missing or empty, a raised section shows no animation. Yuri's Revenge reads no such key, so the animation never plays in its rules.
 :::

@@ -17,6 +17,6 @@ Either animation plays when the wall catches:
 
 The animation plays its type's [`LoopCount`](/keys/loopcount/), once if the type sets none.
 
-:::danger[Set `FirestormAirAnim` before a wall can be raised]
-If the key is missing or empty, the game crashes the first time a raised section catches something above 100 leptons.
+:::note[A missing key shows nothing]
+If the key is missing or empty, the wall catches things above 100 leptons without an animation.
 :::
