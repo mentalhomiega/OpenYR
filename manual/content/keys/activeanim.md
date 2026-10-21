@@ -23,7 +23,7 @@ A BuildingType has four active slots. Slots two, three and four take the same ei
 
 ## When the slot runs
 
-The slot starts when the structure comes online: when its construction finishes, or when the scenario places it. A non-looping animation empties the slot when it plays to its end, and a looping one holds it. All four active slots empty when the structure itself starts to be sold or undeployed, and when it is removed from the game. Selling a structure that has upgrade plugs sells its top plug first, and the active slots keep running.
+The slot starts when the structure comes online: when its construction finishes, or when the scenario places it. A non-looping animation empties the slot when it plays to its end, and a looping one holds it. A structure that starts to be sold or undeployed hides all its animations from then on, and they stop when the structure is removed from the game. Selling a structure that has upgrade plugs sells its top plug first, and the active slots keep running.
 
 These events start the slot again if it is empty:
 

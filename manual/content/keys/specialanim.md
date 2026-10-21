@@ -40,7 +40,7 @@ SpecialAnimThreeZAdjust=-100
 ```
 
 :::caution[A looping first animation stalls the sequence]
-The second slot waits for the first animation to play out, and the repair cycle never stops the first. A looping `SpecialAnim` therefore holds the first slot until the structure begins to be sold or is taken off the map. The second slot never appears, and the first keeps running between visits as well as during them.
+The second slot waits for the first animation to play out, and the repair cycle never stops the first. A looping `SpecialAnim` therefore holds the first slot until the structure is sold or taken off the map. The second slot never appears, and the first keeps running between visits as well as during them.
 :::
 
 ### A structure that charges its shot

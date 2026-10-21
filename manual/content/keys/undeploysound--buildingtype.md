@@ -16,7 +16,7 @@ UndeploySound=MYUP1 ; a sound ID registered in SOUND.INI
 
 A structure plays this sound at its position when it starts to deconstruct, whether it is being sold or undeployed. It is the first sound of the deconstruction. Any crew evacuation and the [`SellSound`](/keys/sellsound/) come after it, and then the reverse build-up.
 
-The structure stops every animation running on it as the sound plays. An [`IsJuggernaut=yes`](/keys/isjuggernaut/) structure first turns its body and barrel back to [`StartFacing`](/keys/startfacing/) and [`StartPitch`](/keys/startpitch/), and plays the sound once it gets there.
+The structure puts out its damage fires as the sound plays, and from then on hides the animations running on it. An [`IsJuggernaut=yes`](/keys/isjuggernaut/) structure first turns its body and barrel back to [`StartFacing`](/keys/startfacing/) and [`StartPitch`](/keys/startpitch/), and plays the sound once it gets there.
 
 Two sell orders stop short of deconstruction and play no `UndeploySound`:
 

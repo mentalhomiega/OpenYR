@@ -178,7 +178,7 @@ Two cases do not use the slot's names:
 - The structure that [`WallTower`](/keys/walltower/) names cycles through lettered turret variants, named after its Image ID with `_B`, `_C` or `_D` appended. They use the turret slot's offset and biases.
 - A [`FirestormWall=yes`](/keys/firestormwall/) section fills its first two special slots with fixed animations. [A firestorm wall section](/keys/specialanim/#a-firestorm-wall-section) covers them.
 
-A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. All twenty-one slots empty when the structure begins to be sold or undeployed, and when it is removed from the game.
+A slot empties when its animation plays to its end or when an event stops it. A looping animation therefore holds its slot until something stops it, while a finite one frees the slot when it ends. A structure that begins to be sold or undeployed hides all its animations from then on, and they stop when it is removed from the game.
 
 Attached animations follow the structure. When the structure is placed on a new cell, each animation moves to its slot's offset from the new position.
 

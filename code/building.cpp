@@ -1747,6 +1747,15 @@ void BuildingClass::AI(void)
 {
 	Update_Temporal_Anims();
 
+	// The animations a structure had when its sale began keep running out of sight (BuildingClass::DrawIt, 0x43D290).
+	if (BState == BSTATE_CONSTRUCTION && Mission == MISSION_DECONSTRUCTION) {
+		for (AnimClass * anim : Anims) {
+			if (anim != NULL) {
+				anim->Make_Invisible();
+			}
+		}
+	}
+
 	if (Temporal_AI()) {
 		return;
 	}
@@ -5656,8 +5665,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 				return(1);
 			}
 
-			End_Anim(BANIM_ALL);
-
 			IsReadyToCommence = false;
 			for (int slot = 0; slot < Link_Count(); slot++) {
 				if (Link(slot) != NULL) {
@@ -5668,6 +5675,9 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			if (Class->IsLaserFencePost) {
 				Toggle_Laser_Fence_Post(false);
 			}
+
+			// The flames of a damaged structure go out when its sale begins, while its other animations keep running unseen (BuildingClass::Mission_Selling, 0x449C30).
+			Remove_Damage_Fires();
 
 			if (Class->IsJuggernaut && (BarrelPitch.Current() != Class->StartPitch || PrimaryFacing.Current() != Class->StartFace)) {
 				BarrelPitch.Set_Desired(Class->StartPitch);
@@ -9112,6 +9122,11 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		}
 
 		if (anim == BANIM_TURRET && Class->IsBarrelAnimAVoxel) {
+			animptr->Make_Invisible();
+		}
+
+		// A structure whose build-up plays backwards for a sale shows none of its animations (BuildingClass::DrawIt, 0x43D290).
+		if (BState == BSTATE_CONSTRUCTION && Mission == MISSION_DECONSTRUCTION) {
 			animptr->Make_Invisible();
 		}
 	}
