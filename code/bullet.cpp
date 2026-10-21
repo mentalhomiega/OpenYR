@@ -1697,10 +1697,15 @@ void BulletClass::Detonate(Coord const & coord)
 		land = Map[(Coord const &)PositionCoord].Land_Type();
 	}
 
-	// A shot the Iron Curtain turned away shows WeaponNullifyAnim instead (BulletClass::Detonate, 0x469BE2).
-	const AnimTypeClass * anim = (nullified && Rule->WeaponNullifyAnim != NULL) ? Rule->WeaponNullifyAnim : Combat_Anim(Strength, Warhead, land, PositionCoord);
+	// gamemd selects the blast animation before it checks for a nullified shot, so an EMEffect warhead draws its random animation either way (BulletClass::Detonate, 0x469BCF).
+	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
 
-	if (IsBright) {
+	// A shot the Iron Curtain turned away shows WeaponNullifyAnim alone, with no light, blast or debris (BulletClass::Detonate, 0x469BDE and 0x46A2A1).
+	if (nullified) {
+		anim = Rule->WeaponNullifyAnim;
+	}
+
+	else if (IsBright) {
 		int disabled = 0;
 		if (Warhead != NULL) {
 			if (Warhead->IsCLDisableRed) disabled |= SpotLightClass::DISABLE_RED;
@@ -1718,7 +1723,7 @@ void BulletClass::Detonate(Coord const & coord)
 		**	because nuke damage is done in the middle of the animation
 		**	and if there's no animation, there won't be any damage.
 		*/
-		if (!aptr && Warhead == Rule->NukeWarhead) {
+		if (!aptr && !nullified && Warhead == Rule->NukeWarhead) {
 			HousesType house = HOUSE_NONE;
 			if (Payback) {
 				house = Payback->House->Class->House;
@@ -1727,7 +1732,7 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
-	// Debris follows the blast; a nullified shot returns before it (BulletClass::Detonate, 0x46A2A1 and 0x469D06).
+	// Debris follows the blast. A nullified shot throws none, but the splitting below still runs, since gamemd repeats the clusters from BulletClass::Explode (BulletClass::Detonate, 0x469D06).
 	if (!nullified && warhead->MaxDebris > 0) {
 		Throw_Warhead_Debris(warhead, PositionCoord);
 	}
