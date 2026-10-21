@@ -2804,6 +2804,26 @@ void Assign_Houses(void)
 		}
 	}
 
+	/*
+	 * A Cooperative match puts every person on one side and every computer player on another
+	 * (gamemd's AllyTeams for that mode, slot 34 at 0x5C3220).
+	 */
+	if (MPMode_Is_Cooperative()) {
+		for (int first = 0; first < Houses.Count(); first++) {
+			HouseClass * housep = Houses[first];
+			if (housep->IsObserver || housep->Class->IsMultiplayPassive) {
+				continue;
+			}
+			for (int second = first + 1; second < Houses.Count(); second++) {
+				HouseClass * other = Houses[second];
+				if (!other->IsObserver && !other->Class->IsMultiplayPassive && housep->Is_Human_Player() == other->Is_Human_Player()) {
+					housep->Make_Ally(other);
+					other->Make_Ally(housep);
+				}
+			}
+		}
+	}
+
 	HouseClass * neutral_house = new HouseClass(HouseTypes[HouseTypeClass::From_Name("Neutral")]);
 	neutral_house->Scheme = Fetch_Scheme_Index_By_Name("LightGrey", NUM_INTENSITY_LEVELS);
 	neutral_house->Initialize_Radar_Color();
