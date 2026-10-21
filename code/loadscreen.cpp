@@ -33,6 +33,7 @@
 #include "lightcon.h"
 #include "map.h"
 #include "mixfile.h"
+#include "mpmode.h"
 #include "palette.h"
 #include "pcx.h"
 #include "playerdisplay.h"
@@ -572,7 +573,7 @@ bool LoadScreenClass::Begin(char const * scenario, CCINIClass const * ini, int p
 	Backdrop->Fill(0);
 
 	Match = Session.Type != GAME_NORMAL;
-	if (!(Match ? Begin_Match(ini, players) : Begin_Campaign(scenario, ini))) {
+	if (!(Match ? Begin_Match(scenario, ini, players) : Begin_Campaign(scenario, ini))) {
 		End();
 		return(false);
 	}
@@ -693,7 +694,59 @@ bool LoadScreenClass::Begin_Campaign(char const * scenario, CCINIClass const * m
 }
 
 
-bool LoadScreenClass::Begin_Match(CCINIClass const * ini, int players)
+/// <summary>
+/// Finds the picture a Cooperative match shows on a map that COOPCAMPMD.INI lists, as gamemd does
+/// (LoadProgressManager::Draw, 0x553311 to 0x5533C0).
+/// </summary>
+/// <param name="scenario">The scenario's file name. A listed map name matches when it begins the file name.</param>
+/// <param name="picture">Receives the campaign's CampaignLoadScreen.</param>
+/// <param name="palette">Receives the campaign's CampaignLoadScreenPallet.</param>
+/// <returns>Returns with false when the match is not Cooperative, no campaign lists the map, or the first campaign
+/// that lists it leaves either name empty.</returns>
+static bool Coop_Picture(char const * scenario, std::string & picture, std::string & palette)
+{
+	if (scenario == NULL || !MPMode_Has_Current() || MPMode_Current().Kind != MPModeKind::Cooperative) {
+		return(false);
+	}
+
+	CCFileClass file("COOPCAMPMD.INI");
+	if (!file.Is_Available()) {
+		return(false);
+	}
+	CCINIClass ini;
+	ini.Load(file, false);
+
+	int const campaigns = ini.Entry_Count("Campaigns");
+	for (int index = 0; index < campaigns; index++) {
+		std::string const section = ini.Get_String("Campaigns", ini.Get_Entry("Campaigns", index));
+		int const maps = ini.Get_Int(section.c_str(), "NumberOfCampaignMaps", 0);
+		for (int map = 1; map <= maps; map++) {
+			char key[16];
+			std::snprintf(key, sizeof(key), "Map%d", map);
+			std::string const list = ini.Get_String(section.c_str(), key);
+
+			// Each Map entry holds up to three names, one per difficulty.
+			size_t start = 0;
+			for (int slot = 0; slot < 3 && start <= list.size(); slot++) {
+				size_t const comma = list.find(',', start);
+				std::string const name = list.substr(start, comma == std::string::npos ? std::string::npos : comma - start);
+				if (!name.empty() && _strnicmp(scenario, name.c_str(), name.size()) == 0) {
+					picture = ini.Get_String(section.c_str(), "CampaignLoadScreen");
+					palette = ini.Get_String(section.c_str(), "CampaignLoadScreenPallet");
+					return(!picture.empty() && !palette.empty());
+				}
+				if (comma == std::string::npos) {
+					break;
+				}
+				start = comma + 1;
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool LoadScreenClass::Begin_Match(char const * scenario, CCINIClass const * ini, int players)
 {
 	if (Session.Players.Count() == 0) {
 		return(false);
@@ -708,12 +761,17 @@ bool LoadScreenClass::Begin_Match(CCINIClass const * ini, int players)
 	CountryArtType const & art = observer ? OBSERVER_ART : COUNTRY_ART[country];
 	MatchLayoutType const & layout = (Width == 640) ? MATCH_640 : MATCH_800;
 
-	char picture[32];
-	std::snprintf(picture, sizeof(picture), "LS%d%s.SHP", Width, art.Picture);
-	PictureName = picture;
+	// A Cooperative campaign's picture has one size, which gamemd draws at either screen width.
+	std::string palette = art.Palette;
+	if (!Coop_Picture(scenario, PictureName, palette)) {
+		char picture[32];
+		std::snprintf(picture, sizeof(picture), "LS%d%s.SHP", Width, art.Picture);
+		PictureName = picture;
+		palette = art.Palette;
+	}
 
-	ShapeFile const shape(picture);
-	std::unique_ptr<ConvertClass> const drawer = Load_Drawer(art.Palette, *Backdrop);
+	ShapeFile const shape(PictureName.c_str());
+	std::unique_ptr<ConvertClass> const drawer = Load_Drawer(palette, *Backdrop);
 	if (shape.Get() == NULL || drawer == nullptr) {
 		return(false);
 	}

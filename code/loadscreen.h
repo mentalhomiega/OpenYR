@@ -65,7 +65,7 @@ class LoadScreenClass
 		class ShapeFile;
 
 		bool Begin_Campaign(char const * scenario, CCINIClass const * mission);
-		bool Begin_Match(CCINIClass const * ini, int players);
+		bool Begin_Match(char const * scenario, CCINIClass const * ini, int players);
 		void Draw_Preview(void);
 		void Draw_Rows(int players);
 		void Draw_Campaign_Progress(ProgressScreenClass const & progress);

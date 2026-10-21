@@ -158,6 +158,12 @@ site_exclusions:
     classification: excluded
     reason: Each is a setting of a campaign mission's section in MISSIONMD.INI, documented as that format rather than as game data.
 
+  - path: code/loadscreen.cpp
+    function: Coop_Picture
+    keys: [NumberOfCampaignMaps, CampaignLoadScreen, CampaignLoadScreenPallet]
+    classification: excluded
+    reason: Each is a setting of a co-op campaign's section in COOPCAMPMD.INI, documented on the loading screens page rather than as game data.
+
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
     keys: [SearchPaths, Mods, DataDirectory, UserDirectory, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, RA2Art, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Eva, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Keyboard, Scheme, Game]
