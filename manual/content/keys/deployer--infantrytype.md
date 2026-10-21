@@ -21,7 +21,7 @@ While a human player's soldier is deployed:
 
 - it ignores move orders, and the cursor shows that it cannot move;
 - it never lies down and plays no idle animations;
-- it fires only if its type sets [`DeployFire=yes`](/keys/deployfire/#scope-infantrytype), and then only at targets within the reach of its [`DeployFireWeapon`](/keys/deployfireweapon/#scope-infantrytype). Without `DeployFire`, it takes no targets at all.
+- it fires only if its type sets [`DeployFire=yes`](/keys/deployfire/), and then only at targets within the reach of its [`DeployFireWeapon`](/keys/deployfireweapon/). Without `DeployFire`, it takes no targets at all.
 
 A scatter that insists, such as the one that clears a cell for an arriving vehicle, packs a human player's dug-in soldier up and sends it off. Any other scatter, such as the one after a hit, leaves it in place.
 

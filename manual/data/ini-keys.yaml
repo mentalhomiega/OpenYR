@@ -11453,65 +11453,37 @@ DeployDir:
 DeployFire:
   key: DeployFire
   scopes:
-  - applies_to: *id013
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: boolean
-    status: needs_review
+    status: generated
     _provenance:
       default_candidate: 'no'
-      declared_in: InfantryTypeClass
+      declared_in: TechnoTypeClass
       member: IsDeployFire
-      source: code/infatype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: InfantryTypeClass
-  - applies_to: *id025
-    file: rules.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: boolean
-    status: needs_review
-    _provenance:
-      default_candidate: 'no'
-      declared_in: UnitTypeClass
-      member: IsDeployFire
-      source: code/unittype.cpp
-      guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 DeployFireWeapon:
   key: DeployFireWeapon
   scopes:
-  - applies_to: *id013
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
       source: object-type
     value_type: integer
-    status: needs_review
+    status: generated
     _provenance:
       default_candidate: '1'
-      declared_in: InfantryTypeClass
+      declared_in: TechnoTypeClass
       member: DeployFireWeapon
-      source: code/infatype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: InfantryTypeClass
-  - applies_to: *id025
-    file: rules.ini
-    section:
-      kind: identifier
-      source: object-type
-    value_type: integer
-    status: needs_review
-    _provenance:
-      default_candidate: '1'
-      declared_in: UnitTypeClass
-      member: DeployFireWeapon
-      source: code/unittype.cpp
-      guard: null
-    level: UnitTypeClass
+    level: TechnoTypeClass
 DeploySound:
   key: DeploySound
   scopes:
@@ -16973,7 +16945,7 @@ Gamma:
 GapGenerator:
   key: GapGenerator
   scopes:
-  - applies_to: *id005
+  - applies_to: *id003
     file: rules.ini
     section:
       kind: identifier
@@ -16981,12 +16953,12 @@ GapGenerator:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: null
-      declared_in: BuildingTypeClass
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
       member: IsGapGenerator
-      source: code/builtype.cpp
+      source: code/techtype.cpp
       guard: null
-    level: BuildingTypeClass
+    level: TechnoTypeClass
 GapRadiusInCells:
   key: GapRadiusInCells
   scopes:
