@@ -157,7 +157,7 @@ A deployed vehicle counts as a vehicle here, so this branch runs before any engi
 
 ### Restoring an allied structure
 
-An engineer that reaches an allied structure restores it to full strength at no cost. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes.
+An engineer that reaches an allied structure restores it to full strength at no cost and is consumed. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength, and [`BuildingRepairedSound`](/keys/buildingrepairedsound/) plays from it. Nothing else about the structure changes. A structure already at full strength is left alone, and the engineer lives and moves away from it.
 
 ### Repairing a bridge
 
@@ -238,7 +238,7 @@ With EVAMD.INI, the announcer names the effect to the player whose house owns th
 
 ### The soldier is consumed
 
-Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, an engineer at an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
+Every soldier that walks into its target structure is deleted, even when nothing happens there, with these exceptions: an engineer that reaches an allied structure at full strength, and an engineer that reaches a `Capturable=yes` non-allied structure that is being sold or warped out, both move away unharmed. The deletion includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, an engineer at an occupiable structure of a [`MultiplayPassive=yes`](/keys/multiplaypassive/) country, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge also leaves the soldier alive.
 
 ## What changes hands
 

@@ -987,6 +987,13 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					**	badly damaged the enemy building is.
 					*/
 					else if (House->Is_Ally(tech) || (tech->RTTI == RTTI_BUILDING && Is_Passive_Occupiable_Building((BuildingClass *)tech))) {
+						// A whole building takes nothing, so the engineer lives and walks away (the engineer arrival in 0x519630).
+						if (tech->Strength == tech->TClass->MaxStrength) {
+							Assign_Destination(NULL);
+							Scatter(tech->Center_Coord(), true, true);
+							BEnd(BENCH_PCP);
+							return;
+						}
 						tech->Renovate();
 					} else {
 						bool iscapturable = false;
@@ -1000,6 +1007,13 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
 							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
 						} else if (iscapturable) {
+							// A building that is being sold or warped out cannot be taken, and the engineer lives.
+							if (tech->Mission == MISSION_DECONSTRUCTION || tech->IsBeingWarpedOut) {
+								Assign_Destination(NULL);
+								Scatter(tech->Center_Coord(), true, true);
+								BEnd(BENCH_PCP);
+								return;
+							}
 							if (tech->Tag) {
 								tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 							}
