@@ -4176,6 +4176,22 @@ void Run(StepType const & step)
 	} else if (step.Command == "statics") {
 		// statics: how many positioned sounds a trigger started are still going.
 		DebugString("AUTOTEST   statics %d\n", Static_Sounds_Active(STATIC_SOUND_TRIGGER));
+	} else if (step.Command == "enterprobe") {
+		// enterprobe: each vehicle on the enter mission, with the building it heads for, its dock cell and the radio state.
+		for (int index = 0; index < Units.Count(); index++) {
+			UnitClass * unit = Units[index];
+			if (unit->IsInLimbo || unit->CurrentMission != MISSION_ENTER) continue;
+			BuildingClass * target = unit->NavCom != NULL ? dynamic_cast<BuildingClass *>(unit->NavCom) : NULL;
+			TechnoClass * contact = unit->Contact_With_Whom();
+			DebugString("AUTOTEST   enterprobe %s %s cell %d,%d nav %s contact %s tethered %d moving %d mzone %d naval %d\n", unit->House->Class->Name(), unit->Class->Name(),
+				unit->Get_Cell().X, unit->Get_Cell().Y, unit->NavCom != NULL ? "set" : "-", contact != NULL ? contact->TClass->Name() : "-", (int)unit->IsTethered,
+				(int)unit->Locomotion->Is_Moving(), (int)unit->Class->MZone, (int)unit->Class->IsNaval);
+			if (target != NULL) {
+				Cell const dock = target->Destination_Coord_For(unit).As_Cell();
+				DebugString("AUTOTEST     target %s cell %d,%d naval %d dock %d,%d land %d links %d\n", target->Class->Name(), target->Get_Cell().X, target->Get_Cell().Y,
+					(int)target->Class->IsNaval, dock.X, dock.Y, (int)Map[dock].Land_Type(), (int)target->In_Radio_Contact());
+			}
+		}
 	} else if (step.Command == "supers") {
 		// supers: each super weapon a house has, how much of its charge is left and the time it charges in.
 		DebugString("AUTOTEST   super defense frames %d distance %d probability %d,%d,%d\n", Rule->AISuperDefenseFrames, (int)Rule->AISuperDefenseDistance, Rule->AISuperDefenseProbability.Count() > 0 ? Rule->AISuperDefenseProbability[0] : -1, Rule->AISuperDefenseProbability.Count() > 1 ? Rule->AISuperDefenseProbability[1] : -1, Rule->AISuperDefenseProbability.Count() > 2 ? Rule->AISuperDefenseProbability[2] : -1);
@@ -4456,6 +4472,23 @@ void Run(StepType const & step)
 					names += std::string(" ") + missing[m]->Name() + (team->House->Can_Build(missing[m], false, false) == 0 ? ("(cannot lvl" + std::to_string(missing[m]->Level) + " req" + std::to_string(missing[m]->RequiredHouses) + " forb" + std::to_string(missing[m]->ForbiddenHouses) + " unb" + std::to_string((int)missing[m]->IsUnbuildable) + " own" + std::to_string(missing[m]->Ownable) + " mask" + std::to_string(team->House->Own_Mask()) + ")") : std::string(""));
 				}
 				DebugString("AUTOTEST     team %s missing%s\n", team->Class->Name(), names.c_str());
+				DebugString("AUTOTEST     team %s group %d recruiter %d priority %d\n", team->Class->Name(), team->Class->Get_Group(), (int)team->Class->IsRecruiter, (int)team->Class->RecruitPriority);
+				for (int t = 0; t < team->Class->TaskForce->ClassCount; t++) {
+					DebugString("AUTOTEST       force %d %s want %d have %d\n", t, team->Class->TaskForce->Members[t].Class->Name(), team->Class->TaskForce->Members[t].Quantity, team->Quantity[t]);
+				}
+				for (int i = 0; i < Infantry.Count(); i++) {
+					InfantryClass * soldier = Infantry[i];
+					if (soldier->House != team->House) continue;
+					bool wanted = false;
+					for (int t = 0; t < team->Class->TaskForce->ClassCount; t++) {
+						if (team->Class->TaskForce->Members[t].Class == soldier->Class_Of()) wanted = true;
+					}
+					if (!wanted) continue;
+					int typeindex = 0;
+					DebugString("AUTOTEST       cand %s cell %d,%d group %d team %s mission %d radio %d recruitable %d limbo %d canadd %d\n", soldier->Class->Name(),
+						soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Group, soldier->Team != NULL ? soldier->Team->Class->Name() : "-", (int)soldier->Mission, (int)soldier->In_Radio_Contact(),
+						(int)soldier->IsTeamRecruitable, (int)soldier->IsInLimbo, (int)team->Can_Add(soldier, typeindex));
+				}
 			}
 		}
 	} else if (step.Command == "banims") {
