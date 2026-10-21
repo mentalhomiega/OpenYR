@@ -5771,8 +5771,13 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					}
 				}
 
-				if (House->Is_Player_Control() && !Considered_Vehicle() && !undeploys) {
-					Sound_Effect(Rule->SellSound, PositionCoord);
+				// A one-cell structure that packs into a vehicle makes neither sound (BuildingClass::IsStrange, 0x457620).
+				bool const strange = Class->UndeploysInto != NULL && Class->Width() == 1 && Class->Height() == 1;
+				if (House->Is_Player_Control() && !strange) {
+					if (!undeploys) {
+						Sound_Effect(Rule->SellSound, PositionCoord);
+					}
+					Sound_Effect(Class->PackupSound, PositionCoord);
 				}
 				Status = DURING;
 				Begin_Mode(BSTATE_CONSTRUCTION);

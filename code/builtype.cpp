@@ -354,6 +354,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	PsychicDetectionRadius(0),
 	IsEligibleForDelayKill(false),
 	BuildupSound(VOC_NONE),
+	PackupSound(VOC_NONE),
 	CreateUnitSound(VOC_NONE),
 	DelayedFireDelay(0),
 	IsAnimDelayedFire(false),
@@ -1375,6 +1376,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
 		BuildupSound = ini.Get_VocType(Name(), "BuildupSound", BuildupSound);
+		PackupSound = ini.Get_VocType(Name(), "PackupSound", PackupSound);
 		CreateUnitSound = ini.Get_VocType(Name(), "CreateUnitSound", CreateUnitSound);
 		ToBuild = ini.Get_RTTIType(Name(), "Factory", ToBuild);
 		FreeUnit = ini.Get_Foot_Type(Name(), "FreeUnit", FreeUnit);
@@ -2522,6 +2524,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PsychicDetectionRadius);
 	stream.Serialize(IsEligibleForDelayKill);
 	stream.Serialize(BuildupSound);
+	stream.Serialize(PackupSound);
 	stream.Serialize(CreateUnitSound);
 	stream.Serialize(DelayedFireDelay);
 	stream.Serialize(IsAnimDelayedFire);

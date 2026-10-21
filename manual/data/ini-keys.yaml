@@ -27434,6 +27434,23 @@ PBarrelThickness:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+PackupSound:
+  key: PackupSound
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: BuildingTypeClass
+      member: PackupSound
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 PadAircraft:
   key: PadAircraft
   scopes:

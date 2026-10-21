@@ -734,6 +734,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Played as the structure starts to build up.
 		VocType BuildupSound;
 
+		// Played as the structure is sold or packs up into its vehicle.
+		VocType PackupSound;
+
 		// Played where a unit this structure produces appears, after the unit's own CreateSound.
 		VocType CreateUnitSound;
 
