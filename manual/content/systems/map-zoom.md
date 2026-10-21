@@ -10,9 +10,15 @@ related:
     id: ScreenCapture
 ---
 
-The mouse wheel over the map zooms the map view. Rolling forward zooms in and rolling back zooms out, by 0.1 for each notch. The zoom stays between 0.5 and 2.0. At 0.5 the view shows twice as much map in each direction, and at 2.0 the map is drawn twice its normal size. Notches that arrive together add up, and a notch past either limit does nothing.
+The mouse wheel over the map zooms the map view. Rolling forward zooms in and rolling back zooms out, by 0.1 for each notch. The zoom stays between 0.5 and 2.0, or between 0.75 and 2.0 in a multiplayer game. At 0.5 the view shows twice as much map in each direction, and at 2.0 the map is drawn twice its normal size. Notches that arrive together add up, and a notch past either limit does nothing.
 
 Over the sidebar the wheel scrolls the sidebar, as before. Only the map's own area zooms: the sidebar, its tabs and the command bar keep their size.
+
+## How far out the zoom goes
+
+On a small map the zoom out limit is higher. It is the zoom at which the map's visible area, the part the view scrolls over, fills the screen along one axis. At that zoom and further in, the view is no wider or taller than the visible area. The limit depends on the screen size.
+
+If the map's visible area is smaller than the screen at normal size along either axis, the zoom out cannot go below normal size.
 
 ## Where the view ends up
 
