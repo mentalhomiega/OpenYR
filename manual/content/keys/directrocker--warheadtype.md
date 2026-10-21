@@ -3,7 +3,7 @@ key: DirectRocker
 scope: warheadtype
 label: Direct rocker
 summary: A blast that strikes a vehicle rocks it instead of damaging it.
-see_also: [Rocker, Weight, DirectRockingCoefficient]
+see_also: [Rocker, Weight, DirectRockingCoefficient, FallBackCoefficient, Pushy]
 when_omitted:
   kind: value
   value: "no"
@@ -19,4 +19,8 @@ Only a voxel-drawn vehicle rocks, as with [`Rocker`](/keys/rocker/). The vehicle
 
 A shot with no firer, or a vehicle under an Iron Curtain, is not rocked. Such a shot deals no damage to that vehicle either.
 
-OpenTS does not hold the struck vehicle in place afterward. The vehicle keeps its movement and its orders.
+The firer and the vehicle become linked to each other. While the link stands, a linked infantry, vehicle or aircraft that is not [`Pushy`](/keys/pushy/#scope-aircrafttype) takes no click orders and does not move. A linked vehicle cannot fire, whatever its type. A firer that is a structure does not link.
+
+The link ends when either object is taken off the map, which includes being destroyed, or when a soldier in the link is given a new target or a new destination.
+
+A linked vehicle is not held at 45 degrees of tilt. A tilt past 180 degrees destroys it. [`FallBackCoefficient`](/keys/fallbackcoefficient/#scope-global-rules) sets how fast a linked vehicle settles back toward level.

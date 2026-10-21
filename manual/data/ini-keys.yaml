@@ -15328,6 +15328,24 @@ FadeOut:
       source: code/themeini.cpp
       guard: null
     level: ThemeClass
+FallBackCoefficient:
+  key: FallBackCoefficient
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: FallBackCoefficient
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Fearless:
   key: Fearless
   scopes:
@@ -30117,6 +30135,23 @@ PurifierBonus:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Pushy:
+  key: Pushy
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsPushy
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 QueueingCell:
   key: QueueingCell
   scopes:
