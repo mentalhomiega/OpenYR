@@ -2671,16 +2671,15 @@ bool InfantryClass::Can_Cheer(void) const
 
 /// <summary>
 /// Plays the Cheer sequence once, as InfantryClass::Cheer (0x522C00) does. The soldier then goes back
-/// to standing ready by the usual end of a sequence. A soldier that is busy cheers only when forced.
-/// A type with no Cheer sequence does nothing.
+/// to standing ready by the usual end of a sequence. A type with no Cheer sequence does nothing.
 /// </summary>
-/// <param name="force">Cheer even when the soldier is busy.</param>
+/// <param name="force">Skip Can_Cheer. A cheer that cannot interrupt the current sequence is dropped, not queued.</param>
 void InfantryClass::Cheer(bool force)
 {
 	if (!force && !Can_Cheer()) {
 		return;
 	}
-	Do_Action(DO_CHEER, true);
+	Do_Action(DO_CHEER, false);
 }
 
 
