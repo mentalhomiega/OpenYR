@@ -6935,11 +6935,10 @@ bool HouseClass::Is_Allowed_To_Ally(HouseClass * house) const
 void HouseClass::Computer_Paranoid(void)
 {
 	/*
-	**	Computer houses change alliances only when the rules allow alliances and the game has no
-	**	team allies (gamemd's HouseClass::AllyAIHouses). Its multiplayer game mode query is always
-	**	false, so the rules flag alone decides.
+	**	Computer houses change alliances only when the rules allow alliances or the match is
+	**	Cooperative, and the game has no team allies (gamemd's HouseClass::AllyAIHouses, 0x501640).
 	*/
-	if (!Rule->AlliesAllowed || Scen->TeamsPresent) {
+	if ((!Rule->AlliesAllowed && !MPMode_Is_Cooperative()) || Scen->TeamsPresent) {
 		return;
 	}
 
