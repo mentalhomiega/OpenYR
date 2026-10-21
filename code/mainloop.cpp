@@ -731,17 +731,22 @@ void Sync_Delay(void)
 		Sleep(GameInFocus ? 0 : 1);
 	}
 
+	// The frame count is taken over 960 ms, as gamemd.exe's 60 SystemTimer units, and feeds the detail gate.
 	static CDTimerClass<MillisecondSystemTimerClass> fps_timer;
 	if (!fps_timer) {
 		LastFramesPerSecond = FramesThisSecond;
 		FramesThisSecond = 0;
-		TotalFrames += LastFramesPerSecond;
+		fps_timer = 960;
+	}
+
+	static CDTimerClass<MillisecondSystemTimerClass> second_timer;
+	if (!second_timer) {
 		SecondsPassed++;
 		if (TotalFrames > 0x7FFFFFFF) {
 			TotalFrames = 0;
 			SecondsPassed = 0;
 		}
-		fps_timer = 1000;
+		second_timer = 1000;
 	}
 }
 

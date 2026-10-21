@@ -508,30 +508,6 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 }
 
 
-// The frame rate threshold for detail-gated animations, with gamemd's hysteresis (Detail::GetMinFrameRate, 0x55AF60).
-// Once the rate falls below the minimum, it must regain the minimum plus the buffer before the threshold drops back.
-// Draw calls update the state; a negative rules value counts as 0.
-static unsigned Detail_Min_Frame_Rate(void)
-{
-	static bool reduced = false;
-	unsigned const minimum = Rule->DetailMinFrameRateNormal > 0 ? (unsigned)Rule->DetailMinFrameRateNormal : 0;
-	unsigned const buffer = Rule->DetailBufferZoneWidth > 0 ? (unsigned)Rule->DetailBufferZoneWidth : 0;
-
-	if (reduced) {
-		if (minimum + buffer <= LastFramesPerSecond) {
-			reduced = false;
-			return(minimum);
-		}
-		return(minimum + buffer);
-	}
-	if (LastFramesPerSecond < minimum) {
-		reduced = true;
-		return(minimum + buffer);
-	}
-	return(minimum);
-}
-
-
 /***********************************************************************************************
  * AnimClass::Draw_It -- Draws the animation at the location specified.                        *
  *                                                                                             *

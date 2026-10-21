@@ -90,6 +90,36 @@ unsigned LastFramesPerSecond=0;
 unsigned TotalFrames=0;
 unsigned SecondsPassed=0;
 
+// gamemd.exe's ReducedEffects flag (0xABCD50): set while the frame count is below the detail minimum.
+static bool ReducedEffects = false;
+
+
+/// <summary>
+/// Returns the frame count that detail-gated effects must reach to be drawn (Detail::GetMinFrameRate, 0x55AF60).
+/// Once the count falls below the minimum, it must regain the minimum plus the buffer zone before the threshold drops back.
+/// </summary>
+/// <remarks>Each call may change the state. While LastFramesPerSecond keeps its value, every call returns the same count.
+/// A negative rules value counts as 0, which disables the test.</remarks>
+/// <returns>unsigned; The frame count an effect needs to be drawn.</returns>
+unsigned Detail_Min_Frame_Rate(void)
+{
+	unsigned const minimum = Rule->DetailMinFrameRateNormal > 0 ? (unsigned)Rule->DetailMinFrameRateNormal : 0;
+	unsigned const buffer = Rule->DetailBufferZoneWidth > 0 ? (unsigned)Rule->DetailBufferZoneWidth : 0;
+
+	if (ReducedEffects) {
+		if (minimum + buffer <= LastFramesPerSecond) {
+			ReducedEffects = false;
+			return(minimum);
+		}
+		return(minimum + buffer);
+	}
+	if (LastFramesPerSecond < minimum) {
+		ReducedEffects = true;
+		return(minimum + buffer);
+	}
+	return(minimum);
+}
+
 
 #ifdef _DEBUG
 /***********************************************************************************************
@@ -239,6 +269,7 @@ void LogicClass::AI(void)
 	int index;
 
 	FramesThisSecond++;
+	TotalFrames++;
 
 	/*
 	**	Handle any general timer trigger events.

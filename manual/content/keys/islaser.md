@@ -23,7 +23,7 @@ Projectile=LLine ; a BulletType, registered by a weapon naming it as its Project
 
 A laser shot draws two effects along the line from the mounting to the target's aim point:
 
-- The beam: a thin core line in [`LaserInnerColor`](/keys/laserinnercolor/), with two glow lines beside it in [`LaserOuterColor`](/keys/laseroutercolor/). [`LaserOuterSpread`](/keys/laserouterspread/) varies the glow color each frame, and the beam lasts [`LaserDuration`](/keys/laserduration/) frames.
+- The beam: a thin core line in [`LaserInnerColor`](/keys/laserinnercolor/), with two glow lines beside it in [`LaserOuterColor`](/keys/laseroutercolor/). [`LaserOuterSpread`](/keys/laserouterspread/) varies the glow color each frame, and the beam lasts [`LaserDuration`](/keys/laserduration/) frames. While the frame rate is below [`DetailMinFrameRateNormal`](/keys/detailminframeratenormal/#scope-global-rules), the beam is drawn as plain shaded lines, as at the lowest detail level.
 - A screen glow along the same line, drawn only at the high [detail level](/keys/detaillevel/#scope-client-settings). It brightens only the red of whatever lies beneath it, whatever colors the beam uses, and fades out over about 22 frames. [`IsBigLaser=yes`](/keys/isbiglaser/) widens it.
 
 :::caution[The beam's settings come from the first weapon slot]

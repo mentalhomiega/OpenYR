@@ -30,6 +30,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "inline.h"
+#include "logic.h"
 #include "mouse.h"
 #include "partsys.h"
 #include "psystype.h"
@@ -642,13 +643,15 @@ void ParticleClass::Behavior_AI(void)
 /// railgun traces have no artwork -- they are plotted as a single lit pixel whose
 /// color is blended along the particle's color list and tested against the alpha
 /// and depth buffers. Particles hidden by the fog of war are skipped, and the low
-/// detail setting drops smoke and sparks entirely.
+/// detail setting drops smoke and sparks entirely. A particle that deals no damage is also
+/// skipped while the frame count is below the detail minimum.
 /// </summary>
 /// <param name="point">The screen position to draw the particle at.</param>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK) {
+	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
+	if ((Class->Damage != 0 || LastFramesPerSecond >= min_frame_rate) && (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK)) {
 		if (Debug_Map || MainWindow == 0 || !Scen->Special.IsFogOfWar || !Map.Is_Fogged((Coord const &)PositionCoord)) {
 
 			if (Class->BehavesLike != BEHAVIOR_SPARK && Class->BehavesLike != BEHAVIOR_RAILGUN) {

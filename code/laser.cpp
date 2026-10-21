@@ -24,6 +24,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "inline.h"
+#include "logic.h"
 #include "mouse.h"
 #include "rgb.h"
 #include "scenario.h"
@@ -155,7 +156,8 @@ void LaserDrawClass::Draw_All(void)
 /// This routine draws the beam as a thin inner core and, when an outer color was
 /// specified, a pair of parallel glow lines flanking it. A beam that lies under the fog
 /// of war, or that is currently blinked off, draws nothing at all. At the lowest detail
-/// level the beam degrades to a plain depth shaded line.
+/// level, or while the frame count is below the detail minimum, the beam degrades to a plain depth
+/// shaded line.
 /// </summary>
 void LaserDrawClass::Draw_It(void)
 {
@@ -180,6 +182,8 @@ void LaserDrawClass::Draw_It(void)
 		};
 
 		if (!BlinkState) {
+			bool const detailed = Detail_Min_Frame_Rate() <= LastFramesPerSecond && Options.DetailLevel != 0;
+
 			/// The "thin" core (InnerColor) is drawn once with no offset. The "thick"
 			/// outer glow (OuterColor) is two extra lines, each a 1-pixel parallel copy
 			/// of the core shifted by _glow_offsets[2*facing] / [2*facing+1].
@@ -249,7 +253,7 @@ void LaserDrawClass::Draw_It(void)
 				current_intensity = (StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity;
 			}
 
-			if (Options.DetailLevel != 0) {
+			if (detailed) {
 				if (Blinks) {
 					LogicalSurface->Draw_Depth_Antialiased_Line(TacticalRect, start_pixel, end_pixel, InnerColor, start_z, end_z, false, true, true, true, current_intensity);
 					if (has_outer_glow) {

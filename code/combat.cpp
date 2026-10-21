@@ -53,11 +53,13 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "gmmath.h"
+#include "goptions.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "inline.h"
 #include "isotype.h"
+#include "logic.h"
 #include "mouse.h"
 #include "overtype.h"
 #include "ovrlight.h"
@@ -620,9 +622,12 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 /// <param name="damage">The strength of the blast, which governs the size of the flash.</param>
 /// <param name="forced">Should the flash occur even if the warhead is not a bright one?</param>
 /// <param name="disabled_channels">The SpotLightClass channel flags the flash leaves out.</param>
+/// <remarks>A flash that leaves out no channel is not made at detail level 0 or while the frame count is
+/// below the detail minimum. A flash that leaves out a channel is made whatever the detail level and frame count.</remarks>
 void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced, int disabled_channels)
 {
-	if (forced || warhead != NULL && warhead->IsBright) {
+	bool const detailed = Options.DetailLevel != 0 && Detail_Min_Frame_Rate() <= LastFramesPerSecond;
+	if ((detailed || (disabled_channels & 0xf) != 0) && (forced || warhead != NULL && warhead->IsBright)) {
 		damage *= 64;
 		int size = damage >> 8;
 		if (size >= 63) {
