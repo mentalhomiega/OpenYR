@@ -73,13 +73,18 @@ struct BackendLayer
 };
 
 // Emissive masks for the frame and the layer, one byte per pixel laid out like their pictures. A
-// null pointer means the picture has no mask this present.
+// null pointer means the picture has no mask this present. Each Width and Height is how many bytes
+// per row and how many rows can be read from its pointer; the presenter reads no further.
 struct BackendEmissive
 {
 	unsigned char const * Frame;
 	int FramePitch;
+	int FrameWidth;
+	int FrameHeight;
 	unsigned char const * Layer;
 	int LayerPitch;
+	int LayerWidth;
+	int LayerHeight;
 };
 
 bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);

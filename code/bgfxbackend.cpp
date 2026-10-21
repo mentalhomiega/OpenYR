@@ -377,11 +377,15 @@ static void Destroy_Mask(BackendMask & mask)
 
 
 /// <summary>
-/// Uploads one mask, making its R8 texture first when the size changed. False means the mask is
-/// not available, such as when the hardware cannot sample R8.
+/// Uploads one mask, making its R8 texture first when the size changed. Only the readable part of the
+/// source is copied; texels beyond it are zero. False means nothing was uploaded: the mask is not
+/// available, such as when the hardware cannot sample R8, or the source has no readable pixels.
 /// </summary>
-static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pitch, int width, int height)
+static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pitch, int readwidth, int readheight, int width, int height)
 {
+	if (pixels == NULL || readwidth <= 0 || readheight <= 0 || width <= 0 || height <= 0) {
+		return(false);
+	}
 	if (!bgfx::isValid(mask.Handle) || mask.Width != width || mask.Height != height) {
 		Destroy_Mask(mask);
 		const bgfx::Caps * caps = bgfx::getCaps();
@@ -400,9 +404,13 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 	}
 
 	// The rows are packed to the texture width, since the pitch of a mask may be wider than the picture.
+	// The source may be smaller than the texture, so the texels it does not reach stay zero.
 	bgfx::Memory const * memory = bgfx::alloc((uint32_t)(width * height));
-	for (int y = 0; y < height; y++) {
-		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)width);
+	std::memset(memory->data, 0, (size_t)(width * height));
+	int const copywidth = std::min(width, readwidth);
+	int const copyheight = std::min(height, readheight);
+	for (int y = 0; y < copyheight; y++) {
+		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)copywidth);
 	}
 	bgfx::updateTexture2D(mask.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)height, memory, (uint16_t)width);
 	mask.Uploaded = true;
@@ -555,9 +563,10 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 
 /// <summary>
 /// Uploads the keyed mask for a frame: the frame's emissive mask in the red channel, and alpha zero where
-/// the frame has the layer key. Without a mask the red channel is zero. False means it could not be made.
+/// the frame has the layer key. Red is zero wherever no mask is given or the mask's readable size does
+/// not reach. False means it could not be made.
 /// </summary>
-static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch)
+static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch, int maskwidth, int maskheight)
 {
 	_KeyedMaskUploaded = false;
 	if (!bgfx::isValid(_KeyedMaskTexture)) {
@@ -572,11 +581,11 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	// A BGRA8 pixel is blue, green, red, alpha from its lowest byte up, so red sits at bit 16 and alpha at bit 24.
 	for (int y = 0; y < _FrameHeight; y++) {
 		unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
-		unsigned char const * value = (mask != NULL) ? mask + y * maskpitch : NULL;
+		unsigned char const * value = (mask != NULL && y < maskheight) ? mask + y * maskpitch : NULL;
 		unsigned int * dest = _KeyedMaskBuffer + y * _FrameWidth;
 		for (int x = 0; x < _FrameWidth; x++) {
 			unsigned int const alpha = (source[x] == BACKEND_LAYER_KEY) ? 0u : 255u;
-			unsigned int const red = (value != NULL) ? value[x] : 0u;
+			unsigned int const red = (value != NULL && x < maskwidth) ? value[x] : 0u;
 			dest[x] = (alpha << 24) | (red << 16);
 		}
 	}
@@ -1114,7 +1123,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		}
 		_LayerMask.Uploaded = false;
 		if (emissive != NULL && emissive->Layer != NULL) {
-			Upload_Mask(_LayerMask, emissive->Layer, emissive->LayerPitch, layer.Width, layer.Height);
+			Upload_Mask(_LayerMask, emissive->Layer, emissive->LayerPitch, emissive->LayerWidth, emissive->LayerHeight, layer.Width, layer.Height);
 		}
 	} else if (!_LayerUploaded) {
 		return(false);
@@ -1129,7 +1138,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		_FrameUploaded = false;
 		// The keyed mask is made from the same pixels, so it keys out exactly where the keyed frame does.
 		if (_HdrActive) {
-			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0);
+			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0, emissive != NULL ? emissive->FrameWidth : 0, emissive != NULL ? emissive->FrameHeight : 0);
 		}
 	} else if (!_KeyedFrameUploaded) {
 		return(false);
@@ -1218,7 +1227,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	if (pixels != NULL) {
 		_FrameMask.Uploaded = false;
 		if (emissive != NULL && emissive->Frame != NULL) {
-			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, _FrameWidth, _FrameHeight);
+			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, emissive->FrameWidth, emissive->FrameHeight, _FrameWidth, _FrameHeight);
 		}
 	}
 

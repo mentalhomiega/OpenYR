@@ -519,20 +519,27 @@ static void Present(void)
 	}
 
 	// Masks are passed only while they are kept; the layer's mask follows the layer picture when it is fresh.
-	BackendEmissive emissive = {NULL, 0, NULL, 0};
+	BackendEmissive emissive = {NULL, 0, 0, 0, NULL, 0, 0, 0};
 	BackendEmissive const * emissiveptr = NULL;
 	Backend_Set_Emissive_View(Emissive_Debug_View());
 	if (Emissive_Is_Enabled()) {
+		// Each mask's extent is the part of its plane readable from the pointer, so the presenter never reads past it.
 		if (EmissivePlane const * frame = Emissive_Plane_For(VisibleSurface)) {
 			emissive.Frame = frame->Pixels;
 			emissive.FramePitch = frame->Pitch;
+			emissive.FrameWidth = frame->Width;
+			emissive.FrameHeight = frame->Height;
 			emissiveptr = &emissive;
 		}
 		if (layerptr != NULL && layer.Pixels != NULL) {
 			if (EmissivePlane const * layer_plane = Emissive_Plane_For(_LayerSurface)) {
-				emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
-				emissive.LayerPitch = layer_plane->Pitch;
-				emissiveptr = &emissive;
+				if (_LayerSource.X >= 0 && _LayerSource.Y >= 0 && _LayerSource.X < layer_plane->Width && _LayerSource.Y < layer_plane->Height) {
+					emissive.Layer = layer_plane->Pixels + _LayerSource.Y * layer_plane->Pitch + _LayerSource.X;
+					emissive.LayerPitch = layer_plane->Pitch;
+					emissive.LayerWidth = layer_plane->Width - _LayerSource.X;
+					emissive.LayerHeight = layer_plane->Height - _LayerSource.Y;
+					emissiveptr = &emissive;
+				}
 			}
 		}
 	}
