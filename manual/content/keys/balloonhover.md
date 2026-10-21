@@ -15,6 +15,8 @@ A BalloonHover object that hovers over a cell inside the playable area counts as
 
 The psychic dominator does not take over an object whose type is `BalloonHover=yes`. The object still takes the blast's damage.
 
+Every structure refuses the enter request of a `BalloonHover=yes` object, so such an object cannot dock at a depot or be taken in by a hospital, armory or bio reactor.
+
 ```ini title="rulesmd.ini"
 [MYHOVERER] ; example VehicleType with the jumpjet locomotor
 Locomotor={92612C46-F71F-11d1-AC9F-006008055BB5}

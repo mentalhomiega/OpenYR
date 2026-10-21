@@ -184,7 +184,7 @@ Five routes lead to a depot. Some look for a `UnitRepair` building and some look
 | Player moves a vehicle onto a depot | `UnitRepair` | The depot is allied, not serving anyone, and holds nothing. The vehicle does not need to be damaged |
 | Player sends an aircraft in | `UnitRepair` or a helipad | The building is allied, not serving anyone, and holds nothing |
 | Repair order | `RepairBay` | The nearest own or allied building of exactly that type that accepts the vehicle, in the same [movement zone](/glossary/#movement-zone) as the vehicle's destination cell. The search runs only while the vehicle's house owns a building of that type |
-| Computer vehicle, checked every 16 frames | `UnitRepair` | The vehicle is damaged, has no mission queued, and is not a harvester or weeder. It is on area guard duty, or on guard duty with no remembered position. It picks its house's nearest depot within twenty cell diagonals, a little over 28 cells |
+| Computer vehicle, checked every 16 frames | `UnitRepair` | The vehicle is damaged, has no mission queued, and is not a harvester or weeder. It is on area guard duty, or on guard duty with no remembered position. It picks its house's nearest depot within twenty cell diagonals, a little over 28 cells. A depot that refuses the vehicle under [Docking](#docking) still counts, so a land vehicle can pick a `Naval=yes` depot, whose dock on the water it cannot reach |
 | Computer aircraft | `RepairBay` | The aircraft is on guard duty below its flight level, and at or below [`ConditionYellow`](/keys/conditionyellow/). It is not in contact with another object, unless it has landed and that object is not a `RepairBay` building. Its house has at least 100 credits, a floor fixed in the engine. The building is chosen as for a repair order, except that aircraft skip the movement-zone test |
 
 The repair order search normally takes the nearest building. A building with its house's [primary-factory flag](/systems/production/#the-primary-factory) is the exception: it replaces every building checked before it, whatever the distance. A building checked after it still replaces it if that building is strictly nearer. The check order follows the engine's internal building list, which nothing on the map shows. A depot has the primary-factory flag only if its type also produces something.
@@ -198,7 +198,9 @@ A depot accepts a [docking request](/internals/radio/) only from an allied vehic
 - it is switched off;
 - it is under construction, being sold, or still playing its buildup;
 - it is already in contact with another object;
-- the requesting object is already standing on it.
+- the requesting object is already standing on it;
+- the depot is [`Naval=yes`](/keys/naval/) and the requesting object is not a ship, or the depot is not `Naval=yes` and the requesting object is a ship, unless the object's [`MovementZone`](/keys/movementzone/) is `Amphibious`;
+- the requesting object has [`BalloonHover=yes`](/keys/balloonhover/).
 
 When the object arrives, the depot starts its service mission and the object goes to sleep. Once the object is within 200 leptons of its dock's spot, the depot switches off the object's locomotor when the object has stopped. An object whose locomotor is already off has its destination cleared instead. This holds the object still on the pad.
 

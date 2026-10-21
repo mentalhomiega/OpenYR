@@ -442,6 +442,13 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			BASECLASS::Receive_Message(from, message, param);
 			if (!House->Is_Ally(from)) return(RADIO_STATIC);
 			if (Mission == MISSION_CONSTRUCTION || Mission == MISSION_DECONSTRUCTION || BState == BSTATE_CONSTRUCTION || (!ScenarioInit && !Has_Free_Link(from))) return(RADIO_NEGATIVE);
+
+			// A sender is refused when only one of the two is naval, unless its movement zone is Amphibious. A BalloonHover
+			// sender is refused by every building (BuildingClass::ReceiveCommand, 0x43C397).
+			if (TechnoClass const * sender = dynamic_cast<TechnoClass const *>(from)) {
+				if (sender->TClass->MZone != MZONE_AMPHIBIOUS && Class->IsNaval != sender->TClass->IsNaval) return(RADIO_NEGATIVE);
+				if (sender->TClass->IsBalloonHover) return(RADIO_NEGATIVE);
+			}
 			if (!IsOn) return(RADIO_NEGATIVE);
 			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
 				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && Takes_Walk_Ins((FootClass const *)from)) {
