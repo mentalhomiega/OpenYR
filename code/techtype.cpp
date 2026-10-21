@@ -194,8 +194,11 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsOpportunityFire(false),
 	IsWarpable(true),
 	IsImmuneToRadiation(false),
+	IsGapGenerator(false),
 	GapRadiusInCells(0),
 	SuperGapRadiusInCells(0),
+	IsDeployFire(false),
+	DeployFireWeapon(1),
 	BombSight(0),
 	DeathWeapon(NULL),
 	DeathWeaponDamageModifier(1.0),
@@ -859,8 +862,11 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsOpportunityFire = ini.Get_Bool(Name(), "OpportunityFire", IsOpportunityFire);
 		IsWarpable = ini.Get_Bool(Name(), "Warpable", IsWarpable);
 		IsImmuneToRadiation = ini.Get_Bool(Name(), "ImmuneToRadiation", IsImmuneToRadiation);
+		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		GapRadiusInCells = ini.Get_Int(Name(), "GapRadiusInCells", GapRadiusInCells);
 		SuperGapRadiusInCells = ini.Get_Int(Name(), "SuperGapRadiusInCells", SuperGapRadiusInCells);
+		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
+		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
 		BombSight = ini.Get_Int(Name(), "BombSight", BombSight);
 		DeathWeapon = TGet_Class(ini, Name(), "DeathWeapon", DeathWeapon);
 		DeathWeaponDamageModifier = ini.Get_Float(Name(), "DeathWeaponDamageModifier", DeathWeaponDamageModifier);
@@ -1696,8 +1702,11 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
 	stream.Serialize(IsImmuneToRadiation);
+	stream.Serialize(IsGapGenerator);
 	stream.Serialize(GapRadiusInCells);
 	stream.Serialize(SuperGapRadiusInCells);
+	stream.Serialize(IsDeployFire);
+	stream.Serialize(DeployFireWeapon);
 	stream.Serialize(BombSight);
 	stream.Serialize(DeathWeapon);
 	stream.Serialize(DeathWeaponDamageModifier);

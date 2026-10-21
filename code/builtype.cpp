@@ -349,7 +349,6 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsTurretAnimAVoxel(false),
 	IsCloakGenerator(false),
 	IsSensorArray(false),
-	IsGapGenerator(false),
 	IsBunker(false),
 	NumberImpassableRows(-1),
 	PsychicDetectionRadius(0),
@@ -1450,7 +1449,6 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		SuperWeapon2 = ini.Get_SuperWeaponType(Name(), "SuperWeapon2", SuperWeapon2);
 		IsCloakGenerator = ini.Get_Bool(Name(), "CloakGenerator", IsCloakGenerator);
 		IsSensorArray = ini.Get_Bool(Name(), "SensorArray", IsSensorArray);
-		IsGapGenerator = ini.Get_Bool(Name(), "GapGenerator", IsGapGenerator);
 		IsBunker = ini.Get_Bool(Name(), "Bunker", IsBunker);
 		NumberImpassableRows = ini.Get_Int(Name(), "NumberImpassableRows", NumberImpassableRows);
 		PsychicDetectionRadius = ini.Get_Int(Name(), "PsychicDetectionRadius", PsychicDetectionRadius);
@@ -2511,7 +2509,6 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsTurretAnimAVoxel);
 	stream.Serialize(IsCloakGenerator);
 	stream.Serialize(IsSensorArray);
-	stream.Serialize(IsGapGenerator);
 	stream.Serialize(IsBunker);
 	stream.Serialize(NumberImpassableRows);
 	stream.Serialize(PsychicDetectionRadius);

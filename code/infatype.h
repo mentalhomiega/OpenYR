@@ -183,8 +183,6 @@ class InfantryTypeClass : public TechnoTypeClass
 		// A Deployer=yes soldier digs in when told to deploy. With DeployFire=yes it fires the
 		// weapon in slot DeployFireWeapon while dug in and its first weapon otherwise.
 		bool IsDeployer;
-		bool IsDeployFire;
-		int DeployFireWeapon;
 
 		// Frames a dug-in soldier stays dug in before it packs up on its own. A negative value leaves
 		// it to the orders it is given, as the rules' default does (UndeployDelay=-1).

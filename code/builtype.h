@@ -715,9 +715,6 @@ class BuildingTypeClass : public TechnoTypeClass
 		 */
 		bool IsSensorArray;
 
-		// While a GapGenerator=yes structure has power, it shrouds the map around it for players who are not its owner's allies.
-		bool IsGapGenerator;
-
 		// A Bunker=yes structure holds one of its owner's Bunkerable vehicles, which fights from inside it.
 		bool IsBunker;
 

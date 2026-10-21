@@ -108,8 +108,6 @@ UnitTypeClass::UnitTypeClass(char const * ininame) :
 	IsSimpleDeployer(false),
 	IsDeployer(false),
 	IsDeployToLand(false),
-	IsDeployFire(false),
-	DeployFireWeapon(1),
 	DeployingAnim(NULL),
 	IsToHarvest(false),
 	IsToVeinHarvest(false),
@@ -382,8 +380,6 @@ bool UnitTypeClass::Read_INI(CCINIClass const & ini)
 		IsDeployToLand = ini.Get_Bool(Name(), "DeployToLand", IsDeployToLand);
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
-		IsDeployFire = ini.Get_Bool(Name(), "DeployFire", IsDeployFire);
-		DeployFireWeapon = ini.Get_Int(Name(), "DeployFireWeapon", DeployFireWeapon);
 		DeployingAnim = TGet_Class(ini, Name(), "DeployingAnim", DeployingAnim);
 		IsNoFireWhileMoving = ini.Get_Bool(Name(), "NoMovingFire", IsNoFireWhileMoving);
 		IsDeployToFire = ini.Get_Bool(Name(), "DeployToFire", IsDeployToFire);
@@ -620,8 +616,6 @@ void UnitTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsSimpleDeployer);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployToLand);
-	stream.Serialize(IsDeployFire);
-	stream.Serialize(DeployFireWeapon);
 	stream.Serialize(DeployingAnim);
 	stream.Serialize(IsToHarvest);
 	stream.Serialize(IsToVeinHarvest);

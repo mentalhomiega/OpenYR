@@ -355,11 +355,20 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Is this object spared radiation damage?
 		bool IsImmuneToRadiation;
 
+		// Is this a gap generator? (Rules key GapGenerator.) Every type reads it; only a building shrouds the map.
+		bool IsGapGenerator;
+
 		// How far a gap generator of this type shrouds the map, in cells.
 		int GapRadiusInCells;
 
 		// A gap generator charged by its owner covers this many cells instead; 0 leaves it uncharged-only (TechnoTypeClass::SuperGapRadiusInCells).
 		int SuperGapRadiusInCells;
+
+		// Does this object fire DeployFireWeapon while deployed? (Rules key DeployFire.)
+		bool IsDeployFire;
+
+		// The weapon slot an object with DeployFire fires while deployed. (Rules key DeployFireWeapon.)
+		int DeployFireWeapon;
 
 		// How near an Ivan bomb must be for this object to show it to its owner, in cells.
 		int BombSight;

@@ -70,8 +70,6 @@ class UnitTypeClass : public TechnoTypeClass
 		// A Deployer=yes vehicle answers the deploy command by firing its AreaFire weapon where it stands.
 		bool IsDeployer;
 		bool IsDeployToLand;
-		bool IsDeployFire;
-		int DeployFireWeapon;
 		AnimTypeClass * DeployingAnim;
 
 		/*
