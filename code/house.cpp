@@ -1530,7 +1530,9 @@ void HouseClass::AI(void)
 			Call_Back();
 		}
 		IsToWin = false;
-		if (Is_Player_Control()) {
+
+		// A Cooperative match is won by any person's win, since all the people play one side.
+		if (Is_Player_Control() || (MPMode_Is_Cooperative_Match() && Is_Human_Player())) {
 			PlayerWins = true;
 		}
 	}
