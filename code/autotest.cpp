@@ -4795,6 +4795,16 @@ void Run(StepType const & step)
 	} else if (step.Command == "glideclock") {
 		// glideclock: times zoom glides by game frames, for recordings.
 		ViewZoomGameClock = true;
+	} else if (step.Command == "scriptedzoom") {
+		// scriptedzoom <0|1>: turns the scripted scene zoom option off or on.
+		Options.ScriptedCameraZoom = std::atoi(step.Argument.c_str()) != 0;
+		DebugString("AUTOTEST scriptedzoom %d\n", (int)Options.ScriptedCameraZoom);
+	} else if (step.Command == "scriptzoom") {
+		// scriptzoom: the zoom on screen, the map pixels the view shows at it, and whether a scene holds the player's zoom.
+		Point2D const centre = TacticalMap != NULL ? TacticalMap->Get_Tactical_Position() : Point2D(0, 0);
+		DebugString("AUTOTEST scriptzoom frame %d drawn %.4f shown %.4f visible %.1fx%.1f centre %d,%d saved %d locked %d ignore %d\n", Frame, ViewZoom, DisplayZoom,
+			ScreenTacticalRect.Width / DisplayZoom, ScreenTacticalRect.Height / DisplayZoom, centre.X, centre.Y, (int)Scripted_View_Zoom_Saved(),
+			Scen != NULL ? (int)Scen->IsInputLocked : -1, (int)IgnoreInput);
 	} else if (step.Command == "statedump") {
 		// statedump <path>: writes the state a save would hold, and an index of its records, for comparing two runs.
 		DebugString("AUTOTEST statedump %s: %s\n", step.Argument.c_str(), Dump_Game_State(step.Argument.c_str()) ? "written" : "failed");

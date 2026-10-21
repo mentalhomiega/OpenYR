@@ -119,6 +119,7 @@
 #include "tube.h"
 #include "unit.h"
 #include "unittype.h"
+#include "viewzoom.h"
 #include "voc.h"
 #include "vox.h"
 
@@ -3619,6 +3620,7 @@ void TeamClass::TMission_CENTER_VIEWPOINT(TeamMissionClass * mission, bool)
 	}
 
 	TacticalMap->Setup_Trigger_Scroll(coord, mission->Data.Speed);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	IsNextMission = true;
 }
 

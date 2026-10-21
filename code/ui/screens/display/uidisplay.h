@@ -74,6 +74,7 @@ class UIDisplayServiceClass
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) = 0;
 		virtual void Set_Player_Colors(int view) = 0;
 		virtual void Set_Screen_Shake(bool on) = 0;
+		virtual void Set_Scripted_Camera_Zoom(bool on) = 0;
 
 		// Shows the colour adjustment on the frame now, without saving it. Cancel puts the saved values back
 		// through the same call.
@@ -153,6 +154,8 @@ struct UIDisplayState
 	UISettingPreviewScreen Preview;
 	// Whether the screen-shake effect is on.
 	bool ScreenShake = true;
+	// Whether scripted scenes zoom the map view to one height, whatever zoom the player picked.
+	bool ScriptedCameraZoom = true;
 	// The automatic paper white and peak brightness, which Reset to defaults puts back, in nits.
 	int DefaultPaperWhite = 0;
 	int DefaultPeakBrightness = 0;
@@ -216,6 +219,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialGamma;
 		int InitialPlayerColors;
 		bool InitialScreenShake;
+		bool InitialScriptedCameraZoom;
 		// Whether a colour preview has been shown, and whether the page has put its colour back.
 		bool PreviewShown = false;
 		bool PreviewRestored = false;

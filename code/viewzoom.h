@@ -92,3 +92,20 @@ void Request_View_Zoom_Step(double step, Point2D const & screen_point);
 
 // Applies a requested zoom change. Call it between frames, never while the map is being drawn.
 void Apply_Pending_View_Zoom(void);
+
+// Scripted scenes zoom the view to the rules' ScriptedCameraHeight, so the view shows the same amount of
+// map on any screen, when Options.ScriptedCameraZoom is on. A scripted action that takes the input away
+// calls this with input_locked set, which keeps the player's zoom, and Restore_Player_View_Zoom puts it back
+// when control returns. A camera move while the input is free calls it without, and nothing is restored
+// afterward, so the player zooms back by hand. Both set the zoom at once in the next frame's zoom update, so a camera
+// scroll still under way keeps its place.
+void Scripted_View_Zoom(bool input_locked);
+
+// Glides back to the zoom the player had when a scripted scene took the input, if one was kept.
+void Restore_Player_View_Zoom(void);
+
+// Drops any zoom kept for a scene, as when a scenario is cleared, so that unlocking keeps the zoom on screen.
+void Forget_Player_View_Zoom(void);
+
+// Whether a scene has the player's zoom kept, to be put back by Restore_Player_View_Zoom.
+bool Scripted_View_Zoom_Saved(void);

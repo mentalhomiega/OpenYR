@@ -13,15 +13,19 @@
 
 #include "_map.h"
 #include "_rect.h"
+#include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
 #include "dbgprint.h"
 #include "debugmode.h"
 #include "dsurface.h"
 #include "ftimer.h"
+#include "globals.h"
+#include "goptions.h"
 #include "gscreen.h"
 #include "map.h"
 #include "mmsys.h"
+#include "rules.h"
 #include "session.h"
 #include "tactical.h"
 #include "video.h"
@@ -59,6 +63,14 @@ static double _AnchorScreenX = 0.0;
 static double _AnchorScreenY = 0.0;
 static double _AnchorMapX = 0.0;
 static double _AnchorMapY = 0.0;
+
+// Whether a scripted scene has the player's zoom kept, and the zoom it is kept as, in ViewZoom units.
+static bool _ScriptedZoomSaved = false;
+static double _PlayerZoom = 1.0;
+
+// A scripted zoom waiting for the next Apply_Pending_View_Zoom, and the zoom it sets, in ViewZoom units.
+static bool _ScriptedZoomPending = false;
+static double _ScriptedZoomTarget = 1.0;
 
 
 static unsigned int Glide_Clock(void)
@@ -260,6 +272,8 @@ void Reset_View_Zoom(void)
 	_PendingZoomStep = 0.0;
 	_Gliding = false;
 	_GlideProgress = 1.0;
+	_ScriptedZoomSaved = false;
+	_ScriptedZoomPending = false;
 }
 
 
@@ -286,6 +300,10 @@ bool Set_View_Zoom(double zoom)
 
 void Request_View_Zoom_Step(double step, Point2D const & screen_point)
 {
+	// Map clicks are dropped while input is ignored, and so is the wheel, so a scripted scene keeps its zoom.
+	if (IgnoreInput) {
+		return;
+	}
 	_PendingZoomStep += step * View_Zoom_Native();
 	_PendingAnchor = screen_point - ScreenTacticalRect.Top_Left();
 }
@@ -311,6 +329,11 @@ void Apply_Pending_View_Zoom(void)
 {
 	if (TacticalMap == NULL) {
 		return;
+	}
+
+	if (_ScriptedZoomPending) {
+		_ScriptedZoomPending = false;
+		Set_View_Zoom(_ScriptedZoomTarget / View_Zoom_Native());
 	}
 
 	// A zoom kept from an earlier skirmish, or one the map's visible area no longer allows, is brought in to the limit.
@@ -366,4 +389,56 @@ void Apply_Pending_View_Zoom(void)
 			Map.Flag_To_Redraw(GS_REDRAW_ALL);
 		}
 	}
+}
+
+
+// Takes a zoom in ViewZoom units and sets it at once on the next Apply_Pending_View_Zoom, not inside the action.
+// A glide would end by putting the view back where it began, which would undo a camera scroll still under way.
+// A change made inside a chronoshift's start frame crashed the presenter in testing, so the change waits for the frame.
+static void SetScriptedZoomAtOnce(double zoom)
+{
+	_PendingZoomStep = 0.0;
+	_ScriptedZoomPending = true;
+	_ScriptedZoomTarget = zoom;
+}
+
+
+void Scripted_View_Zoom(bool input_locked)
+{
+	if (!Options.ScriptedCameraZoom || TacticalMap == NULL || Rule->ScriptedCameraHeight <= 0 || ScreenTacticalRect.Height <= 0) {
+		return;
+	}
+	if (input_locked && !_ScriptedZoomSaved) {
+		_ScriptedZoomSaved = true;
+		_PlayerZoom = _TargetZoom;
+	}
+
+	// ViewZoom is measured against the frame, so the view is ScreenTacticalRect.Height / ViewZoom map pixels
+	// tall. The zoom that shows the scene's height in map pixels therefore takes no View_Zoom_Native factor,
+	// while Set_View_Zoom takes its argument in native units.
+	double const scene = ScreenTacticalRect.Height / double(Rule->ScriptedCameraHeight);
+	SetScriptedZoomAtOnce(std::clamp(scene, View_Zoom_Min(), View_Zoom_Max()));
+}
+
+
+void Restore_Player_View_Zoom(void)
+{
+	if (!_ScriptedZoomSaved) {
+		return;
+	}
+	_ScriptedZoomSaved = false;
+	SetScriptedZoomAtOnce(_PlayerZoom);
+}
+
+
+void Forget_Player_View_Zoom(void)
+{
+	_ScriptedZoomSaved = false;
+	_ScriptedZoomPending = false;
+}
+
+
+bool Scripted_View_Zoom_Saved(void)
+{
+	return(_ScriptedZoomSaved);
 }

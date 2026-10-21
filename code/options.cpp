@@ -197,6 +197,7 @@ OptionsClass::OptionsClass(void) :
 	ScoreVolume(.5f),
 	BitmapSystemFont(false),
 	AutoScroll(true),
+	ScriptedCameraZoom(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	IsSidebarOnRight(true),
@@ -591,6 +592,9 @@ void OptionsClass::Load_Settings(void)
 	AutoScroll = ConfigINI.Get_Bool("Options", "AutoScroll", AutoScroll);
 	DebugString("AutoScroll is %s\n", AutoScroll == true ? "ON" : "OFF");
 
+	ScriptedCameraZoom = ConfigINI.Get_Bool("Options", "ScriptedCameraZoom", ScriptedCameraZoom);
+	DebugString("ScriptedCameraZoom is %s\n", ScriptedCameraZoom == true ? "ON" : "OFF");
+
 
 	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
@@ -811,6 +815,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Options", "ScrollMethod", ScrollMethod);
 	ConfigINI.Put_Int("Options", "ScrollRate", ScrollRate);
 	ConfigINI.Put_Bool("Options", "AutoScroll", AutoScroll);
+	ConfigINI.Put_Bool("Options", "ScriptedCameraZoom", ScriptedCameraZoom);
 	ConfigINI.Put_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	ConfigINI.Put_Int("Options", "DetailLevel", DetailLevel);
 	ConfigINI.Put_Bool("Options", "SidebarCameoText", SidebarCameoText);

@@ -223,6 +223,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.ScreenShake = on;
 		}
 
+		virtual void Set_Scripted_Camera_Zoom(bool on) override
+		{
+			Options.ScriptedCameraZoom = on;
+		}
+
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override
 		{
 			Options.Brightness = brightness;
@@ -526,6 +531,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.DefaultPaperWhite = HDR_Resolve_Paper_White(0, HDR_Current_Display().SDRWhiteKnown, HDR_Current_Display().SDRWhiteNits);
 	state.DefaultPeakBrightness = HDR_Resolve_Peak(0, HDR_Current_Display().PeakNits, state.DefaultPaperWhite);
 	state.ScreenShake = Options.ScreenShake;
+	state.ScriptedCameraZoom = Options.ScriptedCameraZoom;
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.

@@ -101,6 +101,7 @@
 #include "vanim.h"
 #include "vector.h"
 #include "velocity.h"
+#include "viewzoom.h"
 #include "voc.h"
 #include "vox.h"
 #include "warhead.h"
@@ -2294,6 +2295,7 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 	Map.Place_Beacon_Mode_Control(0);
 
 	Lock_Scenario_Input();
+	Scripted_View_Zoom(true);
 
 	return(true);
 }
@@ -2306,6 +2308,7 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 bool TActionClass::TAction_UNLOCK_INPUT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Unlock_Scenario_Input();
+	Restore_Player_View_Zoom();
 	return(true);
 }
 
@@ -2326,6 +2329,7 @@ bool TActionClass::TAction_CENTER_VIEWPOINT(HouseClass * , ObjectClass * , Trigg
 	}
 
 	TacticalMap->Setup_Trigger_Scroll(coord, Data.Speed);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 
@@ -2361,6 +2365,9 @@ bool TActionClass::TAction_ZOOM_OUT(HouseClass * , ObjectClass * , TriggerClass 
 	TacticalMap->ZoomFactor = 1;
 	Keyboard->Clear();
 	IgnoreInput = Scen->IsInputLocked;
+	if (!Scen->IsInputLocked) {
+		Restore_Player_View_Zoom();
+	}
 
 	Show_Mouse();
 	Map.Flag_To_Redraw();
@@ -3166,6 +3173,7 @@ bool TActionClass::TAction_JUMP_CAMERA(HouseClass * , ObjectClass * , TriggerCla
 	}
 
 	TacticalMap->Set_Tactical_Position(coord);
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 
@@ -3351,6 +3359,7 @@ bool TActionClass::TAction_PAUSE_GAME(HouseClass * , ObjectClass * , TriggerClas
 bool TActionClass::TAction_JUMP_CAMERA_HOME(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
 	Execute_Command("CenterBase");
+	Scripted_View_Zoom(Scen->IsInputLocked);
 	return(true);
 }
 

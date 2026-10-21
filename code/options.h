@@ -127,6 +127,12 @@ class OptionsClass {
 		bool AutoScroll;				// Does map autoscroll?
 
 		/*
+		 * If this is on, a scripted scene that takes the input or moves the camera zooms the map view to
+		 * the scene's height, and the player's zoom comes back when control returns. Off leaves the zoom alone.
+		 */
+		bool ScriptedCameraZoom;
+
+		/*
 		 * This is how much detail the renderer is allowed to draw (0 - 2). Animations, particle
 		 * systems and translucency carry a detail level of their own and are skipped when it
 		 * exceeds this one, so a lower setting buys frame rate at the cost of eye candy.

@@ -50,7 +50,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialBrightness(State.Brightness),
 	InitialGamma(State.Gamma),
 	InitialPlayerColors(State.PlayerColors),
-	InitialScreenShake(State.ScreenShake)
+	InitialScreenShake(State.ScreenShake),
+	InitialScriptedCameraZoom(State.ScriptedCameraZoom)
 {
 	ShownRowIndex = State.RowCount;
 	PreviewedMode = InitialColorBlindMode;
@@ -226,6 +227,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.ColorBlindStrength = COLORBLIND_STRENGTH_MAX;
 		State.PlayerColors = Index_Of(State.PlayerColorChoices, 0, State.PlayerColors);
 		State.ScreenShake = true;
+		State.ScriptedCameraZoom = true;
 		Show_Colour_Preview();
 	}
 }
@@ -301,6 +303,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "screenshake") {
 		State.ScreenShake = (intent.Value != 0);
+
+	} else if (intent.Name == "scriptedzoom") {
+		State.ScriptedCameraZoom = (intent.Value != 0);
 
 	} else if (intent.Name == "reset") {
 		Reset_Page();
@@ -400,6 +405,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (State.ScreenShake != InitialScreenShake) {
 			Service.Set_Screen_Shake(State.ScreenShake);
+		}
+		if (State.ScriptedCameraZoom != InitialScriptedCameraZoom) {
+			Service.Set_Scripted_Camera_Zoom(State.ScriptedCameraZoom);
 		}
 		if (State.Fullscreen != InitialFullscreen) {
 			Service.Set_Fullscreen(State.Fullscreen);
@@ -621,6 +629,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("colorblindmode");
 			Model.DirtyVariable("colorblindstrength");
 			Model.DirtyVariable("screenshake");
+			Model.DirtyVariable("scriptedzoom");
 			Update_Gamma_Label(Data.State);
 			Model.DirtyVariable("brightness");
 			Model.DirtyVariable("gamma");
@@ -705,6 +714,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("gamma", &state.Gamma)
 				&& model.Bind("gammalabel", &state.GammaLabel)
 				&& model.Bind("screenshake", &state.ScreenShake)
+				&& model.Bind("scriptedzoom", &state.ScriptedCameraZoom)
 				&& model.Bind("hdractive", &state.HDRActive)
 				&& model.Bind("hdroutputtip", &state.HDROutputTip)
 				&& model.Bind("highlightstip", &state.HighlightsTip)

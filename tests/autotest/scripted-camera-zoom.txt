@@ -1,0 +1,50 @@
+; Scripted camera zoom with the option on (the default). Waypoint 0 is cell 52,97 on the default skirmish map.
+; The view starts at cell 30,30 and the player zooms out to the minimum. LOCK_INPUT (action 46) saves that zoom and
+; zooms to the scene height (900 map pixels tall), CENTER_VIEWPOINT (action 48) scrolls to the waypoint while locked, and a
+; wheel step is ignored. UNLOCK_INPUT (action 47) sets back the saved zoom. A wheel step with input free still works.
+; A JUMP_CAMERA (action 112) and a CENTER_VIEWPOINT with input free set the scene zoom and keep it. A second LOCK_INPUT
+; while locked keeps the first saved zoom, ZOOM_OUT (action 50) while locked does not restore, and the chronoshift effect
+; locks, zooms and restores.
+; The scriptzoom lines log the zoom on screen, the map pixels the view shows (the scene zoom shows 900 tall) and the view centre.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/scripted-camera-zoom.txt -Width 1920 -Height 1080 -Seconds 120 -ShotDir "E:\Claude ra2 decomp\scratch-agent\scripted-camera-zoom\shots-1920" -Filter "AUTOTEST +(scriptzoom|scriptedzoom|zoom|trigaction|wheel|chrono)|Exception"
+1 glideclock
+3 reveal
+10 view 30 30
+20 zoom 0.5
+30 scriptzoom
+35 command ScreenCapture
+50 trigaction 46 0 0
+55 trigaction 48 4 0
+70 scriptzoom
+80 scriptzoom
+90 command ScreenCapture
+100 wheel 0.5
+110 scriptzoom
+120 trigaction 47 0 0
+130 scriptzoom
+140 command ScreenCapture
+145 wheel 0.2
+155 scriptzoom
+165 zoom 0.5
+170 trigaction 112 0 0
+175 command ScreenCapture
+180 scriptzoom
+240 scriptzoom
+250 command ScreenCapture
+260 zoom 0.5
+265 trigaction 48 4 0
+285 scriptzoom
+290 command ScreenCapture
+300 zoom 0.5
+305 trigaction 46 0 0
+310 trigaction 46 0 0
+320 trigaction 50 0 0
+325 scriptzoom
+335 trigaction 47 0 0
+345 scriptzoom
+350 chrono 20
+355 scriptzoom
+400 scriptzoom
+460 scriptzoom
+470 command ScreenCapture
+480 quit

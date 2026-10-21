@@ -825,6 +825,13 @@ class RulesClass
 		double ZoomInFactor;
 
 		/*
+		 * This is the height, in map pixels, that a scripted scene shows when the scripted camera zoom is
+		 * on. The map view zooms so that this many map pixels fill its height, and its width follows the
+		 * screen's aspect ratio. Zero or less turns the scripted zoom off.
+		 */
+		int ScriptedCameraHeight;
+
+		/*
 		 * This is the chance each frame that an object damaged below the ConditionRed
 		 * health level throws off a spark.
 		 */

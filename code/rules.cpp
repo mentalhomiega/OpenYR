@@ -600,6 +600,7 @@ RulesClass::RulesClass(void) :
 	IonCannonDamage(700),
 	RailgunDamageRadius(CELL_LEPTON / 2),
 	ZoomInFactor(2),
+	ScriptedCameraHeight(900),
 	ConditionRedSparkingProbability(.02),
 	ConditionYellowSparkingProbability(.01),
 	TiberiumExplosionDamage(100),
@@ -1676,6 +1677,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		PrerequisiteGDIFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteGDIFactory", PrerequisiteGDIFactory);
 		PrerequisiteNodFactory = ini.Get_BuildingType_List(ini, GENERAL, "PrerequisiteNodFactory", PrerequisiteNodFactory);
 		ZoomInFactor = ini.Get_Float(GENERAL, "ZoomInFactor", ZoomInFactor);
+		ScriptedCameraHeight = ini.Get_Int(GENERAL, "ScriptedCameraHeight", ScriptedCameraHeight);
 		IsRevealByHeight = ini.Get_Bool(GENERAL, "RevealByHeight", IsRevealByHeight);
 		IsShroudedSubteranneanMovesAllowed = ini.Get_Bool(GENERAL, "AllowShroudedSubteranneanMoves", IsShroudedSubteranneanMovesAllowed);
 		AircraftFogReveal = ini.Get_Int(GENERAL, "AircraftFogReveal", AircraftFogReveal);

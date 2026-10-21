@@ -4402,6 +4402,7 @@ void Start_Chrono_Screen_Effect(int frames)
 	if (Rule->LetsDoTheTimeWarpOutAgain != VOC_NONE) {
 		Sound_Effect(Rule->LetsDoTheTimeWarpOutAgain, 1.0f, SOUND_PAN_CENTER, &ChronoSound);
 	}
+	Scripted_View_Zoom(true);
 }
 
 
@@ -4431,6 +4432,7 @@ static void End_Chrono_Screen_Effect(void)
 	if (ChronoLockedInput) {
 		ChronoLockedInput = false;
 		Unlock_Scenario_Input();
+		Restore_Player_View_Zoom();
 	}
 }
 

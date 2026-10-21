@@ -944,6 +944,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Brightness_Gamma(int brightness, int gamma) override { Calls.push_back("brightness gamma " + std::to_string(brightness) + " " + std::to_string(gamma)); }
 		virtual void Set_Player_Colors(int view) override { Calls.push_back("player colors " + std::to_string(view)); }
 		virtual void Set_Screen_Shake(bool on) override { Calls.push_back(on ? "shake on" : "shake off"); }
+		virtual void Set_Scripted_Camera_Zoom(bool on) override { Calls.push_back(on ? "scripted zoom on" : "scripted zoom off"); }
 		virtual void Preview_Colour(int mode, int strength, int brightness, int gamma) override
 		{
 			Calls.push_back("preview " + std::to_string(mode) + " " + std::to_string(strength) + " " + std::to_string(brightness) + " " + std::to_string(gamma));
@@ -3210,8 +3211,10 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(presenter.State.ColorBlindMode == 0 && presenter.State.ColorBlindStrength == 100 && presenter.State.ScreenShake && service.Calls.back() == "preview 0 100 100 100", "Reset to defaults puts the accessibility settings back and shows them");
 
 		Send_Intent(presenter, "screenshake", 0);
+		Send_Intent(presenter, "scriptedzoom", 0);
 		Send_Intent(presenter, "ok");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && std::find(service.Calls.begin(), service.Calls.end(), std::string("shake off")) != service.Calls.end(), "OK saves the screen shake switch");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && std::find(service.Calls.begin(), service.Calls.end(), std::string("shake off")) != service.Calls.end()
+			&& std::find(service.Calls.begin(), service.Calls.end(), std::string("scripted zoom off")) != service.Calls.end(), "OK saves the screen shake and scripted zoom switches");
 
 		view->Release();
 		context.Update();
@@ -3583,7 +3586,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		};
 
 		char const * const order[] = {
-			"colorblind", "colorblind-strength", "player-colors", "shake", "footer-reset", "footer-cancel", "footer-ok"
+			"colorblind", "colorblind-strength", "player-colors", "shake", "scripted-zoom", "footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
 		for (char const * id : order) {

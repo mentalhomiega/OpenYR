@@ -1173,6 +1173,8 @@ void Clear_Scenario(void)
 		Shellmap_Stop();
 	}
 
+	// A zoom kept for a scripted scene does not outlive the scenario it belongs to.
+	Forget_Player_View_Zoom();
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
 
