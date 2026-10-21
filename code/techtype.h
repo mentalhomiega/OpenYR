@@ -920,7 +920,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		WeaponDataStruct Weapons[WEAPON_SLOT_COUNT];
 		WeaponDataStruct EliteWeapons[WEAPON_SLOT_COUNT];
 
-		// The passenger seats of an open-topped transport, AlternateFLH1 to AlternateFLH5. Weapon index
+		// The passenger seats of an open-topped transport, AlternateFLH0 to AlternateFLH4. Weapon index
 		// -1 to -5 reads seat 1 to 5 in TechnoClass::Weapon_FLH.
 		TPoint3D<int> AlternativeFLH[5];
 

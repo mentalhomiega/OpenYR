@@ -790,7 +790,7 @@ bool TechnoClass::Can_Heal(ObjectClass const * object) const
 
 /// <summary>
 /// Fetches the point a weapon is mounted at, or a passenger seat of an open-topped transport when the index is negative.
-/// Index -1 to -5 is seat 1 to 5 (AlternateFLH1 to AlternateFLH5). Any other negative index is zero.
+/// Index -1 to -5 is seat 1 to 5 (AlternateFLH0 to AlternateFLH4). Any other negative index is zero.
 /// </summary>
 /// <param name="which">The weapon slot, or a negative seat index.</param>
 /// <returns>The offset from the object's center in the turret frame, before the body and turret rotation apply.</returns>

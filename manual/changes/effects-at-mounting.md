@@ -69,6 +69,6 @@ credit:
 
 Sonic and magnetron waves, fire and spark particles, railgun beams, laser beams, radiation beams and an EM pulse cannon's launch animation and sound now start at the mounting, where the projectile is created. They used to start at the barrel tip, so the barrel length and thickness moved them. The barrel keys, `PBarrelLength`, `PBarrelThickness`, `SBarrelLength`, `SBarrelThickness` and their elite variants, now have no effect, and an infantry projectile starts at the mounting too.
 
-An infantry passenger of an open-topped transport fires from its seat on the transport, at the art's `AlternateFLH1` to `AlternateFLH5` offset. Seat 1 is the passenger that boarded last. Before, each passenger fired from its own firing offset on the transport.
+An infantry passenger of an open-topped transport fires from its seat on the transport, at the art's `AlternateFLH0` to `AlternateFLH4` offset. Seat 1 is the passenger that boarded last. Before, each passenger fired from its own firing offset on the transport.
 
 A building with `PrimaryFireDualOffset=yes` now launches its projectile from the same point as its effects. A structure with a voxel barrel launches its projectile and its firing animation from the barrel that fired the previous round, as gamemd's `GetFLH` does.

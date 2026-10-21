@@ -1288,7 +1288,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		// Each passenger seat of an open-topped transport has its own mounting. A seat with no entry uses the primary mounting.
 		for (int seat = 0; seat < 5; seat++) {
 			char buf[32];
-			sprintf(buf, "AlternateFLH%d", seat + 1);
+			sprintf(buf, "AlternateFLH%d", seat);
 			AlternativeFLH[seat] = ArtINI.Get_Point(Graphic_Name(), buf, Weapons[0].FireFLH);
 		}
 
