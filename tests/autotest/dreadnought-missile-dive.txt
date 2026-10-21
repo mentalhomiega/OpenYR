@@ -2,7 +2,7 @@
 ; Its missiles (DMISL, stock YR: LazyCurve=no, Altitude=768, PitchFinal=0.5, TurnRate=0.08) climb, level off, then dive.
 ; The rocket lines log each missile every frame: its coordinate in leptons, its height above ground, its flat distance to
 ; its destination, and its height above that destination. The first missile starts its dive about three cells out, at
-; a flat distance of about 830 leptons, and comes down over those cells to the pillbox. Before the dive fix it levelled
+; a flat distance of about 830 leptons, and comes down over those cells to the pillbox. Before the dive fix it leveled
 ; over the pillbox and fell straight down from a flat distance of 0.
 ; Run: scripts/run_autotest.ps1 -Build agent6 -Script tests/autotest/dreadnought-missile-dive.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST   rocket|AUTOTEST strike|Exception"
 30 command CenterBase
