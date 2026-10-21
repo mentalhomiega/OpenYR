@@ -572,6 +572,11 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			ShapeFlags_Type flags = ShapeFlags;
 			int shapenum = Class->Start + Fetch_Stage();
 
+			// A warped animation starts at half or three quarters translucent; the translucency below is added to that, as the bit flags combine (0x422CA0).
+			if (IsUnderTemporal) {
+				flags = ShapeFlags_Type(flags|(Class->IsDoubleThick ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50));
+			}
+
 			/*
 			**	If the translucent table hasn't been determined yet, then check to see if it
 			**	should use the white or normal translucent tables.
@@ -605,11 +610,6 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 						flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT25);
 					}
 				}
-			}
-
-			// The blitter picks one translucency, so an animation that already has one keeps it.
-			if (IsUnderTemporal && (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) == 0) {
-				flags = ShapeFlags_Type(flags|(Class->IsDoubleThick ? SHAPE_TRANSLUCENT75 : SHAPE_TRANSLUCENT50));
 			}
 
 			if ((flags & SHAPE_DARKEN) == 0) {
