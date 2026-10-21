@@ -1435,9 +1435,11 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 
 		int type = 0;
 		while (remaining > 0 && can_throw) {
+			// Two's complement absolute value, as gamemd computes it (BulletClass::Detonate, 0x469D7A). A draw of
+			// INT_MIN stays negative, so its count is never positive and it throws nothing.
 			int const draw = Scen->RandomNumber();
-			long long const magnitude = draw < 0 ? -(long long)draw : (long long)draw;
-			int count = (int)(magnitude % (figure_of(type) + 1));
+			int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
+			int count = magnitude % (figure_of(type) + 1);
 			if (remaining <= count) {
 				count = remaining;
 			}
