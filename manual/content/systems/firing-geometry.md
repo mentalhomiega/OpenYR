@@ -108,7 +108,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 15. A round of ammunition is spent.
 16. If the target is an object a human player owns, the firer reveals the area within two cells of itself to that player when it stands in that player's shroud or fog, or when it belongs to another house and that player has not yet discovered it. That player's own aircraft are exempt from the shroud and fog test. A shot at the ground reveals nothing. In a campaign, any player-controlled house counts as a human player here, and the tests use the player's own shroud, fog and discoveries.
 
-The `Anim` list is indexed by the direction the object is firing. A list of 8, 16, 32 or 64 entries uses the entry for that direction, rounded to the list's number of directions. The first entry is for north-west, and the list continues clockwise, so on an eight-entry list the second entry is north and the third north-east. A list of any other length always uses its first entry.
+The `Anim` list is indexed by the direction the object is firing only when it has eight entries. The entry is the one for that direction, rounded to eight directions. A list of 16, 32 or 64 entries also uses the entry for the direction when [`ExtendedAnimFacings=yes`](/keys/extendedanimfacings/) is set on the weapon. Otherwise, and for a list of any other length, the first entry is used on every shot. The first entry is for north-west, and the list continues clockwise, so on an eight-entry list the second entry is north and the third north-east.
 
 Step 10 sets the reload delay after step 9 has started the weapon's effects. This lets the delay depend on whether an effect is alive; [The reload delay](#the-reload-delay) gives the result.
 

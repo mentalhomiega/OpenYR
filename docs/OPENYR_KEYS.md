@@ -36,7 +36,7 @@ The From column says where a key comes from:
 
 ## Contents
 
-- [Rules](#rules): 111 entries
+- [Rules](#rules): 113 entries
 - [Art](#art): 5 entries
 - [Client settings](#client-settings): 38 entries
 - [UI.INI](#uiini): 31 entries
@@ -194,6 +194,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`Emissive`](../manual/content/keys/emissive--weapontype.md) | Computed; see the page | `Emissive` on a weapon sets the strength of the beam or electric bolt the weapon draws. | OpenYR |
+| [`ExtendedAnimFacings`](../manual/content/keys/extendedanimfacings.md) | `no` | Lets a weapon's 16-, 32- or 64-entry Anim list pick its entry by the direction of the shot. | OpenYR |
 
 ### [AI]
 

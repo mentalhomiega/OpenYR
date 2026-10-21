@@ -1,7 +1,7 @@
 ---
 key: Anim
 summary: The animations played at the firing coordinate when the weapon goes off, either one fixed entry or one per facing.
-see_also: ["Report", "PrimaryFireFLH"]
+see_also: ["Report", "PrimaryFireFLH", "ExtendedAnimFacings"]
 when_omitted:
   kind: value
   value: ""
@@ -9,7 +9,8 @@ when_omitted:
 
 The number of entries decides which animation a shot plays:
 
-- A list of `8`, `16`, `32` or `64` entries gives one animation per direction, and each shot plays the entry for the direction the object fires in.
+- A list of `8` entries gives one animation per direction, and each shot plays the entry for the direction the object fires in.
+- A list of `16`, `32` or `64` entries does the same only when [`ExtendedAnimFacings=yes`](/keys/extendedanimfacings/) is set on the weapon. Otherwise such a list plays its first entry on every shot.
 - A list of any other length plays its first entry on every shot and ignores the rest.
 
 ```ini title="rules.ini"
@@ -17,7 +18,7 @@ The number of entries decides which animation a shot plays:
 Anim=GUNFIRE1,GUNFIRE2,GUNFIRE3,GUNFIRE4,GUNFIRE5,GUNFIRE6,GUNFIRE7,GUNFIRE8 ; AnimTypes registered in [Animations]
 ```
 
-A directional list starts at north-west and runs clockwise. An eight-entry list therefore runs north-west, north, north-east, east, south-east, south, south-west, west. A longer list also starts at north-west and divides the circle into as many equal steps as it has entries.
+A directional list starts at north-west and runs clockwise. An eight-entry list therefore runs north-west, north, north-east, east, south-east, south, south-west, west. A longer list that picks by direction, one with `ExtendedAnimFacings=yes`, also starts at north-west and divides the circle into as many equal steps as it has entries.
 
 The direction used is the one the weapon is aiming in:
 

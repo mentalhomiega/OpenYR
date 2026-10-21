@@ -14915,6 +14915,23 @@ ExplosiveVoxelDebris:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ExtendedAnimFacings:
+  key: ExtendedAnimFacings
+  scopes:
+  - applies_to: *id008
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: WeaponTypeClass
+      member: IsExtendedAnimFacings
+      source: code/weapon.cpp
+      guard: null
+    level: WeaponTypeClass
 ExtraAircraftLight:
   key: ExtraAircraftLight
   scopes:

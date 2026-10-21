@@ -5380,7 +5380,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				*/
 				AnimTypeClass const * a = NULL;
 				if (weapon->Anim.Count() > 0) {
-					a = weapon->Anim[Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count())];
+					int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
+					a = weapon->Anim[entry];
 				}
 				if (a == NULL && IsInOpenToppedTransport) {
 					a = weapon->OpenToppedAnim;

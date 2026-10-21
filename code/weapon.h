@@ -76,6 +76,7 @@ class WeaponTypeClass : public AbstractTypeClass
 		bool Read_INI(CCINIClass const & ini);
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
+		bool Anim_Picks_By_Facing(void) const;
 
 		void Init_Max_Speed(void);
 
@@ -162,6 +163,12 @@ class WeaponTypeClass : public AbstractTypeClass
 		**	This is the animation to display at the firing coordinate.
 		*/
 		TypeList<AnimTypeClass const *> Anim;
+
+		/*
+		 * When set, a list of 16, 32 or 64 Anim entries also picks its entry by the direction of the
+		 * shot, as an eight-entry list does. Yuri's Revenge picks by direction only for eight entries.
+		 */
+		bool IsExtendedAnimFacings;
 
 		/*
 		 * This points to the particle system type this weapon spawns when it fires. The

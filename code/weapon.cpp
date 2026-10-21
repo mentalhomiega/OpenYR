@@ -138,7 +138,8 @@ WeaponTypeClass::WeaponTypeClass(char const * ininame) :
 	IsHouseColor(false),
 	IsTurboBoosted(false),
 	Sound(),
-	Anim()
+	Anim(),
+	IsExtendedAnimFacings(false)
 {
 	for (int i = 0; i < ARRAY_SIZE(BurstDelay); i++) {
 		BurstDelay[i] = -1;
@@ -226,6 +227,7 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		Sound = ini.Get_VocType_List(ini, IniName, "Report", Sound);
 		Anim = TGet_TypeList<AnimTypeClass>(ini, IniName, "Anim", Anim);
+		IsExtendedAnimFacings = ini.Get_Bool(IniName, "ExtendedAnimFacings", IsExtendedAnimFacings);
 
 		IsCamera = ini.Get_Bool(IniName, "Camera", IsCamera);
 		IsInfiniteMindControl = ini.Get_Bool(IniName, "InfiniteMindControl", IsInfiniteMindControl);
@@ -376,6 +378,19 @@ bool WeaponTypeClass::Is_Wall_Destroyer(void) const
 
 
 /// <summary>
+/// Tells whether a shot from this weapon picks its Anim entry by the direction it fires in.
+/// </summary>
+/// <remarks>Only an eight-entry list does so, plus 16, 32 and 64 when IsExtendedAnimFacings is set.
+/// Any other list plays entry 0 on every shot.</remarks>
+/// <returns>bool; Does the entry depend on the firing direction?</returns>
+bool WeaponTypeClass::Anim_Picks_By_Facing(void) const
+{
+	int const count = Anim.Count();
+	return(count == 8 || (IsExtendedAnimFacings && (count == 16 || count == 32 || count == 64)));
+}
+
+
+/// <summary>
 /// Adds this weapon type's data to the CRC calculation.
 /// This routine is used by the multiplayer sync checker to prove that every machine agrees
 /// about the weapon, so the projectile and warhead it refers to are submitted by identifier
@@ -454,6 +469,7 @@ void WeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(MinimumRange);
 	stream.Serialize(Sound);
 	stream.Serialize(Anim);
+	stream.Serialize(IsExtendedAnimFacings);
 	stream.Serialize(AttachedParticleSystem);
 	stream.Serialize(LaserInnerColor);
 	stream.Serialize(LaserOuterColor);
