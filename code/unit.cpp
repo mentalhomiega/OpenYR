@@ -7388,8 +7388,8 @@ int UnitClass::Simple_Deploy_AI(void)
 			}
 			if (Class->DeployingAnim != NULL) {
 				AnimClass * anim = new AnimClass(Class->DeployingAnim, Center_Coord());
-				// The animation is drawn from unit artwork, so it takes the owner's unit colors.
-				anim->AlternativeDrawer = ColorSchemes[House_Display_Scheme(House)]->Converter;
+				// The unit's DeployAnim takes its GetRemapColour drawer, its Palette= or its house colors (UnitClass::Deploy 0x739AC0, Undeploy 0x739CD0).
+				anim->AlternativeDrawer = Remap_Converter();
 				anim->AlternativeBrightness = Map[Get_Cell()].Brightness;
 				if (IsSimpleDeployed) {
 					anim->Play_Backward();
