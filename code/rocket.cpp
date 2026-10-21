@@ -229,8 +229,9 @@ bool RocketLocomotionClass::Process(void)
 				if (CurrentPitch > 0.0f) {
 					CurrentPitch = std::max(0.0f, CurrentPitch - rocket.TurnRate);
 				}
-				double const distance = std::hypot(horizontal, below);
-				if (distance <= -below) {
+				// The dive starts once the flat distance to the target is no more than the height above it, so the
+				// missile starts diving as far out as it is high (gamemd 0x6622C0, state 4).
+				if (horizontal <= -below) {
 					MissionState = STATE_DIVE;
 				}
 			} else {
