@@ -1571,8 +1571,8 @@ test('A game played alone is paced by its own speed table', () => {
 	assertOrdered(functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'), [
 		'static CDTimerClass<MillisecondSystemTimerClass> fps_timer;',
 		'LastFramesPerSecond = FramesThisSecond;',
-		'fps_timer = 1000;',
-	], 'frames are counted over a second of the millisecond clock, not sixty ticks of the old one');
+		'fps_timer = 960;',
+	], 'frames are counted over 960 ms of the millisecond clock, the length of the sixty-unit window in gamemd');
 });
 
 test('An insignificant unit dies without announcing it', () => {
