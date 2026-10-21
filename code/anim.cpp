@@ -958,7 +958,10 @@ void AnimClass::AI(void)
 				}
 			}
 
-			Delete_Me();
+			// Bounce_AI has already deleted a settled animation, so it is not deleted twice.
+			if (bounce_result == BOUNCE_IMPACT) {
+				Delete_Me();
+			}
 			return;
 		}
 	}
