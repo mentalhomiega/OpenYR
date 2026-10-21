@@ -180,6 +180,9 @@ DSurface::DSurface(int width, int height) :
  *=============================================================================================*/
 DSurface::~DSurface(void)
 {
+	// The emissive plane is keyed by this address, which a later surface may be allocated at.
+	Emissive_Forget(this);
+
 	/*
 	 * GDI will not free a bitmap that is still selected into a context, so the one the
 	 * context started with has to go back first.

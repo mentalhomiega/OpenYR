@@ -17,8 +17,9 @@
 #include "surface.h"
 
 
-// Binds planes to the composite and presented surfaces while masks are on, and frees them otherwise.
-void Emissive_Sync(Surface const * composite, Surface const * map_composite, Surface const * visible);
+// Binds planes to the composite, the map's two surfaces and the presented surface while masks are on, and frees
+// the others. The map's two surfaces swap roles when the view pans, so both need a plane.
+void Emissive_Sync(Surface const * composite, Surface const * map_composite, Surface const * map_tile, Surface const * visible);
 
 // Copies the emissive values behind a Bit_Blit, or clears them when the source has no plane.
 void Emissive_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const & source, int sourcex, int sourcey, int width, int height);

@@ -29,10 +29,10 @@
 /// Binds planes to the surfaces the presenter reads and releases any other plane. Surfaces
 /// that are NULL are skipped.
 /// </summary>
-void Emissive_Sync(Surface const * composite, Surface const * map_composite, Surface const * visible)
+void Emissive_Sync(Surface const * composite, Surface const * map_composite, Surface const * map_tile, Surface const * visible)
 {
-	Surface const * surfaces[3] = {composite, map_composite, visible};
-	void const * keep[3] = {NULL, NULL, NULL};
+	Surface const * surfaces[4] = {composite, map_composite, map_tile, visible};
+	void const * keep[4] = {NULL, NULL, NULL, NULL};
 	int count = 0;
 
 	if (Emissive_Is_Enabled()) {

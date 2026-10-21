@@ -259,6 +259,24 @@ void Emissive_Retain(void const * const * keep, int count)
 }
 
 
+void Emissive_Forget(void const * surface)
+{
+	if (surface == NULL) {
+		return;
+	}
+	for (Binding & binding : _Bindings) {
+		if (binding.Surface == surface) {
+			delete [] binding.Plane.Pixels;
+			binding.Plane.Pixels = NULL;
+			binding.Plane.Width = 0;
+			binding.Plane.Height = 0;
+			binding.Plane.Pitch = 0;
+			binding.Surface = NULL;
+		}
+	}
+}
+
+
 void Emissive_Release_All(void)
 {
 	for (Binding & binding : _Bindings) {

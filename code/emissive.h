@@ -102,7 +102,8 @@ void Emissive_Set_Enabled(bool enabled);
 bool Emissive_Debug_View(void);
 void Emissive_Set_Debug_View(bool debug);
 
-// The plane bound to a surface, or NULL when the surface has none or the dimensions do not match.
+// The plane bound to a surface, or NULL when the surface has none. A plane is bound at the surface's own size
+// and is freed by Emissive_Forget when the surface is deleted, so the size always matches the surface.
 EmissivePlane * Emissive_Plane_For(void const * surface);
 
 // Binds a plane whose pixels the caller owns for the whole run, such as the voxel draw surface. Retain and
@@ -114,6 +115,10 @@ EmissivePlane * Emissive_Bind(void const * surface, int width, int height);
 
 // Frees every plane whose surface is not listed in keep. Called when the surfaces are replaced.
 void Emissive_Retain(void const * const * keep, int count);
+
+// Frees the plane bound to a surface, if it has one. Called as a surface is deleted, since the allocator may give
+// a new surface the same address and it must not inherit the old plane.
+void Emissive_Forget(void const * surface);
 
 // Frees every plane. Called when masks are switched off or the surfaces are replaced.
 void Emissive_Release_All(void);

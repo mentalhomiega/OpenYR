@@ -405,7 +405,7 @@ void GScreenClass::Render(void)
 	bool complete = DrawFlags == GS_REDRAW_ALL;
 
 	// Masks follow the composite: planes are bound here, and a full redraw starts them clear.
-	Emissive_Sync(CompositeSurface, MapCompositeSurface, VisibleSurface);
+	Emissive_Sync(CompositeSurface, MapCompositeSurface, MapTileSurface, VisibleSurface);
 	if (complete && Emissive_Is_Enabled() && CompositeSurface != NULL) {
 		Emissive_After_Fill(*CompositeSurface, CompositeSurface->Get_Rect());
 	}
