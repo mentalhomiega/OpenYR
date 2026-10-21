@@ -118,11 +118,26 @@ Base addresses are from `MPGameModeClass`'s vtable at `0x7EED60`. Overrides list
 
 Slots 16, 38 and 47 have no identified purpose. The lobby calls them, and the table gives what each returns.
 
-## Cooperative's allies win
+## Cooperative
 
-The end of `HouseClass::AcceptDefeat` (`0x4FC0B0`) decides the winner. The local player wins when that player is not defeated. Otherwise, for a multiplayer game where `MPGameMode` is Cooperative (slots 1 and 2 both true), the local player wins only when exactly one non-passive house is still alive and it is a person. In every other case the local player loses.
+Slots 1 and 2 return true only for Cooperative, so a call to either is a Cooperative test. `MPGameMode` is checked for null first, and the win, loss and briefing paths below also require `SessionClass::GameMode` 3 or 4 (a game on a network or online). The port's `MPMode_Is_Cooperative` is the mode test alone, and `MPMode_Is_Cooperative_Match` adds the network test (`GAME_IPX` or `GAME_INTERNET`).
 
-The port applies the same winner choice in `HouseClass::MPlayer_Defeated` (`code/house.cpp`). It keeps its own game-over test, `num_alive == 1 || num_humans == 0`. It does not reproduce the hostile-pair test that `AcceptDefeat` runs before this tail.
+| Where | Address | What gamemd does in Cooperative | Port |
+| --- | --- | --- | --- |
+| `HouseClass::AcceptDefeat` | `0x4FC0B0` | After the game-over test, a defeated local player wins when a living house is a person. Every other mode loses. | `MPlayer_Defeated`. The test is the port's `all_allies` test; a living allied person is enough, not exactly one. |
+| `HouseClass::Update` | `0x4F86A5` | A win flagged on any person's house makes the local player win. | Ported; no stock map or rule flags another person's house. |
+| `HouseClass::AllyAIHouses` | `0x501640` | The computer houses band together when `AlliesAllowed` is on or the mode is Cooperative. | `Computer_Paranoid`. |
+| `RadarClass::Update` | `0x653850` | The diplomacy button opens the mission briefing dialog (special dialog 9) in Cooperative and in a campaign. Every other multiplayer game opens special dialog 8. | Ported. |
+| `LoadProgressManager::Draw` | `0x553311`, `0x553E54` | The campaign's picture from `COOPCAMPMD.INI`; the description starts at y 124 on the 800 layout. | Ported. |
+| Slot 33, `0x5C2EF0`, with slot 49, `0x5C2DE0` | | A person draws among the first `NumCoopHumanStartSpots` waypoints; a computer player takes the first free one after them. | `Assign_Start_Positions`. |
+| Slot 34, `0x5C3220` | | Every person is allied with every other person, and every computer player with every other. | `Assign_Houses`. |
+| Slot 31, `0x5C2CB0` | | Does not clear the map's `FixedAlliance` flag, as the base does. | Not needed; the stock maps set `FixedAlliance=no`. |
+| Slot 40, `0x5C3710`, from `0x55CFD0` | | At the end of a game, when a person is not defeated, advances the campaign to its next map, saves the progress and shows a message. It then points the scenario at the campaign's current map and sets `SkipScore` and `SkipMapSelect`. | Not ported. |
+| `Do_Win` `0x685670`, the defeat path `0x685DC0`, slots 41 to 43 | | Replace the multiplayer score and lobby return with a campaign dialog; a win starts the campaign's next mission and a loss starts the same mission again, through the lobby's waiting room. | Not ported. |
+| `MapClass::Reveal` and the other reveal paths | `0x577D90`, `0x5675E5`, `0x5679DF`, `0x577F81` | A game on a network that is not Cooperative leaves three marker cells unrevealed; Cooperative reveals every cell. | The port reveals every cell in every mode. |
+| `HouseClass::Update`, `Game::MainLoop` | `0x4F8851`, `0x55DDB9` | A game on a network that is not Cooperative advances the scenario's random generator once a particular cell has been revealed. | Not ported. |
+
+The lobby calls the rest of Cooperative's overrides: the campaign list, the allowed countries of each campaign (`CampaignPlayerN` and `CampaignEnemyN`), the campaign difficulty, and the saved campaign progress in `COOPSAVE.INI`. Slot 26 gives the computer players the map's remaining start spots and an AI difficulty of 2 minus the campaign difficulty. A launch file supplies all of these through its seats, so the port has no code for them.
 
 ## Unholy Alliance
 
@@ -146,7 +161,8 @@ The lobby's own team defaults are not established. Slot 12 returns 3 when `Allie
 - `code/spawnerconfig.*` reads `GameMode` (default 1) and includes it in the session identity. Its bool keys match without regard to case, so the client's `Superweapons` reads as `SuperWeapons`. `SCHEMA_VERSION` is 8, because a file that read a key differently before this change describes a different match.
 - `code/spawner.cpp` plays Battle, with one debug line, when `MPModesMD.ini` cannot be read or the index is not listed. It never refuses a launch for the mode. It clears `AlliesAllowed` when the mode forbids alliances, and turns `Bases` on for Unholy. A resumed game takes the mode from the file, because a save does not record one.
 - `code/scenario.cpp` `Create_Units` places every base unit for Unholy.
-- `code/house.cpp` `MPlayer_Defeated` applies the Cooperative winner choice.
+- `code/house.cpp` `MPlayer_Defeated` applies the Cooperative winner choice, `AI` lets a person's win end a Cooperative match, and `Computer_Paranoid` treats Cooperative as allowing alliances.
+- `code/scenario.cpp` `Assign_Start_Positions` and `Assign_Houses` apply Cooperative's start positions and alliances. `code/sidebar.cpp` opens the briefing, and `code/loadscreen.cpp` draws the Cooperative load screen.
 
 ## Open items
 
@@ -155,8 +171,8 @@ The lobby's own team defaults are not established. Slot 12 returns 3 when `Allie
 - Team Game's `MustAlly` (slots 11 and 13) is not ported. The port has no per-seat alliance lock.
 - `RandomMapsAllowed` (field 5) is stored but not used. A launch file names a fixed scenario.
 - The lobby's team defaults for computer seats (slots 11 and 12) are not ported.
-- Cooperative's next-mission hook is not identified. Slot 46 is the campaign-completion accomplishment, not the next mission.
-- Cooperative's game-over hostile-pair test (in `AcceptDefeat` before the allies tail) is not ported.
+- Cooperative's next-mission and retry chain is not ported: slot 40 and the win and defeat paths in the table above.
+- The mode's override file is read into the rules in gamemd, after `RULESMD.INI`, so a mode can change any rule; the port reads only the file's alliance flags.
 - The meaning of slots 16, 38 and 47 is not identified.
 - `AllyChangeAllowed` is in the Team Game file. The constructor does not read it, and its reader was not located.
 - The per-mode options the client sends for Unholy Alliance and Free For All are not established. The Yuri's Revenge entries of its configuration were not in the readable repositories. The `GameMode` key and its meaning match the CnCNet spawner's reader.
