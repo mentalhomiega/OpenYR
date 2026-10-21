@@ -13,4 +13,4 @@ The flag takes effect only beside [`ActiveAnimThreePowered=no`](/keys/activeanim
 
 Each time the structure comes into service, it creates the animation in the slot if the slot is empty, on a [`Powered=yes`](/keys/powered/) structure that drains power. That includes an animation that played to its end.
 
-A repair step, or an [upgrade](/keys/upgrades/) installed on a structure below maximum strength, starts the animation if the slot is empty. Either can start it during a shortage, and it then runs until the structure next drops out of service.
+An [upgrade](/keys/upgrades/) installed on a structure below maximum strength starts the animation if the slot is empty. It can do so during a shortage, and the animation then runs until the structure next drops out of service.

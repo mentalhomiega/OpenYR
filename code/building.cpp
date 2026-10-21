@@ -8455,34 +8455,19 @@ void BuildingClass::Repair_AI(void)
 		if (House->Available_Money() >= cost) {
 			House->Spend_Money(cost);
 			Strength += step;
+			EstimatedHealth += step;
 
 			if (Strength >= Class->MaxStrength) {
 				Strength = Class->MaxStrength;
+				EstimatedHealth = Strength;
 				IsRepairing = false;
 			}
 
+			// A repair step changes only the form of the animations the structure is running; it starts none (BuildingClass::AI_Repair, 0x450630).
 			Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
 
 			if (HealthRatio > Rule->ConditionYellow && ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
-			}
-
-			if (Anims[BANIM_ACTIVE_ONE] == NULL) {
-				Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
-			}
-
-			if (!IsCharging && !IsCharged || !Class->IsTurretAnimExclusive) {
-				if (Anims[BANIM_ACTIVE_TWO] == NULL) {
-					Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
-				}
-			}
-
-			if (Anims[BANIM_ACTIVE_THREE] == NULL) {
-				Begin_Anim(BANIM_ACTIVE_THREE, HealthRatio <= Rule->ConditionYellow);
-			}
-
-			if (Anims[BANIM_ACTIVE_FOUR] == NULL) {
-				Begin_Anim(BANIM_ACTIVE_FOUR, HealthRatio <= Rule->ConditionYellow);
 			}
 
 			if (Shape_Number() != shapenum) {
