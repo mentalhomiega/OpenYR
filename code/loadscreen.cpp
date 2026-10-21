@@ -111,6 +111,9 @@ struct MatchLayoutType {
 MatchLayoutType const MATCH_800 = {Point2D(16, 321), 406, Rect(540, 310, 200, 20), Point2D(20, 90), Rect(20, 158, 398, 130), Point2D(20, 300), Rect(499, 379, 216, 166)};
 MatchLayoutType const MATCH_640 = {Point2D(12, 256), 326, Rect(385, 436, 200, 20), Point2D(16, 72), Rect(16, 126, 318, 104), Point2D(16, 235), Rect(385, 270, 200, 200)};
 
+// The top of the country's text in a Cooperative match at the 800 layout, where a campaign's picture is drawn (LoadProgressManager::Draw, 0x553E54).
+int const COOP_BRIEF_TOP_800 = 124;
+
 
 // True when the scenario's [Basic] Player house is on the first side. A missing or unknown house counts as the first side.
 bool Campaign_Is_Allied(CCINIClass const * mission)
@@ -803,9 +806,15 @@ bool LoadScreenClass::Begin_Match(char const * scenario, CCINIClass const * ini,
 	if (art.Special != NULL) {
 		Print_Text(Capitals(Fetch_String_UTF8(art.Special)), *Backdrop, layout.Special, RGBClass(0, 0, 0));
 
-		std::vector<std::string> const lines = Wrap_Text(Fetch_String_UTF8(art.Brief), layout.Brief.Width);
-		Shade(*Backdrop, Rect(layout.Brief.X, layout.Brief.Y, layout.Brief.Width, Text_Font().Get_Height() * (int)lines.size()));
-		Print_Lines(lines, *Backdrop, layout.Brief.Top_Left(), color);
+		// A Cooperative match at the 800 layout starts the country's text higher, to fit the campaign picture.
+		Rect brief = layout.Brief;
+		if (Width != 640 && MPMode_Is_Cooperative()) {
+			brief.Y = COOP_BRIEF_TOP_800;
+		}
+
+		std::vector<std::string> const lines = Wrap_Text(Fetch_String_UTF8(art.Brief), brief.Width);
+		Shade(*Backdrop, Rect(brief.X, brief.Y, brief.Width, Text_Font().Get_Height() * (int)lines.size()));
+		Print_Lines(lines, *Backdrop, brief.Top_Left(), color);
 	}
 
 	std::string const loading = Fetch_String_UTF8("GUI:LoadingEx");
