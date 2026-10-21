@@ -1,0 +1,311 @@
+; Zoom stress: the map zoom changes every frame from 31 to 130, then the view scrolls every frame while zoomed from 131 to 330.
+; A zoom and a chronoshift start share frames 150 and 220. The run should reach quit at 400 with no exception.
+; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/zoom-frame-stress.txt -Width 1024 -Height 768 -Seconds 150 -Filter "AUTOTEST|Exception" -Settings "[Options]`r`nInterfaceStyle=Modern"
+1 glideclock
+30 command CenterBase
+31 zoom 0.8
+32 zoom 0.5
+33 zoom 0.8
+34 zoom 0.5
+35 zoom 0.8
+36 zoom 0.5
+37 zoom 0.8
+38 zoom 0.5
+39 zoom 0.8
+40 zoom 0.5
+41 zoom 0.8
+42 zoom 0.5
+43 zoom 0.8
+44 zoom 0.5
+45 zoom 0.8
+46 zoom 0.5
+47 zoom 0.8
+48 zoom 0.5
+49 zoom 0.8
+50 zoom 0.5
+51 zoom 0.8
+52 zoom 0.5
+53 zoom 0.8
+54 zoom 0.5
+55 zoom 0.8
+56 zoom 0.5
+57 zoom 0.8
+58 zoom 0.5
+59 zoom 0.8
+60 zoom 0.5
+61 zoom 0.8
+62 zoom 0.5
+63 zoom 0.8
+64 zoom 0.5
+65 zoom 0.8
+66 zoom 0.5
+67 zoom 0.8
+68 zoom 0.5
+69 zoom 0.8
+70 zoom 0.5
+71 zoom 0.8
+72 zoom 0.5
+73 zoom 0.8
+74 zoom 0.5
+75 zoom 0.8
+76 zoom 0.5
+77 zoom 0.8
+78 zoom 0.5
+79 zoom 0.8
+80 zoom 0.5
+81 zoom 0.8
+82 zoom 0.5
+83 zoom 0.8
+84 zoom 0.5
+85 zoom 0.8
+86 zoom 0.5
+87 zoom 0.8
+88 zoom 0.5
+89 zoom 0.8
+90 zoom 0.5
+91 zoom 0.8
+92 zoom 0.5
+93 zoom 0.8
+94 zoom 0.5
+95 zoom 0.8
+96 zoom 0.5
+97 zoom 0.8
+98 zoom 0.5
+99 zoom 0.8
+100 zoom 0.5
+101 zoom 0.8
+102 zoom 0.5
+103 zoom 0.8
+104 zoom 0.5
+105 zoom 0.8
+106 zoom 0.5
+107 zoom 0.8
+108 zoom 0.5
+109 zoom 0.8
+110 zoom 0.5
+111 zoom 0.8
+112 zoom 0.5
+113 zoom 0.8
+114 zoom 0.5
+115 zoom 0.8
+116 zoom 0.5
+117 zoom 0.8
+118 zoom 0.5
+119 zoom 0.8
+120 zoom 0.5
+121 zoom 0.8
+122 zoom 0.5
+123 zoom 0.8
+124 zoom 0.5
+125 zoom 0.8
+126 zoom 0.5
+127 zoom 0.8
+128 zoom 0.5
+129 zoom 0.8
+130 zoom 0.5
+131 view 63 42
+132 view 66 44
+133 view 69 46
+134 view 72 48
+135 view 75 50
+136 view 78 52
+137 view 81 54
+138 view 84 56
+139 view 87 58
+140 view 30 60
+141 view 33 62
+142 view 36 64
+143 view 39 66
+144 view 42 68
+145 view 45 70
+146 view 48 72
+147 view 51 74
+148 view 54 76
+149 view 57 78
+150 zoom 0.5
+150 chrono 40
+150 view 60 30
+151 view 63 32
+152 view 66 34
+153 view 69 36
+154 view 72 38
+155 view 75 40
+156 view 78 42
+157 view 81 44
+158 view 84 46
+159 view 87 48
+160 view 30 50
+161 view 33 52
+162 view 36 54
+163 view 39 56
+164 view 42 58
+165 view 45 60
+166 view 48 62
+167 view 51 64
+168 view 54 66
+169 view 57 68
+170 view 60 70
+171 view 63 72
+172 view 66 74
+173 view 69 76
+174 view 72 78
+175 view 75 30
+176 view 78 32
+177 view 81 34
+178 view 84 36
+179 view 87 38
+180 view 30 40
+181 view 33 42
+182 view 36 44
+183 view 39 46
+184 view 42 48
+185 view 45 50
+186 view 48 52
+187 view 51 54
+188 view 54 56
+189 view 57 58
+190 view 60 60
+191 view 63 62
+192 view 66 64
+193 view 69 66
+194 view 72 68
+195 view 75 70
+196 view 78 72
+197 view 81 74
+198 view 84 76
+199 view 87 78
+200 view 30 30
+201 view 33 32
+202 view 36 34
+203 view 39 36
+204 view 42 38
+205 view 45 40
+206 view 48 42
+207 view 51 44
+208 view 54 46
+209 view 57 48
+210 view 60 50
+211 view 63 52
+212 view 66 54
+213 view 69 56
+214 view 72 58
+215 view 75 60
+216 view 78 62
+217 view 81 64
+218 view 84 66
+219 view 87 68
+220 zoom 0.9
+220 chrono 30
+220 view 30 70
+221 view 33 72
+222 view 36 74
+223 view 39 76
+224 view 42 78
+225 view 45 30
+226 view 48 32
+227 view 51 34
+228 view 54 36
+229 view 57 38
+230 view 60 40
+231 view 63 42
+232 view 66 44
+233 view 69 46
+234 view 72 48
+235 view 75 50
+236 view 78 52
+237 view 81 54
+238 view 84 56
+239 view 87 58
+240 view 30 60
+241 view 33 62
+242 view 36 64
+243 view 39 66
+244 view 42 68
+245 view 45 70
+246 view 48 72
+247 view 51 74
+248 view 54 76
+249 view 57 78
+250 view 60 30
+251 view 63 32
+252 view 66 34
+253 view 69 36
+254 view 72 38
+255 view 75 40
+256 view 78 42
+257 view 81 44
+258 view 84 46
+259 view 87 48
+260 view 30 50
+261 view 33 52
+262 view 36 54
+263 view 39 56
+264 view 42 58
+265 view 45 60
+266 view 48 62
+267 view 51 64
+268 view 54 66
+269 view 57 68
+270 view 60 70
+271 view 63 72
+272 view 66 74
+273 view 69 76
+274 view 72 78
+275 view 75 30
+276 view 78 32
+277 view 81 34
+278 view 84 36
+279 view 87 38
+280 view 30 40
+281 view 33 42
+282 view 36 44
+283 view 39 46
+284 view 42 48
+285 view 45 50
+286 view 48 52
+287 view 51 54
+288 view 54 56
+289 view 57 58
+290 view 60 60
+291 view 63 62
+292 view 66 64
+293 view 69 66
+294 view 72 68
+295 view 75 70
+296 view 78 72
+297 view 81 74
+298 view 84 76
+299 view 87 78
+300 view 30 30
+301 view 33 32
+302 view 36 34
+303 view 39 36
+304 view 42 38
+305 view 45 40
+306 view 48 42
+307 view 51 44
+308 view 54 46
+309 view 57 48
+310 view 60 50
+311 view 63 52
+312 view 66 54
+313 view 69 56
+314 view 72 58
+315 view 75 60
+316 view 78 62
+317 view 81 64
+318 view 84 66
+319 view 87 68
+320 view 30 70
+321 view 33 72
+322 view 36 74
+323 view 39 76
+324 view 42 78
+325 view 45 30
+326 view 48 32
+327 view 51 34
+328 view 54 36
+329 view 57 38
+330 view 60 40
+340 command ScreenCapture
+400 quit
