@@ -72,6 +72,12 @@ class BulletTypeClass : public ObjectTypeClass
 		bool IsVeryHigh;
 
 		/*
+		 * If this homing projectile flies level, then this flag will be true. While it has a target,
+		 * it skips the climb over terrain and the pitch turns, so its pitch does not change.
+		 */
+		bool IsLevel;
+
+		/*
 		**	Does this bullet need a shadow drawn under it?  Shadowed bullets
 		**	use the Height value to offset their Y position.
 		*/

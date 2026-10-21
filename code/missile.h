@@ -14,4 +14,4 @@ template <typename T>
 class TVelocity3D;
 class DirType;
 
-int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const & target_coord, DirType const & dir, bool aircraft, bool airburst, bool veryhigh);
+int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const & target_coord, DirType const & dir, bool aircraft, bool airburst, bool veryhigh, bool level);

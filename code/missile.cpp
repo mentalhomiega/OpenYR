@@ -35,10 +35,11 @@
 /// <param name="aircraft">Is the projectile chasing an aircraft?</param>
 /// <param name="airburst">Should the projectile detonate in the air rather than stoop?</param>
 /// <param name="veryhigh">Should the projectile cruise at extra altitude?</param>
+/// <param name="level">Should the projectile skip the terrain climb and the pitch turns while it has a target?</param>
 /// <returns>Returns with the distance still to be covered, with the vertical component
 /// discounted. A projectile with nothing to home on turns toward a 45-degree climb, flies one
 /// frame, and returns its speed in whole leptons, truncated.</returns>
-int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const & target_coord, DirType const & rot, bool aircraft, bool airburst, bool veryhigh)
+int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const & target_coord, DirType const & rot, bool aircraft, bool airburst, bool veryhigh, bool level)
 {
 	if (target_coord == COORD_NONE) {
 		/*
@@ -71,7 +72,10 @@ int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const
 
 	DirType desired_pitch = velocity.Get_Pitch();
 
-	if (!aircraft && (airburst || horizontal_distance > ((veryhigh ? 6 : 3) * CELL_LEPTON)) && rot.As_Dir256() > 1) {
+	/*
+	 * A Level projectile skips the terrain climb and both pitch steps: gamemd's BulletClass::ComputeTrajectory (0x5B20F0) jumps past them for Level=yes.
+	 */
+	if (!level && !aircraft && (airburst || horizontal_distance > ((veryhigh ? 6 : 3) * CELL_LEPTON)) && rot.As_Dir256() > 1) {
 		TVelocity3D<double> lookahead_velocity(velocity);
 		Coord lookahead_coord = coord + Point3D(lookahead_velocity.X, lookahead_velocity.Y, lookahead_velocity.Z) * 6;
 
@@ -103,7 +107,7 @@ int Projectile_Motion(Coord & coord, TVelocity3D<double> & velocity, Coord const
 			DirType turn_rate = rot / 2;
 			desired_pitch.Turn(level_pitch, turn_rate);
 		}
-	} else {
+	} else if (!level) {
 		DirType turn_rate = (rot + 256);
 		desired_pitch.Turn(target_direction.Get_Pitch(), turn_rate / 2);
 	}

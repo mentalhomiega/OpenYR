@@ -567,7 +567,7 @@ void BulletClass::AI(void)
 			is_aircraft = true;
 		}
 
-		distance = Projectile_Motion(coord, velocity, target_coord, DirType((Dir256)(IsLaunching == false ? rot : 0)), (bool &)is_aircraft, Class->IsAirburst, Class->IsVeryHigh);
+		distance = Projectile_Motion(coord, velocity, target_coord, DirType((Dir256)(IsLaunching == false ? rot : 0)), (bool &)is_aircraft, Class->IsAirburst, Class->IsVeryHigh, Class->IsLevel);
 		CellClass * cellptr = &Map[coord];
 		TVelocity3D<double> new_velocity = velocity;
 		Velocity = new_velocity;

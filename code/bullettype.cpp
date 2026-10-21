@@ -83,6 +83,7 @@ BulletTypeClass::BulletTypeClass(char const * name) :
 	IsSubjectToCliffs(false),
 	IsSubjectToWalls(false),
 	IsVeryHigh(false),
+	IsLevel(false),
 	IsShadow(true),
 	IsArcing(false),
 	IsDropping(false),
@@ -184,6 +185,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsSubjectToCliffs = ini.Get_Bool(Name(), "SubjectToCliffs", IsSubjectToCliffs);
 		IsSubjectToWalls = ini.Get_Bool(Name(), "SubjectToWalls", IsSubjectToWalls);
 		IsVeryHigh = ini.Get_Bool(Name(), "VeryHigh", IsVeryHigh);
+		IsLevel = ini.Get_Bool(Name(), "Level", IsLevel);
 		IsShadow = ini.Get_Bool(Name(), "Shadow", IsShadow);
 		IsDropping = ini.Get_Bool(Name(), "Dropping", IsDropping);
 		IsInvisible = ini.Get_Bool(Name(), "Inviso", IsInvisible);
@@ -308,6 +310,7 @@ void BulletTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsShadow);
 	crc(IsArcing);
 	crc(IsDropping);
+	crc(IsLevel);
 	crc(IsInvisible);
 	crc(IsProximityArmed);
 	crc(IsFueled);
@@ -362,6 +365,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsShadow);
 	stream.Serialize(IsArcing);
 	stream.Serialize(IsDropping);
+	stream.Serialize(IsLevel);
 	stream.Serialize(IsInvisible);
 	stream.Serialize(IsProximityArmed);
 	stream.Serialize(IsFueled);
