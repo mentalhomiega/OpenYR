@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-With `yes`, the Deploy command makes the vehicle fire its [`AreaFire=yes`](/keys/areafire/#scope-weapontype) weapon at its own cell. The Chaos Drone uses this to release its gas. The vehicle uses its primary weapon if that is an area weapon, and otherwise its secondary. Give the vehicle an area weapon: without one, it fires its usual weapon at its own cell.
+With `yes`, the Deploy command makes the vehicle fire its [`AreaFire=yes`](/keys/areafire/#scope-weapontype) weapon at its own cell. The Chaos Drone uses this to release its gas. The vehicle uses its primary weapon if that is an area weapon, and otherwise its secondary. Give the vehicle an area weapon: without one, it fires its usual weapon at its own cell. With [`DeployFire=yes`](/keys/deployfire/) as well, the vehicle fires its first weapon at its own cell instead.
 
 ```ini title="rulesmd.ini"
 [MYDRONE] ; example VehicleType
