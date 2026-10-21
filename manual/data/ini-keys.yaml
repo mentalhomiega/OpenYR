@@ -4225,6 +4225,24 @@ Attack:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+AttackCursorOnDisguise:
+  key: AttackCursorOnDisguise
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsAttackCursorOnDisguise
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 AttackCursorOnFriendlies:
   key: AttackCursorOnFriendlies
   scopes:
@@ -10495,6 +10513,23 @@ DamageRadius:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+DamageReducesReadiness:
+  key: DamageReducesReadiness
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsDamageReducesReadiness
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DamageSelf:
   key: DamageSelf
   scopes:
@@ -31061,6 +31096,23 @@ RatioTeamUnits:
       source: code/house.cpp
       guard: null
     level: HouseClass
+ReadinessReductionMultiplier:
+  key: ReadinessReductionMultiplier
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: ReadinessReductionMultiplier
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 RechargeTime:
   key: RechargeTime
   scopes:
@@ -36579,6 +36631,23 @@ SpotlightSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SprayAttack:
+  key: SprayAttack
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: IsSprayAttack
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Spread:
   key: Spread
   scopes:

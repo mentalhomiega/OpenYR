@@ -339,6 +339,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Capacity(0),
 	TurretNotExportedOnGround(false),
 	IsTypeImmune(false),
+	IsDamageReducesReadiness(false),
+	IsSprayAttack(false),
+	ReadinessReductionMultiplier(0.0f),
 	IsCanBeHidden(true),
 	IsDetectDisguise(false),
 	DetectDisguiseRange(0),
@@ -772,6 +775,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		// CanBeHidden comes from the art file, under the type's own name (TechnoTypeClass::LoadFromINI).
 		IsCanBeHidden = ArtINI.Get_Bool(Name(), "CanBeHidden", IsCanBeHidden);
 		IsTypeImmune = ini.Get_Bool(Name(), "TypeImmune", IsTypeImmune);
+		IsDamageReducesReadiness = ini.Get_Bool(Name(), "DamageReducesReadiness", IsDamageReducesReadiness);
+		IsSprayAttack = ini.Get_Bool(Name(), "SprayAttack", IsSprayAttack);
+		ReadinessReductionMultiplier = ini.Get_Float(Name(), "ReadinessReductionMultiplier", ReadinessReductionMultiplier);
 		IsDetectDisguise = ini.Get_Bool(Name(), "DetectDisguise", IsDetectDisguise);
 		DetectDisguiseRange = ini.Get_Int(Name(), "DetectDisguiseRange", DetectDisguiseRange);
 		WalkRate = ini.Get_Int(Name(), "WalkRate", WalkRate);
@@ -1843,6 +1849,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EliteWeapons);
 	stream.Serialize(AlternativeFLH);
 	stream.Serialize(IsTypeImmune);
+	stream.Serialize(IsDamageReducesReadiness);
+	stream.Serialize(IsSprayAttack);
+	stream.Serialize(ReadinessReductionMultiplier);
 	stream.Serialize(IsCanBeHidden);
 	stream.Serialize(IsDetectDisguise);
 	stream.Serialize(DetectDisguiseRange);
@@ -1976,6 +1985,9 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(MaxAmmo);
 	crc(ReloadDelay);
 	crc(EmptyReloadDelay);
+	crc(IsDamageReducesReadiness);
+	crc(IsSprayAttack);
+	crc(ReadinessReductionMultiplier);
 	crc(ReloadIncrement);
 	crc(PipWrap);
 	crc((int)Ownable);

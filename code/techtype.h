@@ -931,6 +931,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		bool IsTypeImmune;
 
+		/*
+		 * If damage costs this object ammunition, then this flag will be true. Each hit removes
+		 * the share of the full load given by its share of full strength, times the multiplier.
+		 */
+		bool IsDamageReducesReadiness;
+
+		// If this object sprays each burst around itself instead of firing at its target, then this flag will be true.
+		bool IsSprayAttack;
+		float ReadinessReductionMultiplier;
+
 		// If an object of this type can show that it is hidden behind a building, then this flag will be true.
 		bool IsCanBeHidden;
 

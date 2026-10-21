@@ -3466,6 +3466,16 @@ void Run(StepType const & step)
 			Rule->AircraftWaypointReload = step.X != 0;
 		}
 		DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
+	} else if (step.Command == "disguise") {
+		// disguise <TypeID>: every computer-owned soldier of that type disguises as the player's AlliedDisguise soldier.
+		for (int index = 0; index < Infantry.Count(); index++) {
+			InfantryClass * soldier = Infantry[index];
+			if (soldier->House != PlayerPtr && stricmp(soldier->Class->Name(), step.Argument.c_str()) == 0) {
+				soldier->DisguiseType = Rule->AlliedDisguise;
+				soldier->DisguiseHouse = PlayerPtr;
+				DebugString("AUTOTEST   disguise %s at %d,%d as %s fools player %d cursor rule %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, Rule->AlliedDisguise != NULL ? Rule->AlliedDisguise->Name() : "-", (int)soldier->Is_Disguised_As(PlayerPtr), (int)Rule->IsAttackCursorOnDisguise);
+			}
+		}
 	} else if (step.Command == "action" || step.Command == "clickon") {
 		ObjectClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 		for (int index = 0; index < Technos.Count(); index++) {
@@ -4324,8 +4334,9 @@ void Run(StepType const & step)
 		for (int index = 0; index < Bullets.Count(); index++) {
 			BulletClass const * bullet = Bullets[index];
 			if (bullet->Class != NULL) {
-				DebugString("AUTOTEST   bullet frame %d %s firerhouse %d scalable %d firerspalette %d spawndelay %d scaled %d\n", Frame, bullet->Class->Name(), bullet->FirerHouse,
-					(int)bullet->Class->IsScalable, (int)bullet->Class->IsFirersPalette, bullet->Class->SpawnDelay, bullet->Class->ScaledSpawnDelay);
+				DebugString("AUTOTEST   bullet frame %d %s firerhouse %d scalable %d firerspalette %d spawndelay %d scaled %d target %d,%d\n", Frame, bullet->Class->Name(), bullet->FirerHouse,
+					(int)bullet->Class->IsScalable, (int)bullet->Class->IsFirersPalette, bullet->Class->SpawnDelay, bullet->Class->ScaledSpawnDelay,
+					bullet->TarCom != NULL ? bullet->TarCom->Center_Coord().As_Cell().X : -1, bullet->TarCom != NULL ? bullet->TarCom->Center_Coord().As_Cell().Y : -1);
 			}
 		}
 	} else if (step.Command == "radbeams") {

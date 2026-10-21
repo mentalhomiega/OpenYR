@@ -356,6 +356,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	BarrelPitch(3),
 	BurstIndex(0),
 	RadialFireIndex(0),
+	SprayIndex(0),
 	IsBurstResetPending(false),
 	BurstResetTimer(),
 	TargetingLaserTimer(),
@@ -5105,8 +5106,20 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		return(NULL);
 	}
 
-	// An AreaFire weapon strikes the firer's own cell, whatever it was aimed at (TechnoClass::Fire, 0x6FE140).
-	if (weapon->IsAreaFire) {
+	// A SprayAttack object strikes a ring of eight points one cell out, starting each burst at a random point and
+	// spacing its shots evenly round the ring; an AreaFire weapon strikes the firer's own cell (TechnoClass::Fire, 0x6FE140).
+	if (TClass->IsSprayAttack) {
+		static Coord const spray[8] = {
+			Coord(256, 0, 0), Coord(180, 180, 0), Coord(0, 256, 0), Coord(-180, 180, 0),
+			Coord(-256, 0, 0), Coord(-180, -180, 0), Coord(0, -256, 0), Coord(180, -180, 0)
+		};
+		if (BurstIndex == 0) {
+			SprayIndex = Random_Pick(0, 7);
+		} else {
+			SprayIndex = (SprayIndex + 8 / weapon->Burst) % 8;
+		}
+		target = &Map[Get_Coord() + spray[SprayIndex]];
+	} else if (weapon->IsAreaFire) {
 		target = &Map[Get_Cell()];
 	}
 
@@ -5764,7 +5777,25 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 			sonic_parasite = sonic_weapon != NULL && sonic_weapon->WarheadPtr != NULL && sonic_weapon->WarheadPtr->IsSonic;
 		}
 
-		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object) || TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
+		// With AttackCursorOnDisguise=no, an enemy whose disguise fools the player is treated as a friend, unless it is
+		// PermaDisguise or a Mirage blinking after a shot. A Mirage passing for a tree can still be attacked by a
+		// TerrainFire weapon, as a tree could (TechnoClass::MouseOverObject, 0x700180; 0x70EF00).
+		bool fooled = false;
+		if (!Rule->IsAttackCursorOnDisguise && object->Is_Techno() && !((TechnoClass const *)object)->TClass->IsPermaDisguise) {
+			if (object->RTTI == RTTI_INFANTRY) {
+				fooled = ((InfantryClass const *)object)->Is_Disguised_As(House);
+			} else if (object->RTTI == RTTI_UNIT) {
+				UnitClass const * unit = (UnitClass const *)object;
+				fooled = !unit->Is_Blinking_Disguise() && unit->Is_Disguised_As(House);
+				if (fooled) {
+					WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+					fooled = weapon == NULL || !weapon->IsTerrainFire;
+				}
+			}
+		}
+		bool const friendly_fire = TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite;
+
+		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || ((!House->Is_Ally(object) || friendly_fire) && (!fooled || friendly_fire))) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
 			if (Is_Weapon_Equipped() ||
 					(RTTI == RTTI_INFANTRY &&
@@ -6616,6 +6647,18 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	if (IsBeingWarpedOut && !forced) {
 		damage = 0;
 		return(RESULT_NONE);
+	}
+
+	// Healing adds ammunition here as damage removes it, with no cap at the full load (TechnoClass::ReceiveDamage, 0x701AE5).
+	if (TClass->IsDamageReducesReadiness) {
+		double const share = TClass->ReadinessReductionMultiplier * ((double)damage / TClass->MaxStrength);
+		Ammo = (int)((double)Ammo - TClass->MaxAmmo * share);
+		if (Ammo < 0) {
+			Ammo = 0;
+		}
+		if (RTTI == RTTI_UNIT) {
+			((UnitClass *)this)->Start_Reloading();
+		}
 	}
 
 	// A CausesDelayKill warhead sets a fuse on an EligibleForDelayKill structure, later the farther it is from the blast (TechnoClass::ReceiveDamage, 0x701E92).
@@ -10785,6 +10828,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SecondaryFacing);
 	stream.Serialize(BurstIndex);
 	stream.Serialize(RadialFireIndex);
+	stream.Serialize(SprayIndex);
 	stream.Serialize(IsBurstResetPending);
 	stream.Serialize(BurstResetTimer);
 	stream.Serialize(TargetingLaserTimer);
@@ -10854,6 +10898,7 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(PurchasePrice);
 	crc(BurstIndex);
 	crc(RadialFireIndex);
+	crc(SprayIndex);
 	crc(IsBurstResetPending);
 	crc((int)BurstResetTimer);
 	crc(AngleRotatedSideways);

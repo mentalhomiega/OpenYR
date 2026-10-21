@@ -463,6 +463,9 @@ class TechnoClass :	public RadioClass,
 		// up per shot and wraps to zero at the segment count (TechnoClass::Fire, 0x6FDD50).
 		int RadialFireIndex;
 
+		// The point of the SprayAttack ring that this object's last shot struck, from 0 (east) to 7.
+		int SprayIndex;
+
 		/*
 		 * Losing a target partway through a burst starts this countdown. The burst keeps its
 		 * next-shot index until a new target is acquired or the full rearm interval expires.

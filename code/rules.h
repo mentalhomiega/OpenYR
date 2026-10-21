@@ -874,6 +874,9 @@ class RulesClass
 		// The fewest frames between two all-cheer commands from this machine.
 		int MaximumCheerRate;
 
+		// If the attack cursor shows over an enemy disguised as one of the player's own objects, then this flag will be true.
+		bool IsAttackCursorOnDisguise;
+
 		/*
 		 * This controls how widely a meteor impact deforms the terrain (0 - 4). Zero
 		 * leaves the ground alone, one dents only the impact cell, and higher values
