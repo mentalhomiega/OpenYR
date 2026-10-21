@@ -2675,8 +2675,9 @@ void Tactical::Scroll_Map(FacingType facing, int distance)
 
 /// <summary>
 /// Returns the area of absolute pixels that the scroll limits keep a tactical view inside.
-/// A view no wider or taller than the area fits on the local map. Clamp_To_Tactical_Rect lets
-/// a modern-interface view reach past the right edge by the panel's width.
+/// A view no wider or taller than the area fits on the local map. The view stops at the map's
+/// edges in every layout, so the modern panel covers the top right of the map rather than
+/// letting the view show past the edge.
 /// </summary>
 Rect Tactical_Visible_Map_Area(void)
 {
@@ -2717,12 +2718,6 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
 	Point2D minimum;
 	Point2D maximum;
 	Tactical_Position_Limits(minimum, maximum);
-
-	// The modern build panel covers the right of the view, so the view may scroll that far past the map's edge.
-	// The menu battle has no panel, so its view stops at the edge.
-	if (Modern_Interface() && !Shellmap_Running()) {
-		maximum.X += Screen_To_View_Offset(Point2D(HUD_PANEL_WIDTH, 0)).X;
-	}
 
 	if (maximum.X < minimum.X) {
 		minimum.X = maximum.X = (minimum.X + maximum.X) / 2;
