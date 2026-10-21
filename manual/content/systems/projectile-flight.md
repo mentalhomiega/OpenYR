@@ -243,7 +243,7 @@ The blast does not always go off where the projectile stood. Up to three moves p
    - the fuse tripped within 64 leptons of the point it was set on;
    - a ballistic shot landed and went off because it is not `Bouncy=yes`, or because the cell it was in at the start of the turn held an object that is not friendly. It must also have come down within 384 leptons (a cell and a half) of the target, or within six times its rebound speed if that is farther. Only half the height difference counts toward that distance.
 2. The blast moves onto the target's center when it is within 32 leptons of it. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) projectiles skip this move.
-3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/), or the projectile is [`Splits=yes`](/keys/splits/) or [`Inaccurate=yes`](/keys/inaccurate/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge.
+3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/), or the projectile is [`Airburst=yes`](/keys/airburst/), [`Splits=yes`](/keys/splits/) or [`Inaccurate=yes`](/keys/inaccurate/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge.
 
 Between the second move and the third, a projectile that is not steered, not [`Arcing=yes`](/keys/arcing/), and not [`Airburst=yes`](/keys/airburst/) or [`Inaccurate=yes`](/keys/inaccurate/) blasts at its fuse point, the target's position at launch. A test that forces the blast where the projectile stands, such as the cliff, wall, below-ground or anti-aircraft test, keeps it there. [`Splits=yes`](/keys/splits/) projectiles and [`EMEffect=yes`](/keys/emeffect/) warheads do not use the fuse point.
 
@@ -251,7 +251,7 @@ The warhead decides what the blast does. [`AnimList`](/keys/animlist/) chooses t
 
 ## Clusters and splitting
 
-[`Cluster`](/keys/cluster/) counts one of two things, and [`Splits`](/keys/splits/) chooses which. An `Airburst=yes` projectile splits unless it sets `Splits=no`; the `Splits` page explains why.
+[`Cluster`](/keys/cluster/) counts one of two things, and [`Splits`](/keys/splits/) chooses which. An `Airburst=yes` projectile does not split unless it sets `Splits=yes`.
 
 An ordinary projectile repeats its whole detonation `Cluster` times. The first blast lands on the point of impact. Each later blast lands one to two cells from that same point, in a random direction, so the blasts do not walk away from it.
 
@@ -261,6 +261,8 @@ A splitting projectile detonates once and then releases `Cluster` bomblets of it
 2. The candidate list is built from the objects within five cells of the carrier's target, or of the carrier itself when its target is a cell. Objects the carrier's blast destroyed are already gone.
 3. Each bomblet keeps the carrier's target at the [`RetargetAccuracy`](/keys/retargetaccuracy/) chance, and otherwise draws from the list.
 4. The bomblets are created at the carrier's position, pointing straight down. That position ignores the 32-lepton move onto the target.
+
+An `Airburst=yes` projectile that does not split detonates once and then fires its `AirburstWeapon` once at each of the nine cells around the burst, with the weapon's `Damage` as written.
 
 ## Where a projectile's artwork is read from
 

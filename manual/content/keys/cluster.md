@@ -7,7 +7,7 @@ when_omitted:
   value: "1"
 ---
 
-[`Splits`](/keys/splits/) decides which of the two the value counts.
+[`Splits`](/keys/splits/) decides which of the two the value counts. An [`Airburst=yes`](/keys/airburst/) projectile that does not write `Splits=yes` ignores it.
 
 An ordinary projectile detonates this many times, and each blast deals the projectile's full damage around its point. The first blast lands at the point of impact. Each later blast lands one to two cells from that point in a random direction, with the distance drawn again for every blast. Only the first blast therefore strikes the point of impact at full strength.
 

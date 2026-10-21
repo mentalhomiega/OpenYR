@@ -166,6 +166,12 @@ class BulletTypeClass : public ObjectTypeClass
 		 */
 		bool IsSplits;
 
+		// An Airburst projectile detonates once whatever its Cluster is, and then fires its AirburstWeapon after the blast.
+		bool Detonates_Once(void) const {return(IsSplits || IsAirburst);}
+
+		// An Airburst projectile that does not split fires its AirburstWeapon at the nine cells around the burst.
+		bool Bursts_Over_Cells(void) const {return(IsAirburst && !IsSplits);}
+
 		/*
 		 * If this bullet may only be fired upon vehicles, then this flag will be true. It
 		 * overrides the IsAntiAircraft and IsAntiGround flags when threats are evaluated.

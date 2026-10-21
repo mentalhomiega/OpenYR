@@ -1399,7 +1399,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 	}
 
 	if (!Warhead->IsEMEffect) {
-		if (!Class->IsSplits) {
+		if (!Class->Detonates_Once()) {
 			// Airburst and Inaccurate shells blast where they stand (BulletClass::Explode, 0x468DC7 and 0x468EB9).
 			if (!forced && !Class->IsArcing && !Is_Homing() && !Class->IsAirburst && !Class->IsInaccurate && Fuse.Fuse_Target() != COORD_NONE) {
 				coord = Fuse.Fuse_Target();
@@ -1419,7 +1419,7 @@ void BulletClass::Bullet_Explodes(bool forced)
 		}
 	}
 
-	if (!Class->IsSplits) {
+	if (!Class->Detonates_Once()) {
 		Coord newcoord = coord;
 		for (int i = 0; i < Class->Cluster; i++) {
 			Detonate(coord);
@@ -1764,6 +1764,30 @@ void BulletClass::Detonate(Coord const & coord)
 	// Debris follows the blast. A nullified shot throws none, but the splitting below still runs, since gamemd repeats the clusters from BulletClass::Explode (BulletClass::Detonate, 0x469D06).
 	if (!nullified && warhead->MaxDebris > 0) {
 		Throw_Warhead_Debris(warhead, PositionCoord);
+	}
+
+	// An Airburst projectile fires its AirburstWeapon once at each of nine cells, the eight neighbours of the cell it burst over
+	// from north clockwise and then that cell, and launches every bomblet at a speed of 50 without a lighting flash (BulletClass::Detonate, 0x4690B0).
+	if (Class->Bursts_Over_Cells()) {
+		WeaponTypeClass * weapon = Class->AirburstWeapon;
+		if (weapon == NULL || weapon->Bullet == NULL) {
+			DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
+		} else {
+			static int const offsets[9][2] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, 0}};
+			Cell const center = Center_Coord().As_Cell();
+			for (int index = 0; index < 9; index++) {
+				Cell const cell(center.X + offsets[index][0], center.Y + offsets[index][1]);
+				if (!Map.In_Radar(cell)) {
+					continue;
+				}
+				BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, 50, false);
+				if (bullet != NULL) {
+					bullet->Weapon = weapon;
+					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+					bullet->Unlimbo(PositionCoord, velocity);
+				}
+			}
+		}
 	}
 
 	if (Class->IsSplits) {

@@ -198,7 +198,7 @@ bool BulletTypeClass::Read_INI(CCINIClass const & ini)
 		IsAirburst = ini.Get_Bool(Name(), "Airburst", IsAirburst);
 		Cluster = ini.Get_Int(Name(), "Cluster", Cluster);
 		IsAntiVehicle = ini.Get_Bool(Name(), "AV", IsAntiVehicle);
-		IsSplits = ini.Get_Bool(Name(), "Splits", IsAirburst);
+		IsSplits = ini.Get_Bool(Name(), "Splits", IsSplits);
 		RetargetAccuracy = ini.Get_Float(Name(), "RetargetAccuracy", RetargetAccuracy);
 
 		IsScalable = ini.Get_Bool(Name(), "Scalable", IsScalable);
