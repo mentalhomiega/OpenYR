@@ -1437,8 +1437,9 @@ void Tactical::Draw_Placement(bool drawtrans)
 		return;
 	}
 
+	// The pointer is in screen pixels, so it is tested against the view's screen rectangle, not the zoomed map rectangle.
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse)) {
 		return;
 	}
 
@@ -1577,8 +1578,9 @@ void Tactical::Draw_Placement_Range(void)
 		return;
 	}
 
+	// The pointer is in screen pixels, so it is tested against the view's screen rectangle, not the zoomed map rectangle.
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse) || !Map.In_Radar(Map.ZoneCell)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse) || !Map.In_Radar(Map.ZoneCell)) {
 		return;
 	}
 
