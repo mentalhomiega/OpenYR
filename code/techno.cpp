@@ -4467,12 +4467,20 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A unit warping in cannot fire (FIRE_REARM) and one being warped out cannot fire (FIRE_ILLEGAL), as TechnoClass::GetFireError (0x6FC0B0) checks.
+	if (Is_Chrono_Warping()) {
+		return(FIRE_REARM);
+	}
+
 	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
 	if (Is_Foot() && IsAttackedByLocomotor) {
 		return(FIRE_ILLEGAL);
 	}
 	if (LocomotorTarget == target) {
 		return(FIRE_REARM);
+	}
+	if (IsBeingWarpedOut) {
+		return(FIRE_ILLEGAL);
 	}
 
 	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
@@ -7981,11 +7989,11 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 					flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 				}
 			}
+		}
 
-			// An object being warped out is drawn half see-through, as TechnoClass::Draw_Voxel (0x706640) draws it.
-			if (IsBeingWarpedOut) {
-				flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
-			}
+		// Warping out or in draws the object half see-through, as the shape draw (gamemd 0x705E00) does.
+		if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+			flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 		}
 
 		ConvertClass * converter;
@@ -8179,7 +8187,8 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		}
 	}
 
-	if (IsBeingWarpedOut) {
+	// Warping out or in draws the voxel half see-through, as TechnoClass::Draw_Voxel (0x706640) does.
+	if (IsBeingWarpedOut || Is_Chrono_Warping()) {
 		flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 	}
 	flags = ShapeFlags_Type(~negflags & (flags|SHAPE_ALPHA));
