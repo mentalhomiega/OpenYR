@@ -279,6 +279,7 @@ void UIRmlBgfxRenderClass::Log_Resource_Counts(char const * when) const
 				when, Statistics.GeometryCount, (unsigned long long)Statistics.GeometryBytes,
 				Statistics.TextureCount, (unsigned long long)Statistics.TextureBytes,
 				Error()[0] != '\0' ? "; error: " : "", Error());
+	Backend_Log_Resource_Counts(when);
 }
 
 

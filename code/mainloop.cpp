@@ -30,6 +30,7 @@
 #include "autotest.h"
 #include "beacon.h"
 #include "bench.h"
+#include "bgfxbackend.h"
 #include "chat.h"
 #include "command.h"
 #include "conquer.h"
@@ -699,6 +700,7 @@ void Sync_Delay(void)
 		if (stat_now - stat_start >= 1000) {
 			DebugString("Render: %u game frames, %u extra draws, %u presents, %u ms waiting in the last %u ms, %u shifted draws\n",
 				stat_frames, stat_draws, Video_Presents_Per_Second(), stat_wait, stat_now - stat_start, RenderBlendShifts);
+			Backend_Log_Resource_Counts("game");
 			RenderBlendShifts = 0;
 			stat_start = stat_now;
 			stat_frames = 0;

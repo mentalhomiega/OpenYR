@@ -99,5 +99,8 @@ bool Backend_Frame_Is_Point_Sampled(void);
 
 char const * Backend_Renderer_Name(void);
 
+// Logs the live texture and buffer counts from bgfx, tagged with the given label.
+void Backend_Log_Resource_Counts(char const * when);
+
 // Saves what the window shows after the next present as a TGA file.
 void Backend_Request_Window_Capture(char const * filepath);

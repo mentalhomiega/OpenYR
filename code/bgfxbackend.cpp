@@ -1419,3 +1419,19 @@ char const * Backend_Renderer_Name(void)
 	}
 	return(bgfx::getRendererName(bgfx::getRendererType()));
 }
+
+
+/// <summary>
+/// Logs the live texture, frame buffer and buffer counts and the memory they hold, tagged with a label.
+/// </summary>
+void Backend_Log_Resource_Counts(char const * when)
+{
+	if (!_Initialized) {
+		return;
+	}
+	bgfx::Stats const * stats = bgfx::getStats();
+	DebugString("GPU: %s; %u textures (%lld bytes), %u frame buffers, %u index buffers, %u vertex buffers, %u dynamic index buffers, %u dynamic vertex buffers, %lld bytes in render targets\n",
+				when, (unsigned int)stats->numTextures, (long long)stats->textureMemoryUsed, (unsigned int)stats->numFrameBuffers,
+				(unsigned int)stats->numIndexBuffers, (unsigned int)stats->numVertexBuffers, (unsigned int)stats->numDynamicIndexBuffers,
+				(unsigned int)stats->numDynamicVertexBuffers, (long long)stats->rtMemoryUsed);
+}
