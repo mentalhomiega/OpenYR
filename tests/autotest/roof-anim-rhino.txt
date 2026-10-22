@@ -1,0 +1,23 @@
+; A Soviet War Factory (NAWEAP at 60,20) builds a Rhino (HTNK) on instant build, and the Rhino drives out of the front door.
+; This is the control for the roof exit: the front door art (NAWEAP_2 and NAWEAP_1) must still show. Zoomed on the factory,
+; a screenshot every 3 frames from 61.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/roof-anim-rhino.txt -Country 8 -Width 800 -Height 600 -Seconds 120 -Settings "[Options]`r`nDebugMode=yes" -ShotDir <dir> -Filter "banimstate|where|produce|Exception"
+30 command CenterBase
+30 command DebugInfiniteMoney
+31 command DebugUnlockAll
+32 command DebugInstantBuild
+35 reveal
+40 own NAPOWR 56 40
+41 own NACNST 50 30
+42 own NATECH 46 44
+43 own NAWEAP 60 20
+50 view 61 21
+51 zoom 2
+60 produce HTNK
+61 record 3
+180 banimstate NAWEAP
+200 where HTNK
+300 record 0
+302 banimstate NAWEAP
+303 where HTNK
+310 quit

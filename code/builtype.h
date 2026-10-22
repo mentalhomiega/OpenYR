@@ -325,6 +325,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		ShapeSet const * DeployingAnim;
 
 		/*
+		 * This is the shape data drawn in place of the building's normal artwork while a unit that
+		 * jumps or hovers leaves through the roof. It takes the place of DeployingAnim for that exit.
+		 */
+		ShapeSet const * RoofDeployingAnim;
+
+		/*
 		 * This is the shape data drawn over a factory's doorway while it unloads, so that
 		 * whatever is passing through appears to be moving through the door.
 		 */

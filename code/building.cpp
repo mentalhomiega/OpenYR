@@ -929,8 +929,24 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 		return;
 	}
 
+	// A jumpjet or balloon-hover unit leaves through the roof. The unit is the first radio link, as in BuildingClass::DrawIt (0x43D290).
+	bool through_roof = false;
 	if (Mission == MISSION_UNLOAD) {
-		if (Class->DeployingAnim != NULL) {
+		TechnoClass * unit = Contact_With_Whom();
+		if (unit != NULL) {
+			TechnoTypeClass const * unittype = unit->Techno_Type_Class();
+			through_roof = unittype->IsJumpJet || unittype->IsBalloonHover;
+		}
+	}
+
+	if (Mission == MISSION_UNLOAD) {
+		if (through_roof) {
+			// Without RoofDeployingAnim the structure keeps its own artwork; DeployingAnim is never used for a roof exit.
+			if (Class->RoofDeployingAnim != NULL) {
+				shapefile = Class->RoofDeployingAnim;
+				zadjust = -40;	// The roof shape is drawn 40 pixels higher (BuildingClass::DrawIt, 0x43D7D6).
+			}
+		} else if (Class->DeployingAnim != NULL) {
 			shapefile = Class->DeployingAnim;
 			zadjust = 0;
 		}
@@ -976,14 +992,6 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 	}
 
 	if (Mission == MISSION_UNLOAD) {
-
-		// A jumpjet or balloon-hover unit leaves through the roof. The unit is the first radio link, as in BuildingClass::DrawIt (0x43D290).
-		TechnoClass * unit = Contact_With_Whom();
-		bool through_roof = false;
-		if (unit != NULL) {
-			TechnoTypeClass const * unittype = unit->Techno_Type_Class();
-			through_roof = unittype->IsJumpJet || unittype->IsBalloonHover;
-		}
 
 		// A roof exit draws only UnderRoofDoorAnim, so a structure without one draws no door for that exit.
 		ShapeSet const * underdoor = through_roof ? Class->UnderRoofDoorAnim : Class->UnderDoorAnim;

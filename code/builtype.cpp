@@ -263,6 +263,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	DoorStages(0),
 	Upgrades(0),
 	DeployingAnim(NULL),
+	RoofDeployingAnim(NULL),
 	UnderDoorAnim(NULL),
 	UnderRoofDoorAnim(NULL),
 	DoorAnim(NULL),
@@ -1108,6 +1109,13 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
 		DeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+	}
+
+	ArtINI.Get_String(Graphic_Name(), "RoofDeployingAnim", "", buffer, sizeof(buffer));
+	if (strlen(buffer) != 0) {
+		_makepath(fullname, NULL, NULL, buffer, ".SHP");
+		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
+		RoofDeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "DoorAnim", "", buffer, sizeof(buffer));
@@ -2423,6 +2431,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AnimData);
 	stream.Serialize(Upgrades);
 	// DeployingAnim -- artwork, fetched from the mix files again as this loads.
+	// RoofDeployingAnim -- artwork, fetched from the mix files again as this loads.
 	// UnderDoorAnim
 	// UnderRoofDoorAnim
 	// DoorAnim
