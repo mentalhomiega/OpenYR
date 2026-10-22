@@ -7387,7 +7387,8 @@ int BuildingClass::Power_Output(void) const
 		}
 	}
 
-	if (power > 0 && IsOn) {
+	// A building being warped out gives no power, as BuildingClass::GetPowerOutput (0x44E7B0) returns 0 for it.
+	if (power > 0 && IsOn && !IsBeingWarpedOut) {
 		// gamemd chops Strength / MaxStrength and then the product (GetPowerOutput, 0x44E7B0), so an
 		// exact whole result comes out one lower unless the ratio is exact in binary.
 		long long const scaled = static_cast<long long>(power) * Strength;
@@ -7413,7 +7414,8 @@ int BuildingClass::Power_Output(void) const
 /// <returns>Returns with the amount of power drained from the owning house.</returns>
 int BuildingClass::Power_Drain(void) const
 {
-	if (IsOn) {
+	// A building being warped out draws no power, as BuildingClass::GetPowerDrain (0x44E880) returns 0 for it.
+	if (IsOn && !IsBeingWarpedOut) {
 		int drain = Class->Drain;
 		if (HasExtraPowerDrain) {
 			drain += Class->ExtraPowerDrain;
