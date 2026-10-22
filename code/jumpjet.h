@@ -65,7 +65,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		void Arrive_Aloft(void);
 		void Process_Cruise(void);
 		void Process_Descent(void);
-		void Process_Unknown(void);
+		void Process_Crashing(void);
 		void Movement_AI(void);
 		Coord Closest_Free_Spot(Coord const & to) const;
 		int Desired_Flight_Level(void) const;
@@ -96,7 +96,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 			HOVERING,
 			CRUISING,
 			DESCENDING,
-			UNKNOWN,
+			CRASHING,
 		} CurrentState;
 
 		/*
@@ -113,6 +113,13 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		 */
 		double CurrentSpeed;
 		double TargetSpeed;
+
+		/*
+		 * This is how many leptons per game frame a crashing vehicle drops by. It starts at the
+		 * type's JumpjetCrash when the vehicle is let go in the air, and a held vehicle's speed
+		 * grows by one lepton each frame until it lands.
+		 */
+		double CrashSpeed;
 
 		/*
 		 * This is the altitude the jumpjet is trying to hold, expressed in leptons above the

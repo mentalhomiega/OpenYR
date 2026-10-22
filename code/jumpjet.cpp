@@ -46,6 +46,7 @@ JumpjetLocomotionClass::JumpjetLocomotionClass(void) :
 	Facing(Rule->JumpjetTurnRate),
 	CurrentSpeed(0.0),
 	TargetSpeed(0.0),
+	CrashSpeed(0.0),
 	FlightLevel(0),
 	CurrentWobble(0.0),
 	IsLanding(false)
@@ -138,8 +139,8 @@ bool JumpjetLocomotionClass::Process(void)
 				Process_Descent();
 				break;
 
-			case UNKNOWN:
-				Process_Unknown();
+			case CRASHING:
+				Process_Crashing();
 				break;
 		}
 
@@ -286,13 +287,22 @@ void JumpjetLocomotionClass::Begin_Fall(void)
 		IsLanding = false;
 	}
 
-	Coord const here = LinkedTo->PositionCoord;
-	HeadToCoord = Coord(here.X, here.Y, Map.Get_Height_GL(here));
 	CurrentSpeed = 0;
 	TargetSpeed = 0;
-	FlightLevel = 0;
-	IsMoving = true;
-	CurrentState = DESCENDING;
+	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
+
+	// A held vehicle first drifts to the centre of its cell, then falls (JumpjetLocomotionClass, 0x54AF33).
+	Coord const here = LinkedTo->PositionCoord;
+	Coord const centre = Map[here].Center_Coord();
+	if (LinkedTo->IsAttackedByLocomotor && Point2D(centre) != Point2D(here)) {
+		HeadToCoord = Coord(centre.X, centre.Y, here.Z);
+		IsMoving = true;
+		CurrentState = CRUISING;
+	} else {
+		HeadToCoord = COORD_NONE;
+		IsMoving = false;
+		CurrentState = CRASHING;
+	}
 }
 
 
@@ -333,8 +343,8 @@ char const * JumpjetLocomotionClass::State_Name(void) const
 			return("CRUISING");
 		case DESCENDING:
 			return("DESCENDING");
-		case UNKNOWN:
-			return("UNKNOWN");
+		case CRASHING:
+			return("CRASHING");
 	}
 	return("INVALID");
 }
@@ -375,6 +385,7 @@ void JumpjetLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FlightLevel);
 	stream.Serialize(CurrentWobble);
 	stream.Serialize(IsLanding);
+	stream.Serialize(CrashSpeed);
 
 	bool haspiggy = (Piggybacker != NULL);
 	stream.Serialize(haspiggy);
@@ -597,6 +608,13 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		LinkedTo->IsDown = false;
 		LinkedTo->Set_Coord(position);
 		LinkedTo->IsDown = down;
+		// A vehicle let go in the air falls once it reaches the spot it was flying to.
+		if (LinkedTo->IsCrashing) {
+			IsMoving = false;
+			HeadToCoord = COORD_NONE;
+			CurrentState = CRASHING;
+			return;
+		}
 		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).
 		if (LinkedTo->TarCom == NULL && !Stays_Aloft() && !Hovers_At_Stop()) {
 			FlightLevel = 0;
@@ -669,11 +687,8 @@ void JumpjetLocomotionClass::Process_Descent(void)
 	int spot = CellClass::Spot_Index(HeadToCoord);
 	bool stop = true;
 
-	// A falling vehicle lands on whatever is under it, so the landing spot is not checked (JumpjetLocomotionClass, 0x54C550).
-	bool const crashing = LinkedTo->IsCrashing;
-
-	if (crashing || ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
-		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding)))) {
+	if ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
+		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding))) {
 
 		if (!IsLanding) {
 			IsLanding = true;
@@ -706,14 +721,6 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			LinkedTo->Assign_Destination(NULL);
 			LinkedTo->Per_Cell_Process(PCP_END);
 
-			// A vehicle let go in the air crushes what is under it and is let go for good so that it can hand back its
-			// own locomotor. The landing itself deals no damage (JumpjetLocomotionClass, 0x54C9FE).
-			if (crashing) {
-				LinkedTo->Crush_On_Landing();
-				LinkedTo->IsCrashing = false;
-				LinkedTo->IsLetGoByLocomotor = true;
-			}
-
 			if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
 				LinkedTo->Look();
 				CurrentState = GROUNDED;
@@ -731,12 +738,52 @@ void JumpjetLocomotionClass::Process_Descent(void)
 
 
 /// <summary>
-/// Handles the unknown flight state.
-/// The state has a slot in the machine but asks for no processing of its own.
+/// Handles the crashing flight state.
+/// A vehicle let go in the air drops straight down, by its crash speed each frame; a held vehicle's
+/// crash speed grows by one lepton a frame. On touching down it crushes what is under it and becomes
+/// an ordinary grounded object.
 /// </summary>
-void JumpjetLocomotionClass::Process_Unknown(void)
+void JumpjetLocomotionClass::Process_Crashing(void)
 {
+	// The fall is truncated to whole leptons (JumpjetLocomotionClass, 0x54CAD2).
+	Coord fallen = LinkedTo->PositionCoord;
+	fallen.Z = static_cast<int>(fallen.Z - CrashSpeed);
+	if (LinkedTo->IsAttackedByLocomotor) {
+		CrashSpeed += 1.0;
+	}
+	LinkedTo->Set_Coord(fallen);
 
+	int height = LinkedTo->HeightAGL;
+	if (!LinkedTo->IsOnBridge) {
+		if (Map[LinkedTo->Get_Coord()].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
+			height -= BRIDGE_LEPTON_HEIGHT;
+		}
+	}
+	if (height > 0) {
+		return;
+	}
+
+	Coord landed = LinkedTo->PositionCoord;
+	landed.Z = Map.Get_Height_GL(landed);
+	LinkedTo->Set_Speed(0.0);
+	LinkedTo->Mark(MARK_UP);
+	LinkedTo->Set_Coord(landed);
+	LinkedTo->Mark(MARK_DOWN);
+	HeadToCoord = COORD_NONE;
+	IsMoving = false;
+	FlightLevel = 0;
+	LinkedTo->Assign_Destination(NULL);
+	LinkedTo->Per_Cell_Process(PCP_END);
+
+	LinkedTo->Crush_On_Landing();
+	LinkedTo->IsCrashing = false;
+	LinkedTo->IsLetGoByLocomotor = true;
+
+	if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
+		LinkedTo->Look();
+		CurrentState = GROUNDED;
+		IsLanding = false;
+	}
 }
 
 
@@ -809,8 +856,9 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		height_diff = height - ground_height;
 	}
 
+	// A crashing vehicle's height is set by Process_Crashing, not by the flight level.
 	bool moved = false;
-	if (height_diff < desired_height) {
+	if (CurrentState != CRASHING && height_diff < desired_height) {
 		int height_agl = LinkedTo->HeightAGL;
 		if ((Map[LinkedTo->Get_Coord()].IsUnderBridge) && !LinkedTo->IsOnBridge) {
 			if (LinkedTo->PositionCoord.Z >= Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT) {
@@ -829,7 +877,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		}
 		moved = true;
 	}
-	if (height_diff > desired_height) {
+	if (CurrentState != CRASHING && height_diff > desired_height) {
 		// A descent moves one JumpjetClimb step, or the rest of the way when less than a step is left.
 		if (desired_height <= height_diff - LinkedTo->TClass->JumpjetClimb) {
 			height = static_cast<int>(height - LinkedTo->TClass->JumpjetClimb);
