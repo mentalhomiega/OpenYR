@@ -1516,6 +1516,21 @@ TechnoClass * RadarTrackingClass::Last(Point2D const & pixel) const
 }
 
 
+TechnoClass * RadarTrackingClass::First_Drawn(Point2D const & pixel, bool shrouded) const
+{
+	auto found = Blips.find(std::pair<int, int>(pixel.X, pixel.Y));
+	if (found == Blips.end()) {
+		return(NULL);
+	}
+	for (TechnoClass * object : found->second) {
+		if (!shrouded || object->House->Is_Player_Control()) {
+			return(object);
+		}
+	}
+	return(NULL);
+}
+
+
 /// <summary>
 /// Empties the radar's object tracking.
 /// </summary>
@@ -1625,7 +1640,8 @@ void RadarClass::Plot_Radar_Pixel(Point2D const & point)
 		coord.Z = Map.Get_Height_GL(coord);
 		bool shadow	= (MainWindow && Map.Is_Shrouded(coord));
 
-		TechnoClass *tech = RadarTracking.First(point);
+		// Gamemd's radar pixel plot (0x655C50) draws an object under shroud only when its house is player-controlled.
+		TechnoClass *tech = RadarTracking.First_Drawn(point, shadow);
 
 		if (tech != NULL) {
 			HouseClass *house = tech->House;

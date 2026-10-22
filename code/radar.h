@@ -67,6 +67,10 @@ class RadarTrackingClass
 		TechnoClass * First(Point2D const & pixel) const;
 		TechnoClass * Last(Point2D const & pixel) const;
 
+		// The object the radar draws at a pixel when the pixel may be shrouded: under shroud only an object
+		// whose house the local player controls is drawn, so the first such object is returned instead.
+		TechnoClass * First_Drawn(Point2D const & pixel, bool shrouded) const;
+
 		void Clear(void) { Blips.clear(); }
 
 		// Visits each occupied pixel once, with the object the radar draws on it.
