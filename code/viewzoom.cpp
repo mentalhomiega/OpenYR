@@ -393,8 +393,7 @@ void Apply_Pending_View_Zoom(void)
 
 
 // Takes a zoom in ViewZoom units and sets it at once on the next Apply_Pending_View_Zoom, not inside the action.
-// A glide would end by putting the view back where it began, which would undo a camera scroll still under way.
-// A change made inside a chronoshift's start frame crashed the presenter in testing, so the change waits for the frame.
+// The zoom is applied on the next frame's zoom update, so a glide does not undo a scripted scroll still under way.
 static void SetScriptedZoomAtOnce(double zoom)
 {
 	_PendingZoomStep = 0.0;

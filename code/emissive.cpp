@@ -36,8 +36,8 @@ namespace {
 
 bool _DebugView = false;
 
-// Planes are bound to a few long-lived surfaces, so a short list is enough.
-constexpr int MaxBindings = 4;
+// Emissive_Sync binds at most five surfaces (the screen pair, the map pair and the presented one); one slot is spare.
+constexpr int MaxBindings = 6;
 
 struct Binding
 {
