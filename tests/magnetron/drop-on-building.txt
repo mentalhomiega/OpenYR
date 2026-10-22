@@ -1,0 +1,91 @@
+; A Magnetron lifts an enemy Rhino (HTNK) over open land. Enemy pillboxes (GAPILL) are placed on cells 60 to 62 at frame 385,
+; while the Rhino is flying, and a move order at frame 400 releases the Rhino. It lands on one of them, which blocks the landing, so the Rhino
+; explodes with CrushWarhead, then C4Warhead, each for its strength (400) times FallingDamageMultiplier
+; (1.0). The first blast destroys that pillbox; "where GAPILL" lists the pillboxes still standing.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/magnetron/drop-on-building.txt -Seconds 150
+300 own TELE 54 40
+301 spawn HTNK 62 40
+302 reveal
+303 view 58 40
+310 strike TELE 62 40
+385 spawn GAPILL 60 40
+385 spawn GAPILL 61 40
+385 spawn GAPILL 62 40
+320 lift HTNK
+324 lift HTNK
+328 lift HTNK
+332 lift HTNK
+336 lift HTNK
+340 lift HTNK
+344 lift HTNK
+348 lift HTNK
+352 lift HTNK
+356 lift HTNK
+360 lift HTNK
+364 lift HTNK
+368 lift HTNK
+372 lift HTNK
+376 lift HTNK
+380 lift HTNK
+384 lift HTNK
+388 lift HTNK
+392 lift HTNK
+396 lift HTNK
+400 move TELE 46 40
+440 lift HTNK
+441 lift HTNK
+442 lift HTNK
+443 lift HTNK
+444 lift HTNK
+445 lift HTNK
+446 lift HTNK
+447 lift HTNK
+448 lift HTNK
+449 lift HTNK
+450 lift HTNK
+451 lift HTNK
+452 lift HTNK
+453 lift HTNK
+454 lift HTNK
+455 lift HTNK
+456 lift HTNK
+457 lift HTNK
+458 lift HTNK
+459 lift HTNK
+460 lift HTNK
+461 lift HTNK
+462 lift HTNK
+463 lift HTNK
+464 lift HTNK
+465 lift HTNK
+466 lift HTNK
+467 lift HTNK
+468 lift HTNK
+469 lift HTNK
+470 lift HTNK
+471 lift HTNK
+472 lift HTNK
+473 lift HTNK
+474 lift HTNK
+475 lift HTNK
+476 lift HTNK
+477 lift HTNK
+478 lift HTNK
+479 lift HTNK
+480 lift HTNK
+481 lift HTNK
+482 lift HTNK
+483 lift HTNK
+484 lift HTNK
+485 lift HTNK
+486 lift HTNK
+487 lift HTNK
+488 lift HTNK
+489 lift HTNK
+490 lift HTNK
+491 lift HTNK
+492 lift HTNK
+494 where GAPILL
+494 where HTNK
+494 where TELE
+495 quit

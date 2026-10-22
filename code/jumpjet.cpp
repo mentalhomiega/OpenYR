@@ -768,14 +768,23 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 	LinkedTo->Set_Speed(0.0);
 	LinkedTo->Mark(MARK_UP);
 	LinkedTo->Set_Coord(landed);
-	LinkedTo->Mark(MARK_DOWN);
 	HeadToCoord = COORD_NONE;
 	IsMoving = false;
 	FlightLevel = 0;
+
+	// The vehicle is off its cell while the landing is checked, so it does not block itself.
+	bool blocked = LinkedTo->Crush_On_Landing();
+	if (!blocked && LinkedTo->Can_Enter_Cell(&Map[landed]) != MOVE_OK && Map[landed].Land_Type() != LAND_WATER) {
+		blocked = true;
+	}
+	LinkedTo->Mark(MARK_DOWN);
+	if (blocked) {
+		LinkedTo->Explode_On_Landing();
+		return;
+	}
+
 	LinkedTo->Assign_Destination(NULL);
 	LinkedTo->Per_Cell_Process(PCP_END);
-
-	LinkedTo->Crush_On_Landing();
 	LinkedTo->IsCrashing = false;
 	LinkedTo->IsLetGoByLocomotor = true;
 

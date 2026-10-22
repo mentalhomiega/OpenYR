@@ -1822,6 +1822,14 @@ class RulesClass
 		 */
 		WarheadTypeClass const * CrushWarhead;
 
+		/*
+		 * A vehicle that a locomotor lets go of and that lands where it cannot stand explodes for its
+		 * strength times this factor, from its current strength when CurrentStrengthDamage is set and
+		 * from its full strength otherwise.
+		 */
+		double FallingDamageMultiplier;
+		bool CurrentStrengthDamage;
+
 		// The warheads V3 rockets and Dreadnought and Boomer missiles explode with, normal and elite.
 		// A drained refinery's owner pays DrainMoneyAmount every DrainMoneyFrameDelay frames to the drainer's owner,
 		// and the drainer shows DrainAnimationType while it drains.

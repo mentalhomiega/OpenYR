@@ -242,7 +242,8 @@ class TechnoClass :	public RadioClass,
 		// The object and house that held this one, as they are credited with what it crushes when it lands.
 		TechnoClass * LetGoBy;
 		HouseClass * LetGoByHouse;
-		void Crush_On_Landing(void);
+		bool Crush_On_Landing(void);
+		void Explode_On_Landing(void);
 
 		// The threat this object has added to the cell it stands in, so it can be taken back exactly.
 		int ThreatPosed;

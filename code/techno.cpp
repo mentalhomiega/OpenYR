@@ -12291,19 +12291,24 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 /// <summary>
 /// Crushes what stands where this vehicle lands after a locomotor let it go in the air
 /// (JumpjetLocomotionClass, 0x54CA90). Only the first object on the cell, apart from this one,
-/// decides what happens. A vehicle or structure is left alone. A soldier is crushed, and so is
-/// everything after it on the cell. Any other object takes damage from CrushWarhead equal to
-/// its strength, ignoring its defenses; with no CrushWarhead it takes none. The holder, or failing
-/// that its house, is credited.
+/// decides what happens. A vehicle or structure there blocks the landing and is left alone. A
+/// soldier is crushed, and so is everything after it on the cell. Any other object takes damage
+/// from CrushWarhead equal to its strength, ignoring its defenses; with no CrushWarhead it takes
+/// none. With a holder, the holder is the attacker and no house is passed; without one, the vehicle
+/// is the attacker and its LetGoByHouse is passed.
 /// </summary>
-void TechnoClass::Crush_On_Landing(void)
+/// <returns>bool; Is the landing blocked by a vehicle or structure on the cell?</returns>
+bool TechnoClass::Crush_On_Landing(void)
 {
 	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(false);
 	if (object == this && object != NULL) {
 		object = object->Next;
 	}
-	if (object == NULL || object->RTTI == RTTI_UNIT || object->RTTI == RTTI_BUILDING) {
-		return;
+	if (object == NULL) {
+		return(false);
+	}
+	if (object->RTTI == RTTI_UNIT || object->RTTI == RTTI_BUILDING) {
+		return(true);
 	}
 
 	if (object->RTTI == RTTI_INFANTRY) {
@@ -12326,7 +12331,36 @@ void TechnoClass::Crush_On_Landing(void)
 		}
 	} else if (Rule->CrushWarhead != NULL) {
 		int damage = object->Strength;
-		object->Take_Damage(damage, 0, Rule->CrushWarhead, LetGoBy, true, false, LetGoByHouse);
+		TechnoClass * attacker = LetGoBy != NULL ? LetGoBy : this;
+		HouseClass * house = LetGoBy != NULL ? NULL : LetGoByHouse;
+		object->Take_Damage(damage, 0, Rule->CrushWarhead, attacker, true, false, house);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Destroys this vehicle where a locomotor let it go onto ground it cannot stand on
+/// (gamemd 0x746209). The CrushWarhead and then the C4Warhead burst at its position, each for its
+/// strength times FallingDamageMultiplier, with the holder as the source. The vehicle is removed
+/// afterwards, and a kill the blast leaves unrecorded is credited to the holder or its house.
+/// </summary>
+void TechnoClass::Explode_On_Landing(void)
+{
+	TechnoClass * owner = LetGoBy != NULL ? LetGoBy : this;
+	int const strength = Rule->CurrentStrengthDamage ? Strength : TClass->MaxStrength;
+	int const damage = static_cast<int>(strength * Rule->FallingDamageMultiplier);
+	Explosion_Damage(PositionCoord, damage, owner, Rule->CrushWarhead, true, LetGoByHouse);
+	if (IsActive) {
+		Explosion_Damage(PositionCoord, damage, owner, Rule->C4Warhead, true, LetGoByHouse);
+	}
+	if (IsActive) {
+		if (LetGoBy != NULL) {
+			Record_The_Kill(LetGoBy);
+		} else if (LetGoByHouse != NULL) {
+			Record_The_Kill_By_House(LetGoByHouse);
+		}
+		Delete_Me();
 	}
 }
 
