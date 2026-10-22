@@ -996,7 +996,10 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		building->Crossing_Firestorm(LinkedTo, true);
 	}
 
-	LinkedTo->PrimaryFacing.Set(Facing.Current());
+	// A held vehicle keeps its body facing while its locomotor heads for the holder (JumpjetLocomotionClass, 0x54D610).
+	if (!LinkedTo->IsAttackedByLocomotor) {
+		LinkedTo->PrimaryFacing.Set(Facing.Current());
+	}
 
 	if (need_to_mark) {
 		LinkedTo->Mark(MARK_DOWN);
