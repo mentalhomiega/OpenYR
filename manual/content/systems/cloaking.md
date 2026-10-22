@@ -252,7 +252,7 @@ Selection follows the sensing rule. When an object of a house the player does no
 The local player's radar asks these questions in order and uses the first answer that applies:
 
 1. Is it `Invisible=yes`, sinking, no longer alive, or in limbo? Then it is never plotted, for any house.
-2. Is it [`RadarVisible=yes`](/keys/radarvisible/)? Then it is always plotted.
+2. Is it [`RadarVisible=yes`](/keys/radarvisible/) and outside the shroud? Then it is plotted.
 3. Does it belong to a house under the local player's control? Then it is plotted once the player has discovered it.
 4. Is the cell under its centre outside the playable area that [`LocalSize`](/keys/localsize/) declares? Then it is not plotted.
 5. Is it in plain view? It is plotted when all of these hold: it is not fogged, not hidden, not under shroud, not more than 20 leptons below ground level, and it does not hold the `RADAR_INVISIBLE` [veteran ability](/systems/veterancy/#abilities).
@@ -268,6 +268,8 @@ A player who has been given the whole map senses every cell, and never counts an
 A detection raises an enemy-sensed [radar event](/reference/enums/radar-event/) at the object's cell. No announcer line plays with it. An object traveling through a tunnel raises no event. A detection within the suppression distance of an enemy-sensed event already on the radar raises no event.
 
 A structure goes through the same questions, with these differences. Step 1 does not ask whether it is sinking or alive. The hidden test in step 4 also fails at its fifteenth translucency level, and the height and ability tests do not apply. A detected structure is always of the hidden kind, never the underground one.
+
+A plotted object is drawn only where the shroud allows. In a cell under the local player's shroud, a blip is drawn only for an object whose house the local player controls. Any other object there, including one that is sensed or detected, leaves the pixel black. Objects in cells outside the shroud are drawn as the questions above decide.
 
 ### Radius rings
 
