@@ -16,4 +16,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-The Magnetron now lifts enemy vehicles with its violet beam, pulls them in and drops them to their destruction when it lets go, as in Yuri's Revenge.
+The Magnetron now lifts enemy vehicles with its violet beam, pulls them in and drops them when it lets go.

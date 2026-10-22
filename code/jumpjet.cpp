@@ -706,15 +706,12 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			LinkedTo->Assign_Destination(NULL);
 			LinkedTo->Per_Cell_Process(PCP_END);
 
-			// A vehicle let go in the air crushes what is under it, may then take its drop damage, and is
-			// let go for good so that it can hand back its own locomotor (JumpjetLocomotionClass, 0x54C9FE).
+			// A vehicle let go in the air crushes what is under it and is let go for good so that it can hand back its
+			// own locomotor. The landing itself deals no damage (JumpjetLocomotionClass, 0x54C9FE).
 			if (crashing) {
 				LinkedTo->Crush_On_Landing();
 				LinkedTo->IsCrashing = false;
 				LinkedTo->IsLetGoByLocomotor = true;
-				if (LinkedTo->IsActive && !LinkedTo->IsInLimbo) {
-					LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
-				}
 			}
 
 			if (LinkedTo != NULL && LinkedTo->IsActive && !LinkedTo->IsInLimbo && !LinkedTo->IsFalling) {
