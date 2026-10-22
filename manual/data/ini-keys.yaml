@@ -32299,6 +32299,24 @@ RollAngle:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+RoofDeployingAnim:
+  key: RoofDeployingAnim
+  scopes:
+  - applies_to:
+    - BuildingType
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Root:
   key: Root
   scopes:
