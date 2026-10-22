@@ -1226,8 +1226,8 @@ ObjectClass * DisplayClass::Cell_Object(Cell const & cell, Point2D const & point
 }
 
 
-// gamemd's TechnoClass::CanBeSelectedNow (0x6FC030) refuses a slave owned by a Slave Miner. The next
-// and previous object searches make that check (MapClass::NextObject 0x4AA2B0, DisplayClass::Prev_Object 0x4AA380).
+// gamemd's TechnoClass::CanBeSelectedNow (0x6FC030) refuses a slave owned by a Slave Miner. Its callers are
+// MapClass::NextObject (0x4AA2B0), DisplayClass::Prev_Object (0x4AA380) and the rubber band callback (0x4AC2B0).
 static bool Is_Slave_Object(ObjectClass const * object)
 {
 	return(object->Is_Techno() && ((TechnoClass const *)object)->SlaveOwner != NULL);
@@ -2330,7 +2330,8 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 /// Selects an object that the rubber band has caught.
 /// This routine is handed to the tactical map's rubber band scan so that it is called for
 /// every object inside the band. Only the player's own selectable objects are taken, and
-/// buildings are passed over unless they are of the sort that can undeploy into a unit.
+/// buildings are passed over unless they are of the sort that can undeploy into a unit. A slave
+/// owned by a Slave Miner is passed over too, as gamemd's rubber band callback (0x4AC2B0) refuses it.
 /// </summary>
 /// <param name="object">The object that the rubber band has caught.</param>
 void Bandbox_Selection_Callback(ObjectClass *object)
@@ -2338,7 +2339,7 @@ void Bandbox_Selection_Callback(ObjectClass *object)
 	HouseClass *house = object->Owner_HouseClass();
 	BuildingClass *bptr = object->RTTI == RTTI_BUILDING ? (BuildingClass *)object : NULL;
 
-	if (house != NULL && house->Is_Player_Control()) {
+	if (house != NULL && house->Is_Player_Control() && !Is_Slave_Object(object)) {
 		if (object->Class_Of()->IsSelectable) {
 			bool selectable = false;
 			if (bptr != NULL) {
