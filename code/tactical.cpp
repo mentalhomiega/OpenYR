@@ -45,6 +45,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "emissive_surface.h"
 #include "linetrail.h"
 #include "radbeam.h"
 #include "fog.h"
@@ -1262,6 +1263,9 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 				ypanrect = bottomclip;
 			}
 
+			// The strip draws repaint colour without touching the emissive mask, so the mask in each strip starts clear.
+			Emissive_After_Fill(*LogicalSurface, xpanrect);
+			Emissive_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
 			Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);
 			Render_Tiles(xpanrect, ypanrect, fullredraw);
