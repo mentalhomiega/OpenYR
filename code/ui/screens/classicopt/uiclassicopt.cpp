@@ -23,7 +23,9 @@ UIClassicOptionsPresenterClass::UIClassicOptionsPresenterClass(UIGameControlsSer
 	SoundService(sound),
 	StartScore(soundstate.Score),
 	StartSound(soundstate.Sound),
-	StartVoice(soundstate.Voice)
+	StartVoice(soundstate.Voice),
+	StartUnit(soundstate.Unit),
+	StartMovie(soundstate.Movie)
 {
 }
 
@@ -43,8 +45,8 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 			|| intent.Name == "hidden") {
 		Game.Execute(forwarded);
 
-	} else if (intent.Name == "music" || intent.Name == "sfx" || intent.Name == "voice") {
-		forwarded.Name = (intent.Name == "music") ? "score" : (intent.Name == "sfx") ? "sound" : "voice";
+	} else if (intent.Name == "music" || intent.Name == "sfx" || intent.Name == "voice" || intent.Name == "unit" || intent.Name == "movie") {
+		forwarded.Name = (intent.Name == "music") ? "score" : (intent.Name == "sfx") ? "sound" : intent.Name;
 		Sound.Execute(forwarded);
 
 	} else if (intent.Name == "select" || intent.Name == "scale" || intent.Name == "stretch" || intent.Name == "systemcursor"
@@ -74,6 +76,12 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (Sound.State.Voice != StartVoice) {
 			SoundService.Set_Voice_Volume(UISoundPresenterClass::Volume_Of(StartVoice), false);
+		}
+		if (Sound.State.Unit != StartUnit) {
+			SoundService.Set_Unit_Voice_Volume(UISoundPresenterClass::Volume_Of(StartUnit), false);
+		}
+		if (Sound.State.Movie != StartMovie) {
+			SoundService.Set_Movie_Volume(UISoundPresenterClass::Volume_Of(StartMovie), false);
 		}
 		Result = UI_RESULT_CANCELLED;
 	}
@@ -125,6 +133,8 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("music");
 			Model.DirtyVariable("sfx");
 			Model.DirtyVariable("voice");
+			Model.DirtyVariable("unit");
+			Model.DirtyVariable("movie");
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
@@ -155,6 +165,8 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			labels.RegisterMember("music", &UIClassicOptionsLabels::Music);
 			labels.RegisterMember("sound", &UIClassicOptionsLabels::Sound);
 			labels.RegisterMember("voice", &UIClassicOptionsLabels::Voice);
+			labels.RegisterMember("unit", &UIClassicOptionsLabels::Unit);
+			labels.RegisterMember("movie", &UIClassicOptionsLabels::Movie);
 			labels.RegisterMember("tooltips", &UIClassicOptionsLabels::Tooltips);
 			labels.RegisterMember("targetlines", &UIClassicOptionsLabels::TargetLines);
 			labels.RegisterMember("showhidden", &UIClassicOptionsLabels::ShowHidden);
@@ -193,6 +205,8 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 				&& model.Bind("music", &sound.Score)
 				&& model.Bind("sfx", &sound.Sound)
 				&& model.Bind("voice", &sound.Voice)
+				&& model.Bind("unit", &sound.Unit)
+				&& model.Bind("movie", &sound.Movie)
 				&& model.Bind("audible", &sound.Enabled)
 				&& model.Bind("modes", &display.Modes)
 				&& model.Bind("selected", &display.Selected)

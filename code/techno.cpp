@@ -5652,10 +5652,10 @@ void TechnoClass::Draw_Target_Laser(void) const
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
 static void Play_Unit_Voice(VocType voc)
 {
-	if (voc != VOC_NONE) {
+	if (voc != VOC_NONE && Options.UnitVoiceVolume > 0.0f) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
-	Sound_Effect(voc);
+	Unit_Voice_Effect(voc);
 }
 
 
@@ -6898,7 +6898,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 */
 			if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
 				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Get_Coord());
+				Unit_Voice_Effect(voc, Get_Coord());
 			}
 
 			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
@@ -7033,7 +7033,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			TechnoTypeClass const * ttype = TClass;
 			if (ttype->VoiceFeedback.Count() > 0 && NonCriticalRandomNumber(0, 99) < 30 && House->Is_Player_Control()) {
 				VocType voc = (VocType)ttype->VoiceFeedback.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Center_Coord());
+				Unit_Voice_Effect(voc, Center_Coord());
 			}
 			break;
 		}

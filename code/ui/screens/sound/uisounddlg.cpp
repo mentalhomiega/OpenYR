@@ -45,6 +45,16 @@ class UISoundEngineServiceClass : public UISoundServiceClass
 			Options.Set_Voice_Volume(volume, feedback);
 		}
 
+		virtual void Set_Unit_Voice_Volume(float volume, bool feedback) override
+		{
+			Options.Set_Unit_Voice_Volume(volume, feedback);
+		}
+
+		virtual void Set_Movie_Volume(float volume, bool feedback) override
+		{
+			Options.Set_Movie_Volume(volume, feedback);
+		}
+
 		virtual void Set_Shuffle(bool on) override
 		{
 			Options.Set_Shuffle(on);
@@ -85,6 +95,8 @@ void UI_Sound_State(UISoundState & state)
 	state.Score = UISoundPresenterClass::Level_Of(Options.ScoreVolume);
 	state.Sound = UISoundPresenterClass::Level_Of(Options.SoundVolume);
 	state.Voice = UISoundPresenterClass::Level_Of(Options.VoiceVolume);
+	state.Unit = UISoundPresenterClass::Level_Of(Options.UnitVoiceVolume);
+	state.Movie = UISoundPresenterClass::Level_Of(Options.MovieVolume);
 	state.Shuffle = Options.IsScoreShuffle;
 	state.Repeat = Options.IsScoreRepeat;
 	state.Enabled = AudioEngine.Is_Available();

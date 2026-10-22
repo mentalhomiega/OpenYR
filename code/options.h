@@ -77,6 +77,8 @@ class OptionsClass {
 		void Set_Score_Volume(float volume, bool feedback);
 		void Set_Sound_Volume(float volume, bool feedback);
 		void Set_Voice_Volume(float volume, bool feedback);
+		void Set_Unit_Voice_Volume(float volume, bool feedback);
+		void Set_Movie_Volume(float volume, bool feedback);
 		int Normalize_Delay(int delay) const;
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
@@ -354,6 +356,8 @@ class OptionsClass {
 		float SoundVolume;				// Volume for sound effects.
 		float VoiceVolume;				/// Volume for voices.
 		float ScoreVolume;				// Volume for scores.
+		float UnitVoiceVolume;			// Volume for unit and building voice responses.
+		float MovieVolume;				// Volume for movies, including the in-game radar movies.
 		bool IsScoreRepeat;				// Score should repeat?
 		bool IsScoreShuffle;			// Score list should shuffle?
 

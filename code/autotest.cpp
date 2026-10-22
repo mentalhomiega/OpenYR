@@ -269,6 +269,7 @@
 #include "gamewindow.h"
 #include "keyboard.h"
 #include "loco.h"
+#include "movie.h"
 #include "logic.h"
 #include "fly.h"
 #include "jumpjet.h"
@@ -4762,6 +4763,11 @@ void Run(StepType const & step)
 	} else if (step.Command == "sounds") {
 		// sounds <0|1>: stops or starts writing every sound effect played to the log.
 		LogSoundEffects = std::atoi(step.Argument.c_str()) != 0;
+	} else if (step.Command == "movie") {
+		// movie <name>: plays that movie to its end, with its sound at the Movies option's level.
+		DebugString("AUTOTEST movie %s\n", step.Argument.c_str());
+		Play_Movie(step.Argument.c_str());
+		DebugString("AUTOTEST movie %s done\n", step.Argument.c_str());
 	} else if (step.Command == "skipscore") {
 		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
 		// SkipScoreScreen does, so the run reaches the lobby without a key press.

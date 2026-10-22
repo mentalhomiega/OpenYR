@@ -49,6 +49,10 @@
 	<input type="range" id="sfx" min="0" max="10" step="1" data-attr-value="sfx" data-attrif-disabled="!audible" data-event-change="queue('sfx', ev.value)"/>
 	<p class="caption centred" id="voice-label">{{labels.voice}}</p>
 	<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!audible" data-event-change="queue('voice', ev.value)"/>
+	<p class="caption centred" id="unit-label">{{labels.unit}}</p>
+	<input type="range" id="unit" min="0" max="10" step="1" data-attr-value="unit" data-attrif-disabled="!audible" data-event-change="queue('unit', ev.value)"/>
+	<p class="caption centred" id="movie-label">{{labels.movie}}</p>
+	<input type="range" id="movie" min="0" max="10" step="1" data-attr-value="movie" data-attrif-disabled="!audible" data-event-change="queue('movie', ev.value)"/>
 
 	<p id="title">{{labels.options}}</p>
 	<button id="keyboard" data-event-click="queue('keyboard')">{{labels.keyboard}}</button>

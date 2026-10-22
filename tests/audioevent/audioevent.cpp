@@ -988,6 +988,28 @@ void Test_Shutdown_Releases(void)
 } // namespace
 
 
+// A unit voice shares the effect budget with sound effects: it takes a slot and a higher-priority effect steals it.
+void Test_Unit_Voice_Budget(void)
+{
+	RigClass rig;
+	rig.Pool.Set_Budget(1);
+
+	AudioEventTypeClass & reply = rig.Type("REPLY", 1);
+	reply.Priority = 10;
+	AudioEventTypeClass & effect = rig.Type("BOOM", 1);
+	effect.Priority = 50;
+
+	AudioHandle voice = rig.Pool.Start(reply, AUDIO_GROUP_UNIT_VOICE, 1.0f, 0.0f);
+	Check(!voice.Is_Null() && rig.Pool.Effects_In_Use() == 1, "a unit voice counts against the effect budget");
+
+	AudioHandle boom = rig.Pool.Start(effect, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	Check(!boom.Is_Null() && !rig.Pool.Is_Playing(voice) && rig.Pool.Is_Playing(boom), "a higher-priority effect steals a unit voice");
+
+	rig.Tick(200);
+	Check(rig.Pool.Live_Count() == 0 && rig.Provider.Balanced(), "unit voice test is done and balanced");
+}
+
+
 int main(void)
 {
 	Test_One_Shot();
@@ -998,6 +1020,7 @@ int main(void)
 	Test_Clock_Clamp();
 	Test_Limit();
 	Test_Budget();
+	Test_Unit_Voice_Budget();
 	Test_Levels();
 	Test_Samples_And_Handles();
 	Test_Voice_Ownership();

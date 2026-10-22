@@ -21,11 +21,17 @@
 			<div class="setting slider-row" id="row-score" desc="The volume of the background music."><span class="caption">Music Volume</span>
 				<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/><span class="value">{{score}}</span>
 			</div>
-			<div class="setting slider-row" id="row-sound" desc="The volume of the sound effects, such as weapons and unit replies."><span class="caption">Sound Volume</span>
+			<div class="setting slider-row" id="row-sound" desc="The volume of the sound effects, such as weapons and explosions."><span class="caption">Sound Volume</span>
 				<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/><span class="value">{{sound}}</span>
 			</div>
-			<div class="setting slider-row" id="row-voice" desc="The volume of the spoken lines, such as unit acknowledgements."><span class="caption">Voice Volume</span>
+			<div class="setting slider-row" id="row-voice" desc="The volume of the EVA announcements and spoken taunts."><span class="caption">EVA</span>
 				<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/><span class="value">{{voice}}</span>
+			</div>
+			<div class="setting slider-row" id="row-unit" desc="The volume of unit and building replies, such as selection acknowledgements and death cries."><span class="caption">Unit voices</span>
+				<input type="range" id="unit" min="0" max="10" step="1" data-attr-value="unit" data-attrif-disabled="!enabled" data-event-change="queue('unit', ev.value)"/><span class="value">{{unit}}</span>
+			</div>
+			<div class="setting slider-row" id="row-movie" desc="The volume of movies, such as briefings, cutscenes and the intro."><span class="caption">Movies</span>
+				<input type="range" id="movie" min="0" max="10" step="1" data-attr-value="movie" data-attrif-disabled="!enabled" data-event-change="queue('movie', ev.value)"/><span class="value">{{movie}}</span>
 			</div>
 
 			<div id="music" data-if="ingame">

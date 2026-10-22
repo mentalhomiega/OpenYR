@@ -49,7 +49,9 @@ void UI_Classic_Options_Labels(UIClassicOptionsLabels & labels)
 	labels.Scroll = Text_Of("GUI:ScrollRate", "Scroll Rate");
 	labels.Music = Text_Of("GUI:MusicVolume", "Music Volume");
 	labels.Sound = Text_Of("GUI:SoundVolume", "Sound Volume");
-	labels.Voice = Text_Of("GUI:VoiceVolume", "Voice Volume");
+	labels.Voice = "EVA";
+	labels.Unit = "Unit voices";
+	labels.Movie = "Movies";
 	labels.Tooltips = Text_Of("GUI:Tooltips", "Tooltips");
 	labels.TargetLines = "Movement and target lines";
 	labels.ShowHidden = "Show units behind buildings";

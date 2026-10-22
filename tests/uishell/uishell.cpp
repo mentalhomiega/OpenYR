@@ -857,6 +857,8 @@ class RecordingSoundServiceClass : public UISoundServiceClass
 		virtual void Set_Score_Volume(float volume, bool feedback) override { Record("score", volume, feedback); }
 		virtual void Set_Sound_Volume(float volume, bool feedback) override { Record("sound", volume, feedback); }
 		virtual void Set_Voice_Volume(float volume, bool feedback) override { Record("voice", volume, feedback); }
+		virtual void Set_Unit_Voice_Volume(float volume, bool feedback) override { Record("unit", volume, feedback); }
+		virtual void Set_Movie_Volume(float volume, bool feedback) override { Record("movie", volume, feedback); }
 		virtual void Set_Shuffle(bool on) override { Calls.push_back(on ? "shuffle on" : "shuffle off"); }
 		virtual void Set_Repeat(bool on) override { Calls.push_back(on ? "repeat on" : "repeat off"); }
 		virtual void Play(int theme) override { Calls.push_back("play " + std::to_string(theme)); }
@@ -1544,6 +1546,8 @@ void Test_Sound_Presenter(void)
 	state.Score = 7;
 	state.Sound = 5;
 	state.Voice = 10;
+	state.Unit = 4;
+	state.Movie = 7;
 	state.Enabled = true;
 	state.InGame = true;
 	state.Tracks.push_back({ "01 - First [3:00]", 5 });
@@ -1556,6 +1560,8 @@ void Test_Sound_Presenter(void)
 	Drive(presenter, "score", 7);
 	Drive(presenter, "sound", 5);
 	Drive(presenter, "voice", 10);
+	Drive(presenter, "unit", 4);
+	Drive(presenter, "movie", 7);
 	Check(service.Calls.empty(), "a slider reporting the level it already holds previews nothing");
 
 	Drive(presenter, "score", 4);
@@ -1566,6 +1572,14 @@ void Test_Sound_Presenter(void)
 	service.Calls.clear();
 	Drive(presenter, "voice", 14);
 	Check(presenter.State.Voice == 10 && service.Joined() == "voice 1.0 feedback", "a slider level is clamped to the top step");
+	service.Calls.clear();
+
+	Drive(presenter, "unit", 3);
+	Check(presenter.State.Unit == 3 && service.Joined() == "unit 0.3 feedback", "a unit voice slider move previews the new volume at once");
+	service.Calls.clear();
+
+	Drive(presenter, "movie", 0);
+	Check(presenter.State.Movie == 0 && service.Joined() == "movie 0.0 feedback", "a movie slider can go silent");
 	service.Calls.clear();
 
 	Drive(presenter, "shuffle", 1);
@@ -1598,7 +1612,7 @@ void Test_Sound_Presenter(void)
 	service.Calls.clear();
 
 	Drive(presenter, "ok");
-	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0", "OK re-applies the levels without feedback and closes");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0; unit 0.3; movie 0.0", "OK re-applies the levels without feedback and closes");
 }
 
 
@@ -2477,7 +2491,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 				sliders++;
 			}
 		}
-		Check(sliders == 3, "the sound screen has three sliders");
+		Check(sliders == 5, "the sound screen has five sliders");
 
 		Rml::Element * score = document->GetElementById("score");
 		Check(score != nullptr && score->GetAttribute<int>("value", -1) == 7, "the music slider starts at the music level");
@@ -4156,6 +4170,8 @@ UIClassicOptionsPresenterClass Classic_Options_Presenter(RecordingClassicOptions
 	sound.Score = 4;
 	sound.Sound = 5;
 	sound.Voice = 6;
+	sound.Unit = 5;
+	sound.Movie = 9;
 	sound.Enabled = true;
 	return(UIClassicOptionsPresenterClass(parts.Game, Game_Controls_Fixture(), parts.Sound, sound, parts.Display, Display_Fixture()));
 }
@@ -4193,7 +4209,7 @@ void Test_Classic_Options_Presenter(void)
 		Drive(presenter, "ok");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Next == UIClassicOptionsPresenterClass::NEXT_NONE, "OK accepts and goes nowhere else");
 		Check(parts.Game.Joined().find("detail 0") != std::string::npos && parts.Game.Joined().find("tooltips off") != std::string::npos && parts.Game.Joined().find("scroll 3") != std::string::npos && parts.Game.Calls.back() == "save", "OK applies and saves the game settings");
-		Check(parts.Sound.Joined() == "score 0.7; sound 0.5; voice 0.6", "OK sets the volumes without feedback");
+		Check(parts.Sound.Joined() == "score 0.7; sound 0.5; voice 0.6; unit 0.5; movie 0.9", "OK sets the volumes without feedback");
 		Check(parts.Display.Calls.back() == "scale 20" && presenter.Display.Picked.has_value() && presenter.Display.Picked->Width == 1920, "OK applies the scale and picks the mode");
 	}
 
@@ -4207,12 +4223,14 @@ void Test_Classic_Options_Presenter(void)
 		Drive(presenter, "select", 0);
 		Drive(presenter, "music", 9);
 		Drive(presenter, "sfx", 1);
+		Drive(presenter, "unit", 2);
+		Drive(presenter, "movie", 1);
 		parts.Sound.Calls.clear();
 
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Cancel closes the page");
 		Check(parts.Game.Calls.empty() && parts.Display.Calls.empty() && !presenter.Display.Picked.has_value(), "Cancel applies no game or display setting");
-		Check(parts.Sound.Joined() == "score 0.4; sound 0.5", "Cancel puts the moved volumes back without feedback");
+		Check(parts.Sound.Joined() == "score 0.4; sound 0.5; unit 0.5; movie 0.9", "Cancel puts the moved volumes back without feedback");
 	}
 
 	{
@@ -4249,7 +4267,7 @@ void Test_Classic_Options_Screen(Rml::Context & context, CountingSystemInterface
 	Check(system.Problems == problems, "the classic options page raises no RmlUi warning or error");
 
 	Rml::ElementDocument * document = Rml(*view).Document();
-	char const * const ids[] = { "detail", "difficulty", "scroll", "music", "sfx", "voice", "tooltips", "lines", "hidden", "modes", "keyboard", "mods", "ok", "cancel", "scale" };
+	char const * const ids[] = { "detail", "difficulty", "scroll", "music", "sfx", "voice", "unit", "movie", "tooltips", "lines", "hidden", "modes", "keyboard", "mods", "ok", "cancel", "scale" };
 	for (char const * id : ids) {
 		Check(document != nullptr && document->GetElementById(id) != nullptr, (std::string("the classic options page has ") + id).c_str());
 	}

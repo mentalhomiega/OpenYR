@@ -73,6 +73,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "hud.h"
+#include "infatype.h"
 #include "init.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
@@ -195,6 +196,8 @@ OptionsClass::OptionsClass(void) :
 	SoundVolume(.7f),
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
+	UnitVoiceVolume(.7f),
+	MovieVolume(.7f),
 	BitmapSystemFont(false),
 	AutoScroll(true),
 	ScriptedCameraZoom(true),
@@ -380,7 +383,6 @@ void OptionsClass::Set_Sound_Volume(float volume, bool feedback)
 {
 	SoundVolume = std::min(volume, 1.0f);
 	AudioEngine.Set_Group_Gain(AUDIO_GROUP_SFX, SoundVolume);
-	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MOVIE, SoundVolume);
 	if (feedback) {
 		Sound_Effect(Rule->GenericBeep);
 	}
@@ -410,6 +412,45 @@ void OptionsClass::Set_Voice_Volume(float volume, bool feedback)
 		}
 	}
 	DebugString("VoiceVolume = %f\n", VoiceVolume);
+}
+
+
+/// <summary>
+/// Sets the volume of unit and building voice responses, such as selection replies and death
+/// cries. Those lines play at this level instead of the sound effects level.
+/// </summary>
+/// <param name="volume">The new volume, zero to one.</param>
+/// <param name="feedback">Should a sample unit reply play at the new level? The sample is the
+/// first selection reply of the GI, and nothing plays when the rules have no such reply.</param>
+void OptionsClass::Set_Unit_Voice_Volume(float volume, bool feedback)
+{
+	UnitVoiceVolume = std::min(volume, 1.0f);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_UNIT_VOICE, UnitVoiceVolume);
+	if (feedback) {
+		InfantryType const gi = InfantryTypeClass::From_Name("E1");
+		if (gi != INFANTRY_NONE && InfantryTypes[gi] != nullptr && InfantryTypes[gi]->VoiceSelect.Count() > 0) {
+			Unit_Voice_Effect((VocType)InfantryTypes[gi]->VoiceSelect[0]);
+		}
+	}
+	DebugString("UnitVoiceVolume = %f\n", UnitVoiceVolume);
+}
+
+
+/// <summary>
+/// Sets the volume of movies, including the briefings, intros and the movies the radar plays.
+/// A movie that is playing takes the new level at once, except a Bink movie, which keeps the
+/// level it opened with.
+/// </summary>
+/// <param name="volume">The new volume, zero to one.</param>
+/// <param name="feedback">Should a beep play at the new level?</param>
+void OptionsClass::Set_Movie_Volume(float volume, bool feedback)
+{
+	MovieVolume = std::min(volume, 1.0f);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MOVIE, MovieVolume);
+	if (feedback) {
+		Sound_Effect(Rule->GenericBeep, 1.0f, SOUND_PAN_CENTER, nullptr, AUDIO_GROUP_MOVIE);
+	}
+	DebugString("MovieVolume = %f\n", MovieVolume);
 }
 
 
@@ -695,6 +736,9 @@ void OptionsClass::Load_Settings(void)
 	SystemCursor = ConfigINI.Get_Bool("Video", "SystemCursor", SystemCursor);
 
 	Set_Sound_Volume(ConfigINI.Get_Float("Audio", "SoundVolume", SoundVolume), false);
+	// A settings file from before these two sliders existed keeps the sound effects level for both.
+	Set_Unit_Voice_Volume(ConfigINI.Get_Float("Audio", "UnitVoiceVolume", SoundVolume), false);
+	Set_Movie_Volume(ConfigINI.Get_Float("Audio", "MovieVolume", SoundVolume), false);
 	Set_Voice_Volume(ConfigINI.Get_Float("Audio", "VoiceVolume", VoiceVolume), false);
 	Set_Score_Volume(ConfigINI.Get_Float("Audio", "ScoreVolume", ScoreVolume), false);
 
@@ -873,6 +917,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Float("Audio", "SoundVolume", SoundVolume);
 	ConfigINI.Put_Float("Audio", "VoiceVolume", VoiceVolume);
 	ConfigINI.Put_Float("Audio", "ScoreVolume", ScoreVolume);
+	ConfigINI.Put_Float("Audio", "UnitVoiceVolume", UnitVoiceVolume);
+	ConfigINI.Put_Float("Audio", "MovieVolume", MovieVolume);
 	ConfigINI.Put_Bool("Audio", "IsScoreRepeat", IsScoreRepeat);
 	ConfigINI.Put_Bool("Audio", "IsScoreShuffle", IsScoreShuffle);
 	ConfigINI.Put_Int("Audio", "SoundLatency", SoundLatency);
@@ -903,6 +949,8 @@ void OptionsClass::Save_Settings (void)
 void OptionsClass::Set(void)
 {
 	Set_Sound_Volume(SoundVolume, false);
+	Set_Unit_Voice_Volume(UnitVoiceVolume, false);
+	Set_Movie_Volume(MovieVolume, false);
 	Set_Voice_Volume(VoiceVolume, false);
 	Set_Score_Volume(ScoreVolume, false);
 	Set_Repeat(IsScoreRepeat);

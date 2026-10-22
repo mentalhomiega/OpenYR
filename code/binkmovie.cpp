@@ -161,7 +161,9 @@ bool Bink_Play(char const * name)
 		}
 	}
 
-	bool const sound = AudioEngine.Master_Gain() > 0.0f;
+	// The Movies slider scales Bink's own output, on top of the master gain.
+	float const movie_level = AudioEngine.Master_Gain() * AudioEngine.Group_Gain(AUDIO_GROUP_MOVIE);
+	bool const sound = movie_level > 0.0f;
 	if (sound) {
 		Api.SetSoundSystem(Api.OpenDirectSound, 0);
 	}
@@ -176,7 +178,8 @@ bool Bink_Play(char const * name)
 	int const width = (int)info->Width;
 	int const height = (int)info->Height;
 	DebugString("BINK %s: %dx%d, %u frames at %u/%u\n", name, width, height, info->Frames, info->FrameRate, info->FrameRateDiv);
-	Api.SetVolume(bink, sound ? (int)(32768.0f * AudioEngine.Master_Gain()) : 0);
+	Api.SetVolume(bink, sound ? (int)(32768.0f * movie_level) : 0);
+	DebugString("BINK %s: movie level %.2f\n", name, movie_level);
 
 	HiddenSurface->Fill(0);
 	Update_Visible_Surface(HiddenSurface);

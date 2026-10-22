@@ -21,6 +21,8 @@ UISoundPresenterClass::UISoundPresenterClass(UISoundServiceClass & service, UISo
 	InitialScore = State.Score;
 	InitialSound = State.Sound;
 	InitialVoice = State.Voice;
+	InitialUnit = State.Unit;
+	InitialMovie = State.Movie;
 	InitialShuffle = State.Shuffle;
 	InitialRepeat = State.Repeat;
 }
@@ -61,6 +63,20 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 			Service.Set_Voice_Volume(Volume_Of(State.Voice), true);
 		}
 
+	} else if (intent.Name == "unit") {
+		int level = Clamp_Level(intent.Value);
+		if (level != State.Unit) {
+			State.Unit = level;
+			Service.Set_Unit_Voice_Volume(Volume_Of(State.Unit), true);
+		}
+
+	} else if (intent.Name == "movie") {
+		int level = Clamp_Level(intent.Value);
+		if (level != State.Movie) {
+			State.Movie = level;
+			Service.Set_Movie_Volume(Volume_Of(State.Movie), true);
+		}
+
 	} else if (intent.Name == "shuffle") {
 		State.Shuffle = (intent.Value != 0);
 		Service.Set_Shuffle(State.Shuffle);
@@ -92,13 +108,18 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Score_Volume(Volume_Of(State.Score), false);
 		Service.Set_Sound_Volume(Volume_Of(State.Sound), false);
 		Service.Set_Voice_Volume(Volume_Of(State.Voice), false);
+		Service.Set_Unit_Voice_Volume(Volume_Of(State.Unit), false);
+		Service.Set_Movie_Volume(Volume_Of(State.Movie), false);
 		Result = UI_RESULT_ACCEPTED;
 
 	} else if (intent.Name == "reset") {
-		// The levels Options starts from: music 0.5, sound 0.7 and voice 1.0, with shuffle and repeat off.
+		// The levels Options starts from: music 0.5, sound 0.7 and voice 1.0, with unit voices and
+		// movies at the sound level, and shuffle and repeat off.
 		Execute(UIIntent{ "score", Level_Of(0.5f), "" });
 		Execute(UIIntent{ "sound", Level_Of(0.7f), "" });
 		Execute(UIIntent{ "voice", Level_Of(1.0f), "" });
+		Execute(UIIntent{ "unit", Level_Of(0.7f), "" });
+		Execute(UIIntent{ "movie", Level_Of(0.7f), "" });
 		if (State.Shuffle) {
 			Execute(UIIntent{ "shuffle", 0, "" });
 		}
@@ -111,6 +132,8 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		Service.Set_Score_Volume(Volume_Of(InitialScore), false);
 		Service.Set_Sound_Volume(Volume_Of(InitialSound), false);
 		Service.Set_Voice_Volume(Volume_Of(InitialVoice), false);
+		Service.Set_Unit_Voice_Volume(Volume_Of(InitialUnit), false);
+		Service.Set_Movie_Volume(Volume_Of(InitialMovie), false);
 		if (State.Shuffle != InitialShuffle) {
 			Service.Set_Shuffle(InitialShuffle);
 		}
@@ -156,6 +179,8 @@ class UISoundViewClass : public UIRmlViewClass
 			Model.DirtyVariable("score");
 			Model.DirtyVariable("sound");
 			Model.DirtyVariable("voice");
+			Model.DirtyVariable("unit");
+			Model.DirtyVariable("movie");
 			Model.DirtyVariable("shuffle");
 			Model.DirtyVariable("repeat");
 			Model.DirtyVariable("selected");
@@ -176,6 +201,8 @@ class UISoundViewClass : public UIRmlViewClass
 				&& model.Bind("score", &state.Score)
 				&& model.Bind("sound", &state.Sound)
 				&& model.Bind("voice", &state.Voice)
+				&& model.Bind("unit", &state.Unit)
+				&& model.Bind("movie", &state.Movie)
 				&& model.Bind("shuffle", &state.Shuffle)
 				&& model.Bind("repeat", &state.Repeat)
 				&& model.Bind("enabled", &state.Enabled)

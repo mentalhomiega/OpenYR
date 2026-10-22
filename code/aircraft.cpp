@@ -2030,7 +2030,7 @@ void AircraftClass::Player_Assign_Mission(MissionType mission, AbstractClass * t
 {
 	if (AllowVoice) {
 		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Sound_Effect(Weapon_Attack_Voice(target));
+			Unit_Voice_Effect(Weapon_Attack_Voice(target));
 		} else if (mission == MISSION_ATTACK) {
 			Response_Attack();
 		} else {

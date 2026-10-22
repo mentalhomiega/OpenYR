@@ -2358,6 +2358,7 @@ void RadarClass::Play_Movie(void)
 		AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 0.5f, 250);
 		AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 0.5f, 250);
+		AudioEngine.Set_Duck(AUDIO_GROUP_UNIT_VOICE, 0.5f, 250);
 		needs_volume_adjustment = false;
 	}
 
@@ -2392,6 +2393,7 @@ void RadarClass::Play_Movie(void)
 			AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 1.0f, 250);
 			AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 1.0f, 250);
+			AudioEngine.Set_Duck(AUDIO_GROUP_UNIT_VOICE, 1.0f, 250);
 			RadarState = RSTATE_MOVIE_DONE;
 			Radar_Activate(SuspendedRadarMode);
 		} else {

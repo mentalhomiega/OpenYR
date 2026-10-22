@@ -45,12 +45,17 @@ bool Sound_Parse_Shift(char const * text, bool attenuate, int & low, int & high)
 
 // A sound with no place in the world. With a handle, a live event of the same
 // sound is re-aimed instead of a second one starting; one of another sound is
-// stopped first.
-AudioHandle Sound_Effect(VocType voc, float volume = 1.0f, int pan = SOUND_PAN_CENTER, AudioHandle * handle = nullptr);
+// stopped first. The group picks the option slider the sound follows.
+AudioHandle Sound_Effect(VocType voc, float volume = 1.0f, int pan = SOUND_PAN_CENTER, AudioHandle * handle = nullptr, AudioGroupType group = AUDIO_GROUP_SFX);
 
 // A sound at a place in the world, attenuated and panned by where that place
 // is on screen, and kept so while it plays.
-AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle = nullptr);
+AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle = nullptr, AudioGroupType group = AUDIO_GROUP_SFX);
+
+// A unit or building voice response, with no place or at a place. It follows the
+// Unit voices option rather than the sound effects option.
+AudioHandle Unit_Voice_Effect(VocType voc);
+AudioHandle Unit_Voice_Effect(VocType voc, Coord const & coord);
 
 // A sound at a place, like the one above, but its level and pan are set once, when it starts,
 // and it is not tracked as the view moves. An endless loop plays until its handle ends it.
@@ -119,7 +124,7 @@ class VocClass
 		static bool Read_Type(INIClass const & ini, char const * section, AudioEventTypeClass const & defaults, AudioEventTypeClass & type);
 
 		bool Can_Play(void) const;
-		AudioHandle Play(float vol, int pan = SOUND_PAN_CENTER, bool no_attack = false);
+		AudioHandle Play(float vol, int pan = SOUND_PAN_CENTER, bool no_attack = false, AudioGroupType group = AUDIO_GROUP_SFX);
 		AudioHandle Play_Voice(float vol);
 
 		VocType Voc_Type(void);

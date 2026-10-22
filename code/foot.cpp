@@ -3961,7 +3961,7 @@ void FootClass::AI(void)
 	if (IsSinking != WasSinking) {
 		WasSinking = IsSinking;
 		if (IsSinking) {
-			Sound_Effect(TClass->VoiceSinking, Center_Coord());
+			Unit_Voice_Effect(TClass->VoiceSinking, Center_Coord());
 			Sound_Effect(TClass->SinkingSound != VOC_NONE ? TClass->SinkingSound : Rule->SinkingSound, Center_Coord());
 		}
 	}

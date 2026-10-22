@@ -27,6 +27,12 @@ unsigned const MAX_TICK_MS = 250;
 // Within this fraction of the quietest candidate, priority order decides alone.
 float const VOLUME_SLACK = 0.1f;
 
+// Groups whose one-shot events share the effect budget.
+bool Is_Effect_Group(AudioGroupType group)
+{
+	return(group == AUDIO_GROUP_SFX || group == AUDIO_GROUP_SYSTEM || group == AUDIO_GROUP_UNIT_VOICE);
+}
+
 } // namespace
 
 
@@ -63,7 +69,7 @@ struct AudioEventPoolClass::EventClass {
 	unsigned Order;
 
 	bool Is_Live(void) const { return(State == AUDIO_EVENT_PENDING || State == AUDIO_EVENT_PLAYING || State == AUDIO_EVENT_GAP); }
-	bool Counts_Toward_Budget(void) const { return(State == AUDIO_EVENT_PLAYING && Voice >= 0 && !Stolen && Stream == nullptr && (Group == AUDIO_GROUP_SFX || Group == AUDIO_GROUP_SYSTEM)); }
+	bool Counts_Toward_Budget(void) const { return(State == AUDIO_EVENT_PLAYING && Voice >= 0 && !Stolen && Stream == nullptr && Is_Effect_Group(Group)); }
 };
 
 
@@ -387,7 +393,7 @@ unsigned AudioEventPoolClass::Effects_In_Use(void) const
 // budget is spent. Sets event.Voice on success.
 bool AudioEventPoolClass::Acquire_Voice(EventClass & event)
 {
-	bool effect = (event.Stream == nullptr && (event.Group == AUDIO_GROUP_SFX || event.Group == AUDIO_GROUP_SYSTEM));
+	bool effect = (event.Stream == nullptr && Is_Effect_Group(event.Group));
 	if (effect && Effects_In_Use() >= (unsigned)BudgetValue) {
 		EventClass * victim = nullptr;
 		float mine = Current_Level(event);

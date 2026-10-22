@@ -540,7 +540,7 @@ void FlyLocomotionClass::Movement_AI(void)
 		if (LinkedTo->Strength == 0 && Riser == 0) {
 			Sound_Effect(LinkedTo->TClass->CrashingSound, LinkedTo->Center_Coord());
 			if (LinkedTo->House->Is_Player_Control()) {
-				Sound_Effect(LinkedTo->TClass->VoiceCrashing, LinkedTo->Center_Coord());
+				Unit_Voice_Effect(LinkedTo->TClass->VoiceCrashing, LinkedTo->Center_Coord());
 			}
 		}
 		if (LinkedTo->Strength == 0) {

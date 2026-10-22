@@ -1208,7 +1208,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 			**	Special voice play.
 			*/
 			if (Class->VoiceComment.Count() > 1) {
-				Sound_Effect((VocType)Class->VoiceComment[1], PositionCoord);
+				Unit_Voice_Effect((VocType)Class->VoiceComment[1], PositionCoord);
 			}
 
 			/*
@@ -2415,7 +2415,7 @@ bool InfantryClass::Random_Animate(void)
 			case 7:
 				Do_Action(DO_IDLE2);
 				if (!IsSelected && IsOwnedByPlayer && Class->VoiceComment.Count() > 0 && Sim_Random_Pick(0, 2) == 0) {
-					Sound_Effect((VocType)Class->VoiceComment[0], PositionCoord);
+					Unit_Voice_Effect((VocType)Class->VoiceComment[0], PositionCoord);
 				}
 				break;
 
