@@ -774,13 +774,33 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 
 	// The vehicle is off its cell while the landing is checked, so it does not block itself.
 	bool blocked = LinkedTo->Crush_On_Landing();
-	if (!blocked && LinkedTo->Can_Enter_Cell(&Map[landed]) != MOVE_OK && Map[landed].Land_Type() != LAND_WATER) {
-		blocked = true;
+	bool sinks = false;
+	if (!blocked && LinkedTo->Can_Enter_Cell(&Map[landed]) != MOVE_OK) {
+		bool const land_unit_on_water = LinkedTo->RTTI == RTTI_UNIT && !static_cast<UnitClass *>(LinkedTo)->Class->IsNaval
+			&& Map[landed].Land_Type() == LAND_WATER && !Map[landed].IsUnderBridge;
+		if (land_unit_on_water) {
+			sinks = true;
+		} else {
+			blocked = true;
+		}
 	}
 	LinkedTo->Mark(MARK_DOWN);
 	if (blocked) {
 		LinkedTo->Explode_On_Landing();
 		return;
+	}
+
+	if (sinks) {
+		UnitClass * unit = static_cast<UnitClass *>(LinkedTo);
+		unit->IsSinking = true;
+		// The kill is recorded here, so the completed sinking must not record it again (IsSinkingWreck).
+		unit->IsSinkingWreck = true;
+		if (LinkedTo->LetGoBy != NULL) {
+			unit->Record_The_Kill(LinkedTo->LetGoBy);
+		} else if (LinkedTo->LetGoByHouse != NULL) {
+			unit->Record_The_Kill_By_House(LinkedTo->LetGoByHouse);
+		}
+		unit->Stun();
 	}
 
 	LinkedTo->Assign_Destination(NULL);
