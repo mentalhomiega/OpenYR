@@ -66,6 +66,9 @@
 **	alliance <house>		queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame
 **	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
 **	modes				writes which special mode is on (repair, sell, power, waypoint, beacon, and targeting) and the object pending placement
+**	placement				writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map
+**	windowpress x y			moves the pointer to that window pixel and presses the left button there, as the start of a drag does
+**	windowrelease x y		moves the pointer to that window pixel and releases the left button there, as the end of a drag does
 **	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
 **							which converts it to the frame
 **	follow <TypeID>			keeps the view centred on one of the player's objects of that type
@@ -284,6 +287,7 @@
 #include "script.h"
 #include "super.h"
 #include "sidebar.h"
+#include "hud.h"
 #include "linetrail.h"
 #include "ambient.h"
 #include "suprtype.h"
@@ -1700,6 +1704,25 @@ static void Modes_Step(void)
 }
 
 
+// Writes the cell the placement cursor sits on, how many cells of its footprint are marked, and where the pointer is.
+static void Placement_Step(void)
+{
+	Point2D const mouse = MouseCursor->Get_Mouse_Point();
+	int marked = 0;
+	if (Map.CursorSize != NULL && Map.ZoneCell != CELL_NONE) {
+		for (Cell const * ptr = Map.CursorSize; *ptr != REFRESH_EOL; ptr++) {
+			Cell const cell = Cell(Map.ZoneCell + Map.ZoneOffset + *ptr);
+			if (Map.In_Radar(cell) && Map[cell].IsCursorHere) {
+				marked++;
+			}
+		}
+	}
+	DebugString("AUTOTEST placement pending %s zone %d,%d marked %d mouse %d,%d in_tactical %d over_map %d\n",
+		Map.PendingObject != NULL ? Map.PendingObject->Name() : "none", Map.ZoneCell.X, Map.ZoneCell.Y, marked,
+		mouse.X, mouse.Y, (int)TacticalRect.Is_Point_Within(mouse), (int)Point_Over_Map(mouse));
+}
+
+
 // The techno on a cell for the probes: the ground occupier if there is one, else a flying object over the cell.
 static TechnoClass * Techno_Over_Cell(Cell const & cell)
 {
@@ -2430,6 +2453,11 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "placement") {
+		Placement_Step();
+		return;
+	}
+
 	if (step.Command == "modsig") {
 		Mod_Signature_Step(step);
 		return;
@@ -2961,6 +2989,20 @@ void Run(StepType const & step)
 		event.Clicks = 1;
 		Game_Window_Handle_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_UP;
+		Game_Window_Handle_Event(event);
+	} else if (step.Command == "windowpress" || step.Command == "windowrelease") {
+		// windowpress x y and windowrelease x y: move the pointer to that window pixel and press or release the left
+		// button there, so a drag can start on the map and end over the command bar or the panel.
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_MOVE;
+		event.X = std::atoi(step.Argument.c_str());
+		event.Y = step.X;
+		_CursorX = event.X;
+		_CursorY = event.Y;
+		Game_Window_Handle_Event(event);
+		event.Type = (step.Command == "windowpress") ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
+		event.Button = WINDOW_BUTTON_LEFT;
+		event.Clicks = 1;
 		Game_Window_Handle_Event(event);
 	} else if (step.Command == "xbutton") {
 		// xbutton <1|2>: a press and release of a side button at the pointer, given to the window the way the mouse gives it.
