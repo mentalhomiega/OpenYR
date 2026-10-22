@@ -6910,7 +6910,10 @@ bool BuildingClass::Revealed(HouseClass * house)
 		**	owned house is not yet revealed, it won't be reflected in the sidebar
 		**	selection icons.
 		*/
-		if (!In_Radio_Contact() && House->Is_Human_Player() && Mission != MISSION_CONSTRUCTION && MissionQueue != MISSION_CONSTRUCTION) {
+		// A structure placed during play has no mission yet. Enter_Idle_Mode queues its construction after this
+		// reveal, so opening it here would end its buildup on the first frame.
+		bool const placed_for_construction = Mission == MISSION_NONE && !ScenarioInit && !Debug_Map;
+		if (!In_Radio_Contact() && House->Is_Human_Player() && !placed_for_construction && Mission != MISSION_CONSTRUCTION && MissionQueue != MISSION_CONSTRUCTION) {
 			Grand_Opening();
 		} else {
 			if (!In_Radio_Contact() && !House->Is_Human_Player() && house == House && Mission != MISSION_CONSTRUCTION) {
