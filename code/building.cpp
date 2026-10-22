@@ -6960,6 +6960,12 @@ bool BuildingClass::Enter_Idle_Mode(bool initial, bool)
 		mission = MISSION_CONSTRUCTION;
 	}
 	Assign_Mission(mission);
+
+	// Construction starts with the placement. If the mission waited for the end of the buildup, its
+	// first step would restart the buildup and it would play twice.
+	if (mission == MISSION_CONSTRUCTION && Commence()) {
+		IsReadyToCommence = false;
+	}
 	return(false);
 }
 

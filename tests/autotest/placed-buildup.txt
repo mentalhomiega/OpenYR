@@ -1,6 +1,7 @@
 ; A Yuri Bio Reactor (YAPOWR) produced and placed during play by the Yuri player plays its construction buildup
-; (YGPOWRMK.SHP, 23 steps) before it opens. banimstate shows bstate 0 (construction) with the stage rising from 0 to 22, then
-; bstate 1 (idle) once the buildup ends. Before the fix the structure opened on the placement frame: bstate 1, stage 0.
+; (YGPOWRMK.SHP, 23 steps) once, before it opens. banimstate shows bstate 0 (construction) with the stage rising from 0 to 22
+; and never falling back to 0, then bstate 1 (idle) once the buildup ends. Before the placement fix the structure opened on the
+; placement frame (bstate 1, stage 0); before the mission fix the buildup ran twice (stage 22, then 2 again around frame 200).
 ; The Yuri Grinder (YAGRND) is placed the same way at 350. Frames 156 to 260 log the Bio Reactor; the screenshots show the art.
 ; Run: scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/placed-buildup.txt -Country 9 -Settings "[Options]<newline>DebugMode=yes" -Width 800 -Height 600 -Seconds 90 -ShotDir <dir> -Filter "AUTOTEST|Exception"
 20 own YACNST 50 30
