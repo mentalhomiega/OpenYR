@@ -1637,7 +1637,7 @@ void Tactical::Draw_Super_Range(void)
 	}
 
 	Point2D mouse = MouseCursor->Get_Mouse_Point();
-	if (!TacticalRect.Is_Point_Within(mouse)) {
+	if (!ScreenTacticalRect.Is_Point_Within(mouse)) {
 		return;
 	}
 
@@ -1646,7 +1646,9 @@ void Tactical::Draw_Super_Range(void)
 		return;
 	}
 
-	Cell cell = Pixel_To_Cell(mouse);
+	// Pixel_To_Cell takes a map pixel, so the screen pointer goes through the zoom first, as a click does (ScrollClass::Resolve_Point).
+	Point2D const view = TacticalRect.Top_Left() + Screen_To_View_Offset(mouse - ScreenTacticalRect.Top_Left());
+	Cell cell = Pixel_To_Cell(view);
 	if (!Map.In_Radar(cell)) {
 		return;
 	}
