@@ -4339,7 +4339,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	Always allow entry if trying to move on a cell with
 			**	authorization from the occupier.
 			*/
-			if (obj == Contact_With_Whom() && (IsTethered || (obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Class->IsCanUnitRepair))) {
+			if (obj == Contact_With_Whom() && IsTethered) {
 				return(MOVE_OK);
 			}
 			if (obj == NavCom && Mission == MISSION_ENTER && obj->RTTI == RTTI_BUILDING && ((BuildingClass *)obj)->Takes_Walk_Ins(this)) {
@@ -4378,10 +4378,10 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 				}
 
 				/*
-				 * A unit can drive onto the building it is trying to enter (repair
-				 * bay) if that building is in the cell it is entering from.
+				 * A unit entering a repair bay drives over the bay's blocked cells, as the ENTER check
+				 * of UnitClass::CanReach (0x73F0A0) allows. Any other unit stops at them.
 				 */
-				if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Map[Adjacent_Cell(cellptr->CellID, Facing_Sub(dir, FACING_180))].Cell_Building() == bptr) {
+				if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Mission == MISSION_ENTER && obj == NavCom) {
 					obj = obj->Next;
 					continue;
 				}
