@@ -1,0 +1,35 @@
+; A slave owned by the player's Slave Miner is passed over by the next-object cycle (NextObject), as gamemd's
+; MapClass::NextObject (0x4AA2B0) does through TechnoClass::CanBeSelectedNow (0x6FC030), which refuses SlaveOwner != NULL.
+; The player's miner deploys by itself near the ore at 62,38 and its slaves go out. Each NextObject press after
+; "select HTNK" prints the selection; SLAV should never appear in it, and the cycle should still reach the other units.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/slave-cycle-skip.txt -Map XMP29U2.MAP -Seconds 200 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+42 own E1 56 42
+600 where SLAV
+610 select HTNK
+620 command NextObject
+621 selected
+622 command NextObject
+623 selected
+624 command NextObject
+625 selected
+626 command NextObject
+627 selected
+628 command NextObject
+629 selected
+630 command NextObject
+631 selected
+632 command NextObject
+633 selected
+634 command NextObject
+635 selected
+636 command NextObject
+637 selected
+638 command NextObject
+639 selected
+700 quit

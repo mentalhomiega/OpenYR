@@ -1226,6 +1226,14 @@ ObjectClass * DisplayClass::Cell_Object(Cell const & cell, Point2D const & point
 }
 
 
+// gamemd's TechnoClass::CanBeSelectedNow (0x6FC030) refuses a slave owned by a Slave Miner. The next
+// and previous object searches make that check (MapClass::NextObject 0x4AA2B0, DisplayClass::Prev_Object 0x4AA380).
+static bool Is_Slave_Object(ObjectClass const * object)
+{
+	return(object->Is_Techno() && ((TechnoClass const *)object)->SlaveOwner != NULL);
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Next_Object -- Searches for next object on display.                           *
  *                                                                                             *
@@ -1264,7 +1272,7 @@ ObjectClass * DisplayClass::Next_Object(ObjectClass * object) const
 			/*
 			**	Verify that the object can be selected by and is owned by the player.
 			*/
-			if (obj != NULL && obj->Is_Players_Army()) {
+			if (obj != NULL && obj->Is_Players_Army() && !Is_Slave_Object(obj)) {
 				if (firstobj == NULL) firstobj = obj;
 				if (foundmatch) return(obj);
 				if (object == obj) foundmatch = true;
@@ -1313,7 +1321,7 @@ ObjectClass * DisplayClass::Prev_Object(ObjectClass * object)  const
 			/*
 			**	Verify that the object can be selected by and is owned by the player.
 			*/
-			if (obj != NULL && obj->Is_Players_Army()) {
+			if (obj != NULL && obj->Is_Players_Army() && !Is_Slave_Object(obj)) {
 				if (firstobj == NULL) firstobj = obj;
 				if (foundmatch) return(obj);
 				if (object == obj) foundmatch = true;
