@@ -6870,20 +6870,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	switch (result) {
 		case RESULT_DESTROYED:
 
-			// A vehicle held or let go in the air is not destroyed where it is. It is let go and falls, and the landing
-			// does not destroy it (FootClass::Crash, 0x4DEBB0; JumpjetLocomotionClass, 0x54C9FE).
-			if (Is_Foot() && IsAttackedByLocomotor && HeightAGL > 0) {
-				if (!IsCrashing) {
-					if (LocomotorSource != NULL) {
-						LocomotorSource->LocomotorTarget = NULL;
-						LocomotorSource = NULL;
-					}
-					Release_Held_Vehicle(NULL);
-				}
-				Strength = 1;
-				return(RESULT_NONE);
-			}
-
 			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
 			if (CaptureManager) {
 				CaptureManager->Free_All();
@@ -6900,9 +6886,6 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				DrainingMe->Stop_Drain();
 			}
 			Release_Locomotor(false);
-			if (LocomotorSource != NULL) {
-				LocomotorSource->Release_Locomotor(false);
-			}
 			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
 				TemporalImUsing->Let_Go();
 			}

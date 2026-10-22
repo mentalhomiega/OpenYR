@@ -1,7 +1,8 @@
-; A Magnetron lifts a Rhino (HTNK) and the Rhino is killed while the beam holds it. The Rhino is let go in the air and
-; falls straight down, as a Rhino released by the beam does, and lands with 1 hit point. The holder's
-; beam is released with it. Each "AUTOTEST   lift" line gives the Rhino's height, locomotor, jumpjet state and hold flags.
-; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/victim-kill.txt -Seconds 150
+; A Magnetron lifts a Rhino (HTNK) and the Rhino is killed while the beam holds it. The Rhino is destroyed where it
+; is, as a non-Crashable unit killed in the air is (UnitClass::Destroy, 0x737C90), so no "AUTOTEST   lift" line for it
+; follows the kill. The holder's beam is released with it. Each "AUTOTEST   lift" line gives the Rhino's height,
+; locomotor, jumpjet state and hold flags.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/magnetron/victim-kill.txt -Seconds 150
 300 own TELE 54 40
 301 spawn HTNK 62 40
 302 reveal
