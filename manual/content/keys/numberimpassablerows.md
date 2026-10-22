@@ -14,6 +14,8 @@ The count applies to a vehicle only in these cases:
 - The vehicle is in radio contact with the structure, as a harvester is with the refinery it is docking at.
 - The structure has [`UnitRepair=yes`](/keys/unitrepair/) or [`Bunker=yes`](/keys/bunker/#scope-buildingtype). Any vehicle can then cross its later columns.
 
+A vehicle on its ENTER mission for a repair structure crosses the counted columns too, so it can drive onto the bay. A vehicle in radio contact with the structure on any other mission stops at them.
+
 A `Bunker=yes` structure holding a vehicle blocks every column whatever the value. A `NumberImpassableRows=0` bunker is open on every column while it is empty. Infantry and aircraft ignore the key.
 
 Stock rules set it to `3` on the refineries, naval yards, and `CAOUTP`, to `1` on the weapons factories and service depots, and to `0` on `NATBNK`.
