@@ -3652,7 +3652,7 @@ void Run(StepType const & step)
 			TechnoClass * techno = Technos[index];
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				int const which = techno->What_Weapon_Should_I_Use(target);
-				DebugString("AUTOTEST   canfire %s at %s: %d facing %d weapon %d fire %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing(), which, (int)techno->Can_Fire(target, which));
+				DebugString("AUTOTEST   canfire %s at %s: %d facing %d weapon %d fire %d visual %d sensed %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing(), which, (int)techno->Can_Fire(target, which), (int)target->Visual_Character(true, techno->House), (int)Map[target->Center_Coord()].Is_Sensed(techno->House));
 				break;
 			}
 		}
@@ -4107,7 +4107,7 @@ void Run(StepType const & step)
 					}
 				}
 			}
-			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo);
+			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained());
 		}
 	} else if (step.Command == "spots") {
 		// spots <TypeID>: each live object of that type, whoever owns it, with its cell, the sub-cell spot its
