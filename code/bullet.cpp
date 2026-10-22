@@ -1493,6 +1493,25 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 }
 
 
+// A unit standing on the cell of the Weapons Factory it is still radio-linked to is not lifted (BulletClass::Detonate,
+// 0x469579; the link is the unit's first radio link, at +0xE4).
+static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
+{
+	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
+		return(false);
+	}
+	TechnoClass const * factory = unit->Link(0);
+	if (factory == NULL || factory->RTTI != RTTI_BUILDING) {
+		return(false);
+	}
+	BuildingClass const * building = static_cast<BuildingClass const *>(factory);
+	if (!building->Class->IsWeaponsFactory) {
+		return(false);
+	}
+	return(Map[unit->Get_Coord()].Cell_Building() == building);
+}
+
+
 /// <summary>
 /// Performs the projectile's damage effect at the location specified.
 /// This routine applies whatever the warhead calls for -- an electromagnetic pulse, a
@@ -1598,10 +1617,13 @@ void BulletClass::Detonate(Coord const & coord)
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		// The firer lets go of what it holds before the target is checked, so a hit that lifts nothing still releases it (BulletClass::Detonate, 0x469210).
 		if (Payback != NULL && Payback->LocomotorTarget != target && Payback->LocomotorSource == NULL && !Payback->IsAttackedByLocomotor) {
+			bool const on_factory = Is_On_Own_Weapons_Factory(target);
 			Payback->Release_Locomotor(false);
-			// A vehicle is lifted only from the ground, and only when it weighs less than the bullet's strength.
-			if (target != NULL && target != Payback && target->RTTI == RTTI_UNIT && target->LocomotorSource == NULL
-				&& target->HeightAGL < 1 && target->TClass->Weight < Strength) {
+			// A unit or aircraft is lifted only from the ground layer, when it is not already held or under an Iron
+			// Curtain, and only when it weighs less than the bullet's strength (BulletClass::Detonate, 0x469648).
+			if (target != NULL && target != Payback && target->Is_Foot() && (target->RTTI == RTTI_UNIT || target->RTTI == RTTI_AIRCRAFT)
+				&& !on_factory && !target->IsAttackedByLocomotor && !target->Is_Iron_Curtained()
+				&& static_cast<FootClass *>(target)->In_Which_Layer() == LAYER_GROUND && target->TClass->Weight < Strength) {
 				target->Imbue_Locomotor(Payback, warhead->Locomotor);
 			}
 		}

@@ -3685,6 +3685,15 @@ void Run(StepType const & step)
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 			}
 		}
+	} else if (step.Command == "ironcurtain") {
+		// ironcurtain <TypeID> <frames>: puts each object of the type, whoever owns it, under an Iron Curtain for that many frames.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (!techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				DebugString("AUTOTEST   ironcurtain %s at %d,%d frames %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X);
+				techno->Iron_Curtain(step.X, techno->House, false);
+			}
+		}
 	} else if (step.Command == "setlocal" || step.Command == "setglobal") {
 		// setlocal <index> <0|1>, setglobal <index> <0|1>: sets or, with 0, clears that scenario variable, as a trigger action would.
 		int const index = std::atoi(step.Argument.c_str());

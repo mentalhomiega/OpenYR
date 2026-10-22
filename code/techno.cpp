@@ -4623,6 +4623,23 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_ILLEGAL);
 	}
 
+	// A locomotor warhead does not fire at a unit that is deploying or undeploying, at a harvester that is unloading, or at a
+	// moving jump-jet type (TechnoClass::GetFireError, 0x6FC0B0; UnitClass::Deploy 0x739AC0 sets the Deploying byte).
+	if (techno != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsLocomotor) {
+		if (techno->RTTI == RTTI_UNIT) {
+			UnitClass const * unit = static_cast<UnitClass const *>(techno);
+			if (unit->SimpleDeployFrame != -1 || (unit->Class->IsToHarvest && unit->CurrentMission == MISSION_UNLOAD)) {
+				return(FIRE_ILLEGAL);
+			}
+		}
+		if (techno->Is_Foot() && techno->TClass->IsJumpJet) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			if (foot->Locomotion != NULL && foot->Locomotion->Is_Moving_Now()) {
+				return(FIRE_ILLEGAL);
+			}
+		}
+	}
+
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
 		goto CANT_FIRE;
 	}
