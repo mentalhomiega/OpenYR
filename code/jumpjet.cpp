@@ -194,7 +194,7 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 	HeadToCoord = to;
 
 	// A BalloonHover unit never lands, so it goes to the destination itself, over a structure if need be.
-	if (to != COORD_NONE && Stays_Aloft() && Map.In_Radar(to.As_Cell())) {
+	if (to != COORD_NONE && LinkedTo->TClass->IsBalloonHover && Map.In_Radar(to.As_Cell())) {
 		HeadToCoord = Map[to.As_Cell()].Center_Coord();
 		LinkedTo->NavCom = &Map[HeadToCoord];
 		IsMoving = true;
@@ -206,7 +206,9 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 	}
 
 	if (to != COORD_NONE) {
-		Cell cell = Map.Nearby_Location(to.As_Cell(), LinkedTo->TClass->Speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
+		// A held vehicle picks its landing spot as a hover unit does, so the spot can be over water (gamemd's reel-in uses SpeedType Hover, 0x54B2C7).
+		SpeedType const speed = LinkedTo->IsAttackedByLocomotor ? SPEED_HOVER : LinkedTo->TClass->Speed;
+		Cell cell = Map.Nearby_Location(to.As_Cell(), speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
 		Coord free = Closest_Free_Spot(cell);
 		if (free != COORD_NONE) {
 			HeadToCoord = free;
@@ -556,6 +558,9 @@ void JumpjetLocomotionClass::Process_Hover(void)
 		if (Point2D(headto) == Point2D(position)) {
 			// A BalloonHover unit ends its move on arrival even while it has a target, so it is
 			// no longer moving and can fire from where it hovers.
+			if (Let_Go_At_Arrival()) {
+				return;
+			}
 			if (Stays_Aloft()) {
 				Arrive_Aloft();
 			} else if (LinkedTo->TarCom == NULL) {
@@ -571,6 +576,23 @@ void JumpjetLocomotionClass::Process_Hover(void)
 			CurrentState = CRUISING;
 		}
 	}
+}
+
+
+/// <summary>
+/// Lets go of the vehicle this jumpjet carries once the jumpjet reaches its destination. The holder
+/// releases the vehicle, which then falls from there, and the vehicle drops to no flight level.
+/// </summary>
+/// <returns>bool; Was a held vehicle let go?</returns>
+bool JumpjetLocomotionClass::Let_Go_At_Arrival(void)
+{
+	TechnoClass * holder = LinkedTo->LocomotorSource;
+	if (!LinkedTo->IsAttackedByLocomotor || holder == NULL) {
+		return(false);
+	}
+	FlightLevel = 0;
+	holder->Release_Locomotor(true);
+	return(true);
 }
 
 
@@ -613,6 +635,10 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 			IsMoving = false;
 			HeadToCoord = COORD_NONE;
 			CurrentState = CRASHING;
+			return;
+		}
+		// A held vehicle is let go on reaching the spot next to its holder, and falls from there (JumpjetLocomotionClass, 0x54C1A9).
+		if (Let_Go_At_Arrival()) {
 			return;
 		}
 		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).

@@ -63,6 +63,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		void Process_Ascent(void);
 		void Process_Hover(void);
 		void Arrive_Aloft(void);
+		bool Let_Go_At_Arrival(void);
 		void Process_Cruise(void);
 		void Process_Descent(void);
 		void Process_Crashing(void);

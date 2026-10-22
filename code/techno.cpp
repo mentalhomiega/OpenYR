@@ -3783,24 +3783,6 @@ void TechnoClass::AI(void)
 
 	AttachedEffects.AI(this);
 
-	// A held vehicle is not let go by a change of target or a stop; only a move order, a landing or the
-	// holder's death releases it. It is pulled toward the holder every 15 frames until then (TechnoClass::AI).
-	if (LocomotorTarget != NULL) {
-		if (Frame % 15 == 0 && LocomotorTarget->Is_Foot()) {
-			Coord const here = Center_Coord();
-			Coord const there = LocomotorTarget->Center_Coord();
-			double const dx = double(there.X - here.X);
-			double const dy = double(there.Y - here.Y);
-			double const distance = std::hypot(dx, dy);
-			if (distance > CELL_LEPTON * 2) {
-				Coord pull = here;
-				pull.X += int(dx / distance * CELL_LEPTON * 2);
-				pull.Y += int(dy / distance * CELL_LEPTON * 2);
-				((FootClass *)LocomotorTarget)->Locomotion->Move_To(pull);
-			}
-		}
-	}
-
 	// A charge turret shows the turret that matches how much of its rearm is left (TechnoClass::AI, 0x6F9E50).
 	if (TClass->IsChargeTurret && TClass->TurretCount > 0 && !TClass->IsGattling) {
 		int turret = 0;
@@ -12390,7 +12372,6 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 	foot->Locomotion = std::move(carrier);
 	Mark(MARK_DOWN);
 
-	IsAttackedByLocomotor = true;
 	IsLetGoByLocomotor = false;
 	IsCrashing = false;
 	LetGoBy = NULL;
@@ -12398,7 +12379,9 @@ void TechnoClass::Imbue_Locomotor(TechnoClass * source, ClassID const & locomoto
 	LocomotorSource = source;
 	source->LocomotorTarget = this;
 	Assign_Target(NULL);
-	foot->Locomotion->Move_To(Center_Coord());
+	// A held vehicle refuses new destinations, so the carrier is sent to the source before the hold is set (ImbueLocomotor, 0x710000).
+	foot->Assign_Destination(source);
+	IsAttackedByLocomotor = true;
 	DebugString("Locomotor: %s lifts %s\n", source->TClass->Name(), TClass->Name());
 }
 
