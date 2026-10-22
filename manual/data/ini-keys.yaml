@@ -10230,6 +10230,24 @@ CurleyShuffle:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CurrentStrengthDamage:
+  key: CurrentStrengthDamage
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: CurrentStrengthDamage
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CursorScale:
   key: CursorScale
   scopes:
@@ -15315,6 +15333,24 @@ FallBackCoefficient:
       default_candidate: '1'
       declared_in: RulesClass
       member: FallBackCoefficient
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+FallingDamageMultiplier:
+  key: FallingDamageMultiplier
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CombatDamage
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '1.0'
+      declared_in: RulesClass
+      member: FallingDamageMultiplier
       source: code/rules.cpp
       guard: null
     level: RulesClass
