@@ -491,6 +491,16 @@ void UnitClass::Tunnel_AI(void)
  *=============================================================================================*/
 void UnitClass::AI(void)
 {
+	// A deactivated vehicle throws a spark about once every 30 frames, staggered by position and ID. The first random
+	// draw is the Y offset and the second the X offset, as gamemd's UnitClass::Update (0x7360C0) orders them.
+	if (IsDeactivated && (PositionCoord.X / 10 + Frame + (PositionCoord.Y / 10) * 0x10000 + Fetch_ID()) % 30 == 0) {
+		int const dy = Random_Pick(-100, 100);
+		int const dx = Random_Pick(-100, 100);
+		if (Rule->DefaultSparkSystem != NULL) {
+			new ParticleSystemClass(Rule->DefaultSparkSystem, Coord(PositionCoord.X + dx, PositionCoord.Y + dy, PositionCoord.Z), NULL, NULL, Coord(0, 0, 0));
+		}
+	}
+
 	if (Temporal_AI()) {
 		return;
 	}
@@ -2749,6 +2759,12 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 /// <param name="brightness">The lighting level to draw the unit at.</param>
 void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightness) const
 {
+	// gamemd's UnitClass::DrawAsVXL (0x73B470) halves the body's brightness while the vehicle is deactivated. A
+	// turreted vehicle is shaded once when it is blitted, so the whole vehicle is darkened here.
+	if (IsDeactivated) {
+		brightness /= 2;
+	}
+
 	VoxelDataStruct *voxl;
 	Point2D drawpoint = xdrawpoint;
 	Point2D offset(0, 0);
