@@ -2950,6 +2950,11 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "view") {
 		FollowType.clear();
+		// A trigger scroll still under way, such as a mission's opening camera pan, would carry the view back next frame.
+		TacticalMap->MoveFrom = Point2D(0, 0);
+		TacticalMap->MoveTo = Point2D(0, 0);
+		TacticalMap->MoveSpeed = 0;
+		TacticalMap->MoveFactor = 0;
 		Coord coord = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
 		TacticalMap->Set_Tactical_Position(coord);
 		Point2D wanted = TacticalMap->Coord_To_Pixel_Absolute(coord);
