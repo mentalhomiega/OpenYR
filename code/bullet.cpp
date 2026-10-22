@@ -1512,6 +1512,22 @@ static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
 }
 
 
+// A unit standing in the bunker it is still radio-linked to is not lifted (BulletClass::Detonate; radio contact 0x65AD30,
+// cell building 0x47C520).
+static bool Is_In_Own_Bunker(TechnoClass const * unit)
+{
+	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
+		return(false);
+	}
+	TechnoClass const * bunker = unit->Link(0);
+	if (bunker == NULL || bunker->RTTI != RTTI_BUILDING) {
+		return(false);
+	}
+	BuildingClass const * building = static_cast<BuildingClass const *>(bunker);
+	return(building->Class->IsBunker && Map[unit->Get_Coord()].Cell_Building() == building);
+}
+
+
 /// <summary>
 /// Performs the projectile's damage effect at the location specified.
 /// This routine applies whatever the warhead calls for -- an electromagnetic pulse, a
@@ -1617,12 +1633,12 @@ void BulletClass::Detonate(Coord const & coord)
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		// The firer lets go of what it holds before the target is checked, so a hit that lifts nothing still releases it (BulletClass::Detonate, 0x469210).
 		if (Payback != NULL && Payback->LocomotorTarget != target && Payback->LocomotorSource == NULL && !Payback->IsAttackedByLocomotor) {
-			bool const on_factory = Is_On_Own_Weapons_Factory(target);
+			bool const in_structure = Is_On_Own_Weapons_Factory(target) || Is_In_Own_Bunker(target);
 			Payback->Release_Locomotor(false);
 			// A unit or aircraft is lifted only from the ground layer, when it is not already held or under an Iron
 			// Curtain, and only when it weighs less than the bullet's strength (BulletClass::Detonate, 0x469648).
 			if (target != NULL && target != Payback && target->Is_Foot() && (target->RTTI == RTTI_UNIT || target->RTTI == RTTI_AIRCRAFT)
-				&& !on_factory && !target->IsAttackedByLocomotor && !target->Is_Iron_Curtained()
+				&& !in_structure && !target->IsAttackedByLocomotor && !target->Is_Iron_Curtained()
 				&& static_cast<FootClass *>(target)->In_Which_Layer() == LAYER_GROUND && target->TClass->Weight < Strength) {
 				target->Imbue_Locomotor(Payback, warhead->Locomotor);
 			}
