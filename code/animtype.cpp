@@ -335,7 +335,8 @@ void AnimTypeClass::Load_Image(TheaterType theater)
 			char fullname[_MAX_FNAME+_MAX_EXT];
 			_makepath(fullname, NULL, NULL, !GraphicName.empty() ? Graphic_Name() : Name(), ".SHP");
 			Theater_Naming_Convention(fullname, theater);
-			ImageData = MFCD::Retrieve(fullname);
+			// A missing file is retried with 'G' as its second letter, as gamemd's GetImage (0x428C30) does through FUN_005F9710.
+			ImageData = Retrieve_Theater_Art(fullname);
 		}
 	}
 
