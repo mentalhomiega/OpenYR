@@ -11686,13 +11686,15 @@ void BuildingClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 /// <summary>
 /// Can this building be given a movement order even though it cannot move?
-/// A factory accepts a move order as a rally point for whatever it produces, so the cursor
-/// logic must offer the move action for it in spite of the building being rooted in place.
+/// A factory or a cloning vat accepts a move order as a rally point for whatever it produces,
+/// so the cursor logic must offer the move action for it in spite of the building being rooted
+/// in place.
 /// </summary>
 /// <returns>bool; Does a movement order to this building mean a rally point?</returns>
 bool BuildingClass::Is_Move_Override(void) const
 {
-	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE) {
+	// gamemd's BuildingClass::IsUnitFactory (0x455DA0) also counts Cloning=yes, not only a Factory key.
+	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsCloning) {
 		return(false);
 	}
 	return(true);
