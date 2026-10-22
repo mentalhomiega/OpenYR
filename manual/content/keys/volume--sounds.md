@@ -2,7 +2,7 @@
 key: Volume
 scope: sounds
 label: Sound effect loudness
-see_also: [Priority, MinVolume, VShift, SoundVolume, VoiceVolume]
+see_also: [Priority, MinVolume, VShift, SoundVolume, VoiceVolume, UnitVoiceVolume]
 when_omitted:
   kind: value
   value: "1.0"
@@ -15,7 +15,7 @@ Each play multiplies the value by two more factors, and the product is again hel
 - the distance fade of a sound played at a place in the world, or the loudness the game asks for when the sound has no place;
 - the play's random [`VShift=`](/keys/vshift/) draw.
 
-The [`SoundVolume`](/keys/soundvolume/) option then scales every sound effect, and while it is at zero no sound effect starts. The one exception is the beep the voice volume slider plays outside a game, which follows [`VoiceVolume`](/keys/voicevolume/) instead.
+The [`SoundVolume`](/keys/soundvolume/) option then scales every sound effect, and while it is at zero no sound effect starts. Unit and building replies follow [`UnitVoiceVolume`](/keys/unitvoicevolume/) instead. The beep the EVA slider plays outside a game follows [`VoiceVolume`](/keys/voicevolume/) instead.
 
 ```ini title="sound01.ini"
 [SCOLD8]

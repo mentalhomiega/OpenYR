@@ -49,6 +49,8 @@ records:
   mutate-friendly-key: OpenYR
   screen-shake-option: OpenYR
   show-fps-option: OpenYR
+  unit-voice-volume: OpenYR
+  movie-volume: OpenYR
   # Keys OpenTS added.
   action-lines-and-ui-ini: OpenTS
   autosave: OpenTS

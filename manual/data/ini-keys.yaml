@@ -25071,6 +25071,24 @@ MovieTime:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MovieVolume:
+  key: MovieVolume
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Audio
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 MultiEngineer:
   key: MultiEngineer
   scopes:
@@ -41849,6 +41867,24 @@ UnitRepair:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+UnitVoiceVolume:
+  key: UnitVoiceVolume
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Audio
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 UnitWithPipGroupNumberOffset:
   key: UnitWithPipGroupNumberOffset
   scopes:

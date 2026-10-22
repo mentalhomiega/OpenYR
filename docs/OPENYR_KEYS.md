@@ -38,7 +38,7 @@ The From column says where a key comes from:
 
 - [Rules](#rules): 114 entries
 - [Art](#art): 5 entries
-- [Client settings](#client-settings): 39 entries
+- [Client settings](#client-settings): 41 entries
 - [UI.INI](#uiini): 31 entries
 - [Other game files](#other-game-files): 10 entries
 - [SPAWN.INI](#spawnini): 64 entries
@@ -285,6 +285,13 @@ InterfaceScale=Auto
 RenderFrameRate=60
 SystemCursor=no
 ```
+
+### [Audio]
+
+| Key | Default | Effect | From |
+| --- | --- | --- | --- |
+| [`MovieVolume`](../manual/content/keys/movievolume.md) | Depends; see the page | The volume of the sound in movies, as a fraction from 0 to 1. | OpenYR |
+| [`UnitVoiceVolume`](../manual/content/keys/unitvoicevolume.md) | Depends; see the page | The volume of unit and building voice replies, as a fraction from 0 to 1. | OpenYR |
 
 ### [Debug]
 

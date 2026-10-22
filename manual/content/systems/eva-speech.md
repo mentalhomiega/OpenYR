@@ -58,7 +58,7 @@ Each scenario starts with EVA enabled. A saved game restores the setting it had 
 
 ## Volume
 
-[`VoiceVolume`](/keys/voicevolume/) sets the volume of all speech, and a line's `Volume` in EVAMD.INI scales its own. A change to `VoiceVolume` applies at once, including to the line that is speaking.
+[`VoiceVolume`](/keys/voicevolume/) sets the volume of all speech: EVA lines, taunts and the lines that Play speech asks for. A line's `Volume` in EVAMD.INI scales its own. A change to `VoiceVolume` applies at once, including to the line that is speaking. Unit and building replies are not speech and follow [`UnitVoiceVolume`](/keys/unitvoicevolume/).
 
 While any of these holds, every request to speak is refused and nothing is queued:
 

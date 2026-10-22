@@ -2,7 +2,7 @@
 title: Sound effects
 summary: How a sound effect is put together from its SOUND.INI section, how it fades and pans with its place on screen, and how it competes for a voice.
 category: audio-speech
-keys: [Sounds, Priority, Volume, MinVolume, Range, Limit, Loop, Delay, FShift, VShift, Type, Control, Attack, Decay, Channels, SoundVolume]
+keys: [Sounds, Priority, Volume, MinVolume, Range, Limit, Loop, Delay, FShift, VShift, Type, Control, Attack, Decay, Channels, SoundVolume, UnitVoiceVolume]
 ---
 
 Each sound effect is defined by its section in [SOUND.INI](/formats/sound-ini/). Every time the game plays the sound, that section decides which samples play, at what pitch and loudness, how far away the sound is heard, and whether it loops.
@@ -72,9 +72,9 @@ A refused sound does not play. If its `Control=` includes `QUEUE`, a sound refus
 
 A sound's level is its [`Volume=`](/keys/volume/#scope-sounds) multiplied by its `VShift=` draw and by one more factor. For a placed sound, that factor is the distance fade. For a sound without a place, it is the loudness the game asks for. The result is capped at full loudness.
 
-The [`SoundVolume`](/keys/soundvolume/) option then scales every sound effect, including those already playing.
+The [`SoundVolume`](/keys/soundvolume/) option then scales every sound effect, including those already playing. Unit and building replies follow [`UnitVoiceVolume`](/keys/unitvoicevolume/) instead.
 
-While a movie from [Play Ingame Movie...](/mapping/actions/taction-play-ingame-movie/) plays in the radar, sound effects play at half level.
+While a movie from [Play Ingame Movie...](/mapping/actions/taction-play-ingame-movie/) plays in the radar, sound effects and unit voice replies play at half level.
 
 Levels follow the loudness curve of the original game's DirectSound playback, so a sound the game plays at half level sounds as it did there. On that curve, half level is about 10 dB quieter than full.
 
