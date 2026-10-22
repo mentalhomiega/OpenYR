@@ -68,9 +68,11 @@ static double _AnchorMapY = 0.0;
 static bool _ScriptedZoomSaved = false;
 static double _PlayerZoom = 1.0;
 
-// A scripted zoom waiting for the next Apply_Pending_View_Zoom, and the zoom it sets, in ViewZoom units.
-static bool _ScriptedZoomPending = false;
-static double _ScriptedZoomTarget = 1.0;
+// Whether GScreenClass::Render is drawing the map, and a zoom set meanwhile that waits for the next
+// Apply_Pending_View_Zoom, as Set_View_Zoom takes it.
+static bool _Drawing = false;
+static bool _ZoomHeld = false;
+static double _HeldZoom = 1.0;
 
 
 static unsigned int Glide_Clock(void)
@@ -273,17 +275,30 @@ void Reset_View_Zoom(void)
 	_Gliding = false;
 	_GlideProgress = 1.0;
 	_ScriptedZoomSaved = false;
-	_ScriptedZoomPending = false;
+	_ZoomHeld = false;
+}
+
+
+void Set_View_Zoom_Drawing(bool drawing)
+{
+	_Drawing = drawing;
 }
 
 
 /// <summary>
 /// Sets the map view zoom at once, clamped to the zoom limits, and ends any glide. The zoom is
 /// measured as the mouse wheel does, from 1 at the screen's own pixels. The point at the middle of
-/// the view stays put. Returns false when the zoom did not change.
+/// the view stays put. Returns false when the zoom did not change. A zoom set while the map is drawn,
+/// as when a chronoshift effect ends, waits for the next Apply_Pending_View_Zoom: changing it would
+/// free the map surfaces under the draw.
 /// </summary>
 bool Set_View_Zoom(double zoom)
 {
+	if (_Drawing) {
+		_ZoomHeld = true;
+		_HeldZoom = zoom;
+		return(true);
+	}
 	zoom = std::clamp(zoom * View_Zoom_Native(), View_Zoom_Min(), View_Zoom_Max());
 	if (TacticalMap == NULL || (!_Gliding && std::abs(zoom - ViewZoom) < 0.001)) {
 		return(false);
@@ -331,9 +346,9 @@ void Apply_Pending_View_Zoom(void)
 		return;
 	}
 
-	if (_ScriptedZoomPending) {
-		_ScriptedZoomPending = false;
-		Set_View_Zoom(_ScriptedZoomTarget / View_Zoom_Native());
+	if (_ZoomHeld) {
+		_ZoomHeld = false;
+		Set_View_Zoom(_HeldZoom);
 	}
 
 	// A zoom kept from an earlier skirmish, or one the map's visible area no longer allows, is brought in to the limit.
@@ -392,13 +407,12 @@ void Apply_Pending_View_Zoom(void)
 }
 
 
-// Takes a zoom in ViewZoom units and sets it at once on the next Apply_Pending_View_Zoom, not inside the action.
-// The zoom is applied on the next frame's zoom update, so a glide does not undo a scripted scroll still under way.
+// Takes a zoom in ViewZoom units and sets it at once rather than gliding. A glide would end by putting
+// the view back where it began, which would undo a camera scroll still under way.
 static void SetScriptedZoomAtOnce(double zoom)
 {
 	_PendingZoomStep = 0.0;
-	_ScriptedZoomPending = true;
-	_ScriptedZoomTarget = zoom;
+	Set_View_Zoom(zoom / View_Zoom_Native());
 }
 
 
@@ -433,7 +447,7 @@ void Restore_Player_View_Zoom(void)
 void Forget_Player_View_Zoom(void)
 {
 	_ScriptedZoomSaved = false;
-	_ScriptedZoomPending = false;
+	_ZoomHeld = false;
 }
 
 

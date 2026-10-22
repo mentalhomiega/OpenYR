@@ -397,6 +397,7 @@ void GScreenClass::Render(void)
 	BStart(BENCH_GSCREEN_RENDER);
 
 	Update_Display_Zoom();
+	Set_View_Zoom_Drawing(true);
 
 	Surface * oldpage = LogicalSurface;
 	LogicalSurface = CompositeSurface;
@@ -501,6 +502,7 @@ void GScreenClass::Render(void)
 
 	BEnd(BENCH_GSCREEN_RENDER);
 	LogicalSurface = oldpage;
+	Set_View_Zoom_Drawing(false);
 }
 
 
