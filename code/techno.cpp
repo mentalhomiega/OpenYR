@@ -2439,6 +2439,13 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		return(false);
 	}
 
+	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
+	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	if (TClass->LandTargeting == 2 && object->On_Ground() && object->Get_Cell_Ptr()->Land_Type() != LAND_WATER) {
+		BEnd(BENCH_EVAL_OBJECT);
+		return(false);
+	}
+
 	/*
 	**	If the object is cloaked, then it isn't a legal target.
 	*/

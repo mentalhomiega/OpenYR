@@ -15,6 +15,8 @@ Sets how the object treats a target on land, which is anywhere other than water 
 | `1` | The object does not fire at objects on the ground on land, or at land cells. |
 | `2` | The object fires its secondary weapon at objects on the ground on land. A naval object also fires it at land cells. |
 
+With `2`, the object takes no target on its own when the target is on the ground and its cell is not water. A beach cell is not water here. An order can still set such a target.
+
 An object on a bridge counts as on land.
 
 ```ini title="rulesmd.ini"
