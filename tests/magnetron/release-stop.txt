@@ -1,6 +1,6 @@
-; A Magnetron lifts an enemy Rhino (HTNK), then is ordered to stop mid-lift. The stop ends the beam's hold, so the Rhino is
-; released in the air, falls straight down and takes no damage on landing.
-; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/magnetron/release-stop.txt -Seconds 150
+; A Magnetron lifts an enemy Rhino (HTNK), then is ordered to stop mid-lift. A stop does not end the hold: the Rhino stays
+; held and is pulled toward the Magnetron, so its lift lines keep attacked 1 and it does not fall.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/magnetron/release-stop.txt -Seconds 150
 300 own TELE 54 40
 301 spawn HTNK 62 40
 302 reveal

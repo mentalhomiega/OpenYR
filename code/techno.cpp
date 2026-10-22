@@ -3783,12 +3783,10 @@ void TechnoClass::AI(void)
 
 	AttachedEffects.AI(this);
 
-	// A held vehicle is let go when the holder turns to something else, and is otherwise pulled
-	// toward the holder (TechnoClass::AI and ReleaseLocomotor, 0x70FEE0).
+	// A held vehicle is not let go by a change of target or a stop; only a move order, a landing or the
+	// holder's death releases it. It is pulled toward the holder every 15 frames until then (TechnoClass::AI).
 	if (LocomotorTarget != NULL) {
-		if (TarCom != LocomotorTarget || Strength <= 0) {
-			Release_Locomotor(false);
-		} else if (Frame % 15 == 0 && LocomotorTarget->Is_Foot()) {
+		if (Frame % 15 == 0 && LocomotorTarget->Is_Foot()) {
 			Coord const here = Center_Coord();
 			Coord const there = LocomotorTarget->Center_Coord();
 			double const dx = double(there.X - here.X);
