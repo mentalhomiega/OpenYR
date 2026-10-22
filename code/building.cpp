@@ -6561,7 +6561,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 										Transmit_Message(RADIO_OVER_OUT, foot);
 										foot->NearbyObject = NULL;
 									} else {
-										Cell exit = Find_Exit_Cell(foot);
+										// gamemd (BuildingClass::Mission_Repair, 0x44B780) sends the unit to the depot's rally point when one is set.
+										Cell exit = ArchiveTarget != NULL ? ArchiveTarget->Center_Coord().As_Cell() : Find_Exit_Cell(foot);
 										if (exit != CELL_NONE) {
 											foot->Assign_Mission(MISSION_MOVE);
 											foot->Assign_Destination(&Map[exit]);
@@ -11695,15 +11696,15 @@ void BuildingClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 /// <summary>
 /// Can this building be given a movement order even though it cannot move?
-/// A factory or a cloning vat accepts a move order as a rally point for whatever it produces,
-/// so the cursor logic must offer the move action for it in spite of the building being rooted
-/// in place.
+/// A factory, a cloning vat or a repair depot accepts a move order as a rally point for whatever
+/// it produces or releases, so the cursor logic must offer the move action for it in spite of the
+/// building being rooted in place.
 /// </summary>
 /// <returns>bool; Does a movement order to this building mean a rally point?</returns>
 bool BuildingClass::Is_Move_Override(void) const
 {
-	// gamemd's BuildingClass::IsUnitFactory (0x455DA0) also counts Cloning=yes, not only a Factory key.
-	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsCloning) {
+	// gamemd's BuildingClass::IsUnitFactory (0x455DA0) also counts Cloning=yes and UnitRepair=yes, not only a Factory key.
+	if (Class->ToBuild != RTTI_UNITTYPE && Class->ToBuild != RTTI_INFANTRYTYPE && Class->ToBuild != RTTI_AIRCRAFTTYPE && !Class->IsCloning && !Class->IsCanUnitRepair) {
 		return(false);
 	}
 	return(true);
