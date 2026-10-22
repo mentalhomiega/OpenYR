@@ -515,7 +515,7 @@ void UI_Display_State(UIDisplayState & state)
 		{BACKEND_RENDERER_AUTO, "Auto"},
 		{BACKEND_RENDERER_D3D11, "Direct3D 11"},
 		{BACKEND_RENDERER_D3D12, "Direct3D 12"},
-		{BACKEND_RENDERER_VULKAN, "Vulkan"},
+		{BACKEND_RENDERER_VULKAN, "Vulkan (experimental)"},
 		{BACKEND_RENDERER_OPENGL, "OpenGL"}
 	}, Options.Renderer, "%d");
 
