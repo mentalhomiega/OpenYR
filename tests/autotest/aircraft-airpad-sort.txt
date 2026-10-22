@@ -1,0 +1,25 @@
+; Airpad sort: a Harrier (ORCA) lands on its dock 0 (cell 61,40) of the Allied Airforce Command (GAAIRC, placed at 60,40).
+; The pad's flat ActiveAnim markings GAAIRC_A and GAAIRC_B (YSort 362) and the third marking GAAIRC_C (YSort 543) are
+; ground-layer animations. The ground layer sorts by X plus Y, so the parked jet must sort after GAAIRC_A and GAAIRC_B.
+; The jet is at X+Y 26112 and the markings at 25962, while GAAIRC_C is at 26143 and still draws a little over its corner.
+; The second Harrier is sent to the same pad. Its landing is not checked; it may still be in the air at the shots.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/aircraft-airpad-sort.txt -Width 1024 -Height 768 -Seconds 150 -Filter "AUTOTEST (where|lift)|Exception"
+30 command CenterBase
+35 reveal
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 46
+311 grantunit ORCA 62 46
+320 view 61 42
+400 enter ORCA 60 40
+900 where ORCA
+900 lift ORCA
+900 view 61 41
+910 zoom 2
+920 windowshot airpad-sort-zoom2
+930 zoom 1
+940 windowshot airpad-sort-zoom1
+960 quit

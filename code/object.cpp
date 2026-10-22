@@ -2832,7 +2832,8 @@ int ObjectClass::Sort_Y(void) const
 {
 	assert(this != NULL);
 
-	return(Render_Coord().Y);
+	// The isometric screen row follows X + Y, so that is the depth order (gamemd GetYSort).
+	return(Render_Coord().X + Render_Coord().Y);
 }
 
 

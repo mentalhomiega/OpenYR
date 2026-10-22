@@ -7,7 +7,7 @@ when_omitted:
   value: "0"
 ---
 
-Moves the animation earlier or later in the ground layer's drawing order. Objects in that layer are drawn in order of their Y coordinate in leptons, and this value is added to the animation's coordinate for that sort; a cell is 256 leptons. A negative value draws the animation behind objects it would otherwise cover, and a positive value draws it in front of them.
+Moves the animation earlier or later in the ground layer's drawing order. Objects in that layer are drawn in order of their X plus Y coordinates in leptons, which is their depth on the isometric map, and this value is added to the animation's sum for that sort; a cell is 256 leptons. A negative value draws the animation behind objects it would otherwise cover, and a positive value draws it in front of them.
 
 Each animation takes the value when it is created. The shipped wake animation sets it:
 
