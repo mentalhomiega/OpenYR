@@ -612,9 +612,11 @@ void TeamClass::AI(void)
 		if (IsLeaveMap) {
 			for (int index = 0; index < LogicTags.Count(); index++) {
 				TagClass * trig = LogicTags[index];
-				if (trig->Spring(TEVENT_LEAVES_MAP)) {
+				trig->Spring(TEVENT_LEAVES_MAP);
+
+				// Step back only if this tag left the list; a persistent tag that keeps springing is not retried.
+				if (index >= LogicTags.Count() || LogicTags[index] != trig) {
 					index--;
-					if (LogicTags.Count() == 0) break;
 				}
 			}
 		}
