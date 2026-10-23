@@ -1,0 +1,11 @@
+; A computer Mirage Tank (MGTK at 60,42) stands still and takes a tree look from DefaultMirageDisguises. The player
+; is not its ally, so it always sees the tree. Nothing of the player's is near, so it never fires and blinks.
+; Expected: in the shot the disguise casts the tree's shadow, its frame in the second half of the shape, like the
+; map's own trees (TechnoClass::DrawObject, 0x705E00). Before the fix the disguise had no shadow.
+; Run: scripts/run_autotest.ps1 -Build agent25 -Script src-agent25/tests/autotest/mirage-disguise-shadow.txt -Seconds 60 -Filter AUTOTEST
+30 view 60 42
+35 reveal
+40 enemy MGTK 60 42
+200 where MGTK
+210 windowshot mirage-disguise-shadow
+230 quit

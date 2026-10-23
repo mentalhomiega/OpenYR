@@ -3341,6 +3341,11 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			Point2D drawpoint = point;
 			drawpoint.Y += MirageType->YDrawFudge;
 			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, 0, drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|Mirage_Shimmer_Flags()), NULL, -12, ZGRAD_90DEG, cellptr.TileBrightness);
+			// The terrain's shadow, its frame in the second half of the shape, goes down too and is never
+			// see-through (TechnoClass::DrawObject, 0x705E00, from UnitClass::DrawAsSHP).
+			if (DrawShapeShadows && !Class->IsNoShadow) {
+				Draw_Shape(*LogicalSurface, *cellptr.Drawer, shape, shape->Get_Count() / 2, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA), NULL, -4 - TacticalMap->Z_Lepton_To_Pixel(Height));
+			}
 		}
 		return;
 	}
