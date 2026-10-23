@@ -1,0 +1,22 @@
+; A neutral tech oil derrick (CAOILD, NeedsEngineer, WorkingSound=OilDerrickLoop) plays its working sound
+; only once an engineer has captured it. gamemd's BuildingClass::IsPowerOnline (0x4555D0) is false for a
+; NeedsEngineer structure whose HasEngineer is clear, and BuildingClass::Update (0x43FB20) plays WorkingSound
+; only when that result changes. The sounds command logs every sound effect as "Sound: <name> at x,y".
+; The skirmish map already has neutral derricks, so the log must show no OilDerrickLoop for them either.
+; Expected: no "Sound: OilDerrickLoop" line before the capture order at frame 300. The capture completes a few
+; frames later, and the one OilDerrickLoop line follows it, at 66,40.
+1 sounds 1
+6 where CAOILD
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAOILD 66 40
+110 own ENGINEER 62 40
+200 log before capture
+210 where CAOILD
+300 capture ENGINEER 66 40
+400 log after capture
+410 where CAOILD
+500 sounds 0
+600 where CAOILD
+700 quit

@@ -1723,7 +1723,8 @@ void BuildingClass::AI(void)
 
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
 	{
-		bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+		// A NeedsEngineer structure stays out of service until HasEngineer is set (IsPowerOnline, 0x4555D0); Is_Powered_On does not check that.
+		bool const online = Is_Powered_On() && (!Class->IsNeedsEngineer || HasEngineer) && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
 		if (Class->PowersUnit != NULL) {
 			Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
 		}
