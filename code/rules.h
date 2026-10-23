@@ -2695,6 +2695,13 @@ class RulesClass
 		int ChronoRangeMinimum;
 
 		/*
+		 * Whether a super weapon that a structure grants stays usable and keeps charging while a
+		 * Chrono Legionnaire erases that structure. When it is false the weapon is suspended, as it
+		 * is while its structure is unpowered, and it resumes once the erase stops.
+		 */
+		bool ChronoErasedSuperWeapons;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */

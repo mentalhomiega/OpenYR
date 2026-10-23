@@ -117,6 +117,9 @@ void TemporalClass::Fire(TechnoClass * target)
 	}
 
 	target->IsBeingWarpedOut = true;
+	if (target->RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
+		target->House->IsRecalcNeeded = true;
+	}
 	if (target->TClass->IsGattling) {
 		target->Gattling_Rate_Down(1);
 	}
@@ -216,6 +219,9 @@ void TemporalClass::Let_Go(void)
 		} else if (Target != nullptr) {
 			Target->WarpedBy = nullptr;
 			Target->IsBeingWarpedOut = false;
+			if (Target->RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
+				Target->House->IsRecalcNeeded = true;
+			}
 			Target->Mark(MARK_CHANGE);
 		}
 	} else if (prev == nullptr) {

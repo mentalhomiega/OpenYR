@@ -10787,17 +10787,19 @@ void HouseClass::Update_Present_Super_Weapons(void)
 					for (int j = 0; j < Buildings.Count(); j++) {
 						BuildingClass * b = Buildings[j];
 						if (!b->IsInLimbo && b->IsActive && b->House->Fetch_ID() == Fetch_ID()) {
+							// A structure being chrono-erased stops enabling its weapons unless ChronoErasedSuperWeapons keeps them usable.
+							bool const on = b->IsOn && (Rule->ChronoErasedSuperWeapons || !b->IsBeingWarpedOut);
 							for (int k = 0; k < 3; k++) {
 								BuildingTypeClass const * upgrade = b->Upgrades[k];
 								if (upgrade != NULL && (upgrade->SuperWeapon == s || upgrade->SuperWeapon2 == s)) {
 									present = true;
-									if (!enabled) enabled = b->IsOn;
+									if (!enabled) enabled = on;
 								}
 							}
 							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s) {
 								present = true;
 								if (enabled) break;
-								enabled = b->IsOn;
+								enabled = on;
 							}
 							if (enabled && present) break;
 						}

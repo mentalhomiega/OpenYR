@@ -8796,6 +8796,9 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (WarpedBy == target) {
 			WarpedBy = NULL;
 			IsBeingWarpedOut = false;
+			if (RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
+				House->IsRecalcNeeded = true;
+			}
 		}
 		if (ParasiteImUsing) {
 			ParasiteImUsing->Detach(target);

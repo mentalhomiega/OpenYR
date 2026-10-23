@@ -4162,7 +4162,7 @@ void Run(StepType const & step)
 			Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
-			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1);
+			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_UNIT) {
 				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
@@ -4282,7 +4282,7 @@ void Run(StepType const & step)
 			for (int s = 0; s < house->SuperWeapon.Count(); s++) {
 				SuperClass * super = house->SuperWeapon[s];
 				if (super == NULL || !super->Is_Present()) continue;
-				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d flashtab %d suspended %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Should_Flash_Tab(), (int)super->Is_Suspended());
+				DebugString("AUTOTEST   super house %s index %d %s ready %d left %d time %d custom %d flashtab %d suspended %d usable %d\n", house->Class->Name(), s, super->Class->Name(), (int)super->Is_Ready(), (int)super->Control.Value(), super->Get_Recharge_Time(), super->CustomRechargeTime, (int)super->Should_Flash_Tab(), (int)super->Is_Suspended(), (int)super->Can_Place());
 			}
 		}
 	} else if (step.Command == "tabflash") {
