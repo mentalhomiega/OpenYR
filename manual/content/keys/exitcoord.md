@@ -1,13 +1,14 @@
 ---
 key: ExitCoord
-summary: The offset from its exit cell's center at which a barracks places a produced object.
+summary: The offset at which a barracks or weapons factory places a produced object.
 see_also: [GDIBarracks, NODBarracks, WeaponsFactory, "system:production"]
 when_omitted:
   kind: value
   value: 0,0,0
+  note: A weapons factory uses the foundation offset described under Weapons factories instead.
 ---
 
-`ExitCoord` moves the point where a barracks puts down an object it releases. Only a [`GDIBarracks=yes`](/keys/gdibarracks/) or [`NODBarracks=yes`](/keys/nodbarracks/) structure uses it, and only when the object leaves by the barracks' preferred exit cell.
+`ExitCoord` moves the point where a barracks puts down an object it releases. Only a [`GDIBarracks=yes`](/keys/gdibarracks/) or [`NODBarracks=yes`](/keys/nodbarracks/) structure uses it for a barracks exit, and only when the object leaves by the barracks' preferred exit cell. A [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure uses it for every object it releases; see [Weapons factories](#weapons-factories).
 
 ```ini title="rules.ini"
 [GAPILE] ; the stock GDI barracks
@@ -25,6 +26,8 @@ A `GDIBarracks=yes` structure prefers to release its object toward the cell one 
 
 When the preferred cell is blocked, the object leaves by another cell around the footprint. It then appears at the center of the matching cell inside the footprint, with no offset. [Leaving the factory](/systems/production/#leaving-the-factory) covers how the exit cell is picked.
 
-:::caution[A weapons factory ignores this key]
-A [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure puts every object it releases, soldiers included, at the same fixed point on the structure, even when it is also a barracks. Writing `ExitCoord` on such a type changes nothing.
-:::
+## Weapons factories
+
+A [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure releases every object it builds, soldiers included, at its `ExitCoord`, measured from the structure's location. This holds even when the structure is also a barracks.
+
+When the key is omitted, a weapons factory uses `(width - 1) * 128, (height - 1) * 128, 0` leptons, where width and height are the structure's foundation in cells. For a `5x3` foundation that is `512,256,0`, the value the stock war factories write.
