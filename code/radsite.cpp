@@ -66,6 +66,22 @@ void RadSiteClass::Irradiate(Coord const & where, int spread, int level)
 }
 
 
+/// <summary>
+/// Returns the level left in the site centered on the cell (RadSiteClass::GetRadLevel, 0x65B510),
+/// or -1 when no site is centered there.
+/// </summary>
+int RadSiteClass::Level_Centered_On(Cell const & cell)
+{
+	for (int index = 0; index < Sites.Count(); index++) {
+		RadSiteClass const * site = Sites[index];
+		if (site->BaseCell == cell) {
+			return(site->RadDuration > 0 ? site->RadLevel * site->RadTimeLeft / site->RadDuration : 0);
+		}
+	}
+	return(-1);
+}
+
+
 // The part of the site's level this cell gets: all of it at the center, falling to none at the reach.
 double RadSiteClass::Share(Cell const & cell) const
 {

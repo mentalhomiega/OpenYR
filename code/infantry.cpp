@@ -113,6 +113,7 @@
 #include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
+#include "radsite.h"
 #include "revent.h"
 #include "inline.h"
 #include "ion.h"
@@ -1627,8 +1628,9 @@ void InfantryClass::AI(void)
 		return;
 	}
 
-	// A deployed soldier with an AreaFire deploy weapon keeps striking its own cell.
-	if (IsActive && !IsInLimbo && TarCom == NULL && Is_Deployed() && Is_Area_Fire_Deployer()) {
+	// A deployed soldier with an AreaFire deploy weapon keeps striking its own cell. A radiation-immune one, such as the
+	// Desolator, targets its cell only through Do_Guard_Deploy, which waits for the radiation there to fall.
+	if (IsActive && !IsInLimbo && TarCom == NULL && Is_Deployed() && Is_Area_Fire_Deployer() && !Class->IsImmuneToRadiation) {
 		Assign_Target(&Map[Get_Cell()]);
 	}
 
@@ -5103,9 +5105,30 @@ int InfantryClass::Do_Guard_Deploy(void)
 			return(Class->DoControls[DO_UNDEPLOY].Count);
 		}
 
-		// A radiation-immune deployer, such as the Desolator, keeps the normal guard mission.
-		if (!Class->IsDeployFire || Class->IsImmuneToRadiation) {
+		if (!Class->IsDeployFire) {
 			return(-1);
+		}
+
+		// A radiation-immune deployer, such as the Desolator, fires at its own cell only while the radiation
+		// centered there has fallen below a third of its deploy weapon's RadLevel (0x521320, immune branch).
+		// Otherwise it waits a random 10 to 20 frames and checks again.
+		if (Class->IsImmuneToRadiation) {
+			WeaponTypeClass const * weapon = Get_Class_Weapon_Data(Class->DeployFireWeapon)->Weapon;
+			int const threshold = weapon != NULL ? weapon->RadLevel / 3 : 0;
+			Cell const cell = Get_Cell();
+			int const level = RadSiteClass::Level_Centered_On(cell);
+			if (level < 0 || level < threshold) {
+				Assign_Target(&Map[cell]);
+				if (Can_Fire(TarCom, Class->DeployFireWeapon) == FIRE_OK) {
+					Fire_At(TarCom, Class->DeployFireWeapon);
+					Assign_Target(NULL);
+					Do_Action(DO_DEPLOYED_FIRE);
+					return(Class->DoControls[DO_DEPLOYED_FIRE].Count);
+				}
+				Assign_Target(NULL);
+			}
+			int const ticks = int(Current_Mission_Control().Rate * TICKS_PER_MINUTE + 0.5);
+			return(ticks + Random_Pick(10, 20));
 		}
 		Refresh_Deployed_Target();
 		return(Deploy_Delay());

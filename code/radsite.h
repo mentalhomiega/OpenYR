@@ -25,6 +25,7 @@ class RadSiteClass
 {
 	public:
 		static void Irradiate(Coord const & where, int spread, int level);
+		static int Level_Centered_On(Cell const & cell);
 		static void Update_All(void);
 		static void Clear_All(void);
 		static void Serialize_All(SaveStreamClass & stream);
