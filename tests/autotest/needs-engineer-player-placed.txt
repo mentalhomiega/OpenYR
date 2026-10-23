@@ -1,0 +1,18 @@
+; A tech oil derrick (CAOILD, NeedsEngineer) that a map places under the player's house pays nothing, because no owner
+; change has set HasEngineer. gamemd sets HasEngineer only in BuildingClass::SetOwningHouse (0x448260), and its structure
+; loader (Read_Scenario_INI_Structures, 0x44F820) disables a NeedsEngineer structure without it. A neutral derrick that an
+; engineer captures pays its 1000 startup at capture and then its ProduceCash payments.
+; Observed on 2026-10-24: credits 10000 at frame 200, 11000 at 400, 11100 at 600, 11200 at 800. The player's CAOILD at
+; 60,40 adds nothing at any dump.
+; Run: scripts/run_autotest.ps1 -Build agent9 -Script src-agent9/tests/autotest/needs-engineer-player-placed.txt -Seconds 120 -Filter "AUTOTEST own|AUTOTEST neutral|AUTOTEST capture|credits|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+30 command CenterBase
+100 own CAOILD 60 40
+110 neutral CAOILD 66 40
+115 own ENGINEER 62 40
+200 dump
+220 capture ENGINEER 66 40
+400 dump
+600 dump
+800 dump
+900 quit
