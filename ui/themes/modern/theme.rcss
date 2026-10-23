@@ -789,6 +789,116 @@ body.lobby #pick
 	padding-top: 9dp;
 }
 
+/* The network game room is as big as the skirmish lobby. The players, the chat and the line to type in
+   take the left column; the map, the game settings and the switches take the right. The guest sees the
+   same places, with the settings and switches greyed. */
+body.netgame #backdrop #reveal
+{
+	width: 1040dp;
+	height: 640dp;
+	top: 50%;
+	margin-top: -320dp;
+}
+
+body.netgame .caption
+{
+	height: 20dp;
+	line-height: 20dp;
+}
+
+body.netgame #cap-side { left: 28dp; top: 29dp; }
+body.netgame #side { left: 110dp; top: 24dp; width: 200dp; height: 30dp; }
+body.netgame #cap-color { left: 336dp; top: 29dp; }
+body.netgame #color-pick { left: 420dp; top: 24dp; width: 248dp; height: 30dp; }
+
+body.netgame #cap-players { left: 28dp; top: 70dp; }
+body.netgame #players { left: 28dp; top: 94dp; width: 640dp; height: 216dp; }
+body.netgame.teams #players { height: 178dp; }
+body.netgame #players .item { height: 24dp; line-height: 24dp; }
+body.netgame #players .cell-mark { width: 24dp; margin-left: 6dp; }
+body.netgame #players .cell-house { width: 26dp; }
+body.netgame #players .cell-name { width: 420dp; }
+body.netgame #players .cell-detail { width: 150dp; }
+
+body.netgame #cap-team { left: 28dp; top: 287dp; }
+body.netgame #team { left: 76dp; top: 282dp; width: 120dp; height: 28dp; }
+body.netgame #cap-start { left: 220dp; top: 287dp; }
+body.netgame #start { left: 270dp; top: 282dp; width: 180dp; height: 28dp; }
+
+body.netgame #chat { left: 28dp; top: 326dp; width: 640dp; height: 214dp; }
+body.netgame #chat .line { line-height: 18dp; }
+body.netgame #say { left: 28dp; top: 548dp; width: 640dp; height: 28dp; padding: 0 4dp; }
+
+body.netgame #pick { left: 696dp; top: 24dp; width: 316dp; height: 30dp; padding-top: 6dp; }
+body.netgame #mapname { left: 696dp; top: 60dp; width: 316dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+body.netgame.guest #cap-map { left: 696dp; top: 29dp; }
+body.netgame.guest #mapname { left: 740dp; top: 29dp; width: 272dp; }
+
+body.netgame #map { left: 696dp; top: 88dp; width: 316dp; height: 198dp; }
+body.netgame #preview { width: 315dp; height: 197dp; }
+
+body.netgame #settings, body.netgame #switches
+{
+	width: 1040dp;
+	height: 640dp;
+}
+
+body.netgame #settings > .row { left: 696dp; width: 316dp; height: 24dp; }
+body.netgame #settings > .row > .caption { width: 104dp; margin-right: 0; text-align: left; }
+body.netgame #settings input[type='range'] { margin-left: 8dp; width: 140dp; }
+
+body.netgame #row-speed { top: 302dp; }
+body.netgame #row-aiplayers { top: 330dp; }
+body.netgame #row-ailevel { top: 358dp; }
+body.netgame #row-units { top: 386dp; }
+body.netgame #row-tech { top: 414dp; }
+body.netgame #row-credits { top: 442dp; }
+
+body.netgame #switches > label { width: 160dp; height: 20dp; line-height: 20dp; }
+body.netgame #switch-allies, body.netgame #switch-truce, body.netgame #switch-bases,
+body.netgame #switch-redeploy, body.netgame #switch-fog { left: 696dp; }
+body.netgame #switch-bridges, body.netgame #switch-crates, body.netgame #switch-short,
+body.netgame #switch-engineer { left: 860dp; width: 152dp; }
+body.netgame #switch-allies, body.netgame #switch-bridges { top: 480dp; }
+body.netgame #switch-truce, body.netgame #switch-crates { top: 502dp; }
+body.netgame #switch-bases, body.netgame #switch-short { top: 524dp; }
+body.netgame #switch-redeploy, body.netgame #switch-engineer { top: 546dp; }
+body.netgame #switch-fog { top: 568dp; }
+
+/* The kick button says what it does instead of showing the boot. It kicks the player picked in the list. */
+body.netgame #kick, body.netgame #kick:active
+{
+	left: 28dp;
+	top: 594dp;
+	width: 120dp;
+	height: 30dp;
+	border: 1dp var(--t-edge-dim, #4d3d6b);
+	padding: 6dp 8dp 0 8dp;
+	decorator: vertical-gradient(var(--t-face-top, #2e2640) var(--t-face-bottom, #18131f));
+}
+
+body.netgame #kick:hover
+{
+	border-color: var(--t-accent, #b46bff);
+	decorator: vertical-gradient(var(--t-hover-top, #3d2f57) var(--t-hover-bottom, #1f1829));
+}
+
+body.netgame #kick .label
+{
+	display: inline;
+}
+
+body.netgame #cancel, body.netgame #go, body.netgame #accept
+{
+	top: 594dp;
+	width: 120dp;
+	height: 30dp;
+	padding-top: 6dp;
+}
+
+body.netgame #cancel { left: 760dp; }
+body.netgame #go, body.netgame #accept { left: 892dp; }
+
 /* The Settings screen: a column of tabs down the left, with the page to its right. The whole screen is one
    translucent tinted backdrop, the .settings-backdrop class, so the game behind it shows through. The
    backdrop's colour and opacity are set in that one class; the tab column and the page sit on top of it. */

@@ -14,7 +14,7 @@
 	<link type="text/rcss" href="netgame.rcss"/>
 	<link type="text/rcss" href="colorpick.rcss"/>
 </head>
-<body template="dialog" data-model="netlobby">
+<body class="netgame" template="dialog" data-model="netlobby">
 	<span class="caption" id="cap-side">Your Side:</span>
 	<select id="side" data-event-change="queue('side', ev.value)">
 		<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
@@ -71,7 +71,7 @@
 
 	<div id="map" class="frame"><surface id="preview"/></div>
 
-	<button id="kick" data-if="host" tip="Kick a user from your game" data-event-click="queue('kick')"></button>
+	<button id="kick" data-if="host" tip="Kick a user from your game" data-event-click="queue('kick')"><span class="label">Kick Player</span></button>
 	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
 	<button id="go" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
 	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-event-click="queue('accept')">Accept</button>
