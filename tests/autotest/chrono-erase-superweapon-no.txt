@@ -1,0 +1,27 @@
+; A Chrono Legionnaire erases a Chronosphere that the computer house owns, with ChronoErasedSuperWeapons=no (chrono-erase-superweapon-no.ini).
+; The computer Chronosphere is charged at frame 60 (grantai), the player's legionnaire strikes it at frame 70, and the beam is released by killing the legionnaire at frame 220.
+; Every super line reads the computer's Chronosphere (ready, suspended, usable). Expected: with no, the super reads suspended 1 and usable 0 while the beam holds the structure (warped 1); both values read suspended 0 and usable 1 before the strike and after the kill.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/chrono-erase-superweapon-no.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST   super|AUTOTEST   where|AUTOTEST   kill|AUTOTEST   houses|Exception"
+5 rules E:/Claude ra2 decomp/src-agent4/tests/autotest/chrono-erase-superweapon-no.ini
+10 command CenterBase
+20 reveal
+30 view 56 40
+40 enemy GAPOWR 46 34
+41 enemy GACSPH 56 44
+50 grantunit CLEG 52 44
+60 grantai ChronoSphereSpecial
+61 supers
+62 houses
+70 strike CLEG 56 44
+80 supers
+90 where CLEG
+100 supers
+120 where GACSPH
+140 supers
+170 where CLEG
+200 supers
+220 kill CLEG 1
+230 supers
+240 where GACSPH
+260 supers
+280 quit
