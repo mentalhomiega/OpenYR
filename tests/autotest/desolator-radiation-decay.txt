@@ -1,0 +1,44 @@
+; Desolator deploy radiation. A deployed Desolator (DESO) fires its RadEruptionWeapon (RadLevel=500, ROF=60) at its
+; own cell with nothing to attack. The center cell radiation level is logged with radlevel while it stays deployed,
+; then after it is killed at frame 700 (hit DESO:Super). The windowshots show the green glow at frames 400, 1000,
+; 1500 and 5800.
+; Run: scripts/run_autotest.ps1 -Build agent3 -Script src-agent3/tests/autotest/desolator-radiation-decay.txt -AIPlayers 0 -Width 1024 -Height 768 -Seconds 500 -Filter "radlevel|windowshot|hit |quit|Exception|game over"
+30 command CenterBase
+35 reveal
+40 own DESO 68 24
+41 own GACNST 60 30
+50 view 68 24
+60 select DESO
+65 command DeployObject
+100 radlevel 68 24
+160 radlevel 68 24
+220 radlevel 68 24
+280 radlevel 68 24
+340 radlevel 68 24
+400 radlevel 68 24
+400 windowshot desodeploy-400
+460 radlevel 68 24
+520 radlevel 68 24
+580 radlevel 68 24
+640 radlevel 68 24
+700 radlevel 68 24
+700 hit DESO:Super 99999
+701 radlevel 68 24
+760 radlevel 68 24
+820 radlevel 68 24
+880 radlevel 68 24
+940 radlevel 68 24
+1000 radlevel 68 24
+1000 windowshot desodeploy-1000
+1500 radlevel 68 24
+1500 windowshot desodeploy-1500
+2500 radlevel 68 24
+3500 radlevel 68 24
+4500 radlevel 68 24
+5000 radlevel 68 24
+5400 radlevel 68 24
+5600 radlevel 68 24
+5800 radlevel 68 24
+5800 windowshot desodeploy-5800
+6000 radlevel 68 24
+6100 quit

@@ -207,6 +207,7 @@
 **	partsys					writes each live particle system with its type, the frames it has left and the object it rides on
 **	bullets					writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays
 **	radbeams				writes how many radiation beams of each kind are live and how many eruption beams are visible
+**	radlevel x y			writes the radiation level of a cell on a line of its own
 **	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
 **							reload countdown of every live object of that type
 **	price <TypeID>			writes what the player pays for the type
@@ -4497,6 +4498,10 @@ void Run(StepType const & step)
 	} else if (step.Command == "radbeams") {
 		// radbeams: how many beams of each kind are live.
 		DebugString("AUTOTEST   radbeams frame %d wave %d eruption %d visible %d\n", Frame, RadBeamClass::Count(false), RadBeamClass::Count(true), RadBeamClass::Count_Visible_Eruptions());
+		} else if (step.Command == "radlevel") {
+			// radlevel x y: the radiation level of that cell, on a line of its own so the cell line's length does not cut it off.
+			int const x = std::atoi(step.Argument.c_str());
+			DebugString("AUTOTEST   radlevel %d,%d level %.3f\n", x, step.X, Map[Cell(x, step.X)].RadLevel);
 	} else if (step.Command == "quantity") {
 		// quantity <TypeID>: how many of that type each house is counted as having, owned and active. A
 		// structure uses the building counts, and a unit, infantry or aircraft type its own counts.
