@@ -1,0 +1,36 @@
+; A computer house's charged Nuke goes on hold by power, then is released. The computer's Missile Silo (NAMISL) grants the
+; Nuke. Its three power plants are killed at frame 55, after the charge at frame 50 and before the computer's AI pass,
+; which fired the same charged Nuke at about frame 112 when power was not cut. The plant at 46,38 restores power at frame 150.
+; chargeai sets the charge as a SetSuperCharge trigger action does (SuperClass::Set_Charge).
+; Expected: suspended 1 and no "ready 0" line from frame 55 to 150, because the hold stops the countdown (gamemd SetOnHold
+; 0x6CB4D0) and gamemd's ClickFire (0x6CB920) refuses a stopped weapon. After frame 150 the weapon is released and fires.
+; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/autotest/ai-super-hold-power.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST   (super house Africans index 0|chargeai|kill|house Africans)|Exception"
+10 command CenterBase
+20 reveal
+30 view 56 40
+40 enemy NAMISL 60 50
+41 enemy GAPOWR 46 34
+42 enemy GAPOWR 46 38
+43 enemy GAPOWR 46 42
+50 chargeai NukeSpecial 100
+52 supers
+55 kill GAPOWR
+56 houses
+60 supers
+75 supers
+90 supers
+105 supers
+120 supers
+135 supers
+150 enemy GAPOWR 46 38
+151 houses
+160 supers
+175 supers
+190 supers
+205 supers
+220 supers
+235 supers
+250 supers
+270 supers
+290 supers
+300 quit

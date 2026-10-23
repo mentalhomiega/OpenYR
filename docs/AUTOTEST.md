@@ -23,6 +23,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
+| `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |
@@ -271,7 +272,7 @@ In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that
 | `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
 | `beacon place x y`, `beacontext <text>` | Queue the beacon event: a placement on the cell, or the text of the selected beacon. `beacon select x y` and `beacon delete` change this copy's selection, and `beacon delete` queues a removal only for a beacon the player owns |
 
-A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
+A step that changes an object or a scenario value without an event changes this copy only. These include `own`, `spawn`, `grantunit`, `neutral`, `kill`, `killhouse`, `killtag`, `hurt`, `grant`, `grantai`, `chargeai`, `transfer`, `cmove`, `setlocal`, `setglobal` and `trigaction`. A network test must not use them, because the other copy keeps its old state: with `1000 own E1 60 60` on one side only, the runner reports a desync at frame 1000. Steps that only read state or change this copy's view (`select`, `view`, `follow`, `record`, `log`, `dump`, `where`, `census`, `supers`, `canbuild`, `planstate`) do not affect the other copy.
 
 The out-of-sync comparison is positional: it compares line N of one report with line N of the other. One object that appears only on one side shifts every line after it, so read the first difference, not the whole list.
 

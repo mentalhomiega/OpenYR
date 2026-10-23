@@ -680,6 +680,10 @@ void SuperClass::Forced_Charge(bool player)
 		IsReady = true;
 		Control.Start();
 		Control = 0;
+		// A held weapon is ready but stays held, its countdown stopped, until Suspend(false) resumes it.
+		if (IsSuspended) {
+			Control.Stop();
+		}
 //		IsSuspended = false;
 		if (player) {
 			Speak_Ready(Class);

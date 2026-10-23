@@ -3374,7 +3374,8 @@ void Run(StepType const & step)
 		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
 		if (id != SUPER_NONE && id < PlayerPtr->SuperWeapon.Count()) {
 			SuperClass * super = PlayerPtr->SuperWeapon[id];
-			super->Enable(false, true, true);
+			// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
+			super->Enable(false, true, PlayerPtr->Power_Fraction() < 1.0);
 			super->Forced_Charge(true);
 			DebugString("AUTOTEST   grant %s type %d ready %d\n", step.Argument.c_str(), (int)super->Class->Type, (int)super->Is_Ready());
 		} else {
@@ -3394,9 +3395,22 @@ void Run(StepType const & step)
 			HouseClass * house = Houses[index];
 			if (house != PlayerPtr && house->ConYards.Count() > 0 && id < house->SuperWeapon.Count()) {
 				SuperClass * super = house->SuperWeapon[id];
-				super->Enable(false, true, true);
+				// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
+				super->Enable(false, false, house->Power_Fraction() < 1.0);
 				super->Forced_Charge(true);
 				DebugString("AUTOTEST   grantai %s to %s ready %d\n", step.Argument.c_str(), house->Class->Name(), (int)super->Is_Ready());
+				break;
+			}
+		}
+	} else if (step.Command == "chargeai") {
+		// chargeai <SuperWeaponTypeID> <percent>: sets how charged the first computer house with a construction yard's super weapon is, as a SetSuperCharge trigger action does (SuperClass::Set_Charge).
+		SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
+		for (int index = 0; index < Houses.Count() && id != SUPER_NONE; index++) {
+			HouseClass * house = Houses[index];
+			if (house != PlayerPtr && house->ConYards.Count() > 0 && id < house->SuperWeapon.Count()) {
+				SuperClass * super = house->SuperWeapon[id];
+				super->Set_Charge(step.X);
+				DebugString("AUTOTEST   chargeai %s to %s percent %d ready %d suspended %d\n", step.Argument.c_str(), house->Class->Name(), step.X, (int)super->Is_Ready(), (int)super->Is_Suspended());
 				break;
 			}
 		}
