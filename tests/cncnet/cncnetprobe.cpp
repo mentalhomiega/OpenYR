@@ -10,7 +10,8 @@
 // CnCNetProbe <host> <port> <seconds> [nick]
 //
 // Runs a lobby session against an IRC server and prints the lobby once a
-// second. Point it at the stand-in (scripts/cncnet_irc_standin.py) only.
+// second. It only listens: it joins the game list channel and says nothing. Point it at the stand-in
+// (scripts/cncnet_irc_standin.py) or, for a read-only look, at a live server.
 
 #include "cncnet/cncnetsession.h"
 
@@ -61,9 +62,6 @@ int main(int argc, char ** argv)
 	int const seconds = std::atoi(argv[3]);
 	for (int second = 0; second < seconds; ++second) {
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		if (second == 3) {
-			session.Say("#cncnet-yr", "hello from the probe");
-		}
 		uint64_t const now = session.Read(lobby, revision);
 		if (now == revision) {
 			continue;

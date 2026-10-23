@@ -19,6 +19,7 @@
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnetspawn.h"
 #include "cncnet/cncnettunnel.h"
+#include "cncnet/cncnettunnellist.h"
 #include "cncnet/ircclient.h"
 #include "cncnet/ircmessage.h"
 
@@ -673,6 +674,73 @@ void Test_Room(void)
 }
 
 
+void Test_Room_Notice(void)
+{
+	CnCNetRoomConfigType config = Room_Config("Host", "b1");
+	config.Notice = "This is an OpenYR test game.";
+	CnCNetRoomClass host = CnCNetRoomClass::Host(config, {{"Map", "Lake"}}, 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	host.Take_Outgoing();
+
+	// Every joiner hears the notice once; a stock client never says hello, so it holds the start back.
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 100);
+	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
+	Check(sent.size() == 1 && sent[0].Kind == CnCNetRoomSendKind::SAY && sent[0].Target == ROOM && sent[0].Text == config.Notice,
+		"room notice: a joiner is told the room is an OpenYR game");
+
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 200);
+	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 200);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 200);
+	host.Take_Outgoing();
+	Deliver(guest, "Guest", {&host}, 300);
+	Deliver(host, "Host", {&guest}, 300);
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 400);
+	Deliver(host, "Host", {&guest}, 400);
+	Check(!host.Can_Start(), "room notice: the host cannot start while a joiner has not said hello");
+	host.Tick(100 + 20000);
+	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock") && host.Can_Start(),
+		"room notice: the silent joiner is removed and the host can start");
+
+	CnCNetRoomClass quiet = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	quiet.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	quiet.Take_Outgoing();
+	quiet.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 10);
+	Check(!Sent(quiet.Take_Outgoing(), CnCNetRoomSendKind::SAY, std::string()) , "room notice: an empty notice says nothing");
+	Check(CnCNet_Room_Channel(42, "#test-game") == "#test-game0000042", "room channel: the prefix is a setting");
+}
+
+
+void Test_Tunnel_List(void)
+{
+	std::string const list =
+		"address;country;countrycode;name;password;clients;maxclients;official;latitude;longitude;version;distance\r\n"
+		"51.75.126.186:50001;France;FR;[EU]Hottwire.me;0;2;100;2;0;0;3;0\r\n"
+		"51.75.126.186:50000;France;FR;[EU]Hottwire.me;0;5;100;2;0;0;2;0\r\n"
+		"51.75.126.186:50002;France;FR;[EU]Hottwire.me (Matchmaking);0;0;250;2;0;0;4;0\r\n"
+		"149.28.164.124:50001;Australia;AU;CnCNet Australia;0;249;250;2;0;0;3;0\r\n"
+		"23.88.49.17:50001;Germany;DE;Locked server;1;0;200;1;0;0;3;0\r\n"
+		"51.75.126.186:50001;France;FR;Duplicate;0;2;100;2;0;0;3;0\r\n"
+		"broken row\r\n"
+		"45.76.102.31:50001;Japan;JP;CnCNet Japan;0;4;250;0;0;0;3;0\r\n";
+	std::vector<CnCNetTunnelEntryType> tunnels = CnCNet_Parse_Tunnel_List(list);
+	Check(tunnels.size() == 3 && tunnels[0].Host == "51.75.126.186" && tunnels[0].Port == 50001 && tunnels[0].Name == "[EU]Hottwire.me"
+		&& tunnels[0].Clients == 2 && tunnels[0].MaxClients == 100 && tunnels[0].Status == 2,
+		"tunnel list: V3 rows without a password are kept once; V2, matchmaking, locked and broken rows are not");
+
+	tunnels[0].PingMS = 80;
+	tunnels[1].PingMS = 20;
+	tunnels[2].PingMS = 10;
+	Check(CnCNet_Pick_Tunnel(tunnels, 3) == std::optional<std::size_t>(2), "tunnel pick: the lowest ping wins");
+	Check(CnCNet_Pick_Tunnel(tunnels, 2) == std::optional<std::size_t>(2) && CnCNet_Pick_Tunnel(tunnels, 1) == std::optional<std::size_t>(2),
+		"tunnel pick: a tunnel with room is still chosen");
+	tunnels[2].PingMS = -1;
+	Check(CnCNet_Pick_Tunnel(tunnels, 3) == std::optional<std::size_t>(0), "tunnel pick: a tunnel with no room for the match or no answer is skipped");
+	tunnels[0].PingMS = -1;
+	Check(!CnCNet_Pick_Tunnel(tunnels, 3).has_value(), "tunnel pick: nothing when none answered with room");
+}
+
+
 bool Has(std::string const & text, std::string const & part)
 {
 	return(text.find(part) != std::string::npos);
@@ -899,6 +967,8 @@ int main(void)
 	Test_SHA1();
 	Test_Room_Encoding();
 	Test_Room();
+	Test_Room_Notice();
+	Test_Tunnel_List();
 	Test_Spawn();
 	Test_Tunnel_Envelope();
 	Test_Tunnel_Bridge();

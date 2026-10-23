@@ -1,0 +1,8 @@
+; The match a cncnet-live-host.txt test starts: log frames for about two minutes, then quit.
+0 log CNCNET_MATCH_FRAME_0
+300 log CNCNET_MATCH_FRAME_300
+1800 log CNCNET_MATCH_FRAME_1800
+3600 log CNCNET_MATCH_FRAME_3600
+5400 log CNCNET_MATCH_FRAME_5400
+7200 log CNCNET_MATCH_FRAME_7200
+7500 quit

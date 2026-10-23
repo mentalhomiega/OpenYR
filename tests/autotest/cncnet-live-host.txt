@@ -1,0 +1,29 @@
+; Three copies play a match through the live CnCNet chat network and a live CnCNet tunnel: this host and
+; cncnet-live-guest-a.txt and cncnet-live-guest-b.txt. Each copy needs its own build folder and user folder,
+; muted and windowed, and must connect only once: GameSurge throttles an address that connects often, and
+; closes every connection from it for a while. Settings for each copy, in RA2MD.INI:
+;   [MultiPlayer] Handle=OYRtestH (OYRtestA, OYRtestB)   [Options] SyncLog=yes
+;   [CnCNet] HostMap=XArena.MAP   MatchArguments=-AUTOTEST=<path with no spaces to cncnet-live-match.txt>
+; Start the host first and the guests 10 seconds apart. The match copies log SYNC frame lines; compare them.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet (experimental)
+ui wait 10000
+ui shot live-host-lobby
+ui set password oyrtest
+ui press Host game
+ui wait 4000
+ui shot live-host-room0
+ui wait 105000
+ui shot live-host-room
+ui press Go!
+ui wait 8000
+ui shot live-host-waiting
+ui wait 150000
+ui shot live-host-after
+ui wait 3000
+ui press Cancel
+ui wait 3000
+ui press Back
+ui wait 2000
+ui quit

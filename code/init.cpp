@@ -206,6 +206,7 @@
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 #include "ui/screens/cncnet/uicncnet.h"
+#include "ui/screens/cncnetlobby/uicncnetlobby.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
 #include "ui/screens/version/uiversion.h"
@@ -3015,6 +3016,7 @@ static int const MENU_SKIRMISH = 103;
 static int const MENU_BACK = 104;
 static int const MENU_PLAY_MOVIES = 105;
 static int const MENU_CNCNET = 106;
+static int const MENU_CNCNET_LOBBY = 107;
 
 
 // The text of a string table label, or the fallback when the table lacks it.
@@ -3097,6 +3099,11 @@ static int Menu_Selection(int choice)
 		case MENU_CNCNET:
 			return(UI_CNCNet_Dialog() ? SEL_EXIT : SEL_NONE);
 
+		// The built-in lobby opens straight from the main menu and returns to it.
+		case MENU_CNCNET_LOBBY:
+			UI_CnCNet_Lobby_Dialog();
+			return(SEL_NONE);
+
 		case MENU_NETWORK:
 		case MENU_SKIRMISH:
 			Session.Type = (choice == MENU_NETWORK) ? GAME_IPX : GAME_SKIRMISH;
@@ -3150,6 +3157,9 @@ int Main_Menu(unsigned int timeout)
 		menu.Kind = UI_MENU_MAIN;
 		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
+		if (UI_CnCNet_Lobby_Enabled()) {
+			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNetLobby", "CnCNet (experimental)"), MENU_CNCNET_LOBBY, true});
+		}
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});

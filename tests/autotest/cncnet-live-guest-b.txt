@@ -1,0 +1,24 @@
+; A guest of cncnet-live-host.txt; see that file for how to run the three copies.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet (experimental)
+ui wait 10000
+ui wait 42000
+ui set password oyrtest
+ui shot live-guestB-lobby
+ui choose OYRtestH's game
+ui wait 1000
+ui press Join
+ui wait 8000
+ui shot live-guestB-joined
+ui press Accept
+ui wait 4000
+ui shot live-guestB-ready
+ui wait 188000
+ui shot live-guestB-after
+ui wait 3000
+ui press Cancel
+ui wait 3000
+ui press Back
+ui wait 2000
+ui quit

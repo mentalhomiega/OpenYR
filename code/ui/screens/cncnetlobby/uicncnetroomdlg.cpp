@@ -21,6 +21,7 @@
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnetspawn.h"
 #include "cncnet/cncnettunnel.h"
+#include "cncnet/cncnettunnelchoice.h"
 #include "conquer.h"
 #include "data.h"
 #include "gamedirs.h"
@@ -323,6 +324,10 @@ void CnCNetRoomServiceClass::Flush(void)
 			case CnCNetRoomSendKind::PART:
 				Network.Part(send.Target);
 				break;
+
+			case CnCNetRoomSendKind::SAY:
+				Network.Say(send.Target, send.Text);
+				break;
 		}
 	}
 }
@@ -545,6 +550,13 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	if (TheRoom.Status() == CnCNetRoomStatus::WAITING_HOST || TheRoom.Status() == CnCNetRoomStatus::JOINING) {
 		UINetChatLine line;
 		line.Text = "Waiting for the host to answer...";
+		line.Color = PLAIN;
+		state.Chat.push_back(line);
+	}
+	if (TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
+		// The CnCNet admins' terms: the host tells players who join that this is an OpenYR game.
+		UINetChatLine line;
+		line.Text = "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.";
 		line.Color = PLAIN;
 		state.Chat.push_back(line);
 	}
@@ -782,10 +794,21 @@ bool CnCNetRoomServiceClass::Can_Start(void)
 /// </summary>
 bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 {
-	std::size_t const colon = Setup.Tunnel.rfind(':');
-	int const port = colon == std::string::npos ? 0 : std::atoi(Setup.Tunnel.c_str() + colon + 1);
+	// Tunnel= in the settings wins; otherwise the nearest tunnel from the master list.
+	std::string tunnel = Setup.Tunnel;
+	if (tunnel.empty()) {
+		CnCNetTunnelChoiceType const choice = Setup.Choice != nullptr ? Setup.Choice->Poll(static_cast<int>(TheRoom.Players().size())) : CnCNetTunnelChoiceType();
+		if (!choice.Found) {
+			error = Setup.Choice == nullptr ? std::string("No tunnel is set.") : choice.Text;
+			return(false);
+		}
+		tunnel = choice.Host + ":" + std::to_string(choice.Port);
+		Note(choice.Text);
+	}
+	std::size_t const colon = tunnel.rfind(':');
+	int const port = colon == std::string::npos ? 0 : std::atoi(tunnel.c_str() + colon + 1);
 	if (colon == 0 || port <= 0 || port > 65535) {
-		error = "The tunnel setting \"" + Setup.Tunnel + "\" is not host:port.";
+		error = "The tunnel setting \"" + tunnel + "\" is not host:port.";
 		return(false);
 	}
 
@@ -798,7 +821,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 	std::mt19937 random{std::random_device{}()};
 	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, COLOR_COUNT),
 		Map_Starts(Session.ScenarioFileName),
-		Setup.Tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
+		tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
 		error = "The match could not start: every guest must be ready.";
 		return(false);
@@ -844,11 +867,15 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	}
 	CnCNetMatchSeatType const * own = nullptr;
 	std::vector<uint32_t> peers;
+	// A tunnel serves many matches at once and knows players by this number alone. The game's own number is
+	// 16 bits, so the match adds 16 more, the same for every player and drawn from its seed, to keep other
+	// matches on the tunnel from taking a seat.
+	uint32_t const match_key = (((static_cast<uint32_t>(match.Seed) * 2654435761u) >> 12) & 0xFFFFu) | 1u;
 	for (CnCNetMatchSeatType const & seat : match.Seats) {
 		if (CnCNetLobbyClass::Same_Nick(seat.Name, Setup.Nick)) {
 			own = &seat;
 		} else {
-			peers.push_back(seat.TunnelId);
+			peers.push_back((match_key << 16) | seat.TunnelId);
 		}
 	}
 	if (own == nullptr) {
@@ -857,10 +884,12 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 
 	CnCNetTunnelBridgeClass bridge;
 	std::string error;
-	if (!bridge.Start(match.TunnelHost, match.TunnelPort, own->TunnelId, peers, error)) {
+	if (!bridge.Start(match.TunnelHost, match.TunnelPort, (match_key << 16) | own->TunnelId, peers, error)) {
 		return(error);
 	}
 
+	DebugString("[CnCNet] Match via tunnel %s:%u, own tunnel id %08x, %zu peers, bridge port %u.\n", match.TunnelHost.c_str(),
+		static_cast<unsigned>(match.TunnelPort), (match_key << 16) | own->TunnelId, peers.size(), static_cast<unsigned>(bridge.Game_Port()));
 	std::string const ini = CnCNet_Spawn_Ini(match, TheRoom.Options(), Setup.Nick, bridge.Game_Port());
 	std::string const spawn_path = User_Directory() + "SPAWN.INI";
 	{
@@ -920,6 +949,8 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	GetExitCodeProcess(process.hProcess, &code);
 	CloseHandle(process.hProcess);
 	box.Hide();
+	DebugString("[CnCNet] Match ended with code %lu; the bridge sent %llu and received %llu datagrams.\n", static_cast<unsigned long>(code),
+		static_cast<unsigned long long>(bridge.Sent()), static_cast<unsigned long long>(bridge.Received()));
 	bridge.Stop();
 	return(code == 0 ? "The match has ended." : "The match ended with exit code " + std::to_string(code) + ".");
 #else
@@ -939,12 +970,26 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 	config.Key = setup.Password;
 	config.HostNick = setup.HostNick;
 	config.Build = Version_Name();
+	if (setup.Host) {
+		config.Notice = setup.Notice;
+	}
 
 	if (setup.Host && (Session.ScenarioFileName[0] == '\0' || !CCFileClass(Session.ScenarioFileName).Is_Available())) {
 		int const index = First_Available_Scenario();
 		if (index >= 0) {
 			Session.Options.ScenarioIndex = index;
 			Select_Scenario_Session(index);
+		}
+	}
+
+	// HostMap= names a map file the host's room starts on, for testers who always play one map.
+	if (setup.Host && !setup.Map.empty()) {
+		int const index = Find_Scenario(setup.Map);
+		if (index >= 0) {
+			Session.Options.ScenarioIndex = index;
+			Select_Scenario_Session(index);
+		} else {
+			DebugString("[CnCNet] HostMap=%s is not a map in the list.\n", setup.Map.c_str());
 		}
 	}
 

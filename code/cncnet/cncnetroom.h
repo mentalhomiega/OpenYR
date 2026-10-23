@@ -72,6 +72,7 @@ struct CnCNetRoomConfigType
 	std::string Key;            // Room password; empty uses CnCNet_Room_Key(Channel).
 	std::string HostNick;       // Guests only.
 	std::string Build;          // Players must run the same build to play together.
+	std::string Notice;         // Host only: said in the channel once for every player who joins; empty says nothing.
 	CnCNetRoomLimitsType Limits;
 	uint64_t HelloTimeoutMS = 20000;
 };
@@ -82,7 +83,8 @@ enum class CnCNetRoomSendKind
 	CTCP,
 	MODE,
 	KICK,
-	PART
+	PART,
+	SAY                         // Chat text to the channel; Text is the line.
 };
 
 
@@ -177,5 +179,5 @@ class CnCNetRoomClass
 };
 
 
-// A room channel name from a random number: "#cncnet-yr-game" and seven digits.
-std::string CnCNet_Room_Channel(uint32_t random);
+// A room channel name from a random number: the prefix, "#cncnet-yr-game" by default, and seven digits.
+std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix = "#cncnet-yr-game");

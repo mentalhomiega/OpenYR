@@ -178,6 +178,9 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 				Changed();
 			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
 				Pending.push_back({event.Nick, now});
+				if (!Config.Notice.empty()) {
+					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
+				}
 			}
 			break;
 
@@ -487,7 +490,8 @@ void CnCNetRoomClass::Remove_Player(std::string const & name, std::string const 
 
 bool CnCNetRoomClass::Can_Start(void) const
 {
-	if (!IsHost || CurrentStatus != CnCNetRoomStatus::IN_ROOM || PlayerList.size() < 2) {
+	// Somebody in the channel who has not said hello may be a stock client, which cannot play this match.
+	if (!IsHost || CurrentStatus != CnCNetRoomStatus::IN_ROOM || PlayerList.size() < 2 || !Pending.empty()) {
 		return(false);
 	}
 	return(std::all_of(PlayerList.begin(), PlayerList.end(),
@@ -648,9 +652,9 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 }
 
 
-std::string CnCNet_Room_Channel(uint32_t random)
+std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix)
 {
 	char digits[8];
 	std::snprintf(digits, sizeof(digits), "%07u", static_cast<unsigned>(random % 10000000u));
-	return(std::string("#cncnet-yr-game") + digits);
+	return(prefix + digits);
 }

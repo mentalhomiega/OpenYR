@@ -17,7 +17,9 @@
 #include "ccini.h"
 #include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsession.h"
+#include "cncnet/cncnettunnelchoice.h"
 #include "deploymentconfig.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "session.h"
 #include "ui/uienginehost.h"
@@ -33,6 +35,13 @@ namespace
 {
 
 char const * const SECTION = "CnCNet";
+
+// The CnCNet admins let OpenYR testers use the live network as an ordinary Yuri's Revenge lobby, on
+// condition that the host of each game tells players who join that it is an OpenYR game. So the game
+// id, the channels and the version are the stock Yuri's Revenge ones, and every one is a setting that
+// can change without a new build.
+char const * const DEFAULT_NOTICE =
+	"This is an OpenYR test game (an open-source Yuri's Revenge remake). A stock Yuri's Revenge client cannot play in it.";
 
 // The chat network the CnCNet client lists. Only a build with
 // AllowLiveServers=yes reaches it; every other build is held to the loopback
@@ -146,13 +155,13 @@ std::string Client_ID(void)
 
 bool UI_CnCNet_Lobby_Enabled(void)
 {
-	return(ConfigINI.Get_Bool(SECTION, "NativeLobby", false));
+	return(ConfigINI.Get_Bool(SECTION, "NativeLobby", true));
 }
 
 
 bool UI_CnCNet_Lobby_Dialog(void)
 {
-	bool const live = ConfigINI.Get_Bool(SECTION, "AllowLiveServers", false);
+	bool const live = ConfigINI.Get_Bool(SECTION, "AllowLiveServers", true);
 	std::vector<CnCNetServerType> servers = Parse_Servers(Setting("Servers", live ? LIVE_SERVERS : "127.0.0.1:6667"), live);
 	if (servers.empty()) {
 		return(false);
@@ -163,12 +172,18 @@ bool UI_CnCNet_Lobby_Dialog(void)
 
 	CnCNetSessionConfigType config;
 	config.Servers = std::move(servers);
-	config.IRC.Nick = Clean_Nick(Session.Handle);
+	// The multiplayer handle is read from the settings only when a game setup opens, which may not have happened yet.
+	std::string name = Setting("Nick", "");
+	if (name.empty()) {
+		name = Session.Handle[0] != '\0' ? std::string(Session.Handle) : ConfigINI.Get_String("MultiPlayer", "Handle", "");
+	}
+	config.IRC.Nick = Clean_Nick(name);
 	config.IRC.Ident = game + "." + Client_ID();
 	config.IRC.RealName = version + " " + Setting("GameName", "YR") + " CnCNet";
-	config.Lobby.BroadcastChannel = "#cncnet-" + game + "-games";
+	config.Lobby.BroadcastChannel = Setting("BroadcastChannel", ("#cncnet-" + game + "-games").c_str());
+	config.Lobby.RoomPrefix = Setting("RoomPrefix", ("#cncnet-" + game + "-game").c_str());
 	config.Lobby.GameVersion = version;
-	std::string const chat = "#cncnet-" + game;
+	std::string const chat = Setting("ChatChannel", ("#cncnet-" + game).c_str());
 	config.Channels = {chat, config.Lobby.BroadcastChannel};
 
 	CnCNetSessionClass session(config);
@@ -176,12 +191,16 @@ bool UI_CnCNet_Lobby_Dialog(void)
 
 	UICnCNetLobbyPresenterClass presenter(session, chat);
 	std::unique_ptr<UIViewClass> view = UI_CnCNet_Lobby_View(presenter);
-	// Matches play through this relay. Like the servers, it must be on this machine unless live servers are allowed.
-	std::string tunnel = Setting("Tunnel", "127.0.0.1:50000");
-	if (!live && !Is_Loopback(tunnel.substr(0, tunnel.rfind(':')))) {
-		session.Note(chat, "Tunnel=" + tunnel + " is not on this machine, so matches use 127.0.0.1:50000.");
+	// Matches play through the relay Tunnel= names, or else the nearest one on the master list. Like the
+	// servers, a named relay must be on this machine unless live servers are allowed.
+	std::string tunnel = Setting("Tunnel", "");
+	if (!live && (tunnel.empty() || !Is_Loopback(tunnel.substr(0, tunnel.rfind(':'))))) {
+		if (!tunnel.empty()) {
+			session.Note(chat, "Tunnel=" + tunnel + " is not on this machine, so matches use 127.0.0.1:50000.");
+		}
 		tunnel = "127.0.0.1:50000";
 	}
+	CnCNetTunnelChoiceClass tunnels;
 
 	std::mt19937 random{std::random_device{}()};
 	for (;;) {
@@ -195,13 +214,20 @@ bool UI_CnCNet_Lobby_Dialog(void)
 		UICnCNetRoomSetupType setup;
 		setup.Host = presenter.Choice == UICnCNetLobbyChoice::HOST;
 		setup.Nick = lobby.Own_Nick();
-		setup.Channel = setup.Host ? CnCNet_Room_Channel(random()) : presenter.JoinChannel;
+		setup.Channel = setup.Host ? CnCNet_Room_Channel(random(), config.Lobby.RoomPrefix) : presenter.JoinChannel;
 		setup.HostNick = setup.Host ? setup.Nick : presenter.JoinHost;
 		setup.Password = presenter.State.Password;
 		setup.RoomName = setup.Nick + "'s game";
 		setup.GameVersion = version;
 		setup.BroadcastChannel = config.Lobby.BroadcastChannel;
 		setup.Tunnel = tunnel;
+		setup.Choice = &tunnels;
+		setup.Map = Setting("HostMap", "");
+		setup.Notice = Setting("RoomNotice", DEFAULT_NOTICE);
+		if (setup.Host && tunnel.empty()) {
+			tunnels = CnCNetTunnelChoiceClass();
+			tunnels.Start(Setting("TunnelListURL", "https://cncnet.org/master-list"), User_Directory() + "cncnet_tunnels.txt");
+		}
 		setup.MatchArguments = Setting("MatchArguments", "");
 
 		UICnCNetRoomResult const result = UI_CnCNet_Room_Dialog(session, setup);

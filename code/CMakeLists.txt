@@ -241,6 +241,7 @@ target_link_libraries(OpenTS PRIVATE
     psapi
     version
     winmm
+    winhttp
     ws2_32
     kernel32 user32 gdi32 winspool comdlg32 advapi32 shell32
     odbc32 odbccp32
