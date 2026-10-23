@@ -507,11 +507,29 @@ body.titlemenu.count-5 #backdrop #reveal
 	margin-top: -159dp;
 }
 
+body.titlemenu.count-7 #backdrop #reveal
+{
+	height: 414dp;
+	margin-top: -207dp;
+}
+
 /* The main menu has no caption: its buttons start at the top of the panel. */
 body.titlemenu.main #backdrop #reveal
 {
 	height: 328dp;
 	margin-top: -164dp;
+}
+
+body.titlemenu.main.count-7 #backdrop #reveal
+{
+	height: 376dp;
+	margin-top: -188dp;
+}
+
+body.titlemenu.main.count-8 #backdrop #reveal
+{
+	height: 424dp;
+	margin-top: -212dp;
 }
 
 body.titlemenu #wallpaper, body.lobby #wallpaper, body.missionbrowser #wallpaper, body.dlg #wallpaper
