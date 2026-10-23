@@ -15,6 +15,25 @@ reader_exclusions:
     reason: The overlay pack fields are compressed scenario payloads, not authored scalar settings.
 
 site_exclusions:
+  - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
+    function: UI_CnCNet_Lobby_Enabled
+    keys: [NativeLobby]
+    classification: excluded
+    reason: The [CnCNet] settings belong to the experimental built-in lobby; the CnCNet lobby change record lists them until the lobby leaves preview.
+
+  - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
+    function: UI_CnCNet_Lobby_Dialog
+    keys: [AllowLiveServers]
+    classification: excluded
+    reason: The [CnCNet] settings belong to the experimental built-in lobby; the CnCNet lobby change record lists them until the lobby leaves preview.
+
+  - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
+    function: UI_CnCNet_Lobby_Dialog
+    keys: [Handle]
+    classification: duplicate
+    canonical_key: Handle
+    reason: The lobby reads the multiplayer handle for its chat nickname before a game setup has loaded it; the session reader owns the key.
+
   - path: code/loadscreen.cpp
     function: Campaign_Is_Allied
     keys: [Player]
