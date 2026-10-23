@@ -48,7 +48,7 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 | `paths` | Path searches (`AStarClass::Find_Path`) |
 | `threats` | Target scans (`TechnoClass::Greatest_Threat`), counted at the base class |
 | `object ai` | Object AI calls |
-| `upload bytes`, `uploads` | Bytes and calls of texture uploads in the bgfx backend |
+| `upload bytes`, `uploads` | Bytes sent to textures, and the texture updates that sent them. A texture update sends only the tiles that changed since the last one, so a still picture adds nothing |
 
 ## Benchmark
 
@@ -58,6 +58,7 @@ vehicles, 40 infantry and two aircraft, and eight destroyers sit on the lake. Th
 with `houseunit` by their position in the house list (`#1` to `#3`). From frame 600 on, the computer
 houses hunt, the player moves its forces across the map, and focus-fire orders go out.
 `bench-large-battle-zoomed-out.txt` is the same battle with the view set to `zoom 0.5`.
+`bench-large-battle-revealed.txt` and `bench-large-battle-revealed-zoomed-out.txt` reveal the map first, and `bench-large-battle-scrolling.txt` moves the view around the middle of the map every four game frames; these three stop at frame 3600.
 
 ```text
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/perf_bench.ps1 -Build agent14 -Runs 3
@@ -79,3 +80,12 @@ per-second worst. These are not percentiles of every sample in the run.
 - The clock is `std::chrono::steady_clock`. On Windows it is the performance counter.
 - Only the phases listed above are timed. Work outside them is not in any phase. To find it, subtract
   the child phases from their parent; `draw.total` also covers the screen copy before the present.
+
+## Texture updates
+
+The presenter keeps a copy of what each texture holds and compares the next picture with it in tiles of
+32 by 16 pixels. It sends the tiles that differ, as rectangles, and sends nothing when no tile differs.
+The frame, the map layer under it and the emissive masks all go this way. A texture that was just created
+is sent whole, and so is a picture of which half or more has changed. `uploadverify 1` in an autotest
+script checks every update against the picture and `uploadverify 0` writes the counts of checks and
+mismatches.
