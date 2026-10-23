@@ -80,6 +80,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "infantry.h"
 
@@ -3115,6 +3116,7 @@ bool InfantryClass::Unlimbo(Coord const & xcoord, Dir256 facing)
  *=============================================================================================*/
 AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	/*
 	**	Engineers consider only buildings that can be captured as being a threat. All others
 	**	are ignored. If there is a building that needs to be recaptured and it is nearby

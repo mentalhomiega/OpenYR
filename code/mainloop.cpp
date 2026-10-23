@@ -41,6 +41,7 @@
 #include "dsurface.h"
 #include "fog.h"
 #include "hangwatch.h"
+#include "perfstat.h"
 #include "init.h"
 #include "globals.h"
 #include "goptions.h"
@@ -405,7 +406,10 @@ bool Main_Loop(void)
 	/*
 	**	AI logic operations are performed here.
 	*/
-	Logic.AI();
+	{
+		PerfScope logic_scope(PERF_FRAME_LOGIC);
+		Logic.AI();
+	}
 	AutoTest_Frame();
 
 	/*
@@ -423,7 +427,10 @@ bool Main_Loop(void)
 	/*
 	**	Process all commands that are ready to be processed.
 	*/
-	Queue_AI();
+	{
+		PerfScope queue_scope(PERF_FRAME_QUEUE);
+		Queue_AI();
+	}
 
 	Call_Back();
 
@@ -490,6 +497,7 @@ bool Main_Loop(void)
 #endif
 
 		Sync_Delay();
+		Perf_Frame_End();
 		Process_Deferred_Deletion();
 		SaveManager.Service();
 	}
@@ -692,6 +700,7 @@ void Sync_Delay(void)
 			} else {
 				UI_Serve_Screen();
 			}
+			PerfScope wait_scope(PERF_FRAME_WAIT);
 			Sleep(GameInFocus ? 0 : 1);
 		}
 		RenderBlend = 1.0;
@@ -720,6 +729,7 @@ void Sync_Delay(void)
 				TacticalMap->AI();
 				Map.Render();
 			} else {
+				PerfScope wait_scope(PERF_FRAME_WAIT);
 				Sleep(0);
 			}
 			if (!FrameTimer()) {
@@ -730,7 +740,10 @@ void Sync_Delay(void)
 		}
 
 		// Out of focus nothing is drawn, so the wait gives the processor back.
-		Sleep(GameInFocus ? 0 : 1);
+		{
+			PerfScope wait_scope(PERF_FRAME_WAIT);
+			Sleep(GameInFocus ? 0 : 1);
+		}
 	}
 
 	// The frame count is taken over 960 ms, as gamemd.exe's 60 SystemTimer units, and feeds the detail gate.

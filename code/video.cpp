@@ -12,6 +12,7 @@
 // window it lands, and hands it to the renderer behind video.h.
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "video.h"
 
@@ -496,6 +497,8 @@ static void Present(void)
 		return;
 	}
 
+	PerfPresentSample present_sample;
+	PerfScope present_scope(PERF_PRESENT_TOTAL);
 	_LastPresentTime = timeGetTime();
 
 	_Presenting = true;
@@ -544,7 +547,11 @@ static void Present(void)
 		}
 	}
 
-	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
+	bool presented = false;
+	{
+		PerfScope upload_scope(PERF_PRESENT_UPLOAD);
+		presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode(), layerptr, emissiveptr);
+	}
 	if (presented) {
 		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();
@@ -552,7 +559,10 @@ static void Present(void)
 		}
 		UIShell.Render_Overlay();
 	}
-	Backend_End_Frame();
+	{
+		PerfScope gpu_scope(PERF_PRESENT_GPU);
+		Backend_End_Frame();
+	}
 	_Presenting = false;
 
 	if (presented) {

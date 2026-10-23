@@ -77,6 +77,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "foot.h"
 
@@ -3251,6 +3252,7 @@ void FootClass::Death_Announcement(TechnoClass const * ) const
  *=============================================================================================*/
 AbstractClass * FootClass::Greatest_Threat(ThreatType method, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	/*
 	**	If the scan is forced to be limited, then limit the scan now.
 	*/

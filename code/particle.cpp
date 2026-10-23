@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "particle.h"
 
@@ -650,6 +651,8 @@ void ParticleClass::Behavior_AI(void)
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
+	PerfScope particle_scope(PERF_DRAW_PARTICLES);
+	Perf_Count(PERF_COUNT_PARTICLES);
 	unsigned const min_frame_rate = Detail_Min_Frame_Rate();
 	if ((Class->Damage != 0 || LastFramesPerSecond >= min_frame_rate) && (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK)) {
 		if (Debug_Map || MainWindow == 0 || !Scen->Special.IsFogOfWar || !Map.Is_Fogged((Coord const &)PositionCoord)) {

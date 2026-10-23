@@ -21,6 +21,7 @@
 #include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
+#include "perfstat.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -1754,6 +1755,8 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 /// <returns>Returns with a pointer to the path found, or NULL if there is no route.</returns>
 PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass * foot, FacingType * moves, int max_loops, MZoneType mzone, ObstacleAvoidanceType avoidance)
 {
+	Perf_Count(PERF_COUNT_PATHS);
+	PerfScope pathfind_scope(PERF_FRAME_PATHFIND);
 	int i;
 
 	IsHSEnabled = true;

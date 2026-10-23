@@ -103,6 +103,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "autotest.h"
 #include "building.h"
@@ -3949,6 +3950,7 @@ DirType BuildingClass::Turret_Facing(void) const
  *=============================================================================================*/
 AbstractClass * BuildingClass::Greatest_Threat(ThreatType threat, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	if (PrimaryWeapon != NULL) {
 		threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
 	}

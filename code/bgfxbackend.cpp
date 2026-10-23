@@ -10,6 +10,7 @@
 // The bgfx side of the presenter. This is the only translation unit that includes bgfx,
 // which keeps the library's headers and build settings away from the rest of the engine.
 
+#include "perfstat.h"
 #include "bgfxbackend.h"
 
 #include "dbgprint.h"
@@ -376,6 +377,14 @@ static void Destroy_Mask(BackendMask & mask)
 }
 
 
+// Counts one texture upload of the given bytes for the perf log.
+static void Count_Upload(std::uint64_t bytes)
+{
+	Perf_Count(PERF_COUNT_UPLOAD_BYTES, bytes);
+	Perf_Count(PERF_COUNT_UPLOADS);
+}
+
+
 /// <summary>
 /// Uploads one mask, making its R8 texture first when the size changed. Only the readable part of the
 /// source is copied; texels beyond it are zero. False means nothing was uploaded: the mask is not
@@ -412,6 +421,7 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 	for (int y = 0; y < copyheight; y++) {
 		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)copywidth);
 	}
+	Count_Upload((std::uint64_t)width * height);
 	bgfx::updateTexture2D(mask.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)height, memory, (uint16_t)width);
 	mask.Uploaded = true;
 	return(true);
@@ -515,6 +525,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 		bgfx::Memory const * memory = bgfx::alloc((uint32_t)(layer.Height * layer.Pitch));
 		std::memcpy(memory->data, layer.Pixels, size);
 		std::memset(memory->data + size, 0, memory->size - size);
+		Count_Upload((std::uint64_t)layer.Pitch * layer.Height);
 		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, memory, (uint16_t)layer.Pitch);
 	} else {
 		for (int y = 0; y < layer.Height; y++) {
@@ -524,6 +535,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 				dest[x] = _ConvertTable[source[x]];
 			}
 		}
+		Count_Upload((std::uint64_t)layer.Width * layer.Height * 4);
 		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, bgfx::copy(_LayerConvertBuffer, (uint32_t)(layer.Width * layer.Height * 4)), (uint16_t)(layer.Width * 4));
 	}
 	_LayerUploaded = true;
@@ -556,6 +568,7 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 			dest[x] = (pixel == BACKEND_LAYER_KEY) ? 0 : _ConvertTable[pixel];
 		}
 	}
+	Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
 	bgfx::updateTexture2D(_KeyedFrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedFrameBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 	return(true);
 }
@@ -589,6 +602,7 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 			dest[x] = (alpha << 24) | (red << 16);
 		}
 	}
+	Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
 	bgfx::updateTexture2D(_KeyedMaskTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedMaskBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 	_KeyedMaskUploaded = true;
 	return(true);
@@ -1244,6 +1258,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	if (pixels != NULL) {
 		if (_FrameIs565) {
+			Count_Upload((std::uint64_t)_FrameHeight * pitch);
 			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(pixels, (uint32_t)(_FrameHeight * pitch)), (uint16_t)pitch);
 			_FrameUploaded = true;
 		} else if (_ConvertBuffer != NULL) {
@@ -1254,6 +1269,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 					dest[x] = _ConvertTable[source[x]];
 				}
 			}
+			Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
 			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_ConvertBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 			_FrameUploaded = true;
 		}

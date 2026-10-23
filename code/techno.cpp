@@ -129,6 +129,8 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "techno.h"
@@ -3075,6 +3077,8 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
  *=============================================================================================*/
 AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
+	Perf_Count(PERF_COUNT_THREATS);
 	// A DistributedFire object keeps every target the scan accepts (TechnoClass::GreatestThreat, 0x6F8F80).
 	IsCollectingThreats = TClass->IsDistributedFire;
 	if (IsCollectingThreats) {
@@ -8128,6 +8132,9 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 		key = -1;
 	}
 
+	PerfScope voxel_scope(PERF_DRAW_VOXELS);
+	Perf_Count(PERF_COUNT_VOXELS);
+
 	ShapeFlags_Type flags = SHAPE_ZGRAD;
 	if (negflags == SHAPE_NORMAL) {
 		bool visible = false;
@@ -8201,11 +8208,17 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
+		// A draw between game frames reads the facing part way between two game frames, so it is counted apart.
+		bool const smoothed = RenderBlend < 1.0;
 		if (entry != NULL) {
+			Perf_Count(smoothed ? PERF_COUNT_VOXEL_SMOOTH_HIT : PERF_COUNT_VOXEL_HIT);
 			Techno_Blit_Voxel(*entry, point, cliprect, flags, brightness);
 			note_body(Rect(point.X + entry->X, point.Y + entry->Y, entry->Width, entry->Height));
 			return;
 		}
+		Perf_Count(smoothed ? PERF_COUNT_VOXEL_SMOOTH_MISS : PERF_COUNT_VOXEL_MISS);
+	} else {
+		Perf_Count(PERF_COUNT_VOXEL_UNCACHED);
 	}
 
 	SurfaceRegion region = Techno_Render_Voxel_Object(voxeldata, matrix, point, cliprect, frame, flags, brightness);

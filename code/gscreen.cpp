@@ -43,6 +43,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "gscreen.h"
 
@@ -395,6 +396,8 @@ void GScreenClass::Remove_A_Button(GadgetClass & gadget)
 void GScreenClass::Render(void)
 {
 	BStart(BENCH_GSCREEN_RENDER);
+	PerfDrawSample draw_sample;
+	PerfScope draw_scope(PERF_DRAW_TOTAL);
 
 	Update_Display_Zoom();
 	Set_View_Zoom_Drawing(true);
@@ -441,6 +444,7 @@ void GScreenClass::Render(void)
 		Draw_Hud_Panel(*SidebarSurface);
 	}
 	if (hud) {
+		PerfScope hud_scope(PERF_DRAW_HUD);
 		Draw_It(complete);
 	}
 	use_map_surfaces(true);
@@ -457,44 +461,47 @@ void GScreenClass::Render(void)
 		Video_Set_Map_Layer(NULL, Rect(), Rect());
 	}
 
-	if (hud && Modern_Interface()) {
-		Draw_Panel_Backdrops(*CompositeSurface);
-	}
-	if (hud && Buttons) Buttons->Draw_All(false);
-	if (hud && Modern_Interface()) {
-		Draw_Panels(*CompositeSurface);
-	}
+	{
+		PerfScope ui_scope(PERF_DRAW_UI);
+		if (hud && Modern_Interface()) {
+			Draw_Panel_Backdrops(*CompositeSurface);
+		}
+		if (hud && Buttons) Buttons->Draw_All(false);
+		if (hud && Modern_Interface()) {
+			Draw_Panels(*CompositeSurface);
+		}
 
 #ifdef _DEBUG
-	/*
-	**	Draw the Editor's buttons
-	*/
-	if (Debug_Map) {
-		if (Buttons) {
-			Buttons->Draw_All();
+		/*
+		**	Draw the Editor's buttons
+		*/
+		if (Debug_Map) {
+			if (Buttons) {
+				Buttons->Draw_All();
+			}
 		}
-	}
 #endif
-	/*
-	**	Draw the multiplayer message system to the Hidpage at this point.
-	**	This way, they'll Blit along with the rest of the map.
-	*/
-	if (hud) {
-		Session.Messages.Draw();
-		TacticalMap->Draw_Super_Timers();
-	}
-	if (Session.DrawMPDebugStats) {
-		Multiplayer_Debug_Print();
-	}
+		/*
+		**	Draw the multiplayer message system to the Hidpage at this point.
+		**	This way, they'll Blit along with the rest of the map.
+		*/
+		if (hud) {
+			Session.Messages.Draw();
+			TacticalMap->Draw_Super_Timers();
+		}
+		if (Session.DrawMPDebugStats) {
+			Multiplayer_Debug_Print();
+		}
 
-	if (Options.ShowFPS) {
-		char buffer[32];
-		snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
-		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
-	}
+		if (Options.ShowFPS) {
+			char buffer[32];
+			snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+		}
 
-	if (hud && ToolTips != NULL) {
-		ToolTips->Draw_Current();
+		if (hud && ToolTips != NULL) {
+			ToolTips->Draw_Current();
+		}
 	}
 
 	Blit_Display();

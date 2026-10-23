@@ -80,6 +80,7 @@
 #include "wave.h"
 
 #include "bench.hh"
+#include "perfstat.h"
 #include "psydom.h"
 
 #include <algorithm>
@@ -247,6 +248,24 @@ void LogicClass::Debug_Dump(MonoClass * mono) const
 #endif
 
 
+// The timing phase for one object's AI, by the object's kind.
+static PerfPhase Perf_Object_AI_Phase(RTTIType rtti)
+{
+	switch (rtti) {
+		case RTTI_INFANTRY:
+			return(PERF_FRAME_AI_INFANTRY);
+		case RTTI_UNIT:
+			return(PERF_FRAME_AI_UNIT);
+		case RTTI_BUILDING:
+			return(PERF_FRAME_AI_BUILDING);
+		case RTTI_AIRCRAFT:
+			return(PERF_FRAME_AI_AIRCRAFT);
+		default:
+			return(PERF_FRAME_AI_OTHER);
+	}
+}
+
+
 /***********************************************************************************************
  * LogicClass::AI -- Handles AI logic processing for game objects.                             *
  *                                                                                             *
@@ -274,6 +293,8 @@ void LogicClass::AI(void)
 	/*
 	**	Handle any general timer trigger events.
 	*/
+	{
+	PerfScope triggers_scope(PERF_FRAME_TRIGGERS);
 	for (LogicTriggerID = 0; LogicTriggerID < LogicTags.Count(); LogicTriggerID++) {
 		TagClass * trig = LogicTags[LogicTriggerID];
 
@@ -309,6 +330,7 @@ void LogicClass::AI(void)
 		if (Scen->MissionTimer.Is_Active() && Scen->MissionTimer == 0) {
 			if (trig->Spring(TEVENT_MISSION_TIMER_EXPIRED)) continue;
 		}
+	}
 	}
 
 	/*
@@ -386,8 +408,11 @@ void LogicClass::AI(void)
 	/*
 	**	Team AI is processed.
 	*/
-	for (index = 0; index < teams.Count(); index++) {
-		teams[index]->AI();
+	{
+		PerfScope teams_scope(PERF_FRAME_TEAMS);
+		for (index = 0; index < teams.Count(); index++) {
+			teams[index]->AI();
+		}
 	}
 
 	SpotLightClass::Update_All();
@@ -406,11 +431,16 @@ void LogicClass::AI(void)
 	/*
 	**	AI for all sentient objects is processed.
 	*/
+	PerfScope objects_scope(PERF_FRAME_OBJECTS);
 	for (index = 0; index < Count(); index++) {
 		ObjectClass * obj = (*this)[index];
 
 		BStart(BENCH_AI);
-		obj->AI();
+		{
+			PerfScope kind_scope(Perf_Object_AI_Phase(obj->RTTI));
+			Perf_Count(PERF_COUNT_OBJECT_AI);
+			obj->AI();
+		}
 		BEnd(BENCH_AI);
 
 		/*
@@ -435,24 +465,36 @@ void LogicClass::AI(void)
 	/*
 	**	Map related logic is performed.
 	*/
-	Map.Logic();
+	{
+		PerfScope map_scope(PERF_FRAME_MAP);
+		Map.Logic();
+	}
 
-	TacticalMap->AI();
+	{
+		PerfScope tactical_scope(PERF_FRAME_TACTICAL);
+		TacticalMap->AI();
+	}
 
 	/*
 	**	Factory processing is performed.
 	*/
-	for (index = 0; index < Factories.Count(); index++) {
-		Factories[index]->AI();
+	{
+		PerfScope factories_scope(PERF_FRAME_FACTORIES);
+		for (index = 0; index < Factories.Count(); index++) {
+			Factories[index]->AI();
+		}
 	}
 
 	/*
 	**	House processing is performed.
 	*/
-	for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
-		HouseClass * hptr = Houses[house];
-		if (hptr) {
-			hptr->AI();
+	{
+		PerfScope houses_scope(PERF_FRAME_HOUSES);
+		for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
+			HouseClass * hptr = Houses[house];
+			if (hptr) {
+				hptr->AI();
+			}
 		}
 	}
 

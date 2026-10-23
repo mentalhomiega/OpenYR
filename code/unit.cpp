@@ -96,6 +96,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "unit.h"
@@ -6109,6 +6110,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
  *=============================================================================================*/
 AbstractClass * UnitClass::Greatest_Threat(ThreatType threat, Coord const & coord, bool onlyenemy) const
 {
+	PerfScope threat_scope(PERF_FRAME_THREAT);
 	if (House->Is_Human_Player() && Class->IsDeployToFire) {
 		return(NULL);
 	}

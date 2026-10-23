@@ -12,6 +12,7 @@
  ******************************************************************************/
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "tactical.h"
@@ -1216,6 +1217,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		LogicalSurface->Lock();
 
 		if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+			PerfScope terrain_scope(PERF_DRAW_TERRAIN);
 
 			/*
 			 * Build the two redraw strips that the pan exposed. 'xpanrect' is the full-height strip
@@ -1267,7 +1269,10 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			Emissive_After_Fill(*LogicalSurface, xpanrect);
 			Emissive_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
-			Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);
+			{
+				PerfScope shroud_scope(PERF_DRAW_SHROUD);
+				Render_Shroud(xpanrect, ypanrect, bounds, fullredraw);
+			}
 			Render_Tiles(xpanrect, ypanrect, fullredraw);
 			Render_Fogged_Objects(xpanrect, ypanrect, fullredraw);
 			Render_Overlays(xpanrect, ypanrect, fullredraw);
@@ -1294,6 +1299,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	LastTacPixelY = TacPixelY;
 
 	if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
 	}
 
@@ -1304,28 +1310,40 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		composite->Lock();
 		Surface * savedlogical = LogicalSurface;
 		LogicalSurface = composite;
-		Draw_Waypoints(false);
-		Draw_Planned_Orders(false);
-		Draw_Rally_Points(false);
-		Draw_Placement(false);
+		{
+			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
+			Draw_Waypoints(false);
+			Draw_Planned_Orders(false);
+			Draw_Rally_Points(false);
+			Draw_Placement(false);
+		}
 
 #ifdef _DEBUG
 		if (DrawOccupierLinks) Debug_Draw_Occupier_Links();
 		if (OccupationBitPrint) Debug_Draw_Occupation_Flags();
 #endif
 
-		VeinholeMonsterClass::Draw_All();
-		IonBlastClass::Draw_All();
-		Draw_Objects(true);
-		SpotLightClass::Draw_All();
-		LaserDrawClass::Draw_All();
-		EBoltClass::Draw_All();
-		LineTrailClass::Update_And_Draw_All();
-		RadBeamClass::Draw_All();
-		Draw_Mind_Control_Links();
-		Draw_Psychic_Lines();
-		Draw_Hidden_Markers();
-		Draw_Beacons();
+		{
+			PerfScope fx_scope(PERF_DRAW_FX);
+			VeinholeMonsterClass::Draw_All();
+			IonBlastClass::Draw_All();
+		}
+		{
+			PerfScope objects_scope(PERF_DRAW_OBJECTS);
+			Draw_Objects(true);
+		}
+		{
+			PerfScope fx_scope(PERF_DRAW_FX);
+			SpotLightClass::Draw_All();
+			LaserDrawClass::Draw_All();
+			EBoltClass::Draw_All();
+			LineTrailClass::Update_And_Draw_All();
+			RadBeamClass::Draw_All();
+			Draw_Mind_Control_Links();
+			Draw_Psychic_Lines();
+			Draw_Hidden_Markers();
+			Draw_Beacons();
+		}
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
@@ -1334,27 +1352,30 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			}
 		}
 
-		Draw_Rubber_Band();
-		Draw_Waypoints(true);
-		Draw_Planned_Orders(true);
-		Draw_Rally_Points(true);
-		Draw_Placement(true);
-		Draw_Placement_Range();
-		Draw_Super_Range();
-		Draw_Chrono_Screen_Effect();
-		Draw_Flying_Texts();
+		{
+			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
+			Draw_Rubber_Band();
+			Draw_Waypoints(true);
+			Draw_Planned_Orders(true);
+			Draw_Rally_Points(true);
+			Draw_Placement(true);
+			Draw_Placement_Range();
+			Draw_Super_Range();
+			Draw_Chrono_Screen_Effect();
+			Draw_Flying_Texts();
 
-		for (i = 0; i < CurrentObject.Count(); i++) {
-			ObjectClass * object = CurrentObject[i];
-			if (object->Is_Techno() && ((TechnoClass*)object)->IsSelected) {
-				if (TechnoClass::ActionLines == true && ((TechnoClass*)object)->House->Is_Player_Control()) {
-					((TechnoClass*)object)->Draw_Action_Line();
+			for (i = 0; i < CurrentObject.Count(); i++) {
+				ObjectClass * object = CurrentObject[i];
+				if (object->Is_Techno() && ((TechnoClass*)object)->IsSelected) {
+					if (TechnoClass::ActionLines == true && ((TechnoClass*)object)->House->Is_Player_Control()) {
+						((TechnoClass*)object)->Draw_Action_Line();
+					}
 				}
 			}
-		}
 
-		Render_Outside_Map(*composite);
-		Ring_Glow_Flush(*composite);
+			Render_Outside_Map(*composite);
+			Ring_Glow_Flush(*composite);
+		}
 
 		LogicalSurface = savedlogical;
 		composite->Unlock();
@@ -2950,6 +2971,9 @@ void Tactical::Draw_Objects(bool forced)
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
 			ObjectClass * obj = DisplayClass::Layer[layer][index];
 			RTTIType rtti = obj->RTTI;
+			if (rtti != RTTI_TERRAIN) {
+				Perf_Count(PERF_COUNT_OBJECTS);
+			}
 
 			if (rtti == RTTI_BUILDING || (rtti == RTTI_TERRAIN && !((TerrainClass *)obj)->Is_Animating())) {
 

@@ -234,6 +234,7 @@
 
 #include "autotest.h"
 #include "combat.h"
+#include "perfstat.h"
 #include "session.h"
 #include "rulesreload.h"
 
@@ -3189,6 +3190,44 @@ void Run(StepType const & step)
 		} else {
 			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
 		}
+	} else if (step.Command == "houseunit") {
+		// houseunit <TypeID>@<House> x y: puts an object of the type, owned by the named house, on that cell, on Guard, as spawn does.
+		// An underscore in the house name stands for a space.
+		std::string type_name = step.Argument;
+		std::string house_name;
+		std::size_t const at = type_name.find('@');
+		if (at != std::string::npos) {
+			house_name = type_name.substr(at + 1);
+			type_name.erase(at);
+		}
+		std::replace(house_name.begin(), house_name.end(), '_', ' ');
+		HouseClass * owner = NULL;
+		if (!house_name.empty() && house_name[0] == '#') {
+			// #<n> names the house at position n in the house list, for houses with no spawn name.
+			int const position = std::atoi(house_name.c_str() + 1);
+			owner = position >= 0 && position < Houses.Count() ? Houses[position] : NULL;
+		} else {
+			owner = House_From_Name(house_name.c_str());
+			for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+				if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
+					owner = Houses[index];
+				}
+			}
+		}
+		TechnoTypeClass const * type = Find_Type(type_name);
+		if (owner != NULL && type != NULL) {
+			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
+			Cell cell(step.X, step.Y);
+			ScenarioInit++;
+			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+			ScenarioInit--;
+			if (placed) {
+				object->Assign_Mission(MISSION_GUARD);
+			}
+			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, placed ? "placed" : "failed");
+		} else {
+			DebugString("AUTOTEST houseunit %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no such house");
+		}
 	} else if (step.Command == "own" || step.Command == "neutral" || step.Command == "enemy") {
 		// own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
 		// same for the house of the Civilian side. enemy does it for the first computer house with a
@@ -4888,6 +4927,10 @@ void Run(StepType const & step)
 	} else if (step.Command == "hashparts") {
 		// hashparts: logs each value the state hash covers, one object per line.
 		Log_State_Parts();
+	} else if (step.Command == "perflog") {
+		// perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
+		Perf_Set_Enabled(std::atoi(step.Argument.c_str()) != 0);
+		DebugString("AUTOTEST perflog %d\n", (int)Perf_Enabled);
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));

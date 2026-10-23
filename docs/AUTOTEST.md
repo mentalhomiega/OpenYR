@@ -24,6 +24,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
 | `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
+| `houseunit <TypeID>@<House> x y` | Like `spawn`, but the object belongs to the named house, on Guard. `<House>` is a spawn name such as `Spawn2` (an underscore stands for a space), or `#<n>` for the house at position `n` in the house list, which reaches a computer house with no spawn name. The log says `no such house` or `no such type` when a name does not resolve |
+| `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
 | `attack <TypeID>` | Orders the player-controlled objects of that type (see `select`) to attack the nearest structure of another house that has a construction yard |

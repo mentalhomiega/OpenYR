@@ -59,6 +59,7 @@
 #include "always.h"
 
 #include "options.h"
+#include "perfstat.h"
 
 #include "_command.h"
 #include "_deploymentconfig.h"
@@ -679,6 +680,12 @@ void OptionsClass::Load_Settings(void)
 		Debug_SyncLog = true;
 	}
 	DebugString("SyncLog is %s\n", Debug_SyncLog == true ? "ON" : "OFF");
+
+	// Turns on the once-a-second Perf lines, as the perflog autotest step does.
+	if (ConfigINI.Get_Bool("Options", "PerfLog", false)) {
+		Perf_Set_Enabled(true);
+	}
+	DebugString("PerfLog is %s\n", Perf_Enabled == true ? "ON" : "OFF");
 
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
 	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
