@@ -43,7 +43,10 @@ struct CnCNetSessionConfigType
 	CnCNetLobbyConfigType Lobby;
 	std::vector<std::string> Channels;     // Joined once registered, in order.
 	int ConnectTimeoutMS = 8000;
-	int RetryDelayMS = 15000;
+	int RetryDelayMS = 4000;       // The wait after the first lost connection; it doubles for each one after.
+	int MaxRetryDelayMS = 60000;
+	int MaxAttempts = 6;           // Connections in a row that fail or do not last StableMS before the session gives up.
+	int StableMS = 60000;
 	std::string QuitMessage = "Leaving";
 };
 
@@ -95,6 +98,7 @@ class CnCNetSessionClass
 		std::vector<Command> Commands;
 		CnCNetLobbyClass Lobby;
 		uint64_t Revision = 1;
+		std::string LastReason;        // Why the last connection ended.
 };
 
 

@@ -12,6 +12,7 @@
 #include "cncnet/tcpstream.h"
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <random>
 
@@ -186,6 +187,11 @@ void CnCNetSessionClass::Run(void)
 	std::mt19937 random(seed());
 	IRCClientClass client(Config.IRC);
 
+	// A server that closes us again and again, or that throttles fast reconnects, is left alone: the wait
+	// doubles from RetryDelayMS up to MaxRetryDelayMS, and after MaxAttempts connections that did not
+	// last StableMS the session gives up until the lobby is opened again.
+	int failures = 0;
+
 	while (!Stopping) {
 		std::vector<CnCNetServerType> servers = Config.Servers;
 		std::shuffle(servers.begin(), servers.end(), random);
@@ -208,9 +214,13 @@ void CnCNetSessionClass::Run(void)
 				continue;
 			}
 			reached = true;
+			uint64_t const connected_at = CnCNet_Clock();
 			bool const lost = Session(stream, client);
 			if (!lost) {
 				return;
+			}
+			if (CnCNet_Clock() - connected_at >= static_cast<uint64_t>(Config.StableMS)) {
+				failures = 0;
 			}
 			break;
 		}
@@ -218,16 +228,48 @@ void CnCNetSessionClass::Run(void)
 		if (Stopping) {
 			break;
 		}
+		++failures;
+		// A ban or a throttle will not end by asking again soon, so the session stops at once.
+		bool banned = false;
+		{
+			std::string lower;
+			for (char c : LastReason) {
+				lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+			}
+			for (char const * word : {"lined", "banned", "throttle", "excessive", "too fast", "too many"}) {
+				banned = banned || lower.find(word) != std::string::npos;
+			}
+		}
+		if (banned) {
+			failures = Config.MaxAttempts;
+		}
+		if (failures >= Config.MaxAttempts) {
+			{
+				std::lock_guard<std::mutex> guard(Lock);
+				Lobby.Set_Status(CnCNetStatus::FAILED, banned ? "The CnCNet server refused this connection (" + LastReason + "). Try again later."
+					: reached ? "The CnCNet server keeps closing the connection. Try again later."
+					: "No CnCNet server answered. Try again later.");
+				Changed();
+			}
+			while (Pause(1000)) {
+			}
+			break;
+		}
+		int delay = Config.RetryDelayMS;
+		for (int step = 1; step < failures && delay < Config.MaxRetryDelayMS; ++step) {
+			delay *= 2;
+		}
+		delay = std::min(delay, Config.MaxRetryDelayMS);
 		{
 			std::lock_guard<std::mutex> guard(Lock);
 			if (reached) {
 				Lobby.Set_Status(CnCNetStatus::RECONNECTING, std::string());
 			} else {
-				Lobby.Set_Status(CnCNetStatus::FAILED, "No CnCNet server answered.");
+				Lobby.Set_Status(CnCNetStatus::FAILED, "No CnCNet server answered. Trying again.");
 			}
 			Changed();
 		}
-		if (!Pause(reached ? 2000 : Config.RetryDelayMS)) {
+		if (!Pause(delay)) {
 			break;
 		}
 	}
@@ -332,6 +374,7 @@ bool CnCNetSessionClass::Session(TCPStreamClass & stream, IRCClientClass & clien
 	stream.Close();
 	client.Disconnected();
 	std::lock_guard<std::mutex> guard(Lock);
+	LastReason = reason;
 	Lobby.Connection_Lost(reason, CnCNet_Clock());
 	Changed();
 	return(true);
