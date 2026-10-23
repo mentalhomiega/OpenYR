@@ -80,6 +80,7 @@
 
 #include "_bench.h"
 #include "_convert.h"
+#include "_keyboar.h"
 #include "_map.h"
 #include "_mixfile.h"
 #include "_rtti.h"
@@ -2850,6 +2851,55 @@ void SidebarClass::StripClass::SelectClass::Press_Left(void)
 }
 
 
+/// <summary>
+/// Runs the right press the cameo takes from a click, without a mouse event.
+/// </summary>
+void SidebarClass::StripClass::SelectClass::Press_Right(void)
+{
+	KeyNumType key = KN_NONE;
+	Action(RIGHTPRESS, key);
+}
+
+
+/// <summary>
+/// Returns how many PRODUCE events a left click on a unit or infantry cameo sends. Shift held in the modern
+/// interface sends Options.ShiftQueueCount of them, limited to the places left in the factory's queue.
+/// </summary>
+/// <param name="factory">The factory that builds the type, or NULL when none is making anything yet.</param>
+/// <returns>Returns the number of events to send, never less than one.</returns>
+static int Cameo_Produce_Count(FactoryClass const * factory)
+{
+	if (!Modern_Interface() || Options.ShiftQueueCount <= 1 || !Keyboard->Down(KN_LSHIFT)) {
+		return(1);
+	}
+
+	// A factory holds one object in production and up to MaximumQueuedObjects behind it.
+	int room = Rule->MaximumQueuedObjects + 1;
+	if (factory != NULL) {
+		room = Rule->MaximumQueuedObjects - factory->Queued_Count() + (factory->Get_Object() == NULL ? 1 : 0);
+	}
+	return(std::max(1, std::min(Options.ShiftQueueCount, room)));
+}
+
+
+/// <summary>
+/// Sends the abandon for a cameo's type. Shift held abandons every object of that type, queued or in
+/// production, in one event; without Shift it abandons one.
+/// </summary>
+static void Cameo_Abandon(RTTIType otype, int oid, TechnoTypeClass const * choice)
+{
+	if (Keyboard->Down(KN_LSHIFT)) {
+		FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
+		int const pending = (fptr != NULL) ? fptr->Total(choice) : 0;
+		if (pending > 1) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT, otype, oid, pending));
+			return;
+		}
+	}
+	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
+}
+
+
 /***********************************************************************************************
  * SidebarClass::StripClass::SelectClass:: -- Action function when buildable cameo is selected *
  *                                                                                             *
@@ -2967,7 +3017,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 
 					if (!factory->Is_Building()) {
 						Speak(VOX_CANCELED);
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
+						Cameo_Abandon(otype, oid, choice);
 					} else {
 						Speak(VOX_SUSPENDED);
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SUSPEND, otype, oid));
@@ -2980,7 +3030,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					 */
 					FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, HouseClass::Build_Category(otype, oid), HouseClass::Is_Naval_Type(otype, oid));
 					if (fptr != NULL && fptr->Is_Queued(choice)) {
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON, otype, oid));
+						Cameo_Abandon(otype, oid, choice);
 					}
 				}
 			}
@@ -3070,7 +3120,10 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						produce = true;
 					}
 					if (produce) {
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
+						int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
+						for (int queued = 0; queued < count; queued++) {
+							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
+						}
 					}
 				}
 			}

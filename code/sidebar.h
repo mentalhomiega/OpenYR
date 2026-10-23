@@ -205,6 +205,9 @@ class SidebarClass : public PowerClass
 					// Does what a left press on the cameo does, without a mouse event.
 					void Press_Left(void);
 
+					// Does what a right press on the cameo does, without a mouse event.
+					void Press_Right(void);
+
 					StripClass * Strip;
 					int Index;
 

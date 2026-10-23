@@ -156,6 +156,9 @@ class OptionsClass {
 		// The cameo rows the modern build panel shows; the panel clamps it to what the screen fits.
 		int SidebarRows;
 
+		// The units a Shift-click queues on a unit cameo in the modern interface. A factory's queue limit caps it.
+		int ShiftQueueCount;
+
 		// Offers the tester debug cheats in single-player games; see debugmode.h.
 		bool DebugMode;
 

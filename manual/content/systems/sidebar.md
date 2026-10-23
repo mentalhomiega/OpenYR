@@ -176,6 +176,8 @@ Queuing plays no announcement, so a second click on a cameo that is already buil
 
 A right click never starts anything. Where it cancels, it removes a queued copy before touching the object in production, so one right click undoes one extra left click.
 
+With Shift held in the modern interface, a left click on a unit or infantry cameo queues [`ShiftQueueCount`](/keys/shiftqueuecount/) units at once, five by default, fewer when the factory's queue has fewer places left. A right click with Shift cancels every copy of that type the factory holds, queued and in production, in one step. When the object in production is building, the first Shift right click suspends it, as a plain right click does, and the next one cancels the copies.
+
 A right click on any cameo whose type is in production also leaves placement mode, even when the structure being placed belongs to another cameo.
 
 Structures are never queued, so the queuing rows do not apply to them. While the house has a structure order outstanding in the same slot (building, on hold, or finished and waiting to be placed), a left click on any *other* cameo of that slot is refused. A defense has its own slot, so a structure order and a defense order do not refuse each other. The engine announces that there is no factory and sends no order.

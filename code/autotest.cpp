@@ -34,6 +34,8 @@
 **	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
 **	cameos					writes each sidebar strip's cameos in order, with the type and whether the player can build it now
 **	clickcameo <TypeID>		starts production of the type, as a click on its cameo does, when a strip still offers the cameo
+**	cameopress <TypeID> <left|right>	presses the type's visible sidebar cameo through the cameo's own action, as a click does, so Shift held with hold applies its Shift behaviour
+**	queuestate <TypeID>		writes how many of the type the player's factory holds, in production and queued, how many are queued, and the player's credits
 **	prereqs <TypeID>		writes the prerequisites the type lists, then each type whose Prerequisite list names it
 **	view x y				centres the view on a cell
 **	cell x y				writes a cell's shroud state, tile, height and occupier
@@ -4728,6 +4730,46 @@ void Run(StepType const & step)
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
 		}
 		DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
+	} else if (step.Command == "cameopress") {
+		// cameopress <TypeID> left|right: presses the type's visible cameo through the cameo's own action, so the Shift
+		// state the script holds decides what the press does, as it does for a player.
+		std::size_t const space = step.Argument.find_first_of(" \t");
+		std::string const name = step.Argument.substr(0, space);
+		bool const right = space != std::string::npos && step.Argument.find("right", space) != std::string::npos;
+		TechnoTypeClass const * type = Find_Type(name);
+		bool pressed = false;
+		for (int column = 0; type != NULL && !pressed && column < SidebarClass::COLUMNS; column++) {
+			SidebarClass::StripClass & strip = Map.Column[column];
+			for (int index = 0; index < strip.BuildableCount && !pressed; index++) {
+				if (Fetch_Techno_Type(strip.Buildables[index].BuildableType, strip.Buildables[index].BuildableID) != type) {
+					continue;
+				}
+				int const slot = index - strip.TopIndex;
+				if (slot < 0 || slot >= Map.Max_Visible()) {
+					continue;
+				}
+				SidebarClass::StripClass::SelectClass & cameo = SidebarClass::StripClass::SelectButton[column][slot];
+				cameo.Set_Owner(strip, slot);
+				if (right) {
+					cameo.Press_Right();
+				} else {
+					cameo.Press_Left();
+				}
+				pressed = true;
+			}
+		}
+		DebugString("AUTOTEST   cameopress %s %s: %s\n", name.c_str(), right ? "right" : "left",
+			type == NULL ? "no such type" : (pressed ? "pressed" : "no visible cameo"));
+	} else if (step.Command == "queuestate") {
+		// queuestate <TypeID>: how many of the type the player's factory holds, in production and queued, how many
+		// are queued behind the one in production, and the player's credits.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			RTTIType const rtti = type->Fetch_RTTI();
+			FactoryClass * factory = PlayerPtr->Fetch_Factory(rtti, HouseClass::Build_Category(rtti, type->Fetch_Heap_ID()), HouseClass::Is_Naval_Type(rtti, type->Fetch_Heap_ID()));
+			DebugString("AUTOTEST   queuestate %s: pending %d queued %d credits %d\n", type->Name(),
+				factory != NULL ? factory->Total(type) : 0, factory != NULL ? factory->Queued_Count() : 0, PlayerPtr->Available_Money());
+		}
 	} else if (step.Command == "prereqs") {
 		// prereqs <TypeID>: the prerequisites the type lists, then each type of any kind whose Prerequisite list names it.
 		TechnoTypeClass const * type = Find_Type(step.Argument);
@@ -5043,7 +5085,7 @@ bool AutoTest_Load(char const * filename)
 			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
 			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
 			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
-			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0
+			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0 || std::strcmp(command, "cameopress") == 0
 			|| std::strcmp(command, "binding") == 0 || std::strcmp(command, "scheme") == 0) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");

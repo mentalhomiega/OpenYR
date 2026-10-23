@@ -208,6 +208,7 @@ OptionsClass::OptionsClass(void) :
 	ModernInterface(true),
 	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
+	ShiftQueueCount(5),
 	DebugMode(false),
 	PlayerColorView(0),
 	SidebarCameoText(false),
@@ -700,6 +701,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
 
 	AutoSaveInterval = ConfigINI.Get_Int("Options", "AutoSaveInterval", AutoSaveInterval);
+	ShiftQueueCount = std::max(1, ConfigINI.Get_Int("Options", "ShiftQueueCount", ShiftQueueCount));
 	DebugString("AutoSaveInterval = %d\n", AutoSaveInterval);
 
 	ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", ScreenWidth);
