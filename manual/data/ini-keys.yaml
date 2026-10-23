@@ -7899,6 +7899,24 @@ ChronoDistanceFactor:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+ChronoErasedSuperWeapons:
+  key: ChronoErasedSuperWeapons
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: ChronoErasedSuperWeapons
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 ChronoHarvTooFarDistance:
   key: ChronoHarvTooFarDistance
   scopes:
@@ -10242,7 +10260,7 @@ CurrentStrengthDamage:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: 'yes'
       declared_in: RulesClass
       member: CurrentStrengthDamage
       source: code/rules.cpp
