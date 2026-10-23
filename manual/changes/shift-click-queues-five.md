@@ -6,6 +6,12 @@ targets:
 - type: key
   id: ShiftQueueCount
   effect: added
+- type: command
+  id: fixed:shift-queue
+  effect: added
+- type: command
+  id: fixed:shift-abandon
+  effect: added
 - type: system
   id: sidebar
   effect: changed

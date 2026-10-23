@@ -2738,6 +2738,34 @@ fixed_controls:
   _provenance:
     source: code/display.cpp
     guard: null
+- id: fixed:shift-queue
+  route_id: fixed-shift-queue
+  kind: fixed
+  title: Queue several units
+  description: Queues ShiftQueueCount units of the clicked sidebar cameo at once in the modern interface.
+    Buildings still queue one.
+  audience: player
+  availability: *id001
+  bindings:
+  - Shift
+  context: Left-clicking a unit cameo on the sidebar
+  _provenance:
+    source: code/sidebar.cpp
+    guard: null
+- id: fixed:shift-abandon
+  route_id: fixed-shift-abandon
+  kind: fixed
+  title: Cancel all of a type
+  description: Cancels every queued and in-production unit of the clicked cameo's type, as Yuri's Revenge's
+    AbandonAll does. An active factory is put on hold first.
+  audience: player
+  availability: *id001
+  bindings:
+  - Shift
+  context: Right-clicking a cameo on the sidebar
+  _provenance:
+    source: code/sidebar.cpp
+    guard: null
 - id: fixed:dropship-accept
   route_id: fixed-dropship-accept
   kind: fixed

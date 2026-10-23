@@ -205,6 +205,24 @@ fixed_controls:
     availability: *all
     sites:
       - { file: code/display.cpp, function: DisplayClass::Mouse_Left_Release, expression: KN_LSHIFT }
+  - id: fixed:shift-queue
+    title: Queue several units
+    description: Queues ShiftQueueCount units of the clicked sidebar cameo at once in the modern interface. Buildings still queue one.
+    audience: player
+    bindings: [Shift]
+    context: Left-clicking a unit cameo on the sidebar
+    availability: *all
+    sites:
+      - { file: code/sidebar.cpp, function: Cameo_Produce_Count, expression: KN_LSHIFT }
+  - id: fixed:shift-abandon
+    title: Cancel all of a type
+    description: Cancels every queued and in-production unit of the clicked cameo's type, as Yuri's Revenge's AbandonAll does. An active factory is put on hold first.
+    audience: player
+    bindings: [Shift]
+    context: Right-clicking a cameo on the sidebar
+    availability: *all
+    sites:
+      - { file: code/sidebar.cpp, function: Cameo_Abandon, expression: KN_LSHIFT }
   - id: fixed:dropship-accept
     title: Accept dropship loadout
     description: Accepts the current dropship loadout and closes the pre-mission screen.
