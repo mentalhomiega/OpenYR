@@ -39,7 +39,9 @@ class PaletteClass;
 class Surface;
 template<class T> class DynamicVectorClass;
 
-#define NUM_INTENSITY_LEVELS 63
+// Every lit drawer in gamemd has 53 brightness bands (0x52BE40, 0x545000, 0x627590), so the
+// middle band is exactly normal light; with 63 the alpha lighting picked band 30 of 62, 3% dark.
+#define NUM_INTENSITY_LEVELS 53
 
 /*
 **	This class is the data that represents the marriage between a source art
