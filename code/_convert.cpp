@@ -44,5 +44,6 @@ ConvertClass * TiberiumDrawer = NULL;
 ConvertClass * AnimDrawer = NULL;
 ConvertClass * NormalDrawer = NULL;
 ConvertClass * MouseDrawer = NULL;
+ConvertClass * GrfxTxtDrawer = NULL;
 ConvertClass * SidebarDrawer = NULL;
 ConvertClass * IsometricDrawer = NULL;

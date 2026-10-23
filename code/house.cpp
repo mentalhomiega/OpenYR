@@ -128,6 +128,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "csf.h"
 
 #include <cmath>
 
@@ -4188,11 +4189,12 @@ bool HouseClass::Flag_To_Win(bool silent)
 		}
 		if (Session.Type == GAME_NORMAL && Is_Player_Control()) {
 			Lock_Scenario_Input();
-			TacticalMap->Set_Caption_Text(TXT_SCENARIO_WON);
+			// gamemd (0x4FCB39) sets the string table's TXT_SCENARIO_WON with frame 0 of GRFXTXT.SHP, then speaks EVA_MissionAccomplished.
+			TacticalMap->Set_Caption_Text(Fetch_String("TXT_SCENARIO_WON"), Tactical::CAPTION_MISSION_ACCOMPLISHED);
 			Speak(VOX_ACCOMPLISHED);
 			Map.Flag_To_Redraw();
 		} else if (Is_Player_Control() && !IsObserver) {
-			TacticalMap->Set_Caption_Text(TXT_VICTORIOUS);
+			TacticalMap->Set_Caption_Text(Fetch_String("TXT_VICTORIOUS"), Tactical::CAPTION_VICTORIOUS);
 			Speak(VOX_YOU_ARE_VICTORIOUS);
 			Map.Flag_To_Redraw();
 		}
@@ -4232,12 +4234,13 @@ bool HouseClass::Flag_To_Lose(bool silent)
 		}
 		if (Session.Type == GAME_NORMAL && Is_Player_Control()) {
 			Lock_Scenario_Input();
-			TacticalMap->Set_Caption_Text(TXT_SCENARIO_LOST);
+			// gamemd (0x4FCD22): TXT_SCENARIO_LOST with frame 1, then EVA_MissionFailed.
+			TacticalMap->Set_Caption_Text(Fetch_String("TXT_SCENARIO_LOST"), Tactical::CAPTION_MISSION_FAILED);
 			Speak(VOX_FAIL);
 			Map.Flag_To_Redraw();
 		} else if (Is_Player_Control()) {
 			// A watcher gets the caption but no voice, as gamemd's Lose (0x4FCBD0) gives its local observer.
-			TacticalMap->Set_Caption_Text(TXT_LOST);
+			TacticalMap->Set_Caption_Text(Fetch_String("TXT_LOST"), Tactical::CAPTION_GAME_OVER);
 			if (!IsObserver) {
 				Speak(VOX_YOU_HAVE_LOST);
 			}

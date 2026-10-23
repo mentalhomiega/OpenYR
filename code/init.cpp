@@ -2686,6 +2686,15 @@ static bool Bootstrap(void)
 	Read_Palette(pal, "MOUSEPAL.PAL");
 	MouseDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface);
 
+	/*
+	**	The mission caption art (GRFXTXT.SHP) has a palette of its own, and the caption falls
+	**	back to plain text without it, as gamemd's Init_Game (0x52ba60) does.
+	*/
+	if (MFCD::Retrieve("GRFXTXT.PAL") != NULL) {
+		Read_Palette(pal, "GRFXTXT.PAL");
+		GrfxTxtDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface);
+	}
+
 	TiberiumDrawer = VoxelDrawer;
 
 	/*

@@ -256,9 +256,18 @@ class Tactical : public AbstractClass
 		/*
 		 * Caption text and map overlays.
 		 */
-		void Set_Caption_Text(int text_id);
+		void Set_Caption_Text(wchar_t const * text, int style);
 		void Clear_Caption_Text(void);
-		void Draw_Screen_Text(char const * text);
+		void Draw_Screen_Text(wchar_t const * text);
+
+		// The frame of GRFXTXT.SHP shown for each caption style.
+		enum CaptionStyleType {
+			CAPTION_NONE = -1,
+			CAPTION_MISSION_ACCOMPLISHED = 0,
+			CAPTION_MISSION_FAILED = 1,
+			CAPTION_VICTORIOUS = 2,
+			CAPTION_GAME_OVER = 3
+		};
 
 		void Draw_Rally_Points(bool inshroud);
 		void Draw_Waypoints(bool inshroud);
@@ -284,9 +293,16 @@ class Tactical : public AbstractClass
 		/*
 		 * This is the caption text drawn across the middle of the tactical view. It is empty
 		 * whenever there is no caption to show, which is how the message is taken down again.
-		 * The scenario won and scenario lost announcements are put up through it.
+		 * The scenario won and scenario lost announcements are put up through it. The text is
+		 * what the string table gives, so it is wide, as gamemd keeps it (0x6d4db0).
 		 */
-		char ScreenText[64];
+		wchar_t ScreenText[64];
+
+		/*
+		 * This is the frame of the caption art (GRFXTXT.SHP) drawn in the middle of the view in
+		 * place of the text, or -1 when there is none.
+		 */
+		int CaptionStyle;
 
 		/*
 		 * This is the game frame the per-frame housekeeping was last done on. The AI routine

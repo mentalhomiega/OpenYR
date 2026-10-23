@@ -885,6 +885,10 @@ void __cdecl Prog_End(void)
 		delete MouseDrawer;
 		MouseDrawer = NULL;
 	}
+	if (GrfxTxtDrawer != NULL) {
+		delete GrfxTxtDrawer;
+		GrfxTxtDrawer = NULL;
+	}
 	if (SidebarDrawer != NULL) {
 		delete SidebarDrawer;
 		SidebarDrawer = NULL;

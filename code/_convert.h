@@ -46,5 +46,6 @@ extern ConvertClass * TiberiumDrawer;
 extern ConvertClass * AnimDrawer;
 extern ConvertClass * NormalDrawer;
 extern ConvertClass * MouseDrawer;
+extern ConvertClass * GrfxTxtDrawer;
 extern ConvertClass * SidebarDrawer;
 extern ConvertClass * IsometricDrawer;

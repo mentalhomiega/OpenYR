@@ -147,7 +147,8 @@ Tactical::Tactical(void) :
 	WaypointAnimCounter(0),
 	WaypointAnimTimer()
 {
-	ScreenText[0] = '\0';
+	ScreenText[0] = L'\0';
+	CaptionStyle = CAPTION_NONE;
 
 	CoordToPixelMatrix.Make_Identity();
 	CoordToPixelMatrix.Rotate_X(RAD_60);
@@ -1388,43 +1389,82 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 
 
 /// <summary>
-/// Sets the caption text shown over the tactical view.
-/// The text is pulled from the string table, so the caller only has to know which message it
-/// wants displayed.
+/// Sets the caption shown over the tactical view.
+/// A caption is the text from the string table and the frame of the caption art that goes
+/// with it, as gamemd keeps them (0x6d4db0). A null text takes the text down.
 /// </summary>
-/// <param name="text_id">The string table identifier of the caption, or -1 to clear it.</param>
-void Tactical::Set_Caption_Text(int text_id)
+/// <param name="text">The caption text, or NULL for none.</param>
+/// <param name="style">The frame of GRFXTXT.SHP that is drawn in place of the text, or -1 for none.</param>
+void Tactical::Set_Caption_Text(wchar_t const * text, int style)
 {
-	if (text_id == -1) {
-		Clear_Caption_Text();
+	if (text == NULL) {
+		ScreenText[0] = L'\0';
 	} else {
-		strcpy(ScreenText, Fetch_String(text_id));
+		wcsncpy(ScreenText, text, ARRAY_SIZE(ScreenText) - 1);
+		ScreenText[ARRAY_SIZE(ScreenText) - 1] = L'\0';
 	}
+	CaptionStyle = style;
 }
 
 
 /// <summary>
-/// Clears the caption text shown over the tactical view.
+/// Clears the caption shown over the tactical view.
 /// </summary>
 void Tactical::Clear_Caption_Text(void)
 {
-	ScreenText[0] = '\0';
+	Set_Caption_Text(NULL, CAPTION_NONE);
 }
 
 
 /// <summary>
-/// Draws a line of text across the middle of the tactical view.
-/// This routine paints straight onto the composite surface with GDI, so it does nothing
-/// unless that surface can hand out a device context. It also stays quiet while the map
-/// editor is running.
+/// Fetches the caption art, GRFXTXT.SHP, which the game reads when it is first wanted, as
+/// gamemd reads it at start up (0x52ba60, GRFXTXT_SHP) when the file exists.
+/// </summary>
+/// <returns>The shape, or NULL when the game has no such file.</returns>
+static ShapeSet const * Caption_Art(void)
+{
+	static std::unique_ptr<char[]> data;
+	static bool tried = false;
+
+	if (!tried) {
+		tried = true;
+		CCFileClass file("GRFXTXT.SHP");
+		if (file.Is_Available()) {
+			data.reset((char *)Load_Alloc_Data(file));
+		}
+	}
+	return((ShapeSet const *)data.get());
+}
+
+
+/// <summary>
+/// Draws the caption across the middle of the tactical view.
+/// As gamemd does (0x6d4e20), the caption art, frame CaptionStyle of GRFXTXT.SHP, is centred in
+/// the view. Without the art or its palette, or when the style names no frame of it, the text is
+/// painted in white instead. The routine paints on the composite surface, so it does nothing unless
+/// that surface can hand out a device context for the text, and it stays quiet while the map editor
+/// is running.
 /// </summary>
 /// <param name="text">The text to display. A NULL or empty string draws nothing.</param>
-void Tactical::Draw_Screen_Text(char const * text)
+void Tactical::Draw_Screen_Text(wchar_t const * text)
 {
 	if (Debug_Map) {
 		return;
 	}
-	if (text == NULL || !strlen(text)) {
+	if ((text == NULL || !wcslen(text)) && CaptionStyle == CAPTION_NONE) {
+		return;
+	}
+
+	if (CaptionStyle != CAPTION_NONE && GrfxTxtDrawer != NULL) {
+		ShapeSet const * art = Caption_Art();
+		if (art != NULL && CaptionStyle < art->Get_Count()) {
+			Point2D point(TacticalRect.X + (TacticalRect.Width - art->Get_Width()) / 2, TacticalRect.Y + (TacticalRect.Height - art->Get_Height()) / 2);
+			Draw_Shape(*CompositeSurface, *GrfxTxtDrawer, art, CaptionStyle, point, TacticalRect, SHAPE_NORMAL);
+			return;
+		}
+	}
+
+	if (text == NULL || !wcslen(text)) {
 		return;
 	}
 	if (CompositeSurface->Is_GDI_Backed()) {
@@ -1438,7 +1478,7 @@ void Tactical::Draw_Screen_Text(char const * text)
 			SetBkMode(hdc, TRANSPARENT);
 			SetTextAlign(hdc, TA_CENTER);
 			SetTextColor(hdc, RGB(255, 255, 255));
-			TextOut(hdc, rect.X + point.X, rect.Y + point.Y, text, strlen(text));
+			TextOutW(hdc, rect.X + point.X, rect.Y + point.Y, text, (int)wcslen(text));
 			SelectObject(hdc, h);
 			DeleteObject(font);
 			surface->ReleaseDC(hdc);
@@ -4270,6 +4310,7 @@ void Tactical::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(ScreenText);
+	stream.Serialize(CaptionStyle);
 	stream.Serialize(LastAIFrame);
 	stream.Serialize(field_58);
 	stream.Serialize(field_59);
