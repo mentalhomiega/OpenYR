@@ -262,6 +262,9 @@ void UIScript_Tick(Rml::Context * context)
 			Video_Mark_Overlay_Dirty();
 			WaitUntil = now + 500;
 			return;
+		} else if (step.Command == "frames") {
+			// frames: logs the game frame count and the clock, so two lines give the frame rate of the menu battle.
+			DebugString("UISCRIPT frames %d at %lld ms\n", Frame, now);
 		} else if (step.Command == "ids") {
 			for (int index = 0; index < context->GetNumDocuments(); index++) {
 				Rml::ElementDocument * document = context->GetDocument(index);

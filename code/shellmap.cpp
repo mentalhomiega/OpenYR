@@ -61,6 +61,7 @@ struct SessionPart
 {
 	GameType Type = GAME_NORMAL;
 	GameOptionsType Options = {};
+	int GameSpeed = 0;
 	std::vector<NodeNameType *> Players;
 	std::vector<NodeNameType *> Computers;
 	bool AIOnly = false;
@@ -97,6 +98,9 @@ unsigned int const BATTLE_LIFETIME_MS = 25 * 60 * 1000;
 // The camera pans this many map pixels a second, about a screen width in a minute.
 double const CAMERA_SPEED = 30.0;
 
+// The battle runs at game speed 4 whatever the player's GameSpeed option is; that option still applies to their games.
+int const MENU_BATTLE_GAME_SPEED = 4;
+
 
 void Move_List(DynamicVectorClass<NodeNameType *> & from, std::vector<NodeNameType *> & to)
 {
@@ -121,6 +125,7 @@ void Take(SessionPart & part)
 {
 	part.Type = Session.Type;
 	part.Options = Session.Options;
+	part.GameSpeed = Options.GameSpeed;
 	Move_List(Session.Players, part.Players);
 	Move_List(Session.Computers, part.Computers);
 	part.AIOnly = Session.AIOnly;
@@ -138,6 +143,7 @@ void Give(SessionPart const & part)
 {
 	Session.Type = part.Type;
 	Session.Options = part.Options;
+	Options.GameSpeed = part.GameSpeed;
 	Fill_List(Session.Players, part.Players);
 	Fill_List(Session.Computers, part.Computers);
 	Session.AIOnly = part.AIOnly;
@@ -323,6 +329,8 @@ bool Prepare_Battle(char * file, int file_size)
 
 	Battle.Type = GAME_SKIRMISH;
 	Battle.Options = Session.Options;
+	Battle.Options.GameSpeed = MENU_BATTLE_GAME_SPEED;
+	Battle.GameSpeed = MENU_BATTLE_GAME_SPEED;
 	Battle.Options.ScenarioIndex = index;
 	std::snprintf(Battle.Options.ScenarioDescription, sizeof(Battle.Options.ScenarioDescription), "%s", Session.Scenarios[index]->Description());
 	Battle.Options.Bases = true;
@@ -490,7 +498,8 @@ bool Load_Battle(void)
 	CampaignType const campaign = Scen->Campaign;
 	int const scenario = Scen->Scenario;
 
-	DebugString("Menu battle: %s with %d computer players\n", file, (int)Battle.Computers.size());
+	DebugString("Menu battle: %s with %d computer players at game speed %d, %u frames a second\n", file, (int)Battle.Computers.size(),
+		MENU_BATTLE_GAME_SPEED, NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
 
 	bool loaded = false;
 	Running = true;
@@ -609,7 +618,7 @@ void Shellmap_Service(void)
 		BattleScope scope;
 
 		unsigned int const now = timeGetTime();
-		int const rate = std::max(1, (int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
+		int const rate = std::max(1, (int)NetTiming::Solo_Game_Speed_Frame_Rate(MENU_BATTLE_GAME_SPEED));
 		unsigned int const step = std::max(1, 1000 / rate);
 		if (LastLogic == 0) {
 			LastLogic = now;

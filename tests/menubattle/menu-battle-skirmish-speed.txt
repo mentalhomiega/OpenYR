@@ -1,0 +1,19 @@
+; Skirmish after the menu battle: the battle runs at game speed 4 (20 frames a second), and the player's
+; GameSpeed must come back for the skirmish. With [Options] GameSpeed=6 the fps lines should read about 10, the
+; skirmish limit. A skirmish started from the menus takes its speed from the skirmish lobby's Game Speed slider,
+; which is remembered as [Skirmish] Speed = 6 minus the game speed (the rules' MPGameSpeed when unset), so the
+; run uses Speed=0 for speed 6. Run with run_autotest.ps1 -Menus -Seconds 150 -Settings "[MenuBattle]`r`nInTests=yes`r`n[Skirmish]`r`nSpeed=0"
+; -Filter "AUTOTEST fps|GameSpeed = |Menu battle|Exception". The game frame count restarts when the skirmish loads,
+; so the fps lines count from the skirmish's first frame.
+ui waitfor backdrop
+ui wait 15000
+ui press Single Player
+ui wait 1500
+ui press Skirmish
+ui wait 3000
+ui press OK
+ui wait 6000
+150 fps
+300 fps
+450 fps
+500 quit
