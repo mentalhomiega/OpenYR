@@ -1440,8 +1440,8 @@ static ShapeSet const * Caption_Art(void)
 /// <summary>
 /// Draws the caption across the middle of the tactical view.
 /// As gamemd does (0x6d4e20), the caption art, frame CaptionStyle of GRFXTXT.SHP, is centred in
-/// the view. Without the art or its palette, or when the style names no frame of it, the text is
-/// painted in white instead. The routine paints on the composite surface, so it does nothing unless
+/// the area of the view that is not under the sidebar. Without the art or its palette, or when
+/// the style names no frame of it, the text is painted in white instead. The routine paints on the composite surface, so it does nothing unless
 /// that surface can hand out a device context for the text, and it stays quiet while the map editor
 /// is running.
 /// </summary>
@@ -1458,7 +1458,12 @@ void Tactical::Draw_Screen_Text(wchar_t const * text)
 	if (CaptionStyle != CAPTION_NONE && GrfxTxtDrawer != NULL) {
 		ShapeSet const * art = Caption_Art();
 		if (art != NULL && CaptionStyle < art->Get_Count()) {
-			Point2D point(TacticalRect.X + (TacticalRect.Width - art->Get_Width()) / 2, TacticalRect.Y + (TacticalRect.Height - art->Get_Height()) / 2);
+			// gamemd centres the art in its view, which has no sidebar in it. Horizontally this is the
+			// map area left of the modern panel, or the classic layout's view; vertically it is the whole view.
+			Rect const view = Tactical_View_Rect();
+			int const right = Modern_Interface() ? Hud_Layout().Panel.X : view.X + view.Width;
+			Point2D const centre = Screen_To_View_Offset(Point2D(view.X + (right - view.X) / 2 - ScreenTacticalRect.X, 0));
+			Point2D point(TacticalRect.X + centre.X - art->Get_Width() / 2, TacticalRect.Y + (TacticalRect.Height - art->Get_Height()) / 2);
 			Draw_Shape(*CompositeSurface, *GrfxTxtDrawer, art, CaptionStyle, point, TacticalRect, SHAPE_NORMAL);
 			return;
 		}
