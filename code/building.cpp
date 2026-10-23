@@ -1089,6 +1089,15 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				PrimaryFacing.Current();
 			}
 
+			/*
+			 * Turret and barrel images are cached as gamemd does (TechnoClass::Draw_Voxel, 0x706640), keyed by
+			 * the turret facing, the turret frame or barrel pitch and, for a barrel alone, its frame. The
+			 * recoil offsets are floats, so a part is cached only while its recoil is at rest.
+			 */
+			bool const at_rest = key != -1 && TurretRecoil.TravelSoFar == 0.0f && BarrelRecoil.TravelSoFar == 0.0f;
+			int const facing_key = int(PrimaryFacing.Current().As_Dir32());
+			int const pitch_key = int(BarrelPitch.Current().As_Dir32());
+
 			if (Class->AuxVoxel.VoxLib != NULL) {
 
 				// The turret steps through its frames as it animates, and a barrel under a voxel turret stays on frame 0 (BuildingClass::Draw, 0x43DA80).
@@ -1115,24 +1124,27 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 				Point2D drawpoint = xy + Class->AnimData[BANIM_TURRET].Location;
 
+				int const turret_key = at_rest && turret_frame < 64 ? (1 << 16) | (turret_frame << 5) | facing_key : -1;
+				int const barrel_key = at_rest ? (2 << 16) | (pitch_key << 5) | facing_key : -1;
+
 				VoxelDataStruct * voxl;
 				bool draw_barrel;
 				if (PrimaryFacing.Current().As_Dir4() <= 0 || PrimaryFacing.Current().As_Dir4() >= 3) {
 					draw_barrel = false;
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, 0, barrel_key, &Class->AuxVoxel2Index, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				} else {
 					draw_barrel = true;
 				}
 
-				Draw_Voxel(Class->AuxVoxel, turret_frame, -1, &Class->AuxVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
+				Draw_Voxel(Class->AuxVoxel, turret_frame, turret_key, &Class->AuxVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
 
 				if (draw_barrel) {
 					voxl = &Class->AuxVoxel2;
 					if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-						Draw_Voxel(Class->AuxVoxel2, 0, -1, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
+						Draw_Voxel(Class->AuxVoxel2, 0, barrel_key, &Class->AuxVoxel2Index, rect, drawpoint, Get_Isometric_View_Matrix() * barrel_matrix, Map[cell].Brightness, SHAPE_NORMAL);
 					}
 				}
 
@@ -1148,7 +1160,8 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 				// A barrel drawn alone steps through its frames with the turret animation (BuildingClass::Draw, 0x43DA80).
 				int const barrel_frame = Class->AuxVoxel2.MotLib->Get_Frame_Count() > 0 ? TurretAnimFrame % Class->AuxVoxel2.MotLib->Get_Frame_Count() : 0;
-				Draw_Voxel(Class->AuxVoxel2, barrel_frame, -1, &Class->VoxelIndex, rect, xy + Class->AnimData[BANIM_TURRET].Location, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
+				int const lone_key = at_rest && barrel_frame < 64 ? (3 << 16) | (barrel_frame << 10) | (pitch_key << 5) | facing_key : -1;
+				Draw_Voxel(Class->AuxVoxel2, barrel_frame, lone_key, &Class->AuxVoxel2Index, rect, xy + Class->AnimData[BANIM_TURRET].Location, Get_Isometric_View_Matrix() * matrix, Map[cell].Brightness, SHAPE_NORMAL);
 			}
 		}
 
