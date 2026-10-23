@@ -1,4 +1,4 @@
-; Skirmish after the menu battle: the battle runs at game speed 4 (20 frames a second), and the player's
+; Skirmish after the menu battle: the battle runs at game speed 3 (30 frames a second), and the player's
 ; GameSpeed must come back for the skirmish. With [Options] GameSpeed=6 the fps lines should read about 10, the
 ; skirmish limit. A skirmish started from the menus takes its speed from the skirmish lobby's Game Speed slider,
 ; which is remembered as [Skirmish] Speed = 6 minus the game speed (the rules' MPGameSpeed when unset), so the

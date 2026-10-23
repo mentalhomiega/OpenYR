@@ -98,8 +98,8 @@ unsigned int const BATTLE_LIFETIME_MS = 25 * 60 * 1000;
 // The camera pans this many map pixels a second, about a screen width in a minute.
 double const CAMERA_SPEED = 30.0;
 
-// The battle runs at game speed 4 whatever the player's GameSpeed option is; that option still applies to their games.
-int const MENU_BATTLE_GAME_SPEED = 4;
+// The battle runs at game speed 3, 30 frames a second, whatever the player's GameSpeed option is; that option still applies to their games.
+int const MENU_BATTLE_GAME_SPEED = 3;
 
 
 void Move_List(DynamicVectorClass<NodeNameType *> & from, std::vector<NodeNameType *> & to)

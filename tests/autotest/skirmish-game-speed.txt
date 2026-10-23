@@ -1,5 +1,5 @@
 ; Skirmish game speed: the fps lines show the game frames counted in the last whole second. The menu battle
-; always runs at 20 frames a second (game speed 4), so a skirmish at another GameSpeed must read its own limit.
+; always runs at 30 frames a second (game speed 3), so a skirmish at another GameSpeed must read its own limit.
 ; Run with run_autotest.ps1 -Build agent15 -Script <this file> -Seconds 120 -Settings "[Settings]`r`nGameSpeed=N" for
 ; N = 6 (limit 10) or 2 (limit 45), and -Filter "AUTOTEST fps|Exception". A spawned skirmish takes its speed from
 ; the [Settings] section, which the runner writes to SPAWN.INI. The first second of a game reads low, so the lines
