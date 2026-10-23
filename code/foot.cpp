@@ -1349,13 +1349,20 @@ void FootClass::Approach_Target(void)
 			return;
 		}
 
-		// A CanApproachTarget=no object, or a vehicle in a bunker, forgets a target out of reach
-		// instead of chasing it, except while a human player has it guard an area
+		// A CanApproachTarget=no object, a magnetron holding its victim, a vehicle in a bunker or a passenger
+		// of an open-topped transport forgets a target out of reach instead of chasing it. An attack order
+		// still chases, as do a human player's area guard and a computer player's hunt
 		// (FootClass::ApproachTarget, 0x4D5690).
-		if (!inrange && (!TClass->IsCanApproachTarget || BunkerLinkedItem != NULL) && !(CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())) {
-			Assign_Target(NULL);
-			Assign_Destination(NULL);
-			return;
+		bool const can_approach = TClass->IsCanApproachTarget && LocomotorTarget == NULL && BunkerLinkedItem == NULL && !IsInOpenToppedTransport;
+		if (!inrange && !can_approach) {
+			bool const chase = CurrentMission == MISSION_ATTACK
+				|| (CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())
+				|| (CurrentMission == MISSION_HUNT && !House->Is_Human_Player());
+			if (!chase) {
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
+				return;
+			}
 		}
 
 		/*
