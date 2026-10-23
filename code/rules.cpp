@@ -843,7 +843,7 @@ RulesClass::RulesClass(void) :
 	C4Warhead(NULL),
 	CrushWarhead(NULL),
 	FallingDamageMultiplier(1.0),
-	CurrentStrengthDamage(false),
+	CurrentStrengthDamage(true),
 	DrainMoneyFrameDelay(30),
 	DrainMoneyAmount(30),
 	DrainAnimationType(NULL),
