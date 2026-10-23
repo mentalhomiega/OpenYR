@@ -383,6 +383,11 @@ void TeleportLocomotionClass::Start_Warp(void)
 		DebugString("AUTOTEST   warp out %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 	}
 
+	// The jump releases any parasite first, onto the nearest cell it can enter from the cell the object leaves (gamemd: 0x7195CF).
+	if (LinkedTo->ParasiteEatingMe != NULL && LinkedTo->ParasiteEatingMe->ParasiteImUsing) {
+		LinkedTo->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+	}
+
 	LinkedTo->Mark(MARK_UP);
 	LinkedTo->PositionCoord = landing;
 	LinkedTo->RenderPrevCoord = COORD_NONE;
