@@ -1555,6 +1555,11 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			Size = size;
 		}
 
+		// Without an ExitCoord key a weapons factory releases at the offset gamemd's GetCoords gives (0x447AC0), as GetExitCoords (0x44F640) falls back to it.
+		if (IsWeaponsFactory && !ini.Is_Present(Name(), "ExitCoord")) {
+			ExitCoordinate = Coord(Width() * CELL_LEPTON_W / 2 - CELL_LEPTON_W / 2, Height() * CELL_LEPTON_H / 2 - CELL_LEPTON_H / 2, 0);
+		}
+
 		MidPoint = ArtINI.Get_Int(Graphic_Name(), "MidPoint", MidPoint);
 		DoorStages = ArtINI.Get_Int(Graphic_Name(), "DoorStages", DoorStages);
 		IsDamagedDoor = ArtINI.Get_Bool(Graphic_Name(), "DamagedDoor", IsDamagedDoor);

@@ -6031,10 +6031,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 		}
 	}
 
-	/*
-	 * A weapons factory that this unit is exiting wants the unit driven to its
-	 * exit cell before anything else; queue the real destination behind it.
-	 */
+	// In contact with a weapons factory, a destination other than the cell (3,1) from its top-left cell is queued, not assigned.
 	BuildingClass * wf = (BuildingClass *)Contact_With_Whom();
 	if (wf != NULL && wf->Fetch_RTTI() == RTTI_BUILDING && wf->Class->IsWeaponsFactory) {
 		Cell exitcell = wf->Get_Coord().As_Cell() + Cell(3, 1);

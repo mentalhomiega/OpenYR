@@ -7178,7 +7178,9 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 								unit->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 							}
 						} else if (clsid != ClassID_DriveLocomotion) {
-							unit->Assign_Destination(&Map[Get_Cell() + Cell(3, 1)]);
+							// A flying or hovering unit heads for the door cell, as gamemd does (BuildingClass::Mission_Unload, 0x44DF65).
+							// The call skips UnitClass::Assign_Destination, which holds orders while the unit is in contact with this factory.
+							unit->FootClass::Assign_Destination(&Map[Get_Cell() + Cell(4, 1)]);
 						} else {
 							Coord cs;
 							cs.X = coord.X;
@@ -7832,8 +7834,9 @@ bool BuildingClass::Can_Player_Move(void) const
  *=============================================================================================*/
 Coord BuildingClass::Exit_Coord(void) const
 {
+	// The location plus ExitCoord, as BuildingClass::GetExitCoords (0x44F640) gives it; the type sets the default when it is read.
 	if (Class->IsWeaponsFactory) {
-		return(PositionCoord + Coord(98, 188, 0));
+		return(PositionCoord + Class->ExitCoordinate);
 	}
 
 	if (Class->ExitCoordinate != COORD_NONE) {
