@@ -27,6 +27,12 @@ site_exclusions:
     classification: excluded
     reason: The [CnCNet] settings belong to the experimental built-in lobby; the CnCNet lobby change record lists them until the lobby leaves preview.
 
+  - path: code/ui/screens/cncnetlobby/uicncnetroomdlg.cpp
+    function: CnCNetRoomServiceClass::Play_Match
+    keys: [TimingPolicy]
+    classification: excluded
+    reason: The [CnCNet] settings belong to the experimental built-in lobby; the CnCNet lobby change record lists them until the lobby leaves preview.
+
   - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
     function: UI_CnCNet_Lobby_Dialog
     keys: [Handle]

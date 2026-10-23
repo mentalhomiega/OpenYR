@@ -798,6 +798,8 @@ void Test_Spawn(void)
 	Check(Has(ini, "[SpawnLocations]\nMulti1=" + std::to_string(match.Seats[0].Start) + "\nMulti2=3\n"), "spawn: starts in colour order");
 	Check(Has(ini, "[Multi1_Alliances]\nHouseAllyOne=1\n") && Has(ini, "[Multi2_Alliances]\nHouseAllyOne=0\n"), "spawn: team mates allied by sorted seat");
 	Check(!Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000), "_Alliances"), "spawn: no alliances without teams");
+	Check(Has(ini, "TimingPolicy=Adaptive\n"), "spawn: adaptive timing by default");
+	Check(Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, false), "TimingPolicy=Gamemd\n"), "spawn: gamemd timing when asked");
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
 	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
 

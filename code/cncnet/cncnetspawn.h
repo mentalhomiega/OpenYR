@@ -54,6 +54,7 @@ std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & mat
 bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMatchType & match);
 
 // The SPAWN.INI text for one player of the match, with the room's options.
-// bridge_port is the loopback port of that player's tunnel bridge.
+// bridge_port is the loopback port of that player's tunnel bridge. adaptive_timing picks the
+// adaptive network timing; false plays gamemd's.
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
-	std::string const & own_name, uint16_t bridge_port);
+	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing = true);

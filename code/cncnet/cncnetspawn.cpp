@@ -206,7 +206,7 @@ static int Spawn_Side(CnCNetMatchSeatType const & seat)
 
 
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
-	std::string const & own_name, uint16_t bridge_port)
+	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing)
 {
 	CnCNetMatchSeatType const * own = nullptr;
 	for (CnCNetMatchSeatType const & seat : match.Seats) {
@@ -233,6 +233,8 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	line("Seed", std::to_string(match.Seed));
 	line("FrameSendRate", "7");
 	line("Protocol", "2");
+	// Only the host's choice counts, since the host sets the timing for every player.
+	line("TimingPolicy", adaptive_timing ? "Adaptive" : "Gamemd");
 	line("GameID", "1");
 	line("Credits", Option(options, "Credits", "10000"));
 	line("UnitCount", Option(options, "UnitCount", "10"));

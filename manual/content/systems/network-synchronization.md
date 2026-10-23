@@ -31,7 +31,7 @@ The [adaptive table](#adaptive-policy) is the other option.
 
 ## Adaptive policy
 
-This section describes the adaptive table. It runs only when the [launch file](/formats/spawn-ini/#a-game-against-other-machines) sets `TimingPolicy=Adaptive`. Under the adaptive table, a compressed game packs a run of frames into one packet. It starts at `2/6` and then adjusts both settings during play. Every player reports its measurements, and one player, the [master](/systems/out-of-sync-recovery/#the-master), evaluates the reports and sends each new timing to everyone.
+This section describes the adaptive table. It runs only when the [launch file](/formats/spawn-ini/#a-game-against-other-machines) sets `TimingPolicy=Adaptive`. The built-in CnCNet lobby writes that line unless its settings ask for gamemd's timing. Under the adaptive table, a compressed game packs a run of frames into one packet. It starts at `2/6` and then adjusts both settings during play. Every player reports its measurements, and one player, the [master](/systems/out-of-sync-recovery/#the-master), evaluates the reports and sends each new timing to everyone.
 
 ### Timing rungs
 

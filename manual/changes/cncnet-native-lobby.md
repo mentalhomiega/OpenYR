@@ -39,5 +39,6 @@ The lobby reads these keys in the `[CnCNet]` section of the settings file:
 | `TunnelListURL` | `https://cncnet.org/master-list` | Where the tunnel list is downloaded. |
 | `HostMap` | empty | A map file a hosted room starts on. |
 | `MatchArguments` | empty | Added to the command line of the copy that plays the match. |
+| `TimingPolicy` | `Adaptive` | The network timing the match plays when this player hosts. `Gamemd` plays gamemd's online timing. |
 
 The lobby chat channel needs a key that OpenYR does not have, so it does not join it and the lobby shows the game list and the global channel.

@@ -890,7 +890,11 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 
 	DebugString("[CnCNet] Match via tunnel %s:%u, own tunnel id %08x, %zu peers, bridge port %u.\n", match.TunnelHost.c_str(),
 		static_cast<unsigned>(match.TunnelPort), (match_key << 16) | own->TunnelId, peers.size(), static_cast<unsigned>(bridge.Game_Port()));
-	std::string const ini = CnCNet_Spawn_Ini(match, TheRoom.Options(), Setup.Nick, bridge.Game_Port());
+	// [CnCNet] TimingPolicy=Gamemd plays gamemd's online timing, which schedules every order 30 frames ahead or more.
+	char policy[32];
+	ConfigINI.Get_String("CnCNet", "TimingPolicy", "Adaptive", policy, sizeof(policy));
+	bool const adaptive = _stricmp(policy, "Gamemd") != 0;
+	std::string const ini = CnCNet_Spawn_Ini(match, TheRoom.Options(), Setup.Nick, bridge.Game_Port(), adaptive);
 	std::string const spawn_path = User_Directory() + "SPAWN.INI";
 	{
 		std::ofstream file(spawn_path, std::ios::binary | std::ios::trunc);
