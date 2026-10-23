@@ -646,9 +646,10 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	bool			shadow;						// is the cell in shadow or not
 	Point2D			point;						/// click position relative to the tactical view
 
-	// The map does not act on the second press of a double click.
-	// A press outside the map's screen area, or over a panel drawn on the map, belongs to the sidebar or bars.
-	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1 && Point_Over_Map(Point2D(event.X, event.Y)));
+	// A double click's second press is a press and a release, as gamemd queues it (WM_LBUTTONDBLCLK and WM_RBUTTONDBLCLK,
+	// FUN_0054f790), so the map acts on it. A press outside the map's screen area, or over a panel drawn on the map, belongs
+	// to the sidebar or bars.
+	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && Point_Over_Map(Point2D(event.X, event.Y)));
 	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
 
 	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {

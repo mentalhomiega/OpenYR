@@ -2982,9 +2982,10 @@ void Run(StepType const & step)
 		_CursorX = event.X;
 		_CursorY = event.Y;
 		Game_Window_Handle_Event(event);
-	} else if (step.Command == "windowclick") {
+	} else if (step.Command == "windowclick" || step.Command == "windowdouble") {
 		// windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
-		// so it is converted to the frame as a player's click is.
+		// so it is converted to the frame as a player's click is. windowdouble x y is the same click as the second
+		// of a quick pair, whose press SDL reports with Clicks 2.
 		WindowEvent event;
 		event.Type = WINDOW_EVENT_MOUSE_MOVE;
 		event.X = std::atoi(step.Argument.c_str());
@@ -2994,7 +2995,7 @@ void Run(StepType const & step)
 		Game_Window_Handle_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_DOWN;
 		event.Button = WINDOW_BUTTON_LEFT;
-		event.Clicks = 1;
+		event.Clicks = (step.Command == "windowdouble") ? 2 : 1;
 		Game_Window_Handle_Event(event);
 		event.Type = WINDOW_EVENT_MOUSE_UP;
 		Game_Window_Handle_Event(event);

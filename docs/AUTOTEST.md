@@ -91,6 +91,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `pickable <TypeID>` | Writes each object of that type the player owns, with whether the clickable list holds it and, when it does, the window pixel its entry is drawn at (`window x,y`, or `-1,-1` when it is not listed). The list is the one the last render built |
 | `pickat x y` | Writes the object a left click at that window pixel would pick from the clickable list and the cell under it, without selecting anything |
 | `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
+| `windowdouble x y` | A left click at that window pixel, as `windowclick` gives it, but its press carries `Clicks` 2: the second click of a quick pair, as SDL reports it |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |
