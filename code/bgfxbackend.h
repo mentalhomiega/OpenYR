@@ -104,3 +104,8 @@ void Backend_Log_Resource_Counts(char const * when);
 
 // Saves what the window shows after the next present as a TGA file.
 void Backend_Request_Window_Capture(char const * filepath);
+
+// Turns on a check that the copy kept of each texture matches the picture it was sent from, counting
+// checks and mismatches. Turning it on zeroes the counts.
+void Backend_Verify_Uploads(bool on);
+void Backend_Upload_Verify_Totals(unsigned int * checks, unsigned int * mismatches);

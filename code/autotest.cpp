@@ -218,6 +218,7 @@
 **	dump					writes the player's credits, objects and missions to the log
 **	fps					writes the game frames counted in the last whole second, which the game's FPS readout shows
 **	log <text>				writes the text to the log
+**	uploadverify <0|1>		1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
 **	loadshot <name>			saves what the window shows each time a loading screen is
@@ -4931,6 +4932,16 @@ void Run(StepType const & step)
 		// perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 		Perf_Set_Enabled(std::atoi(step.Argument.c_str()) != 0);
 		DebugString("AUTOTEST perflog %d\n", (int)Perf_Enabled);
+	} else if (step.Command == "uploadverify") {
+		// uploadverify <0|1>: 1 checks, at every present, that the copy kept of each texture matches its picture; 0 logs the checks and mismatches so far.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		unsigned int checks = 0;
+		unsigned int mismatches = 0;
+		if (!on) {
+			Backend_Upload_Verify_Totals(&checks, &mismatches);
+			DebugString("AUTOTEST uploadverify checks %u mismatches %u\n", checks, mismatches);
+		}
+		Backend_Verify_Uploads(on);
 	} else if (step.Command == "hash") {
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));

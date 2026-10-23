@@ -18,6 +18,7 @@
 
 #include "bgfxviews.hh"
 #include "hdrcolour.h"
+#include "tilediff.h"
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
@@ -93,6 +94,27 @@ static unsigned int * _LayerConvertBuffer = NULL;
 static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
 static unsigned int * _KeyedFrameBuffer = NULL;
 
+// What each texture holds, kept so a present sends only the tiles that changed. The picture copies hold
+// the 565 source; the keyed mask copy holds the frame's emissive mask.
+static TileDiffClass _FrameDiff;
+static TileDiffClass _LayerDiff;
+static TileDiffClass _KeyedDiff;
+static TileDiffClass _KeyedMaskDiff;
+static TileGridClass _Grid;
+static TileGridClass _KeyedGrid;
+static TileGridClass _MaskGrid;
+static std::vector<TileRect> _Rects;
+static std::vector<unsigned char> _KeyedMaskEffective;
+
+// True when the keyed mask texture was brought up to date with the keyed frame texture in the same present,
+// and whether that present had a mask.
+static bool _KeyedMaskCurrent = false;
+static bool _KeyedMaskMasked = false;
+
+static bool _VerifyUploads = false;
+static unsigned int _VerifyChecks = 0;
+static unsigned int _VerifyMismatches = 0;
+
 // HDR output and the colour adjustment. Frames are routed through the scene target when HDR10 output
 // is on or the colour adjustment is not the identity; the composite pass then draws them to the window.
 static bool _HdrActive = false;
@@ -122,6 +144,8 @@ struct BackendMask
 	int Width;
 	int Height;
 	bool Uploaded;
+	TileDiffClass Diff;
+	std::vector<unsigned char> Effective;
 };
 
 static BackendMask _FrameMask = {BGFX_INVALID_HANDLE, 0, 0, false};
@@ -374,6 +398,7 @@ static void Destroy_Mask(BackendMask & mask)
 	mask.Width = 0;
 	mask.Height = 0;
 	mask.Uploaded = false;
+	mask.Diff.Invalidate();
 }
 
 
@@ -386,9 +411,84 @@ static void Count_Upload(std::uint64_t bytes)
 
 
 /// <summary>
+/// While upload checking is on, counts a check and a mismatch when the copy kept for a texture differs from the
+/// picture it was brought up to date with.
+/// </summary>
+static void Verify_Diff(TileDiffClass const & diff, void const * pixels, int pitch, int width, int height, int bytesperpixel)
+{
+	if (!_VerifyUploads || diff.Copy() == NULL) {
+		return;
+	}
+	_VerifyChecks++;
+	size_t const rowbytes = (size_t)width * bytesperpixel;
+	for (int y = 0; y < height; y++) {
+		if (std::memcmp(diff.Copy() + (size_t)y * rowbytes, (unsigned char const *)pixels + (ptrdiff_t)y * pitch, rowbytes) != 0) {
+			_VerifyMismatches++;
+			DebugString("Backend: upload copy differs from the picture at row %d\n", y);
+			return;
+		}
+	}
+}
+
+
+/// <summary>
+/// Sends the marked tiles of a picture to a texture as rectangles. Fill writes one rectangle's texels into the
+/// memory it is given, rows packed at the pitch it is given.
+/// </summary>
+template <class Fill>
+static void Send_Tiles(bgfx::TextureHandle texture, TileGridClass const & grid, int texelbytes, Fill fill)
+{
+	grid.Rects(_Rects);
+	if (_Rects.empty()) {
+		return;
+	}
+	std::uint64_t total = 0;
+	for (TileRect const & rect : _Rects) {
+		uint32_t const pitch = (uint32_t)(rect.Width * texelbytes);
+		bgfx::Memory const * memory = bgfx::alloc(pitch * (uint32_t)rect.Height);
+		fill(memory->data, (int)pitch, rect);
+		bgfx::updateTexture2D(texture, 0, 0, (uint16_t)rect.X, (uint16_t)rect.Y, (uint16_t)rect.Width, (uint16_t)rect.Height, memory, (uint16_t)pitch);
+		total += (std::uint64_t)pitch * rect.Height;
+	}
+	Count_Upload(total);
+}
+
+
+static void Copy_Tile(unsigned char * dest, int destpitch, unsigned char const * source, int sourcepitch, TileRect const & rect, int texelbytes)
+{
+	for (int y = 0; y < rect.Height; y++) {
+		std::memcpy(dest + (ptrdiff_t)y * destpitch, source + (ptrdiff_t)(rect.Y + y) * sourcepitch + (ptrdiff_t)rect.X * texelbytes, (size_t)rect.Width * texelbytes);
+	}
+}
+
+
+/// <summary>
+/// Widens a rectangle of 565 pixels to 32 bits. With keyed set, the layer key pixels become zero, which is
+/// see-through.
+/// </summary>
+static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const * source, int sourcepitch, TileRect const & rect, bool keyed)
+{
+	for (int y = 0; y < rect.Height; y++) {
+		unsigned short const * in = (unsigned short const *)(source + (ptrdiff_t)(rect.Y + y) * sourcepitch) + rect.X;
+		unsigned int * out = (unsigned int *)(dest + (ptrdiff_t)y * destpitch);
+		if (keyed) {
+			for (int x = 0; x < rect.Width; x++) {
+				out[x] = (in[x] == BACKEND_LAYER_KEY) ? 0 : _ConvertTable[in[x]];
+			}
+		} else {
+			for (int x = 0; x < rect.Width; x++) {
+				out[x] = _ConvertTable[in[x]];
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Uploads one mask, making its R8 texture first when the size changed. Only the readable part of the
-/// source is copied; texels beyond it are zero. False means nothing was uploaded: the mask is not
-/// available, such as when the hardware cannot sample R8, or the source has no readable pixels.
+/// source is used; texels beyond it are zero. Only the tiles that changed since the last upload are sent.
+/// False means nothing was uploaded: the mask is not available, such as when the hardware cannot sample
+/// R8, or the source has no readable pixels.
 /// </summary>
 static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pitch, int readwidth, int readheight, int width, int height)
 {
@@ -410,19 +510,29 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 		}
 		mask.Width = width;
 		mask.Height = height;
+		mask.Diff.Reset(width, height, 1);
 	}
 
-	// The rows are packed to the texture width, since the pitch of a mask may be wider than the picture.
-	// The source may be smaller than the texture, so the texels it does not reach stay zero.
-	bgfx::Memory const * memory = bgfx::alloc((uint32_t)(width * height));
-	std::memset(memory->data, 0, (size_t)(width * height));
-	int const copywidth = std::min(width, readwidth);
-	int const copyheight = std::min(height, readheight);
-	for (int y = 0; y < copyheight; y++) {
-		std::memcpy(memory->data + y * width, pixels + y * pitch, (size_t)copywidth);
+	// A source smaller than the texture is padded with zero, since the pitch of a mask may be wider than the picture.
+	unsigned char const * source = pixels;
+	int sourcepitch = pitch;
+	if (readwidth < width || readheight < height) {
+		mask.Effective.assign((size_t)width * height, 0);
+		int const copywidth = std::min(width, readwidth);
+		int const copyheight = std::min(height, readheight);
+		for (int y = 0; y < copyheight; y++) {
+			std::memcpy(&mask.Effective[(size_t)y * width], pixels + (ptrdiff_t)y * pitch, (size_t)copywidth);
+		}
+		source = mask.Effective.data();
+		sourcepitch = width;
 	}
-	Count_Upload((std::uint64_t)width * height);
-	bgfx::updateTexture2D(mask.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)height, memory, (uint16_t)width);
+
+	_MaskGrid.Resize(width, height);
+	mask.Diff.Compare(source, sourcepitch, _MaskGrid);
+	Verify_Diff(mask.Diff, source, sourcepitch, width, height, 1);
+	Send_Tiles(mask.Handle, _MaskGrid, 1, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+		Copy_Tile(dest, destpitch, source, sourcepitch, rect, 1);
+	});
 	mask.Uploaded = true;
 	return(true);
 }
@@ -480,6 +590,10 @@ static void Destroy_Layer(void)
 	_LayerUploaded = false;
 	_KeyedFrameUploaded = false;
 	_KeyedMaskUploaded = false;
+	_KeyedMaskCurrent = false;
+	_LayerDiff.Invalidate();
+	_KeyedDiff.Invalidate();
+	_KeyedMaskDiff.Invalidate();
 }
 
 
@@ -510,33 +624,25 @@ static bool Upload_Layer(BackendLayer const & layer)
 		if (!bgfx::isValid(_LayerTexture)) {
 			return(false);
 		}
-		if (!_FrameIs565) {
-			_LayerConvertBuffer = new unsigned int[layer.Width * layer.Height];
-		}
 		_LayerWidth = layer.Width;
 		_LayerHeight = layer.Height;
 		_LayerUploaded = false;
+		_LayerDiff.Reset(layer.Width, layer.Height, 2);
 	}
 
+	unsigned char const * source = (unsigned char const *)layer.Pixels;
+	int const sourcepitch = layer.Pitch;
+	_Grid.Resize(layer.Width, layer.Height);
+	_LayerDiff.Compare(source, sourcepitch, _Grid);
+	Verify_Diff(_LayerDiff, source, sourcepitch, layer.Width, layer.Height, 2);
 	if (_FrameIs565) {
-		// The last row is read only up to the picture's edge, which may be the end of its surface,
-		// but the upload is padded to a whole pitch because Vulkan copies every row at full pitch.
-		uint32_t const size = (uint32_t)((layer.Height - 1) * layer.Pitch + layer.Width * 2);
-		bgfx::Memory const * memory = bgfx::alloc((uint32_t)(layer.Height * layer.Pitch));
-		std::memcpy(memory->data, layer.Pixels, size);
-		std::memset(memory->data + size, 0, memory->size - size);
-		Count_Upload((std::uint64_t)layer.Pitch * layer.Height);
-		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, memory, (uint16_t)layer.Pitch);
+		Send_Tiles(_LayerTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Copy_Tile(dest, destpitch, source, sourcepitch, rect, 2);
+		});
 	} else {
-		for (int y = 0; y < layer.Height; y++) {
-			unsigned short const * source = (unsigned short const *)((char const *)layer.Pixels + y * layer.Pitch);
-			unsigned int * dest = _LayerConvertBuffer + y * layer.Width;
-			for (int x = 0; x < layer.Width; x++) {
-				dest[x] = _ConvertTable[source[x]];
-			}
-		}
-		Count_Upload((std::uint64_t)layer.Width * layer.Height * 4);
-		bgfx::updateTexture2D(_LayerTexture, 0, 0, 0, 0, (uint16_t)layer.Width, (uint16_t)layer.Height, bgfx::copy(_LayerConvertBuffer, (uint32_t)(layer.Width * layer.Height * 4)), (uint16_t)(layer.Width * 4));
+		Send_Tiles(_LayerTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Widen_Tile(dest, destpitch, source, sourcepitch, rect, false);
+		});
 	}
 	_LayerUploaded = true;
 	return(true);
@@ -553,23 +659,19 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 		if (!bgfx::isValid(_KeyedFrameTexture)) {
 			return(false);
 		}
-		delete [] _KeyedFrameBuffer;
-		_KeyedFrameBuffer = new unsigned int[_FrameWidth * _FrameHeight];
+		_KeyedDiff.Reset(_FrameWidth, _FrameHeight, 2);
 	}
 	if (_ConvertTable[0xFFFF] == 0) {
 		Build_Convert_Table();
 	}
 
-	for (int y = 0; y < _FrameHeight; y++) {
-		unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
-		unsigned int * dest = _KeyedFrameBuffer + y * _FrameWidth;
-		for (int x = 0; x < _FrameWidth; x++) {
-			unsigned short const pixel = source[x];
-			dest[x] = (pixel == BACKEND_LAYER_KEY) ? 0 : _ConvertTable[pixel];
-		}
-	}
-	Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
-	bgfx::updateTexture2D(_KeyedFrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedFrameBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
+	unsigned char const * source = (unsigned char const *)pixels;
+	_KeyedGrid.Resize(_FrameWidth, _FrameHeight);
+	_KeyedDiff.Compare(source, pitch, _KeyedGrid);
+	Verify_Diff(_KeyedDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
+	Send_Tiles(_KeyedFrameTexture, _KeyedGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+		Widen_Tile(dest, destpitch, source, pitch, rect, true);
+	});
 	return(true);
 }
 
@@ -582,28 +684,65 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch, int maskwidth, int maskheight)
 {
 	_KeyedMaskUploaded = false;
+	bool const wascurrent = _KeyedMaskCurrent;
+	_KeyedMaskCurrent = false;
 	if (!bgfx::isValid(_KeyedMaskTexture)) {
 		_KeyedMaskTexture = bgfx::createTexture2D((uint16_t)_FrameWidth, (uint16_t)_FrameHeight, false, 1, bgfx::TextureFormat::BGRA8);
 		if (!bgfx::isValid(_KeyedMaskTexture)) {
 			return(false);
 		}
-		delete [] _KeyedMaskBuffer;
-		_KeyedMaskBuffer = new unsigned int[_FrameWidth * _FrameHeight];
+		_KeyedMaskDiff.Reset(_FrameWidth, _FrameHeight, 1);
+	}
+
+	// The texture follows the keyed frame texture: it changes where the frame changed, and where the mask changed.
+	// Without a keyed upload beside it, or when the mask appears or goes, every tile is sent.
+	bool const masked = (mask != NULL && maskwidth > 0 && maskheight > 0);
+	bool const full = !wascurrent || masked != _KeyedMaskMasked;
+	_MaskGrid.Resize(_FrameWidth, _FrameHeight);
+	unsigned char const * value = NULL;
+	int valuepitch = 0;
+	if (masked) {
+		value = mask;
+		valuepitch = maskpitch;
+		if (maskwidth < _FrameWidth || maskheight < _FrameHeight) {
+			_KeyedMaskEffective.assign((size_t)_FrameWidth * _FrameHeight, 0);
+			int const copywidth = std::min(_FrameWidth, maskwidth);
+			int const copyheight = std::min(_FrameHeight, maskheight);
+			for (int y = 0; y < copyheight; y++) {
+				std::memcpy(&_KeyedMaskEffective[(size_t)y * _FrameWidth], mask + (ptrdiff_t)y * maskpitch, (size_t)copywidth);
+			}
+			value = _KeyedMaskEffective.data();
+			valuepitch = _FrameWidth;
+		}
+		if (full) {
+			_KeyedMaskDiff.Invalidate();
+		}
+		_KeyedMaskDiff.Compare(value, valuepitch, _MaskGrid);
+		Verify_Diff(_KeyedMaskDiff, value, valuepitch, _FrameWidth, _FrameHeight, 1);
+	} else {
+		_KeyedMaskDiff.Invalidate();
+	}
+	if (full) {
+		_MaskGrid.Mark_All();
+	} else {
+		_MaskGrid.Add(_KeyedGrid);
 	}
 
 	// A BGRA8 pixel is blue, green, red, alpha from its lowest byte up, so red sits at bit 16 and alpha at bit 24.
-	for (int y = 0; y < _FrameHeight; y++) {
-		unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
-		unsigned char const * value = (mask != NULL && y < maskheight) ? mask + y * maskpitch : NULL;
-		unsigned int * dest = _KeyedMaskBuffer + y * _FrameWidth;
-		for (int x = 0; x < _FrameWidth; x++) {
-			unsigned int const alpha = (source[x] == BACKEND_LAYER_KEY) ? 0u : 255u;
-			unsigned int const red = (value != NULL && x < maskwidth) ? value[x] : 0u;
-			dest[x] = (alpha << 24) | (red << 16);
+	unsigned char const * frame = (unsigned char const *)pixels;
+	Send_Tiles(_KeyedMaskTexture, _MaskGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+		for (int y = 0; y < rect.Height; y++) {
+			unsigned short const * in = (unsigned short const *)(frame + (ptrdiff_t)(rect.Y + y) * pitch) + rect.X;
+			unsigned char const * red = (value != NULL) ? value + (ptrdiff_t)(rect.Y + y) * valuepitch + rect.X : NULL;
+			unsigned int * out = (unsigned int *)(dest + (ptrdiff_t)y * destpitch);
+			for (int x = 0; x < rect.Width; x++) {
+				unsigned int const alpha = (in[x] == BACKEND_LAYER_KEY) ? 0u : 255u;
+				out[x] = (alpha << 24) | ((red != NULL ? (unsigned int)red[x] : 0u) << 16);
+			}
 		}
-	}
-	Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
-	bgfx::updateTexture2D(_KeyedMaskTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_KeyedMaskBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
+	});
+	_KeyedMaskMasked = masked;
+	_KeyedMaskCurrent = true;
 	_KeyedMaskUploaded = true;
 	return(true);
 }
@@ -1070,6 +1209,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 	if (!bgfx::isValid(_FrameTexture)) {
 		return(false);
 	}
+	_FrameDiff.Reset(width, height, 2);
 
 	delete [] _ConvertBuffer;
 	_ConvertBuffer = NULL;
@@ -1136,7 +1276,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 			return(false);
 		}
 		_LayerMask.Uploaded = false;
-		if (emissive != NULL && emissive->Layer != NULL) {
+		if (emissive != NULL && emissive->Layer != NULL && (_HdrActive || _MaskView)) {
 			Upload_Mask(_LayerMask, emissive->Layer, emissive->LayerPitch, emissive->LayerWidth, emissive->LayerHeight, layer.Width, layer.Height);
 		}
 	} else if (!_LayerUploaded) {
@@ -1153,6 +1293,8 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		// The keyed mask is made from the same pixels, so it keys out exactly where the keyed frame does.
 		if (_HdrActive) {
 			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0, emissive != NULL ? emissive->FrameWidth : 0, emissive != NULL ? emissive->FrameHeight : 0);
+		} else {
+			_KeyedMaskCurrent = false;
 		}
 	} else if (!_KeyedFrameUploaded) {
 		return(false);
@@ -1240,9 +1382,6 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	// A frame with no mask this present leaves the frame mask cleared, so the debug view shows nothing stale.
 	if (pixels != NULL) {
 		_FrameMask.Uploaded = false;
-		if (emissive != NULL && emissive->Frame != NULL) {
-			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, emissive->FrameWidth, emissive->FrameHeight, _FrameWidth, _FrameHeight);
-		}
 	}
 
 	// Masks are drawn only for an HDR composite that has emissive planes this present.
@@ -1257,20 +1396,25 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	}
 
 	if (pixels != NULL) {
-		if (_FrameIs565) {
-			Count_Upload((std::uint64_t)_FrameHeight * pitch);
-			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(pixels, (uint32_t)(_FrameHeight * pitch)), (uint16_t)pitch);
-			_FrameUploaded = true;
-		} else if (_ConvertBuffer != NULL) {
-			for (int y = 0; y < _FrameHeight; y++) {
-				unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
-				unsigned int * dest = _ConvertBuffer + y * _FrameWidth;
-				for (int x = 0; x < _FrameWidth; x++) {
-					dest[x] = _ConvertTable[source[x]];
-				}
+		// The mask is drawn only into an HDR composite, or shown by the debug view.
+		if (emissive != NULL && emissive->Frame != NULL && (_HdrActive || _MaskView)) {
+			Upload_Mask(_FrameMask, emissive->Frame, emissive->FramePitch, emissive->FrameWidth, emissive->FrameHeight, _FrameWidth, _FrameHeight);
+		}
+
+		unsigned char const * source = (unsigned char const *)pixels;
+		if (_FrameIs565 || _ConvertBuffer != NULL) {
+			_Grid.Resize(_FrameWidth, _FrameHeight);
+			_FrameDiff.Compare(source, pitch, _Grid);
+			Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
+			if (_FrameIs565) {
+				Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+					Copy_Tile(dest, destpitch, source, pitch, rect, 2);
+				});
+			} else {
+				Send_Tiles(_FrameTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+					Widen_Tile(dest, destpitch, source, pitch, rect, false);
+				});
 			}
-			Count_Upload((std::uint64_t)_FrameWidth * _FrameHeight * 4);
-			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_ConvertBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 			_FrameUploaded = true;
 		}
 	}
@@ -1450,4 +1594,21 @@ void Backend_Log_Resource_Counts(char const * when)
 				when, (unsigned int)stats->numTextures, (long long)stats->textureMemoryUsed, (unsigned int)stats->numFrameBuffers,
 				(unsigned int)stats->numIndexBuffers, (unsigned int)stats->numVertexBuffers, (unsigned int)stats->numDynamicIndexBuffers,
 				(unsigned int)stats->numDynamicVertexBuffers, (long long)stats->rtMemoryUsed);
+}
+
+
+void Backend_Verify_Uploads(bool on)
+{
+	_VerifyUploads = on;
+	if (on) {
+		_VerifyChecks = 0;
+		_VerifyMismatches = 0;
+	}
+}
+
+
+void Backend_Upload_Verify_Totals(unsigned int * checks, unsigned int * mismatches)
+{
+	*checks = _VerifyChecks;
+	*mismatches = _VerifyMismatches;
 }
