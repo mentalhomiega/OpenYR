@@ -600,6 +600,20 @@ void Main_Window_Take_Focus(void)
 }
 
 
+void Main_Window_Set_Shown(bool shown)
+{
+	if (_Window == nullptr || AutoTest_Active()) {
+		return;
+	}
+	if (shown) {
+		SDL_ShowWindow(_Window);
+		SDL_RaiseWindow(_Window);
+	} else {
+		SDL_HideWindow(_Window);
+	}
+}
+
+
 void Main_Window_Capture_Mouse(bool capture)
 {
 	if (_Window == nullptr || AutoTest_Active()) {

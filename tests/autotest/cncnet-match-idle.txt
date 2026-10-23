@@ -1,0 +1,29 @@
+; Hosts a match through the built-in CnCNet lobby with the stand-in's OpenYR guest bot as the second
+; player, so no second copy of the game is needed. While the match child runs, the lobby hides its
+; window and pauses its menu battle; the log line "Menu battle frames during the match" gives the battle's
+; frame count at the start and at the end, and the two numbers must be equal. Start the stand-in and the
+; relay on this machine first, and give the stand-in the version text this build shows in the lobby
+; (the OpenYR build string, for example "0.2.0 (<commit>, x86)"):
+;   python -I scripts/cncnet_irc_standin.py --port 16668 --bots 0 --game-version 9.3.5 --openyr-build "<version text>" --room-password test
+;   python -I scripts/cncnet_tunnel_relay.py --relay-port 50000
+; Then run this copy with
+;   -Menus -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668`nTunnel=127.0.0.1:50000`nMatchArguments=-AUTOTEST=<path to cncnet-match-child.txt>`n[MenuBattle]`nInTests=yes"
+; The path in MatchArguments must have no spaces. The bot does not play the match, so in a local run the
+; match child was still alive after 40 seconds.
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui set password test
+ui wait 500
+ui press Host game
+ui wait 30000
+ui shot match-idle-room
+ui press Go!
+ui wait 60000
+ui shot match-idle-match
+ui wait 30000
+ui shot match-idle-after
+ui quit

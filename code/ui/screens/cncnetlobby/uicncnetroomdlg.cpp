@@ -32,9 +32,11 @@
 #include "mods.h"
 #include "netshare.h"
 #include "rules.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
+#include "shellmap.h"
+#include "theme.h"
 #include "ui/screens/netlobby/uinetlobby.h"
-#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -937,22 +939,29 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	}
 	CloseHandle(process.hThread);
 
-	UIWaitBoxClass box;
-	box.Show("The match is running in its own window.");
-	UIServiceCallback const * outer = UIShell.Running_Service();
-	while (WaitForSingleObject(process.hProcess, 0) == WAIT_TIMEOUT) {
-		if (outer != nullptr) {
-			(*outer)();
-		} else {
-			UI_Service_Game();
+	// The match runs in its own process. Until it ends, the lobby hides its window and pauses its menu
+	// battle and music, so the match gets the processor; the room keeps its connection served.
+	uint64_t const frames_at_start = Shellmap_Frame_Count();
+	Shellmap_Pause();
+	Theme.Pause();
+	Main_Window_Set_Shown(false);
+	for (;;) {
+		// Wakes for a window message or after 150 ms. Returns when the match process has ended or the wait fails.
+		DWORD const wait = MsgWaitForMultipleObjects(1, &process.hProcess, FALSE, 150, QS_ALLINPUT);
+		if (wait != WAIT_OBJECT_0 + 1 && wait != WAIT_TIMEOUT) {
+			break;
 		}
+		Main_Window_Pump_Events();
 		Service();
-		Sleep(15);
 	}
 	DWORD code = 0;
 	GetExitCodeProcess(process.hProcess, &code);
 	CloseHandle(process.hProcess);
-	box.Hide();
+	Main_Window_Set_Shown(true);
+	Theme.Resume();
+	Shellmap_Resume();
+	DebugString("[CnCNet] Menu battle frames during the match: %llu at start, %llu at end.\n",
+		static_cast<unsigned long long>(frames_at_start), static_cast<unsigned long long>(Shellmap_Frame_Count()));
 	DebugString("[CnCNet] Match ended with code %lu; the bridge sent %llu and received %llu datagrams.\n", static_cast<unsigned long>(code),
 		static_cast<unsigned long long>(bridge.Sent()), static_cast<unsigned long long>(bridge.Received()));
 	bridge.Stop();

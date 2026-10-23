@@ -30,6 +30,10 @@ NativeWindow Main_Window_Native(void);
 bool Main_Window_Drawable_Size(int & width, int & height);
 bool Main_Window_Minimized(void);
 
+// Hides the main window, or shows it again and raises it. An unattended test run keeps its window
+// hidden, so the call does nothing there.
+void Main_Window_Set_Shown(bool shown);
+
 // The desktop position and size, in pixels, of the main window's client area.
 bool Main_Window_Client_Rect(int & x, int & y, int & width, int & height);
 

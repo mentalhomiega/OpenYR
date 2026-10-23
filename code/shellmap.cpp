@@ -79,10 +79,15 @@ bool Running = false;
 bool Loading = false;
 int ScopeDepth = 0;
 bool InService = false;
+// Set while a match runs in another process, so the battle runs no frames and draws nothing.
+bool Paused = false;
 
 unsigned int LastLogic = 0;
 std::uint64_t LastPresent = ~std::uint64_t(0);
 unsigned int Started = 0;
+
+// Logic frames the battle has run since the game started, for the lobby's log of a match.
+std::uint64_t Battle_Frames = 0;
 
 double CameraX = 0.0;
 double CameraY = 0.0;
@@ -401,6 +406,7 @@ void Logic_Frame(void)
 	Logic.AI();
 	Queue_AI();
 	Frame++;
+	Battle_Frames++;
 	Process_Deferred_Deletion();
 }
 
@@ -608,7 +614,7 @@ void Shellmap_Stop(void)
 
 void Shellmap_Service(void)
 {
-	if (!Running || Loading || InService) {
+	if (!Running || Loading || InService || Paused) {
 		return;
 	}
 
@@ -654,4 +660,24 @@ void Shellmap_Service(void)
 		Shellmap_Stop();
 		Shellmap_Start();
 	}
+}
+
+
+std::uint64_t Shellmap_Frame_Count(void)
+{
+	return(Battle_Frames);
+}
+
+
+void Shellmap_Pause(void)
+{
+	Paused = true;
+}
+
+
+// The time the pause covered is not played back; the battle carries on from its current state.
+void Shellmap_Resume(void)
+{
+	Paused = false;
+	LastLogic = 0;
 }

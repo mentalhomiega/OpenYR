@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 // The menu battle is a skirmish between computer players drawn behind the modern menus. While it
 // runs it owns the game world, but the menus keep owning the session settings: the battle swaps
 // its own Session.Type, Session.Options and player lists in only while it loads, thinks or draws.
@@ -35,3 +37,13 @@ void Shellmap_Stop(void);
 // Advances the battle by the game time that has passed and draws it. The menus call this from
 // their loops; further calls before the next presented frame do nothing.
 void Shellmap_Service(void);
+
+// The logic frames the battle has run since the game started.
+std::uint64_t Shellmap_Frame_Count(void);
+
+// Freezes the battle until Shellmap_Resume: Shellmap_Service runs no frames and draws nothing, and
+// the battle keeps its state. The lobby pauses it while a match runs in another process.
+void Shellmap_Pause(void);
+
+// Lets a paused battle run again from the state it stopped in.
+void Shellmap_Resume(void);
