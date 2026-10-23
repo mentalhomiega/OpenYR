@@ -1,0 +1,25 @@
+; A Soviet War Factory (NAWEAP at 60,20) has its rally point at 75,40 and builds a Rhino (HTNK) on instant build. The Rhino
+; drives out of the front door and must still head for the rally point: the control for the rally change on jump-jet exits.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/roof-rally-rhino.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Settings "[Options]`r`nDebugMode=yes" -ShotDir <dir> -Filter "banimstate|where|produce|Exception"
+30 command CenterBase
+30 command DebugInfiniteMoney
+31 command DebugUnlockAll
+32 command DebugInstantBuild
+35 reveal
+40 own NAPOWR 56 40
+41 own NACNST 50 30
+42 own NATECH 46 44
+43 own NAWEAP 60 20
+45 rally NAWEAP 75 40
+50 view 61 21
+51 zoom 2
+60 produce HTNK
+180 where HTNK
+240 where HTNK
+300 where HTNK
+360 where HTNK
+420 where HTNK
+480 where HTNK
+540 where HTNK
+600 where HTNK
+610 quit
