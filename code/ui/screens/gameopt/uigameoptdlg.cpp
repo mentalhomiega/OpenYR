@@ -104,7 +104,7 @@ void UI_Game_Options_State(UIGameOptionsState & state)
 
 	char label[64];
 	std::snprintf(label, sizeof(label), Fetch_String(TXT_CONNECTION_QUALITY_RUNG),
-		Fetch_String(Network_Quality_Text_ID(quality)), settings.FrameSendRate);
+		Fetch_String(Network_Quality_Text_ID(quality)));
 	state.ConnectionName = label;
 }
 

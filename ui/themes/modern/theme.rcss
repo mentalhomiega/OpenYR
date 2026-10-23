@@ -282,6 +282,19 @@ input[type='range'] sliderbar
 	decorator: none;
 }
 
+/* A read-only slider, such as the Connection readout in an internet game, keeps the modern shape but greys out. */
+input[type='range']:disabled
+{
+	border-color: var(--t-disabled-edge, #2c2638);
+	background-color: var(--t-disabled-top, #1c1825);
+}
+
+input[type='range']:disabled sliderbar
+{
+	background-color: var(--t-disabled-check, #5f4a80);
+	decorator: none;
+}
+
 /* Scroll bars */
 scrollbarvertical
 {
