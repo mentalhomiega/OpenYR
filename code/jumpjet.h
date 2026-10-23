@@ -31,6 +31,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
+		virtual void Link_To_Object(void *pointer) override;
 
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
@@ -54,6 +55,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		// Speeds in leptons per game frame, and the flight state's name, for the autotest speed probe.
 		double Current_Speed(void) const;
 		double Target_Speed(void) const;
+		DirType Facing_Current(void) const;
 		char const * State_Name(void) const;
 
 		/*---------------------------------------------------------------------

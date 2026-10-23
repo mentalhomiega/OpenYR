@@ -992,6 +992,7 @@ void Log_Speed_Probe(void)
 		Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
 		FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
 		JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+		DebugString("AUTOTEST facing %s frame %d primary %d desired %d loco %d\n", techno->TClass->Name(), Frame, (int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), jump != NULL ? (int)jump->Facing_Current().As_Int() : -1);
 		if (fly != NULL) {
 			DebugString("AUTOTEST speed %s frame %d kind fly cell %d,%d height %d mission %s nav %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)foot->Locomotion->Is_Moving(), fly->Current_Speed(), fly->Target_Speed());
 		} else if (jump != NULL) {

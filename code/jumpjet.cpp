@@ -65,6 +65,21 @@ JumpjetLocomotionClass::~JumpjetLocomotionClass(void)
 
 
 /// <summary>
+/// Attaches the jumpjet locomotor to the object it drives and restarts its facing tracker at
+/// DIR_E, at the rate of turn the unit's type gives. The tracker starts East rather than north,
+/// as gamemd links a jumpjet (JumpjetLocomotionClass::Link_To_Object, 0x54AD30).
+/// </summary>
+/// <param name="pointer">Pointer to the foot class object this locomotor will carry about.</param>
+void JumpjetLocomotionClass::Link_To_Object(void *pointer)
+{
+	BASECLASS::Link_To_Object(pointer);
+	FacingClass face(LinkedTo->TClass->JumpjetTurnRate);
+	face.Set(DIR_E);
+	Facing = face;
+}
+
+
+/// <summary>
 /// Is the jumpjet under orders to move?
 /// This asks whether the unit has a destination, not whether it happens to be in the air.
 /// </summary>
@@ -325,6 +340,17 @@ double JumpjetLocomotionClass::Current_Speed(void) const
 double JumpjetLocomotionClass::Target_Speed(void) const
 {
 	return(TargetSpeed);
+}
+
+
+/// <summary>
+/// Reports the direction the locomotor is tracking. Movement copies it into the unit's primary
+/// facing, except while a locomotor warhead holds the unit.
+/// </summary>
+/// <returns>DirType; The current facing of the locomotor's tracker.</returns>
+DirType JumpjetLocomotionClass::Facing_Current(void) const
+{
+	return(Facing.Current());
 }
 
 
