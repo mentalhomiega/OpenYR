@@ -1723,8 +1723,7 @@ void BuildingClass::AI(void)
 
 	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
 	{
-		// A NeedsEngineer structure stays out of service until HasEngineer is set (IsPowerOnline, 0x4555D0); Is_Powered_On does not check that.
-		bool const online = Is_Powered_On() && (!Class->IsNeedsEngineer || HasEngineer) && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+		bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
 		if (Class->PowersUnit != NULL) {
 			Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
 		}
@@ -11424,6 +11423,10 @@ bool BuildingClass::Is_Powered_On(void) const
 	}
 	// A power plant goes out of service in a blackout and while it is drained (BuildingClass::IsPowerOnline, 0x4555D0).
 	if (Class->IsPoweredSpecial && (House->Is_Power_Blackout() || House->Is_Being_Drained())) {
+		return(false);
+	}
+	// A NeedsEngineer structure is out of service until an engineer has captured it (IsPowerOnline, 0x455686).
+	if (Class->IsNeedsEngineer && !HasEngineer) {
 		return(false);
 	}
 	return(true);
