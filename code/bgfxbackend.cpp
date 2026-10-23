@@ -730,7 +730,7 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 
 	// A BGRA8 pixel is blue, green, red, alpha from its lowest byte up, so red sits at bit 16 and alpha at bit 24.
 	unsigned char const * frame = (unsigned char const *)pixels;
-	Send_Tiles(_KeyedMaskTexture, _MaskGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+	auto fill = [&](unsigned char * dest, int destpitch, TileRect const & rect) {
 		for (int y = 0; y < rect.Height; y++) {
 			unsigned short const * in = (unsigned short const *)(frame + (ptrdiff_t)(rect.Y + y) * pitch) + rect.X;
 			unsigned char const * red = (value != NULL) ? value + (ptrdiff_t)(rect.Y + y) * valuepitch + rect.X : NULL;
@@ -740,7 +740,28 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 				out[x] = (alpha << 24) | ((red != NULL ? (unsigned int)red[x] : 0u) << 16);
 			}
 		}
-	});
+	};
+	Send_Tiles(_KeyedMaskTexture, _MaskGrid, 4, fill);
+
+	// With checking on, the sent rectangles are also applied to a copy of the texture, which must equal the whole
+	// picture's conversion.
+	if (_VerifyUploads) {
+		static std::vector<unsigned int> mirror;
+		if (mirror.size() != (size_t)_FrameWidth * _FrameHeight || !wascurrent) {
+			mirror.assign((size_t)_FrameWidth * _FrameHeight, 0);
+		}
+		for (TileRect const & rect : _Rects) {
+			fill((unsigned char *)&mirror[(size_t)rect.Y * _FrameWidth + rect.X], _FrameWidth * 4, rect);
+		}
+		TileRect const whole = {0, 0, _FrameWidth, _FrameHeight};
+		std::vector<unsigned int> expected((size_t)_FrameWidth * _FrameHeight);
+		fill((unsigned char *)expected.data(), _FrameWidth * 4, whole);
+		_VerifyChecks++;
+		if (std::memcmp(mirror.data(), expected.data(), expected.size() * 4) != 0) {
+			_VerifyMismatches++;
+			DebugString("Backend: keyed mask copy differs from the picture\n");
+		}
+	}
 	_KeyedMaskMasked = masked;
 	_KeyedMaskCurrent = true;
 	_KeyedMaskUploaded = true;
