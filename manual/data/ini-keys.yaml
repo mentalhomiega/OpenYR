@@ -34182,6 +34182,24 @@ ShouldUseCellDrawer:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+ShowDefenceRange:
+  key: ShowDefenceRange
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: ShowDefenceRange
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 ShowFPS:
   key: ShowFPS
   scopes:
