@@ -10965,6 +10965,25 @@ bool HouseClass::Is_Build_Limited(TechnoTypeClass const * type) const
 		}
 
 		case RTTI_AIRCRAFTTYPE:
+			// gamemd's CanBuild (0x50B370) returns before the BuildLimit test for an AirportBound aircraft.
+			if (((AircraftTypeClass const *)type)->IsAirportBound) {
+				int committed = 0;
+				for (int i = 0; i < Rule->PadAircraft.Count(); i++) {
+					AircraftTypeClass const * pad = Rule->PadAircraft[i];
+					committed += AAQuantity.Value(pad->Fetch_Heap_ID());
+					if (factory != NULL) {
+						committed += factory->Total(pad);
+					}
+				}
+				int docks = 0;
+				for (int i = 0; i < Buildings.Count(); i++) {
+					BuildingClass const * bptr = Buildings[i];
+					if (bptr->House == this && !bptr->IsInLimbo && bptr->Class->IsHelipad) {
+						docks += bptr->Class->NumberOfDocks;
+					}
+				}
+				return(committed >= docks);
+			}
 			if (type->BuildLimit <= 0) {
 				if (queued + PAQuantity.Value(type->Fetch_Heap_ID()) >= abs(type->BuildLimit)) {
 					return(true);

@@ -255,6 +255,14 @@ bool FactoryClass::Set(TechnoTypeClass const & object, HouseClass & house, bool 
 		Abandon();
 	}
 
+	// gamemd's production click (SidebarClass, 0x50B370 gate) refuses a limited object on an idle factory too.
+	if (object.RTTI != RTTI_BUILDINGTYPE && !resume && house.Is_Build_Limited(&object)) {
+		if (house.Is_Player_Control()) {
+			Sound_Effect(Rule->ScoldSound);
+		}
+		return(false);
+	}
+
 	if (object.RTTI != RTTI_BUILDINGTYPE && (Is_Building() || QueuedObjects.Count() > 0 || Is_Suspended()) && !resume) {
 		if (QueuedObjects.Count() < Rule->MaximumQueuedObjects && !House->Is_Build_Limited(&object)) {
 			QueuedObjects.Add(&object);
