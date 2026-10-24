@@ -603,7 +603,7 @@ test('An out-of-sync frame is reported before the players are asked to decide', 
 		'Report_Out_Of_Sync(mismatches, mismatch_count, CRC, ARRAY_SIZE(CRC));',
 		'Multiplayer_Load_Is_Pending()',
 		'DesyncDialog.Run()',
-		'Destroy_Connection(id, -1);',
+		'Destroy_Connection_And_Frame_Sync(id, -1);',
 		'Sign_Off_Match();',
 	], 'the report describes the frame before any decision changes the session');
 });
