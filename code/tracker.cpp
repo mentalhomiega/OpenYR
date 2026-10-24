@@ -135,6 +135,13 @@ void Detach_This_From_All(AbstractClass const * target, bool all)
 		for (index = 0; index < AnimPtrTracker.Count(); index++) {
 			AnimPtrTracker[index]->Detach(target, all);
 		}
+
+		// A giant squid's grapple animation is held by its parasite, which the tracker does not list.
+		for (index = 0; index < Technos.Count(); index++) {
+			if (Technos[index]->ParasiteImUsing) {
+				Technos[index]->ParasiteImUsing->Detach(target);
+			}
+		}
 		/*
 		 * nothing else needs to be done
 		 */
