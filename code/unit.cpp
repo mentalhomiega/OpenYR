@@ -2715,9 +2715,15 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	case VISUAL_HIDDEN:
 		break;
 
-	default:
-		blitter = converter->Blitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags()));
+	default: {
+		// The composite is opaque in the 8-bit surface, so a warp's half see-through is applied here.
+		ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags());
+		if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT50);
+		}
+		blitter = converter->Blitter_From_Flags(flags);
 		break;
+	}
 	}
 
 	int width = UnitCompositeDirtyRect.Width;
