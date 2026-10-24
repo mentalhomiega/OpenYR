@@ -290,6 +290,7 @@
 #include "rules.h"
 #include "saveload.h"
 #include "scenario.h"
+#include "shapeset.h"
 #include "script.h"
 #include "super.h"
 #include "sidebar.h"
@@ -4750,6 +4751,15 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST     slot %d wants %s damaged %s: %s stage %d rate %d disabled %d\n", slot, wanted, building->Class->AnimData[slot].AnimDamaged,
 					anim != NULL ? anim->Class->Name() : "(none)", anim != NULL ? anim->Fetch_Stage() : -1, anim != NULL ? anim->Fetch_Rate() : -1, anim != NULL ? (int)anim->Is_Disabled() : -1);
 			}
+		}
+	} else if (step.Command == "bshape") {
+		// bshape <TypeID>: for each building of that type, its health, state and mission, whether its animations are the damaged forms, and the body frame drawn out of the image's frame count.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			ShapeSet const * image = (ShapeSet const *)building->Get_Image_Data();
+			DebugString("AUTOTEST   bshape %s at %d,%d health %.3f yellow %.3f bstate %d mission %d shape %d frames %d damaged anims %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+				building->HealthRatio, Rule->ConditionYellow, (int)building->BState, (int)building->Mission, building->Shape_Number(), image != NULL ? image->Get_Count() : -1, (int)building->IsDamagedAnims);
 		}
 	} else if (step.Command == "infstate") {
 		// infstate <TypeID>: for each soldier of that type, the sequence it plays with its stage, the shape drawn, its facing and where it is.
