@@ -593,3 +593,19 @@ body[data-model="keyboard"] #footer #footer-ok
 	left: 635dp;
 	top: 563dp;
 }
+
+/* The Options page's check boxes keep each label on one line in the right-hand box, which is
+   widened to the column and set a size smaller, so the longest label fits. */
+body[data-model="classicopt"] #more
+{
+	left: 634dp;
+	width: 164dp;
+}
+
+body[data-model="classicopt"] #more label.check
+{
+	left: 4dp;
+	width: 156dp;
+	font-size: 11dp;
+	white-space: nowrap;
+}
