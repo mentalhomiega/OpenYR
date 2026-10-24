@@ -33,6 +33,12 @@ site_exclusions:
     classification: excluded
     reason: The [CnCNet] settings belong to the experimental built-in lobby; the CnCNet lobby change record lists them until the lobby leaves preview.
 
+  - path: code/report/reportsend.cpp
+    function: Read_Settings
+    keys: [ReportUpload, ReportURL]
+    classification: excluded
+    reason: Report sending is a draft with no receiver; the report-upload change record lists these keys until a receiver exists.
+
   - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
     function: UI_CnCNet_Lobby_Dialog
     keys: [Handle]

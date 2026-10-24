@@ -42,10 +42,10 @@ struct HandleType
 	~HandleType(void) { if (Value != nullptr) WinHttpCloseHandle(Value); }
 };
 
-}
 
-
-bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
+// Makes one request. A POST sends content with its type; a GET sends nothing.
+bool Request(wchar_t const * method, std::string const & url, std::string const * content, std::string const & content_type,
+	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
 {
 	body.clear();
 	std::wstring const wide = Wide(url);
@@ -75,19 +75,27 @@ bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_by
 		return(false);
 	}
 	HandleType request;
-	request.Value = WinHttpOpenRequest(connection.Value, L"GET", path.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
+	request.Value = WinHttpOpenRequest(connection.Value, method, path.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES,
 		parts.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0);
+	std::string all_headers = headers;
+	if (content != nullptr) {
+		all_headers += "Content-Type: " + content_type + "\r\n";
+	}
+	std::wstring const wide_headers = Wide(all_headers);
+	DWORD const content_length = content != nullptr ? static_cast<DWORD>(content->size()) : 0;
 	if (request.Value == nullptr
-		|| !WinHttpSendRequest(request.Value, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0)
+		|| !WinHttpSendRequest(request.Value, wide_headers.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : wide_headers.c_str(),
+			wide_headers.empty() ? 0 : static_cast<DWORD>(-1L),
+			content != nullptr ? const_cast<char *>(content->data()) : WINHTTP_NO_REQUEST_DATA, content_length, content_length, 0)
 		|| !WinHttpReceiveResponse(request.Value, nullptr)) {
-		error = "Could not get " + url + " (error " + std::to_string(GetLastError()) + ").";
+		error = "Could not reach " + url + " (error " + std::to_string(GetLastError()) + ").";
 		return(false);
 	}
 
 	DWORD status = 0;
 	DWORD size = sizeof(status);
 	WinHttpQueryHeaders(request.Value, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX);
-	if (status != 200) {
+	if (status != 200 && !(content != nullptr && status == 201)) {
 		error = url + " answered with status " + std::to_string(status) + ".";
 		return(false);
 	}
@@ -115,11 +123,34 @@ bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_by
 	}
 }
 
+}
+
+
+bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
+{
+	return(Request(L"GET", url, nullptr, std::string(), std::string(), timeout_ms, max_bytes, body, error));
+}
+
+
+bool CnCNet_Http_Post(std::string const & url, std::string const & content, std::string const & content_type,
+	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
+{
+	return(Request(L"POST", url, &content, content_type, headers, timeout_ms, max_bytes, body, error));
+}
+
 #else
 
 bool CnCNet_Http_Get(std::string const &, int, std::size_t, std::string &, std::string & error)
 {
 	error = "Fetching the tunnel list needs Windows for now.";
+	return(false);
+}
+
+
+bool CnCNet_Http_Post(std::string const &, std::string const &, std::string const &, std::string const &, int, std::size_t,
+	std::string &, std::string & error)
+{
+	error = "Sending needs Windows for now.";
 	return(false);
 }
 

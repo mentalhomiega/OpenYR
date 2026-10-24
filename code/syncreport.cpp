@@ -58,6 +58,7 @@
 #include "psystype.h"
 #include "ptype.h"
 #include "queue.h"
+#include "report/reportsend.h"
 #include "saveload.h"
 #include "scenario.h"
 #include "scheme.h"
@@ -602,5 +603,8 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	Print_Heap_CRCs(fp);
 
 	fclose(fp);
+
+	// Offered to the developers once the match is over, if ReportURL is set.
+	Report_Note_Desync(filename);
 
 }
