@@ -5290,7 +5290,8 @@ InfantryTypeClass const * UnitClass::Crew_Type(void) const
  *=============================================================================================*/
 int UnitClass::Do_MISSION_REPAIR(void)
 {
-	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, true);
+	// Only the unit's own depots; gamemd's FootClass::FindCloserDockBuilding (0x4DEE80) walks Owner->Buildings.
+	BuildingClass * nearest = Find_Docking_Bay(Rule->RepairBay, false);
 
 	IsHarvesting = false;
 

@@ -4463,6 +4463,12 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	}
 
+	// A factory that is already its house's primary gives no self action, so a click leaves it primary
+	// (BuildingClass::MouseOverObject, 0x447210, returns None for Factory && IsPrimaryFactory).
+	if (action == ACTION_SELF && Class->Is_Factory() && IsLeader) {
+		action = ACTION_NONE;
+	}
+
 	// The attack cursor needs an anti-ground first weapon, whatever the target: an AA-only structure
 	// gets none even against an airborne object (BuildingClass::MouseOverObject, 0x447210, AG read at 0x447394).
 	// The weapon must also be able to take the shot (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
