@@ -8589,6 +8589,10 @@ bool TechnoClass::Temporal_AI(void)
 		}
 	}
 	if (Is_Chrono_Warping()) {
+		// A soldier killed while it holds after a jump keeps its AI, so its death sequence advances (gamemd's InfantryClass::Update, 0x51BAB0, runs past IsWarpingIn).
+		if (RTTI == RTTI_INFANTRY && Strength <= 0) {
+			return(false);
+		}
 		// The AI that returns here is also what runs the locomotor, so the warp steps it.
 		FootClass * foot = static_cast<FootClass *>(this);
 		foot->IsLocomotorProcessing = true;
