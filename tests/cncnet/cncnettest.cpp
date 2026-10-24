@@ -553,6 +553,17 @@ bool Sent(std::vector<CnCNetRoomSendType> const & sent, CnCNetRoomSendKind kind,
 }
 
 
+bool Said(std::vector<CnCNetRoomSendType> const & sent, std::string const & text)
+{
+	for (CnCNetRoomSendType const & send : sent) {
+		if (send.Kind == CnCNetRoomSendKind::SAY && send.Text == text) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 void Test_Room(void)
 {
 	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
@@ -617,23 +628,40 @@ void Test_Room(void)
 	other.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 700);
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 700);
 	Deliver(other, "Other", {&host}, 700);
-	sent = Deliver(host, "Host", {&other, &guest}, 700);
-	Check(Sent(sent, CnCNetRoomSendKind::KICK, "Other") && host.Players().size() == 2, "room: a guest on another build is refused and kicked");
-	Check(other.Status() == CnCNetRoomStatus::CLOSED && other.Status_Text().find("b1") != std::string::npos
-		&& guest.Status() == CnCNetRoomStatus::IN_ROOM, "room: the refused guest learns why; others are unaffected");
+	Deliver(host, "Host", {&other, &guest}, 700);
+	Check(host.Players().size() == 3 && host.Find_Player("Other") != nullptr
+		&& host.Build_Problem(*host.Find_Player("Other")) == "different OpenYR build", "room: a guest on another build stays listed and is marked");
+	Check(other.Status() == CnCNetRoomStatus::IN_ROOM && other.Build_Differs_From_Host() && !guest.Build_Differs_From_Host(),
+		"room: the guest on another build learns it differs; the matching guest does not");
+
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 705);
+	other.Set_Ready(true);
+	Deliver(other, "Other", {&host}, 705);
+	Check(!host.Can_Start(), "room: a player on another build holds the start back even when ready");
+	host.Apply(Room_Event(IRCEventKind::PARTED, "Other", ROOM), 706);
+	Check(host.Can_Start(), "room: the host can start once that player has left");
 
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 1000);
+	CnCNetRoomPlayerType const * stock = host.Find_Player("Stock");
+	Check(stock != nullptr && host.Build_Problem(*stock) == "not OpenYR", "room: a joiner is listed as not OpenYR until its hello arrives");
 	host.Tick(20999);
 	Check(!Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a silent joiner gets the full hello timeout");
 	host.Tick(21000);
-	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a joiner that never says hello is kicked");
+	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a joiner that never says hello is removed when the timeout ends");
+	host.Apply(Room_Event(IRCEventKind::KICKED, "Host", ROOM, std::string(), "Stock"), 21001);
+	Check(host.Find_Player("Stock") == nullptr, "room: the removed joiner leaves the list when the server confirms the kick");
 
 	guest.Set_Ready(true);
 	Deliver(guest, "Guest", {&host}, 22000);
 	Deliver(host, "Host", {&guest}, 22000);
+	Check(host.Can_Start(), "room: the host can start once the removed joiner has left");
 	Check(host.Start({{"Seed", "5"}}), "room: the host starts when everyone is ready");
 	Deliver(host, "Host", {&guest}, 22100);
 	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5", "room: the guest receives the start");
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Late", ROOM), 22150);
+	Check(host.Find_Player("Late") == nullptr && Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Late"),
+		"room: a joiner after the start is refused at once and not listed");
 
 	host.Return_To_Room();
 	sent = Deliver(host, "Host", {&guest}, 30000);
@@ -682,11 +710,10 @@ void Test_Room_Notice(void)
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
 	host.Take_Outgoing();
 
-	// Every joiner hears the notice once; a stock client never says hello, so it holds the start back.
+	// Every joiner hears the notice once. A stock client never says hello: it is listed as not OpenYR and holds the start back.
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 100);
 	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
-	Check(sent.size() == 1 && sent[0].Kind == CnCNetRoomSendKind::SAY && sent[0].Target == ROOM && sent[0].Text == config.Notice,
-		"room notice: a joiner is told the room is an OpenYR game");
+	Check(Said(sent, config.Notice), "room notice: a joiner is told the room is an OpenYR game");
 
 	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 200);
 	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 200);
@@ -699,8 +726,23 @@ void Test_Room_Notice(void)
 	Deliver(host, "Host", {&guest}, 400);
 	Check(!host.Can_Start(), "room notice: the host cannot start while a joiner has not said hello");
 	host.Tick(100 + 20000);
-	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock") && host.Can_Start(),
-		"room notice: the silent joiner is removed and the host can start");
+	sent = host.Take_Outgoing();
+	Check(Sent(sent, CnCNetRoomSendKind::KICK, "Stock") && !Sent(sent, CnCNetRoomSendKind::KICK, "Guest"),
+		"room notice: the silent joiner is removed when its hello timeout ends; a joiner who said hello is not");
+	CnCNetRoomPlayerType const * silent = host.Find_Player("Stock");
+	Check(silent != nullptr && host.Build_Problem(*silent) == "not OpenYR" && !host.Can_Start(),
+		"room notice: the silent joiner stays listed as not OpenYR until the server confirms the kick");
+	host.Apply(Room_Event(IRCEventKind::KICKED, "Host", ROOM, std::string(), "Stock"), 20200);
+	Check(host.Can_Start(), "room notice: the host can start once the silent joiner has left");
+
+	CnCNetRoomConfigType tiny = Room_Config("Host", "b1");
+	tiny.Limits.MaxPlayers = 2;
+	CnCNetRoomClass crowded = CnCNetRoomClass::Host(tiny, {{"Map", "Lake"}}, 0);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 100);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Late", ROOM), 100);
+	Check(crowded.Find_Player("Late") == nullptr && crowded.Players().size() == 2 && Sent(crowded.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Late"),
+		"room notice: a joiner to a full room is refused at once and not listed");
 
 	CnCNetRoomClass quiet = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
 	quiet.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
@@ -708,6 +750,80 @@ void Test_Room_Notice(void)
 	quiet.Apply(Room_Event(IRCEventKind::JOINED, "Other", ROOM), 10);
 	Check(!Sent(quiet.Take_Outgoing(), CnCNetRoomSendKind::SAY, std::string()) , "room notice: an empty notice says nothing");
 	Check(CnCNet_Room_Channel(42, "#test-game") == "#test-game0000042", "room channel: the prefix is a setting");
+}
+
+
+void Test_Build_Identity(void)
+{
+	Check(CnCNet_Build_Identity("023533ea", false, "x86", 0x200) == "023533ea/x86/200", "build id: commit, architecture and packed version");
+	Check(CnCNet_Build_Identity("023533ea", true, "x64", 0x200) == "023533ea-modified/x64/200", "build id: a modified tree is marked");
+	Check(CnCNet_Build_Short("023533ea-modified/x64/200") == "023533ea-modified", "build id: the room shows the commit and its marker");
+	Check(CnCNet_Build_Short("0.2.0 (023533ea, x86)").empty() && CnCNet_Build_Short("").empty() && CnCNet_Build_Short("/x86/200").empty(),
+		"build id: an older display text or an empty id shows no commit");
+}
+
+
+void Test_Build_Gate(void)
+{
+	std::string const mine = CnCNet_Build_Identity("abc1234", false, "x86", 0x200);
+	std::string const theirs = CnCNet_Build_Identity("def5678", false, "x86", 0x200);
+
+	// A hello from an older build carries display text, and one in another room protocol is read as no build id.
+	CnCNetRoomClass parsed = CnCNetRoomClass::Host(Room_Config("Host", mine), {{"Map", "Lake"}}, 0);
+	parsed.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	parsed.Take_Outgoing();
+	parsed.Apply(Room_Event(IRCEventKind::CTCP, "Older", ROOM, "OYRHELLO", "1;0.2.0 (abc1234, x86)"), 10);
+	parsed.Apply(Room_Event(IRCEventKind::CTCP, "Newer", ROOM, "OYRHELLO", "2;" + mine), 10);
+	CnCNetRoomPlayerType const * older = parsed.Find_Player("Older");
+	CnCNetRoomPlayerType const * newer = parsed.Find_Player("Newer");
+	Check(older != nullptr && older->OpenYR && parsed.Build_Problem(*older) == "different OpenYR build",
+		"build gate: an older build's hello is a different build with no commit shown");
+	Check(newer != nullptr && newer->Build.empty() && parsed.Build_Problem(*newer) == "different OpenYR build",
+		"build gate: a hello in another room protocol announces no build id");
+
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", mine), {{"Map", "Lake"}}, 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	host.Take_Outgoing();
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", mine), 0);
+	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 0);
+	Deliver(guest, "Guest", {&host}, 10);
+	Deliver(host, "Host", {&guest}, 10);
+	CnCNetRoomClass stranger = CnCNetRoomClass::Guest(Room_Config("Stranger", theirs), 0);
+	stranger.Apply(Room_Event(IRCEventKind::JOINED, "Stranger", ROOM), 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Stranger", ROOM), 0);
+	Deliver(stranger, "Stranger", {&host}, 10);
+	Deliver(host, "Host", {&guest, &stranger}, 10);
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 20);
+	stranger.Set_Ready(true);
+	Deliver(stranger, "Stranger", {&host}, 20);
+
+	CnCNetRoomPlayerType const * row = host.Find_Player("Stranger");
+	Check(row != nullptr && host.Build_Problem(*row) == "different OpenYR build (def5678)", "build gate: the host names the other commit next to the player");
+	Check(host.Find_Player("Guest") != nullptr && host.Build_Problem(*host.Find_Player("Guest")).empty(), "build gate: a matching guest has no mark");
+	Check(!host.Can_Start(), "build gate: a ready player on another build holds the start back");
+	Check(stranger.Find_Player("Stranger") != nullptr && stranger.Build_Problem(*stranger.Find_Player("Stranger")) == "different OpenYR build (def5678)"
+		&& stranger.Build_Differs_From_Host() && !guest.Build_Differs_From_Host(),
+		"build gate: the player on another build is marked with its own commit; the matching guest is not");
+	host.Apply(Room_Event(IRCEventKind::PARTED, "Stranger", ROOM), 30);
+	Check(host.Can_Start(), "build gate: the host can start once that player has left");
+
+	std::vector<CnCNetRoomPlayerType> players(3);
+	players[0].Name = "Host";
+	players[0].Host = true;
+	players[0].OpenYR = true;
+	players[0].Build = mine;
+	players[1].Name = "Guest";
+	players[1].OpenYR = true;
+	players[1].Build = theirs;
+	players[2].Name = "Stock";
+	std::vector<CnCNetRoomPlayerType> const decoded = CnCNetRoomClass::Decode_Players(CnCNetRoomClass::Encode_Players(players));
+	Check(decoded.size() == 3 && decoded[1].OpenYR && decoded[1].Build == theirs && !decoded[2].OpenYR && decoded[2].Build.empty(),
+		"build gate: the build id and the OpenYR mark survive the player list");
+	std::vector<CnCNetRoomPlayerType> const older_row = CnCNetRoomClass::Decode_Players("Old,-1,0,-1,-1,H");
+	Check(older_row.size() == 1 && older_row[0].Host && !older_row[0].OpenYR && older_row[0].Build.empty(),
+		"build gate: a player row from before the build id has no build id");
 }
 
 
@@ -970,6 +1086,8 @@ int main(void)
 	Test_Room_Encoding();
 	Test_Room();
 	Test_Room_Notice();
+	Test_Build_Identity();
+	Test_Build_Gate();
 	Test_Tunnel_List();
 	Test_Spawn();
 	Test_Tunnel_Envelope();

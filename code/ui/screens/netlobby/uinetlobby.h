@@ -86,6 +86,7 @@ struct UINetPlayerRow
 	std::string Hint;
 	std::string Mark;
 	std::string Detail;     // Team and start, where the lobby has them.
+	std::string Note;       // A line under the name, such as a different build; empty for none.
 	bool Selected = false;
 };
 

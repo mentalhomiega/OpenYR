@@ -31,6 +31,7 @@
 #include "misc.h"
 #include "mods.h"
 #include "netshare.h"
+#include "opents_build.h"
 #include "rules.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
@@ -44,6 +45,7 @@
 #include "version.h"
 #include "win.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -515,6 +517,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
 		UINetPlayerRow row;
 		row.Name = player.Name;
+		row.Note = TheRoom.Build_Problem(player);
 		row.Color = (player.Color >= 0 && player.Color < MAX_MPLAYER_COLORS) ? UI_Color_Text(PlayerColorTable[player.Color]) : std::string(PLAIN);
 		if (player.Side == CNCNET_SPECTATOR_SIDE) {
 			row.House = "nodi.pcx";
@@ -559,6 +562,19 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		// The CnCNet admins' terms: the host tells players who join that this is an OpenYR game.
 		UINetChatLine line;
 		line.Text = "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.";
+		line.Color = PLAIN;
+		state.Chat.push_back(line);
+		if (std::any_of(TheRoom.Players().begin(), TheRoom.Players().end(),
+				[&](CnCNetRoomPlayerType const & player) { return(!TheRoom.Build_Problem(player).empty()); })) {
+			UINetChatLine blocked;
+			blocked.Text = "The game cannot start until every player is on your OpenYR build. Remove the players marked below.";
+			blocked.Color = PLAIN;
+			state.Chat.push_back(blocked);
+		}
+	}
+	if (!TheRoom.Is_Host() && TheRoom.Build_Differs_From_Host()) {
+		UINetChatLine line;
+		line.Text = "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.";
 		line.Color = PLAIN;
 		state.Chat.push_back(line);
 	}
@@ -625,7 +641,8 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CreditsStep = 100;
 	state.Credits = options.Credits;
 
-	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready;
+	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
+		&& !TheRoom.Build_Differs_From_Host();
 	state.CanGo = Can_Start();
 }
 
@@ -825,7 +842,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		Map_Starts(Session.ScenarioFileName),
 		tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
-		error = "The match could not start: every guest must be ready.";
+		error = "The match could not start: every guest must be ready and on your OpenYR build.";
 		return(false);
 	}
 	Broadcast(true);
@@ -982,7 +999,8 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 	config.Channel = setup.Channel;
 	config.Key = setup.Password;
 	config.HostNick = setup.HostNick;
-	config.Build = Version_Name();
+	config.Build = CnCNet_Build_Identity(OPENTS_COMMIT, OPENTS_COMMIT_DIRTY != 0, OPENTS_ARCH, OPENTS_VERSION_PACKED);
+	DebugString("[CnCNet] Room build id %s.\n", config.Build.c_str());
 	if (setup.Host) {
 		config.Notice = setup.Notice;
 	}
