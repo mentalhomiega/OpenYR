@@ -7988,7 +7988,9 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		}
 
 		// Warping out or in draws the object half see-through, as the shape draw (gamemd 0x705E00) does.
-		if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+		// A turret composite is blitted without it here; UnitClass::Unit_Blit_Voxel applies it on the screen.
+		bool const composited = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+		if ((IsBeingWarpedOut || Is_Chrono_Warping()) && !composited) {
 			flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 		}
 
@@ -8187,7 +8189,9 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 	}
 
 	// Warping out or in draws the voxel half see-through, as TechnoClass::Draw_Voxel (0x706640) does.
-	if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+	// A turret composite is blitted without it here; UnitClass::Unit_Blit_Voxel applies it on the screen.
+	bool const composited_voxel = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+	if ((IsBeingWarpedOut || Is_Chrono_Warping()) && !composited_voxel) {
 		flags = ShapeFlags_Type(flags|SHAPE_TRANSLUCENT50);
 	}
 	flags = ShapeFlags_Type(~negflags & (flags|SHAPE_ALPHA));
