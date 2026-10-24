@@ -38,6 +38,7 @@
 	<label class="check" id="switch-tooltips"><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/>{{labels.tooltips}}</label>
 	<label class="check" id="switch-lines"><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/>{{labels.targetlines}}</label>
 	<label class="check" id="switch-hidden"><input type="checkbox" id="hidden" data-attrif-checked="hidden" data-event-click="queue('hidden', hidden ? 0 : 1)"/>{{labels.showhidden}}</label>
+	<label class="check" id="switch-defencerange"><input type="checkbox" id="defencerange" data-attrif-checked="defencerange" data-event-click="queue('defencerange', defencerange ? 0 : 1)"/>{{labels.showdefencerange}}</label>
 	<p class="caption" id="scroll-label">{{labels.scroll}}</p>
 	<p class="value" id="scroll-name">{{scrollname}}</p>
 	<input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/>

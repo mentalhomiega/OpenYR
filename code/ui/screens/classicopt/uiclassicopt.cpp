@@ -42,7 +42,7 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 
 	if (intent.Name == "scroll" || intent.Name == "detail" || intent.Name == "difficulty" || intent.Name == "cameo"
 			|| intent.Name == "lines" || intent.Name == "tooltips" || intent.Name == "coasting" || intent.Name == "edge"
-			|| intent.Name == "hidden") {
+			|| intent.Name == "hidden" || intent.Name == "defencerange") {
 		Game.Execute(forwarded);
 
 	} else if (intent.Name == "music" || intent.Name == "sfx" || intent.Name == "voice" || intent.Name == "unit" || intent.Name == "movie") {
@@ -127,6 +127,7 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("coasting");
 			Model.DirtyVariable("edge");
 			Model.DirtyVariable("hidden");
+			Model.DirtyVariable("defencerange");
 			Model.DirtyVariable("scrollname");
 			Model.DirtyVariable("detailname");
 			Model.DirtyVariable("difficultyname");
@@ -170,6 +171,7 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 			labels.RegisterMember("tooltips", &UIClassicOptionsLabels::Tooltips);
 			labels.RegisterMember("targetlines", &UIClassicOptionsLabels::TargetLines);
 			labels.RegisterMember("showhidden", &UIClassicOptionsLabels::ShowHidden);
+			labels.RegisterMember("showdefencerange", &UIClassicOptionsLabels::ShowDefenceRange);
 			labels.RegisterMember("keyboard", &UIClassicOptionsLabels::Keyboard);
 			labels.RegisterMember("mods", &UIClassicOptionsLabels::Mods);
 			labels.RegisterMember("more", &UIClassicOptionsLabels::More);
@@ -198,6 +200,7 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 				&& model.Bind("coasting", &game.Coasting)
 				&& model.Bind("edge", &game.EdgeScroll)
 				&& model.Bind("hidden", &game.ShowHidden)
+				&& model.Bind("defencerange", &game.ShowDefenceRange)
 				&& model.Bind("hasdifficulty", &game.HasDifficulty)
 				&& model.Bind("scrollname", &game.ScrollName)
 				&& model.Bind("detailname", &game.DetailName)

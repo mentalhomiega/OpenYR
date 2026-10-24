@@ -1,0 +1,18 @@
+; A selected Pillbox (GAPILL) of the player's, with a Power Plant so it has power, draws its primary weapon range ring
+; while the Show defence range option is on. The option starts from the interface style (on for Modern), then the
+; script turns it off and on again with the defencerange command. The three windowshots show the default, off and on.
+; Run: scripts/run_autotest.ps1 -Script src-agent21/tests/autotest/defence-range-ring.txt -Build agent21 -Width 800 -Height 600 -Seconds 90 -ShotDir <dir> -Filter "AUTOTEST (where|defencerange)|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 56 58
+50 own GAPILL 62 62
+55 view 62 62
+57 zoom 2
+60 select GAPILL
+70 where GAPILL
+80 windowshot defence-range-default
+90 defencerange 0
+100 windowshot defence-range-off
+110 defencerange 1
+120 windowshot defence-range-on
+130 quit

@@ -12058,6 +12058,26 @@ void BuildingClass::Draw_Radial_Indicator(void) const
 
 
 /// <summary>
+/// Draws the weapon range ring of this defence while it is selected and the Show defence range
+/// option is on. Like the radial indicator, the ring is drawn only for the owning player and only
+/// while the structure has power. A type with a radial indicator draws its own ring instead.
+/// </summary>
+void BuildingClass::Draw_Defence_Range(void) const
+{
+	if (Class->IsHasRadialIndicator || !Options.ShowDefenceRange) {
+		return;
+	}
+	WeaponDataStruct const * weapon = Class->Get_Weapon(0);
+	if (weapon == NULL || weapon->Weapon == NULL || !Is_Powered_On() || !House->Is_Player_Control()) {
+		return;
+	}
+
+	int const range = weapon->Weapon->Range / CELL_LEPTON;
+	TacticalMap->Draw_Range_Ring(Center_Coord(), range, House_Display_RGB(House));
+}
+
+
+/// <summary>
 /// Flashes the building to acknowledge that it was clicked on.
 /// This routine is called by the sidebar and the tactical map when the player designates
 /// this building as a target. The building refreshes its animation appearance as well, so

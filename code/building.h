@@ -553,6 +553,8 @@ class BuildingClass : public TechnoClass
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual Rect Get_Render_Rect(void) override;
 		virtual void Draw_Radial_Indicator(void) const override;
+		// Draws the weapon range ring of a selected defence when the Show defence range option is on.
+		void Draw_Defence_Range(void) const;
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);
 		virtual void Draw_Extras(Point2D &point, Rect &rect);

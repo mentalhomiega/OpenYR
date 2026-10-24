@@ -4337,6 +4337,9 @@ void Run(StepType const & step)
 					techno->TClass->Name(), (int)techno->Visual_Character(false), (int)techno->Visual_Character(true), (int)techno->Is_Sensed_By_Player(),
 					(int)techno->HeightAGL, (int)techno->IsLocked, (int)techno->IsCloakable, (int)techno->Is_Allowed_To_Recloak(), (int)techno->Is_Ready_To_Cloak(), (int)techno->CloakDelay, techno->CloakingDevice.Fetch_Stage(), (int)techno->IsOwnedByPlayer);
 				DebugString("AUTOTEST   sight %s range %d increase %d\n", techno->TClass->Name(), techno->TClass->SightRange, (int)techno->SightIncrease);
+				DebugString("AUTOTEST   facing %s body %d desired %d turret %d desired %d rotating %d paralysis %d moving %d\n", techno->TClass->Name(), (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
+					(int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256(), (int)techno->PrimaryFacing.Is_Rotating(), techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->ParalysisTimer : -1,
+					techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->Locomotion->Is_Moving() : -1);
 				DebugString("AUTOTEST   recloak %s arm %d immobilized %d stun %d deactivated %d locomotor %d radio %d tarcom %d closeenough %d\n", techno->TClass->Name(), (int)techno->Arm, (int)techno->Is_Immobilized(), (int)techno->StunDuration, (int)techno->IsDeactivated, (int)techno->IsAttackedByLocomotor,
 					techno->Contact_With_Whom() != NULL ? 1 : 0, techno->TarCom != NULL ? 1 : 0, techno->TarCom != NULL ? (int)techno->Is_Close_Enough(techno->TarCom, techno->What_Weapon_Should_I_Use(techno->TarCom)) : -1);
 			}
@@ -5061,6 +5064,10 @@ void Run(StepType const & step)
 		// scriptedzoom <0|1>: turns the scripted scene zoom option off or on.
 		Options.ScriptedCameraZoom = std::atoi(step.Argument.c_str()) != 0;
 		DebugString("AUTOTEST scriptedzoom %d\n", (int)Options.ScriptedCameraZoom);
+	} else if (step.Command == "defencerange") {
+		// defencerange <0|1>: turns the Show defence range option off or on, as the options screen does.
+		Options.ShowDefenceRange = std::atoi(step.Argument.c_str()) != 0;
+		DebugString("AUTOTEST defencerange %d\n", (int)Options.ShowDefenceRange);
 	} else if (step.Command == "scriptzoom") {
 		// scriptzoom: the zoom on screen, the map pixels the view shows at it, and whether a scene holds the player's zoom.
 		Point2D const centre = TacticalMap != NULL ? TacticalMap->Get_Tactical_Position() : Point2D(0, 0);
