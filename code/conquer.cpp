@@ -690,7 +690,7 @@ void IPX_Call_Back(void)
 							std::string const name = sender->Name;
 							if (Ipx.Connection_Index(house) >= 0) {
 								Forget_Kick_Player(house);
-								Destroy_Connection(house, 0);
+								Destroy_Connection_And_Frame_Sync(house, 0);
 								DesyncDialog.Notify_Player_Left(house, name.c_str());
 							} else if (SaveManager.Multiplayer_Load_Is_In_Progress()) {
 								// The connections are rebuilt after the load, so the seat itself goes.

@@ -69,6 +69,7 @@ namespace NetGlobal { enum class DecodeError; }
 NetGlobal::DecodeError Kick_Packet_Received(int kicker, int kickee);
 
 void Forget_Kick_Player(int player);
+void Destroy_Connection_And_Frame_Sync(int id, int error);
 
 extern BasicTimerClass<SystemTimerClass> SentFrameSyncTimer;
 extern int SentFrameSyncCount;
