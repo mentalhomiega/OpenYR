@@ -1,0 +1,148 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+// The parts of report sending that need no game: whether to ask, what goes in a
+// report, the zip it travels in, the note that rides with it, and the folder of
+// reports still waiting to go.
+
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <filesystem>
+#include <string>
+#include <vector>
+
+
+// [Options] ReportUpload: ask before each report, send each one, or never send.
+enum class ReportPolicy
+{
+	Ask,
+	Always,
+	Never,
+};
+
+// What went wrong. A hang is a stall the watchdog caught; the game may have
+// carried on after it.
+enum class ReportKind
+{
+	Crash,
+	Hang,
+	Desync,
+};
+
+// What to do with a report once it exists.
+enum class ReportDecision
+{
+	Skip,		// No receiver is set, or the player said never.
+	Ask,		// Show the Send / Don't send dialog.
+	Send,		// Queue it without asking.
+};
+
+// What the receiver's answer to a send does to the queued report.
+enum class ReportSendResult
+{
+	Sent,		// 2xx: the receiver has it, so it leaves the queue.
+	Refused,	// 4xx, or an answer that is neither 2xx nor 5xx: it leaves the queue with no retry.
+	Retry,		// No answer, or 5xx: it stays queued for a later game start.
+};
+
+// One file of a report.
+struct ReportFileType
+{
+	std::string Name;				// The name inside the zip.
+	std::filesystem::path Path;
+	std::uintmax_t Size = 0;
+};
+
+// The receiver that reports go to unless [Options] ReportURL names another. An empty
+// ReportURL turns sending off.
+constexpr char const REPORT_DEFAULT_URL[] = "https://94-237-94-104.sslip.io/report";
+
+// The largest report as sent: the zip, with its files deflated, in bytes. A file whose
+// entry would take the zip past it is left out, and named in the dialog as left out.
+constexpr std::uintmax_t REPORT_MAX_BYTES = 4 * 1024 * 1024;
+
+// A report that fails with a retryable result is dropped once this many game starts
+// have each failed to send it.
+constexpr int REPORT_MAX_FAILED_STARTS = 3;
+
+// The name of the marker a crash folder gets once the player has answered for
+// it, so that it is not asked about again.
+constexpr char const REPORT_DECIDED_MARKER[] = "report-decided.txt";
+
+
+// Reads the [Options] ReportUpload text. Anything unknown asks.
+ReportPolicy Report_Policy_From_Text(std::string const & text);
+
+// Settles what to do. An empty receiver address always skips, whatever the policy.
+ReportDecision Report_Decide(ReportPolicy policy, std::string const & url);
+
+// The name the receiver files a report under: crash, hang or desync.
+char const * Report_Kind_Name(ReportKind kind);
+
+// The kind of a folder the crash handler wrote: exception-hang-* is a hang, any
+// other exception-* is a crash.
+ReportKind Report_Kind_From_Folder(std::filesystem::path const & folder);
+
+// The crash and hang folders under the Exceptions folder that the player has
+// not answered for yet, oldest first.
+std::vector<std::filesystem::path> Report_Undecided_Folders(std::filesystem::path const & exceptions);
+
+// Marks a folder as answered for, noting whether the report was queued.
+bool Report_Mark_Decided(std::filesystem::path const & folder, bool queued);
+
+// Whether a file of a crash or hang folder goes in a report. Only the minidump and the
+// .txt and .log files do: a full memory dump and every other file stay out.
+bool Report_Wanted_File(std::string const & name);
+
+// The files of a crash or hang folder that go in a report, in name order.
+std::vector<ReportFileType> Report_Folder_Files(std::filesystem::path const & folder);
+
+// Deflates the files into a zip, in order. A file whose entry would take the zip past
+// max_bytes goes to left_out, and the files after it are still tried. Returns false with
+// the reason in error when a file cannot be read.
+bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t max_bytes,
+	std::vector<ReportFileType> & kept, std::vector<ReportFileType> & left_out, std::string & zip, std::string & error);
+
+// The CRC-32 a zip stores (the reflected 0xEDB88320 polynomial).
+std::uint32_t Report_Crc32(void const * data, std::size_t length, std::uint32_t crc = 0);
+
+// The lines the dialog lists: each kept file's name and size, the total and the zip's
+// size, then each file left out.
+std::string Report_File_List_Text(std::vector<ReportFileType> const & kept, std::vector<ReportFileType> const & left_out,
+	std::uintmax_t zip_bytes);
+
+// The session key that groups every seat's out-of-sync report from one match:
+// the game id and the random seed from the head of a SYNC_H*.LOG. Empty when
+// the text has neither.
+std::string Report_Desync_Session_Key(std::string const & sync_text);
+
+// The note that rides with a report. timestamp is UTC, as 2026-10-24T01:02:03Z.
+std::string Report_Meta_Json(std::string const & commit, ReportKind kind, std::string const & timestamp,
+	std::string const & id, std::string const & session_key);
+
+// Puts a report in the waiting folder as <id>.zip and <id>.json. The zip is
+// written first and the note last, so a note always has its zip.
+bool Report_Queue(std::filesystem::path const & pending, std::string const & id, std::string const & zip,
+	std::string const & meta, std::string & error);
+
+// The ids waiting in the folder, oldest first: each has both its files.
+std::vector<std::string> Report_Pending_Ids(std::filesystem::path const & pending);
+
+// Removes a report from the waiting folder, with its count of failed starts.
+void Report_Remove_Pending(std::filesystem::path const & pending, std::string const & id);
+
+// Maps the HTTP status of a send's answer to what happens to the report. Pass 0 when
+// no answer arrived.
+ReportSendResult Report_Classify_Send(int http_status);
+
+// Records one game start in which the waiting report failed to send, and returns how
+// many such starts there have been.
+int Report_Count_Failed_Start(std::filesystem::path const & pending, std::string const & id);

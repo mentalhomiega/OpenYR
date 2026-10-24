@@ -112,6 +112,7 @@
 #include "netshare.h"
 #include "progress.h"
 #include "queue.h"
+#include "report/reportsend.h"
 #include "restate.h"
 #include "rules.h"
 #include "savemgr.h"
@@ -378,6 +379,9 @@ void Main_Game(int argc, char * argv[])
 	// The watchdog times only what runs after one-time initialization.
 	Hang_Watchdog_Start();
 
+	// Offers the reports of a crash or freeze in an earlier run, if ReportURL is set.
+	Report_Startup();
+
 	/*
 	**	Game processing loop:
 	**	1) Select which game to play, or whether to exit (don't fade the palette
@@ -484,6 +488,9 @@ void Main_Game(int argc, char * argv[])
 
 		//VisiblePage.Clear();
 		Title_Screen_Restore(true);
+
+		// Offers an out-of-sync report this seat wrote during the match, if ReportURL is set.
+		Report_After_Match();
 
 		Prep_For_No_Side();
 

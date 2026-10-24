@@ -1133,6 +1133,15 @@ BEGIN
     TXT_BEACON_PLACED       "Beacon placed."
     TXT_BEACON_SELECT_HINT  "Select the beacon and press Enter to write a message for it."
     TXT_BEACON_TEXT_PROMPT  "Beacon message: "
+    TXT_REPORT_ASK          "Send this %s report to the OpenYR developers?
+
+%s
+The logs contain player nicknames and details of this PC, such as its Windows version, processor and graphics card."
+    TXT_REPORT_SEND         "Send"
+    TXT_REPORT_DONT_SEND    "Don't send"
+    TXT_REPORT_KIND_CRASH   "crash"
+    TXT_REPORT_KIND_HANG    "freeze"
+    TXT_REPORT_KIND_DESYNC  "out-of-sync"
     TXT_DEBUG_FAST_FORWARD_DESC "Runs the game without the frame limit that the game speed sets, so it runs much faster. Each tick does the same work as usual. Works only with Debug mode on in single-player games."
 END
 
