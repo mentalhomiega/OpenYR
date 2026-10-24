@@ -10,4 +10,4 @@ credit:
 - MentalHomiega
 ---
 
-A vehicle sent on a repair mission now chooses only among its owner's repair depots, as in Yuri's Revenge. Before, it could also choose an allied player's depot, but only while its owner had at least one depot of that type, and even when the allied depot was farther away. Sending a unit into an allied depot by hand still works.
+A vehicle sent on a repair mission now chooses only among its owner's repair depots, as in Yuri's Revenge. Before, it could also choose a nearer allied player's depot, but only while its owner had at least one depot of that type. Sending a unit into an allied depot by hand still works.
