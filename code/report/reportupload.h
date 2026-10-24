@@ -61,8 +61,8 @@ struct ReportFileType
 	std::uintmax_t Size = 0;
 };
 
-// The receiver that reports go to unless [Options] ReportURL names another. An empty
-// ReportURL turns sending off.
+// The receiver that reports go to unless [Options] ReportURL names another. The INI
+// loader drops a key with no value, so an empty ReportURL= line gives this default.
 constexpr char const REPORT_DEFAULT_URL[] = "https://94-237-94-104.sslip.io/report";
 
 // The largest report as sent: the zip, with its files deflated, in bytes. A file whose

@@ -7,7 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Offers crash, hang and out-of-sync reports to the developers, as
+// [Options] ReportUpload and ReportURL say. ReportUpload=never turns all of it off.
 // [Options] ReportUpload and ReportURL say. An empty ReportURL turns all of it off.
 
 #pragma once
