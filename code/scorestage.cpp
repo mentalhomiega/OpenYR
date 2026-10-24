@@ -390,6 +390,16 @@ Rect ScoreStageClass::Dialog_Rect(int x, int y, int width, int height)
 
 
 /// <summary>
+/// Tests whether a screen point is inside an area of the stage as the stage is drawn on the screen.
+/// </summary>
+bool ScoreStageClass::Contains_Screen_Point(Rect const & area, int x, int y) const
+{
+	Rect const screen = Stage_To_Screen(area);
+	return(x >= screen.X && x < screen.X + screen.Width && y >= screen.Y && y < screen.Y + screen.Height);
+}
+
+
+/// <summary>
 /// Maps an area of the stage onto the screen rectangle it is stretched to.
 /// </summary>
 Rect ScoreStageClass::Stage_To_Screen(Rect const & area) const

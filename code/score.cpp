@@ -30,13 +30,13 @@
 #include "globals.h"
 #include "houstype.h"
 #include "keyboard.h"
+#include "language/language.h"
 #include "mixfile.h"
 #include "msgloop.h"
 #include "scenario.h"
 #include "session.h"
 #include "surface.h"
 #include "theme.h"
-#include "utf8.h"
 #include "winstub.h"
 
 #include <algorithm>
@@ -141,14 +141,22 @@ void Format_Elapsed(char * buffer, unsigned time)
 	sprintf(buffer, format.c_str(), hours, minutes, time);
 }
 
+/*
+ * The local player's name, the profile handle the menu uses, or the no-name text when it is empty.
+ */
+char const * Player_Name(void)
+{
+	return(Session.Handle[0] != 0 ? Session.Handle : Fetch_String(TXT_NONAME));
+}
+
 }
 
 /// <summary>
 /// Shows the campaign results screen after a mission.
 /// The screen is drawn on the side's art in the layout of gamemd's Campaign Results dialog. It lists
 /// the player, and the first enemy house, with the figures of the mission and the efficiency total.
-/// The two best places of the hall of fame are shown below the table, and a score that makes one of
-/// them takes a name from the keyboard.
+/// The two best places of the hall of fame are shown below the table. A score that makes one of them
+/// is entered under the player's name, without any typing.
 /// </summary>
 void ScoreClass::Presentation(void)
 {
@@ -345,7 +353,7 @@ void ScoreClass::Presentation(void)
 					hallfame[i] = hallfame[i-1];
 				}
 			}
-			hallfame[index].name[0] = 0;
+			std::snprintf(hallfame[index].name, sizeof(hallfame[index].name), "%s", Player_Name());
 			hallfame[index].score = (int)total;
 			hallfame[index].level = Scen->Scenario;
 			hallfame[index].side = PlayerPtr->Class->Side;
@@ -366,12 +374,6 @@ void ScoreClass::Presentation(void)
 		Rect const place_area = ScoreStageClass::Dialog_Rect(PLACE_LABEL_X[place], 232, 80, 34);
 		Stage.Keep(place_area);
 		Stage.Present(place_area);
-	}
-
-	if (index < FAME_PLACES) {
-		Show_Mouse();
-		Input_Name(hallfame[index].name, ScoreStageClass::Dialog_Rect(PLACE_X[index], 242, 55, 10));
-		Hide_Mouse();
 	}
 
 	if (file.Open(FAME_FILE_NAME, FileClass::WRITE)) {
@@ -475,55 +477,8 @@ void ScoreClass::Print_Row_Figures(int row, int kills, int losses, int built, in
 
 
 /// <summary>
-/// Takes a name from the keyboard into a hall of fame place.
-/// The name is typed into the place's field on the stage, and the field is redrawn after each key.
-/// A name that would run past the field is not accepted.
-/// </summary>
-/// <param name="str">The name to type into. It is cleared when it is entered.</param>
-/// <param name="field">The stage area the name is printed in.</param>
-void ScoreClass::Input_Name(char str[], Rect const & field)
-{
-	if (AutoTest_Post_Win()) {
-		return;
-	}
-
-	int index = (int)std::strlen(str);
-	int key = 0;
-
-	Keyboard->Clear();
-	do {
-		if (Keyboard->Check()) {
-			key = Keyboard->To_ASCII(Keyboard->Get());
-			if (key == KN_BACKSPACE) {
-				if (index > 0) {
-					index = (int)(UTF8::Previous(str, str + index) - str);
-					str[index] = 0;
-					DoSound("Back", 192);
-				}
-			} else if (key != KN_KEYPAD_RETURN && key != KN_RETURN && key >= KN_SPACE && index < MAX_FAMENAME_LENGTH - 8) {
-				int length = UTF8::Encode((char32_t)key, str + index);
-				str[index + length] = 0;
-				if (Stage.Text_Width(str) > field.Width) {
-					str[index] = 0;
-				} else {
-					index += length;
-					DoSound("Type", 128);
-				}
-			}
-		}
-
-		Stage.Restore(field);
-		Stage.Print_Left(str, field.X, field.Y);
-		Stage.Present(field);
-		Call_Back();
-		Windows_Message_Handler();
-		Sleep(16);
-	} while (key != KN_RETURN && key != KN_KEYPAD_RETURN);
-}
-
-
-/// <summary>
-/// Waits for the player to continue, with the emblem looping while the screen is up.
+/// Waits for the player to press Continue, with the emblem looping while the screen is up.
+/// Only a left click on the Continue button ends the wait; keys and clicks elsewhere are ignored.
 /// </summary>
 /// <param name="animation">The emblem animation to loop, or NULL to wait with a still picture.</param>
 void ScoreClass::Wait_For_Click(ShapeSet const * animation)
@@ -543,7 +498,7 @@ void ScoreClass::Wait_For_Click(ShapeSet const * animation)
 		Windows_Message_Handler();
 		if (Keyboard->Check()) {
 			int key = Keyboard->Get();
-			if (key == VK_LBUTTON || key == VK_ESCAPE || key == VK_SPACE) {
+			if (key == VK_LBUTTON && Stage.Contains_Screen_Point(BUTTON_RECT, Keyboard->Mouse_X(), Keyboard->Mouse_Y())) {
 				running = false;
 			}
 		}
