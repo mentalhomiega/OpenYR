@@ -20,4 +20,4 @@ Harvester=yes
 
 With the Teleport locomotor, as Yuri's Revenge's Chrono Miner uses it, the harvester drives to the ore field and teleports home to unload.
 
-A teleport jumps as soon as its order is processed: the object leaves its cell and appears at the destination in the same frame. It then holds still for the delay set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/). An order given during the hold is refused.
+A teleport jumps as soon as its order is processed: the object leaves its cell and appears at the destination in the same frame. It then holds still for the delay set by [`ChronoTrigger`](/keys/chronotrigger/), [`ChronoDistanceFactor`](/keys/chronodistancefactor/), [`ChronoMinimumDelay`](/keys/chronominimumdelay/) and [`ChronoRangeMinimum`](/keys/chronorangeminimum/). An order given during the hold is refused. A soldier killed during the hold starts its death sequence at once, and the sequence advances during the hold.

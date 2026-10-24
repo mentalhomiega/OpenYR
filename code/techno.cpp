@@ -4514,8 +4514,8 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		goto CANT_FIRE;
 	}
 
-	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried.
-	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && Transporter->IsInLimbo))) {
+	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
+	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && (Transporter->IsInLimbo || Transporter->IsBeingWarpedOut)))) {
 		return(FIRE_ILLEGAL);
 	}
 
@@ -8605,6 +8605,10 @@ bool TechnoClass::Temporal_AI(void)
 		}
 	}
 	if (Is_Chrono_Warping()) {
+		// A soldier killed while it holds after a jump keeps its AI, so its death sequence advances (gamemd's InfantryClass::Update, 0x51BAB0, runs past IsWarpingIn).
+		if (RTTI == RTTI_INFANTRY && Strength <= 0) {
+			return(false);
+		}
 		// The AI that returns here is also what runs the locomotor, so the warp steps it.
 		FootClass * foot = static_cast<FootClass *>(this);
 		foot->IsLocomotorProcessing = true;
