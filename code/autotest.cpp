@@ -236,6 +236,7 @@
 #include "always.h"
 
 #include "autotest.h"
+#include "mainloop.h"
 #include "combat.h"
 #include "perfstat.h"
 #include "session.h"
@@ -4999,6 +5000,10 @@ void Run(StepType const & step)
 		// stall <ms>: keeps the main thread busy without pumping messages, so the hang watchdog reports it.
 		DebugString("AUTOTEST stall %s\n", step.Argument.c_str());
 		Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
+	} else if (step.Command == "rounding") {
+		// rounding <near|chop|up|down|guard>: sets the game thread's rounding mode for the rest of the run, or turns the per-frame guard back on.
+		DebugString("AUTOTEST rounding %s\n", step.Argument.c_str());
+		Rounding_Test_Set(step.Argument.c_str());
 	} else if (step.Command == "quit") {
 		DebugString("AUTOTEST quit\n");
 		std::exit(0);

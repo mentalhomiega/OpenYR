@@ -91,15 +91,74 @@
 #include "weapon.h"
 
 #include <cstdio>
+#include <cstring>
 #include <float.h>
+#include <intrin.h>
+#include <string>
+#include <xmmintrin.h>
+
+#include "modsync.h"
+#include "mods.h"
 
 
 namespace {
 	int LastReportFrame = -1;
 	int ReportsThisSession = 0;
 	bool OutOfSyncPlayer[MAX_PLAYERS] = {};
+	// The last 256 frames' checksum parts; the report lists them beside the checksum ring.
+	SyncFrameDetail FrameDetails[256];
 	constexpr int SYNC_REPORT_MAX_AGE_DAYS = 30;
 	constexpr int SYNC_REPORT_SESSION_CAP = 3;
+}
+
+
+/// <summary>The processor's name and the instruction sets the math library may choose between, from CPUID.</summary>
+static std::string Cpu_Description(void)
+{
+	int regs[4] = {0, 0, 0, 0};
+	char brand[49] = {};
+	__cpuid(regs, static_cast<int>(0x80000000));
+	if (static_cast<unsigned int>(regs[0]) >= 0x80000004u) {
+		for (int part = 0; part < 3; part++) {
+			__cpuid(regs, static_cast<int>(0x80000002u + part));
+			memcpy(brand + part * 16, regs, 16);
+		}
+	}
+	__cpuid(regs, 1);
+	unsigned int const signature = static_cast<unsigned int>(regs[0]);
+	bool const sse2 = (regs[3] & (1 << 26)) != 0;
+	bool const fma = (regs[2] & (1 << 12)) != 0;
+	bool const avx = (regs[2] & (1 << 28)) != 0;
+	bool avx2 = false;
+	__cpuid(regs, 0);
+	if (regs[0] >= 7) {
+		__cpuidex(regs, 7, 0);
+		avx2 = (regs[1] & (1 << 5)) != 0;
+	}
+	std::string text = brand;
+	char tail[96];
+	snprintf(tail, sizeof(tail), " (signature %08x, SSE2 %d, FMA %d, AVX %d, AVX2 %d)", signature, (int)sse2, (int)fma, (int)avx, (int)avx2);
+	text += tail;
+	return(text);
+}
+
+
+/// <summary>The mods this machine runs, as a join request would carry them, or "none".</summary>
+static std::string Mods_Description(void)
+{
+	ModSync::Signature const signature = ModSync::Describe(Active_Mods());
+	std::string const names = ModSync::List_Names(signature);
+	if (names.empty()) {
+		return("none");
+	}
+	return(names + " [" + ModSync::Encode(signature) + "]");
+}
+
+
+/// <summary>Keeps the parts of one frame's checksum for the report.</summary>
+void Sync_Record_Frame_Detail(int frame, SyncFrameDetail const & detail)
+{
+	FrameDetails[frame & 255] = detail;
 }
 
 
@@ -235,12 +294,15 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Seed: %08x\n", Seed);
 	fprintf(fp, "Session type: %d\n", Session.Type);
 	fprintf(fp, "FPU control word: %x\n", _controlfp(0, 0));
+	fprintf(fp, "MXCSR: %08x\n", static_cast<unsigned int>(_mm_getcsr()));
 
 	int cpu_type = PROC_PENTIUM_PRO;
 	char vendor[32];
 	vendor[0] = '\0';
 	Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
 	fprintf(fp, "CPU vendor: %s\r\n", vendor);
+	fprintf(fp, "CPU: %s\n", Cpu_Description().c_str());
+	fprintf(fp, "Mods: %s\n", Mods_Description().c_str());
 
 	fprintf(fp, "Frames: %d\n", Frame);
 
@@ -249,6 +311,9 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "Latency setting: %d\n", Session.LatencyFudge);
 	fprintf(fp, "Game speed setting: %d\n", Options.GameSpeed);
 	fprintf(fp, "FrameSendRate: %d\n", Session.FrameSendRate);
+	fprintf(fp, "MaxAhead now: %d\n", Session.MaxAhead);
+	fprintf(fp, "Timing policy: %s\n", Session.NetworkTimingAdaptive ? "Adaptive" : "Gamemd");
+	fprintf(fp, "Timing master house: %d (announced %d)\n", Session.Master_Player_ID(), Session.MasterPlayerID);
 
 	for (i = 0; i < MAX_PLAYERS; i++) {
 		MPStatsType *stat = &Session.ConnectionStats[i];
@@ -270,7 +335,10 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		int const filled = (Frame + 1 < (int)ring_size) ? (Frame + 1) : (int)ring_size;
 		for (i = 0; i < filled; i++) {
 			int const frame = Frame - i;
-			fprintf(fp, "Frame %d slot %3d %08x\n", frame, frame & mask, crc_ring[frame & mask]);
+			SyncFrameDetail const & detail = FrameDetails[frame & mask];
+			fprintf(fp, "Frame %d slot %3d %08x  parts inf=%08x unit=%08x bld=%08x map=%08x logic=%08x rng=%08x  counts inf=%u unit=%u bld=%u logic=%u\n",
+				frame, frame & mask, crc_ring[frame & mask], detail.Prefix[0], detail.Prefix[1], detail.Prefix[2], detail.Prefix[3],
+				detail.Prefix[4], detail.Prefix[5], detail.Count[0], detail.Count[1], detail.Count[2], detail.Count[3]);
 		}
 	}
 

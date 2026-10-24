@@ -196,6 +196,10 @@
 // CRC[] is a record of our last 32 game CRC's.
 //---------------------------------------------------------------------------
 static unsigned int GameCRC;
+// GameCRC as it stood after each part of Compute_Game_CRC (infantry, units, buildings, map layers, logic list, random
+// number), and how many objects each part counted. The out-of-sync report lists them beside the checksum, so two
+// machines' reports name the part that diverged first.
+static SyncFrameDetail CurrentFrameDetail;
 static unsigned int CRC[256] =
 	{0,0,0,0,0,0,0,0,0,0,
 	 0,0,0,0,0,0,0,0,0,0,
@@ -811,6 +815,16 @@ static void Queue_AI_Multiplayer(void)
 	}
 
 	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
+	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+
+	// Once a second the debug log keeps the checksum and its parts, so the logs of two machines that went out of
+	// sync show the frame and the part of the game where they first differed, with the sync log off too.
+	if (Frame > 0 && (Frame & 63) == 0) {
+		DebugString("SYNC check frame %d crc %08x parts inf=%08x unit=%08x bld=%08x map=%08x logic=%08x rng=%08x counts inf=%u unit=%u bld=%u logic=%u\n",
+			Frame, GameCRC, CurrentFrameDetail.Prefix[0], CurrentFrameDetail.Prefix[1], CurrentFrameDetail.Prefix[2], CurrentFrameDetail.Prefix[3],
+			CurrentFrameDetail.Prefix[4], CurrentFrameDetail.Prefix[5], CurrentFrameDetail.Count[0], CurrentFrameDetail.Count[1],
+			CurrentFrameDetail.Count[2], CurrentFrameDetail.Count[3]);
+	}
 
 	// Frame info packets carry this value to the other machines.
 	if (Debug_SyncLog) {
@@ -3760,6 +3774,7 @@ static void Queue_Playback(void)
 	//------------------------------------------------------------------------
 	Compute_Game_CRC();
 	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
+	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
 
 	//------------------------------------------------------------------------
 	// If we've reached the CRC print frame, do so & exit
@@ -3878,6 +3893,9 @@ static void Compute_Game_CRC(void)
 		Add_CRC (&GameCRC, (int)infp->PositionCoord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
 	}
 
+	CurrentFrameDetail.Prefix[0] = GameCRC;
+	CurrentFrameDetail.Count[0] = (unsigned)Infantry.Count();
+
 	//------------------------------------------------------------------------
 	// Units
 	//------------------------------------------------------------------------
@@ -3887,6 +3905,9 @@ static void Compute_Game_CRC(void)
 			(int)unitp->SecondaryFacing.Current().As_Dir256());
 	}
 
+	CurrentFrameDetail.Prefix[1] = GameCRC;
+	CurrentFrameDetail.Count[1] = (unsigned)Units.Count();
+
 	//------------------------------------------------------------------------
 	// Buildings
 	//------------------------------------------------------------------------
@@ -3894,6 +3915,9 @@ static void Compute_Game_CRC(void)
 		bldgp = (BuildingClass *)Buildings[i];
 		Add_CRC (&GameCRC, (int)bldgp->PositionCoord.As_Int() + (int)bldgp->PrimaryFacing.Current().As_Dir256());
 	}
+
+	CurrentFrameDetail.Prefix[2] = GameCRC;
+	CurrentFrameDetail.Count[2] = (unsigned)Buildings.Count();
 
 	//------------------------------------------------------------------------
 	// Map Layers
@@ -3908,6 +3932,8 @@ static void Compute_Game_CRC(void)
 		}
 	}
 
+	CurrentFrameDetail.Prefix[3] = GameCRC;
+
 	//------------------------------------------------------------------------
 	// Logic Layers
 	//------------------------------------------------------------------------
@@ -3919,10 +3945,14 @@ static void Compute_Game_CRC(void)
 		Add_CRC (&GameCRC, (int)objp->PositionCoord.As_Int() + (int)objp->RTTI);
 	}
 
+	CurrentFrameDetail.Prefix[4] = GameCRC;
+	CurrentFrameDetail.Count[3] = (unsigned)Logic.Count();
+
 	//------------------------------------------------------------------------
 	//	A random #
 	//------------------------------------------------------------------------
 	Add_CRC(&GameCRC, Scen->RandomNumber);
+	CurrentFrameDetail.Prefix[5] = GameCRC;
 
 }	/* end of Compute_Game_CRC */
 
