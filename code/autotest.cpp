@@ -655,6 +655,22 @@ void Computer_Hunt(std::string const & name)
 
 
 /// <summary>
+/// Puts the player's foot objects of that type on the repair mission, as a harvester with nothing to do is put on it,
+/// so UnitClass::Do_MISSION_REPAIR runs its depot search.
+/// </summary>
+void Player_Repair(std::string const & name)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+			FootClass * foot = static_cast<FootClass *>(techno);
+			foot->Assign_Mission(MISSION_REPAIR);
+		}
+	}
+}
+
+
+/// <summary>
 /// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
 /// </summary>
 void Stop_Objects(std::string const & name)
@@ -2830,6 +2846,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "hunt") {
 		// hunt <TypeID>: puts the computer players' objects of that type on the hunt mission (Computer_Hunt).
 		Computer_Hunt(step.Argument);
+	} else if (step.Command == "repairmission") {
+		// repairmission <TypeID>: puts the player's objects of that type on the repair mission (Player_Repair).
+		Player_Repair(step.Argument);
 	} else if (step.Command == "attack") {
 		Attack(step.Argument);
 	} else if (step.Command == "strike") {
