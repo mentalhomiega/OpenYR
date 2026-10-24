@@ -1,0 +1,22 @@
+; A Crazy Ivan next to a friendly IFV (FV, Passengers=1). gamemd's TechnoClass::MouseOverObject (0x6FFEC0) leaves
+; AttackCursorOnFriendlies out for an Ivan bomb weapon over a transport, so the friendly IFV is not an attack target.
+; InfantryClass::MouseOverObject (0x51E3B0) then asks the transport QueryCanEnter and gives Enter. Once the IFV holds a
+; passenger, the answer is negative, so the cursor gives NoEnter, never an Ivan bomb. A friendly tank (MTNK) is a
+; control: it is not a transport, so AttackCursorOnFriendlies still gives the Ivan its bomb action.
+; "action" writes the action the object gets over the target cell, and "clickon" performs it.
+; Expected: at frame 60 the first Ivan's action over the IFV is Enter; at frame 170, with the IFV full, the second
+; Ivan's action is NoEnter. The MTNK action at frame 61 is an Ivan bomb (IvanBomb) because MTNK has no passengers.
+; Run: scripts/run_autotest.ps1 -Build agent7 -Map XMP29U2.MAP -Script src-agent7/tests/autotest/ivan-enter-transport.txt -Seconds 90 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own FV 60 20
+41 own IVAN 58 20
+42 own MTNK 63 20
+60 action IVAN 60 20
+61 action IVAN 63 20
+70 clickon IVAN 60 20
+150 where IVAN
+160 own IVAN 58 21
+170 action IVAN 60 20
+180 where FV
+240 quit
