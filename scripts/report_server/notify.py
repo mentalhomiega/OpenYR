@@ -1,4 +1,4 @@
-"""DRAFT, not deployed: posts a line to the staff channel for each report receiver.py stored.
+"""Posts a line to the staff channel for each report receiver.py stored.
 
 It reads the notices in <root>/notify, posts each through the tester bot's own Discord client
 (scripts/discord.py in the bot's folder, which reads DISCORD_BOT_TOKEN), and removes a notice once

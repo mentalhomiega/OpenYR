@@ -37,7 +37,7 @@ site_exclusions:
     function: Read_Settings
     keys: [ReportUpload, ReportURL]
     classification: excluded
-    reason: Report sending is a draft with no receiver; the report-upload change record lists these keys until a receiver exists.
+    reason: The report-upload change record documents these keys, with their default receiver and their limits.
 
   - path: code/ui/screens/cncnetlobby/uicncnetlobbydlg.cpp
     function: UI_CnCNet_Lobby_Dialog

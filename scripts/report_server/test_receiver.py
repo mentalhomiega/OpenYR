@@ -16,9 +16,9 @@ import notify  # noqa: E402
 import receiver  # noqa: E402
 
 
-def make_zip(files):
+def make_zip(files, method=zipfile.ZIP_STORED):
     buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_STORED) as archive:
+    with zipfile.ZipFile(buffer, 'w', method) as archive:
         for name, data in files.items():
             archive.writestr(name, data)
     return buffer.getvalue()
@@ -49,6 +49,12 @@ class ZipTests(unittest.TestCase):
     def test_good_zip(self):
         self.assertEqual(receiver.check_zip(make_zip({'except.txt': 'x', 'minidump.dmp': b'\0' * 10})),
                          ['except.txt', 'minidump.dmp'])
+
+    def test_good_deflated_zip(self):
+        # The game deflates its files, so the receiver reads deflated entries as well as stored ones.
+        data = make_zip({'DEBUG.LOG': 'line one\n' * 5000, 'SYNC_H0.LOG': 'TS Sync\n'}, zipfile.ZIP_DEFLATED)
+        self.assertLess(len(data), 4096)
+        self.assertEqual(receiver.check_zip(data), ['DEBUG.LOG', 'SYNC_H0.LOG'])
 
     def test_refuses_bad_zips(self):
         for data in [b'not a zip', make_zip({}), make_zip({'../evil.txt': 'x'}), make_zip({'sub/file.txt': 'x'}),
@@ -111,6 +117,20 @@ class AcceptTests(unittest.TestCase):
             with self.assertRaises(receiver.ReportError) as caught:
                 self.send(note(), data, **options)
             self.assertEqual(caught.exception.status, status)
+        with self.assertRaises(receiver.ReportError) as caught:
+            self.send(note(), b'not a zip')
+        self.assertEqual(caught.exception.status, 400)
+
+    def test_five_megabytes_is_the_limit(self):
+        self.assertEqual(receiver.MAX_BODY_BYTES, 5 * 1024 * 1024)
+
+    def test_rate_limit_answers_429(self):
+        data = make_zip({'except.txt': 'x'})
+        for _ in range(receiver.REPORTS_PER_HOUR):
+            self.send(note(id_='20261024-010203-crash-%d-1' % _), data)
+        with self.assertRaises(receiver.ReportError) as caught:
+            self.send(note(id_='20261024-010203-crash-99-1'), data)
+        self.assertEqual(caught.exception.status, 429)
 
     def test_a_resent_report_is_stored_once(self):
         data = make_zip({'except.txt': 'x'})

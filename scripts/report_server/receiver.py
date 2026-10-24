@@ -1,4 +1,4 @@
-"""DRAFT, not deployed: receives the crash, freeze and out-of-sync reports the game sends.
+"""Receives the crash, freeze and out-of-sync reports the game sends.
 
 The game POSTs a zip (Content-Type: application/zip) with a one-line JSON note in the
 X-OpenYR-Report header: {"format":1,"id":...,"kind":"crash|hang|desync","commit":...,"time":...,
@@ -22,8 +22,8 @@ import threading
 import time
 import zipfile
 
-# The game never sends more than 16 MB of files; the zip adds a little to that.
-MAX_BODY_BYTES = 17 * 1024 * 1024
+# The game sends at most 4 MB of zip per report; the limit is a little above that.
+MAX_BODY_BYTES = 5 * 1024 * 1024
 # A zip may hold at most this many files, unpacking to at most this much.
 MAX_FILES = 32
 MAX_UNPACKED_BYTES = 64 * 1024 * 1024
