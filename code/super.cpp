@@ -1356,6 +1356,11 @@ void SuperClass::Place(Cell const & cell, bool player)
 						start.Z += BRIDGE_LEPTON_HEIGHT;
 					}
 
+					// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
+					if (Class->Type == SUPER_MULTI_MISSILE) {
+						Sound_Effect(Rule->DigSound, start);
+					}
+
 					Cell closest = Map.Closest_Edge_Cell(start);
 
 					WeaponTypeClass const * wtype;
@@ -1399,6 +1404,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 								House->NukeDest = cell;
 								launchsite->LastSuperWeaponIndex = Class->Type;
 								if (Class->Type == SUPER_MULTI_MISSILE) {
+									Coord coord = cell.As_Coord();
+									coord.Z = Map.Get_Height_GL(coord);
+									Sound_Effect(Rule->DigSound, coord);
 									Speak_Eva("EVA_NuclearMissileLaunched");
 								}
 							}
