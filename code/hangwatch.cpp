@@ -152,8 +152,9 @@ DWORD WINAPI Watch_Thread_Proc(LPVOID)
 		}
 
 		// Nothing is timed before the first beat, so start-up is not reported. A native dialog pumps
-		// no messages of ours, so the wait starts again when it closes.
-		if (!armed || HangWatchDialogs.load(std::memory_order_relaxed) > 0) {
+		// no messages of ours, so the wait starts again when it closes. A crash report parks the
+		// main thread on purpose, so it is not a stall either.
+		if (!armed || HangWatchDialogs.load(std::memory_order_relaxed) > 0 || HangWatchCrashing.load(std::memory_order_relaxed)) {
 			changed = now;
 			continue;
 		}
