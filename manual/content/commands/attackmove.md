@@ -10,4 +10,4 @@ Holding Control and Shift with a left click on the ground gives the same order w
 
 A click on an enemy object still attacks it. Only ground orders are attack-moves; a click on a friendly object gives its usual order. An aircraft, a type with no primary weapon, and a type with [`PreventAttackMove=yes`](/keys/preventattackmove/) each keep their plain move or attack order.
 
-The default key is A in the Modern control scheme, bound as a press. The Classic scheme leaves the command unbound, because Classic uses A for Toggle Alliance.
+The default key is A in the Modern control scheme, bound as a press. The Classic scheme leaves the command unbound, because Classic uses A for Toggle Alliance. The keyboard dialog refuses Ctrl or Shift on its own as this key, because holding both is already the chord above.

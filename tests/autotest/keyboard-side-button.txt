@@ -1,0 +1,34 @@
+; Controls page: Attack move takes Mouse 5 (a side button), a click on the capture box and then Ctrl are refused with
+; their reasons, then Reset to defaults is confirmed and OK saves. The shots show the result in the scheme the user folder's
+; KEYBOARDMD.INI names (Classic when the file is absent). Classic gives Attack move no key, so its reset leaves the row blank and
+; the notice names Attack move; Modern restores A with no notice. Delete KEYBOARDMD.INI from the user folder to start from Classic.
+; Shots: side-button-assigned (Mouse 5 in the row), side-button-ctrl-refused (the notice names Ctrl), side-button-reset.
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/keyboard-side-button.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 90 -Filter "UISCRIPT|Exception"
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-keyboard
+ui wait 1500
+ui choose Attack move
+ui wait 500
+ui xbutton capture 2
+ui wait 500
+ui press Assign
+ui wait 500
+ui shot side-button-assigned
+ui wclick capture
+ui wait 500
+ui key ctrl
+ui wait 500
+ui shot side-button-ctrl-refused
+ui press Reset to defaults
+ui wait 1000
+ui shot side-button-reset-prompt
+ui press Yes
+ui wait 1000
+ui shot side-button-reset
+ui press OK
+ui wait 1500
+ui quit

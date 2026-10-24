@@ -1400,6 +1400,87 @@ void Test_Keyboard_Presenter(void)
 }
 
 
+// The fixture with Attack move added and bound to Mouse 5, a key the Classic scheme does not give it.
+UIKeyboardState Attack_Move_Fixture(void)
+{
+	UIKeyboardState state = Keyboard_Fixture();
+	state.Commands.push_back({ "AttackMove", "Attack move", "Arms an attack-move order", (int)HOTKEY_CATEGORY_COMMANDS });
+	state.Bindings.push_back({ "AttackMove", 6, 0, HOTKEY_PRESS });
+	return(state);
+}
+
+
+void Drive_Refusal(UIPresenterClass & presenter, int reason, char const * name)
+{
+	UIIntent intent;
+	intent.Name = "refuse";
+	intent.Value = reason;
+	intent.Text = name;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Test_Keyboard_Refusals(void)
+{
+	RecordingKeyboardServiceClass service;
+	UIKeyboardPresenterClass presenter(service, Attack_Move_Fixture());
+	Drive(presenter, "pick", 4 * HOTKEY_SLOT_COUNT);
+	Drive(presenter, "capture", 88);
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Ctrl");
+	Check(presenter.State.Notice == "Ctrl cannot be bound by itself. Hold it with another key. Holding Ctrl and Shift together already gives attack-move on a click.", "Ctrl alone on Attack move says why and names the Ctrl and Shift attack-move");
+	Check(presenter.State.CapturedName == "K88" && Key_Of_Name(presenter.State.Bindings, "AttackMove") == 6, "a refused key keeps the captured key and the binding");
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Alt");
+	Check(presenter.State.Notice == "Alt cannot be bound by itself. Hold it with another key.", "Alt alone gives the plain reason");
+
+	Drive(presenter, "pick", 1 * HOTKEY_SLOT_COUNT);
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Shift");
+	Check(presenter.State.Notice == "Shift cannot be bound by itself. Hold it with another key.", "a modifier on another command gives no attack-move hint");
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MOUSE, "");
+	Check(presenter.State.Notice == "The left and right mouse buttons cannot be bound here. Use the middle button, a side button or the wheel.", "a left or right click says the buttons cannot be bound");
+
+	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_UNMAPPED, "");
+	Check(presenter.State.Notice == "That key cannot be bound.", "a key the screen cannot name says so");
+
+	Drive(presenter, "capture", 65);
+	Check(presenter.State.Notice.empty() && presenter.State.CapturedName == "K65", "a key that can be bound clears the notice");
+}
+
+
+void Test_Keyboard_Reset_Notice(void)
+{
+	RecordingKeyboardServiceClass service;
+
+	// The scheme gives Attack move no key, so the reset unbinds the Mouse 5 binding and says so.
+	UIKeyboardPresenterClass classic(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(classic, "resetall");
+	Check(Hotkey_Find(classic.State.Bindings, "AttackMove", 0) < 0 && classic.State.Notice == "Attack move has no default key in the Classic scheme, so it is now unbound.", "a reset with no default for a bound command unbinds it and names it");
+
+	// The scheme gives the key back, so the reset restores it without a notice.
+	UIKeyboardPresenterClass modern(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "AttackMove", 65 }, { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(modern, "resetall");
+	Check(Key_Of_Name(modern.State.Bindings, "AttackMove") == 65 && modern.State.Notice.empty(), "a reset restores the scheme's key with no notice");
+
+	// A category reset names only the commands of its category.
+	UIKeyboardPresenterClass category(service, Attack_Move_Fixture());
+	Drive(category, "category", HOTKEY_CATEGORY_COMMANDS + 1);
+	service.DefaultTable = { { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(category, "resetcategory");
+	Check(category.State.Notice == "Attack move has no default key in the Classic scheme, so it is now unbound." && Key_Of_Name(category.State.Bindings, "TypeSelect") == 84, "a category reset names the unbound commands of its category and keeps the others");
+
+	// A scheme change names the bound commands that the new scheme leaves unbound.
+	UIKeyboardPresenterClass switched(service, Attack_Move_Fixture());
+	service.DefaultTable = { { "TypeSelect", 84 }, { "ToggleRepair", 75 }, { "ScatterObject", 88 }, { "ToggleSell", 76 } };
+	Drive(switched, "scheme", 1);
+	Check(switched.State.Scheme == 1 && switched.State.Notice == "Attack move has no default key in the Modern scheme, so it is now unbound.", "a scheme change names the commands it unbinds");
+}
+
+
 class RecordingModsServiceClass : public UIModsServiceClass
 {
 	public:
@@ -7698,6 +7779,8 @@ int main(void)
 	Test_Game_Controls_Presenter();
 	Test_Keys();
 	Test_Keyboard_Presenter();
+	Test_Keyboard_Refusals();
+	Test_Keyboard_Reset_Notice();
 	Test_Mods_Presenter();
 	Test_Settings_Tabs_Presenter();
 	Test_Settings_Host();

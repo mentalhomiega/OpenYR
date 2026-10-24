@@ -77,6 +77,12 @@ A key with a `Double` or `Hold` binding and a `Press` binding waits before its p
 
 `DoublePressMs=` and `HoldMs=` are in milliseconds, from 50 to 2000. A value outside that range, or one that is not a number, gives the default: 250 and 400.
 
+## The keyboard dialog
+
+The dialog does not capture a key press that it cannot bind, and its notice says why. Shift, Ctrl or Alt on its own is refused, and so are the left and right mouse buttons and a key the dialog cannot name. A chord such as Ctrl with Shift is not a binding; [Attack move](/commands/attackmove/) already takes it on a click.
+
+Reset to defaults and Reset category unbind each command that the scheme gives no key, and the notice names it. Classic gives [Attack move](/commands/attackmove/) no key, so a Mouse 5 binding to it is removed by a Classic reset. A scheme change does the same.
+
 ## Rules for a line
 
 - A key that is not a number, or is `0`, is ignored.
