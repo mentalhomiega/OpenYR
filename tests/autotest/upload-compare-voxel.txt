@@ -1,0 +1,107 @@
+; Pixel-compare scene for turret and barrel voxel caching (scratch-agent/perf/VOXEL.md). Turreted vehicles of every side and a row of
+; defences stand in the player's corner of XMP08T2; computer infantry spawn at changing angles, so turrets and barrels turn and fire.
+; A capture every 100 frames from frame 300. Run twice with each build and compare the TGAs byte for byte.
+1 view 52 56
+2 reveal
+10 grantunit MTNK 44 56
+10 grantunit FV 46 56
+10 grantunit SREF 48 56
+10 grantunit MGTK 50 56
+10 grantunit HTNK 52 56
+10 grantunit APOC 54 56
+10 grantunit HTK 56 56
+10 grantunit TTNK 44 58
+10 grantunit LTNK 46 58
+10 grantunit BFRT 48 58
+10 grantunit MTNK 50 58
+10 grantunit HTNK 52 58
+10 grantunit FV 54 58
+10 grantunit DEST 56 58
+10 own GAPOWR 40 50
+10 own GAPOWR 40 53
+12 own NAFLAK 44 51
+12 own NASAM 47 51
+12 own NALASR 50 51
+12 own GTGCAN 53 51
+12 own YAGGUN 56 51
+12 own NATBNK 59 51
+100 spawn E1 60 58
+100 spawn E2 61 58
+100 spawn E1 48 63
+100 spawn E2 49 63
+100 spawn E1 48 53
+100 spawn E2 49 53
+300 spawn E1 45 61
+300 spawn E2 46 61
+300 spawn E1 52 52
+300 spawn E2 53 52
+300 spawn E1 59 61
+300 spawn E2 60 61
+300 windowshot upload-voxel-300
+400 windowshot upload-voxel-400
+500 spawn E1 56 53
+500 spawn E2 57 53
+500 spawn E1 56 63
+500 spawn E2 57 63
+500 spawn E1 44 58
+500 spawn E2 45 58
+500 windowshot upload-voxel-500
+600 windowshot upload-voxel-600
+700 spawn E1 52 64
+700 spawn E2 53 64
+700 spawn E1 45 55
+700 spawn E2 46 55
+700 spawn E1 59 55
+700 spawn E2 60 55
+700 windowshot upload-voxel-700
+800 windowshot upload-voxel-800
+900 spawn E1 48 53
+900 spawn E2 49 53
+900 spawn E1 60 58
+900 spawn E2 61 58
+900 spawn E1 48 63
+900 spawn E2 49 63
+900 windowshot upload-voxel-900
+1000 windowshot upload-voxel-1000
+1100 spawn E1 59 61
+1100 spawn E2 60 61
+1100 spawn E1 45 61
+1100 spawn E2 46 61
+1100 spawn E1 52 52
+1100 spawn E2 53 52
+1100 windowshot upload-voxel-1100
+1200 windowshot upload-voxel-1200
+1300 spawn E1 44 58
+1300 spawn E2 45 58
+1300 spawn E1 56 53
+1300 spawn E2 57 53
+1300 spawn E1 56 63
+1300 spawn E2 57 63
+1300 windowshot upload-voxel-1300
+1400 windowshot upload-voxel-1400
+1500 spawn E1 59 55
+1500 spawn E2 60 55
+1500 spawn E1 52 64
+1500 spawn E2 53 64
+1500 spawn E1 45 55
+1500 spawn E2 46 55
+1500 windowshot upload-voxel-1500
+1600 windowshot upload-voxel-1600
+1700 spawn E1 48 63
+1700 spawn E2 49 63
+1700 spawn E1 48 53
+1700 spawn E2 49 53
+1700 spawn E1 60 58
+1700 spawn E2 61 58
+1700 windowshot upload-voxel-1700
+1800 windowshot upload-voxel-1800
+1900 spawn E1 52 52
+1900 spawn E2 53 52
+1900 spawn E1 59 61
+1900 spawn E2 60 61
+1900 spawn E1 45 61
+1900 spawn E2 46 61
+1900 windowshot upload-voxel-1900
+2000 windowshot upload-voxel-2000
+2100 windowshot upload-voxel-2100
+2110 quit
