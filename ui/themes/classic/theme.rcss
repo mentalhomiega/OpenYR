@@ -609,3 +609,40 @@ body[data-model="classicopt"] #more label.check
 	font-size: 11dp;
 	white-space: nowrap;
 }
+
+/* The CnCNet lobby is laid out for 900dp, wider than the classic stage. Its panel fills the stage and its
+   columns narrow to fit, so the search, the game list and the lobby chat stay inside the frame. */
+body[data-model="cncnetlobby"] #reveal
+{
+	width: 800dp;
+}
+
+body[data-model="cncnetlobby"] #left
+{
+	width: 380dp;
+}
+
+body[data-model="cncnetlobby"] .col-name
+{
+	width: 130dp;
+}
+
+body[data-model="cncnetlobby"] .col-map
+{
+	width: 110dp;
+}
+
+body[data-model="cncnetlobby"] .col-players
+{
+	width: 50dp;
+}
+
+body[data-model="cncnetlobby"] .col-status
+{
+	width: 70dp;
+}
+
+body[data-model="cncnetlobby"] #userside, body[data-model="cncnetlobby"] #whisper
+{
+	width: 120dp;
+}
