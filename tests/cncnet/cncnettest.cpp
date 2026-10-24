@@ -553,6 +553,17 @@ bool Sent(std::vector<CnCNetRoomSendType> const & sent, CnCNetRoomSendKind kind,
 }
 
 
+bool Said(std::vector<CnCNetRoomSendType> const & sent, std::string const & text)
+{
+	for (CnCNetRoomSendType const & send : sent) {
+		if (send.Kind == CnCNetRoomSendKind::SAY && send.Text == text) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 void Test_Room(void)
 {
 	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
@@ -632,22 +643,25 @@ void Test_Room(void)
 	Check(host.Can_Start(), "room: the host can start once that player has left");
 
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 1000);
-	host.Tick(20999);
-	Check(host.Find_Player("Stock") == nullptr, "room: a silent joiner gets the full hello timeout");
-	host.Tick(21000);
 	CnCNetRoomPlayerType const * stock = host.Find_Player("Stock");
-	Check(stock != nullptr && host.Build_Problem(*stock) == "not OpenYR" && !Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"),
-		"room: a joiner that never says hello is listed as not OpenYR and not kicked");
+	Check(stock != nullptr && host.Build_Problem(*stock) == "not OpenYR", "room: a joiner is listed as not OpenYR until its hello arrives");
+	host.Tick(20999);
+	Check(!Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a silent joiner gets the full hello timeout");
+	host.Tick(21000);
+	Check(Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Stock"), "room: a joiner that never says hello is removed when the timeout ends");
+	host.Apply(Room_Event(IRCEventKind::KICKED, "Host", ROOM, std::string(), "Stock"), 21001);
+	Check(host.Find_Player("Stock") == nullptr, "room: the removed joiner leaves the list when the server confirms the kick");
 
 	guest.Set_Ready(true);
 	Deliver(guest, "Guest", {&host}, 22000);
 	Deliver(host, "Host", {&guest}, 22000);
-	Check(!host.Can_Start(), "room: a not OpenYR player holds the start back");
-	host.Apply(Room_Event(IRCEventKind::PARTED, "Stock", ROOM), 22001);
-	Check(host.Can_Start(), "room: removing the not OpenYR player lets the host start");
+	Check(host.Can_Start(), "room: the host can start once the removed joiner has left");
 	Check(host.Start({{"Seed", "5"}}), "room: the host starts when everyone is ready");
 	Deliver(host, "Host", {&guest}, 22100);
 	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5", "room: the guest receives the start");
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Late", ROOM), 22150);
+	Check(host.Find_Player("Late") == nullptr && Sent(host.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Late"),
+		"room: a joiner after the start is refused at once and not listed");
 
 	host.Return_To_Room();
 	sent = Deliver(host, "Host", {&guest}, 30000);
@@ -696,11 +710,10 @@ void Test_Room_Notice(void)
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
 	host.Take_Outgoing();
 
-	// Every joiner hears the notice once; a stock client never says hello, so it holds the start back.
+	// Every joiner hears the notice once. A stock client never says hello: it is listed as not OpenYR and holds the start back.
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 100);
 	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
-	Check(sent.size() == 1 && sent[0].Kind == CnCNetRoomSendKind::SAY && sent[0].Target == ROOM && sent[0].Text == config.Notice,
-		"room notice: a joiner is told the room is an OpenYR game");
+	Check(Said(sent, config.Notice), "room notice: a joiner is told the room is an OpenYR game");
 
 	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 200);
 	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 200);
@@ -713,11 +726,23 @@ void Test_Room_Notice(void)
 	Deliver(host, "Host", {&guest}, 400);
 	Check(!host.Can_Start(), "room notice: the host cannot start while a joiner has not said hello");
 	host.Tick(100 + 20000);
+	sent = host.Take_Outgoing();
+	Check(Sent(sent, CnCNetRoomSendKind::KICK, "Stock") && !Sent(sent, CnCNetRoomSendKind::KICK, "Guest"),
+		"room notice: the silent joiner is removed when its hello timeout ends; a joiner who said hello is not");
 	CnCNetRoomPlayerType const * silent = host.Find_Player("Stock");
 	Check(silent != nullptr && host.Build_Problem(*silent) == "not OpenYR" && !host.Can_Start(),
-		"room notice: the silent joiner is listed as not OpenYR and holds the start back");
-	host.Apply(Room_Event(IRCEventKind::PARTED, "Stock", ROOM), 20200);
+		"room notice: the silent joiner stays listed as not OpenYR until the server confirms the kick");
+	host.Apply(Room_Event(IRCEventKind::KICKED, "Host", ROOM, std::string(), "Stock"), 20200);
 	Check(host.Can_Start(), "room notice: the host can start once the silent joiner has left");
+
+	CnCNetRoomConfigType tiny = Room_Config("Host", "b1");
+	tiny.Limits.MaxPlayers = 2;
+	CnCNetRoomClass crowded = CnCNetRoomClass::Host(tiny, {{"Map", "Lake"}}, 0);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Stock", ROOM), 100);
+	crowded.Apply(Room_Event(IRCEventKind::JOINED, "Late", ROOM), 100);
+	Check(crowded.Find_Player("Late") == nullptr && crowded.Players().size() == 2 && Sent(crowded.Take_Outgoing(), CnCNetRoomSendKind::KICK, "Late"),
+		"room notice: a joiner to a full room is refused at once and not listed");
 
 	CnCNetRoomClass quiet = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
 	quiet.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);

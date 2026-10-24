@@ -179,9 +179,19 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 				}
 				Changed();
 			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
-				Pending.push_back({event.Nick, now});
-				if (!Config.Notice.empty()) {
-					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
+				if (CurrentStatus == CnCNetRoomStatus::STARTING) {
+					Refuse(event.Nick, "The game has already started.");
+				} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
+					Refuse(event.Nick, "The room is full.");
+				} else {
+					// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
+					Pending.push_back({event.Nick, now});
+					CnCNetRoomPlayerType player;
+					player.Name = event.Nick;
+					Seat_Joiner(player);
+					if (!Config.Notice.empty()) {
+						Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
+					}
 				}
 			}
 			break;
@@ -376,17 +386,10 @@ void CnCNetRoomClass::Tick(uint64_t now)
 				late.push_back(pending.Nick);
 			}
 		}
+		// A joiner that never said hello is a stock client or an old build. It has been listed as not OpenYR
+		// since it joined; the refusal removes it, and the host cannot start while it is listed.
 		for (std::string const & nick : late) {
-			std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, nick)); });
-			// A joiner that never said hello may be a stock client. It stays listed as not OpenYR, so the
-			// host cannot start until it leaves or the host removes it.
-			if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
-				Refuse(nick, "The room is full.");
-			} else {
-				CnCNetRoomPlayerType player;
-				player.Name = nick;
-				Seat_Joiner(player);
-			}
+			Refuse(nick, "This room needs OpenYR.");
 		}
 	}
 }
