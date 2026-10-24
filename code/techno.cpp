@@ -5896,7 +5896,13 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 				}
 			}
 		}
-		bool const friendly_fire = TClass->IsAttackFriendlies || TClass->IsAttackCursorOnFriendlies || sonic_parasite;
+		// An Ivan bomb weapon over a transport is a boarding order, so AttackCursorOnFriendlies does not make the transport a target (TechnoClass::MouseOverObject, 0x6FFEC0).
+		bool ivan_transport = false;
+		if (object->Is_Techno() && ((TechnoClass const *)object)->TClass->Max_Passengers() > 0) {
+			WeaponTypeClass const * ivan_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			ivan_transport = ivan_weapon != NULL && ivan_weapon->WarheadPtr != NULL && ivan_weapon->WarheadPtr->IsIvanBomb;
+		}
+		bool const friendly_fire = TClass->IsAttackFriendlies || (TClass->IsAttackCursorOnFriendlies && !ivan_transport) || sonic_parasite;
 
 		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || ((!House->Is_Ally(object) || friendly_fire) && (!fooled || friendly_fire))) && (ctrldown || object->Class_Of()->IsLegalTarget || terrain_target)) {
 
