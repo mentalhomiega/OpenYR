@@ -6999,6 +6999,11 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Either the type is flagged exploding, or a veteran/elite has the explodes ability.
 			 */
 			if (!TClass->IsExploding && !Has_Ability(ABILITY_EXPLODES)) {
+				// A Suicide weapon as the current weapon sets off the death weapon without the cargo scatter (TechnoClass::ReceiveDamage, 0x701900, 0x7025F5).
+				WeaponTypeClass const * current = Get_Class_Weapon_Data(CurrentWeaponNumber)->Weapon;
+				if (current != NULL && current->IsSuicide) {
+					Fire_Death_Weapon();
+				}
 				break;
 			}
 
