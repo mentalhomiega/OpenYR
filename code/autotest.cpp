@@ -2777,6 +2777,11 @@ void Run(StepType const & step)
 		Execute_Command(step.Argument.c_str());
 	} else if (step.Command == "select") {
 		Select_Type(step.Argument);
+	} else if (step.Command == "selectadd") {
+		// selectadd <TypeID>: adds the player's objects of that type to the selection, as a shift-click would.
+		For_Player_Objects<UnitClass>(Units, step.Argument, [](UnitClass * object) {object->Select();});
+		For_Player_Objects<InfantryClass>(Infantry, step.Argument, [](InfantryClass * object) {object->Select();});
+		For_Player_Objects<AircraftClass>(Aircraft, step.Argument, [](AircraftClass * object) {object->Select();});
 	} else if (step.Command == "produce") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL) {
@@ -4124,6 +4129,10 @@ void Run(StepType const & step)
 			}
 			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
 		}
+	} else if (step.Command == "helptext") {
+		// helptext <id>: the tooltip text the map gives for the mouse position now, as the tooltip manager asks for it.
+		char const * text = Map.Help_Text(std::atoi(step.Argument.c_str()));
+		DebugString("AUTOTEST   helptext %d: %s\n", std::atoi(step.Argument.c_str()), text != NULL ? text : "(none)");
 	} else if (step.Command == "cellpixel") {
 		// cellpixel x y: the window pixel of the centre of that cell under the current view, for windowclick.
 		Coord const centre = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();

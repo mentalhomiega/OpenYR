@@ -1,0 +1,53 @@
+; Attack-move key over shrouded and fogged ground, through the window path, with a mixed selection (E1 and HTNK) and fog
+; of war on. Each step hovers the pointer, reads the mouse shape and the map's tooltip text, then clicks. "where" logs each
+; unit's mission. Shroud: 67,47 is never seen before the first click, at the window point 380,420 (view 60 42). The first
+; hover has no key held, the second has A (AttackMove, key 65) held, and the click goes with the key held. Fog: the group
+; walks to 66,46, which maps 67,47, then back to 50,42, which leaves 67,47 under the fog. A held-key hover and click follow.
+; Shape codes: 18 MOUSE_CAN_MOVE, 21 MOUSE_CAN_ATTACK. Tooltip id 600 is the tactical map's help id.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-key-shroud.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+35 grantunit E1 60 42
+36 grantunit HTNK 58 44
+40 select E1
+41 selectadd HTNK
+45 selected
+50 cell 67 47
+52 windowmove 380 420
+54 shape
+56 helptext 600
+60 hold 65
+62 windowmove 380 420
+64 shape
+66 helptext 600
+68 windowclick 380 420
+120 where E1
+122 where HTNK
+200 where E1
+202 where HTNK
+230 release 65
+240 cell 67 47
+250 move E1 66 46
+252 move HTNK 66 46
+254 selectadd E1
+500 where E1
+502 where HTNK
+600 move E1 50 42
+602 move HTNK 50 42
+604 selectadd E1
+1200 where E1
+1202 where HTNK
+1300 cell 67 47
+1310 hold 65
+1312 windowmove 380 420
+1314 shape
+1316 helptext 600
+1318 windowclick 380 420
+1360 where E1
+1362 where HTNK
+1450 where E1
+1452 where HTNK
+1500 release 65
+1600 where E1
+1602 where HTNK
+1700 quit
