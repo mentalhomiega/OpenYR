@@ -1,0 +1,37 @@
+; A Chrono Miner (CMIN) built at a war factory leaves it on its Teleport locomotor. gamemd (BuildingClass::Mission_Unload,
+; 0x44D880, OPEN state) gives a Teleport locomotor the same tunnel branch as a Tunnel one (goto LAB_0044DFAD): the unit drives
+; out on a Drive locomotor that carries its Teleport. Before the fix the unit took the flying-unit branch and was sent to the
+; door cell by a teleport (warp order to 66,47 at frame 931), then sat on Move. After the fix it leaves on Move, starts Harvest
+; beside the door, drives to the ore, fills, and returns to the refinery by teleport (warp order to the dock).
+; Run: scripts/run_autotest.ps1 -Build agent18 -Script E:/Claude ra2 decomp/src-agent18/tests/autotest/chrono-miner-warfactory-exit.txt -Width 800 -Height 600 -Seconds 300 -ShotDir <dir> -Filter "AUTOTEST|Exception"
+1 reveal
+2 view 60 40
+10 own GACNST 50 30
+11 own GAPOWR 56 44
+12 own GAREFN 56 36
+13 own GAWEAP 62 46
+20 produce CMIN
+100 where CMIN
+200 where CMIN
+300 where CMIN
+400 where CMIN
+500 where CMIN
+600 where CMIN
+700 where CMIN
+800 where CMIN
+900 where CMIN
+1000 where CMIN
+1000 command ScreenCapture
+1200 where CMIN
+1400 where CMIN
+1500 command ScreenCapture
+1600 where CMIN
+1800 where CMIN
+2000 where CMIN
+2200 where CMIN
+2400 where CMIN
+2400 dump
+2600 where CMIN
+2800 where CMIN
+3000 where CMIN
+3000 quit

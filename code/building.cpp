@@ -7167,7 +7167,8 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 
 						ClassID const clsid = Locomotion_Class_ID(unit->Locomotion.get());
 
-						if (clsid == ClassID_TunnelLocomotion) {
+						// A Teleport locomotor takes the tunnel branch too: gamemd (BuildingClass::Mission_Unload, 0x44DFAD) drives it out on a Drive locomotor it carries.
+						if (clsid == ClassID_TunnelLocomotion || clsid == ClassID_TeleportLocomotion) {
 							IPiggyback * piggy = Piggyback_Of(unit->Locomotion.get());
 							if (piggy != NULL && piggy->Is_Piggybacking()) {
 								unit->Locomotion = piggy->End_Piggyback();
