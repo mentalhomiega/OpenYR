@@ -3747,7 +3747,8 @@ void Run(StepType const & step)
 		TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			// An open-topped passenger is limboed as it boards (gamemd limboes it before EnteredOpenTopped), so it still counts.
+			if (techno->House == PlayerPtr && (!techno->IsInLimbo || techno->IsInOpenToppedTransport) && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				int const which = techno->What_Weapon_Should_I_Use(target);
 				DebugString("AUTOTEST   canfire %s at %s: %d facing %d weapon %d fire %d visual %d sensed %d\n", techno->TClass->Name(), target->TClass->Name(), (int)techno->Can_Fire(target, 0), (int)techno->PrimaryFacing.Current().As_Facing(), which, (int)techno->Can_Fire(target, which), (int)target->Visual_Character(true, techno->House), (int)Map[target->Center_Coord()].Is_Sensed(techno->House));
 				break;

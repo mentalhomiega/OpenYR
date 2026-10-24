@@ -77,7 +77,7 @@ If a passenger finds no cell, it goes back aboard and the transport stops unload
 
 The passengers of an [`OpenTopped=yes`](/keys/opentopped/) vehicle fight from inside it. Each passenger stays at the transport's position, picks its own targets within reach of it, and fires its own weapons. A passenger aboard never moves off to chase a target and takes no movement orders.
 
-- A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport.
+- A passenger fires only a weapon with [`FireInTransport=yes`](/keys/fireintransport/), and none while the transport is itself off the map, such as inside another transport, or while the transport is being warped out by a chronosphere or a temporal beam.
 - A passenger with both a primary and a secondary weapon fires the weapon its type's [`OpenTransportWeapon`](/keys/opentransportweapon/) names, if any, instead of choosing between them. So does a [`DeployFire=yes`](/keys/deployfire/) soldier that has not deployed.
 - Each shot's damage is multiplied by [`OpenToppedDamageMultiplier`](/keys/opentoppeddamagemultiplier/), after the passenger's own firepower bonuses, and rounded down.
 - The passenger can fire at targets [`OpenToppedRangeBonus`](/keys/opentoppedrangebonus/#scope-global-rules) whole cells beyond its weapon's `Range`, except with arcing projectiles.

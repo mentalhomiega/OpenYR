@@ -4514,8 +4514,8 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		goto CANT_FIRE;
 	}
 
-	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried.
-	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && Transporter->IsInLimbo))) {
+	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
+	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && (Transporter->IsInLimbo || Transporter->IsBeingWarpedOut)))) {
 		return(FIRE_ILLEGAL);
 	}
 
