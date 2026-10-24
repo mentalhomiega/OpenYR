@@ -2635,6 +2635,25 @@ void Kick_Player_Now(ConnManClass *net, int kickee, FrameSyncStruct * their, boo
 }
 
 
+/// <summary>
+/// Destroys a connection and removes its frame-sync record, so TheirFrameSync[] stays in step
+/// with the connection list. Use this instead of Destroy_Connection when a player leaves a game.
+/// gamemd does the same in Kick_Player_Now (0064b240) and the EXIT event of Execute_DoList (0064c380).
+/// </summary>
+/// <param name="id">The house whose connection goes.</param>
+/// <param name="error">Passed on to Destroy_Connection.</param>
+void Destroy_Connection_And_Frame_Sync(int id, int error)
+{
+	int const index = Ipx.Connection_Index(id);
+	if (index >= 0) {
+		for (int i = index; i < Ipx.Num_Connections() - 1; i++) {
+			TheirFrameSync[i] = TheirFrameSync[i + 1];
+		}
+	}
+	Destroy_Connection(id, error);
+}
+
+
 /***************************************************************************
  * Handle_Timeout -- handles a timeout in the wait-for-players loop        *
  *                                                                         *
@@ -3412,7 +3431,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 					case DesyncDialogClass::OutcomeType::Continue:
 						for (int id = 0; id < MAX_PLAYERS; id++) {
 							if (Sync_Is_Out_Of_Sync(id) && net->Connection_Index(id) >= 0) {
-								Destroy_Connection(id, -1);
+								Destroy_Connection_And_Frame_Sync(id, -1);
 							}
 						}
 						Map.Flag_To_Redraw(GS_REDRAW_ALL);
