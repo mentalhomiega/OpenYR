@@ -1,0 +1,25 @@
+; Boris, with his Flare secondary weapon, hovers over an enemy structure that allows C4. With the area revealed, the
+; hover shows the airstrike cursor (MOUSE_AIR_STRIKE, 82): "shape 82 frame 480 sheet frames 517" means the cursor
+; sheet holds that frame. The sheet is MOUSE.SHA; the old MOUSE.SHP had 450 frames, so frame 480 drew nothing.
+; A click on the structure then calls the airstrike: the "airstrike call" line, and the BPLN planes after it, show it.
+; Without reveal the cell is shroud, the hover reads no object, and the cursor is the move cursor (18).
+; cursor clears the selection, so it runs last.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/boris-airstrike-cursor.txt -Country 8 -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception"
+30 view 46 40
+35 reveal
+40 grantunit BORIS 44 40
+50 enemy GAPOWR 46 42
+55 cell 46 42
+56 select BORIS
+65 windowmove 340 330
+67 shape
+68 hutaction BORIS 46 42
+70 command ScreenCapture
+75 windowclick 340 330
+120 airstrike BORIS
+160 airstrike BORIS
+200 airstrike BORIS
+240 where BORIS
+260 shape
+270 cursor BORIS 46 42
+300 quit

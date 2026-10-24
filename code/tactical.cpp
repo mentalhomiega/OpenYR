@@ -4007,7 +4007,7 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
 	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHP");
+	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
 	unsigned color = MouseDrawer->Convert_Pixel(3);
 	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
 

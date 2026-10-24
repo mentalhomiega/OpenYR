@@ -129,6 +129,7 @@
 **	screen					writes the current screen shake offset
 **	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
 **	dumpfile <name>	copies a file the game can read to dump-<name> in the working directory
+**	mixof <name>	writes each attached archive that holds that file, in lookup order, with its size; the first is the copy Retrieve returns
 **	stockcheck		reads every VXL, HVA, SHP and PCX that the art and rules files name, through the loaders, and logs each one refused
 **	previewtime		reads the preview of each map on the multiplayer list three times and logs how long each pass took
 **	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
@@ -329,6 +330,8 @@
 #include "voxlib.h"
 #include "motlib.h"
 #include "mixfile.h"
+#include "mouse.h"
+#include "shapeset.h"
 #include "_pk.h"
 #include "partsys.h"
 #include "psystype.h"
@@ -2303,9 +2306,11 @@ void Run(StepType const & step)
 		return;
 	}
 
-	// shape: writes the mouse shape the map shows now, as the last hover set it (MouseType numbers, MOUSE_CAN_ATTACK is 21).
+	// shape: writes the mouse shape the map shows now, as the last hover set it (MouseType numbers, MOUSE_CAN_ATTACK is 21),
+	// with the first frame of its cursor entry and the frames the loaded cursor sheet holds; the sheet has no art at a frame past its count.
 	if (step.Command == "shape") {
-		DebugString("AUTOTEST   shape %d\n", (int)Map.Get_Mouse_Shape());
+		MouseType const shape = Map.Get_Mouse_Shape();
+		DebugString("AUTOTEST   shape %d frame %d sheet frames %d\n", (int)shape, Map.Get_Mouse_Start_Frame(shape), MouseClass::MouseShapes != NULL ? MouseClass::MouseShapes->Get_Count() : -1);
 		return;
 	}
 
@@ -2530,6 +2535,23 @@ void Run(StepType const & step)
 			DebugString("AUTOTEST   dumpfile %s: %d bytes to %s\n", step.Argument.c_str(), size, path.c_str());
 		} else {
 			DebugString("AUTOTEST   dumpfile %s: not found\n", step.Argument.c_str());
+		}
+		return;
+	}
+
+	if (step.Command == "mixof") {
+		// mixof <name>: writes each attached archive that holds the name, in lookup order (the first one is the copy Retrieve returns), with its size.
+		int order = 0;
+		bool found = false;
+		for (MixFileClass * mix = MixFileClass::First_Attached(); mix != NULL; mix = mix->Next_Attached(), order++) {
+			int size = 0;
+			if (mix->Member_Size(step.Argument.c_str(), &size)) {
+				DebugString("AUTOTEST   mixof %s: archive %d %s size %d\n", step.Argument.c_str(), order, mix->Filename, size);
+				found = true;
+			}
+		}
+		if (!found) {
+			DebugString("AUTOTEST   mixof %s: not in an archive\n", step.Argument.c_str());
 		}
 		return;
 	}

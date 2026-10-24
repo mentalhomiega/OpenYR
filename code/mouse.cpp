@@ -352,14 +352,14 @@ void MouseClass::One_Time(void)
 	**	is an override file available.
 	*/
 	#ifdef _DEBUG
-		RawFileClass file("MOUSE.SHP");
+		RawFileClass file("MOUSE.SHA");
 		if (file.Is_Available()) {
 			MouseShapes = (ShapeSet const *)Load_Alloc_Data(file);
 		} else {
-			MouseShapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHP");
+			MouseShapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHA");
 		}
 	#else
-		MouseShapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHP");
+		MouseShapes = (ShapeSet const *)MFCD::Retrieve("MOUSE.SHA");
 	#endif
 }
 

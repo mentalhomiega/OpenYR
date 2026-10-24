@@ -702,3 +702,30 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	assert(1);//BG
 	return(false);
 }
+
+
+/// <summary>Reports whether this archive holds the named member, and its size in bytes.</summary>
+/// <param name="filename">The member's name, in any case.</param>
+/// <param name="size">Receives the member's size when it is found; may be NULL.</param>
+/// <returns>bool; Is the member in this archive?</returns>
+bool MixFileClass::Member_Size(char const * filename, int * size) const
+{
+	if (filename == NULL || HeaderBuffer == NULL || strlen(filename) >= _MAX_PATH) {
+		return(false);
+	}
+
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+
+	SubBlock key;
+	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
+	SubBlock const * block = Binary_Search<SubBlock>(HeaderBuffer, Count, key);
+	if (block == NULL) {
+		return(false);
+	}
+	if (size != NULL) {
+		*size = block->Size;
+	}
+	return(true);
+}
