@@ -7475,3 +7475,29 @@ int UnitClass::Simple_Deploy_AI(void)
 	}
 	return(1);
 }
+
+
+/// <summary>
+/// Finds the cell a DeployToLand unit can land on when the cell it is over cannot take it.
+/// Only the eight cells around the unit are tried: a land cell that is clear and free to occupy.
+/// </summary>
+/// <returns>Cell; The landing cell, or CELL_NONE when no neighbouring cell fits.</returns>
+Cell UnitClass::Deploy_Landing_Cell(void) const
+{
+	Cell const here = Get_Cell();
+	for (FacingType face = FACING_N; face < FACING_COUNT; face++) {
+		Cell const cell = Adjacent_Cell(here, face);
+		CellClass * cellptr = &Map[cell];
+		if (cellptr->Land_Type() == LAND_WATER || cellptr->Land_Type() == LAND_BEACH || cellptr->IsUnderBridge) {
+			continue;
+		}
+		if (Can_Enter_Cell(cellptr) != MOVE_OK) {
+			continue;
+		}
+		if (!cellptr->Is_Spot_Free(CellClass::Spot_Index(cellptr->Center_Coord()), false)) {
+			continue;
+		}
+		return(cell);
+	}
+	return(CELL_NONE);
+}

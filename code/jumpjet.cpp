@@ -739,7 +739,12 @@ void JumpjetLocomotionClass::Process_Descent(void)
 	int spot = CellClass::Spot_Index(HeadToCoord);
 	bool stop = true;
 
-	if ((cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
+	// A DeployToLand unit does not come down on water or beach; its landing is retargeted below.
+	bool const deploy_landing = LinkedTo->RTTI == RTTI_UNIT && static_cast<UnitClass *>(LinkedTo)->IsLandingToDeploy;
+	bool const wet = Map[HeadToCoord].Land_Type() == LAND_WATER || Map[HeadToCoord].Land_Type() == LAND_BEACH;
+
+	if (!(deploy_landing && wet && !IsLanding) &&
+		(cellptr->Is_Spot_Free(spot, cellptr->IsUnderBridge) || IsLanding) &&
 		(Map[HeadToCoord].IsUnderBridge || move <= MOVE_MOVING_BLOCK && (move != MOVE_MOVING_BLOCK || IsLanding))) {
 
 		if (!IsLanding) {
@@ -783,6 +788,29 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			}
 		}
 		stop = false;
+	}
+
+	// A deploying unit whose landing is blocked or on water tries only the cells around it, and cancels the deploy when none fits.
+	if (stop && deploy_landing && wet) {
+		UnitClass * unit = static_cast<UnitClass *>(LinkedTo);
+		Cell const landing = unit->Deploy_Landing_Cell();
+		if (landing != CELL_NONE) {
+			Move_To(Map[landing].Center_Coord());
+		} else {
+			if (IsLanding) {
+				LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+				IsLanding = false;
+			}
+			unit->IsLandingToDeploy = false;
+			unit->Assign_Mission(MISSION_GUARD);
+			unit->Assign_Destination(NULL);
+			HeadToCoord = COORD_NONE;
+			IsMoving = false;
+			CurrentSpeed = 0;
+			TargetSpeed = 0;
+			CurrentState = HOVERING;
+		}
+		return;
 	}
 
 	if (stop) Stop_Moving();
