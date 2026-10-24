@@ -34,5 +34,6 @@
 #include "keyboard.h"
 
 bool Main_Loop(void);
+void Rounding_Test_Set(char const * mode);
 void Keyboard_Process(KeyNumType & input);
 void Multiplayer_Debug_Print(bool noframecheck);

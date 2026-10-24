@@ -78,6 +78,9 @@
 #include "special.hh"
 
 #include <algorithm>
+#include <cstring>
+#include <float.h>
+#include <xmmintrin.h>
 #include "bullet.h"
 #include "dbgprint.h"
 #include "foot.h"
@@ -246,6 +249,64 @@ static void Note_Render_Cost(unsigned int took)
 }
 
 
+/// <summary>
+/// Notes the rounding mode of the game thread, which every sum of the simulation's floats depends on. The mode
+/// in force on the first game frame is logged, and a frame whose mode differs from the last one logged is logged
+/// too, so a driver, an overlay or a plug-in that resets it shows up in the debug log. The mode is never changed
+/// here: a machine that played a match in another mode than the rest would show it beside its out-of-sync report.
+/// </summary>
+static void Log_Rounding_Mode(void)
+{
+	static unsigned int LastX87 = 0;
+	static unsigned int LastSse = 0;
+	static bool Started = false;
+
+	unsigned int x87 = 0;
+	_controlfp_s(&x87, 0, 0);
+	unsigned int const sse = static_cast<unsigned int>(_mm_getcsr());
+	unsigned int const x87_bits = x87 & (_MCW_RC | _MCW_PC | _MCW_DN);
+	unsigned int const sse_bits = sse & 0xE040;
+	if (!Started || Frame <= 0) {
+		Started = true;
+		LastX87 = x87_bits;
+		LastSse = sse_bits;
+		DebugString("Rounding mode at frame %d: x87 %08x, MXCSR %08x (%s)\n", Frame, x87, sse,
+			(x87 & _MCW_RC) == _RC_CHOP ? "toward zero" : (x87 & _MCW_RC) == _RC_NEAR ? "nearest" : "other");
+		return;
+	}
+	if (x87_bits == LastX87 && sse_bits == LastSse) {
+		return;
+	}
+	DebugString("Rounding mode changed at frame %d to x87 %08x, MXCSR %08x\n", Frame, x87, sse);
+	LastX87 = x87_bits;
+	LastSse = sse_bits;
+}
+
+
+/// <summary>
+/// Sets the game thread's rounding mode for the rest of the run, so a test can play one machine in a different
+/// mode from the others. "near", "chop", "up" and "down" name the modes.
+/// </summary>
+void Rounding_Test_Set(char const * mode)
+{
+	unsigned int bits = _RC_NEAR;
+	unsigned int sse = 0x0000;
+	if (std::strcmp(mode, "chop") == 0) {
+		bits = _RC_CHOP;
+		sse = 0x6000;
+	} else if (std::strcmp(mode, "up") == 0) {
+		bits = _RC_UP;
+		sse = 0x4000;
+	} else if (std::strcmp(mode, "down") == 0) {
+		bits = _RC_DOWN;
+		sse = 0x2000;
+	}
+	unsigned int ignored = 0;
+	_controlfp_s(&ignored, bits, _MCW_RC);
+	_mm_setcsr((_mm_getcsr() & ~0x6000u) | sse);
+}
+
+
 /***********************************************************************************************
  * Main_Loop -- This is the main game loop (as a single loop).                                 *
  *                                                                                             *
@@ -402,6 +463,8 @@ bool Main_Loop(void)
 			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
 		}
 	}
+
+	Log_Rounding_Mode();
 
 	/*
 	**	AI logic operations are performed here.
