@@ -48,6 +48,7 @@ class MixFileClass : public Node<MixFileClass *>
 		static MixFileClass * First_Attached(void) {MixFileClass * first = List.First(); return(first->Is_Valid() ? first : NULL);}
 		MixFileClass * Next_Attached(void) {MixFileClass * next = Next(); return(next->Is_Valid() ? next : NULL);}
 		int Member_Count(void) const {return(Count);}
+		bool Member_Size(char const * filename, int * size) const;
 
 		// Makes Retrieve of a member of this archive return memory even though the archive is not
 		// cached: the member is read from the file on its first Retrieve and kept until the
