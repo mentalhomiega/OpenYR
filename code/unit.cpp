@@ -5764,6 +5764,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (target == NavCom) return;
 
+	// A simple deployer takes no new destination while its deploy or pack-up animation runs (gamemd UnitClass::SetDestination, 0x741970).
+	if (target != NULL && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
+		return;
+	}
+
 	/*
 	**	Transport vehicles must tell all passengers that are about to load, that they
 	**	cannot proceed. This is accomplished with a radio message to this effect.
@@ -6670,6 +6675,12 @@ bool UnitClass::Ready_To_Commence(void)
 		return(false);
 	}
 
+	// A simple deployer whose deploy or pack-up animation is running takes no new order until it ends (gamemd
+	// UnitClass::ReadyToNextMission, 0x744270, which checks the Deploying and Undeploying flags).
+	if (CurrentMission == MISSION_UNLOAD && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
+		return(false);
+	}
+
 	if (MissionQueue != MISSION_ENTER) {
 		if (Locomotion->Is_Moving_Now() && HeightAGL >= 0 &&
 			Mission != MISSION_GUARD && (Mission != MISSION_ATTACK || TarCom != NULL) && !IsMissionUnloadStandby) {
@@ -7469,4 +7480,30 @@ int UnitClass::Simple_Deploy_AI(void)
 			return(1);
 	}
 	return(1);
+}
+
+
+/// <summary>
+/// Finds the cell a DeployToLand unit can land on when the cell it is over cannot take it.
+/// Only the eight cells around the unit are tried: a land cell that is clear and free to occupy.
+/// </summary>
+/// <returns>Cell; The landing cell, or CELL_NONE when no neighbouring cell fits.</returns>
+Cell UnitClass::Deploy_Landing_Cell(void) const
+{
+	Cell const here = Get_Cell();
+	for (FacingType face = FACING_N; face < FACING_COUNT; face++) {
+		Cell const cell = Adjacent_Cell(here, face);
+		CellClass * cellptr = &Map[cell];
+		if (cellptr->Land_Type() == LAND_WATER || cellptr->Land_Type() == LAND_BEACH || cellptr->IsUnderBridge) {
+			continue;
+		}
+		if (Can_Enter_Cell(cellptr) != MOVE_OK) {
+			continue;
+		}
+		if (!cellptr->Is_Spot_Free(CellClass::Spot_Index(cellptr->Center_Coord()), false)) {
+			continue;
+		}
+		return(cell);
+	}
+	return(CELL_NONE);
 }

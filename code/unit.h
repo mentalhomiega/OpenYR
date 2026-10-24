@@ -105,6 +105,7 @@ class UnitClass : public FootClass
 		bool IsLandingToDeploy;
 		int SimpleDeployFrame;
 		int Simple_Deploy_AI(void);
+		Cell Deploy_Landing_Cell(void) const;
 
 		// The passenger count a gunner vehicle last acted on.
 		int GunnerPassengers;

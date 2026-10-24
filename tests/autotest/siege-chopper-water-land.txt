@@ -1,0 +1,19 @@
+; Siege Chopper (SCHP, SpeedType=Hover) given a move order onto the open water cell 86,73 of the XMP08T2 lake, then the deploy
+; command there. A DeployToLand unit does not land on water: the search of the eight cells around it finds no land spot,
+; so the deploy is cancelled. The chopper stays airborne on Guard and logs no "Deploy:" line. Before the fix it landed on the
+; water cell and deployed there. The airborne probe logs the height above ground each time.
+30 reveal
+40 water 86 73
+45 grantunit SCHP 80 66
+50 select SCHP
+60 order SCHP 86 73
+120 airborne SCHP
+160 where SCHP
+240 airborne SCHP
+300 command DeployObject
+340 airborne SCHP
+400 airborne SCHP
+460 airborne SCHP
+520 where SCHP
+600 airborne SCHP
+700 quit

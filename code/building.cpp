@@ -3457,13 +3457,10 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 							base->ArchiveTarget = ((FootClass *)base)->NavCom;
 						}
 
+						// A jump-jet infantry gets no walk to the exit cell, so its jump-jet locomotor takes over at once (BuildingClass::KickOutUnit, 0x443C60).
 						InfantryClass * flying_jumpjet = NULL;
-						if (base->Fetch_RTTI() == RTTI_INFANTRY && base->ArchiveTarget != NULL) {
-							InfantryClass * infantry = (InfantryClass *)base;
-							if (infantry->Class->IsJumpJet &&
-								infantry->Should_JumpJet_Fly(infantry->Get_Coord().As_Cell(), base->ArchiveTarget->Center_Coord().As_Cell())) {
-								flying_jumpjet = infantry;
-							}
+						if (base->Fetch_RTTI() == RTTI_INFANTRY && ((InfantryClass *)base)->Class->IsJumpJet) {
+							flying_jumpjet = (InfantryClass *)base;
 						}
 
 						base->Assign_Mission(MISSION_MOVE);
