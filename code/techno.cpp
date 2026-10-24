@@ -5712,6 +5712,11 @@ bool Attack_Move_Key_Held(void)
  *=============================================================================================*/
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
+	// A paralyzed foot, such as a giant squid's victim, takes no move order: no voice, no mission (FootClass::CellClickedAction, 0x4D7D50, via TechnoClass::IsControllable, 0x700C40). Attacks still go through.
+	if ((mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE) && Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
+		return;
+	}
+
 	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held,
 	// and only for a type that can attack-move (TechnoClass::ClickedMission, 0x6FFBE0).
 	bool const ground_move = (mission == MISSION_MOVE && target == NULL && destination != NULL && destination->What_Am_I() == RTTI_CELL);

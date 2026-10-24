@@ -1,0 +1,55 @@
+; A player's Typhoon sub on the lake of XMP08T2 is grabbed by an enemy Giant Squid three cells off and bitten for
+; about 1700 frames. Before the grapple anim fix, the game crashed in a later squid frame after the grapple animation
+; had ended while the squid still held the sub. Sub and squid are logged with where every 100 frames.
+30 command CenterBase
+300 grantunit SUB 85 65
+301 enemy SQD 86 68
+302 select SUB
+400 where SUB
+400 where SQD
+500 where SUB
+500 where SQD
+600 where SUB
+600 where SQD
+700 where SUB
+700 where SQD
+800 where SUB
+800 where SQD
+900 where SUB
+900 where SQD
+1000 where SUB
+1000 where SQD
+1100 where SUB
+1100 where SQD
+1200 where SUB
+1200 where SQD
+1300 where SUB
+1300 where SQD
+1400 where SUB
+1400 where SQD
+1500 where SUB
+1500 where SQD
+1600 where SUB
+1600 where SQD
+1700 where SUB
+1700 where SQD
+1800 where SUB
+1800 where SQD
+1900 where SUB
+1900 where SQD
+2000 where SUB
+2000 where SQD
+2100 where SUB
+2100 where SQD
+2200 where SUB
+2200 where SQD
+2300 where SUB
+2300 where SQD
+2400 where SUB
+2400 where SQD
+2500 where SUB
+2500 where SQD
+2600 where SUB
+2600 where SQD
+2700 dump
+2800 quit

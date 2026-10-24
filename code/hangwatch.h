@@ -22,6 +22,8 @@ inline DWORD HangWatchMainThread = 0;
 inline std::atomic<unsigned int> HangWatchBeats { 0 };
 inline std::atomic<unsigned int> HangWatchDialogs { 0 };
 inline std::atomic<unsigned int> HangWatchLoads { 0 };
+// Set once a crash report has begun. The crashing thread then waits on purpose, and the report pumps no messages.
+inline std::atomic<bool> HangWatchCrashing { false };
 
 inline void Hang_Watchdog_Beat(void)
 {

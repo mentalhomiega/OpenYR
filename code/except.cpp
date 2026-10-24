@@ -50,6 +50,7 @@
 #if defined(_WIN32)
 
 #include "autotest.h"
+#include "hangwatch.h"
 #include "misc.h"
 #include "resource.h"
 #include "version.h"
@@ -1922,6 +1923,7 @@ static LONG CALLBACK Exception_Filter(EXCEPTION_POINTERS * e_info)
 
 	DWORD expected = 0;
 	if (FirstCrashThreadId.compare_exchange_strong(expected, self)) {
+		HangWatchCrashing.store(true);
 		GetLocalTime(&CrashTime);
 
 		// The dumper cannot wait for itself, so a first crash on it is reported in place, as
