@@ -11,11 +11,14 @@
 
 #include "ui/uiscript.h"
 
+#include "_ui.h"
 #include "bgfxbackend.h"
+#include "ui/uishell.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "movie.h"
 #include "video.h"
+#include "windowevent.hh"
 
 #include <RmlUi/Core.h>
 
@@ -49,6 +52,26 @@ std::string ShotPath;
 long long Now_Milliseconds(void)
 {
 	return(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
+}
+
+
+// Moves the pointer to the element's centre, then presses and releases the button there through the shell's window
+// events, which is the path a player's mouse takes.
+void Window_Click(Rml::Element * element, WindowMouseButton button)
+{
+	Rml::Vector2f const origin = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+	Rml::Vector2f const size = element->GetBox().GetSize(Rml::BoxArea::Border);
+	WindowEvent event;
+	event.X = (int)(origin.x + size.x * 0.5f);
+	event.Y = (int)(origin.y + size.y * 0.5f);
+	event.Button = button;
+	event.Clicks = 1;
+	event.Type = WINDOW_EVENT_MOUSE_MOVE;
+	UIShell.Handle_Window_Event(event);
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	UIShell.Handle_Window_Event(event);
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	UIShell.Handle_Window_Event(event);
 }
 
 
@@ -186,12 +209,22 @@ bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
 		{"right", Rml::Input::KI_RIGHT},
 		{"pageup", Rml::Input::KI_PRIOR},
 		{"pagedown", Rml::Input::KI_NEXT},
+		{"shift", Rml::Input::KI_LSHIFT},
+		{"ctrl", Rml::Input::KI_LCONTROL},
 	};
 	for (auto const & entry : keys) {
 		if (name == entry.Name) {
 			key = entry.Key;
 			return(true);
 		}
+	}
+	if (name.size() == 1 && std::isalpha((unsigned char)name[0])) {
+		key = (Rml::Input::KeyIdentifier)(Rml::Input::KI_A + (std::tolower((unsigned char)name[0]) - 'a'));
+		return(true);
+	}
+	if (name.size() == 1 && std::isdigit((unsigned char)name[0])) {
+		key = (Rml::Input::KeyIdentifier)(Rml::Input::KI_0 + (name[0] - '0'));
+		return(true);
 	}
 	return(false);
 }
@@ -210,8 +243,12 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
 /// id), pointer (an element id and two fractions of its box, where the mouse is pressed and released),
-/// set (a slider's id and the value to give it, separated by a space), press (a button's
-/// label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only inside the element with that id), key (escape, return, tab, space, page up or down or an arrow, with ctrl+ or shift+ in front to hold that key),
+/// set (a slider's id and the value to give it, separated by a space),
+/// xbutton (an element id and 1 or 2: a press of Mouse 4 or Mouse 5 at its centre, through the window events),
+/// wclick (an element id: a left click at its centre, through the window events),
+/// press (a button's label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only
+/// inside the element with that id), key (escape, return, tab, space, page up or down, an arrow, a letter, a digit, shift
+/// or ctrl, with ctrl+ or shift+ in front to hold that key),
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread
@@ -328,6 +365,30 @@ void UIScript_Tick(Rml::Context * context)
 				context->ProcessMouseMove((int)(origin.x + fx * size.x), (int)(origin.y + fy * size.y), 0);
 				context->ProcessMouseButtonDown(0, 0);
 				context->ProcessMouseButtonUp(0, 0);
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "xbutton") {
+			// "id 1|2" presses a side button (1 is Mouse 4, 2 is Mouse 5) at the centre of the element.
+			std::istringstream fields(step.Argument);
+			std::string id;
+			int side = 0;
+			fields >> id >> side;
+			Rml::Element * element = Find_Element(context, id);
+			if (element == nullptr || fields.fail() || (side != 1 && side != 2)) {
+				DebugString("UISCRIPT   xbutton %s: no such visible element or no button\n", step.Argument.c_str());
+			} else {
+				Window_Click(element, (side == 2) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1);
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "wclick") {
+			// "id" makes a left click at the centre of the element, as a player's click arrives.
+			Rml::Element * element = Find_Element(context, step.Argument);
+			if (element == nullptr) {
+				DebugString("UISCRIPT   wclick %s: no such visible element\n", step.Argument.c_str());
+			} else {
+				Window_Click(element, WINDOW_BUTTON_LEFT);
 				WaitUntil = now + 300;
 				return;
 			}

@@ -47,7 +47,13 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "capture") {
 		State.Captured = (intent.Value > 0) ? intent.Value : 0;
 		State.CapturedName = Name_Of_Key(State.Captured);
+		if (State.Captured != 0) {
+			State.Notice.clear();
+		}
 		Check_Capture();
+
+	} else if (intent.Name == "refuse") {
+		Refuse(intent.Value, intent.Text);
 
 	} else if (intent.Name == "trigger") {
 		State.Trigger = (intent.Value >= HOTKEY_PRESS && intent.Value <= HOTKEY_HELD) ? intent.Value : HOTKEY_PRESS;
@@ -240,8 +246,12 @@ void UIKeyboardPresenterClass::Reset_Category(void)
 		return;
 	}
 
-	std::vector<std::string> removed = Hotkey_Reset_Category(State.Bindings, Service.Defaults(State.Scheme), (HotkeyCategory)(State.Category - 1));
-	State.Notice = removed.empty() ? std::string() : ("Removed the key of " + removed[0] + (removed.size() > 1 ? " and others." : "."));
+	HotkeyCategory const category = (HotkeyCategory)(State.Category - 1);
+	std::vector<HotkeyEntry> const before = State.Bindings;
+	std::vector<std::string> removed = Hotkey_Reset_Category(State.Bindings, Service.Defaults(State.Scheme), category);
+	std::string notice = removed.empty() ? std::string() : ("Removed the key of " + removed[0] + (removed.size() > 1 ? " and others." : "."));
+	std::string const unbound = Unbound_Notice(before, category);
+	State.Notice = notice.empty() ? unbound : (unbound.empty() ? notice : (notice + " " + unbound));
 	Reload_Rows();
 }
 
@@ -254,8 +264,9 @@ void UIKeyboardPresenterClass::Reset_All(void)
 	if (!Service.Confirm()) {
 		return;
 	}
+	std::vector<HotkeyEntry> const before = State.Bindings;
 	Hotkey_Reset_All(State.Bindings, Service.Defaults(State.Scheme));
-	State.Notice.clear();
+	State.Notice = Unbound_Notice(before, -1);
 	Reload_Rows();
 }
 
@@ -271,10 +282,63 @@ void UIKeyboardPresenterClass::Change_Scheme(int scheme)
 	if (!Service.Confirm()) {
 		return;
 	}
+	std::vector<HotkeyEntry> const before = State.Bindings;
 	State.Scheme = scheme;
 	Hotkey_Reset_All(State.Bindings, Service.Defaults(scheme));
-	State.Notice.clear();
+	State.Notice = Unbound_Notice(before, -1);
 	Reload_Rows();
+}
+
+
+/// <summary>
+/// Says why a key press was not captured. The capture keeps its key, so the player can press another.
+/// </summary>
+void UIKeyboardPresenterClass::Refuse(int reason, std::string const & name)
+{
+	if (reason == UI_KEYBOARD_REFUSE_MODIFIER) {
+		State.Notice = name + " cannot be bound by itself. Hold it with another key.";
+		if ((name == "Ctrl" || name == "Shift") && State.Selected >= 0 && State.Commands[State.Selected].Name == "AttackMove") {
+			State.Notice += " Holding Ctrl and Shift together already gives attack-move on a click.";
+		}
+	} else if (reason == UI_KEYBOARD_REFUSE_MOUSE) {
+		State.Notice = "The left and right mouse buttons cannot be bound here. Use the middle button, a side button or the wheel.";
+	} else {
+		State.Notice = "That key cannot be bound.";
+	}
+}
+
+
+/// <summary>
+/// Names the commands of the category, or of every category when category is -1, that held a key in before and hold none now.
+/// Such a command has no default key in the scheme, so a reset leaves it unbound.
+/// </summary>
+std::string UIKeyboardPresenterClass::Unbound_Notice(std::vector<HotkeyEntry> const & before, int category) const
+{
+	auto holds = [](std::vector<HotkeyEntry> const & entries, std::string const & command) {
+		return(std::any_of(entries.begin(), entries.end(), [&](HotkeyEntry const & entry) { return(entry.Command == command); }));
+	};
+
+	std::vector<std::string> names;
+	for (UIHotkeyCommand const & command : State.Commands) {
+		if (category >= 0 && command.Category != category) {
+			continue;
+		}
+		if (holds(before, command.Name) && !holds(State.Bindings, command.Name)) {
+			names.push_back(command.Display);
+		}
+	}
+	if (names.empty()) {
+		return(std::string());
+	}
+
+	std::string list = names[0];
+	for (size_t index = 1; index < names.size(); index++) {
+		list += (index + 1 == names.size()) ? " and " : ", ";
+		list += names[index];
+	}
+	bool const one = (names.size() == 1);
+	return(list + (one ? " has" : " have") + " no default key in the " + Keyboard_Scheme_Name((KeyboardScheme)State.Scheme) + " scheme, so "
+		+ (one ? "it is" : "they are") + " now unbound.");
 }
 
 
@@ -386,6 +450,8 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				int code = 0;
 				if (event.GetId() == Rml::EventId::Mousedown) {
 					switch (event.GetParameter<int>("button", -1)) {
+						case 0:
+						case 1:		Queue("refuse", UI_KEYBOARD_REFUSE_MOUSE); break;
 						case 2:		code = VK_MBUTTON; break;
 						case 3:		code = VK_XBUTTON1; break;
 						case 4:		code = VK_XBUTTON2; break;
@@ -423,6 +489,8 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				int number = UI_Key_Number(key, event.GetParameter<bool>("shift_key", false), event.GetParameter<bool>("ctrl_key", false), event.GetParameter<bool>("alt_key", false));
 				if (number != 0) {
 					Queue("capture", number);
+				} else {
+					Refuse_Key(key);
 				}
 				event.StopPropagation();
 				return;
@@ -432,6 +500,20 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		}
 
 	private:
+		// Tells the presenter why a key that UI_Key_Number cannot name is refused.
+		void Refuse_Key(Rml::Input::KeyIdentifier key)
+		{
+			switch (key) {
+				case Rml::Input::KI_LSHIFT:
+				case Rml::Input::KI_RSHIFT:		Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Shift"); break;
+				case Rml::Input::KI_LCONTROL:
+				case Rml::Input::KI_RCONTROL:	Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Ctrl"); break;
+				case Rml::Input::KI_LMENU:
+				case Rml::Input::KI_RMENU:		Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Alt"); break;
+				default:						Queue("refuse", UI_KEYBOARD_REFUSE_UNMAPPED); break;
+			}
+		}
+
 		Rml::Element * Capture(void)
 		{
 			return((Document() != nullptr) ? Document()->GetElementById("capture") : nullptr);

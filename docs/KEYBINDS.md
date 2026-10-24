@@ -45,6 +45,8 @@ While the scenario's input is locked, keyboard bindings do not fire, and the pre
 
 Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W, E and R tab keys and the A, S, D and X command keys.
 
+The keyboard page refuses a key press that cannot be a binding and says why in its notice: Shift, Ctrl or Alt on its own, the left and right mouse buttons, and a key the page cannot name. A binding is one key with its Shift, Control and Alt bits, so the page cannot capture a chord of two modifiers. A modifier alone is also the held key that `ForceFire`, `ForceMove` and `SelectModifier` read, so another command bound to it would clash with them. Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held, and `TechnoClass::Player_Assign_Mission` applies that to a ground click. The notice for Attack move names that chord.
+
 ## New command behaviour
 
 - `TypeSelect` selects the player's units on screen whose types match the selection, when the key is released within half a second. A longer press does nothing, as in gamemd.
@@ -62,6 +64,7 @@ Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W,
 - A file without that version is read as version 1, which is what the older builds wrote. Each start applies the upgrade in memory, and the file stays as it was until the keyboard dialog saves it. An entry that still holds its old key takes the current key, or loses its key when the current table gives none. A key the player set stays. A command the file does not name gets its current key when that key is free.
 - With no keyboard file, each command gets its current key.
 - The keyboard page's "Reset category" and "Reset all" buttons change the page's bindings to the scheme's defaults. Nothing is written until OK saves them, and Cancel discards them. The reset does not delete the loose file.
+- A command with no default key in the scheme loses its binding on reset, and the notice names it. Attack move has no Classic default, so a Mouse 5 binding to it is removed by Reset to defaults in Classic and restored to A in Modern. A scheme change does the same.
 
 ## Yuri's Revenge commands
 
