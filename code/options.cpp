@@ -215,6 +215,7 @@ OptionsClass::OptionsClass(void) :
 	SidebarSorting(true),
 	ActionLines(true),
 	ShowHidden(false),
+	ShowDefenceRange(true),
 	ScreenShake(true),
 	IsClassicMenus(false),
 	MenuTheme(MENU_THEME_RANDOM),
@@ -798,6 +799,9 @@ void OptionsClass::Load_Interface_Style(void)
 	IsModernInterfaceChosen = ModernInterface;
 	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);
 	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
+
+	// The defence range ring defaults to the interface style: on for Modern, off for Classic.
+	ShowDefenceRange = ConfigINI.Get_Bool("Options", "ShowDefenceRange", ModernInterface);
 }
 
 
@@ -875,6 +879,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ShowHidden", ShowHidden);
+	ConfigINI.Put_Bool("Options", "ShowDefenceRange", ShowDefenceRange);
 	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
 	ConfigINI.Put_String("Options", "MenuTheme", MenuTheme == MENU_THEME_ALLIED ? "Allied"

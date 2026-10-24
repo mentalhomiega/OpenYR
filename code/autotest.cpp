@@ -5010,6 +5010,10 @@ void Run(StepType const & step)
 		// scriptedzoom <0|1>: turns the scripted scene zoom option off or on.
 		Options.ScriptedCameraZoom = std::atoi(step.Argument.c_str()) != 0;
 		DebugString("AUTOTEST scriptedzoom %d\n", (int)Options.ScriptedCameraZoom);
+	} else if (step.Command == "defencerange") {
+		// defencerange <0|1>: turns the Show defence range option off or on, as the options screen does.
+		Options.ShowDefenceRange = std::atoi(step.Argument.c_str()) != 0;
+		DebugString("AUTOTEST defencerange %d\n", (int)Options.ShowDefenceRange);
 	} else if (step.Command == "scriptzoom") {
 		// scriptzoom: the zoom on screen, the map pixels the view shows at it, and whether a scene holds the player's zoom.
 		Point2D const centre = TacticalMap != NULL ? TacticalMap->Get_Tactical_Position() : Point2D(0, 0);

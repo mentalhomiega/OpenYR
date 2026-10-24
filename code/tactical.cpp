@@ -1353,6 +1353,13 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			}
 		}
 
+		for (i = 0; i < CurrentObject.Count(); i++) {
+			ObjectClass * object = CurrentObject[i];
+			if (object->Fetch_RTTI() == RTTI_BUILDING) {
+				static_cast<BuildingClass *>(object)->Draw_Defence_Range();
+			}
+		}
+
 		{
 			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
 			Draw_Rubber_Band();

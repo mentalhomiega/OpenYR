@@ -71,6 +71,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.EdgeScroll = (intent.Value != 0);
 	} else if (intent.Name == "hidden") {
 		State.ShowHidden = (intent.Value != 0);
+	} else if (intent.Name == "defencerange") {
+		State.ShowDefenceRange = (intent.Value != 0);
 	} else if (intent.Name == "rally") {
 		State.AltToRally = (intent.Value != 0);
 	} else if (intent.Name == "airpick") {
@@ -108,6 +110,7 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.Coasting = true;
 		State.EdgeScroll = true;
 		State.ShowHidden = false;
+		State.ShowDefenceRange = State.ModernInterface;
 		State.AltToRally = false;
 		State.SimulateUnfocused = false;
 		State.SidebarSorting = true;
@@ -144,6 +147,7 @@ void UIGameControlsPresenterClass::Apply(void)
 	Service.Set_Scroll_Coasting(State.Coasting);
 	Service.Set_Edge_Scroll(State.EdgeScroll);
 	Service.Set_Show_Hidden(State.ShowHidden);
+	Service.Set_Show_Defence_Range(State.ShowDefenceRange);
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
 	}
@@ -235,6 +239,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("coasting", &state.Coasting)
 				&& model.Bind("edge", &state.EdgeScroll)
 				&& model.Bind("hidden", &state.ShowHidden)
+				&& model.Bind("defencerange", &state.ShowDefenceRange)
 				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("hasspeed", &state.HasSpeed)
 				&& model.Bind("hasdifficulty", &state.HasDifficulty)

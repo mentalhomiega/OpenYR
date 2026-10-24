@@ -48,6 +48,7 @@ struct UIClassicOptionsLabels
 	std::string Tooltips;
 	std::string TargetLines;
 	std::string ShowHidden;
+	std::string ShowDefenceRange;
 	std::string Keyboard;
 	std::string Mods;
 	std::string More;

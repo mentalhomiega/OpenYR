@@ -186,6 +186,9 @@ class OptionsClass {
 		// If the marker over an object hidden behind a building is to be shown, then this flag will be true.
 		bool ShowHidden;
 
+		// If a selected defence draws its weapon range ring, then this flag will be true. It defaults on in the modern interface.
+		bool ShowDefenceRange;
+
 		// If warhead and ion blast shakes move the view, then this flag will be true. The simulation never reads it.
 		bool ScreenShake;
 

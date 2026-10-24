@@ -55,6 +55,7 @@ void UI_Classic_Options_Labels(UIClassicOptionsLabels & labels)
 	labels.Tooltips = Text_Of("GUI:Tooltips", "Tooltips");
 	labels.TargetLines = "Movement and target lines";
 	labels.ShowHidden = "Show units behind buildings";
+	labels.ShowDefenceRange = "Show defence range when selected";
 	labels.Keyboard = Text_Of("GUI:Keyboard", "Keyboard");
 	labels.Mods = "Mods";
 	labels.More = "More Options";

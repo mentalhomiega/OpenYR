@@ -38,6 +38,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Scroll_Coasting(bool on) = 0;
 		virtual void Set_Edge_Scroll(bool on) = 0;
 		virtual void Set_Show_Hidden(bool on) = 0;
+		virtual void Set_Show_Defence_Range(bool on) = 0;
 		virtual void Set_Difficulty(int difficulty) = 0;
 		virtual void Set_Alt_To_Rally(bool on) = 0;
 		virtual void Set_Simulate_Unfocused(bool on) = 0;
@@ -61,6 +62,9 @@ struct UIGameControlsState
 	bool Coasting = false;
 	bool EdgeScroll = false;
 	bool ShowHidden = false;
+	bool ShowDefenceRange = false;
+	// The interface style chosen in Display; the defence range ring starts on for Modern and off for Classic.
+	bool ModernInterface = false;
 	bool InGame = false;
 	bool HasSpeed = true;
 	bool HasDifficulty = true;

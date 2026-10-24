@@ -103,6 +103,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Options.ShowHidden = on;
 		}
 
+		virtual void Set_Show_Defence_Range(bool on) override
+		{
+			Options.ShowDefenceRange = on;
+		}
+
 		virtual void Set_Difficulty(int difficulty) override
 		{
 			Options.Difficulty = difficulty;
@@ -186,6 +191,8 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.Coasting = (Options.ScrollMethod == 0);
 	state.EdgeScroll = Options.AutoScroll;
 	state.ShowHidden = Options.ShowHidden;
+	state.ShowDefenceRange = Options.ShowDefenceRange;
+	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.InGame = GameActive;
 	// A watching house has no speed to set; gamemd hides the speed slider from its observer.
 	state.HasSpeed = !(GameActive && (Session.Type == GAME_INTERNET || (PlayerPtr != NULL && PlayerPtr->Is_Watching())));
