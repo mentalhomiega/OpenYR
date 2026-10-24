@@ -563,6 +563,25 @@ void Place(std::string const & name)
 }
 
 
+// Queues the placement event for a finished structure on the given cell, as Place does for the cell it finds.
+void PlaceAt(std::string const & name, int x, int y)
+{
+	TechnoTypeClass const * type = Find_Type(name);
+	if (type == NULL || type->Fetch_RTTI() != RTTI_BUILDINGTYPE || PlayerPtr->ConYards.Count() == 0) {
+		DebugString("AUTOTEST placeat %s: no structure type or no construction yard\n", name.c_str());
+		return;
+	}
+	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
+	Cell const cell(x, y);
+	bool const legal = Map.In_Local_Radar(cell) && building->Legal_Placement(cell, PlayerPtr)
+		&& Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell);
+	DebugString("AUTOTEST placeat %s at %d,%d: %s\n", name.c_str(), x, y, legal ? "queued" : "not legal");
+	if (legal) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+	}
+}
+
+
 void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
@@ -2793,6 +2812,8 @@ void Run(StepType const & step)
 		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);
+	} else if (step.Command == "placeat") {
+		PlaceAt(step.Argument, step.X, step.Y);
 	} else if (step.Command == "move" || step.Command == "order" || step.Command == "cmove") {
 		if (step.Command == "move") {
 			Move(step.Argument, step.X, step.Y);
@@ -4252,6 +4273,7 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   visual %s character %d raw %d sensed %d height %d locked %d cloakable %d recloak %d ready %d delay %d stage %d owned %d\n",
 					techno->TClass->Name(), (int)techno->Visual_Character(false), (int)techno->Visual_Character(true), (int)techno->Is_Sensed_By_Player(),
 					(int)techno->HeightAGL, (int)techno->IsLocked, (int)techno->IsCloakable, (int)techno->Is_Allowed_To_Recloak(), (int)techno->Is_Ready_To_Cloak(), (int)techno->CloakDelay, techno->CloakingDevice.Fetch_Stage(), (int)techno->IsOwnedByPlayer);
+				DebugString("AUTOTEST   sight %s range %d increase %d\n", techno->TClass->Name(), techno->TClass->SightRange, (int)techno->SightIncrease);
 				DebugString("AUTOTEST   recloak %s arm %d immobilized %d stun %d deactivated %d locomotor %d radio %d tarcom %d closeenough %d\n", techno->TClass->Name(), (int)techno->Arm, (int)techno->Is_Immobilized(), (int)techno->StunDuration, (int)techno->IsDeactivated, (int)techno->IsAttackedByLocomotor,
 					techno->Contact_With_Whom() != NULL ? 1 : 0, techno->TarCom != NULL ? 1 : 0, techno->TarCom != NULL ? (int)techno->Is_Close_Enough(techno->TarCom, techno->What_Weapon_Should_I_Use(techno->TarCom)) : -1);
 			}

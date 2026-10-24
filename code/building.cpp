@@ -2212,6 +2212,10 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 		House->IsRecalcNeeded = true;
 		LastStrength = 0;
 
+		// Sight on every placement, as gamemd's UpdateSight does (0x70AF50 from TechnoClass::Unlimbo, 0x6F6CA0). The
+		// Revealed call below does not look at a structure that is already discovered.
+		Look(false);
+
 		bool revealed = false;
 		for (int index = 0; index < Houses.Count(); index++) {
 			HouseClass * house = Houses[index];

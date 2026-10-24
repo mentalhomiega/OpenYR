@@ -22,6 +22,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
+| `placeat <TypeID> x y` | Places the finished structure on that cell through the same placement event as `place`, and writes `queued` or `not legal` for the cell |
 | `grantunit <TypeID> x y` | Like `spawn`, but the object belongs to the player, so `move` and `strike` order it |
 | `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
 | `houseunit <TypeID>@<House> x y` | Like `spawn`, but the object belongs to the named house, on Guard. `<House>` is a spawn name such as `Spawn2` (an underscore stands for a space), or `#<n>` for the house at position `n` in the house list, which reaches a computer house with no spawn name. The log says `no such house` or `no such type` when a name does not resolve |
