@@ -3317,7 +3317,11 @@ bool HouseClass::Place_Object(RTTIType type, int id, Cell const & cell)
 							Speak(VOX_DEPLOY);
 						}
 					}
-					builder->Transmit_Message(RADIO_OVER_OUT);
+					// A placed structure keeps the builder's contact until its construction ends, since the
+					// construction start (RADIO_BUILDING) is what starts the builder's active animation.
+					if (!placed) {
+						builder->Transmit_Message(RADIO_OVER_OUT);
+					}
 				}
 			} else {
 
