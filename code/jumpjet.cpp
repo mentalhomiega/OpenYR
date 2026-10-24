@@ -791,7 +791,7 @@ void JumpjetLocomotionClass::Process_Descent(void)
 	}
 
 	// A deploying unit whose landing is blocked or on water tries only the cells around it, and cancels the deploy when none fits.
-	if (stop && deploy_landing && wet) {
+	if (stop && deploy_landing) {
 		UnitClass * unit = static_cast<UnitClass *>(LinkedTo);
 		Cell const landing = unit->Deploy_Landing_Cell();
 		if (landing != CELL_NONE) {
