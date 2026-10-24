@@ -373,6 +373,7 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			row.RegisterMember("hint", &UINetPlayerRow::Hint);
 			row.RegisterMember("mark", &UINetPlayerRow::Mark);
 			row.RegisterMember("detail", &UINetPlayerRow::Detail);
+			row.RegisterMember("note", &UINetPlayerRow::Note);
 			row.RegisterMember("selected", &UINetPlayerRow::Selected);
 
 			UINetLobbyState & state = Data.State;

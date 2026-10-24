@@ -51,6 +51,8 @@ struct CnCNetRoomPlayerType
 	int Team = -1;      // -1 is no team.
 	bool Ready = false;
 	bool Host = false;
+	bool OpenYR = false;    // Said hello, so it runs OpenYR whatever its build.
+	std::string Build;      // The build id it announced; empty for an older build that announced none.
 };
 
 
@@ -71,7 +73,7 @@ struct CnCNetRoomConfigType
 	std::string Channel;
 	std::string Key;            // Room password; empty uses CnCNet_Room_Key(Channel).
 	std::string HostNick;       // Guests only.
-	std::string Build;          // Players must run the same build to play together.
+	std::string Build;          // The build id this build announces; see CnCNet_Build_Identity.
 	std::string Notice;         // Host only: said in the channel once for every player who joins; empty says nothing.
 	CnCNetRoomLimitsType Limits;
 	uint64_t HelloTimeoutMS = 20000;
@@ -115,6 +117,13 @@ class CnCNetRoomClass
 		CnCNetRoomPlayerType const * Find_Player(std::string const & name) const;
 		uint64_t Revision(void) const { return(Changes); }
 
+		// Why a listed player cannot play with this room's build, in plain words; empty when it can.
+		// The host compares each player with its own build; a guest compares with the host's row.
+		std::string Build_Problem(CnCNetRoomPlayerType const & player) const;
+
+		// Guest only: the host's row names a different build than ours.
+		bool Build_Differs_From_Host(void) const;
+
 		void Apply(IRCEventType const & event, uint64_t now);
 		void Tick(uint64_t now);
 
@@ -157,6 +166,8 @@ class CnCNetRoomClass
 		void Guest_Message(IRCEventType const & event);
 		void Player_Left(std::string const & nick);
 		void Refuse(std::string const & nick, std::string const & reason);
+		void Seat_Joiner(CnCNetRoomPlayerType player);
+		bool Host_Build(std::string & build) const;
 		bool Setup_Allowed(CnCNetRoomPlayerType const & player, int side, int color, int start, int team) const;
 		void Send_CTCP(std::string const & command, std::string const & arguments, std::string const & key = std::string());
 		void Send_Options(void);
@@ -181,3 +192,12 @@ class CnCNetRoomClass
 
 // A room channel name from a random number: the prefix, "#cncnet-yr-game" by default, and seven digits.
 std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix = "#cncnet-yr-game");
+
+
+// The build id a build announces in its room hello: "<commit>/<architecture>/<packed version in hex>",
+// with "-modified" after the commit when tracked files differ from it.
+std::string CnCNet_Build_Identity(std::string_view commit, bool modified, std::string_view architecture, uint32_t packed_version);
+
+// The commit of a build id from CnCNet_Build_Identity, as the room shows it. Empty for any other text,
+// such as the display version an older build announced.
+std::string CnCNet_Build_Short(std::string_view build);

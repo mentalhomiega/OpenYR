@@ -27,11 +27,12 @@
 
 	<span class="caption" id="cap-players">Players:</span>
 	<div id="players" class="list"><div class="rows">
-		<div class="item" data-for="row : players" data-class-selected="row.selected" data-event-click="queue('pick', it_index)">
+		<div class="item" data-for="row : players" data-class-selected="row.selected" data-class-noted="row.note != ''" data-event-click="queue('pick', it_index)">
 			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
 			<span class="cell-house" data-attr-tip="row.hint"><img data-attr-src="row.house"/></span>
 			<span class="cell-name" data-style-color="row.color">{{row.name}}</span>
 			<span class="cell-detail" data-if="hasteams">{{row.detail}}</span>
+			<div class="cell-note" data-if="row.note != ''">{{row.note}}</div>
 		</div>
 	</div></div>
 	<span class="caption" id="cap-team" data-if="hasteams">Team:</span>

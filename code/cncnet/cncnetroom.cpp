@@ -117,6 +117,8 @@ CnCNetRoomClass CnCNetRoomClass::Host(CnCNetRoomConfigType config, std::map<std:
 	CnCNetRoomPlayerType host;
 	host.Name = room.Config.OwnNick;
 	host.Host = true;
+	host.OpenYR = true;
+	host.Build = room.Config.Build;
 	host.Color = 0;
 	room.PlayerList.push_back(host);
 	return(room);
@@ -260,32 +262,29 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 {
 	if (event.Command == HELLO) {
 		std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)); });
-		if (Find_Player(event.Nick) != nullptr) {
+		std::vector<std::string_view> const parts = Split(event.Text, ';');
+		// A hello in another room protocol announces no build id, so it differs from ours.
+		bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
+		std::string const build = readable && parts.size() > 1 ? Unescape(parts[1]) : std::string();
+		if (CnCNetRoomPlayerType * known = Player(event.Nick)) {
+			// A listed player who says hello again, such as one listed as not OpenYR, takes the build it now announces.
+			known->OpenYR = true;
+			known->Build = build;
+			Changed();
 			Send_Options();
 			Send_Players();
 			return;
 		}
-		std::vector<std::string_view> const parts = Split(event.Text, ';');
-		int const protocol = To_Int(parts[0], 0);
-		std::string const build = parts.size() > 1 ? Unescape(parts[1]) : std::string();
-		if (protocol != CNCNET_ROOM_PROTOCOL || build != Config.Build) {
-			Refuse(event.Nick, "This room runs OpenYR " + Config.Build + ".");
-		} else if (CurrentStatus == CnCNetRoomStatus::STARTING) {
+		if (CurrentStatus == CnCNetRoomStatus::STARTING) {
 			Refuse(event.Nick, "The game has already started.");
 		} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
 			Refuse(event.Nick, "The room is full.");
 		} else {
 			CnCNetRoomPlayerType player;
 			player.Name = event.Nick;
-			for (int color = 0; color < Config.Limits.Colors && player.Color < 0; ++color) {
-				if (Setup_Allowed(player, -1, color, -1, -1)) {
-					player.Color = color;
-				}
-			}
-			PlayerList.push_back(player);
-			Changed();
-			Send_Options();
-			Send_Players();
+			player.OpenYR = true;
+			player.Build = build;
+			Seat_Joiner(player);
 		}
 		return;
 	}
@@ -378,9 +377,70 @@ void CnCNetRoomClass::Tick(uint64_t now)
 			}
 		}
 		for (std::string const & nick : late) {
-			Refuse(nick, "This room needs OpenYR " + Config.Build + ".");
+			std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, nick)); });
+			// A joiner that never said hello may be a stock client. It stays listed as not OpenYR, so the
+			// host cannot start until it leaves or the host removes it.
+			if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
+				Refuse(nick, "The room is full.");
+			} else {
+				CnCNetRoomPlayerType player;
+				player.Name = nick;
+				Seat_Joiner(player);
+			}
 		}
 	}
+}
+
+
+void CnCNetRoomClass::Seat_Joiner(CnCNetRoomPlayerType player)
+{
+	for (int color = 0; color < Config.Limits.Colors && player.Color < 0; ++color) {
+		if (Setup_Allowed(player, -1, color, -1, -1)) {
+			player.Color = color;
+		}
+	}
+	PlayerList.push_back(player);
+	Changed();
+	Send_Options();
+	Send_Players();
+}
+
+
+bool CnCNetRoomClass::Host_Build(std::string & build) const
+{
+	for (CnCNetRoomPlayerType const & player : PlayerList) {
+		if (player.Host) {
+			build = player.Build;
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+std::string CnCNetRoomClass::Build_Problem(CnCNetRoomPlayerType const & player) const
+{
+	if (!player.OpenYR && !player.Host) {
+		return("not OpenYR");
+	}
+	std::string reference;
+	if (IsHost) {
+		reference = Config.Build;
+	} else if (!Host_Build(reference)) {
+		return(std::string());
+	}
+	if (player.Build == reference) {
+		return(std::string());
+	}
+	std::string const commit = CnCNet_Build_Short(player.Build);
+	return(commit.empty() ? std::string("different OpenYR build") : "different OpenYR build (" + commit + ")");
+}
+
+
+bool CnCNetRoomClass::Build_Differs_From_Host(void) const
+{
+	std::string host_build;
+	return(!IsHost && Host_Build(host_build) && host_build != Config.Build);
 }
 
 
@@ -494,8 +554,9 @@ bool CnCNetRoomClass::Can_Start(void) const
 	if (!IsHost || CurrentStatus != CnCNetRoomStatus::IN_ROOM || PlayerList.size() < 2 || !Pending.empty()) {
 		return(false);
 	}
+	// A player on another build, or not on OpenYR, holds the start back even when it is ready.
 	return(std::all_of(PlayerList.begin(), PlayerList.end(),
-		[](CnCNetRoomPlayerType const & player) { return(player.Host || player.Ready); }));
+		[this](CnCNetRoomPlayerType const & player) { return(player.Host || (player.Ready && Build_Problem(player).empty())); }));
 }
 
 
@@ -617,8 +678,9 @@ std::string CnCNetRoomClass::Encode_Players(std::vector<CnCNetRoomPlayerType> co
 		std::string flags;
 		if (player.Host) flags.push_back('H');
 		if (player.Ready) flags.push_back('R');
+		if (player.OpenYR) flags.push_back('O');
 		text += Escape(player.Name) + "," + std::to_string(player.Side) + "," + std::to_string(player.Color) + ","
-			+ std::to_string(player.Start) + "," + std::to_string(player.Team) + "," + flags;
+			+ std::to_string(player.Start) + "," + std::to_string(player.Team) + "," + flags + "," + Escape(player.Build);
 	}
 	return(text);
 }
@@ -646,6 +708,11 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 		player.Team = std::max(To_Int(fields[4], -1), -1);
 		player.Host = fields[5].find('H') != std::string_view::npos;
 		player.Ready = fields[5].find('R') != std::string_view::npos;
+		player.OpenYR = fields[5].find('O') != std::string_view::npos;
+		// Rows from builds before the build id have no seventh field.
+		if (fields.size() > 6) {
+			player.Build = Unescape(fields[6]);
+		}
 		players.push_back(player);
 	}
 	return(players);
@@ -657,4 +724,26 @@ std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix)
 	char digits[8];
 	std::snprintf(digits, sizeof(digits), "%07u", static_cast<unsigned>(random % 10000000u));
 	return(prefix + digits);
+}
+
+
+std::string CnCNet_Build_Identity(std::string_view commit, bool modified, std::string_view architecture, uint32_t packed_version)
+{
+	char version[16];
+	std::snprintf(version, sizeof(version), "%X", static_cast<unsigned>(packed_version));
+	std::string identity(commit);
+	if (modified) {
+		identity += "-modified";
+	}
+	return(identity + "/" + std::string(architecture) + "/" + version);
+}
+
+
+std::string CnCNet_Build_Short(std::string_view build)
+{
+	std::size_t const slash = build.find('/');
+	if (slash == std::string_view::npos || slash == 0) {
+		return(std::string());
+	}
+	return(std::string(build.substr(0, slash)));
 }

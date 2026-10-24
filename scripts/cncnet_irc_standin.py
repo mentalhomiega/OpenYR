@@ -7,7 +7,8 @@ broadcast channel the way a CnCNet host does, so the lobby screen has something 
 
 With --openyr-build and --room-password, two bots also speak the OpenYR room protocol: the first
 hosts a password-protected OpenYR room that answers a player's hello, and the last joins any game a
-player announces, says hello and gets ready. The build must be the game's version text.
+player announces, says hello and gets ready. The build must be the game's build id, which its debug
+log prints as "[CnCNet] Room build id".
 
   python scripts/cncnet_irc_standin.py [--port 6667] [--bots 3] [--game-version 1.001]
       [--log FILE] [--openyr-build TEXT --room-password TEXT]

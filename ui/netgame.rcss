@@ -115,6 +115,10 @@
 #players .cell-name { width: 120dp; overflow: hidden; white-space: nowrap; }
 #players .cell-detail { display: inline-block; vertical-align: top; width: 56dp; text-align: right; color: #c8c8c8; }
 
+/* A player the host cannot start with, such as one on another build, gets a second line that says why. */
+#players .item.noted { height: 26dp; }
+#players .cell-note { padding-left: 25dp; line-height: 12dp; color: #ffd27a; white-space: nowrap; overflow: hidden; }
+
 /* CnCNet rooms also pick a team and a start, so the player list gives up a row for the two drop-downs. */
 .teams #players { height: 84dp; }
 #cap-team { left: 27dp; top: 182dp; }
