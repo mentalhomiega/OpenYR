@@ -28,6 +28,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -48,6 +49,9 @@ std::string PendingDesyncPath;
 // Whether the sender is already working through the waiting folder.
 std::atomic<bool> Sending(false);
 
+// The reports whose send failed during this run. The sender thread is the only user.
+std::set<std::string> FailedThisRun;
+
 // How long one upload may take before it is left for the next start.
 constexpr int SEND_TIMEOUT_MS = 30000;
 
@@ -65,7 +69,7 @@ SettingsType Read_Settings(void)
 	SettingsType settings;
 	ConfigINI.Get_String("Options", "ReportUpload", "ask", text, sizeof(text));
 	settings.Policy = Report_Policy_From_Text(text);
-	ConfigINI.Get_String("Options", "ReportURL", "", text, sizeof(text));
+	ConfigINI.Get_String("Options", "ReportURL", REPORT_DEFAULT_URL, text, sizeof(text));
 	settings.URL = text;
 	return(settings);
 }
@@ -130,8 +134,8 @@ char const * Kind_Text(ReportKind kind)
 
 
 /// <summary>
-/// Settles one report: asks if the settings say to, then queues it. Returns true when it
-/// was queued.
+/// Settles one report: builds its zip, asks if the settings say to, then queues it. Returns
+/// true when it was queued.
 /// </summary>
 bool Offer_Report(SettingsType const & settings, ReportKind kind, std::vector<ReportFileType> const & files, std::string const & session_key)
 {
@@ -140,15 +144,21 @@ bool Offer_Report(SettingsType const & settings, ReportKind kind, std::vector<Re
 		return(false);
 	}
 
+	// The zip is built before the dialog, because the files it leaves out are part of what the dialog lists.
 	std::vector<ReportFileType> kept;
 	std::vector<ReportFileType> left_out;
-	Report_Fit_Files(files, REPORT_MAX_BYTES, kept, left_out);
+	std::string zip;
+	std::string error;
+	if (!Report_Build_Zip(files, REPORT_MAX_BYTES, kept, left_out, zip, error)) {
+		DebugString("Report: could not build the %s report: %s\n", Report_Kind_Name(kind), error.c_str());
+		return(false);
+	}
 	if (kept.empty()) {
 		return(false);
 	}
 
 	if (decision == ReportDecision::Ask) {
-		std::string const list = Report_File_List_Text(kept, left_out);
+		std::string const list = Report_File_List_Text(kept, left_out, zip.size());
 		std::vector<char> message(list.size() + 1024);
 		std::snprintf(message.data(), message.size(), Fetch_String(TXT_REPORT_ASK), Kind_Text(kind), list.c_str());
 		if (WWMessageBox().Process(message.data(), TXT_REPORT_SEND, TXT_REPORT_DONT_SEND) != 0) {
@@ -157,11 +167,9 @@ bool Offer_Report(SettingsType const & settings, ReportKind kind, std::vector<Re
 		}
 	}
 
-	std::string zip;
-	std::string error;
 	std::string const id = New_Report_Id(kind);
 	std::string const meta = Report_Meta_Json(OPENTS_COMMIT, kind, Utc_Text("%Y-%m-%dT%H:%M:%SZ"), id, session_key);
-	if (!Report_Build_Zip(kept, zip, error) || !Report_Queue(Pending_Folder(), id, zip, meta, error)) {
+	if (!Report_Queue(Pending_Folder(), id, zip, meta, error)) {
 		DebugString("Report: could not queue the %s report: %s\n", Report_Kind_Name(kind), error.c_str());
 		return(false);
 	}
@@ -184,7 +192,7 @@ void Offer_Folders(SettingsType const & settings)
 
 
 /// <summary>
-/// Sends what is waiting, oldest first, on a thread of its own. The first failure stops the
+/// Sends what is waiting, oldest first, on a thread of its own. A retryable failure stops the
 /// round, and what is left goes at the next start.
 /// </summary>
 void Start_Sender(SettingsType const & settings)
@@ -206,12 +214,27 @@ void Start_Sender(SettingsType const & settings)
 			}
 			std::string answer;
 			std::string error;
-			if (!CnCNet_Http_Post(url, zip, "application/zip", "X-OpenYR-Report: " + meta + "\r\n", SEND_TIMEOUT_MS, 4096, answer, error)) {
-				DebugString("Report: %s not sent, will try again next start: %s\n", id.c_str(), error.c_str());
-				break;
+			int status = 0;
+			CnCNet_Http_Post(url, zip, "application/zip", "X-OpenYR-Report: " + meta + "\r\n", SEND_TIMEOUT_MS, 4096, answer, error, &status);
+			ReportSendResult const result = Report_Classify_Send(status);
+			if (result == ReportSendResult::Sent) {
+				DebugString("Report: sent %s\n", id.c_str());
+				Report_Remove_Pending(pending, id);
+				continue;
 			}
-			DebugString("Report: sent %s\n", id.c_str());
-			Report_Remove_Pending(pending, id);
+			if (result == ReportSendResult::Refused) {
+				DebugString("Report: %s refused, dropped with no retry: %s\n", id.c_str(), error.c_str());
+				Report_Remove_Pending(pending, id);
+				continue;
+			}
+			// A failure counts once per run, so a run that sends several times is still one game start.
+			if (FailedThisRun.insert(id).second && Report_Count_Failed_Start(pending, id) >= REPORT_MAX_FAILED_STARTS) {
+				DebugString("Report: %s not sent after %d game starts, dropped: %s\n", id.c_str(), REPORT_MAX_FAILED_STARTS, error.c_str());
+				Report_Remove_Pending(pending, id);
+				continue;
+			}
+			DebugString("Report: %s not sent, will try again next start: %s\n", id.c_str(), error.c_str());
+			break;
 		}
 		Sending = false;
 	}).detach();
@@ -245,7 +268,7 @@ void Report_After_Match(void)
 		std::string session_key;
 		std::error_code error;
 		for (fs::path const path : { fs::path(PendingDesyncPath), fs::path(Debug_Log_File_Name()) }) {
-			if (path.empty() || !fs::is_regular_file(path, error)) {
+			if (path.empty() || !fs::is_regular_file(path, error) || !Report_Wanted_File(path.filename().string())) {
 				continue;
 			}
 			ReportFileType file;

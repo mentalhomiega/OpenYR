@@ -181,8 +181,8 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PR
     INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
 )
 
-# writepng.cpp and truecolour.cpp take miniz from bimg, which the link already carries.
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/truecolour.cpp" APPEND PROPERTY
+# writepng.cpp, truecolour.cpp and report/reportupload.cpp take miniz from bimg, which the link already carries.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/truecolour.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/report/reportupload.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps"
 )
 

@@ -9,6 +9,8 @@
 
 #include "report/reportupload.h"
 
+#include <miniz/miniz.h>
+
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -107,6 +109,22 @@ bool Write_File(fs::path const & path, std::string const & bytes)
 	return(static_cast<bool>(file));
 }
 
+
+// Deflates data as raw deflate, the form a zip entry holds. Returns false when miniz cannot allocate.
+bool Deflate_Raw(std::string const & data, std::string & packed)
+{
+	// A negative window size is what makes miniz leave out the zlib header and checksum.
+	mz_uint const flags = tdefl_create_comp_flags_from_zip_params(MZ_DEFAULT_COMPRESSION, -MZ_DEFAULT_WINDOW_BITS, MZ_DEFAULT_STRATEGY);
+	std::size_t length = 0;
+	void * const heap = tdefl_compress_mem_to_heap(data.data(), data.size(), &length, static_cast<int>(flags));
+	if (heap == nullptr) {
+		return(false);
+	}
+	packed.assign(static_cast<char const *>(heap), length);
+	mz_free(heap);
+	return(true);
+}
+
 }
 
 
@@ -180,12 +198,23 @@ bool Report_Mark_Decided(fs::path const & folder, bool queued)
 }
 
 
+bool Report_Wanted_File(std::string const & name)
+{
+	if (name == REPORT_DECIDED_MARKER) {
+		return(false);
+	}
+	std::string const lower = Lower(name);
+	std::string const extension = fs::path(lower).extension().string();
+	return(lower == "minidump.dmp" || extension == ".txt" || extension == ".log");
+}
+
+
 std::vector<ReportFileType> Report_Folder_Files(fs::path const & folder)
 {
 	std::vector<ReportFileType> files;
 	std::error_code error;
 	for (fs::directory_iterator it(folder, error), end; !error && it != end; it.increment(error)) {
-		if (!it->is_regular_file(error) || it->path().filename() == REPORT_DECIDED_MARKER) {
+		if (!it->is_regular_file(error) || !Report_Wanted_File(it->path().filename().string())) {
 			continue;
 		}
 		ReportFileType file;
@@ -199,36 +228,92 @@ std::vector<ReportFileType> Report_Folder_Files(fs::path const & folder)
 }
 
 
-void Report_Fit_Files(std::vector<ReportFileType> const & files, std::uintmax_t max_bytes,
-	std::vector<ReportFileType> & kept, std::vector<ReportFileType> & left_out)
+bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t max_bytes,
+	std::vector<ReportFileType> & kept, std::vector<ReportFileType> & left_out, std::string & zip, std::string & error)
 {
 	kept.clear();
 	left_out.clear();
-	std::uintmax_t total = 0;
+	zip.clear();
+	if (files.size() > 0xFFFF) {
+		error = "Too many files for one zip.";
+		return(false);
+	}
+
+	// An entry is added only when its size fits, so the zip never passes max_bytes.
+	std::string entries;
+	std::string central;
 	for (ReportFileType const & file : files) {
-		if (total + file.Size <= max_bytes) {
-			total += file.Size;
-			kept.push_back(file);
-		} else {
-			left_out.push_back(file);
+		std::ifstream stream(file.Path, std::ios::binary);
+		if (!stream) {
+			error = "Could not read " + file.Path.string() + ".";
+			return(false);
 		}
-	}
-}
+		std::string const data((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+		if (data.size() > 0xFFFFFFFFu || file.Name.size() > 0xFFFF) {
+			left_out.push_back(file);
+			continue;
+		}
 
+		// A file that deflate does not shrink, or that deflate fails on, is stored as it is.
+		std::string packed;
+		bool const deflated = Deflate_Raw(data, packed) && packed.size() < data.size();
+		std::string const & body = deflated ? packed : data;
+		std::uint32_t const crc = Report_Crc32(data.data(), data.size());
+		std::uintmax_t const entry_bytes = 30 + 46 + 2 * file.Name.size() + body.size();
+		std::uintmax_t const zip_bytes = entries.size() + central.size() + entry_bytes + 22;
+		if (zip_bytes > max_bytes || zip_bytes > 0xFFFFFFFFu) {
+			left_out.push_back(file);
+			continue;
+		}
+		std::uint32_t const offset = static_cast<std::uint32_t>(entries.size());
+		unsigned const method = deflated ? 8 : 0;
 
-std::string Report_File_List_Text(std::vector<ReportFileType> const & kept, std::vector<ReportFileType> const & left_out)
-{
-	std::string text;
-	std::uintmax_t total = 0;
-	for (ReportFileType const & file : kept) {
-		text += file.Name + "  " + Size_Text(file.Size) + "\n";
-		total += file.Size;
+		Put32(entries, 0x04034b50);
+		Put16(entries, 20);								// Version needed: 2.0.
+		Put16(entries, 0);								// Flags.
+		Put16(entries, method);
+		Put16(entries, 0);								// Time.
+		Put16(entries, 0);								// Date.
+		Put32(entries, crc);
+		Put32(entries, static_cast<std::uint32_t>(body.size()));
+		Put32(entries, static_cast<std::uint32_t>(data.size()));
+		Put16(entries, static_cast<unsigned>(file.Name.size()));
+		Put16(entries, 0);								// Extra field length.
+		entries += file.Name;
+		entries += body;
+
+		Put32(central, 0x02014b50);
+		Put16(central, 20);							// Version made by.
+		Put16(central, 20);
+		Put16(central, 0);
+		Put16(central, method);
+		Put16(central, 0);
+		Put16(central, 0);
+		Put32(central, crc);
+		Put32(central, static_cast<std::uint32_t>(body.size()));
+		Put32(central, static_cast<std::uint32_t>(data.size()));
+		Put16(central, static_cast<unsigned>(file.Name.size()));
+		Put16(central, 0);							// Extra field length.
+		Put16(central, 0);							// Comment length.
+		Put16(central, 0);							// Disk number.
+		Put16(central, 0);							// Internal attributes.
+		Put32(central, 0);							// External attributes.
+		Put32(central, offset);
+		central += file.Name;
+		kept.push_back(file);
 	}
-	text += "Total: " + Size_Text(total) + "\n";
-	for (ReportFileType const & file : left_out) {
-		text += "Left out, too big: " + file.Name + "  " + Size_Text(file.Size) + "\n";
-	}
-	return(text);
+
+	std::uint32_t const central_offset = static_cast<std::uint32_t>(entries.size());
+	zip = entries + central;
+	Put32(zip, 0x06054b50);
+	Put16(zip, 0);									// This disk.
+	Put16(zip, 0);									// Disk with the directory.
+	Put16(zip, static_cast<unsigned>(kept.size()));
+	Put16(zip, static_cast<unsigned>(kept.size()));
+	Put32(zip, static_cast<std::uint32_t>(central.size()));
+	Put32(zip, central_offset);
+	Put16(zip, 0);									// Comment length.
+	return(true);
 }
 
 
@@ -255,77 +340,20 @@ std::uint32_t Report_Crc32(void const * data, std::size_t length, std::uint32_t 
 }
 
 
-bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::string & zip, std::string & error)
+std::string Report_File_List_Text(std::vector<ReportFileType> const & kept, std::vector<ReportFileType> const & left_out,
+	std::uintmax_t zip_bytes)
 {
-	// Stored entries only: the logs and dumps are not worth a compressor in the game, and a
-	// stored zip is one any receiver can check without one either. The date fields are left
-	// at zero, since the note that rides with the zip carries the time.
-	zip.clear();
-	std::string central;
-	for (ReportFileType const & file : files) {
-		std::ifstream stream(file.Path, std::ios::binary);
-		if (!stream) {
-			error = "Could not read " + file.Path.string() + ".";
-			return(false);
-		}
-		std::string const data((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-		if (data.size() > 0xFFFFFFFFu || zip.size() > 0xFFFFFFFFu || file.Name.size() > 0xFFFF) {
-			error = file.Name + " is too big for a zip without ZIP64.";
-			return(false);
-		}
-		std::uint32_t const crc = Report_Crc32(data.data(), data.size());
-		std::uint32_t const offset = static_cast<std::uint32_t>(zip.size());
-		std::uint32_t const size = static_cast<std::uint32_t>(data.size());
-
-		Put32(zip, 0x04034b50);
-		Put16(zip, 20);								// Version needed: 2.0.
-		Put16(zip, 0);								// Flags.
-		Put16(zip, 0);								// Stored.
-		Put16(zip, 0);								// Time.
-		Put16(zip, 0);								// Date.
-		Put32(zip, crc);
-		Put32(zip, size);
-		Put32(zip, size);
-		Put16(zip, static_cast<unsigned>(file.Name.size()));
-		Put16(zip, 0);								// Extra field length.
-		zip += file.Name;
-		zip += data;
-
-		Put32(central, 0x02014b50);
-		Put16(central, 20);							// Version made by.
-		Put16(central, 20);
-		Put16(central, 0);
-		Put16(central, 0);
-		Put16(central, 0);
-		Put16(central, 0);
-		Put32(central, crc);
-		Put32(central, size);
-		Put32(central, size);
-		Put16(central, static_cast<unsigned>(file.Name.size()));
-		Put16(central, 0);							// Extra field length.
-		Put16(central, 0);							// Comment length.
-		Put16(central, 0);							// Disk number.
-		Put16(central, 0);							// Internal attributes.
-		Put32(central, 0);							// External attributes.
-		Put32(central, offset);
-		central += file.Name;
+	std::string text;
+	std::uintmax_t total = 0;
+	for (ReportFileType const & file : kept) {
+		text += file.Name + "  " + Size_Text(file.Size) + "\n";
+		total += file.Size;
 	}
-
-	if (files.size() > 0xFFFF) {
-		error = "Too many files for one zip.";
-		return(false);
+	text += "Total: " + Size_Text(total) + ", " + Size_Text(zip_bytes) + " zipped\n";
+	for (ReportFileType const & file : left_out) {
+		text += "Left out, the report would pass " + Size_Text(REPORT_MAX_BYTES) + ": " + file.Name + "  " + Size_Text(file.Size) + "\n";
 	}
-	std::uint32_t const central_offset = static_cast<std::uint32_t>(zip.size());
-	zip += central;
-	Put32(zip, 0x06054b50);
-	Put16(zip, 0);									// This disk.
-	Put16(zip, 0);									// Disk with the directory.
-	Put16(zip, static_cast<unsigned>(files.size()));
-	Put16(zip, static_cast<unsigned>(files.size()));
-	Put32(zip, static_cast<std::uint32_t>(central.size()));
-	Put32(zip, central_offset);
-	Put16(zip, 0);									// Comment length.
-	return(true);
+	return(text);
 }
 
 
@@ -414,4 +442,31 @@ void Report_Remove_Pending(fs::path const & pending, std::string const & id)
 	std::error_code error;
 	fs::remove(pending / (id + ".json"), error);
 	fs::remove(pending / (id + ".zip"), error);
+	fs::remove(pending / (id + ".tries"), error);
+}
+
+
+ReportSendResult Report_Classify_Send(int http_status)
+{
+	if (http_status == 0 || (http_status >= 500 && http_status <= 599)) {
+		return(ReportSendResult::Retry);
+	}
+	if (http_status >= 200 && http_status <= 299) {
+		return(ReportSendResult::Sent);
+	}
+	return(ReportSendResult::Refused);
+}
+
+
+int Report_Count_Failed_Start(fs::path const & pending, std::string const & id)
+{
+	fs::path const path = pending / (id + ".tries");
+	int count = 0;
+	std::ifstream file(path);
+	if (file) {
+		file >> count;
+	}
+	count++;
+	Write_File(path, std::to_string(count) + "\n");
+	return(count);
 }

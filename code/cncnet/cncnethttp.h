@@ -23,6 +23,8 @@ bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_by
 
 // Sends content with its type, and any extra header lines (each ending in
 // \r\n), and fetches the answer. Status 200 or 201 counts as accepted. Fails
-// as the GET does otherwise.
+// as the GET does otherwise. When status is given, it receives the HTTP status
+// of the answer, or 0 when no answer arrived.
 bool CnCNet_Http_Post(std::string const & url, std::string const & content, std::string const & content_type,
-	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error);
+	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error,
+	int * status = nullptr);

@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // Offers crash, hang and out-of-sync reports to the developers, as
-// [Options] ReportUpload and ReportURL say. DRAFT: with ReportURL empty, the
-// default, none of this asks or sends anything.
+// [Options] ReportUpload and ReportURL say. An empty ReportURL turns all of it off.
 
 #pragma once
 

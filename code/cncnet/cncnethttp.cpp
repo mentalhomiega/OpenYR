@@ -45,9 +45,12 @@ struct HandleType
 
 // Makes one request. A POST sends content with its type; a GET sends nothing.
 bool Request(wchar_t const * method, std::string const & url, std::string const * content, std::string const & content_type,
-	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
+	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error, int * status_out)
 {
 	body.clear();
+	if (status_out != nullptr) {
+		*status_out = 0;
+	}
 	std::wstring const wide = Wide(url);
 	URL_COMPONENTS parts{};
 	parts.dwStructSize = sizeof(parts);
@@ -95,6 +98,9 @@ bool Request(wchar_t const * method, std::string const & url, std::string const 
 	DWORD status = 0;
 	DWORD size = sizeof(status);
 	WinHttpQueryHeaders(request.Value, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &status, &size, WINHTTP_NO_HEADER_INDEX);
+	if (status_out != nullptr) {
+		*status_out = static_cast<int>(status);
+	}
 	if (status != 200 && !(content != nullptr && status == 201)) {
 		error = url + " answered with status " + std::to_string(status) + ".";
 		return(false);
@@ -128,14 +134,15 @@ bool Request(wchar_t const * method, std::string const & url, std::string const 
 
 bool CnCNet_Http_Get(std::string const & url, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
 {
-	return(Request(L"GET", url, nullptr, std::string(), std::string(), timeout_ms, max_bytes, body, error));
+	return(Request(L"GET", url, nullptr, std::string(), std::string(), timeout_ms, max_bytes, body, error, nullptr));
 }
 
 
 bool CnCNet_Http_Post(std::string const & url, std::string const & content, std::string const & content_type,
-	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error)
+	std::string const & headers, int timeout_ms, std::size_t max_bytes, std::string & body, std::string & error,
+	int * status)
 {
-	return(Request(L"POST", url, &content, content_type, headers, timeout_ms, max_bytes, body, error));
+	return(Request(L"POST", url, &content, content_type, headers, timeout_ms, max_bytes, body, error, status));
 }
 
 #else
@@ -148,8 +155,11 @@ bool CnCNet_Http_Get(std::string const &, int, std::size_t, std::string &, std::
 
 
 bool CnCNet_Http_Post(std::string const &, std::string const &, std::string const &, std::string const &, int, std::size_t,
-	std::string &, std::string & error)
+	std::string &, std::string & error, int * status)
 {
+	if (status != nullptr) {
+		*status = 0;
+	}
 	error = "Sending needs Windows for now.";
 	return(false);
 }
