@@ -5758,6 +5758,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (target == NavCom) return;
 
+	// A simple deployer takes no new destination while its deploy or pack-up animation runs (gamemd UnitClass::SetDestination, 0x741970).
+	if (target != NULL && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
+		return;
+	}
+
 	/*
 	**	Transport vehicles must tell all passengers that are about to load, that they
 	**	cannot proceed. This is accomplished with a radio message to this effect.
@@ -6661,6 +6666,12 @@ bool UnitClass::Ready_To_Commence(void)
 	}
 
 	if (IsDumping) {
+		return(false);
+	}
+
+	// A simple deployer whose deploy or pack-up animation is running takes no new order until it ends (gamemd
+	// UnitClass::ReadyToNextMission, 0x744270, which checks the Deploying and Undeploying flags).
+	if (CurrentMission == MISSION_UNLOAD && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
 		return(false);
 	}
 
