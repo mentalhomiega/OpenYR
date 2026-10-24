@@ -154,7 +154,8 @@ body.main #content button:nth-child(5), body.singleplayer #content button:nth-ch
 body.singleplayer #content button:nth-child(1), body.movies #content button:nth-child(1) { top: 198dp; }
 body.singleplayer #content button:nth-child(2), body.movies #content button:nth-child(2) { top: 242dp; }
 body.singleplayer #content button:nth-child(3), body.movies #content button:nth-child(3) { top: 286dp; }
-body.main #content button:nth-child(6) { top: 537dp; }
+body.main #content button:nth-child(6) { top: 423dp; }
+body.main #content button:nth-child(7) { top: 537dp; }
 body.singleplayer #content button:nth-child(4), body.movies #content button:nth-child(4) { top: 563dp; }
 
 body.multiplayer #content button:nth-child(1) { top: 203dp; }
@@ -391,4 +392,263 @@ select selectarrow, select:disabled selectarrow, select.disabled selectarrow
 	line-height: 13dp;
 	color: #c8b8e8;
 	pointer-events: none;
+}
+
+/* The Controls page in the classic frame. Its panel covers the stage art left of the right-hand column, the
+   command list scrolls inside the panel, and the editor stands at the panel's right. Back and OK take the
+   column's buttons, and Reset to defaults sits at the panel's foot. Sizes are in dp. */
+body[data-model="keyboard"] #reveal
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 800dp;
+	height: 600dp;
+	margin-left: -400dp;
+	margin-top: -300dp;
+}
+
+body[data-model="keyboard"] #wallpaper
+{
+	right: 168dp;
+	bottom: 32dp;
+}
+
+/* Keeps #chrome in normal flow. An absolute #chrome stayed about 400dp right of the stage after the screen reveal. */
+body[data-model="keyboard"] #chrome
+{
+	position: static;
+	left: auto;
+	right: auto;
+	width: auto;
+	height: 600dp;
+	margin: 0;
+}
+
+body[data-model="keyboard"] #page
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 632dp;
+	height: 568dp;
+	flex: none;
+	display: block;
+}
+
+body[data-model="keyboard"] #list
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 632dp;
+	height: 568dp;
+	flex: none;
+	display: block;
+	padding: 0;
+	overflow: visible;
+}
+
+body[data-model="keyboard"] #filters
+{
+	position: absolute;
+	left: 14dp;
+	top: 12dp;
+	width: 604dp;
+	height: 46dp;
+}
+
+body[data-model="keyboard"] #scheme-field
+{
+	width: 190dp;
+}
+
+body[data-model="keyboard"] #search-field
+{
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+body[data-model="keyboard"] #category-field
+{
+	width: 200dp;
+}
+
+body[data-model="keyboard"] .head-row
+{
+	position: absolute;
+	left: 14dp;
+	top: 70dp;
+	width: 372dp;
+	margin: 0;
+	padding: 0 8dp;
+}
+
+body[data-model="keyboard"] .head-row .slot-head, body[data-model="keyboard"] .slot
+{
+	flex: 0 0 100dp;
+	width: 100dp;
+}
+
+body[data-model="keyboard"] #commands
+{
+	position: absolute;
+	left: 14dp;
+	top: 98dp;
+	width: 372dp;
+	height: 330dp;
+	margin: 0;
+}
+
+body[data-model="keyboard"] #list-footer
+{
+	position: absolute;
+	left: 14dp;
+	top: 436dp;
+	margin: 0;
+}
+
+body[data-model="keyboard"] #side
+{
+	position: absolute;
+	left: 404dp;
+	top: 70dp;
+	width: 214dp;
+	height: 440dp;
+	flex: none;
+	padding: 0;
+	overflow: visible;
+}
+
+body[data-model="keyboard"] #capture-row
+{
+	display: block;
+	height: auto;
+}
+
+body[data-model="keyboard"] #capture
+{
+	width: 214dp;
+}
+
+body[data-model="keyboard"] #trigger
+{
+	width: 214dp;
+	margin-left: 0;
+	margin-top: 8dp;
+}
+
+body[data-model="keyboard"] #assign, body[data-model="keyboard"] #clear, body[data-model="keyboard"] #swap, body[data-model="keyboard"] #dismiss
+{
+	width: 100dp;
+}
+
+body[data-model="keyboard"] #assign
+{
+	margin-right: 8dp;
+}
+
+body[data-model="keyboard"] #footer
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 0;
+	height: 0;
+	padding: 0;
+	display: block;
+}
+
+body[data-model="keyboard"] #footer-spacer
+{
+	display: none;
+}
+
+body[data-model="keyboard"] #footer button
+{
+	position: absolute;
+	margin: 0;
+	width: 162dp;
+	height: 37dp;
+	padding-top: 11dp;
+}
+
+body[data-model="keyboard"] #footer #footer-reset
+{
+	left: 14dp;
+	top: 520dp;
+	width: 180dp;
+	height: 34dp;
+	padding-top: 8dp;
+}
+
+body[data-model="keyboard"] #footer #footer-cancel
+{
+	left: 635dp;
+	top: 519dp;
+}
+
+body[data-model="keyboard"] #footer #footer-ok
+{
+	left: 635dp;
+	top: 563dp;
+}
+
+/* The Options page's check boxes keep each label on one line in the right-hand box, which is
+   widened to the column and set a size smaller, so the longest label fits. */
+body[data-model="classicopt"] #more
+{
+	left: 634dp;
+	width: 164dp;
+}
+
+body[data-model="classicopt"] #more label.check
+{
+	left: 4dp;
+	width: 156dp;
+	font-size: 11dp;
+	white-space: nowrap;
+}
+
+/* The CnCNet lobby is laid out for 900dp, wider than the classic stage. Its panel fills the stage and its
+   columns narrow to fit, so the search, the game list and the lobby chat stay inside the frame. */
+body[data-model="cncnetlobby"] #reveal
+{
+	width: 800dp;
+}
+
+body[data-model="cncnetlobby"] #left
+{
+	width: 380dp;
+}
+
+body[data-model="cncnetlobby"] .col-name
+{
+	width: 130dp;
+}
+
+body[data-model="cncnetlobby"] .col-map
+{
+	width: 110dp;
+}
+
+body[data-model="cncnetlobby"] .col-players
+{
+	width: 50dp;
+}
+
+body[data-model="cncnetlobby"] .col-status
+{
+	width: 70dp;
+}
+
+body[data-model="cncnetlobby"] #userside, body[data-model="cncnetlobby"] #whisper
+{
+	width: 120dp;
+}
+
+/* The Skirmish setup panel starts below the title art. Its stock place covered the lower part of the logo. */
+body[data-model="skirmish"] #reveal
+{
+	margin-top: -190dp;
 }
