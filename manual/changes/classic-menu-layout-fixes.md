@@ -18,4 +18,6 @@ On the classic Options page, "Stretch videos to fill the screen" and "Use the Wi
 
 The CnCNet lobby fits the classic stage. Before, its panel was 900 dp wide and ran past both sides at 800x600.
 
+The Skirmish setup panel in the classic style starts below the title art. Before, its top edge covered the lower part of the Yuri's Revenge logo.
+
 The modern menus are unchanged.

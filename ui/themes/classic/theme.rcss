@@ -646,3 +646,9 @@ body[data-model="cncnetlobby"] #userside, body[data-model="cncnetlobby"] #whispe
 {
 	width: 120dp;
 }
+
+/* The Skirmish setup panel starts below the title art. Its stock place covered the lower part of the logo. */
+body[data-model="skirmish"] #reveal
+{
+	margin-top: -190dp;
+}
