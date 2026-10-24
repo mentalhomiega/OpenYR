@@ -1872,6 +1872,13 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 	if (shadow) {
 		switch (waypoint_action) {
 			case ACTION_MOVE:
+				// An armed or held attack-move shows the attack cursor under the shroud as well (ConvertAction, 0x4AAE90, shows 0x47 for 0x3E).
+				if (object == NULL && (AttackMoveArmed || Attack_Move_Key_Held())) {
+					Set_Default_Mouse(MOUSE_CAN_ATTACK_2, wsmall);
+					break;
+				}
+				// fall into next case.
+
 			case ACTION_ATTACK:
 				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 				break;
