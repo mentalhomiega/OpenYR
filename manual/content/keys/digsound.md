@@ -1,6 +1,6 @@
 ---
 key: DigSound
-summary: Sound of a subterranean unit breaking the surface on its way down or up.
+summary: Sound of a subterranean unit breaking the surface on its way down or up, and of a nuclear missile launch.
 see_also: [Dig, TunnelSpeed, Locomotor]
 when_omitted:
   kind: value
@@ -19,3 +19,5 @@ A vehicle with the tunnel [`Locomotor`](/keys/locomotor/) plays this sound at it
 3. when, rising at its destination, it comes within 50 leptons of ground level.
 
 [`Dig`](/keys/dig/) lists the points a cancelled move skips.
+
+A nuclear missile superweapon plays this sound at its target cell when it is launched, from its silo or from the map edge. The stock rules set it to `NukeSiren`, the air-raid siren.
