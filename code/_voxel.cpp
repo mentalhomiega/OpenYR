@@ -20,7 +20,9 @@ float VoxelLightAngle;
 Vector3 VoxelLightSource;
 float VoxelCameraAngle;
 Matrix3D VoxelCameraMatrix;
-StaticBufferClass VoxelStaticBuffer(2000000);
+// Turret and barrel images share the buffer with the hulls, and their keys name the hull facing as well
+// as the turret facing, so the buffer is 8 MB; a full buffer drops every image and renders them afresh.
+StaticBufferClass VoxelStaticBuffer(8000000);
 
 /// Both use the truncated pi the voxel code carries, not M_PI.
 const float DefaultLightAngle = (float)(45 * (3.1415 / 180.0));

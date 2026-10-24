@@ -2850,6 +2850,9 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 	main_matrix = Locomotion->Draw_Matrix(&key);
 
+	// The pose the locomotor folded into the key (ramp and facing), which the turret and barrel keys build on.
+	int const pose = key;
+
 	if (key != -1) {
 		key = frame | (key << 5);
 	}
@@ -2889,6 +2892,23 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		}
 	}
 
+	/*
+	 * Turret and barrel images are cached as gamemd does (UnitClass::DrawAsVXL, 0x73B470, through
+	 * TechnoClass::Draw_Voxel, 0x706640, with VoxelTurretWeaponCache and VoxelTurretBarrelCache). gamemd
+	 * keys them by the body pose and the turret facing; this key is stricter, adding the hull facing, the
+	 * turret frame or barrel pitch and the weapon slot, so a cached image is the one the matrix would
+	 * render. Only a vehicle that composes on the scratch surface (has_turret) caches, and only when the
+	 * hull pose is itself cacheable. The turret flags carry SHAPE_NOTRANS to leave the flags unchanged.
+	 */
+	int const turret_slot = turret == &Class->AuxVoxel ? 0 : int(turret - Class->ChargerTurrets);
+	auto const part_key = [&](int sub, int sub_limit) -> int {
+		if (!has_turret || key == -1 || pose < 0 || pose >= (1 << 11) || sub < 0 || sub >= sub_limit || turret_slot < 0 || turret_slot >= 8) {
+			return(-1);
+		}
+		return(pose | (int(PrimaryFacing.Current().As_Dir32()) << 11) | (int(SecondaryFacing.Current().As_Dir32()) << 16) | (sub << 21) | (turret_slot << 27));
+	};
+	ShapeFlags_Type const part_flags = has_turret ? ShapeFlags_Type(flags | SHAPE_NOTRANS) : flags;
+
 	if (Class->IsTurretEquipped && turret->VoxLib != NULL) {
 		// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
 		int turret_frame = frame;
@@ -2907,21 +2927,24 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
 		barrel_matrix.Translate(vec2);
 
+		int const turret_key = part_key(turret_frame, 64);
+		int const barrel_key = part_key(int(BarrelPitch.Current().As_Dir32()), 32);
+
 		bool draw_barrel;
 		if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
 			draw_barrel = false;
 			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
+				Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
 			}
 		} else {
 			draw_barrel = true;
 		}
 
-		Draw_Voxel(*turret, turret_frame, -1, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		Draw_Voxel(*turret, turret_frame, turret_key, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, part_flags);
 
 		if (draw_barrel) {
 			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, -1, &Class->VoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, flags);
+				Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
 			}
 		}
 	} else {

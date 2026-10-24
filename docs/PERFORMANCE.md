@@ -43,7 +43,7 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 | `voxels` | Voxel draws of a body or turret, not counting shadows |
 | `voxel hit`, `voxel miss` | Cache-eligible voxel draws found in or missing from the cache, when the draw is not between game frames |
 | `voxel smooth hit`, `voxel smooth miss` | The same, for draws between game frames, where the facing is blended toward the previous frame's |
-| `voxel uncached` | Voxel draws that do not use the cache, such as turrets |
+| `voxel uncached` | Voxel draws that do not use the cache: aircraft bodies, a body with no cacheable pose (for example tilting), a turret part while its recoil is under way, and types with `DisableVoxelCache=yes` |
 | `particles` | Particle draws |
 | `paths` | Path searches (`AStarClass::Find_Path`) |
 | `threats` | Target scans (`TechnoClass::Greatest_Threat`), counted at the base class |
@@ -89,3 +89,17 @@ The frame, the map layer under it and the emissive masks all go this way. A text
 is sent whole, and so is a picture of which half or more has changed. `uploadverify 1` in an autotest
 script checks every update against the picture and `uploadverify 0` writes the counts of checks and
 mismatches.
+
+## Voxel images
+
+A voxel image is rendered once, kept run-length encoded in `VoxelStaticBuffer` (8,000,000 bytes) and
+blitted from there on every later draw. A vehicle's hull is keyed by its facing, ramp and frame. In gamemd
+its turret and barrel use the same kind of cache (`UnitClass::DrawAsVXL`, 0x73B470, through
+`TechnoClass::Draw_Voxel`, 0x706640, with `VoxelTurretWeaponCache` and `VoxelTurretBarrelCache`).
+
+Our turret and barrel keys are stricter than gamemd's, so a cached image is the one the draw matrix would
+render: the hull's pose key, the hull facing, the turret facing, the turret frame or barrel pitch, and the
+weapon slot of a multi-turret vehicle. A turret and a barrel each have a cache of their own
+(`AuxVoxelIndex` and `AuxVoxel2Index`), so a barrel key never meets a hull key. A building's turret and
+barrel are keyed by facing, frame and pitch, and only while both recoil offsets are zero. When the buffer
+is full every cache is cleared, as before.

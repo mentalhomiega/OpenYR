@@ -8194,7 +8194,8 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 
 	Rect cliprect = xcliprect;
 
-	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface && key != -1) {
+	// A turret or barrel part (negflags has SHAPE_NOTRANS) is composed without it, cached or not.
+	if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface && key != -1 && !(negflags & SHAPE_NOTRANS)) {
 		flags = ShapeFlags_Type(flags|SHAPE_NOTRANS);
 	}
 
