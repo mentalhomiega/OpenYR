@@ -1696,8 +1696,14 @@ void BulletClass::Detonate(Coord const & coord)
 	else if (warhead->IsMakesDisguise) {
 		InfantryClass const * target = dynamic_cast<InfantryClass const *>(TarCom);
 		if (Payback != NULL && Payback->TClass->IsCanDisguise && target != NULL && target != Payback) {
-			Payback->DisguiseType = target->Class;
-			Payback->DisguiseHouse = target->House;
+			// A disguised soldier passes on the look it shows, so a spy that copies a spy wears the default soldier.
+			if (target->DisguiseType != NULL) {
+				Payback->DisguiseType = target->DisguiseType;
+				Payback->DisguiseHouse = target->DisguiseHouse;
+			} else {
+				Payback->DisguiseType = target->Class;
+				Payback->DisguiseHouse = target->House;
+			}
 			Payback->Mark(MARK_CHANGE);
 		}
 	}
