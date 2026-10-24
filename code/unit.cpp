@@ -2900,14 +2900,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
 		// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
+		// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
 		Matrix3D barrel_matrix = main_matrix;
 		Vector3 vec2 = main_matrix.Get_Translation();
 		barrel_matrix.Translate(-vec2);
-
-		Vector3 flh = Vector3(-Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, -Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-		barrel_matrix.Translate(-flh);
 		barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
-		barrel_matrix.Translate(flh);
 		barrel_matrix.Translate(vec2);
 
 		bool draw_barrel;
