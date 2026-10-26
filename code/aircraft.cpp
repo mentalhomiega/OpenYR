@@ -2240,7 +2240,12 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (TarCom == NULL || Ammo == 0) {
 				Status = RETURN_TO_BASE;
 			} else {
-				Assign_Destination(Good_Fire_Location(TarCom));
+				// A fighter flies straight at its target, as gamemd's status 3 does while the target is out of range (AircraftClass::Mission_Attack, 0x417FE0, AircraftClass.c:2661).
+				if (Is_Fighter() && !Is_Strafe()) {
+					Assign_Destination(TarCom);
+				} else {
+					Assign_Destination(Good_Fire_Location(TarCom));
+				}
 				if (NavCom != NULL) {
 					Status = FLY_TO_POSITION;
 				} else {
