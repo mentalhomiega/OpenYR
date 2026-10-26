@@ -213,7 +213,7 @@ std::vector<HotkeyEntry> const Held_Table = {
 	{ "SelectModifier", 16, 0, HOTKEY_HELD },
 	{ "QueueMove", 81, 0, HOTKEY_HELD },
 
-	// Attack move on a click is Ctrl with Shift held, which Yuri's Revenge reads from its keys, not from a binding.
+	// Classic's attack move is Ctrl with Shift held, the chord Yuri's Revenge uses on a click. The held state is read like the other held keys.
 	{ "AttackMove", 0x300, 0, HOTKEY_HELD },
 };
 
