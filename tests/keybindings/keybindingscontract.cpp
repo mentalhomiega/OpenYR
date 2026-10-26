@@ -14,6 +14,7 @@
 #include "hotkeytiming.h"
 #include "keybindings.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <set>
 #include <string>
@@ -117,7 +118,7 @@ void Test_Tables(void)
 
 	Check(Key_Of(classic, "TeamSelect_1") == KEY_1 && Find(classic, "TeamSelect_1")->Trigger == HOTKEY_PRESS, "Classic: TeamSelect_1 is a Press of 1");
 	Check(Find(classic, "TeamCenter_1") != nullptr && Find(classic, "TeamCenter_1")->Trigger == HOTKEY_PRESS, "Classic: TeamCenter_1 has no double press");
-	Check(Find(classic, "AttackMove") == nullptr, "Classic leaves AttackMove unbound");
+	Check(Find(classic, "AttackMove") != nullptr && Find(classic, "AttackMove")->Trigger == HOTKEY_HELD, "Classic: AttackMove is Ctrl with Shift held");
 	Check(Key_Of(classic, "ForceFire") == KEY_CTRL && Find(classic, "ForceFire")->Trigger == HOTKEY_HELD, "Classic: ForceFire is Ctrl held");
 	Check(Key_Of(classic, "QueueMove") == KEY_Q && Find(classic, "QueueMove")->Trigger == HOTKEY_HELD, "Classic: QueueMove is Q held");
 
@@ -365,7 +366,7 @@ void Test_Grid_Modifier(void)
 	// A version 3 Classic file gains nothing, and a version 4 file is taken as saved.
 	std::vector<HotkeyEntry> classic = { { "CenterBase", 36 } };
 	Upgrade_Hotkeys(classic, 3, KEYBOARD_SCHEME_CLASSIC);
-	Check(Find(classic, "GridBuildModifier") == nullptr && classic.size() == 1, "a version 3 Classic file gains no grid modifier");
+	Check(Find(classic, "GridBuildModifier") == nullptr && classic.size() == 2 && Key_Of(classic, "AttackMove") == 0x300, "a version 3 Classic file gains no grid modifier, only attack move");
 	std::vector<HotkeyEntry> current = { { "CenterBase", 36 } };
 	Upgrade_Hotkeys(current, KEYBOARD_DEFAULTS_VERSION, KEYBOARD_SCHEME_MODERN);
 	Check(current.size() == 1, "a version 4 file gets no defaults for the commands it omits");
@@ -401,6 +402,55 @@ void Test_Modifier_Only(void)
 	// Only the commands that read their key as held state take a modifier-only binding.
 	Check(Hotkey_Accepts_Modifier_Only("AttackMove") && Hotkey_Accepts_Modifier_Only("ForceFire") && Hotkey_Accepts_Modifier_Only("GridBuildModifier"), "attack move and the held modifiers take a modifier-only binding");
 	Check(!Hotkey_Accepts_Modifier_Only("Stop") && !Hotkey_Accepts_Modifier_Only("StopObject") && !Hotkey_Accepts_Modifier_Only("Options"), "a command that needs a press does not take a modifier-only binding");
+}
+
+
+void Test_Attack_Move_Default(void)
+{
+	// Classic attack move is Ctrl with Shift held, a held binding with no key; Modern keeps its A press.
+	int const KEY_CTRL_SHIFT = KEY_SHIFT_BIT | KEY_CTRL_BIT;
+	Check(Find(Default_Hotkeys(), "AttackMove") != nullptr && Key_Of(Default_Hotkeys(), "AttackMove") == KEY_CTRL_SHIFT && Find(Default_Hotkeys(), "AttackMove")->Trigger == HOTKEY_HELD, "Classic binds attack move to Ctrl with Shift held");
+	Check(Key_Of(Modern_Hotkeys(), "AttackMove") == KEY_A && Find(Modern_Hotkeys(), "AttackMove")->Trigger == HOTKEY_PRESS, "Modern keeps attack move on A as a press");
+
+	// A version 4 Classic file that does not name attack move gains the chord.
+	std::vector<HotkeyEntry> v4 = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(v4, 4, KEYBOARD_SCHEME_CLASSIC);
+	Check(Key_Of(v4, "AttackMove") == KEY_CTRL_SHIFT && Find(v4, "AttackMove")->Trigger == HOTKEY_HELD, "a version 4 Classic file gains the Ctrl and Shift attack move");
+	Check(Key_Of(v4, "CenterBase") == 36 && Hotkey_Bindings_Valid(v4), "a version 4 Classic file keeps its bindings and binds each key once");
+
+	// A version 4 Classic file that binds attack move keeps its own key, and gains no chord beside it.
+	std::vector<HotkeyEntry> own = { { "AttackMove", KEY_A } };
+	Upgrade_Hotkeys(own, 4, KEYBOARD_SCHEME_CLASSIC);
+	Check(Key_Of(own, "AttackMove") == KEY_A && std::count_if(own.begin(), own.end(), [](HotkeyEntry const & entry) { return entry.Command == "AttackMove"; }) == 1, "a file that binds attack move keeps that binding alone");
+
+	// A player's binding that holds Ctrl with Shift keeps the chord, so attack move is not given it.
+	std::vector<HotkeyEntry> holds = { { "Options", KEY_CTRL_SHIFT, 0, HOTKEY_HELD } };
+	Upgrade_Hotkeys(holds, 4, KEYBOARD_SCHEME_CLASSIC);
+	Check(Find(holds, "AttackMove") == nullptr && Key_Of(holds, "Options") == KEY_CTRL_SHIFT, "a Ctrl and Shift chord another command holds stops the attack move default");
+
+	// A version 3 file gains the chord, and one that lacks a held modifier it predates keeps it removed.
+	std::vector<HotkeyEntry> v3 = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(v3, 3, KEYBOARD_SCHEME_CLASSIC);
+	Check(Key_Of(v3, "AttackMove") == KEY_CTRL_SHIFT && Find(v3, "ForceFire") == nullptr, "a version 3 Classic file gains attack move and not the held modifiers it omits");
+
+	// A version 2 Classic file gains the chord with its held modifiers.
+	std::vector<HotkeyEntry> v2 = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(v2, 2, KEYBOARD_SCHEME_CLASSIC);
+	Check(Key_Of(v2, "AttackMove") == KEY_CTRL_SHIFT && Key_Of(v2, "ForceFire") == KEY_CTRL, "a version 2 Classic file gains attack move with the held modifiers");
+
+	// A version 1 Classic file gets the current Classic defaults, the chord among them.
+	HotkeyFile v1 = Hotkey_File_Read({ { "Hotkey", { { "Options", "27" } } } });
+	std::vector<HotkeyEntry> v1_entries = v1.Entries;
+	Upgrade_Hotkeys(v1_entries, v1.Version, v1.Scheme);
+	Check(Key_Of(v1_entries, "AttackMove") == KEY_CTRL_SHIFT, "a version 1 Classic file gains attack move");
+
+	// A version 5 file keeps a missing attack move, as does a Modern version 4 file, whose A key is its own default.
+	std::vector<HotkeyEntry> v5 = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(v5, KEYBOARD_DEFAULTS_VERSION, KEYBOARD_SCHEME_CLASSIC);
+	Check(Find(v5, "AttackMove") == nullptr, "a version 5 Classic file that omits attack move keeps it omitted");
+	std::vector<HotkeyEntry> modern4 = { { "CenterBase", 36 } };
+	Upgrade_Hotkeys(modern4, 4, KEYBOARD_SCHEME_MODERN);
+	Check(Find(modern4, "AttackMove") == nullptr, "a version 4 Modern file that omits attack move gains nothing");
 }
 
 
@@ -619,6 +669,7 @@ int main(void)
 	Test_Prefixes();
 	Test_File();
 	Test_Grid_Modifier();
+	Test_Attack_Move_Default();
 	Test_Modifier_Only();
 	Test_Timing_Ranges();
 	Test_Held_State();

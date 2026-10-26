@@ -212,6 +212,9 @@ std::vector<HotkeyEntry> const Held_Table = {
 	{ "ForceMove", 18, 0, HOTKEY_HELD },
 	{ "SelectModifier", 16, 0, HOTKEY_HELD },
 	{ "QueueMove", 81, 0, HOTKEY_HELD },
+
+	// Attack move on a click is Ctrl with Shift held, which Yuri's Revenge reads from its keys, not from a binding.
+	{ "AttackMove", 0x300, 0, HOTKEY_HELD },
 };
 
 // The Modern scheme. It lists every command whose key differs from Yuri's Revenge, and the keys it
@@ -353,12 +356,18 @@ int Find_Key(std::vector<HotkeyEntry> const & table, std::string const & command
 
 
 /// <summary>
-/// Returns whether a version 4 build added the held binding of the command. A version 3 file predates these
-/// bindings only; the held keys it names, including any the player removed, are kept as saved.
+/// Returns the version of the build that added the held binding of the command. A file older than that version
+/// gets the binding when it does not name the command; a file of that version or later keeps what it names.
 /// </summary>
-bool Added_In_Version_4(std::string const & command)
+int Held_Binding_Version(std::string const & command)
 {
-	return(command == "GridBuildModifier");
+	if (command == "GridBuildModifier") {
+		return(4);
+	}
+	if (command == "AttackMove") {
+		return(5);
+	}
+	return(3);
 }
 
 
@@ -461,14 +470,14 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 		return;
 	}
 
-	// A version 2 file predates the Held entries, and a version 3 file predates the grid modifier. Its other
+	// A file of version 2 to 4 predates some Held entries, which Held_Binding_Version gives. Its other
 	// bindings are kept as saved.
 	if (version >= 2) {
 		for (HotkeyEntry const & entry : current) {
 			if (entry.Trigger != HOTKEY_HELD || Names_Command(entries, entry.Command)) {
 				continue;
 			}
-			if (version >= 3 && !Added_In_Version_4(entry.Command)) {
+			if (version >= Held_Binding_Version(entry.Command)) {
 				continue;
 			}
 			bool taken = false;
