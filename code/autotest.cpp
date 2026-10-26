@@ -419,6 +419,7 @@ std::size_t Next = 0;
 // Frames between the screenshots of a recording, or 0 when not recording.
 int RecordInterval = 0;
 int HashInterval = 0;
+int StateCRCInterval = 0;
 
 // The type the speed probe logs, empty when it is off, and the frames between its logs (0 logs once).
 std::string SpeedProbeType;
@@ -1018,6 +1019,35 @@ void Log_State_Hash(void)
 		hash = (hash ^ random[index]) * 16777619u;
 	}
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
+}
+
+
+template<class T>
+void Hash_Targets(unsigned int & hash, DynamicVectorClass<T *> & list)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		AbstractClass const * target = list[index]->TarCom;
+		Hash_Value(hash, target != NULL ? target->What_Am_I() : -1);
+		Hash_Value(hash, target != NULL ? target->Fetch_ID() : -1);
+	}
+}
+
+
+/// <summary>
+/// Logs two checksums of the game state: Object_CRCs, the per-object checksum that the multiplayer
+/// check folds in and that leaves out each object's target, and a second checksum over every
+/// object's target. Runs with the same script and seed should log the same values. Reading the
+/// state does not change it.
+/// </summary>
+void Log_State_CRC(void)
+{
+	unsigned int targets = 2166136261u;
+	Hash_Targets(targets, Buildings);
+	Hash_Targets(targets, Units);
+	Hash_Targets(targets, Aircraft);
+	Hash_Targets(targets, Infantry);
+	CRCEngine objects = Object_CRCs();
+	DebugString("AUTOTEST statecrc frame %d objects %08X targets %08X\n", Frame, (unsigned int)objects(), targets);
 }
 
 
@@ -5100,6 +5130,10 @@ void Run(StepType const & step)
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
 		Log_State_Hash();
+	} else if (step.Command == "statecrc") {
+		// statecrc [interval]: logs the object and target checksums now, and every interval frames after when one is given.
+		StateCRCInterval = std::max(0, std::atoi(step.Argument.c_str()));
+		Log_State_CRC();
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
 	} else if (step.Command == "searchdir") {
@@ -5298,6 +5332,10 @@ void AutoTest_Frame(void)
 
 	if (HashInterval > 0 && (Frame % HashInterval) == 0) {
 		Log_State_Hash();
+	}
+
+	if (StateCRCInterval > 0 && (Frame % StateCRCInterval) == 0) {
+		Log_State_CRC();
 	}
 
 	if (SpeedProbeInterval > 0 && (Frame % SpeedProbeInterval) == 0) {
