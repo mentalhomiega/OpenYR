@@ -3707,13 +3707,6 @@ void Tactical::Reset_Dirty_Rectangles(void)
 
 
 /// <summary>
-/// Draws rally point lines for the player's selected production buildings. For every selected,
-/// player-owned factory that has a rally point assigned, a green dashed line is drawn from the
-/// building to its rally point cell. Rally points that fall under a high bridge are raised by
-/// the bridge height so the line terminates at the correct screen position.
-/// </summary>
-/// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
-/// <summary>
 /// Draws each beacon the local player can see, with its message above it.
 /// </summary>
 void Tactical::Draw_Beacons(void)
@@ -3754,6 +3747,13 @@ void Tactical::Draw_Beacons(void)
 }
 
 
+/// <summary>
+/// Draws rally point lines for the player's selected production buildings. For every selected,
+/// player-owned factory that has a rally point assigned, a green dashed line is drawn from the
+/// building to its rally point cell. Rally points that fall under a high bridge are raised by
+/// the bridge height so the line terminates at the correct screen position.
+/// </summary>
+/// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
 {
 	static bool _pattern[8] = {
