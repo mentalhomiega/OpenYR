@@ -47,25 +47,14 @@
 #include <string>
 
 
-#define NUMFAMENAMES				9
-#define MAX_FAMENAME_LENGTH	104
-
 /*
- * The campaign results dialog (dialog 3015) lists two places of the hall of fame, and each one
- * gets a name field of this many dialog units.
+ * The campaign results dialog (dialog 3015) shows two places, the two rows with the highest scores.
  */
 #define FAME_PLACES					2
 
 void const * Beepy6;
 int ControlQ;	// cheat key to skip past score/mapsel screens
 bool StillUpdating;
-
-struct Fame {
-	char	name[MAX_FAMENAME_LENGTH];
-	int	score;
-	int	level;
-	int	side;
-};
 
 namespace {
 
@@ -156,9 +145,8 @@ char const * Player_Name(void)
 /// <summary>
 /// Shows the campaign results screen after a mission.
 /// The screen is drawn on the side's art in the layout of gamemd's Campaign Results dialog. It lists
-/// the player, and the first enemy house, with the figures of the mission and the efficiency total.
-/// The two best places of the hall of fame are shown below the table. A score that makes one of them
-/// is entered under the player's name, without any typing.
+/// the player and the first enemy house, the higher score first. The first and second places repeat
+/// those two rows. Nothing is typed on the screen.
 /// </summary>
 void ScoreClass::Presentation(void)
 {
@@ -204,22 +192,15 @@ void ScoreClass::Presentation(void)
 	ShapeSet * animation = Stage.Load_Shape(name);
 
 	/*
-	 * The figures of the two rows. The score is the efficiency total, and the built figure is the
-	 * share of the biggest spender's credits.
+	 * The figures of the two rows, as gamemd's FillScoreStatistics (0x49b7e0) stores them. Built is the
+	 * losses plus the four owned-object totals; that sum is not confirmed against gamemd's stored count.
+	 * Gamemd prints every figure as a plain number.
 	 */
 	HouseClass * enemy = NULL;
 	for (int i = 0; i < Houses.Count() && enemy == NULL; i++) {
 		HouseClass * hptr = Houses[i];
 		if (hptr != NULL && hptr != PlayerPtr && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver && !PlayerPtr->Is_Ally(hptr)) {
 			enemy = hptr;
-		}
-	}
-
-	unsigned int most_spent = 0;
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass * hptr = Houses[i];
-		if (hptr != NULL && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver) {
-			most_spent = std::max(most_spent, hptr->CreditsSpent);
 		}
 	}
 
@@ -246,10 +227,12 @@ void ScoreClass::Presentation(void)
 			rows[row].Kills += hptr->BuildingsKilled[i];
 		}
 		rows[row].Losses = hptr->UnitsLost + hptr->BuildingsLost;
-		rows[row].Built = (most_spent > 0) ? (int)((double)hptr->CreditsSpent / (double)most_spent * 100.0) : 0;
-		rows[row].Score = Do_Calc(hptr);
+		rows[row].Built = rows[row].Losses + hptr->ABQuantity.Total() + hptr->AUQuantity.Total() + hptr->AIQuantity.Total() + hptr->AAQuantity.Total();
+		rows[row].Score = std::max(0, hptr->PointTotal);
 	}
-	unsigned int total = (unsigned int)rows[0].Score;
+	if (row_count == 2 && rows[1].Score > rows[0].Score) {
+		std::swap(rows[0], rows[1]);
+	}
 
 	/*
 	 * The static part of the screen: title, time, headings and the continue button.
@@ -335,55 +318,20 @@ void ScoreClass::Presentation(void)
 	Stage.Present(TABLE_RECT);
 
 	/*
-	 * The hall of fame keeps the best nine scores, and its two best places are shown here. A score
-	 * that enters the list takes its name from the player.
+	 * The first and second places are the two rows, with each row's name and score.
 	 */
-	Fame hallfame[NUMFAMENAMES];
-	memset(hallfame, 0, sizeof(hallfame));
-	CCFileClass file;
-	file.Set_Name(FAME_FILE_NAME);
-	if (file.Is_Available() == true) {
-		file.Read(hallfame, sizeof(hallfame));
-		file.Close();
-	}
-
-	if (hallfame[NUMFAMENAMES-1].score >= (int)total) {
-		hallfame[NUMFAMENAMES-1].score = 0;
-	}
-	int index = 0;
-	for (index = 0; index < NUMFAMENAMES; index++) {
-		if ((int)total > hallfame[index].score) {
-			if (index < (NUMFAMENAMES-1)) {
-				for (int i = (NUMFAMENAMES-1); i > index; i--) {
-					hallfame[i] = hallfame[i-1];
-				}
-			}
-			std::snprintf(hallfame[index].name, sizeof(hallfame[index].name), "%s", Player_Name());
-			hallfame[index].score = (int)total;
-			hallfame[index].level = Scen->Scenario;
-			hallfame[index].side = PlayerPtr->Class->Side;
-			break;
-		}
-	}
-
 	DoSound("Emblem", 256);
 	for (int place = 0; place < FAME_PLACES; place++) {
 		std::string label = Fetch_String_UTF8(place == 0 ? "GUI:FirstPlace" : "GUI:SecondPlace");
 		Stage.Print_Left(label.c_str(), ScoreStageClass::Dialog_X(PLACE_LABEL_X[place]), ScoreStageClass::Dialog_Y(232));
-		if (hallfame[place].score > 0) {
-			sprintf(buffer, "%d%%", hallfame[place].score);
+		if (place < row_count) {
+			Stage.Print_Left(rows[place].Name.c_str(), ScoreStageClass::Dialog_X(PLACE_X[place]), ScoreStageClass::Dialog_Y(242));
+			sprintf(buffer, "%d", rows[place].Score);
 			Stage.Print_Left(buffer, ScoreStageClass::Dialog_X(PLACE_X[place]), ScoreStageClass::Dialog_Y(254));
 		}
-		Rect const field = ScoreStageClass::Dialog_Rect(PLACE_X[place], 242, 55, 10);
-		Stage.Print_Left(hallfame[place].name, field.X, field.Y);
 		Rect const place_area = ScoreStageClass::Dialog_Rect(PLACE_LABEL_X[place], 232, 80, 34);
 		Stage.Keep(place_area);
 		Stage.Present(place_area);
-	}
-
-	if (file.Open(FAME_FILE_NAME, FileClass::WRITE)) {
-		file.Write(hallfame, sizeof(hallfame));
-		file.Close();
 	}
 
 	/*
@@ -415,54 +363,6 @@ void ScoreClass::Presentation(void)
 
 
 /// <summary>
-/// Determines the efficiency rating for the score screen.
-/// The rating weighs how much of what the house and its allies built came through the
-/// mission alive against how much of the money they had to spend went unspent.
-/// </summary>
-/// <param name="house">The house being rated -- normally the player.</param>
-/// <returns>Returns with the efficiency rating, expressed as a percentage.</returns>
-unsigned int ScoreClass::Do_Calc(HouseClass * house)
-{
-	int remain = 0;
-	int total = 0;
-
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass * hptr = Houses[i];
-		if (house->Is_Ally(hptr) && hptr->Is_Ally(house) || house == hptr) {
-			remain += hptr->ABQuantity.Total();
-			remain += hptr->AUQuantity.Total();
-			remain += hptr->AIQuantity.Total();
-			remain += hptr->AAQuantity.Total();
-			total += hptr->BuildingsLost;
-			total += hptr->UnitsLost;
-		}
-	}
-
-	total += remain;
-	DebugString("Remaining: %ld, Total: %ld\n", remain, total);
-
-	float build_eco = total > 0 ? ((float)remain / total) : 0.0f;
-
-	DebugString("BuildEconomy = %f\n", build_eco);
-
-	DebugString("Money: %ld, Harvested: %ld, Initial: %ld\n", house->Available_Money(), house->HarvestedCredits, house->Control.InitialCredits);
-
-	total = house->HarvestedCredits + house->Control.InitialCredits;
-	float money_eco = total > 0 ? (float)house->Available_Money() / (float)total : 0.0f;
-
-	DebugString("MoneyEconomy = %f\n", money_eco);
-
-	float eco = money_eco + build_eco;
-
-	unsigned int efficiency = (unsigned int)((eco / 2.0) * 100.0);
-
-	DebugString("Efficiency: %ld\n", efficiency);
-
-	return(efficiency);
-}
-
-
-/// <summary>
 /// Prints one row's figures on the results table.
 /// </summary>
 void ScoreClass::Print_Row_Figures(int row, int kills, int losses, int built, int score)
@@ -474,9 +374,9 @@ void ScoreClass::Print_Row_Figures(int row, int kills, int losses, int built, in
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(KILLS_RIGHT), y);
 	sprintf(buffer, "%d", losses);
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(LOSSES_RIGHT), y);
-	sprintf(buffer, "%d%%", built);
+	sprintf(buffer, "%d", built);
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(BUILT_RIGHT), y);
-	sprintf(buffer, "%d%%", score);
+	sprintf(buffer, "%d", score);
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(SCORE_RIGHT), y);
 }
 

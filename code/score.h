@@ -52,7 +52,6 @@ class ScoreClass {
 		void Presentation(void);
 
 	private:
-		unsigned int Do_Calc(HouseClass * house);
 		void DoSound(const char * name, int volume);
 		void Print_Row_Figures(int row, int kills, int losses, int built, int score);
 		void Wait_For_Click(ShapeSet const * animation);
