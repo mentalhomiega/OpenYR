@@ -4224,6 +4224,33 @@ void Run(StepType const & step)
 		Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
 		Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
 		DebugString("AUTOTEST   cellpixel %d,%d at window %d,%d\n", std::atoi(step.Argument.c_str()), step.X, window.X, window.Y);
+	} else if (step.Command == "hoverat") {
+		// hoverat x y: moves the pointer to the centre pixel of that cell, as windowmove does, so the object there hovers from the next frame.
+		Coord const centre = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
+		Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
+		Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_MOUSE_MOVE;
+		event.X = window.X;
+		event.Y = window.Y;
+		_CursorX = event.X;
+		_CursorY = event.Y;
+		Game_Window_Handle_Event(event);
+		DebugString("AUTOTEST   hoverat %d,%d pointer %d,%d\n", std::atoi(step.Argument.c_str()), step.X, window.X, window.Y);
+	} else if (step.Command == "pips") {
+		// pips <TypeID> x y: the inputs of the occupant-pip gate for the building of that type on that cell, and whether the pointer hovers it.
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		if (building == NULL || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) {
+			DebugString("AUTOTEST   pips %s at %d,%d: no such building\n", step.Argument.c_str(), step.X, step.Y);
+		} else {
+			bool const visible = building->Pips_Visible_To_Player();
+			bool const occupant_pips = visible && building->Class->IsShowOccupantPips && building->Class->MaxNumberOccupants > 0;
+			DebugString("AUTOTEST   pips %s at %d,%d house %s passive %d allied %d pipsforall %d canoccupy %d showpips %d max %d occupants %d hover %d selected %d visible %d occupant pips %d\n",
+				building->Class->Name(), step.X, step.Y, building->House->Class->Name(), (int)building->House->Class->IsMultiplayPassive,
+				(int)(building->House->Shares_View_With(PlayerPtr) || building->SpiedBy[PlayerPtr]), (int)building->TClass->IsPipsDrawForAll,
+				(int)building->Class->IsCanBeOccupied, (int)building->Class->IsShowOccupantPips, building->Class->MaxNumberOccupants,
+				building->Occupants.Count(), (int)(Map.HoverObject == building), (int)building->IsSelected, (int)visible, (int)occupant_pips);
+		}
 	} else if (step.Command == "pickat") {
 		// pickat x y: the object a click at that window pixel would pick, and the cell under it. Selection is left alone.
 		Point2D const view = Screen_To_View_Offset(Point2D(std::atoi(step.Argument.c_str()), step.X) - ScreenTacticalRect.Top_Left());

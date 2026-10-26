@@ -956,6 +956,7 @@ class TechnoClass :	public RadioClass,
 		bool Is_Decoration_Visible(void) const;
 		bool Is_Hidden_Behind_Building(void) const;
 		Point2D Pip_Origin(Point2D const & point) const;
+		bool Pips_Visible_To_Player(void) const;
 		virtual void Draw_Health_Bar_Old(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Health_Bar(Point2D const & point, Rect const & rect) const;
 		virtual void Draw_Pips(Point2D const & bottomleft, Point2D const & bottomright, Rect const & rect) const;

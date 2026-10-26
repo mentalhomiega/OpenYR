@@ -92,7 +92,7 @@ Shots leave from the art entry's [`MuzzleFlash0`](/keys/muzzleflash0/) through `
 
 ## Pips
 
-A garrisonable structure under the mouse, or selected, shows a row of figures with one figure per `MaxNumberOccupants` slot. Every player sees the row, whoever owns the structure. A slot with a soldier inside shows that soldier's [`OccupyPip`](/keys/occupypip/) figure; an empty slot shows an empty figure. [`ShowOccupantPips=no`](/keys/showoccupantpips/) hides the row.
+A garrisonable structure under the mouse, or selected, shows a row of figures with one figure per `MaxNumberOccupants` slot, when the player sees its pips. The player sees them on a structure of an ally or of a house it spies on, and on a structure of a house whose country sets `MultiplayPassive=yes`, such as an empty civilian structure. A structure of an active enemy house shows no row, even when it can hold soldiers. A slot with a soldier inside shows that soldier's [`OccupyPip`](/keys/occupypip/) figure; an empty slot shows an empty figure. [`ShowOccupantPips=no`](/keys/showoccupantpips/) hides the row.
 
 ## Moving out
 

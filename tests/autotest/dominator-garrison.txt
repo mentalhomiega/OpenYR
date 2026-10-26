@@ -1,0 +1,61 @@
+; Occupant pips and garrisoning for the Psychic Dominator, a civilian Dominator and other garrisonable buildings.
+; The Psychic Dominator (YAPPET) has no occupant slots: it shows no pips and no soldier can enter it.
+; The partially built Dominator (YAPPPT) has TechLevel=-1, CanBeOccupied=yes and MaxNumberOccupants=10 in the stock
+; rules. gamemd's per-frame owner update FUN_00458200 (0x458200, decomp/_unnamed/00450000.c:2676, called from BuildingClass.c:2801) hands an empty
+; TechLevel -1 structure to the Civilian house every frame, so a Dominator placed empty is a civilian garrison. Its
+; ten empty slots then show as black pips and any infantry may enter, as for the civilian houses.
+; gamemd draws occupant pips for a building only in TechnoClass::DrawHealthBar (0x6F64A0, decomp TechnoClass.c:2751-2770),
+; when PipsDrawForAll is set, the viewer is an ally, or the building's house is passive (the house byte at +0x157b).
+; An active enemy structure shows no occupant pips.
+; Entry follows BuildingClass::CanBeOccupiedBy (0x457CE0): the owner must be the soldier's house or a passive house.
+; Each hover follows a view on the target, so the target is on the tactical map and not under the sidebar.
+; Expected after the fix:
+;   own YAPPET: no pips; the GI's cursor on it is Select, not Enter; a Conscript does not get in (radar limbo 0)
+;   neutral YAPPPT (empty civilian Dominator): pips shown; a GI gets in
+;   neutral CASANF01 (civilian house): pips shown; a GI gets in
+;   enemy NABNKR (active enemy bunker, unoccupied): no pips
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script E:/Claude ra2 decomp/src-agent14/tests/autotest/dominator-garrison.txt -Width 800 -Height 600 -Seconds 240 -ShotDir <folder> -Filter "AUTOTEST   garrison|AUTOTEST   pips|AUTOTEST   cursor|AUTOTEST   hoverat|AUTOTEST   radar|AUTOTEST enter|AUTOTEST own|AUTOTEST enemy|AUTOTEST neutral|Exception"
+30 command CenterBase
+35 reveal
+50 own YAPPET 58 36
+51 neutral YAPPPT 66 36
+52 neutral YAPPPT 74 36
+53 neutral CASANF01 58 46
+54 enemy NABNKR 68 46
+56 own E1 56 42
+100 view 66 36
+102 hoverat 66 36
+104 pips YAPPPT 66 36
+106 command ScreenCapture
+110 view 74 36
+112 hoverat 74 36
+114 pips YAPPPT 74 36
+116 command ScreenCapture
+120 view 58 36
+122 hoverat 58 36
+124 pips YAPPET 58 36
+126 command ScreenCapture
+130 view 58 46
+132 hoverat 58 46
+134 pips CASANF01 58 46
+136 command ScreenCapture
+140 view 68 46
+142 hoverat 68 46
+144 pips NABNKR 68 46
+146 command ScreenCapture
+180 cursor E1 58 36
+182 cursor E1 58 46
+200 enter E1 58 46
+500 garrisons
+520 own E2 62 39
+530 enter E2 58 36
+800 radar E2
+810 own E1 70 38
+820 enter E1 74 36
+1100 garrisons
+1110 radar E1
+1120 view 74 36
+1122 hoverat 74 36
+1124 pips YAPPPT 74 36
+1126 command ScreenCapture
+1200 quit
