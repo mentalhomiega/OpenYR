@@ -114,20 +114,25 @@ int main()
 	Expect("hexadecimal", Bits(Parse("0x10")), Bits(16.0));
 	Expect("overflow", Bits(Parse("1e400")), Bits(HUGE_VAL));
 
+	// The hexadecimal and overflow parses above use the scope, which must restore the chop mode set at the start.
+	unsigned int mode = 0;
+	_controlfp_s(&mode, 0, 0);
+	Expect("mode after scope", static_cast<std::uint64_t>(mode & _MCW_RC), static_cast<std::uint64_t>(_RC_CHOP));
+	volatile double after_scope = Parse("1.1");
+	Expect("float 1.1 chop after scope", Bits(static_cast<float>(after_scope)), 0x3f8ccccc);
+
 	char const * volatile bad = "abc";
 	char * end = nullptr;
 	Expect("no number value", Bits(Parse_Nearest_Double(bad, &end)), Bits(0.0));
 	Expect("no number end", end == bad ? 1u : 0u, 1u);
 
-	// A value written with Snprintf_Nearest reads back as the float that was written.
+	// Settings values are read as the nearest float, and a value written with Snprintf_Nearest reads back as that float.
 	char const * const settings[] = {"0.9", "1.1", "0.3", "0.25", "0.75", "1.5", "0.6", "12.345", "0.001", "0.05"};
 	for (char const * text : settings) {
-		volatile double parsed = Parse(text);
-		float const stored = static_cast<float>(parsed);
+		float const stored = Parse_Single(text);
 		char written[64];
 		Snprintf_Nearest(written, sizeof(written), "%f", static_cast<double>(stored));
-		volatile double reread = Parse(written);
-		Expect(text, Bits(static_cast<float>(reread)), Bits(stored));
+		Expect(text, Bits(Parse_Single(written)), Bits(stored));
 	}
 
 	_controlfp_s(&previous, _RC_NEAR, _MCW_RC);
