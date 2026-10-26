@@ -5728,6 +5728,11 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		mission = MISSION_ATTACK_MOVE;
 	}
 
+	// A fully deployed simple deployer takes no plain move order until it packs up: gamemd's UnitClass::MouseOverCell (0x7404B0) gives a move over a deployed unit no action, so no order is issued. An attack-move passes.
+	if (mission == MISSION_MOVE && RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsSimpleDeployed) {
+		return;
+	}
+
 	/*
 	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
 	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
