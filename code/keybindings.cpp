@@ -276,6 +276,12 @@ char const * Hotkey_Trigger_Prefix(HotkeyTrigger trigger)
 }
 
 
+bool Hotkey_Is_Modifier_Only(int key)
+{
+	return((key & 0xFF) == 0 && (key & HOTKEY_MODIFIER_BITS) != 0);
+}
+
+
 namespace
 {
 

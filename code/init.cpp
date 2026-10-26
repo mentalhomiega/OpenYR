@@ -7162,6 +7162,11 @@ void Apply_Hotkeys(void)
 			continue;
 		}
 
+		// A modifier-only binding never arrives as a press, so the commands read it as held state instead.
+		if (Hotkey_Is_Modifier_Only(entry.Key)) {
+			continue;
+		}
+
 		KeyTriggers & triggers = keys[entry.Key];
 		switch (entry.Trigger) {
 			case HOTKEY_DOUBLE:
@@ -7231,7 +7236,7 @@ void Apply_Hotkeys(void)
 static bool Grid_Modifier_Held(void)
 {
 	for (KeyNumType key : GridModifierKeys) {
-		if (key != KN_NONE && HotkeyTiming.Is_Held(key)) {
+		if (key != KN_NONE && (HotkeyTiming.Is_Held(key) || (Hotkey_Is_Modifier_Only(key) && Keyboard->Down(key)))) {
 			return(true);
 		}
 	}

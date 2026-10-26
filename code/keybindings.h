@@ -76,6 +76,13 @@ bool Hotkey_Bindings_Valid(std::vector<HotkeyEntry> const & entries);
 // The prefix a binding shows before its key, such as "2x " for a Double. A Press has no prefix.
 char const * Hotkey_Trigger_Prefix(HotkeyTrigger trigger);
 
+// The modifier bits of a key identifier: Shift, Control and Alt, as keyboard.h defines them.
+int const HOTKEY_MODIFIER_BITS = 0x700;
+
+// Whether the key is modifier bits alone, such as Ctrl+Shift, with no key. The engine never receives such a key
+// as a press; the commands that read a held key test it instead.
+bool Hotkey_Is_Modifier_Only(int key);
+
 // One line of a keyboard file: a name and its value, as the file writes them.
 struct HotkeyFileLine
 {
