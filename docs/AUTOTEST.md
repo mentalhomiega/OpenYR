@@ -212,10 +212,10 @@ first frame whose hash differs is where their gameplay diverged. A script that s
 
 ## Two-copy sync test
 
-`scripts/run_netsync.ps1`, in the workspace that hosts this repository, runs two copies of one build as a two-player match over 127.0.0.1. It then reports whether the copies stayed in step. Both copies run hidden and muted, as in `run_autotest.ps1`.
+`scripts/run_netsync.ps1` runs two copies of one build as a two-player match over 127.0.0.1. It then reports whether the copies stayed in step. Both copies run hidden and muted, with no movies and no question about sending problem reports. `-GameExe` names the `Game.exe` to run and `-DataDir` the Yuri's Revenge folder that holds the game data; the runner only reads that folder.
 
 ```text
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_netsync.ps1 -Build agent17 -Seconds 400
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_netsync.ps1 -GameExe build\bin\Release\Game.exe -DataDir "C:\Games\Yuri's Revenge" -Seconds 400
 ```
 
 Each copy starts with `-SYNCLOG`, which writes one line to its debug log for every game frame:
@@ -237,7 +237,9 @@ The exit code is `0` when the copies agree on every common frame, `3` when they 
 
 | Parameter | Default | Effect |
 | --- | --- | --- |
-| `-Build` | `src` | The build to run, named as in `run_autotest.ps1` |
+| `-GameExe` | required | The `Game.exe` both copies run |
+| `-DataDir` | required | The Yuri's Revenge folder with the game data |
+| `-WorkDir` | `netsync` beside `Game.exe` | Holds each copy's user folder and the relay log |
 | `-Map` | `XMP29U2.MAP` | The skirmish map |
 | `-Seconds` | `120` | How long both copies run before the runner stops them |
 | `-AI` | `2` | Computer players, seated the same way on both copies |
@@ -262,12 +264,12 @@ The `XMP29U2.MAP` pair desynced at frame 14726 in two of five runs before the mi
 
 An earlier note put the first differing random draw at frame 14636. That came from comparing the draws by table cursor, which is offset between the copies. Compared in draw order, the draws agree through frame 14725. The first difference is at frame 14726, after a building's guard scan found a target on one copy only.
 
-Each copy has its own user folder, `build\<Build>-netsync-a-user` or `-b-user`, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
+Each copy has its own user folder, `side-a-user` or `side-b-user` in the work folder, with its own `SPAWN.INI`. The copy named `SyncA` is the host, and `SyncB` joins it. The runner seats two people, then the computer players, in the same order on both copies.
 
 - `[Settings] BindAddress=127.0.0.1` makes each socket listen on loopback only, so nothing listens on the network.
 - The runner writes `0 log NETSYNC_SIDE_A` (or `_B`) as the first line of each copy's script, and finds each copy's debug log by that marker.
 - Both copies write to the build's `Debug` folder. Each run deletes the `DEBUG_*.LOG` and `SYNC_*.LOG` files there first, so use `-KeepDir` to keep a run's logs.
-- Runs of one build take turns, as with `run_autotest.ps1`, and the runner holds two of the four game slots.
+- Runs of one `Game.exe` take turns. The runner holds two of four game slots that every runner on the machine shares, so at most four copies run at once.
 
 ### Orders in a network game
 
