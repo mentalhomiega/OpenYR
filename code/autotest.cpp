@@ -4155,6 +4155,11 @@ void Run(StepType const & step)
 				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
 				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
 				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+			Coord const turret = techno->Turret_Coord();
+			Coord const lead = techno->Predict_Target_Coord();
+			DebugString("AUTOTEST   barrelstate %s barrel desired %d current %d center z %d tarz %d turret %d,%d,%d lead %d,%d,%d\n",
+				techno->TClass->Name(), (int)techno->BarrelPitch.Desired().As_Int(), (int)techno->BarrelPitch.Current().As_Int(), techno->Center_Coord().Z,
+				techno->TarCom != NULL ? techno->TarCom->Center_Coord().Z : -1, turret.X, turret.Y, turret.Z, lead.X, lead.Y, lead.Z);
 		}
 	} else if (step.Command == "animlog") {
 		// animlog <TypeID>: the animation state of each object of that type, whoever owns it. The body draws the voxel frame

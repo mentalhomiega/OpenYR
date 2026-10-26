@@ -93,7 +93,7 @@ One shot runs the steps below in order. A step that ends the shot skips every la
 1. The firing slot must hold a weapon. An empty slot fires nothing.
 2. If the weapon's warhead has a [`LimpetFactor`](/keys/limpetfactor/) above `0` and the target is a vehicle, infantry, aircraft or structure, no projectile is fired. If the firer's house has not yet marked that target, the target is marked, the weapon's [`Report`](/keys/report/) sound plays, and the firer is taken off the map. If that house has already marked the target, the shot ends and the firer stays.
 3. The shot ends if this weapon's effect from an earlier shot is still alive. [Effects that hold the weapon shut](#effects-that-hold-the-weapon-shut) lists these effects.
-4. The barrel starts turning to the elevation chosen for this target.
+4. The barrel starts turning to the elevation chosen for this target. A vehicle's barrel does not turn for its target; see the next section.
 5. The projectile's damage is set. An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon gives its projectile no damage. For any other weapon, a positive [`Damage`](/keys/damage/#scope-weapontype) is multiplied by the house's firepower bias and the object's firepower bias, and raised further by the veteran firepower ability. A zero or negative `Damage` is used unchanged.
 6. The projectile is created and [launched from the mounting](/systems/projectile-flight/#what-the-shot-leaves-with). A laser, railgun or sonic weapon also creates its projectile here. The shot ends if the projectile cannot be created, if no ballistic arc reaches the target, or if the projectile cannot be placed at the mounting.
 7. A turreted object recoils if its type sets [`TurretRecoil=yes`](/keys/turretrecoil/).
@@ -138,9 +138,10 @@ A structure can replace the mounting. The engine tests these cases in order and 
 
 The barrel's elevation is chosen from the first slot, whichever slot fires:
 
+- A vehicle's barrel stays at its [`FireAngle`](/keys/fireangle/) elevation and does not aim at its target.
 - A structure whose first-slot weapon has `IsLaser=yes` points its barrel straight at the aim point.
 - An [`EMPulseCannon=yes`](/keys/empulsecannon/) structure solves a ballistic arc. If no arc reaches the target, it tries again with a launch speed a quarter higher.
-- Every other object solves a ballistic arc for its first-slot weapon. The barrel takes the high arc when that weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. `Lobber` on the second slot does not raise the barrel. The projectile itself still follows its own weapon's `Lobber`.
+- Every other object, aircraft and infantry included, solves a ballistic arc for its first-slot weapon. The barrel takes the high arc when that weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. `Lobber` on the second slot does not raise the barrel. The projectile itself still follows its own weapon's `Lobber`.
 
 ### How a burst alternates sides
 
