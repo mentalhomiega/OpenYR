@@ -1426,18 +1426,21 @@ void Test_Keyboard_Refusals(void)
 	RecordingKeyboardServiceClass service;
 	UIKeyboardPresenterClass presenter(service, Attack_Move_Fixture());
 	Drive(presenter, "pick", 4 * HOTKEY_SLOT_COUNT);
-	Drive(presenter, "capture", 88);
 
-	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Ctrl");
-	Check(presenter.State.Notice == "Ctrl cannot be bound by itself. Hold it with another key. Holding Ctrl and Shift together already gives attack-move on a click.", "Ctrl alone on Attack move says why and names the Ctrl and Shift attack-move");
-	Check(presenter.State.CapturedName == "K88" && Key_Of_Name(presenter.State.Bindings, "AttackMove") == 6, "a refused key keeps the captured key and the binding");
+	// Holding Ctrl and Shift says what releasing them binds; released with no key, they are captured alone.
+	Drive(presenter, "chord", 0x300);
+	Check(presenter.State.Notice == "K768 held. Release the keys to bind them alone, or press a key with them.", "holding Ctrl and Shift says what releasing them binds");
+	Drive(presenter, "capture", 0x300);
+	Check(presenter.State.CapturedName == "K768" && presenter.State.Notice.empty() && Key_Of_Name(presenter.State.Bindings, "AttackMove") == 6, "a modifier-only capture on attack move is kept and binds nothing yet");
+	Drive(presenter, "capture", 0x300 | 88);
+	Check(presenter.State.CapturedName == "K856", "a key pressed with Ctrl and Shift is captured with both");
 
-	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Alt");
-	Check(presenter.State.Notice == "Alt cannot be bound by itself. Hold it with another key.", "Alt alone gives the plain reason");
-
+	// A command that needs a key press refuses a modifier-only capture, and keeps no capture.
 	Drive(presenter, "pick", 1 * HOTKEY_SLOT_COUNT);
-	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MODIFIER, "Shift");
-	Check(presenter.State.Notice == "Shift cannot be bound by itself. Hold it with another key.", "a modifier on another command gives no attack-move hint");
+	Drive(presenter, "capture", 0x300);
+	Check(presenter.State.Captured == 0 && presenter.State.CapturedName.empty() && presenter.State.Notice == "Toggle repair needs a key press. K768 alone works only for held-key commands, such as Attack move.", "a command that needs a press refuses Ctrl and Shift alone");
+	Drive(presenter, "capture", 0x300 | 88);
+	Check(presenter.State.CapturedName == "K856" && presenter.State.Notice.empty(), "a command that needs a press takes a key pressed with modifiers");
 
 	Drive_Refusal(presenter, UI_KEYBOARD_REFUSE_MOUSE, "");
 	Check(presenter.State.Notice == "The left and right mouse buttons cannot be bound here. Use the middle button, a side button or the wheel.", "a left or right click says the buttons cannot be bound");
