@@ -31,7 +31,10 @@ class Nearest_Rounding_Scope
 	public:
 		Nearest_Rounding_Scope()
 		{
-			_controlfp_s(&previous_, _RC_NEAR, _MCW_RC);
+			// _controlfp_s returns the word it stores, so the previous mode is read before it is changed.
+			_controlfp_s(&previous_, 0, 0);
+			unsigned int ignored = 0;
+			_controlfp_s(&ignored, _RC_NEAR, _MCW_RC);
 		}
 
 		~Nearest_Rounding_Scope()
