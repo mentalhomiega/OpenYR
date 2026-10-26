@@ -53,9 +53,14 @@ class ScoreStageClass
 		int Text_Height(void) const;
 
 		void Load_Palette(char const * name);
+		ConvertClass * Load_Drawer(char const * name) const;
+		static void Free_Drawer(ConvertClass * drawer);
+		void Set_Text_Color(int red, int green, int blue);
 		ShapeSet * Load_Shape(char const * name) const;
 		static void Free_Shape(ShapeSet const * shapes);
 		void Draw_Shape_Frame(ShapeSet const * shapes, int frame, Rect const & box);
+		void Draw_Shape_At(ShapeSet const * shapes, int frame, int x, int y, ConvertClass * drawer);
+		void Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect const & box);
 		void Draw_Band(char const * name, int x, int y);
 
 		bool Is_Small(void) const;

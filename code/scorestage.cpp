@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <vector>
 
 
 namespace {
@@ -405,6 +406,180 @@ void ScoreStageClass::Load_Palette(char const * name)
 		delete Drawer;
 	}
 	Drawer = new ConvertClass(CCPalette, CCPalette, *StageSurface);
+}
+
+
+/// <summary>
+/// Makes a drawer that converts shapes through a palette stored in 6 bit values, without changing the
+/// stage's own drawer.
+/// </summary>
+/// <param name="name">The palette's file name.</param>
+/// <returns>Returns with the drawer, or NULL when the palette is missing. Free it with Free_Drawer.</returns>
+/// <remarks>The global CCPalette is overwritten with the palette.</remarks>
+ConvertClass * ScoreStageClass::Load_Drawer(char const * name) const
+{
+	CCFileClass file(name);
+	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
+	file.Close();
+	if (palette == NULL) return(NULL);
+
+	for (int i = 0; i < 256; i++) {
+		CCPalette[i] = RGBClass(
+			((unsigned char *)*palette)[i*3] << 2,
+			((unsigned char *)*palette)[i*3+1] << 2,
+			((unsigned char *)*palette)[i*3+2] << 2);
+	}
+	delete palette;
+
+	return(new ConvertClass(CCPalette, CCPalette, *StageSurface));
+}
+
+
+void ScoreStageClass::Free_Drawer(ConvertClass * drawer)
+{
+	delete drawer;
+}
+
+
+/// <summary>
+/// Recolors the stage's text. The glyph shading is kept and the white of the glyphs takes the color.
+/// </summary>
+void ScoreStageClass::Set_Text_Color(int red, int green, int blue)
+{
+	if (Font != NULL) {
+		Font->Set_Color(red, green, blue);
+	}
+}
+
+
+/// <summary>
+/// Draws one frame of a shape set at its own size, with the shape's own offsets, through a drawer.
+/// </summary>
+/// <param name="x">The stage x of the shape set's top left corner.</param>
+/// <param name="y">The stage y of the shape set's top left corner.</param>
+/// <param name="drawer">The drawer that holds the palette the shape set is stored in.</param>
+void ScoreStageClass::Draw_Shape_At(ShapeSet const * shapes, int frame, int x, int y, ConvertClass * drawer)
+{
+	if (shapes == NULL || drawer == NULL) {
+		return;
+	}
+	Draw_Shape(*StageSurface, *drawer, shapes, frame, Point2D(x, y), StageSurface->Get_Rect(), SHAPE_WIN_REL);
+}
+
+
+/// <summary>
+/// Draws one frame of a shape set into a box on the stage, stretched to fill it, with its dark blue
+/// background left out so that it blends into what is already on the stage. The background is the dark blue
+/// pixels that have no bright pixel within a few pixels of them, and the frame's own edge fades out.
+/// </summary>
+/// <param name="box">The stage area the frame fills.</param>
+/// <remarks>The frame is drawn through the drawer Load_Palette made.</remarks>
+void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect const & box)
+{
+	if (shapes == NULL || Drawer == NULL || box.Width <= 0 || box.Height <= 0) {
+		return;
+	}
+
+	int const width = shapes->Get_Width();
+	int const height = shapes->Get_Height();
+	DSurface picture(width, height);
+	picture.Fill(0);
+	Draw_Shape(picture, *Drawer, shapes, frame, Point2D(0, 0), picture.Get_Rect(), SHAPE_WIN_REL);
+
+	// Which pixels are the plate rather than its dark blue surround, then that spread over a few pixels so
+	// that dark detail inside the plate stays solid and the plate's edge is soft.
+	constexpr int REACH = 5;
+	std::vector<float> colors((size_t)width * height * 3);
+	std::vector<float> present((size_t)width * height);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel((unsigned short)picture.Get_Pixel(Point2D(x, y)));
+			float const r = rgb.Get_Red();
+			float const g = rgb.Get_Green();
+			float const b = rgb.Get_Blue();
+			float const brightest = std::max(r, std::max(g, b));
+			size_t const at = (size_t)y * width + x;
+			colors[at * 3] = r;
+			colors[at * 3 + 1] = g;
+			colors[at * 3 + 2] = b;
+			present[at] = (brightest >= 60.0f && !(b > r * 1.3f && brightest < 110.0f)) ? 1.0f : 0.0f;
+		}
+	}
+	std::vector<float> spread((size_t)width * height);
+	std::vector<float> across((size_t)width * height);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float sum = 0.0f;
+			for (int k = -REACH; k <= REACH; k++) {
+				sum += present[(size_t)y * width + std::clamp(x + k, 0, width - 1)];
+			}
+			across[(size_t)y * width + x] = sum / (2 * REACH + 1);
+		}
+	}
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float sum = 0.0f;
+			for (int k = -REACH; k <= REACH; k++) {
+				sum += across[(size_t)std::clamp(y + k, 0, height - 1) * width + x];
+			}
+			spread[(size_t)y * width + x] = sum / (2 * REACH + 1);
+		}
+	}
+
+	// Premultiplied colors with alpha, 4 floats a source pixel.
+	std::vector<float> source((size_t)width * height * 4);
+	constexpr float FADE = 16.0f;
+	for (size_t at = 0; at < (size_t)width * height; at++) {
+		int const x = (int)(at % width);
+		int const y = (int)(at / width);
+		float const edge = (float)std::min(std::min(x, width - 1 - x), std::min(y, height - 1 - y));
+		float const alpha = std::clamp((spread[at] - 0.15f) / 0.35f, 0.0f, 1.0f) * std::clamp(edge / FADE, 0.0f, 1.0f);
+		source[at * 4] = colors[at * 3] * alpha;
+		source[at * 4 + 1] = colors[at * 3 + 1] * alpha;
+		source[at * 4 + 2] = colors[at * 3 + 2] * alpha;
+		source[at * 4 + 3] = alpha;
+	}
+
+	for (int dy = 0; dy < box.Height; dy++) {
+		int const row = box.Y + dy;
+		if (row < 0 || row >= StageHeight) {
+			continue;
+		}
+		unsigned short * line = (unsigned short *)StageSurface->Lock(Point2D(0, row));
+		if (line == NULL) {
+			break;
+		}
+		double const fy = std::clamp((dy + 0.5) * height / box.Height - 0.5, 0.0, height - 1.0);
+		int const y0 = (int)fy;
+		int const y1 = std::min(y0 + 1, height - 1);
+		double const ty = fy - y0;
+		for (int dx = 0; dx < box.Width; dx++) {
+			int const column = box.X + dx;
+			if (column < 0 || column >= StageWidth) {
+				continue;
+			}
+			double const fx = std::clamp((dx + 0.5) * width / box.Width - 0.5, 0.0, width - 1.0);
+			int const x0 = (int)fx;
+			int const x1 = std::min(x0 + 1, width - 1);
+			double const tx = fx - x0;
+			double sample[4];
+			for (int k = 0; k < 4; k++) {
+				double const top = source[((size_t)y0 * width + x0) * 4 + k] * (1.0 - tx) + source[((size_t)y0 * width + x1) * 4 + k] * tx;
+				double const bottom = source[((size_t)y1 * width + x0) * 4 + k] * (1.0 - tx) + source[((size_t)y1 * width + x1) * 4 + k] * tx;
+				sample[k] = top * (1.0 - ty) + bottom * ty;
+			}
+			if (sample[3] <= 0.0) {
+				continue;
+			}
+			RGBClass const behind = DSurface::Deconstruct_Hicolor_Pixel(line[column]);
+			double const keep = 1.0 - sample[3];
+			int const red = std::clamp((int)(behind.Get_Red() * keep + sample[0] + 0.5), 0, 255);
+			int const green = std::clamp((int)(behind.Get_Green() * keep + sample[1] + 0.5), 0, 255);
+			int const blue = std::clamp((int)(behind.Get_Blue() * keep + sample[2] + 0.5), 0, 255);
+			line[column] = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
+		}
+		StageSurface->Unlock();
+	}
 }
 
 
