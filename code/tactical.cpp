@@ -3741,7 +3741,9 @@ void Tactical::Draw_Beacons(void)
 
 			// A selected beacon draws from the second half of its frames.
 			int const frame = (beacon->IsSelected ? half : 0) + Frame % half;
-			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL | SHAPE_ALPHA));
+
+			// Without alpha lighting, shroud does not darken the marker, as in gamemd's beacon draw (0x430250, flags 0x600).
+			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
 			if (beacon->Text[0] != '\0') {
 				Point2D label(pixel.X, pixel.Y - 25);
