@@ -282,6 +282,18 @@ bool Hotkey_Is_Modifier_Only(int key)
 }
 
 
+bool Hotkey_Accepts_Modifier_Only(std::string const & command)
+{
+	static char const * const held_commands[] = { "AttackMove", "ForceFire", "ForceMove", "SelectModifier", "QueueMove", "GridBuildModifier" };
+	for (char const * held : held_commands) {
+		if (command == held) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 namespace
 {
 

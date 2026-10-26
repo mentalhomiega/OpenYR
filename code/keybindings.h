@@ -83,6 +83,10 @@ int const HOTKEY_MODIFIER_BITS = 0x700;
 // as a press; the commands that read a held key test it instead.
 bool Hotkey_Is_Modifier_Only(int key);
 
+// Whether the command can take a modifier-only binding. Only the commands that read their key as held state do
+// something with one; a command that needs a press would never fire.
+bool Hotkey_Accepts_Modifier_Only(std::string const & command);
+
 // One line of a keyboard file: a name and its value, as the file writes them.
 struct HotkeyFileLine
 {

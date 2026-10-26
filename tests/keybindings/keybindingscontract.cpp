@@ -396,7 +396,11 @@ void Test_Modifier_Only(void)
 	Check(Hotkey_Conflict(list, "Options", 0, KEY_CTRL_SHIFT | KEY_X, HOTKEY_PRESS) < 0 && Hotkey_Conflict(list, "Options", 0, KEY_X, HOTKEY_PRESS) < 0, "Ctrl+Shift does not conflict with Ctrl+Shift+X or with X");
 	Check(Hotkey_Conflict(list, "AttackMove", 0, KEY_CTRL_SHIFT, HOTKEY_HELD) < 0, "a command does not conflict with its own binding");
 	Check(Hotkey_Conflict(list, "Options", 0, KEY_CTRL_SHIFT, HOTKEY_HELD) < 0, "a press and a held trigger on Ctrl+Shift do not conflict");
-	Check(Hotkey_Trigger_Prefix(HOTKEY_HELD) != nullptr && std::string(Hotkey_Trigger_Prefix(HOTKEY_HELD)) == "Held ", "a held binding keeps its Held prefix");
+	Check(std::string(Hotkey_Trigger_Prefix(HOTKEY_HELD)) == "Held ", "a held binding keeps its Held prefix");
+
+	// Only the commands that read their key as held state take a modifier-only binding.
+	Check(Hotkey_Accepts_Modifier_Only("AttackMove") && Hotkey_Accepts_Modifier_Only("ForceFire") && Hotkey_Accepts_Modifier_Only("GridBuildModifier"), "attack move and the held modifiers take a modifier-only binding");
+	Check(!Hotkey_Accepts_Modifier_Only("Stop") && !Hotkey_Accepts_Modifier_Only("StopObject") && !Hotkey_Accepts_Modifier_Only("Options"), "a command that needs a press does not take a modifier-only binding");
 }
 
 
