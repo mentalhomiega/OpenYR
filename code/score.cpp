@@ -235,7 +235,8 @@ void ScoreClass::Presentation(void)
 	int const row_count = (enemy != NULL) ? 2 : 1;
 	for (int row = 0; row < row_count; row++) {
 		HouseClass * hptr = houses[row];
-		rows[row].Name = Session.Shown_Name(hptr);
+		char const * full_name = hptr->Class->Full_Name();
+		rows[row].Name = (hptr == PlayerPtr) ? Player_Name() : ((full_name != NULL && full_name[0] != 0) ? full_name : (char const *)hptr->IniName);
 		rows[row].Kills = 0;
 		rows[row].Losses = 0;
 		for (unsigned int i = 0; i < sizeof(hptr->UnitsKilled) / sizeof(hptr->UnitsKilled[0]); i++) {
