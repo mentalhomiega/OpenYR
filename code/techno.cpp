@@ -3918,7 +3918,9 @@ void TechnoClass::AI(void)
 		IsInRecoilState = false;
 	}
 
-	if (TarCom != NULL && PrimaryWeapon != NULL) {
+	// A vehicle's barrel is not aimed at its target. gamemd sets it only when the vehicle is placed (TechnoClass::Unlimbo,
+	// 0x6F6DAF) and when it deploys (UnitClass::TryToDeploy, 0x739819), so it rests at FireAngle otherwise.
+	if (TarCom != NULL && PrimaryWeapon != NULL && RTTI != RTTI_UNIT) {
 		BarrelPitch.Set_Desired(Barrel_Pitch(TarCom));
 		if (RTTI != RTTI_BUILDING || !PrimaryWeapon->IsLaser) {
 			Coord coord = Predict_Target_Coord() - Turret_Coord();
@@ -5301,7 +5303,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		target_coord = target->As_Coord();
 	}
 
-	BarrelPitch.Set_Desired(Barrel_Pitch(target));
+	if (RTTI != RTTI_UNIT) {
+		BarrelPitch.Set_Desired(Barrel_Pitch(target));
+	}
 
 	/*
 	**	Get the location where the projectile should appear.
