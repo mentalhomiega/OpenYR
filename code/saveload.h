@@ -15,8 +15,10 @@
 
 #include "persist.h"
 
+#include <cstddef>
 #include <cstdio>
 #include <memory>
+#include <string>
 
 class SaveStreamClass;
 class SaveVersionInfo;
@@ -60,6 +62,20 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);
 bool Save_Game(const char *file_name, char const * descr);
 bool Load_Game(const char *file_name);
 bool Dump_Game_State(char const * path);
+
+struct RoundTripReportType
+{
+	std::size_t Bytes = 0;              // The uncompressed state.
+	double SaveMs = 0;
+	double LoadMs = 0;
+	double ResaveMs = 0;
+	bool Same = false;                  // The second save is byte for byte the first.
+	std::size_t FirstDifference = 0;    // Set when Same is false.
+	unsigned int RecordOffset = 0;      // Where the record holding FirstDifference starts.
+	std::string Record;                 // That record's class or section.
+};
+bool Round_Trip_Game_State(RoundTripReportType & report);
+
 void Dump_Mark(SaveStreamClass const & stream, char const * name);
 bool Reconcile_Players(void);
 void Print_Heap_CRCs(FILE * fp);

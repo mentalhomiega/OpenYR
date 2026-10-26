@@ -151,6 +151,8 @@
 #include "psydom.h"
 #include "radsite.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <memory>
 #include <new>
@@ -170,6 +172,8 @@ unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
 
 // While Dump_Game_State runs, the offset and class of each object record it writes.
 static std::vector<std::pair<unsigned int, std::string>> * DumpRecords = nullptr;
+
+static bool Restore_Game_Content(std::vector<unsigned char> & content);
 
 
 /// <summary>
@@ -1287,9 +1291,36 @@ bool Load_Game(const char *file_name)
 	Session.Type = (GameType)info.Get_Game_Type();
 	Debug_Cheats_Reset();
 
+	if (!Restore_Game_Content(file.Content)) {
+		return(false);
+	}
+
+	// Only a save that records its mods is compared; a load under a different list goes
+	// ahead and tells the player.
+	if (info.Has_Mods()) {
+		std::string const active = Active_Mod_List();
+		if (_strnicmp(info.Get_Mods(), active.c_str(), SaveVersionInfo::MODS_LENGTH - 1) != 0) {
+			DebugString("[Mods] The save was made with mods \"%s\"; the mods in force are \"%s\".\n",
+				info.Get_Mods(), active.c_str());
+			SaveManager.Note_Different_Mods(info.Get_Mods(), active.c_str());
+		}
+	}
+
+	DebugString("LOADING GAME [%s] - Complete\n\n", file_name);
+	return(true);
+}
+
+
+/// <summary>
+/// Replaces the running game with the state in content, as written by Put_All. A failed
+/// load leaves a partly built game that the caller has to clear.
+/// </summary>
+/// <returns>bool; Was the whole state read and put in place?</returns>
+static bool Restore_Game_Content(std::vector<unsigned char> & content)
+{
 	Swizzler.Discard();
 
-	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
+	SaveStreamClass stream(content, SaveStreamClass::MODE_LOAD);
 	bool res = false;
 	// The catch sits here rather than around the whole routine because what was already
 	// loaded still has to be abandoned below. Both of the ways a count read from the file
@@ -1336,19 +1367,78 @@ bool Load_Game(const char *file_name)
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
 	SaveManager.Autosave.Schedule(Frame);
+	return(true);
+}
 
-	// Only a save that records its mods is compared; a load under a different list goes
-	// ahead and tells the player.
-	if (info.Has_Mods()) {
-		std::string const active = Active_Mod_List();
-		if (_strnicmp(info.Get_Mods(), active.c_str(), SaveVersionInfo::MODS_LENGTH - 1) != 0) {
-			DebugString("[Mods] The save was made with mods \"%s\"; the mods in force are \"%s\".\n",
-				info.Get_Mods(), active.c_str());
-			SaveManager.Note_Different_Mods(info.Get_Mods(), active.c_str());
-		}
+
+/// <summary>
+/// Saves the game state to memory, loads it back in place of the running game, and saves it
+/// again, timing each step. The report says whether the second save is byte for byte the first
+/// and, if not, the first differing offset and the record it falls in. The game carries on from
+/// the loaded state, so a later state hash shows whether the load changed how it plays.
+/// </summary>
+/// <returns>bool; Were all three steps completed?</returns>
+bool Round_Trip_Game_State(RoundTripReportType & report)
+{
+	using Clock = std::chrono::steady_clock;
+	auto const elapsed_ms = [](Clock::time_point start) {
+		return(std::chrono::duration<double, std::milli>(Clock::now() - start).count());
+	};
+
+	report = RoundTripReportType();
+
+	std::vector<unsigned char> first;
+	std::vector<std::pair<unsigned int, std::string>> first_records;
+	Clock::time_point start = Clock::now();
+	Swizzler.Begin_Save();
+	DumpRecords = &first_records;
+	bool saved = false;
+	{
+		SaveStreamClass stream(first, SaveStreamClass::MODE_SAVE);
+		saved = Put_All(stream, 0);
+	}
+	DumpRecords = nullptr;
+	report.SaveMs = elapsed_ms(start);
+	report.Bytes = first.size();
+	if (!saved) {
+		return(false);
 	}
 
-	DebugString("LOADING GAME [%s] - Complete\n\n", file_name);
+	std::vector<unsigned char> loading = first;
+	start = Clock::now();
+	if (!Restore_Game_Content(loading)) {
+		return(false);
+	}
+	report.LoadMs = elapsed_ms(start);
+
+	std::vector<unsigned char> second;
+	start = Clock::now();
+	Swizzler.Begin_Save();
+	{
+		SaveStreamClass stream(second, SaveStreamClass::MODE_SAVE);
+		saved = Put_All(stream, 0);
+	}
+	report.ResaveMs = elapsed_ms(start);
+	if (!saved) {
+		return(false);
+	}
+
+	report.Same = first == second;
+	if (!report.Same) {
+		std::size_t const shorter = std::min(first.size(), second.size());
+		std::size_t offset = 0;
+		while (offset < shorter && first[offset] == second[offset]) {
+			offset++;
+		}
+		report.FirstDifference = offset;
+		for (auto const & record : first_records) {
+			if (record.first > offset) {
+				break;
+			}
+			report.RecordOffset = record.first;
+			report.Record = record.second;
+		}
+	}
 	return(true);
 }
 

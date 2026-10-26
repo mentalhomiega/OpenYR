@@ -419,6 +419,7 @@ std::size_t Next = 0;
 // Frames between the screenshots of a recording, or 0 when not recording.
 int RecordInterval = 0;
 int HashInterval = 0;
+int RoundTripInterval = 0;
 
 // The type the speed probe logs, empty when it is off, and the frames between its logs (0 logs once).
 std::string SpeedProbeType;
@@ -1018,6 +1019,28 @@ void Log_State_Hash(void)
 		hash = (hash ^ random[index]) * 16777619u;
 	}
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
+}
+
+
+/// <summary>
+/// Saves the game to memory, loads it back in place and saves it again, then logs the state's
+/// size, the time of each step and whether the two saves match. The game plays on from the
+/// loaded state.
+/// </summary>
+void Log_Round_Trip(void)
+{
+	RoundTripReportType report;
+	bool const done = Round_Trip_Game_State(report);
+	if (!done) {
+		DebugString("AUTOTEST roundtrip frame %d failed bytes %u save %.2f ms load %.2f ms\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs);
+		return;
+	}
+	if (report.Same) {
+		DebugString("AUTOTEST roundtrip frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms same\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs);
+	} else {
+		DebugString("AUTOTEST roundtrip frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms differs at %u in %s at %u\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs,
+			(unsigned)report.FirstDifference, report.Record.empty() ? "(start)" : report.Record.c_str(), report.RecordOffset);
+	}
 }
 
 
@@ -5100,6 +5123,13 @@ void Run(StepType const & step)
 		// hash [interval]: logs the game-state hash now, and every interval frames after when one is given.
 		HashInterval = std::max(0, std::atoi(step.Argument.c_str()));
 		Log_State_Hash();
+	} else if (step.Command == "roundtrip") {
+		// roundtrip [interval]: saves the game to memory and loads it back now, and every interval frames after when one is given.
+		RoundTripInterval = std::max(0, std::atoi(step.Argument.c_str()));
+		// On a frame the interval reaches, the repeat below runs it once.
+		if (RoundTripInterval == 0 || (Frame % RoundTripInterval) != 0) {
+			Log_Round_Trip();
+		}
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
 	} else if (step.Command == "searchdir") {
@@ -5298,6 +5328,11 @@ void AutoTest_Frame(void)
 
 	if (HashInterval > 0 && (Frame % HashInterval) == 0) {
 		Log_State_Hash();
+	}
+
+	// After the hash, so the hash logged on the same frame is the state before the round trip.
+	if (RoundTripInterval > 0 && (Frame % RoundTripInterval) == 0) {
+		Log_Round_Trip();
 	}
 
 	if (SpeedProbeInterval > 0 && (Frame % SpeedProbeInterval) == 0) {

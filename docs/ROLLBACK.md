@@ -6,8 +6,10 @@ restores the game state from before that frame and re-runs up to the present
 with the order in place. This hides the order delay that the lockstep schedule
 in [Network timing](NETCODE.md) needs.
 
-This page is a plan. Only the input link exists, and no game code uses it, so
-no game played on this branch behaves differently from `modern`.
+This page is a plan. Only the input link and the `roundtrip` autotest step
+exist. No game code uses the link, and the step runs only from an autotest
+script, so no other game played on this branch behaves differently from
+`modern`.
 
 ## What exists
 
@@ -79,9 +81,11 @@ regions. OpenYR's state lives in its own pools and globals, which allows a
 narrower snapshot. Three ways to try, in order:
 
 1. **Save into memory.** Write the game to a memory stream with the save code
-   and load it back on a rollback. This reuses tested code, but the save must
-   round-trip exactly, and a save every frame must cost a few milliseconds at
-   most. Measure both first.
+   and load it back on a rollback. The game state survives the round trip, but
+   the load is about a hundred times too slow (see
+   [Save and load measurements](#save-and-load-measurements)). This way needs a
+   load that puts back only the game state and keeps the theater, art and rules
+   that a match never changes.
 2. **An arena for game-state allocations.** Give the object pools and other
    game-state allocations their own region and copy its dirty pages, as the
    prototype did. Globals that hold game state need their own list; renderer,
@@ -100,10 +104,45 @@ playback and compare the frame hash after every re-run.
   it on once the harness exists.
 - Every test copy has `ReportUpload=never` under `[Options]` in `RA2MD.INI`.
 
+### Save and load measurements
+
+The autotest step `roundtrip` saves the game to memory, loads it back in place
+of the running game and saves it again ([AUTOTEST.md](AUTOTEST.md)). These
+figures come from one Win32 Release build on one PC: a skirmish on
+`XMP29U2.MAP`, seed 1, game speed 0, the player and three computer players,
+with 105 to 150 buildings, vehicles and soldiers. The player only deploys its MCV, and the game ends on
+frame 7478 when the player loses.
+
+- **The game plays on the same.** A run with a round trip every 300 frames
+  (24 in all) logged the same `hash` every 150 frames as a run without them,
+  through frame 7478, and lost on the same frame. Two runs without round trips
+  matched each other. `hash` covers each object's position, facing, strength,
+  mission, limbo state and owner, each house's credits and the random-number
+  state.
+- **The saved state comes back the same, with two exceptions.** On frame 600,
+  a state dump before the round trip and one after it differ only in the
+  scenario's elapsed play time, a wall-clock count that runs on while the load
+  takes place, and in `UINameLabel` of four civilian building types (CASYDN01,
+  CATIME, CALA02, CALOND02). Those labels were empty before the load and hold
+  the type's ID after it. They are interface text. Each of the
+  24 round trips also found its first difference in the play time; the probe
+  reports only the first difference, so the other 23 were not checked further.
+- **Saving costs 21 to 50 ms**, 26 ms on average, for 5.2 to 5.3 MB of state.
+- **Loading costs 1.4 to 1.9 s**, 1.6 s on average. Most of it rebuilds what a
+  match never changes. The theater takes about 0.34 s before its tile sets are
+  read and 0.87 s to load 146 isometric tiles. Re-reading art and rules and
+  loading the objects take the remaining 0.5 s or so.
+
+A frame at 60 fps lasts 16.7 ms, so a 26 ms save on every frame is too slow as
+well, even before the load is reduced. The next measurement is a load that skips the theater, art and
+rules, and a save of game state alone.
+
 ## Open questions
 
-- Whether the save code round-trips a game exactly, and how long it takes per
-  frame on a large map.
+- How fast a load that keeps the theater, art and rules can be, and how much
+  of the 5.2 MB a game-state-only save needs.
+- Whether other maps, campaign missions and games with player orders round-trip
+  the same way. Only one skirmish has been measured.
 - Which globals hold game state, and which threads touch it.
 - How chat, pause and exit, which ride vanilla packets, travel in a rollback
   match.
