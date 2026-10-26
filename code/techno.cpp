@@ -1418,14 +1418,28 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 
 
 /// <summary>
+/// Tells whether the local player sees this object's pips. Allies and spies see them, every
+/// player sees a passive house's structure, and PipsDrawForAll shows them to all. Matches
+/// gamemd's TechnoClass::DrawHealthBar (0x6F64A0).
+/// </summary>
+bool TechnoClass::Pips_Visible_To_Player(void) const
+{
+	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr] || TClass->IsPipsDrawForAll) {
+		return(true);
+	}
+	return(RTTI == RTTI_BUILDING && House->Class->IsMultiplayPassive);
+}
+
+
+/// <summary>
 /// Draws the decorations that appear after the object's body.
 /// Every object the player can see wears its rank insignia. A selected object, or a
 /// submerged one the player's sensors have picked up, gets its selection box and its
 /// condition indicator drawn over it, plus its pips when the player is allied to its owner
 /// or spying on that house. Without a selection, the object under the mouse still shows its
-/// condition and those pips. A structure that can be garrisoned shows its pips to every
-/// player. The talk bubble, when the object has something to say, is drawn whether the
-/// object is selected or not.
+/// condition and those pips. A structure of a passive house shows its pips to every player.
+/// The talk bubble, when the object has something to say, is drawn whether the object is
+/// selected or not.
 /// </summary>
 void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect) const
 {
@@ -1437,8 +1451,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 		}
 	}
 
-	bool allied = House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr];
-	bool pips_shown = allied || TClass->IsPipsDrawForAll || (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Class->IsCanBeOccupied);
+	bool pips_shown = Pips_Visible_To_Player();
 
 	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
 	if (Is_Decoration_Visible()) {
