@@ -66,6 +66,7 @@
 #include "isotype.h"
 #include "laser.h"
 #include "layer.h"
+#include "lightcon.h"
 #include "mixfile.h"
 #include "mouse.h"
 #include "overtype.h"
@@ -84,6 +85,7 @@
 #include "viewzoom.h"
 #include "terrain.h"
 #include "terrtype.h"
+#include "utf8.h"
 #include "vector.h"
 #include "vein.h"
 #include "waypoint.h"
@@ -95,7 +97,9 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 
 extern Point2D Lerp(Point2D const & a, Point2D const & b, float t);
@@ -3706,8 +3710,91 @@ void Tactical::Reset_Dirty_Rectangles(void)
 }
 
 
+// A beacon message wraps at this width in pixels (BeaconClass::Draw, 0x430250, passes 200 to the text measure).
+static constexpr int BEACON_LABEL_WIDTH = 200;
+
+
 /// <summary>
-/// Draws each beacon the local player can see, with its message above it.
+/// Splits a beacon message into lines no wider than the label width. A line ends at the last space
+/// that fits, or before the character that overflows when the line holds no space.
+/// </summary>
+static std::vector<std::string> Split_Beacon_Label(char const * text, FontClass const & font)
+{
+	std::vector<std::string> lines;
+	char const * start = text;
+
+	while (*start != '\0') {
+		int width = 0;
+		char const * pos = start;
+		char const * space = NULL;
+		char const * after_space = NULL;
+		bool overflow = false;
+
+		while (*pos != '\0') {
+			char const * next = pos;
+			int const advance = font.Char_Pixel_Width(UTF8::Decode(next));
+			if (width + advance > BEACON_LABEL_WIDTH && pos > start) {
+				overflow = true;
+				break;
+			}
+			width += advance;
+			if (*pos == ' ') {
+				space = pos;
+				after_space = next;
+			}
+			pos = next;
+		}
+
+		char const * end = pos;
+		char const * next_start = pos;
+		if (overflow && space != NULL && space > start) {
+			end = space;
+			next_start = after_space;
+		}
+		lines.emplace_back(start, end);
+		start = next_start;
+	}
+	return(lines);
+}
+
+
+/// <summary>
+/// Draws a beacon message in a black box, outlined in the house colour, whose top is 32 pixels below
+/// the beacon's point. The text is left-aligned in the box, inset by four pixels.
+/// </summary>
+/// <param name="clip">The view rectangle that the box and text are clipped to.</param>
+static void Draw_Beacon_Label(char const * text, Point2D const & point, ColorScheme * scheme, Rect const & clip)
+{
+	FontClass const * font = Font_From_TPF(TPF_EFNT);
+	std::vector<std::string> const lines = Split_Beacon_Label(text, *font);
+	if (lines.empty()) {
+		return;
+	}
+
+	int width = 0;
+	for (std::string const & line : lines) {
+		width = std::max(width, font->String_Pixel_Width(line.c_str()));
+	}
+	int const line_height = font->Get_Height();
+
+	Rect const box(point.X - width / 2 - 4, point.Y + 32, width + 8, int(lines.size()) * line_height + 8);
+	Rect const shown = Intersect(box, clip);
+	if (!shown.Is_Valid()) {
+		return;
+	}
+
+	LogicalSurface->Fill_Rect(shown, scheme->Converter->Convert_Pixel(TBLACK));
+	LogicalSurface->Draw_Rect(shown, scheme->Converter->Convert_Pixel(scheme->Color));
+
+	for (int row = 0; row < int(lines.size()); row++) {
+		Point2D const at(box.X + 4, box.Y + 4 + row * line_height);
+		Simple_Text_Print(lines[row].c_str(), *LogicalSurface, clip, at, scheme, 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW), 1);
+	}
+}
+
+
+/// <summary>
+/// Draws each beacon the local player can see: its marker, then its message below the marker.
 /// </summary>
 void Tactical::Draw_Beacons(void)
 {
@@ -3739,8 +3826,7 @@ void Tactical::Draw_Beacons(void)
 			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
 			if (beacon->Text[0] != '\0') {
-				Point2D label(pixel.X, pixel.Y - 25);
-				Simple_Text_Print(beacon->Text, *LogicalSurface, TacticalRect, label, ColorSchemes[House_Display_Scheme(Houses[house])], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
+				Draw_Beacon_Label(beacon->Text, pixel, ColorSchemes[House_Display_Scheme(Houses[house])], TacticalRect);
 			}
 		}
 	}
