@@ -276,6 +276,24 @@ char const * Hotkey_Trigger_Prefix(HotkeyTrigger trigger)
 }
 
 
+bool Hotkey_Is_Modifier_Only(int key)
+{
+	return((key & 0xFF) == 0 && (key & HOTKEY_MODIFIER_BITS) != 0);
+}
+
+
+bool Hotkey_Accepts_Modifier_Only(std::string const & command)
+{
+	static char const * const held_commands[] = { "AttackMove", "ForceFire", "ForceMove", "SelectModifier", "QueueMove", "GridBuildModifier" };
+	for (char const * held : held_commands) {
+		if (command == held) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 namespace
 {
 

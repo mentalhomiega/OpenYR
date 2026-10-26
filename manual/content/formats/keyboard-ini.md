@@ -18,7 +18,7 @@ The file is `KEYBOARDMD.INI` unless [`Keyboard=`](/formats/opents-ini/#the-files
 
 ```ini title="KEYBOARDMD.INI"
 [Defaults]
-Version=3
+Version=5
 Scheme=Modern
 DoublePressMs=250
 HoldMs=400
@@ -48,7 +48,7 @@ Options=121
 | `[HotkeyTrigger]` | The trigger of each primary key. A command with no line here fires on a press. |
 | `[HotkeyTrigger2]` | The trigger of each secondary key. |
 
-A key is a keyboard identifier: the key's Windows virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt. Zero is no key. The mouse and wheel use these codes:
+A key is a keyboard identifier: the key's Windows virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt. Zero is no key. A binding of modifier bits alone, such as 768 for Control with Shift, has no key. Only the commands that read a held key take one: `AttackMove`, `ForceFire`, `ForceMove`, `SelectModifier`, `QueueMove` and `GridBuildModifier`. The game reads such a binding as held while its modifiers are down. A key with modifier bits, such as 856 for Control, Shift and X, fires only when those modifiers are down with it. The mouse and wheel use these codes:
 
 | Code | Input |
 | --- | --- |
@@ -79,9 +79,9 @@ A key with a `Double` or `Hold` binding and a `Press` binding waits before its p
 
 ## The keyboard dialog
 
-The dialog does not capture a key press that it cannot bind, and its notice says why. Shift, Ctrl or Alt on its own is refused, and so are the left and right mouse buttons and a key the dialog cannot name. A chord such as Ctrl with Shift is not a binding; [Attack move](/commands/attackmove/) already takes it on a click.
+A key pressed with Shift, Ctrl or Alt is captured with those modifiers, such as Control, Alt and X. Shift, Ctrl or Alt pressed and released with no other key is captured alone, such as Control with Shift. The capture box shows the keys while they are held. A command that needs a key press refuses a modifier-only capture, and its notice says so. The dialog also refuses the left and right mouse buttons and a key it cannot name.
 
-Reset to defaults and Reset category unbind each command that the scheme gives no key, and the notice names it. Classic gives [Attack move](/commands/attackmove/) no key, so a Mouse 5 binding to it is removed by a Classic reset. A scheme change does the same.
+Reset to defaults and Reset category unbind each command that the scheme gives no key, and the notice names it. The restored defaults replace the bindings of the commands they cover. Classic gives [Attack move](/commands/attackmove/) Control with Shift held, so a Classic reset of Commands replaces a Mouse 5 binding to it. A scheme change replaces every binding.
 
 ## Rules for a line
 
@@ -93,10 +93,12 @@ Reset to defaults and Reset category unbind each command that the scheme gives n
 
 ## Version
 
-The `[Defaults]` section's `Version=` records the defaults the file was written against. The keyboard dialog writes version 3. A file with no `Version=` is version 1, which the earlier builds wrote; a file with `Version=2` is version 2.
+The `[Defaults]` section's `Version=` records the defaults the file was written against. The keyboard dialog writes version 5. A file with no `Version=` is version 1, which the earlier builds wrote; a file with `Version=2` is version 2.
 
-- Version 3 is read as saved. A command the file does not name has no key.
-- Version 2 is read as saved, except that the held modifiers version 3 added are filled in when the file does not name them: `ForceFire` on Control, `ForceMove` on Alt, `SelectModifier` on Shift and `QueueMove` on Q. Those keys stay in use, so force fire and force move work as before.
+- Version 5 is read as saved. A command the file does not name has no key.
+- Version 4 is read as saved, except that a Classic file that does not name [Attack move](/commands/attackmove/) gains Control with Shift held, unless another binding holds that chord.
+- Version 3 is read as saved, except that the grid build modifier of Modern and the Classic attack-move chord are filled in when the file does not name them and no other binding holds their key. A command the file does not name otherwise has no key.
+- Version 2 is read as saved, except that the held modifiers version 3 added are filled in when the file does not name them: `ForceFire` on Control, `ForceMove` on Alt, `SelectModifier` on Shift and `QueueMove` on Q. The grid build modifier and the attack-move chord are filled in when the file does not name them and their key is free. Those keys stay in use, so force fire and force move work as before.
 - Version 1 is upgraded to the current defaults of its scheme in memory, as each earlier build upgraded it. An entry that still has its old default takes the current default, or loses its key if the scheme gives that command none. A key the file binds to a command is kept, and a default that would take that key is dropped. A command the file does not name gets its current default, if that key is free.
 
 The upgrade happens in memory. The file keeps its version until the keyboard dialog saves it.

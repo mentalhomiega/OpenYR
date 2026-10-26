@@ -378,7 +378,19 @@ int WWKeyboardClass::To_ASCII(unsigned short key)
  *=============================================================================================*/
 bool WWKeyboardClass::Down(unsigned short key)
 {
-	return(Main_Window_Key_Down(key & 0xFF));
+	// A key with modifier bits is held only while those modifiers are down. Modifier bits alone are held when all of them are.
+	bool const shift = (key & WWKEY_SHIFT_BIT) != 0;
+	bool const ctrl = (key & WWKEY_CTRL_BIT) != 0;
+	bool const alt = (key & WWKEY_ALT_BIT) != 0;
+	if ((shift && !Main_Window_Key_Down(VK_SHIFT)) || (ctrl && !Main_Window_Key_Down(VK_CONTROL)) || (alt && !Main_Window_Key_Down(VK_MENU))) {
+		return(false);
+	}
+
+	int const virtualkey = key & 0xFF;
+	if (virtualkey == 0) {
+		return(shift || ctrl || alt);
+	}
+	return(Main_Window_Key_Down(virtualkey));
 }
 
 
