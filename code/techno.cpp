@@ -12168,16 +12168,18 @@ bool TechnoClass::Is_Bomb_Visible(void) const
 
 /// <summary>
 /// Sets off this dying object's death weapon where it stands (TechnoClass::FireDeathWeapon,
-/// 0x70D690). The type's DeathWeapon, or else its primary weapon, does that weapon's Damage
-/// times DeathWeaponDamageModifier; an object with neither sets off the rules' DeathWeapon for
-/// half its type's Strength. The blast is credited to this object.
+/// 0x70D690). The type's DeathWeapon, or else the weapon GetTurretWeapon (0x70E1A0) picks, does
+/// that weapon's Damage times DeathWeaponDamageModifier; an object with neither sets off the
+/// rules' DeathWeapon for half its type's Strength. The blast is credited to this object.
 /// </summary>
 void TechnoClass::Fire_Death_Weapon(void)
 {
+	// A type with turrets uses its current weapon position; any other type uses position 0 (0x70E1A0, 0x717880).
+	int const which = TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
 	WeaponTypeClass * weapon = TClass->DeathWeapon;
 	int damage = 0;
 	if (weapon == NULL) {
-		weapon = Get_Class_Weapon_Data(0)->Weapon;
+		weapon = Get_Class_Weapon_Data(which)->Weapon;
 	}
 	if (weapon != NULL) {
 		damage = (int)(weapon->Attack * TClass->DeathWeaponDamageModifier);
