@@ -319,7 +319,8 @@ void SpawnManagerClass::AI(void)
 				if (owner_attacked || (node.IsMissile && owner_moving)) {
 					break;
 				}
-				NextSpawnFrame = Frame + (SpawnType->IsMissileSpawn ? 9 : 20);
+				// gamemd reads MissileSpawn from the launching object's type (0x6B7392), not from the spawn's type.
+				NextSpawnFrame = Frame + (Owner->TClass->IsMissileSpawn ? 9 : 20);
 				Launch(node, index);
 				break;
 
