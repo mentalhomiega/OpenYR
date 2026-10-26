@@ -50,10 +50,19 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 		if (State.Captured != 0) {
 			State.Notice.clear();
 		}
+		if ((State.Captured & 0xFF) == 0 && State.Captured != 0 && State.Selected >= 0 && !Hotkey_Accepts_Modifier_Only(State.Commands[State.Selected].Name)) {
+			State.Notice = State.SelectedName + " needs a key press. " + State.CapturedName + " alone works only for held-key commands, such as Attack move.";
+			State.Captured = 0;
+			State.CapturedName.clear();
+		}
 		Check_Capture();
 
+	} else if (intent.Name == "chord") {
+		// The modifiers are held and no key has joined them yet; the notice says what releasing them binds.
+		State.Notice = Name_Of_Key(intent.Value) + " held. Release the keys to bind them alone, or press a key with them.";
+
 	} else if (intent.Name == "refuse") {
-		Refuse(intent.Value, intent.Text);
+		Refuse(intent.Value);
 
 	} else if (intent.Name == "trigger") {
 		State.Trigger = (intent.Value >= HOTKEY_PRESS && intent.Value <= HOTKEY_HELD) ? intent.Value : HOTKEY_PRESS;
@@ -293,14 +302,9 @@ void UIKeyboardPresenterClass::Change_Scheme(int scheme)
 /// <summary>
 /// Says why a key press was not captured. The capture keeps its key, so the player can press another.
 /// </summary>
-void UIKeyboardPresenterClass::Refuse(int reason, std::string const & name)
+void UIKeyboardPresenterClass::Refuse(int reason)
 {
-	if (reason == UI_KEYBOARD_REFUSE_MODIFIER) {
-		State.Notice = name + " cannot be bound by itself. Hold it with another key.";
-		if ((name == "Ctrl" || name == "Shift") && State.Selected >= 0 && State.Commands[State.Selected].Name == "AttackMove") {
-			State.Notice += " Holding Ctrl and Shift together already gives attack-move on a click.";
-		}
-	} else if (reason == UI_KEYBOARD_REFUSE_MOUSE) {
+	if (reason == UI_KEYBOARD_REFUSE_MOUSE) {
 		State.Notice = "The left and right mouse buttons cannot be bound here. Use the middle button, a side button or the wheel.";
 	} else {
 		State.Notice = "That key cannot be bound.";
@@ -429,6 +433,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 			Rml::Element * capture = Capture();
 			if (capture != nullptr) {
 				capture->AddEventListener(Rml::EventId::Keydown, this);
+				capture->AddEventListener(Rml::EventId::Keyup, this);
 				capture->AddEventListener(Rml::EventId::Mousedown, this);
 				capture->AddEventListener(Rml::EventId::Mousescroll, this);
 			}
@@ -473,8 +478,26 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				}
 			}
 
+			if (event.GetId() == Rml::EventId::Keyup && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
+				int const modifier = Modifier_Bit((Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0));
+				if (modifier != 0) {
+					Release_Modifier(modifier);
+					event.StopPropagation();
+				}
+				return;
+			}
+
 			if (event.GetId() == Rml::EventId::Keydown && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
 				Rml::Input::KeyIdentifier key = (Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0);
+
+				// A modifier is bound only when it is released with no key pressed with it, so the release decides.
+				int const modifier = Modifier_Bit(key);
+				if (modifier != 0) {
+					Hold_Modifier(modifier, event);
+					event.StopPropagation();
+					return;
+				}
+				ChordKeyed = true;
 
 				// Backspace and Delete clear the slot. Escape with nothing captured closes the screen through the base view.
 				if (key == Rml::Input::KI_BACK || key == Rml::Input::KI_DELETE) {
@@ -490,7 +513,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				if (number != 0) {
 					Queue("capture", number);
 				} else {
-					Refuse_Key(key);
+					Queue("refuse", UI_KEYBOARD_REFUSE_UNMAPPED);
 				}
 				event.StopPropagation();
 				return;
@@ -500,18 +523,47 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		}
 
 	private:
-		// Tells the presenter why a key that UI_Key_Number cannot name is refused.
-		void Refuse_Key(Rml::Input::KeyIdentifier key)
+		// The modifier bit a Shift, Ctrl or Alt key sets, or 0 for any other key.
+		static int Modifier_Bit(Rml::Input::KeyIdentifier key)
 		{
 			switch (key) {
 				case Rml::Input::KI_LSHIFT:
-				case Rml::Input::KI_RSHIFT:		Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Shift"); break;
+				case Rml::Input::KI_RSHIFT:		return(WWKEY_SHIFT_BIT);
 				case Rml::Input::KI_LCONTROL:
-				case Rml::Input::KI_RCONTROL:	Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Ctrl"); break;
+				case Rml::Input::KI_RCONTROL:	return(WWKEY_CTRL_BIT);
 				case Rml::Input::KI_LMENU:
-				case Rml::Input::KI_RMENU:		Queue("refuse", UI_KEYBOARD_REFUSE_MODIFIER, "Alt"); break;
-				default:						Queue("refuse", UI_KEYBOARD_REFUSE_UNMAPPED); break;
+				case Rml::Input::KI_RMENU:		return(WWKEY_ALT_BIT);
+				default:						return(0);
 			}
+		}
+
+		// Records a modifier going down. The chord is the modifiers seen since none was held.
+		void Hold_Modifier(int modifier, Rml::Event & event)
+		{
+			int modifiers = modifier;
+			modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
+			modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
+			modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
+
+			DownModifiers |= modifier;
+			ChordModifiers |= modifiers;
+			if (!ChordKeyed) {
+				Queue("chord", ChordModifiers);
+			}
+		}
+
+		// Ends the chord once no modifier is down. Without a key in the chord, the modifiers are captured alone.
+		void Release_Modifier(int modifier)
+		{
+			DownModifiers &= ~modifier;
+			if (DownModifiers != 0) {
+				return;
+			}
+			if (!ChordKeyed && ChordModifiers != 0) {
+				Queue("capture", ChordModifiers);
+			}
+			ChordModifiers = 0;
+			ChordKeyed = false;
 		}
 
 		Rml::Element * Capture(void)
@@ -522,6 +574,11 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		UIKeyboardPresenterClass & Data;
 		int LastSelected = -1;
 		int LastSlot = 0;
+
+		// The modifier bits held down, the bits of the chord being made, and whether a key other than a modifier joined it.
+		int DownModifiers = 0;
+		int ChordModifiers = 0;
+		bool ChordKeyed = false;
 };
 
 }
