@@ -35,10 +35,10 @@
 #include "stimer.h"
 #include "surface.h"
 #include "theme.h"
-#include "utracker.h"
 #include "winstub.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -57,14 +57,48 @@ constexpr int EMBLEM_WIDTH = 424;
 constexpr int EMBLEM_HEIGHT = 220;
 
 /*
- * The side art, indexed by side: Allied, Soviet and Yuri. These are the names in gamemd's table
- * (0x844c58); the narrow entries are used on a 640 wide screen. The Yuri narrow entries name Soviet
- * files in gamemd's table, so they are kept here.
+ * gamemd's emblem control steps its animation on a 100 millisecond timer (0x6033f0 answers 100 for
+ * the picture, control 1835 of dialog 259). When the animation wraps to frame 0 the dialog procedure
+ * (0x6c9383) sets the frame to 29, so the first pass shows every frame and the later passes repeat
+ * frame 29 to the last.
  */
-char const * const BACKGROUND_WIDE[3] = { "ASCRBKMD.SHP", "SSCRBKMD.SHP", "SYCRBKMD.SHP" };
-char const * const EMBLEM_WIDE[3] = { "ASCRAMD.SHP", "SSCRAMD.SHP", "SYCRAMD.SHP" };
-char const * const BACKGROUND_NARROW[3] = { "ASCRBKSM.SHP", "SSCRBKSM.SHP", "SSCRBKSM.SHP" };
-char const * const EMBLEM_NARROW[3] = { "ASCRASM.SHP", "SSCRASM.SHP", "SSCRASM.SHP" };
+constexpr int EMBLEM_FRAME_MILLISECONDS = 100;
+constexpr int EMBLEM_LOOP_START = 29;
+
+/*
+ * The classic layout on the 800 by 600 stage. gamemd draws the side's background at the top left
+ * (0x72e730) and the side's plate 80 pixels to the right of it (0x72e920). The emblem animation matches the
+ * plate's art where it is drawn at 24 by 142 pixels inside the plate (found by comparing their frames).
+ * The text controls of dialog 259 appear 50 pixels higher in the original's screenshot than the dialog
+ * template puts them, and its status text starts at x 8; those offsets were measured from that screenshot.
+ */
+constexpr int PLATE_X = 80;
+constexpr int PLATE_Y = 0;
+constexpr int EMBLEM_X = PLATE_X + 24;
+constexpr int EMBLEM_Y = PLATE_Y + 142;
+constexpr int TEXT_RISE = 50;
+constexpr int PARAGRAPH_LINE_HEIGHT = 17;
+constexpr int STATUS_X = 8;
+constexpr int STATUS_CENTRE_Y = 587;
+constexpr int TITLE_TOP = 4;
+constexpr int TITLE_HEIGHT = 30;
+
+/*
+ * The text color of gamemd's dialogs. OwnerDraw's primary text color is the color reference 0x00FFFF, yellow,
+ * for every side (0xac18a4, set at 0x600588 and 0x60fa3f).
+ */
+constexpr int TEXT_RED = 255;
+constexpr int TEXT_GREEN = 255;
+constexpr int TEXT_BLUE = 0;
+
+/*
+ * The side art, indexed by side: Allied, Soviet and Yuri. These are the names in gamemd's table
+ * (0x844c58) for the 800 wide screen. The small 640 wide entries are not used: the stage is always
+ * 800 by 600 and is fitted to the screen.
+ */
+char const * const BACKGROUND[3] = { "ASCRBKMD.SHP", "SSCRBKMD.SHP", "SYCRBKMD.SHP" };
+char const * const PLATE[3] = { "ASCRTMD.SHP", "SSCRTMD.SHP", "SYCRTMD.SHP" };
+char const * const EMBLEM[3] = { "ASCRAMD.SHP", "SSCRAMD.SHP", "SYCRAMD.SHP" };
 char const * const PALETTE[3] = { "ASCORE.PAL", "SSCORE.PAL", "YSCORE.PAL" };
 
 /*
@@ -97,6 +131,39 @@ struct Figures {
 };
 
 /*
+ * The shared menu art that frames the classic screen: the metal column with its monitor, the button
+ * slots and the status bar. Each piece is drawn through its own palette, as gamemd does (0x72e450).
+ */
+struct ShellArt {
+	ShellArt(void) : Top(NULL), Slot(NULL), Bottom(NULL), Status(NULL), Button(NULL), Shell(NULL), ShellSlot(NULL), ShellButton(NULL) {}
+
+	~ShellArt(void)
+	{
+		ShapeSet const * const shapes[5] = { Top, Slot, Bottom, Status, Button };
+		for (ShapeSet const * shape : shapes) {
+			if (shape != NULL) {
+				ScoreStageClass::Free_Shape(shape);
+			}
+		}
+		ScoreStageClass::Free_Drawer(Shell);
+		ScoreStageClass::Free_Drawer(ShellSlot);
+		ScoreStageClass::Free_Drawer(ShellButton);
+	}
+
+	ShellArt(ShellArt const &) = delete;
+	ShellArt & operator = (ShellArt const &) = delete;
+
+	ShapeSet * Top;
+	ShapeSet * Slot;
+	ShapeSet * Bottom;
+	ShapeSet * Status;
+	ShapeSet * Button;
+	ConvertClass * Shell;
+	ConvertClass * ShellSlot;
+	ConvertClass * ShellButton;
+};
+
+/*
  * Formats timer ticks as hh:mm:ss, the way gamemd prints the par and elapsed times.
  */
 void Format_Time(char * buffer, int ticks)
@@ -106,30 +173,21 @@ void Format_Time(char * buffer, int ticks)
 }
 
 /*
- * The enemies destroyed by the human houses: the kills of each house in the four categories it tracks.
+ * The enemies destroyed by the player's houses. gamemd adds up the kill trackers of every house whose
+ * player control flag is set (0x6c92b0, the flag at +0x1ED), and a tracker counts what that house killed,
+ * except types with DontScore. TechnoClass::Count_The_Kill gives the same kills to the house's UnitsKilled
+ * and BuildingsKilled arrays, by victim house, in every kind of game.
  */
 int Enemies_Destroyed(void)
 {
 	int total = 0;
 	for (int i = 0; i < Houses.Count(); i++) {
 		HouseClass * house = Houses[i];
-		if (house == NULL || !house->IsHuman) {
+		if (house == NULL || !house->IsPlayerControl) {
 			continue;
 		}
-		UnitTrackerClass * const trackers[4] = {
-			house->DestroyedAircraft,
-			house->DestroyedInfantry,
-			house->DestroyedUnits,
-			house->DestroyedBuildings
-		};
-		for (UnitTrackerClass * tracker : trackers) {
-			if (tracker == NULL) {
-				continue;
-			}
-			int * totals = tracker->Get_All_Totals();
-			for (int unit = 0; unit < tracker->Get_Unit_Count(); unit++) {
-				total += totals[unit];
-			}
+		for (int victim = 0; victim < ARRAY_SIZE(house->UnitsKilled); victim++) {
+			total += house->UnitsKilled[victim] + house->BuildingsKilled[victim];
 		}
 	}
 	return(total);
@@ -201,9 +259,8 @@ std::vector<std::string> Wrap_Text(ScoreStageClass const & stage, std::string co
 	return(lines);
 }
 
-void Print_Paragraph(ScoreStageClass & stage, std::string const & text, Rect const & area)
+void Print_Paragraph(ScoreStageClass & stage, std::string const & text, Rect const & area, int line_height)
 {
-	int const line_height = stage.Text_Height();
 	std::vector<std::string> const lines = Wrap_Text(stage, text, area.Width);
 	for (std::size_t i = 0; i < lines.size(); i++) {
 		stage.Print_Left(lines[i].c_str(), area.X, area.Y + (int)i * line_height);
@@ -245,6 +302,113 @@ int Panel_Edge_Color(void)
 	return(DSurface::Build_Hicolor_Pixel(RGBClass(110, 130, 160)));
 }
 
+/*
+ * The top of a line of text whose middle is on the given line, for the stage's text height.
+ */
+int Centred_Text_Top(ScoreStageClass const & stage, int centre)
+{
+	return(centre - stage.Text_Height() / 2);
+}
+
+/*
+ * Loads the shared menu art. A missing piece stays NULL and is left out of the screen.
+ */
+void Load_Shell(ScoreStageClass & stage, ShellArt & shell)
+{
+	shell.Top = stage.Load_Shape("SDTP.SHP");
+	shell.Slot = stage.Load_Shape("SDBTNBKGD.SHP");
+	shell.Bottom = stage.Load_Shape("SDBTM.SHP");
+	shell.Status = stage.Load_Shape("LWSCRNL.SHP");
+	shell.Button = stage.Load_Shape("SDBTNANM.SHP");
+	shell.Shell = stage.Load_Drawer("SHELL.PAL");
+	shell.ShellSlot = stage.Load_Drawer("SHELL2.PAL");
+	shell.ShellButton = stage.Load_Drawer("SDBTNANM.PAL");
+}
+
+/*
+ * Draws the art of the classic screen, without text, placed as gamemd places it (0x72e450 and 0x72ec70): the
+ * side's background and plate, the metal column down the right with its button slots, and the status bar
+ * along the bottom. The last full slot of the column holds the Continue button, which is returned with the
+ * column's area.
+ */
+void Draw_Classic_Art(ScoreStageClass & stage, ShapeSet const * background, ShapeSet const * plate, ShellArt const & shell, Rect & button, Rect & column)
+{
+	int const width = stage.Width();
+	int const height = stage.Height();
+
+	if (background != NULL) {
+		stage.Draw_Shape_Frame(background, 0, Rect(0, 0, background->Get_Width(), background->Get_Height()));
+	}
+	if (plate != NULL) {
+		stage.Draw_Shape_Frame(plate, 0, Rect(PLATE_X, PLATE_Y, plate->Get_Width(), plate->Get_Height()));
+	}
+
+	int top_height = 0;
+	int column_x = width;
+	if (shell.Top != NULL) {
+		top_height = shell.Top->Get_Height();
+		column_x = width - shell.Top->Get_Width();
+		stage.Draw_Shape_At(shell.Top, 0, column_x, 0, shell.Shell);
+	}
+	column = Rect(column_x, 0, width - column_x, height);
+
+	int slots = 0;
+	if (shell.Slot != NULL && shell.Slot->Get_Height() > 0) {
+		int const slot_height = shell.Slot->Get_Height();
+		slots = (height - top_height) / slot_height;
+		for (int i = 0; i < slots; i++) {
+			stage.Draw_Shape_At(shell.Slot, 0, width - shell.Slot->Get_Width(), top_height + i * slot_height, shell.ShellSlot);
+		}
+		if (shell.Bottom != NULL) {
+			stage.Draw_Shape_At(shell.Bottom, 0, width - shell.Bottom->Get_Width(), top_height + slots * slot_height, shell.Shell);
+		}
+	}
+
+	if (shell.Status != NULL) {
+		stage.Draw_Shape_At(shell.Status, 0, 0, height - shell.Status->Get_Height(), shell.Shell);
+	}
+
+	if (shell.Button != NULL && slots > 0) {
+		button = Rect(width - shell.Button->Get_Width(), top_height + (slots - 1) * shell.Slot->Get_Height(), shell.Button->Get_Width(), shell.Button->Get_Height());
+		stage.Draw_Shape_At(shell.Button, 2, button.X, button.Y, shell.ShellButton);
+	} else {
+		button = ScoreStageClass::Dialog_Rect(425, 346, 108, 23);
+	}
+}
+
+/*
+ * Prints the texts of the classic screen at the positions of dialog 259's controls. The rank and the
+ * commendation are left aligned, the two times are centred under their labels, and the number of enemies
+ * destroyed is left aligned, as the dialog's static styles say.
+ */
+void Draw_Classic_Text(ScoreStageClass & stage, Figures const & figures, Rect const & column, Rect const & button)
+{
+	Rect const title(column.X, TITLE_TOP, column.Width, TITLE_HEIGHT);
+	stage.Print_Centre(figures.Title.c_str(), title.X, title.Width, Centred_Text_Top(stage, title.Y + title.Height / 2));
+
+	Rect const rank(128, 57 - TEXT_RISE, 386, 16);
+	stage.Print_Left(figures.Rank.c_str(), rank.X, Centred_Text_Top(stage, rank.Y + rank.Height / 2));
+	Print_Paragraph(stage, figures.Message, Rect(128, 81 - TEXT_RISE, 386, 65), PARAGRAPH_LINE_HEIGHT);
+
+	Rect const enemies_label(128, 163 - TEXT_RISE, 165, 16);
+	Rect const enemies_value(300, 163 - TEXT_RISE, 213, 16);
+	stage.Print_Left(figures.EnemiesLabel.c_str(), enemies_label.X, Centred_Text_Top(stage, enemies_label.Y + enemies_label.Height / 2));
+	stage.Print_Left(figures.EnemiesValue.c_str(), enemies_value.X, Centred_Text_Top(stage, enemies_value.Y + enemies_value.Height / 2));
+
+	Rect const par_label(188, 432 - TEXT_RISE, 83, 16);
+	Rect const par_value(188, 450 - TEXT_RISE, 83, 16);
+	stage.Print_Centre(figures.ParLabel.c_str(), par_label.X, par_label.Width, Centred_Text_Top(stage, par_label.Y + par_label.Height / 2));
+	stage.Print_Centre(figures.ParValue.c_str(), par_value.X, par_value.Width, Centred_Text_Top(stage, par_value.Y + par_value.Height / 2));
+
+	Rect const your_label(363, 432 - TEXT_RISE, 83, 16);
+	Rect const your_value(363, 450 - TEXT_RISE, 83, 16);
+	stage.Print_Centre(figures.YourLabel.c_str(), your_label.X, your_label.Width, Centred_Text_Top(stage, your_label.Y + your_label.Height / 2));
+	stage.Print_Centre(figures.YourValue.c_str(), your_value.X, your_value.Width, Centred_Text_Top(stage, your_value.Y + your_value.Height / 2));
+
+	stage.Print_Centre(figures.Caption.c_str(), button.X, button.Width, Centred_Text_Top(stage, button.Y + button.Height / 2));
+	stage.Print_Left(figures.Status.c_str(), STATUS_X, Centred_Text_Top(stage, STATUS_CENTRE_Y));
+}
+
 void Draw_Button(ScoreStageClass & stage, Rect const & button, std::string const & caption)
 {
 	Fill_Area(stage.Canvas(), button, Button_Color());
@@ -253,46 +417,9 @@ void Draw_Button(ScoreStageClass & stage, Rect const & button, std::string const
 }
 
 /*
- * Lays out the classic screen: gamemd's standalone score dialog on the 800 by 600 stage. The emblem
- * goes in the dialog's picture box, centred, and the button and the texts go where the dialog puts them.
- */
-void Draw_Classic(ScoreStageClass & stage, Figures const & figures, Rect & emblem, Rect & button)
-{
-	Rect const picture = ScoreStageClass::Dialog_Rect(72, 115, 282, 141);
-	emblem = Rect(picture.X + (picture.Width - EMBLEM_WIDTH) / 2, picture.Y + (picture.Height - EMBLEM_HEIGHT) / 2, EMBLEM_WIDTH, EMBLEM_HEIGHT);
-	button = ScoreStageClass::Dialog_Rect(425, 346, 108, 23);
-
-	Rect const title = ScoreStageClass::Dialog_Rect(425, 1, 108, 10);
-	stage.Print_Centre(figures.Title.c_str(), title.X, title.Width, title.Y);
-
-	Rect const rank = ScoreStageClass::Dialog_Rect(85, 35, 257, 10);
-	stage.Print_Left(figures.Rank.c_str(), rank.X, rank.Y);
-	Print_Paragraph(stage, figures.Message, ScoreStageClass::Dialog_Rect(85, 50, 257, 40));
-
-	Rect const enemies_label = ScoreStageClass::Dialog_Rect(85, 100, 110, 10);
-	Rect const enemies_value = ScoreStageClass::Dialog_Rect(200, 100, 142, 10);
-	stage.Print_Left(figures.EnemiesLabel.c_str(), enemies_label.X, enemies_label.Y);
-	stage.Print_Left(figures.EnemiesValue.c_str(), enemies_value.X, enemies_value.Y);
-
-	Rect const par_label = ScoreStageClass::Dialog_Rect(125, 266, 55, 10);
-	Rect const par_value = ScoreStageClass::Dialog_Rect(125, 277, 55, 10);
-	stage.Print_Centre(figures.ParLabel.c_str(), par_label.X, par_label.Width, par_label.Y);
-	stage.Print_Centre(figures.ParValue.c_str(), par_value.X, par_value.Width, par_value.Y);
-
-	Rect const your_label = ScoreStageClass::Dialog_Rect(242, 266, 55, 10);
-	Rect const your_value = ScoreStageClass::Dialog_Rect(242, 277, 55, 10);
-	stage.Print_Centre(figures.YourLabel.c_str(), your_label.X, your_label.Width, your_label.Y);
-	stage.Print_Centre(figures.YourValue.c_str(), your_value.X, your_value.Width, your_value.Y);
-
-	Draw_Button(stage, button, figures.Caption);
-
-	Rect const status = ScoreStageClass::Dialog_Rect(10, 357, 303, 12);
-	stage.Print_Left(figures.Status.c_str(), status.X, status.Y);
-}
-
-/*
  * Lays out the modern screen: three panels across the screen. The left panel holds the rank and the
  * commendation, the centre panel the emblem, and the right panel the figures and the Continue button.
+ * The emblem fills the width of its panel.
  */
 void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem, Rect & button)
 {
@@ -303,9 +430,9 @@ void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem
 	int const top = height * 14 / 100;
 	int const panel_height = height * 70 / 100;
 
-	Rect const left(width * 4 / 100, top, width * 30 / 100, panel_height);
-	Rect const centre(width * 36 / 100, top, width * 28 / 100, panel_height);
-	Rect const right(width * 66 / 100, top, width * 30 / 100, panel_height);
+	Rect const left(width * 4 / 100, top, width * 26 / 100, panel_height);
+	Rect const centre(width * 32 / 100, top, width * 36 / 100, panel_height);
+	Rect const right(width * 70 / 100, top, width * 26 / 100, panel_height);
 
 	stage.Print_Centre(figures.Title.c_str(), 0, width, height * 4 / 100);
 
@@ -316,9 +443,9 @@ void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem
 	}
 
 	stage.Print_Left(figures.Rank.c_str(), left.X + pad, left.Y + pad);
-	Print_Paragraph(stage, figures.Message, Rect(left.X + pad, left.Y + pad + 2 * text_height, left.Width - 2 * pad, left.Height));
+	Print_Paragraph(stage, figures.Message, Rect(left.X + pad, left.Y + pad + 2 * text_height, left.Width - 2 * pad, left.Height), text_height);
 
-	double const fit = std::min(1.5, std::min((centre.Width - 2 * pad) / (double)EMBLEM_WIDTH, (centre.Height - 2 * pad) / (double)EMBLEM_HEIGHT));
+	double const fit = std::min((centre.Width - 2 * pad) / (double)EMBLEM_WIDTH, (centre.Height - 2 * pad) / (double)EMBLEM_HEIGHT);
 	int const emblem_width = (int)(EMBLEM_WIDTH * fit);
 	int const emblem_height = (int)(EMBLEM_HEIGHT * fit);
 	emblem = Rect(centre.X + (centre.Width - emblem_width) / 2, centre.Y + (centre.Height - emblem_height) / 2, emblem_width, emblem_height);
@@ -364,51 +491,54 @@ void ScoreClass::Presentation(void)
 	Theme.Play_Song(Theme.From_Name("SCORE"));
 
 	int const side = Side_Index();
-	bool const narrow = Stage.Is_Small();
+	Stage.Set_Text_Color(TEXT_RED, TEXT_GREEN, TEXT_BLUE);
+	ShellArt shell;
+	if (!modern) {
+		Load_Shell(Stage, shell);
+	}
 	Stage.Load_Palette(PALETTE[side]);
 
-	ShapeSet * background = Stage.Load_Shape((narrow ? BACKGROUND_NARROW : BACKGROUND_WIDE)[side]);
-	ShapeSet * emblem = Stage.Load_Shape((narrow ? EMBLEM_NARROW : EMBLEM_WIDE)[side]);
+	ShapeSet * background = Stage.Load_Shape(BACKGROUND[side]);
+	ShapeSet * plate = Stage.Load_Shape(PLATE[side]);
+	ShapeSet * emblem = Stage.Load_Shape(EMBLEM[side]);
 
 	Rect const whole(0, 0, Stage.Width(), Stage.Height());
-	Rect const art = (background != NULL && !modern) ? Rect(0, 0, background->Get_Width(), background->Get_Height()) : whole;
-	if (background != NULL) {
-		Stage.Draw_Shape_Frame(background, 0, art);
-	}
-
-	/*
-	 * The art is blurred behind the screen: over the whole modern stage, or into the bars beside the classic
-	 * stage. The classic stage outside the art gets the same dimmed backdrop, since the art does not cover it.
-	 */
-	if (modern) {
-		Stage.Fill_Backdrop(*Stage.Canvas(), whole);
-	} else {
-		Stage.Fill_Backdrop(*HiddenSurface, art);
-		Stage.Show_Screen();
-		Stage.Fill_Backdrop(*Stage.Canvas(), art);
-		if (background != NULL) {
-			Stage.Draw_Shape_Frame(background, 0, art);
-		}
-	}
-
 	Figures const figures = Collect_Figures();
 	Rect emblem_box;
 	Rect button;
+
 	if (modern) {
+		// The side art is blurred over the whole screen and the panels go over it.
+		if (background != NULL) {
+			Stage.Draw_Shape_Frame(background, 0, whole);
+		}
+		Stage.Fill_Backdrop(*Stage.Canvas(), whole);
 		Draw_Modern(Stage, figures, emblem_box, button);
 	} else {
-		Draw_Classic(Stage, figures, emblem_box, button);
+		// A screen larger than the stage shows the same art around it, blurred and dimmed.
+		Rect column;
+		Draw_Classic_Art(Stage, background, plate, shell, button, column);
+		Stage.Fill_Backdrop(*HiddenSurface, whole);
+		Stage.Show_Screen();
+		Draw_Classic_Text(Stage, figures, column, button);
+		emblem_box = Rect(EMBLEM_X, EMBLEM_Y, EMBLEM_WIDTH, EMBLEM_HEIGHT);
 	}
 
-	if (emblem != NULL) {
-		Stage.Draw_Shape_Frame(emblem, 0, emblem_box);
+	Stage.Save_Base();
+	int frame = 0;
+	Draw_Emblem(emblem, frame, emblem_box, modern);
+
+	// A test run captures the screen next, so it shows the emblem at the end of its first pass.
+	if (AutoTest_Active() && emblem != NULL) {
+		frame = std::max(1, emblem->Get_Count()) - 1;
+		Draw_Emblem(emblem, frame, emblem_box, modern);
 	}
 	Stage.Present(whole);
 
 	AutoTest_Score_Shown();
 
 	Show_Mouse();
-	Wait_For_Click(emblem, emblem_box, button);
+	Wait_For_Click(emblem, emblem_box, button, frame, modern);
 	Hide_Mouse();
 
 	Theme.Stop(true);
@@ -416,6 +546,9 @@ void ScoreClass::Presentation(void)
 
 	if (emblem != NULL) {
 		ScoreStageClass::Free_Shape(emblem);
+	}
+	if (plate != NULL) {
+		ScoreStageClass::Free_Shape(plate);
 	}
 	if (background != NULL) {
 		ScoreStageClass::Free_Shape(background);
@@ -429,23 +562,49 @@ void ScoreClass::Presentation(void)
 
 
 /// <summary>
-/// Waits for the player to click the Continue button, with the emblem animation looping while the
+/// Draws one frame of the emblem animation into its box. The classic emblem goes over the plate it was
+/// made for; the modern emblem is stretched to its panel with its dark background left out.
+/// </summary>
+/// <param name="animation">The emblem animation, or NULL to draw nothing.</param>
+/// <param name="frame">The frame to draw.</param>
+/// <param name="box">The stage area the frame fills.</param>
+/// <param name="modern">Is the modern layout in use?</param>
+void ScoreClass::Draw_Emblem(ShapeSet const * animation, int frame, Rect const & box, bool modern)
+{
+	if (animation == NULL) {
+		return;
+	}
+	if (modern) {
+		Stage.Restore(box);
+		Stage.Draw_Keyed_Frame(animation, frame, box);
+	} else {
+		Stage.Draw_Shape_Frame(animation, frame, box);
+	}
+}
+
+
+/// <summary>
+/// Waits for the player to click the Continue button, with the emblem animation playing while the
 /// screen is up. A left click outside the button, and any key, does nothing.
 /// </summary>
-/// <param name="animation">The emblem animation to loop, or NULL to wait with a still picture.</param>
-/// <param name="frame">The stage area each animation frame is drawn into.</param>
+/// <param name="animation">The emblem animation to play, or NULL to wait with a still picture.</param>
+/// <param name="box">The stage area each animation frame is drawn into.</param>
 /// <param name="button">The stage area of the Continue button.</param>
-void ScoreClass::Wait_For_Click(ShapeSet const * animation, Rect const & frame, Rect const & button)
+/// <param name="start">The frame the animation shows when the wait starts.</param>
+/// <param name="modern">Is the modern layout in use?</param>
+void ScoreClass::Wait_For_Click(ShapeSet const * animation, Rect const & box, Rect const & button, int start, bool modern)
 {
 	Keyboard->Clear();
 	if (AutoTest_Post_Win()) {
 		return;
 	}
 
+	using Clock = std::chrono::steady_clock;
+	auto const step = std::chrono::milliseconds(EMBLEM_FRAME_MILLISECONDS);
+
 	int const frame_count = (animation != NULL) ? std::max(1, animation->Get_Count()) : 1;
-	int const loops_per_frame = std::max(1, Rule->ScoreEmblemTicks);
-	int current = 0;
-	int loops = 0;
+	int current = start;
+	auto next = Clock::now() + step;
 	bool running = true;
 
 	while (running) {
@@ -457,10 +616,16 @@ void ScoreClass::Wait_For_Click(ShapeSet const * animation, Rect const & frame, 
 				running = false;
 			}
 		}
-		if (animation != NULL && ++loops % loops_per_frame == 0) {
-			current = (current + 1) % frame_count;
-			Stage.Draw_Shape_Frame(animation, current, frame);
-			Stage.Present(frame);
+
+		auto const now = Clock::now();
+		if (animation != NULL && now >= next) {
+			next = std::max(next + step, now);
+			current++;
+			if (current >= frame_count) {
+				current = (frame_count > EMBLEM_LOOP_START) ? EMBLEM_LOOP_START : 0;
+			}
+			Draw_Emblem(animation, current, box, modern);
+			Stage.Present(box);
 		}
 		Sleep(16);
 	}

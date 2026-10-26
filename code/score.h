@@ -31,7 +31,8 @@ class ScoreClass {
 		void Presentation(void);
 
 	private:
-		void Wait_For_Click(ShapeSet const * animation, Rect const & frame, Rect const & button);
+		void Draw_Emblem(ShapeSet const * animation, int frame, Rect const & box, bool modern);
+		void Wait_For_Click(ShapeSet const * animation, Rect const & box, Rect const & button, int start, bool modern);
 
 		ScoreStageClass Stage;
 };

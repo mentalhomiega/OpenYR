@@ -1077,10 +1077,6 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
-		// The number of 16 millisecond wait loops that one frame of the mission score screen's emblem
-		// animation lasts. Gamemd's rate is not confirmed, so this is a setting.
-		int ScoreEmblemTicks;
-
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
 		int NoParachuteMaxFallRate;
