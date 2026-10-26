@@ -274,6 +274,13 @@ void ScenarioClass::Reset(void)
 	CDifficulty = DIFF_NORMAL;
 	ElapsedTimer = 0;
 	ElapsedTimer.Stop();
+	for (int rank = 0; rank < 3; rank++) {
+		ParTime[rank] = TIMER_MINUTE;
+	}
+	strcpy(UnderParTitle, "GUI:NoUnderParTitle");
+	strcpy(UnderParMessage, "GUI:NoUnderParMessage");
+	strcpy(OverParTitle, "GUI:NoOverParTitle");
+	strcpy(OverParMessage, "GUI:NoOverParMessage");
 	MissionTimer = 0;
 	MissionTimer.Stop();
 	MissionTimerText[0] = '\0';
@@ -4120,11 +4127,38 @@ int ScenarioClass::First_Unused_Local(void) const
 /// player's house is established here as well, since the objects created afterward attach
 /// themselves to it.
 /// </summary>
+/*
+ * Reads one par time of the [Ranking] section, written hh:mm:ss, as timer ticks. A missing key keeps the
+ * current value. A value that does not parse gives the fields it has and zero for the rest, as gamemd does.
+ */
+static int Read_Par_Time(CCINIClass const & ini, char const * key, int current)
+{
+	char text[32] = "";
+	ini.Get_String("Ranking", key, "", text, sizeof(text));
+	if (text[0] == '\0') {
+		return(current);
+	}
+	int hours = 0;
+	int minutes = 0;
+	int seconds = 0;
+	sscanf(text, "%d:%d:%d", &hours, &minutes, &seconds);
+	return(((hours * 60) + minutes) * 60 + seconds) * TIMER_SECOND;
+}
+
+
 bool ScenarioClass::Read_INI(CCINIClass const & ini)
 {
 	char const * const BASIC = "Basic";
 
 	int i;
+
+	ParTime[DIFF_EASY] = Read_Par_Time(ini, "ParTimeEasy", ParTime[DIFF_EASY]);
+	ParTime[DIFF_NORMAL] = Read_Par_Time(ini, "ParTimeMedium", ParTime[DIFF_NORMAL]);
+	ParTime[DIFF_HARD] = Read_Par_Time(ini, "ParTimeHard", ParTime[DIFF_HARD]);
+	ini.Get_String("Ranking", "UnderParTitle", "GUI:NoUnderParTitle", UnderParTitle, sizeof(UnderParTitle));
+	ini.Get_String("Ranking", "UnderParMessage", "GUI:NoUnderParMessage", UnderParMessage, sizeof(UnderParMessage));
+	ini.Get_String("Ranking", "OverParTitle", "GUI:NoOverParTitle", OverParTitle, sizeof(OverParTitle));
+	ini.Get_String("Ranking", "OverParMessage", "GUI:NoOverParMessage", OverParMessage, sizeof(OverParMessage));
 
 	// Only a campaign mission takes the fast-growth switch from its map. A skirmish keeps the value the session has.
 	bool const fast_growth = Special.IsTGrowth;
