@@ -33,6 +33,8 @@ class MSFont
 
 		bool Init(char const * file_name, char const * palette_name);
 
+		void Set_Color(int red, int green, int blue);
+
 		void Get_String_Rect(char const * string, Rect & rect);
 
 		virtual int Get_Character_Width(char32_t code);
@@ -108,6 +110,12 @@ class MSFont
 		 * the font, so only those are freed when the last font is destroyed.
 		 */
 		bool AllocLoaded;
+
+		/*
+		 * This is the name of the palette the glyphs are colored with, kept so that the font
+		 * can be recolored.
+		 */
+		char PaletteName[64];
 
 		/*
 		 * These are the measured glyph frames, filled in as glyphs are first used.

@@ -162,6 +162,7 @@ MSFont::MSFont(bool use_side_palette) :
 	Red(0),
 	Green(0),
 	Blue(0),
+	PaletteName(),
 	Metrics()
 {
 	Init("FULLFNT3.SHP", use_side_palette ? "SIDEFNT3.PAL" : "FULLFNT3.PAL");
@@ -179,6 +180,7 @@ MSFont::MSFont(char const * file_name) :
 	Red(0),
 	Green(0),
 	Blue(0),
+	PaletteName(),
 	Metrics()
 {
 	char palette_name[256];
@@ -200,6 +202,7 @@ MSFont::MSFont(char const * file_name, char const * palette_name) :
 	Red(0),
 	Green(0),
 	Blue(0),
+	PaletteName(),
 	Metrics()
 {
 	Init(file_name, palette_name);
@@ -277,6 +280,9 @@ bool MSFont::Init(char const * file_name, char const * palette_name)
 	if (palette == NULL) {
 		return(false);
 	}
+
+	strncpy(PaletteName, palette_name, sizeof(PaletteName) - 1);
+	PaletteName[sizeof(PaletteName) - 1] = '\0';
 
 	for (int gindex = 0; gindex < 256; gindex++) {
 		CCPalette[gindex] = RGBClass(
@@ -493,3 +499,39 @@ void MSFont::Draw_String(Surface * surface, char const * string, int x, int y, i
 	}
 }
 
+
+/// <summary>
+/// Recolors the font. Each color of the glyph palette is multiplied by the given color, so the glyph
+/// shading is kept; white glyphs take the color itself.
+/// </summary>
+/// <param name="red">The red of the color, 0 to 255.</param>
+/// <param name="green">The green of the color, 0 to 255.</param>
+/// <param name="blue">The blue of the color, 0 to 255.</param>
+/// <remarks>The global CCPalette is overwritten with the recolored palette.</remarks>
+void MSFont::Set_Color(int red, int green, int blue)
+{
+	CCFileClass file(PaletteName);
+	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
+	if (palette == NULL) {
+		return;
+	}
+
+	for (int index = 0; index < 256; index++) {
+		CCPalette[index] = RGBClass(
+			(((unsigned char *)*palette)[index*3] << 2) * red / 255,
+			(((unsigned char *)*palette)[index*3+1] << 2) * green / 255,
+			(((unsigned char *)*palette)[index*3+2] << 2) * blue / 255);
+	}
+	delete palette;
+
+	Red = (unsigned char)CCPalette[68].Get_Red();
+	Green = (unsigned char)CCPalette[68].Get_Green();
+	Blue = (unsigned char)CCPalette[68].Get_Blue();
+	Color = DSurface::Build_Hicolor_Pixel(Red, Green, Blue);
+
+	ConvertClass * drawer = new ConvertClass(CCPalette, CCPalette, *VisibleSurface);
+	if (drawer != NULL) {
+		delete Drawer;
+		Drawer = drawer;
+	}
+}
