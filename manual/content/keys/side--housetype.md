@@ -27,7 +27,7 @@ The side of the country the local player plays decides:
 - which side's voices play, unless a mission sets [`SpeechSide=`](/keys/speechside/);
 - which music tracks are offered, when a track is restricted with its own [`Side=`](/keys/side/#scope-themes);
 - in skirmish and multiplayer games, which pair of loading pictures appears: the second side's for a country on the second side, the first side's otherwise;
-- on the campaign results screen and the multiplayer score screen, which side's picture, palette and row bands are drawn: the first side's art when the player's country is on the first side, the second side's art otherwise, and the third side's art for any other side.
+- on the mission score screen after a won campaign mission, which side's background, emblem and palette are drawn, and on the multiplayer score screen, which side's picture, palette and row bands are drawn: the first side's art when the player's country is on the first side, the second side's art otherwise, and the third side's art for any other side.
 
 For the archives and voices, a player's country with no side counts as the first side. Such a player is offered no side-restricted track, and its score screens use the third side's art.
 

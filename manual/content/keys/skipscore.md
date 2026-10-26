@@ -12,7 +12,7 @@ when_omitted:
 SkipScore=yes
 ```
 
-`SkipScore=yes` removes the score screen that follows a won campaign mission, together with its music track and hall of fame. Nothing else changes. The [`Win`](/keys/win/) movie still plays first, [`PostScore`](/keys/postscore/) and [`PreMapSelect`](/keys/premapselect/) still follow, and the campaign advances as it would have.
+`SkipScore=yes` removes the mission score screen that follows a won campaign mission, together with its music track. Nothing else changes. The [`Win`](/keys/win/) movie still plays first, [`PostScore`](/keys/postscore/) and [`PreMapSelect`](/keys/premapselect/) still follow, and the campaign advances as it would have.
 
 Playing back a recorded game skips the score screen whatever this key says.
 
