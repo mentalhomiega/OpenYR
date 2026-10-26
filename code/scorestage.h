@@ -40,6 +40,7 @@ class ScoreStageClass
 
 		void Present(Rect const & area);
 		void Clear_Screen(void);
+		bool Contains_Screen_Point(Rect const & area, int x, int y) const;
 
 		void Print_Left(char const * text, int x, int y);
 		void Print_Right(char const * text, int right, int y);

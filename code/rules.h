@@ -1077,6 +1077,10 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
+		// Stretches the campaign results screen's side art over the whole 800 by 600 stage, rather than
+		// drawing it at its 632 by 568 size. Gamemd's placement of the art is not confirmed.
+		bool IsScoreArtFillsStage;
+
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
 		int NoParachuteMaxFallRate;
