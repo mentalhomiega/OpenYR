@@ -33,6 +33,8 @@
 #include "language/language.h"
 #include "mixfile.h"
 #include "msgloop.h"
+#include "_rules.h"
+#include "rules.h"
 #include "scenario.h"
 #include "session.h"
 #include "surface.h"
@@ -192,7 +194,9 @@ void ScoreClass::Presentation(void)
 	sprintf(name, "%sBK%s.SHP", Art_Prefix(), Stage.Is_Small() ? "SM" : "MD");
 	ShapeSet * background = Stage.Load_Shape(name);
 	if (background != NULL) {
-		Stage.Draw_Shape_Frame(background, 0, Rect(0, 0, 632, 568));
+		// The art is 632 by 568; the fill option stretches it over the whole stage.
+		Rect const art = Rule->IsScoreArtFillsStage ? Rect(0, 0, 800, 600) : Rect(0, 0, 632, 568);
+		Stage.Draw_Shape_Frame(background, 0, art);
 		ScoreStageClass::Free_Shape(background);
 	}
 
