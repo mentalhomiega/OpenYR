@@ -81,7 +81,9 @@ ScoreStageClass::ScoreStageClass(void) :
 	BaseSurface(NULL),
 	Font(NULL),
 	Drawer(NULL),
-	Mounted(false)
+	Mounted(false),
+	StageWidth(STAGE_WIDTH),
+	StageHeight(STAGE_HEIGHT)
 {
 }
 
@@ -95,25 +97,34 @@ ScoreStageClass::~ScoreStageClass(void)
 /// <summary>
 /// Creates the stage and its font, sizes the fit to the screen and mounts the neutral archives.
 /// </summary>
+/// <param name="fill_screen">When true the stage is the size of the screen at 1 to 1, rather than 800 by 600 fitted to it.</param>
 /// <returns>bool; Was the stage created? Nothing is left allocated when it was not.</returns>
-bool ScoreStageClass::Open(void)
+bool ScoreStageClass::Open(bool fill_screen)
 {
 	Close();
 
-	StageSurface = new DSurface(STAGE_WIDTH, STAGE_HEIGHT);
-	BaseSurface = new DSurface(STAGE_WIDTH, STAGE_HEIGHT);
+	int const screen_width = HiddenSurface->Get_Width();
+	int const screen_height = HiddenSurface->Get_Height();
+	StageWidth = fill_screen ? screen_width : STAGE_WIDTH;
+	StageHeight = fill_screen ? screen_height : STAGE_HEIGHT;
+
+	StageSurface = new DSurface(StageWidth, StageHeight);
+	BaseSurface = new DSurface(StageWidth, StageHeight);
 	if (StageSurface == NULL || BaseSurface == NULL) {
 		DebugString("ScoreStage: Failed to create surface!\n");
 		Close();
 		return(false);
 	}
 
-	int const screen_width = HiddenSurface->Get_Width();
-	int const screen_height = HiddenSurface->Get_Height();
-	Scale = std::min(screen_width / (double)STAGE_WIDTH, screen_height / (double)STAGE_HEIGHT);
-	int const fit_width = (int)(STAGE_WIDTH * Scale + 0.5);
-	int const fit_height = (int)(STAGE_HEIGHT * Scale + 0.5);
-	FitOrigin = Point2D((screen_width - fit_width) / 2, (screen_height - fit_height) / 2);
+	if (fill_screen) {
+		Scale = 1.0;
+		FitOrigin = Point2D(0, 0);
+	} else {
+		Scale = std::min(screen_width / (double)STAGE_WIDTH, screen_height / (double)STAGE_HEIGHT);
+		int const fit_width = (int)(STAGE_WIDTH * Scale + 0.5);
+		int const fit_height = (int)(STAGE_HEIGHT * Scale + 0.5);
+		FitOrigin = Point2D((screen_width - fit_width) / 2, (screen_height - fit_height) / 2);
+	}
 
 	Font = new MSFont(false);
 	if (Font == NULL) {
@@ -218,6 +229,125 @@ void ScoreStageClass::Clear_Screen(void)
 	VisibleSurface->Blit_From(frame, *HiddenSurface, frame);
 	Video_Mark_Dirty();
 	Video_Present_Now();
+}
+
+
+/// <summary>
+/// Shows the whole hidden screen surface, as it was last filled.
+/// </summary>
+void ScoreStageClass::Show_Screen(void)
+{
+	Rect const frame = HiddenSurface->Get_Rect();
+	VisibleSurface->Blit_From(frame, *HiddenSurface, frame);
+	Video_Mark_Dirty();
+	Video_Present_Now();
+}
+
+
+/// <summary>
+/// Fills a surface with an area of the stage, averaged on a coarse grid, blurred and dimmed. The area
+/// is read from the stage's current pixels, so it must be drawn before anything that should not be blurred.
+/// </summary>
+/// <param name="target">The 16 bit surface to fill. It may be any size; the stage is not changed.</param>
+/// <param name="source">The stage area to take the art from, stretched over the whole target.</param>
+void ScoreStageClass::Fill_Backdrop(Surface & target, Rect const & source)
+{
+	constexpr int COLUMNS = 32;
+	constexpr int ROWS = 24;
+	constexpr int SAMPLES = 4;
+	constexpr double DIM = 0.45;
+
+	if (StageSurface == NULL || target.Bytes_Per_Pixel() != 2) {
+		return;
+	}
+
+	double grid[ROWS][COLUMNS][3];
+	for (int row = 0; row < ROWS; row++) {
+		for (int col = 0; col < COLUMNS; col++) {
+			double sum[3] = { 0.0, 0.0, 0.0 };
+			for (int sy = 0; sy < SAMPLES; sy++) {
+				for (int sx = 0; sx < SAMPLES; sx++) {
+					int const x = source.X + (int)((col + (sx + 0.5) / SAMPLES) * source.Width / COLUMNS);
+					int const y = source.Y + (int)((row + (sy + 0.5) / SAMPLES) * source.Height / ROWS);
+					RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel((unsigned short)StageSurface->Get_Pixel(Point2D(x, y)));
+					sum[0] += rgb.Get_Red();
+					sum[1] += rgb.Get_Green();
+					sum[2] += rgb.Get_Blue();
+				}
+			}
+			for (int k = 0; k < 3; k++) {
+				grid[row][col][k] = sum[k] / (SAMPLES * SAMPLES);
+			}
+		}
+	}
+
+	// Two passes of a 3 by 3 box blur, with the edge cells repeated outward.
+	for (int pass = 0; pass < 2; pass++) {
+		double blurred[ROWS][COLUMNS][3];
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < COLUMNS; col++) {
+				double sum[3] = { 0.0, 0.0, 0.0 };
+				for (int dy = -1; dy <= 1; dy++) {
+					for (int dx = -1; dx <= 1; dx++) {
+						int const r = std::clamp(row + dy, 0, ROWS - 1);
+						int const c = std::clamp(col + dx, 0, COLUMNS - 1);
+						for (int k = 0; k < 3; k++) {
+							sum[k] += grid[r][c][k];
+						}
+					}
+				}
+				for (int k = 0; k < 3; k++) {
+					blurred[row][col][k] = sum[k] / 9.0;
+				}
+			}
+		}
+		for (int row = 0; row < ROWS; row++) {
+			for (int col = 0; col < COLUMNS; col++) {
+				for (int k = 0; k < 3; k++) {
+					grid[row][col][k] = blurred[row][col][k];
+				}
+			}
+		}
+	}
+
+	int const width = target.Get_Width();
+	int const height = target.Get_Height();
+	for (int y = 0; y < height; y++) {
+		unsigned short * line = (unsigned short *)target.Lock(Point2D(0, y));
+		if (line == NULL) {
+			break;
+		}
+		double const gy = std::clamp((y + 0.5) * ROWS / height - 0.5, 0.0, ROWS - 1.0);
+		int const r0 = (int)gy;
+		int const r1 = std::min(r0 + 1, ROWS - 1);
+		double const ty = gy - r0;
+		for (int x = 0; x < width; x++) {
+			double const gx = std::clamp((x + 0.5) * COLUMNS / width - 0.5, 0.0, COLUMNS - 1.0);
+			int const c0 = (int)gx;
+			int const c1 = std::min(c0 + 1, COLUMNS - 1);
+			double const tx = gx - c0;
+			int channel[3];
+			for (int k = 0; k < 3; k++) {
+				double const top = grid[r0][c0][k] * (1.0 - tx) + grid[r0][c1][k] * tx;
+				double const bottom = grid[r1][c0][k] * (1.0 - tx) + grid[r1][c1][k] * tx;
+				channel[k] = (int)((top * (1.0 - ty) + bottom * ty) * DIM + 0.5);
+			}
+			line[x] = (unsigned short)DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]);
+		}
+		target.Unlock();
+	}
+}
+
+
+int ScoreStageClass::Width(void) const
+{
+	return(StageWidth);
+}
+
+
+int ScoreStageClass::Height(void) const
+{
+	return(StageHeight);
 }
 
 
