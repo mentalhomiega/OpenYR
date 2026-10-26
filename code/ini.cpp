@@ -1267,7 +1267,8 @@ double INIClass::Get_Double(char const * section, char const * entry, double def
 
 	char const * text = entryptr->Value.c_str();
 	char * end = NULL;
-	double result = strtod(text, &end);
+	// Parse_Nearest_Double gives the nearest double whatever the mode; strtod rounds in the mode in force.
+	double result = Parse_Nearest_Double(text, &end);
 	if (end == text) {
 		char const * source = Source_Of(*entryptr);
 		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
