@@ -38,6 +38,7 @@ int const KEY_F10 = 121;
 int const KEY_HOME = 36;
 int const KEY_UP = 38;
 int const KEY_TAB = 9;
+int const KEY_X = 88;
 
 
 void Check(bool condition, char const * what)
@@ -376,6 +377,29 @@ void Test_Grid_Modifier(void)
 }
 
 
+void Test_Modifier_Only(void)
+{
+	// Ctrl+Shift alone is a key of modifier bits; Ctrl+Shift+X and a plain key are keys with a key.
+	int const KEY_CTRL_SHIFT = KEY_SHIFT_BIT | KEY_CTRL_BIT;
+	Check(Hotkey_Is_Modifier_Only(KEY_CTRL_SHIFT) && Hotkey_Is_Modifier_Only(KEY_SHIFT_BIT), "Ctrl+Shift alone and Shift alone are modifier-only");
+	Check(!Hotkey_Is_Modifier_Only(KEY_CTRL_SHIFT | KEY_X) && !Hotkey_Is_Modifier_Only(KEY_A) && !Hotkey_Is_Modifier_Only(0), "a key with a key, a plain key and no key at all are not modifier-only");
+
+	// The file writes the modifier bits as a number, so Ctrl+Shift round trips with its trigger.
+	std::vector<HotkeyEntry> const chords = { { "AttackMove", KEY_CTRL_SHIFT, 0, HOTKEY_HELD }, { "Options", KEY_CTRL_SHIFT | KEY_X }, { "Stop", KEY_CTRL_SHIFT | KEY_1, 1 } };
+	HotkeyFile const read = Hotkey_File_Read(Hotkey_File_Sections(chords, KEYBOARD_SCHEME_CLASSIC, 250, 400));
+	Check(Same_Set(read.Entries, chords), "modifier-only and multi-key bindings round trip with their slots and triggers");
+	Check(Find(read.Entries, "AttackMove") != nullptr && Find(read.Entries, "AttackMove")->Key == KEY_CTRL_SHIFT && Find(read.Entries, "AttackMove")->Trigger == HOTKEY_HELD, "Ctrl+Shift is read back as the number of its modifier bits");
+
+	// Two commands on one exact combination conflict; the same modifiers with another key, or a plain key, do not.
+	std::vector<HotkeyEntry> const list = { { "AttackMove", KEY_CTRL_SHIFT } };
+	Check(Hotkey_Conflict(list, "Options", 0, KEY_CTRL_SHIFT, HOTKEY_PRESS) == 0, "a second command on Ctrl+Shift conflicts");
+	Check(Hotkey_Conflict(list, "Options", 0, KEY_CTRL_SHIFT | KEY_X, HOTKEY_PRESS) < 0 && Hotkey_Conflict(list, "Options", 0, KEY_X, HOTKEY_PRESS) < 0, "Ctrl+Shift does not conflict with Ctrl+Shift+X or with X");
+	Check(Hotkey_Conflict(list, "AttackMove", 0, KEY_CTRL_SHIFT, HOTKEY_HELD) < 0, "a command does not conflict with its own binding");
+	Check(Hotkey_Conflict(list, "Options", 0, KEY_CTRL_SHIFT, HOTKEY_HELD) < 0, "a press and a held trigger on Ctrl+Shift do not conflict");
+	Check(Hotkey_Trigger_Prefix(HOTKEY_HELD) != nullptr && std::string(Hotkey_Trigger_Prefix(HOTKEY_HELD)) == "Held ", "a held binding keeps its Held prefix");
+}
+
+
 void Test_Timing_Ranges(void)
 {
 	// The file keeps the double-press window within 150 to 500 and the hold within 200 to 800; other values give the default.
@@ -591,6 +615,7 @@ int main(void)
 	Test_Prefixes();
 	Test_File();
 	Test_Grid_Modifier();
+	Test_Modifier_Only();
 	Test_Timing_Ranges();
 	Test_Held_State();
 	Test_Timing();
