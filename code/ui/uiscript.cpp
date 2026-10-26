@@ -196,6 +196,10 @@ void Log_Ids(Rml::Element * element, int depth)
 }
 
 
+// The modifiers that keydown steps have pressed and keyup steps have not released.
+static int ScriptHeldModifiers = 0;
+
+
 bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
 {
 	static struct { char const * Name; Rml::Input::KeyIdentifier Key; } const keys[] = {
@@ -211,6 +215,7 @@ bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
 		{"pagedown", Rml::Input::KI_NEXT},
 		{"shift", Rml::Input::KI_LSHIFT},
 		{"ctrl", Rml::Input::KI_LCONTROL},
+		{"alt", Rml::Input::KI_LMENU},
 	};
 	for (auto const & entry : keys) {
 		if (name == entry.Name) {
@@ -433,6 +438,10 @@ void UIScript_Tick(Rml::Context * context)
 					modifiers |= Rml::Input::KM_SHIFT;
 					name.erase(0, 6);
 					more = true;
+				} else if (name.rfind("alt+", 0) == 0) {
+					modifiers |= Rml::Input::KM_ALT;
+					name.erase(0, 4);
+					more = true;
 				}
 			}
 
@@ -442,6 +451,25 @@ void UIScript_Tick(Rml::Context * context)
 			} else {
 				context->ProcessKeyDown(key, modifiers);
 				context->ProcessKeyUp(key, modifiers);
+				WaitUntil = now + 300;
+				return;
+			}
+		} else if (step.Command == "keydown" || step.Command == "keyup") {
+			// Presses or releases one key, passing the shift, ctrl and alt keys that keydown steps hold, so a
+			// capture sees each modifier go down and come up as a player's would.
+			Rml::Input::KeyIdentifier key;
+			if (!Key_From_Name(step.Argument, key)) {
+				DebugString("UISCRIPT   %s %s: unknown key\n", step.Command.c_str(), step.Argument.c_str());
+			} else {
+				int const bit = (key == Rml::Input::KI_LSHIFT) ? Rml::Input::KM_SHIFT : (key == Rml::Input::KI_LCONTROL) ? Rml::Input::KM_CTRL
+					: (key == Rml::Input::KI_LMENU) ? Rml::Input::KM_ALT : 0;
+				if (step.Command == "keydown") {
+					ScriptHeldModifiers |= bit;
+					context->ProcessKeyDown(key, ScriptHeldModifiers);
+				} else {
+					context->ProcessKeyUp(key, ScriptHeldModifiers);
+					ScriptHeldModifiers &= ~bit;
+				}
 				WaitUntil = now + 300;
 				return;
 			}
