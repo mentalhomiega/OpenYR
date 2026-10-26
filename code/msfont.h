@@ -49,6 +49,23 @@ class MSFont
 		int Glyph_Frame(char32_t code) const;
 
 		/*
+		 * Where a glyph frame's ink starts and how wide it is. A few glyph frames of the
+		 * shape file, such as the apostrophe, carry a lone anchor pixel in their top left
+		 * corner that stretches the frame over blank columns; the ink of those frames is
+		 * measured without it.
+		 */
+		struct GlyphMetrics {
+			short Left;
+			short Width;
+			bool Anchored;
+			bool Known;
+		};
+
+		GlyphMetrics const & Glyph_Metrics(int shape_frame);
+		void Measure_Glyph(int shape_frame, GlyphMetrics & metrics) const;
+		void Draw_Glyph(Surface * surface, int shape_frame, int frame, int x, int y);
+
+		/*
 		 * These are the width and height of the font's glyph cell, expressed in pixels and
 		 * taken from the shape file as it is loaded. The height is what a newline advances
 		 * by, and the width serves as a rough per character measure.
@@ -91,4 +108,9 @@ class MSFont
 		 * the font, so only those are freed when the last font is destroyed.
 		 */
 		bool AllocLoaded;
+
+		/*
+		 * These are the measured glyph frames, filled in as glyphs are first used.
+		 */
+		GlyphMetrics Metrics[651];
 };
