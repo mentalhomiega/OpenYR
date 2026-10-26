@@ -1,0 +1,47 @@
+; Control for v3-move-after-attack.txt: the same V3 and tank, with no move order. The strike at frame 100 queues the target;
+; the spawn cycle takes it on its next 10-frame update (frame 110) and launches the rocket on the one after (frame 120),
+; from the body facing west while the V3 stands still.
+; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/v3-attack-then-wait.txt -Map XMP08T2.MAP -Seconds 120
+10 command CenterBase
+30 reveal
+40 own V3 100 80
+41 face 192 100 80
+42 neutral HTNK 92 80
+60 spawns V3
+100 strike V3 92 80
+101 spawns V3
+102 rocket V3ROCKET
+106 rocket V3ROCKET
+110 spawns V3
+110 rocket V3ROCKET
+114 rocket V3ROCKET
+118 rocket V3ROCKET
+120 spawns V3
+122 rocket V3ROCKET
+126 rocket V3ROCKET
+130 rocket V3ROCKET
+134 rocket V3ROCKET
+138 rocket V3ROCKET
+140 spawns V3
+142 rocket V3ROCKET
+146 rocket V3ROCKET
+150 rocket V3ROCKET
+154 rocket V3ROCKET
+158 rocket V3ROCKET
+160 spawns V3
+162 rocket V3ROCKET
+166 rocket V3ROCKET
+170 rocket V3ROCKET
+174 rocket V3ROCKET
+178 rocket V3ROCKET
+182 rocket V3ROCKET
+186 rocket V3ROCKET
+190 rocket V3ROCKET
+194 rocket V3ROCKET
+198 rocket V3ROCKET
+200 spawns V3
+260 spawns V3
+300 spawns V3
+400 spawns V3
+450 where V3
+500 quit
