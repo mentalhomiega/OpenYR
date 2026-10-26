@@ -15,35 +15,14 @@
 
 #include "rect.h"
 #include "scorestage.h"
-#include "vector.h"
 
-class HouseClass;
 class ShapeSet;
 
-template<class T> class DynamicVectorClass;
-
 
 /*
- * One of the campaign results screen's sounds, held by the name the screen asks for it by.
- */
-class SfxEntry {
-	public:
-		SfxEntry(char const * name, char const *filename);
-		~SfxEntry(void);
-
-		const char * Get_Name(void) { return(Name);}
-		void * Get_Sample(void) { return(Sample);}
-
-	private:
-		char * Name;
-		void * Sample;
-		bool IsAllocated;
-};
-
-
-/*
- * The campaign results screen. It shows the player and the enemy in the layout of gamemd's
- * Campaign Results dialog (dialog 3015), with the side's own art.
+ * The mission score screen shown after a campaign mission is won. It follows gamemd's standalone
+ * score dialog (dialog 259): the rank and commendation come from the mission's [Ranking] section, and
+ * it shows the par time, the elapsed time and the enemies destroyed. Only its Continue button closes it.
  */
 class ScoreClass {
 	public:
@@ -52,12 +31,9 @@ class ScoreClass {
 		void Presentation(void);
 
 	private:
-		void DoSound(const char * name, int volume);
-		void Print_Row_Figures(int row, int kills, int losses, int built, int score);
-		void Wait_For_Click(ShapeSet const * animation);
+		void Wait_For_Click(ShapeSet const * animation, Rect const & frame, Rect const & button);
 
 		ScoreStageClass Stage;
-		DynamicVectorClass<SfxEntry *> ScoreSnds;
 };
 
 
