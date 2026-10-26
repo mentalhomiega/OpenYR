@@ -133,6 +133,15 @@ bool Is_Logo_Background(unsigned char const * pixel)
 	return((b > r + 25 && g > r + 10) || (g > r + 25 && g > b));
 }
 
+// Dim green-grey haze lies beside the right wing tip, the TM and the right end of the lower bar.
+bool Is_Logo_Haze(unsigned char const * pixel)
+{
+	int const r = pixel[0];
+	int const g = pixel[1];
+	int const b = pixel[2];
+	return(std::max(r, std::max(g, b)) < 112 && g > r + 8 && g >= b);
+}
+
 
 void Spread_Mask(std::vector<unsigned char> & mask, int radius, bool grow)
 {
@@ -247,8 +256,10 @@ UIImageResult Make_Title_Logo(std::vector<unsigned char> & rgba, int & width, in
 			}
 			if (piece.size() >= 10 && top < 80 && left > 1 && right < LOGO_WIDTH - 2) {
 				for (size_t const kept : piece) {
-					// Haze joins the right wing below its tip.
-					if (kept % LOGO_WIDTH < 364 || kept / LOGO_WIDTH < 56) {
+					int const kx = (int)(kept % LOGO_WIDTH);
+					int const ky = (int)(kept / LOGO_WIDTH);
+					// Haze and lightning join the logo's right end; the final E's outline ends at column 371.
+					if ((kx < 373 || ky < 56) && (kx < 340 || !Is_Logo_Haze(pixel(kx, ky)))) {
 						mask[kept] = 255;
 					}
 				}
