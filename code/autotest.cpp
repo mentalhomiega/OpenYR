@@ -1782,6 +1782,36 @@ static TechnoClass * Techno_Over_Cell(Cell const & cell)
 	return(target);
 }
 
+// spawns <TypeID>: each object of the type with its cell, body and desired facing in 256 steps, whether its body is rotating and its
+// locomotor moving, its locomotor destination and its TarCom, then its spawn cycle's current and queued targets, status and next spawn
+// frame, and the status of each spawn.
+static void Spawn_Probe_Step(StepType const & step)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+		Cell const cell = techno->Get_Cell();
+		bool const foot = techno->Is_Foot();
+		FootClass const * vehicle = foot ? static_cast<FootClass const *>(techno) : NULL;
+		Coord const dest = vehicle != NULL ? vehicle->Locomotion->Destination() : Coord(-1, -1, -1);
+		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		DebugString("AUTOTEST   spawns %s of %s frame %d cell %d,%d body %d desired %d rotating %d moving %d moving_now %d dest %d,%d tarcom %d,%d mission %s\n",
+			techno->TClass->Name(), techno->House->Class->Name(), Frame, cell.X, cell.Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
+			(int)techno->PrimaryFacing.Is_Rotating(), vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving() : -1, vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving_Now() : -1,
+			dest.X, dest.Y, tar.X, tar.Y, MissionClass::Mission_Name(techno->Get_Mission()));
+		if (!techno->SpawnManager) continue;
+		SpawnManagerClass const & spawns = *techno->SpawnManager;
+		AbstractClass const * target = spawns.Current_Target();
+		AbstractClass const * queued = spawns.Queued_Target();
+		Cell const aim = target != NULL ? target->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const next = queued != NULL ? queued->Center_Coord().As_Cell() : Cell(-1, -1);
+		DebugString("AUTOTEST   spawncycle %s frame %d target %d,%d queued %d,%d status %d next_spawn %d nodes", techno->TClass->Name(), Frame, aim.X, aim.Y, next.X, next.Y, spawns.Cycle_Status(), spawns.Next_Spawn_Frame());
+		for (int node = 0; node < spawns.Node_Count(); node++) DebugString(" %d", spawns.Node_Status(node));
+		DebugStringNoPrefix("\n");
+	}
+}
+
+
 static void Air_Probe_Step(StepType const & step)
 {
 	if (step.Command == "weapons") {
@@ -2310,6 +2340,12 @@ void Run(StepType const & step)
 	// weapons, airborne and rocket: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "weapons" || step.Command == "airborne" || step.Command == "rocket") {
 		Air_Probe_Step(step);
+		return;
+	}
+
+	// spawns: see Spawn_Probe_Step, which sits before the chain below for the same reason.
+	if (step.Command == "spawns") {
+		Spawn_Probe_Step(step);
 		return;
 	}
 
