@@ -65,12 +65,15 @@ struct GpuDrawList
 // replay check compares.
 void GpuDraw_Begin(Surface & target, Rect const & area);
 
-// Stops recording. With the replay check on, replays the list over the picture the target had at
+// Stops recording. With the GPU check on, hands the pass to GpuMap_Check. With the replay check on, replays the list over the picture the target had at
 // GpuDraw_Begin and logs a GPU_REPLAY line comparing the result with the target.
 void GpuDraw_End(void);
 
 // The gpureplay autotest step.
 void GpuDraw_Set_Replay_Check(bool enabled);
+
+// The gpucheck autotest step: each pass is also drawn on the GPU and compared (code/gpumap.h).
+void GpuDraw_Set_Gpu_Check(bool enabled);
 
 // The list recorded by the last pass.
 GpuDrawList const & GpuDraw_List(void);

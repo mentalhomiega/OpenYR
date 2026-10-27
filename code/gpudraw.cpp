@@ -15,10 +15,12 @@
 #include "_zbuffer.h"
 #include "abuffer.h"
 #include "alphalighting.h"
+#include "bgfxbackend.h"
 #include "blit.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
+#include "gpumap.h"
 #include "surface.h"
 #include "zbuffer.h"
 
@@ -27,6 +29,7 @@
 
 
 static bool _ReplayCheck = false;
+static bool _GpuCheck = false;
 static Surface * _Target = NULL;
 static Rect _Area;
 static std::vector<unsigned short> _Before;
@@ -201,6 +204,24 @@ static void Replay(std::vector<unsigned short> & picture)
 }
 
 
+// Unwraps the ring buffer's values under the area into rows; a missing buffer reads as zero.
+template<class T>
+static void Read_Ring(T * buffer, std::vector<unsigned short> & values)
+{
+	values.assign((std::size_t)_Area.Width * _Area.Height, 0);
+	if (buffer == NULL) {
+		return;
+	}
+	for (int r = 0; r < _Area.Height; r++) {
+		unsigned short * p = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y + r - buffer->Get_Bounds().Y));
+		for (int i = 0; i < _Area.Width; i++) {
+			values[(std::size_t)r * _Area.Width + i] = *p;
+			p = buffer->Wrap_Overflow(p + 1);
+		}
+	}
+}
+
+
 static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels)
 {
 	pixels.assign((std::size_t)area.Width * area.Height, 0);
@@ -225,7 +246,7 @@ void GpuDraw_Begin(Surface & target, Rect const & area)
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
 	_List.Unsupported = 0;
-	if (!_ReplayCheck || target.Bytes_Per_Pixel() != 2) {
+	if ((!_ReplayCheck && !_GpuCheck) || target.Bytes_Per_Pixel() != 2) {
 		return;
 	}
 	_Area = Intersect(area, target.Get_Rect());
@@ -260,6 +281,26 @@ void GpuDraw_End(void)
 	if (!Read_Area(target, _Area, after)) {
 		return;
 	}
+	if (_GpuCheck && Backend_Is_Running()) {
+		std::vector<unsigned short> depth;
+		std::vector<unsigned short> alpha;
+		Read_Ring(DepthBuffer, depth);
+		Read_Ring(AlphaBuffer, alpha);
+		GpuMapPass pass;
+		pass.Area = _Area;
+		pass.Frame = Frame;
+		pass.Base = &_Before;
+		pass.Depth = &depth;
+		pass.Alpha = &alpha;
+		pass.List = &_List;
+		// Compared with the software replay, so draws the record does not hold do not count.
+		std::vector<unsigned short> replayed = _Before;
+		Replay(replayed);
+		GpuMap_Check(pass, replayed);
+	}
+	if (!_ReplayCheck) {
+		return;
+	}
 	Replay(_Before);
 	int differing = 0;
 	int first = -1;
@@ -279,6 +320,12 @@ void GpuDraw_End(void)
 void GpuDraw_Set_Replay_Check(bool enabled)
 {
 	_ReplayCheck = enabled;
+}
+
+
+void GpuDraw_Set_Gpu_Check(bool enabled)
+{
+	_GpuCheck = enabled;
 }
 
 

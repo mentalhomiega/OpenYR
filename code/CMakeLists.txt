@@ -156,11 +156,12 @@ target_include_directories(OpenTS PRIVATE
 # The generated build stamp has to exist before anything compiles.
 add_dependencies(OpenTS OpenTSBuildStamp)
 
-# bgfx's include paths and settings apply only to the two files that include it: the frame
-# renderer and the UI overlay renderer.
+# bgfx's include paths and settings apply only to the files that include it: the frame
+# renderer, the GPU map renderer and the UI overlay renderer.
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/gpumap.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES

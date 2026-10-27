@@ -20,4 +20,6 @@ enum BgfxViewType : unsigned short
 	VIEW_COMPOSITE,
 	VIEW_SHOT,
 	VIEW_READBACK,
+	VIEW_MAPDRAW,
+	VIEW_MAPREAD,
 };

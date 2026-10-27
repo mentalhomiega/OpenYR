@@ -33,6 +33,7 @@ enum BackendScaleMode {
 // with the SDR back buffer instead, and Backend_HDR_Active reports which it has.
 bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr);
 void Backend_Shutdown(void);
+bool Backend_Is_Running(void);
 
 // True when the frame reaches the window as HDR10, through the composite pass.
 bool Backend_HDR_Active(void);

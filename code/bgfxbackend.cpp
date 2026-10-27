@@ -15,6 +15,7 @@
 
 #include "dbgprint.h"
 #include "except.h"
+#include "gpumap.h"
 
 #include "bgfxviews.hh"
 #include "hdrcolour.h"
@@ -1139,6 +1140,7 @@ void Backend_Shutdown(void)
 		return;
 	}
 
+	GpuMap_Shutdown();
 	Destroy_Prescale_Target();
 	Destroy_Layer();
 	Destroy_Targets();
@@ -1536,12 +1538,19 @@ void Backend_End_Frame(void)
 	}
 	_MaskDrawn = false;
 	_LastFrame = bgfx::frame();
+	GpuMap_After_Frame(_LastFrame);
 	if (Perf_Enabled) {
 		bgfx::Stats const * stats = bgfx::getStats();
 		if (stats->gpuTimerFreq > 0 && stats->gpuTimeEnd > stats->gpuTimeBegin) {
 			Perf_Add_Time(PERF_PRESENT_GPU_TIME, (double)(stats->gpuTimeEnd - stats->gpuTimeBegin) * 1000.0 / (double)stats->gpuTimerFreq);
 		}
 	}
+}
+
+
+bool Backend_Is_Running(void)
+{
+	return(_Initialized);
 }
 
 
