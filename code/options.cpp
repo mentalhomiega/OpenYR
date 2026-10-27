@@ -240,6 +240,9 @@ OptionsClass::OptionsClass(void) :
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
 	GpuRender(false),
+	SoftShadows(false),
+	SoftShadowRadius(3),
+	Shockwaves(false),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -718,6 +721,9 @@ void OptionsClass::Load_Settings(void)
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
 	GpuRender = ConfigINI.Get_Bool("Video", "GpuRender", GpuRender);
+	SoftShadows = ConfigINI.Get_Bool("Video", "SoftShadows", SoftShadows);
+	SoftShadowRadius = std::clamp(ConfigINI.Get_Int("Video", "SoftShadowRadius", SoftShadowRadius), 1, 16);
+	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));

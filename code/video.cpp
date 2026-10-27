@@ -482,10 +482,10 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 }
 
 
-void Video_Set_Gpu_Map_Layer(Rect const & dest)
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest)
 {
 	_LayerSurface = NULL;
-	_LayerSource = dest;
+	_LayerSource = source;
 	_LayerDest = dest;
 	_LayerFresh = false;
 	_LayerGpu = true;

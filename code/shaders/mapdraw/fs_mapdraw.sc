@@ -7,9 +7,12 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 //   v_texcoord1     x: offset of the blit's colour indices in s_index, y: blit width,
 //                   z: first row of its translator in s_lut, w: row of s_alut for its lighting level, -1 for none
 //   v_texcoord2     x: depth of the first row, y: fraction, z: numerator, w: denominator (0 when every row has x)
-//   v_texcoord3     x: depth step, y: offset of its depth shape in s_zshape (-1 for none), z: kind
+//   v_texcoord3     x: depth step, y: offset of its depth shape in s_zshape (-1 for none), z: kind,
+//                   w: 1 to skip the depth test
 // Kind: 0 copy, 1 darken, 2 75% source, 3 half, 4 25% source, 5 the area's base picture, 6 copy without depth test,
-// 7 one pixel of the 565 colour in v_texcoord1.x.
+// 7 a solid fill of the 565 colour in v_texcoord1.x, 8 a shadow's coverage written as 1 into the shadow mask,
+// 9 the base picture darkened by the blurred shadow mask in s_shadow, 10 a spot light's brightening factor
+// (v_texcoord1.z holds the channels it leaves alone).
 
 #include "bgfx_shader.sh"
 
@@ -20,6 +23,8 @@ SAMPLER2D(s_zbuf, 3);
 SAMPLER2D(s_abuf, 4);
 SAMPLER2D(s_zshape, 5);
 SAMPLER2D(s_base, 6);
+SAMPLER2D(s_shadow, 7);
+uniform vec4 u_ring[2];
 
 #define ARENA_WIDTH 4096
 
@@ -33,6 +38,14 @@ int Fetch16(sampler2D s, ivec2 p)
 	return int(texelFetch(s, p, 0).x * 65535.0 + 0.5);
 }
 
+// The texel of a ring buffer holding area pixel p; ring is u_ring[i] (start, width, size).
+ivec2 Ring(ivec2 p, vec4 ring)
+{
+	int width = int(ring.y + 0.5);
+	int index = (int(ring.x + 0.5) + p.y * width + p.x) % int(ring.z + 0.5);
+	return ivec2(index % width, index / width);
+}
+
 vec3 Rgb565(int c)
 {
 	return vec3(float((c / 2048) % 32) / 31.0, float((c / 32) % 64) / 63.0, float(c % 32) / 31.0);
@@ -44,8 +57,12 @@ void main()
 	ivec2 local = ivec2(floor(v_texcoord0.xy));
 	ivec2 area = ivec2(floor(v_texcoord0.zw));
 
-	if (kind == 5) {
-		gl_FragColor = vec4(Rgb565(Fetch16(s_base, area)), 1.0);
+	if (kind == 5 || kind == 9) {
+		vec3 base = Rgb565(Fetch16(s_base, area));
+		if (kind == 9) {
+			base *= 1.0 - 0.5 * texelFetch(s_shadow, area, 0).x;
+		}
+		gl_FragColor = vec4(base, 1.0);
 		return;
 	}
 
@@ -60,7 +77,14 @@ void main()
 		discard;
 	}
 
-	if (kind != 6) {
+	if (kind == 10) {
+		int flags = int(v_texcoord1.z + 0.5);
+		vec3 enabled = vec3(float((flags / 2) % 2 == 0), float((flags / 4) % 2 == 0), float((flags / 8) % 2 == 0));
+		gl_FragColor = vec4(enabled * (float(index) / 256.0), 0.0);
+		return;
+	}
+
+	if (kind != 6 && v_texcoord3.w < 0.5) {
 		int z = int(v_texcoord2.x);
 		int denominator = int(v_texcoord2.w + 0.5);
 		if (denominator != 0) {
@@ -73,7 +97,7 @@ void main()
 				shape -= 256;
 			}
 		}
-		if (!((z - shape) < Fetch16(s_zbuf, area))) {
+		if (!((z - shape) < Fetch16(s_zbuf, Ring(area, u_ring[0])))) {
 			discard;
 		}
 	}
@@ -81,6 +105,10 @@ void main()
 	// The software blends floor each halved or quartered term. The source term is floored here; the
 	// blend scales the target by alpha and takes off rgb, which is centred on the flooring loss of the
 	// target term.
+	if (kind == 8) {
+		gl_FragColor = vec4_splat(1.0);
+		return;
+	}
 	vec3 unit = vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0);
 	if (kind == 1) {
 		gl_FragColor = vec4(0.25 * unit, 0.5);
@@ -90,7 +118,7 @@ void main()
 	int band = 0;
 	if (v_texcoord1.w >= 0.0) {
 		// The alpha buffer value indexes on past the row's end the way the software lookup does.
-		int entry = int(v_texcoord1.w + 0.5) * 256 + Fetch16(s_abuf, area);
+		int entry = int(v_texcoord1.w + 0.5) * 256 + Fetch16(s_abuf, Ring(area, u_ring[1]));
 		band = Fetch16(s_alut, ivec2(entry % 256, entry / 256));
 	}
 	int value = index + band;

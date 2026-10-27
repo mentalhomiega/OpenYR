@@ -12,16 +12,21 @@
 #include "gpudraw.h"
 
 #include "_alpha.h"
+#include "_rect.h"
+#include "_tactica.h"
 #include "_zbuffer.h"
 #include "abuffer.h"
 #include "alphalighting.h"
 #include "bgfxbackend.h"
 #include "blit.h"
+#include "coord.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "gpumap.h"
+#include "ovrlight.h"
 #include "surface.h"
+#include "tactical.h"
 #include "zbuffer.h"
 
 #include <algorithm>
@@ -63,6 +68,7 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.ZWrap = zwrap;
 	blit.AlphaLevel = alpha;
 	blit.Colour = -1;
+	blit.Brighten = -1;
 	_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)width * height);
 	_List.Blits.push_back(blit);
 	return(_List.Blits.back());
@@ -162,14 +168,48 @@ static unsigned short Blend(GpuBlit const & blit, unsigned short dest, unsigned 
 }
 
 
+// Brightens the picture under a spot light the way Brighten_Color does, each enabled channel by
+// its own value times the shape's over 256.
+static void Replay_Brighten(GpuBlit const & blit, std::vector<unsigned short> & picture)
+{
+	unsigned char const * shape = &_List.PixelArena[blit.Pixels];
+	for (int r = 0; r < blit.Height; r++) {
+		for (int i = 0; i < blit.Width; i++) {
+			int const x = blit.X + i;
+			int const y = blit.Y + r;
+			int const multiplier = shape[r * blit.Width + i];
+			if (multiplier == 0 || !_Area.Is_Point_Within(Point2D(x, y))) {
+				continue;
+			}
+			unsigned short & pixel = picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)];
+			RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel(pixel);
+			int red = rgb.Get_Red();
+			int green = rgb.Get_Green();
+			int blue = rgb.Get_Blue();
+			if (!(blit.Brighten & SpotLightClass::DISABLE_RED)) red = std::min(255, red + ((red * multiplier) >> 8));
+			if (!(blit.Brighten & SpotLightClass::DISABLE_GREEN)) green = std::min(255, green + ((green * multiplier) >> 8));
+			if (!(blit.Brighten & SpotLightClass::DISABLE_BLUE)) blue = std::min(255, blue + ((blue * multiplier) >> 8));
+			pixel = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
+		}
+	}
+}
+
+
 // Draws the list over picture, which holds the area's pixels, the way the software blitters do.
 static void Replay(std::vector<unsigned short> & picture)
 {
 	for (GpuBlit const & blit : _List.Blits) {
 		if (blit.Colour >= 0) {
-			if (_Area.Is_Point_Within(Point2D(blit.X, blit.Y))) {
-				picture[(blit.Y - _Area.Y) * _Area.Width + (blit.X - _Area.X)] = (unsigned short)blit.Colour;
+			Rect const fill = Intersect(_Area, Rect(blit.X, blit.Y, blit.Width, blit.Height));
+			for (int y = fill.Y; y < fill.Y + fill.Height; y++) {
+				for (int x = fill.X; x < fill.X + fill.Width; x++) {
+					picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)] = (unsigned short)blit.Colour;
+				}
 			}
+			continue;
+		}
+		if (blit.Brighten >= 0) {
+			Replay_Brighten(blit, picture);
 			continue;
 		}
 		unsigned char const * pixels = &_List.PixelArena[blit.Pixels];
@@ -218,23 +258,46 @@ static void Replay(std::vector<unsigned short> & picture)
 template<class T>
 static void Read_Ring(T * buffer, std::vector<unsigned short> & values)
 {
-	values.assign((std::size_t)_Area.Width * _Area.Height, 0);
 	if (buffer == NULL) {
+		values.assign((std::size_t)_Area.Width * _Area.Height, 0);
 		return;
 	}
+	values.resize((std::size_t)_Area.Width * _Area.Height);
 	for (int r = 0; r < _Area.Height; r++) {
 		unsigned short * p = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y + r - buffer->Get_Bounds().Y));
-		for (int i = 0; i < _Area.Width; i++) {
-			values[(std::size_t)r * _Area.Width + i] = *p;
-			p = buffer->Wrap_Overflow(p + 1);
+		unsigned short * out = &values[(std::size_t)r * _Area.Width];
+		int left = _Area.Width;
+		while (left > 0) {
+			int const run = std::min(left, (int)(buffer->Get_Buffer_End() - p));
+			std::memcpy(out, p, run * sizeof(unsigned short));
+			out += run;
+			left -= run;
+			p = buffer->Wrap_Overflow(p + run);
 		}
 	}
 }
 
 
+// The ring buffer as it is stored, for the GPU to read in place; a missing buffer reads as zeros
+// held in fallback.
+template<class T>
+static GpuRing Ring_Of(T * buffer, std::vector<unsigned short> & fallback)
+{
+	if (buffer == NULL) {
+		fallback.assign((std::size_t)_Area.Width * _Area.Height, 0);
+		return(GpuRing{ fallback.data(), _Area.Width, _Area.Height, 0 });
+	}
+	int const width = (int)buffer->Get_Buffer_Width();
+	int const height = buffer->Get_Bounds().Height;
+	unsigned short const * start = buffer->Get_Buffer_End() - (std::size_t)width * height;
+	unsigned short const * first = buffer->Get_Buffer_Offset(Point2D(_Area.X, _Area.Y - buffer->Get_Bounds().Y));
+	return(GpuRing{ start, width, height, (int)(first - start) });
+}
+
+
 static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels)
 {
-	pixels.assign((std::size_t)area.Width * area.Height, 0);
+	pixels.resize((std::size_t)area.Width * area.Height);
 	char const * base = (char const *)surface.Lock(Point2D(area.X, area.Y));
 	if (base == NULL) {
 		return(false);
@@ -260,6 +323,88 @@ static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigne
 }
 
 
+/// <summary>
+/// Records a spot light that brightens dest, clipped to clip and the surface, by the 8-bit shape. True
+/// means the GPU draws it and the caller must not touch the surface.
+/// </summary>
+bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable)
+{
+	if (&surface != _Target) {
+		return(false);
+	}
+	Rect const area = Intersect(Intersect(clip, surface.Get_Rect()), dest);
+	if (!area.Is_Valid()) {
+		return(_Render);
+	}
+	unsigned char const * bytes = (unsigned char const *)shape.Lock(Point2D(area.X - dest.X, area.Y - dest.Y));
+	if (bytes == NULL) {
+		return(false);
+	}
+	BlitDesc desc = {};
+	GpuBlit & blit = Add_Blit(desc, area.X, area.Y, area.Width, area.Height, 0, 0, 1, 0, 0, 0);
+	unsigned char * out = &_List.PixelArena[blit.Pixels];
+	for (int r = 0; r < area.Height; r++) {
+		std::memcpy(out + r * area.Width, bytes + r * shape.Stride(), area.Width);
+	}
+	shape.Unlock();
+	blit.Brighten = disable;
+	return(_Render);
+}
+
+
+struct Shockwave
+{
+	Coord Where;
+	int Start;
+	float Strength;
+};
+
+static std::vector<Shockwave> _Shockwaves;
+static int const SHOCKWAVE_FRAMES = 40;
+static std::size_t const SHOCKWAVE_LIMIT = 16;
+
+
+static bool Shockwave_Done(Shockwave const & wave)
+{
+	return(Frame < wave.Start || Frame - wave.Start >= SHOCKWAVE_FRAMES);
+}
+
+
+// The rings of the shockwaves still running, in pixels of the pass area.
+static std::vector<GpuRipple> Shockwave_Ripples(void)
+{
+	std::erase_if(_Shockwaves, Shockwave_Done);
+	std::vector<GpuRipple> ripples;
+	for (Shockwave const & wave : _Shockwaves) {
+		Point2D pixel;
+		TacticalMap->Coord_To_Pixel(wave.Where, pixel);
+		float const t = (float)(Frame - wave.Start) / SHOCKWAVE_FRAMES;
+		float const ease = 1.0f - (1.0f - t) * (1.0f - t);
+		GpuRipple ripple;
+		ripple.X = (float)(pixel.X + TacticalRect.X - _Area.X);
+		ripple.Y = (float)(pixel.Y + TacticalRect.Y - _Area.Y);
+		ripple.Radius = 6.0f + 170.0f * ease;
+		ripple.Strength = wave.Strength * (1.0f - t);
+		ripples.push_back(ripple);
+	}
+	return(ripples);
+}
+
+
+/// <summary>
+/// Starts a shockwave ring at coord that the GPU map pass draws for two thirds of a second; a
+/// stronger blast bends the picture further. Only the GPU-drawn map shows it.
+/// </summary>
+void GpuDraw_Add_Shockwave(Coord const & coord, int strength)
+{
+	std::erase_if(_Shockwaves, Shockwave_Done);
+	if (_Shockwaves.size() >= SHOCKWAVE_LIMIT) {
+		_Shockwaves.erase(_Shockwaves.begin());
+	}
+	_Shockwaves.push_back({ coord, Frame, std::clamp((float)strength / 8.0f, 6.0f, 16.0f) });
+}
+
+
 // Logs a GPU_RENDER line every 600 passes: how many the GPU drew and how many fell back to software.
 static void Count_Render(bool drawn)
 {
@@ -276,21 +421,31 @@ static void Count_Render(bool drawn)
 
 static bool Finish_Render(Surface & target)
 {
-	if (!Read_Area(target, _Area, _Before)) {
+	// The GPU reads these by reference until the frame is submitted, so passes alternate sets.
+	static std::vector<unsigned short> _Uploads[2][3];
+	static int _UploadSet = 0;
+	std::vector<unsigned short> * upload = _Uploads[_UploadSet];
+	_UploadSet ^= 1;
+	std::vector<unsigned short> & base = upload[0];
+	if (!Read_Area(target, _Area, base)) {
 		return(false);
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
-		std::vector<unsigned short> depth;
-		std::vector<unsigned short> alpha;
-		Read_Ring(DepthBuffer, depth);
-		Read_Ring(AlphaBuffer, alpha);
+		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
+			return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind != BlitDesc::DARKEN && blit.Desc.AlphaRemap != NULL);
+		});
 		GpuMapPass pass;
 		pass.Area = _Area;
 		pass.Frame = Frame;
-		pass.Base = &_Before;
-		pass.Depth = &depth;
-		pass.Alpha = &alpha;
+		pass.Base = &base;
+		pass.Depth = NULL;
+		pass.Alpha = NULL;
+		pass.DepthRing = Ring_Of(DepthBuffer, upload[1]);
+		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};
 		pass.List = &_List;
+		pass.Persistent = true;
+		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
+		pass.Ripples = &ripples;
 		if (GpuMap_Draw(pass)) {
 			Count_Render(true);
 			return(true);
@@ -298,8 +453,8 @@ static bool Finish_Render(Surface & target)
 	}
 	Count_Render(false);
 	// The recorded draws land over the ones the record does not hold, which drew in order.
-	Replay(_Before);
-	Write_Area(target, _Area, _Before);
+	Replay(base);
+	Write_Area(target, _Area, base);
 	return(false);
 }
 
@@ -310,13 +465,27 @@ static bool Finish_Render(Surface & target)
 /// </summary>
 bool GpuDraw_Pixel(Surface const & surface, Point2D const & pixel, unsigned short colour)
 {
+	return(GpuDraw_Fill(surface, Rect(pixel.X, pixel.Y, 1, 1), colour));
+}
+
+
+/// <summary>
+/// Records a solid fill the object pass puts into surface, clipped to it. True means the GPU draws
+/// it and the caller must not write it.
+/// </summary>
+bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short colour)
+{
 	if (&surface != _Target) {
 		return(false);
 	}
+	Rect const fill = Intersect(surface.Get_Rect(), rect);
+	if (!fill.Is_Valid()) {
+		return(_Render);
+	}
 	BlitDesc desc = {};
-	GpuBlit & blit = Add_Blit(desc, pixel.X, pixel.Y, 0, 0, 0, 0, 1, 0, 0, 0);
-	blit.Width = 1;
-	blit.Height = 1;
+	GpuBlit & blit = Add_Blit(desc, fill.X, fill.Y, 0, 0, 0, 0, 1, 0, 0, 0);
+	blit.Width = fill.Width;
+	blit.Height = fill.Height;
 	blit.Colour = colour;
 	return(_Render);
 }
@@ -389,6 +558,10 @@ bool GpuDraw_End(void)
 		pass.Depth = &depth;
 		pass.Alpha = &alpha;
 		pass.List = &_List;
+		pass.Persistent = false;
+		pass.DepthRing = GpuRing{};
+		pass.AlphaRing = GpuRing{};
+		pass.Ripples = NULL;
 		// Compared with the software replay, so draws the record does not hold do not count.
 		std::vector<unsigned short> replayed = _Before;
 		Replay(replayed);

@@ -48,6 +48,7 @@
 #include "gscreen.h"
 
 #include "gpudraw.h"
+#include "gpumap.h"
 
 #include "_bench.h"
 #include "_keyboar.h"
@@ -451,16 +452,24 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
-	bool const gpu_render = Options.GpuRender && !zoomed && Modern_Interface() && Video_Map_Layer_Supported();
-	GpuDraw_Begin(*CompositeSurface, TacticalRect, gpu_render);
+	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported();
+	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
+	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
+	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
+	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
-	bool const gpu_drawn = GpuDraw_End();
+	bool gpu_drawn = false;
+	{
+		PerfScope gpumap_scope(PERF_DRAW_GPUMAP);
+		gpu_drawn = GpuDraw_End();
+	}
 	Video_Draw_Probe_Target(NULL);
 	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);
 	if (gpu_drawn) {
-		CompositeSurface->Fill_Rect(TacticalRect, VIDEO_LAYER_KEY);
-		Video_Set_Gpu_Map_Layer(TacticalRect);
+		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
+		CompositeSurface->Fill_Rect(dest, VIDEO_LAYER_KEY);
+		Video_Set_Gpu_Map_Layer(gpu_area, dest);
 	} else if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution.
 		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);

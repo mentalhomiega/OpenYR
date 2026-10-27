@@ -12,8 +12,12 @@
 
 enum BgfxViewType : unsigned short
 {
-	// The GPU map pass runs first so that the present in the same frame draws its result.
+	// The GPU map passes run first so that the present in the same frame draws their result.
+	VIEW_MAPSHADOW,
+	VIEW_MAPBLURX,
+	VIEW_MAPBLURY,
 	VIEW_MAPDRAW,
+	VIEW_MAPPOST,
 	VIEW_PRESCALE,
 	VIEW_PRESENT,
 	VIEW_UI,

@@ -17,6 +17,7 @@
 #include <vector>
 
 
+class Coord;
 class Surface;
 
 
@@ -47,8 +48,12 @@ struct GpuBlit
 
 	int AlphaLevel;
 
-	// The 565 colour of a one-pixel item, which the GPU writes untested; -1 for a blit.
+	// The 565 colour of a solid fill, which the GPU writes untested; -1 for a blit.
 	int Colour;
+
+	// For a spot light, the channels it leaves alone as SpotLightClass disable flags; Pixels then
+	// holds its brightness shape. -1 for anything else.
+	int Brighten;
 };
 
 
@@ -75,6 +80,17 @@ bool GpuDraw_End(void);
 
 // Records a pixel of the object pass; true means the GPU draws it and the caller must not.
 bool GpuDraw_Pixel(Surface const & surface, Point2D const & pixel, unsigned short colour);
+
+// Records a solid fill of the object pass, clipped to the surface; true means the GPU draws it and
+// the caller must not.
+bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short colour);
+
+// Records a spot light brightening dest, clipped to clip and the surface, by the 8-bit shape; true
+// means the GPU draws it and the caller must not.
+bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
+
+// Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
+void GpuDraw_Add_Shockwave(Coord const & coord, int strength);
 
 // The gpureplay autotest step.
 void GpuDraw_Set_Replay_Check(bool enabled);

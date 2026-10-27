@@ -49,6 +49,7 @@ enum PerfPhase : unsigned char {
 	PERF_DRAW_OVERLAY,          // orders, placement, rubber band, indicators and screen text
 	PERF_DRAW_HUD,              // sidebar and radar (GScreenClass::Draw_It)
 	PERF_DRAW_UI,               // panel backdrops, buttons, messages and tool tips
+	PERF_DRAW_GPUMAP,           // GpuDraw_End: reading the map area and buffers and submitting the GPU map pass
 	PERF_PRESENT_TOTAL,         // one present, from the presenter's start to its end
 	PERF_PRESENT_UPLOAD,        // Backend_Present: texture uploads and the frame's passes
 	PERF_PRESENT_GPU,           // Backend_End_Frame: bgfx::frame, which can wait for the GPU

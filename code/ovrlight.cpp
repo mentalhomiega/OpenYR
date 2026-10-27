@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "ovrlight.h"
+#include "gpudraw.h"
 
 #include "_map.h"
 #include "_rect.h"
@@ -230,6 +231,9 @@ void SpotLightClass::Draw_It(void)
 			Rect scliprect(0, 0, 255, 127);
 			void * dbuffer;
 			void * sbuffer;
+			if (GpuDraw_Brighten(*dsurf, dcliprect, drect, *ssurf, DisableFlags)) {
+				return;
+			}
 			if (XSurface::Prep_For_Blit(*dsurf, dcliprect, drect, *ssurf, scliprect, srect, overlapped, dbuffer, sbuffer)) {
 
 				unsigned short *dptr = (unsigned short *)dbuffer;

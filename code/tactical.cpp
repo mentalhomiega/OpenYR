@@ -15,6 +15,7 @@
 #include "perfstat.h"
 
 #include "playerdisplay.h"
+#include "gpudraw.h"
 #include "tactical.h"
 #include "flyingtext.h"
 
@@ -1045,6 +1046,14 @@ void Tactical::Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool
 }
 
 
+static void Fill_Outside_Map(Surface & surface, Rect const & rect)
+{
+	if (!GpuDraw_Fill(surface, rect, TBLACK)) {
+		surface.Fill_Rect(rect, TBLACK);
+	}
+}
+
+
 /// <summary>
 /// Blacks out the parts of the tactical view that the map does not reach.
 /// </summary>
@@ -1062,19 +1071,19 @@ void Tactical::Render_Outside_Map(Surface & surface)
 	int bottom = TacticalRect.Y + maximum.Y + TacticalRect.Height / 2 - TacPixelY;
 
 	if (left > TacticalRect.X) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height));
 	}
 
 	if (right < TacticalRect.X + TacticalRect.Width) {
-		surface.Fill_Rect(Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height));
 	}
 
 	if (top > TacticalRect.Y) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y));
 	}
 
 	if (bottom < TacticalRect.Y + TacticalRect.Height) {
-		surface.Fill_Rect(Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom));
 	}
 }
 

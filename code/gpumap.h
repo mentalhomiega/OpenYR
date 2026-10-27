@@ -18,6 +18,27 @@
 struct GpuDrawList;
 
 
+// A shockwave ring the GPU bends the map picture around, in pixels of the pass area.
+struct GpuRipple
+{
+	float X;
+	float Y;
+	float Radius;
+	float Strength;
+};
+
+
+// A depth or alpha ring buffer as it is stored: Width * Height values, the area's top-left value at
+// Start and each next row Width values on, wrapping past the end to the beginning.
+struct GpuRing
+{
+	unsigned short const * Values;
+	int Width;
+	int Height;
+	int Start;
+};
+
+
 // The picture and buffers one object pass of the map view drew over, each Area.Width * Area.Height
 // values in rows.
 struct GpuMapPass
@@ -28,6 +49,17 @@ struct GpuMapPass
 	std::vector<unsigned short> const * Depth;
 	std::vector<unsigned short> const * Alpha;
 	GpuDrawList const * List;
+
+	// Base and the rings below stay unchanged until the next frame is submitted, so they are
+	// uploaded without a copy. AlphaRing.Values may then be NULL when no blit in List reads it.
+	bool Persistent;
+
+	// With Persistent, the depth and alpha buffers as stored; Depth and Alpha are then unused.
+	GpuRing DepthRing;
+	GpuRing AlphaRing;
+
+	// At most 16 rings drawn over the finished picture, or NULL for none.
+	std::vector<GpuRipple> const * Ripples;
 };
 
 
@@ -38,6 +70,10 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 
 // Draws the pass into the GPU map texture; false means it was not drawn.
 bool GpuMap_Draw(GpuMapPass const & pass);
+
+// Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
+// 0 draws each shadow as the software does.
+void GpuMap_Set_Soft_Shadows(int radius);
 
 // The bgfx handle index of the texture GpuMap_Draw draws into, which is Area.Width by Area.Height.
 std::uint16_t GpuMap_Texture(void);

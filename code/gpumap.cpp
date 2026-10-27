@@ -23,7 +23,9 @@
 #include <unordered_map>
 #include <utility>
 
+#include "shaders/mapdraw/fs_mapblur.bin.h"
 #include "shaders/mapdraw/fs_mapdraw.bin.h"
+#include "shaders/mapdraw/fs_mappost.bin.h"
 #include "shaders/mapdraw/vs_mapdraw.bin.h"
 
 
@@ -39,6 +41,20 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 		"fs_mapdraw",
 		{
 			{ bgfx::RendererType::Direct3D11, fs_mapdraw_dxbc, sizeof(fs_mapdraw_dxbc) },
+			{ bgfx::RendererType::Count, NULL, 0 },
+		}
+	},
+	{
+		"fs_mapblur",
+		{
+			{ bgfx::RendererType::Direct3D11, fs_mapblur_dxbc, sizeof(fs_mapblur_dxbc) },
+			{ bgfx::RendererType::Count, NULL, 0 },
+		}
+	},
+	{
+		"fs_mappost",
+		{
+			{ bgfx::RendererType::Direct3D11, fs_mappost_dxbc, sizeof(fs_mappost_dxbc) },
 			{ bgfx::RendererType::Count, NULL, 0 },
 		}
 	},
@@ -60,6 +76,9 @@ enum ShaderKind
 	KIND_BASE,
 	KIND_COPY_NO_DEPTH,
 	KIND_PIXEL,
+	KIND_SHADOW_MASK,
+	KIND_SHADOWED_BASE,
+	KIND_BRIGHTEN,
 };
 
 enum SamplerSlot
@@ -97,6 +116,25 @@ static bgfx::TextureHandle _Readback = BGFX_INVALID_HANDLE;
 static int _TargetWidth = 0;
 static int _TargetHeight = 0;
 
+// Soft shadows: shadows are drawn into a mask, the mask is blurred, and the base is darkened through it.
+static int _SoftShadowRadius = 0;
+static bgfx::ProgramHandle _BlurProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _BlurUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _ShadowSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _ShadowTexture[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
+static bgfx::FrameBufferHandle _ShadowTarget[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
+
+static int const RIPPLE_LIMIT = 16;
+static bgfx::ProgramHandle _PostProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _SceneSampler = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _RippleUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _RippleInfoUniform = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _PostTexture = BGFX_INVALID_HANDLE;
+static bgfx::FrameBufferHandle _PostTarget = BGFX_INVALID_HANDLE;
+static bool _PostShown = false;
+static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
+
 static bool _Pending = false;
 static std::uint32_t _ReadyFrame = 0;
 static std::vector<unsigned char> _Pixels;
@@ -124,6 +162,18 @@ static bool Start(void)
 	for (int slot = 0; slot < SLOT_COUNT; slot++) {
 		_Samplers[slot] = bgfx::createUniform(_SamplerNames[slot], bgfx::UniformType::Sampler);
 	}
+	_ShadowSampler = bgfx::createUniform("s_shadow", bgfx::UniformType::Sampler);
+	_MaskSampler = bgfx::createUniform("s_mask", bgfx::UniformType::Sampler);
+	_BlurUniform = bgfx::createUniform("u_blur", bgfx::UniformType::Vec4);
+	_BlurProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapblur"), true);
+	_SceneSampler = bgfx::createUniform("s_scene", bgfx::UniformType::Sampler);
+	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
+	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
+	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
+	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
+	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
+		DebugString("GPU_DIFF: the shadow blur or shockwave program did not build\n");
+	}
 	_Layout.begin()
 		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
 		.add(bgfx::Attrib::TexCoord0, 4, bgfx::AttribType::Float)
@@ -139,6 +189,19 @@ static bool Start(void)
 
 static void Destroy_Target(void)
 {
+	if (bgfx::isValid(_PostTarget)) {
+		bgfx::destroy(_PostTarget);
+		_PostTarget = BGFX_INVALID_HANDLE;
+		_PostTexture = BGFX_INVALID_HANDLE;
+	}
+	_PostShown = false;
+	for (int i = 0; i < 2; i++) {
+		if (bgfx::isValid(_ShadowTarget[i])) {
+			bgfx::destroy(_ShadowTarget[i]);
+			_ShadowTarget[i] = BGFX_INVALID_HANDLE;
+			_ShadowTexture[i] = BGFX_INVALID_HANDLE;
+		}
+	}
 	if (bgfx::isValid(_Target)) {
 		bgfx::destroy(_Target);
 		_Target = BGFX_INVALID_HANDLE;
@@ -170,6 +233,20 @@ static bool Size_Target(int width, int height)
 		Destroy_Target();
 		return(false);
 	}
+	for (int i = 0; i < 2; i++) {
+		_ShadowTexture[i] = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, BGFX_TEXTURE_RT | point);
+		_ShadowTarget[i] = bgfx::isValid(_ShadowTexture[i]) ? bgfx::createFrameBuffer(1, &_ShadowTexture[i], true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
+		if (!bgfx::isValid(_ShadowTarget[i])) {
+			Destroy_Target();
+			return(false);
+		}
+	}
+	_PostTexture = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
+	_PostTarget = bgfx::isValid(_PostTexture) ? bgfx::createFrameBuffer(1, &_PostTexture, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
+	if (!bgfx::isValid(_PostTarget)) {
+		Destroy_Target();
+		return(false);
+	}
 	_TargetWidth = width;
 	_TargetHeight = height;
 	_Pixels.assign((std::size_t)width * height * 4, 0);
@@ -177,33 +254,74 @@ static bool Size_Target(int width, int height)
 }
 
 
-// A point-sampled texture of the bytes, ARENA_WIDTH texels wide; an empty arena gets one texel.
-static bgfx::TextureHandle Make_Arena(void const * bytes, std::size_t size)
+// A texture the passes rewrite; it is remade only when it must grow or change width.
+struct Store
 {
-	unsigned char const zero = 0;
-	if (size == 0) {
-		bytes = &zero;
-		size = 1;
+	bgfx::TextureHandle Handle = BGFX_INVALID_HANDLE;
+	int Width = 0;
+	int Height = 0;
+};
+
+static Store _Stores[SLOT_COUNT];
+
+
+static void Destroy_Stores(void)
+{
+	for (Store & store : _Stores) {
+		if (bgfx::isValid(store.Handle)) {
+			bgfx::destroy(store.Handle);
+		}
+		store = Store();
 	}
-	int const width = (int)std::min<std::size_t>(size, ARENA_WIDTH);
-	int const rows = (int)((size + ARENA_WIDTH - 1) / ARENA_WIDTH);
-	if (rows > TEXTURE_LIMIT) {
-		return(bgfx::TextureHandle{ bgfx::kInvalidHandle });
-	}
-	bgfx::Memory const * memory = bgfx::alloc((uint32_t)width * rows);
-	std::memset(memory->data, 0, memory->size);
-	std::memcpy(memory->data, bytes, size);
-	return(bgfx::createTexture2D((uint16_t)width, (uint16_t)rows, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP, memory));
 }
 
 
-static bgfx::TextureHandle Make_R16(unsigned short const * values, int width, int height)
+// Writes memory into the store's top rows. Exact makes the store exactly that many rows; otherwise
+// it keeps spare rows so that it is remade rarely.
+static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int width, int rows, bool exact, bgfx::Memory const * memory)
 {
-	if (width <= 0 || height <= 0 || width > TEXTURE_LIMIT || height > TEXTURE_LIMIT) {
-		return(bgfx::TextureHandle{ bgfx::kInvalidHandle });
+	if (width <= 0 || rows <= 0 || width > TEXTURE_LIMIT || rows > TEXTURE_LIMIT) {
+		return(false);
 	}
-	return(bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R16, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP,
-		bgfx::copy(values, (uint32_t)((std::size_t)width * height * sizeof(unsigned short)))));
+	if (!bgfx::isValid(store.Handle) || store.Width != width || store.Height < rows || (exact && store.Height != rows)) {
+		if (bgfx::isValid(store.Handle)) {
+			bgfx::destroy(store.Handle);
+		}
+		int const height = exact ? rows : std::min(TEXTURE_LIMIT, std::max(rows, store.Height) * 2);
+		store.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, format, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		store.Width = width;
+		store.Height = height;
+		if (!bgfx::isValid(store.Handle)) {
+			store = Store();
+			return(false);
+		}
+	}
+	bgfx::updateTexture2D(store.Handle, 0, 0, 0, 0, (uint16_t)width, (uint16_t)rows, memory);
+	return(true);
+}
+
+
+// Fills the store with the bytes, ARENA_WIDTH texels a row; an empty arena gets one row of zeros.
+static bool Fill_Arena(Store & store, void const * bytes, std::size_t size)
+{
+	int const rows = std::max(1, (int)((size + ARENA_WIDTH - 1) / ARENA_WIDTH));
+	if (rows > TEXTURE_LIMIT) {
+		return(false);
+	}
+	bgfx::Memory const * memory = bgfx::alloc((uint32_t)ARENA_WIDTH * rows);
+	if (size > 0) {
+		std::memcpy(memory->data, bytes, size);
+	}
+	std::memset(memory->data + size, 0, memory->size - size);
+	return(Fill_Store(store, bgfx::TextureFormat::R8, ARENA_WIDTH, rows, false, memory));
+}
+
+
+// With reference set, the values must stay unchanged until the next frame is submitted.
+static bool Fill_R16(Store & store, unsigned short const * values, int width, int rows, bool exact, bool reference = false)
+{
+	uint32_t const size = (uint32_t)((std::size_t)width * rows * sizeof(unsigned short));
+	return(Fill_Store(store, bgfx::TextureFormat::R16, width, rows, exact, reference ? bgfx::makeRef(values, size) : bgfx::copy(values, size)));
 }
 
 
@@ -264,6 +382,65 @@ static void Set_Quad(MapVertex * vertex, Rect const & area, int x, int y, int wi
 }
 
 
+static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect const & area, float const * projection)
+{
+	bgfx::setViewFrameBuffer(view, target);
+	bgfx::setViewRect(view, 0, 0, (uint16_t)area.Width, (uint16_t)area.Height);
+	bgfx::setViewTransform(view, NULL, projection);
+	bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
+	bgfx::setViewClear(view, BGFX_CLEAR_NONE);
+}
+
+
+// Draws every shadow's coverage into the first shadow mask and blurs it there, through the second.
+static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float const * projection, float const * ring, int shadowquads)
+{
+	bgfx::TransientVertexBuffer buffer;
+	bgfx::allocTransientVertexBuffer(&buffer, shadowquads * 6, _Layout);
+	MapVertex * vertex = (MapVertex *)buffer.data;
+	{
+		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
+		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+		float const t3[4] = { 0.0f, -1.0f, 0.0f, 1.0f };
+		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
+	}
+	int quad = 1;
+	for (GpuBlit const & blit : list.Blits) {
+		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Desc.Kind != BlitDesc::DARKEN) {
+			continue;
+		}
+		float const t1[4] = { (float)blit.Pixels, (float)blit.Width, 0.0f, -1.0f };
+		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
+		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
+		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+		quad++;
+	}
+
+	Set_Map_View(VIEW_MAPSHADOW, _ShadowTarget[0], area, projection);
+	bgfx::setViewClear(VIEW_MAPSHADOW, BGFX_CLEAR_COLOR, 0x00000000);
+	for (int i = 1; i < shadowquads; i++) {
+		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+		}
+		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setState(BGFX_STATE_WRITE_RGB);
+		bgfx::submit(VIEW_MAPSHADOW, _Program);
+	}
+
+	bgfx::ViewId const views[2] = { VIEW_MAPBLURX, VIEW_MAPBLURY };
+	for (int pass = 0; pass < 2; pass++) {
+		Set_Map_View(views[pass], _ShadowTarget[1 - pass], area, projection);
+		float const blur[4] = { pass == 0 ? 1.0f : 0.0f, pass == 0 ? 0.0f : 1.0f, (float)_SoftShadowRadius, 0.0f };
+		bgfx::setUniform(_BlurUniform, blur);
+		bgfx::setVertexBuffer(0, &buffer, 0, 6);
+		bgfx::setTexture(0, _MaskSampler, _ShadowTexture[pass]);
+		bgfx::setState(BGFX_STATE_WRITE_RGB);
+		bgfx::submit(views[pass], _BlurProgram);
+	}
+}
+
+
 static bool Submit_Pass(GpuMapPass const & pass)
 {
 	if (!Start()) {
@@ -285,7 +462,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	std::vector<unsigned short> alut;
 	for (GpuBlit const & blit : list.Blits) {
 		BlitDesc const & desc = blit.Desc;
-		if (blit.Colour >= 0 || desc.Kind == BlitDesc::DARKEN) {
+		if (blit.Colour >= 0 || blit.Brighten >= 0 || desc.Kind == BlitDesc::DARKEN) {
 			continue;
 		}
 		int const rows = Translator_Rows(desc.AlphaRemap, bandrows);
@@ -307,30 +484,48 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		alut.assign(256, 0);
 	}
 
-	bgfx::TextureHandle textures[SLOT_COUNT];
-	textures[SLOT_INDEX] = Make_Arena(list.PixelArena.data(), list.PixelArena.size());
-	textures[SLOT_LUT] = Make_R16(lut.data(), 256, (int)(lut.size() / 256));
-	textures[SLOT_ALUT] = Make_R16(alut.data(), 256, (int)(alut.size() / 256));
-	textures[SLOT_ZBUF] = Make_R16(pass.Depth->data(), area.Width, area.Height);
-	textures[SLOT_ABUF] = Make_R16(pass.Alpha->data(), area.Width, area.Height);
-	textures[SLOT_ZSHAPE] = Make_Arena(list.ZShapeArena.data(), list.ZShapeArena.size());
-	textures[SLOT_BASE] = Make_R16(pass.Base->data(), area.Width, area.Height);
-	bool valid = true;
-	for (bgfx::TextureHandle texture : textures) {
-		valid = valid && bgfx::isValid(texture);
+	bool valid = Fill_Arena(_Stores[SLOT_INDEX], list.PixelArena.data(), list.PixelArena.size());
+	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
+	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
+	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
+	// a ring of the area's width that starts at 0.
+	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
+	if (pass.Persistent) {
+		GpuRing const * const rings[2] = { &pass.DepthRing, &pass.AlphaRing };
+		Store * const stores[2] = { &_Stores[SLOT_ZBUF], &_Stores[SLOT_ABUF] };
+		for (int i = 0; i < 2; i++) {
+			GpuRing const & source = *rings[i];
+			if (source.Values != NULL) {
+				valid = Fill_R16(*stores[i], source.Values, source.Width, source.Height, true, true) && valid;
+				ring[i * 4 + 0] = (float)source.Start;
+				ring[i * 4 + 1] = (float)source.Width;
+				ring[i * 4 + 2] = (float)source.Width * source.Height;
+			} else if (!bgfx::isValid(stores[i]->Handle)) {
+				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true, true) && valid;
+			}
+		}
+	} else {
+		valid = Fill_R16(_Stores[SLOT_ZBUF], pass.Depth->data(), area.Width, area.Height, true) && valid;
+		valid = Fill_R16(_Stores[SLOT_ABUF], pass.Alpha->data(), area.Width, area.Height, true) && valid;
 	}
+	valid = Fill_Arena(_Stores[SLOT_ZSHAPE], list.ZShapeArena.data(), list.ZShapeArena.size()) && valid;
+	valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true, pass.Persistent) && valid;
 
+	int shadows = 0;
+	if (_SoftShadowRadius > 0) {
+		for (GpuBlit const & blit : list.Blits) {
+			if (blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN) {
+				shadows++;
+			}
+		}
+	}
 	int const quads = (int)list.Blits.size() + 1;
-	if (valid && bgfx::getAvailTransientVertexBuffer(quads * 6, _Layout) < (uint32_t)quads * 6) {
+	int const shadowquads = shadows > 0 ? shadows + 1 : 0;
+	if (valid && bgfx::getAvailTransientVertexBuffer((quads + shadowquads) * 6, _Layout) < (uint32_t)(quads + shadowquads) * 6) {
 		valid = false;
 	}
 	if (!valid) {
 		DebugString("GPU_DIFF frame %d: the pass does not fit the GPU limits\n", pass.Frame);
-		for (bgfx::TextureHandle texture : textures) {
-			if (bgfx::isValid(texture)) {
-				bgfx::destroy(texture);
-			}
-		}
 		return(false);
 	}
 
@@ -340,17 +535,24 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	{
 		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
 		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-		float const t3[4] = { 0.0f, -1.0f, (float)KIND_BASE, 0.0f };
+		float const t3[4] = { 0.0f, -1.0f, (float)(shadows > 0 ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
 	for (std::size_t i = 0; i < list.Blits.size(); i++) {
 		GpuBlit const & blit = list.Blits[i];
 		BlitDesc const & desc = blit.Desc;
+		if (blit.Brighten >= 0) {
+			float const t1[4] = { (float)blit.Pixels, (float)blit.Width, (float)blit.Brighten, -1.0f };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			continue;
+		}
 		if (blit.Colour >= 0) {
 			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)KIND_PIXEL, 0.0f };
-			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, 1, 1, t1, t2, t3);
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 			continue;
 		}
 		float lutfirst = 0.0f;
@@ -364,39 +566,70 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		}
 		float const t1[4] = { (float)blit.Pixels, (float)blit.Width, lutfirst, alutrow };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
-		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)Shader_Kind(desc), 0.0f };
+		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)Shader_Kind(desc), desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 	}
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
-	bgfx::setViewFrameBuffer(VIEW_MAPDRAW, _Target);
-	bgfx::setViewRect(VIEW_MAPDRAW, 0, 0, (uint16_t)area.Width, (uint16_t)area.Height);
-	bgfx::setViewTransform(VIEW_MAPDRAW, NULL, projection);
-	bgfx::setViewMode(VIEW_MAPDRAW, bgfx::ViewMode::Sequential);
-	bgfx::setViewClear(VIEW_MAPDRAW, BGFX_CLEAR_NONE);
+	if (shadows > 0) {
+		Submit_Shadows(list, area, projection, ring, shadowquads);
+	}
+	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection);
 
 	uint64_t const write = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
 	for (int i = 0; i < quads; i++) {
-		int const kind = i == 0 ? KIND_BASE : (list.Blits[i - 1].Colour >= 0 ? KIND_PIXEL : Shader_Kind(list.Blits[i - 1].Desc));
+		int kind = KIND_BASE;
+		if (i > 0) {
+			GpuBlit const & blit = list.Blits[i - 1];
+			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc));
+		}
+		if (kind == KIND_DARKEN && shadows > 0) {
+			continue;
+		}
 		uint64_t state = write;
 		// The shader outputs the source term in rgb and the target's weight in alpha (fs_mapdraw.sc).
 		if (kind == KIND_DARKEN) {
 			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA) | BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_REVSUB);
 		} else if (kind == KIND_SOURCE75 || kind == KIND_HALF || kind == KIND_SOURCE25) {
 			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA);
+		} else if (kind == KIND_BRIGHTEN) {
+			// The shader outputs the brightening factor; the target gains itself times it.
+			state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_DST_COLOR, BGFX_STATE_BLEND_ONE);
 		}
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
-			bgfx::setTexture((uint8_t)slot, _Samplers[slot], textures[slot]);
+			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
+		if (i == 0 && shadows > 0) {
+			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
+		}
+		bgfx::setUniform(_RingUniform, ring, 2);
 		bgfx::setState(state);
 		bgfx::submit(VIEW_MAPDRAW, _Program);
 	}
-	for (bgfx::TextureHandle texture : textures) {
-		bgfx::destroy(texture);
-	}
 
+	_PostShown = false;
+	if (pass.Ripples != NULL && !pass.Ripples->empty()) {
+		int const count = std::min((int)pass.Ripples->size(), RIPPLE_LIMIT);
+		float ripples[RIPPLE_LIMIT * 4] = {};
+		for (int i = 0; i < count; i++) {
+			GpuRipple const & ripple = (*pass.Ripples)[i];
+			ripples[i * 4 + 0] = ripple.X;
+			ripples[i * 4 + 1] = ripple.Y;
+			ripples[i * 4 + 2] = ripple.Radius;
+			ripples[i * 4 + 3] = ripple.Strength;
+		}
+		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, 0.0f };
+		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection);
+		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)count);
+		bgfx::setUniform(_RippleInfoUniform, info);
+		bgfx::setVertexBuffer(0, &buffer, 0, 6);
+		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
+		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+		bgfx::submit(VIEW_MAPPOST, _PostProgram);
+		_PostShown = true;
+	}
 	return(true);
 }
 
@@ -422,9 +655,15 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 }
 
 
+void GpuMap_Set_Soft_Shadows(int radius)
+{
+	_SoftShadowRadius = std::clamp(radius, 0, 16);
+}
+
+
 std::uint16_t GpuMap_Texture(void)
 {
-	return(_TargetTexture.idx);
+	return(_PostShown ? _PostTexture.idx : _TargetTexture.idx);
 }
 
 
@@ -469,12 +708,24 @@ void GpuMap_After_Frame(std::uint32_t frame)
 void GpuMap_Shutdown(void)
 {
 	Destroy_Target();
+	Destroy_Stores();
 	if (bgfx::isValid(_Program)) {
 		bgfx::destroy(_Program);
 		_Program = BGFX_INVALID_HANDLE;
 		for (bgfx::UniformHandle & sampler : _Samplers) {
 			bgfx::destroy(sampler);
 		}
+		bgfx::destroy(_BlurProgram);
+		bgfx::destroy(_BlurUniform);
+		bgfx::destroy(_MaskSampler);
+		bgfx::destroy(_ShadowSampler);
+		_BlurProgram = BGFX_INVALID_HANDLE;
+		bgfx::destroy(_PostProgram);
+		bgfx::destroy(_SceneSampler);
+		bgfx::destroy(_RippleUniform);
+		bgfx::destroy(_RippleInfoUniform);
+		bgfx::destroy(_RingUniform);
+		_PostProgram = BGFX_INVALID_HANDLE;
 	}
 	_Ready = false;
 	_Failed = false;

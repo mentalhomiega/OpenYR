@@ -103,8 +103,9 @@ bool Video_Map_Layer_Supported(void);
 // surface removes the layer.
 void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest);
 
-// Draws the GPU map texture (gpumap.h) under the frame at dest until the next Video_Set_Map_Layer.
-void Video_Set_Gpu_Map_Layer(Rect const & dest);
+// Draws the GPU map texture (gpumap.h), drawn from the map area source, under the frame area dest
+// until the next Video_Set_Map_Layer.
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest);
 void Video_Present_If_Dirty(void);
 void Video_Present_Now(void);
 

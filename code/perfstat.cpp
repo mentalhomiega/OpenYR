@@ -34,7 +34,7 @@ enum PerfDomain {
 char const * const Phase_Names[PERF_PHASE_COUNT] = {
 	"logic", "triggers", "teams", "objects", "infantry", "unit", "building", "aircraft", "other",
 	"pathfind", "threat", "map", "tactical", "factories", "houses", "queue", "wait",
-	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui",
+	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui", "gpumap",
 	"total", "upload", "gpu", "gputime",
 };
 

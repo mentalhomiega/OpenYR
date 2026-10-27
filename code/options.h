@@ -287,9 +287,17 @@ class OptionsClass {
 		// Caps the presents per second: zero is unlimited, and a negative value follows the display's refresh rate.
 		int FrameRateLimit;
 
-		// Draws the map view's objects on the GPU in the modern interface, on Direct3D 11, while the
-		// map is not zoomed. Experimental; a pass the GPU cannot draw falls back to software.
+		// Draws the map view's objects on the GPU in the modern interface, on Direct3D 11.
+		// Experimental; a pass the GPU cannot draw falls back to software.
 		bool GpuRender;
+
+		// With GpuRender, shadows are drawn as one blurred mask over the ground, SoftShadowRadius
+		// pixels soft, instead of halving each pixel they cover.
+		bool SoftShadows;
+		int SoftShadowRadius;
+
+		// With GpuRender, each weapon blast sends a ring through the map picture that bends it.
+		bool Shockwaves;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
