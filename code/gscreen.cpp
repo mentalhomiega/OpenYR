@@ -109,7 +109,7 @@ struct CompositeRows {
 	{
 		int const left = std::max(area.X, 0);
 		int const right = area.X + area.Width;
-		if (right <= left) {
+		if (right <= left || left >= BlockWidth * 32) {
 			return;
 		}
 		int const first = left / BlockWidth;
@@ -171,6 +171,13 @@ static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
 	int const pitch = composite->Stride();
 	int const bpp = composite->Bytes_Per_Pixel();
 	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs);
+	// Scrolling swaps the composite with the tile layer, whose watch says nothing about what the composite last held.
+	static DSurface const * last_composite = NULL;
+	if (composite != last_composite) {
+		last_composite = composite;
+		_SinceKeyFill.Known = false;
+		_SinceCopy.Known = false;
+	}
 	for (CompositeRows * rows : {first, second}) {
 		if (rows == NULL) {
 			continue;
