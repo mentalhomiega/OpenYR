@@ -58,6 +58,7 @@
 
 #include <commctrl.h>
 #include <dbghelp.h>
+#include <psapi.h>
 #include <tlhelp32.h>
 
 #include <atomic>
@@ -1105,6 +1106,37 @@ static void Guarded_Crash_Site(CONTEXT const * context)
 }
 
 
+/// <summary>
+/// Appends how busy the stalled thread was and how the machine's memory stood.
+/// </summary>
+static void Append_Stall_Load(ULONGLONG busy_milliseconds, ULONGLONG stalled_milliseconds)
+{
+	if (busy_milliseconds != ULLONG_MAX) {
+		Exception_Printf("CPU         : %I64u ms used of the %I64u ms stall\r\n", busy_milliseconds, stalled_milliseconds);
+	}
+
+	MEMORYSTATUSEX status;
+	memset(&status, 0, sizeof(status));
+	status.dwLength = sizeof(status);
+
+	if (GlobalMemoryStatusEx(&status)) {
+		Exception_Printf("Memory      : %u%% in use, %I64u MB physical free of %I64u MB, %I64u MB address space free\r\n",
+					status.dwMemoryLoad, status.ullAvailPhys / (1024 * 1024), status.ullTotalPhys / (1024 * 1024),
+					status.ullAvailVirtual / (1024 * 1024));
+	}
+
+	PROCESS_MEMORY_COUNTERS_EX counters;
+	memset(&counters, 0, sizeof(counters));
+	counters.cb = sizeof(counters);
+
+	if (GetProcessMemoryInfo(GetCurrentProcess(), (PROCESS_MEMORY_COUNTERS *)&counters, sizeof(counters))) {
+		Exception_Printf("Process     : %I64u MB working set, %I64u MB private, %lu page faults\r\n",
+					(ULONGLONG)counters.WorkingSetSize / (1024 * 1024), (ULONGLONG)counters.PrivateUsage / (1024 * 1024),
+					counters.PageFaultCount);
+	}
+}
+
+
 static void Guarded_Stall_Address(CONTEXT const * context)
 {
 	__try {
@@ -1557,14 +1589,19 @@ void Exception_Refresh_Module_Table(void)
 /// <param name="thread">A handle to the thread, which the caller has suspended.</param>
 /// <param name="thread_id">The thread's identifier, shown in the report.</param>
 /// <param name="context">The thread's machine state, from GetThreadContext on the suspended thread.</param>
+/// <param name="busy_milliseconds">The processor time the thread used during the stall, or ULLONG_MAX when unknown.</param>
+/// <param name="stalled_milliseconds">How long the thread went without a beat.</param>
 /// <param name="text">The buffer to write into. The text is always null terminated.</param>
 /// <param name="size">The size of the buffer in characters.</param>
 /// <returns>True when the buffer holds text.</returns>
 /// <remarks>
 /// The caller must hold the symbol lock from Exception_Stall_Lock. Symbols are named only when the
-/// symbol handler is ready; otherwise the stack is listed as return addresses.
+/// symbol handler is ready; otherwise the stack is listed as return addresses. The processor time
+/// tells a thread that was computing from one that was waiting, and the memory lines tell a stall
+/// on a machine that is paging from one that is not.
 /// </remarks>
-bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, char * text, unsigned size)
+bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * context, ULONGLONG busy_milliseconds,
+			ULONGLONG stalled_milliseconds, char * text, unsigned size)
 {
 	if (text == NULL || size == 0 || context == NULL) {
 		return(false);
@@ -1577,6 +1614,7 @@ bool Exception_Describe_Stall(HANDLE thread, DWORD thread_id, CONTEXT const * co
 	ThreadReportSink = &sink;
 
 	Exception_Printf("Thread      : 0x%04X%s\r\n", thread_id, (thread_id == MainThreadId) ? " (main thread)" : "");
+	Append_Stall_Load(busy_milliseconds, stalled_milliseconds);
 	Guarded_Stall_Address(context);
 	Guarded_Call_Stack(context, thread);
 
