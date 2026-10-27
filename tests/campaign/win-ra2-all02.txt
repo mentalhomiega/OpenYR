@@ -1,0 +1,194 @@
+; Campaign win check for Allied 2 (Red Alert 2). Forty-five Grizzly tanks (grantunit) stand in for the army a player would build; everything after is an order.
+; The tanks clear the sentry guns on the road west, Tanya, the engineers and the GIs follow, and an engineer captures the Colosseum (the chapel), which
+; enables the win; the tanks then drive north-east and destroy the Russian base and every soldier and vehicle it has (strikeobj, nearest first).
+; The win waits for every Confederation and Russian structure and soldier to be gone. Expected: "AUTOTEST game over frame N: won" (frame 19833 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all02.txt -Campaign -Map ALL02S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1000 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit MTNK 116 102
+11 grantunit MTNK 118 102
+12 grantunit MTNK 120 102
+13 grantunit MTNK 122 102
+14 grantunit MTNK 124 102
+15 grantunit MTNK 126 102
+16 grantunit MTNK 128 102
+17 grantunit MTNK 130 102
+18 grantunit MTNK 132 102
+19 grantunit MTNK 116 104
+20 grantunit MTNK 118 104
+21 grantunit MTNK 120 104
+22 grantunit MTNK 122 104
+23 grantunit MTNK 124 104
+24 grantunit MTNK 126 104
+25 grantunit MTNK 128 104
+26 grantunit MTNK 130 104
+27 grantunit MTNK 132 104
+28 grantunit MTNK 116 106
+29 grantunit MTNK 118 106
+30 grantunit MTNK 120 106
+31 grantunit MTNK 122 106
+32 grantunit MTNK 124 106
+33 grantunit MTNK 126 106
+34 grantunit MTNK 128 106
+35 grantunit MTNK 130 106
+36 grantunit MTNK 132 106
+37 grantunit MTNK 116 108
+38 grantunit MTNK 118 108
+39 grantunit MTNK 120 108
+40 grantunit MTNK 122 108
+41 grantunit MTNK 124 108
+42 grantunit MTNK 126 108
+43 grantunit MTNK 128 108
+44 grantunit MTNK 130 108
+45 grantunit MTNK 132 108
+46 grantunit MTNK 116 110
+47 grantunit MTNK 118 110
+48 grantunit MTNK 120 110
+49 grantunit MTNK 122 110
+50 grantunit MTNK 124 110
+51 grantunit MTNK 126 110
+52 grantunit MTNK 128 110
+53 grantunit MTNK 130 110
+54 grantunit MTNK 132 110
+60 move MTNK 96 106
+61 waitcell MTNK 96 106 6 1500
+70 move MTNK 84 102
+71 waitcell MTNK 84 102 6 1500
+80 strikeobj NALASR 72 98 3 all
+330 strikeobj NALASR 72 98 3 all
+580 strikeobj NALASR 72 98 3 all
+830 strikeobj NALASR 68 99 3 all
+1080 strikeobj NALASR 68 99 3 all
+1330 strikeobj NALASR 68 99 3 all
+1580 strikeobj NALASR 61 99 3 all
+1830 strikeobj NALASR 61 99 3 all
+2080 strikeobj NALASR 61 99 3 all
+2330 move TANY 91 107
+2331 move ENGINEER 91 107
+2332 move E1 91 107
+2334 waitcell TANY 91 107 3 2500
+2338 move TANY 75 100
+2339 move ENGINEER 75 100
+2340 move E1 75 100
+2342 waitcell TANY 75 100 3 2500
+2346 move TANY 62 94
+2347 move ENGINEER 62 94
+2348 move E1 62 94
+2350 waitcell TANY 62 94 3 2500
+2354 spy ENGINEER 57 81
+2654 strikeobj NALASR 72 78 4 all
+2954 strikeobj NALASR 72 78 4 all
+3254 strikeobj NALASR 72 78 4 all
+3554 strikeobj GAGATE_A 64 98 4 all
+3854 strikeobj GAGATE_A 64 98 4 all
+4154 strikeobj GAGATE_A 64 98 4 all
+4454 counts Confederation
+4455 move MTNK 100 78
+4457 waitcell MTNK 100 78 8 2500
+4461 move MTNK 114 66
+4463 waitcell MTNK 114 66 8 2500
+4467 strikeobj NALASR 112 61 30 all
+4717 strikeobj NALASR 117 61 30 all
+4967 strikeobj NAFLAK 109 58 30 all
+5217 strikeobj NAFLAK 122 58 30 all
+5467 strikeobj HTNK 115 60 30 all
+5717 strikeobj HTK 115 60 30 all
+5967 strikeobj E2 115 55 30 all
+6217 strikeobj DOG 113 45 30 all
+6467 strikeobj NAHAND 118 53 30 all
+6717 strikeobj NAPOWR 120 50 30 all
+6967 strikeobj NAPOWR 120 48 30 all
+7217 strikeobj NAPOWR 112 41 30 all
+7467 strikeobj NAPOWR 112 39 30 all
+7717 strikeobj NACNST 116 43 30 all
+7967 strikeobj HARV 113 54 30 all
+8217 counts Russians
+8218 counts Confederation
+8219 strikeobj NALASR 112 61 30 all
+8469 strikeobj NALASR 117 61 30 all
+8719 strikeobj NAFLAK 109 58 30 all
+8969 strikeobj NAFLAK 122 58 30 all
+9219 strikeobj HTNK 115 60 30 all
+9469 strikeobj HTK 115 60 30 all
+9719 strikeobj E2 115 55 30 all
+9969 strikeobj DOG 113 45 30 all
+10219 strikeobj NAHAND 118 53 30 all
+10469 strikeobj NAPOWR 120 50 30 all
+10719 strikeobj NAPOWR 120 48 30 all
+10969 strikeobj NAPOWR 112 41 30 all
+11219 strikeobj NAPOWR 112 39 30 all
+11469 strikeobj NACNST 116 43 30 all
+11719 strikeobj HARV 113 54 30 all
+11969 counts Russians
+11970 counts Confederation
+11971 strikeobj NALASR 112 61 30 all
+12221 strikeobj NALASR 117 61 30 all
+12471 strikeobj NAFLAK 109 58 30 all
+12721 strikeobj NAFLAK 122 58 30 all
+12971 strikeobj HTNK 115 60 30 all
+13221 strikeobj HTK 115 60 30 all
+13471 strikeobj E2 115 55 30 all
+13721 strikeobj DOG 113 45 30 all
+13971 strikeobj NAHAND 118 53 30 all
+14221 strikeobj NAPOWR 120 50 30 all
+14471 strikeobj NAPOWR 120 48 30 all
+14721 strikeobj NAPOWR 112 41 30 all
+14971 strikeobj NAPOWR 112 39 30 all
+15221 strikeobj NACNST 116 43 30 all
+15471 strikeobj HARV 113 54 30 all
+15721 counts Russians
+15722 counts Confederation
+15732 enemies
+15737 strikeobj NAREFN 115 50 40 all
+15837 strikeobj NAWEAP 115 50 40 all
+15937 strikeobj NARADR 115 50 40 all
+16037 strikeobj NATECH 115 50 40 all
+16137 strikeobj NAPSIS 115 50 40 all
+16237 strikeobj NANRCT 115 50 40 all
+16337 strikeobj NAIRON 115 50 40 all
+16437 strikeobj NAHAND 115 50 40 all
+16537 strikeobj NAPOWR 115 50 40 all
+16637 strikeobj NATESLA 115 50 40 all
+16737 strikeobj NASAM 115 50 40 all
+16837 strikeobj NALASR 115 50 40 all
+16937 strikeobj NAFLAK 115 50 40 all
+17037 strikeobj NAYARD 115 50 40 all
+17137 strikeobj NAINDP 115 50 40 all
+17237 strikeobj NAAPOC 115 50 40 all
+17337 strikeobj NANRCT 115 50 40 all
+17437 strikeobj NAMISL 115 50 40 all
+17537 strikeobj NAPOWR 115 50 40 all
+17637 strikeobj NACNST 115 50 40 all
+17737 strikeobj NAREFN 115 50 40 all
+17837 strikeobj NAWEAP 115 50 40 all
+17937 strikeobj NARADR 115 50 40 all
+18037 strikeobj NATECH 115 50 40 all
+18137 strikeobj NAPSIS 115 50 40 all
+18237 strikeobj NANRCT 115 50 40 all
+18337 strikeobj NAIRON 115 50 40 all
+18437 strikeobj NAHAND 115 50 40 all
+18537 strikeobj NAPOWR 115 50 40 all
+18637 strikeobj NATESLA 115 50 40 all
+18737 strikeobj NASAM 115 50 40 all
+18837 strikeobj NALASR 115 50 40 all
+18937 strikeobj NAFLAK 115 50 40 all
+19037 strikeobj NAYARD 115 50 40 all
+19137 strikeobj NAINDP 115 50 40 all
+19237 strikeobj NAAPOC 115 50 40 all
+19337 strikeobj NANRCT 115 50 40 all
+19437 strikeobj NAMISL 115 50 40 all
+19537 strikeobj NAPOWR 115 50 40 all
+19637 strikeobj NACNST 115 50 40 all
+19737 counts Russians
+20338 quit

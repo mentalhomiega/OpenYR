@@ -1,0 +1,120 @@
+; Campaign win check for Soviet 2 (Red Alert 2). Thirty Rhino tanks and six Dreadnoughts (grantunit) join the force the mission gives, standing in for the army a player would
+; build; everything after is an order. The tanks destroy the German refineries and harvester next to the start, then drive south, destroy the American base soldier by
+; soldier and building by building (strikeobj, nearest first), and the Dreadnoughts on the east coast sink the American destroyers. The win waits for every German and
+; American structure, vehicle, ship and soldier, which includes the harvester that drives away from the refineries and the engineers that run out of a dead yard.
+; Expected: "AUTOTEST game over frame N: won" (frame 19541 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov02.txt -Campaign -Map SOV02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+20 grantunit HTNK 78 46
+21 grantunit HTNK 80 46
+22 grantunit HTNK 82 46
+23 grantunit HTNK 84 46
+24 grantunit HTNK 86 46
+25 grantunit HTNK 88 46
+26 grantunit HTNK 78 48
+27 grantunit HTNK 80 48
+28 grantunit HTNK 82 48
+29 grantunit HTNK 84 48
+30 grantunit HTNK 86 48
+31 grantunit HTNK 88 48
+32 grantunit HTNK 78 50
+33 grantunit HTNK 80 50
+34 grantunit HTNK 82 50
+35 grantunit HTNK 84 50
+36 grantunit HTNK 86 50
+37 grantunit HTNK 88 50
+38 grantunit HTNK 78 52
+39 grantunit HTNK 80 52
+40 grantunit HTNK 82 52
+41 grantunit HTNK 84 52
+42 grantunit HTNK 86 52
+43 grantunit HTNK 88 52
+44 grantunit HTNK 78 54
+45 grantunit HTNK 80 54
+46 grantunit HTNK 82 54
+47 grantunit HTNK 84 54
+48 grantunit HTNK 86 54
+49 grantunit HTNK 88 54
+60 grantunit DRED 112 100
+61 grantunit DRED 115 100
+62 grantunit DRED 118 100
+63 grantunit DRED 112 103
+64 grantunit DRED 115 103
+65 grantunit DRED 118 103
+1000 strikeobj GAREFN 63 62 8 land
+1300 strikeobj GAREFN 61 55 8 land
+1600 strikeobj CMIN 68 60 8 land
+1900 strikeobj GAREFN 63 62 8 land
+2200 strikeobj GAREFN 61 55 8 land
+2500 strikeobj CMIN 68 60 8 land
+2800 move HTNK 80 105
+2806 waitcell HTNK 80 105 6 2500
+2811 strikeobj GAPILL 77 113 50 land
+3161 strikeobj GAPILL 73 113 50 land
+3511 strikeobj GAPILL 90 131 50 land
+3861 strikeobj GAPILL 84 125 50 land
+4211 strikeobj E1 79 125 50 land
+4561 strikeobj MTNK 78 115 50 land
+4911 strikeobj GAPOWR 93 140 50 land
+5261 strikeobj GAPOWR 90 142 50 land
+5611 strikeobj GAPILE 78 119 50 land
+5961 strikeobj GAYARD 89 119 50 land
+6311 strikeobj GAWEAP 83 135 50 land
+6661 strikeobj GAREFN 96 142 50 land
+7011 strikeobj GAPOWR 93 143 50 land
+7361 strikeobj GAPOWR 90 139 50 land
+7711 strikeobj GACNST 79 129 50 land
+8061 strikeobj CMIN 99 143 50 land
+8411 strikeobj ENGINEER 78 133 50 land
+8761 strikeobj DEST 105 110 60 naval
+9061 strikeobj DEST 105 110 60 naval
+9361 strikeobj DEST 105 110 60 naval
+9661 strikeobj ENGINEER 78 133 50 land
+9911 strikeobj ENGINEER 78 133 50 land
+10161 strikeobj ENGINEER 78 133 50 land
+10411 strikeobj CMIN 72 72 25 land
+10661 strikeobj CMIN 72 72 25 land
+10911 strikeobj CMIN 72 72 25 land
+11161 counts Americans
+11162 counts Germans
+11163 strikeobj GAPILL 77 113 50 land
+11513 strikeobj GAPILL 73 113 50 land
+11863 strikeobj GAPILL 90 131 50 land
+12213 strikeobj GAPILL 84 125 50 land
+12563 strikeobj E1 79 125 50 land
+12913 strikeobj MTNK 78 115 50 land
+13263 strikeobj GAPOWR 93 140 50 land
+13613 strikeobj GAPOWR 90 142 50 land
+13963 strikeobj GAPILE 78 119 50 land
+14313 strikeobj GAYARD 89 119 50 land
+14663 strikeobj GAWEAP 83 135 50 land
+15013 strikeobj GAREFN 96 142 50 land
+15363 strikeobj GAPOWR 93 143 50 land
+15713 strikeobj GAPOWR 90 139 50 land
+16063 strikeobj GACNST 79 129 50 land
+16413 strikeobj CMIN 99 143 50 land
+16763 strikeobj ENGINEER 78 133 50 land
+17113 strikeobj DEST 105 110 60 naval
+17413 strikeobj DEST 105 110 60 naval
+17713 strikeobj DEST 105 110 60 naval
+18013 strikeobj ENGINEER 78 133 50 land
+18263 strikeobj ENGINEER 78 133 50 land
+18513 strikeobj ENGINEER 78 133 50 land
+18763 strikeobj CMIN 72 72 25 land
+19013 strikeobj CMIN 72 72 25 land
+19263 strikeobj CMIN 72 72 25 land
+19513 counts Americans
+19514 counts Germans
+20115 quit

@@ -601,6 +601,16 @@ void TActionClass::Read_INI(void)
 		case PARAM_CODE_TECHNO:
 		case PARAM_CODE_BUILDING:
 			snprintf(Text, sizeof(Text), "%s", text);
+			/*
+			**	A Red Alert 2 map gives an object type as its position in one list of every type, buildings first, where
+			**	Yuri's Revenge writes its ID (the action reads it by name, as 0x6E4150 does).
+			*/
+			if (code == PARAM_CODE_TECHNO && Scenario_Is_From_RA2() && text[0] >= '0' && text[0] <= '9') {
+				std::string const name = RA2_Techno_Name(atoi(text));
+				if (!name.empty()) {
+					snprintf(Text, sizeof(Text), "%s", name.c_str());
+				}
+			}
 			break;
 
 		/*
@@ -3473,10 +3483,12 @@ bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerCla
 {
 	for (int index = 0; index < TechnoTypes.Count(); index++) {
 		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
+			DebugString("AUTOTEST   flash cameo %s for %d frames\n", TechnoTypes[index]->Name(), Extra);
 			Map.Flash_Cameo(TechnoTypes[index], Extra);
 			return(true);
 		}
 	}
+	DebugString("TAction: flash cameo names %s, which is not an object type\n", Text);
 	return(false);
 }
 

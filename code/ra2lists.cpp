@@ -54,8 +54,8 @@ std::vector<std::string> Read_List(char const * section)
 }
 
 
-// The name Red Alert 2 gives a position of the list, or an empty string.
-std::string Name_At(char const * section, int position)
+// The names of a rules list as Red Alert 2 numbers them.
+std::vector<std::string> const & List_Of(char const * section)
 {
 	static std::map<std::string, std::vector<std::string>> lists;
 	static std::string loaded_from;
@@ -68,10 +68,18 @@ std::string Name_At(char const * section, int position)
 	if (found == lists.end()) {
 		found = lists.emplace(section, Read_List(section)).first;
 	}
-	if (position < 0 || position >= (int)found->second.size()) {
+	return(found->second);
+}
+
+
+// The name Red Alert 2 gives a position of the list, or an empty string.
+std::string Name_At(char const * section, int position)
+{
+	std::vector<std::string> const & list = List_Of(section);
+	if (position < 0 || position >= (int)list.size()) {
 		return(std::string());
 	}
-	return(found->second[position]);
+	return(list[position]);
 }
 
 }
@@ -96,4 +104,22 @@ WeaponType RA2_Weapon_Position(WeaponType position)
 	std::string const name = Name_At("Weapons", position);
 	WeaponType const type = name.empty() ? WEAPON_NONE : WeaponTypeClass::From_Name(name.c_str());
 	return(type == WEAPON_NONE ? position : type);
+}
+
+
+std::string RA2_Techno_Name(int position)
+{
+	// A map that names an object type by a single number counts buildings first, then vehicles, aircraft and infantry.
+	static char const * const sections[] = {"BuildingTypes", "VehicleTypes", "AircraftTypes", "InfantryTypes"};
+	if (position < 0) {
+		return(std::string());
+	}
+	for (char const * section : sections) {
+		int const count = (int)List_Of(section).size();
+		if (position < count) {
+			return(Name_At(section, position));
+		}
+		position -= count;
+	}
+	return(std::string());
 }
