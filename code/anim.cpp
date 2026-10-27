@@ -1062,7 +1062,9 @@ void AnimClass::AI(void)
 			**	animation either ends or loops.
 			*/
 			// The stage is relative to Class->Start, so a reversed animation ends at stage 0 (gamemd AnimClass::Update, 0x424752).
-			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || (IsReversed && stage <= 0)) {
+			// A forward shadow animation that plays once ends at LoopEnd, so frames past it never show (gamemd AnimClass::Update, 0x42470C to 0x42475A).
+			bool const shadow_ends_at_loop_end = Loops <= 1 && Class->IsShadow && !Class->IsReverse && !IsReversed && stage >= Class->LoopEnd - Class->Start;
+			if ((Loops <= 1 && stage >= Class->Stages) || (Loops > 1 && stage >= Class->LoopEnd-Class->Start) || shadow_ends_at_loop_end || (IsReversed && stage <= 0)) {
 
 				/*
 				**	Determine if this animation should loop another time. If so, then start the loop
