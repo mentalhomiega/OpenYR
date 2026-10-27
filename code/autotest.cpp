@@ -99,6 +99,7 @@
 **	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
 **	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
 **	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
+**	waitgone <TypeID> x y [radius] [timeout]	pauses the script until no object of that type that strikeobj could pick is within radius cells of the cell
 **	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
 **	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
 **	cover x y			writes how many buildings screen that cell and whether it counts as covered
@@ -775,18 +776,21 @@ bool Strike_Side_Allows(bool naval, std::string const & side)
 }
 
 
-void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side)
+// The nearest live object of the type within radius cells of the cell, whoever owns it except the player and its allies.
+// A type of * stands for any type that is neither Insignificant nor DontScore.
+TechnoClass * Strike_Target(std::string const & name, int x, int y, int radius)
 {
-	if (side != "" && side != "all" && side != "land" && side != "naval") {
-		DebugString("AUTOTEST strikeobj %s: side must be land, naval or all, not %s\n", name.c_str(), side.c_str());
-		return;
-	}
 	TechnoClass * target = NULL;
 	int bestdistance = 0;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->IsInLimbo || !techno->IsActive || techno->House == PlayerPtr || techno->House->Is_Ally(PlayerPtr)) continue;
-		if (stricmp(techno->TClass->Name(), name.c_str()) != 0) continue;
+		if (name == "*") {
+			// Any type the house counts as owned, which is what the destroyed-house events read.
+			if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) continue;
+		} else if (stricmp(techno->TClass->Name(), name.c_str()) != 0) {
+			continue;
+		}
 		Cell const cell = techno->Get_Cell();
 		int const dx = cell.X - x;
 		int const dy = cell.Y - y;
@@ -797,6 +801,17 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 			bestdistance = distance;
 		}
 	}
+	return(target);
+}
+
+
+void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side)
+{
+	if (side != "" && side != "all" && side != "land" && side != "naval") {
+		DebugString("AUTOTEST strikeobj %s: side must be land, naval or all, not %s\n", name.c_str(), side.c_str());
+		return;
+	}
+	TechnoClass * target = Strike_Target(name, x, y, radius);
 	if (target == NULL) {
 		DebugString("AUTOTEST strikeobj %s near %d,%d: no live target within %d cells\n", name.c_str(), x, y, radius);
 		return;
@@ -1286,13 +1301,13 @@ static void Trigger_Step(StepType const & step)
 
 
 /*
-**	Wait steps: waitcell, waittrigger, waitowns and waitlocal pause the script until their condition
+**	Wait steps: waitcell, waittrigger, waitowns, waitlocal and waitgone pause the script until their condition
 **	holds, or until their timeout passes. Their words are the line's frame and command, then the
 **	arguments: see the wait functions below for each one's word positions.
 */
 bool Is_Wait_Command(std::string const & command)
 {
-	return(command == "waitcell" || command == "waittrigger" || command == "waitowns" || command == "waitlocal");
+	return(command == "waitcell" || command == "waittrigger" || command == "waitowns" || command == "waitlocal" || command == "waitgone");
 }
 
 
@@ -1323,12 +1338,12 @@ int Number(std::vector<std::string> const & words, std::size_t index, int fallba
 }
 
 
-// The fewest words a wait line needs. waitcell is: frame, command, TypeID, x, y, then radius and timeout.
+// The fewest words a wait line needs. waitcell and waitgone are: frame, command, TypeID, x, y, then radius and timeout.
 // waittrigger is: frame, command, trigger, timeout. waitowns is: frame, command, house, TypeID, count,
 // timeout. waitlocal is: frame, command, index, value, timeout.
 std::size_t Wait_Min_Words(std::string const & command)
 {
-	if (command == "waitcell" || command == "waitowns") {
+	if (command == "waitcell" || command == "waitgone" || command == "waitowns") {
 		return(5);
 	}
 	if (command == "waittrigger") {
@@ -1341,7 +1356,7 @@ std::size_t Wait_Min_Words(std::string const & command)
 // The word that holds a wait's timeout, in the layout Wait_Min_Words describes.
 std::size_t Wait_Timeout_Word(std::string const & command)
 {
-	if (command == "waitcell") {
+	if (command == "waitcell" || command == "waitgone") {
 		return(6);
 	}
 	if (command == "waittrigger") {
@@ -1396,7 +1411,7 @@ std::string Wait_Problem(std::vector<std::string> const & words)
 	if (words.size() < Wait_Min_Words(command)) {
 		return("too few arguments");
 	}
-	if (command == "waitcell" && Find_Type(Word(words, 2)) == NULL) {
+	if ((command == "waitcell" || command == "waitgone") && Find_Type(Word(words, 2)) == NULL) {
 		return("no such type " + Word(words, 2));
 	}
 	if (command == "waittrigger" && TriggerTypeClass::From_Name(Word(words, 2).c_str()) == NULL) {
@@ -1433,6 +1448,9 @@ bool Wait_Met(std::vector<std::string> const & words)
 		std::string const name = Word(words, 2);
 		return(Player_Object_Within(Units, name, cell, radius) || Player_Object_Within(Infantry, name, cell, radius)
 			|| Player_Object_Within(Buildings, name, cell, radius) || Player_Object_Within(Aircraft, name, cell, radius));
+	}
+	if (command == "waitgone") {
+		return(Strike_Target(Word(words, 2), Number(words, 3, 0), Number(words, 4, 0), Number(words, 5, 3)) == NULL);
 	}
 	if (command == "waittrigger") {
 		return(Trigger_Springs(TriggerTypeClass::From_Name(Word(words, 2).c_str())) > 0);
