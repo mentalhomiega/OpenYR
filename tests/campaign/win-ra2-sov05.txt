@@ -1,0 +1,64 @@
+; Campaign win check for Soviet 5 (Red Alert 2). Twenty-four Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order.
+; The airships clear the way to the Eiffel Tower (CAPARS01 at 46,32): each strikeobj line sends them against the next pillbox, tank, IFV or soldier along the route, one target per 400 frames. Then the three Tesla Troopers the mission gives (house Other3, which the player controls) walk to cell 47,34 and energize the tower ("Tower Energized"). The tower and the Allied units that hunt it fight, and once every unit of the Allied house is dead "Win Timer" and "Win" follow.
+; Expected: "AUTOTEST game over frame N: won" (frame 11625 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov05.txt -Campaign -Map SOV05U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 330 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit ZEP 72 62
+11 grantunit ZEP 74 62
+12 grantunit ZEP 76 62
+13 grantunit ZEP 78 62
+14 grantunit ZEP 80 62
+15 grantunit ZEP 82 62
+16 grantunit ZEP 72 64
+17 grantunit ZEP 74 64
+18 grantunit ZEP 76 64
+19 grantunit ZEP 78 64
+20 grantunit ZEP 80 64
+21 grantunit ZEP 82 64
+22 grantunit ZEP 72 66
+23 grantunit ZEP 74 66
+24 grantunit ZEP 76 66
+25 grantunit ZEP 78 66
+26 grantunit ZEP 80 66
+27 grantunit ZEP 82 66
+28 grantunit ZEP 72 68
+29 grantunit ZEP 74 68
+30 grantunit ZEP 76 68
+31 grantunit ZEP 78 68
+32 grantunit ZEP 80 68
+33 grantunit ZEP 82 68
+200 strikeobj GAPILL 67 63 4 all
+600 strikeobj E1 67 63 8 all
+1000 strikeobj GAPILL 65 56 4 all
+1400 strikeobj MTNK 62 53 8 all
+1800 strikeobj GAPILL 52 56 4 all
+2200 strikeobj FV 49 53 6 all
+2600 strikeobj MTNK 51 43 8 all
+3000 strikeobj MTNK 59 43 8 all
+3400 strikeobj GAPILL 61 44 4 all
+3800 strikeobj GAPILL 58 44 4 all
+4200 strikeobj GAPILL 52 44 4 all
+4600 strikeobj GAPILL 49 44 4 all
+5000 strikeobj E1 44 42 8 all
+5400 strikeobj GAPILL 41 36 4 all
+5800 strikeobj GAPILL 41 31 4 all
+6200 strikeobj E1 43 33 8 all
+6600 strikeobj MTNK 55 33 8 all
+7000 strikeobj MTNK 58 33 8 all
+7400 strikeobj E1 54 34 8 all
+7800 strikeobj E1 53 30 8 all
+8200 strikeobj GAPILL 49 23 4 all
+8600 strikeobj GAPILL 52 23 4 all
+9000 move SHK 47 34
