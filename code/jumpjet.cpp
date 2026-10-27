@@ -281,8 +281,10 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 			}
 			Move_To(nearby_coord);
 		} else {
-			LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
+			// The kill runs the dying unit's Stun, which stops its driver and so comes back here; the move is dropped first so that call does nothing.
+			IsMoving = false;
 			HeadToCoord = COORD_NONE;
+			LinkedTo->Take_Damage(LinkedTo->Strength, 0, Rule->C4Warhead, NULL, true, true);
 		}
 	}
 }
