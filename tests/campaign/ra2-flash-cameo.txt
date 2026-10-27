@@ -1,0 +1,47 @@
+; Checks that Boot Camp day 2 (Red Alert 2) flashes the cameos its tutorial names. The map writes object types as a position in one list of every type
+; (0 is the power plant, 1 the refinery, 3 the barracks, 364 the GI); the log must read "AUTOTEST   flash cameo GAPOWR for 150 frames",
+; then GAREFN, GAPILE, and E1 once a GI is built (the last needs the longer run of win-trn02.txt).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/ra2-flash-cameo.txt -Campaign -Map TRN02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "flash cameo|TAction|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+5 waitcell AMCV 23 38 1 3000
+10 move AMCV 44 30
+11 waitcell AMCV 44 30 0 2500
+90 select AMCV
+95 command DeployObject
+96 waitowns player GACNST 1 300
+130 produce GAPOWR
+800 place GAPOWR
+801 waitowns player GAPOWR 1 100
+810 produce GAREFN
+1000 queuestate GAREFN
+1500 queuestate GAREFN
+1900 queuestate GAREFN
+2300 place GAREFN
+2301 waitowns player GAREFN 1 100
+2310 produce GAPILE
+2900 queuestate GAPILE
+3200 place GAPILE
+3201 waitowns player GAPILE 1 100
+3210 produce E1
+3211 produce E1
+3212 produce E1
+3213 produce E1
+3214 produce E1
+3215 produce E1
+3216 produce E1
+3217 produce E1
+3218 produce E1
+3219 produce E1
+3300 quit
