@@ -184,7 +184,8 @@ class CellClass : public AbstractClass
 		 * occupation marks let base placement logic tell whose structures already stand here.
 		 */
 		HouseArray<std::uint16_t> CloakCount;
-		HouseArray<std::uint16_t> SensorCount;
+		// Signed: an array's removal may take a count below zero (BuildingClass::SensorArrayDeactivate, 0x4556D0).
+		HouseArray<std::int16_t> SensorCount;
 
 		// The number of disguise detectors of each house covering this cell.
 		HouseArray<std::uint16_t> DisguiseSensorCount;

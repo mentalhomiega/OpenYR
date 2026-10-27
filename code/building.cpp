@@ -11455,11 +11455,6 @@ bool BuildingClass::Is_Powered_On(void) const
 
 
 /// <summary>
-/// Switches this sensor array off.
-/// The array's coverage is lifted from every cell within its radius, so that cloaked objects
-/// standing there are hidden again unless another array of the house still covers them.
-/// </summary>
-/// <summary>
 /// Starts or stops this structure showing its owner the disguised objects within
 /// DetectDisguiseRange cells (BuildingClass::DisguiseDetectorActivate, 0x455A80, and
 /// DisguiseDetectorDeactivate, 0x455980). Turning it on or off twice in a row does nothing more.
@@ -11491,12 +11486,19 @@ void BuildingClass::Disguise_Detector(bool on)
 }
 
 
+/// <summary>
+/// Switches this sensor array off.
+/// The array's coverage is lifted from every cell within its SensorsSight radius, so that cloaked
+/// objects standing there are hidden again unless another array of the house still covers them.
+/// </summary>
 void BuildingClass::Disable_Sensor_Array(void)
 {
 	if (!IsSensing) {
 		return;
 	}
 
+	// gamemd lifts the array over CloakRadiusInCells, not SensorsSight (SensorArrayDeactivate, 0x4556D0), so
+	// a cell outside the SensorsSight ring loses a count that was never added.
 	int radius = Class->CloakRadiusInCells;
 	int dist = radius * radius;
 	Cell origin = Center_Coord().As_Cell();
@@ -11505,8 +11507,9 @@ void BuildingClass::Disable_Sensor_Array(void)
 			Cell newcell = Cell(origin.X + x, origin.Y + y);
 			if (x * x + y * y < dist) {
 				CellClass * cellptr = &Map[newcell];
-				if (cellptr->Remove_Sensor(House)) {
-					Cloak_Cell_Occupiers(cellptr);
+				bool const cleared = cellptr->Remove_Sensor(House);
+				Cloak_Cell_Occupiers(cellptr);
+				if (cleared) {
 					BuildingClass * building = cellptr->Cell_Building();
 					if (building != NULL && building->House != PlayerPtr) {
 						if (building->Visual_Character() != VISUAL_NORMAL) {
@@ -11523,16 +11526,17 @@ void BuildingClass::Disable_Sensor_Array(void)
 
 /// <summary>
 /// Switches this sensor array on.
-/// Every cell within the array's radius is marked as sensed by the owning house, which
+/// Every cell within SensorsSight cells is marked as sensed by the owning house, which
 /// reveals cloaked objects standing there and forces any cloaked unit in the area to
-/// reconsider whether it can stay hidden. A powered down array does nothing.
+/// reconsider whether it can stay hidden. A powered down array does nothing. CloakRadiusInCells
+/// is the cloak field's radius and does not size the sensing (BuildingClass::SensorArrayActivate, 0x455820).
 /// </summary>
 void BuildingClass::Enable_Sensor_Array(void)
 {
 	if (Is_Powered_On()) {
 		bool add = !IsSensing;
 		IsSensing = true;
-		int radius = Class->CloakRadiusInCells;
+		int radius = Techno_Type_Class()->SensorsSight;
 		int dist = radius * radius;
 		Cell origin = Center_Coord().As_Cell();
 		for (int y = -radius; y < radius; y++) {

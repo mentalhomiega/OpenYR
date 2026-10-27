@@ -166,13 +166,13 @@ Neither test marks a cell as sensed. Unless it has [`SensorsSight`](/keys/sensor
 
 ### Sensor arrays
 
-A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than [`CloakRadiusInCells`](/keys/cloakradiusincells/). This is the same key that sizes a cloak generator's field, but an array's coverage is not cut off by the square grid a field is drawn on.
+A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than its [`SensorsSight`](/keys/sensorssight/). Its coverage is not cut off by the square grid a cloak field is drawn on, and [`CloakRadiusInCells`](/keys/cloakradiusincells/) does not size it.
 
 The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until a cloaking field next finishes growing while the array is operational.
 
-Coverage is lifted when the array is taken off the map. Capturing an array moves its coverage: the old owner stops sensing the array's cells, and the new owner senses them at once if the array is operational. A power shortfall never lifts coverage.
+Coverage is lifted when the array is taken off the map. Lifting takes one count from every cell within [`CloakRadiusInCells`](/keys/cloakradiusincells/) of the array, which can be wider than its sensing. Capturing an array moves its coverage: the old owner loses those counts, and the new owner senses the cells within `SensorsSight` at once if the array is operational. A power shortfall never lifts coverage.
 
-Arrays of one house may overlap. A cell stays sensed while any of the house's arrays covers it, so taking one array away leaves the cells the others cover in place.
+Arrays of one house may overlap, and each adds one count to its cells. A cell at a count of zero that a lift takes one below zero stays unsensed until two sensors cover it again, so a cell another array covers within the lifted ring can lose its sensing.
 
 ### Mobile sensors
 

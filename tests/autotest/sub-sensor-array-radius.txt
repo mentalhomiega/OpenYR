@@ -1,0 +1,33 @@
+; A Yuri Psychic Sensor (NAPSIS, SensorsSight=15, CloakRadiusInCells default 20) at 75,56 on the north shore of XMP08T2,
+; powered by a power plant at 70,52. Two idle enemy Typhoon subs drift in the lake. SUB at 60,62 is about 16 cells from the
+; sensor (squared distance 261: outside 15, inside 20). SUB at 70,64 is about 9 cells away (inside both). Each where line gives
+; the sub's cell and visual character (0 normal, 3 shadowy, 5 hidden); "sensed 1" means the player's sensor covers that cell.
+; Before the fix the sensor covered 20 cells, so the far sub was shadowy (visual 3, sensed 1) for the whole run. After it, the
+; far sub stays hidden (visual 5, sensed 0) while the sub inside 15 cells is shadowy. At frame 400 a destroyer is placed beside the far
+; sub, so the sub is sensed by the destroyer's 8-cell SensorsSight.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sub-sensor-array-radius.txt -Map XMP08T2.MAP -Seconds 90 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 reveal
+50 own GAPOWR 70 52
+51 own NAPSIS 75 56
+55 enemy SUB 60 62
+56 enemy SUB 70 64
+150 where SUB
+150 cell 60 62
+150 cell 70 64
+250 where SUB
+250 cell 60 62
+250 cell 70 64
+300 view 68 60
+305 command ScreenCapture
+320 where SUB
+320 cell 60 62
+320 cell 70 64
+400 own DEST 62 60
+420 where SUB
+420 cell 60 62
+420 cell 70 64
+500 where SUB
+500 cell 60 62
+500 cell 70 64
+600 quit
