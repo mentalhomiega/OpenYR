@@ -65,6 +65,7 @@
 #include "globals.h"
 #include "house.h"
 #include "houstype.h"
+#include "ra2lists.h"
 #include "incdec.h"
 #include "init.h"
 #include "infantry.h"
@@ -544,6 +545,10 @@ void TActionClass::Read_INI(void)
 			Data.Value = val;
 			if (Action_Needs(Action) == NEED_HOUSE) {
 				Data.House = HouseTypeClass::From_RA2_Number(Data.House);
+			} else if (Action_Needs(Action) == NEED_ANIM_AND_LOCATION) {
+				Data.Anim = RA2_Anim_Position(Data.Anim);
+			} else if (Action_Needs(Action) == NEED_WEAPON_AND_LOCATION) {
+				Data.Weapon = RA2_Weapon_Position(Data.Weapon);
 			}
 			break;
 
@@ -2176,12 +2181,17 @@ bool TActionClass::TAction_RESIZE_PLAYER_VIEW(HouseClass * , ObjectClass * , Tri
 /// </summary>
 bool TActionClass::TAction_PLAY_ANIM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	if ((unsigned)Data.Anim >= (unsigned)AnimTypes.Count()) {
+		DebugString("TAction: play animation %d is not in the animation list\n", (int)Data.Anim);
+		return(false);
+	}
 	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
+	DebugString("AUTOTEST   play animation %s\n", AnimTypes[Data.Anim]->Name());
 	AnimClass * anim = new AnimClass(AnimTypes[Data.Anim], coord);
 	anim->IsInert = true;
 	return(true);
