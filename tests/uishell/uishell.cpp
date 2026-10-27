@@ -2996,6 +2996,7 @@ static UIDisplayState Graphics_Fixture(void)
 	UIDisplayState state = Display_Fixture();
 	state.Page = UI_TAB_GRAPHICS;
 	state.ModernInterface = true;
+	state.ModernInterfaceRunning = true;
 	state.HDRActive = true;
 	state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
 	state.RowCount = 2;
@@ -3201,6 +3202,8 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(presenter.State.ModernInterface && rows != nullptr && !rows->HasAttribute("disabled") && row != nullptr && !row->IsClassSet("disabled") && preview != nullptr && !preview->IsClassSet("disabled"), "ticking the modern interface enables the drop-down and its mock live");
+		Rml::Element * notice = document->GetElementById("restart-notice");
+		Check(notice != nullptr && notice->IsVisible(), "a restart notice shows while the chosen interface differs from the running one");
 
 		if (modern != nullptr) {
 			Click(context, modern);
@@ -3209,6 +3212,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
+		Check(notice != nullptr && !notice->IsVisible(), "the restart notice goes once the choice matches the running interface");
 
 		view->Release();
 		context.Update();
