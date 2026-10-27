@@ -1417,7 +1417,17 @@ void Do_Win(void)
 		** score and map selection, don't increment scenario, and set it to
 		** variation B.
 		*/
-		if (Scen->IsNoMapSel) {
+		if (Scenario_Is_From_RA2()) {
+			// The map names no successor that exists, as Red Alert 2 chooses its next mission outside the map.
+			CampaignType const next = Campaign_Next_RA2_Mission();
+			if (next == CAMPAIGN_NONE) {
+				GameActive = false;
+				Show_Mouse();
+				return;
+			}
+			Scen->Campaign = next;
+			strcpy(Scen->ScenarioName, Campaigns[next]->ScenarioName);
+		} else if (Scen->IsNoMapSel) {
 #ifdef _DEMO
 			if (Scen->GlobalFlags[1].Value) {
 				strcpy(Scen->ScenarioName, Scen->AltNextScenarioName);

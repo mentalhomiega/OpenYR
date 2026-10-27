@@ -12,6 +12,7 @@
 #include "campaign.h"
 
 #include "campaignname.hh"
+#include "ccfile.h"
 #include "ccini.h"
 #include "crc.h"
 #include "globals.h"
@@ -147,6 +148,27 @@ bool Scenario_Is_From_RA2(void)
 {
 	return(Scen != NULL && Scen->Campaign >= 0 && Scen->Campaign < Campaigns.Count() && Campaigns[Scen->Campaign] != NULL
 		&& Campaigns[Scen->Campaign]->ScenarioArchive == "RA2");
+}
+
+
+/// <summary>
+/// Finds the mission that follows the running Red Alert 2 mission: the next entry of the campaign list, when that entry
+/// is a Red Alert 2 mission whose map exists. A header or movie row, the end of the list, or a missing map ends the
+/// campaign.
+/// </summary>
+/// <returns>CampaignType; the entry to play next, or CAMPAIGN_NONE when the campaign ends.</returns>
+CampaignType Campaign_Next_RA2_Mission(void)
+{
+	if (!Scenario_Is_From_RA2() || Scen->Campaign + 1 >= Campaigns.Count()) {
+		return(CAMPAIGN_NONE);
+	}
+
+	CampaignClass const * next = Campaigns[Scen->Campaign + 1];
+	if (next == NULL || next->ScenarioArchive != "RA2" || !Campaign_Is_Mission_File(next->ScenarioName)
+		|| !CCFileClass(next->ScenarioName).Is_Available()) {
+		return(CAMPAIGN_NONE);
+	}
+	return(CampaignType(Scen->Campaign + 1));
 }
 
 
