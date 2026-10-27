@@ -44,6 +44,8 @@ class DeploymentConfigClass
 		std::string RA2ArtFile = "ART.INI";
 		// Red Alert 2's rules file, whose [Countries] order numbers the houses its missions name.
 		std::string RA2RulesFile = "RULES.INI";
+		// Red Alert 2's announcer file, whose lines its missions speak.
+		std::string RA2EvaFile = "EVA.INI";
 		std::string AIFile = "AIMD.INI";
 		std::string AIExpansionFile = "";
 		std::string SoundFile = "SOUNDMD.INI";
