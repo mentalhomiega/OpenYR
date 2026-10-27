@@ -79,8 +79,8 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
   with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 175 in
-  software. With `SoftShadows` it drew 243, with `Bloom` 255, with `WaterRipples` 250, and with
-  every effect on 244; no effect added more than half a millisecond of processor time to a picture. Each pass uploads only
+  software. With `SoftShadows` it drew 243, with `Bloom` 255, with `WaterRipples` 250, with
+  `CloudShadows` and `Weather=Snow` 244, and with every effect on 230; no effect added more than half a millisecond of processor time to a picture. Each pass uploads only
   the rows of the base picture, the depth buffer and the alpha buffer that changed since the last
   drawn pass. Outside Windows the depth and alpha buffers cannot list the pages written to them,
   so those two go up whole every pass.
