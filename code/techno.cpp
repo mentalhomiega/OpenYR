@@ -3258,97 +3258,44 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
 		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
+		// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
+		auto Visit_Ring_Cell = [&](Cell const & newcell) {
+			if (Map.In_Radar(newcell)) {
+				if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
+					if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
+					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
+						if (bestval < value) {
+							bestobject = object;
+							bestval = value;
+						}
+					}
+				}
+				if (bestobject == NULL) {
+					value = Evaluate_Just_Cell(newcell);
+					if (bestcellvalue < value) {
+						bestcellvalue = value;
+						bestcell = newcell;
+					}
+				}
+			}
+		};
+
 		for (int radius = 0; scan_cells && radius < crange; radius++) {
 
 			/*
 			**	Scan the top and bottom rows of the "box".
 			*/
 			for (int x = -radius; x <= radius; x++) {
-				Cell newcell = cell + Cell(x, -radius);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-
-				newcell = cell + Cell(x, radius);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
+				Visit_Ring_Cell(cell + Cell(x, -radius));
+				Visit_Ring_Cell(cell + Cell(x, radius));
 			}
 
 			/*
 			**	Scan the left and right columns of the "box".
 			*/
 			for (int y = -(radius-1); y < radius; y++) {
-				Cell newcell = cell + Cell(-radius, y);
-
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
-
-				newcell = cell + Cell(radius, y);
-				if (Map.In_Radar(newcell)) {
-					if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-						if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-							if (bestval < value) {
-								bestobject = object;
-								bestval = value;
-							}
-						}
-					}
-					if (bestobject == NULL) {
-						value = Evaluate_Just_Cell(newcell);
-						if (bestcellvalue < value) {
-							bestcellvalue = value;
-							bestcell = newcell;
-						}
-					}
-				}
+				Visit_Ring_Cell(cell + Cell(-radius, y));
+				Visit_Ring_Cell(cell + Cell(radius, y));
 			}
 
 			/*
