@@ -2566,9 +2566,10 @@ void Run(StepType const & step)
 
 	// shape: writes the mouse shape the map shows now, as the last hover set it (MouseType numbers, MOUSE_CAN_ATTACK is 21),
 	// with the first frame of its cursor entry and the frames the loaded cursor sheet holds; the sheet has no art at a frame past its count.
+	// shown is the shape on screen, which an override such as the panel's normal pointer can differ from.
 	if (step.Command == "shape") {
 		MouseType const shape = Map.Get_Mouse_Shape();
-		DebugString("AUTOTEST   shape %d frame %d sheet frames %d\n", (int)shape, Map.Get_Mouse_Start_Frame(shape), MouseClass::MouseShapes != NULL ? MouseClass::MouseShapes->Get_Count() : -1);
+		DebugString("AUTOTEST   shape %d frame %d sheet frames %d shown %d\n", (int)shape, Map.Get_Mouse_Start_Frame(shape), MouseClass::MouseShapes != NULL ? MouseClass::MouseShapes->Get_Count() : -1, (int)Map.Get_Displayed_Mouse_Shape());
 		return;
 	}
 
