@@ -1,0 +1,146 @@
+; Campaign win check for Soviet 6 (Red Alert 2). Sixty Dreadnoughts (grantunit) stand in for the fleet a player would build; everything after is an order.
+; The fleet sails west from the start and attacks, in turn, the Allied Prism Towers (ATESLA) that cover the shore, the Aircraft Carriers, the Destroyers, the Aegis Cruisers, the Naval Yards, then the SAM sites and pillboxes. Each strikeobj line names the nearest remaining target of its type. Taking the Prism Towers first matters: ordered against ships first, the Dreadnoughts sail inside their range and lose about half the fleet without winning.
+; Once the Allied house has no ship left "AllNavyDestroyed" springs (the Asian fleet has not been called, since no Naval Yard of ours stands), and "PlayerWin2" follows.
+; Expected: "AUTOTEST game over frame N: won" (frame 14057 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov06.txt -Campaign -Map SOV06T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit DRED 181 88
+11 grantunit DRED 183 88
+12 grantunit DRED 185 88
+13 grantunit DRED 187 88
+14 grantunit DRED 189 88
+15 grantunit DRED 191 88
+16 grantunit DRED 193 88
+17 grantunit DRED 195 88
+18 grantunit DRED 197 88
+19 grantunit DRED 199 88
+20 grantunit DRED 181 90
+21 grantunit DRED 183 90
+22 grantunit DRED 185 90
+23 grantunit DRED 187 90
+24 grantunit DRED 189 90
+25 grantunit DRED 191 90
+26 grantunit DRED 193 90
+27 grantunit DRED 195 90
+28 grantunit DRED 197 90
+29 grantunit DRED 199 90
+30 grantunit DRED 181 92
+31 grantunit DRED 183 92
+32 grantunit DRED 185 92
+33 grantunit DRED 187 92
+34 grantunit DRED 189 92
+35 grantunit DRED 191 92
+36 grantunit DRED 193 92
+37 grantunit DRED 195 92
+38 grantunit DRED 197 92
+39 grantunit DRED 199 92
+40 grantunit DRED 181 94
+41 grantunit DRED 183 94
+42 grantunit DRED 185 94
+43 grantunit DRED 187 94
+44 grantunit DRED 189 94
+45 grantunit DRED 191 94
+46 grantunit DRED 193 94
+47 grantunit DRED 195 94
+48 grantunit DRED 197 94
+49 grantunit DRED 199 94
+50 grantunit DRED 181 96
+51 grantunit DRED 183 96
+52 grantunit DRED 185 96
+53 grantunit DRED 187 96
+54 grantunit DRED 189 96
+55 grantunit DRED 191 96
+56 grantunit DRED 193 96
+57 grantunit DRED 195 96
+58 grantunit DRED 197 96
+59 grantunit DRED 199 96
+60 grantunit DRED 181 98
+61 grantunit DRED 183 98
+62 grantunit DRED 185 98
+63 grantunit DRED 187 98
+64 grantunit DRED 189 98
+65 grantunit DRED 191 98
+66 grantunit DRED 193 98
+67 grantunit DRED 195 98
+68 grantunit DRED 197 98
+69 grantunit DRED 199 98
+300 strikeobj ATESLA 100 110 120 all
+600 strikeobj ATESLA 100 110 120 all
+900 strikeobj ATESLA 100 110 120 all
+1200 strikeobj ATESLA 100 110 120 all
+1500 strikeobj ATESLA 100 110 120 all
+1800 strikeobj ATESLA 100 110 120 all
+2100 strikeobj ATESLA 100 110 120 all
+2400 strikeobj ATESLA 100 110 120 all
+2700 strikeobj ATESLA 100 110 120 all
+3000 strikeobj ATESLA 100 110 120 all
+3300 strikeobj ATESLA 100 110 120 all
+3600 strikeobj ATESLA 100 110 120 all
+3900 strikeobj ATESLA 100 110 120 all
+4200 strikeobj ATESLA 100 110 120 all
+4500 strikeobj ATESLA 100 110 120 all
+4800 strikeobj ATESLA 100 110 120 all
+5100 strikeobj CARRIER 100 110 120 all
+5400 strikeobj CARRIER 100 110 120 all
+5700 strikeobj CARRIER 100 110 120 all
+6000 strikeobj CARRIER 100 110 120 all
+6300 strikeobj CARRIER 100 110 120 all
+6600 strikeobj CARRIER 100 110 120 all
+6900 strikeobj CARRIER 100 110 120 all
+7200 strikeobj CARRIER 100 110 120 all
+7500 strikeobj DEST 100 110 120 all
+7800 strikeobj DEST 100 110 120 all
+8100 strikeobj DEST 100 110 120 all
+8400 strikeobj DEST 100 110 120 all
+8700 strikeobj DEST 100 110 120 all
+9000 strikeobj DEST 100 110 120 all
+9300 strikeobj DEST 100 110 120 all
+9600 strikeobj DEST 100 110 120 all
+9900 strikeobj AEGIS 100 110 120 all
+10200 strikeobj AEGIS 100 110 120 all
+10500 strikeobj AEGIS 100 110 120 all
+10800 strikeobj AEGIS 100 110 120 all
+11100 strikeobj GAYARD 100 110 120 all
+11400 strikeobj GAYARD 100 110 120 all
+11700 strikeobj GAYARD 100 110 120 all
+12000 strikeobj GAYARD 100 110 120 all
+12300 strikeobj CARRIER 100 110 120 all
+12600 strikeobj CARRIER 100 110 120 all
+12900 strikeobj CARRIER 100 110 120 all
+13200 strikeobj CARRIER 100 110 120 all
+13500 strikeobj CARRIER 100 110 120 all
+13800 strikeobj CARRIER 100 110 120 all
+14100 strikeobj DEST 100 110 120 all
+14400 strikeobj DEST 100 110 120 all
+14700 strikeobj DEST 100 110 120 all
+15000 strikeobj DEST 100 110 120 all
+15300 strikeobj DEST 100 110 120 all
+15600 strikeobj DEST 100 110 120 all
+15900 strikeobj AEGIS 100 110 120 all
+16200 strikeobj AEGIS 100 110 120 all
+16500 strikeobj AEGIS 100 110 120 all
+16800 strikeobj GAYARD 100 110 120 all
+17100 strikeobj GAYARD 100 110 120 all
+17400 strikeobj GAYARD 100 110 120 all
+17700 strikeobj NASAM 100 110 120 all
+18000 strikeobj NASAM 100 110 120 all
+18300 strikeobj NASAM 100 110 120 all
+18600 strikeobj NASAM 100 110 120 all
+18900 strikeobj NASAM 100 110 120 all
+19200 strikeobj NASAM 100 110 120 all
+19500 strikeobj GAPILL 100 110 120 all
+19800 strikeobj GAPILL 100 110 120 all
+20100 strikeobj GAPILL 100 110 120 all
+20400 strikeobj GAPILL 100 110 120 all
