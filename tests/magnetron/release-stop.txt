@@ -1,6 +1,6 @@
-; A Magnetron lifts an enemy Rhino (HTNK), then is ordered to stop at frame 400. A stop does not end the hold. The Rhino flies
-; to the spot beside the Magnetron, is let go on arrival and falls there. Each lift line gives the body facing, which stays the same
-; while the Rhino is held.
+; A Magnetron lifts an enemy Rhino (HTNK), then is ordered to stop at frame 400. The stop ends the hold: the Rhino is let go at
+; once: attacked drops to 0, crashing reads 1 while it falls from the air, and it lands where it fell. Before the stop, the Rhino
+; flies to the spot beside the Magnetron and keeps its body facing while it is held.
 ; Run: scripts/run_autotest.ps1 -Build agent4 -Script src-agent4/tests/magnetron/release-stop.txt -Seconds 150
 300 own TELE 54 40
 301 spawn HTNK 62 40
