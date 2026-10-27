@@ -17,6 +17,7 @@
 #include "except.h"
 
 #include <algorithm>
+#include <climits>
 #include <cstdio>
 #include <cstring>
 
@@ -43,20 +44,41 @@ constexpr unsigned int HANG_RESUMED_LOG_WAIT_MILLISECONDS = 60000;
 constexpr size_t HANG_REPORT_SIZE = 64 * 1024;
 
 ULONGLONG LimitMilliseconds = 0;
+HANDLE MainThreadHandle = NULL;
 char Report[HANG_REPORT_SIZE];
 char Status[512];
 char Folder[MAX_PATH];
 
 
 /// <summary>
+/// Returns the processor time the main thread has used so far, or ULLONG_MAX when it cannot be read.
+/// </summary>
+ULONGLONG Main_Thread_Cpu_Milliseconds(void)
+{
+	FILETIME created, exited, kernel, user;
+	if (MainThreadHandle == NULL || !GetThreadTimes(MainThreadHandle, &created, &exited, &kernel, &user)) {
+		return(ULLONG_MAX);
+	}
+
+	ULARGE_INTEGER k, u;
+	k.LowPart = kernel.dwLowDateTime;
+	k.HighPart = kernel.dwHighDateTime;
+	u.LowPart = user.dwLowDateTime;
+	u.HighPart = user.dwHighDateTime;
+	return((k.QuadPart + u.QuadPart) / 10000);
+}
+
+
+/// <summary>
 /// Captures the stalled main thread's stack and minidump, and logs them.
 /// </summary>
 /// <param name="stalled_milliseconds">How long the main thread has gone without a beat.</param>
+/// <param name="cpu_at_beat">The main thread's processor time at its last beat, or ULLONG_MAX when unknown.</param>
 /// <remarks>
 /// The thread is suspended only for the capture and the dump. The header line is logged before it
 /// is suspended, so a capture that cannot finish still leaves the stall in the log.
 /// </remarks>
-void Report_Stall(ULONGLONG stalled_milliseconds)
+void Report_Stall(ULONGLONG stalled_milliseconds, ULONGLONG cpu_at_beat)
 {
 	int const header_length = snprintf(Report, sizeof(Report), "HANG: main thread stuck for %llu s\n",
 				stalled_milliseconds / 1000);
@@ -85,7 +107,13 @@ void Report_Stall(ULONGLONG stalled_milliseconds)
 		captured = GetThreadContext(thread, &context) != FALSE;
 
 		if (captured && locked) {
-			Exception_Describe_Stall(thread, HangWatchMainThread, &context, Report + header, sizeof(Report) - header);
+			ULONGLONG busy = ULLONG_MAX;
+			ULONGLONG const cpu_now = Main_Thread_Cpu_Milliseconds();
+			if (cpu_at_beat != ULLONG_MAX && cpu_now != ULLONG_MAX && cpu_now >= cpu_at_beat) {
+				busy = cpu_now - cpu_at_beat;
+			}
+			Exception_Describe_Stall(thread, HangWatchMainThread, &context, busy, stalled_milliseconds,
+						Report + header, sizeof(Report) - header);
 			stacked = Debug_Log_Block(Report + header, HANG_LOG_WAIT_MILLISECONDS);
 			dumped = Exception_Write_Stall_Dump(Report, Folder, sizeof(Folder), &dump_error);
 		}
@@ -128,6 +156,7 @@ DWORD WINAPI Watch_Thread_Proc(LPVOID)
 	unsigned int seen = HangWatchBeats.load(std::memory_order_relaxed);
 	ULONGLONG changed = GetTickCount64();
 	ULONGLONG stall_start = 0;
+	ULONGLONG cpu_at_beat = ULLONG_MAX;
 	bool armed = false;
 	bool reported = false;
 
@@ -147,6 +176,7 @@ DWORD WINAPI Watch_Thread_Proc(LPVOID)
 			}
 			seen = beats;
 			changed = now;
+			cpu_at_beat = Main_Thread_Cpu_Milliseconds();
 			armed = true;
 			continue;
 		}
@@ -169,7 +199,7 @@ DWORD WINAPI Watch_Thread_Proc(LPVOID)
 		}
 
 		stall_start = changed;
-		Report_Stall(now - changed);
+		Report_Stall(now - changed, cpu_at_beat);
 		reported = true;
 	}
 }
@@ -193,6 +223,7 @@ void Hang_Watchdog_Start(void)
 
 	LimitMilliseconds = (ULONGLONG)std::min(unsigned int(seconds), HANG_MAX_SECONDS) * 1000;
 	HangWatchMainThread = GetCurrentThreadId();
+	MainThreadHandle = OpenThread(THREAD_QUERY_LIMITED_INFORMATION, FALSE, HangWatchMainThread);
 
 	HANDLE const thread = CreateThread(NULL, 256 * 1024, Watch_Thread_Proc, NULL, 0, NULL);
 	if (thread == NULL) {
