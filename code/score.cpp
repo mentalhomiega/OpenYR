@@ -442,8 +442,10 @@ void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem
 		Outline_Area(stage.Canvas(), panel, Panel_Edge_Color());
 	}
 
-	stage.Print_Left(figures.Rank.c_str(), left.X + pad, left.Y + pad);
-	Print_Paragraph(stage, figures.Message, Rect(left.X + pad, left.Y + pad + 2 * text_height, left.Width - 2 * pad, left.Height), text_height);
+	int const text_width = left.Width - 2 * pad;
+	int const rank_lines = (int)Wrap_Text(stage, figures.Rank, text_width).size();
+	Print_Paragraph(stage, figures.Rank, Rect(left.X + pad, left.Y + pad, text_width, left.Height), text_height);
+	Print_Paragraph(stage, figures.Message, Rect(left.X + pad, left.Y + pad + (rank_lines + 1) * text_height, text_width, left.Height), text_height);
 
 	double const fit = std::min((centre.Width - 2 * pad) / (double)EMBLEM_WIDTH, (centre.Height - 2 * pad) / (double)EMBLEM_HEIGHT);
 	int const emblem_width = (int)(EMBLEM_WIDTH * fit);
