@@ -20,6 +20,12 @@ The three kinds of sample:
 
 A phase nested in another phase also adds to the outer one. `frame.objects` contains
 `frame.pathfind` and `frame.threat`, and `draw.objects` contains `draw.voxels` and `draw.particles`.
+`frame.threat` contains `frame.ring` (the cell ring walk of an area or range scan) and `frame.eval`
+(the `Evaluate_Object` calls that the ring walk makes for the occupant of a cell). Those calls are the only
+ones in `frame.eval`; the full-map scan's calls are in `frame.threat` alone. The ring walk's own cost,
+without its occupant evaluations, is `frame.ring` minus `frame.eval`. That remainder holds the per-cell tests
+and `Evaluate_Just_Cell`, which are not timed separately, because a clock read per cell would cost more than
+the cell.
 `draw.total` includes the present that a draw starts, so draw and present time overlap.
 
 ## Perf lines
@@ -49,6 +55,20 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 | `threats` | Target scans (`TechnoClass::Greatest_Threat`), counted at the base class |
 | `object ai` | Object AI calls |
 | `upload bytes`, `uploads` | Bytes sent to textures, and the texture updates that sent them. A texture update sends only the tiles that changed since the last one, so a still picture adds nothing |
+| `scans ring`, `scans air`, `scans full` | Target scans by path: area and range scans that walk the cell ring, scans that walk the aircraft and air-layer lists, and full-map scans. One scan can count in both `scans ring` and `scans air` |
+| `scan targeting`, `scan mission`, `scan team`, `scan house` | `Greatest_Threat` calls from `Target_Something_Nearby`, from foot area scans (attack move, patrol, guard area), from team AI, and from house AI (quarry). The remaining scans are in `threats` but in none of these four |
+| `ring cells` | Ring cells on the radar map that the cell walk visits, counted per area or range scan before any evaluation |
+| `ring empty` | Of those, cells with no `TechnoClass` in either occupier chain (the bridge chain and the ground chain) |
+| `ring wall` | Of those, cells with a wall overlay (`OverlayTypes[...]->IsWall`) |
+| `cell candidates` | `Evaluate_Cell` calls that found an occupant and passed it to `Evaluate_Object` |
+| `object evals` | `Evaluate_Object` calls, from the ring walk and from full-map scans |
+| `area modify` | `Area_Modify` calls, including the calls that return 1 at once for a weapon that is not suppressive |
+| `weapon selects` | `What_Weapon_Should_I_Use` calls |
+| `ring keys`, `ring key repeats` | Ring walks with a distinct key and with a key an earlier walk in the same game frame already had. The key is the origin cell, the scanner's house, its type, its zone, the threat method and `crange`. It leaves out the exact origin coordinate, so a repeat can still find a different result |
+
+The ring counters are taken only when the cell walk runs; they add a read of each ring cell while recording. The
+`ring keys` counts use a set cleared at each game frame, so they cost more than the other counters; expect the
+scan time to grow while recording.
 
 ## Benchmark
 

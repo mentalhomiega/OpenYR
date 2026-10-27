@@ -229,6 +229,8 @@
 
 #include <algorithm>
 #include <intrin.h>
+#include <set>
+#include <tuple>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
@@ -516,6 +518,7 @@ bool TechnoClass::Is_Players_Army(void) const
  *=============================================================================================*/
 int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 {
+	Perf_Count(PERF_COUNT_WEAPON_SELECTS);
 	// As InfantryClass::SelectWeapon (0x5218E0): a DeployFire=yes soldier fires DeployFireWeapon
 	// while dug in and its first weapon otherwise.
 	if (RTTI == RTTI_INFANTRY) {
@@ -2310,6 +2313,7 @@ bool TechnoClass::In_Range(Coord const & coord, int which) const
  *=============================================================================================*/
 double TechnoClass::Area_Modify(Cell const & cell) const
 {
+	Perf_Count(PERF_COUNT_AREA_MODIFY);
 //	assert(PrimaryWeapon != NULL);
 	if (PrimaryWeapon == NULL || !PrimaryWeapon->IsSupressed) return(1);
 
@@ -2419,6 +2423,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 {
 	assert(object != NULL);
 
+	Perf_Count(PERF_COUNT_OBJECT_EVALS);
 	BStart(BENCH_EVAL_OBJECT);
 
 	bool engineer = Is_Renovator();
@@ -2946,7 +2951,9 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 		return(false);
 	}
 	*object = tech;
+	Perf_Count(PERF_COUNT_CELL_CANDIDATES);
 
+	PerfScope eval_scope(PERF_FRAME_THREAT_EVAL);
 	bool result = Evaluate_Object(method, mask, range, tech, value);
 
 	BEnd(BENCH_EVAL_CELL);
@@ -3050,6 +3057,47 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 	*/
 	BEnd(BENCH_EVAL_WALL);
 	return(Weapon_Range(0) - Distance(cell));
+}
+
+
+namespace {
+
+// Counts a ring walk whose inputs match an earlier walk in the same game frame. Recording only.
+void Count_Ring_Walk_Key(Cell const & cell, int house, void const * type, int zone, int method, int crange)
+{
+	static int key_frame = -1;
+	static std::set<std::tuple<int, int, int, void const *, int, int, int>> keys;
+
+	if (Frame != key_frame) {
+		keys.clear();
+		key_frame = Frame;
+	}
+	if (keys.insert(std::make_tuple(static_cast<int>(cell.X), static_cast<int>(cell.Y), house, type, zone, method, crange)).second) {
+		Perf_Count(PERF_COUNT_RING_KEYS);
+	} else {
+		Perf_Count(PERF_COUNT_RING_KEY_REPEATS);
+	}
+}
+
+
+// Counts a ring cell with no techno in either occupier chain, and one with a wall overlay.
+void Count_Ring_Cell_Contents(Cell const & cell)
+{
+	CellClass const & cellref = Map[cell];
+	bool techno = false;
+	for (int bridge = 0; bridge < 2 && !techno; bridge++) {
+		for (ObjectClass * object = cellref.Cell_Occupier(bridge != 0); object != NULL && !techno; object = object->Next) {
+			techno = Dynamic_Cast<TechnoClass *>(object) != NULL;
+		}
+	}
+	if (!techno) {
+		Perf_Count(PERF_COUNT_RING_CELLS_EMPTY);
+	}
+	if (cellref.Overlay != OVERLAY_NONE && OverlayTypes[cellref.Overlay]->IsWall) {
+		Perf_Count(PERF_COUNT_RING_CELLS_WALL);
+	}
+}
+
 }
 
 
@@ -3200,6 +3248,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		*/
 		// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
 		if (method & THREAT_AIR) {
+			Perf_Count(PERF_COUNT_SCANS_AIR);
 			int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
 			int value;
 			int index;
@@ -3258,9 +3307,20 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
 		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
+		if (scan_cells) {
+			Perf_Count(PERF_COUNT_SCANS_RING);
+			if (Perf_Enabled) {
+				Count_Ring_Walk_Key(cell, House->HeapID, TClass, zone, method, crange);
+			}
+		}
+		PerfScope ring_scope(PERF_FRAME_THREAT_RING);
 		// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
 		auto Visit_Ring_Cell = [&](Cell const & newcell) {
 			if (Map.In_Radar(newcell)) {
+				Perf_Count(PERF_COUNT_RING_CELLS);
+				if (Perf_Enabled) {
+					Count_Ring_Cell_Contents(newcell);
+				}
 				if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
 					if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
 					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
@@ -3316,6 +3376,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		}
 
 	} else {
+		Perf_Count(PERF_COUNT_SCANS_FULL);
 		/*
 		**	A full map scan was requested. First scan through aircraft. The top map layer
 		**	is NOT scanned since that layer will probably contain more bullets and animations
@@ -9867,6 +9928,7 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 	*/
 	// A slave never picks a target on its own (TechnoClass::CanPassiveAcquireTargets, 0x7091D0).
 	if (TarCom == NULL && SlaveOwner == NULL) {
+		Perf_Count(PERF_COUNT_SCAN_TARGETING);
 		AbstractClass * best = Greatest_Threat(threat, coord, false);
 		Assign_Target(TClass->IsDistributedFire ? Distributed_Target() : best);
 

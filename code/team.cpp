@@ -71,6 +71,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 
 #include "team.h"
 #include "lstorm.h"
@@ -2644,6 +2645,7 @@ void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
 		HouseClass * enemy = house->Enemy != HOUSE_NONE ? Houses[house->Enemy] : NULL;
 		target = Pick_Building_With_Property(BuildingTypes[mission->Data.Type], enemy, leader, TargetPropertyType((unsigned short)mission->Data.Prop), Class->OnlyTargetHouseEnemy);
 	} else {
+		Perf_Count(PERF_COUNT_SCAN_TEAM);
 		target = leader->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), leader->PositionCoord, Class->OnlyTargetHouseEnemy);
 	}
 
@@ -2803,6 +2805,7 @@ void TeamClass::TMission_PATROL(TeamMissionClass * mission, bool first_time)
 	if (Frame % int(Rule->PatrolTime * TICKS_PER_MINUTE) == 0) {
 		FootClass * leader = Fetch_A_Leader();
 		if (leader != NULL) {
+			Perf_Count(PERF_COUNT_SCAN_TEAM);
 			AbstractClass * target = leader->Greatest_Threat(ThreatType(THREAT_NORMAL|THREAT_RANGE), leader->PositionCoord, false);
 
 			if (target != NULL) {
@@ -2978,6 +2981,7 @@ void TeamClass::TMission_ATTACK(TeamMissionClass * mission, bool)
 		/*
 		**	Have the team leader pick what the next team target will be.
 		*/
+		Perf_Count(PERF_COUNT_SCAN_TEAM);
 		Assign_Mission_Target(candidate->Greatest_Threat(Quarry_Threat(QuarryType(mission->Data.Value)), candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
 		if (MissionTarget == NULL || !Ammo_Check()) IsNextMission = true;
 	}

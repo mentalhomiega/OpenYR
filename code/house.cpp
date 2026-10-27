@@ -128,6 +128,7 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "always.h"
+#include "perfstat.h"
 #include "csf.h"
 
 #include <cmath>
@@ -10347,6 +10348,7 @@ Cell HouseClass::Pick_Target_By_Type(QuarryType quarry)
 			FootClass * leader = team->Fetch_A_Leader();
 			if (leader == NULL) return(CELL_NONE);
 
+			Perf_Count(PERF_COUNT_SCAN_HOUSE);
 			AbstractClass * target = leader->Greatest_Threat(Quarry_Threat(quarry), leader->PositionCoord, true);
 			if (target == NULL) return(CELL_NONE);
 			return(target->Center_Coord().As_Cell());
