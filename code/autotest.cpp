@@ -5278,6 +5278,23 @@ void Run(StepType const & step)
 			new OverlayClass(OverlayTypes[type], Cell(step.X, step.Y), HousesType(PlayerPtr->HeapID));
 			DebugString("AUTOTEST wall %s at %d,%d: overlay %d\n", step.Argument.c_str(), step.X, step.Y, (int)Map[Cell(step.X, step.Y)].Overlay);
 		}
+	} else if (step.Command == "ewall") {
+		// ewall <OverlayType> x y: builds a section of that wall on that cell, owned by the first computer house with a
+		// construction yard that the player is not allied with, as enemy does for a structure.
+		OverlayType const type = OverlayTypeClass::From_Name(step.Argument.c_str());
+		HouseClass * owner = NULL;
+		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0 && !PlayerPtr->Is_Ally(Houses[index])) {
+				owner = Houses[index];
+			}
+		}
+		if (type != OVERLAY_NONE && owner != NULL) {
+			Map.PendingHouse = HousesType(owner->HeapID);
+			new OverlayClass(OverlayTypes[type], Cell(step.X, step.Y), HousesType(owner->HeapID));
+			DebugString("AUTOTEST ewall %s at %d,%d: overlay %d owner %s\n", step.Argument.c_str(), step.X, step.Y, (int)Map[Cell(step.X, step.Y)].Overlay, owner->Class->Name());
+		} else {
+			DebugString("AUTOTEST ewall %s: %s\n", step.Argument.c_str(), type == OVERLAY_NONE ? "no such overlay" : "no computer house");
+		}
 	} else if (step.Command == "holdmove") {
 		// holdmove 0|1: turns MissileLaunchHoldsMove off or on for the rest of the run.
 		Rule->IsMissileLaunchHoldsMove = step.Argument != "0";

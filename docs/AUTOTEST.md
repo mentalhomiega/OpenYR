@@ -76,6 +76,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `radar <TypeID>` | Writes each of the player's objects of that type with whether it is in limbo, whether the radar tracks it, whether the player has discovered it, and its radar pixel |
 | `neutral <TypeID> x y` | Puts an object of the type on that cell, owned by the house of the Civilian side, as `own` does for the player |
 | `enemy <TypeID> x y` | Puts an object of the type on that cell, owned by the first computer house with a construction yard that the player is not allied with, as `own` does for the player |
+| `ewall <OverlayType> x y` | Builds a section of that wall on that cell, owned by the computer house `enemy` picks. It logs the overlay index and owner, or `no such overlay` or `no computer house`. The `wall` command makes the same section owned by the player |
 | `spy <TypeID> x y` | Gives the player's objects of that type the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
 | `terrain x y` | Logs the land type of that cell (2 is water, 6 is beach), whether it is a shore piece and whether it holds any water |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
