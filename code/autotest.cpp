@@ -44,6 +44,8 @@
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
 **	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
+**	bridgehut x y			brings the bridge near the cell down as a bridge repair hut's C4 does (MapClass::Destroy_Bridge_At)
+**	bridgedecks x0 x1 y		writes how many high bridge deck overlays are left on row y from x0 to x1
 **	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
 **	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
 **	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
@@ -2052,6 +2054,36 @@ static void Bridge_Hit_Step(StepType const & step)
 
 
 /// <summary>
+/// Brings down the bridge near a cell as the C4 on a bridge repair hut does, through MapClass::Destroy_Bridge_At.
+/// </summary>
+/// <param name="step">The x in the argument and the y in X.</param>
+static void Bridge_Hut_Step(StepType const & step)
+{
+	int const x = std::atoi(step.Argument.c_str());
+	Map.Destroy_Bridge_At(Cell(x, step.X));
+	DebugString("AUTOTEST   bridgehut %d,%d\n", x, step.X);
+}
+
+
+/// <summary>
+/// Logs how many high bridge deck overlays stand on one row between two columns.
+/// </summary>
+/// <param name="step">The first column in the argument, the last in X, and the row in Y.</param>
+static void Bridge_Decks_Step(StepType const & step)
+{
+	int const first = std::atoi(step.Argument.c_str());
+	int left = 0;
+	for (int x = first; x <= step.X; x++) {
+		CellClass const & c = Map[Cell(x, step.Y)];
+		if ((c.Overlay == OVERLAY_BRIDGE1 || c.Overlay == OVERLAY_BRIDGE2) && c.IsBridgeDeck) {
+			left++;
+		}
+	}
+	DebugString("AUTOTEST   bridgedecks %d..%d,%d left %d\n", first, step.X, step.Y, left);
+}
+
+
+/// <summary>
 /// Hits the concrete low bridge on a cell through MapClass::Damage_Concrete_Bridge, the call a weapon impact
 /// makes on a concrete piece, and logs whether a span came down.
 /// </summary>
@@ -2310,6 +2342,14 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "bridgehit") {
 		Bridge_Hit_Step(step);
+		return;
+	}
+	if (step.Command == "bridgehut") {
+		Bridge_Hut_Step(step);
+		return;
+	}
+	if (step.Command == "bridgedecks") {
+		Bridge_Decks_Step(step);
 		return;
 	}
 	if (step.Command == "concretehit") {
