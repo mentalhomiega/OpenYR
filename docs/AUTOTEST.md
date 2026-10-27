@@ -188,6 +188,26 @@ The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows o
 start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
 colors and starts. It needs no game data.
 
+## Solo skirmish
+
+A skirmish with no computer player is a solo game: the person plays alone, and the game does not end
+because no opponent exists. The scripts below pass `-AIPlayers 0` unless they say otherwise.
+
+- `tests/autotest/skirmish-solo-spawn.txt` plays a skirmish from a launch file to frame 3000. The log has no
+  `AUTOTEST game over` line before the quit at frame 3010.
+- `tests/autotest/skirmish-solo-lobby.txt` starts the same game from the skirmish lobby. It runs with `-Menus`
+  and `-Settings` set to a `[Skirmish]` section with `Slot2=0,-1,1,0,0,0`, which opens the second row.
+- `tests/autotest/skirmish-solo-defeat.txt` defeats the person, and the log has `AUTOTEST game over frame N: lost`.
+  With `CoachMode=yes` under `[Settings]` in `-Settings`, the same script checks the coach mode run.
+- `tests/autotest/skirmish-solo-score.txt` wins the game with the Win Mission cheat, which needs
+  `DebugMode=yes` under `[Options]`, and `tests/autotest/skirmish-solo-lose-score.txt` loses it. Both carry
+  the game over on to the score screen with `continuewin` or `continuelose`, and the log has
+  `AUTOTEST score screen shown`.
+
+`tests/autotest/skirmish-1v1-win.txt` checks the rule for a game with a computer player: run with `-AIPlayers 1`,
+destroying the computer house (Africans with the default `-AICountries`) ends the game with
+`AUTOTEST game over frame N: won`.
+
 ## Saving and loading
 
 `command QuickSave` writes `QUICKSAVE.SAV` in the `Saved Games` folder of the user directory, and `command QuickLoad` loads it. A save made while the scenario's input is

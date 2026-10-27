@@ -1,0 +1,9 @@
+; A skirmish with nobody to play against, from a launch file (run_autotest.ps1 -AIPlayers 0). The person alone
+; must reach frame 3000 without a game over; the run then ends at frame 3010 with quit.
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent21 -Script src-agent21/tests/autotest/skirmish-solo-spawn.txt -AIPlayers 0 -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST|game over|Exception"
+100 log solo-100
+1000 log solo-1000
+2000 log solo-2000
+3000 log solo-3000
+3010 quit

@@ -1,0 +1,8 @@
+; The person alone loses everything, and the lost game carries on to its score screen. continuelose keeps the
+; run going past the loss, so the score screen's capture line appears; the score screen then ends at once. The
+; run has no quit line, so it ends at -Seconds once the game has returned. Expects "AUTOTEST game over frame N: lost",
+; "Loser" in the debug log and "AUTOTEST score screen shown frame N". Run it with -AIPlayers 0.
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent21 -Script src-agent21/tests/autotest/skirmish-solo-lose-score.txt -AIPlayers 0 -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST defeat|AUTOTEST score|game over|Loser|Exception"
+0 continuelose
+1000 defeat player

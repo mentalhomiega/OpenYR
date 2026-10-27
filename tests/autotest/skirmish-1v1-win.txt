@@ -1,0 +1,7 @@
+; A 1v1 skirmish against one computer player still ends when that player is destroyed. The computer house is
+; Africans with the default AICountries, so killhouse Africans 0 leaves the person as the last side standing.
+; Expects "AUTOTEST game over frame N: won" and the run ends there.
+; Run from the workspace root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent21 -Script src-agent21/tests/autotest/skirmish-1v1-win.txt -AIPlayers 1 -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST game over|AUTOTEST   killhouse|Exception"
+300 killhouse Africans 0
+1500 quit

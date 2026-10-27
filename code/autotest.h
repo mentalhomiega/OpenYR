@@ -28,9 +28,9 @@ void AutoTest_Frame(void);
 // Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
 void AutoTest_Game_Over(bool won);
 
-// True once a won mission carried on under continuewin, and for the rest of the run. The score
-// screen then takes its default instead of waiting for a click, because no script step runs while
-// it shows.
+// True once a won mission carried on under continuewin, or a lost one under continuelose, and for the
+// rest of the run. The score screen then takes its default instead of waiting for a click, because
+// no script step runs while it shows.
 bool AutoTest_Post_Win(void);
 
 void AutoTest_Loading_Screen_Shown(void);
