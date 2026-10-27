@@ -91,6 +91,11 @@ struct BackendEmissive
 	int LayerHeight;
 };
 
+// Names the rows of the next present's picture that may differ from the picture of the present before it.
+// Null rows, or a count other than the picture's height, means any row may differ. The rows stay noted
+// until the frame textures that use them have been brought up to date.
+void Backend_Note_Changed_Rows(unsigned char const * rows, int count);
+
 bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);
 
 // Shows the emissive masks in place of the pictures; the red channel carries the mask value.

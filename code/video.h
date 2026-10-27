@@ -107,6 +107,10 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 // until the next Video_Set_Map_Layer.
 void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest);
 void Video_Present_If_Dirty(void);
+// Notes that a copy changed only the visible surface rows whose entries are non-zero. before is the
+// surface's change count just before the copy and after its count just after; null rows mean the copy
+// may have changed any row.
+void Video_Note_Visible_Rows(unsigned char const * rows, int count, unsigned before, unsigned after);
 void Video_Present_Now(void);
 
 VideoScaleInfo const & Video_Get_Scale_Info(void);

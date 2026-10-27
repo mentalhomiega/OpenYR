@@ -79,8 +79,9 @@ class TileDiffClass
 
 		// Marks the tiles of the picture that differ from the copy, and brings the copy up to date with
 		// them. The picture is as wide and as high as the last Reset, at the given pitch in bytes. The grid
-		// must be sized for the same picture.
-		void Compare(void const * pixels, int pitch, TileGridClass & grid);
+		// must be sized for the same picture. With rows, a row whose entry is zero is taken as unchanged
+		// and not read; rows must cover the picture's height.
+		void Compare(void const * pixels, int pitch, TileGridClass & grid, std::uint8_t const * rows = nullptr);
 
 		// The copy, for checking that it matches the picture after Compare. Null before the first Reset.
 		std::uint8_t const * Copy(void) const { return(Shadow.empty() ? nullptr : Shadow.data()); }

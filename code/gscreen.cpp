@@ -78,6 +78,103 @@
 #include "emissive.h"
 #include "emissive_surface.h"
 #include "shadowplane.h"
+#include "dsurface.h"
+#include "video.h"
+
+#include <algorithm>
+#include <utility>
+#include <vector>
+
+
+// Composite surface rows written since an event, from the surface's write watch. Known is false when
+// any row may have been written.
+struct CompositeRows {
+	std::vector<unsigned char> Rows;
+	bool Known = false;
+
+	void Restart(int height)
+	{
+		Rows.assign((size_t)std::max(height, 0), 0);
+		Known = true;
+	}
+};
+
+// Rows written since the map layer key was last filled in, and since the composite was last copied to
+// the visible surface.
+static CompositeRows _SinceKeyFill;
+static CompositeRows _SinceCopy;
+static Rect _KeyFillRect;
+static Rect _CopySource;
+static Rect _CopyDest;
+static unsigned _VisibleChangesAfterCopy;
+static int _CopiesUntilFull;
+static std::vector<unsigned char> _CopiedRows;
+
+
+/// <summary>
+/// Adds the composite rows written since the last call to each given set. Returns false, and marks the
+/// sets unknown, when the composite cannot list its written rows.
+/// </summary>
+static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
+{
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	DSurface * const composite = (DSurface *)CompositeSurface;
+	int const height = composite->Get_Height();
+	int const pitch = composite->Stride();
+	bool const listed = pitch > 0 && composite->Written_Runs(runs);
+	for (CompositeRows * rows : {first, second}) {
+		if (rows == NULL) {
+			continue;
+		}
+		if (!listed || (int)rows->Rows.size() != height) {
+			rows->Known = false;
+			continue;
+		}
+		if (!rows->Known) {
+			continue;
+		}
+		for (auto const & run : runs) {
+			int const top = std::min((int)(run.first / pitch), height);
+			int const bottom = std::min((int)((run.second + pitch - 1) / pitch), height);
+			std::fill(rows->Rows.begin() + top, rows->Rows.begin() + bottom, (unsigned char)1);
+		}
+	}
+	return(listed);
+}
+
+
+/// <summary>
+/// Fills dest on the composite with the map layer key. Rows nothing has written since the last fill of
+/// the same rectangle still hold the key and are left alone; the emissive values under all of dest are cleared.
+/// </summary>
+static void Fill_Map_Layer_Key(Rect const & dest)
+{
+	bool const listed = Take_Composite_Rows(&_SinceKeyFill, &_SinceCopy);
+	if (!_SinceKeyFill.Known || dest != _KeyFillRect) {
+		CompositeSurface->Fill_Rect(dest, VIDEO_LAYER_KEY);
+	} else {
+		int const bottom = std::min(dest.Y + dest.Height, (int)_SinceKeyFill.Rows.size());
+		int y = std::max(dest.Y, 0);
+		while (y < bottom) {
+			if (_SinceKeyFill.Rows[y] == 0) {
+				y++;
+				continue;
+			}
+			int const top = y;
+			while (y < bottom && _SinceKeyFill.Rows[y] != 0) {
+				y++;
+			}
+			CompositeSurface->Fill_Rect(Rect(dest.X, top, dest.Width, y - top), VIDEO_LAYER_KEY);
+		}
+		Emissive_After_Fill(*CompositeSurface, Intersect(dest, CompositeSurface->Get_Rect()));
+	}
+	_KeyFillRect = dest;
+	// The rows just filled go to the copy only; counting them for the next fill would refill them every frame.
+	Take_Composite_Rows(NULL, &_SinceCopy);
+	if (listed) {
+		_SinceKeyFill.Restart(CompositeSurface->Get_Height());
+	}
+}
 #include "shellmap.h"
 #include "video.h"
 #include "viewzoom.h"
@@ -490,7 +587,7 @@ void GScreenClass::Render(void)
 	use_map_surfaces(false);
 	if (gpu_drawn) {
 		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
-		CompositeSurface->Fill_Rect(dest, VIDEO_LAYER_KEY);
+		Fill_Map_Layer_Key(dest);
 		Video_Set_Gpu_Map_Layer(gpu_area, dest);
 	} else if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution.
@@ -686,9 +783,58 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 	}
 
 	/*
-	 * Now blit the source surface to the visible surface
+	 * Now blit the source surface to the visible surface. A composite frame copies only the rows written
+	 * since its last copy while nothing else has changed the visible surface and the frame sits where it did;
+	 * every 120th copy is whole.
 	 */
-	VisibleSurface->Blit_From(dest_rect, *surface, src_rect, false, true);
+	DSurface * const visible = (DSurface *)VisibleSurface;
+	unsigned const before = visible->Change_Count();
+	bool const composite = (surface == CompositeSurface);
+	bool partial = false;
+	bool listed = false;
+	if (composite) {
+		listed = Take_Composite_Rows(&_SinceKeyFill, &_SinceCopy);
+		Rect const bounds = visible->Get_Rect();
+		bool const inside = dest_rect.X >= 0 && dest_rect.Y >= 0 && dest_rect.X + dest_rect.Width <= bounds.Width && dest_rect.Y + dest_rect.Height <= bounds.Height;
+		bool const unzoomed = (TacticalMap == NULL || TacticalMap->ZoomFactor == 1.0);
+		partial = listed && _SinceCopy.Known && inside && unzoomed && shake_x == 0 && shake_y == 0
+			&& before == _VisibleChangesAfterCopy && src_rect == _CopySource && dest_rect == _CopyDest && --_CopiesUntilFull > 0;
+	}
+	if (partial) {
+		_CopiedRows.assign((size_t)visible->Get_Height(), 0);
+		int const width = std::min(src_rect.Width, dest_rect.Width);
+		int const height = std::min(src_rect.Height, dest_rect.Height);
+		int const bottom = std::min(src_rect.Y + height, (int)_SinceCopy.Rows.size());
+		int const shift = dest_rect.Y - src_rect.Y;
+		int y = std::max(src_rect.Y, 0);
+		while (y < bottom) {
+			if (_SinceCopy.Rows[y] == 0) {
+				y++;
+				continue;
+			}
+			int const top = y;
+			while (y < bottom && _SinceCopy.Rows[y] != 0) {
+				y++;
+			}
+			VisibleSurface->Blit_From(Rect(dest_rect.X, top + shift, width, y - top), *surface, Rect(src_rect.X, top, width, y - top), false, true);
+			std::fill(_CopiedRows.begin() + (top + shift), _CopiedRows.begin() + (y + shift), (unsigned char)1);
+		}
+		// Emissive values can change where the pixels did not, so all of them follow.
+		Emissive_After_Bit_Blit(*VisibleSurface, dest_rect.X, dest_rect.Y, *surface, src_rect.X, src_rect.Y, width, height);
+		Video_Note_Visible_Rows(_CopiedRows.data(), (int)_CopiedRows.size(), before, visible->Change_Count());
+	} else {
+		VisibleSurface->Blit_From(dest_rect, *surface, src_rect, false, true);
+		Video_Note_Visible_Rows(NULL, 0, before, visible->Change_Count());
+		_CopiesUntilFull = 120;
+	}
+	if (composite) {
+		if (listed) {
+			_SinceCopy.Restart(CompositeSurface->Get_Height());
+		}
+		_CopySource = src_rect;
+		_CopyDest = dest_rect;
+		_VisibleChangesAfterCopy = visible->Change_Count();
+	}
 
 	Video_Present_If_Dirty();
 }

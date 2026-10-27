@@ -552,6 +552,26 @@ static void Log_Present_Digest(DSurface const * surface, BackendLayer const * la
 }
 
 
+// The visible surface rows changed since the last upload, and the surface's change count after the copy
+// that noted them. Known is false when any row may have changed.
+static std::vector<unsigned char> _VisibleRows;
+static bool _VisibleRowsKnown = false;
+static unsigned _VisibleRowsChanges = 0;
+
+
+void Video_Note_Visible_Rows(unsigned char const * rows, int count, unsigned before, unsigned after)
+{
+	if (rows == NULL || before != _VisibleRowsChanges || (int)_VisibleRows.size() != count) {
+		_VisibleRowsKnown = false;
+	} else if (_VisibleRowsKnown) {
+		for (int y = 0; y < count; y++) {
+			_VisibleRows[y] |= rows[y];
+		}
+	}
+	_VisibleRowsChanges = after;
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
@@ -634,6 +654,16 @@ static void Present(void)
 
 	if (_PresentDigest) {
 		Log_Present_Digest(surface, layerptr);
+	}
+
+	if (pixels != NULL) {
+		// Rows are only known while every change to the surface since the last upload came through a noted copy.
+		int const height = surface->Get_Height();
+		bool const known = _VisibleRowsKnown && surface->Change_Count() == _VisibleRowsChanges && (int)_VisibleRows.size() == height;
+		Backend_Note_Changed_Rows(known ? _VisibleRows.data() : NULL, height);
+		_VisibleRows.assign((size_t)height, 0);
+		_VisibleRowsKnown = true;
+		_VisibleRowsChanges = surface->Change_Count();
 	}
 
 	bool presented = false;

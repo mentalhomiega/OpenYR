@@ -7494,7 +7494,7 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 	}
 
 	if (composite_rect.Is_Valid()) {
-		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height);
+		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height, true);
 		CompositeSurface->Fill(0);
 
 		DebugString("CompositeSurface (%dx%d)\n", composite_rect.Width, composite_rect.Height);
