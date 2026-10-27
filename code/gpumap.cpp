@@ -885,6 +885,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 				waves[0] = (float)(ms % 1000000) / 1000.0f;
 				waves[1] = 1.5f * _WaterStrength / 100.0f;
 				waves[2] = 0.06f * _WaterStrength / 100.0f;
+				waves[3] = 0.4f * _WaterStrength / 100.0f;
 				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 			}
 			bgfx::setUniform(_WaterUniform, waves);

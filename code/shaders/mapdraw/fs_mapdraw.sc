@@ -20,7 +20,7 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
 // u_water: x the time in seconds, y how far water ripples shift the base in pixels (0 for none), z how much they
-// brighten and darken it.
+// brighten and darken it, w how bright the glints of sunlight on them are.
 
 #include "bgfx_shader.sh"
 
@@ -62,10 +62,15 @@ vec3 Rgb565(int c)
 	return vec3(float((c / 2048) % 32) / 31.0, float((c / 32) % 64) / 63.0, float(c % 32) / 31.0);
 }
 
-// Water tiles mark the tile layer's plane with 1 (code/shadowplane.h).
+// The bits of the tile layer's plane at p: 128 a shadow, 1 water (code/shadowplane.h).
+int Plane(ivec2 p)
+{
+	return int(texelFetch(s_tileshadow, p, 0).x * 255.0 + 0.5);
+}
+
 bool Water(ivec2 p)
 {
-	return int(texelFetch(s_tileshadow, p, 0).x * 255.0 + 0.5) == 1;
+	return Plane(p) % 2 == 1;
 }
 
 // The base at water pixel p, shifted and shaded by two waves crossing the ground. A neighbour that
@@ -87,7 +92,15 @@ vec3 Water_Base(ivec2 p, vec3 still)
 		c[i] = Water(t) ? Rgb565(Fetch16(s_base, t)) : still;
 	}
 	vec3 colour = mix(mix(c[0], c[1], f.x), mix(c[2], c[3], f.x), f.y);
-	return colour * (1.0 + u_water.z * (cos(a) + 0.6 * cos(b)));
+	colour *= 1.0 + u_water.z * (cos(a) + 0.6 * cos(b));
+	// Three finer waves at unrelated angles meet in short-lived peaks, which show as glints along the
+	// crests of the swell; a slow wide wave thins them out in drifting patches.
+	float g = sin(at.x * 0.17 + at.y * 0.29 + u_water.x * 2.9) * sin(at.x * 0.21 - at.y * 0.37 - u_water.x * 2.3)
+		* sin(at.x * -0.26 + at.y * 0.13 + u_water.x * 1.7);
+	float crest = max(cos(a) + 0.6 * cos(b), 0.0) / 1.6;
+	float patches = max(sin(at.x * 0.013 - at.y * 0.021 + u_water.x * 0.4) + 0.3 * sin(at.x * 0.029 + at.y * 0.011 - u_water.x * 0.3), 0.0);
+	float glint = pow(max(g, 0.0) * 1.3, 6.0) * crest * crest * crest * patches;
+	return min(colour + glint * u_water.w, vec3_splat(1.0));
 }
 
 void main()
@@ -114,7 +127,7 @@ void main()
 	}
 
 	if (kind == 15) {
-		if (texelFetch(s_tileshadow, area, 0).x < 0.5) {
+		if (Plane(area) < 128) {
 			discard;
 		}
 		gl_FragColor = vec4_splat(1.0);

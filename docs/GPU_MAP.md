@@ -18,8 +18,8 @@ the alpha buffer, then draws the objects over it. When the map view is drawn mor
 a frame is presented, only the last pass goes to the GPU. With `SoftShadows`, a shadow drawn into the
 tile layer marks a mask kept beside the layer instead of darkening its pixels, and the GPU pass
 darkens the ground through that mask. With `WaterRipples`, the same mask marks the pixels of water
-tiles that no later tile, extra tile image, opaque draw or kept shadow in the layer covers, and the
-GPU pass ripples the ground only there, before it draws the objects.
+tiles that no later tile, extra tile image or opaque draw in the layer covers, and the GPU pass
+ripples the ground only there, before it draws the objects. A shadow on the water ripples with it.
 
 After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
 GPU reads it from the tile layer directly, and only when that layer has changed. If a pass then
@@ -46,8 +46,8 @@ greyed out without the modern interface. `SoftShadowRadius`, `BloomStrength` and
 | `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
 | `Bloom` | `no` | With `GpuRender`, the parts of the map marked in the emissive mask, such as lasers, electric bolts, lamps and fire, glow onto the picture around them, about 24 pixels out. It turns the emissive mask on, which [EMISSIVE_MASK.md](EMISSIVE_MASK.md) describes, so an object or animation glows only when the mask marks it. A pass drawn in software has no glow. |
 | `BloomStrength` | `100` | The brightness of the `Bloom` glow in percent, from 1 to 400. |
-| `WaterRipples` | `no` | With `GpuRender`, the water of the map ripples: two slow waves shift the ground under the water by up to 2.4 pixels sideways and 1.2 pixels up or down, and lighten or darken it by up to 10%. Ships, units and effects on the water are drawn after the ripple and do not move with it. Shore tiles that are part land do not ripple, and a pass drawn in software shows still water. Changing the switch redraws the whole tile layer. |
-| `WaterRippleStrength` | `100` | The size of the `WaterRipples` shift and shading in percent, from 1 to 400. |
+| `WaterRipples` | `no` | With `GpuRender`, the water of the map ripples: two slow waves shift the ground under the water by up to 2.4 pixels sideways and 1.2 pixels up or down, and lighten or darken it by up to 10%, and sunlight glints in drifting patches along the crests. Ships, units and effects on the water are drawn after the ripple and do not move with it. Shore tiles that are part land do not ripple, and a pass drawn in software shows still water. Changing the switch redraws the whole tile layer. |
+| `WaterRippleStrength` | `100` | The size of the `WaterRipples` shift and shading and the brightness of its glints, in percent, from 1 to 400. |
 
 ## Limits
 

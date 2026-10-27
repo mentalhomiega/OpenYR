@@ -663,7 +663,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			emissive += emissive_pitch;
 		}
 		if (shadow != NULL) {
-			Emissive_RLE_Row(shadow, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, shadow_value, shadow_depth && DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z, consumed && shadow_write);
+			Emissive_RLE_Row(shadow, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, shadow_value, shadow_depth && DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z, consumed && shadow_write, consumed ? SHADOWPLANE_WATER : 0);
 			shadow += shadow_pitch;
 		}
 		if (!consumed) {

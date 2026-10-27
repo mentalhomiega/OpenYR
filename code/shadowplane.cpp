@@ -266,7 +266,7 @@ void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short hal
 		unsigned short * row = (unsigned short *)((char *)pixels + y * surface.Stride());
 		unsigned char const * marks = plane->Pixels + (clipped.Y + y) * plane->Pitch + clipped.X;
 		for (int x = 0; x < clipped.Width; x++) {
-			if (marks[x] == SHADOWPLANE_SHADOW) {
+			if ((marks[x] & SHADOWPLANE_SHADOW) != 0) {
 				row[x] = (unsigned short)((row[x] >> 1) & halfmask);
 			}
 		}
@@ -288,7 +288,7 @@ void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigne
 		unsigned char const * marks = plane->Pixels + (area.Y + y) * plane->Pitch;
 		unsigned short * row = pixels + (std::size_t)y * area.Width;
 		for (int x = std::max(0, -area.X); x < area.Width && area.X + x < plane->Width; x++) {
-			if (marks[area.X + x] == SHADOWPLANE_SHADOW) {
+			if ((marks[area.X + x] & SHADOWPLANE_SHADOW) != 0) {
 				row[x] = (unsigned short)((row[x] >> 1) & halfmask);
 			}
 		}

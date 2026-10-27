@@ -98,7 +98,7 @@ void Test_Plane(void)
 	RLE_Blit(tile, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
 	RLE_Blit(ref, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
 	Check(std::count(tilepixels.begin(), tilepixels.end(), GROUND) == W * H, "a shadow drawn into the tile layer leaves its pixels alone");
-	Check(Mark(2, 1) == 255 && Mark(5, 1) == 255 && Mark(4, 2) == 255 && Mark(5, 2) == 255, "a shadow marks the plane under its pixels");
+	Check(Mark(2, 1) == SHADOWPLANE_SHADOW && Mark(5, 1) == SHADOWPLANE_SHADOW && Mark(4, 2) == SHADOWPLANE_SHADOW && Mark(5, 2) == SHADOWPLANE_SHADOW, "a shadow marks the plane under its pixels");
 	Check(Mark(2, 2) == 0 && Mark(3, 2) == 0 && Mark(1, 1) == 0 && Mark(2, 0) == 0, "a shadow leaves the plane clear outside its pixels");
 
 	std::vector<unsigned short> darkened = tilepixels;
@@ -107,16 +107,16 @@ void Test_Plane(void)
 
 	RLE_Blit(tile, Rect(0, 1, 4, 2), source, Rect(0, 0, 4, 2), xlat);
 	Check(Mark(2, 1) == 0 && Mark(3, 1) == 0, "an opaque draw clears the plane under its pixels");
-	Check(Mark(4, 1) == 255 && Mark(4, 2) == 255, "an opaque draw leaves the plane beside it");
+	Check(Mark(4, 1) == SHADOWPLANE_SHADOW && Mark(4, 2) == SHADOWPLANE_SHADOW, "an opaque draw leaves the plane beside it");
 	Check(tilepixels[1 * W + 2] == DRAWN, "an opaque draw still draws");
 
 	ShadowPlane_After_Fill(tile, Rect(5, 1, 1, 1));
-	Check(Mark(5, 1) == 0 && Mark(5, 2) == 255, "a fill clears the plane under it only");
+	Check(Mark(5, 1) == 0 && Mark(5, 2) == SHADOWPLANE_SHADOW, "a fill clears the plane under it only");
 
 	BlitPlain<unsigned short> plain;
 	Bit_Blit(copy, Rect(0, 0, W, H), tile, Rect(0, 0, W, H), plain);
 	EmissivePlane const * copied = ShadowPlane_For(&copy);
-	Check(copied != NULL && copied->Pixels[2 * W + 4] == 255 && copied->Pixels[1 * W + 2] == 0, "a copy carries the plane to the other surface");
+	Check(copied != NULL && copied->Pixels[2 * W + 4] == SHADOWPLANE_SHADOW && copied->Pixels[1 * W + 2] == 0, "a copy carries the plane to the other surface");
 
 	ShadowPlane_Darken(copy, Rect(0, 0, W, H), HALF_MASK);
 	Check(copypixels[2 * W + 4] == (unsigned short)((GROUND >> 1) & HALF_MASK) && copypixels[1 * W + 2] == DRAWN, "darkening a surface halves only the marked pixels");
@@ -174,6 +174,15 @@ void Test_Water(void)
 
 	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, false);
 	Check(Mark(1, 0) == 0 && Mark(1, 1) == 0, "another tile clears the water");
+
+	ShadowPlane_Set_Enabled(true, true);
+	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, true);
+	std::fill(tilepixels.begin(), tilepixels.end(), GROUND);
+	RLE_Blit(tile, Rect(0, 0, 4, 2), source, Rect(0, 0, 4, 2), darken);
+	Check(Mark(0, 0) == (SHADOWPLANE_SHADOW | SHADOWPLANE_WATER) && Mark(2, 1) == (SHADOWPLANE_SHADOW | SHADOWPLANE_WATER) && Mark(1, 1) == SHADOWPLANE_WATER, "a kept shadow on water keeps the water bit");
+	std::fill(darkened.begin(), darkened.end(), GROUND);
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK);
+	Check(darkened[0] == (unsigned short)((GROUND >> 1) & HALF_MASK) && darkened[1 * W + 1] == GROUND, "a shadow on water darkens and bare water does not");
 
 	ShadowPlane_Set_Enabled(true, false);
 	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, true);

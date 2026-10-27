@@ -21,9 +21,9 @@
 class RLEBlitter;
 
 
-// Plane values: a shadow, and an uncovered pixel of a water tile.
-constexpr unsigned char SHADOWPLANE_SHADOW = 255;
-constexpr unsigned char SHADOWPLANE_WATER = 1;
+// Plane bits: a shadow, and an uncovered pixel of a water tile. A shadow keeps the water bit.
+constexpr unsigned char SHADOWPLANE_SHADOW = 0x80;
+constexpr unsigned char SHADOWPLANE_WATER = 0x01;
 
 // Planes are on while shadows or water are kept.
 bool ShadowPlane_Is_Enabled(void);
@@ -44,8 +44,8 @@ EmissivePlane * ShadowPlane_For(void const * surface);
 // Frees the plane of a surface that is being deleted.
 void ShadowPlane_Forget(void const * surface);
 
-// The plane that RLE_Blit marks while drawing into dest, or NULL. Sets value to 255 for a shadow,
-// which the blit must then skip, 0 for an opaque draw, and returns NULL for a translucent one and,
+// The plane that RLE_Blit marks while drawing into dest, or NULL. Sets value to SHADOWPLANE_SHADOW
+// for a shadow, which the blit must then skip and which keeps the water bit, 0 for an opaque draw, and returns NULL for a translucent one and,
 // while shadows are not kept, for a shadow.
 // Sets depthwrite when the blitter writes depth, which a skipped shadow must still do.
 EmissivePlane * ShadowPlane_For_RLE(Surface const & dest, RLEBlitter const & blitter, unsigned char & value, bool & depthtest, bool & depthwrite);
