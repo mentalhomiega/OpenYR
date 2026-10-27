@@ -8817,7 +8817,8 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		std::erase(AttackedTargets, (TechnoClass *)target);
 		if (BunkerLinkedItem == target) {
 			BunkerLinkedItem = NULL;
-			if (RTTI == RTTI_BUILDING) {
+			// While a scenario is cleared, gamemd only drops the link (0x7077C0); new anims would need colour schemes already freed.
+			if (RTTI == RTTI_BUILDING && !ScenarioInit) {
 				((BuildingClass *)this)->Bunker_Walls_Down_Anims();
 			}
 		}
