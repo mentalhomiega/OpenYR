@@ -69,12 +69,21 @@ struct RoundTripReportType
 	double SaveMs = 0;
 	double LoadMs = 0;
 	double ResaveMs = 0;
+	double SaveMapMs = 0;               // Of SaveMs, writing the map and its cells.
+	double ClearMs = 0;                 // Of LoadMs, deleting the running game's objects.
+	double LoadMapMs = 0;               // Of LoadMs, reading the map and its cells.
+	double FixupMs = 0;                 // Of LoadMs, resolving pointers and the fixups after.
 	bool Same = false;                  // The second save is byte for byte the first.
 	std::size_t FirstDifference = 0;    // Set when Same is false.
 	unsigned int RecordOffset = 0;      // Where the record holding FirstDifference starts.
 	std::string Record;                 // That record's class or section.
 };
-bool Round_Trip_Game_State(RoundTripReportType & report);
+// A snapshot holds the game state a rollback restores: everything a save holds except the
+// rules, the sides and the types rules and art define, which stay in place.
+bool Round_Trip_Game_State(RoundTripReportType & report, bool snapshot = false);
+
+// True while a snapshot is being restored into the match it was taken from.
+extern bool SnapshotRestoring;
 
 void Dump_Mark(SaveStreamClass const & stream, char const * name);
 bool Reconcile_Players(void);

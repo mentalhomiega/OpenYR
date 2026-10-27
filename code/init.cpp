@@ -7543,8 +7543,10 @@ static void Init_Threads(void)
 /// released, and the cell array goes with them.
 /// </summary>
 /// <remarks>The game logic must not be running -- there is nothing left for it to run
-/// upon.</remarks>
-void Delete_All_Objects(void)
+/// upon. With keep_rule_types, the sides and every type that rules and art define stay, and
+/// only the types a map defines (task forces, team, script, tag, trigger and AI trigger types)
+/// and the tiberiums, which hold growth and spread state, are deleted.</remarks>
+void Delete_All_Objects(bool keep_rule_types)
 {
 	ScenarioInit++;
 
@@ -7595,7 +7597,7 @@ void Delete_All_Objects(void)
 		delete Factories[0];
 	}
 	Process_Deferred_Deletion();
-	while (Sides.Count()) {
+	while (!keep_rule_types && Sides.Count()) {
 		delete Sides[0];
 	}
 	Process_Deferred_Deletion();
@@ -7646,8 +7648,33 @@ void Delete_All_Objects(void)
 	LineTrailClass::All_Clear();
 	RadBeamClass::All_Clear();
 
-	while (AbstractTypes.Count()) {
-		delete AbstractTypes[0];
+	if (keep_rule_types) {
+		// Deleting one of these can delete others with it, so each is looked up again first.
+		std::vector<AbstractTypeClass *> doomed;
+		for (int index = 0; index < AbstractTypes.Count(); index++) {
+			switch (AbstractTypes[index]->What_Am_I()) {
+				case RTTI_TASKFORCE:
+				case RTTI_TEAMTYPE:
+				case RTTI_SCRIPTTYPE:
+				case RTTI_TAGTYPE:
+				case RTTI_TRIGGERTYPE:
+				case RTTI_AITRIGGERTYPE:
+				case RTTI_TIBERIUM:
+					doomed.push_back(AbstractTypes[index]);
+					break;
+				default:
+					break;
+			}
+		}
+		for (AbstractTypeClass * abstype : doomed) {
+			if (AbstractTypes.ID(abstype) != -1) {
+				delete abstype;
+			}
+		}
+	} else {
+		while (AbstractTypes.Count()) {
+			delete AbstractTypes[0];
+		}
 	}
 	Process_Deferred_Deletion();
 
@@ -7664,7 +7691,7 @@ void Delete_All_Objects(void)
 	/*
 	 * Check if all deletions succeeded before leaving.
 	 */
-	assert(AbstractTypes.Count() == 0);
+	assert(keep_rule_types || AbstractTypes.Count() == 0);
 	assert(SpotLights.Count() == 0);
 	assert(EMPulseClass::EMPulses.Count() == 0);
 	assert(FoggedObjectClass::FoggyObjects.Count() == 0);
@@ -7682,7 +7709,7 @@ void Delete_All_Objects(void)
 	assert(ParticleSystems.Count() == 0);
 	assert(Waves.Count() == 0);
 	assert(Factories.Count() == 0);
-	assert(Sides.Count() == 0);
+	assert(keep_rule_types || Sides.Count() == 0);
 	assert(Teams.Count() == 0);
 	assert(Houses.Count() == 0);
 	assert(Anims.Count() == 0);

@@ -420,6 +420,7 @@ std::size_t Next = 0;
 int RecordInterval = 0;
 int HashInterval = 0;
 int RoundTripInterval = 0;
+int SnapTripInterval = 0;
 
 // The type the speed probe logs, empty when it is off, and the frames between its logs (0 logs once).
 std::string SpeedProbeType;
@@ -1024,21 +1025,23 @@ void Log_State_Hash(void)
 
 /// <summary>
 /// Saves the game to memory, loads it back in place and saves it again, then logs the state's
-/// size, the time of each step and whether the two saves match. The game plays on from the
-/// loaded state.
+/// size, the time of each step and whether the two saves match. With snapshot, the rollback
+/// snapshot is used instead of the full save. The game plays on from the loaded state.
 /// </summary>
-void Log_Round_Trip(void)
+void Log_Round_Trip(bool snapshot)
 {
+	char const * const name = snapshot ? "snaptrip" : "roundtrip";
 	RoundTripReportType report;
-	bool const done = Round_Trip_Game_State(report);
+	bool const done = Round_Trip_Game_State(report, snapshot);
 	if (!done) {
-		DebugString("AUTOTEST roundtrip frame %d failed bytes %u save %.2f ms load %.2f ms\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs);
+		DebugString("AUTOTEST %s frame %d failed bytes %u save %.2f ms load %.2f ms\n", name, Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs);
 		return;
 	}
+	DebugString("AUTOTEST %s phases frame %d save map %.2f ms clear %.2f ms load map %.2f ms fixup %.2f ms\n", name, Frame, report.SaveMapMs, report.ClearMs, report.LoadMapMs, report.FixupMs);
 	if (report.Same) {
-		DebugString("AUTOTEST roundtrip frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms same\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs);
+		DebugString("AUTOTEST %s frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms same\n", name, Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs);
 	} else {
-		DebugString("AUTOTEST roundtrip frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms differs at %u in %s at %u\n", Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs,
+		DebugString("AUTOTEST %s frame %d bytes %u save %.2f ms load %.2f ms resave %.2f ms differs at %u in %s at %u\n", name, Frame, (unsigned)report.Bytes, report.SaveMs, report.LoadMs, report.ResaveMs,
 			(unsigned)report.FirstDifference, report.Record.empty() ? "(start)" : report.Record.c_str(), report.RecordOffset);
 	}
 }
@@ -5128,7 +5131,13 @@ void Run(StepType const & step)
 		RoundTripInterval = std::max(0, std::atoi(step.Argument.c_str()));
 		// On a frame the interval reaches, the repeat below runs it once.
 		if (RoundTripInterval == 0 || (Frame % RoundTripInterval) != 0) {
-			Log_Round_Trip();
+			Log_Round_Trip(false);
+		}
+	} else if (step.Command == "snaptrip") {
+		// snaptrip [interval]: as roundtrip, with the rollback snapshot in place of the full save.
+		SnapTripInterval = std::max(0, std::atoi(step.Argument.c_str()));
+		if (SnapTripInterval == 0 || (Frame % SnapTripInterval) != 0) {
+			Log_Round_Trip(true);
 		}
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
@@ -5332,7 +5341,10 @@ void AutoTest_Frame(void)
 
 	// After the hash, so the hash logged on the same frame is the state before the round trip.
 	if (RoundTripInterval > 0 && (Frame % RoundTripInterval) == 0) {
-		Log_Round_Trip();
+		Log_Round_Trip(false);
+	}
+	if (SnapTripInterval > 0 && (Frame % SnapTripInterval) == 0) {
+		Log_Round_Trip(true);
 	}
 
 	if (SpeedProbeInterval > 0 && (Frame % SpeedProbeInterval) == 0) {

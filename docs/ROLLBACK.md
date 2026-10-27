@@ -6,10 +6,10 @@ restores the game state from before that frame and re-runs up to the present
 with the order in place. This hides the order delay that the lockstep schedule
 in [Network timing](NETCODE.md) needs.
 
-This page is a plan. Only the input link and the `roundtrip` autotest step
-exist. No game code uses the link, and the step runs only from an autotest
-script, so no other game played on this branch behaves differently from
-`modern`.
+This page is a plan. Only the input link, the game-state snapshot and the
+`roundtrip` and `snaptrip` autotest steps exist. No game code uses the link or
+the snapshot, and the steps run only from an autotest script, so no other game
+played on this branch behaves differently from `modern`.
 
 ## What exists
 
@@ -81,11 +81,12 @@ regions. OpenYR's state lives in its own pools and globals, which allows a
 narrower snapshot. Three ways to try, in order:
 
 1. **Save into memory.** Write the game to a memory stream with the save code
-   and load it back on a rollback. The game state survives the round trip, but
-   the load is about a hundred times too slow (see
-   [Save and load measurements](#save-and-load-measurements)). This way needs a
-   load that puts back only the game state and keeps the theater, art and rules
-   that a match never changes.
+   and load it back on a rollback. The full save round-trips the game state,
+   but its load takes about 1.6 s. The game-state snapshot below keeps the
+   theater, art, rules and rule types in place and restores in about 46 ms
+   (see [Save and load measurements](#save-and-load-measurements)). That is
+   still several frames' time, so this way needs a faster restore before it can
+   run on every rollback.
 2. **An arena for game-state allocations.** Give the object pools and other
    game-state allocations their own region and copy its dirty pages, as the
    prototype did. Globals that hold game state need their own list; renderer,
@@ -119,28 +120,71 @@ frame 7478 when the player loses.
   matched each other. `hash` covers each object's position, facing, strength,
   mission, limbo state and owner, each house's credits and the random-number
   state.
-- **The saved state comes back the same, with two exceptions.** On frame 600,
-  a state dump before the round trip and one after it differ only in the
-  scenario's elapsed play time, a wall-clock count that runs on while the load
-  takes place, and in `UINameLabel` of four civilian building types (CASYDN01,
-  CATIME, CALA02, CALOND02). Those labels were empty before the load and hold
-  the type's ID after it. They are interface text. Each of the
-  24 round trips also found its first difference in the play time; the probe
-  reports only the first difference, so the other 23 were not checked further.
-- **Saving costs 21 to 50 ms**, 26 ms on average, for 5.2 to 5.3 MB of state.
-- **Loading costs 1.4 to 1.9 s**, 1.6 s on average. Most of it rebuilds what a
+- **The saved state comes back nearly the same.** On frame 600, a state dump
+  before the round trip and one after it first differ in the scenario's
+  elapsed play time, a wall-clock count that runs on while the load takes
+  place. Four civilian building types (CASYDN01, CATIME, CALA02, CALOND02)
+  also have a longer record after the load: their `UINameLabel`, empty before,
+  holds the type's ID. That is interface text. Records of equal length were not
+  compared byte by byte for this full round trip.
+- **Saving costs 20 to 50 ms**, 24 to 26 ms on average, for 5.2 to 5.3 MB of
+  state.
+- **Loading costs 1.3 to 1.9 s**, 1.6 s on average. Most of it rebuilds what a
   match never changes. The theater takes about 0.34 s before its tile sets are
-  read and 0.87 s to load 146 isometric tiles. Re-reading art and rules and
-  loading the objects take the remaining 0.5 s or so.
+  read, and the map's load reloads 146 isometric tiles; reading the map takes
+  0.6 to 0.9 s in all.
 
-A frame at 60 fps lasts 16.7 ms, so a 26 ms save on every frame is too slow as
-well, even before the load is reduced. The next measurement is a load that skips the theater, art and
-rules, and a save of game state alone.
+#### Game-state snapshot
+
+The autotest step `snaptrip` does the same with the rollback snapshot
+(`Round_Trip_Game_State` with `snapshot`). The snapshot leaves out the rules,
+the sides, and the types rules and art define: animation, house, vehicle,
+infantry, building, aircraft, voxel animation, warhead, weapon, particle,
+particle system, projectile, smudge, overlay, super weapon and terrain types.
+They stay in place across a restore, and the snapshot numbers them first, so
+the objects' pointers to them resolve without their records. The theater, art,
+rules and isometric tiles are not reloaded either. The snapshot still holds
+the types a map defines (task forces, team, script, tag, trigger and AI trigger
+types) and the tiberiums, which hold growth and spread state.
+
+Same game and build as above, with a snapshot round trip every 300 frames:
+
+- **The game plays on the same.** All 50 hashes match the run without round
+  trips, through the loss on frame 7478.
+- **The state comes back the same except for bookkeeping.** On frame 600, full
+  state dumps before and after a snapshot round trip have the same size and the
+  same 10,320 records. 44 records differ:
+  - the scenario's elapsed play time, as above;
+  - the map's `Redraws` count, which the restore raises to redraw everything;
+  - `Dirty` in 40 drive locomotors, which writing a record clears, so the first
+    dump itself changed it;
+  - `IsRadarTracked` in 2 buildings, which `Post_Load_Radar_Fixup` clears on
+    every object so that the radar registers each one again.
+- **The snapshot is 2.7 to 2.8 MB.**
+- **Saving costs 13 to 22 ms**, 16 ms on average. Writing the map's cells is
+  12 ms of that on average.
+- **Restoring costs 31 to 145 ms**, 46 ms on average: 18 ms deleting the running
+  game's objects, 14 ms reading the map's cells, 7 ms resolving pointers and
+  the fixups after, and the rest reading the other objects.
+
+A frame at 60 fps lasts 16.7 ms. Two costs dominate, and both come from the
+restore recreating every object:
+
+- The map's 7,140 cells are about 1.7 MB of the snapshot and three quarters of
+  the save. Only a few change each frame, but a cell that holds an object holds
+  its address, and every object gets a new one in a restore. So writing only the
+  changed cells needs objects restored at their old addresses, or every cell's
+  object pointers rewritten.
+- Deleting the running game's objects, 18 ms on average, runs every object's
+  destructor before the snapshot's copies are built.
+
+Restoring objects in place, into the objects that already exist, would avoid
+both the deletion and the new addresses. That is close to option 2 below.
 
 ## Open questions
 
-- How fast a load that keeps the theater, art and rules can be, and how much
-  of the 5.2 MB a game-state-only save needs.
+- Whether any rule type changes during a match on other maps or in campaign
+  missions. The snapshot assumes none does.
 - Whether other maps, campaign missions and games with player orders round-trip
   the same way. Only one skirmish has been measured.
 - Which globals hold game state, and which threads touch it.

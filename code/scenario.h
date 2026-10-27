@@ -645,7 +645,7 @@ bool End_Game(void);
 bool Read_Scenario(char const * root);
 bool Start_Scenario(char const * name, bool briefing, CampaignType campaign);
 HousesType Select_House(void);
-void Clear_Scenario(void);
+void Clear_Scenario(bool keep_rule_types = false);
 void Do_Lose(void);
 void Do_Win(void);
 void Do_Restart(void);

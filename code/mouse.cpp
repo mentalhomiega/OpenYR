@@ -505,17 +505,20 @@ bool MouseClass::Load(SaveStreamClass & stream)
 			cell.release();
 		}
 
-		TerrainTypeClass::Init(Scen->Theater);
-		if (Scen->Theater != LastTheater) {
-			IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
-		} else {
-			IsometricTileTypeClass::Clear_Use_Counts();
+		// A snapshot restores into the match it was taken from, whose theater data is still in place.
+		if (!SnapshotRestoring) {
+			TerrainTypeClass::Init(Scen->Theater);
+			if (Scen->Theater != LastTheater) {
+				IsometricTileTypeClass::Read_Control_File(Scen->Theater, true);
+			} else {
+				IsometricTileTypeClass::Clear_Use_Counts();
+			}
+			IsometricTileTypeClass::Load_Tiles(false, false);
+			OverlayTypeClass::Init(Scen->Theater);
+			BuildingTypeClass::Init(Scen->Theater);
+			AnimTypeClass::Init(Scen->Theater);
+			SmudgeTypeClass::Init(Scen->Theater);
 		}
-		IsometricTileTypeClass::Load_Tiles(false, false);
-		OverlayTypeClass::Init(Scen->Theater);
-		BuildingTypeClass::Init(Scen->Theater);
-		AnimTypeClass::Init(Scen->Theater);
-		SmudgeTypeClass::Init(Scen->Theater);
 		DraggedWaypoint = NULL;
 		LastTheater = Scen->Theater;
 

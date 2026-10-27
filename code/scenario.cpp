@@ -1155,7 +1155,8 @@ void Post_Load_Game(void)
  *    preparation for a subsequent scenario data load. This will free                          *
  *    all units, animations, and icon maps.                                                    *
  *                                                                                             *
- * INPUT:   none                                                                               *
+ * INPUT:   keep_rule_types -- Keep the sides and the types rules and art define, for a        *
+ *                             rollback snapshot that restores into the same match.            *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -1166,7 +1167,7 @@ void Post_Load_Game(void)
  *   03/21/1992 JLB : Changed buffer allocations, so changes memset code.                      *
  *   07/13/1995 JLB : End count down moved here.                                               *
  *=============================================================================================*/
-void Clear_Scenario(void)
+void Clear_Scenario(bool keep_rule_types)
 {
 	// A scenario the menus start takes the world from the menu battle.
 	if (!Shellmap_In_Scope()) {
@@ -1189,13 +1190,17 @@ void Clear_Scenario(void)
 
 	IonStormClass::Ion_Storm_End();
 
-	for (index = AbstractTypes.Count() - 1; index >= 0; index--) {
-		AbstractTypeClass * abstype = AbstractTypes[index];
-		if (abstype->What_Am_I() == RTTI_ISOTILETYPE) {
-			AbstractTypes.Delete_Index(index);
+	// The isometric tile types are kept out of reach of the deletion. Keeping the rule types
+	// leaves them alone already.
+	if (!keep_rule_types) {
+		for (index = AbstractTypes.Count() - 1; index >= 0; index--) {
+			AbstractTypeClass * abstype = AbstractTypes[index];
+			if (abstype->What_Am_I() == RTTI_ISOTILETYPE) {
+				AbstractTypes.Delete_Index(index);
+			}
 		}
 	}
-	Delete_All_Objects();
+	Delete_All_Objects(keep_rule_types);
 
 	// Beacons are not saved, so a load or a new scenario starts with none.
 	Beacons.Clear();
@@ -1204,8 +1209,10 @@ void Clear_Scenario(void)
 	Map.Reset_Planning_Hints();
 
 	Reset_Selection_Filters();
-	for (index = 0; index < IsometricTileTypes.Count(); index++) {
-		AbstractTypes.Add(IsometricTileTypes[index]);
+	if (!keep_rule_types) {
+		for (index = 0; index < IsometricTileTypes.Count(); index++) {
+			AbstractTypes.Add(IsometricTileTypes[index]);
+		}
 	}
 
 	Map.Free_Cells();

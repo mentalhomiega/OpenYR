@@ -173,7 +173,91 @@ unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
 // While Dump_Game_State runs, the offset and class of each object record it writes.
 static std::vector<std::pair<unsigned int, std::string>> * DumpRecords = nullptr;
 
-static bool Restore_Game_Content(std::vector<unsigned char> & content);
+bool SnapshotRestoring = false;
+
+// The time each phase of the last save and load took, for Round_Trip_Game_State.
+static struct {
+	double SaveMap;
+	double Clear;
+	double LoadMap;
+	double Fixup;
+} PhaseMs = {};
+
+using PhaseClock = std::chrono::steady_clock;
+
+static double Ms_Since(PhaseClock::time_point start)
+{
+	return(std::chrono::duration<double, std::milli>(PhaseClock::now() - start).count());
+}
+
+static bool Restore_Game_Content(std::vector<unsigned char> & content, bool snapshot = false);
+static bool Load_Rule_Data(SaveStreamClass & stream);
+static bool Get_Objects(SaveStreamClass & stream, bool snapshot, Random2Class const & random, int uniqueid);
+
+
+/// <summary>
+/// Calls visit on every side and every type that rules and art define, always in the same
+/// order. A snapshot leaves these in place, and its save and restore both number them by
+/// this order.
+/// </summary>
+template<class F>
+static void For_Each_Kept_Type(F && visit)
+{
+	auto const each = [&](auto const & heap) {
+		for (int index = 0; index < heap.Count(); index++) {
+			visit(static_cast<void *>(heap[index]));
+		}
+	};
+	each(AnimTypes);
+	each(HouseTypes);
+	each(UnitTypes);
+	each(InfantryTypes);
+	each(BuildingTypes);
+	each(AircraftTypes);
+	each(VoxelAnimTypes);
+	each(Warheads);
+	each(Weapons);
+	each(ParticleTypes);
+	each(ParticleSystemTypes);
+	each(BulletTypes);
+	each(SmudgeTypes);
+	each(OverlayTypes);
+	each(Sides);
+	each(SuperWeaponTypes);
+	each(TerrainTypes);
+}
+
+
+/// <summary>
+/// Gives the kept types the first save identities, 1 upward in For_Each_Kept_Type order, so a
+/// snapshot's pointers to them can be resolved without their records. Call right after
+/// Swizzler.Begin_Save.
+/// </summary>
+/// <returns>bool; False when a type was met twice, which would put the numbering out of step
+/// with Announce_Kept_Types.</returns>
+static bool Number_Kept_Types(void)
+{
+	SwizzleIDType expected = 1;
+	bool ok = true;
+	For_Each_Kept_Type([&](void * type) {
+		if (Swizzler.ID_Of(type) != expected++) {
+			ok = false;
+		}
+	});
+	return(ok);
+}
+
+
+/// <summary>
+/// Registers each kept type at the identity Number_Kept_Types gave it.
+/// </summary>
+static void Announce_Kept_Types(void)
+{
+	SwizzleIDType id = 1;
+	For_Each_Kept_Type([&](void * type) {
+		Swizzler.Here_I_Am(id++, type);
+	});
+}
 
 
 /// <summary>
@@ -435,8 +519,12 @@ void Print_Heap_CRCs(FILE * fp)
  * HISTORY:                                                                                    *
  *   07/08/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-static bool Put_All(SaveStreamClass & stream, int save_net)
+static bool Put_All(SaveStreamClass & stream, int save_net, bool snapshot = false)
 {
+	if (snapshot && !Number_Kept_Types()) {
+		return(false);
+	}
+
 	/*
 	**	Save the scenario global information.
 	*/
@@ -444,12 +532,14 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	Scen->Save(stream);
 	Dump_Mark(stream, "Environment");
 	Environment.Save(stream);
-	Dump_Mark(stream, "Rules");
-	Rule->Save(stream);
+	if (!snapshot) {
+		Dump_Mark(stream, "Rules");
+		Rule->Save(stream);
+	}
 
 	DebugString("Saving AnimTypes\n");
 	Dump_Mark(stream, "AnimTypes");
-	if (!Save_Vector(stream, AnimTypes)) {
+	if (!snapshot && !Save_Vector(stream, AnimTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -459,10 +549,12 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	*/
 	DebugString("Saving Map\n");
 	Dump_Mark(stream, "Map");
+	PhaseClock::time_point const map_start = PhaseClock::now();
 	if (!Map.Save(stream)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
+	PhaseMs.SaveMap = Ms_Since(map_start);
 
 	DebugString("Saving Tunnels\n");
 	Dump_Mark(stream, "Tunnels");
@@ -504,7 +596,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	*/
 	DebugString("Saving HouseTypes\n");
 	Dump_Mark(stream, "HouseTypes");
-	if (!Save_Vector(stream, HouseTypes)) {
+	if (!snapshot && !Save_Vector(stream, HouseTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -522,13 +614,13 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving UnitTypes\n");
 	Dump_Mark(stream, "UnitTypes");
-	if (!Save_Vector(stream, UnitTypes)) {
+	if (!snapshot && !Save_Vector(stream, UnitTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving InfantryTypes\n");
 	Dump_Mark(stream, "InfantryTypes");
-	if (!Save_Vector(stream, InfantryTypes)) {
+	if (!snapshot && !Save_Vector(stream, InfantryTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -540,7 +632,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving BuildingTypes\n");
 	Dump_Mark(stream, "BuildingTypes");
-	if (!Save_Vector(stream, BuildingTypes)) {
+	if (!snapshot && !Save_Vector(stream, BuildingTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -552,7 +644,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving AircraftTypes\n");
 	Dump_Mark(stream, "AircraftTypes");
-	if (!Save_Vector(stream, AircraftTypes)) {
+	if (!snapshot && !Save_Vector(stream, AircraftTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -649,7 +741,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving VoxelAnimTypes\n");
 	Dump_Mark(stream, "VoxelAnimTypes");
-	if (!Save_Vector(stream, VoxelAnimTypes)) {
+	if (!snapshot && !Save_Vector(stream, VoxelAnimTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -661,19 +753,19 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving Warheads\n");
 	Dump_Mark(stream, "Warheads");
-	if (!Save_Vector(stream, Warheads)) {
+	if (!snapshot && !Save_Vector(stream, Warheads)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Weapons\n");
 	Dump_Mark(stream, "Weapons");
-	if (!Save_Vector(stream, Weapons)) {
+	if (!snapshot && !Save_Vector(stream, Weapons)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving ParticleTypes\n");
 	Dump_Mark(stream, "ParticleTypes");
-	if (!Save_Vector(stream, ParticleTypes)) {
+	if (!snapshot && !Save_Vector(stream, ParticleTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -685,7 +777,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving ParticleSystemTypes\n");
 	Dump_Mark(stream, "ParticleSystemTypes");
-	if (!Save_Vector(stream, ParticleSystemTypes)) {
+	if (!snapshot && !Save_Vector(stream, ParticleSystemTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -697,7 +789,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving BulletTypes\n");
 	Dump_Mark(stream, "BulletTypes");
-	if (!Save_Vector(stream, BulletTypes)) {
+	if (!snapshot && !Save_Vector(stream, BulletTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -715,13 +807,13 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving SmudgeTypes\n");
 	Dump_Mark(stream, "SmudgeTypes");
-	if (!Save_Vector(stream, SmudgeTypes)) {
+	if (!snapshot && !Save_Vector(stream, SmudgeTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving OverlayTypes\n");
 	Dump_Mark(stream, "OverlayTypes");
-	if (!Save_Vector(stream, OverlayTypes)) {
+	if (!snapshot && !Save_Vector(stream, OverlayTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -739,7 +831,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving Sides\n");
 	Dump_Mark(stream, "Sides");
-	if (!Save_Vector(stream, Sides)) {
+	if (!snapshot && !Save_Vector(stream, Sides)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -757,7 +849,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving SuperWeaponTypes\n");
 	Dump_Mark(stream, "SuperWeaponTypes");
-	if (!Save_Vector(stream, SuperWeaponTypes)) {
+	if (!snapshot && !Save_Vector(stream, SuperWeaponTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -769,7 +861,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	}
 	DebugString("Saving TerrianTypes\n");
 	Dump_Mark(stream, "TerrianTypes");
-	if (!Save_Vector(stream, TerrainTypes)) {
+	if (!snapshot && !Save_Vector(stream, TerrainTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -814,7 +906,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	 * A campaign takes its options from the mission. Every other kind is given them at setup, so
 	 * the save is the only place a resume can find them.
 	 */
-	if (Session.Type != GAME_NORMAL) {
+	if (!snapshot && Session.Type != GAME_NORMAL) {
 		DebugString("Writing Session.Options\n");
 		if (!Session.Options.Save(stream)) {
 			DebugString("\t***** FAILED!\n");
@@ -834,9 +926,14 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 /// order they were written out.
 /// </summary>
 /// <returns>bool; Was the game state restored?</returns>
-static bool Get_All(SaveStreamClass & stream, bool save_net)
+static bool Get_All(SaveStreamClass & stream, bool save_net, bool snapshot = false)
 {
-	Clear_Scenario();
+	PhaseClock::time_point const clear_start = PhaseClock::now();
+	Clear_Scenario(snapshot);
+	PhaseMs.Clear = Ms_Since(clear_start);
+	if (snapshot) {
+		Announce_Kept_Types();
+	}
 	Scen->Load(stream);
 
 	// Building the objects for the load draws from the generator and takes identifiers from
@@ -845,6 +942,58 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	Random2Class const random = Scen->RandomNumber;
 	int const uniqueid = Scen->UniqueID;
 
+	if (snapshot) {
+		Environment.Load(stream);
+	} else if (!Load_Rule_Data(stream)) {
+		return(false);
+	}
+
+	if (!snapshot && !Load_Vector<AnimTypeClass>(stream)) {	/// AnimTypes
+		return(false);
+	}
+
+	PhaseClock::time_point const map_start = PhaseClock::now();
+	if (!Map.Load(stream)) {
+		return(false);
+	}
+	PhaseMs.LoadMap = Ms_Since(map_start);
+
+	if (!Load_Vector<TubeClass>(stream)) {	/// Tubes
+		return(false);
+	}
+
+	if (!Load_Misc_Values(stream)) {
+		return(false);
+	}
+
+	Map.Reset_All_Subzones();
+	if (!Logic.Load(stream)) {
+		return(false);
+	}
+
+	if (TacticalMap != NULL) {
+		delete TacticalMap;
+		TacticalMap = NULL;
+	}
+	std::unique_ptr<Tactical> tactical = Load_Object_As<Tactical>(stream);
+	if (tactical == nullptr) {
+		return(false);
+	}
+	// The map installed itself in TacticalMap as it was constructed, and that global is
+	// what deletes it from here on.
+	tactical.release();
+
+	return(Get_Objects(stream, snapshot, random, uniqueid));
+}
+
+
+/// <summary>
+/// Puts back the add-on, side, display surfaces, environment, theater, art and rules the
+/// save was made under. A snapshot skips this, since its match still has all of them.
+/// </summary>
+/// <returns>bool; Were they all put in place?</returns>
+static bool Load_Rule_Data(SaveStreamClass & stream)
+{
 	Disable_Addon(ADDON_ANY);
 	Set_Required_Addon(Scen->RequiredAddOn);
 	if (!Addon_Installed(Scen->RequiredAddOn)) {
@@ -884,41 +1033,19 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (Prep_Speech_For_Side_Or_First(speech) == SIDE_NONE) {
 		return(false);
 	}
+	return(true);
+}
 
-	if (!Load_Vector<AnimTypeClass>(stream)) {	/// AnimTypes
-		return(false);
-	}
 
-	if (!Map.Load(stream)) {
-		return(false);
-	}
-
-	if (!Load_Vector<TubeClass>(stream)) {	/// Tubes
-		return(false);
-	}
-
-	if (!Load_Misc_Values(stream)) {
-		return(false);
-	}
-
-	Map.Reset_All_Subzones();
-	if (!Logic.Load(stream)) {
-		return(false);
-	}
-
-	if (TacticalMap != NULL) {
-		delete TacticalMap;
-		TacticalMap = NULL;
-	}
-	std::unique_ptr<Tactical> tactical = Load_Object_As<Tactical>(stream);
-	if (tactical == nullptr) {
-		return(false);
-	}
-	// The map installed itself in TacticalMap as it was constructed, and that global is
-	// what deletes it from here on.
-	tactical.release();
-
-	if (!Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
+/// <summary>
+/// Reads the object heaps, from the houses on, in the order Put_All wrote them, then puts back
+/// the random-number state and identifier counter the save holds. A snapshot holds no type
+/// heaps that rules and art define, and no session options.
+/// </summary>
+/// <returns>bool; Was every heap read?</returns>
+static bool Get_Objects(SaveStreamClass & stream, bool snapshot, Random2Class const & random, int uniqueid)
+{
+	if (!snapshot && !Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
 		return(false);
 	}
 	if (!Load_Vector<HouseClass>(stream)) {	/// Houses
@@ -927,22 +1054,22 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (!Load_Vector<UnitClass>(stream)) {	/// Units
 		return(false);
 	}
-	if (!Load_Vector<UnitTypeClass>(stream)) {	/// UnitTypes
+	if (!snapshot && !Load_Vector<UnitTypeClass>(stream)) {	/// UnitTypes
 		return(false);
 	}
-	if (!Load_Vector<InfantryTypeClass>(stream)) {	/// InfantryTypes
+	if (!snapshot && !Load_Vector<InfantryTypeClass>(stream)) {	/// InfantryTypes
 		return(false);
 	}
 	if (!Load_Vector<InfantryClass>(stream)) {	/// Infantry
 		return(false);
 	}
-	if (!Load_Vector<BuildingTypeClass>(stream)) {	/// BuildingTypes
+	if (!snapshot && !Load_Vector<BuildingTypeClass>(stream)) {	/// BuildingTypes
 		return(false);
 	}
 	if (!Load_Vector<BuildingClass>(stream)) {	/// Buildings
 		return(false);
 	}
-	if (!Load_Vector<AircraftTypeClass>(stream)) {	/// AircraftTypes
+	if (!snapshot && !Load_Vector<AircraftTypeClass>(stream)) {	/// AircraftTypes
 		return(false);
 	}
 	if (!Load_Vector<AircraftClass>(stream)) {	/// Aircraft
@@ -990,31 +1117,31 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (!Load_Vector<FactoryClass>(stream)) {	/// Factories
 		return(false);
 	}
-	if (!Load_Vector<VoxelAnimTypeClass>(stream)) {	/// VoxelAnimTypes
+	if (!snapshot && !Load_Vector<VoxelAnimTypeClass>(stream)) {	/// VoxelAnimTypes
 		return(false);
 	}
 	if (!Load_Vector<VoxelAnimClass>(stream)) {	/// VoxelAnims
 		return(false);
 	}
-	if (!Load_Vector<WarheadTypeClass>(stream)) {	/// Warheads
+	if (!snapshot && !Load_Vector<WarheadTypeClass>(stream)) {	/// Warheads
 		return(false);
 	}
-	if (!Load_Vector<WeaponTypeClass>(stream)) {	/// Weapons
+	if (!snapshot && !Load_Vector<WeaponTypeClass>(stream)) {	/// Weapons
 		return(false);
 	}
-	if (!Load_Vector<ParticleTypeClass>(stream)) {	/// ParticleTypes
+	if (!snapshot && !Load_Vector<ParticleTypeClass>(stream)) {	/// ParticleTypes
 		return(false);
 	}
 	if (!Load_Vector<ParticleClass>(stream)) {	/// Particles
 		return(false);
 	}
-	if (!Load_Vector<ParticleSystemTypeClass>(stream)) {	/// ParticleSystemTypes
+	if (!snapshot && !Load_Vector<ParticleSystemTypeClass>(stream)) {	/// ParticleSystemTypes
 		return(false);
 	}
 	if (!Load_Vector<ParticleSystemClass>(stream)) {	/// ParticleSystems
 		return(false);
 	}
-	if (!Load_Vector<BulletTypeClass>(stream)) {	/// BulletTypes
+	if (!snapshot && !Load_Vector<BulletTypeClass>(stream)) {	/// BulletTypes
 		return(false);
 	}
 	if (!Load_Vector<BulletClass>(stream)) {	/// Bullets
@@ -1023,10 +1150,10 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (!Load_Vector<WaypointPathClass>(stream)) {	/// WaypointPaths
 		return(false);
 	}
-	if (!Load_Vector<SmudgeTypeClass>(stream)) {	/// SmudgeTypes
+	if (!snapshot && !Load_Vector<SmudgeTypeClass>(stream)) {	/// SmudgeTypes
 		return(false);
 	}
-	if (!Load_Vector<OverlayTypeClass>(stream)) {	/// OverlayTypes
+	if (!snapshot && !Load_Vector<OverlayTypeClass>(stream)) {	/// OverlayTypes
 		return(false);
 	}
 	if (!Load_Vector<LightSourceClass>(stream)) {	/// LightSources
@@ -1035,7 +1162,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (!Load_Vector<BuildingLightClass>(stream)) {	/// BuildingLights
 		return(false);
 	}
-	if (!Load_Vector<SideClass>(stream)) {	/// Sides
+	if (!snapshot && !Load_Vector<SideClass>(stream)) {	/// Sides
 		return(false);
 	}
 	if (!Load_Vector<TiberiumClass>(stream)) {	/// Tiberiums
@@ -1044,13 +1171,13 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	if (!Load_Vector<EMPulseClass>(stream)) {	/// EMPulseClass::EMPulses
 		return(false);
 	}
-	if (!Load_Vector<SuperWeaponTypeClass>(stream)) {	/// SuperWeaponTypes
+	if (!snapshot && !Load_Vector<SuperWeaponTypeClass>(stream)) {	/// SuperWeaponTypes
 		return(false);
 	}
 	if (!Load_Vector<SuperClass>(stream)) {	/// SuperWeapons
 		return(false);
 	}
-	if (!Load_Vector<TerrainTypeClass>(stream)) {	/// TerrainTypes
+	if (!snapshot && !Load_Vector<TerrainTypeClass>(stream)) {	/// TerrainTypes
 		return(false);
 	}
 	if (!Load_Vector<TerrainClass>(stream)) {	/// Terrains
@@ -1072,7 +1199,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	if (Session.Type != GAME_NORMAL) {
+	if (!snapshot && Session.Type != GAME_NORMAL) {
 		DebugString("Reading Session.Options\n");
 		if (!Session.Options.Load(stream)) {
 			DebugString("\t***** FAILED!\n");
@@ -1312,27 +1439,30 @@ bool Load_Game(const char *file_name)
 
 
 /// <summary>
-/// Replaces the running game with the state in content, as written by Put_All. A failed
-/// load leaves a partly built game that the caller has to clear.
+/// Replaces the running game with the state in content, as written by Put_All. A snapshot
+/// must be restored into the match it was taken from. A failed load leaves a partly built
+/// game that the caller has to clear.
 /// </summary>
 /// <returns>bool; Was the whole state read and put in place?</returns>
-static bool Restore_Game_Content(std::vector<unsigned char> & content)
+static bool Restore_Game_Content(std::vector<unsigned char> & content, bool snapshot)
 {
 	Swizzler.Discard();
 
 	SaveStreamClass stream(content, SaveStreamClass::MODE_LOAD);
 	bool res = false;
+	SnapshotRestoring = snapshot;
 	// The catch sits here rather than around the whole routine because what was already
 	// loaded still has to be abandoned below. Both of the ways a count read from the file
 	// can end an allocation are refused here; anything else still raises.
 	try {
-		res = Get_All(stream, false);
+		res = Get_All(stream, false, snapshot);
 	} catch (std::bad_alloc const &) {
 		DebugString("\t***** FAILED! (out of memory at %u of %u bytes)\n", stream.Offset(), stream.Size());
 	} catch (std::length_error const &) {
 		DebugString("\t***** FAILED! (a count no container can hold at %u of %u bytes)\n",
 			stream.Offset(), stream.Size());
 	}
+	SnapshotRestoring = false;
 	if (!res) {
 		DebugString("\t***** FAILED! (at %u of %u bytes)\n", stream.Offset(), stream.Size());
 		// What was loaded stays in the heaps until the next teardown, so the requests it
@@ -1344,6 +1474,7 @@ static bool Restore_Game_Content(std::vector<unsigned char> & content)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
+	PhaseClock::time_point const fixup_start = PhaseClock::now();
 	Swizzler.Resolve();
 
 	/*
@@ -1367,6 +1498,7 @@ static bool Restore_Game_Content(std::vector<unsigned char> & content)
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
 	SaveManager.Autosave.Schedule(Frame);
+	PhaseMs.Fixup = Ms_Since(fixup_start);
 	return(true);
 }
 
@@ -1375,10 +1507,11 @@ static bool Restore_Game_Content(std::vector<unsigned char> & content)
 /// Saves the game state to memory, loads it back in place of the running game, and saves it
 /// again, timing each step. The report says whether the second save is byte for byte the first
 /// and, if not, the first differing offset and the record it falls in. The game carries on from
-/// the loaded state, so a later state hash shows whether the load changed how it plays.
+/// the loaded state, so a later state hash shows whether the load changed how it plays. With
+/// snapshot, all three steps use the snapshot instead of the full save.
 /// </summary>
 /// <returns>bool; Were all three steps completed?</returns>
-bool Round_Trip_Game_State(RoundTripReportType & report)
+bool Round_Trip_Game_State(RoundTripReportType & report, bool snapshot)
 {
 	using Clock = std::chrono::steady_clock;
 	auto const elapsed_ms = [](Clock::time_point start) {
@@ -1395,10 +1528,11 @@ bool Round_Trip_Game_State(RoundTripReportType & report)
 	bool saved = false;
 	{
 		SaveStreamClass stream(first, SaveStreamClass::MODE_SAVE);
-		saved = Put_All(stream, 0);
+		saved = Put_All(stream, 0, snapshot);
 	}
 	DumpRecords = nullptr;
 	report.SaveMs = elapsed_ms(start);
+	report.SaveMapMs = PhaseMs.SaveMap;
 	report.Bytes = first.size();
 	if (!saved) {
 		return(false);
@@ -1406,17 +1540,20 @@ bool Round_Trip_Game_State(RoundTripReportType & report)
 
 	std::vector<unsigned char> loading = first;
 	start = Clock::now();
-	if (!Restore_Game_Content(loading)) {
+	if (!Restore_Game_Content(loading, snapshot)) {
 		return(false);
 	}
 	report.LoadMs = elapsed_ms(start);
+	report.ClearMs = PhaseMs.Clear;
+	report.LoadMapMs = PhaseMs.LoadMap;
+	report.FixupMs = PhaseMs.Fixup;
 
 	std::vector<unsigned char> second;
 	start = Clock::now();
 	Swizzler.Begin_Save();
 	{
 		SaveStreamClass stream(second, SaveStreamClass::MODE_SAVE);
-		saved = Put_All(stream, 0);
+		saved = Put_All(stream, 0, snapshot);
 	}
 	report.ResaveMs = elapsed_ms(start);
 	if (!saved) {

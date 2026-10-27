@@ -58,7 +58,7 @@ bool Campaign_Available(CampaignClass * campaign);
 void Prepare_Theater_Roster(void);
 void Prepare_Side_Roster(void);
 
-void Delete_All_Objects(void);
+void Delete_All_Objects(bool keep_rule_types = false);
 
 void Init_Theater(TheaterType theater);
 bool Prep_For_Side(SideType side);
