@@ -2433,7 +2433,14 @@ void DisplayClass::Mouse_Left_Held(Point2D const & point)
 	if (IsRubberBand && !IsWaypointMode) {
 		Rect rect = TacticalRect;
 		Point2D npoint = point;
-		int x = Bound2(npoint.X, 0, rect.Width);
+
+		// In the modern interface a band never reaches the panel's columns, including the rows below the panel.
+		int right = rect.Width;
+		if (Modern_Interface()) {
+			Point2D const panel_offset(Hud_Layout().Panel.X - ScreenTacticalRect.X, 0);
+			right = std::min(right, Screen_To_View_Offset(panel_offset).X);
+		}
+		int x = Bound2(npoint.X, 0, right);
 		int y = Bound2(npoint.Y, 0, rect.Height);
 		npoint.X = x;
 		npoint.Y = y;
