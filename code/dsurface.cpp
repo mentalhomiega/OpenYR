@@ -366,6 +366,7 @@ void * DSurface::Lock(Point2D point) const
 	if (point.X < 0 || point.Y < 0) return(NULL);
 
 	BASECLASS::Lock();
+	Video_Draw_Probe_Note_Lock(this);
 	return(((char *)GDIBuffer) + point.Y * Stride() + point.X * Bytes_Per_Pixel());
 }
 

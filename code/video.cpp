@@ -20,6 +20,7 @@
 #include "_ui.h"
 #include "_xmouse.h"
 #include "bgfxbackend.h"
+#include "blit.h"
 #include "colourblind.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -36,13 +37,20 @@
 #include "videodirty.h"
 #include "wwmouse.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
+#include <string>
 #include <utility>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 
 /*
@@ -753,6 +761,87 @@ void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
 	}
 	DebugString("DRAW_DIGEST frame %d draw %llu hash %016llx\n", Frame, (unsigned long long)_DrawDigestCount, hash);
 	_DrawDigestCount++;
+}
+
+
+static bool _DrawProbe = false;
+static Surface const * _DrawProbeTarget = NULL;
+static std::map<std::vector<std::uintptr_t>, std::uint64_t> _DrawProbeStacks;
+static std::map<std::string, std::pair<std::uint64_t, std::uint64_t>> _DrawProbeBlits;
+
+
+/// <summary>
+/// Turns the drawprobe autotest step on or off. Turning it off logs a DRAW_PROBE line for each call
+/// stack that locked the map view during the foreground pass, with its count, most frequent first.
+/// </summary>
+void Video_Set_Draw_Probe(bool enabled)
+{
+	if (!enabled && _DrawProbe) {
+		std::vector<std::pair<std::uint64_t, std::vector<std::uintptr_t> const *>> sorted;
+		for (auto const & entry : _DrawProbeStacks) {
+			sorted.emplace_back(entry.second, &entry.first);
+		}
+		std::sort(sorted.begin(), sorted.end(), [](auto const & a, auto const & b) { return a.first > b.first; });
+		for (auto const & entry : sorted) {
+			char text[256];
+			int length = snprintf(text, sizeof(text), "DRAW_PROBE count %llu stack", (unsigned long long)entry.first);
+			for (std::uintptr_t rva : *entry.second) {
+				length += snprintf(text + length, sizeof(text) - length, " %08x", (unsigned)rva);
+			}
+			DebugString("%s\n", text);
+		}
+		_DrawProbeStacks.clear();
+		for (auto const & entry : _DrawProbeBlits) {
+			DebugString("DRAW_PROBE_BLIT count %llu pixels %llu kind %s\n", (unsigned long long)entry.second.first, (unsigned long long)entry.second.second, entry.first.c_str());
+		}
+		_DrawProbeBlits.clear();
+	}
+	_DrawProbe = enabled;
+	Blit_Probe_Hook = enabled ? Video_Draw_Probe_Note_Blit : NULL;
+}
+
+
+/// <summary>
+/// Names the surface whose locks the drawprobe step counts; NULL stops counting.
+/// </summary>
+void Video_Draw_Probe_Target(Surface const * surface)
+{
+	_DrawProbeTarget = _DrawProbe ? surface : NULL;
+}
+
+
+/// <summary>
+/// Counts a blit into the surface by its blitter kind and clipped pixel area while the surface is the probe target.
+/// </summary>
+void Video_Draw_Probe_Note_Blit(Surface const * surface, char const * kind, int pixels)
+{
+	if (surface != _DrawProbeTarget || surface == NULL) {
+		return;
+	}
+	auto & entry = _DrawProbeBlits[kind];
+	entry.first++;
+	entry.second += pixels;
+}
+
+
+/// <summary>
+/// Counts a lock of the surface under its caller's stack while the surface is the probe target.
+/// </summary>
+void Video_Draw_Probe_Note_Lock(Surface const * surface)
+{
+	if (surface != _DrawProbeTarget || surface == NULL) {
+		return;
+	}
+#ifdef _WIN32
+	void * frames[6];
+	USHORT const count = CaptureStackBackTrace(2, 6, frames, NULL);
+	std::uintptr_t const base = (std::uintptr_t)GetModuleHandle(NULL);
+	std::vector<std::uintptr_t> key;
+	for (USHORT i = 0; i < count; i++) {
+		key.push_back((std::uintptr_t)frames[i] - base);
+	}
+	_DrawProbeStacks[key]++;
+#endif
 }
 
 

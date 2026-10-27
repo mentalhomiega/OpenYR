@@ -120,4 +120,10 @@ void Video_Set_Present_Digest(bool enabled);
 void Video_Set_Draw_Digest(bool enabled);
 void Video_Note_Draw_Digest(Surface const & surface, Rect const & area);
 
+// The drawprobe autotest step: counts the call stacks that lock the target surface, logged when it is turned off.
+void Video_Set_Draw_Probe(bool enabled);
+void Video_Draw_Probe_Target(Surface const * surface);
+void Video_Draw_Probe_Note_Lock(Surface const * surface);
+void Video_Draw_Probe_Note_Blit(Surface const * surface, char const * kind, int pixels);
+
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);

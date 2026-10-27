@@ -27,6 +27,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `chargeai <SuperWeaponTypeID> <percent>` | Sets the charge of the first computer house's super weapon that has a construction yard, as a SetSuperCharge trigger action does (`SuperClass::Set_Charge`). The log gets `ready` and `suspended` |
 | `houseunit <TypeID>@<House> x y` | Like `spawn`, but the object belongs to the named house, on Guard. `<House>` is a spawn name such as `Spawn2` (an underscore stands for a space), or `#<n>` for the house at position `n` in the house list, which reaches a computer house with no spawn name. The log says `no such house` or `no such type` when a name does not resolve |
 | `drawdigest <0\|1>` | `1` logs one `DRAW_DIGEST` line each time the map view is drawn, with the game frame, the draw index and a hash of the map view. `0` stops the lines. See [Comparing map draws](#comparing-map-draws) |
+| `drawprobe <0\|1>` | `1` starts counting what draws into the map view during its object pass; `0` logs the counts and stops. See [Listing map draws](#listing-map-draws) |
 | `presentdigest <0\|1>` | `1` logs one `PRESENT_DIGEST` line at each present that reaches the presenter, with the game frame, the present index and a hash of the frame and the map layer. `0` stops the lines. See [Comparing presented frames](#comparing-presented-frames) |
 | `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
@@ -230,6 +231,18 @@ A present that the refresh interval skips is not logged. Set `FrameRateLimit=0` 
 Presents also come from the message loop between draws, for example when the mouse pointer or the sidebar
 changes, and those change with the clock. Two runs of one build can therefore differ in their present lines.
 Use the draw digest below to compare the map view.
+
+## Listing map draws
+
+`drawprobe 1` counts every lock of the map view during the pass that draws objects and their overlays, and every blit into it. `drawprobe 0` logs the counts and stops:
+
+```text
+DRAW_PROBE count 125746 stack 0002f1a3 00056c10 ...
+DRAW_PROBE_BLIT count 252190 pixels 1016212261 kind class RLEBlitTransXlatAlphaZRead<unsigned short>
+```
+
+- A `DRAW_PROBE` line gives how many locks came from one call stack, most frequent first, as the return addresses of up to six callers relative to `Game.exe`. Add the image base 0x400000 and pass them to `llvm-symbolizer --obj=Game.exe` with the build's `Game.pdb` to get the functions. The stacks are recorded on Windows only.
+- A `DRAW_PROBE_BLIT` line gives the number of blits of one blitter type and the clipped pixels they covered.
 
 ## Comparing map draws
 

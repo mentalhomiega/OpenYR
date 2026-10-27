@@ -448,7 +448,9 @@ void GScreenClass::Render(void)
 		Draw_It(complete);
 	}
 	use_map_surfaces(true);
+	Video_Draw_Probe_Target(CompositeSurface);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	Video_Draw_Probe_Target(NULL);
 	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);
 	if (zoomed && Video_Map_Layer_Supported()) {

@@ -49,6 +49,7 @@
 #include "zshapewindow.h"
 
 #include <algorithm>
+#include <typeinfo>
 #include <vector>
 
 
@@ -133,6 +134,9 @@ bool From_Buffer(Surface & surface, Rect const & rect, Buffer const & buffer)
 	BSurface from(rect.Width, rect.Height, surface.Bytes_Per_Pixel(), buffer);
 	return(surface.Blit_From(rect, from, Rect(0, 0, rect.Width, rect.Height)));
 }
+
+
+void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels) = NULL;
 
 
 /***********************************************************************************************
@@ -228,6 +232,7 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (!XSurface::Prep_For_Blit(dest, dcliprect, drect, source, scliprect, srect, overlapped, dbuffer, sbuffer)) {
 		return(false);
 	}
+	if (Blit_Probe_Hook != NULL) Blit_Probe_Hook(&dest, typeid(blitter).name(), drect.Width * drect.Height);
 
 	if (Emissive_Is_Enabled()) {
 		Emissive_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
@@ -500,6 +505,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (!Blit_Clip(drect, dcliprect, srect, scliprect)) {
 		return(false);
 	}
+	if (Blit_Probe_Hook != NULL) Blit_Probe_Hook(&dest, typeid(blitter).name(), drect.Width * drect.Height);
 
 	/*
 	**	Determine the top and left skip margins. These require special handling

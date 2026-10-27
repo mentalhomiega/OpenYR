@@ -37,6 +37,9 @@
 
 #include "zgrad.hh"
 
+// Called for each clipped blit with its destination, blitter type name and pixel area while set; the drawprobe step sets it.
+extern void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels);
+
 bool Bit_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, Blitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);
 bool RLE_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, RLEBlitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);
 
