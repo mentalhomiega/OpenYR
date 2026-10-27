@@ -11,6 +11,7 @@
 
 #include "scorestage.h"
 
+#include "_font.h"
 #include "_mixfile.h"
 #include "_palette.h"
 #include "_pk.h"
@@ -22,11 +23,11 @@
 #include "dbgprint.h"
 #include "draw.h"
 #include "dsurface.h"
+#include "font.h"
 #include "globals.h"
 #include "house.h"
 #include "houstype.h"
 #include "mixfile.h"
-#include "msfont.h"
 #include "palette.h"
 #include "pcx.h"
 #include "shapeset.h"
@@ -81,6 +82,7 @@ ScoreStageClass::ScoreStageClass(void) :
 	StageSurface(NULL),
 	BaseSurface(NULL),
 	Font(NULL),
+	TextConverter(NULL),
 	Drawer(NULL),
 	Mounted(false),
 	StageWidth(STAGE_WIDTH),
@@ -127,12 +129,13 @@ bool ScoreStageClass::Open(bool fill_screen)
 		FitOrigin = Point2D((screen_width - fit_width) / 2, (screen_height - fit_height) / 2);
 	}
 
-	Font = new MSFont(false);
+	Font = Font6Ptr;
 	if (Font == NULL) {
 		DebugString("ScoreStage: Unable to create font!\n");
 		Close();
 		return(false);
 	}
+	Set_Text_Color(255, 255, 0);
 
 	if (MountCount++ == 0) {
 		Mount_Neutral_Archives();
@@ -152,10 +155,11 @@ void ScoreStageClass::Close(void)
 		delete Drawer;
 		Drawer = NULL;
 	}
-	if (Font != NULL) {
-		delete Font;
-		Font = NULL;
+	if (TextConverter != NULL) {
+		delete TextConverter;
+		TextConverter = NULL;
 	}
+	Font = NULL;
 	if (BaseSurface != NULL) {
 		delete BaseSurface;
 		BaseSurface = NULL;
@@ -352,33 +356,44 @@ int ScoreStageClass::Height(void) const
 }
 
 
+namespace {
+
+/*
+ * The remap for BitFontClass::Print. Index 1 is the glyph color. Index 0 (no background fill) and index 2
+ * (no shadow) are left empty, so a glyph's set bits are the only pixels drawn, as gamemd's BitFont does.
+ */
+unsigned char const TEXT_REMAP[16] = { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+}
+
+
 void ScoreStageClass::Print_Left(char const * text, int x, int y)
 {
-	Font->Draw_String(StageSurface, text, x, y, 2);
+	Font->Print(text, *StageSurface, Rect(0, 0, StageWidth, StageHeight), Point2D(x, y), *TextConverter, TEXT_REMAP);
 }
 
 
 void ScoreStageClass::Print_Right(char const * text, int right, int y)
 {
-	Font->Draw_String(StageSurface, text, right - Font->Get_String_Width(text), y, 2);
+	Print_Left(text, right - Text_Width(text), y);
 }
 
 
 void ScoreStageClass::Print_Centre(char const * text, int left, int width, int y)
 {
-	Font->Draw_String(StageSurface, text, left + (width - Font->Get_String_Width(text)) / 2, y, 2);
+	Print_Left(text, left + (width - Text_Width(text)) / 2, y);
 }
 
 
 int ScoreStageClass::Text_Width(char const * text) const
 {
-	return(Font->Get_String_Width(text));
+	return(Font->String_Pixel_Width(text));
 }
 
 
 int ScoreStageClass::Text_Height(void) const
 {
-	return(Font->Get_Font_Height());
+	return(Font->Get_Height());
 }
 
 
@@ -442,12 +457,20 @@ void ScoreStageClass::Free_Drawer(ConvertClass * drawer)
 
 
 /// <summary>
-/// Recolors the stage's text. The glyph shading is kept and the white of the glyphs takes the color.
+/// Sets the color that the text printed after this call is drawn in. Open starts the stage in yellow, the
+/// color of gamemd's dialog text.
 /// </summary>
+/// <param name="red">The red of the color, 0 to 255.</param>
+/// <param name="green">The green of the color, 0 to 255.</param>
+/// <param name="blue">The blue of the color, 0 to 255.</param>
 void ScoreStageClass::Set_Text_Color(int red, int green, int blue)
 {
-	if (Font != NULL) {
-		Font->Set_Color(red, green, blue);
+	PaletteClass palette(RGBClass(0, 0, 0));
+	palette[1] = RGBClass(red, green, blue);
+	ConvertClass * converter = new ConvertClass(palette, palette, *VisibleSurface);
+	if (converter != NULL) {
+		delete TextConverter;
+		TextConverter = converter;
 	}
 }
 

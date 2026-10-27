@@ -13,7 +13,7 @@
 #include "rect.h"
 
 class ConvertClass;
-class MSFont;
+class FontClass;
 class ShapeSet;
 class Surface;
 
@@ -77,7 +77,8 @@ class ScoreStageClass
 		Point2D FitOrigin;
 		Surface * StageSurface;
 		Surface * BaseSurface;
-		MSFont * Font;
+		FontClass const * Font;
+		ConvertClass * TextConverter;
 		ConvertClass * Drawer;
 		bool Mounted;
 		int StageWidth;
