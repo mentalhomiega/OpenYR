@@ -27,7 +27,7 @@ The first row is the person at the keyboard: the name field, a country, a color,
 | Medium AI | A computer player at the middle difficulty. |
 | Hard AI | A computer player at the hardest difficulty. |
 
-A row that holds nobody has its country, color, start and team boxes disabled. The game starts only with at least one computer player and with at least two players who are not all on one team; otherwise the screen says which is missing and stays open.
+A row that holds nobody has its country, color, start and team boxes disabled. A game with no computer player starts with the person alone, whatever the person's team. A game with computer players starts only when its players are not all on one team; otherwise the screen says so and stays open. A map with fewer start positions than the game needs shows a message and keeps the screen open.
 
 ## Country, color and start
 
@@ -38,6 +38,10 @@ A row that holds nobody has its country, color, start and team boxes disabled. T
 ## Teams
 
 A team box offers None and teams 1 to 4. Players on the same team start the game allied with each other, in both directions. A player on no team is allied with nobody.
+
+## A game with no computer player
+
+With every row after the first set to Open or Closed, the person plays alone. No opponent existing does not end the game. It ends when the person's house is defeated, when the person quits, or when a trigger on the map ends it. In such a game the person's team has no effect.
 
 ## Difficulty
 
