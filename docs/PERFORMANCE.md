@@ -24,18 +24,33 @@ A phase nested in another phase also adds to the outer one. `frame.objects` cont
 
 ## Perf lines
 
-Each second the log gets four lines, followed by the count line:
+Each second the log gets a window line, the frame, draw, present and gap lines, and the count line:
 
 ```text
 Perf: window 1000 ms, 60 game frames, 233 draws, 184 presents
 Perf frame ms avg/p95/max: logic 1.36/2.06/2.61, ...
 Perf draw ms avg/p95/max: total 4.74/7.34/38.89, ...
 Perf present ms avg/p95/max: total 2.34/3.23/17.14, ...
-Perf count: objects 32925, voxels 4120, ...
+Perf gap ms avg/p95/max: present 16.68/17.05/31.20
+Perf count: objects 32925, voxels 4120, ..., draws skipped 3
 ```
 
 Each phase reads `average/p95/worst` in milliseconds over the samples taken in that second. The p95
 is the nearest-rank 95th percentile. Counts are totals for the second.
+
+`present.gputime` is the GPU time of the newest frame the GPU finished, from `bgfx::getStats`. bgfx
+measures it a frame or more behind the present that records it, so read it as the GPU cost per present,
+not as part of `present.total`. A present whose renderer gives no GPU timer adds zero.
+
+The gap line has one sample per present that reaches the presenter: the time from that present's start
+to the start of the next one. Its worst value is the longest interval between two presents in the second.
+
+## Skipped draws
+
+With `RenderFrameRate` above zero, the wait between two game frames redraws the view each
+`1000 / RenderFrameRate` ms. A due redraw is skipped when less time is left in the wait than the last
+redraw took (`mainloop.cpp`, `Sync_Delay`). `draws skipped` counts a skip at most once for each interval
+between two redraws that happen, so a due redraw that is skipped again and again adds one. The counter stays at zero with `RenderFrameRate=0`, which has no such loop.
 
 | Count | Meaning |
 |---|---|
@@ -49,6 +64,7 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 | `threats` | Target scans (`TechnoClass::Greatest_Threat`), counted at the base class |
 | `object ai` | Object AI calls |
 | `upload bytes`, `uploads` | Bytes sent to textures, and the texture updates that sent them. A texture update sends only the tiles that changed since the last one, so a still picture adds nothing |
+| `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
 
 ## Benchmark
 
@@ -65,7 +81,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/perf_bench.ps1 -
 ```
 
 The script runs `scripts/run_autotest.ps1` in the workspace that holds the worktree, at 1920x1080
-with `RenderFrameRate=240`, three computer players and game speed 1. It copies each run's debug log
+with `RenderFrameRate=240` (`-Width`, `-Height` and `-RenderFrameRate` change them), three computer players and game speed 1. It copies each run's debug log
 to `scratch-agent\perf` and prints a summary table of frames, draws and presents per second, and the
 mean, p95 and worst time for each phase and the mean count per second. The first five seconds of
 each run are left out. `-Logs <file>...` summarises logs that already exist.

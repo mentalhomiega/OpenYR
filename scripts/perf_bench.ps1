@@ -21,7 +21,10 @@ param(
 	[int]$SkipSeconds = 5,
 	[string]$Label = 'bench',
 	[string]$OutDir = '',
-	[string[]]$Logs = @()
+	[string[]]$Logs = @(),
+	[int]$Width = 1920,
+	[int]$Height = 1080,
+	[int]$RenderFrameRate = 240
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -38,7 +41,7 @@ if ($Logs.Count -eq 0) {
 	$Logs = @()
 	for ($run = 1; $run -le $Runs; $run++) {
 		"perf_bench: run $run of $Runs, $scriptPath"
-		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map XMP08T2.MAP -Width 1920 -Height 1080 -RenderFrameRate 240 -AIPlayers 3 -AICountries '5,5,5' -Seconds $Seconds -Filter 'BENCH|Exception' | Out-Host
+		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map XMP08T2.MAP -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate -AIPlayers 3 -AICountries '5,5,5' -Seconds $Seconds -Filter 'BENCH|Exception' | Out-Host
 		$log = Get-ChildItem (Join-Path $debugDir '*.LOG') | Sort-Object LastWriteTime | Select-Object -Last 1
 		if (-not $log) { Write-Error "perf_bench: run $run wrote no debug log in $debugDir"; exit 1 }
 		$copy = Join-Path $OutDir "$Label-run$run.log"
@@ -55,7 +58,7 @@ function Read-Records([string]$path) {
 		if ($line -match 'Perf: window (\d+) ms, (\d+) game frames, (\d+) draws, (\d+) presents') {
 			$current = @{ Window = [double]$Matches[1]; Frames = [double]$Matches[2]; Draws = [double]$Matches[3]; Presents = [double]$Matches[4]; Phases = @{}; Counts = @{} }
 			[void]$records.Add($current)
-		} elseif ($current -and $line -match 'Perf (frame|draw|present) ms avg/p95/max: (.*)$') {
+		} elseif ($current -and $line -match 'Perf (frame|draw|present|gap) ms avg/p95/max: (.*)$') {
 			$prefix = $Matches[1]
 			foreach ($entry in ($Matches[2] -split ', ')) {
 				if ($entry -match '^(.+) (\S+)/(\S+)/(\S+)$') {
@@ -99,7 +102,7 @@ $presents = @($kept | ForEach-Object { $_.Presents * 1000.0 / $_.Window })
 [void]$out.Add('| Phase | Mean ms | p95 ms | Max ms |')
 [void]$out.Add('|---|---:|---:|---:|')
 $keys = @($kept[0].Phases.Keys)
-foreach ($k in ($keys | Sort-Object { [array]::IndexOf(@('frame', 'draw', 'present'), ($_ -split '\.')[0]) }, { $_ })) {
+foreach ($k in ($keys | Sort-Object { [array]::IndexOf(@('frame', 'draw', 'present', 'gap'), ($_ -split '\.')[0]) }, { $_ })) {
 	$present = @($kept | Where-Object { $_.Phases.ContainsKey($k) } | ForEach-Object { $_.Phases[$k] })
 	$avgs = [double[]]@($present | ForEach-Object { $_.Avg })
 	$p95s = [double[]]@($present | ForEach-Object { $_.P95 })
