@@ -4340,6 +4340,7 @@ void Run(StepType const & step)
 			Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
+			DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_UNIT) {
 				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
