@@ -620,10 +620,17 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 
 	unsigned char * emissive = NULL;
 	int emissive_pitch = 0;
+	// A draw that writes zero leaves a row with no lit pixel unchanged, so such rows are skipped.
+	unsigned char const * emissive_lit = NULL;
 	if (Emissive_Is_Enabled()) {
 		if (EmissivePlane * plane = Emissive_Plane_For(&dest)) {
 			emissive = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
 			emissive_pitch = plane->Pitch;
+			if (Emissive_Draw_Strength != 0) {
+				Emissive_Mark_Rows(*plane, dcliprect.Y + drect.Y, height);
+			} else if (plane->Lit != NULL) {
+				emissive_lit = plane->Lit + dcliprect.Y + drect.Y;
+			}
 		}
 	}
 
@@ -649,8 +656,10 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		/*
 		**	Blit the correct sub-portion to the destination surface.
 		*/
-		if (emissive != NULL) {
+		if (emissive != NULL && (emissive_lit == NULL || emissive_lit[y] != 0)) {
 			Emissive_RLE_Row(emissive, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, Emissive_Draw_Strength, DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z);
+		}
+		if (emissive != NULL) {
 			emissive += emissive_pitch;
 		}
 		if (shadow != NULL) {

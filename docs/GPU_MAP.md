@@ -66,14 +66,13 @@ the modern interface. `SoftShadowRadius` and `BloomStrength` have no switch.
   a pixel. A pass with more than 8 waves is drawn in software.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
-- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 245 pictures per second
-  with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 125 in
-  software. With `SoftShadows` it drew about 200, with `Bloom` about 180, and with every effect on
-  about 150; most of the bloom cost is the processor comparing the emissive mask row by row. Each
-  pass uploads only the rows of the base picture, the
-  depth buffer and the alpha buffer that changed since the last drawn pass. Outside Windows the
-  depth and alpha buffers cannot list the pages written to them, so those two go up whole every
-  pass.
+- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
+  with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 175 in
+  software. With `SoftShadows` it drew 243, with `Bloom` 255, and with every effect on 245; no
+  effect added more than half a millisecond of processor time to a picture. Each pass uploads only
+  the rows of the base picture, the depth buffer and the alpha buffer that changed since the last
+  drawn pass. Outside Windows the depth and alpha buffers cannot list the pages written to them,
+  so those two go up whole every pass.
 
 ## Rebuilding the shaders
 

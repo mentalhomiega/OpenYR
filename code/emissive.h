@@ -21,7 +21,15 @@ struct EmissivePlane
 	int Width;
 	int Height;
 	int Pitch;
+	// One byte per row, zero only where the whole row is zero; NULL treats every row as lit.
+	unsigned char * Lit = nullptr;
 };
+
+// Whether a row may hold a value other than zero.
+inline bool Emissive_Row_Lit(EmissivePlane const & plane, int row) { return(plane.Lit == nullptr || plane.Lit[row] != 0); }
+
+// Marks rows as possibly holding values. A caller that writes Pixels directly marks the rows it wrote.
+void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count);
 
 
 // Each row of the default table. Strength is the mask value 0-255 that the kind writes.

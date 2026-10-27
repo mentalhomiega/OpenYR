@@ -422,21 +422,32 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 }
 
 
-// Brings values up to the shadow plane under area, flagging in changed each row that differed; the
-// part of area outside the plane reads as no shadow.
-static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed)
+// Brings values up to the plane under area, flagging in changed each row that differed; the part
+// of area outside the plane reads as zero. lit keeps a byte per row of values that is zero only
+// where that row is all zero.
+static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed, std::vector<unsigned char> & lit)
 {
 	std::size_t const width = (std::size_t)area.Width;
-	if (values.size() != width * area.Height || (int)changed.size() != area.Height) {
+	if (values.size() != width * area.Height || (int)changed.size() != area.Height || (int)lit.size() != area.Height) {
 		values.assign(width * area.Height, 0);
 		changed.assign(area.Height, 1);
+		lit.assign(area.Height, 0);
 	}
 	int const left = std::max(area.X, 0);
 	int const right = std::min(area.X + area.Width, plane.Width);
 	if (left == area.X && right == area.X + area.Width && area.Y >= 0 && area.Y + area.Height <= plane.Height) {
 		for (int r = 0; r < area.Height; r++) {
-			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
 			unsigned char * copy = &values[r * width];
+			if (!Emissive_Row_Lit(plane, area.Y + r)) {
+				if (lit[r] != 0) {
+					std::memset(copy, 0, width);
+					changed[r] = 1;
+					lit[r] = 0;
+				}
+				continue;
+			}
+			lit[r] = 1;
+			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
 			if (std::memcmp(copy, row, width) != 0) {
 				std::memcpy(copy, row, width);
 				changed[r] = 1;
@@ -452,6 +463,7 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 			std::memcpy(&row[left - area.X], plane.Pixels + (std::size_t)y * plane.Pitch + left, right - left);
 		}
 		unsigned char * copy = &values[r * width];
+		lit[r] = 1;
 		if (std::memcmp(copy, row.data(), width) != 0) {
 			std::memcpy(copy, row.data(), width);
 			changed[r] = 1;
@@ -671,8 +683,10 @@ static bool Finish_Render(Surface & target)
 	static std::vector<unsigned char> changed;
 	static std::vector<unsigned char> tileshadow;
 	static std::vector<unsigned char> tileshadowchanged;
+	static std::vector<unsigned char> tileshadowlit;
 	static std::vector<unsigned char> glow;
 	static std::vector<unsigned char> glowchanged;
+	static std::vector<unsigned char> glowlit;
 	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
@@ -700,11 +714,11 @@ static bool Finish_Render(Surface & target)
 	// A shadow drawn into the tile layer locks it, so unchanged tiles mean an unchanged plane.
 	EmissivePlane const * plane = ShadowPlane_For(TileSurface);
 	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
-		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged);
+		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged, tileshadowlit);
 	}
 	EmissivePlane const * emissive = GpuMap_Bloom() > 0 ? Emissive_Plane_For(&target) : NULL;
 	if (emissive != NULL) {
-		Read_Plane(*emissive, _Area, glow, glowchanged);
+		Read_Plane(*emissive, _Area, glow, glowchanged, glowlit);
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
