@@ -105,6 +105,10 @@ struct GpuDrawList
 void GpuDraw_Plan(bool render);
 bool GpuDraw_Tiles_Left(void);
 
+// The render flag last given to GpuDraw_Plan. While it is false, the background pass darkens the
+// copied terrain through the shadow plane itself (shadowplane.h).
+bool GpuDraw_Planned(void);
+
 // Starts recording the blits into target until GpuDraw_End. Area is the part of the target the
 // checks compare and the GPU draws. With render set, recorded draws write no colour to target.
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render = false);

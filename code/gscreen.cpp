@@ -74,6 +74,7 @@
 #include "tactical.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "shadowplane.h"
 #include "shellmap.h"
 #include "video.h"
 #include "viewzoom.h"
@@ -439,6 +440,11 @@ void GScreenClass::Render(void)
 
 	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
 	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
+	if (ShadowPlane_Set_Enabled(Options.GpuRender && Options.SoftShadows && Modern_Interface() && Video_Map_Layer_Supported() && GpuMap_Supported())) {
+		redraw = true;
+		TacticalMap->IsToRedraw = true;
+	}
+	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
 	GpuDraw_Plan(gpu_render);
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);

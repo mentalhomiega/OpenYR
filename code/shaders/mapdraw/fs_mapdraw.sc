@@ -17,7 +17,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 12 additive line pixels whose index is the alpha buffer value (v_texcoord1.z holds 0xRRGGBB), 13 antialiased line
 // pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha),
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
-// the facing plus 8 for a magnetron beam, w the tint at amplitude 0).
+// the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
+// written as 1 into the shadow mask.
 
 #include "bgfx_shader.sh"
 
@@ -30,6 +31,7 @@ SAMPLER2D(s_zshape, 5);
 SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
+SAMPLER2D(s_tileshadow, 9);
 uniform vec4 u_ring[2];
 
 #define ARENA_WIDTH 4096
@@ -74,6 +76,14 @@ void main()
 
 	if (kind == 7) {
 		gl_FragColor = vec4(Rgb565(int(v_texcoord1.x + 0.5)), 1.0);
+		return;
+	}
+
+	if (kind == 15) {
+		if (texelFetch(s_tileshadow, area, 0).x == 0.0) {
+			discard;
+		}
+		gl_FragColor = vec4_splat(1.0);
 		return;
 	}
 

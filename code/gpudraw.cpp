@@ -26,6 +26,7 @@
 #include "globals.h"
 #include "gpumap.h"
 #include "ovrlight.h"
+#include "shadowplane.h"
 #include "surface.h"
 #include "tactical.h"
 #include "wave.h"
@@ -46,6 +47,7 @@ static GpuDrawList _List;
 static int _Locks = 0;
 static int _LockedBlits = 0;
 static bool _TilesLeft = false;
+static bool _Planned = false;
 // Passes in a row the GPU drew whole; the terrain copy is left out only after a run of them, since
 // a pass that falls back without it loses the draws the record does not hold.
 static int _CleanPasses = 0;
@@ -419,6 +421,33 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 }
 
 
+// Brings values up to the shadow plane under area, flagging in changed each row that differed; the
+// part of area outside the plane reads as no shadow.
+static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vector<unsigned char> & values, std::vector<unsigned char> & changed)
+{
+	std::size_t const width = (std::size_t)area.Width;
+	if (values.size() != width * area.Height || (int)changed.size() != area.Height) {
+		values.assign(width * area.Height, 0);
+		changed.assign(area.Height, 1);
+	}
+	int const left = std::max(area.X, 0);
+	int const right = std::min(area.X + area.Width, plane.Width);
+	std::vector<unsigned char> row(width);
+	for (int r = 0; r < area.Height; r++) {
+		int const y = area.Y + r;
+		std::fill(row.begin(), row.end(), 0);
+		if (y >= 0 && y < plane.Height && left < right) {
+			std::memcpy(&row[left - area.X], plane.Pixels + (std::size_t)y * plane.Pitch + left, right - left);
+		}
+		unsigned char * copy = &values[r * width];
+		if (std::memcmp(copy, row.data(), width) != 0) {
+			std::memcpy(copy, row.data(), width);
+			changed[r] = 1;
+		}
+	}
+}
+
+
 static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigned short> const & pixels)
 {
 	char * base = (char *)surface.Lock(Point2D(area.X, area.Y));
@@ -628,10 +657,13 @@ static bool Finish_Render(Surface & target)
 	// keeps the last pass's picture, so only the rows that changed since the GPU took them go up.
 	static std::vector<unsigned short> upload[3];
 	static std::vector<unsigned char> changed;
+	static std::vector<unsigned char> tileshadow;
+	static std::vector<unsigned char> tileshadowchanged;
 	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
 		changed.clear();
+		tileshadowchanged.clear();
 		changedarea = _Area;
 		_BaseTiles = NULL;
 	}
@@ -649,6 +681,11 @@ static bool Finish_Render(Surface & target)
 			_BaseTiles = tiles;
 			_BaseTilesCount = tiles->Change_Count();
 		}
+	}
+	// A shadow drawn into the tile layer locks it, so unchanged tiles mean an unchanged plane.
+	EmissivePlane const * plane = ShadowPlane_For(TileSurface);
+	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
+		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged);
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
@@ -668,6 +705,8 @@ static bool Finish_Render(Surface & target)
 		pass.List = &_List;
 		pass.Persistent = true;
 		pass.BaseChanged = &changed;
+		pass.TileShadow = plane != NULL ? &tileshadow : NULL;
+		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		if (GpuMap_Draw(pass)) {
@@ -680,6 +719,9 @@ static bool Finish_Render(Surface & target)
 	_CleanPasses = 0;
 	// The recorded draws land over the ones the record does not hold, which drew in order. Without
 	// the terrain copy, those draws went to a target the base no longer comes from, and are lost.
+	if (TileSurface != NULL) {
+		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask());
+	}
 	Replay(base);
 	Write_Area(target, _Area, base);
 	std::fill(changed.begin(), changed.end(), 1);
@@ -690,7 +732,14 @@ static bool Finish_Render(Surface & target)
 
 void GpuDraw_Plan(bool render)
 {
+	_Planned = render;
 	_TilesLeft = render && _CleanPasses >= 30 && Backend_Is_Running();
+}
+
+
+bool GpuDraw_Planned(void)
+{
+	return(_Planned);
 }
 
 
@@ -705,6 +754,9 @@ static void Restore_Tiles(Surface & target)
 {
 	if (_TilesLeft && TileSurface != NULL) {
 		target.Blit_From(TacticalRect, *TileSurface, TacticalRect);
+		if (target.Bytes_Per_Pixel() == 2) {
+			ShadowPlane_Darken(target, TacticalRect, DSurface::Get_Halfbright_Mask());
+		}
 	}
 	_TilesLeft = false;
 }

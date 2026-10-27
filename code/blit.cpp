@@ -44,6 +44,7 @@
 #include "_zbuffer.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "shadowplane.h"
 #include "bsurface.h"
 #include "rect.h"
 #include "zshapewindow.h"
@@ -238,6 +239,9 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 
 	if (Emissive_Is_Enabled()) {
 		Emissive_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
+	}
+	if (ShadowPlane_Is_Enabled()) {
+		ShadowPlane_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
 	}
 
 	/*
@@ -623,8 +627,21 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		}
 	}
 
-	bool consumed = false;
-	if (Blit_Record_RLE != NULL) {
+	unsigned char * shadow = NULL;
+	int shadow_pitch = 0;
+	unsigned char shadow_value = 0;
+	bool shadow_depth = false;
+	bool shadow_write = false;
+	if (ShadowPlane_Is_Enabled()) {
+		if (EmissivePlane * plane = ShadowPlane_For_RLE(dest, blitter, shadow_value, shadow_depth, shadow_write)) {
+			shadow = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
+			shadow_pitch = plane->Pitch;
+		}
+	}
+
+	// A shadow drawn into the tile layer marks its plane and leaves the pixels alone.
+	bool consumed = shadow != NULL && shadow_value != 0;
+	if (Blit_Record_RLE != NULL && !consumed) {
 		consumed = Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
 	}
 	for (int y = 0; y < height; y++) {
@@ -635,6 +652,10 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		if (emissive != NULL) {
 			Emissive_RLE_Row(emissive, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, Emissive_Draw_Strength, DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z);
 			emissive += emissive_pitch;
+		}
+		if (shadow != NULL) {
+			Emissive_RLE_Row(shadow, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, shadow_value, shadow_depth && DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z, consumed && shadow_write);
+			shadow += shadow_pitch;
 		}
 		if (!consumed) {
 			blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);

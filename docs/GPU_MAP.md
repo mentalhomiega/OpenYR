@@ -15,7 +15,9 @@ default, and works only in the modern interface on Direct3D 11.
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
 the alpha buffer, then draws the objects over it. When the map view is drawn more than once before
-a frame is presented, only the last pass goes to the GPU.
+a frame is presented, only the last pass goes to the GPU. With `SoftShadows`, a shadow drawn into the
+tile layer marks a mask kept beside the layer instead of darkening its pixels, and the GPU pass
+darkens the ground through that mask.
 
 After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
 GPU reads it from the tile layer directly, and only when that layer has changed. If a pass then
@@ -36,7 +38,7 @@ until GPU drawing is ticked, and GPU drawing is greyed out without the modern in
 | Key | Default | Effect |
 |---|---|---|
 | `GpuRender` | `no` | Draws the object pass on the GPU. A pass holding a draw the recorder does not support is drawn in software instead and shows no soft shadows or shockwaves. |
-| `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. Shadows baked into the tile layer, such as those of buildings and trees that stand still, stay hard. |
+| `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass and the shadows of buildings and trees in the tile layer go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. A pass drawn in software shows the same shadows hard. Changing the switch redraws the whole tile layer. |
 | `SoftShadowRadius` | `3` | The blur radius of `SoftShadows` in pixels, from 1 to 16. |
 | `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
 

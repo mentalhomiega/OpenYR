@@ -14,6 +14,7 @@
 #include "always.h"
 
 #include "isotype.h"
+#include "shadowplane.h"
 
 #include "_alpha.h"
 #include "_convert.h"
@@ -1931,6 +1932,9 @@ void IsometricTileTypeClass::Draw_Tile(LightConvertClass * drawer, int subtile, 
 						IsoDrawData.RowSrcOffset = &_iso_row_offsets[table_off];
 						IsoDrawData.RowStartCol = (unsigned char *)&_iso_start_cols[table_off];
 						IsoDrawData.RowRunLength = (unsigned char *)&_iso_run_lengths[std::max(0, right_clip)][table_off];
+					}
+					if (!depth_only) {
+						ShadowPlane_After_Tile(surface, x, y, cliprect, _tilemask, ISO_DRAW_WIDTH, ISO_DRAW_HEIGHT);
 					}
 					IsoDrawData.SurfacePitch = surface.Stride();
 					IsoDrawData.DestPtr = (unsigned short *)surface.Lock(Point2D(lock_x, work.Y));

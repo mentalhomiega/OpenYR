@@ -14,6 +14,8 @@ opents_add_test(ZBufRing
         _zbuffer.cpp
         emissive.cpp
         emissive_surface.cpp
+        shadowplane.cpp
+        _surface.cpp
         writewatch.cpp
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX

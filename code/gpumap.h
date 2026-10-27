@@ -64,6 +64,12 @@ struct GpuMapPass
 
 	// At most 16 rings drawn over the finished picture, or NULL for none.
 	std::vector<GpuRipple> const * Ripples;
+
+	// With soft shadows, the shadow plane of the tile layer under Area (nonzero where a shadow
+	// falls) and a flag for each of its rows that changed since the GPU last took it; NULL when
+	// the tile layer's shadows are in Base.
+	std::vector<unsigned char> const * TileShadow = NULL;
+	std::vector<unsigned char> * TileShadowChanged = NULL;
 };
 
 
@@ -82,6 +88,9 @@ void GpuMap_Drop(void);
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
 // 0 draws each shadow as the software does.
 void GpuMap_Set_Soft_Shadows(int radius);
+
+// True when the renderer is running and can draw map passes.
+bool GpuMap_Supported(void);
 
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass

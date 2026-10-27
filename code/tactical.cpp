@@ -16,6 +16,7 @@
 
 #include "playerdisplay.h"
 #include "gpudraw.h"
+#include "shadowplane.h"
 #include "tactical.h"
 #include "flyingtext.h"
 
@@ -1282,6 +1283,8 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			// The strip draws repaint colour without touching the emissive mask, so the mask in each strip starts clear.
 			Emissive_After_Fill(*LogicalSurface, xpanrect);
 			Emissive_After_Fill(*LogicalSurface, ypanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
 			{
 				PerfScope shroud_scope(PERF_DRAW_SHROUD);
@@ -1315,6 +1318,9 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	if ((drawpass == DRAW_PASS_BACKGROUND && !GpuDraw_Tiles_Left()) || drawpass == DRAW_PASS_FULL) {
 		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
+		if (drawpass == DRAW_PASS_FULL || !GpuDraw_Planned()) {
+			ShadowPlane_Darken(*LogicalSurface, TacticalRect, DSurface::Get_Halfbright_Mask());
+		}
 	}
 
 	if (drawpass == DRAW_PASS_FOREGROUND || drawpass == DRAW_PASS_FULL) {

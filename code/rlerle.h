@@ -314,6 +314,13 @@ class RLEBlitTransXlatAlphaZReadWrite : public RLEBlitter
 			}
 		}
 
+		virtual bool Describe_Depth_Write(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, 0};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 		AlphaLightingRemapClass *AlphaLightingRemap;
@@ -1308,6 +1315,13 @@ class RLEBlitTransDarkenZReadWrite : public RLEBlitter
 				}
 				zp = Blit_Wrap_Z_Buffer(zp);
 			}
+		}
+
+		virtual bool Describe_Depth_Write(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::DARKEN, true, (unsigned short const *)NULL, NULL, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:

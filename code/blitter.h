@@ -106,4 +106,8 @@ class RLEBlitter {
 
 		// Fills desc and returns true for the kinds a GPU renderer can draw; false for every other kind.
 		virtual bool Describe(BlitDesc & desc) const {return(false);}
+
+		// Fills desc and returns true for a kind that also writes depth wherever it draws, which the GPU
+		// renderer cannot draw; false for every other kind.
+		virtual bool Describe_Depth_Write(BlitDesc & desc) const {return(false);}
 };

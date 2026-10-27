@@ -112,8 +112,9 @@ class DSurface : public XSurface
 		void * Get_Buffer(void) const {return(GDIBuffer);}
 
 		/*
-		 * Rises with every lock, device context and stretched blit into this surface, so
-		 * a count that has not moved since an earlier read means the pixels are the same.
+		 * Takes a new value, never used by any surface before, with every lock, device
+		 * context and stretched blit into this surface. A value that has not moved since
+		 * an earlier read means the pixels are the same.
 		 */
 		unsigned Change_Count(void) const {return(Changes);}
 

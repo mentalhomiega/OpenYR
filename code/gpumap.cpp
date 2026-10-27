@@ -84,6 +84,7 @@ enum ShaderKind
 	KIND_ADDITIVE_LINE,
 	KIND_ANTIALIASED_LINE,
 	KIND_SONIC,
+	KIND_TILE_SHADOW,
 };
 
 enum SamplerSlot
@@ -140,6 +141,10 @@ static bgfx::FrameBufferHandle _PostTarget = BGFX_INVALID_HANDLE;
 static bool _PostShown = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
+// The tile layer's shadow plane, kept between passes so only changed rows go up.
+static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _TileShadow = BGFX_INVALID_HANDLE;
+static bool _TileShadowTracked = false;
 static bgfx::TextureHandle _Snapshot = BGFX_INVALID_HANDLE;
 
 // Set while a drawn pass's buffers are uploaded by reference and its frame is not yet submitted.
@@ -182,6 +187,7 @@ static bool Start(void)
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
+	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
 	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
 		DebugString("GPU_DIFF: the shadow blur or shockwave program did not build\n");
@@ -227,6 +233,11 @@ static void Destroy_Target(void)
 		bgfx::destroy(_Snapshot);
 		_Snapshot = BGFX_INVALID_HANDLE;
 	}
+	if (bgfx::isValid(_TileShadow)) {
+		bgfx::destroy(_TileShadow);
+		_TileShadow = BGFX_INVALID_HANDLE;
+	}
+	_TileShadowTracked = false;
 	_TargetWidth = 0;
 	_TargetHeight = 0;
 }
@@ -246,7 +257,8 @@ static bool Size_Target(int width, int height)
 	_Target = bgfx::createFrameBuffer(1, &_TargetTexture, true);
 	_Readback = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
 	_Snapshot = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | point);
-	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Readback) || !bgfx::isValid(_Snapshot)) {
+	_TileShadow = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
+	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Readback) || !bgfx::isValid(_Snapshot) || !bgfx::isValid(_TileShadow)) {
 		Destroy_Target();
 		return(false);
 	}
@@ -415,6 +427,33 @@ static bool Fill_R16_Changed(Store & store, unsigned short const * values, int w
 }
 
 
+// Uploads the rows of the tile layer's shadow plane that changed since the GPU last took them, and
+// clears their flags.
+static void Upload_Tile_Shadow(std::vector<unsigned char> const & values, int width, int rows, std::vector<unsigned char> & changed)
+{
+	if (!_TileShadowTracked || (int)changed.size() != rows) {
+		changed.assign(rows, 1);
+		_TileShadowTracked = true;
+	}
+	int const GAP = 8;
+	int row = 0;
+	while (row < rows) {
+		if (changed[row] == 0) {
+			row++;
+			continue;
+		}
+		int const first = row;
+		int unchanged = 0;
+		for (row++; row < rows && unchanged < GAP; row++) {
+			unchanged = changed[row] != 0 ? 0 : unchanged + 1;
+		}
+		int const end = row - unchanged;
+		std::fill(changed.begin() + first, changed.begin() + end, 0);
+		bgfx::updateTexture2D(_TileShadow, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
+	}
+}
+
+
 // Rows of 256 translator entries a blit through remap can read: the highest band it adds, plus one.
 static int Translator_Rows(AlphaLightingRemapClass const * remap, std::unordered_map<AlphaLightingRemapClass const *, int> & cache)
 {
@@ -482,8 +521,9 @@ static void Set_Map_View(bgfx::ViewId view, bgfx::FrameBufferHandle target, Rect
 }
 
 
-// Draws every shadow's coverage into the first shadow mask and blurs it there, through the second.
-static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float const * projection, float const * ring, int shadowquads)
+// Draws every shadow's coverage, with the tile layer's shadows when tileshadow is set, into the first
+// shadow mask and blurs it there, through the second.
+static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float const * projection, float const * ring, int shadowquads, bool tileshadow)
 {
 	bgfx::TransientVertexBuffer buffer;
 	bgfx::allocTransientVertexBuffer(&buffer, shadowquads * 6, _Layout);
@@ -495,6 +535,13 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
 	int quad = 1;
+	if (tileshadow) {
+		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
+		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+		float const t3[4] = { 0.0f, -1.0f, (float)KIND_TILE_SHADOW, 1.0f };
+		Set_Quad(vertex + 6, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
+		quad++;
+	}
 	for (GpuBlit const & blit : list.Blits) {
 		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Desc.Kind != BlitDesc::DARKEN) {
 			continue;
@@ -512,6 +559,9 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+		}
+		if (tileshadow) {
+			bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 		}
 		bgfx::setUniform(_RingUniform, ring, 2);
 		bgfx::setState(BGFX_STATE_WRITE_RGB);
@@ -630,8 +680,14 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
 		return(false);
 	}
+	bool const tileshadow = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && _SoftShadowRadius > 0
+		&& pass.TileShadow->size() == (std::size_t)area.Width * area.Height;
+	if (tileshadow) {
+		Upload_Tile_Shadow(*pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
+	}
+	bool const shadowed = shadows > 0 || tileshadow;
 	int const quads = (int)list.Blits.size() + 1;
-	int const shadowquads = shadows > 0 ? shadows + 1 : 0;
+	int const shadowquads = shadowed ? shadows + 1 + (tileshadow ? 1 : 0) : 0;
 	if (valid && bgfx::getAvailTransientVertexBuffer((quads + shadowquads) * 6, _Layout) < (uint32_t)(quads + shadowquads) * 6) {
 		valid = false;
 	}
@@ -646,7 +702,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	{
 		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
 		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-		float const t3[4] = { 0.0f, -1.0f, (float)(shadows > 0 ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
+		float const t3[4] = { 0.0f, -1.0f, (float)(shadowed ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
 	for (std::size_t i = 0; i < list.Blits.size(); i++) {
@@ -690,8 +746,8 @@ static bool Submit_Pass(GpuMapPass const & pass)
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
-	if (shadows > 0) {
-		Submit_Shadows(list, area, projection, ring, shadowquads);
+	if (shadowed) {
+		Submit_Shadows(list, area, projection, ring, shadowquads, tileshadow);
 	}
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection);
 
@@ -703,7 +759,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 			GpuBlit const & blit = list.Blits[i - 1];
 			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Line >= 0 ? KIND_LINE + blit.LineKind : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc)));
 		}
-		if (kind == KIND_DARKEN && shadows > 0) {
+		if (kind == KIND_DARKEN && shadowed) {
 			continue;
 		}
 		uint64_t state = write;
@@ -729,7 +785,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		for (int slot = 0; slot < SLOT_COUNT; slot++) {
 			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
 		}
-		if (i == 0 && shadows > 0) {
+		if (i == 0 && shadowed) {
 			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
 		}
 		if (kind == KIND_SONIC) {
@@ -807,6 +863,12 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 	_PendingBlits = (int)pass.List->Blits.size();
 	_Pending = true;
 	return(true);
+}
+
+
+bool GpuMap_Supported(void)
+{
+	return(Backend_Is_Running() && Start());
 }
 
 

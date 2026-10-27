@@ -55,6 +55,7 @@
 #include "emissive_surface.h"
 #include "gpudraw.h"
 #include "misc.h"
+#include "shadowplane.h"
 #include "video.h"
 
 #include <algorithm>
@@ -81,6 +82,15 @@ unsigned short DSurface::EighthbrightMask = 0;
 
 bool DSurface::AllowStretchBlits = true;
 int DSurface::PrimaryColorMode = COLORMODE_565;
+
+
+// Change values are unique across every surface, so a surface made again at the same address
+// cannot repeat a value an earlier one had.
+static unsigned Next_Change(void)
+{
+	static unsigned _Last = 0;
+	return(++_Last);
+}
 
 
 /***********************************************************************************************
@@ -113,7 +123,7 @@ DSurface::DSurface(int width, int height) :
 	GDIOldBitmap(NULL),
 	GDIBuffer(NULL),
 	Pitch(0),
-	Changes(0)
+	Changes(Next_Change())
 {
 	/*
 	 * BITMAPINFO carries room for a single color entry, but a bitfields bitmap is
@@ -184,6 +194,7 @@ DSurface::~DSurface(void)
 {
 	// The emissive plane is keyed by this address, which a later surface may be allocated at.
 	Emissive_Forget(this);
+	ShadowPlane_Forget(this);
 
 	/*
 	 * GDI will not free a bitmap that is still selected into a context, so the one the
@@ -269,7 +280,7 @@ HDC DSurface::GetDC(void)
 	 * drawing on them, which is what it did when this context came from DirectDraw.
 	 */
 	LockCount++;
-	Changes++;
+	Changes = Next_Change();
 	return(GDIDC);
 }
 
@@ -372,7 +383,7 @@ void * DSurface::Lock(Point2D point) const
 	if (point.X < 0 || point.Y < 0) return(NULL);
 
 	BASECLASS::Lock();
-	Changes++;
+	Changes = Next_Change();
 	Video_Draw_Probe_Note_Lock(this);
 	if (Surface_Lock_Hook != NULL) {
 		Surface_Lock_Hook(this);
@@ -523,7 +534,7 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	GdiFlush();
 
 	SetStretchBltMode(GDIDC, COLORONCOLOR);
-	Changes++;
+	Changes = Next_Change();
 	bool result = StretchBlt(GDIDC, drect.X, drect.Y, drect.Width, drect.Height,
 		source.GDIDC, srect.X, srect.Y, srect.Width, srect.Height, SRCCOPY) != 0;
 
@@ -532,6 +543,9 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	// A stretched picture has no mask of its own, so the area it covers reads as ordinary.
 	if (result && Emissive_Is_Enabled()) {
 		Emissive_After_Fill(*this, drect);
+	}
+	if (result) {
+		ShadowPlane_After_Fill(*this, drect);
 	}
 
 	if (result && IsPrimary) {
@@ -598,6 +612,9 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 
 	if (result && Emissive_Is_Enabled()) {
 		Emissive_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
+	}
+	if (result) {
+		ShadowPlane_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
 	}
 
 	if (result && IsPrimary) {
