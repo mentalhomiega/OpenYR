@@ -685,6 +685,7 @@ int FootClass::Do_MISSION_ATTACK_MOVE(void)
 	switch (Status) {
 
 		case ATTACK_MOVE_TRAVEL: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 			ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
 			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
@@ -755,6 +756,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			break;
 
 		case PATROL_FIND_TARGET: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);
@@ -830,6 +832,7 @@ int FootClass::Do_MISSION_PATROL(void)
 			 * the patrol cell before giving up the engagement.
 			 */
 			if (TarCom == NULL) {
+				Perf_Count(PERF_COUNT_SCAN_MISSION);
 				AbstractClass * target = Greatest_Threat(THREAT_AREA, PatrolCell->Center_Coord(), false);
 				ObjectClass * scanptr = target->As_ObjectClass();
 				int scanweapon = What_Weapon_Should_I_Use(scanptr);
@@ -865,6 +868,7 @@ int FootClass::Do_MISSION_PATROL(void)
 		}
 
 		case PATROL_RETURN: {
+			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, PatrolCell->Center_Coord(), false);
 			ObjectClass * optr = target->As_ObjectClass();
 			int primary = What_Weapon_Should_I_Use(optr);

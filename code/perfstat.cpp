@@ -33,7 +33,7 @@ enum PerfDomain {
 // Phase names in the order of PerfPhase, as the Perf lines print them.
 char const * const Phase_Names[PERF_PHASE_COUNT] = {
 	"logic", "triggers", "teams", "objects", "infantry", "unit", "building", "aircraft", "other",
-	"pathfind", "threat", "map", "tactical", "factories", "houses", "queue", "wait",
+	"pathfind", "threat", "ring", "eval", "map", "tactical", "factories", "houses", "queue", "wait",
 	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui",
 	"total", "upload", "gpu",
 };
@@ -42,6 +42,9 @@ char const * const Phase_Names[PERF_PHASE_COUNT] = {
 char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"objects", "voxels", "voxel hit", "voxel miss", "voxel smooth hit", "voxel smooth miss", "voxel uncached",
 	"particles", "paths", "threats", "object ai", "upload bytes", "uploads",
+	"scans ring", "scans air", "scans full", "scan targeting", "scan mission", "scan team", "scan house",
+	"ring cells", "ring empty", "ring wall", "cell candidates", "object evals", "area modify", "weapon selects",
+	"ring keys", "ring key repeats",
 };
 
 struct PhaseState {

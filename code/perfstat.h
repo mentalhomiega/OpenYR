@@ -32,6 +32,8 @@ enum PerfPhase : unsigned char {
 	PERF_FRAME_AI_OTHER,        // bullets, animations, particles and other objects
 	PERF_FRAME_PATHFIND,        // AStarClass::Find_Path; nested in the object AI
 	PERF_FRAME_THREAT,          // Greatest_Threat target scans; nested in the object AI
+	PERF_FRAME_THREAT_RING,     // cell ring walk of an area or range scan; nested in THREAT, contains THREAT_EVAL
+	PERF_FRAME_THREAT_EVAL,     // Evaluate_Object calls from the ring walk; nested in THREAT_RING
 	PERF_FRAME_MAP,             // Map.Logic()
 	PERF_FRAME_TACTICAL,        // TacticalMap->AI()
 	PERF_FRAME_FACTORIES,       // factory AI
@@ -69,6 +71,22 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_OBJECT_AI,       // object AI calls
 	PERF_COUNT_UPLOAD_BYTES,    // bytes passed to texture uploads
 	PERF_COUNT_UPLOADS,         // texture uploads
+	PERF_COUNT_SCANS_RING,      // target scans that walk the ring of cells (area and range scans)
+	PERF_COUNT_SCANS_AIR,       // target scans that walk the aircraft and air layer lists (air scans)
+	PERF_COUNT_SCANS_FULL,      // target scans of the full map (aircraft list and Technos)
+	PERF_COUNT_SCAN_TARGETING,  // Greatest_Threat calls from Target_Something_Nearby
+	PERF_COUNT_SCAN_MISSION,    // Greatest_Threat calls from foot area scans (attack move, patrol, guard area)
+	PERF_COUNT_SCAN_TEAM,       // Greatest_Threat calls from team AI
+	PERF_COUNT_SCAN_HOUSE,      // Greatest_Threat calls from house AI (quarry)
+	PERF_COUNT_RING_CELLS,      // ring cells on the radar map that the walk visits
+	PERF_COUNT_RING_CELLS_EMPTY,    // ring cells with no techno in either occupier chain
+	PERF_COUNT_RING_CELLS_WALL,     // ring cells with a wall overlay
+	PERF_COUNT_CELL_CANDIDATES, // Evaluate_Cell calls that found an occupant to evaluate
+	PERF_COUNT_OBJECT_EVALS,    // Evaluate_Object calls
+	PERF_COUNT_AREA_MODIFY,     // Area_Modify calls
+	PERF_COUNT_WEAPON_SELECTS,  // What_Weapon_Should_I_Use calls
+	PERF_COUNT_RING_KEYS,       // distinct ring-walk keys in a game frame
+	PERF_COUNT_RING_KEY_REPEATS,    // ring walks whose key an earlier walk in the same game frame had
 	PERF_COUNTER_COUNT
 };
 

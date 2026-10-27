@@ -63,5 +63,7 @@ bool Dump_Game_State(char const * path);
 void Dump_Mark(SaveStreamClass const & stream, char const * name);
 bool Reconcile_Players(void);
 void Print_Heap_CRCs(FILE * fp);
+class CRCEngine;
+CRCEngine Object_CRCs(void);
 
 extern unsigned int ExpectedGameVersion;
