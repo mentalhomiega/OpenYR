@@ -1,0 +1,78 @@
+; Campaign win check for Soviet 8 (Red Alert 2). Forty-five Apocalypse tanks (grantunit) stand in for the army a player would build; everything after is an order.
+; The tanks drive north through the map in four legs, through Vladimir's base, and every order from frame 3600 attacks the White House (CAWASH01) at 98,14.
+; Its destruction springs WHDestroyed, which starts the win after a short delay. Expected: "AUTOTEST game over frame N: won" (frame 4416 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov08.txt -Campaign -Map SOV08U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit APOC 52 108
+11 grantunit APOC 54 108
+12 grantunit APOC 56 108
+13 grantunit APOC 58 108
+14 grantunit APOC 60 108
+15 grantunit APOC 62 108
+16 grantunit APOC 64 108
+17 grantunit APOC 66 108
+18 grantunit APOC 68 108
+19 grantunit APOC 52 110
+20 grantunit APOC 54 110
+21 grantunit APOC 56 110
+22 grantunit APOC 58 110
+23 grantunit APOC 60 110
+24 grantunit APOC 62 110
+25 grantunit APOC 64 110
+26 grantunit APOC 66 110
+27 grantunit APOC 68 110
+28 grantunit APOC 52 112
+29 grantunit APOC 54 112
+30 grantunit APOC 56 112
+31 grantunit APOC 58 112
+32 grantunit APOC 60 112
+33 grantunit APOC 62 112
+34 grantunit APOC 64 112
+35 grantunit APOC 66 112
+36 grantunit APOC 68 112
+37 grantunit APOC 52 114
+38 grantunit APOC 54 114
+39 grantunit APOC 56 114
+40 grantunit APOC 58 114
+41 grantunit APOC 60 114
+42 grantunit APOC 62 114
+43 grantunit APOC 64 114
+44 grantunit APOC 66 114
+45 grantunit APOC 68 114
+46 grantunit APOC 52 116
+47 grantunit APOC 54 116
+48 grantunit APOC 56 116
+49 grantunit APOC 58 116
+50 grantunit APOC 60 116
+51 grantunit APOC 62 116
+52 grantunit APOC 64 116
+53 grantunit APOC 66 116
+54 grantunit APOC 68 116
+110 move APOC 64 90
+900 move APOC 66 73
+1800 move APOC 78 52
+2700 move APOC 80 38
+3600 strikeobj CAWASH01 98 14 3 all
+3800 strikeobj CAWASH01 98 14 3 all
+4000 strikeobj CAWASH01 98 14 3 all
+4200 strikeobj CAWASH01 98 14 3 all
+4400 strikeobj CAWASH01 98 14 3 all
+4600 strikeobj CAWASH01 98 14 3 all
+4800 strikeobj CAWASH01 98 14 3 all
+5000 strikeobj CAWASH01 98 14 3 all
+5200 strikeobj CAWASH01 98 14 3 all
+5400 strikeobj CAWASH01 98 14 3 all
+5600 strikeobj CAWASH01 98 14 3 all
+5800 strikeobj CAWASH01 98 14 3 all

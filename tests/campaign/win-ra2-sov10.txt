@@ -1,0 +1,113 @@
+; Campaign win check for Soviet 10 (Red Alert 2). Thirty-six Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order.
+; The airships fly west over the Allied bases and bomb the Weather Control Device (GAWEAT) at 17,95. Its destruction springs "WCD Destroyed" and starts the win.
+; Expected: "AUTOTEST game over frame N: won" (frame 7246 in the last run). Before the jump-jet Stop_Moving fix this script crashed the game when a Kirov was stopped with no cell to land in.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov10.txt -Campaign -Map SOV10T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit ZEP 140 150
+11 grantunit ZEP 144 150
+12 grantunit ZEP 148 150
+13 grantunit ZEP 152 150
+14 grantunit ZEP 156 150
+15 grantunit ZEP 160 150
+16 grantunit ZEP 164 150
+17 grantunit ZEP 168 150
+18 grantunit ZEP 140 153
+19 grantunit ZEP 144 153
+20 grantunit ZEP 148 153
+21 grantunit ZEP 152 153
+22 grantunit ZEP 156 153
+23 grantunit ZEP 160 153
+24 grantunit ZEP 164 153
+25 grantunit ZEP 168 153
+26 grantunit ZEP 140 156
+27 grantunit ZEP 144 156
+28 grantunit ZEP 148 156
+29 grantunit ZEP 152 156
+30 grantunit ZEP 156 156
+31 grantunit ZEP 160 156
+32 grantunit ZEP 164 156
+33 grantunit ZEP 168 156
+34 grantunit ZEP 140 159
+35 grantunit ZEP 144 159
+36 grantunit ZEP 148 159
+37 grantunit ZEP 152 159
+38 grantunit ZEP 156 159
+39 grantunit ZEP 160 159
+40 grantunit ZEP 164 159
+41 grantunit ZEP 168 159
+42 grantunit ZEP 140 162
+43 grantunit ZEP 144 162
+44 grantunit ZEP 148 162
+45 grantunit ZEP 152 162
+200 strikeobj GAWEAT 17 95 3 all
+400 strikeobj GAWEAT 17 95 3 all
+600 strikeobj GAWEAT 17 95 3 all
+800 strikeobj GAWEAT 17 95 3 all
+1000 strikeobj GAWEAT 17 95 3 all
+1200 strikeobj GAWEAT 17 95 3 all
+1400 strikeobj GAWEAT 17 95 3 all
+1600 strikeobj GAWEAT 17 95 3 all
+1800 strikeobj GAWEAT 17 95 3 all
+2000 strikeobj GAWEAT 17 95 3 all
+2200 strikeobj GAWEAT 17 95 3 all
+2400 strikeobj GAWEAT 17 95 3 all
+2600 strikeobj GAWEAT 17 95 3 all
+2800 strikeobj GAWEAT 17 95 3 all
+3000 strikeobj GAWEAT 17 95 3 all
+3200 strikeobj GAWEAT 17 95 3 all
+3400 strikeobj GAWEAT 17 95 3 all
+3600 strikeobj GAWEAT 17 95 3 all
+3800 strikeobj GAWEAT 17 95 3 all
+4000 strikeobj GAWEAT 17 95 3 all
+4200 strikeobj GAWEAT 17 95 3 all
+4400 strikeobj GAWEAT 17 95 3 all
+4600 strikeobj GAWEAT 17 95 3 all
+4800 strikeobj GAWEAT 17 95 3 all
+5000 strikeobj GAWEAT 17 95 3 all
+5200 strikeobj GAWEAT 17 95 3 all
+5400 strikeobj GAWEAT 17 95 3 all
+5600 strikeobj GAWEAT 17 95 3 all
+5800 strikeobj GAWEAT 17 95 3 all
+6000 strikeobj GAWEAT 17 95 3 all
+6200 strikeobj GAWEAT 17 95 3 all
+6400 strikeobj GAWEAT 17 95 3 all
+6600 strikeobj GAWEAT 17 95 3 all
+6800 strikeobj GAWEAT 17 95 3 all
+7000 strikeobj GAWEAT 17 95 3 all
+7200 strikeobj GAWEAT 17 95 3 all
+7400 strikeobj GAWEAT 17 95 3 all
+7600 strikeobj GAWEAT 17 95 3 all
+7800 strikeobj GAWEAT 17 95 3 all
+8000 strikeobj GAWEAT 17 95 3 all
+8200 strikeobj GAWEAT 17 95 3 all
+8400 strikeobj GAWEAT 17 95 3 all
+8600 strikeobj GAWEAT 17 95 3 all
+8800 strikeobj GAWEAT 17 95 3 all
+9000 strikeobj GAWEAT 17 95 3 all
+9200 strikeobj GAWEAT 17 95 3 all
+9400 strikeobj GAWEAT 17 95 3 all
+9600 strikeobj GAWEAT 17 95 3 all
+9800 strikeobj GAWEAT 17 95 3 all
+10000 strikeobj GAWEAT 17 95 3 all
+10200 strikeobj GAWEAT 17 95 3 all
+10400 strikeobj GAWEAT 17 95 3 all
+10600 strikeobj GAWEAT 17 95 3 all
+10800 strikeobj GAWEAT 17 95 3 all
+11000 strikeobj GAWEAT 17 95 3 all
+11200 strikeobj GAWEAT 17 95 3 all
+11400 strikeobj GAWEAT 17 95 3 all
+11600 strikeobj GAWEAT 17 95 3 all
+11800 strikeobj GAWEAT 17 95 3 all
+3000 counts player

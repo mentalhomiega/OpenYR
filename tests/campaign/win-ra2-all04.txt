@@ -1,0 +1,65 @@
+; Campaign win check for Allied 4 (Red Alert 2). Thirty Destroyers (grantunit) join the six the mission gives; everything after is an order.
+; The fleet sails west along the channel to the Russian shipyard and the ships attack the Psychic Amplifier (NAPSYA) at 43,82 (strikeobj, naval units only).
+; Its destruction starts the siren and the short delay that end in the win. The Construction Yard is never built, so the 50-minute timer never starts.
+; Expected: "AUTOTEST game over frame N: won" (frame 2805 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all04.txt -Campaign -Map ALL04U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit DEST 140 82
+11 grantunit DEST 142 82
+12 grantunit DEST 144 82
+13 grantunit DEST 146 82
+14 grantunit DEST 148 82
+15 grantunit DEST 150 82
+16 grantunit DEST 152 82
+17 grantunit DEST 154 82
+18 grantunit DEST 156 82
+19 grantunit DEST 140 84
+20 grantunit DEST 142 84
+21 grantunit DEST 144 84
+22 grantunit DEST 146 84
+23 grantunit DEST 148 84
+24 grantunit DEST 150 84
+25 grantunit DEST 152 84
+26 grantunit DEST 154 84
+27 grantunit DEST 156 84
+28 grantunit DEST 140 86
+29 grantunit DEST 142 86
+30 grantunit DEST 144 86
+31 grantunit DEST 146 86
+32 grantunit DEST 148 86
+33 grantunit DEST 150 86
+34 grantunit DEST 152 86
+35 grantunit DEST 154 86
+36 grantunit DEST 156 86
+37 grantunit DEST 140 88
+38 grantunit DEST 142 88
+39 grantunit DEST 144 88
+120 move DEST 49 85
+1500 strikeobj NAPSYA 43 82 8 naval
+1800 strikeobj NAPSYA 43 82 8 naval
+2100 strikeobj NAPSYA 43 82 8 naval
+2400 strikeobj NAPSYA 43 82 8 naval
+2700 strikeobj NAPSYA 43 82 8 naval
+3000 strikeobj NAPSYA 43 82 8 naval
+3300 strikeobj NAPSYA 43 82 8 naval
+3600 strikeobj NAPSYA 43 82 8 naval
+3900 strikeobj NAPSYA 43 82 8 naval
+4200 strikeobj NAPSYA 43 82 8 naval
+4500 strikeobj NAPSYA 43 82 8 naval
+4800 strikeobj NAPSYA 43 82 8 naval
+5100 strikeobj NAPSYA 43 82 8 naval
+5400 strikeobj NAPSYA 43 82 8 naval
+5700 strikeobj NAPSYA 43 82 8 naval
+3000 counts player

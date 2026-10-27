@@ -1,0 +1,59 @@
+; Campaign win check for Soviet 4 (Red Alert 2). Twenty-five Apocalypse tanks and fourteen Dreadnoughts (grantunit) stand in for the army and fleet a player would build;
+; the tanks stand on the beach at the Allied landing zones (121,40 to 123,56) and the Dreadnoughts in the channel the landing craft sail. No order is given: the units
+; sink the Allied fleet and kill the landing parties as they come ashore, and the win trigger fires once every Allied unit and structure is dead (Win Timer, enabled when the fleet arrives).
+; Expected: "AUTOTEST game over frame N: won" (frame 17029 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov04.txt -Campaign -Map SOV04S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 450 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit APOC 110 40
+11 grantunit APOC 112 40
+12 grantunit APOC 114 40
+13 grantunit APOC 116 40
+14 grantunit APOC 118 40
+15 grantunit APOC 110 44
+16 grantunit APOC 112 44
+17 grantunit APOC 114 44
+18 grantunit APOC 116 44
+19 grantunit APOC 118 44
+20 grantunit APOC 110 48
+21 grantunit APOC 112 48
+22 grantunit APOC 114 48
+23 grantunit APOC 116 48
+24 grantunit APOC 118 48
+25 grantunit APOC 110 52
+26 grantunit APOC 112 52
+27 grantunit APOC 114 52
+28 grantunit APOC 116 52
+29 grantunit APOC 118 52
+30 grantunit APOC 110 56
+31 grantunit APOC 112 56
+32 grantunit APOC 114 56
+33 grantunit APOC 116 56
+34 grantunit APOC 118 56
+35 grantunit DRED 136 44
+36 grantunit DRED 139 44
+37 grantunit DRED 142 44
+38 grantunit DRED 145 44
+39 grantunit DRED 148 44
+40 grantunit DRED 151 44
+41 grantunit DRED 136 47
+42 grantunit DRED 139 47
+43 grantunit DRED 142 47
+44 grantunit DRED 145 47
+45 grantunit DRED 148 47
+46 grantunit DRED 151 47
+47 grantunit DRED 136 50
+48 grantunit DRED 139 50
+9000 counts player
+15000 counts BadGuy1

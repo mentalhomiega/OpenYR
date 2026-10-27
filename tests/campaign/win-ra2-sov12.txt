@@ -1,0 +1,94 @@
+; Campaign win check for Soviet 12 (Red Alert 2). Thirty-six Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order.
+; The airships fly west over the Allied bases and bomb the Chronosphere (GACSPH) at 68,129, whose destruction springs "Win Condition_Timer"; the ending movie and the win follow.
+; Ground units cannot leave the start: the Soviet base is on its own landmass.
+; Expected: "AUTOTEST game over frame N: won" (frame 5198 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov12.txt -Campaign -Map SOV12S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit ZEP 160 100
+11 grantunit ZEP 162 100
+12 grantunit ZEP 164 100
+13 grantunit ZEP 166 100
+14 grantunit ZEP 160 102
+15 grantunit ZEP 162 102
+16 grantunit ZEP 164 102
+17 grantunit ZEP 166 102
+18 grantunit ZEP 160 104
+19 grantunit ZEP 162 104
+20 grantunit ZEP 164 104
+21 grantunit ZEP 166 104
+22 grantunit ZEP 160 106
+23 grantunit ZEP 162 106
+24 grantunit ZEP 164 106
+25 grantunit ZEP 166 106
+26 grantunit ZEP 160 108
+27 grantunit ZEP 162 108
+28 grantunit ZEP 164 108
+29 grantunit ZEP 166 108
+30 grantunit ZEP 160 110
+31 grantunit ZEP 162 110
+32 grantunit ZEP 164 110
+33 grantunit ZEP 166 110
+34 grantunit ZEP 160 112
+35 grantunit ZEP 162 112
+36 grantunit ZEP 164 112
+37 grantunit ZEP 166 112
+38 grantunit ZEP 160 114
+39 grantunit ZEP 162 114
+40 grantunit ZEP 164 114
+41 grantunit ZEP 166 114
+42 grantunit ZEP 160 116
+43 grantunit ZEP 162 116
+44 grantunit ZEP 164 116
+45 grantunit ZEP 166 116
+200 strikeobj GACSPH 68 129 3 all
+400 strikeobj GACSPH 68 129 3 all
+600 strikeobj GACSPH 68 129 3 all
+800 strikeobj GACSPH 68 129 3 all
+1000 strikeobj GACSPH 68 129 3 all
+1200 strikeobj GACSPH 68 129 3 all
+1400 strikeobj GACSPH 68 129 3 all
+1600 strikeobj GACSPH 68 129 3 all
+1800 strikeobj GACSPH 68 129 3 all
+2000 strikeobj GACSPH 68 129 3 all
+2200 strikeobj GACSPH 68 129 3 all
+2400 strikeobj GACSPH 68 129 3 all
+2600 strikeobj GACSPH 68 129 3 all
+2800 strikeobj GACSPH 68 129 3 all
+3000 strikeobj GACSPH 68 129 3 all
+3200 strikeobj GACSPH 68 129 3 all
+3400 strikeobj GACSPH 68 129 3 all
+3600 strikeobj GACSPH 68 129 3 all
+3800 strikeobj GACSPH 68 129 3 all
+4000 strikeobj GACSPH 68 129 3 all
+4200 strikeobj GACSPH 68 129 3 all
+4400 strikeobj GACSPH 68 129 3 all
+4600 strikeobj GACSPH 68 129 3 all
+4800 strikeobj GACSPH 68 129 3 all
+5000 strikeobj GACSPH 68 129 3 all
+5200 strikeobj GACSPH 68 129 3 all
+5400 strikeobj GACSPH 68 129 3 all
+5600 strikeobj GACSPH 68 129 3 all
+5800 strikeobj GACSPH 68 129 3 all
+6000 strikeobj GACSPH 68 129 3 all
+6200 strikeobj GACSPH 68 129 3 all
+6400 strikeobj GACSPH 68 129 3 all
+6600 strikeobj GACSPH 68 129 3 all
+6800 strikeobj GACSPH 68 129 3 all
+7000 strikeobj GACSPH 68 129 3 all
+7200 strikeobj GACSPH 68 129 3 all
+7400 strikeobj GACSPH 68 129 3 all
+7600 strikeobj GACSPH 68 129 3 all
+7800 strikeobj GACSPH 68 129 3 all
+3000 counts player

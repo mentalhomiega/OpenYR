@@ -1,0 +1,78 @@
+; Campaign win check for Soviet 11 (Red Alert 2). Twenty Kirov airships (grantunit) join the two the mission gives; everything after is an order.
+; The airships fly north-west over Yuri's bases and bomb the Capitol (CARUS03) at 46,43, whose destruction springs "Yuri Defeated" and starts the win.
+; A ground army cannot take this route: Yuri's mind controllers (BadGuy2, near 75,75) take over the tanks that pass them.
+; Expected: "AUTOTEST game over frame N: won" (frame 5590 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov11.txt -Campaign -Map SOV11S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit ZEP 100 140
+11 grantunit ZEP 102 140
+12 grantunit ZEP 104 140
+13 grantunit ZEP 106 140
+14 grantunit ZEP 108 140
+15 grantunit ZEP 110 140
+16 grantunit ZEP 112 140
+17 grantunit ZEP 114 140
+18 grantunit ZEP 116 140
+19 grantunit ZEP 118 140
+20 grantunit ZEP 100 142
+21 grantunit ZEP 102 142
+22 grantunit ZEP 104 142
+23 grantunit ZEP 106 142
+24 grantunit ZEP 108 142
+25 grantunit ZEP 110 142
+26 grantunit ZEP 112 142
+27 grantunit ZEP 114 142
+28 grantunit ZEP 116 142
+29 grantunit ZEP 118 142
+200 strikeobj CARUS03 46 43 3 all
+400 strikeobj CARUS03 46 43 3 all
+600 strikeobj CARUS03 46 43 3 all
+800 strikeobj CARUS03 46 43 3 all
+1000 strikeobj CARUS03 46 43 3 all
+1200 strikeobj CARUS03 46 43 3 all
+1400 strikeobj CARUS03 46 43 3 all
+1600 strikeobj CARUS03 46 43 3 all
+1800 strikeobj CARUS03 46 43 3 all
+2000 strikeobj CARUS03 46 43 3 all
+2200 strikeobj CARUS03 46 43 3 all
+2400 strikeobj CARUS03 46 43 3 all
+2600 strikeobj CARUS03 46 43 3 all
+2800 strikeobj CARUS03 46 43 3 all
+3000 strikeobj CARUS03 46 43 3 all
+3200 strikeobj CARUS03 46 43 3 all
+3400 strikeobj CARUS03 46 43 3 all
+3600 strikeobj CARUS03 46 43 3 all
+3800 strikeobj CARUS03 46 43 3 all
+4000 strikeobj CARUS03 46 43 3 all
+4200 strikeobj CARUS03 46 43 3 all
+4400 strikeobj CARUS03 46 43 3 all
+4600 strikeobj CARUS03 46 43 3 all
+4800 strikeobj CARUS03 46 43 3 all
+5000 strikeobj CARUS03 46 43 3 all
+5200 strikeobj CARUS03 46 43 3 all
+5400 strikeobj CARUS03 46 43 3 all
+5600 strikeobj CARUS03 46 43 3 all
+5800 strikeobj CARUS03 46 43 3 all
+6000 strikeobj CARUS03 46 43 3 all
+6200 strikeobj CARUS03 46 43 3 all
+6400 strikeobj CARUS03 46 43 3 all
+6600 strikeobj CARUS03 46 43 3 all
+6800 strikeobj CARUS03 46 43 3 all
+7000 strikeobj CARUS03 46 43 3 all
+7200 strikeobj CARUS03 46 43 3 all
+7400 strikeobj CARUS03 46 43 3 all
+7600 strikeobj CARUS03 46 43 3 all
+7800 strikeobj CARUS03 46 43 3 all
+3000 counts player
