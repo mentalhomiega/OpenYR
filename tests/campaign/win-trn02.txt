@@ -1,0 +1,136 @@
+; Campaign win check for Boot Camp day 2 (Red Alert 2): plays the tutorial through with a player's orders and no debug shortcut.
+; The Mobile Construction Vehicle drives out to open ground and deploys. The base builds a power plant, a refinery and a barracks one after the
+; other (a structure is placed when its build time has passed), the barracks trains about 40 GIs, and the GIs advance on Red's base in steps.
+; Red's soldiers are attacked first (a deployed GI shoots from beyond a GI's range, so the group is ordered onto each one), then the
+; Construction Yard (attack E1), then each building that is left (strikeobj). Expected: "AUTOTEST game over frame N: won".
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-trn02.txt -Campaign -Map TRN02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 900 -Filter "AUTOTEST +(sprung|win|game over|wait)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+5 waitcell AMCV 23 38 1 3000
+10 move AMCV 44 30
+11 waitcell AMCV 44 30 0 2500
+90 select AMCV
+95 command DeployObject
+96 waitowns player GACNST 1 300
+130 produce GAPOWR
+800 place GAPOWR
+801 waitowns player GAPOWR 1 100
+810 produce GAREFN
+1000 queuestate GAREFN
+1500 queuestate GAREFN
+1900 queuestate GAREFN
+2300 place GAREFN
+2301 waitowns player GAREFN 1 100
+2310 produce GAPILE
+2900 queuestate GAPILE
+3200 place GAPILE
+3201 waitowns player GAPILE 1 100
+3210 produce E1
+3211 produce E1
+3212 produce E1
+3213 produce E1
+3214 produce E1
+3215 produce E1
+3216 produce E1
+3217 produce E1
+3218 produce E1
+3219 produce E1
+3220 produce E1
+3221 produce E1
+3222 produce E1
+3223 produce E1
+6500 produce E1
+6501 produce E1
+6502 produce E1
+6503 produce E1
+6504 produce E1
+6505 produce E1
+6506 produce E1
+6507 produce E1
+6508 produce E1
+6509 produce E1
+6510 produce E1
+6511 produce E1
+9500 produce E1
+9501 produce E1
+9502 produce E1
+9503 produce E1
+9504 produce E1
+9505 produce E1
+9506 produce E1
+9507 produce E1
+9508 produce E1
+9509 produce E1
+9510 produce E1
+9511 produce E1
+12500 produce E1
+12501 produce E1
+12502 produce E1
+12503 produce E1
+12504 produce E1
+12505 produce E1
+12506 produce E1
+12507 produce E1
+12508 produce E1
+12509 produce E1
+12510 produce E1
+12511 produce E1
+12600 waitowns player E1 40 12000
+12620 move E1 41 44
+12700 waitcell E1 41 44 3 900
+12720 move E1 42 49
+12800 waitcell E1 42 49 3 900
+12900 move E1 41 52
+13300 move E1 42 52
+13700 move E1 43 52
+14100 move E1 41 53
+14500 move E1 42 53
+14900 move E1 43 53
+15300 strikeobj E1 44 55 20 all
+15550 strikeobj E1 44 55 20 all
+15800 strikeobj E1 44 55 20 all
+16050 strikeobj E1 44 55 20 all
+16300 strikeobj E1 44 55 20 all
+16550 strikeobj E1 44 55 20 all
+16800 strikeobj E1 44 55 20 all
+17050 strikeobj E1 44 55 20 all
+17300 strikeobj E1 44 55 20 all
+17550 strikeobj E1 44 55 20 all
+17800 strikeobj E1 44 55 20 all
+18050 strikeobj E1 44 55 20 all
+18300 attack E1
+18700 attack E1
+19100 attack E1
+19500 attack E1
+19900 attack E1
+20300 attack E1
+20700 attack E1
+21100 attack E1
+21500 strikeobj GAPILE 47 57 4 all
+22000 strikeobj GAPOWR 50 55 4 all
+22500 strikeobj GAREFN 38 64 4 all
+23000 strikeobj GAPOWR 35 64 4 all
+23500 strikeobj GAPOWR 32 64 4 all
+24000 strikeobj GAPILE 47 57 4 all
+24500 strikeobj GAPOWR 50 55 4 all
+25000 strikeobj GAREFN 38 64 4 all
+25500 strikeobj GAPOWR 35 64 4 all
+26000 strikeobj GAPOWR 32 64 4 all
+26500 strikeobj GAPILE 47 57 4 all
+27000 strikeobj GAPOWR 50 55 4 all
+27500 strikeobj GAREFN 38 64 4 all
+28000 strikeobj GAPOWR 35 64 4 all
+28500 strikeobj GAPOWR 32 64 4 all
+29000 counts RedTeam_House
+29600 quit
