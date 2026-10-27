@@ -28,6 +28,7 @@
 #include "shapeset.h"
 #include "utf8.h"
 
+#include <algorithm>
 #include <cstring>
 
 
@@ -53,6 +54,105 @@ int MSFont::Glyph_Frame(char32_t code) const
 
 
 /// <summary>
+/// Fetches where a glyph frame's ink starts and how wide it is. A frame whose top left pixel is a lone
+/// anchor, as the apostrophe's is, is measured without that pixel, so its ink is not pushed to the right
+/// by the blank columns the anchor stretches the frame over.
+/// </summary>
+MSFont::GlyphMetrics const & MSFont::Glyph_Metrics(int shape_frame)
+{
+	static GlyphMetrics const none = {0, 0, false, true};
+
+	if (shape_frame < 0 || shape_frame >= ARRAY_SIZE(Metrics)) {
+		return(none);
+	}
+	if (!Metrics[shape_frame].Known) {
+		Measure_Glyph(shape_frame, Metrics[shape_frame]);
+	}
+	return(Metrics[shape_frame]);
+}
+
+
+void MSFont::Measure_Glyph(int shape_frame, GlyphMetrics & metrics) const
+{
+	Rect const rect = FontFile->Get_Rect(shape_frame);
+	metrics.Left = (short)rect.X;
+	metrics.Width = (short)rect.Width;
+	metrics.Anchored = false;
+	metrics.Known = true;
+
+	unsigned char const * data = (unsigned char const *)FontFile->Get_Data(shape_frame);
+	if (data == NULL || rect.X != 0 || rect.Y != 0 || rect.Width < 2 || rect.Height < 1 || shape_frame >= FontFile->Get_Count()) {
+		return;
+	}
+
+	bool const skips = FontFile->Is_Transparent(shape_frame);
+	bool const lines = FontFile->Is_RLE_Compressed(shape_frame);
+	int first = rect.Width;
+	int last = -1;
+	bool anchor = false;
+	for (int row = 0; row < rect.Height; row++) {
+		unsigned char const * end = NULL;
+		int column = 0;
+		if (lines) {
+			end = data + (data[0] | (data[1] << 8));
+			data += 2;
+		}
+		while (column < rect.Width && (!lines || data < end)) {
+			unsigned char value = *data++;
+			if (skips && value == 0 && lines) {
+				column += *data++;
+				continue;
+			}
+			if (value != 0 || !skips) {
+				if (row == 0 && column == 0) {
+					anchor = true;
+				} else {
+					first = std::min(first, column);
+					last = std::max(last, column);
+				}
+			}
+			column++;
+		}
+		if (lines) {
+			data = end;
+		}
+	}
+
+	if (anchor && last >= 0 && first > 0) {
+		metrics.Left = (short)first;
+		metrics.Width = (short)(last - first + 1);
+		metrics.Anchored = true;
+	}
+}
+
+
+/// <summary>
+/// Draws one frame of a glyph with its ink starting at x, and without the anchor pixel of an anchored glyph.
+/// </summary>
+/// <param name="shape_frame">The first frame of the glyph.</param>
+/// <param name="frame">The frame of the glyph to draw, 0 to 2.</param>
+void MSFont::Draw_Glyph(Surface * surface, int shape_frame, int frame, int x, int y)
+{
+	GlyphMetrics const & measured = Glyph_Metrics(shape_frame + 2);
+	Rect window = surface->Get_Rect();
+	int origin = x - measured.Left;
+
+	if (measured.Anchored) {
+		int const cut = origin + FontFile->Get_Rect(shape_frame + frame).X + 1;
+		if (cut > window.X) {
+			window.Width -= cut - window.X;
+			window.X = cut;
+		}
+		if (window.Width <= 0) {
+			return;
+		}
+	}
+
+	Draw_Shape(*surface, *Drawer, FontFile, shape_frame + frame, Point2D(origin - window.X, y), window, SHAPE_WIN_REL);
+}
+
+
+/// <summary>
 /// Creates the standard menu font.
 /// This routine loads the common font used throughout the menu screens, colored either to
 /// suit the side being played or with the neutral palette.
@@ -61,7 +161,9 @@ int MSFont::Glyph_Frame(char32_t code) const
 MSFont::MSFont(bool use_side_palette) :
 	Red(0),
 	Green(0),
-	Blue(0)
+	Blue(0),
+	PaletteName(),
+	Metrics()
 {
 	Init("FULLFNT3.SHP", use_side_palette ? "SIDEFNT3.PAL" : "FULLFNT3.PAL");
 	InstanceCount++;
@@ -77,7 +179,9 @@ MSFont::MSFont(bool use_side_palette) :
 MSFont::MSFont(char const * file_name) :
 	Red(0),
 	Green(0),
-	Blue(0)
+	Blue(0),
+	PaletteName(),
+	Metrics()
 {
 	char palette_name[256];
 	strncpy(palette_name, file_name, 256);
@@ -97,7 +201,9 @@ MSFont::MSFont(char const * file_name) :
 MSFont::MSFont(char const * file_name, char const * palette_name) :
 	Red(0),
 	Green(0),
-	Blue(0)
+	Blue(0),
+	PaletteName(),
+	Metrics()
 {
 	Init(file_name, palette_name);
 	InstanceCount++;
@@ -174,6 +280,9 @@ bool MSFont::Init(char const * file_name, char const * palette_name)
 	if (palette == NULL) {
 		return(false);
 	}
+
+	strncpy(PaletteName, palette_name, sizeof(PaletteName) - 1);
+	PaletteName[sizeof(PaletteName) - 1] = '\0';
 
 	for (int gindex = 0; gindex < 256; gindex++) {
 		CCPalette[gindex] = RGBClass(
@@ -325,7 +434,7 @@ int MSFont::Get_Character_Width(char32_t code)
 
 	if (code > ' ') {
 		int shape_frame = Glyph_Frame(code);
-		return(FontFile->Get_Rect(shape_frame + 2).Width + 1);
+		return(Glyph_Metrics(shape_frame + 2).Width + 1);
 	}
 	return(0);
 }
@@ -357,7 +466,7 @@ void MSFont::Draw_Character(Surface * surface, char32_t code, int x, int y, int 
 			}
 		}
 
-		Draw_Shape(*surface, *Drawer, FontFile, shape_frame + frame, Point2D(x - FontFile->Get_Rect(shape_frame + 2).X, y), surface->Get_Rect(), SHAPE_WIN_REL);
+		Draw_Glyph(surface, shape_frame, frame, x, y);
 	}
 }
 
@@ -382,10 +491,47 @@ void MSFont::Draw_String(Surface * surface, char const * string, int x, int y, i
 			if (code > ' ') {
 				int shape_frame = Glyph_Frame(code);
 
-				Draw_Shape(*surface, *Drawer, FontFile, shape_frame + frame, Point2D(current_x - FontFile->Get_Rect(shape_frame + 2).X, y), surface->Get_Rect(), SHAPE_WIN_REL);
+				Draw_Glyph(surface, shape_frame, frame, current_x, y);
 			}
 
 			current_x += Get_Character_Width(code);
 		}
+	}
+}
+
+
+/// <summary>
+/// Recolors the font. Each color of the glyph palette is multiplied by the given color, so the glyph
+/// shading is kept; white glyphs take the color itself.
+/// </summary>
+/// <param name="red">The red of the color, 0 to 255.</param>
+/// <param name="green">The green of the color, 0 to 255.</param>
+/// <param name="blue">The blue of the color, 0 to 255.</param>
+/// <remarks>The global CCPalette is overwritten with the recolored palette.</remarks>
+void MSFont::Set_Color(int red, int green, int blue)
+{
+	CCFileClass file(PaletteName);
+	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
+	if (palette == NULL) {
+		return;
+	}
+
+	for (int index = 0; index < 256; index++) {
+		CCPalette[index] = RGBClass(
+			(((unsigned char *)*palette)[index*3] << 2) * red / 255,
+			(((unsigned char *)*palette)[index*3+1] << 2) * green / 255,
+			(((unsigned char *)*palette)[index*3+2] << 2) * blue / 255);
+	}
+	delete palette;
+
+	Red = (unsigned char)CCPalette[68].Get_Red();
+	Green = (unsigned char)CCPalette[68].Get_Green();
+	Blue = (unsigned char)CCPalette[68].Get_Blue();
+	Color = DSurface::Build_Hicolor_Pixel(Red, Green, Blue);
+
+	ConvertClass * drawer = new ConvertClass(CCPalette, CCPalette, *VisibleSurface);
+	if (drawer != NULL) {
+		delete Drawer;
+		Drawer = drawer;
 	}
 }

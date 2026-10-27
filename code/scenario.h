@@ -175,6 +175,17 @@ class ScenarioClass {
 		*/
 		mutable TTimerClass<SystemTimerClass> ElapsedTimer;
 
+		/*
+		**	The [Ranking] section of the mission. ParTime is indexed by difficulty (easy, normal,
+		**	hard) and holds timer ticks, TIMER_SECOND a second. The titles and messages are CSF
+		**	labels. The under-par pair is shown when the mission time is not over par.
+		*/
+		int ParTime[3];
+		char UnderParTitle[32];
+		char UnderParMessage[32];
+		char OverParTitle[32];
+		char OverParMessage[32];
+
 	private:
 		/*
 		**	This is an array of waypoints; each waypoint corresponds to a letter of

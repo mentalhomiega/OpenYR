@@ -649,7 +649,6 @@ RulesClass::RulesClass(void) :
 	IceBreakingWeight(4),
 	ShipSinkingWeight(3),
 	IsAlliedWallTransparency(false),
-	IsScoreArtFillsStage(true),
 	ParachuteMaxFallRate(-3),
 	NoParachuteMaxFallRate(-100),
 	IceCrackSounds(),
@@ -1731,7 +1730,6 @@ bool RulesClass::General(CCINIClass const & ini)
 		IceBreakingWeight = ini.Get_Float(GENERAL, "IceBreakingWeight", IceBreakingWeight);
 		ShipSinkingWeight = ini.Get_Float(GENERAL, "ShipSinkingWeight", ShipSinkingWeight);
 		IsAlliedWallTransparency = ini.Get_Bool("WallModel", "AlliedWallTransparency", IsAlliedWallTransparency);
-		IsScoreArtFillsStage = ini.Get_Bool(GENERAL, "ScoreArtFillsStage", IsScoreArtFillsStage);
 		ParachuteMaxFallRate = ini.Get_Int(GENERAL, "ParachuteMaxFallRate", ParachuteMaxFallRate);
 		NoParachuteMaxFallRate = ini.Get_Int(GENERAL, "NoParachuteMaxFallRate", NoParachuteMaxFallRate);
 		CliffBackImpassability = ini.Get_Int(GENERAL, "CliffBackImpassability", CliffBackImpassability);

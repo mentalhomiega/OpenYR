@@ -7330,6 +7330,11 @@ void TechnoClass::Count_The_Kill(HouseClass * killer_house)
 {
 	int total_recorded = 0;
 
+	// A type with DontScore adds nothing to the killer's counts.
+	if (TClass->IsDontScore) {
+		killer_house = NULL;
+	}
+
 	switch ((RTTIType)RTTI) {
 		case RTTI_BUILDING:
 			{
