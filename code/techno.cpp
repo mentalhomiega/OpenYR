@@ -9820,8 +9820,10 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	if (AllowVoice && TClass->VoiceSelect.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
+	// A slave of a Slave Miner answers with its enslaved lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : TClass->VoiceSelect;
+	if (AllowVoice && voices.Count()) {
+		Play_Unit_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
 }
 
