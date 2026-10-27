@@ -44,6 +44,7 @@ class ParasiteClass
 		void Try_Infect(TechnoClass * target);
 		void Update(void);
 		void Exit_Unit(void);
+		void Victim_Removed(void);
 		void Victim_Hit(int damage, TechnoClass const * source);
 		void Detach(AbstractClass const * target);
 		void Serialize(SaveStreamClass & stream);

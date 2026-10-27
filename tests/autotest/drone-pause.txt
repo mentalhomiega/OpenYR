@@ -1,0 +1,170 @@
+; Terror Drone pause after a kill: a player's Terror Drone (DRON) infects a computer Rhino (HTNK) three cells east at frame 160.
+; Its bites (DroneJump, ROF 60, 50 damage) take the Rhino from 400 strength to 0. The last bite lands on frame 609, and the Rhino is gone by frame 610.
+; The drone comes out on 62,62 on frame 610. An order to move it (order DRON 60 66) is given on frame 611, then again on 700, 760, 788, 790 and 800.
+; gamemd's victim-death exit (ParasiteClass::PointerExpired, 0x62A260) does not write the parasite's ParalysisTimer. Only ParasiteClass::ExitUnit (0x62A4A0)
+; sets it, to ROF x 3 frames, so a drone released by its victim's death takes the frame-611 order.
+; Before the fix: where DRON shows paralysis 180 on frame 610, the order on 611 is dropped (mission Guard), paralysis counts down to 0 by frame 790,
+; and the order on 790 starts the move (mission Move on frame 792).
+; After the fix: paralysis is 0 throughout, the order on 611 starts the move (mission Move on frame 612), and the drone reaches 60,66 by frame 780.
+; Run: scripts/run_autotest.ps1 -Build agent21 -Script E:/Claude ra2 decomp/src-agent21/tests/autotest/drone-pause.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST|Exception"
+1 view 62 62
+2 zoom 2.5
+3 reveal
+10 own DRON 60 62
+150 spawn HTNK 64 62
+160 strike DRON 64 62
+180 where DRON
+180 where HTNK
+210 where DRON
+210 where HTNK
+240 where DRON
+240 where HTNK
+270 where DRON
+270 where HTNK
+300 where DRON
+300 where HTNK
+330 where DRON
+330 where HTNK
+360 where DRON
+360 where HTNK
+390 where DRON
+390 where HTNK
+420 where DRON
+420 where HTNK
+450 where DRON
+450 where HTNK
+480 where DRON
+480 where HTNK
+510 where DRON
+510 where HTNK
+540 where DRON
+540 where HTNK
+570 where DRON
+570 where HTNK
+600 where DRON
+600 where HTNK
+604 where DRON
+604 where HTNK
+605 where DRON
+605 where HTNK
+606 where DRON
+606 where HTNK
+607 where DRON
+607 where HTNK
+608 where DRON
+608 where HTNK
+609 where DRON
+609 where HTNK
+610 where DRON
+610 where HTNK
+611 where DRON
+611 where HTNK
+611 order DRON 60 66
+612 where DRON
+612 where HTNK
+613 where DRON
+613 where HTNK
+614 where DRON
+614 where HTNK
+615 where DRON
+615 where HTNK
+616 where DRON
+616 where HTNK
+618 where DRON
+620 where DRON
+622 where DRON
+624 where DRON
+626 where DRON
+628 where DRON
+630 where DRON
+632 where DRON
+634 where DRON
+636 where DRON
+638 where DRON
+640 where DRON
+642 where DRON
+644 where DRON
+646 where DRON
+648 where DRON
+650 where DRON
+652 where DRON
+654 where DRON
+656 where DRON
+658 where DRON
+660 where DRON
+662 where DRON
+664 where DRON
+666 where DRON
+668 where DRON
+670 where DRON
+672 where DRON
+674 where DRON
+676 where DRON
+678 where DRON
+680 where DRON
+682 where DRON
+684 where DRON
+686 where DRON
+688 where DRON
+690 where DRON
+692 where DRON
+694 where DRON
+696 where DRON
+698 where DRON
+700 where DRON
+700 order DRON 60 66
+702 where DRON
+704 where DRON
+706 where DRON
+708 where DRON
+710 where DRON
+712 where DRON
+714 where DRON
+716 where DRON
+718 where DRON
+720 where DRON
+722 where DRON
+724 where DRON
+726 where DRON
+728 where DRON
+730 where DRON
+732 where DRON
+734 where DRON
+736 where DRON
+738 where DRON
+740 where DRON
+742 where DRON
+744 where DRON
+746 where DRON
+748 where DRON
+750 where DRON
+752 where DRON
+754 where DRON
+756 where DRON
+758 where DRON
+760 where DRON
+760 order DRON 60 66
+762 where DRON
+764 where DRON
+766 where DRON
+768 where DRON
+770 where DRON
+772 where DRON
+774 where DRON
+776 where DRON
+778 where DRON
+780 where DRON
+782 where DRON
+784 where DRON
+786 where DRON
+788 where DRON
+788 order DRON 60 66
+790 where DRON
+790 order DRON 60 66
+792 where DRON
+794 where DRON
+796 where DRON
+798 where DRON
+800 where DRON
+800 order DRON 60 66
+802 quit
