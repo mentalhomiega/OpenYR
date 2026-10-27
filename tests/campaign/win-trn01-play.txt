@@ -1,0 +1,49 @@
+; Campaign win check for Boot Camp day 1 (Red Alert 2) with a player's orders only (win-trn01.txt forces the targets down with killtag instead).
+; The soldier walks out of the base to the broken bridge; the engineer the helicopter drops enters the bridge repair hut (spy); the soldier follows
+; the road to the range, shoots the two targets, then walks to the derelict tank and shoots it. Expected: "AUTOTEST game over frame N: won" (frame 8672 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-trn01-play.txt -Campaign -Map TRN01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 move E1 72 80
+11 waitcell E1 72 80 2 1200
+16 move E1 72 67
+17 waitcell E1 72 67 2 1200
+22 move E1 77 66
+23 waitcell E1 77 66 2 1200
+28 waittrigger 07C412F4 3000
+33 spy ENGINEER 80 65
+433 move E1 77 58
+434 waitcell E1 77 58 2 1200
+439 where E1
+441 move E1 77 49
+442 waitcell E1 77 49 2 1200
+447 where E1
+449 move E1 66 47
+450 waitcell E1 66 47 2 1200
+455 where E1
+457 strike E1 65 44
+757 strike E1 65 43
+1057 strike E1 65 44
+1357 strike E1 65 43
+1657 strike E1 65 44
+1957 strike E1 65 43
+2257 strike E1 65 44
+2557 strike E1 65 43
+2857 move E1 58 32
+2863 waitcell E1 58 32 2 1500
+2868 strike E1 55 26
+3168 strike E1 55 26
+3468 strike E1 55 26
+3768 strike E1 55 26
+4868 quit
