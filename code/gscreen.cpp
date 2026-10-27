@@ -449,6 +449,7 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);
 	if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution.

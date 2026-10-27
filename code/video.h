@@ -113,4 +113,11 @@ unsigned int Video_Present_Interval(void);
 std::uint64_t Video_Present_Count(void);
 std::uint64_t Video_Frame_Upload_Count(void);
 
+// The presentdigest autotest step: on logs a PRESENT_DIGEST line at each present that reaches the presenter.
+void Video_Set_Present_Digest(bool enabled);
+
+// The drawdigest autotest step: on logs a DRAW_DIGEST line for each map view passed to Video_Note_Draw_Digest.
+void Video_Set_Draw_Digest(bool enabled);
+void Video_Note_Draw_Digest(Surface const & surface, Rect const & area);
+
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);

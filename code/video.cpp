@@ -36,8 +36,11 @@
 #include "videodirty.h"
 #include "wwmouse.h"
 
+#include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <utility>
 #include <vector>
 
@@ -83,6 +86,14 @@ static int _PendingHeight = 0;
 
 static std::uint64_t _PresentCount = 0;
 static std::uint64_t _FrameUploadCount = 0;
+
+// The presentdigest autotest step: when on, each present logs a hash of the frame and map layer it sends.
+static bool _PresentDigest = false;
+static std::uint64_t _PresentDigestCount = 0;
+
+// The drawdigest autotest step: when on, each draw of the map logs a hash of the map view it drew.
+static bool _DrawDigest = false;
+static std::uint64_t _DrawDigestCount = 0;
 
 
 static void Refresh_Mouse_Pointer(void)
@@ -479,6 +490,48 @@ void Video_Mark_Overlay_Dirty(void)
 }
 
 
+// FNV-1a with 64-bit lanes: each whole 8-byte word of a row is mixed in, then the row's tail bytes one by one.
+static std::uint64_t Digest_Rows(std::uint64_t hash, char const * base, int pitch, int row_bytes, int rows)
+{
+	std::uint64_t const prime = 0x100000001b3ULL;
+	for (int row = 0; row < rows; row++) {
+		char const * line = base + (std::ptrdiff_t)row * pitch;
+		int offset = 0;
+		for (; offset + 8 <= row_bytes; offset += 8) {
+			std::uint64_t word;
+			std::memcpy(&word, line + offset, sizeof(word));
+			hash ^= word;
+			hash *= prime;
+		}
+		for (; offset < row_bytes; offset++) {
+			hash ^= (unsigned char)line[offset];
+			hash *= prime;
+		}
+	}
+	return(hash);
+}
+
+
+// Logs the digest of the frame, and of the map layer when one is drawn under it, as the presenter is about to send them.
+static void Log_Present_Digest(DSurface const * surface, BackendLayer const * layer)
+{
+	std::uint64_t const basis = 0xcbf29ce484222325ULL;
+	char const * frame = (char const *)surface->Get_Buffer();
+	unsigned long long frame_hash = 0;
+	if (frame != NULL) {
+		frame_hash = Digest_Rows(basis, frame, surface->Stride(), surface->Get_Width() * surface->Bytes_Per_Pixel(), surface->Get_Height());
+	}
+
+	char layer_text[24] = "none";
+	if (layer != NULL && layer->Pixels != NULL) {
+		snprintf(layer_text, sizeof(layer_text), "%016llx", (unsigned long long)Digest_Rows(basis, (char const *)layer->Pixels, layer->Pitch, layer->Width * 2, layer->Height));
+	}
+
+	DebugString("PRESENT_DIGEST frame %d present %llu hash %016llx layer %s\n", Frame, (unsigned long long)_PresentDigestCount, frame_hash, layer_text);
+	_PresentDigestCount++;
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
@@ -545,6 +598,10 @@ static void Present(void)
 				}
 			}
 		}
+	}
+
+	if (_PresentDigest) {
+		Log_Present_Digest(surface, layerptr);
 	}
 
 	bool presented = false;
@@ -653,6 +710,49 @@ std::uint64_t Video_Present_Count(void)
 std::uint64_t Video_Frame_Upload_Count(void)
 {
 	return(_FrameUploadCount);
+}
+
+
+/// <summary>
+/// Turns the per-present PRESENT_DIGEST log on or off. Turning it on restarts the present index at 0.
+/// </summary>
+void Video_Set_Present_Digest(bool enabled)
+{
+	_PresentDigest = enabled;
+	_PresentDigestCount = 0;
+}
+
+
+/// <summary>
+/// Turns the per-draw DRAW_DIGEST log on or off. Turning it on restarts the draw index at 0.
+/// </summary>
+void Video_Set_Draw_Digest(bool enabled)
+{
+	_DrawDigest = enabled;
+	_DrawDigestCount = 0;
+}
+
+
+/// <summary>
+/// Logs a DRAW_DIGEST line with a hash of the area of the surface, when the drawdigest step is on.
+/// The surface must not be locked by the caller.
+/// </summary>
+void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
+{
+	if (!_DrawDigest) {
+		return;
+	}
+	Rect const clipped = Intersect(area, surface.Get_Rect());
+	unsigned long long hash = 0xcbf29ce484222325ULL;
+	if (clipped.Width > 0 && clipped.Height > 0) {
+		char const * base = (char const *)surface.Lock(Point2D(clipped.X, clipped.Y));
+		if (base != NULL) {
+			hash = Digest_Rows(hash, base, surface.Stride(), clipped.Width * surface.Bytes_Per_Pixel(), clipped.Height);
+			surface.Unlock();
+		}
+	}
+	DebugString("DRAW_DIGEST frame %d draw %llu hash %016llx\n", Frame, (unsigned long long)_DrawDigestCount, hash);
+	_DrawDigestCount++;
 }
 
 
