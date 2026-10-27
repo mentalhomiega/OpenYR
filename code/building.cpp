@@ -1745,6 +1745,10 @@ void BuildingClass::AI(void)
 			if (sound != VOC_NONE) {
 				Sound_Effect(sound, Center_Coord());
 			}
+			// A structure that drops out of service for lack of power lets go of the units it holds (BuildingClass::UpdatePowerState, 0x4549B0, FreeAll).
+			if (!online && CaptureManager) {
+				CaptureManager->Free_All();
+			}
 			Update_Power_Anims(online);
 			WasOnline = online;
 		}
