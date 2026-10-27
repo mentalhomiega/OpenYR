@@ -42,6 +42,7 @@
 **	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
 **	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay
 **	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
+**	wallcensus				writes each overlay type the rules mark as a wall, with the wall overlays the scenario's OverlayPack names (outside the radar counted apart) and the ones the loaded map holds, and whether the type has an image and a cell animation
 **	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
 **	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
 **	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
@@ -258,6 +259,9 @@
 #include "building.h"
 #include "factory.h"
 #include "ccfile.h"
+#include "ccini.h"
+#include "lcwstraw.h"
+#include "xstraw.h"
 #include "builtype.h"
 #include "bullet.h"
 #include "bullettype.h"
@@ -1959,6 +1963,92 @@ static void Bridge_Census_Step(StepType const & step)
 
 
 /// <summary>
+/// Logs each overlay type the rules mark as a wall, with the wall overlays the scenario's OverlayPack names
+/// and the ones the loaded map holds, the first cell of each, and whether the type has an image or a cell animation.
+/// </summary>
+/// <param name="step">The step, which takes no argument.</param>
+static void Wall_Census_Step(StepType const & step)
+{
+	(void)step;
+	int const types = OverlayTypes.Count();
+	std::vector<int> raw(types, 0);
+	std::vector<int> raw_outside(types, 0);
+	std::vector<int> raw_first_x(types, -1);
+	std::vector<int> raw_first_y(types, -1);
+	std::vector<int> loaded(types, 0);
+	std::vector<int> first_x(types, -1);
+	std::vector<int> first_y(types, -1);
+	int rejected = 0;
+
+	CCINIClass ini;
+	CCFileClass file(Scen->ScenarioName);
+	if (file.Is_Available()) {
+		ini.Load(file, false);
+	}
+	std::vector<unsigned char> pack(640 * 400 * 2);
+	int const len = ini.Get_UUBlock("OverlayPack", pack.data(), (int)pack.size());
+	if (len > 0) {
+		BufferStraw bpipe(pack.data(), len);
+		LCWStraw uncomp(LCWStraw::DECOMPRESS);
+		uncomp.Get_From(&bpipe);
+		for (int y = 0; y < MAP_CELL_H; y++) {
+			for (int x = 0; x < MAP_CELL_W; x++) {
+				unsigned char value = 0xFF;
+				uncomp.Get(&value, sizeof(value));
+				if (value == 0xFF) {
+					continue;
+				}
+				if (value >= types) {
+					rejected++;
+					continue;
+				}
+				if (!OverlayTypes[value]->IsWall) {
+					continue;
+				}
+				if (raw[value] == 0) {
+					raw_first_x[value] = x;
+					raw_first_y[value] = y;
+				}
+				raw[value]++;
+				if (!Map.In_Radar(Cell(x, y))) {
+					raw_outside[value]++;
+				}
+			}
+		}
+	}
+
+	Map.Reset_Iterator();
+	for (CellClass * cptr = Map.Iterate(); cptr != NULL; cptr = Map.Iterate()) {
+		if (cptr->Overlay != OVERLAY_NONE && OverlayTypes[cptr->Overlay]->IsWall) {
+			if (loaded[cptr->Overlay] == 0) {
+				first_x[cptr->Overlay] = cptr->CellID.X;
+				first_y[cptr->Overlay] = cptr->CellID.Y;
+			}
+			loaded[cptr->Overlay]++;
+		}
+	}
+
+	int total_raw = 0;
+	int total_loaded = 0;
+	for (int index = 0; index < types; index++) {
+		if (!OverlayTypes[index]->IsWall) {
+			continue;
+		}
+		total_raw += raw[index];
+		total_loaded += loaded[index];
+		if (raw[index] == 0 && loaded[index] == 0) {
+			continue;
+		}
+		DebugString("AUTOTEST   wallcensus %s index %d raw %d outside %d loaded %d raw_first %d,%d loaded_first %d,%d image %d cellanim %d\n",
+			OverlayTypes[index]->Name(), index, raw[index], raw_outside[index], loaded[index],
+			raw_first_x[index], raw_first_y[index], first_x[index], first_y[index],
+			OverlayTypes[index]->Get_Image_Data() != NULL ? 1 : 0, OverlayTypes[index]->CellAnim != NULL ? 1 : 0);
+	}
+	DebugString("AUTOTEST wallcensus %s raw %d loaded %d rejected %d\n", Scen->ScenarioName, total_raw, total_loaded, rejected);
+}
+
+
+/// <summary>
 /// Logs, for each foot the player owns of the type, whether it is standing on a bridge and the bridge state of its cell.
 /// </summary>
 /// <param name="step">A step whose argument is the type name.</param>
@@ -2264,6 +2354,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "bridgecensus") {
 		Bridge_Census_Step(step);
+		return;
+	}
+	if (step.Command == "wallcensus") {
+		Wall_Census_Step(step);
 		return;
 	}
 	if (step.Command == "bridgearea") {
