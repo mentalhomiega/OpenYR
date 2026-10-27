@@ -1,8 +1,10 @@
-; Controls page: Attack move takes Mouse 5 (a side button), a click on the capture box and then Ctrl are refused with
-; their reasons, then Reset to defaults is confirmed and OK saves. The shots show the result in the scheme the user folder's
-; KEYBOARDMD.INI names (Classic when the file is absent). Classic gives Attack move no key, so its reset leaves the row blank and
-; the notice names Attack move; Modern restores A with no notice. Delete KEYBOARDMD.INI from the user folder to start from Classic.
-; Shots: side-button-assigned (Mouse 5 in the row), side-button-ctrl-refused (the notice names Ctrl), side-button-reset.
+; Controls page: Attack move takes Mouse 5 (a side button). Then a click on the capture box and a Ctrl press capture Ctrl alone,
+; which Attack move accepts because it is a held-key command: the key box keeps Ctrl with no notice. Reset to defaults is
+; confirmed and OK saves. The shots show the result in the scheme the user folder's KEYBOARDMD.INI names (Classic when the file
+; is absent). Classic's default for Attack move is Held Ctrl+Shift, so its reset restores that with no notice, and the key box keeps
+; the captured Ctrl. Modern's default for Attack move is A (a press). Delete KEYBOARDMD.INI from the user folder to start from Classic.
+; Shots: side-button-assigned (Mouse 5 in the row), side-button-ctrl-captured (Ctrl in the key box, no notice), side-button-reset-prompt
+; and side-button-reset.
 ; Run from the workspace root:
 ;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/keyboard-side-button.txt -Menus -MenuStyle Modern -Width 640 -Height 480 -Seconds 90 -Filter "UISCRIPT|Exception"
 ui waitfor backdrop
@@ -22,7 +24,7 @@ ui wclick capture
 ui wait 500
 ui key ctrl
 ui wait 500
-ui shot side-button-ctrl-refused
+ui shot side-button-ctrl-captured
 ui press Reset to defaults
 ui wait 1000
 ui shot side-button-reset-prompt
