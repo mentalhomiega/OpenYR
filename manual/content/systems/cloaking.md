@@ -166,7 +166,7 @@ Neither test marks a cell as sensed. Unless it has [`SensorsSight`](/keys/sensor
 
 ### Sensor arrays
 
-A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than [`CloakRadiusInCells`](/keys/cloakradiusincells/). This is the same key that sizes a cloak generator's field, but an array's coverage is not cut off by the square grid a field is drawn on.
+A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than its [`SensorsSight`](/keys/sensorssight/). Its coverage is not cut off by the square grid a cloak field is drawn on, and [`CloakRadiusInCells`](/keys/cloakradiusincells/) does not size it.
 
 The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until a cloaking field next finishes growing while the array is operational.
 

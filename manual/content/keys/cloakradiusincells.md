@@ -6,7 +6,7 @@ when_omitted:
   value: "20"
 ---
 
-A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure grows its field out to this radius, one cell per game frame. A [`SensorArray=yes`](/keys/sensorarray/) structure marks every cell closer than this radius as sensed, all in one frame. The value is stored in a single byte, so values above `127` wrap to negative numbers.
+A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure grows its field out to this radius, one cell per game frame. The value is stored in a single byte, so values above `127` wrap to negative numbers.
 
 Every cloaking field is cut off at the edge of a square centered on its generator. The square's side is the largest `CloakRadiusInCells` of any BuildingType plus sixteen cells, counting types that are neither generators nor arrays. So when no type sets more than the default, even a default 20-cell field is cut off. [What a field covers](/systems/cloaking/#what-a-field-covers) gives the sizes. Sensor coverage is not cut off.
 

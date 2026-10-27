@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A sensor array marks every cell within [`CloakRadiusInCells`](/keys/cloakradiusincells/) of it as sensed for its owner. That house sees cloaked objects and fully faded enemy structures on a sensed cell as shadowy outlines, and can target the cloaked objects. [What sensing changes](/systems/cloaking/#what-sensing-changes) lists the full effect.
+A sensor array marks every cell within [`SensorsSight`](/keys/sensorssight/) cells of it as sensed for its owner. That house sees cloaked objects and fully faded enemy structures on a sensed cell as shadowy outlines, and can target the cloaked objects. [What sensing changes](/systems/cloaking/#what-sensing-changes) lists the full effect.
 
 The array marks its cells at these times, each only if the array is [operational](/systems/power/#defenses) then:
 
