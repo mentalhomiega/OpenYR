@@ -78,6 +78,7 @@
 #include "bench.hh"
 
 #include <algorithm>
+#include <cmath>
 
 void Multiplayer_Debug_Print(void);
 
@@ -375,6 +376,24 @@ void GScreenClass::Remove_A_Button(GadgetClass & gadget)
 }
 
 
+/// <summary>
+/// The part of the zoomed map surface that shows a part of the screen view, mapped as Shown_Map_Rect
+/// maps the whole view onto the screen. The presenter draws the map layer the same way.
+/// </summary>
+/// <param name="screen_part">A rectangle inside ScreenTacticalRect, in screen pixels.</param>
+static Rect Shown_Map_Part(Rect const & screen_part)
+{
+	Rect const shown = Shown_Map_Rect();
+	double const scale_x = double(shown.Width) / ScreenTacticalRect.Width;
+	double const scale_y = double(shown.Height) / ScreenTacticalRect.Height;
+	int const left = shown.X + int(std::floor((screen_part.X - ScreenTacticalRect.X) * scale_x));
+	int const top = shown.Y + int(std::floor((screen_part.Y - ScreenTacticalRect.Y) * scale_y));
+	int const right = shown.X + int(std::ceil((screen_part.X + screen_part.Width - ScreenTacticalRect.X) * scale_x));
+	int const bottom = shown.Y + int(std::ceil((screen_part.Y + screen_part.Height - ScreenTacticalRect.Y) * scale_y));
+	return(Rect(left, top, right - left, bottom - top));
+}
+
+
 /***********************************************************************************************
  * GScreenClass::Render -- General drawing dispatcher an display update function.              *
  *                                                                                             *
@@ -451,8 +470,13 @@ void GScreenClass::Render(void)
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	use_map_surfaces(false);
 	if (zoomed && Video_Map_Layer_Supported()) {
-		// The presenter draws the map under the frame at the window's own resolution.
+		// The presenter draws the map under the frame at the window's own resolution. The translucent panel
+		// blends with the map, so the frame under the panel holds a copy of the map instead of the key.
 		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);
+		if (hud && Modern_Interface()) {
+			Rect const panel = Hud_Layout().Panel;
+			CompositeSurface->Blit_From(panel, *MapCompositeSurface, Shown_Map_Part(panel));
+		}
 		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);
 	} else {
 		if (zoomed) {

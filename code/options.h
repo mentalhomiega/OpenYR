@@ -156,6 +156,9 @@ class OptionsClass {
 		// The cameo rows the modern build panel shows; the panel clamps it to what the screen fits.
 		int SidebarRows;
 
+		// The percent of the modern build panel's background that stays solid; the map shows through the rest. 100 is opaque.
+		int SidebarOpacity;
+
 		// The units a Shift-click queues on a unit cameo in the modern interface. A factory's queue limit caps it.
 		int ShiftQueueCount;
 

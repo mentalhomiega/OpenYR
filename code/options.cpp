@@ -208,6 +208,7 @@ OptionsClass::OptionsClass(void) :
 	ModernInterface(true),
 	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
+	SidebarOpacity(HUD_DEFAULT_OPACITY),
 	ShiftQueueCount(5),
 	DebugMode(false),
 	PlayerColorView(0),
@@ -798,6 +799,7 @@ void OptionsClass::Load_Interface_Style(void)
 	ModernInterface = (stricmp(style, "Modern") == 0);
 	IsModernInterfaceChosen = ModernInterface;
 	SidebarRows = ConfigINI.Get_Int("Options", "SidebarRows", HUD_DEFAULT_ROWS);
+	SidebarOpacity = std::clamp(ConfigINI.Get_Int("Options", "SidebarOpacity", HUD_DEFAULT_OPACITY), 0, 100);
 	DebugString("Interface style is %s\n", ModernInterface ? "Modern" : "Classic");
 
 	// The defence range ring defaults to the interface style: on for Modern, off for Classic.
@@ -887,6 +889,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "MenuBattle", MenuBattle);
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
+	ConfigINI.Put_Int("Options", "SidebarOpacity", SidebarOpacity);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
 	ConfigINI.Put_String("Options", "PlayerColors", PlayerColorView == PLAYER_VIEW_COLORBLIND_SAFE ? "ColorBlindSafe"
 		: PlayerColorView == PLAYER_VIEW_RELATIONSHIP ? "Relationship" : "Default");

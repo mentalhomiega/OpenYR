@@ -1323,14 +1323,14 @@ void SidebarClass::Draw_Build_Area(void)
 
 /// <summary>
 /// Copies the build panel onto the frame at its place on the right, over the map, for the modern
-/// interface.
+/// interface. The panel's background lets the map show through at Options.SidebarOpacity.
 /// </summary>
 void SidebarClass::Draw_Panels(Surface & surface)
 {
 	if (IsSidebarActive && GameActive && ScenarioActive && SidebarSurface != NULL) {
 		Rect const panel = Hud_Layout().Panel;
 		Rect const source(0, 0, panel.Width, panel.Height);
-		surface.Blit_From(panel, *SidebarSurface, source);
+		Blit_Hud_Panel(surface, panel, *SidebarSurface, source);
 	}
 	BASECLASS::Draw_Panels(surface);
 }

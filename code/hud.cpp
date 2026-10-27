@@ -25,11 +25,14 @@
 #include "shapeset.h"
 #include "tab.h"
 #include "viewzoom.h"
+#include "video.h"
 #include "draw.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <iterator>
+#include <vector>
 
 
 bool Modern_Interface(void)
@@ -197,6 +200,23 @@ HudColors const & Side_Colors(void)
 }
 
 
+namespace {
+
+// The panel background and the wells on it. Blit_Hud_Panel finds these colours to make them translucent.
+RGBClass Hud_Fill_Color(void)
+{
+	return(RGBClass(20, 22, 26));
+}
+
+
+RGBClass Hud_Well_Color(void)
+{
+	return(RGBClass(8, 9, 11));
+}
+
+}
+
+
 void Draw_Hud_Frame(Surface & surface, Rect const & rect)
 {
 	HudColors const & colors = Side_Colors();
@@ -209,7 +229,7 @@ void Draw_Hud_Frame(Surface & surface, Rect const & rect)
 
 void Draw_Hud_Well(Surface & surface, Rect const & rect)
 {
-	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(8, 9, 11)));
+	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(Hud_Well_Color()));
 	surface.Draw_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(48, 52, 60)));
 }
 
@@ -396,7 +416,7 @@ ShapeSet const * Hud_Icon(char const * name)
 
 void Draw_Hud_Fill(Surface & surface, Rect const & rect)
 {
-	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(RGBClass(20, 22, 26)));
+	surface.Fill_Rect(rect, DSurface::Build_Hicolor_Pixel(Hud_Fill_Color()));
 }
 
 
@@ -408,6 +428,128 @@ void Draw_Hud_Panel(Surface & surface)
 	Draw_Hud_Well(surface, layout.PowerReadout);
 	Draw_Hud_Well(surface, layout.Radar);
 	Draw_Hud_Well(surface, layout.Power);
+}
+
+
+namespace {
+
+// Mixes a panel colour over a map pixel, the colour taking the opacity percent of the result.
+unsigned short Blend_Over_Map(unsigned short map, RGBClass const & colour, int opacity)
+{
+	RGBClass const under = DSurface::Deconstruct_Hicolor_Pixel(map);
+	auto mix = [opacity](int beneath, int tint) {
+		return((beneath * (100 - opacity) + tint * opacity + 50) / 100);
+	};
+	return(static_cast<unsigned short>(DSurface::Build_Hicolor_Pixel(
+		mix(under.Get_Red(), colour.Get_Red()), mix(under.Get_Green(), colour.Get_Green()), mix(under.Get_Blue(), colour.Get_Blue()))));
+}
+
+
+bool Rect_Holds(Rect const & outer, Rect const & inner)
+{
+	Rect const common = Intersect(outer, inner);
+	return(common.Is_Valid() && common.X == inner.X && common.Y == inner.Y && common.Width == inner.Width && common.Height == inner.Height);
+}
+
+
+// Each 16-bit pixel blended with the panel fill and with a well at one opacity. The panel is drawn every frame, so a
+// lookup replaces the channel mixing for each background pixel.
+struct HudBlendTable {
+	int Opacity = -1;
+	std::vector<unsigned short> Fill;
+	std::vector<unsigned short> Well;
+};
+
+
+HudBlendTable const & Hud_Blend_Table(int opacity)
+{
+	static HudBlendTable table;
+	if (table.Opacity != opacity) {
+		table.Opacity = opacity;
+		table.Fill.resize(65536);
+		table.Well.resize(65536);
+		for (int pixel = 0; pixel < 65536; pixel++) {
+			table.Fill[pixel] = Blend_Over_Map(static_cast<unsigned short>(pixel), Hud_Fill_Color(), opacity);
+			table.Well[pixel] = Blend_Over_Map(static_cast<unsigned short>(pixel), Hud_Well_Color(), opacity);
+		}
+	}
+	return(table);
+}
+
+}
+
+
+/// <summary>
+/// Copies a part of the sidebar surface onto the frame for the modern build panel.
+/// The panel's fill and well pixels are blended over the map beneath them at Options.SidebarOpacity
+/// percent. Every other pixel is copied as drawn, including all of the radar and the buttons, and so
+/// is any pixel where the frame holds no map, which is one the video map layer keys out.
+/// </summary>
+/// <param name="surface">The frame the panel is copied onto.</param>
+/// <param name="dest">The place on the frame, which must lie inside it.</param>
+/// <param name="source">The sidebar surface the panel is drawn on.</param>
+/// <param name="source_rect">The part of the sidebar surface to copy, the same size as dest.</param>
+void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source, Rect const & source_rect)
+{
+	int const opacity = std::clamp(Options.SidebarOpacity, 0, 100);
+	bool const fits = dest.Width == source_rect.Width && dest.Height == source_rect.Height
+		&& Rect_Holds(surface.Get_Rect(), dest) && Rect_Holds(source.Get_Rect(), source_rect);
+	if (opacity >= 100 || !fits || surface.Bytes_Per_Pixel() != 2 || source.Bytes_Per_Pixel() != 2) {
+		surface.Blit_From(dest, source, source_rect);
+		return;
+	}
+
+	unsigned short * out = static_cast<unsigned short *>(surface.Lock());
+	unsigned short const * in = static_cast<unsigned short const *>(source.Lock());
+	if (out == NULL || in == NULL) {
+		if (in != NULL) source.Unlock();
+		if (out != NULL) surface.Unlock();
+		surface.Blit_From(dest, source, source_rect);
+		return;
+	}
+
+	int const out_stride = surface.Stride() / 2;
+	int const in_stride = source.Stride() / 2;
+	int const fill_pixel = DSurface::Build_Hicolor_Pixel(Hud_Fill_Color());
+	int const well_pixel = DSurface::Build_Hicolor_Pixel(Hud_Well_Color());
+	HudLayout const layout = Hud_Layout();
+	Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
+	HudBlendTable const & blend = Hud_Blend_Table(opacity);
+
+	for (int y = 0; y < dest.Height; y++) {
+		int const sy = source_rect.Y + y;
+
+		// Only the solid areas that cross this row can hold a pixel that must stay opaque.
+		Rect crossing[std::size(solid)];
+		int crossings = 0;
+		for (Rect const & rect : solid) {
+			if (sy >= rect.Y && sy < rect.Y + rect.Height) {
+				crossing[crossings++] = rect;
+			}
+		}
+
+		for (int x = 0; x < dest.Width; x++) {
+			int const sx = source_rect.X + x;
+			unsigned short const pixel = in[sy * in_stride + sx];
+			unsigned short & target = out[(dest.Y + y) * out_stride + dest.X + x];
+
+			bool background = (pixel == fill_pixel || pixel == well_pixel);
+			for (int index = 0; background && index < crossings; index++) {
+				if (sx >= crossing[index].X && sx < crossing[index].X + crossing[index].Width) {
+					background = false;
+				}
+			}
+
+			if (!background || target == VIDEO_LAYER_KEY) {
+				target = pixel;
+			} else {
+				target = (pixel == fill_pixel) ? blend.Fill[target] : blend.Well[target];
+			}
+		}
+	}
+
+	source.Unlock();
+	surface.Unlock();
 }
 
 
