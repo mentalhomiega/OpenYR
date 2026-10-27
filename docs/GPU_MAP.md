@@ -10,7 +10,7 @@ default, and works only in the modern interface on Direct3D 11.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow) and `fs_mappost.sc` (shockwaves and bloom), each compiled into a `.bin.h` header. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow) and `fs_mappost.sc` (shockwaves, bloom and cloud shadows), each compiled into a `.bin.h` header. |
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
@@ -33,10 +33,10 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 
 All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
 Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves`, `Bloom` (the **Glow**
-switch) and `WaterRipples` when the page is accepted, and the game writes every key in the table back
-to `RA2MD.INI`. The effect switches are greyed out until GPU drawing is ticked, and GPU drawing is
-greyed out without the modern interface. `SoftShadowRadius`, `BloomStrength` and
-`WaterRippleStrength` have no switch.
+switch), `WaterRipples` and `CloudShadows` when the page is accepted, and the game writes every key in
+the table back to `RA2MD.INI`. The effect switches are greyed out until GPU drawing is ticked, and GPU
+drawing is greyed out without the modern interface. `SoftShadowRadius`, `BloomStrength`,
+`WaterRippleStrength` and `CloudShadowStrength` have no switch.
 
 | Key | Default | Effect |
 |---|---|---|
@@ -48,6 +48,8 @@ greyed out without the modern interface. `SoftShadowRadius`, `BloomStrength` and
 | `BloomStrength` | `100` | The brightness of the `Bloom` glow in percent, from 1 to 400. |
 | `WaterRipples` | `no` | With `GpuRender`, the water of the map ripples: two slow waves shift the ground under the water by up to 2.4 pixels sideways and 1.2 pixels up or down, and lighten or darken it by up to 10%, and sunlight glints in drifting patches along the crests. Ships, units and effects on the water are drawn after the ripple and do not move with it. Shore tiles that are part land do not ripple, and a pass drawn in software shows still water. Changing the switch redraws the whole tile layer. |
 | `WaterRippleStrength` | `100` | The size of the `WaterRipples` shift and shading and the brightness of its glints, in percent, from 1 to 400. |
+| `CloudShadows` | `no` | With `GpuRender`, the shadows of clouds a few hundred pixels across drift slowly over the map, about 10 pixels a second, and darken everything the pass draws under them, units included, by up to 30%. They cover about a third of the map and stay fixed to the ground as the view scrolls. A pass drawn in software shows no clouds. |
+| `CloudShadowStrength` | `100` | How much a cloud darkens the map in percent, from 1 to 400; 400 darkens it completely. |
 
 ## Limits
 

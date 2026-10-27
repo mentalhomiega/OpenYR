@@ -75,6 +75,11 @@ struct GpuMapPass
 	// GPU last took it; NULL for no glow.
 	std::vector<unsigned char> const * Glow = NULL;
 	std::vector<unsigned char> * GlowChanged = NULL;
+
+	// The map position of Area's top left pixel, in pixels, which keeps water ripples and cloud
+	// shadows fixed to the ground as the view moves.
+	int WorldX = 0;
+	int WorldY = 0;
 };
 
 
@@ -104,6 +109,9 @@ int GpuMap_Bloom(void);
 // Ripples the water of the tile layer at strength percent (at most 400); 0 leaves it still. The
 // ripples need the water marks of the shadow plane (code/shadowplane.h).
 void GpuMap_Set_Water(int strength);
+
+// Shades the map under slowly drifting clouds at strength percent (at most 400); 0 shows no clouds.
+void GpuMap_Set_Clouds(int strength);
 
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass

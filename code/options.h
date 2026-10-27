@@ -308,6 +308,10 @@ class OptionsClass {
 		bool WaterRipples;
 		int WaterRippleStrength;
 
+		// With GpuRender, the map is shaded under slowly drifting clouds, at CloudShadowStrength percent.
+		bool CloudShadows;
+		int CloudShadowStrength;
+
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
 		 * Presents are already limited to the refresh rate without it.

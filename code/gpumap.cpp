@@ -158,6 +158,8 @@ static bool _TileShadowTracked = false;
 // Water ripples read the water marks from the same plane as the tile shadows.
 static int _WaterStrength = 0;
 static bgfx::UniformHandle _WaterUniform = BGFX_INVALID_HANDLE;
+static int _CloudStrength = 0;
+static bgfx::UniformHandle _WorldUniform = BGFX_INVALID_HANDLE;
 
 // Bloom: the emissive mask, kept between passes like the tile shadows, weights the picture into a
 // quarter-size glow that is blurred and added back in the post pass.
@@ -215,6 +217,7 @@ static bool Start(void)
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
+	_WorldUniform = bgfx::createUniform("u_world", bgfx::UniformType::Vec4);
 	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
 	_GlowProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapglow"), true);
 	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
@@ -775,6 +778,13 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
 	}
 	bool const shadowed = shadows > 0 || tileshadow;
+	bool const clouds = _CloudStrength > 0;
+	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
+	if (water || clouds) {
+		// Wrapped every 1,000 seconds, so the float keeps its precision.
+		long long const ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+		world[2] = (float)(ms % 1000000) / 1000.0f;
+	}
 	int const quads = (int)list.Blits.size() + 1;
 	int const shadowquads = shadowed ? shadows + 1 + (tileshadow ? 1 : 0) : 0;
 	if (valid && bgfx::getAvailTransientVertexBuffer((quads + shadowquads) * 6, _Layout) < (uint32_t)(quads + shadowquads) * 6) {
@@ -880,15 +890,13 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		if (i == 0) {
 			float waves[4] = {};
 			if (water) {
-				// Wrapped every 1,000 seconds, so the float keeps its precision.
-				long long const ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
-				waves[0] = (float)(ms % 1000000) / 1000.0f;
 				waves[1] = 1.5f * _WaterStrength / 100.0f;
 				waves[2] = 0.06f * _WaterStrength / 100.0f;
 				waves[3] = 0.4f * _WaterStrength / 100.0f;
 				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
 			}
 			bgfx::setUniform(_WaterUniform, waves);
+			bgfx::setUniform(_WorldUniform, world);
 		}
 		if (kind == KIND_SONIC) {
 			// A view's blits run before its draws, so the wave reads everything drawn before it.
@@ -910,7 +918,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 
 	_PostShown = false;
 	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
-	if (ripple || glow) {
+	if (ripple || glow || clouds) {
 		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
 		float ripples[RIPPLE_LIMIT * 4] = {};
 		for (int i = 0; i < count; i++) {
@@ -924,6 +932,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection);
 		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
 		bgfx::setUniform(_RippleInfoUniform, info);
+		bgfx::setUniform(_WorldUniform, world);
 		bgfx::setVertexBuffer(0, &buffer, 0, 6);
 		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
 		if (glow) {
@@ -1005,6 +1014,12 @@ int GpuMap_Bloom(void)
 void GpuMap_Set_Water(int strength)
 {
 	_WaterStrength = std::clamp(strength, 0, 400);
+}
+
+
+void GpuMap_Set_Clouds(int strength)
+{
+	_CloudStrength = std::clamp(strength, 0, 400);
 }
 
 
@@ -1102,6 +1117,7 @@ void GpuMap_Shutdown(void)
 		}
 		bgfx::destroy(_GlowUniform);
 		bgfx::destroy(_WaterUniform);
+		bgfx::destroy(_WorldUniform);
 		bgfx::destroy(_GlowMaskSampler);
 		bgfx::destroy(_GlowSampler);
 	}

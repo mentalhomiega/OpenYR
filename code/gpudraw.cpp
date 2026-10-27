@@ -744,6 +744,8 @@ static bool Finish_Render(Surface & target)
 		pass.GlowChanged = emissive != NULL ? &glowchanged : NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
+		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
+		pass.WorldY = TacticalMap->TacPixelY + _Area.Y - TacticalRect.Y;
 		if (GpuMap_Draw(pass)) {
 			Count_Render(true);
 			_CleanPasses++;

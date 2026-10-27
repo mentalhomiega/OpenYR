@@ -19,8 +19,9 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
-// u_water: x the time in seconds, y how far water ripples shift the base in pixels (0 for none), z how much they
-// brighten and darken it, w how bright the glints of sunlight on them are.
+// u_world: xy the map position of the area's top left pixel, in pixels, z the time in seconds.
+// u_water: y how far water ripples shift the base in pixels (0 for none), z how much they brighten and darken it,
+// w how bright the glints of sunlight on them are.
 
 #include "bgfx_shader.sh"
 
@@ -35,6 +36,7 @@ SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
 uniform vec4 u_ring[2];
+uniform vec4 u_world;
 uniform vec4 u_water;
 
 #define ARENA_WIDTH 4096
@@ -77,10 +79,11 @@ bool Water(ivec2 p)
 // is not water reads as p itself, so the shore never pulls land into the water.
 vec3 Water_Base(ivec2 p, vec3 still)
 {
-	vec2 at = vec2(p);
+	vec2 at = vec2(p) + u_world.xy;
 	// The ground is drawn at half height, so the waves run twice as fast down the screen.
-	float a = at.x * 0.045 + at.y * 0.09 + u_water.x * 1.6;
-	float b = at.x * -0.06 + at.y * 0.12 + u_water.x * 1.1;
+	float t = u_world.z;
+	float a = at.x * 0.045 + at.y * 0.09 + t * 1.6;
+	float b = at.x * -0.06 + at.y * 0.12 + t * 1.1;
 	vec2 shift = vec2(sin(a) + 0.6 * sin(b), 0.5 * (cos(a) - 0.6 * cos(b))) * u_water.y;
 	vec2 q = at + shift;
 	ivec2 q0 = ivec2(floor(q));
@@ -95,10 +98,10 @@ vec3 Water_Base(ivec2 p, vec3 still)
 	colour *= 1.0 + u_water.z * (cos(a) + 0.6 * cos(b));
 	// Three finer waves at unrelated angles meet in short-lived peaks, which show as glints along the
 	// crests of the swell; a slow wide wave thins them out in drifting patches.
-	float g = sin(at.x * 0.17 + at.y * 0.29 + u_water.x * 2.9) * sin(at.x * 0.21 - at.y * 0.37 - u_water.x * 2.3)
-		* sin(at.x * -0.26 + at.y * 0.13 + u_water.x * 1.7);
+	float g = sin(at.x * 0.17 + at.y * 0.29 + t * 2.9) * sin(at.x * 0.21 - at.y * 0.37 - t * 2.3)
+		* sin(at.x * -0.26 + at.y * 0.13 + t * 1.7);
 	float crest = max(cos(a) + 0.6 * cos(b), 0.0) / 1.6;
-	float patches = max(sin(at.x * 0.013 - at.y * 0.021 + u_water.x * 0.4) + 0.3 * sin(at.x * 0.029 + at.y * 0.011 - u_water.x * 0.3), 0.0);
+	float patches = max(sin(at.x * 0.013 - at.y * 0.021 + t * 0.4) + 0.3 * sin(at.x * 0.029 + at.y * 0.011 - t * 0.3), 0.0);
 	float glint = pow(max(g, 0.0) * 1.3, 6.0) * crest * crest * crest * patches;
 	return min(colour + glint * u_water.w, vec3_splat(1.0));
 }

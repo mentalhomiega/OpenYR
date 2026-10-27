@@ -467,6 +467,7 @@ void GScreenClass::Render(void)
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
+	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

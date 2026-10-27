@@ -932,7 +932,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0") + (bloom ? "1" : "0") + (water ? "1" : "0")); }
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0") + (bloom ? "1" : "0") + (water ? "1" : "0") + (clouds ? "1" : "0")); }
 		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
@@ -3231,6 +3231,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Rml::Element * waves = document->GetElementById("shockwaves");
 		Rml::Element * glow = document->GetElementById("bloom");
 		Rml::Element * water = document->GetElementById("water-ripples");
+		Rml::Element * clouds = document->GetElementById("cloud-shadows");
 		auto sync = [&](Rml::Element * element) {
 			if (element != nullptr) {
 				Click(context, element);
@@ -3239,7 +3240,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 				context.Update();
 			}
 		};
-		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled"), "soft shadows, shockwaves, glow and water ripples are greyed while GPU drawing is off");
+		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled") && clouds != nullptr && clouds->HasAttribute("disabled"), "every GPU effect switch is greyed while GPU drawing is off");
 
 		sync(soft);
 		Check(!presenter.State.SoftShadows, "a greyed soft shadows switch does not turn on");
@@ -3250,9 +3251,10 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		sync(waves);
 		sync(glow);
 		sync(water);
+		sync(clouds);
 		Drive(presenter, "ok");
 		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
-		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 10111") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101111") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3696,7 +3698,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "classic-menus",
-			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
