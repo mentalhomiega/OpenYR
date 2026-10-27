@@ -82,3 +82,4 @@ class CampaignClass : public AbstractTypeClass
 };
 
 void Read_Battle_INI(CCINIClass const & ini);
+bool Scenario_Is_From_RA2(void);

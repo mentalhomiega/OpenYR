@@ -47,6 +47,7 @@
 #include "builtype.h"
 #include "globals.h"
 #include "house.h"
+#include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
 #include "savestream.h"
@@ -654,6 +655,9 @@ void TEventClass::Read_INI(void)
 	switch (code) {
 		case 0:
 			Data.Value = val;
+			if (Event_Needs(Event) == NEED_HOUSE) {
+				Data.House = HouseTypeClass::From_RA2_Number(Data.House);
+			}
 			break;
 
 		case 1:

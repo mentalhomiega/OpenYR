@@ -1,0 +1,32 @@
+; Boot Camp day 1 (TRN01T): moving the GI toward the army tents discovers them, which makes the four GIs of the range the player's.
+; Needs the RA2 campaign list: run with -Mods "<repo>\tests\autotest\ra2-campaigns" -Campaign -Map TRN01T.MAP.
+; Expected: "Drill Sarge 3" fires after the GI reaches the tents, and the Player_House counts at frames 700 and 900 show 5 infantry
+; while Other2_House shows no infantry, because the four range GIs were handed to the player.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/boot-camp-day1.txt -Campaign -Map TRN01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST +(log|trigger fired|game over|census)|Exception"
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+60 log GI before the move
+60 where E1
+60 move E1 60 91
+330 log second leg
+330 move E1 67 92
+700 log after the move
+700 where E1
+700 counts Player_House
+700 counts Other2_House
+900 log four GIs
+900 where E1
+900 counts Player_House
+900 counts Other2_House
+1000 command ScreenCapture
+1100 quit

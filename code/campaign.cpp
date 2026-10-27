@@ -16,6 +16,7 @@
 #include "crc.h"
 #include "globals.h"
 #include "savestream.h"
+#include "scenario.h"
 #include "sun.h"
 #include "tracker.h"
 #include "vector.h"
@@ -134,6 +135,18 @@ void Read_Battle_INI(CCINIClass const & ini)
 
 		campaign->Read_INI(ini);
 	}
+}
+
+
+/// <summary>
+/// Asks whether the running mission belongs to a campaign whose Scenario= has the RA2-> prefix.
+/// Such a mission is written against Red Alert 2's lists, which Yuri's Revenge's lists differ from in the
+/// places where their numbers matter.
+/// </summary>
+bool Scenario_Is_From_RA2(void)
+{
+	return(Scen != NULL && Scen->Campaign >= 0 && Scen->Campaign < Campaigns.Count() && Campaigns[Scen->Campaign] != NULL
+		&& Campaigns[Scen->Campaign]->ScenarioArchive == "RA2");
 }
 
 

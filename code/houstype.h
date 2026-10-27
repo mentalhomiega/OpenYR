@@ -20,6 +20,7 @@
 #include "typelist.h"
 
 class AircraftTypeClass;
+class CCINIClass;
 class InfantryTypeClass;
 class UnitTypeClass;
 
@@ -164,6 +165,8 @@ class HouseTypeClass : public AbstractTypeClass
 		virtual int Fetch_Heap_ID(void) const override;
 
 		static HousesType From_Name(char const * name);
+		static void Prepare_RA2_Numbering(CCINIClass const & scenario);
+		static HousesType From_RA2_Number(HousesType number);
 		static void One_Time(void);
 		static HouseTypeClass * Find_Or_Make(char const * ininame);
 

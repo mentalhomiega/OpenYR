@@ -2151,6 +2151,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Rule->Addition() with scenario overrides\n");
 	Rule->Addition(ini);
 	DebugString("Finished Rule->Addition() with scenario overrides\n");
+	HouseTypeClass::Prepare_RA2_Numbering(ini);
 	Check_Map_Rules(Scen->ScenarioName, std::string_view(Scen->SourceFile.Data(), Scen->SourceFile.Size()), DeploymentConfig.RulesFile.c_str());
 	TutorialText.Read_Overrides(ini);
 	Session.Update_Progress(45);

@@ -542,6 +542,9 @@ void TActionClass::Read_INI(void)
 	{
 		case PARAM_CODE_OTHER:
 			Data.Value = val;
+			if (Action_Needs(Action) == NEED_HOUSE) {
+				Data.House = HouseTypeClass::From_RA2_Number(Data.House);
+			}
 			break;
 
 		case PARAM_CODE_TEAM:
