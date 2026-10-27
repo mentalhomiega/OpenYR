@@ -394,6 +394,25 @@ static Rect Shown_Map_Part(Rect const & screen_part)
 }
 
 
+/// <summary>
+/// Draws the ShowFPS counts at the top left of the game view.
+/// The first line is the rendered rate: the presents per second that reached the display in
+/// the last complete second. The second line is the game rate, the game frames run in the last
+/// 960 ms window (LastFramesPerSecond), which also gates the detail effects.
+/// </summary>
+/// <param name="surface">The surface the counts are drawn on.</param>
+static void Draw_Frame_Rates(Surface & surface)
+{
+	char buffer[32];
+
+	snprintf(buffer, sizeof(buffer), "Render %u FPS", Video_Presents_Per_Second());
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+
+	snprintf(buffer, sizeof(buffer), "Game %u ticks/s", LastFramesPerSecond);
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 12), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+}
+
+
 /***********************************************************************************************
  * GScreenClass::Render -- General drawing dispatcher an display update function.              *
  *                                                                                             *
@@ -518,9 +537,7 @@ void GScreenClass::Render(void)
 		}
 
 		if (Options.ShowFPS) {
-			char buffer[32];
-			snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
-			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+			Draw_Frame_Rates(*LogicalSurface);
 		}
 
 		if (hud && ToolTips != NULL) {
