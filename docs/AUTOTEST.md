@@ -78,7 +78,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `neutral <TypeID> x y` | Puts an object of the type on that cell, owned by the house of the Civilian side, as `own` does for the player |
 | `enemy <TypeID> x y` | Puts an object of the type on that cell, owned by the first computer house with a construction yard that the player is not allied with, as `own` does for the player |
 | `ewall <OverlayType> x y` | Builds a section of that wall on that cell, owned by the computer house `enemy` picks. It logs the overlay index and owner, or `no such overlay` or `no computer house`. The `wall` command makes the same section owned by the player |
-| `spy <TypeID> x y` | Gives the player's objects of that type the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
+| `spy <TypeID> x y` | Gives the player-controlled objects of that type (see `select`) the capture order a click on the structure on that cell gives, so a spy walks in and infiltrates it |
 | `terrain x y` | Logs the land type of that cell (2 is water, 6 is beach), whether it is a shore piece and whether it holds any water |
 | `rank <TypeID> <0\|1\|2>` | Makes every object of that type, whoever owns it, rookie, veteran or elite |
 | `veterancy <TypeID>` | Writes the rules' `VeteranRatio` and `VeteranCap`, the player's score, then each object of that type with its rank, experience and cost |
@@ -107,7 +107,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
 | `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
-| `strike <TypeID> x y` | The player's objects of that type attack the object on that cell |
+| `strike <TypeID> x y` | The player-controlled objects of that type (see `select`) attack the object on that cell |
 | `strikeobj <TypeID> x y [radius] [land\|naval\|all]` | The player's armed units and infantry attack the nearest live object of that type within `radius` cells (default 3) of the cell. The target is chosen when the line runs, so a target that has moved is still found; the units keep it until it dies or leaves the map. `land` orders only units that are not ships, `naval` only ships, and `all` (the default) every armed unit |
 | `treehit <Warhead> x y` | Hits the terrain object on that cell with 100 points of damage from the warhead, with no firer, and writes its strength before and after |
 | `trees` | Writes every terrain object on the map with its cell, strength, armor and whether it is immune |

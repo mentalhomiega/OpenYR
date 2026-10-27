@@ -3159,7 +3159,7 @@ void Run(StepType const & step)
 		PlanningRecordScope const recording(Map.IsPlanningMode);
 		for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			if ((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				if (Network_Game()) {
 					techno->Player_Assign_Mission(MISSION_ATTACK, target);
 				} else {
@@ -3438,7 +3438,7 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
 			}
 		}
@@ -3449,7 +3449,7 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Assign_Mission(MISSION_CAPTURE);
 				techno->Assign_Target(building);
 			}
