@@ -1,0 +1,89 @@
+; Wall breakers ordered at a computer building hidden by a ring of walls (FootClass::ApproachTarget,
+; TechnoClass::IsCloseEnough, TrajectoryHelper::FindFirstImpenetrableObstacle).
+; Four rows, each a 1x1 computer GAPILL at x 66 with its eight neighbours walled. The unit stands at x 58.
+;   row 40: a Rhino 120mm (AP, Wall=yes) against a ring of GASAND, sandbags that do not connect.
+;   row 50: a Grizzly 105mm (AP, Wall=yes) against a ring of GAWALL, concrete that connects.
+;   row 60: a Lasher 75mm (AP, Wall=yes) against a ring of GASAND.
+;   row 70: an E1 rifle (no wall warhead) against a ring of GASAND, as the control.
+; canfire prints the Can_Fire result before the order. The units stand 8 cells out, beyond their range, so a canfire 8 here is a range miss, not a wall.
+30 command CenterBase
+300 own HTNK 58 40
+301 own MTNK 58 50
+302 own LTNK 58 60
+303 own E1 58 70
+304 enemy GAPILL 66 40
+305 enemy GAPILL 66 50
+306 enemy GAPILL 66 60
+307 enemy GAPILL 66 70
+310 ewall GASAND 65 39
+311 ewall GASAND 66 39
+312 ewall GASAND 67 39
+313 ewall GASAND 65 40
+314 ewall GASAND 67 40
+315 ewall GASAND 65 41
+316 ewall GASAND 66 41
+317 ewall GASAND 67 41
+320 ewall GAWALL 65 49
+321 ewall GAWALL 66 49
+322 ewall GAWALL 67 49
+323 ewall GAWALL 65 50
+324 ewall GAWALL 67 50
+325 ewall GAWALL 65 51
+326 ewall GAWALL 66 51
+327 ewall GAWALL 67 51
+330 ewall GASAND 65 59
+331 ewall GASAND 66 59
+332 ewall GASAND 67 59
+333 ewall GASAND 65 60
+334 ewall GASAND 67 60
+335 ewall GASAND 65 61
+336 ewall GASAND 66 61
+337 ewall GASAND 67 61
+340 ewall GASAND 65 69
+341 ewall GASAND 66 69
+342 ewall GASAND 67 69
+343 ewall GASAND 65 70
+344 ewall GASAND 67 70
+345 ewall GASAND 65 71
+346 ewall GASAND 66 71
+347 ewall GASAND 67 71
+360 reveal
+370 canfire HTNK 66 40
+371 canfire MTNK 66 50
+372 canfire LTNK 66 60
+373 canfire E1 66 70
+380 cell 65 40
+381 cell 66 50
+400 strike HTNK 66 40
+401 strike MTNK 66 50
+402 strike LTNK 66 60
+403 strike E1 66 70
+500 where HTNK
+501 where MTNK
+502 where LTNK
+503 where E1
+600 where HTNK
+601 where MTNK
+602 where LTNK
+603 where E1
+700 cell 65 40
+701 cell 65 50
+702 cell 65 60
+703 cell 65 70
+800 where HTNK
+801 where MTNK
+802 where LTNK
+803 where E1
+900 where HTNK
+901 where MTNK
+902 where LTNK
+903 where E1
+1000 cell 66 40
+1001 cell 66 50
+1002 cell 66 60
+1003 cell 66 70
+1100 where HTNK
+1101 where MTNK
+1102 where LTNK
+1103 where E1
+1500 quit
