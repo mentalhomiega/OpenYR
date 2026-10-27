@@ -15,6 +15,7 @@
 #include "_rect.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "_voxel.h"
 #include "_zbuffer.h"
 #include "abuffer.h"
 #include "alphalighting.h"
@@ -26,6 +27,7 @@
 #include "emissive.h"
 #include "globals.h"
 #include "gpumap.h"
+#include "objtype.h"
 #include "ovrlight.h"
 #include "shadowplane.h"
 #include "surface.h"
@@ -35,7 +37,9 @@
 #include "zbuffer.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
+#include <unordered_map>
 
 
 static bool _ReplayCheck = false;
@@ -58,6 +62,68 @@ static DSurface const * _BaseTiles = NULL;
 static unsigned _BaseTilesCount = 0;
 
 
+static GpuAtlas _Atlas;
+static std::unordered_map<void const *, std::uint32_t> _AtlasImages;
+static unsigned _AtlasGeneration = 0;
+// Set when the voxel images changed or the atlas filled during the pass; the atlas is unused until the next pass empties it.
+static bool _AtlasStale = false;
+
+
+// Returns the atlas offset of the whole source image of the RLE blit being recorded, decoding it on first
+// use, or -1 when the source is not a cached voxel image or the atlas cannot take it.
+static std::int64_t Atlas_Image(void)
+{
+	BlitRecordSource const & source = Blit_Record_Source;
+	if (!VoxelStaticBuffer.Contains(source.Base) || source.Width <= 0 || source.Height <= 0) {
+		return(-1);
+	}
+	if (ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
+		_AtlasStale = true;
+	}
+	if (_AtlasStale) {
+		return(-1);
+	}
+	auto const found = _AtlasImages.find(source.Base);
+	if (found != _AtlasImages.end()) {
+		return(found->second);
+	}
+	std::size_t const size = (std::size_t)source.Width * source.Height;
+	// A full atlas is emptied at the next pass; until then images are copied into the arena.
+	if (_Atlas.Bytes.size() + size > GPU_ATLAS_BYTES) {
+		_AtlasStale = true;
+		return(-1);
+	}
+	std::uint32_t const offset = (std::uint32_t)_Atlas.Bytes.size();
+	_Atlas.Bytes.resize(_Atlas.Bytes.size() + size);
+	unsigned char * out = &_Atlas.Bytes[offset];
+	unsigned char const * row = (unsigned char const *)source.Base;
+	for (int r = 0; r < source.Height; r++) {
+		unsigned char const * data = row + sizeof(unsigned short);
+		int position = 0;
+		while (position < source.Width) {
+			int count;
+			if (*data == 0) {
+				count = std::min((int)data[1], source.Width - position);
+				std::memset(out + position, 0, (std::size_t)count);
+				data += 2;
+			} else {
+				count = 1;
+				while (position + count < source.Width && data[count] != 0) {
+					count++;
+				}
+				std::memcpy(out + position, data, (std::size_t)count);
+				data += count;
+			}
+			position += count;
+		}
+		out += source.Width;
+		row += *(unsigned short const *)row;
+	}
+	_AtlasImages.emplace(source.Base, offset);
+	return(offset);
+}
+
+
 static void Count_Lock(Surface const * surface)
 {
 	if (surface == _Target) {
@@ -66,7 +132,7 @@ static void Count_Lock(Surface const * surface)
 }
 
 
-static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int height, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha)
+static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int height, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha, std::int64_t atlas = -1, int pitch = 0)
 {
 	GpuBlit blit;
 	blit.Desc = desc;
@@ -87,7 +153,14 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.Line = -1;
 	blit.LineKind = GPU_LINE_SHADED;
 	blit.Fade = 256;
-	_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)width * height);
+	blit.Pitch = width;
+	blit.InAtlas = atlas >= 0;
+	if (blit.InAtlas) {
+		blit.Pixels = (std::uint32_t)atlas;
+		blit.Pitch = pitch;
+	} else {
+		_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)width * height);
+	}
 	_List.Blits.push_back(blit);
 	return(_List.Blits.back());
 }
@@ -102,6 +175,14 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
 		_List.Unsupported++;
 		return(false);
+	}
+	// A cached voxel image is read from the atlas at the clipped corner, so no pixels are copied.
+	std::int64_t const image = zshape == NULL ? Atlas_Image() : -1;
+	if (image >= 0) {
+		BlitRecordSource const & source = Blit_Record_Source;
+		Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha, image + (std::int64_t)source.Top * source.Width + leftmargin, source.Width);
+		_LockedBlits++;
+		return(_Render);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha);
 	_LockedBlits++;
@@ -307,7 +388,7 @@ static void Replay(std::vector<unsigned short> & picture)
 			Replay_Line(blit, picture);
 			continue;
 		}
-		unsigned char const * pixels = &_List.PixelArena[blit.Pixels];
+		unsigned char const * pixels = blit.InAtlas ? &_Atlas.Bytes[blit.Pixels] : &_List.PixelArena[blit.Pixels];
 		for (int r = 0; r < blit.Height; r++) {
 			int const y = blit.Y + r;
 			if (y < _Area.Y || y >= _Area.Y + _Area.Height) {
@@ -326,7 +407,7 @@ static void Replay(std::vector<unsigned short> & picture)
 				ap = AlphaBuffer->Get_Buffer_Offset(Point2D(blit.X, y - AlphaBuffer->Get_Bounds().Y));
 			}
 			for (int i = 0; i < blit.Width; i++) {
-				unsigned char const index = pixels[r * blit.Width + i];
+				unsigned char const index = pixels[r * blit.Pitch + i];
 				int const x = blit.X + i;
 				bool visible = index != 0 && x >= _Area.X && x < _Area.X + _Area.Width;
 				if (visible && zp != NULL) {
@@ -894,6 +975,13 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 {
 	GpuMap_Drop();
+	if (_AtlasStale || ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
+		_Atlas.Bytes.clear();
+		_AtlasImages.clear();
+		_Atlas.Epoch++;
+		_AtlasGeneration = ObjectTypeClass::VoxelIndexGeneration;
+		_AtlasStale = false;
+	}
 	_List.Blits.clear();
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
@@ -1000,6 +1088,12 @@ void GpuDraw_Set_Replay_Check(bool enabled)
 void GpuDraw_Set_Gpu_Check(bool enabled)
 {
 	_GpuCheck = enabled;
+}
+
+
+GpuAtlas const & GpuDraw_Atlas(void)
+{
+	return(_Atlas);
 }
 
 

@@ -138,6 +138,7 @@ bool From_Buffer(Surface & surface, Rect const & rect, Buffer const & buffer)
 
 
 void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels) = NULL;
+BlitRecordSource Blit_Record_Source = {};
 bool (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha) = NULL;
 bool (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha) = NULL;
 
@@ -602,6 +603,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		dest.Unlock();
 		return(false);
 	}
+	Blit_Record_Source = { sbuffer, source.Get_Width(), source.Get_Height(), topmargin };
 
 	/*
 	**	Skip any top margin lines. This must be manually performed on a line

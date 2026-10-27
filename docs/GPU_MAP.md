@@ -94,6 +94,10 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   every 120th picture, while the screen shakes or is zoomed, and after anything else has changed the
   visible surface. In alternating runs of the
   4K benchmark on a busy machine, this raised the rate from about 119 to 140 pictures per second.
+- Cached voxel images, such as vehicle shadows and the hulls of vehicles without a turret, are decoded
+  once into an atlas of up to 4 MB that the GPU keeps, and later passes refer to it instead of copying
+  their pixels. The atlas is emptied when the cached voxel images are cleared or it fills. In four
+  alternating pairs of the 4K benchmark it raised the rate from about 486 to about 508 pictures per second.
 
 ## Rebuilding the shaders
 

@@ -86,6 +86,24 @@ struct GpuBlit
 	// A shaded line's fade (256 for none), an antialiased line's GPU_LINE_* channel flags, or a sonic
 	// wave's tint at amplitude 0.
 	int Fade;
+
+	// The row length of the colour indices: Width in the arena, the source image's width in the atlas.
+	int Pitch;
+
+	// Set when Pixels is an offset into GpuDraw_Atlas rather than into the pass's arena.
+	bool InAtlas;
+};
+
+
+// The most bytes the atlas holds; the GPU keeps it in the top rows of the index texture.
+inline constexpr std::size_t GPU_ATLAS_BYTES = 1024 * 4096;
+
+// Cached voxel images decoded once for the GPU. An offset stays valid until the atlas is emptied,
+// which happens only between passes; Epoch counts the emptyings.
+struct GpuAtlas
+{
+	std::vector<unsigned char> Bytes;
+	unsigned Epoch = 0;
 };
 
 
@@ -178,3 +196,4 @@ void GpuDraw_Set_Gpu_Check(bool enabled);
 
 // The list recorded by the last pass.
 GpuDrawList const & GpuDraw_List(void);
+GpuAtlas const & GpuDraw_Atlas(void);

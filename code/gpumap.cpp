@@ -75,6 +75,9 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 // Width of the textures that hold byte arenas; fs_mapdraw.sc uses the same value.
 static int const ARENA_WIDTH = 4096;
 static int const TEXTURE_LIMIT = 16384;
+// The index texture holds the atlas in its top rows and the pass's arena below them.
+static int const ATLAS_ROWS = (int)(GPU_ATLAS_BYTES / ARENA_WIDTH);
+static_assert(GPU_ATLAS_BYTES % ARENA_WIDTH == 0);
 
 enum ShaderKind
 {
@@ -394,6 +397,63 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 }
 
 
+// Fills the index store: the atlas in its top ATLAS_ROWS rows, uploading only what the store does not
+// hold yet, then the pass's arena, ARENA_WIDTH texels a row.
+static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes, std::size_t size)
+{
+	static unsigned uploaded_epoch = 0;
+	static std::size_t uploaded = 0;
+
+	int const rows = std::max(1, (int)((size + ARENA_WIDTH - 1) / ARENA_WIDTH));
+	if (ATLAS_ROWS + rows > TEXTURE_LIMIT) {
+		return(false);
+	}
+	store.Tracked = false;
+	if (!bgfx::isValid(store.Handle) || store.Width != ARENA_WIDTH || store.Height < ATLAS_ROWS + rows) {
+		if (bgfx::isValid(store.Handle)) {
+			bgfx::destroy(store.Handle);
+		}
+		int const height = std::min(TEXTURE_LIMIT, std::max(ATLAS_ROWS + rows, store.Height) * 2);
+		store.Handle = bgfx::createTexture2D((uint16_t)ARENA_WIDTH, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
+		store.Width = ARENA_WIDTH;
+		store.Height = height;
+		uploaded = 0;
+		if (!bgfx::isValid(store.Handle)) {
+			store = Store();
+			return(false);
+		}
+	}
+	if (uploaded_epoch != atlas.Epoch || uploaded > atlas.Bytes.size()) {
+		uploaded_epoch = atlas.Epoch;
+		uploaded = 0;
+	}
+	if (uploaded < atlas.Bytes.size()) {
+		int const first = (int)(uploaded / ARENA_WIDTH);
+		int const last = (int)((atlas.Bytes.size() + ARENA_WIDTH - 1) / ARENA_WIDTH);
+		std::size_t const start = (std::size_t)first * ARENA_WIDTH;
+		bgfx::Memory const * memory = bgfx::alloc((uint32_t)ARENA_WIDTH * (last - first));
+		std::memcpy(memory->data, atlas.Bytes.data() + start, atlas.Bytes.size() - start);
+		std::memset(memory->data + (atlas.Bytes.size() - start), 0, memory->size - (atlas.Bytes.size() - start));
+		bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)first, (uint16_t)ARENA_WIDTH, (uint16_t)(last - first), memory);
+		uploaded = atlas.Bytes.size();
+	}
+	bgfx::Memory const * memory = bgfx::alloc((uint32_t)ARENA_WIDTH * rows);
+	if (size > 0) {
+		std::memcpy(memory->data, bytes, size);
+	}
+	std::memset(memory->data + size, 0, memory->size - size);
+	bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)ATLAS_ROWS, (uint16_t)ARENA_WIDTH, (uint16_t)rows, memory);
+	return(true);
+}
+
+
+// The offset of a blit's colour indices in the index texture.
+static float Index_Offset(GpuBlit const & blit)
+{
+	return((float)(blit.InAtlas ? blit.Pixels : (std::uint64_t)ATLAS_ROWS * ARENA_WIDTH + blit.Pixels));
+}
+
+
 // Fills the store with the bytes, ARENA_WIDTH texels a row; an empty arena gets one row of zeros.
 static bool Fill_Arena(Store & store, void const * bytes, std::size_t size)
 {
@@ -606,7 +666,7 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Desc.Kind != BlitDesc::DARKEN) {
 			continue;
 		}
-		float const t1[4] = { (float)blit.Pixels, (float)blit.Width, 0.0f, -1.0f };
+		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, 0.0f, -1.0f };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)KIND_SHADOW_MASK, blit.Desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + quad * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -719,7 +779,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		alut.assign(256, 0);
 	}
 
-	bool valid = Fill_Arena(_Stores[SLOT_INDEX], list.PixelArena.data(), list.PixelArena.size());
+	bool valid = Fill_Index(_Stores[SLOT_INDEX], GpuDraw_Atlas(), list.PixelArena.data(), list.PixelArena.size());
 	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
 	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
 	// A pass the GPU has not read yet still holds the buffers' memory, so this one is copied.
@@ -813,14 +873,14 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		GpuBlit const & blit = list.Blits[i];
 		BlitDesc const & desc = blit.Desc;
 		if (blit.Brighten >= 0) {
-			float const t1[4] = { (float)blit.Pixels, (float)blit.Width, (float)blit.Brighten, -1.0f };
+			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 			continue;
 		}
 		if (blit.Line >= 0) {
-			float const t1[4] = { (float)blit.Pixels, (float)blit.Width, (float)blit.Line, (float)blit.Fade };
+			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
@@ -842,7 +902,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 				alutrow = (float)(alutbase[desc.AlphaRemap] + std::min((261 * level) >> 11, 254));
 			}
 		}
-		float const t1[4] = { (float)blit.Pixels, (float)blit.Width, lutfirst, alutrow };
+		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, lutfirst, alutrow };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
 		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)Shader_Kind(desc), desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
