@@ -1,0 +1,21 @@
+; Lifting a Yuri Psychic Sensor (NAPSIS, SensorsSight=15, CloakRadiusInCells default 20) at 75,56 takes one count from every cell
+; within 20 cells, so cells 16 to 20 out lose a count they never gained. The cell 60,56 is 15 cells west of the sensor, on the
+; ring edge (squared distance 225, outside 15, inside 20). The cell line gives its sensing and its sensor count is not logged,
+; so the sensed value is read: a count of -1 is not sensed.
+; A destroyer at 62,60 then covers 60,56 with one more count (its SensorsSight is 8). gamemd's count becomes zero, which is not
+; sensed (sensed 0). Before the fix the lift stopped at zero, so the same cell reads sensed 1.
+; Cells 62,60 and 65,60 are inside the destroyer's radius with no lift, so they read sensed 1 (controls).
+; The lift runs as the sensor is killed at frame 200; kill takes the building off the map, which is what triggers the lift.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sub-sensor-array-lift.txt -Map XMP08T2.MAP -Seconds 60 -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 reveal
+50 own GAPOWR 70 52
+51 own NAPSIS 75 56
+100 cell 60 56
+200 kill NAPSIS 1
+210 cell 60 56
+220 own DEST 62 60
+230 cell 60 56
+230 cell 62 60
+230 cell 65 60
+240 quit

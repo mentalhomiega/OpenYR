@@ -170,9 +170,9 @@ A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell w
 
 The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until a cloaking field next finishes growing while the array is operational.
 
-Coverage is lifted when the array is taken off the map. Capturing an array moves its coverage: the old owner stops sensing the array's cells, and the new owner senses them at once if the array is operational. A power shortfall never lifts coverage.
+Coverage is lifted when the array is taken off the map. Lifting takes one count from every cell within [`CloakRadiusInCells`](/keys/cloakradiusincells/) of the array, which can be wider than its sensing. Capturing an array moves its coverage: the old owner loses those counts, and the new owner senses the cells within `SensorsSight` at once if the array is operational. A power shortfall never lifts coverage.
 
-Arrays of one house may overlap. A cell stays sensed while any of the house's arrays covers it, so taking one array away leaves the cells the others cover in place.
+Arrays of one house may overlap, and each adds one count to its cells. A cell at a count of zero that a lift takes one below zero stays unsensed until two sensors cover it again, so a cell another array covers within the lifted ring can lose its sensing.
 
 ### Mobile sensors
 

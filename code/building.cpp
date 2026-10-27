@@ -11497,7 +11497,9 @@ void BuildingClass::Disable_Sensor_Array(void)
 		return;
 	}
 
-	int radius = Techno_Type_Class()->SensorsSight;
+	// gamemd lifts the array over CloakRadiusInCells, not SensorsSight (SensorArrayDeactivate, 0x4556D0), so
+	// a cell outside the SensorsSight ring loses a count that was never added.
+	int radius = Class->CloakRadiusInCells;
 	int dist = radius * radius;
 	Cell origin = Center_Coord().As_Cell();
 	for (int y = -radius; y < radius; y++) {
@@ -11505,8 +11507,9 @@ void BuildingClass::Disable_Sensor_Array(void)
 			Cell newcell = Cell(origin.X + x, origin.Y + y);
 			if (x * x + y * y < dist) {
 				CellClass * cellptr = &Map[newcell];
-				if (cellptr->Remove_Sensor(House)) {
-					Cloak_Cell_Occupiers(cellptr);
+				bool const cleared = cellptr->Remove_Sensor(House);
+				Cloak_Cell_Occupiers(cellptr);
+				if (cleared) {
 					BuildingClass * building = cellptr->Cell_Building();
 					if (building != NULL && building->House != PlayerPtr) {
 						if (building->Visual_Character() != VISUAL_NORMAL) {

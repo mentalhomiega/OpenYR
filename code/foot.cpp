@@ -5536,7 +5536,7 @@ void FootClass::Update_Sensors(bool lift)
 				}
 				CellClass * cellptr = &Map[cell];
 				if (pass == 0) {
-					// A cell is lowered only while this house still senses it, so counts never go negative.
+					// Only a count above zero is lowered, so this object never takes a cell below zero.
 					if (!cellptr->Is_Sensed(house)) {
 						continue;
 					}

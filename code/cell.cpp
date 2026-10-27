@@ -6229,11 +6229,12 @@ bool CellClass::Is_Cloaked(HouseClass const * house) const
 
 /// <summary>
 /// Determines if the house specified has a sensor covering this cell.
+/// A count below zero does not sense the cell.
 /// </summary>
 /// <returns>bool; Is the cell sensed by that house?</returns>
 bool CellClass::Is_Sensed(HouseClass const * house) const
 {
-	return(SensorCount[house] != 0);
+	return(SensorCount[house] > 0);
 }
 
 
@@ -6273,15 +6274,12 @@ bool CellClass::Add_Sensor(HouseClass const * house)
 
 
 /// <summary>
-/// Counts one sensor array of the house specified off this cell.
+/// Counts one sensor array of the house specified off this cell. The count is not floored at
+/// zero, as gamemd's is, so a removal with no matching addition leaves it negative.
 /// </summary>
-/// <returns>bool; Is the cell no longer sensed by that house?</returns>
+/// <returns>bool; Did the count reach zero?</returns>
 bool CellClass::Remove_Sensor(HouseClass const * house)
 {
-	assert(SensorCount[house] > 0);
-	if (SensorCount[house] == 0) {
-		return(false);
-	}
 	return(--SensorCount[house] == 0);
 }
 
