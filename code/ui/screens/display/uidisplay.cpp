@@ -51,7 +51,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialGamma(State.Gamma),
 	InitialPlayerColors(State.PlayerColors),
 	InitialScreenShake(State.ScreenShake),
-	InitialScriptedCameraZoom(State.ScriptedCameraZoom)
+	InitialScriptedCameraZoom(State.ScriptedCameraZoom),
+	InitialSidebarOpacity(State.SidebarOpacity)
 {
 	ShownRowIndex = State.RowCount;
 	PreviewedMode = InitialColorBlindMode;
@@ -211,6 +212,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.StretchMovies = false;
 		State.Brightness = 100;
 		State.Gamma = 100;
+		State.SidebarOpacity = HUD_DEFAULT_OPACITY;
 
 		int const row = Index_Of(State.RowCounts, HUD_DEFAULT_ROWS, ShownRowIndex);
 		if (row >= 0 && row < (int)State.RowCounts.size()) {
@@ -383,6 +385,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 			State.RowCount = ShownRowIndex;
 		}
 
+	} else if (intent.Name == "sidebaropacity") {
+		State.SidebarOpacity = std::clamp(intent.Value, 0, 100);
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
@@ -463,6 +468,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (PickedRows >= 0) {
 			Service.Set_Sidebar_Rows(PickedRows);
+		}
+		if (State.SidebarOpacity != InitialSidebarOpacity) {
+			Service.Set_Sidebar_Opacity(State.SidebarOpacity);
 		}
 		UI_Setting_Preview_Commit();
 		if (State.Scale != InitialScale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
@@ -635,6 +643,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("gamma");
 			Model.DirtyVariable("gammalabel");
 			Model.DirtyVariable("rowcount");
+			Model.DirtyVariable("sidebaropacity");
 			if (Data.PreviewChanged) {
 				Data.PreviewChanged = false;
 				Model.DirtyVariable("preview");
@@ -720,6 +729,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("highlightstip", &state.HighlightsTip)
 				&& model.Bind("rowcounts", &state.RowCounts)
 				&& model.Bind("rowcount", &state.RowCount)
+				&& model.Bind("sidebaropacity", &state.SidebarOpacity)
 				&& UI_Rml_Setting_Preview_Bind(model, "preview", state.Preview));
 		}
 

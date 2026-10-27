@@ -924,6 +924,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) override { Calls.push_back(on ? "classic menus on" : "classic menus off"); }
 		virtual void Set_Modern_Interface(bool on) override { Calls.push_back(on ? "modern interface on" : "modern interface off"); }
 		virtual void Set_Sidebar_Rows(int rows) override { Calls.push_back("sidebar rows " + std::to_string(rows)); }
+		virtual void Set_Sidebar_Opacity(int percent) override { Calls.push_back("sidebar opacity " + std::to_string(percent)); }
 		virtual void Set_Bitmap_System_Font(bool on) override { Calls.push_back(on ? "bitmap font on" : "bitmap font off"); }
 		virtual void Set_Show_FPS(bool on) override { Calls.push_back(on ? "fps on" : "fps off"); }
 		virtual void Set_Frame_Limit(int limit) override { Calls.push_back("frame limit " + std::to_string(limit)); }
@@ -1034,6 +1035,21 @@ void Test_Display_Presenter(void)
 		std::size_t const first = joined.find("colour blind 2 40");
 		Check(first != std::string::npos && joined.find("colour blind", first + 1) == std::string::npos, "accepting the colour-blind mode and strength applies them once");
 		Check(joined.find("brightness gamma 120 80;") != std::string::npos, "accepting the brightness and gamma applies them");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.SidebarOpacity = 80;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "sidebaropacity", 60);
+		Check(presenter.State.SidebarOpacity == 60 && service.Calls.empty(), "the sidebar opacity is held until the player accepts");
+		Drive(presenter, "ok");
+		int opacity_calls = 0;
+		for (std::string const & call : service.Calls) {
+			opacity_calls += (call == "sidebar opacity 60") ? 1 : 0;
+		}
+		Check(opacity_calls == 1, "accepting a new sidebar opacity applies it once");
 	}
 
 	{
@@ -3648,7 +3664,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 		};
 
 		char const * const order[] = {
-			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "classic-menus",
+			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
 			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
