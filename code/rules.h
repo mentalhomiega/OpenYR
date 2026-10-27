@@ -1077,6 +1077,9 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
+		// Set by MissileLaunchHoldsMove: a spawner's move waits while a missile it launched is on its pad or taking off.
+		bool IsMissileLaunchHoldsMove;
+
 		// Stretches the campaign results screen's side art over the whole 800 by 600 stage, rather than
 		// drawing it at its 632 by 568 size. Gamemd's placement of the art is not confirmed.
 		bool IsScoreArtFillsStage;

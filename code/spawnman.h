@@ -33,6 +33,7 @@ class SpawnManagerClass
 		void Kill_Nodes(void);
 		void Detach(AbstractClass const * target);
 		int Docked_Count(void) const;
+		int Launching_Count(void) const;
 		// Read by the autotest probes; the cycle state is otherwise private.
 		AbstractClass const * Current_Target(void) const { return Target; }
 		AbstractClass const * Queued_Target(void) const { return NewTarget; }

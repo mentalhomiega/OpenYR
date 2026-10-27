@@ -5041,6 +5041,10 @@ void Run(StepType const & step)
 			new OverlayClass(OverlayTypes[type], Cell(step.X, step.Y), HousesType(PlayerPtr->HeapID));
 			DebugString("AUTOTEST wall %s at %d,%d: overlay %d\n", step.Argument.c_str(), step.X, step.Y, (int)Map[Cell(step.X, step.Y)].Overlay);
 		}
+	} else if (step.Command == "holdmove") {
+		// holdmove 0|1: turns MissileLaunchHoldsMove off or on for the rest of the run.
+		Rule->IsMissileLaunchHoldsMove = step.Argument != "0";
+		DebugString("AUTOTEST holdmove %d\n", (int)Rule->IsMissileLaunchHoldsMove);
 	} else if (step.Command == "liveanims") {
 		// liveanims <AnimType>: how many animations of that type are playing.
 		int count = 0;
