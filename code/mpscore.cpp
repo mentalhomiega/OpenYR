@@ -178,6 +178,7 @@ class MultiScore : public MSEngine
 	private:
 		void Draw_Picture(void);
 		void Draw_Static(void);
+		void Set_Row_Color(int row);
 		void Print_Player_Names(void);
 		void Print_Row(int row, int kills, int losses, int built, int score);
 		void Print_Figures(void);
@@ -484,6 +485,18 @@ void MultiScore::Draw_Static(void)
 }
 
 
+/*
+ * Sets the text color to the house color of the player on the row. gamemd's score dialog colors every
+ * cell of a row this way: its row loop (005c9b10) sends the scheme's HSV converted by 00517440, which
+ * HSVClass's conversion matches.
+ */
+void MultiScore::Set_Row_Color(int row)
+{
+	RGBClass const color = ColorSchemes[Scores[row]->Scheme]->HSV;
+	Stage.Set_Text_Color(color.Get_Red(), color.Get_Green(), color.Get_Blue());
+}
+
+
 /// <summary>
 /// Reveals each player's name on its row, one row at a time.
 /// Each name is kept on the base surface, so the counting animation keeps it on screen.
@@ -495,6 +508,7 @@ void MultiScore::Print_Player_Names(void)
 
 	for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
 		int const y = Row_Text_Y(i);
+		Set_Row_Color(i);
 		Stage.Print_Left(Scores[i]->Name, left, y);
 
 		Rect const row(left, y, right - left, Stage.Text_Height());
@@ -515,6 +529,7 @@ void MultiScore::Print_Row(int row, int kills, int losses, int built, int score)
 	char buffer[32];
 	int const y = Row_Text_Y(row);
 
+	Set_Row_Color(row);
 	sprintf(buffer, "%d", kills);
 	Stage.Print_Right(buffer, Right_Edge(KILLS_COLUMN), y);
 	sprintf(buffer, "%d", losses);
@@ -568,6 +583,7 @@ void MultiScore::Print_Figures(void)
 /// </summary>
 void MultiScore::Print_Prompt(void)
 {
+	Stage.Set_Text_Color(255, 255, 0);
 	std::string prompt = Fetch_String_UTF8("TXT_CLICK_CONTINUE");
 	Stage.Print_Left(prompt.c_str(), PROMPT_RECT.X, PROMPT_RECT.Y);
 	Stage.Present(PROMPT_RECT);
