@@ -31,7 +31,7 @@
 
 			<p class="section">Interface</p>
 			<label class="check setting" id="switch-modern-interface" desc="Draws the map under panels that float over it. Off keeps the classic sidebar."><span class="caption">Modern in-game interface</span><input type="checkbox" id="modern-interface" data-attrif-checked="moderninterface" data-event-click="queue('moderninterface', moderninterface ? 0 : 1)"/></label>
-			<p class="notice" id="restart-notice" data-if="moderninterface != moderninterfacerunning">Restart needed: the {{moderninterface ? 'modern interface' : 'classic sidebar'}} takes effect the next time the game starts. GPU drawing works only in the modern interface.</p>
+			<p class="notice" id="restart-notice" data-if="ingame && moderninterface != moderninterfacerunning">The {{moderninterface ? 'modern interface' : 'classic sidebar'}} takes effect when you return to the main menu. GPU drawing works only in the modern interface.</p>
 			<div class="setting" id="rows-row" data-class-disabled="!moderninterface" desc="How many rows of buildings and units the sidebar shows. The preview beside the list shows the layout."><span class="caption">Sidebar rows</span><select id="sidebar-rows" data-value="rowcount" data-attrif-disabled="!moderninterface" data-event-change="queue('sidebarrows', ev.value)">
 				<option data-for="entry : rowcounts" data-attr-value="it_index">{{entry.label}}</option>
 			</select></div>

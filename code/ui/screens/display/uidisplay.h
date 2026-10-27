@@ -100,8 +100,9 @@ struct UIDisplayState
 	bool SystemCursor = false;
 	bool ClassicMenus = false;
 	bool ModernInterface = false;
-	// The interface the game started with; a choice that differs takes effect at the next start.
+	// The interface running now. In a game a choice that differs waits for the main menu; the menus switch at once.
 	bool ModernInterfaceRunning = false;
+	bool InGame = false;
 	bool BitmapSystemFont = false;
 	bool ShowFPS = false;
 	std::vector<UIDisplayChoice> FrameLimits;

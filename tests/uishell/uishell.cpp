@@ -3180,6 +3180,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		RecordingDisplayServiceClass service;
 		UIDisplayState state = Display_Fixture();
 		state.Page = UI_TAB_GRAPHICS;
+		state.InGame = true;
 		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
@@ -3213,6 +3214,15 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		}
 		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
 		Check(notice != nullptr && !notice->IsVisible(), "the restart notice goes once the choice matches the running interface");
+
+		presenter.State.InGame = false;
+		if (modern != nullptr) {
+			Click(context, modern);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(presenter.State.ModernInterface && notice != nullptr && !notice->IsVisible(), "the main menu switches the interface at once, so it shows no notice");
 
 		view->Release();
 		context.Update();

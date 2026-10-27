@@ -3147,6 +3147,9 @@ int Main_Menu(unsigned int timeout)
 
 	timeout = 0;
 
+	// A style picked during the last game takes effect on the way back to the menu.
+	Apply_Interface_Choice();
+
 	if (Options.IsClassicMenus) {
 		char * background = Get_New_Menu()->Background;
 		Load_Title_Screen(background, HiddenSurface, &CCPalette);

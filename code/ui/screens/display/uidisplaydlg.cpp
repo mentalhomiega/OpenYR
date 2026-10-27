@@ -429,6 +429,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
 	state.ModernInterfaceRunning = Options.ModernInterface;
+	state.InGame = GameActive;
 	state.BitmapSystemFont = Options.BitmapSystemFont;
 	state.ShowFPS = Options.ShowFPS;
 	state.FrameLimit = Fill_Choices(state.FrameLimits, {

@@ -204,6 +204,26 @@ RadarClass::~RadarClass(void)
 void RadarClass::One_Time(void)
 {
 	DebugString("RadarClass::One_Time()\n");
+	Lay_Out_Radar();
+
+	BASECLASS::One_Time();
+
+	RadarButton.Set_Flags(GadgetClass::FlagEnum(GadgetClass::FlagEnum::LEFTPRESS |
+														GadgetClass::FlagEnum::LEFTHELD |
+														GadgetClass::FlagEnum::LEFTRELEASE |
+														GadgetClass::FlagEnum::LEFTUP |
+														GadgetClass::FlagEnum::RIGHTPRESS |
+														GadgetClass::FlagEnum::RIGHTRELEASE |
+														GadgetClass::FlagEnum::RIGHTUP));
+}
+
+
+/// <summary>
+/// Sizes the radar for the running interface style and the sidebar surface. A map already
+/// shown keeps its old scale until the next scenario sets the map dimensions.
+/// </summary>
+void RadarClass::Lay_Out_Radar(void)
+{
 	RadX				 = 0;
 	RadY				 = TOP_Y + 32;
 	RadWidth			 = SidebarSurface->Get_Width();
@@ -227,19 +247,10 @@ void RadarClass::One_Time(void)
 		RadPHeight = RadIHeight = box.Height - 2;
 	}
 
-	BASECLASS::One_Time();
-
 	RadarButton.X		= RadX + SidebarRect.X;
 	RadarButton.Y 		= RadY;
 	RadarButton.Width 	= RadWidth;
 	RadarButton.Height 	= RadHeight;
-	RadarButton.Set_Flags(GadgetClass::FlagEnum(GadgetClass::FlagEnum::LEFTPRESS |
-														GadgetClass::FlagEnum::LEFTHELD |
-														GadgetClass::FlagEnum::LEFTRELEASE |
-														GadgetClass::FlagEnum::LEFTUP |
-														GadgetClass::FlagEnum::RIGHTPRESS |
-														GadgetClass::FlagEnum::RIGHTRELEASE |
-														GadgetClass::FlagEnum::RIGHTUP));
 }
 
 

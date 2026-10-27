@@ -742,6 +742,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
 				&& model.Bind("moderninterfacerunning", &state.ModernInterfaceRunning)
+				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
 				&& model.Bind("showfps", &state.ShowFPS)
 				&& model.Bind("framelimits", &state.FrameLimits)

@@ -77,7 +77,8 @@ the same arrangement whether or not the map is zoomed:
 
 `[Options] InterfaceStyle=Modern|Classic` in the user settings, defaulting to Modern in the modern
 build once it is complete, and to Classic until then. The options screen gets a matching choice.
-Changing it takes effect at the next game start.
+A change from the main menu applies when the settings close; one made in a game applies on the
+way back to the main menu.
 
 ## Steps
 
