@@ -1,0 +1,42 @@
+; The pointer over the Modern panel's left edge at 1920x1080. The panel starts at x 1670, so 1669 and below are the map and
+; 1670 and up are the panel, including its left margin (1670 to 1675). E1 is selected and nothing is held.
+; Each shape line gives shown, the shape on screen: 18 is MOUSE_CAN_MOVE (the map), 0 is MOUSE_NORMAL (the panel, the arrow).
+; The probe reads shown, not the hover's own shape, because the panel overrides the hover with the arrow.
+; Expected: every panel point shows 0 and every map point shows 18. The click at 1676 (margin) orders nothing and the click at
+; 1664 (map) orders E1 to move. The where lines give the mission; Guard stays until a move order.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/panel-edge-cursor-1920.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80" -Filter "AUTOTEST|Exception"
+30 view 46 40
+35 reveal
+40 grantunit E1 44 40
+50 select E1
+55 where E1
+60 windowmove 1660 200
+64 shape
+68 windowmove 1664 200
+72 shape
+76 windowmove 1669 200
+80 shape
+84 windowmove 1670 200
+88 shape
+92 windowmove 1672 200
+96 shape
+100 windowmove 1676 200
+104 shape
+108 windowmove 1680 200
+112 shape
+116 windowmove 1800 270
+120 shape
+124 windowmove 1800 420
+128 shape
+132 windowmove 1600 200
+136 shape
+150 windowmove 1676 200
+156 windowclick 1676 200
+170 where E1
+176 windowmove 1672 200
+182 windowclick 1672 200
+196 where E1
+202 windowmove 1664 200
+208 windowclick 1664 200
+222 where E1
+240 quit
