@@ -4318,7 +4318,7 @@ void Run(StepType const & step)
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass const * techno = Technos[index];
 			if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size());
+			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d marked by %s\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size(), techno->AirstrikeMarkedBy != NULL ? techno->AirstrikeMarkedBy->TClass->Name() : "-");
 			{
 				// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
 				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);

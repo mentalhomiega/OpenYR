@@ -1,0 +1,19 @@
+; Boris marks a power plant with his designator and calls two MiGs. The plant stays tinted (AirstrikeMarkedBy) while Boris
+; holds it, even after the strike ends: the MiGs are killed at frame 150, and "airstrike GAPOWR ... marked by BORIS" still shows
+; at 170 and 190. The move order at 200 drops Boris's target, and the tint lifts at once ("AUTOTEST airstrike unmark"), so the
+; "marked by -" line at 215 and the second screenshot show the plant clear. ScreenCapture at 115 and 190 is the tinted plant and the one at 225 is clear.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/boris-airstrike-lock-break.txt -Country 8 -Width 800 -Height 600 -Seconds 60 -ShotDir <dir> -Filter "airstrike|AirToGroundMissile|kill BPLN|Exception"
+30 view 46 36
+35 reveal
+40 grantunit BORIS 44 36
+50 enemy GAPOWR 46 38
+80 strike BORIS 46 38
+115 command ScreenCapture
+120 airstrike GAPOWR
+150 kill BPLN 1
+170 airstrike GAPOWR
+190 command ScreenCapture
+200 move BORIS 36 36
+215 airstrike GAPOWR
+225 command ScreenCapture
+230 quit
