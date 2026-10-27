@@ -12,6 +12,7 @@
 #include "abuffer.h"
 
 #include "bsurface.h"
+#include "writewatch.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -35,7 +36,8 @@ ABuffer::ABuffer(Rect rect) :
 {
 	Bounds = rect;
 	BufferSize = BufferWidth * BufferHeight;
-	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ABUFFER_BPP);
+	// The GPU map pass uploads only the pages written since it last took the buffer.
+	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ABUFFER_BPP, WriteWatch_Alloc((std::size_t)BufferWidth * BufferHeight * ABUFFER_BPP));
 
 	Fill(ABUFFER_COLOR);
 
@@ -87,6 +89,8 @@ void ABuffer::Release_Surface(void)
 {
 	delete SurfacePtr;
 	SurfacePtr = NULL;
+	WriteWatch_Free(BufferStart);
+	BufferStart = NULL;
 }
 
 

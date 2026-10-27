@@ -8,13 +8,14 @@ default, and works only in the modern interface on Direct3D 11.
 
 | Part | File | Role |
 |---|---|---|
-| Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, and the pixels of depth-shaded, additive and antialiased lines (trails, electric bolts and lasers). |
+| Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
 | Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur) and `fs_mappost.sc` (shockwaves), each compiled into a `.bin.h` header. |
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
-the alpha buffer, then draws the objects over it.
+the alpha buffer, then draws the objects over it. When the map view is drawn more than once before
+a frame is presented, only the last pass goes to the GPU.
 
 The autotest steps `gpureplay` and `gpucheck` check the recorder and the GPU against the software
 result; [AUTOTEST.md](AUTOTEST.md) documents them.
@@ -47,12 +48,16 @@ All keys are in the `[Video]` section and are read at startup.
   software's rounding. An antialiased laser blends each pixel from its own colour, while the software
   blends some pixels from their neighbour's. An additive laser glow that saturates a channel stops at
   white in that channel, while the software hands the excess to the other channels.
+- A sonic or magnetron wave lifts each shifted pixel from the picture as it stood before the wave.
+  The software lifts some pixels from ones the wave has already shifted, so the ripple can differ by
+  a pixel. A pass with more than 8 waves is drawn in software.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
-- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 93 pictures per second
-  with `GpuRender` and 128 in software. Copying out the frame's picture and handing it, the depth
-  buffer and the alpha buffer to the GPU cost about 1.1 ms per pass, and uploading them adds to the
-  present, so the GPU path still draws slower at that size.
+- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 170 pictures per second
+  with `GpuRender` and 125 in software. Each pass uploads only the rows of the base picture, the
+  depth buffer and the alpha buffer that changed since the last drawn pass. Outside Windows the
+  depth and alpha buffers cannot list the pages written to them, so those two go up whole every
+  pass.
 
 ## Rebuilding the shaders
 

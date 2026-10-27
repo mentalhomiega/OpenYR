@@ -17,6 +17,9 @@ enum BgfxViewType : unsigned short
 	VIEW_MAPBLURX,
 	VIEW_MAPBLURY,
 	VIEW_MAPDRAW,
+	// Each sonic wave in a map pass continues the drawing in the next of these views.
+	VIEW_MAPWAVE,
+	VIEW_MAPWAVE_LAST = VIEW_MAPWAVE + 7,
 	VIEW_MAPPOST,
 	VIEW_PRESCALE,
 	VIEW_PRESENT,

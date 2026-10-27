@@ -46,6 +46,8 @@ class WaveClass : public ObjectClass
 		virtual void AI(void) override;
 
 		static void Init_Statics(void);
+		static Point2D Sonic_Shift(int amplitude, FacingType facing);
+		static unsigned short Sonic_Tint(unsigned short color, int amplitude, bool magnetron);
 
 	private:
 		void Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned short * buffer, Rect const & cliprect) const;

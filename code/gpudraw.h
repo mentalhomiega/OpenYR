@@ -26,7 +26,8 @@ enum GpuLineKind
 {
 	GPU_LINE_SHADED,
 	GPU_LINE_ADDITIVE,
-	GPU_LINE_ANTIALIASED
+	GPU_LINE_ANTIALIASED,
+	GPU_LINE_SONIC
 };
 
 // The channels an antialiased line blends.
@@ -71,13 +72,16 @@ struct GpuBlit
 	// holds its brightness shape. -1 for anything else.
 	int Brighten;
 
-	// For a run of line pixels, the line's colour: 565 for a shaded line, 0xRRGGBB for the others.
-	// Pixels then holds a value for each pixel, 0 where the line does not plot: the alpha buffer value
-	// for a shaded or additive line, and the colour weight plus 1 for an antialiased one. -1 otherwise.
+	// For a run of line pixels, the line's colour: 565 for a shaded line, 0xRRGGBB for the others,
+	// and for a sonic wave its facing plus 8 when it is a magnetron beam. Pixels then holds a value
+	// for each pixel, 0 where the line does not plot: the alpha buffer value for a shaded or additive
+	// line, the colour weight plus 1 for an antialiased one, and the wave amplitude plus 1 for a
+	// sonic wave, which shifts and tints the pixels the target held before it. -1 otherwise.
 	int Line;
 	GpuLineKind LineKind;
 
-	// A shaded line's fade (256 for none), or an antialiased line's GPU_LINE_* channel flags.
+	// A shaded line's fade (256 for none), an antialiased line's GPU_LINE_* channel flags, or a sonic
+	// wave's tint at amplitude 0.
 	int Fade;
 };
 

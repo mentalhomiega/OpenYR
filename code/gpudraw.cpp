@@ -27,6 +27,7 @@
 #include "ovrlight.h"
 #include "surface.h"
 #include "tactical.h"
+#include "wave.h"
 #include "xsurface.h"
 #include "zbuffer.h"
 
@@ -205,6 +206,29 @@ static void Replay_Brighten(GpuBlit const & blit, std::vector<unsigned short> & 
 static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & picture)
 {
 	unsigned char const * values = &_List.PixelArena[blit.Pixels];
+	if (blit.LineKind == GPU_LINE_SONIC) {
+		// The wave lifts its pixels from the picture as it stood before the wave, as the GPU does.
+		std::vector<unsigned short> const before = picture;
+		FacingType const facing = (FacingType)(blit.Line & 7);
+		for (int r = 0; r < blit.Height; r++) {
+			for (int i = 0; i < blit.Width; i++) {
+				int const x = blit.X + i;
+				int const y = blit.Y + r;
+				int const value = values[r * blit.Width + i];
+				if (value == 0 || !_Area.Is_Point_Within(Point2D(x, y))) {
+					continue;
+				}
+				Point2D const shift = WaveClass::Sonic_Shift(value - 1, facing);
+				Point2D source(x, y);
+				if (_Area.Is_Point_Within(Point2D(x + shift.X, y + shift.Y))) {
+					source = Point2D(x + shift.X, y + shift.Y);
+				}
+				unsigned short const color = before[(source.Y - _Area.Y) * _Area.Width + (source.X - _Area.X)];
+				picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)] = WaveClass::Sonic_Tint(color, value - 1, blit.Line >= 8);
+			}
+		}
+		return;
+	}
 	for (int r = 0; r < blit.Height; r++) {
 		for (int i = 0; i < blit.Width; i++) {
 			int const x = blit.X + i;
@@ -360,6 +384,32 @@ static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned
 }
 
 
+// Brings pixels up to the area's pixels, flagging in changed each row that differed; a picture of
+// another size is read whole with every row flagged.
+static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels, std::vector<unsigned char> & changed)
+{
+	std::size_t const width = (std::size_t)area.Width;
+	if (pixels.size() != width * area.Height || (int)changed.size() != area.Height) {
+		changed.assign(area.Height, 1);
+		return(Read_Area(surface, area, pixels));
+	}
+	char const * base = (char const *)surface.Lock(Point2D(area.X, area.Y));
+	if (base == NULL) {
+		return(false);
+	}
+	for (int r = 0; r < area.Height; r++) {
+		void const * row = base + r * surface.Stride();
+		unsigned short * copy = &pixels[r * width];
+		if (std::memcmp(copy, row, width * sizeof(unsigned short)) != 0) {
+			std::memcpy(copy, row, width * sizeof(unsigned short));
+			changed[r] = 1;
+		}
+	}
+	surface.Unlock();
+	return(true);
+}
+
+
 static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigned short> const & pixels)
 {
 	char * base = (char *)surface.Lock(Point2D(area.X, area.Y));
@@ -450,11 +500,12 @@ bool GpuDraw_Line_Pixel(int x, int y, int value)
 
 /// <summary>
 /// Ends the line GpuDraw_Line_Begin started, adding its pixels to the list in runs of up to 64 so
-/// each run's rectangle stays small.
+/// each run's rectangle stays small. A sonic wave is added as one run, because the GPU copies the
+/// target once for each.
 /// </summary>
 void GpuDraw_Line_End(void)
 {
-	std::size_t const RUN = 64;
+	std::size_t const RUN = _LineKind == GPU_LINE_SONIC ? std::max<std::size_t>(_LinePixels.size(), 1) : 64;
 	for (std::size_t first = 0; first < _LinePixels.size(); first += RUN) {
 		std::size_t const last = std::min(first + RUN, _LinePixels.size());
 		int left = _LinePixels[first].X;
@@ -564,13 +615,17 @@ static void Count_Render(bool drawn)
 
 static bool Finish_Render(Surface & target)
 {
-	// The GPU reads these by reference until the frame is submitted, so passes alternate sets.
-	static std::vector<unsigned short> _Uploads[2][3];
-	static int _UploadSet = 0;
-	std::vector<unsigned short> * upload = _Uploads[_UploadSet];
-	_UploadSet ^= 1;
+	// The kept pass reads these until it is drawn at the present or the next pass begins. Base
+	// keeps the last pass's picture, so only the rows that changed since the GPU took them go up.
+	static std::vector<unsigned short> upload[3];
+	static std::vector<unsigned char> changed;
+	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
-	if (!Read_Area(target, _Area, base)) {
+	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
+		changed.clear();
+		changedarea = _Area;
+	}
+	if (!Read_Changes(target, _Area, base, changed)) {
 		return(false);
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
@@ -590,6 +645,7 @@ static bool Finish_Render(Surface & target)
 		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};
 		pass.List = &_List;
 		pass.Persistent = true;
+		pass.BaseChanged = &changed;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		if (GpuMap_Draw(pass)) {
@@ -601,6 +657,7 @@ static bool Finish_Render(Surface & target)
 	// The recorded draws land over the ones the record does not hold, which drew in order.
 	Replay(base);
 	Write_Area(target, _Area, base);
+	std::fill(changed.begin(), changed.end(), 1);
 	return(false);
 }
 
@@ -643,6 +700,7 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 /// </summary>
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 {
+	GpuMap_Drop();
 	_List.Blits.clear();
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
@@ -708,6 +766,7 @@ bool GpuDraw_End(void)
 		pass.Alpha = &alpha;
 		pass.List = &_List;
 		pass.Persistent = false;
+		pass.BaseChanged = NULL;
 		pass.DepthRing = GpuRing{};
 		pass.AlphaRing = GpuRing{};
 		pass.Ripples = NULL;

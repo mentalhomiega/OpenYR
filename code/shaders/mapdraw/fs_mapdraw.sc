@@ -15,7 +15,9 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // (v_texcoord1.z holds the channels it leaves alone), 11 depth-shaded line pixels whose index is the alpha
 // buffer value under each (v_texcoord1.z holds the 565 colour, w the fade; the target's weight goes out in alpha),
 // 12 additive line pixels whose index is the alpha buffer value (v_texcoord1.z holds 0xRRGGBB), 13 antialiased line
-// pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha).
+// pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha),
+// 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
+// the facing plus 8 for a magnetron beam, w the tint at amplitude 0).
 
 #include "bgfx_shader.sh"
 
@@ -27,6 +29,7 @@ SAMPLER2D(s_abuf, 4);
 SAMPLER2D(s_zshape, 5);
 SAMPLER2D(s_base, 6);
 SAMPLER2D(s_shadow, 7);
+SAMPLER2D(s_snapshot, 8);
 uniform vec4 u_ring[2];
 
 #define ARENA_WIDTH 4096
@@ -97,6 +100,32 @@ void main()
 		int amount = max(fade, 0);
 		vec3 source = vec3((c8 * amount) / 256) * (float(index) / 128.0);
 		gl_FragColor = vec4(source * scale, float((256 - amount) * index) / 32768.0);
+		return;
+	}
+
+	if (kind == 14) {
+		// WaveClass::Sonic_Shift and WaveClass::Sonic_Tint.
+		int amplitude = index - 1;
+		int wave = int(v_texcoord1.z + 0.5);
+		int facing = wave % 8;
+		int count = amplitude < 2 ? 0 : (amplitude < 7 ? 1 : (amplitude < 10 ? 2 : 3));
+		ivec2 step = ivec2(facing == 0 || facing == 4 ? 0 : (facing < 4 ? 1 : -1), facing == 2 || facing == 6 ? 0 : (facing > 2 && facing < 6 ? 1 : -1));
+		ivec2 source = area + step * count;
+		ivec2 size = ivec2(textureSize(s_snapshot, 0));
+		if (source.x < 0 || source.y < 0 || source.x >= size.x || source.y >= size.y) {
+			source = area;
+		}
+		vec3 under = texelFetch(s_snapshot, source, 0).xyz;
+		ivec3 c8 = ivec3(floor(under * vec3(31.0, 63.0, 31.0) + 0.5)) * ivec3(8, 4, 8);
+		int mult = int(v_texcoord1.w + 0.5) + amplitude * 8;
+		if (wave >= 8) {
+			c8.x = min(255, c8.x + ((mult / 2) * c8.x) / 256);
+			c8.z = min(255, c8.z + (c8.z * mult * 4) / 256);
+		} else {
+			c8.y = min(255, c8.y + (c8.y * mult) / 256);
+			c8.z = min(255, c8.z + (c8.z * mult) / 256);
+		}
+		gl_FragColor = vec4(vec3(c8 / ivec3(8, 4, 8)) * vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0), 1.0);
 		return;
 	}
 

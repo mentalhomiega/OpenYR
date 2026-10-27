@@ -50,9 +50,13 @@ struct GpuMapPass
 	std::vector<unsigned short> const * Alpha;
 	GpuDrawList const * List;
 
-	// Base and the rings below stay unchanged until the next frame is submitted, so they are
-	// uploaded without a copy. AlphaRing.Values may then be NULL when no blit in List reads it.
+	// The rings below stay unchanged until the next frame is submitted, so they are uploaded
+	// without a copy. AlphaRing.Values may then be NULL when no blit in List reads it.
 	bool Persistent;
+
+	// With Persistent, a flag for each row of Base that changed since the GPU last took it, or NULL
+	// to upload every row. The rows the GPU takes have their flags cleared.
+	std::vector<unsigned char> * BaseChanged;
 
 	// With Persistent, the depth and alpha buffers as stored; Depth and Alpha are then unused.
 	GpuRing DepthRing;
@@ -68,21 +72,27 @@ struct GpuMapPass
 // nothing, when the renderer is not Direct3D 11 or an earlier check is still being read back.
 bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected);
 
-// Draws the pass into the GPU map texture; false means it was not drawn.
+// Keeps the pass for GpuMap_Texture to draw, replacing any pass kept earlier; false means it cannot
+// be drawn. Its list and buffers must stay unchanged until it is drawn or dropped.
 bool GpuMap_Draw(GpuMapPass const & pass);
+
+// Forgets the pass GpuMap_Draw kept; call it before changing the list or buffers that pass uses.
+void GpuMap_Drop(void);
 
 // Draws shadows as one mask blurred over radius pixels (at most 16) and darkens the base through it;
 // 0 draws each shadow as the software does.
 void GpuMap_Set_Soft_Shadows(int radius);
 
-// The bgfx handle index of the texture GpuMap_Draw draws into, which is Area.Width by Area.Height.
+// Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
+// the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass
+// does not fit the GPU limits.
 std::uint16_t GpuMap_Texture(void);
 
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
 
-// Ends a bgfx frame early when the last pass's buffers have not been read yet; call it before
-// freeing the depth or alpha buffer.
+// Forgets the kept pass and ends a bgfx frame early when the last drawn pass's buffers have not
+// been read yet; call it before freeing the depth or alpha buffer.
 void GpuMap_Release_References(void);
 
 // Releases the GPU resources; the renderer calls it before it shuts down.

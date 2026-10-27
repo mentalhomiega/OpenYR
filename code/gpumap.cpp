@@ -14,6 +14,7 @@
 #include "bgfxviews.hh"
 #include "dbgprint.h"
 #include "gpudraw.h"
+#include "writewatch.h"
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
@@ -82,6 +83,7 @@ enum ShaderKind
 	KIND_LINE,
 	KIND_ADDITIVE_LINE,
 	KIND_ANTIALIASED_LINE,
+	KIND_SONIC,
 };
 
 enum SamplerSlot
@@ -137,12 +139,15 @@ static bgfx::TextureHandle _PostTexture = BGFX_INVALID_HANDLE;
 static bgfx::FrameBufferHandle _PostTarget = BGFX_INVALID_HANDLE;
 static bool _PostShown = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _Snapshot = BGFX_INVALID_HANDLE;
 
+// Set while a drawn pass's buffers are uploaded by reference and its frame is not yet submitted.
+static bool _Referenced = false;
 static bool _Pending = false;
 static std::uint32_t _ReadyFrame = 0;
 
 // True from a pass that handed the GPU its buffers without a copy until bgfx::frame reads them.
-static bool _Referenced = false;
 static std::vector<unsigned char> _Pixels;
 static std::vector<unsigned short> _Expected;
 static int _PendingFrame = 0;
@@ -176,6 +181,7 @@ static bool Start(void)
 	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
+	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
 	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
 		DebugString("GPU_DIFF: the shadow blur or shockwave program did not build\n");
@@ -217,6 +223,10 @@ static void Destroy_Target(void)
 		bgfx::destroy(_Readback);
 		_Readback = BGFX_INVALID_HANDLE;
 	}
+	if (bgfx::isValid(_Snapshot)) {
+		bgfx::destroy(_Snapshot);
+		_Snapshot = BGFX_INVALID_HANDLE;
+	}
 	_TargetWidth = 0;
 	_TargetHeight = 0;
 }
@@ -235,7 +245,8 @@ static bool Size_Target(int width, int height)
 	}
 	_Target = bgfx::createFrameBuffer(1, &_TargetTexture, true);
 	_Readback = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | point);
-	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Readback)) {
+	_Snapshot = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_BLIT_DST | point);
+	if (!bgfx::isValid(_Target) || !bgfx::isValid(_Readback) || !bgfx::isValid(_Snapshot)) {
 		Destroy_Target();
 		return(false);
 	}
@@ -266,6 +277,9 @@ struct Store
 	bgfx::TextureHandle Handle = BGFX_INVALID_HANDLE;
 	int Width = 0;
 	int Height = 0;
+
+	// Set while the texture holds the values Fill_R16_Changed or Fill_R16_Watched last wrote.
+	bool Tracked = false;
 };
 
 static Store _Stores[SLOT_COUNT];
@@ -289,6 +303,7 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 	if (width <= 0 || rows <= 0 || width > TEXTURE_LIMIT || rows > TEXTURE_LIMIT) {
 		return(false);
 	}
+	store.Tracked = false;
 	if (!bgfx::isValid(store.Handle) || store.Width != width || store.Height < rows || (exact && store.Height != rows)) {
 		if (bgfx::isValid(store.Handle)) {
 			bgfx::destroy(store.Handle);
@@ -328,6 +343,75 @@ static bool Fill_R16(Store & store, unsigned short const * values, int width, in
 {
 	uint32_t const size = (uint32_t)((std::size_t)width * rows * sizeof(unsigned short));
 	return(Fill_Store(store, bgfx::TextureFormat::R16, width, rows, exact, reference ? bgfx::makeRef(values, size) : bgfx::copy(values, size)));
+}
+
+
+// Uploads rows first to end of the values, which are width values a row.
+static void Update_Rows(Store & store, unsigned short const * values, int width, int first, int end)
+{
+	uint32_t const size = (uint32_t)((std::size_t)(end - first) * width * sizeof(unsigned short));
+	bgfx::updateTexture2D(store.Handle, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(values + (std::size_t)first * width, size));
+}
+
+
+// Makes the store exactly width by rows values, uploading only the rows on pages written since the
+// last call when the system lists them (writewatch.h). Reference is as for Fill_R16.
+static bool Fill_R16_Watched(Store & store, unsigned short const * values, int width, int rows, bool reference)
+{
+	std::size_t const bytes = (std::size_t)width * rows * sizeof(unsigned short);
+	std::vector<std::pair<std::size_t, std::size_t>> runs;
+	bool const listed = WriteWatch_Take(values, bytes, runs);
+	if (!listed || !store.Tracked || store.Width != width || store.Height != rows) {
+		if (!Fill_R16(store, values, width, rows, true, reference)) {
+			return(false);
+		}
+		store.Tracked = listed;
+		return(true);
+	}
+	std::size_t const pitch = (std::size_t)width * sizeof(unsigned short);
+	int done = 0;
+	for (auto const & run : runs) {
+		int const first = std::max(done, (int)(run.first / pitch));
+		int const end = std::min(rows, (int)((run.second + pitch - 1) / pitch));
+		if (first < end) {
+			Update_Rows(store, values, width, first, end);
+			done = end;
+		}
+	}
+	return(true);
+}
+
+
+// Makes the store exactly width by rows values, uploading only the rows flagged in changed when
+// it already holds the rest, and clears the flags.
+static bool Fill_R16_Changed(Store & store, unsigned short const * values, int width, int rows, std::vector<unsigned char> & changed)
+{
+	if (!store.Tracked || store.Width != width || store.Height != rows || (int)changed.size() != rows) {
+		if (!Fill_R16(store, values, width, rows, true)) {
+			return(false);
+		}
+		store.Tracked = true;
+		changed.assign(rows, 0);
+		return(true);
+	}
+	// Changed rows up to 8 apart go up together, so a scattered change takes few updates.
+	int const GAP = 8;
+	int row = 0;
+	while (row < rows) {
+		if (changed[row] == 0) {
+			row++;
+			continue;
+		}
+		int const first = row;
+		int unchanged = 0;
+		for (row++; row < rows && unchanged < GAP; row++) {
+			unchanged = changed[row] != 0 ? 0 : unchanged + 1;
+		}
+		int const end = row - unchanged;
+		std::fill(changed.begin() + first, changed.begin() + end, 0);
+		Update_Rows(store, values, width, first, end);
+	}
+	return(true);
 }
 
 
@@ -493,7 +577,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	bool valid = Fill_Arena(_Stores[SLOT_INDEX], list.PixelArena.data(), list.PixelArena.size());
 	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
 	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
-	// A pass the GPU has not read yet still holds the other buffer set's memory, so this one is copied.
+	// A pass the GPU has not read yet still holds the buffers' memory, so this one is copied.
 	bool const reference = pass.Persistent && !_Referenced;
 	if (reference) {
 		static bool registered = false;
@@ -512,12 +596,12 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		for (int i = 0; i < 2; i++) {
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
-				valid = Fill_R16(*stores[i], source.Values, source.Width, source.Height, true, reference) && valid;
+				valid = Fill_R16_Watched(*stores[i], source.Values, source.Width, source.Height, reference) && valid;
 				ring[i * 4 + 0] = (float)source.Start;
 				ring[i * 4 + 1] = (float)source.Width;
 				ring[i * 4 + 2] = (float)source.Width * source.Height;
 			} else if (!bgfx::isValid(stores[i]->Handle)) {
-				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true, true) && valid;
+				valid = Fill_R16(*stores[i], pass.Base->data(), area.Width, area.Height, true) && valid;
 			}
 		}
 	} else {
@@ -525,7 +609,11 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		valid = Fill_R16(_Stores[SLOT_ABUF], pass.Alpha->data(), area.Width, area.Height, true) && valid;
 	}
 	valid = Fill_Arena(_Stores[SLOT_ZSHAPE], list.ZShapeArena.data(), list.ZShapeArena.size()) && valid;
-	valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true, reference) && valid;
+	if (pass.Persistent && pass.BaseChanged != NULL) {
+		valid = Fill_R16_Changed(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, *pass.BaseChanged) && valid;
+	} else {
+		valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true) && valid;
+	}
 
 	int shadows = 0;
 	if (_SoftShadowRadius > 0) {
@@ -534,6 +622,13 @@ static bool Submit_Pass(GpuMapPass const & pass)
 				shadows++;
 			}
 		}
+	}
+	int const waves = (int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
+		return(blit.Line >= 0 && blit.LineKind == GPU_LINE_SONIC);
+	});
+	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
+		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
+		return(false);
 	}
 	int const quads = (int)list.Blits.size() + 1;
 	int const shadowquads = shadows > 0 ? shadows + 1 : 0;
@@ -601,6 +696,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection);
 
 	uint64_t const write = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
+	bgfx::ViewId view = VIEW_MAPDRAW;
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
 		if (i > 0) {
@@ -636,9 +732,16 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		if (i == 0 && shadows > 0) {
 			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
 		}
+		if (kind == KIND_SONIC) {
+			// A view's blits run before its draws, so the wave reads everything drawn before it.
+			view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
+			Set_Map_View(view, _Target, area, projection);
+			bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
+		}
 		bgfx::setUniform(_RingUniform, ring, 2);
 		bgfx::setState(state);
-		bgfx::submit(VIEW_MAPDRAW, _Program);
+		bgfx::submit(view, _Program);
 	}
 
 	_PostShown = false;
@@ -666,9 +769,29 @@ static bool Submit_Pass(GpuMapPass const & pass)
 }
 
 
+// Only the pass kept last before a frame is presented is drawn, because passes drawn in one frame
+// share the views and the uploaded buffers.
+static GpuMapPass _Kept;
+static std::vector<GpuRipple> _KeptRipples;
+static bool _HasKept = false;
+
+
 bool GpuMap_Draw(GpuMapPass const & pass)
 {
-	return(Submit_Pass(pass));
+	if (!Start()) {
+		return(false);
+	}
+	_Kept = pass;
+	_KeptRipples = pass.Ripples != NULL ? *pass.Ripples : std::vector<GpuRipple>();
+	_Kept.Ripples = &_KeptRipples;
+	_HasKept = true;
+	return(true);
+}
+
+
+void GpuMap_Drop(void)
+{
+	_HasKept = false;
 }
 
 
@@ -695,6 +818,12 @@ void GpuMap_Set_Soft_Shadows(int radius)
 
 std::uint16_t GpuMap_Texture(void)
 {
+	if (_HasKept) {
+		_HasKept = false;
+		if (!Submit_Pass(_Kept)) {
+			return(bgfx::kInvalidHandle);
+		}
+	}
 	return(_PostShown ? _PostTexture.idx : _TargetTexture.idx);
 }
 
@@ -739,11 +868,13 @@ void GpuMap_After_Frame(std::uint32_t frame)
 
 
 /// <summary>
-/// Makes the GPU read the buffers the last pass handed it without a copy, by ending a bgfx frame
-/// early when one is still waiting. Call it before freeing the depth or alpha buffer.
+/// Forgets the kept pass and makes the GPU read the buffers the last drawn pass handed it without a
+/// copy, by ending a bgfx frame early when one is still waiting. Call it before freeing the depth or
+/// alpha buffer.
 /// </summary>
 void GpuMap_Release_References(void)
 {
+	GpuMap_Drop();
 	if (_Referenced) {
 		bgfx::frame();
 		_Referenced = false;
