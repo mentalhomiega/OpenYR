@@ -6,11 +6,9 @@ targets:
 - type: key
   id: NewTheater
   effect: changed
-  scope: overlaytype
 - type: key
   id: Theater
   effect: changed
-  scope: overlaytype
 credit: [MentalHomiega]
 ---
 

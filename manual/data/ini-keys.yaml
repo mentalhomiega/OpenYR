@@ -24742,6 +24742,24 @@ MiscPaveTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+MissileLaunchHoldsMove:
+  key: MissileLaunchHoldsMove
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsMissileLaunchHoldsMove
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MissileROTVar:
   key: MissileROTVar
   scopes:
@@ -27476,6 +27494,42 @@ Organic:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+OverParMessage:
+  key: OverParMessage
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Ranking
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: GUI:NoOverParMessage
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+OverParTitle:
+  key: OverParTitle
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Ranking
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: GUI:NoOverParTitle
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 OverloadCount:
   key: OverloadCount
   scopes:
@@ -34440,6 +34494,24 @@ SidebarImage:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SidebarOpacity:
+  key: SidebarOpacity
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: null
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 SidebarPCX:
   key: SidebarPCX
   scopes:
@@ -41823,6 +41895,42 @@ UnderDoorAnim:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+UnderParMessage:
+  key: UnderParMessage
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Ranking
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: GUI:NoUnderParMessage
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
+UnderParTitle:
+  key: UnderParTitle
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Ranking
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: GUI:NoUnderParTitle
+      declared_in: ScenarioClass
+      member: null
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 UnderRoofDoorAnim:
   key: UnderRoofDoorAnim
   scopes:
@@ -43440,6 +43548,23 @@ VoiceSelect:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+VoiceSelectEnslaved:
+  key: VoiceSelectEnslaved
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of sounds
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: VoiceSelectEnslaved
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 VoiceSinking:
   key: VoiceSinking
   scopes:
@@ -44374,6 +44499,24 @@ WaypointAnimationSpeed:
       default_candidate: '12'
       declared_in: RulesClass
       member: WaypointAnimationSpeed
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+WaypointAttackFromFirst:
+  key: WaypointAttackFromFirst
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: WaypointAttackFromFirst
       source: code/rules.cpp
       guard: null
     level: RulesClass

@@ -2798,13 +2798,11 @@ fixed_controls:
   route_id: fixed-campaign-results-continue
   kind: fixed
   title: Dismiss campaign results
-  description: Closes the campaign results screen after its prompt appears.
+  description: Closes the campaign results screen with a click on its Continue button.
   audience: player
   availability: *id001
   bindings:
   - Left mouse button
-  - Escape
-  - Space
   context: Campaign results screen after a won mission
   _provenance:
     source: code/score.cpp

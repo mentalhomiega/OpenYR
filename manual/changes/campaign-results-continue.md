@@ -5,7 +5,7 @@ release: 0.2.0
 targets:
 - type: command
   id: fixed:campaign-results-continue
-  effect: added
+  effect: changed
 credit:
 - MentalHomiega
 ---
