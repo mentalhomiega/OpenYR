@@ -5,7 +5,6 @@ release: 0.2.0
 targets:
 - type: key
   id: Palette
-  scope: art
   effect: changed
 credit:
 - MentalHomiega

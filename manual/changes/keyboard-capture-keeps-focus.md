@@ -1,4 +1,4 @@
-﻿---
+---
 title: Keep the keyboard on the capture box after a button click
 category: fix
 release: 0.2.0
