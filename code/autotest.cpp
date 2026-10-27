@@ -48,6 +48,9 @@
 **	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
 **	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
 **	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
+**	targetaction <AttackerTypeID> <TargetTypeID>	writes the action the player's first object of the attacker type gets over the first live enemy object of the target type,
+**							with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it
+**	enemystrike <TypeID> x y	orders the first computer-owned object of that type to attack what stands on that cell
 **	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
 **	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
 **	hutc4 x y				writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength
@@ -2168,6 +2171,61 @@ static void Passable_Step(StepType const & step)
 
 
 /// <summary>
+/// Logs the action the first player's object of one type gets over the first live object of another type that the player's house does not
+/// allow to be an ally, with the target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it now.
+/// </summary>
+/// <param name="step">The attacker's and target's types, the words after the command in the line.</param>
+static void Target_Action_Step(StepType const & step)
+{
+	std::vector<std::string> const words = Line_Words(step.Line);
+	if (words.size() < 4) {
+		DebugString("AUTOTEST   targetaction needs an attacker type and a target type\n");
+		return;
+	}
+	TechnoClass * attacker = NULL;
+	TechnoClass * target = NULL;
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (attacker == NULL && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), words[2].c_str()) == 0) {
+			attacker = techno;
+		}
+		if (target == NULL && !techno->IsInLimbo && techno->House != PlayerPtr && stricmp(techno->TClass->Name(), words[3].c_str()) == 0) {
+			target = techno;
+		}
+	}
+	if (attacker == NULL || target == NULL) {
+		DebugString("AUTOTEST   targetaction %s %s: no attacker or no target\n", words[2].c_str(), words[2].c_str());
+		return;
+	}
+	int const which = attacker->What_Weapon_Should_I_Use(target);
+	DebugString("AUTOTEST   targetaction %s on %s: action %s in_air %d agl %d fire %d weapon %d range %d\n", attacker->TClass->Name(), target->TClass->Name(),
+		ActionName[attacker->What_Action((ObjectClass const *)target)], (int)target->In_Air(), (int)target->HeightAGL, (int)attacker->Can_Fire(target, which), which, (int)attacker->In_Range(target, which));
+}
+
+
+/// <summary>
+/// Orders the first computer-owned object of a type to attack what stands on a cell, as a computer house's unit does with a target.
+/// </summary>
+/// <param name="step">The type in the argument, and the cell in X and Y.</param>
+static void Enemy_Strike_Step(StepType const & step)
+{
+	TechnoClass * target = Map[Cell(step.X, step.Y)].Cell_Techno();
+	DebugString("AUTOTEST enemystrike %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+	if (target == NULL) {
+		return;
+	}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Assign_Target(target);
+			techno->Assign_Mission(MISSION_ATTACK);
+			return;
+		}
+	}
+}
+
+
+/// <summary>
 /// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
 /// </summary>
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
@@ -2416,6 +2474,14 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "passable") {
 		Passable_Step(step);
+		return;
+	}
+	if (step.Command == "targetaction") {
+		Target_Action_Step(step);
+		return;
+	}
+	if (step.Command == "enemystrike") {
+		Enemy_Strike_Step(step);
 		return;
 	}
 	if (step.Command == "hutaction") {
