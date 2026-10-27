@@ -106,6 +106,13 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "cancel") {
 		Result = UI_RESULT_CANCELLED;
 	}
+
+	// A click on a row, a trigger, a scheme, Assign, Clear, Swap, Cancel or a reset takes the keyboard focus from the
+	// capture box. The view focuses the box again when this count changes, so the next keys reach it.
+	if (intent.Name == "pick" || intent.Name == "trigger" || intent.Name == "assign" || intent.Name == "swap" || intent.Name == "dismiss"
+		|| intent.Name == "clear" || intent.Name == "resetcategory" || intent.Name == "resetall" || intent.Name == "reset" || intent.Name == "scheme") {
+		State.FocusCount++;
+	}
 }
 
 
@@ -385,10 +392,11 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		{
 			Model.DirtyAllVariables();
 
-			// Picking a slot moves the keyboard focus to the capture box, so its key presses reach the screen.
-			if (Data.State.Selected != LastSelected || Data.State.SelectedSlot != LastSlot) {
+			// Picking a slot, or a button that leaves a slot selected, moves the keyboard focus to the capture box, so its key presses reach the screen.
+			if (Data.State.Selected != LastSelected || Data.State.SelectedSlot != LastSlot || Data.State.FocusCount != LastFocusCount) {
 				LastSelected = Data.State.Selected;
 				LastSlot = Data.State.SelectedSlot;
+				LastFocusCount = Data.State.FocusCount;
 				Rml::Element * capture = Capture();
 				if (LastSelected >= 0 && capture != nullptr) {
 					capture->Focus();
@@ -574,6 +582,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		UIKeyboardPresenterClass & Data;
 		int LastSelected = -1;
 		int LastSlot = 0;
+		int LastFocusCount = 0;
 
 		// The modifier bits held down, the bits of the chord being made, and whether a key other than a modifier joined it.
 		int DownModifiers = 0;

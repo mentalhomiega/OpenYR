@@ -93,6 +93,9 @@ struct UIKeyboardState
 
 	// What the last reset or scheme change did, such as the bindings it removed.
 	std::string Notice;
+
+	// Counts the intents that hand the keys back to the capture box. A click on a button takes the focus from it.
+	int FocusCount = 0;
 };
 
 
