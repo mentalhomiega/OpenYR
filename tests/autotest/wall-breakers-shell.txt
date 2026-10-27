@@ -1,0 +1,16 @@
+; Probe: one Grizzly (MTNK) at 58 50 shoots a computer GAPILL at 66 50 through a ring of GAWALL.
+30 command CenterBase
+300 own MTNK 58 50
+304 enemy GAPILL 66 50
+310 ewall GAWALL 65 49
+311 ewall GAWALL 66 49
+312 ewall GAWALL 67 49
+313 ewall GAWALL 65 50
+314 ewall GAWALL 67 50
+315 ewall GAWALL 65 51
+316 ewall GAWALL 66 51
+317 ewall GAWALL 67 51
+360 reveal
+370 canfire MTNK 66 50
+380 strike MTNK 66 50
+700 quit

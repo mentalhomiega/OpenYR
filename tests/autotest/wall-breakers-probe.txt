@@ -1,0 +1,277 @@
+; Probe of the wall-breakers run: one Rhino (row 40, sandbags) and one Lasher (row 60, sandbags), logged every 10 frames.
+; The Rhino starts 6 cells out, beyond its 5.75-cell range, so its first canfire line reads 8 for range.
+30 command CenterBase
+300 own HTNK 60 40
+302 own LTNK 60 60
+304 enemy GAPILL 66 40
+305 enemy GAPILL 66 60
+310 ewall GASAND 65 39
+311 ewall GASAND 66 39
+312 ewall GASAND 67 39
+313 ewall GASAND 65 40
+314 ewall GASAND 67 40
+315 ewall GASAND 65 41
+316 ewall GASAND 66 41
+317 ewall GASAND 67 41
+318 ewall GASAND 65 59
+319 ewall GASAND 66 59
+320 ewall GASAND 67 59
+321 ewall GASAND 65 60
+322 ewall GASAND 67 60
+323 ewall GASAND 65 61
+324 ewall GASAND 66 61
+325 ewall GASAND 67 61
+360 reveal
+370 canfire HTNK 66 40
+371 canfire LTNK 66 60
+380 strike HTNK 66 40
+381 strike LTNK 66 60
+390 where HTNK
+390 where LTNK
+390 cell 65 41
+390 cell 65 40
+400 where HTNK
+400 where LTNK
+400 cell 65 41
+400 cell 65 40
+410 where HTNK
+410 where LTNK
+410 cell 65 41
+410 cell 65 40
+420 where HTNK
+420 where LTNK
+420 cell 65 41
+420 cell 65 40
+430 where HTNK
+430 where LTNK
+430 cell 65 41
+430 cell 65 40
+440 where HTNK
+440 where LTNK
+440 cell 65 41
+440 cell 65 40
+450 where HTNK
+450 where LTNK
+450 cell 65 41
+450 cell 65 40
+460 where HTNK
+460 where LTNK
+460 cell 65 41
+460 cell 65 40
+470 where HTNK
+470 where LTNK
+470 cell 65 41
+470 cell 65 40
+480 where HTNK
+480 where LTNK
+480 cell 65 41
+480 cell 65 40
+490 where HTNK
+490 where LTNK
+490 cell 65 41
+490 cell 65 40
+500 where HTNK
+500 where LTNK
+500 cell 65 41
+500 cell 65 40
+510 where HTNK
+510 where LTNK
+510 cell 65 41
+510 cell 65 40
+520 where HTNK
+520 where LTNK
+520 cell 65 41
+520 cell 65 40
+530 where HTNK
+530 where LTNK
+530 cell 65 41
+530 cell 65 40
+540 where HTNK
+540 where LTNK
+540 cell 65 41
+540 cell 65 40
+550 where HTNK
+550 where LTNK
+550 cell 65 41
+550 cell 65 40
+560 where HTNK
+560 where LTNK
+560 cell 65 41
+560 cell 65 40
+570 where HTNK
+570 where LTNK
+570 cell 65 41
+570 cell 65 40
+580 where HTNK
+580 where LTNK
+580 cell 65 41
+580 cell 65 40
+590 where HTNK
+590 where LTNK
+590 cell 65 41
+590 cell 65 40
+600 where HTNK
+600 where LTNK
+600 cell 65 41
+600 cell 65 40
+610 where HTNK
+610 where LTNK
+610 cell 65 41
+610 cell 65 40
+620 where HTNK
+620 where LTNK
+620 cell 65 41
+620 cell 65 40
+630 where HTNK
+630 where LTNK
+630 cell 65 41
+630 cell 65 40
+640 where HTNK
+640 where LTNK
+640 cell 65 41
+640 cell 65 40
+650 where HTNK
+650 where LTNK
+650 cell 65 41
+650 cell 65 40
+660 where HTNK
+660 where LTNK
+660 cell 65 41
+660 cell 65 40
+670 where HTNK
+670 where LTNK
+670 cell 65 41
+670 cell 65 40
+680 where HTNK
+680 where LTNK
+680 cell 65 41
+680 cell 65 40
+690 where HTNK
+690 where LTNK
+690 cell 65 41
+690 cell 65 40
+700 where HTNK
+700 where LTNK
+700 cell 65 41
+700 cell 65 40
+710 where HTNK
+710 where LTNK
+710 cell 65 41
+710 cell 65 40
+720 where HTNK
+720 where LTNK
+720 cell 65 41
+720 cell 65 40
+730 where HTNK
+730 where LTNK
+730 cell 65 41
+730 cell 65 40
+740 where HTNK
+740 where LTNK
+740 cell 65 41
+740 cell 65 40
+750 where HTNK
+750 where LTNK
+750 cell 65 41
+750 cell 65 40
+760 where HTNK
+760 where LTNK
+760 cell 65 41
+760 cell 65 40
+770 where HTNK
+770 where LTNK
+770 cell 65 41
+770 cell 65 40
+780 where HTNK
+780 where LTNK
+780 cell 65 41
+780 cell 65 40
+790 where HTNK
+790 where LTNK
+790 cell 65 41
+790 cell 65 40
+800 where HTNK
+800 where LTNK
+800 cell 65 41
+800 cell 65 40
+810 where HTNK
+810 where LTNK
+810 cell 65 41
+810 cell 65 40
+820 where HTNK
+820 where LTNK
+820 cell 65 41
+820 cell 65 40
+830 where HTNK
+830 where LTNK
+830 cell 65 41
+830 cell 65 40
+840 where HTNK
+840 where LTNK
+840 cell 65 41
+840 cell 65 40
+850 where HTNK
+850 where LTNK
+850 cell 65 41
+850 cell 65 40
+860 where HTNK
+860 where LTNK
+860 cell 65 41
+860 cell 65 40
+870 where HTNK
+870 where LTNK
+870 cell 65 41
+870 cell 65 40
+880 where HTNK
+880 where LTNK
+880 cell 65 41
+880 cell 65 40
+890 where HTNK
+890 where LTNK
+890 cell 65 41
+890 cell 65 40
+900 where HTNK
+900 where LTNK
+900 cell 65 41
+900 cell 65 40
+910 where HTNK
+910 where LTNK
+910 cell 65 41
+910 cell 65 40
+920 where HTNK
+920 where LTNK
+920 cell 65 41
+920 cell 65 40
+930 where HTNK
+930 where LTNK
+930 cell 65 41
+930 cell 65 40
+940 where HTNK
+940 where LTNK
+940 cell 65 41
+940 cell 65 40
+950 where HTNK
+950 where LTNK
+950 cell 65 41
+950 cell 65 40
+960 where HTNK
+960 where LTNK
+960 cell 65 41
+960 cell 65 40
+970 where HTNK
+970 where LTNK
+970 cell 65 41
+970 cell 65 40
+980 where HTNK
+980 where LTNK
+980 cell 65 41
+980 cell 65 40
+990 where HTNK
+990 where LTNK
+990 cell 65 41
+990 cell 65 40
+1000 where HTNK
+1000 where LTNK
+1000 cell 65 41
+1000 cell 65 40
+1200 quit
