@@ -2352,9 +2352,13 @@ static void Waypoint_Probe_Step(StepType const & step)
 		PlayerPtr->Place_Waypoint(coord);
 		DebugString("AUTOTEST   waypoint %d,%d selected path %d waypoints on it %d\n", step.X, step.Y, (int)PlayerPtr->SelectedPath, PlayerPtr->SelectedPath == PATH_NONE ? 0 : PlayerPtr->Paths[PlayerPtr->SelectedPath]->Waypoint_Count());
 	} else if (step.Command == "wpsend") {
-		// wpsend <any> x y: a click on the waypoint at that cell by the selected objects, with the path order a click makes on it.
-		Map.Active_Click(NULL, Cell(step.X, step.Y), ACTION_FOLLOW_WAYPOINT);
-		DebugString("AUTOTEST   wpsend %d,%d\n", step.X, step.Y);
+		// wpsend <move|attack> x y: a click on the waypoint at that cell by the selected objects. A move click is the
+		// move a click on the ground makes; an attack click is an attack on the object standing on the cell. Either
+		// goes through DisplayClass::Active_Click, which hands each object the path that holds the waypoint.
+		bool const attack = step.Argument == "attack";
+		TechnoClass * over = attack ? Techno_Over_Cell(Cell(step.X, step.Y)) : NULL;
+		Map.Active_Click(over, Cell(step.X, step.Y), attack ? ACTION_ATTACK : ACTION_MOVE);
+		DebugString("AUTOTEST   wpsend %s %d,%d over %s\n", attack ? "attack" : "move", step.X, step.Y, over != NULL ? over->TClass->Name() : "ground");
 	} else if (step.Command == "wpstate") {
 		// wpstate <TypeID>: each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status, ammo,
 		// the waypoint path it follows and the next waypoint, and its radio contact.

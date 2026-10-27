@@ -3998,6 +3998,14 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		PlayerPtr->Fetch_Waypoint_Data(waypoint, waypoint_path, waypoint_id);
 	}
 
+	// An attack on a waypoint is an attack on its path: the path starts at its first waypoint, so the legs before the attack run first.
+	if (waypoint_path != PATH_NONE && action == ACTION_ATTACK && !IsPlanningMode && Rule->WaypointAttackFromFirst && PlayerPtr->Paths[waypoint_path]->Waypoint_Count() > 0) {
+		cell = PlayerPtr->Paths[waypoint_path]->Get_Waypoint(0)->Location.As_Cell();
+		waypoint_id = 0;
+		object = NULL;
+		action = ACTION_MOVE;
+	}
+
 	for (index = 0; index < CurrentObject.Count(); index++) {
 		// A planning click leaves each unit's house waypoint path alone.
 		if (!IsPlanningMode) {

@@ -1,0 +1,51 @@
+; Waypoint mode (V): a move waypoint at 62,62, then an attack waypoint on the Construction Yard at 72,62, for six
+; Rhino tanks (HTNK). The path is followed from the first waypoint with a click on it (wpsend). The Rhinos should
+; drive to 62,62 first, and only then go on to the yard.
+; Expected AUTOTEST lines:
+;   frame 351: where HTNK shows mission Move toward 62,62, and the yard has full strength.
+;   after the first Move arrival, mission Attack with tarcom GACNST. The yard's strength falls only after that.
+30 command CenterBase
+300 grantunit HTNK 50 50
+300 grantunit HTNK 50 56
+300 grantunit HTNK 50 62
+300 grantunit HTNK 50 68
+300 grantunit HTNK 50 74
+300 grantunit HTNK 44 62
+305 reveal
+306 spawn GACNST 72 62
+310 view 60 62
+320 select HTNK
+321 selected
+330 selected
+330 command WaypointMode
+331 selected
+332 waypoint x 62 62
+334 waypoint x 72 62
+340 selected
+340 command WaypointMode
+341 selected
+342 select HTNK
+343 selected
+350 wpsend move 62 62
+351 where HTNK
+355 where HTNK
+360 where HTNK
+370 where HTNK
+380 where HTNK
+400 where HTNK
+420 where HTNK
+440 where HTNK
+460 where HTNK
+480 where HTNK
+500 where HTNK
+520 where HTNK
+540 where HTNK
+560 where HTNK
+600 where HTNK
+650 where HTNK
+700 where HTNK
+800 where GACNST
+1000 where GACNST
+1200 where HTNK
+1400 where HTNK
+1600 quit

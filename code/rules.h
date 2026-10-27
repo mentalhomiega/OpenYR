@@ -2806,6 +2806,13 @@ class RulesClass
 		bool AircraftWaypointReload;
 
 		/*
+		 * If true, a click that attacks a building or unit standing on a waypoint starts that path at its first
+		 * waypoint, so the legs before the attack run first. If false, the path starts at the clicked waypoint,
+		 * and the attack starts at once.
+		 */
+		bool WaypointAttackFromFirst;
+
+		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag
 		 * will be true. Otherwise the fog is dithered on, covering every other pixel in a
 		 * checkerboard so that half the terrain still shows through.

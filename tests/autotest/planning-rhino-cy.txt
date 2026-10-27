@@ -1,0 +1,61 @@
+; Planned move, then a planned attack on an enemy Construction Yard, for six Rhino tanks (HTNK). This is the
+; tester's case: the Rhinos should drive to 62,62 first, and only then fire at the yard at 72,62. The yard is
+; GACNST (a 3x3 structure) and is 10 cells past the move. The planned attack is given with forceattack, which
+; records the same planned order a plain click on the building makes. The commit is at frame 350.
+; Expected AUTOTEST lines:
+;   frame 340: planstate HTNK orders 2 running 0 for each tank (both legs recorded, none run).
+;   frame 351: planstate HTNK orders 1 running 1 mission 2 (the move leg runs, the attack leg waits).
+;   frames 352 to 420: each HTNK is on mission Move until it reaches 62,62, and the yard keeps full strength.
+;   after that: the HTNK lines show mission Attack with tarcom GACNST, and the yard's strength falls.
+30 command CenterBase
+300 grantunit HTNK 50 50
+300 grantunit HTNK 50 56
+300 grantunit HTNK 50 62
+300 grantunit HTNK 50 68
+300 grantunit HTNK 50 74
+300 grantunit HTNK 44 62
+305 reveal
+306 spawn GACNST 72 62
+310 view 60 62
+320 select HTNK
+330 planning 1
+335 planmove HTNK 62 62
+336 forceattack HTNK 72 62
+340 planstate HTNK
+350 planning 0
+351 planstate HTNK
+355 where HTNK
+360 where HTNK
+362 where GACNST
+365 where HTNK
+370 where HTNK
+375 where HTNK
+380 where HTNK
+385 where HTNK
+390 where HTNK
+395 where HTNK
+400 where HTNK
+402 where GACNST
+405 where HTNK
+410 where HTNK
+415 where HTNK
+420 where HTNK
+425 where HTNK
+430 where HTNK
+440 where HTNK
+442 where GACNST
+460 where HTNK
+480 where HTNK
+500 where HTNK
+520 where HTNK
+540 where HTNK
+560 where HTNK
+580 where HTNK
+600 where HTNK
+650 where HTNK
+700 where HTNK
+800 where GACNST
+1000 where GACNST
+1200 where HTNK
+1400 where HTNK
+1600 quit
