@@ -351,7 +351,8 @@ SystemCursor=no
 | [`Renderer`](../manual/content/keys/renderer.md) | `0` | Which graphics interface the game draws through, as a number. | OpenTS |
 | [`RenderFrameRate`](../manual/content/keys/renderframerate.md) | `-1` | The most extra pictures per second the game draws between game frames. | OpenYR |
 | [`ScaleMode`](../manual/content/keys/scalemode.md) | `PixelArt` | How the picture is filtered when it is scaled into the window. | OpenTS |
-| [`ShowFPS`](../manual/content/keys/showfps--client-settings.md) | `no` | `ShowFPS=yes` draws a frame count in the top-left corner of the game view. | OpenYR |
+| [`ShowFPS`](../manual/content/keys/showfps--client-settings.md) | `no` | `ShowFPS=yes` draws the rendered and game frame rates in the top-left corner of the game view. | OpenYR |
+| [`ShowFrameGraph`](../manual/content/keys/showframegraph--client-settings.md) | `no` | `ShowFrameGraph=yes` draws a frame-time graph under the `ShowFPS` counts. | OpenYR |
 | [`SystemCursor`](../manual/content/keys/systemcursor--client-settings.md) | `yes` | `SystemCursor=yes` shows the Windows mouse pointer wherever the game would show its green arrow: over its menus and dialogs, and wherever no battlefield pointer is up. | OpenTS |
 | [`VSync`](../manual/content/keys/vsync.md) | `yes` | Whether the renderer waits for the display's refresh before showing a finished frame. | OpenTS |
 | [`WindowHeight`](../manual/content/keys/windowheight.md) | `-1` | The height of the drawable area of the game window, in pixels. | OpenTS |

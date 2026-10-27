@@ -48,6 +48,8 @@
 #include "gscreen.h"
 
 #include "_bench.h"
+#include "_convert.h"
+#include "convert.h"
 #include "_keyboar.h"
 #include "_map.h"
 #include "_rect.h"
@@ -394,6 +396,54 @@ static Rect Shown_Map_Part(Rect const & screen_part)
 }
 
 
+/// <summary>
+/// Draws the frame-time graph: one column for each gap between presents, newest at the right.
+/// A column is 1 pixel per millisecond, and a gap of 40 ms or more fills the graph's full height.
+/// Gaps that have not yet been recorded leave their columns black.
+/// </summary>
+/// <param name="surface">The surface the graph is drawn on.</param>
+/// <param name="origin">The top left corner of the graph.</param>
+static void Draw_Frame_Graph(Surface & surface, Point2D const & origin)
+{
+	constexpr int height = 40;
+	int const width = VIDEO_FRAME_TIME_HISTORY;
+
+	surface.Fill_Rect(Rect(origin.X, origin.Y, width, height), NormalDrawer->Convert_Pixel(TBLACK));
+
+	int const count = Video_Frame_Time_Count();
+	for (int index = 0; index < count; index++) {
+		int const bar = std::clamp((int)Video_Frame_Time(index), 1, height);
+		int const x = origin.X + width - count + index;
+		surface.Fill_Rect(Rect(x, origin.Y + height - bar, 1, bar), NormalDrawer->Convert_Pixel(WHITE));
+	}
+
+	Fancy_Text_Print("40 ms", surface, surface.Get_Rect(), Point2D(origin.X + width + 4, origin.Y), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+}
+
+
+/// <summary>
+/// Draws the ShowFPS counts at the top left of the game view.
+/// The first line is the rendered rate: the presents per second that reached the display in
+/// the last complete second. The second line is the game rate, the game frames run in the last
+/// 960 ms window (LastFramesPerSecond), which also gates the detail effects.
+/// </summary>
+/// <param name="surface">The surface the counts are drawn on.</param>
+static void Draw_Frame_Rates(Surface & surface)
+{
+	char buffer[32];
+
+	snprintf(buffer, sizeof(buffer), "Render %u FPS", Video_Presents_Per_Second());
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 4),Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+
+	snprintf(buffer, sizeof(buffer), "Game %u ticks/s", LastFramesPerSecond);
+	Fancy_Text_Print(buffer, surface, surface.Get_Rect(), Point2D(4, 14), Fetch_Scheme_By_Name("Grey"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+
+	if (Options.ShowFrameGraph) {
+		Draw_Frame_Graph(surface, Point2D(4, 26));
+	}
+}
+
+
 /***********************************************************************************************
  * GScreenClass::Render -- General drawing dispatcher an display update function.              *
  *                                                                                             *
@@ -518,9 +568,7 @@ void GScreenClass::Render(void)
 		}
 
 		if (Options.ShowFPS) {
-			char buffer[32];
-			snprintf(buffer, sizeof(buffer), "%u FPS", LastFramesPerSecond);
-			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(4, 4), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+			Draw_Frame_Rates(*LogicalSurface);
 		}
 
 		if (hud && ToolTips != NULL) {

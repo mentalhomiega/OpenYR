@@ -110,6 +110,13 @@ VideoScaleInfo const & Video_Get_Scale_Info(void);
 unsigned int Video_Presents_Per_Second(void);
 unsigned int Video_Present_Interval(void);
 
+// The frame-time history keeps the gaps between the last this many presents.
+constexpr int VIDEO_FRAME_TIME_HISTORY = 120;
+// Returns how many gaps the history holds now, at most VIDEO_FRAME_TIME_HISTORY.
+int Video_Frame_Time_Count(void);
+// Returns the gap in milliseconds at index, oldest first; index must be below Video_Frame_Time_Count().
+unsigned int Video_Frame_Time(int index);
+
 std::uint64_t Video_Present_Count(void);
 std::uint64_t Video_Frame_Upload_Count(void);
 
