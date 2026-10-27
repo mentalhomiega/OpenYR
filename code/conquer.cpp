@@ -551,8 +551,19 @@ void Call_Back(void)
 	**	Music and speech maintenance
 	*/
 	if (AudioEngine.Is_Available() && GameInFocus == true) {
-		AudioEngine.Sound_Callback();
-		Sound_Effect_AI();
+		// The loop runs this thousands of times a second when drawing is uncapped. Voices are serviced
+		// every 2 ms, and positional and ambient sounds about 60 times a second; gamemd refreshes them once per game frame.
+		static unsigned last_service;
+		static unsigned last_effects;
+		unsigned const now = AudioEngine.Now_Ms();
+		if (now - last_service >= 2) {
+			last_service = now;
+			AudioEngine.Sound_Callback();
+		}
+		if (now - last_effects >= 16) {
+			last_effects = now;
+			Sound_Effect_AI();
+		}
 		Theme.AI();
 		Speak_AI();
 	}
