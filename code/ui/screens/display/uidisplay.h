@@ -52,6 +52,7 @@ class UIDisplayServiceClass
 		virtual void Set_Classic_Menus(bool on) = 0;
 		virtual void Set_Modern_Interface(bool on) = 0;
 		virtual void Set_Sidebar_Rows(int rows) = 0;
+		virtual void Set_Sidebar_Opacity(int percent) = 0;
 		virtual void Set_Bitmap_System_Font(bool on) = 0;
 		virtual void Set_Show_FPS(bool on) = 0;
 		virtual void Set_Frame_Limit(int limit) = 0;
@@ -148,6 +149,8 @@ struct UIDisplayState
 	std::string GammaLabel;
 	std::vector<UIDisplayChoice> RowCounts;
 	int RowCount = 0;
+	// How solid the modern build panel's background is, in percent, from the SidebarOpacity setting.
+	int SidebarOpacity = 0;
 	// The screen the page starts on, used for the preview when no resolution is picked.
 	int ScreenWidth = 0;
 	int ScreenHeight = 0;
@@ -220,6 +223,7 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int InitialPlayerColors;
 		bool InitialScreenShake;
 		bool InitialScriptedCameraZoom;
+		int InitialSidebarOpacity;
 		// Whether a colour preview has been shown, and whether the page has put its colour back.
 		bool PreviewShown = false;
 		bool PreviewRestored = false;

@@ -85,6 +85,11 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Modern_Panel_Rows_Changed();
 		}
 
+		virtual void Set_Sidebar_Opacity(int percent) override
+		{
+			Options.SidebarOpacity = percent;
+		}
+
 		virtual void Set_Bitmap_System_Font(bool on) override
 		{
 			Options.BitmapSystemFont = on;
@@ -532,6 +537,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.DefaultPeakBrightness = HDR_Resolve_Peak(0, HDR_Current_Display().PeakNits, state.DefaultPaperWhite);
 	state.ScreenShake = Options.ScreenShake;
 	state.ScriptedCameraZoom = Options.ScriptedCameraZoom;
+	state.SidebarOpacity = Options.SidebarOpacity;
 
 	// The rows the current screen fits, from one up. The page starts on the saved count, or on the most
 	// the frame allows when the saved count is more.

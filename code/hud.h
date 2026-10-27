@@ -65,6 +65,7 @@ enum HudEnums {
 	HUD_TIP_PADDING=3,
 	HUD_BUTTON_SIZE=28,
 	HUD_BUTTON_GAP=4,
+	HUD_DEFAULT_OPACITY=80,	// The Sidebar opacity setting's default: the percent of the panel background that stays solid.
 	HUD_ICON_RADIUS=4		// The corner radius of the icons in the ui folder.
 };
 
@@ -136,6 +137,10 @@ void Draw_Hud_Fill(Surface & surface, Rect const & rect);
 // Draws the build panel's frame and its fixed wells onto the sidebar surface. The radar, power
 // bar, credits and buttons draw over it.
 void Draw_Hud_Panel(Surface & surface);
+
+// Copies a part of the sidebar surface onto the frame as the build panel. The panel's background is
+// blended over the map at Options.SidebarOpacity percent; the radar and the buttons are always opaque.
+void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source, Rect const & source_rect);
 
 // The text of a string table label, or the fallback when the table lacks it.
 std::string Panel_Text(char const * label, char const * fallback);

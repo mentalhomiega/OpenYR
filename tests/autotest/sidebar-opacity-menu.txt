@@ -1,0 +1,24 @@
+; The Sidebar opacity slider on the Graphics page of the settings, from the main menu. The slider sits under Sidebar rows
+; and is greyed out while the modern in-game interface is off, which the script shows before it is switched back on.
+; The page's Back button cancels the edit. The ui shot lines write .tga files to the game's Screenshots folder; the runner
+; copies only .png files, so convert them after the run.
+; Run from the repository root, at 1920 x 1080:
+;   scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sidebar-opacity-menu.txt -Menus -MenuStyle Modern -Width 1920 -Height 1080 -Seconds 60
+ui waitfor backdrop
+ui wait 2000
+ui press Options
+ui wait 1500
+ui click tab-graphics
+ui wait 1500
+ui shot graphics-opacity-80
+ui click modern-interface
+ui wait 800
+ui shot graphics-modern-off
+ui click modern-interface
+ui wait 800
+ui set sidebar-opacity 50
+ui wait 800
+ui shot graphics-opacity-50
+ui press Back
+ui wait 1500
+ui shot graphics-cancel
