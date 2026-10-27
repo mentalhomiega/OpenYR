@@ -72,6 +72,7 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "lstorm.h"
 #include "scenario.h"
 #include "theater.h"
 #include "emissive.h"
@@ -471,7 +472,7 @@ void GScreenClass::Render(void)
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
 	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
 	GpuWeather weather = GPU_WEATHER_NONE;
-	if (Options.Weather == WEATHER_RAIN) {
+	if (Options.Weather == WEATHER_RAIN || (Options.Weather == WEATHER_MAP && LightningStormClass::Is_Active())) {
 		weather = GPU_WEATHER_RAIN;
 	} else if (Options.Weather == WEATHER_SNOW || (Options.Weather == WEATHER_MAP && Scen != NULL && TheaterClass::As_Reference(Scen->Theater).IsArctic)) {
 		weather = GPU_WEATHER_SNOW;

@@ -46,8 +46,8 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
-// The weather the GPU map pass draws: Map snows on maps whose theater sets IsArctic and draws
-// nothing elsewhere, and Rain and Snow fall on every map.
+// The weather the GPU map pass draws: Map rains while a lightning storm rages, snows on maps whose
+// theater sets IsArctic and draws nothing elsewhere, and Rain and Snow fall on every map.
 enum WeatherMode {
 	WEATHER_NONE,
 	WEATHER_MAP,
