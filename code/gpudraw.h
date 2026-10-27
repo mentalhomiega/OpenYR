@@ -145,6 +145,10 @@ void GpuDraw_Line_End(void);
 // Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
 void GpuDraw_Add_Shockwave(Coord const & coord, int strength);
 
+// Lights the sky of the GPU-drawn map for a moment, as a lightning bolt does, unless the last flash was
+// under 45 frames ago; only rain shows it.
+void GpuDraw_Add_Flash(void);
+
 // The gpureplay autotest step.
 void GpuDraw_Set_Replay_Check(bool enabled);
 

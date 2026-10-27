@@ -661,6 +661,33 @@ void GpuDraw_Add_Shockwave(Coord const & coord, int strength)
 }
 
 
+static int _FlashFrame = -1;
+static int const FLASH_FRAMES = 8;
+
+// Bolts in a storm land several times a second, so flashes closer together than this are skipped
+// to keep the picture from strobing.
+static int const FLASH_GAP = 45;
+
+
+void GpuDraw_Add_Flash(void)
+{
+	if (_FlashFrame < 0 || Frame < _FlashFrame || Frame - _FlashFrame >= FLASH_GAP) {
+		_FlashFrame = Frame;
+	}
+}
+
+
+// How bright the last lightning flash still is, from 1 as it strikes down to 0.
+static float Flash_Amount(void)
+{
+	if (_FlashFrame < 0 || Frame < _FlashFrame || Frame - _FlashFrame >= FLASH_FRAMES) {
+		return(0.0f);
+	}
+	float const fade = 1.0f - (float)(Frame - _FlashFrame) / FLASH_FRAMES;
+	return(fade * fade);
+}
+
+
 // Logs a GPU_RENDER line every 600 passes: how many the GPU drew and how many fell back to software.
 static void Count_Render(bool drawn)
 {
@@ -746,6 +773,7 @@ static bool Finish_Render(Surface & target)
 		pass.Ripples = &ripples;
 		pass.WorldX = TacticalMap->TacPixelX + _Area.X - TacticalRect.X;
 		pass.WorldY = TacticalMap->TacPixelY + _Area.Y - TacticalRect.Y;
+		pass.Flash = Flash_Amount();
 		if (GpuMap_Draw(pass)) {
 			Count_Render(true);
 			_CleanPasses++;

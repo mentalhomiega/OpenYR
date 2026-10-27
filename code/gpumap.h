@@ -80,6 +80,9 @@ struct GpuMapPass
 	// shadows fixed to the ground as the view moves.
 	int WorldX = 0;
 	int WorldY = 0;
+
+	// How bright a lightning flash lights the sky, from 0 to 1.
+	float Flash = 0.0f;
 };
 
 

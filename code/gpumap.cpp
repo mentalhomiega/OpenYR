@@ -938,7 +938,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
 		bgfx::setUniform(_RippleInfoUniform, info);
 		bgfx::setUniform(_WorldUniform, world);
-		float const falling[4] = { weather ? (float)_Weather : 0.0f, _WeatherStrength / 100.0f, 0.0f, 0.0f };
+		float const falling[4] = { weather ? (float)_Weather : 0.0f, _WeatherStrength / 100.0f, pass.Flash, 0.0f };
 		bgfx::setUniform(_WeatherUniform, falling);
 		bgfx::setVertexBuffer(0, &buffer, 0, 6);
 		bgfx::setTexture(0, _SceneSampler, _TargetTexture);

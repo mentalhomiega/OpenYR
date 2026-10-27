@@ -7,7 +7,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 //   u_rippleinfo    x: ring count, yz: area size, w: glow strength (0 for none)
 //   u_world         xy: map position of the area's top left pixel, z: time in seconds, w: how much a cloud
 //                   darkens the picture (0 for no clouds)
-//   u_weather       x: 1 for rain, 2 for snow, 0 for neither, y: how much falls, from 0 to 4
+//   u_weather       x: 1 for rain, 2 for snow, 0 for neither, y: how much falls, from 0 to 4,
+//                   z: how bright a lightning flash lights the picture under rain, from 0 to 1
 
 #include "bgfx_shader.sh"
 
@@ -135,6 +136,7 @@ void main()
 		// Rain dims the picture a little, as under an overcast sky.
 		rgb *= 1.0 - 0.06 * min(u_weather.y, 2.0);
 		rgb = mix(rgb, vec3(0.72, 0.78, 0.86), Rain(p, u_world.xy, u_world.z, u_weather.y));
+		rgb = rgb * (1.0 + 0.7 * u_weather.z) + vec3(0.05, 0.05, 0.07) * u_weather.z;
 	}
 	gl_FragColor = vec4(rgb, colour.a);
 }
