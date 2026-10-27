@@ -1285,6 +1285,12 @@ void EventClass::Execute(void)
 				techno->Assign_Destination(NULL);
 				techno->Assign_Target(NULL);
 
+				// A stop ends a magnetron's hold. gamemd gets there when its attack mission finds no target (FootClass::Mission_Attack, 0x4D4DC0,
+				// into UnitClass::EnterIdleMode, 0x738970, which releases the vehicle); this stop sets the guard mission at once.
+				if (techno->LocomotorTarget != NULL && techno->CurrentMission == MISSION_ATTACK) {
+					techno->Release_Locomotor(true);
+				}
+
 				// A spawner's missiles still on the pad are released (EventClass::Execute, 0x4C6CB0).
 				if (techno->SpawnManager) {
 					techno->SpawnManager->Reset_Target();
