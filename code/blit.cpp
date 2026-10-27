@@ -137,6 +137,8 @@ bool From_Buffer(Surface & surface, Rect const & rect, Buffer const & buffer)
 
 
 void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels) = NULL;
+void (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha) = NULL;
+void (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha) = NULL;
 
 
 /***********************************************************************************************
@@ -311,6 +313,9 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (drect.Width * dest.Bytes_Per_Pixel() == dest.Stride() && dest.Stride() == source.Stride()) {
 
 		int length = std::min(srect.Height*srect.Width, drect.Height*drect.Width);
+		if (Blit_Record_Bit != NULL) {
+			Blit_Record_Bit(dest, blitter, 0, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, alpha);
+		}
 		if (overlapped) {
 			blitter.BlitBackward(dbuffer, sbuffer, length);
 		} else {
@@ -353,6 +358,13 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		**	This perform a line-by-line pixel copy.
 		*/
 		int height = std::min(srect.Height, drect.Height);
+		if (Blit_Record_Bit != NULL) {
+			if (overlapped) {
+				Blit_Record_Bit(dest, blitter, 0, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, alpha);
+			} else {
+				Blit_Record_Bit(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, (unsigned char const *)sbuffer, sstride, current_z, z_fraction, z_step_numerator, z_step_denominator, gradient->WrapIncrement, alpha);
+			}
+		}
 		if (overlapped) {
 			for (int y = 0; y < height; y++) {
 				blitter.BlitBackward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha);
@@ -611,6 +623,9 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		}
 	}
 
+	if (Blit_Record_RLE != NULL) {
+		Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
+	}
 	for (int y = 0; y < height; y++) {
 
 		/*

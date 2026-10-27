@@ -34,6 +34,23 @@
 #include "win.h" // for NULL
 
 
+class AlphaLightingRemapClass;
+
+/*
+**	What a blitter does to each pixel, for a renderer that draws the blit itself. Translator is the
+**	16-bit table indexed by the pixel value (plus the lighting band when AlphaRemap is set); Mask is the
+**	channel mask the darken and translucent kinds apply.
+*/
+struct BlitDesc {
+	enum KindType { XLAT, DARKEN, LUCENT25, LUCENT50, LUCENT75 };
+	KindType Kind;
+	bool ZRead;
+	unsigned short const * Translator;
+	AlphaLightingRemapClass * AlphaRemap;
+	unsigned short Mask;
+};
+
+
 /*
 **	This is the interface class to the blitter object. The blitter object handles moving
 **	pixels. That's all it does. For every type of pixel translation, there should be a
@@ -63,6 +80,9 @@ class Blitter {
 		**	as such, you should call the appropriate blit routine rather than letting this
 		**	routine perform the check and call.
 		*/
+		// Fills desc and returns true for the kinds a GPU renderer can draw; false for every other kind.
+		virtual bool Describe(BlitDesc & desc) const {return(false);}
+
 		void Blit(void * dest, void const * source, int length) const {if (dest < source) BlitBackward(dest, source, length); else BlitForward(dest, source, length);}
 };
 
@@ -83,4 +103,7 @@ class RLEBlitter {
 		**	must begin at the start of the compressed data sequence.
 		*/
 		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const = 0;
+
+		// Fills desc and returns true for the kinds a GPU renderer can draw; false for every other kind.
+		virtual bool Describe(BlitDesc & desc) const {return(false);}
 };

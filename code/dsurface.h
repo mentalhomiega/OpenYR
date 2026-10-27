@@ -48,6 +48,10 @@ enum DSurfaceColorMode {
 // A concrete surface whose pixels are a GDI device independent bitmap in system memory.
 // The bitmap is permanently selected into a memory device context, so the surface can be
 // drawn to either as raw 16 bit pixels through Lock or with GDI through GetDC.
+// Called with the surface at each lock of a DSurface while set; the GPU draw recorder sets it.
+extern void (*Surface_Lock_Hook)(Surface const * surface);
+
+
 class DSurface : public XSurface
 {
 		typedef XSurface BASECLASS;

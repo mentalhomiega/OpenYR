@@ -360,6 +360,9 @@ int DSurface::Stride(void) const
  * HISTORY:                                                                                    *
  *   02/07/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
+void (*Surface_Lock_Hook)(Surface const * surface) = NULL;
+
+
 void * DSurface::Lock(Point2D point) const
 {
 	if (GDIBuffer == NULL) return(NULL);
@@ -367,6 +370,9 @@ void * DSurface::Lock(Point2D point) const
 
 	BASECLASS::Lock();
 	Video_Draw_Probe_Note_Lock(this);
+	if (Surface_Lock_Hook != NULL) {
+		Surface_Lock_Hook(this);
+	}
 	return(((char *)GDIBuffer) + point.Y * Stride() + point.X * Bytes_Per_Pixel());
 }
 

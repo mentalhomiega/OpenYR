@@ -226,6 +226,7 @@
 **	presentdigest <0|1>		1 logs a PRESENT_DIGEST line at each present: the game frame, the present index, and a hash of the frame and the map layer; 0 stops the lines
 **	drawdigest <0|1>		1 logs a DRAW_DIGEST line at each draw of the map view: the game frame, the draw index, and a hash of the map view's pixels; 0 stops the lines
 **	drawprobe <0|1>		1 counts the call stacks that lock the map view during its foreground pass; 0 logs a DRAW_PROBE line per stack with its count
+**	gpureplay <0|1>		1 records each object pass of the map view and logs a GPU_REPLAY line comparing a replay of the record with it; 0 stops
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
 **	loadshot <name>			saves what the window shows each time a loading screen is
@@ -272,6 +273,7 @@
 #include "event.h"
 #include "globals.h"
 #include "goptions.h"
+#include "gpudraw.h"
 #include "hangwatch.h"
 #include "house.h"
 #include "houstype.h"
@@ -5109,6 +5111,11 @@ void Run(StepType const & step)
 		bool const on = std::atoi(step.Argument.c_str()) != 0;
 		Video_Set_Draw_Digest(on);
 		DebugString("AUTOTEST drawdigest %d\n", (int)on);
+	} else if (step.Command == "gpureplay") {
+		// gpureplay <0|1>: 1 records each object pass of the map view and logs how far a replay of the record is from it.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		GpuDraw_Set_Replay_Check(on);
+		DebugString("AUTOTEST gpureplay %d\n", (int)on);
 	} else if (step.Command == "drawprobe") {
 		// drawprobe <0|1>: 1 counts the call stacks that lock the map view in its foreground pass; 0 logs them.
 		bool const on = std::atoi(step.Argument.c_str()) != 0;

@@ -47,6 +47,8 @@
 
 #include "gscreen.h"
 
+#include "gpudraw.h"
+
 #include "_bench.h"
 #include "_keyboar.h"
 #include "_map.h"
@@ -449,7 +451,9 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
+	GpuDraw_Begin(*CompositeSurface, TacticalRect);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	GpuDraw_End();
 	Video_Draw_Probe_Target(NULL);
 	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);

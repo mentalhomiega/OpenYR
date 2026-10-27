@@ -163,6 +163,13 @@ class RLEBlitTransXlatAlpha : public RLEBlitter
 			}
 		}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, false, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)0};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 		AlphaLightingRemapClass *AlphaLightingRemap;
@@ -228,6 +235,13 @@ class RLEBlitTransXlatAlphaZRead : public RLEBlitter
 				zp = Blit_Wrap_Z_Buffer(zp);
 				ap = Blit_Wrap_A_Buffer(ap);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)0};
+			return(true);
 		}
 
 	private:
@@ -1165,6 +1179,13 @@ class RLEBlitTransDarken : public RLEBlitter {
 			}
 		}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::DARKEN, false, (unsigned short const *)NULL, NULL, (unsigned short)Mask};
+			return(true);
+		}
+
 	private:
 		T Mask;
 };
@@ -1220,6 +1241,13 @@ class RLEBlitTransDarkenZRead : public RLEBlitter
 				}
 				zp = Blit_Wrap_Z_Buffer(zp);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::DARKEN, true, (unsigned short const *)NULL, NULL, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:
@@ -1450,6 +1478,13 @@ class RLEBlitTransLucent50AlphaZRead : public RLEBlitter
 				zp = Blit_Wrap_Z_Buffer(zp);
 				ap = Blit_Wrap_A_Buffer(ap);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT50, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:
@@ -1939,6 +1974,13 @@ class RLEBlitTransLucent25AlphaZRead : public RLEBlitter
 				zp = Blit_Wrap_Z_Buffer(zp);
 				ap = Blit_Wrap_A_Buffer(ap);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT25, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:
@@ -2433,6 +2475,13 @@ class RLEBlitTransLucent75AlphaZRead : public RLEBlitter
 				zp = Blit_Wrap_Z_Buffer(zp);
 				ap = Blit_Wrap_A_Buffer(ap);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT75, true, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:
