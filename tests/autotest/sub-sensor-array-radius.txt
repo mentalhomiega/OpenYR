@@ -19,7 +19,7 @@
 250 cell 60 62
 250 cell 70 64
 300 view 68 60
-305 windowshot sub-sensor-radius-psychic
+305 command ScreenCapture
 320 where SUB
 320 cell 60 62
 320 cell 70 64
