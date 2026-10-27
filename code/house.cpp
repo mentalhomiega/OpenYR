@@ -1873,7 +1873,12 @@ void HouseClass::AI(void)
 			}
 		} else if (ProductionMode == UNITS) {
 			AI_Unit();
-			if (BuildUnit == UNIT_NONE || !Is_Harvester_Unit(UnitTypes[BuildUnit])) {
+			// gamemd (HouseClass::Update, 0x4F8440, production state 2) holds back infantry and aircraft only while the
+			// vehicle on order is the first harvester the country may own. A country with none, Yuri's, always orders
+			// them: its slave miner is not that harvester, and treating it as one kept a house that was waiting on a
+			// slave miner from ordering anything else.
+			UnitTypeClass const * country_harvester = Country_Harvester();
+			if (country_harvester == NULL || BuildUnit != country_harvester->HeapID) {
 				AI_Infantry();
 				AI_Aircraft();
 			}
