@@ -8045,6 +8045,9 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 		} else {
 			if (RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface) {
 				converter = EightBitDrawer;
+			} else if (RTTI == RTTI_BUILDING && Palette_Converter() != NULL) {
+				// TechnoClass::GetDrawer (0x705D70) answers with the type's Palette= before anything else.
+				converter = Palette_Converter();
 			} else if (Is_Disguised_To_Player()) {
 				converter = Effect_Converter(ColorSchemes[House_Display_Scheme(DisguiseHouse)]);
 			} else {

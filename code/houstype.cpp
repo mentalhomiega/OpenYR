@@ -44,7 +44,11 @@
 #include "houstype.h"
 
 #include "airctype.h"
+#include "campaign.h"
+#include "ccfile.h"
 #include "ccini.h"
+#include "_deploymentconfig.h"
+#include "deploymentconfig.h"
 #include "crc.h"
 #include "dbgprint.h"
 #include "findmake.h"
@@ -57,6 +61,9 @@
 #include "tracker.h"
 #include "unittype.h"
 #include "vector.h"
+
+#include <string>
+#include <vector>
 
 /***********************************************************************************************
  * HouseTypeClass::HouseTypeClass -- Constructor for house type objects.                       *
@@ -473,6 +480,61 @@ ClassID HouseTypeClass::Class_ID(void) const
 HouseTypeClass * HouseTypeClass::Find_Or_Make(char const * ininame)
 {
 	return(TFind_Or_Make<HouseTypeClass>(ininame, HouseTypes));
+}
+
+
+namespace
+{
+
+// The countries in the order a Red Alert 2 mission numbers them: Red Alert 2's own list, then the mission's [Countries].
+// Empty unless the running mission is a Red Alert 2 one.
+std::vector<std::string> RA2_Country_Order;
+
+}
+
+
+/// <summary>
+/// Learns the country numbering a Red Alert 2 mission uses. Red Alert 2 lists 13 countries and Yuri's Revenge lists 14,
+/// with YuriCountry inserted at 9, so a mission's house number from 9 up names a different country in Yuri's Revenge.
+/// Without a Red Alert 2 mission, or without the rules file RA2Rules= names, numbers are left as written.
+/// </summary>
+/// <param name="scenario">The mission's INI, whose [Countries] follow Red Alert 2's list.</param>
+void HouseTypeClass::Prepare_RA2_Numbering(CCINIClass const & scenario)
+{
+	RA2_Country_Order.clear();
+	if (!Scenario_Is_From_RA2()) {
+		return;
+	}
+
+	CCFileClass file(DeploymentConfig.RA2RulesFile.c_str());
+	CCINIClass rules;
+	if (!file.Is_Available() || !rules.Load(file, false)) {
+		DebugString("RA2 mission: %s is missing, so its house numbers are read as Yuri's Revenge's.\n", DeploymentConfig.RA2RulesFile.c_str());
+		return;
+	}
+
+	static char const * const COUNTRIES = "Countries";
+	CCINIClass const * const lists[] = {&rules, &scenario};
+	for (CCINIClass const * ini : lists) {
+		int const count = ini->Entry_Count(COUNTRIES);
+		for (int index = 0; index < count; index++) {
+			RA2_Country_Order.push_back(ini->Get_String(COUNTRIES, ini->Get_Entry(COUNTRIES, index)));
+		}
+	}
+}
+
+
+/// <summary>
+/// Converts a house number written for Red Alert 2 into the country it names here.
+/// A number outside Red Alert 2's list, and every number outside a Red Alert 2 mission, is returned as it is.
+/// </summary>
+HousesType HouseTypeClass::From_RA2_Number(HousesType number)
+{
+	if (number < 0 || number >= (int)RA2_Country_Order.size()) {
+		return(number);
+	}
+	HousesType const type = From_Name(RA2_Country_Order[number].c_str());
+	return(type == HOUSE_NONE ? number : type);
 }
 
 

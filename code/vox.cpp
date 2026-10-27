@@ -1006,29 +1006,19 @@ void Set_Speech_State(bool state)
 }
 
 
-/// <summary>
-/// Reads the announcer's lines from the file the deployment names, EVAMD.INI by default, as
-/// Yuri's Revenge does at startup. Each name in [DialogList] is a section that names the
-/// line's sample for the Allied, Russian and Yuri voices and may set its Type, Priority and
-/// Volume. Without the file the Tiberian Sun speech files are spoken instead.
-/// </summary>
-void Load_Eva(void)
+// Adds the lines of one announcer file to the list. With only_new, a line whose name the list already holds is left
+// out, so a name keeps the line it had and the numbers a mission gives lines stay the same.
+static void Append_Eva_Lines(CCINIClass const & ini, bool only_new)
 {
-	EvaLines.clear();
-	std::fill(VoiceLines, VoiceLines + VOX_COUNT, -1);
-
-	CCINIClass ini;
-	CCFileClass file(DeploymentConfig.EvaFile.c_str());
-	if (!file.Is_Available() || !ini.Load(file, false)) {
-		return;
-	}
-
 	static char const * const LIST = "DialogList";
 	static char const * const _sides[3] = {"Allied", "Russian", "Yuri"};
 	int const count = ini.Entry_Count(LIST);
 	for (int index = 0; index < count; index++) {
 		EvaLineType line;
 		line.Name = ini.Get_String(LIST, ini.Get_Entry(LIST, index));
+		if (only_new && Eva_Line(line.Name.c_str()) >= 0) {
+			continue;
+		}
 		char const * section = line.Name.c_str();
 		for (int side = 0; side < 3; side++) {
 			// The game keeps eight characters of a sample's name.
@@ -1049,6 +1039,33 @@ void Load_Eva(void)
 
 		line.Volume = (float)ini.Get_Float(section, "Volume", 1.0);
 		EvaLines.push_back(line);
+	}
+}
+
+
+/// <summary>
+/// Reads the announcer's lines from the file the deployment names, EVAMD.INI by default, as
+/// Yuri's Revenge does at startup, and then adds the lines of the file RA2Eva= names that the first lacks, which
+/// the Red Alert 2 missions speak. Each name in [DialogList] is a section that names the
+/// line's sample for the Allied, Russian and Yuri voices and may set its Type, Priority and
+/// Volume. Without the file the Tiberian Sun speech files are spoken instead.
+/// </summary>
+void Load_Eva(void)
+{
+	EvaLines.clear();
+	std::fill(VoiceLines, VoiceLines + VOX_COUNT, -1);
+
+	CCINIClass ini;
+	CCFileClass file(DeploymentConfig.EvaFile.c_str());
+	if (!file.Is_Available() || !ini.Load(file, false)) {
+		return;
+	}
+	Append_Eva_Lines(ini, false);
+
+	CCINIClass ra2;
+	CCFileClass ra2_file(DeploymentConfig.RA2EvaFile.c_str());
+	if (ra2_file.Is_Available() && ra2.Load(ra2_file, false)) {
+		Append_Eva_Lines(ra2, true);
 	}
 
 	for (VoiceEvaType const & entry : VoiceEva) {

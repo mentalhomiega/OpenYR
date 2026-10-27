@@ -1,0 +1,23 @@
+; Campaign progression check for Boot Camp day 1 (Red Alert 2): wins it as win-trn01.txt does, then carries on past the win so day 2
+; (TRN02T.MAP) is read. The map names GDI2A.MAP as its successor, which does not exist, so the campaign list picks the mission.
+; continuewin keeps the game running past the game over line. Day 2 waits at its briefing, so the run ends when -Seconds runs out;
+; the log shows "Starting scnenario: TRN02T.MAP" after the win.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-trn01-next.txt -Campaign -Map TRN01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST +(win|game over)|Starting scnenario|MapSelect|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+0 continuewin
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+100 killtag 07B784AC
+110 killtag 0893EAEC
+300 killtag 07CFF60C
+1500 quit
