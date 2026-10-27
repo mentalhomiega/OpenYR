@@ -35,6 +35,10 @@
 #include "win.h"
 #include "xsurface.h"
 
+#include <cstddef>
+#include <utility>
+#include <vector>
+
 
 enum DSurfaceColorMode {
 	COLORMODE_INVALID = -1,
@@ -63,6 +67,12 @@ class DSurface : public XSurface
 		**	Constructs a working surface (not visible).
 		*/
 		DSurface(int width, int height);
+
+		/*
+		 * Constructs a working surface whose written pages Written_Runs lists. It has no
+		 * device context, so GetDC yields NULL and a stretched blit from it runs in software.
+		 */
+		DSurface(int width, int height, bool watched);
 
 		/*
 		**	Get/Release a windows device context for the surface pixels.
@@ -118,6 +128,10 @@ class DSurface : public XSurface
 		 */
 		unsigned Change_Count(void) const {return(Changes);}
 
+		// Fills runs with the byte ranges of Get_Buffer written since the last call and starts
+		// listing anew. False means the surface does not list its writes, so every byte counts as written.
+		bool Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
+
 		/*
 		**	Queries information about the surface.
 		*/
@@ -128,7 +142,7 @@ class DSurface : public XSurface
 		 * This surface owns a device context, so GetDC yields one that draws on these
 		 * same pixels.
 		 */
-		virtual bool Is_GDI_Backed(void) const override {return(true);}
+		virtual bool Is_GDI_Backed(void) const override {return(!IsWatched);}
 
 		virtual bool Can_Blit(void) const;
 
@@ -194,6 +208,9 @@ class DSurface : public XSurface
 		 */
 		void * GDIBuffer;
 		int Pitch;
+
+		// The pixels came from WriteWatch_Alloc instead of a bitmap.
+		bool IsWatched;
 
 		mutable unsigned Changes;
 

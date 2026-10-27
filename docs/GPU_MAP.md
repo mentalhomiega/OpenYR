@@ -22,7 +22,9 @@ tiles that no later tile, extra tile image or opaque draw in the layer covers, a
 ripples the ground only there, before it draws the objects. A shadow on the water ripples with it.
 
 After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
-GPU reads it from the tile layer directly, and only when that layer has changed. If a pass then
+GPU reads it from the tile layer directly, and only when that layer has changed. On Windows the
+tile layer lists the memory pages written to it, so a changed layer is compared only on the rows
+written since the last pass; elsewhere the whole layer is compared. If a pass then
 falls back to software, the draws the recorder does not hold are missing from that one frame, and
 the copy resumes until the GPU has again drawn 30 passes in a row.
 
@@ -83,7 +85,8 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   `CloudShadows` and `Weather=Snow` 244, and with every effect on 230; no effect added more than half a millisecond of processor time to a picture. Each pass uploads only
   the rows of the base picture, the depth buffer and the alpha buffer that changed since the last
   drawn pass. Outside Windows the depth and alpha buffers cannot list the pages written to them,
-  so those two go up whole every pass.
+  so those two go up whole every pass. With the frame rate uncapped (`FrameRateLimit=0`, `VSync=no`)
+  the same benchmark drew about 507 pictures per second with `GpuRender` and 154 in software.
 
 ## Rebuilding the shaders
 

@@ -57,8 +57,10 @@
 #include "misc.h"
 #include "shadowplane.h"
 #include "video.h"
+#include "writewatch.h"
 
 #include <algorithm>
+#include <cstring>
 #include <math.h>
 #include <utility>
 
@@ -115,6 +117,12 @@ static unsigned Next_Change(void)
  *   02/07/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 DSurface::DSurface(int width, int height) :
+	DSurface(width, height, false)
+{
+}
+
+
+DSurface::DSurface(int width, int height, bool watched) :
 	BASECLASS(width, height),
 	BytesPerPixel(2),
 	IsPrimary(false),
@@ -123,8 +131,17 @@ DSurface::DSurface(int width, int height) :
 	GDIOldBitmap(NULL),
 	GDIBuffer(NULL),
 	Pitch(0),
+	IsWatched(watched),
 	Changes(Next_Change())
 {
+	if (watched) {
+		// The same row layout a bitmap would have, so the pixels are addressed the same way.
+		Pitch = (width * 2 + 3) & ~3;
+		GDIBuffer = WriteWatch_Alloc((std::size_t)Pitch * height);
+		std::memset(GDIBuffer, 0, (std::size_t)Pitch * height);
+		return;
+	}
+
 	/*
 	 * BITMAPINFO carries room for a single color entry, but a bitfields bitmap is
 	 * described by three masks following the header, so the header is declared with
@@ -176,6 +193,16 @@ DSurface::DSurface(int width, int height) :
 }
 
 
+bool DSurface::Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const
+{
+	if (!IsWatched) {
+		runs.clear();
+		return(false);
+	}
+	return(WriteWatch_Take(GDIBuffer, (std::size_t)Pitch * Get_Height(), runs));
+}
+
+
 /***********************************************************************************************
  * DSurface::~DSurface -- Destructor for a direct draw surface object.                         *
  *                                                                                             *
@@ -214,6 +241,9 @@ DSurface::~DSurface(void)
 		GDIBitmap = NULL;
 	}
 
+	if (IsWatched) {
+		WriteWatch_Free(GDIBuffer);
+	}
 	GDIBuffer = NULL;
 }
 

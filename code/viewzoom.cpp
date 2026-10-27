@@ -194,7 +194,7 @@ void Allocate_Map_Surfaces(void)
 	int const height = TacticalRect.Y + TacticalRect.Height;
 	MapCompositeSurface = new DSurface(width, height);
 	MapCompositeSurface->Fill(0);
-	MapTileSurface = new DSurface(width, height);
+	MapTileSurface = new DSurface(width, height, true);
 	MapTileSurface->Fill(0);
 	DebugString("Map surfaces %dx%d for zoom %.2f\n", width, height, ViewZoom);
 }

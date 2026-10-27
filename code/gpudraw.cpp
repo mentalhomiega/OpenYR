@@ -397,19 +397,35 @@ static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned
 
 
 // Brings pixels up to the area's pixels, flagging in changed each row that differed; a picture of
-// another size is read whole with every row flagged.
-static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels, std::vector<unsigned char> & changed)
+// another size is read whole with every row flagged. With written, the byte ranges of the surface
+// written since pixels last matched it, only the rows they touch are compared.
+static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels, std::vector<unsigned char> & changed, std::vector<std::pair<std::size_t, std::size_t>> const * written = NULL)
 {
 	std::size_t const width = (std::size_t)area.Width;
 	if (pixels.size() != width * area.Height || (int)changed.size() != area.Height) {
 		changed.assign(area.Height, 1);
 		return(Read_Area(surface, area, pixels));
 	}
+	static std::vector<unsigned char> touched;
+	if (written != NULL) {
+		touched.assign(area.Height, 0);
+		std::size_t const stride = (std::size_t)surface.Stride();
+		for (auto const & run : *written) {
+			int const first = std::max(0, (int)(run.first / stride) - area.Y);
+			int const end = std::min(area.Height, (int)((run.second + stride - 1) / stride) - area.Y);
+			for (int r = first; r < end; r++) {
+				touched[r] = 1;
+			}
+		}
+	}
 	char const * base = (char const *)surface.Lock(Point2D(area.X, area.Y));
 	if (base == NULL) {
 		return(false);
 	}
 	for (int r = 0; r < area.Height; r++) {
+		if (written != NULL && touched[r] == 0) {
+			continue;
+		}
 		void const * row = base + r * surface.Stride();
 		unsigned short * copy = &pixels[r * width];
 		if (std::memcmp(copy, row, width * sizeof(unsigned short)) != 0) {
@@ -729,8 +745,11 @@ static bool Finish_Render(Surface & target)
 	bool const same = tiles != NULL && tiles == _BaseTiles && tiles->Change_Count() == _BaseTilesCount
 		&& base.size() == (std::size_t)_Area.Width * _Area.Height && (int)changed.size() == _Area.Height;
 	if (!same) {
+		// Base matches the watched tile layer as of the last read, so only what was written since needs comparing.
+		static std::vector<std::pair<std::size_t, std::size_t>> written;
+		bool const listed = tiles != NULL && tiles->Written_Runs(written) && tiles == _BaseTiles;
 		_BaseTiles = NULL;
-		if (!Read_Changes(tilesleft ? *TileSurface : target, _Area, base, changed)) {
+		if (!Read_Changes(tilesleft ? *TileSurface : target, _Area, base, changed, listed ? &written : NULL)) {
 			return(false);
 		}
 		if (tiles != NULL) {
