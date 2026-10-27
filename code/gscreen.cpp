@@ -82,20 +82,67 @@
 #include "video.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
 
-// Composite surface rows written since an event, from the surface's write watch. Known is false when
-// any row may have been written.
+// Composite surface pixels written since an event, from the surface's write watch: for each row, a mask
+// of the column blocks written. Known is false when any pixel may have been written.
 struct CompositeRows {
-	std::vector<unsigned char> Rows;
+	std::vector<std::uint32_t> Rows;
+	int BlockWidth = 1;
 	bool Known = false;
 
-	void Restart(int height)
+	static int Block_Width(int width) { return(std::max(64, (width + 31) / 32)); }
+
+	void Restart(int height, int width)
 	{
 		Rows.assign((size_t)std::max(height, 0), 0);
+		BlockWidth = Block_Width(width);
 		Known = true;
+	}
+
+	// Passes each written part of area to each, as rectangles that join the rows written in the same blocks.
+	template<class F>
+	void For_Each_Rect(Rect const & area, F each) const
+	{
+		int const left = std::max(area.X, 0);
+		int const right = area.X + area.Width;
+		if (right <= left) {
+			return;
+		}
+		int const first = left / BlockWidth;
+		int const last = std::min((right - 1) / BlockWidth, 31);
+		std::uint32_t const area_mask = (last >= 31 ? ~std::uint32_t(0) : (std::uint32_t(1) << (last + 1)) - 1) & ~((std::uint32_t(1) << first) - 1);
+		int const bottom = std::min(area.Y + area.Height, (int)Rows.size());
+		int y = std::max(area.Y, 0);
+		while (y < bottom) {
+			std::uint32_t const mask = Rows[y] & area_mask;
+			if (mask == 0) {
+				y++;
+				continue;
+			}
+			int const top = y;
+			while (y < bottom && (Rows[y] & area_mask) == mask) {
+				y++;
+			}
+			for (int block = first; block <= last; block++) {
+				if (!(mask & (std::uint32_t(1) << block))) {
+					continue;
+				}
+				int end = block;
+				while (end + 1 <= last && (mask & (std::uint32_t(1) << (end + 1)))) {
+					end++;
+				}
+				int const x0 = std::max(left, block * BlockWidth);
+				int const x1 = std::min(right, (end + 1) * BlockWidth);
+				if (x1 > x0) {
+					each(Rect(x0, top, x1 - x0, y - top));
+				}
+				block = end;
+			}
+		}
 	}
 };
 
@@ -120,13 +167,15 @@ static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
 	static std::vector<std::pair<std::size_t, std::size_t>> runs;
 	DSurface * const composite = (DSurface *)CompositeSurface;
 	int const height = composite->Get_Height();
+	int const width = composite->Get_Width();
 	int const pitch = composite->Stride();
-	bool const listed = pitch > 0 && composite->Written_Runs(runs);
+	int const bpp = composite->Bytes_Per_Pixel();
+	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs);
 	for (CompositeRows * rows : {first, second}) {
 		if (rows == NULL) {
 			continue;
 		}
-		if (!listed || (int)rows->Rows.size() != height) {
+		if (!listed || (int)rows->Rows.size() != height || rows->BlockWidth != CompositeRows::Block_Width(width)) {
 			rows->Known = false;
 			continue;
 		}
@@ -136,7 +185,19 @@ static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
 		for (auto const & run : runs) {
 			int const top = std::min((int)(run.first / pitch), height);
 			int const bottom = std::min((int)((run.second + pitch - 1) / pitch), height);
-			std::fill(rows->Rows.begin() + top, rows->Rows.begin() + bottom, (unsigned char)1);
+			for (int y = top; y < bottom; y++) {
+				std::size_t const row_start = (std::size_t)y * pitch;
+				std::size_t const begin = std::max(run.first, row_start) - row_start;
+				std::size_t const end = std::min(run.second, row_start + pitch) - row_start;
+				int const x0 = (int)(begin / bpp);
+				int const x1 = std::min(width, (int)((end + bpp - 1) / bpp));
+				if (x1 <= x0) {
+					continue;
+				}
+				int const b0 = std::min(x0 / rows->BlockWidth, 31);
+				int const b1 = std::min((x1 - 1) / rows->BlockWidth, 31);
+				rows->Rows[y] |= (b1 >= 31 ? ~std::uint32_t(0) : (std::uint32_t(1) << (b1 + 1)) - 1) & ~((std::uint32_t(1) << b0) - 1);
+			}
 		}
 	}
 	return(listed);
@@ -153,26 +214,16 @@ static void Fill_Map_Layer_Key(Rect const & dest)
 	if (!_SinceKeyFill.Known || dest != _KeyFillRect) {
 		CompositeSurface->Fill_Rect(dest, VIDEO_LAYER_KEY);
 	} else {
-		int const bottom = std::min(dest.Y + dest.Height, (int)_SinceKeyFill.Rows.size());
-		int y = std::max(dest.Y, 0);
-		while (y < bottom) {
-			if (_SinceKeyFill.Rows[y] == 0) {
-				y++;
-				continue;
-			}
-			int const top = y;
-			while (y < bottom && _SinceKeyFill.Rows[y] != 0) {
-				y++;
-			}
-			CompositeSurface->Fill_Rect(Rect(dest.X, top, dest.Width, y - top), VIDEO_LAYER_KEY);
-		}
+		_SinceKeyFill.For_Each_Rect(dest, [](Rect const & rect) {
+			CompositeSurface->Fill_Rect(rect, VIDEO_LAYER_KEY);
+		});
 		Emissive_After_Fill(*CompositeSurface, Intersect(dest, CompositeSurface->Get_Rect()));
 	}
 	_KeyFillRect = dest;
 	// The rows just filled go to the copy only; counting them for the next fill would refill them every frame.
 	Take_Composite_Rows(NULL, &_SinceCopy);
 	if (listed) {
-		_SinceKeyFill.Restart(CompositeSurface->Get_Height());
+		_SinceKeyFill.Restart(CompositeSurface->Get_Height(), CompositeSurface->Get_Width());
 	}
 }
 #include "shellmap.h"
@@ -804,21 +855,12 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 		_CopiedRows.assign((size_t)visible->Get_Height(), 0);
 		int const width = std::min(src_rect.Width, dest_rect.Width);
 		int const height = std::min(src_rect.Height, dest_rect.Height);
-		int const bottom = std::min(src_rect.Y + height, (int)_SinceCopy.Rows.size());
+		int const shift_x = dest_rect.X - src_rect.X;
 		int const shift = dest_rect.Y - src_rect.Y;
-		int y = std::max(src_rect.Y, 0);
-		while (y < bottom) {
-			if (_SinceCopy.Rows[y] == 0) {
-				y++;
-				continue;
-			}
-			int const top = y;
-			while (y < bottom && _SinceCopy.Rows[y] != 0) {
-				y++;
-			}
-			VisibleSurface->Blit_From(Rect(dest_rect.X, top + shift, width, y - top), *surface, Rect(src_rect.X, top, width, y - top), false, true);
-			std::fill(_CopiedRows.begin() + (top + shift), _CopiedRows.begin() + (y + shift), (unsigned char)1);
-		}
+		_SinceCopy.For_Each_Rect(Rect(src_rect.X, src_rect.Y, width, height), [&](Rect const & rect) {
+			VisibleSurface->Blit_From(Rect(rect.X + shift_x, rect.Y + shift, rect.Width, rect.Height), *surface, rect, false, true);
+			std::fill(_CopiedRows.begin() + (rect.Y + shift), _CopiedRows.begin() + (rect.Y + rect.Height + shift), (unsigned char)1);
+		});
 		// Emissive values can change where the pixels did not, so all of them follow.
 		Emissive_After_Bit_Blit(*VisibleSurface, dest_rect.X, dest_rect.Y, *surface, src_rect.X, src_rect.Y, width, height);
 		Video_Note_Visible_Rows(_CopiedRows.data(), (int)_CopiedRows.size(), before, visible->Change_Count());
@@ -829,7 +871,7 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 	}
 	if (composite) {
 		if (listed) {
-			_SinceCopy.Restart(CompositeSurface->Get_Height());
+			_SinceCopy.Restart(CompositeSurface->Get_Height(), CompositeSurface->Get_Width());
 		}
 		_CopySource = src_rect;
 		_CopyDest = dest_rect;

@@ -87,9 +87,10 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   drawn pass. Outside Windows the depth and alpha buffers cannot list the pages written to them,
   so those two go up whole every pass. With the frame rate uncapped (`FrameRateLimit=0`, `VSync=no`)
   the same benchmark drew about 507 pictures per second with `GpuRender` and 154 in software.
-- On Windows the game watches the frame surface's written pages. A GPU pass refills the map layer key
-  only on rows written since the last fill. Every picture copies to the visible surface only the rows
-  written since the last copy, and the presenter compares only those rows. The whole frame is copied
+- On Windows the game watches the frame surface's written pages. The frame is split into 32 column
+  blocks, and each row records the blocks written. A GPU pass refills the map layer key only in the
+  blocks written since the last fill. Every picture copies to the visible surface only the blocks written
+  since the last copy, and the presenter compares only the rows that hold them. The whole frame is copied
   every 120th picture, while the screen shakes or is zoomed, and after anything else has changed the
   visible surface. In alternating runs of the
   4K benchmark on a busy machine, this raised the rate from about 119 to 140 pictures per second.
