@@ -4773,7 +4773,7 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   census frame %d technos %d anims %d bullets %d waves %d teams %d\n", Frame, Technos.Count(), Anims.Count(), Bullets.Count(), Waves.Count(), Teams.Count());
 		for (int house = 0; house < Houses.Count(); house++) {
 			int buildings = 0, units = 0, infantry = 0, aircraft = 0, busy = 0, harvesters = 0;
-			int destinations = 0;
+			int destinations = 0, gatherers_on_map = 0, slave_miners = 0;
 			std::string types;
 			for (int index = 0; index < Technos.Count(); index++) {
 				TechnoClass * techno = Technos[index];
@@ -4781,6 +4781,8 @@ void Run(StepType const & step)
 					continue;
 				}
 				if (techno->TClass->IsResourceDestination) destinations++;
+				if (techno->TClass->IsResourceGatherer) gatherers_on_map++;
+				if (stricmp(techno->TClass->Name(), "SMIN") == 0) slave_miners++;
 				if (techno->What_Am_I() == RTTI_BUILDING) {
 					buildings++;
 					types += std::string(" ") + techno->TClass->Name();
@@ -4814,8 +4816,8 @@ void Run(StepType const & step)
 						owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
 						(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort, owner->Control.TechLevel);
 					ProducedTallyStruct const produced = _ProducedBy[owner];
-					DebugString("AUTOTEST     economy difficulty %d gatherers %d destinations %d produced units %d infantry %d aircraft %d structures %d factories units %d infantry %d aircraft %d\n",
-						(int)owner->Difficulty, owner->Count_Resource_Gatherers(), destinations, produced.Count[0], produced.Count[1], produced.Count[2], produced.Count[3],
+					DebugString("AUTOTEST     economy difficulty %d gatherers %d on map %d slave miners %d destinations %d produced units %d infantry %d aircraft %d structures %d factories units %d infantry %d aircraft %d\n",
+						(int)owner->Difficulty, owner->Count_Resource_Gatherers(), gatherers_on_map, slave_miners, destinations, produced.Count[0], produced.Count[1], produced.Count[2], produced.Count[3],
 						owner->Factory_Count(RTTI_UNIT), owner->Factory_Count(RTTI_INFANTRY), owner->Factory_Count(RTTI_AIRCRAFT));
 				}
 				for (int f = 0; f < Factories.Count(); f++) {
