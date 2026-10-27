@@ -1,0 +1,81 @@
+; Campaign win check for Allied 7 (Red Alert 2). The fleet the mission gives (3 Destroyers, 2 Aircraft Carriers, 2 Aegis Cruisers) sails from the harbor in the east round the south coast to Niihau and sinks the Soviet sentry gun (NALASR at 92,206), the only Soviet building the mission starts with. With it gone "_Win Occurred" (no Soviet buildings) and "_Win Game Over" follow.
+; The ships go in stages because a single move order across the whole route finds no path: the corridor the hierarchical search lays out runs over beach cells (land type 6), which the zone layer counts as water and a ship cannot enter, and the retries do not find another corridor. Each stage is a short sea hop that does.
+; Expected: "AUTOTEST game over frame N: won" (frame 4381 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all07.txt -Campaign -Map ALL07T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+100 move DEST 200 140
+100 move CARRIER 200 140
+100 move AEGIS 200 140
+600 move DEST 220 170
+600 move CARRIER 220 170
+600 move AEGIS 220 170
+1100 move DEST 220 180
+1100 move CARRIER 220 180
+1100 move AEGIS 220 180
+1600 move DEST 190 185
+1600 move CARRIER 190 185
+1600 move AEGIS 190 185
+2100 move DEST 150 190
+2100 move CARRIER 150 190
+2100 move AEGIS 150 190
+2600 move DEST 130 195
+2600 move CARRIER 130 195
+2600 move AEGIS 130 195
+3100 move DEST 110 200
+3100 move CARRIER 110 200
+3100 move AEGIS 110 200
+3600 move DEST 100 203
+3600 move CARRIER 100 203
+3600 move AEGIS 100 203
+4100 strikeobj NALASR 92 206 5 all
+4250 strikeobj NALASR 92 206 5 all
+4400 strikeobj NALASR 92 206 5 all
+4550 strikeobj NALASR 92 206 5 all
+4700 strikeobj NALASR 92 206 5 all
+4850 strikeobj NALASR 92 206 5 all
+5000 strikeobj NALASR 92 206 5 all
+5150 strikeobj NALASR 92 206 5 all
+5300 strikeobj NALASR 92 206 5 all
+5450 strikeobj NALASR 92 206 5 all
+5600 strikeobj NALASR 92 206 5 all
+5750 strikeobj NALASR 92 206 5 all
+5900 strikeobj NALASR 92 206 5 all
+6050 strikeobj NALASR 92 206 5 all
+6200 strikeobj NALASR 92 206 5 all
+6350 strikeobj NALASR 92 206 5 all
+6500 strikeobj NALASR 92 206 5 all
+6650 strikeobj NALASR 92 206 5 all
+6800 strikeobj NALASR 92 206 5 all
+6950 strikeobj NALASR 92 206 5 all
+7100 strikeobj NALASR 92 206 5 all
+7250 strikeobj NALASR 92 206 5 all
+7400 strikeobj NALASR 92 206 5 all
+7550 strikeobj NALASR 92 206 5 all
+7700 strikeobj NALASR 92 206 5 all
+7850 strikeobj NALASR 92 206 5 all
+8000 strikeobj NALASR 92 206 5 all
+8150 strikeobj NALASR 92 206 5 all
+8300 strikeobj NALASR 92 206 5 all
+8450 strikeobj NALASR 92 206 5 all
+8600 strikeobj NALASR 92 206 5 all
+8750 strikeobj NALASR 92 206 5 all
+8900 strikeobj NALASR 92 206 5 all
+9050 strikeobj NALASR 92 206 5 all
+9200 strikeobj NALASR 92 206 5 all
+9350 strikeobj NALASR 92 206 5 all
+9500 strikeobj NALASR 92 206 5 all
+9650 strikeobj NALASR 92 206 5 all
+9800 strikeobj NALASR 92 206 5 all
+9950 strikeobj NALASR 92 206 5 all
