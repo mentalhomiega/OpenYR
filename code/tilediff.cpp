@@ -18,6 +18,12 @@
 #endif
 
 
+// Scratch for Rects and Compare, kept between calls so that a present allocates only when a list grows.
+static std::vector<size_t> Rect_Band_Above;
+static std::vector<size_t> Rect_Band_Current;
+static std::vector<std::uint8_t> Changed_Tiles;
+
+
 static bool Bytes_Equal(std::uint8_t const * a, std::uint8_t const * b, size_t count)
 {
 #ifdef TILEDIFF_SSE2
@@ -107,8 +113,9 @@ void TileGridClass::Rects(std::vector<TileRect> & out) const
 
 	// One unmarked tile between two marked ones is sent with them, which costs less than a second rectangle.
 	// A rectangle exactly under one from the band above grows that one instead.
-	std::vector<size_t> above;
-	std::vector<size_t> current;
+	std::vector<size_t> & above = Rect_Band_Above;
+	std::vector<size_t> & current = Rect_Band_Current;
+	above.clear();
 	for (int ty = 0; ty < TilesY; ty++) {
 		std::uint8_t const * row = Row(ty);
 		int const y = ty * TileHeight;
@@ -189,7 +196,8 @@ void TileDiffClass::Compare(void const * pixels, int pitch, TileGridClass & grid
 		return;
 	}
 
-	std::vector<std::uint8_t> changed((size_t)tilesx);
+	std::vector<std::uint8_t> & changed = Changed_Tiles;
+	changed.assign((size_t)tilesx, 0);
 	for (int ty = 0; ty < tilesy; ty++) {
 		int const y0 = ty * TileGridClass::TileHeight;
 		int const y1 = std::min(Height, y0 + TileGridClass::TileHeight);

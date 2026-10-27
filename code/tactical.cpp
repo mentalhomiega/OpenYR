@@ -3021,7 +3021,9 @@ void Tactical::Draw_Objects(bool forced)
 	 * Each entry is an object whose post-render hook is due, with the pixel it was drawn at. The
 	 * entries stay in layer order, as gamemd's second pass (Tactical::Draw_Objects, 0x6D8DB0) runs them.
 	 */
-	std::vector<std::pair<ObjectClass *, Point2D>> post_render;
+	// Kept between draws so that a draw allocates only when the list grows; nothing draws objects re-entrantly.
+	static std::vector<std::pair<ObjectClass *, Point2D>> post_render;
+	post_render.clear();
 
 	for (int layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
 		for (int index = 0; index < DisplayClass::Layer[layer].Count(); index++) {
