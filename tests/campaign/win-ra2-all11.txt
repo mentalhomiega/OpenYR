@@ -1,0 +1,207 @@
+; Campaign win check for Allied 11 (Red Alert 2). Seventy-two Prism tanks (grantunit) guard the base island while the mission runs to
+; "Heeeere's Cuuuba", which on Normal sets local 0 at 1260 seconds (frame 18900): the view grows to the south, the nuclear silos pass
+; to BadGuy2 and "Win (Nukes KIA)" is enabled. Then eighty-one Grizzly and twenty-seven Prism tanks (grantunit, as a chronoshift
+; would bring them) appear by the Soviet base, and each order attacks one Nuclear Missile Silo (NAMISL) until it is gone.
+; The silos' destruction springs "Win (Nukes KIA)" and the chain ends in "Win (Game Over)".
+; Expected: "AUTOTEST game over frame N: won" (frame 20302 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all11.txt -Campaign -Map ALL11T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 720 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit SREF 96 116
+11 grantunit SREF 98 116
+12 grantunit SREF 100 116
+13 grantunit SREF 102 116
+14 grantunit SREF 104 116
+15 grantunit SREF 106 116
+16 grantunit SREF 108 116
+17 grantunit SREF 110 116
+18 grantunit SREF 112 116
+19 grantunit SREF 114 116
+20 grantunit SREF 116 116
+21 grantunit SREF 118 116
+22 grantunit SREF 96 118
+23 grantunit SREF 98 118
+24 grantunit SREF 100 118
+25 grantunit SREF 102 118
+26 grantunit SREF 104 118
+27 grantunit SREF 106 118
+28 grantunit SREF 108 118
+29 grantunit SREF 110 118
+30 grantunit SREF 112 118
+31 grantunit SREF 114 118
+32 grantunit SREF 116 118
+33 grantunit SREF 118 118
+34 grantunit SREF 96 120
+35 grantunit SREF 98 120
+36 grantunit SREF 100 120
+37 grantunit SREF 102 120
+38 grantunit SREF 104 120
+39 grantunit SREF 106 120
+40 grantunit SREF 108 120
+41 grantunit SREF 110 120
+42 grantunit SREF 112 120
+43 grantunit SREF 114 120
+44 grantunit SREF 116 120
+45 grantunit SREF 118 120
+46 grantunit SREF 96 122
+47 grantunit SREF 98 122
+48 grantunit SREF 100 122
+49 grantunit SREF 102 122
+50 grantunit SREF 104 122
+51 grantunit SREF 106 122
+52 grantunit SREF 108 122
+53 grantunit SREF 110 122
+54 grantunit SREF 112 122
+55 grantunit SREF 114 122
+56 grantunit SREF 116 122
+57 grantunit SREF 118 122
+58 grantunit SREF 96 124
+59 grantunit SREF 98 124
+60 grantunit SREF 100 124
+61 grantunit SREF 102 124
+62 grantunit SREF 104 124
+63 grantunit SREF 106 124
+64 grantunit SREF 108 124
+65 grantunit SREF 110 124
+66 grantunit SREF 112 124
+67 grantunit SREF 114 124
+68 grantunit SREF 116 124
+69 grantunit SREF 118 124
+70 grantunit SREF 96 126
+71 grantunit SREF 98 126
+72 grantunit SREF 100 126
+73 grantunit SREF 102 126
+74 grantunit SREF 104 126
+75 grantunit SREF 106 126
+76 grantunit SREF 108 126
+77 grantunit SREF 110 126
+78 grantunit SREF 112 126
+79 grantunit SREF 114 126
+80 grantunit SREF 116 126
+81 grantunit SREF 118 126
+1010 waitlocal 0 1 25000
+1100 grantunit MTNK 148 176
+1101 grantunit MTNK 151 176
+1102 grantunit MTNK 154 176
+1103 grantunit MTNK 157 176
+1104 grantunit MTNK 160 176
+1105 grantunit MTNK 163 176
+1106 grantunit MTNK 166 176
+1107 grantunit MTNK 169 176
+1108 grantunit MTNK 172 176
+1109 grantunit MTNK 148 179
+1110 grantunit MTNK 151 179
+1111 grantunit MTNK 154 179
+1112 grantunit MTNK 157 179
+1113 grantunit MTNK 160 179
+1114 grantunit MTNK 163 179
+1115 grantunit MTNK 166 179
+1116 grantunit MTNK 169 179
+1117 grantunit MTNK 172 179
+1118 grantunit MTNK 148 182
+1119 grantunit MTNK 151 182
+1120 grantunit MTNK 154 182
+1121 grantunit MTNK 157 182
+1122 grantunit MTNK 160 182
+1123 grantunit MTNK 163 182
+1124 grantunit MTNK 166 182
+1125 grantunit MTNK 169 182
+1126 grantunit MTNK 172 182
+1127 grantunit MTNK 148 185
+1128 grantunit MTNK 151 185
+1129 grantunit MTNK 154 185
+1130 grantunit MTNK 157 185
+1131 grantunit MTNK 160 185
+1132 grantunit MTNK 163 185
+1133 grantunit MTNK 166 185
+1134 grantunit MTNK 169 185
+1135 grantunit MTNK 172 185
+1136 grantunit MTNK 148 188
+1137 grantunit MTNK 151 188
+1138 grantunit MTNK 154 188
+1139 grantunit MTNK 157 188
+1140 grantunit MTNK 160 188
+1141 grantunit MTNK 163 188
+1142 grantunit MTNK 166 188
+1143 grantunit MTNK 169 188
+1144 grantunit MTNK 172 188
+1145 grantunit MTNK 148 191
+1146 grantunit MTNK 151 191
+1147 grantunit MTNK 154 191
+1148 grantunit MTNK 157 191
+1149 grantunit MTNK 160 191
+1150 grantunit MTNK 163 191
+1151 grantunit MTNK 166 191
+1152 grantunit MTNK 169 191
+1153 grantunit MTNK 172 191
+1154 grantunit MTNK 148 194
+1155 grantunit MTNK 151 194
+1156 grantunit MTNK 154 194
+1157 grantunit MTNK 157 194
+1158 grantunit MTNK 160 194
+1159 grantunit MTNK 163 194
+1160 grantunit MTNK 166 194
+1161 grantunit MTNK 169 194
+1162 grantunit MTNK 172 194
+1163 grantunit MTNK 148 197
+1164 grantunit MTNK 151 197
+1165 grantunit MTNK 154 197
+1166 grantunit MTNK 157 197
+1167 grantunit MTNK 160 197
+1168 grantunit MTNK 163 197
+1169 grantunit MTNK 166 197
+1170 grantunit MTNK 169 197
+1171 grantunit MTNK 172 197
+1172 grantunit MTNK 148 200
+1173 grantunit MTNK 151 200
+1174 grantunit MTNK 154 200
+1175 grantunit MTNK 157 200
+1176 grantunit MTNK 160 200
+1177 grantunit MTNK 163 200
+1178 grantunit MTNK 166 200
+1179 grantunit MTNK 169 200
+1180 grantunit MTNK 172 200
+1200 grantunit SREF 148 203
+1201 grantunit SREF 151 203
+1202 grantunit SREF 154 203
+1203 grantunit SREF 157 203
+1204 grantunit SREF 160 203
+1205 grantunit SREF 163 203
+1206 grantunit SREF 166 203
+1207 grantunit SREF 169 203
+1208 grantunit SREF 172 203
+1209 grantunit SREF 148 206
+1210 grantunit SREF 151 206
+1211 grantunit SREF 154 206
+1212 grantunit SREF 157 206
+1213 grantunit SREF 160 206
+1214 grantunit SREF 163 206
+1215 grantunit SREF 166 206
+1216 grantunit SREF 169 206
+1217 grantunit SREF 172 206
+1218 grantunit SREF 148 209
+1219 grantunit SREF 151 209
+1220 grantunit SREF 154 209
+1221 grantunit SREF 157 209
+1222 grantunit SREF 160 209
+1223 grantunit SREF 163 209
+1224 grantunit SREF 166 209
+1225 grantunit SREF 169 209
+1226 grantunit SREF 172 209
+1400 strikeobj NAMISL 184 202 1 all
+1401 waitgone NAMISL 184 202 1 3000
+1410 strikeobj NAMISL 186 196 1 all
+1411 waitgone NAMISL 186 196 1 3000
+1420 strikeobj NAMISL 192 194 1 all
+1421 waitgone NAMISL 192 194 1 3000
