@@ -1,0 +1,83 @@
+; Campaign win check for Soviet 1 (Red Alert 2). Its Mobile Construction Vehicle drives out and deploys, then 16 Rhino tanks and three Soviet engineers stand in
+; for the army a player would build (grantunit gives them to the player; everything after is an order). The tanks clear the soldiers that guard the broken bridge,
+; an engineer enters the bridge repair hut, the tanks cross, follow the road to the Pentagon and each order destroys one wing of it (the win waits for all four).
+; Expected: "AUTOTEST game over frame N: won".
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov01.txt -Campaign -Map SOV01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+20 move SMCV 105 131
+21 waitcell SMCV 105 131 0 1500
+80 select SMCV
+85 command DeployObject
+86 waitowns player NACNST 1 200
+100 grantunit HTNK 100 128
+101 grantunit HTNK 102 128
+102 grantunit HTNK 104 128
+103 grantunit HTNK 106 128
+104 grantunit HTNK 100 130
+105 grantunit HTNK 102 130
+106 grantunit HTNK 104 130
+107 grantunit HTNK 106 130
+108 grantunit HTNK 100 132
+109 grantunit HTNK 102 132
+110 grantunit HTNK 104 132
+111 grantunit HTNK 106 132
+112 grantunit HTNK 100 134
+113 grantunit HTNK 102 134
+114 grantunit HTNK 104 134
+115 grantunit HTNK 106 134
+120 grantunit SENGINEER 100 126
+121 grantunit SENGINEER 102 126
+122 grantunit SENGINEER 104 126
+210 move HTNK 90 100
+600 waitcell HTNK 90 100 5 900
+800 move HTNK 95 95
+1100 waitcell HTNK 95 95 5 600
+1110 strikeobj E1 96 88 14 all
+1260 strikeobj E1 96 88 14 all
+1410 strikeobj E1 96 88 14 all
+1560 strikeobj E1 96 88 14 all
+1710 strikeobj E1 96 88 14 all
+1860 strikeobj E1 96 88 14 all
+2010 strikeobj E1 96 88 14 all
+2160 strikeobj E1 96 88 14 all
+2310 strikeobj E1 96 88 14 all
+2460 strikeobj E1 96 88 14 all
+2610 strikeobj E1 96 88 14 all
+2760 strikeobj E1 96 88 14 all
+2910 spy SENGINEER 92 87
+4000 counts player
+4100 move HTNK 86 85
+4490 counts player
+4500 move HTNK 80 86
+4890 counts player
+4900 move HTNK 75 88
+5290 counts player
+5300 move HTNK 70 88
+5690 counts player
+5700 move HTNK 75 80
+6090 counts player
+6100 move HTNK 83 50
+6490 counts player
+6500 move HTNK 62 44
+6890 counts player
+6900 strikeobj CAWA2A 60 36 4 all
+7400 counts player
+7400 strikeobj CAWA2B 60 40 4 all
+7900 counts player
+7900 strikeobj CAWA2D 56 36 4 all
+8400 counts player
+8400 strikeobj CAWA2C 56 40 4 all
+8900 counts player
+9200 quit
