@@ -74,6 +74,14 @@ static unsigned int _PresentsThisSecond = 0;
 static unsigned int _PresentsLastSecond = 0;
 static unsigned int _PresentSecondStart = 0;
 
+// Gaps between successful presents, in milliseconds, for the frame-time graph. The ring holds the
+// oldest gap at _FrameTimeNext once it is full, and the next gap overwrites that one.
+static unsigned int _FrameTimeMs[VIDEO_FRAME_TIME_HISTORY];
+static int _FrameTimeNext = 0;
+static int _FrameTimeCount = 0;
+static unsigned int _FrameTimeLast = 0;
+static bool _FrameTimeHasLast = false;
+
 // A window that repaints itself can start a present inside the engine's own; the inner one is
 // skipped. A resize that arrives during a present waits for it to finish.
 static bool _Presenting = false;
@@ -287,6 +295,9 @@ void Video_Shutdown(void)
 	_PresentSecondStart = 0;
 	_PresentCount = 0;
 	_FrameUploadCount = 0;
+	_FrameTimeNext = 0;
+	_FrameTimeCount = 0;
+	_FrameTimeHasLast = false;
 }
 
 
@@ -479,6 +490,26 @@ void Video_Mark_Overlay_Dirty(void)
 }
 
 
+/// <summary>
+/// Adds the time since the previous successful present to the frame-time history.
+/// The first present after a reset adds nothing. A gap includes any time with no present, such as
+/// an idle screen or a minimised window, so that time shows as one long gap.
+/// </summary>
+static void Record_Present_Gap(void)
+{
+	unsigned int const now = timeGetTime();
+	if (_FrameTimeHasLast) {
+		_FrameTimeMs[_FrameTimeNext] = now - _FrameTimeLast;
+		_FrameTimeNext = (_FrameTimeNext + 1) % VIDEO_FRAME_TIME_HISTORY;
+		if (_FrameTimeCount < VIDEO_FRAME_TIME_HISTORY) {
+			_FrameTimeCount++;
+		}
+	}
+	_FrameTimeLast = now;
+	_FrameTimeHasLast = true;
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
@@ -573,6 +604,7 @@ static void Present(void)
 		}
 		_PresentsThisSecond++;
 		_PresentCount++;
+		Record_Present_Gap();
 	} else {
 		_Dirty.Restore(snapshot);
 		DebugString("Video: present refused, marks kept\n");
@@ -641,6 +673,19 @@ unsigned int Video_Presents_Per_Second(void)
 unsigned int Video_Present_Interval(void)
 {
 	return(_PresentInterval);
+}
+
+
+int Video_Frame_Time_Count(void)
+{
+	return(_FrameTimeCount);
+}
+
+
+unsigned int Video_Frame_Time(int index)
+{
+	int const first = _FrameTimeCount < VIDEO_FRAME_TIME_HISTORY ? 0 : _FrameTimeNext;
+	return(_FrameTimeMs[(first + index) % VIDEO_FRAME_TIME_HISTORY]);
 }
 
 
