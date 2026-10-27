@@ -1,0 +1,156 @@
+; Campaign win check for Allied 1 (Red Alert 2). Ten destroyers (grantunit) sink the four Dreadnoughts before they reach the harbor entrance (if the fleet is lost after it
+; gets there the mission fails), Tanya swims the harbor and walks into the Allied fort, which changes hands, and forty Grizzly tanks and three engineers (grantunit)
+; stand in for the army a player would build from the fort's base. An engineer enters the bridge repair hut, the tanks cross and destroy the Soviet base building by
+; building (strikeobj, nearest first); the win waits for every Soviet structure that counts (the decorative ones do not). Expected: "AUTOTEST game over frame N: won" (frame 14040 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all01.txt -Campaign -Map ALL01T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1500 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit DEST 58 94
+11 grantunit DEST 60 94
+12 grantunit DEST 62 94
+13 grantunit DEST 64 94
+14 grantunit DEST 66 94
+15 grantunit DEST 58 96
+16 grantunit DEST 60 96
+17 grantunit DEST 62 96
+18 grantunit DEST 64 96
+19 grantunit DEST 66 96
+100 move TANY 70 75
+120 strikeobj DRED 62 91 30 naval
+270 strikeobj DRED 62 91 30 naval
+420 strikeobj DRED 62 91 30 naval
+570 strikeobj DRED 62 91 30 naval
+720 strikeobj DRED 62 91 30 naval
+870 strikeobj DRED 62 91 30 naval
+1020 strikeobj DRED 62 91 30 naval
+1170 strikeobj DRED 62 91 30 naval
+1320 strikeobj DRED 62 91 30 naval
+1470 strikeobj DRED 62 91 30 naval
+1620 strikeobj DRED 62 91 30 naval
+1770 strikeobj DRED 62 91 30 naval
+1920 strikeobj DRED 62 91 30 naval
+2070 strikeobj DRED 62 91 30 naval
+2220 strikeobj DRED 62 91 30 naval
+2370 strikeobj DRED 62 91 30 naval
+2520 strikeobj DRED 62 91 30 naval
+2670 strikeobj DRED 62 91 30 naval
+2820 strikeobj DRED 62 91 30 naval
+2970 strikeobj DRED 62 91 30 naval
+3120 strikeobj DRED 62 91 30 naval
+3270 strikeobj DRED 62 91 30 naval
+3420 strikeobj DRED 62 91 30 naval
+3570 strikeobj DRED 62 91 30 naval
+3720 counts BadGuy2_House
+3721 waitcell TANY 70 75 3 3000
+3726 move TANY 66 50
+3727 waitcell TANY 66 50 3 2500
+3736 move TANY 66 40
+3737 waitcell TANY 66 40 3 2500
+3746 waittrigger 0965E07C 1500
+3756 grantunit MTNK 66 30
+3757 grantunit MTNK 68 30
+3758 grantunit MTNK 70 30
+3759 grantunit MTNK 72 30
+3760 grantunit MTNK 74 30
+3761 grantunit MTNK 76 30
+3762 grantunit MTNK 78 30
+3763 grantunit MTNK 80 30
+3764 grantunit MTNK 66 32
+3765 grantunit MTNK 68 32
+3766 grantunit MTNK 70 32
+3767 grantunit MTNK 72 32
+3768 grantunit MTNK 74 32
+3769 grantunit MTNK 76 32
+3770 grantunit MTNK 78 32
+3771 grantunit MTNK 80 32
+3772 grantunit MTNK 66 34
+3773 grantunit MTNK 68 34
+3774 grantunit MTNK 70 34
+3775 grantunit MTNK 72 34
+3776 grantunit MTNK 74 34
+3777 grantunit MTNK 76 34
+3778 grantunit MTNK 78 34
+3779 grantunit MTNK 80 34
+3780 grantunit MTNK 66 36
+3781 grantunit MTNK 68 36
+3782 grantunit MTNK 70 36
+3783 grantunit MTNK 72 36
+3784 grantunit MTNK 74 36
+3785 grantunit MTNK 76 36
+3786 grantunit MTNK 78 36
+3787 grantunit MTNK 80 36
+3788 grantunit MTNK 66 38
+3789 grantunit MTNK 68 38
+3790 grantunit MTNK 70 38
+3791 grantunit MTNK 72 38
+3792 grantunit MTNK 74 38
+3793 grantunit MTNK 76 38
+3794 grantunit MTNK 78 38
+3795 grantunit MTNK 80 38
+3801 grantunit ENGINEER 74 44
+3802 grantunit ENGINEER 76 44
+3803 grantunit ENGINEER 78 44
+3816 counts player
+3817 move MTNK 80 44
+3818 move ENGINEER 80 45
+3819 waitcell MTNK 80 44 6 1500
+3829 spy ENGINEER 80 48
+4429 move MTNK 82 56
+4430 waitcell MTNK 82 56 6 2500
+4440 where MTNK
+4441 command ScreenCapture
+4446 counts BadGuy1_House
+4456 strikeobj E2 88 66 30 land
+4806 strikeobj V3 84 72 30 land
+5156 strikeobj NALASR 93 63 30 land
+5506 strikeobj NALASR 95 63 30 land
+5856 strikeobj NAHAND 89 65 30 land
+6206 strikeobj NAHAND 90 72 30 land
+6556 strikeobj NACNST 93 67 30 land
+6906 strikeobj NAPOWR 98 69 30 land
+7256 strikeobj NAPOWR 98 66 30 land
+7606 strikeobj NAPOWR 91 77 30 land
+7956 strikeobj NARADR 96 75 30 land
+8306 strikeobj NAWEAP 83 77 30 land
+8656 strikeobj NAWEAP 83 82 30 land
+9006 counts BadGuy1_House
+9007 strikeobj E2 88 66 30 land
+9357 strikeobj V3 84 72 30 land
+9707 strikeobj NALASR 93 63 30 land
+10057 strikeobj NALASR 95 63 30 land
+10407 strikeobj NAHAND 89 65 30 land
+10757 strikeobj NAHAND 90 72 30 land
+11107 strikeobj NACNST 93 67 30 land
+11457 strikeobj NAPOWR 98 69 30 land
+11807 strikeobj NAPOWR 98 66 30 land
+12157 strikeobj NAPOWR 91 77 30 land
+12507 strikeobj NARADR 96 75 30 land
+12857 strikeobj NAWEAP 83 77 30 land
+13207 strikeobj NAWEAP 83 82 30 land
+13557 counts BadGuy1_House
+13558 strikeobj E2 88 66 30 land
+13908 strikeobj V3 84 72 30 land
+14258 strikeobj NALASR 93 63 30 land
+14608 strikeobj NALASR 95 63 30 land
+14958 strikeobj NAHAND 89 65 30 land
+15308 strikeobj NAHAND 90 72 30 land
+15658 strikeobj NACNST 93 67 30 land
+16008 strikeobj NAPOWR 98 69 30 land
+16358 strikeobj NAPOWR 98 66 30 land
+16708 strikeobj NAPOWR 91 77 30 land
+17058 strikeobj NARADR 96 75 30 land
+17408 strikeobj NAWEAP 83 77 30 land
+17758 strikeobj NAWEAP 83 82 30 land
+18108 counts BadGuy1_House
+18709 quit
