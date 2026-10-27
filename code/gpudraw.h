@@ -14,6 +14,9 @@
 #include "rect.h"
 
 #include <cstdint>
+#include <memory>
+#include <new>
+#include <utility>
 #include <vector>
 
 
@@ -86,11 +89,29 @@ struct GpuBlit
 };
 
 
+// An allocator whose resize leaves new bytes unset, for an arena whose every recorded draw writes all of its pixels.
+template <typename T>
+struct GpuArenaAllocator : std::allocator<T>
+{
+	template <typename U>
+	struct rebind { using other = GpuArenaAllocator<U>; };
+
+	GpuArenaAllocator() = default;
+	template <typename U>
+	GpuArenaAllocator(GpuArenaAllocator<U> const &) noexcept {}
+
+	template <typename U>
+	void construct(U * pointer) noexcept { ::new ((void *)pointer) U; }
+	template <typename U, typename... Args>
+	void construct(U * pointer, Args &&... args) { ::new ((void *)pointer) U(std::forward<Args>(args)...); }
+};
+
+
 // The blits recorded during one object pass.
 struct GpuDrawList
 {
 	std::vector<GpuBlit> Blits;
-	std::vector<unsigned char> PixelArena;
+	std::vector<unsigned char, GpuArenaAllocator<unsigned char>> PixelArena;
 	std::vector<signed char> ZShapeArena;
 
 	// Draws into the target this pass that the list does not hold: blits of other kinds and

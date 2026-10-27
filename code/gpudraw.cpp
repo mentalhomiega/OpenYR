@@ -112,20 +112,29 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 		unsigned char const * data = row + sizeof(unsigned short);
 		int position = 0;
 		while (position < end) {
-			unsigned char value = *data++;
-			if (value == 0) {
-				int run = *data++;
-				for (int i = 0; i < run && position < end; i++, position++) {
-					if (position >= leftmargin) {
-						out[position - leftmargin] = 0;
-					}
+			int count;
+			if (*data == 0) {
+				count = data[1];
+				int const first = std::max(position, leftmargin);
+				int const last = std::min(position + count, end);
+				if (last > first) {
+					std::memset(out + (first - leftmargin), 0, (std::size_t)(last - first));
 				}
+				data += 2;
 			} else {
-				if (position >= leftmargin) {
-					out[position - leftmargin] = value;
+				// A literal span runs until the next transparent run or the end of the drawn width.
+				count = 1;
+				while (position + count < end && data[count] != 0) {
+					count++;
 				}
-				position++;
+				int const first = std::max(position, leftmargin);
+				int const last = position + count;
+				if (last > first) {
+					std::memcpy(out + (first - leftmargin), data + (first - position), (std::size_t)(last - first));
+				}
+				data += count;
 			}
+			position += count;
 		}
 		out += width;
 		row += *(unsigned short const *)row;
