@@ -412,12 +412,27 @@ void ParasiteClass::Victim_Hit(int damage, TechnoClass const * source)
 
 /// <summary>
 /// Brings the parasite out of its victim (ParasiteClass::ExitUnit, 0x62A4A0) onto the
-/// victim's cell, or the nearest cell it can stand on. A doomed parasite, or one with no room
-/// to come out, is lost.
+/// victim's cell, or the nearest cell it can stand on, paralyzed for three rearm delays. A
+/// doomed parasite, or one with no room to come out, is lost.
 /// </summary>
 void ParasiteClass::Exit_Unit(void)
 {
 	Release(Frame < SuppressedUntil, true);
+}
+
+
+/// <summary>
+/// Lets the parasite out when its victim dies or leaves the map (ParasiteClass::PointerExpired,
+/// 0x62A260), and ends any grapple it held. Unlike Exit_Unit, the parasite is not paralyzed, so
+/// it takes move orders at once. Does nothing when there is no victim.
+/// </summary>
+void ParasiteClass::Victim_Removed(void)
+{
+	if (Victim == nullptr || Owner == nullptr) {
+		return;
+	}
+	Release(Frame < SuppressedUntil, false);
+	Reset_Grapple();
 }
 
 
@@ -453,10 +468,12 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 	if (from_exit) {
 		Reset_Grapple();
 	}
-	// The parasite itself is paralyzed for three rearm delays after it comes out (ParasiteClass::ExitUnit, 0x62A4A0).
-	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
-	if (weapon != nullptr && Owner->Is_Foot()) {
-		((FootClass *)Owner)->ParalysisTimer = weapon->ROF * 3;
+	// Only an exit through ExitUnit (0x62A4A0) paralyzes the parasite for three rearm delays; PointerExpired (0x62A260) does not.
+	if (from_exit) {
+		WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
+		if (weapon != nullptr && Owner->Is_Foot()) {
+			((FootClass *)Owner)->ParalysisTimer = weapon->ROF * 3;
+		}
 	}
 	if (IsReselect && Owner->House->Is_Player_Control()) {
 		Owner->Select();
@@ -483,7 +500,7 @@ void ParasiteClass::Detach(AbstractClass const * target)
 		GrappleAnim = nullptr;
 		return;
 	}
-	// A victim leaving the map or dying lets the parasite out where it stood (ParasiteClass::PointerExpired, 0x62A260).
+	// A victim leaving the map or dying lets the parasite out where it stood, without the exit paralysis (ParasiteClass::PointerExpired, 0x62A260).
 	if (target == Victim && Owner != nullptr) {
 		Release(Frame < SuppressedUntil, false);
 	}

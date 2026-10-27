@@ -8536,7 +8536,7 @@ void TechnoClass::Delete_Me(void)
 
 	// A dying victim lets its parasite out where it stood, unless the parasite is doomed (ParasiteClass::PointerExpired, 0x62A260).
 	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
-		ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+		ParasiteEatingMe->ParasiteImUsing->Victim_Removed();
 	}
 	if (ParasiteImUsing) {
 		ParasiteImUsing->Reset_Grapple();
