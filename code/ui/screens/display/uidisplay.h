@@ -60,6 +60,7 @@ class UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
 		virtual void Set_Integer_Scaling(bool on) = 0;
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves) = 0;
 		virtual void Set_Filter(int mode) = 0;
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
@@ -114,6 +115,9 @@ struct UIDisplayState
 	bool Fullscreen = false;
 	bool VSync = false;
 	bool IntegerScaling = false;
+	bool GpuRender = false;
+	bool SoftShadows = false;
+	bool Shockwaves = false;
 	std::vector<UIDisplayChoice> Filters;
 	int Filter = 0;
 	std::vector<UIDisplayChoice> FrameRates;
@@ -195,6 +199,9 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		bool InitialFullscreen;
 		bool InitialVSync;
 		bool InitialIntegerScaling;
+		bool InitialGpuRender;
+		bool InitialSoftShadows;
+		bool InitialShockwaves;
 		int InitialFilter;
 		int InitialFrameRate;
 		int InitialCursorScale;

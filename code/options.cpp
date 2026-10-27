@@ -916,6 +916,10 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
+	ConfigINI.Put_Bool("Video", "GpuRender", GpuRender);
+	ConfigINI.Put_Bool("Video", "SoftShadows", SoftShadows);
+	ConfigINI.Put_Int("Video", "SoftShadowRadius", SoftShadowRadius);
+	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
 	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

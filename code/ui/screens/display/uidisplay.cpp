@@ -31,6 +31,9 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFullscreen(State.Fullscreen),
 	InitialVSync(State.VSync),
 	InitialIntegerScaling(State.IntegerScaling),
+	InitialGpuRender(State.GpuRender),
+	InitialSoftShadows(State.SoftShadows),
+	InitialShockwaves(State.Shockwaves),
 	InitialFilter(State.Filter),
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
@@ -198,6 +201,9 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
 		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
 		State.IntegerScaling = false;
+		State.GpuRender = false;
+		State.SoftShadows = false;
+		State.Shockwaves = false;
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -323,6 +329,21 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "integerscaling") {
 		State.IntegerScaling = (intent.Value != 0);
 
+	} else if (intent.Name == "gpurender") {
+		if (State.ModernInterface) {
+			State.GpuRender = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "softshadows") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.SoftShadows = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "shockwaves") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Shockwaves = (intent.Value != 0);
+		}
+
 	} else if (intent.Name == "filter") {
 		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
 
@@ -417,6 +438,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (State.IntegerScaling != InitialIntegerScaling) {
 			Service.Set_Integer_Scaling(State.IntegerScaling);
+		}
+		if (State.GpuRender != InitialGpuRender || State.SoftShadows != InitialSoftShadows || State.Shockwaves != InitialShockwaves) {
+			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves);
 		}
 		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
 			Service.Set_Filter(State.Filters[State.Filter].Value);
@@ -616,6 +640,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
 			Model.DirtyVariable("integerscaling");
+			Model.DirtyVariable("gpurender");
+			Model.DirtyVariable("softshadows");
+			Model.DirtyVariable("shockwaves");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -691,6 +718,9 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)
+				&& model.Bind("gpurender", &state.GpuRender)
+				&& model.Bind("softshadows", &state.SoftShadows)
+				&& model.Bind("shockwaves", &state.Shockwaves)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)

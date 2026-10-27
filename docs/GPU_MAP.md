@@ -27,7 +27,11 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 
 ## Settings
 
-All keys are in the `[Video]` section and are read at startup.
+All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
+Graphics page of the settings set `GpuRender`, `SoftShadows` and `Shockwaves` when the page is
+accepted, and the game writes all four keys back to `RA2MD.INI`. The effect switches are greyed out
+until GPU drawing is ticked, and GPU drawing is greyed out without the modern interface.
+`SoftShadowRadius` has no switch.
 
 | Key | Default | Effect |
 |---|---|---|

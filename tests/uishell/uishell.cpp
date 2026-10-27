@@ -932,6 +932,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0")); }
 		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
@@ -3215,6 +3216,46 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 
 	{
 		RecordingDisplayServiceClass service;
+		UIDisplayState state = Graphics_Fixture();
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares for the GPU drawing switches");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * gpu = document->GetElementById("gpu-render");
+		Rml::Element * soft = document->GetElementById("soft-shadows");
+		Rml::Element * waves = document->GetElementById("shockwaves");
+		auto sync = [&](Rml::Element * element) {
+			if (element != nullptr) {
+				Click(context, element);
+				presenter.Drain();
+				view->Sync();
+				context.Update();
+			}
+		};
+		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled"), "soft shadows and shockwaves are greyed while GPU drawing is off");
+
+		sync(soft);
+		Check(!presenter.State.SoftShadows, "a greyed soft shadows switch does not turn on");
+
+		sync(gpu);
+		Check(presenter.State.GpuRender && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
+
+		sync(waves);
+		Drive(presenter, "ok");
+		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 101") != service.Calls.end(), "accepting applies the GPU drawing switches together");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
 		UIDisplayState state = Display_Fixture();
 		state.ShowFPS = true;
 		state.Fullscreen = false;
@@ -3631,9 +3672,11 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 	}
 
 	{
-		// The Graphics page: picture, interface, HDR, picture level and renderer, then the footer.
+		// The Graphics page: picture, interface, GPU drawing, HDR, picture level and renderer, then the footer.
 		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Graphics_Fixture());
+		UIDisplayState state = Graphics_Fixture();
+		state.GpuRender = true;
+		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the graphics view prepares for the tab order");
@@ -3649,7 +3692,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "classic-menus",
-			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;
