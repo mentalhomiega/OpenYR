@@ -74,6 +74,8 @@ class StaticBufferClass
 		}
 
 		void Reset(void) { Cursor = Buffer; }
+		unsigned int Used(void) const { return((unsigned int)(Cursor - Buffer)); }
+		unsigned int Capacity(void) const { return(Size); }
 
 	private:
 		/*

@@ -247,8 +247,12 @@ class ObjectTypeClass : public AbstractTypeClass
 
 		static void Clear_Voxel_Indexes(void);
 
+		// Counts the clears of any type's voxel images; a cache built from those images is stale once it moves.
+		static inline unsigned VoxelIndexGeneration = 0;
+
 		void Clear_Voxel_Index(void)
 		{
+			++VoxelIndexGeneration;
 			VoxelIndex.Clear();
 			AuxVoxelIndex.Clear();
 			ShadowVoxelIndex.Clear();

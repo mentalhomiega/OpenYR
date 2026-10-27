@@ -119,3 +119,12 @@ weapon slot of a multi-turret vehicle. A turret and a barrel each have a cache o
 (`AuxVoxelIndex` and `AuxVoxel2Index`), so a barrel key never meets a hull key. A building's turret and
 barrel are keyed by facing, frame and pitch, and only while both recoil offsets are zero. When the buffer
 is full every cache is cleared, as before.
+
+A turreted vehicle is assembled from its hull, turret and barrel on a 160 by 160 scratch surface and then
+drawn to the map in one piece. The finished picture is cached too, keyed by the hull, turret and barrel
+keys, and copied onto the scratch surface in place of the three part draws. A picture is kept only when it
+lies wholly on the scratch surface and the buffer is less than half full, and these pictures are dropped
+whenever any type's voxel images are cleared. The APC's water image, a `NoSpawnAlt` hull and types with
+`DisableVoxelCache=yes` are not cached this way. In the first 1,500 frames of the large battle the map
+draws matched hash for hash with and without this cache. At 3840x2160 with `GpuRender` and the frame rate
+uncapped, the short benchmark rose from about 400 to about 530 pictures per second.
