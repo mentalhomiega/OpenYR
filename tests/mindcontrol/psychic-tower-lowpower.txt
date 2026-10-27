@@ -1,0 +1,24 @@
+; A Yuri Psychic Tower (YAPSYT) placed for the player, powered by a Yuri Power Plant (YAPOWR), takes Gunners that
+; come into its range. At frame 300 the power plant is destroyed, so the house is short of power: the tower drains
+; 100 and nothing supplies it. A structure that loses power frees the units it holds (gamemd
+; BuildingClass::UpdatePowerState, 0x4549B0, calls CaptureManagerClass::FreeAll on the power-off path).
+; Expected: the banimstate line at 302 shows YAPSYT with power 0, a "mind control released E1 to Africans" line
+; follows each held Gunner's release, and at 330 the Gunners are back with their own house. Before the fix the
+; Gunners stayed with YuriCountry after the kill.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/mindcontrol/psychic-tower-lowpower.txt -Country 9 -Seconds 90 -Filter "AUTOTEST|Exception"
+10 command CenterBase
+35 own YAPOWR 36 84
+40 own YAPSYT 40 90
+50 spawn E1 46 86
+50 spawn E1 46 88
+50 spawn E1 46 92
+50 spawn E1 46 94
+200 where E1
+200 banimstate YAPSYT
+290 where E1
+290 banimstate YAPSYT
+300 kill YAPOWR 1
+302 banimstate YAPSYT
+330 where E1
+330 banimstate YAPSYT
+360 quit
