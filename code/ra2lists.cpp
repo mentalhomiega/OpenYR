@@ -93,7 +93,7 @@ WeaponType RA2_Weapon_Position(WeaponType position)
 	if (!Scenario_Is_From_RA2()) {
 		return(position);
 	}
-	std::string const name = Name_At("WeaponTypes", position);
+	std::string const name = Name_At("Weapons", position);
 	WeaponType const type = name.empty() ? WEAPON_NONE : WeaponTypeClass::From_Name(name.c_str());
 	return(type == WEAPON_NONE ? position : type);
 }
