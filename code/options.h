@@ -299,6 +299,11 @@ class OptionsClass {
 		// With GpuRender, each weapon blast sends a ring through the map picture that bends it.
 		bool Shockwaves;
 
+		// With GpuRender, lasers, lamps, fire and other emissive parts of the map glow, at
+		// BloomStrength percent.
+		bool Bloom;
+		int BloomStrength;
+
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
 		 * Presents are already limited to the refresh rate without it.

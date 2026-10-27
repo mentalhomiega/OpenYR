@@ -10,7 +10,7 @@ default, and works only in the modern interface on Direct3D 11.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur) and `fs_mappost.sc` (shockwaves), each compiled into a `.bin.h` header. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow) and `fs_mappost.sc` (shockwaves and bloom), each compiled into a `.bin.h` header. |
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
@@ -30,10 +30,10 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 ## Settings
 
 All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
-Graphics page of the settings set `GpuRender`, `SoftShadows` and `Shockwaves` when the page is
-accepted, and the game writes all four keys back to `RA2MD.INI`. The effect switches are greyed out
-until GPU drawing is ticked, and GPU drawing is greyed out without the modern interface.
-`SoftShadowRadius` has no switch.
+Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves` and `Bloom` (the **Glow**
+switch) when the page is accepted, and the game writes every key in the table back to `RA2MD.INI`.
+The effect switches are greyed out until GPU drawing is ticked, and GPU drawing is greyed out without
+the modern interface. `SoftShadowRadius` and `BloomStrength` have no switch.
 
 | Key | Default | Effect |
 |---|---|---|
@@ -41,6 +41,8 @@ until GPU drawing is ticked, and GPU drawing is greyed out without the modern in
 | `SoftShadows` | `no` | With `GpuRender`, the shadows of objects drawn in the pass and the shadows of buildings and trees in the tile layer go into one mask that is blurred and darkens the ground once, so overlapping shadows do not darken twice. A pass drawn in software shows the same shadows hard. Changing the switch redraws the whole tile layer. |
 | `SoftShadowRadius` | `3` | The blur radius of `SoftShadows` in pixels, from 1 to 16. |
 | `Shockwaves` | `no` | With `GpuRender`, each weapon impact that shows a blast animation sends a ring across the ground that bends the picture under it for 40 game frames. Up to 16 rings run at once; a newer one replaces the oldest. |
+| `Bloom` | `no` | With `GpuRender`, the parts of the map marked in the emissive mask, such as lasers, electric bolts, lamps and fire, glow onto the picture around them, about 24 pixels out. It turns the emissive mask on, which [EMISSIVE_MASK.md](EMISSIVE_MASK.md) describes, so an object or animation glows only when the mask marks it. A pass drawn in software has no glow. |
+| `BloomStrength` | `100` | The brightness of the `Bloom` glow in percent, from 1 to 400. |
 
 ## Limits
 
@@ -66,7 +68,9 @@ until GPU drawing is ticked, and GPU drawing is greyed out without the modern in
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 245 pictures per second
   with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 125 in
-  software. Each pass uploads only the rows of the base picture, the
+  software. With `SoftShadows` it drew about 200, with `Bloom` about 180, and with every effect on
+  about 150; most of the bloom cost is the processor comparing the emissive mask row by row. Each
+  pass uploads only the rows of the base picture, the
   depth buffer and the alpha buffer that changed since the last drawn pass. Outside Windows the
   depth and alpha buffers cannot list the pages written to them, so those two go up whole every
   pass.

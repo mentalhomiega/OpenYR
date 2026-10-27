@@ -70,6 +70,11 @@ struct GpuMapPass
 	// the tile layer's shadows are in Base.
 	std::vector<unsigned char> const * TileShadow = NULL;
 	std::vector<unsigned char> * TileShadowChanged = NULL;
+
+	// With bloom, the emissive mask under Area and a flag for each of its rows that changed since the
+	// GPU last took it; NULL for no glow.
+	std::vector<unsigned char> const * Glow = NULL;
+	std::vector<unsigned char> * GlowChanged = NULL;
 };
 
 
@@ -91,6 +96,10 @@ void GpuMap_Set_Soft_Shadows(int radius);
 
 // True when the renderer is running and can draw map passes.
 bool GpuMap_Supported(void);
+
+// Adds a glow around the emissive parts of the picture at strength percent (at most 400); 0 adds none.
+void GpuMap_Set_Bloom(int strength);
+int GpuMap_Bloom(void);
 
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass

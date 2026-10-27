@@ -464,6 +464,7 @@ void GScreenClass::Render(void)
 	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
 	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
+	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

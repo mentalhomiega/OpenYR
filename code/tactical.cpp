@@ -48,6 +48,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "emissive.h"
 #include "emissive_surface.h"
 #include "linetrail.h"
 #include "radbeam.h"
@@ -1321,6 +1322,9 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		if (drawpass == DRAW_PASS_FULL || !GpuDraw_Planned()) {
 			ShadowPlane_Darken(*LogicalSurface, TacticalRect, DSurface::Get_Halfbright_Mask());
 		}
+	} else if (drawpass == DRAW_PASS_BACKGROUND && Emissive_Is_Enabled()) {
+		// The pixels stay behind for the GPU pass, but the emissive values the last frame's objects left must go.
+		Emissive_After_Bit_Blit(*LogicalSurface, TacticalRect.X, TacticalRect.Y, *TileSurface, TacticalRect.X, TacticalRect.Y, TacticalRect.Width, TacticalRect.Height);
 	}
 
 	if (drawpass == DRAW_PASS_FOREGROUND || drawpass == DRAW_PASS_FULL) {

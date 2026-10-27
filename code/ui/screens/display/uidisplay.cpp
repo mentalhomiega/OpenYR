@@ -34,6 +34,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialGpuRender(State.GpuRender),
 	InitialSoftShadows(State.SoftShadows),
 	InitialShockwaves(State.Shockwaves),
+	InitialBloom(State.Bloom),
 	InitialFilter(State.Filter),
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
@@ -204,6 +205,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.GpuRender = false;
 		State.SoftShadows = false;
 		State.Shockwaves = false;
+		State.Bloom = false;
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -344,6 +346,11 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 			State.Shockwaves = (intent.Value != 0);
 		}
 
+	} else if (intent.Name == "bloom") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Bloom = (intent.Value != 0);
+		}
+
 	} else if (intent.Name == "filter") {
 		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
 
@@ -439,8 +446,8 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		if (State.IntegerScaling != InitialIntegerScaling) {
 			Service.Set_Integer_Scaling(State.IntegerScaling);
 		}
-		if (State.GpuRender != InitialGpuRender || State.SoftShadows != InitialSoftShadows || State.Shockwaves != InitialShockwaves) {
-			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves);
+		if (State.GpuRender != InitialGpuRender || State.SoftShadows != InitialSoftShadows || State.Shockwaves != InitialShockwaves || State.Bloom != InitialBloom) {
+			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom);
 		}
 		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
 			Service.Set_Filter(State.Filters[State.Filter].Value);
@@ -643,6 +650,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("gpurender");
 			Model.DirtyVariable("softshadows");
 			Model.DirtyVariable("shockwaves");
+			Model.DirtyVariable("bloom");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -721,6 +729,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("gpurender", &state.GpuRender)
 				&& model.Bind("softshadows", &state.SoftShadows)
 				&& model.Bind("shockwaves", &state.Shockwaves)
+				&& model.Bind("bloom", &state.Bloom)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)

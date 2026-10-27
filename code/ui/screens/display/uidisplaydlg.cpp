@@ -150,11 +150,13 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves) override
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom) override
 		{
 			Options.GpuRender = render;
 			Options.SoftShadows = softshadows;
 			Options.Shockwaves = shockwaves;
+			Options.Bloom = bloom;
+			Apply_HDR_Highlights();
 		}
 
 		virtual void Set_Filter(int mode) override
@@ -481,6 +483,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.GpuRender = Options.GpuRender;
 	state.SoftShadows = Options.SoftShadows;
 	state.Shockwaves = Options.Shockwaves;
+	state.Bloom = Options.Bloom;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
 	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {

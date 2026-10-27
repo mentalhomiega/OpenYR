@@ -26,6 +26,7 @@
 
 #include "shaders/mapdraw/fs_mapblur.bin.h"
 #include "shaders/mapdraw/fs_mapdraw.bin.h"
+#include "shaders/mapdraw/fs_mapglow.bin.h"
 #include "shaders/mapdraw/fs_mappost.bin.h"
 #include "shaders/mapdraw/vs_mapdraw.bin.h"
 
@@ -56,6 +57,13 @@ static const bgfx::EmbeddedShader _MapShaders[] = {
 		"fs_mappost",
 		{
 			{ bgfx::RendererType::Direct3D11, fs_mappost_dxbc, sizeof(fs_mappost_dxbc) },
+			{ bgfx::RendererType::Count, NULL, 0 },
+		}
+	},
+	{
+		"fs_mapglow",
+		{
+			{ bgfx::RendererType::Direct3D11, fs_mapglow_dxbc, sizeof(fs_mapglow_dxbc) },
 			{ bgfx::RendererType::Count, NULL, 0 },
 		}
 	},
@@ -145,6 +153,19 @@ static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _TileShadow = BGFX_INVALID_HANDLE;
 static bool _TileShadowTracked = false;
+
+// Bloom: the emissive mask, kept between passes like the tile shadows, weights the picture into a
+// quarter-size glow that is blurred and added back in the post pass.
+static int _BloomStrength = 0;
+static int const GLOW_RADIUS = 6;
+static bgfx::ProgramHandle _GlowProgram = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _GlowUniform = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _GlowMaskSampler = BGFX_INVALID_HANDLE;
+static bgfx::UniformHandle _GlowSampler = BGFX_INVALID_HANDLE;
+static bgfx::TextureHandle _GlowMask = BGFX_INVALID_HANDLE;
+static bool _GlowMaskTracked = false;
+static bgfx::TextureHandle _GlowTexture[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
+static bgfx::FrameBufferHandle _GlowTarget[2] = { BGFX_INVALID_HANDLE, BGFX_INVALID_HANDLE };
 static bgfx::TextureHandle _Snapshot = BGFX_INVALID_HANDLE;
 
 // Set while a drawn pass's buffers are uploaded by reference and its frame is not yet submitted.
@@ -189,8 +210,12 @@ static bool Start(void)
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
 	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
-	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
-		DebugString("GPU_DIFF: the shadow blur or shockwave program did not build\n");
+	_GlowProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapglow"), true);
+	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
+	_GlowMaskSampler = bgfx::createUniform("s_glowmask", bgfx::UniformType::Sampler);
+	_GlowSampler = bgfx::createUniform("s_glow", bgfx::UniformType::Sampler);
+	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram) || !bgfx::isValid(_GlowProgram)) {
+		DebugString("GPU_DIFF: the shadow blur, shockwave or glow program did not build\n");
 	}
 	_Layout.begin()
 		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
@@ -213,6 +238,18 @@ static void Destroy_Target(void)
 		_PostTexture = BGFX_INVALID_HANDLE;
 	}
 	_PostShown = false;
+	for (int i = 0; i < 2; i++) {
+		if (bgfx::isValid(_GlowTarget[i])) {
+			bgfx::destroy(_GlowTarget[i]);
+			_GlowTarget[i] = BGFX_INVALID_HANDLE;
+			_GlowTexture[i] = BGFX_INVALID_HANDLE;
+		}
+	}
+	if (bgfx::isValid(_GlowMask)) {
+		bgfx::destroy(_GlowMask);
+		_GlowMask = BGFX_INVALID_HANDLE;
+	}
+	_GlowMaskTracked = false;
 	for (int i = 0; i < 2; i++) {
 		if (bgfx::isValid(_ShadowTarget[i])) {
 			bgfx::destroy(_ShadowTarget[i]);
@@ -273,6 +310,16 @@ static bool Size_Target(int width, int height)
 	_PostTexture = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | point);
 	_PostTarget = bgfx::isValid(_PostTexture) ? bgfx::createFrameBuffer(1, &_PostTexture, true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
 	if (!bgfx::isValid(_PostTarget)) {
+		Destroy_Target();
+		return(false);
+	}
+	_GlowMask = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, point);
+	uint64_t const linear = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+	for (int i = 0; i < 2; i++) {
+		_GlowTexture[i] = bgfx::createTexture2D((uint16_t)((width + 3) / 4), (uint16_t)((height + 3) / 4), false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_RT | linear);
+		_GlowTarget[i] = bgfx::isValid(_GlowTexture[i]) ? bgfx::createFrameBuffer(1, &_GlowTexture[i], true) : bgfx::FrameBufferHandle{ bgfx::kInvalidHandle };
+	}
+	if (!bgfx::isValid(_GlowMask) || !bgfx::isValid(_GlowTarget[0]) || !bgfx::isValid(_GlowTarget[1])) {
 		Destroy_Target();
 		return(false);
 	}
@@ -427,13 +474,13 @@ static bool Fill_R16_Changed(Store & store, unsigned short const * values, int w
 }
 
 
-// Uploads the rows of the tile layer's shadow plane that changed since the GPU last took them, and
-// clears their flags.
-static void Upload_Tile_Shadow(std::vector<unsigned char> const & values, int width, int rows, std::vector<unsigned char> & changed)
+// Uploads the rows of a plane kept in texture that changed since the GPU last took them, and clears
+// their flags. Tracked is cleared when the texture is remade, which sends every row.
+static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vector<unsigned char> const & values, int width, int rows, std::vector<unsigned char> & changed)
 {
-	if (!_TileShadowTracked || (int)changed.size() != rows) {
+	if (!tracked || (int)changed.size() != rows) {
 		changed.assign(rows, 1);
-		_TileShadowTracked = true;
+		tracked = true;
 	}
 	int const GAP = 8;
 	int row = 0;
@@ -449,7 +496,7 @@ static void Upload_Tile_Shadow(std::vector<unsigned char> const & values, int wi
 		}
 		int const end = row - unchanged;
 		std::fill(changed.begin() + first, changed.begin() + end, 0);
-		bgfx::updateTexture2D(_TileShadow, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
+		bgfx::updateTexture2D(texture, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
 	}
 }
 
@@ -581,6 +628,41 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 }
 
 
+// Weights the drawn picture by the emissive mask into the first glow picture, a quarter of the size,
+// and blurs it there through the second.
+static void Submit_Glow(GpuMapPass const & pass, Rect const & area)
+{
+	Upload_Plane(_GlowMask, _GlowMaskTracked, *pass.Glow, area.Width, area.Height, *pass.GlowChanged);
+	Rect const quarter(0, 0, (area.Width + 3) / 4, (area.Height + 3) / 4);
+	float projection[16];
+	Backend_Build_Ortho_Projection(projection, quarter.Width, quarter.Height);
+	bgfx::TransientVertexBuffer buffer;
+	bgfx::allocTransientVertexBuffer(&buffer, 6, _Layout);
+	float const t[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	Set_Quad((MapVertex *)buffer.data, quarter, 0, 0, quarter.Width, quarter.Height, t, t, t);
+
+	Set_Map_View(VIEW_MAPGLOW, _GlowTarget[0], quarter, projection);
+	float const prepare[4] = { (float)area.Width, (float)area.Height, 0.0f, 0.0f };
+	bgfx::setUniform(_GlowUniform, prepare);
+	bgfx::setVertexBuffer(0, &buffer, 0, 6);
+	bgfx::setTexture(0, _SceneSampler, _TargetTexture);
+	bgfx::setTexture(1, _GlowMaskSampler, _GlowMask);
+	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+	bgfx::submit(VIEW_MAPGLOW, _GlowProgram);
+
+	bgfx::ViewId const views[2] = { VIEW_MAPGLOWX, VIEW_MAPGLOWY };
+	for (int step = 0; step < 2; step++) {
+		Set_Map_View(views[step], _GlowTarget[1 - step], quarter, projection);
+		float const blur[4] = { step == 0 ? 1.0f : 0.0f, step == 0 ? 0.0f : 1.0f, (float)GLOW_RADIUS, 1.0f };
+		bgfx::setUniform(_GlowUniform, blur);
+		bgfx::setVertexBuffer(0, &buffer, 0, 6);
+		bgfx::setTexture(0, _SceneSampler, _GlowTexture[step]);
+		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+		bgfx::submit(views[step], _GlowProgram);
+	}
+}
+
+
 static bool Submit_Pass(GpuMapPass const & pass)
 {
 	if (!Start()) {
@@ -683,7 +765,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	bool const tileshadow = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && _SoftShadowRadius > 0
 		&& pass.TileShadow->size() == (std::size_t)area.Width * area.Height;
 	if (tileshadow) {
-		Upload_Tile_Shadow(*pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
+		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
 	}
 	bool const shadowed = shadows > 0 || tileshadow;
 	int const quads = (int)list.Blits.size() + 1;
@@ -800,9 +882,16 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		bgfx::submit(view, _Program);
 	}
 
+	bool const glow = pass.Glow != NULL && pass.GlowChanged != NULL && _BloomStrength > 0 && bgfx::isValid(_GlowProgram)
+		&& pass.Glow->size() == (std::size_t)area.Width * area.Height;
+	if (glow) {
+		Submit_Glow(pass, area);
+	}
+
 	_PostShown = false;
-	if (pass.Ripples != NULL && !pass.Ripples->empty()) {
-		int const count = std::min((int)pass.Ripples->size(), RIPPLE_LIMIT);
+	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
+	if (ripple || glow) {
+		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
 		float ripples[RIPPLE_LIMIT * 4] = {};
 		for (int i = 0; i < count; i++) {
 			GpuRipple const & ripple = (*pass.Ripples)[i];
@@ -811,12 +900,15 @@ static bool Submit_Pass(GpuMapPass const & pass)
 			ripples[i * 4 + 2] = ripple.Radius;
 			ripples[i * 4 + 3] = ripple.Strength;
 		}
-		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, 0.0f };
+		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, glow ? 1.2f * (float)_BloomStrength / 100.0f : 0.0f };
 		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection);
-		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)count);
+		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
 		bgfx::setUniform(_RippleInfoUniform, info);
 		bgfx::setVertexBuffer(0, &buffer, 0, 6);
 		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
+		if (glow) {
+			bgfx::setTexture(1, _GlowSampler, _GlowTexture[0]);
+		}
 		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
 		bgfx::submit(VIEW_MAPPOST, _PostProgram);
 		_PostShown = true;
@@ -875,6 +967,18 @@ bool GpuMap_Supported(void)
 void GpuMap_Set_Soft_Shadows(int radius)
 {
 	_SoftShadowRadius = std::clamp(radius, 0, 16);
+}
+
+
+void GpuMap_Set_Bloom(int strength)
+{
+	_BloomStrength = std::clamp(strength, 0, 400);
+}
+
+
+int GpuMap_Bloom(void)
+{
+	return(_BloomStrength);
 }
 
 
@@ -966,6 +1070,13 @@ void GpuMap_Shutdown(void)
 		bgfx::destroy(_RippleInfoUniform);
 		bgfx::destroy(_RingUniform);
 		_PostProgram = BGFX_INVALID_HANDLE;
+		if (bgfx::isValid(_GlowProgram)) {
+			bgfx::destroy(_GlowProgram);
+			_GlowProgram = BGFX_INVALID_HANDLE;
+		}
+		bgfx::destroy(_GlowUniform);
+		bgfx::destroy(_GlowMaskSampler);
+		bgfx::destroy(_GlowSampler);
 	}
 	_Ready = false;
 	_Failed = false;

@@ -243,6 +243,8 @@ OptionsClass::OptionsClass(void) :
 	SoftShadows(false),
 	SoftShadowRadius(3),
 	Shockwaves(false),
+	Bloom(false),
+	BloomStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -602,13 +604,14 @@ static char const * Scale_Mode_Name(int mode)
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
 /// <summary>
-/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
+/// the debug view.
 /// The masks follow the renderer, so this is called again once the renderer has started.
 /// </summary>
 void Apply_HDR_Highlights(void)
 {
 	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
-	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
 }
 
 
@@ -724,6 +727,8 @@ void OptionsClass::Load_Settings(void)
 	SoftShadows = ConfigINI.Get_Bool("Video", "SoftShadows", SoftShadows);
 	SoftShadowRadius = std::clamp(ConfigINI.Get_Int("Video", "SoftShadowRadius", SoftShadowRadius), 1, 16);
 	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
+	Bloom = ConfigINI.Get_Bool("Video", "Bloom", Bloom);
+	BloomStrength = std::clamp(ConfigINI.Get_Int("Video", "BloomStrength", BloomStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
@@ -920,6 +925,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "SoftShadows", SoftShadows);
 	ConfigINI.Put_Int("Video", "SoftShadowRadius", SoftShadowRadius);
 	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
+	ConfigINI.Put_Bool("Video", "Bloom", Bloom);
+	ConfigINI.Put_Int("Video", "BloomStrength", BloomStrength);
 	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

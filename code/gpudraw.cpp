@@ -23,6 +23,7 @@
 #include "coord.h"
 #include "dbgprint.h"
 #include "dsurface.h"
+#include "emissive.h"
 #include "globals.h"
 #include "gpumap.h"
 #include "ovrlight.h"
@@ -432,6 +433,17 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 	}
 	int const left = std::max(area.X, 0);
 	int const right = std::min(area.X + area.Width, plane.Width);
+	if (left == area.X && right == area.X + area.Width && area.Y >= 0 && area.Y + area.Height <= plane.Height) {
+		for (int r = 0; r < area.Height; r++) {
+			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
+			unsigned char * copy = &values[r * width];
+			if (std::memcmp(copy, row, width) != 0) {
+				std::memcpy(copy, row, width);
+				changed[r] = 1;
+			}
+		}
+		return;
+	}
 	std::vector<unsigned char> row(width);
 	for (int r = 0; r < area.Height; r++) {
 		int const y = area.Y + r;
@@ -659,11 +671,14 @@ static bool Finish_Render(Surface & target)
 	static std::vector<unsigned char> changed;
 	static std::vector<unsigned char> tileshadow;
 	static std::vector<unsigned char> tileshadowchanged;
+	static std::vector<unsigned char> glow;
+	static std::vector<unsigned char> glowchanged;
 	static Rect changedarea;
 	std::vector<unsigned short> & base = upload[0];
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
 		changed.clear();
 		tileshadowchanged.clear();
+		glowchanged.clear();
 		changedarea = _Area;
 		_BaseTiles = NULL;
 	}
@@ -687,6 +702,10 @@ static bool Finish_Render(Surface & target)
 	if (plane != NULL && (!same || tileshadow.size() != (std::size_t)_Area.Width * _Area.Height)) {
 		Read_Plane(*plane, _Area, tileshadow, tileshadowchanged);
 	}
+	EmissivePlane const * emissive = GpuMap_Bloom() > 0 ? Emissive_Plane_For(&target) : NULL;
+	if (emissive != NULL) {
+		Read_Plane(*emissive, _Area, glow, glowchanged);
+	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
 			if (blit.Line >= 0) {
@@ -707,6 +726,8 @@ static bool Finish_Render(Surface & target)
 		pass.BaseChanged = &changed;
 		pass.TileShadow = plane != NULL ? &tileshadow : NULL;
 		pass.TileShadowChanged = plane != NULL ? &tileshadowchanged : NULL;
+		pass.Glow = emissive != NULL ? &glow : NULL;
+		pass.GlowChanged = emissive != NULL ? &glowchanged : NULL;
 		std::vector<GpuRipple> const ripples = Shockwave_Ripples();
 		pass.Ripples = &ripples;
 		if (GpuMap_Draw(pass)) {
