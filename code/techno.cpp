@@ -5685,7 +5685,7 @@ void TechnoClass::Draw_Target_Laser(void) const
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
 static void Play_Unit_Voice(VocType voc)
 {
-	if (voc != VOC_NONE && Options.UnitVoiceVolume > 0.0f) {
+	if (voc != VOC_NONE) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
 	Unit_Voice_Effect(voc);
