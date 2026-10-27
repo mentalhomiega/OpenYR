@@ -258,6 +258,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * alternatives will not repeat itself.
 		 */
 		TypeList<int> VoiceSelect;
+		// Played instead of VoiceSelect while the object is a slave of a Slave Miner (TechnoClass::VoiceSelect, 0x708EB0).
+		TypeList<int> VoiceSelectEnslaved;
 		TypeList<int> VoiceMove;
 		TypeList<int> VoiceAttack;
 		TypeList<int> VoiceDie;

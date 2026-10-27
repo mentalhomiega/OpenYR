@@ -5685,7 +5685,7 @@ void TechnoClass::Draw_Target_Laser(void) const
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
 static void Play_Unit_Voice(VocType voc)
 {
-	if (voc != VOC_NONE && Options.UnitVoiceVolume > 0.0f) {
+	if (voc != VOC_NONE) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
 	Unit_Voice_Effect(voc);
@@ -9825,8 +9825,10 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	if (AllowVoice && TClass->VoiceSelect.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
+	// A slave of a Slave Miner answers with its enslaved lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : TClass->VoiceSelect;
+	if (AllowVoice && voices.Count()) {
+		Play_Unit_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
 }
 
