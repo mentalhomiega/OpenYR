@@ -675,11 +675,14 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 
 			point = Screen_To_View_Offset(Point2D(event.X - ScreenTacticalRect.X, event.Y - ScreenTacticalRect.Y));
 
-			// A pending building cannot be placed by a release over the modern command bar or panel.
-			bool const over_hud = Modern_Interface() && Map.PendingObjectPtr != NULL && !Point_Over_Map(Point2D(event.X, event.Y));
-			if (!over_hud) {
+			// In the modern interface a release over the command bar or panel orders nothing and places nothing, except
+			// that a rubber band in progress still finishes; Mouse_Left_Held holds its corner to the map.
+			bool const over_hud = Modern_Interface() && !Point_Over_Map(Point2D(event.X, event.Y));
+			if (!over_hud || (IsRubberBand && Map.PendingObjectPtr == NULL)) {
 				Resolve_Point(point, cell, coord, object, fog, shadow);
 				Map.Mouse_Left_Release(coord, cell, object, What_Action(cell, object, false));
+			} else {
+				IsTentative = false;
 			}
 			IsMouseDown = false;
 			Main_Window_Capture_Mouse(false);

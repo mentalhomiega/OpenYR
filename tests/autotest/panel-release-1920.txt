@@ -1,0 +1,58 @@
+; The Modern panel's release rules at 1920x1080. The panel covers x 1670 and up, down to y 411. E1 is at 44,40 (window 900,300),
+; E2 at 56,30 (window 1560,330, open map inside the bands below), and HTNK at 58,26 (window 1740,300, under the panel).
+; A band is dragged with windowpress, hold 01 (the left button, held for the drag), windowmove steps and windowrelease, then
+; release 01. Each case has a control with the same steps on the open map.
+; 1. A drag from 1500,240 to 1800,360 over the panel: the band stops at the panel's edge (x 1669), so "selected" lists E2 and
+;    not HTNK. Nothing is ordered: E2 and HTNK keep Guard.
+; 2. A plain click (no hold) from 1500,240 released over the panel at 1800,360, and then over HTNK at 1740,300, with E1
+;    selected: nothing is ordered and E1 stays selected with Guard.
+; 3. A press on the panel's margin at 1672,200 released on the map at 1500,240: nothing is ordered and E1 keeps Guard.
+; 4. Controls on the open map: a drag from 1400,240 to 1640,360 selects E2 alone, and a plain click at 1400,240 orders E1 to move.
+; Before the fix, case 1 also selects HTNK, and case 2 orders E1 to move with the release at 1800,360 (Guard becomes Move).
+; Expected after the fix: "selected 1: E2" at 70 and 136, "selected 1: E1" at 93 and 105, E1 Guard at 92 and 104 and 118,
+; E2 and HTNK Guard at 71 and 72, and E1 Move at 148.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/panel-release-1920.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80" -Filter "AUTOTEST|Exception"
+30 view 46 40
+35 reveal
+40 grantunit E1 44 40
+41 own E2 56 30
+42 own HTNK 58 26
+50 select E1
+55 where E2
+56 where HTNK
+60 windowpress 1500 240
+61 hold 01
+62 windowmove 1600 300
+63 windowmove 1700 300
+64 windowmove 1800 360
+65 windowmove 1800 360
+66 windowrelease 1800 360
+67 release 01
+70 selected
+71 where E2
+72 where HTNK
+80 select E1
+84 windowpress 1500 240
+88 windowrelease 1800 360
+92 where E1
+93 selected
+96 windowpress 1500 240
+100 windowrelease 1740 300
+104 where E1
+105 selected
+110 windowpress 1672 200
+114 windowrelease 1500 240
+118 where E1
+119 selected
+120 windowpress 1400 240
+124 hold 01
+126 windowmove 1500 300
+128 windowmove 1640 360
+130 windowmove 1640 360
+132 windowrelease 1640 360
+133 release 01
+136 selected
+140 select E1
+144 windowclick 1400 240
+148 where E1
+240 quit
