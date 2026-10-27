@@ -10,7 +10,7 @@ default, and works only in the modern interface on Direct3D 11.
 |---|---|---|
 | Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, the pixels of plain, depth-shaded, additive and antialiased lines (mind-control links, trails, electric bolts and lasers), and the pixels sonic and magnetron waves shift. |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
-| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow) and `fs_mappost.sc` (shockwaves, bloom and cloud shadows), each compiled into a `.bin.h` header. |
+| Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur), `fs_mapglow.sc` (bloom glow) and `fs_mappost.sc` (shockwaves, bloom, cloud shadows and weather), each compiled into a `.bin.h` header. |
 
 The terrain, buildings and trees that stand still are still drawn in software into the cached
 tile layer. Each frame the GPU receives that picture, the depth buffer and, when a blit needs it,
@@ -33,10 +33,12 @@ result; [AUTOTEST.md](AUTOTEST.md) documents them.
 
 All keys are in the `[Video]` section and are read at startup. The **GPU drawing** switches on the
 Graphics page of the settings set `GpuRender`, `SoftShadows`, `Shockwaves`, `Bloom` (the **Glow**
-switch), `WaterRipples` and `CloudShadows` when the page is accepted, and the game writes every key in
-the table back to `RA2MD.INI`. The effect switches are greyed out until GPU drawing is ticked, and GPU
-drawing is greyed out without the modern interface. `SoftShadowRadius`, `BloomStrength`,
-`WaterRippleStrength` and `CloudShadowStrength` have no switch.
+switch), `WaterRipples`, `CloudShadows` and `Weather` when the page is accepted, and the game writes
+every key in the table back to `RA2MD.INI`. The effect switches are greyed out until GPU drawing is
+ticked, and GPU drawing is greyed out without the modern interface. Ticking **Weather** sets
+`Weather=Map` unless `RA2MD.INI` already chose `Rain` or `Snow`, and clearing it sets `None`.
+`SoftShadowRadius`, `BloomStrength`, `WaterRippleStrength`, `CloudShadowStrength` and
+`WeatherStrength` have no switch.
 
 | Key | Default | Effect |
 |---|---|---|
@@ -50,6 +52,8 @@ drawing is greyed out without the modern interface. `SoftShadowRadius`, `BloomSt
 | `WaterRippleStrength` | `100` | The size of the `WaterRipples` shift and shading and the brightness of its glints, in percent, from 1 to 400. |
 | `CloudShadows` | `no` | With `GpuRender`, the shadows of clouds a few hundred pixels across drift slowly over the map, about 10 pixels a second, and darken everything the pass draws under them, units included, by up to 30%. They cover about a third of the map and stay fixed to the ground as the view scrolls. A pass drawn in software shows no clouds. |
 | `CloudShadowStrength` | `100` | How much a cloud darkens the map in percent, from 1 to 400; 400 darkens it completely. |
+| `Weather` | `None` | With `GpuRender`, `Map` makes snow fall on maps whose theater sets `IsArctic=yes`, which in Yuri's Revenge is the snow theater, and draws nothing on other maps. `Snow` and `Rain` fall on every map; rain also dims the picture, by 6% at the usual amount and at most 12%. The flakes and drops are drawn over everything in the pass, fall in two or three layers at different speeds, and move with the ground as the view scrolls. A pass drawn in software shows no weather. |
+| `WeatherStrength` | `100` | How much snow or rain falls, in percent, from 1 to 400. |
 
 ## Limits
 

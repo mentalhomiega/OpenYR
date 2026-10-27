@@ -72,6 +72,8 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "scenario.h"
+#include "theater.h"
 #include "emissive.h"
 #include "emissive_surface.h"
 #include "shadowplane.h"
@@ -468,6 +470,13 @@ void GScreenClass::Render(void)
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
 	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
 	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
+	GpuWeather weather = GPU_WEATHER_NONE;
+	if (Options.Weather == WEATHER_RAIN) {
+		weather = GPU_WEATHER_RAIN;
+	} else if (Options.Weather == WEATHER_SNOW || (Options.Weather == WEATHER_MAP && Scen != NULL && TheaterClass::As_Reference(Scen->Theater).IsArctic)) {
+		weather = GPU_WEATHER_SNOW;
+	}
+	GpuMap_Set_Weather(weather, Options.WeatherStrength);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

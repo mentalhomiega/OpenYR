@@ -37,6 +37,7 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialBloom(State.Bloom),
 	InitialWaterRipples(State.WaterRipples),
 	InitialCloudShadows(State.CloudShadows),
+	InitialWeather(State.Weather),
 	InitialFilter(State.Filter),
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
@@ -210,6 +211,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.Bloom = false;
 		State.WaterRipples = false;
 		State.CloudShadows = false;
+		State.Weather = false;
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -365,6 +367,11 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 			State.CloudShadows = (intent.Value != 0);
 		}
 
+	} else if (intent.Name == "weather") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Weather = (intent.Value != 0);
+		}
+
 	} else if (intent.Name == "filter") {
 		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
 
@@ -461,8 +468,9 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 			Service.Set_Integer_Scaling(State.IntegerScaling);
 		}
 		if (State.GpuRender != InitialGpuRender || State.SoftShadows != InitialSoftShadows || State.Shockwaves != InitialShockwaves || State.Bloom != InitialBloom || State.WaterRipples != InitialWaterRipples
-			|| State.CloudShadows != InitialCloudShadows) {
-			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom, State.WaterRipples, State.CloudShadows);
+			|| State.CloudShadows != InitialCloudShadows
+			|| State.Weather != InitialWeather) {
+			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom, State.WaterRipples, State.CloudShadows, State.Weather);
 		}
 		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
 			Service.Set_Filter(State.Filters[State.Filter].Value);
@@ -668,6 +676,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("bloom");
 			Model.DirtyVariable("waterripples");
 			Model.DirtyVariable("cloudshadows");
+			Model.DirtyVariable("weather");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -749,6 +758,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("bloom", &state.Bloom)
 				&& model.Bind("waterripples", &state.WaterRipples)
 				&& model.Bind("cloudshadows", &state.CloudShadows)
+				&& model.Bind("weather", &state.Weather)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)

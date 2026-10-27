@@ -46,6 +46,15 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
+// The weather the GPU map pass draws: Map snows on maps whose theater sets IsArctic and draws
+// nothing elsewhere, and Rain and Snow fall on every map.
+enum WeatherMode {
+	WEATHER_NONE,
+	WEATHER_MAP,
+	WEATHER_RAIN,
+	WEATHER_SNOW
+};
+
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
 enum MenuThemeType {
 	MENU_THEME_RANDOM,
@@ -311,6 +320,10 @@ class OptionsClass {
 		// With GpuRender, the map is shaded under slowly drifting clouds, at CloudShadowStrength percent.
 		bool CloudShadows;
 		int CloudShadowStrength;
+
+		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
+		int Weather;
+		int WeatherStrength;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.

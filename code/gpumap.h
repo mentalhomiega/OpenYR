@@ -113,6 +113,15 @@ void GpuMap_Set_Water(int strength);
 // Shades the map under slowly drifting clouds at strength percent (at most 400); 0 shows no clouds.
 void GpuMap_Set_Clouds(int strength);
 
+enum GpuWeather {
+	GPU_WEATHER_NONE,
+	GPU_WEATHER_RAIN,
+	GPU_WEATHER_SNOW
+};
+
+// Draws weather falling over the map, with strength percent (at most 400) of the usual amount.
+void GpuMap_Set_Weather(GpuWeather weather, int strength);
+
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass
 // does not fit the GPU limits.

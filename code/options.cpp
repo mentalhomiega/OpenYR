@@ -249,6 +249,8 @@ OptionsClass::OptionsClass(void) :
 	WaterRippleStrength(100),
 	CloudShadows(false),
 	CloudShadowStrength(100),
+	Weather(WEATHER_NONE),
+	WeatherStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -737,6 +739,10 @@ void OptionsClass::Load_Settings(void)
 	WaterRippleStrength = std::clamp(ConfigINI.Get_Int("Video", "WaterRippleStrength", WaterRippleStrength), 1, 400);
 	CloudShadows = ConfigINI.Get_Bool("Video", "CloudShadows", CloudShadows);
 	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
+	char weathername[16];
+	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
+	Weather = stricmp(weathername, "Map") == 0 ? WEATHER_MAP : stricmp(weathername, "Rain") == 0 ? WEATHER_RAIN : stricmp(weathername, "Snow") == 0 ? WEATHER_SNOW : WEATHER_NONE;
+	WeatherStrength = std::clamp(ConfigINI.Get_Int("Video", "WeatherStrength", WeatherStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
@@ -939,6 +945,9 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
 	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
 	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
+	static char const * const _weathernames[] = { "None", "Map", "Rain", "Snow" };
+	ConfigINI.Put_String("Video", "Weather", _weathernames[std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW)]);
+	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
 	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

@@ -150,7 +150,7 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
-		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds) override
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override
 		{
 			Options.GpuRender = render;
 			Options.SoftShadows = softshadows;
@@ -158,6 +158,12 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Options.Bloom = bloom;
 			Options.WaterRipples = water;
 			Options.CloudShadows = clouds;
+			// Ticking the switch keeps a Rain or Snow chosen in RA2MD.INI.
+			if (!weather) {
+				Options.Weather = WEATHER_NONE;
+			} else if (Options.Weather == WEATHER_NONE) {
+				Options.Weather = WEATHER_MAP;
+			}
 			Apply_HDR_Highlights();
 		}
 
@@ -488,6 +494,7 @@ void UI_Display_State(UIDisplayState & state)
 	state.Bloom = Options.Bloom;
 	state.WaterRipples = Options.WaterRipples;
 	state.CloudShadows = Options.CloudShadows;
+	state.Weather = Options.Weather != WEATHER_NONE;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
 	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {
