@@ -91,8 +91,8 @@ void Test_Plane(void)
 	RLEBlitTransXlat<unsigned short> xlat(translator.data());
 
 	TileSurface = &tile;
-	Check(ShadowPlane_Set_Enabled(true), "turning planes on reports a change");
-	Check(!ShadowPlane_Set_Enabled(true), "turning planes on twice reports no change");
+	Check(ShadowPlane_Set_Enabled(true, false), "turning planes on reports a change");
+	Check(!ShadowPlane_Set_Enabled(true, false), "turning planes on twice reports no change");
 	ShadowPlane_Sync(&copy, &tile, NULL, NULL);
 
 	RLE_Blit(tile, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
@@ -121,12 +121,65 @@ void Test_Plane(void)
 	ShadowPlane_Darken(copy, Rect(0, 0, W, H), HALF_MASK);
 	Check(copypixels[2 * W + 4] == (unsigned short)((GROUND >> 1) & HALF_MASK) && copypixels[1 * W + 2] == DRAWN, "darkening a surface halves only the marked pixels");
 
-	Check(ShadowPlane_Set_Enabled(false), "turning planes off reports a change");
+	Check(ShadowPlane_Set_Enabled(false, false), "turning planes off reports a change");
 	Check(ShadowPlane_For(TileSurface) == NULL, "turning planes off frees them");
 	std::fill(tilepixels.begin(), tilepixels.end(), GROUND);
 	RLE_Blit(tile, Rect(2, 1, 4, 2), source, Rect(0, 0, 4, 2), darken);
 	Check(Same(tilepixels, reference), "with planes off a shadow darkens the pixels");
 
+	ShadowPlane_Sync(NULL, NULL, NULL, NULL);
+	TileSurface = NULL;
+}
+
+
+void Test_Water(void)
+{
+	std::vector<unsigned short> tilepixels(W * H, GROUND);
+	std::vector<unsigned short> copypixels(W * H, 0);
+	std::vector<unsigned char> shape(SHAPE, SHAPE + sizeof(SHAPE));
+	std::vector<unsigned short> translator(256, DRAWN);
+	BSurface tile(W, H, 2, tilepixels.data());
+	BSurface copy(W, H, 2, copypixels.data());
+	BSurface source(4, 2, 1, shape.data());
+	RLEBlitTransDarken<unsigned short> darken(HALF_MASK);
+	RLEBlitTransXlat<unsigned short> xlat(translator.data());
+
+	TileSurface = &tile;
+	Check(ShadowPlane_Set_Enabled(false, true), "keeping only water turns planes on");
+	ShadowPlane_Sync(&copy, &tile, NULL, NULL);
+
+	// A 4 by 2 diamond in the top left corner; 32 marks the pixels outside it.
+	std::vector<unsigned char> diamond(W * H, 32);
+	for (int y = 0; y < 2; y++) {
+		for (int x = 0; x < 4; x++) {
+			diamond[y * W + x] = 0;
+		}
+	}
+	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, true);
+	Check(Mark(1, 1) == SHADOWPLANE_WATER && Mark(3, 0) == SHADOWPLANE_WATER && Mark(5, 1) == 0, "a water tile marks the pixels of its diamond");
+
+	RLE_Blit(tile, Rect(0, 0, 4, 2), source, Rect(0, 0, 4, 2), darken);
+	Check(tilepixels[0] == (unsigned short)((GROUND >> 1) & HALF_MASK) && Mark(0, 0) == SHADOWPLANE_WATER, "without kept shadows a shadow darkens the water and leaves it marked");
+
+	std::vector<unsigned short> darkened(W * H, GROUND);
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK);
+	Check(std::count(darkened.begin(), darkened.end(), GROUND) == W * H, "water marks do not darken");
+
+	unsigned char const extra[2] = { 5, 0 };
+	ShadowPlane_After_Extra(tile, 0, 1, Rect(0, 0, W, H), extra, 2, 1);
+	Check(Mark(0, 1) == 0 && Mark(1, 1) == SHADOWPLANE_WATER, "an extra image clears the water under its drawn pixels only");
+
+	RLE_Blit(tile, Rect(2, 0, 4, 2), source, Rect(0, 0, 4, 2), xlat);
+	Check(Mark(2, 0) == 0 && Mark(1, 0) == SHADOWPLANE_WATER, "an opaque draw clears the water under it");
+
+	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, false);
+	Check(Mark(1, 0) == 0 && Mark(1, 1) == 0, "another tile clears the water");
+
+	ShadowPlane_Set_Enabled(true, false);
+	ShadowPlane_After_Tile(tile, 0, 0, Rect(0, 0, W, H), diamond.data(), W, H, true);
+	Check(Mark(1, 0) == 0, "water is not marked while only shadows are kept");
+
+	ShadowPlane_Set_Enabled(false, false);
 	ShadowPlane_Sync(NULL, NULL, NULL, NULL);
 	TileSurface = NULL;
 }
@@ -159,6 +212,7 @@ void Test_Depth_Write(void)
 int main(void)
 {
 	Test_Plane();
+	Test_Water();
 	Test_Depth_Write();
 
 	std::printf("%-52s %s\n", "Shadow plane of the tile layer",

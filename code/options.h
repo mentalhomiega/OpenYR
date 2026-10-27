@@ -304,6 +304,10 @@ class OptionsClass {
 		bool Bloom;
 		int BloomStrength;
 
+		// With GpuRender, the water of the map ripples, at WaterRippleStrength percent.
+		bool WaterRipples;
+		int WaterRippleStrength;
+
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.
 		 * Presents are already limited to the refresh rate without it.

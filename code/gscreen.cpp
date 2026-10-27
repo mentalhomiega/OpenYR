@@ -440,7 +440,8 @@ void GScreenClass::Render(void)
 
 	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
 	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
-	if (ShadowPlane_Set_Enabled(Options.GpuRender && Options.SoftShadows && Modern_Interface() && Video_Map_Layer_Supported() && GpuMap_Supported())) {
+	bool const gpu_planes = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && GpuMap_Supported();
+	if (ShadowPlane_Set_Enabled(gpu_planes && Options.SoftShadows, gpu_planes && Options.WaterRipples)) {
 		redraw = true;
 		TacticalMap->IsToRedraw = true;
 	}
@@ -465,6 +466,7 @@ void GScreenClass::Render(void)
 	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
 	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
+	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
 	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
 	bool gpu_drawn = false;

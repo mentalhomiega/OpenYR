@@ -245,6 +245,8 @@ OptionsClass::OptionsClass(void) :
 	Shockwaves(false),
 	Bloom(false),
 	BloomStrength(100),
+	WaterRipples(false),
+	WaterRippleStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -729,6 +731,8 @@ void OptionsClass::Load_Settings(void)
 	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
 	Bloom = ConfigINI.Get_Bool("Video", "Bloom", Bloom);
 	BloomStrength = std::clamp(ConfigINI.Get_Int("Video", "BloomStrength", BloomStrength), 1, 400);
+	WaterRipples = ConfigINI.Get_Bool("Video", "WaterRipples", WaterRipples);
+	WaterRippleStrength = std::clamp(ConfigINI.Get_Int("Video", "WaterRippleStrength", WaterRippleStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
@@ -927,6 +931,8 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
 	ConfigINI.Put_Bool("Video", "Bloom", Bloom);
 	ConfigINI.Put_Int("Video", "BloomStrength", BloomStrength);
+	ConfigINI.Put_Bool("Video", "WaterRipples", WaterRipples);
+	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
 	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

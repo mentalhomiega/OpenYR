@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -154,6 +155,10 @@ static bgfx::UniformHandle _TileShadowSampler = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _TileShadow = BGFX_INVALID_HANDLE;
 static bool _TileShadowTracked = false;
 
+// Water ripples read the water marks from the same plane as the tile shadows.
+static int _WaterStrength = 0;
+static bgfx::UniformHandle _WaterUniform = BGFX_INVALID_HANDLE;
+
 // Bloom: the emissive mask, kept between passes like the tile shadows, weights the picture into a
 // quarter-size glow that is blurred and added back in the post pass.
 static int _BloomStrength = 0;
@@ -209,6 +214,7 @@ static bool Start(void)
 	_RingUniform = bgfx::createUniform("u_ring", bgfx::UniformType::Vec4, 2);
 	_SnapshotSampler = bgfx::createUniform("s_snapshot", bgfx::UniformType::Sampler);
 	_TileShadowSampler = bgfx::createUniform("s_tileshadow", bgfx::UniformType::Sampler);
+	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
 	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
 	_GlowProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapglow"), true);
 	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
@@ -762,9 +768,10 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
 		return(false);
 	}
-	bool const tileshadow = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && _SoftShadowRadius > 0
-		&& pass.TileShadow->size() == (std::size_t)area.Width * area.Height;
-	if (tileshadow) {
+	bool const plane = pass.TileShadow != NULL && pass.TileShadowChanged != NULL && pass.TileShadow->size() == (std::size_t)area.Width * area.Height;
+	bool const tileshadow = plane && _SoftShadowRadius > 0;
+	bool const water = plane && _WaterStrength > 0;
+	if (tileshadow || water) {
 		Upload_Plane(_TileShadow, _TileShadowTracked, *pass.TileShadow, area.Width, area.Height, *pass.TileShadowChanged);
 	}
 	bool const shadowed = shadows > 0 || tileshadow;
@@ -869,6 +876,18 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		}
 		if (i == 0 && shadowed) {
 			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
+		}
+		if (i == 0) {
+			float waves[4] = {};
+			if (water) {
+				// Wrapped every 1,000 seconds, so the float keeps its precision.
+				long long const ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+				waves[0] = (float)(ms % 1000000) / 1000.0f;
+				waves[1] = 1.5f * _WaterStrength / 100.0f;
+				waves[2] = 0.06f * _WaterStrength / 100.0f;
+				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
+			}
+			bgfx::setUniform(_WaterUniform, waves);
 		}
 		if (kind == KIND_SONIC) {
 			// A view's blits run before its draws, so the wave reads everything drawn before it.
@@ -982,6 +1001,12 @@ int GpuMap_Bloom(void)
 }
 
 
+void GpuMap_Set_Water(int strength)
+{
+	_WaterStrength = std::clamp(strength, 0, 400);
+}
+
+
 std::uint16_t GpuMap_Texture(void)
 {
 	if (_HasKept) {
@@ -1075,6 +1100,7 @@ void GpuMap_Shutdown(void)
 			_GlowProgram = BGFX_INVALID_HANDLE;
 		}
 		bgfx::destroy(_GlowUniform);
+		bgfx::destroy(_WaterUniform);
 		bgfx::destroy(_GlowMaskSampler);
 		bgfx::destroy(_GlowSampler);
 	}

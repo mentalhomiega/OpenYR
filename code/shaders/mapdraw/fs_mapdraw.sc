@@ -19,6 +19,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // 14 sonic wave pixels whose index is the amplitude plus 1, shifted and tinted from s_snapshot (v_texcoord1.z holds
 // the facing plus 8 for a magnetron beam, w the tint at amplitude 0), 15 the tile layer's shadows from s_tileshadow
 // written as 1 into the shadow mask.
+// u_water: x the time in seconds, y how far water ripples shift the base in pixels (0 for none), z how much they
+// brighten and darken it.
 
 #include "bgfx_shader.sh"
 
@@ -33,6 +35,7 @@ SAMPLER2D(s_shadow, 7);
 SAMPLER2D(s_snapshot, 8);
 SAMPLER2D(s_tileshadow, 9);
 uniform vec4 u_ring[2];
+uniform vec4 u_water;
 
 #define ARENA_WIDTH 4096
 
@@ -59,6 +62,34 @@ vec3 Rgb565(int c)
 	return vec3(float((c / 2048) % 32) / 31.0, float((c / 32) % 64) / 63.0, float(c % 32) / 31.0);
 }
 
+// Water tiles mark the tile layer's plane with 1 (code/shadowplane.h).
+bool Water(ivec2 p)
+{
+	return int(texelFetch(s_tileshadow, p, 0).x * 255.0 + 0.5) == 1;
+}
+
+// The base at water pixel p, shifted and shaded by two waves crossing the ground. A neighbour that
+// is not water reads as p itself, so the shore never pulls land into the water.
+vec3 Water_Base(ivec2 p, vec3 still)
+{
+	vec2 at = vec2(p);
+	// The ground is drawn at half height, so the waves run twice as fast down the screen.
+	float a = at.x * 0.045 + at.y * 0.09 + u_water.x * 1.6;
+	float b = at.x * -0.06 + at.y * 0.12 + u_water.x * 1.1;
+	vec2 shift = vec2(sin(a) + 0.6 * sin(b), 0.5 * (cos(a) - 0.6 * cos(b))) * u_water.y;
+	vec2 q = at + shift;
+	ivec2 q0 = ivec2(floor(q));
+	vec2 f = q - floor(q);
+	ivec2 last = textureSize(s_base, 0) - ivec2(1, 1);
+	vec3 c[4];
+	for (int i = 0; i < 4; i++) {
+		ivec2 t = clamp(q0 + ivec2(i % 2, i / 2), ivec2(0, 0), last);
+		c[i] = Water(t) ? Rgb565(Fetch16(s_base, t)) : still;
+	}
+	vec3 colour = mix(mix(c[0], c[1], f.x), mix(c[2], c[3], f.x), f.y);
+	return colour * (1.0 + u_water.z * (cos(a) + 0.6 * cos(b)));
+}
+
 void main()
 {
 	int kind = int(v_texcoord3.z + 0.5);
@@ -67,6 +98,9 @@ void main()
 
 	if (kind == 5 || kind == 9) {
 		vec3 base = Rgb565(Fetch16(s_base, area));
+		if (u_water.y > 0.0 && Water(area)) {
+			base = Water_Base(area, base);
+		}
 		if (kind == 9) {
 			base *= 1.0 - 0.5 * texelFetch(s_shadow, area, 0).x;
 		}
@@ -80,7 +114,7 @@ void main()
 	}
 
 	if (kind == 15) {
-		if (texelFetch(s_tileshadow, area, 0).x == 0.0) {
+		if (texelFetch(s_tileshadow, area, 0).x < 0.5) {
 			discard;
 		}
 		gl_FragColor = vec4_splat(1.0);

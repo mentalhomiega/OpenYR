@@ -101,6 +101,10 @@ bool GpuMap_Supported(void);
 void GpuMap_Set_Bloom(int strength);
 int GpuMap_Bloom(void);
 
+// Ripples the water of the tile layer at strength percent (at most 400); 0 leaves it still. The
+// ripples need the water marks of the shadow plane (code/shadowplane.h).
+void GpuMap_Set_Water(int strength);
+
 // Draws the pass GpuMap_Draw kept, if any, and returns the bgfx handle index of the texture holding
 // the latest drawn pass, which is Area.Width by Area.Height; bgfx::kInvalidHandle when the kept pass
 // does not fit the GPU limits.

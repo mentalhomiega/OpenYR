@@ -29,6 +29,8 @@ struct Binding
 }
 
 static bool _Enabled = false;
+static bool _Shadows = false;
+static bool _Water = false;
 static Binding _Bindings[4];
 
 
@@ -45,13 +47,21 @@ bool ShadowPlane_Is_Enabled(void)
 }
 
 
-bool ShadowPlane_Set_Enabled(bool enabled)
+bool ShadowPlane_Keeps_Water(void)
 {
-	if (enabled == _Enabled) {
+	return(_Water);
+}
+
+
+bool ShadowPlane_Set_Enabled(bool shadows, bool water)
+{
+	if (shadows == _Shadows && water == _Water) {
 		return(false);
 	}
-	_Enabled = enabled;
-	if (!enabled) {
+	_Shadows = shadows;
+	_Water = water;
+	_Enabled = shadows || water;
+	if (!_Enabled) {
 		for (Binding & binding : _Bindings) {
 			Free_Plane(binding);
 		}
@@ -147,7 +157,10 @@ EmissivePlane * ShadowPlane_For_RLE(Surface const & dest, RLEBlitter const & bli
 		return(plane);
 	}
 	if (desc.Kind == BlitDesc::DARKEN) {
-		value = 255;
+		if (!_Shadows) {
+			return(NULL);
+		}
+		value = SHADOWPLANE_SHADOW;
 	} else if (desc.Kind == BlitDesc::XLAT) {
 		value = 0;
 	} else {
@@ -199,7 +212,27 @@ void ShadowPlane_After_Fill(Surface & dest, Rect const & rect)
 }
 
 
-void ShadowPlane_After_Tile(Surface & dest, int x, int y, Rect const & clip, unsigned char const * mask, int width, int height)
+void ShadowPlane_After_Tile(Surface & dest, int x, int y, Rect const & clip, unsigned char const * mask, int width, int height, bool water)
+{
+	EmissivePlane * plane = ShadowPlane_For(&dest);
+	if (plane == NULL) {
+		return;
+	}
+	unsigned char const value = water && _Water ? SHADOWPLANE_WATER : 0;
+	Rect const area = Intersect(Intersect(clip, Rect(x, y, width, height)), Rect(0, 0, plane->Width, plane->Height));
+	for (int py = area.Y; py < area.Y + area.Height; py++) {
+		unsigned char const * row = mask + (py - y) * width - x;
+		unsigned char * out = plane->Pixels + py * plane->Pitch;
+		for (int px = area.X; px < area.X + area.Width; px++) {
+			if (row[px] != 32) {
+				out[px] = value;
+			}
+		}
+	}
+}
+
+
+void ShadowPlane_After_Extra(Surface & dest, int x, int y, Rect const & clip, unsigned char const * pixels, int width, int height)
 {
 	EmissivePlane * plane = ShadowPlane_For(&dest);
 	if (plane == NULL) {
@@ -207,10 +240,10 @@ void ShadowPlane_After_Tile(Surface & dest, int x, int y, Rect const & clip, uns
 	}
 	Rect const area = Intersect(Intersect(clip, Rect(x, y, width, height)), Rect(0, 0, plane->Width, plane->Height));
 	for (int py = area.Y; py < area.Y + area.Height; py++) {
-		unsigned char const * row = mask + (py - y) * width - x;
+		unsigned char const * row = pixels + (py - y) * width - x;
 		unsigned char * out = plane->Pixels + py * plane->Pitch;
 		for (int px = area.X; px < area.X + area.Width; px++) {
-			if (row[px] != 32) {
+			if (row[px] != 0) {
 				out[px] = 0;
 			}
 		}
@@ -233,7 +266,7 @@ void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short hal
 		unsigned short * row = (unsigned short *)((char *)pixels + y * surface.Stride());
 		unsigned char const * marks = plane->Pixels + (clipped.Y + y) * plane->Pitch + clipped.X;
 		for (int x = 0; x < clipped.Width; x++) {
-			if (marks[x] != 0) {
+			if (marks[x] == SHADOWPLANE_SHADOW) {
 				row[x] = (unsigned short)((row[x] >> 1) & halfmask);
 			}
 		}
@@ -255,7 +288,7 @@ void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigne
 		unsigned char const * marks = plane->Pixels + (area.Y + y) * plane->Pitch;
 		unsigned short * row = pixels + (std::size_t)y * area.Width;
 		for (int x = std::max(0, -area.X); x < area.Width && area.X + x < plane->Width; x++) {
-			if (marks[area.X + x] != 0) {
+			if (marks[area.X + x] == SHADOWPLANE_SHADOW) {
 				row[x] = (unsigned short)((row[x] >> 1) & halfmask);
 			}
 		}
