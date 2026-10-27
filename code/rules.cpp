@@ -250,6 +250,7 @@ RulesClass::RulesClass(void) :
 	IsLargeSidebarStrips(false),
 	IsUseCameoSortOrder(false),
 	AircraftWaypointReload(true),
+	WaypointAttackFromFirst(true),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
 	IsFineDifficulty(false),
@@ -1795,6 +1796,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		IsLargeSidebarStrips = ini.Get_Bool(GENERAL, "LargeSidebarStrips", IsLargeSidebarStrips);
 		IsUseCameoSortOrder = ini.Get_Bool(GENERAL, "UseCameoSortOrder", IsUseCameoSortOrder);
 		AircraftWaypointReload = ini.Get_Bool(GENERAL, "AircraftWaypointReload", AircraftWaypointReload);
+		WaypointAttackFromFirst = ini.Get_Bool(GENERAL, "WaypointAttackFromFirst", WaypointAttackFromFirst);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		AlliedBaseDefenseCounts = ini.Get_IntList(GENERAL, "AlliedBaseDefenseCounts", AlliedBaseDefenseCounts);
