@@ -13451,23 +13451,6 @@ void MapClass::Lower_Bridge_Deck(Cell const & cell, bool east_west)
 
 
 /// <summary>
-/// Marks the screen area around a cell for redraw after its span changes (gamemd
-/// MapClass::RefreshBridgeDirtyArea, 0x576770).
-/// </summary>
-void MapClass::Register_Bridge_Dirty_Area(Cell const & cell)
-{
-	CellClass const * cptr = Bridge_Cell_At(cell);
-	if (cptr == NULL) {
-		return;
-	}
-	Point2D point;
-	TacticalMap->Coord_To_Pixel((Coord)cell, point);
-	point.Y -= LEVEL_PIXEL_H * cptr->Height;
-	TacticalMap->Register_Dirty_Area(Rect(point - Point2D(128, 128), 256, 256));
-}
-
-
-/// <summary>
 /// Weakens the deck and the span piece just east of a deck cell (gamemd 0x572230, the first
 /// step of an east-west span's damage).
 /// </summary>
@@ -13690,7 +13673,8 @@ void MapClass::Collapse_Deck_Step(Cell const & cell, FacingType dir, bool east_w
 /// under-deck branch). The deck is the cell's owner, the cell itself or its BridgeOwnerCell. Its
 /// overlay stage picks the step: stages 0 to 8 are an east-west span and 9 to 17 a north-south one.
 /// The first hit on an intact deck only weakens it and returns false; a later hit takes the deck down
-/// and returns true. The span walk is the one gamemd makes from the deck, not a search for span ends.
+/// and returns true, then Destroy_High_Bridge_Connections (gamemd 0x576770) takes down any deck run left
+/// between two gaps in the span.
 /// </summary>
 /// <param name="cell">A cell under the span.</param>
 /// <returns>bool; Did the span come down?</returns>
@@ -13751,7 +13735,7 @@ bool MapClass::Blow_Up_High_Bridge_Area(Cell const & cell)
 		return(false);
 	}
 
-	Register_Bridge_Dirty_Area(cell);
+	Destroy_High_Bridge_Connections(cell);
 	if (Unregister_Subzone_Connections(deck_cell)) {
 		Zone_Reset();
 	}

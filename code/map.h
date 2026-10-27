@@ -234,7 +234,6 @@ class MapClass: public GScreenClass
 		bool Damage_Bridge_At_Cell(Cell const & cell);
 		bool Blow_Up_High_Bridge_Area(Cell const & cell);
 		void Lower_Bridge_Deck(Cell const & cell, bool east_west);
-		void Register_Bridge_Dirty_Area(Cell const & cell);
 		void Weaken_Deck_East(Cell const & cell);
 		void Weaken_Deck_West(Cell const & cell);
 		void Weaken_Deck_South(Cell const & cell);
