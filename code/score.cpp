@@ -77,9 +77,11 @@ constexpr int PLATE_Y = 0;
 constexpr int EMBLEM_X = PLATE_X + 24;
 constexpr int EMBLEM_Y = PLATE_Y + 142;
 constexpr int TEXT_RISE = 50;
+// The rank, commendation and enemies text sit 3 pixels lower in the original's screenshot than the time boxes' text.
+constexpr int PANEL_TEXT_RISE = 47;
 constexpr int PARAGRAPH_LINE_HEIGHT = 17;
-constexpr int STATUS_X = 8;
-constexpr int STATUS_CENTRE_Y = 587;
+constexpr int STATUS_X = 10;
+constexpr int STATUS_CENTRE_Y = 584;
 constexpr int TITLE_TOP = 4;
 constexpr int TITLE_HEIGHT = 30;
 
@@ -386,12 +388,12 @@ void Draw_Classic_Text(ScoreStageClass & stage, Figures const & figures, Rect co
 	Rect const title(column.X, TITLE_TOP, column.Width, TITLE_HEIGHT);
 	stage.Print_Centre(figures.Title.c_str(), title.X, title.Width, Centred_Text_Top(stage, title.Y + title.Height / 2));
 
-	Rect const rank(128, 57 - TEXT_RISE, 386, 16);
+	Rect const rank(128, 57 - PANEL_TEXT_RISE, 386, 16);
 	stage.Print_Left(figures.Rank.c_str(), rank.X, Centred_Text_Top(stage, rank.Y + rank.Height / 2));
-	Print_Paragraph(stage, figures.Message, Rect(128, 81 - TEXT_RISE, 386, 65), PARAGRAPH_LINE_HEIGHT);
+	Print_Paragraph(stage, figures.Message, Rect(128, 81 - PANEL_TEXT_RISE, 386, 65), PARAGRAPH_LINE_HEIGHT);
 
-	Rect const enemies_label(128, 163 - TEXT_RISE, 165, 16);
-	Rect const enemies_value(300, 163 - TEXT_RISE, 213, 16);
+	Rect const enemies_label(128, 163 - PANEL_TEXT_RISE, 165, 16);
+	Rect const enemies_value(300, 163 - PANEL_TEXT_RISE, 213, 16);
 	stage.Print_Left(figures.EnemiesLabel.c_str(), enemies_label.X, Centred_Text_Top(stage, enemies_label.Y + enemies_label.Height / 2));
 	stage.Print_Left(figures.EnemiesValue.c_str(), enemies_value.X, Centred_Text_Top(stage, enemies_value.Y + enemies_value.Height / 2));
 
