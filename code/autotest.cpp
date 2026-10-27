@@ -27,9 +27,10 @@
 **	scatter <TypeID> x y [forced] [nokidding]	calls Scatter on each live soldier of that type, whoever owns it, with the threat at the
 **							centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given
 **							and how many numbers the game's random generator handed out
-**	strikeobj <TypeID> x y [radius] [land|naval|all]	orders the player's armed units and infantry to attack the nearest
+**	strikeobj <TypeID> x y [radius] [land|naval|all] [AttackerTypeID]	orders the player's armed units and infantry to attack the nearest
 **							live object of that type within radius cells (default 3) of the cell, looked up when the line runs;
-**							land or naval limits the orders to units that are not, or are, ships (default all)
+**							land or naval limits the orders to units that are not, or are, ships (default all); an attacker type
+**							limits them to objects of that type, PlayerControl houses' included
 **	owners <TypeID>			writes the type's owner bits and each house's country bit
 **	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
 **	cameos					writes each sidebar strip's cameos in order, with the type and whether the player can build it now
@@ -775,7 +776,16 @@ bool Strike_Side_Allows(bool naval, std::string const & side)
 }
 
 
-void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side)
+// Without an attacker type every armed unit of the player's own house attacks; with one, only objects of that type from the player's
+// house or a PlayerControl house do.
+bool Strike_Attacker_Allows(TechnoClass const * techno, std::string const & attacker)
+{
+	if (attacker.empty()) return(techno->House == PlayerPtr);
+	return((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && stricmp(techno->TClass->Name(), attacker.c_str()) == 0);
+}
+
+
+void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side, std::string const & attacker)
 {
 	if (side != "" && side != "all" && side != "land" && side != "naval") {
 		DebugString("AUTOTEST strikeobj %s: side must be land, naval or all, not %s\n", name.c_str(), side.c_str());
@@ -807,7 +817,7 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 	PlanningRecordScope const recording(Map.IsPlanningMode);
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
-		if (unit->House == PlayerPtr && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
+		if (Strike_Attacker_Allows(unit, attacker) && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
 			if (network) {
 				unit->Player_Assign_Mission(MISSION_ATTACK, target);
 			} else {
@@ -819,7 +829,7 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
-		if (infantry->House == PlayerPtr && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
+		if (Strike_Attacker_Allows(infantry, attacker) && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
 			if (network) {
 				infantry->Player_Assign_Mission(MISSION_ATTACK, target);
 			} else {
@@ -2630,7 +2640,7 @@ void Run(StepType const & step)
 	// strikeobj <TypeID> x y [radius]: see Strike_Object. It sits before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "strikeobj") {
 		std::vector<std::string> const words = Line_Words(step.Line);
-		Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6));
+		Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6), Word(words, 7));
 		return;
 	}
 
