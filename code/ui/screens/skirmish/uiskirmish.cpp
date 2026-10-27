@@ -229,16 +229,17 @@ void UISkirmishPresenterClass::Take_Color(int row, int index)
 
 
 /// <summary>
-/// Judges whether the player list describes a game: somebody to play against, and not everyone on
-/// one team, which nothing could win. A refusal leaves its reason in the state's notice.
+/// Judges whether the player list describes a game. With no computer player the person plays alone
+/// and the list is accepted. With computer players, not everyone may be on one team, which nothing
+/// could win. A refusal leaves its reason in the state's notice.
 /// </summary>
 bool UISkirmishPresenterClass::Judge_Setup(void)
 {
 	UISkirmishState & state = State;
 
 	if (state.Computer_Count() == 0) {
-		state.Notice = "Add a computer player to start.";
-		return(false);
+		state.Notice.clear();
+		return(true);
 	}
 
 	int shared = -1;

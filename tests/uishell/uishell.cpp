@@ -5496,10 +5496,7 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(presenter.State.MapName == "Picked map" && presenter.State.Rows == 2, "the setup takes the map that came back and shows the rows it holds");
 	Check(presenter.State.Slots[1].Start <= 2 && !presenter.State.Slots[2].Active, "a start the new map lacks becomes Random and rows past the new count do not play");
 
-	// Starting needs an opponent who is not an ally of everyone.
-	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_OPEN);
-	Drive(presenter, "ok");
-	Check(!presenter.Result.has_value() && !presenter.State.Notice.empty() && service.Asked == 0, "a game against nobody does not start, and says why");
+	// A game with computer players needs one who is not an ally of everyone.
 	Choose_Slot(presenter, "slotkind", 1, UI_SKIRMISH_SLOT_MEDIUM);
 	Choose_Slot(presenter, "slotteam", 0, 1);
 	Choose_Slot(presenter, "slotteam", 1, 1);
@@ -5531,6 +5528,53 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(system.Problems == problems, "changing the player list raises no RmlUi warning or error");
 
 	view->Release();
+	context.Update();
+}
+
+
+// With no computer player the person plays alone: the setup starts whatever the team boxes say, and
+// the service's map check still holds the setup open.
+void Test_Skirmish_Solo(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	Fill_Skirmish_Lists(state);
+	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
+	state.Slots[1].Kind = UI_SKIRMISH_SLOT_OPEN;
+	state.Slots[2].Kind = UI_SKIRMISH_SLOT_CLOSED;
+
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the solo skirmish view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(presenter.State.Computer_Count() == 0 && presenter.State.Is_Active(0) && !presenter.State.Is_Active(1), "a setup with no computer player plays only the person");
+
+	Choose_Slot(presenter, "slotteam", 0, 2);
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_START && service.Asked == 1, "the person alone starts a game, whatever team they are on");
+	Check(presenter.State.Notice.empty(), "and a game against nobody leaves no notice");
+
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the solo setup raises no RmlUi warning or error");
+	view->Release();
+	context.Update();
+
+	RecordingSkirmishServiceClass refusing;
+	refusing.Startable = false;
+	UISkirmishPresenterClass refused(refusing, state);
+	std::unique_ptr<UIViewClass> refused_view = UI_Skirmish_View(refused);
+	Drive(refused, "ok");
+	Check(!refused.Result.has_value() && refusing.Asked == 1, "a map too small for the person alone leaves the setup open");
+	refused_view->Release();
 	context.Update();
 }
 
@@ -6417,6 +6461,7 @@ void Test_Documents(void)
 		Test_Raster_Font();
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
+		Test_Skirmish_Solo(*context, system);
 		Test_Skirmish_Layouts(*context, system);
 		Test_Colour_Picker(*context, system);
 		Test_Scenario_Screen(*context, system);

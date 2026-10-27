@@ -238,6 +238,9 @@
 **							line still says won. The score screen then ends at once. The next mission is
 **							chosen without a map selection screen, so no step is needed there. It applies
 **							from the start, whatever the frame
+**	continuelose			a lost game goes on to its score screen instead of ending the run; the game over
+**							line still says lost. The score screen then ends at once. It applies from the start,
+**							whatever the frame
 **	quit					ends the process
 */
 
@@ -443,6 +446,9 @@ int LoadShotCount = 0;
 // Set by a continuewin step; a won mission then carries on instead of ending the run.
 bool ContinueAfterWin = false;
 bool PostWinContinue = false;
+// Set by a continuelose line; a lost game then carries on to its score screen instead of ending the run.
+bool ContinueAfterLose = false;
+bool PostLoseContinue = false;
 
 // Frames a wait step waits for its condition when its line gives no timeout.
 int const Wait_Default_Timeout = 3000;
@@ -5514,9 +5520,13 @@ bool AutoTest_Load(char const * filename)
 		if (std::strcmp(command, "loadshot") == 0) {
 			LoadShotName = text;
 		}
-		// continuewin is kept when the script is read, so it needs no step.
+		// continuewin and continuelose are kept when the script is read, so they need no step.
 		if (std::strcmp(command, "continuewin") == 0) {
 			ContinueAfterWin = true;
+			continue;
+		}
+		if (std::strcmp(command, "continuelose") == 0) {
+			ContinueAfterLose = true;
 			continue;
 		}
 		std::string source = line;
@@ -5638,11 +5648,15 @@ void AutoTest_Game_Over(bool won)
 		PostWinContinue = true;
 		return;
 	}
+	if (!won && ContinueAfterLose) {
+		PostLoseContinue = true;
+		return;
+	}
 	std::exit(0);
 }
 
 
 bool AutoTest_Post_Win(void)
 {
-	return(Active && PostWinContinue);
+	return(Active && (PostWinContinue || PostLoseContinue));
 }
