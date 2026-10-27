@@ -33,6 +33,8 @@
 
 #include "surface.h"
 
+#include <vector>
+
 /*
 **	This is a concrete (mostly) derived class that handles a surface. This layer presumes that
 **	pixels are compositied into a contiguous integral (usually a byte) linear array. The
@@ -148,3 +150,7 @@ class XSurface : public Surface
 
 bool Blit_Clip(Rect & drect, Rect const & dwindow, Rect & srect, Rect const & swindow);
 bool Clip_Line_To_Rect(Point2D & point1, Point2D & point2, Rect const & rect);
+
+// While set, Draw_Line on a 16-bit surface passes the pixels it would set to this hook, in surface
+// coordinates; a true result means the hook draws them and the line writes nothing.
+extern bool (*Draw_Line_Record)(Surface const & surface, int color, std::vector<Point2D> const & pixels);

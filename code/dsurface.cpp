@@ -586,6 +586,10 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 {
 	if (GDIBuffer == NULL || !fillrect.Is_Valid()) return(false);
 
+	if (GpuDraw_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())), (unsigned short)color)) {
+		return(true);
+	}
+
 	bool result = BASECLASS::Fill_Rect(cliprect, fillrect, color);
 
 	if (result && Emissive_Is_Enabled()) {

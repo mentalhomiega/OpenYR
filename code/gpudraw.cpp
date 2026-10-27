@@ -27,6 +27,7 @@
 #include "ovrlight.h"
 #include "surface.h"
 #include "tactical.h"
+#include "xsurface.h"
 #include "zbuffer.h"
 
 #include <algorithm>
@@ -481,6 +482,19 @@ void GpuDraw_Line_End(void)
 }
 
 
+static bool Record_Plain_Line(Surface const & surface, int color, std::vector<Point2D> const & pixels)
+{
+	if (!GpuDraw_Line_Begin(surface, GPU_LINE_SHADED, (unsigned short)color, 256)) {
+		return(false);
+	}
+	for (Point2D const & pixel : pixels) {
+		GpuDraw_Line_Pixel(pixel.X, pixel.Y, 127);
+	}
+	GpuDraw_Line_End();
+	return(_Render);
+}
+
+
 struct Shockwave
 {
 	Coord Where;
@@ -651,6 +665,7 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	Surface_Lock_Hook = Count_Lock;
 	Blit_Record_RLE = Record_RLE;
 	Blit_Record_Bit = Record_Bit;
+	Draw_Line_Record = Record_Plain_Line;
 }
 
 
@@ -666,6 +681,7 @@ bool GpuDraw_End(void)
 	}
 	Blit_Record_RLE = NULL;
 	Blit_Record_Bit = NULL;
+	Draw_Line_Record = NULL;
 	Surface_Lock_Hook = NULL;
 	// Each blit locks the target once and the object pass locks it once around the whole pass.
 	_List.Unsupported += std::max(0, _Locks - _LockedBlits - _List.Unsupported - 1);

@@ -54,6 +54,10 @@
 
 #include <cassert>
 #include <utility>
+#include <vector>
+
+bool (*Draw_Line_Record)(Surface const & surface, int color, std::vector<Point2D> const & pixels) = NULL;
+
 
 /***********************************************************************************************
  * XSurface::Draw_Line -- Draws a line upon the surface.                                       *
@@ -131,6 +135,17 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 	void * buffer = Lock(start);
 	if (buffer != NULL) {
 
+		bool const collect = bpp == 2 && Draw_Line_Record != NULL;
+		char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * bpp;
+		std::vector<unsigned short *> collected;
+		auto const put = [&](unsigned short * pixel) {
+			if (collect) {
+				collected.push_back(pixel);
+			} else {
+				*pixel = (unsigned short)color;
+			}
+		};
+
 		if (start.Y == end.Y) {
 
 			/*
@@ -140,7 +155,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 				memset(buffer, color, end.X - start.X + 1);
 			} else {
 				for (int i = 0; i <= end.X - start.X; i++) {
-					*((unsigned short *)buffer + i) = color;
+					put((unsigned short *)buffer + i);
 				}
 			}
 
@@ -155,7 +170,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 				if (bpp == 1) {
 					*(unsigned char *)buffer = color;
 				} else {
-					*(unsigned short *)buffer = color;
+					put((unsigned short *)buffer);
 				}
 				buffer = (unsigned char *)buffer + pitch;
 			}
@@ -191,7 +206,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 					if (bpp == 1) {
 						*((unsigned char *)buffer + i) = color;
 					} else {
-						*((unsigned short *)buffer + i) = color;
+						put((unsigned short *)buffer + i);
 					}
 
 					if (delta > 0) {
@@ -216,7 +231,7 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 					if (bpp == 1) {
 						*((unsigned char *)buffer + k) = color;
 					} else {
-						*((unsigned short *)buffer + k) = color;
+						put((unsigned short *)buffer + k);
 					}
 
 					if (delta > 0) {
@@ -230,6 +245,19 @@ bool XSurface::Draw_Line(Rect const & xcliprect, Point2D const & startpoint, Poi
 			}
 		}
 
+		if (collect) {
+			std::vector<Point2D> pixels;
+			pixels.reserve(collected.size());
+			for (unsigned short * pixel : collected) {
+				std::ptrdiff_t const offset = (char const *)pixel - origin;
+				pixels.push_back(Point2D((int)(offset % Stride()) / 2, (int)(offset / Stride())));
+			}
+			if (!Draw_Line_Record(*this, color, pixels)) {
+				for (unsigned short * pixel : collected) {
+					*pixel = (unsigned short)color;
+				}
+			}
+		}
 		Unlock();
 		return(true);
 	}
