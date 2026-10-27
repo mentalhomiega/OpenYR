@@ -1,0 +1,208 @@
+; Campaign win check for Allied 12 (Red Alert 2). Forty-four Prism tanks and forty-four Grizzly tanks (grantunit) stand in for the army
+; a player would build after the chronoshifted MCV arrives; everything after is an order.
+; Until frame 4000 every order attacks the enemy object nearest to 105,105 (strikeobj *), clearing a way through the Soviet base;
+; then the nearest to the Kremlin (CARUS03 at 125,122). Destroying the four tagged Apocalypse tanks and BadGuy3's Tesla coil,
+; flak cannons and sentry guns around the Kremlin springs "Kremlin Secured 1", and the chain ends in "Mission Victory".
+; The Kremlin itself must stand ("Kremlin is Destroyed" loses the mission); the tanks never target it.
+; Expected: "AUTOTEST game over frame N: won" (frame 4931 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all12.txt -Campaign -Map ALL12S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit SREF 80 84
+11 grantunit SREF 82 84
+12 grantunit SREF 84 84
+13 grantunit SREF 86 84
+14 grantunit SREF 88 84
+15 grantunit SREF 90 84
+16 grantunit SREF 92 84
+17 grantunit SREF 94 84
+18 grantunit SREF 96 84
+19 grantunit SREF 98 84
+20 grantunit SREF 100 84
+21 grantunit SREF 80 86
+22 grantunit SREF 82 86
+23 grantunit SREF 84 86
+24 grantunit SREF 86 86
+25 grantunit SREF 88 86
+26 grantunit SREF 90 86
+27 grantunit SREF 92 86
+28 grantunit SREF 94 86
+29 grantunit SREF 96 86
+30 grantunit SREF 98 86
+31 grantunit SREF 100 86
+32 grantunit SREF 80 88
+33 grantunit SREF 82 88
+34 grantunit SREF 84 88
+35 grantunit SREF 86 88
+36 grantunit SREF 88 88
+37 grantunit SREF 90 88
+38 grantunit SREF 92 88
+39 grantunit SREF 94 88
+40 grantunit SREF 96 88
+41 grantunit SREF 98 88
+42 grantunit SREF 100 88
+43 grantunit SREF 80 90
+44 grantunit SREF 82 90
+45 grantunit SREF 84 90
+46 grantunit SREF 86 90
+47 grantunit SREF 88 90
+48 grantunit SREF 90 90
+49 grantunit SREF 92 90
+50 grantunit SREF 94 90
+51 grantunit SREF 96 90
+52 grantunit SREF 98 90
+53 grantunit SREF 100 90
+54 grantunit MTNK 80 92
+55 grantunit MTNK 82 92
+56 grantunit MTNK 84 92
+57 grantunit MTNK 86 92
+58 grantunit MTNK 88 92
+59 grantunit MTNK 90 92
+60 grantunit MTNK 92 92
+61 grantunit MTNK 94 92
+62 grantunit MTNK 96 92
+63 grantunit MTNK 98 92
+64 grantunit MTNK 100 92
+65 grantunit MTNK 80 94
+66 grantunit MTNK 82 94
+67 grantunit MTNK 84 94
+68 grantunit MTNK 86 94
+69 grantunit MTNK 88 94
+70 grantunit MTNK 90 94
+71 grantunit MTNK 92 94
+72 grantunit MTNK 94 94
+73 grantunit MTNK 96 94
+74 grantunit MTNK 98 94
+75 grantunit MTNK 100 94
+76 grantunit MTNK 80 96
+77 grantunit MTNK 82 96
+78 grantunit MTNK 84 96
+79 grantunit MTNK 86 96
+80 grantunit MTNK 88 96
+81 grantunit MTNK 90 96
+82 grantunit MTNK 92 96
+83 grantunit MTNK 94 96
+84 grantunit MTNK 96 96
+85 grantunit MTNK 98 96
+86 grantunit MTNK 100 96
+87 grantunit MTNK 80 98
+88 grantunit MTNK 82 98
+89 grantunit MTNK 84 98
+90 grantunit MTNK 86 98
+91 grantunit MTNK 88 98
+92 grantunit MTNK 90 98
+93 grantunit MTNK 92 98
+94 grantunit MTNK 94 98
+95 grantunit MTNK 96 98
+96 grantunit MTNK 98 98
+97 grantunit MTNK 100 98
+200 strikeobj * 105 105 60 all
+300 strikeobj * 105 105 60 all
+400 strikeobj * 105 105 60 all
+500 strikeobj * 105 105 60 all
+600 strikeobj * 105 105 60 all
+700 strikeobj * 105 105 60 all
+800 strikeobj * 105 105 60 all
+900 strikeobj * 105 105 60 all
+1000 strikeobj * 105 105 60 all
+1000 counts BadGuy3
+1100 strikeobj * 105 105 60 all
+1200 strikeobj * 105 105 60 all
+1300 strikeobj * 105 105 60 all
+1400 strikeobj * 105 105 60 all
+1500 strikeobj * 105 105 60 all
+1600 strikeobj * 105 105 60 all
+1700 strikeobj * 105 105 60 all
+1800 strikeobj * 105 105 60 all
+1900 strikeobj * 105 105 60 all
+2000 strikeobj * 105 105 60 all
+2000 counts BadGuy3
+2100 strikeobj * 105 105 60 all
+2200 strikeobj * 105 105 60 all
+2300 strikeobj * 105 105 60 all
+2400 strikeobj * 105 105 60 all
+2500 strikeobj * 105 105 60 all
+2600 strikeobj * 105 105 60 all
+2700 strikeobj * 105 105 60 all
+2800 strikeobj * 105 105 60 all
+2900 strikeobj * 105 105 60 all
+3000 strikeobj * 105 105 60 all
+3000 counts BadGuy3
+3100 strikeobj * 105 105 60 all
+3200 strikeobj * 105 105 60 all
+3300 strikeobj * 105 105 60 all
+3400 strikeobj * 105 105 60 all
+3500 strikeobj * 105 105 60 all
+3600 strikeobj * 105 105 60 all
+3700 strikeobj * 105 105 60 all
+3800 strikeobj * 105 105 60 all
+3900 strikeobj * 105 105 60 all
+4000 strikeobj * 105 105 60 all
+4000 strikeobj * 121 120 60 all
+4000 counts BadGuy3
+4100 strikeobj * 121 120 60 all
+4200 strikeobj * 121 120 60 all
+4300 strikeobj * 121 120 60 all
+4400 strikeobj * 121 120 60 all
+4500 strikeobj * 121 120 60 all
+4600 strikeobj * 121 120 60 all
+4700 strikeobj * 121 120 60 all
+4800 strikeobj * 121 120 60 all
+4900 strikeobj * 121 120 60 all
+5000 strikeobj * 121 120 60 all
+5000 counts BadGuy3
+5100 strikeobj * 121 120 60 all
+5200 strikeobj * 121 120 60 all
+5300 strikeobj * 121 120 60 all
+5400 strikeobj * 121 120 60 all
+5500 strikeobj * 121 120 60 all
+5600 strikeobj * 121 120 60 all
+5700 strikeobj * 121 120 60 all
+5800 strikeobj * 121 120 60 all
+5900 strikeobj * 121 120 60 all
+6000 strikeobj * 121 120 60 all
+6000 counts BadGuy3
+6100 strikeobj * 121 120 60 all
+6200 strikeobj * 121 120 60 all
+6300 strikeobj * 121 120 60 all
+6400 strikeobj * 121 120 60 all
+6500 strikeobj * 121 120 60 all
+6600 strikeobj * 121 120 60 all
+6700 strikeobj * 121 120 60 all
+6800 strikeobj * 121 120 60 all
+6900 strikeobj * 121 120 60 all
+7000 strikeobj * 121 120 60 all
+7000 counts BadGuy3
+7100 strikeobj * 121 120 60 all
+7200 strikeobj * 121 120 60 all
+7300 strikeobj * 121 120 60 all
+7400 strikeobj * 121 120 60 all
+7500 strikeobj * 121 120 60 all
+7600 strikeobj * 121 120 60 all
+7700 strikeobj * 121 120 60 all
+7800 strikeobj * 121 120 60 all
+7900 strikeobj * 121 120 60 all
+8000 strikeobj * 121 120 60 all
+8000 counts BadGuy3
+8100 strikeobj * 121 120 60 all
+8200 strikeobj * 121 120 60 all
+8300 strikeobj * 121 120 60 all
+8400 strikeobj * 121 120 60 all
+8500 strikeobj * 121 120 60 all
+8600 strikeobj * 121 120 60 all
+8700 strikeobj * 121 120 60 all
+8800 strikeobj * 121 120 60 all
+8900 strikeobj * 121 120 60 all
+9000 strikeobj * 121 120 60 all
+9000 counts BadGuy3
