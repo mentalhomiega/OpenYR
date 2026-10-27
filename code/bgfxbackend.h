@@ -71,6 +71,9 @@ struct BackendLayer
 	int DestY;
 	int DestWidth;
 	int DestHeight;
+
+	// The picture is the GPU map texture (gpumap.h) instead of Pixels.
+	bool Gpu;
 };
 
 // Emissive masks for the frame and the layer, one byte per pixel laid out like their pictures. A

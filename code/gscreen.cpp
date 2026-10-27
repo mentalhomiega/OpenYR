@@ -451,13 +451,17 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
-	GpuDraw_Begin(*CompositeSurface, TacticalRect);
+	bool const gpu_render = Options.GpuRender && !zoomed && Modern_Interface() && Video_Map_Layer_Supported();
+	GpuDraw_Begin(*CompositeSurface, TacticalRect, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
-	GpuDraw_End();
+	bool const gpu_drawn = GpuDraw_End();
 	Video_Draw_Probe_Target(NULL);
 	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);
-	if (zoomed && Video_Map_Layer_Supported()) {
+	if (gpu_drawn) {
+		CompositeSurface->Fill_Rect(TacticalRect, VIDEO_LAYER_KEY);
+		Video_Set_Gpu_Map_Layer(TacticalRect);
+	} else if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution.
 		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);
 		Video_Set_Map_Layer(MapCompositeSurface, Shown_Map_Rect(), ScreenTacticalRect);

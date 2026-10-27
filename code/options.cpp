@@ -239,6 +239,7 @@ OptionsClass::OptionsClass(void) :
 	ShowFPS(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
+	GpuRender(false),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -716,6 +717,7 @@ void OptionsClass::Load_Settings(void)
 	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
+	GpuRender = ConfigINI.Get_Bool("Video", "GpuRender", GpuRender);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));

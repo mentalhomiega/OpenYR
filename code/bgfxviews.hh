@@ -12,6 +12,8 @@
 
 enum BgfxViewType : unsigned short
 {
+	// The GPU map pass runs first so that the present in the same frame draws its result.
+	VIEW_MAPDRAW,
 	VIEW_PRESCALE,
 	VIEW_PRESENT,
 	VIEW_UI,
@@ -20,6 +22,5 @@ enum BgfxViewType : unsigned short
 	VIEW_COMPOSITE,
 	VIEW_SHOT,
 	VIEW_READBACK,
-	VIEW_MAPDRAW,
 	VIEW_MAPREAD,
 };

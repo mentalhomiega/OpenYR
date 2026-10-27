@@ -36,6 +36,12 @@ struct GpuMapPass
 // nothing, when the renderer is not Direct3D 11 or an earlier check is still being read back.
 bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected);
 
+// Draws the pass into the GPU map texture; false means it was not drawn.
+bool GpuMap_Draw(GpuMapPass const & pass);
+
+// The bgfx handle index of the texture GpuMap_Draw draws into, which is Area.Width by Area.Height.
+std::uint16_t GpuMap_Texture(void);
+
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
 

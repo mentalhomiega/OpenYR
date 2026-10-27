@@ -59,6 +59,7 @@ enum ShaderKind
 	KIND_SOURCE25,
 	KIND_BASE,
 	KIND_COPY_NO_DEPTH,
+	KIND_PIXEL,
 };
 
 enum SamplerSlot
@@ -263,9 +264,9 @@ static void Set_Quad(MapVertex * vertex, Rect const & area, int x, int y, int wi
 }
 
 
-bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected)
+static bool Submit_Pass(GpuMapPass const & pass)
 {
-	if (_Pending || !Start()) {
+	if (!Start()) {
 		return(false);
 	}
 	GpuDrawList const & list = *pass.List;
@@ -284,7 +285,7 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 	std::vector<unsigned short> alut;
 	for (GpuBlit const & blit : list.Blits) {
 		BlitDesc const & desc = blit.Desc;
-		if (desc.Kind == BlitDesc::DARKEN) {
+		if (blit.Colour >= 0 || desc.Kind == BlitDesc::DARKEN) {
 			continue;
 		}
 		int const rows = Translator_Rows(desc.AlphaRemap, bandrows);
@@ -345,6 +346,13 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 	for (std::size_t i = 0; i < list.Blits.size(); i++) {
 		GpuBlit const & blit = list.Blits[i];
 		BlitDesc const & desc = blit.Desc;
+		if (blit.Colour >= 0) {
+			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)KIND_PIXEL, 0.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, 1, 1, t1, t2, t3);
+			continue;
+		}
 		float lutfirst = 0.0f;
 		float alutrow = -1.0f;
 		if (desc.Kind != BlitDesc::DARKEN) {
@@ -370,7 +378,7 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 
 	uint64_t const write = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
 	for (int i = 0; i < quads; i++) {
-		int const kind = i == 0 ? KIND_BASE : Shader_Kind(list.Blits[i - 1].Desc);
+		int const kind = i == 0 ? KIND_BASE : (list.Blits[i - 1].Colour >= 0 ? KIND_PIXEL : Shader_Kind(list.Blits[i - 1].Desc));
 		uint64_t state = write;
 		// The shader outputs the source term in rgb and the target's weight in alpha (fs_mapdraw.sc).
 		if (kind == KIND_DARKEN) {
@@ -389,13 +397,34 @@ bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & e
 		bgfx::destroy(texture);
 	}
 
+	return(true);
+}
+
+
+bool GpuMap_Draw(GpuMapPass const & pass)
+{
+	return(Submit_Pass(pass));
+}
+
+
+bool GpuMap_Check(GpuMapPass const & pass, std::vector<unsigned short> const & expected)
+{
+	if (_Pending || !Submit_Pass(pass)) {
+		return(false);
+	}
 	bgfx::blit(VIEW_MAPREAD, _Readback, 0, 0, _TargetTexture);
 	_ReadyFrame = bgfx::readTexture(_Readback, _Pixels.data());
 	_Expected = expected;
 	_PendingFrame = pass.Frame;
-	_PendingBlits = (int)list.Blits.size();
+	_PendingBlits = (int)pass.List->Blits.size();
 	_Pending = true;
 	return(true);
+}
+
+
+std::uint16_t GpuMap_Texture(void)
+{
+	return(_TargetTexture.idx);
 }
 
 

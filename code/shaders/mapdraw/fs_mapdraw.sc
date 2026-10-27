@@ -8,7 +8,8 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 //                   z: first row of its translator in s_lut, w: row of s_alut for its lighting level, -1 for none
 //   v_texcoord2     x: depth of the first row, y: fraction, z: numerator, w: denominator (0 when every row has x)
 //   v_texcoord3     x: depth step, y: offset of its depth shape in s_zshape (-1 for none), z: kind
-// Kind: 0 copy, 1 darken, 2 75% source, 3 half, 4 25% source, 5 the area's base picture, 6 copy without depth test.
+// Kind: 0 copy, 1 darken, 2 75% source, 3 half, 4 25% source, 5 the area's base picture, 6 copy without depth test,
+// 7 one pixel of the 565 colour in v_texcoord1.x.
 
 #include "bgfx_shader.sh"
 
@@ -45,6 +46,11 @@ void main()
 
 	if (kind == 5) {
 		gl_FragColor = vec4(Rgb565(Fetch16(s_base, area)), 1.0);
+		return;
+	}
+
+	if (kind == 7) {
+		gl_FragColor = vec4(Rgb565(int(v_texcoord1.x + 0.5)), 1.0);
 		return;
 	}
 

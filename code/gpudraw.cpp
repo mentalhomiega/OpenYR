@@ -30,6 +30,7 @@
 
 static bool _ReplayCheck = false;
 static bool _GpuCheck = false;
+static bool _Render = false;
 static Surface * _Target = NULL;
 static Rect _Area;
 static std::vector<unsigned short> _Before;
@@ -61,21 +62,22 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.ZDenominator = zdenominator;
 	blit.ZWrap = zwrap;
 	blit.AlphaLevel = alpha;
+	blit.Colour = -1;
 	_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)width * height);
 	_List.Blits.push_back(blit);
 	return(_List.Blits.back());
 }
 
 
-static void Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha)
+static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha)
 {
 	if (&dest != _Target) {
-		return;
+		return(false);
 	}
 	BlitDesc desc;
 	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
 		_List.Unsupported++;
-		return;
+		return(false);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha);
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
@@ -109,24 +111,26 @@ static void Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 			_List.ZShapeArena.insert(_List.ZShapeArena.end(), zshape + r * zshapepitch, zshape + r * zshapepitch + width);
 		}
 	}
+	return(_Render);
 }
 
 
-static void Record_Bit(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha)
+static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha)
 {
 	if (&dest != _Target) {
-		return;
+		return(false);
 	}
 	BlitDesc desc;
 	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
 		_List.Unsupported++;
-		return;
+		return(false);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	for (int r = 0; r < height; r++) {
 		std::memcpy(out + r * width, pixels + r * pitch, width);
 	}
+	return(_Render);
 }
 
 
@@ -162,6 +166,12 @@ static unsigned short Blend(GpuBlit const & blit, unsigned short dest, unsigned 
 static void Replay(std::vector<unsigned short> & picture)
 {
 	for (GpuBlit const & blit : _List.Blits) {
+		if (blit.Colour >= 0) {
+			if (_Area.Is_Point_Within(Point2D(blit.X, blit.Y))) {
+				picture[(blit.Y - _Area.Y) * _Area.Width + (blit.X - _Area.X)] = (unsigned short)blit.Colour;
+			}
+			continue;
+		}
 		unsigned char const * pixels = &_List.PixelArena[blit.Pixels];
 		for (int r = 0; r < blit.Height; r++) {
 			int const y = blit.Y + r;
@@ -237,20 +247,101 @@ static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned
 }
 
 
+static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigned short> const & pixels)
+{
+	char * base = (char *)surface.Lock(Point2D(area.X, area.Y));
+	if (base == NULL) {
+		return;
+	}
+	for (int r = 0; r < area.Height; r++) {
+		std::memcpy(base + r * surface.Stride(), &pixels[(std::size_t)r * area.Width], area.Width * sizeof(unsigned short));
+	}
+	surface.Unlock();
+}
+
+
+// Logs a GPU_RENDER line every 600 passes: how many the GPU drew and how many fell back to software.
+static void Count_Render(bool drawn)
+{
+	static int _Drawn = 0;
+	static int _Fallback = 0;
+	(drawn ? _Drawn : _Fallback)++;
+	if (_Drawn + _Fallback >= 600) {
+		DebugString("GPU_RENDER frame %d drawn %d fallback %d\n", Frame, _Drawn, _Fallback);
+		_Drawn = 0;
+		_Fallback = 0;
+	}
+}
+
+
+static bool Finish_Render(Surface & target)
+{
+	if (!Read_Area(target, _Area, _Before)) {
+		return(false);
+	}
+	if (_List.Unsupported == 0 && Backend_Is_Running()) {
+		std::vector<unsigned short> depth;
+		std::vector<unsigned short> alpha;
+		Read_Ring(DepthBuffer, depth);
+		Read_Ring(AlphaBuffer, alpha);
+		GpuMapPass pass;
+		pass.Area = _Area;
+		pass.Frame = Frame;
+		pass.Base = &_Before;
+		pass.Depth = &depth;
+		pass.Alpha = &alpha;
+		pass.List = &_List;
+		if (GpuMap_Draw(pass)) {
+			Count_Render(true);
+			return(true);
+		}
+	}
+	Count_Render(false);
+	// The recorded draws land over the ones the record does not hold, which drew in order.
+	Replay(_Before);
+	Write_Area(target, _Area, _Before);
+	return(false);
+}
+
+
 /// <summary>
-/// Records the blits into the target until GpuDraw_End, when the replay check is on.
+/// Records one pixel the object pass puts into surface. True means the GPU draws it and the caller
+/// must not write it.
 /// </summary>
-void GpuDraw_Begin(Surface & target, Rect const & area)
+bool GpuDraw_Pixel(Surface const & surface, Point2D const & pixel, unsigned short colour)
+{
+	if (&surface != _Target) {
+		return(false);
+	}
+	BlitDesc desc = {};
+	GpuBlit & blit = Add_Blit(desc, pixel.X, pixel.Y, 0, 0, 0, 0, 1, 0, 0, 0);
+	blit.Width = 1;
+	blit.Height = 1;
+	blit.Colour = colour;
+	return(_Render);
+}
+
+
+/// <summary>
+/// Records the blits into the target until GpuDraw_End when a check is on or render is set. With
+/// render set, recorded blits and pixels write no colour to the target.
+/// </summary>
+void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 {
 	_List.Blits.clear();
 	_List.PixelArena.clear();
 	_List.ZShapeArena.clear();
 	_List.Unsupported = 0;
-	if ((!_ReplayCheck && !_GpuCheck) || target.Bytes_Per_Pixel() != 2) {
+	_Render = render;
+	if ((!_ReplayCheck && !_GpuCheck && !_Render) || target.Bytes_Per_Pixel() != 2) {
 		return;
 	}
 	_Area = Intersect(area, target.Get_Rect());
-	if (_Area.Width <= 0 || _Area.Height <= 0 || !Read_Area(target, _Area, _Before)) {
+	if (_Area.Width <= 0 || _Area.Height <= 0) {
+		return;
+	}
+	// While rendering, the pass writes no colour to the target, so the base picture is read at the end.
+	if (!_Render && !Read_Area(target, _Area, _Before)) {
 		return;
 	}
 	_Target = &target;
@@ -262,12 +353,14 @@ void GpuDraw_Begin(Surface & target, Rect const & area)
 
 
 /// <summary>
-/// Stops recording; with the replay check on, logs how far the replayed list is from the target.
+/// Stops recording. Returns true when the GPU drew the pass, which happens only with render set; a
+/// rendered pass the GPU could not draw is drawn into the target in software. With the replay check
+/// on, logs how far the replayed list is from the target.
 /// </summary>
-void GpuDraw_End(void)
+bool GpuDraw_End(void)
 {
 	if (_Target == NULL) {
-		return;
+		return(false);
 	}
 	Blit_Record_RLE = NULL;
 	Blit_Record_Bit = NULL;
@@ -276,10 +369,13 @@ void GpuDraw_End(void)
 	_List.Unsupported += std::max(0, _Locks - (int)_List.Blits.size() - _List.Unsupported - 1);
 	Surface & target = *_Target;
 	_Target = NULL;
+	if (_Render) {
+		return(Finish_Render(target));
+	}
 
 	std::vector<unsigned short> after;
 	if (!Read_Area(target, _Area, after)) {
-		return;
+		return(false);
 	}
 	if (_GpuCheck && Backend_Is_Running()) {
 		std::vector<unsigned short> depth;
@@ -299,7 +395,7 @@ void GpuDraw_End(void)
 		GpuMap_Check(pass, replayed);
 	}
 	if (!_ReplayCheck) {
-		return;
+		return(false);
 	}
 	Replay(_Before);
 	int differing = 0;
@@ -314,6 +410,7 @@ void GpuDraw_End(void)
 	}
 	DebugString("GPU_REPLAY frame %d blits %d unsupported %d differing %d first %d,%d\n", Frame, (int)_List.Blits.size(), _List.Unsupported, differing,
 		first < 0 ? -1 : _Area.X + first % _Area.Width, first < 0 ? -1 : _Area.Y + first / _Area.Width);
+	return(false);
 }
 
 

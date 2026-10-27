@@ -1294,7 +1294,18 @@ void Backend_Set_VSync(bool vsync)
 /// </summary>
 static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer, BackendEmissive const * emissive)
 {
-	if (layer.Pixels != NULL) {
+	bgfx::TextureHandle layertexture = _LayerTexture;
+	int layerwidth = _LayerWidth;
+	int layerheight = _LayerHeight;
+	if (layer.Gpu) {
+		layertexture.idx = GpuMap_Texture();
+		if (!bgfx::isValid(layertexture)) {
+			return(false);
+		}
+		layerwidth = layer.Width;
+		layerheight = layer.Height;
+		_LayerMask.Uploaded = false;
+	} else if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {
 			return(false);
 		}
@@ -1331,7 +1342,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	unsigned int const clamp = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 
 	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
-	bool const layer_shrunk = layer.DestWidth < _LayerWidth || layer.DestHeight < _LayerHeight;
+	bool const layer_shrunk = layer.DestWidth < layerwidth || layer.DestHeight < layerheight;
 	// The debug view shows the layer's mask alone, since it covers the same area as the frame.
 	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
 	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
@@ -1346,7 +1357,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	}
 
 	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
-	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
 	}
 	if (layer_masked) {

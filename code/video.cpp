@@ -76,6 +76,7 @@ static Surface const * _LayerSurface = NULL;
 static Rect _LayerSource;
 static Rect _LayerDest;
 static bool _LayerFresh = false;
+static bool _LayerGpu = false;
 
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
@@ -477,6 +478,17 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 	_LayerSource = source;
 	_LayerDest = dest;
 	_LayerFresh = (surface != NULL);
+	_LayerGpu = false;
+}
+
+
+void Video_Set_Gpu_Map_Layer(Rect const & dest)
+{
+	_LayerSurface = NULL;
+	_LayerSource = dest;
+	_LayerDest = dest;
+	_LayerFresh = false;
+	_LayerGpu = true;
 }
 
 
@@ -566,7 +578,19 @@ static void Present(void)
 
 	BackendLayer layer;
 	BackendLayer const * layerptr = NULL;
-	if (_LayerSurface != NULL) {
+	layer.Gpu = false;
+	if (_LayerGpu) {
+		layer.Pixels = NULL;
+		layer.Pitch = 0;
+		layer.Width = _LayerSource.Width;
+		layer.Height = _LayerSource.Height;
+		layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
+		layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
+		layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
+		layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+		layer.Gpu = true;
+		layerptr = &layer;
+	} else if (_LayerSurface != NULL) {
 		DSurface const * source = (DSurface const *)_LayerSurface;
 		char const * base = (char const *)source->Get_Buffer();
 		if (base != NULL) {
