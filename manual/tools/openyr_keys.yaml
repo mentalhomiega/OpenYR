@@ -33,6 +33,7 @@ records:
   menu-styles: OpenYR
   modern-ingame-interface: OpenYR
   modern-sidebar-rows: OpenYR
+  sidebar-opacity: OpenYR
   mods-screen: OpenYR
   render-frame-rate: OpenYR
   sidebar-strip-default-capacity: OpenYR

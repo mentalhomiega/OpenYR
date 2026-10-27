@@ -1,0 +1,33 @@
+; Clicks on the modern build panel stay with the panel, and clicks just outside it reach the map. E1 is selected.
+; At 1920x1080 the panel spans x 1670 to 1920 and y 0 to about 412. The steps are:
+;   1676,200  inside the panel's left margin: must not move E1
+;   1800,270  an empty translucent cameo well inside the panel: must not move E1
+;   1664,200  just left of the panel, on the map: must order E1 to move
+;   1800,420  just below the panel, on the map: must order E1 to move
+; The where lines show the mission (Guard stays until a move order). The selected lines show E1 is still selected.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sidebar-opacity-clicks.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80" -Filter "AUTOTEST|Exception"
+30 view 46 40
+35 reveal
+40 grantunit E1 44 40
+50 select E1
+55 where E1
+60 windowmove 1676 200
+62 shape
+64 windowclick 1676 200
+80 where E1
+82 selected
+90 windowmove 1800 270
+92 shape
+94 windowclick 1800 270
+110 where E1
+112 selected
+120 windowmove 1664 200
+122 shape
+124 windowclick 1664 200
+140 where E1
+150 select E1
+160 windowmove 1800 420
+162 shape
+164 windowclick 1800 420
+180 where E1
+200 quit

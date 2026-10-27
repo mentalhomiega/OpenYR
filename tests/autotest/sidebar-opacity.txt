@@ -1,0 +1,19 @@
+; The modern build panel with units under it, for SidebarOpacity screenshots at 1920x1080. The panel is x 1670 to 1920
+; and y 0 to about 412. Units on the empty cameo cells (56,24), (58,22), (58,24) and (58,26) stand in translucent wells,
+; so they show through the panel at the default opacity. Units on (50,16), (52,16), (50,19) and (54,19) lie under the radar
+; and the buttons, which stay opaque, so they stay hidden. The construction yard fills the cameo grid with structure cameos.
+; The ScreenCapture line writes the picture. Run from the repository root, once per setting:
+;   scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/sidebar-opacity.txt -Width 1920 -Height 1080 -Seconds 60 -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarOpacity=80"
+30 view 46 40
+35 reveal
+40 grantunit GACNST 30 30
+42 grantunit E1 50 16
+43 grantunit E1 52 16
+44 grantunit HTNK 50 19
+45 grantunit E1 54 19
+46 grantunit E1 56 24
+47 grantunit MTNK 58 22
+48 grantunit E1 58 24
+49 grantunit HTNK 58 26
+150 command ScreenCapture
+160 quit
