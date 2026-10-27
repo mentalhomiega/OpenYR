@@ -1312,7 +1312,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	LastTacPixelX = TacPixelX;
 	LastTacPixelY = TacPixelY;
 
-	if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+	if ((drawpass == DRAW_PASS_BACKGROUND && !GpuDraw_Tiles_Left()) || drawpass == DRAW_PASS_FULL) {
 		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
 	}

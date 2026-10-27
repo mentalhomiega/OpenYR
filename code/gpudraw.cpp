@@ -13,6 +13,7 @@
 
 #include "_alpha.h"
 #include "_rect.h"
+#include "_surface.h"
 #include "_tactica.h"
 #include "_zbuffer.h"
 #include "abuffer.h"
@@ -44,6 +45,14 @@ static std::vector<unsigned short> _Before;
 static GpuDrawList _List;
 static int _Locks = 0;
 static int _LockedBlits = 0;
+static bool _TilesLeft = false;
+// Passes in a row the GPU drew whole; the terrain copy is left out only after a run of them, since
+// a pass that falls back without it loses the draws the record does not hold.
+static int _CleanPasses = 0;
+// The terrain surface and its change count when the base picture was last read from it; NULL
+// while the base holds anything else.
+static DSurface const * _BaseTiles = NULL;
+static unsigned _BaseTilesCount = 0;
 
 
 static void Count_Lock(Surface const * surface)
@@ -624,9 +633,22 @@ static bool Finish_Render(Surface & target)
 	if (changedarea.X != _Area.X || changedarea.Y != _Area.Y) {
 		changed.clear();
 		changedarea = _Area;
+		_BaseTiles = NULL;
 	}
-	if (!Read_Changes(target, _Area, base, changed)) {
-		return(false);
+	bool const tilesleft = _TilesLeft;
+	_TilesLeft = false;
+	DSurface const * tiles = tilesleft ? dynamic_cast<DSurface const *>(TileSurface) : NULL;
+	bool const same = tiles != NULL && tiles == _BaseTiles && tiles->Change_Count() == _BaseTilesCount
+		&& base.size() == (std::size_t)_Area.Width * _Area.Height && (int)changed.size() == _Area.Height;
+	if (!same) {
+		_BaseTiles = NULL;
+		if (!Read_Changes(tilesleft ? *TileSurface : target, _Area, base, changed)) {
+			return(false);
+		}
+		if (tiles != NULL) {
+			_BaseTiles = tiles;
+			_BaseTilesCount = tiles->Change_Count();
+		}
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
@@ -650,15 +672,41 @@ static bool Finish_Render(Surface & target)
 		pass.Ripples = &ripples;
 		if (GpuMap_Draw(pass)) {
 			Count_Render(true);
+			_CleanPasses++;
 			return(true);
 		}
 	}
 	Count_Render(false);
-	// The recorded draws land over the ones the record does not hold, which drew in order.
+	_CleanPasses = 0;
+	// The recorded draws land over the ones the record does not hold, which drew in order. Without
+	// the terrain copy, those draws went to a target the base no longer comes from, and are lost.
 	Replay(base);
 	Write_Area(target, _Area, base);
 	std::fill(changed.begin(), changed.end(), 1);
+	_BaseTiles = NULL;
 	return(false);
+}
+
+
+void GpuDraw_Plan(bool render)
+{
+	_TilesLeft = render && _CleanPasses >= 30 && Backend_Is_Running();
+}
+
+
+bool GpuDraw_Tiles_Left(void)
+{
+	return(_TilesLeft);
+}
+
+
+// Copies the terrain the background pass left out, for a pass that will not read it from TileSurface.
+static void Restore_Tiles(Surface & target)
+{
+	if (_TilesLeft && TileSurface != NULL) {
+		target.Blit_From(TacticalRect, *TileSurface, TacticalRect);
+	}
+	_TilesLeft = false;
 }
 
 
@@ -706,10 +754,13 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	_List.ZShapeArena.clear();
 	_List.Unsupported = 0;
 	_Render = render;
+	_Area = Intersect(area, target.Get_Rect());
+	if (!_Render || target.Bytes_Per_Pixel() != 2 || _Area.Width <= 0 || _Area.Height <= 0 || TileSurface == NULL) {
+		Restore_Tiles(target);
+	}
 	if ((!_ReplayCheck && !_GpuCheck && !_Render) || target.Bytes_Per_Pixel() != 2) {
 		return;
 	}
-	_Area = Intersect(area, target.Get_Rect());
 	if (_Area.Width <= 0 || _Area.Height <= 0) {
 		return;
 	}

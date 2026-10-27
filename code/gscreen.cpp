@@ -437,6 +437,9 @@ void GScreenClass::Render(void)
 		LogicalSurface = CompositeSurface;
 	};
 
+	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
+	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
+	GpuDraw_Plan(gpu_render);
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
@@ -452,8 +455,6 @@ void GScreenClass::Render(void)
 	}
 	use_map_surfaces(true);
 	Video_Draw_Probe_Target(CompositeSurface);
-	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
-	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
 	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
 	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
 	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);

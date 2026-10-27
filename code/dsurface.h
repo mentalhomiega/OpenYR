@@ -112,6 +112,12 @@ class DSurface : public XSurface
 		void * Get_Buffer(void) const {return(GDIBuffer);}
 
 		/*
+		 * Rises with every lock, device context and stretched blit into this surface, so
+		 * a count that has not moved since an earlier read means the pixels are the same.
+		 */
+		unsigned Change_Count(void) const {return(Changes);}
+
+		/*
 		**	Queries information about the surface.
 		*/
 		virtual int Bytes_Per_Pixel(void) const override;
@@ -187,6 +193,8 @@ class DSurface : public XSurface
 		 */
 		void * GDIBuffer;
 		int Pitch;
+
+		mutable unsigned Changes;
 
 	public:
 		/*

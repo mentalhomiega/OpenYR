@@ -99,6 +99,12 @@ struct GpuDrawList
 };
 
 
+// Called before the map's background pass with the render flag the next GpuDraw_Begin will get.
+// While GpuDraw_Tiles_Left is true, the background pass must not copy the cached terrain into the
+// target: the GPU pass reads it from TileSurface, and GpuDraw_Begin copies it when it cannot.
+void GpuDraw_Plan(bool render);
+bool GpuDraw_Tiles_Left(void);
+
 // Starts recording the blits into target until GpuDraw_End. Area is the part of the target the
 // checks compare and the GPU draws. With render set, recorded draws write no colour to target.
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render = false);

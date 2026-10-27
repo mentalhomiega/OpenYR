@@ -17,6 +17,11 @@ tile layer. Each frame the GPU receives that picture, the depth buffer and, when
 the alpha buffer, then draws the objects over it. When the map view is drawn more than once before
 a frame is presented, only the last pass goes to the GPU.
 
+After 30 passes in a row that the GPU drew, the tile layer is no longer copied into the frame; the
+GPU reads it from the tile layer directly, and only when that layer has changed. If a pass then
+falls back to software, the draws the recorder does not hold are missing from that one frame, and
+the copy resumes until the GPU has again drawn 30 passes in a row.
+
 The autotest steps `gpureplay` and `gpucheck` check the recorder and the GPU against the software
 result; [AUTOTEST.md](AUTOTEST.md) documents them.
 
@@ -53,8 +58,9 @@ All keys are in the `[Video]` section and are read at startup.
   a pixel. A pass with more than 8 waves is drawn in software.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
-- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 170 pictures per second
-  with `GpuRender` and 125 in software. Each pass uploads only the rows of the base picture, the
+- At 3840x2160 the first 1,500 frames of the large battle benchmark drew 245 pictures per second
+  with `GpuRender`, which is the benchmark's limit of 240 per second plus extra draws, and 125 in
+  software. Each pass uploads only the rows of the base picture, the
   depth buffer and the alpha buffer that changed since the last drawn pass. Outside Windows the
   depth and alpha buffers cannot list the pages written to them, so those two go up whole every
   pass.

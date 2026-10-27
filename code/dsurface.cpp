@@ -112,7 +112,8 @@ DSurface::DSurface(int width, int height) :
 	GDIDC(NULL),
 	GDIOldBitmap(NULL),
 	GDIBuffer(NULL),
-	Pitch(0)
+	Pitch(0),
+	Changes(0)
 {
 	/*
 	 * BITMAPINFO carries room for a single color entry, but a bitfields bitmap is
@@ -268,6 +269,7 @@ HDC DSurface::GetDC(void)
 	 * drawing on them, which is what it did when this context came from DirectDraw.
 	 */
 	LockCount++;
+	Changes++;
 	return(GDIDC);
 }
 
@@ -370,6 +372,7 @@ void * DSurface::Lock(Point2D point) const
 	if (point.X < 0 || point.Y < 0) return(NULL);
 
 	BASECLASS::Lock();
+	Changes++;
 	Video_Draw_Probe_Note_Lock(this);
 	if (Surface_Lock_Hook != NULL) {
 		Surface_Lock_Hook(this);
@@ -520,6 +523,7 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	GdiFlush();
 
 	SetStretchBltMode(GDIDC, COLORONCOLOR);
+	Changes++;
 	bool result = StretchBlt(GDIDC, drect.X, drect.Y, drect.Width, drect.Height,
 		source.GDIDC, srect.X, srect.Y, srect.Width, srect.Height, SRCCOPY) != 0;
 
