@@ -22,6 +22,22 @@ class Surface;
 
 
 // One blit of the map view's object pass, in the form a GPU renderer draws it.
+enum GpuLineKind
+{
+	GPU_LINE_SHADED,
+	GPU_LINE_ADDITIVE,
+	GPU_LINE_ANTIALIASED
+};
+
+// The channels an antialiased line blends.
+enum
+{
+	GPU_LINE_RED = 1,
+	GPU_LINE_GREEN = 2,
+	GPU_LINE_BLUE = 4
+};
+
+
 struct GpuBlit
 {
 	BlitDesc Desc;
@@ -54,6 +70,15 @@ struct GpuBlit
 	// For a spot light, the channels it leaves alone as SpotLightClass disable flags; Pixels then
 	// holds its brightness shape. -1 for anything else.
 	int Brighten;
+
+	// For a run of line pixels, the line's colour: 565 for a shaded line, 0xRRGGBB for the others.
+	// Pixels then holds a value for each pixel, 0 where the line does not plot: the alpha buffer value
+	// for a shaded or additive line, and the colour weight plus 1 for an antialiased one. -1 otherwise.
+	int Line;
+	GpuLineKind LineKind;
+
+	// A shaded line's fade (256 for none), or an antialiased line's GPU_LINE_* channel flags.
+	int Fade;
 };
 
 
@@ -88,6 +113,20 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 // Records a spot light brightening dest, clipped to clip and the surface, by the 8-bit shape; true
 // means the GPU draws it and the caller must not.
 bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & dest, Surface & shape, int disable);
+
+// True while the GPU draws the object pass into surface.
+bool GpuDraw_Is_Rendering(Surface const & surface);
+
+// Starts recording a line drawn into surface after its lock, with the colour and extra GpuBlit::Line
+// and GpuBlit::Fade describe; true means each pixel the line plots goes to GpuDraw_Line_Pixel, until
+// GpuDraw_Line_End.
+bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra);
+
+// Records a pixel the line plots with its GpuBlit::Pixels value; a value of 0 or less records
+// nothing. True means the GPU draws it and the caller must not.
+bool GpuDraw_Line_Pixel(int x, int y, int value);
+
+void GpuDraw_Line_End(void);
 
 // Starts a shockwave ring at the world point for the GPU-drawn map; strength is the blast's damage.
 void GpuDraw_Add_Shockwave(Coord const & coord, int strength);

@@ -41,6 +41,7 @@ static Rect _Area;
 static std::vector<unsigned short> _Before;
 static GpuDrawList _List;
 static int _Locks = 0;
+static int _LockedBlits = 0;
 
 
 static void Count_Lock(Surface const * surface)
@@ -69,6 +70,9 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 	blit.AlphaLevel = alpha;
 	blit.Colour = -1;
 	blit.Brighten = -1;
+	blit.Line = -1;
+	blit.LineKind = GPU_LINE_SHADED;
+	blit.Fade = 256;
 	_List.PixelArena.resize(_List.PixelArena.size() + (std::size_t)width * height);
 	_List.Blits.push_back(blit);
 	return(_List.Blits.back());
@@ -86,6 +90,7 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 		return(false);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha);
+	_LockedBlits++;
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	unsigned char const * row = (unsigned char const *)rows;
 	int const end = leftmargin + width;
@@ -132,6 +137,7 @@ static bool Record_Bit(Surface const & dest, Blitter const & blitter, int x, int
 		return(false);
 	}
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha);
+	_LockedBlits++;
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	for (int r = 0; r < height; r++) {
 		std::memcpy(out + r * width, pixels + r * pitch, width);
@@ -195,6 +201,45 @@ static void Replay_Brighten(GpuBlit const & blit, std::vector<unsigned short> & 
 }
 
 
+static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & picture)
+{
+	unsigned char const * values = &_List.PixelArena[blit.Pixels];
+	for (int r = 0; r < blit.Height; r++) {
+		for (int i = 0; i < blit.Width; i++) {
+			int const x = blit.X + i;
+			int const y = blit.Y + r;
+			int const value = values[r * blit.Width + i];
+			if (value == 0 || !_Area.Is_Point_Within(Point2D(x, y))) {
+				continue;
+			}
+			unsigned short & pixel = picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)];
+			int const red = (blit.Line >> 16) & 0xFF;
+			int const green = (blit.Line >> 8) & 0xFF;
+			int const blue = blit.Line & 0xFF;
+			if (blit.LineKind == GPU_LINE_SHADED) {
+				pixel = DSurface::Shade_Line_Pixel(pixel, (unsigned)blit.Line, value, blit.Fade);
+			} else if (blit.LineKind == GPU_LINE_ADDITIVE) {
+				pixel = DSurface::Add_Beam_Light(pixel, (value * red) >> 7, (value * green) >> 7, (value * blue) >> 7);
+			} else {
+				// The software line blends each pixel from its neighbour's colour on some slopes; this
+				// blends it from its own.
+				int const cov = AlphaBuffer != NULL ? *AlphaBuffer->Get_Buffer_Offset(Point2D(x, y - AlphaBuffer->Get_Bounds().Y)) : 0;
+				int const weight = DSurface::Antialiased_Line_Weight(value - 1);
+				int const back = DSurface::Antialiased_Line_Weight(256 - (value - 1));
+				RGBClass const under = DSurface::Deconstruct_Hicolor_Pixel(pixel);
+				int r = under.Get_Red();
+				int g = under.Get_Green();
+				int b = under.Get_Blue();
+				if (blit.Fade & GPU_LINE_RED) r = std::min(255, (cov * (red * weight + r * back)) >> 15);
+				if (blit.Fade & GPU_LINE_GREEN) g = std::min(255, (cov * (green * weight + g * back)) >> 15);
+				if (blit.Fade & GPU_LINE_BLUE) b = std::min(255, (cov * (blue * weight + b * back)) >> 15);
+				pixel = (unsigned short)DSurface::Build_Hicolor_Pixel(r, g, b);
+			}
+		}
+	}
+}
+
+
 // Draws the list over picture, which holds the area's pixels, the way the software blitters do.
 static void Replay(std::vector<unsigned short> & picture)
 {
@@ -210,6 +255,10 @@ static void Replay(std::vector<unsigned short> & picture)
 		}
 		if (blit.Brighten >= 0) {
 			Replay_Brighten(blit, picture);
+			continue;
+		}
+		if (blit.Line >= 0) {
+			Replay_Line(blit, picture);
 			continue;
 		}
 		unsigned char const * pixels = &_List.PixelArena[blit.Pixels];
@@ -352,6 +401,86 @@ bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & d
 }
 
 
+struct LinePixel
+{
+	int X;
+	int Y;
+	int Value;
+};
+
+static std::vector<LinePixel> _LinePixels;
+static GpuLineKind _LineKind = GPU_LINE_SHADED;
+static int _LineColour = -1;
+static int _LineFade = 256;
+
+
+bool GpuDraw_Is_Rendering(Surface const & surface)
+{
+	return(_Render && &surface == _Target);
+}
+
+
+/// <summary>
+/// Starts recording a line that surface has just been locked for; the lock is not counted as an
+/// unsupported draw. Returns false when surface is not the recorded target.
+/// </summary>
+bool GpuDraw_Line_Begin(Surface const & surface, GpuLineKind kind, int colour, int extra)
+{
+	if (&surface != _Target) {
+		return(false);
+	}
+	_Locks--;
+	_LinePixels.clear();
+	_LineKind = kind;
+	_LineColour = colour;
+	_LineFade = extra;
+	return(true);
+}
+
+
+bool GpuDraw_Line_Pixel(int x, int y, int value)
+{
+	if (value > 0) {
+		_LinePixels.push_back(LinePixel{ x, y, std::min(value, 255) });
+	}
+	return(_Render);
+}
+
+
+/// <summary>
+/// Ends the line GpuDraw_Line_Begin started, adding its pixels to the list in runs of up to 64 so
+/// each run's rectangle stays small.
+/// </summary>
+void GpuDraw_Line_End(void)
+{
+	std::size_t const RUN = 64;
+	for (std::size_t first = 0; first < _LinePixels.size(); first += RUN) {
+		std::size_t const last = std::min(first + RUN, _LinePixels.size());
+		int left = _LinePixels[first].X;
+		int top = _LinePixels[first].Y;
+		int right = left;
+		int bottom = top;
+		for (std::size_t i = first; i < last; i++) {
+			left = std::min(left, _LinePixels[i].X);
+			right = std::max(right, _LinePixels[i].X);
+			top = std::min(top, _LinePixels[i].Y);
+			bottom = std::max(bottom, _LinePixels[i].Y);
+		}
+		BlitDesc desc = {};
+		GpuBlit & blit = Add_Blit(desc, left, top, right - left + 1, bottom - top + 1, 0, 0, 1, 0, 0, 0);
+		blit.Line = _LineColour;
+		blit.LineKind = _LineKind;
+		blit.Fade = _LineFade;
+		unsigned char * out = &_List.PixelArena[blit.Pixels];
+		std::memset(out, 0, (std::size_t)blit.Width * blit.Height);
+		for (std::size_t i = first; i < last; i++) {
+			out[(_LinePixels[i].Y - top) * blit.Width + (_LinePixels[i].X - left)] = (unsigned char)_LinePixels[i].Value;
+		}
+	}
+	_LinePixels.clear();
+}
+
+
 struct Shockwave
 {
 	Coord Where;
@@ -432,6 +561,9 @@ static bool Finish_Render(Surface & target)
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
+			if (blit.Line >= 0) {
+				return(blit.LineKind == GPU_LINE_ANTIALIASED);
+			}
 			return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind != BlitDesc::DARKEN && blit.Desc.AlphaRemap != NULL);
 		});
 		GpuMapPass pass;
@@ -515,6 +647,7 @@ void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 	}
 	_Target = &target;
 	_Locks = 0;
+	_LockedBlits = 0;
 	Surface_Lock_Hook = Count_Lock;
 	Blit_Record_RLE = Record_RLE;
 	Blit_Record_Bit = Record_Bit;
@@ -535,7 +668,7 @@ bool GpuDraw_End(void)
 	Blit_Record_Bit = NULL;
 	Surface_Lock_Hook = NULL;
 	// Each blit locks the target once and the object pass locks it once around the whole pass.
-	_List.Unsupported += std::max(0, _Locks - (int)_List.Blits.size() - _List.Unsupported - 1);
+	_List.Unsupported += std::max(0, _Locks - _LockedBlits - _List.Unsupported - 1);
 	Surface & target = *_Target;
 	_Target = NULL;
 	if (_Render) {

@@ -31,6 +31,7 @@
 #include "dsurface.h"
 #include "font.h"
 #include "globals.h"
+#include "gpumap.h"
 #include "house.h"
 #include "infatype.h"
 #include "keyboard.h"
@@ -578,6 +579,7 @@ void Dropship_Screen(void)
 
 	Rect alpha_area = AlphaBuffer->Get_Bounds();
 	Hide_Mouse();
+	GpuMap_Release_References();
 	delete AlphaBuffer;
 	AlphaBuffer = NULL;
 	AlphaBuffer = new ABuffer(Rect(0, 0, HiddenSurface->Get_Width(), HiddenSurface->Get_Height()));
@@ -1040,6 +1042,7 @@ void Dropship_Screen(void)
 
 	Hide_Mouse();
 
+	GpuMap_Release_References();
 	delete AlphaBuffer;
 	AlphaBuffer = NULL;
 	AlphaBuffer = new ABuffer(alpha_area);

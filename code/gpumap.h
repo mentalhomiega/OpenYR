@@ -81,5 +81,9 @@ std::uint16_t GpuMap_Texture(void);
 // Called by the renderer after each submitted frame.
 void GpuMap_After_Frame(std::uint32_t frame);
 
+// Ends a bgfx frame early when the last pass's buffers have not been read yet; call it before
+// freeing the depth or alpha buffer.
+void GpuMap_Release_References(void);
+
 // Releases the GPU resources; the renderer calls it before it shuts down.
 void GpuMap_Shutdown(void);

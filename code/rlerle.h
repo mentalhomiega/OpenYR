@@ -1411,6 +1411,13 @@ class RLEBlitTransLucent50Alpha : public RLEBlitter
 			}
 		}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT50, false, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 		AlphaLightingRemapClass *AlphaLightingRemap;
@@ -1905,6 +1912,13 @@ class RLEBlitTransLucent25Alpha : public RLEBlitter
 				}
 				ap = Blit_Wrap_A_Buffer(ap);
 			}
+		}
+
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::LUCENT25, false, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)Mask};
+			return(true);
 		}
 
 	private:

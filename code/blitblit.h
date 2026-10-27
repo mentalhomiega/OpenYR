@@ -340,6 +340,13 @@ class BlitTransXlatAlpha : public Blitter {
 		*/
 		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
+		virtual bool Describe(BlitDesc & desc) const override
+		{
+			if constexpr (sizeof(T) != sizeof(unsigned short)) return(false);
+			desc = BlitDesc{BlitDesc::XLAT, false, (unsigned short const *)TranslateTable, AlphaLightingRemap, (unsigned short)0};
+			return(true);
+		}
+
 	private:
 		T const * TranslateTable;
 		AlphaLightingRemapClass *AlphaLightingRemap;

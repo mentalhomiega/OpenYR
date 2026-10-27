@@ -79,6 +79,9 @@ enum ShaderKind
 	KIND_SHADOW_MASK,
 	KIND_SHADOWED_BASE,
 	KIND_BRIGHTEN,
+	KIND_LINE,
+	KIND_ADDITIVE_LINE,
+	KIND_ANTIALIASED_LINE,
 };
 
 enum SamplerSlot
@@ -137,6 +140,9 @@ static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
 
 static bool _Pending = false;
 static std::uint32_t _ReadyFrame = 0;
+
+// True from a pass that handed the GPU its buffers without a copy until bgfx::frame reads them.
+static bool _Referenced = false;
 static std::vector<unsigned char> _Pixels;
 static std::vector<unsigned short> _Expected;
 static int _PendingFrame = 0;
@@ -462,7 +468,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	std::vector<unsigned short> alut;
 	for (GpuBlit const & blit : list.Blits) {
 		BlitDesc const & desc = blit.Desc;
-		if (blit.Colour >= 0 || blit.Brighten >= 0 || desc.Kind == BlitDesc::DARKEN) {
+		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Line >= 0 || desc.Kind == BlitDesc::DARKEN) {
 			continue;
 		}
 		int const rows = Translator_Rows(desc.AlphaRemap, bandrows);
@@ -487,6 +493,16 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	bool valid = Fill_Arena(_Stores[SLOT_INDEX], list.PixelArena.data(), list.PixelArena.size());
 	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
 	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
+	// A pass the GPU has not read yet still holds the other buffer set's memory, so this one is copied.
+	bool const reference = pass.Persistent && !_Referenced;
+	if (reference) {
+		static bool registered = false;
+		if (!registered) {
+			registered = true;
+			std::atexit(GpuMap_Release_References);
+		}
+		_Referenced = true;
+	}
 	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
 	// a ring of the area's width that starts at 0.
 	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
@@ -496,7 +512,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		for (int i = 0; i < 2; i++) {
 			GpuRing const & source = *rings[i];
 			if (source.Values != NULL) {
-				valid = Fill_R16(*stores[i], source.Values, source.Width, source.Height, true, true) && valid;
+				valid = Fill_R16(*stores[i], source.Values, source.Width, source.Height, true, reference) && valid;
 				ring[i * 4 + 0] = (float)source.Start;
 				ring[i * 4 + 1] = (float)source.Width;
 				ring[i * 4 + 2] = (float)source.Width * source.Height;
@@ -509,7 +525,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		valid = Fill_R16(_Stores[SLOT_ABUF], pass.Alpha->data(), area.Width, area.Height, true) && valid;
 	}
 	valid = Fill_Arena(_Stores[SLOT_ZSHAPE], list.ZShapeArena.data(), list.ZShapeArena.size()) && valid;
-	valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true, pass.Persistent) && valid;
+	valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true, reference) && valid;
 
 	int shadows = 0;
 	if (_SoftShadowRadius > 0) {
@@ -548,6 +564,13 @@ static bool Submit_Pass(GpuMapPass const & pass)
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 			continue;
 		}
+		if (blit.Line >= 0) {
+			float const t1[4] = { (float)blit.Pixels, (float)blit.Width, (float)blit.Line, (float)blit.Fade };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			continue;
+		}
 		if (blit.Colour >= 0) {
 			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
@@ -582,7 +605,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		int kind = KIND_BASE;
 		if (i > 0) {
 			GpuBlit const & blit = list.Blits[i - 1];
-			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc));
+			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Line >= 0 ? KIND_LINE + blit.LineKind : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc)));
 		}
 		if (kind == KIND_DARKEN && shadows > 0) {
 			continue;
@@ -591,8 +614,17 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		// The shader outputs the source term in rgb and the target's weight in alpha (fs_mapdraw.sc).
 		if (kind == KIND_DARKEN) {
 			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA) | BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_REVSUB);
-		} else if (kind == KIND_SOURCE75 || kind == KIND_HALF || kind == KIND_SOURCE25) {
+		} else if (kind == KIND_SOURCE75 || kind == KIND_HALF || kind == KIND_SOURCE25 || kind == KIND_LINE) {
 			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA);
+		} else if (kind == KIND_ADDITIVE_LINE) {
+			state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ONE);
+		} else if (kind == KIND_ANTIALIASED_LINE) {
+			// The line leaves the channels it does not blend unwritten.
+			int const channels = list.Blits[i - 1].Fade;
+			state = BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA)
+				| ((channels & GPU_LINE_RED) ? BGFX_STATE_WRITE_R : 0)
+				| ((channels & GPU_LINE_GREEN) ? BGFX_STATE_WRITE_G : 0)
+				| ((channels & GPU_LINE_BLUE) ? BGFX_STATE_WRITE_B : 0);
 		} else if (kind == KIND_BRIGHTEN) {
 			// The shader outputs the brightening factor; the target gains itself times it.
 			state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_DST_COLOR, BGFX_STATE_BLEND_ONE);
@@ -669,6 +701,7 @@ std::uint16_t GpuMap_Texture(void)
 
 void GpuMap_After_Frame(std::uint32_t frame)
 {
+	_Referenced = false;
 	if (!_Pending || frame < _ReadyFrame) {
 		return;
 	}
@@ -705,8 +738,22 @@ void GpuMap_After_Frame(std::uint32_t frame)
 }
 
 
+/// <summary>
+/// Makes the GPU read the buffers the last pass handed it without a copy, by ending a bgfx frame
+/// early when one is still waiting. Call it before freeing the depth or alpha buffer.
+/// </summary>
+void GpuMap_Release_References(void)
+{
+	if (_Referenced) {
+		bgfx::frame();
+		_Referenced = false;
+	}
+}
+
+
 void GpuMap_Shutdown(void)
 {
+	GpuMap_Release_References();
 	Destroy_Target();
 	Destroy_Stores();
 	if (bgfx::isValid(_Program)) {

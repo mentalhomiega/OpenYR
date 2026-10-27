@@ -8,7 +8,7 @@ default, and works only in the modern interface on Direct3D 11.
 
 | Part | File | Role |
 |---|---|---|
-| Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels and spot lights. |
+| Recorder | `code/gpudraw.cpp` | Records each draw of the object pass into the map view as a `GpuBlit`: blits from `RLE_Blit` and `Bit_Blit` (colour indices, depth values, translator, lighting remap and blend kind), solid fills, particle pixels, spot lights, and the pixels of depth-shaded, additive and antialiased lines (trails, electric bolts and lasers). |
 | GPU renderer | `code/gpumap.cpp` | Draws a recorded pass with the map shaders into a texture that the present shows in place of the software picture. |
 | Shaders | `code/shaders/mapdraw/` | `vs_mapdraw.sc`, `fs_mapdraw.sc` (the pass), `fs_mapblur.sc` (soft shadow blur) and `fs_mappost.sc` (shockwaves), each compiled into a `.bin.h` header. |
 
@@ -42,6 +42,13 @@ All keys are in the `[Video]` section and are read at startup.
   difference was 4 steps.
 - Spot lights brighten in 8-bit colour on the GPU, so they can differ from the software result by
   one step.
+- Lines are tested against the depth buffer when they are recorded, so their pixels match the
+  software line. A fading trail and an antialiased laser blend in the hardware blend without the
+  software's rounding. An antialiased laser blends each pixel from its own colour, while the software
+  blends some pixels from their neighbour's. An additive laser glow that saturates a channel stops at
+  white in that channel, while the software hands the excess to the other channels.
+- While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
+  picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 93 pictures per second
   with `GpuRender` and 128 in software. Copying out the frame's picture and handing it, the depth
   buffer and the alpha buffer to the GPU cost about 1.1 ms per pass, and uploading them adds to the

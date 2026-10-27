@@ -141,6 +141,9 @@ class DSurface : public XSurface
 		static int Build_Hicolor_Pixel(RGBClass const & rgb);
 		static RGBClass Deconstruct_Hicolor_Pixel(unsigned short pixel);
 		static unsigned short Blend_Pixel(unsigned short src_color, unsigned short dst_color, int level);
+		static unsigned short Shade_Line_Pixel(unsigned short under, unsigned color, int value, int fade);
+		static unsigned short Add_Beam_Light(unsigned short pixel, int red_add, int green_add, int blue_add);
+		static int Antialiased_Line_Weight(int index);
 		static void Build_Remap_Table(unsigned short * table, int count, PaletteClass const & palette);
 		static unsigned short Get_Halfbright_Mask(void) {return(HalfbrightMask);}
 		static unsigned short Get_Quarterbright_Mask(void) {return(QuarterbrightMask);}

@@ -12,7 +12,10 @@ $input v_texcoord0, v_texcoord1, v_texcoord2, v_texcoord3
 // Kind: 0 copy, 1 darken, 2 75% source, 3 half, 4 25% source, 5 the area's base picture, 6 copy without depth test,
 // 7 a solid fill of the 565 colour in v_texcoord1.x, 8 a shadow's coverage written as 1 into the shadow mask,
 // 9 the base picture darkened by the blurred shadow mask in s_shadow, 10 a spot light's brightening factor
-// (v_texcoord1.z holds the channels it leaves alone).
+// (v_texcoord1.z holds the channels it leaves alone), 11 depth-shaded line pixels whose index is the alpha
+// buffer value under each (v_texcoord1.z holds the 565 colour, w the fade; the target's weight goes out in alpha),
+// 12 additive line pixels whose index is the alpha buffer value (v_texcoord1.z holds 0xRRGGBB), 13 antialiased line
+// pixels whose index is the colour weight plus 1 (v_texcoord1.z holds 0xRRGGBB; the target's weight goes out in alpha).
 
 #include "bgfx_shader.sh"
 
@@ -75,6 +78,44 @@ void main()
 	int index = Fetch8(s_index, int(v_texcoord1.x + 0.5) + local.y * width + local.x);
 	if (index == 0) {
 		discard;
+	}
+
+	if (kind == 11) {
+		int c = int(v_texcoord1.z + 0.5);
+		int fade = int(v_texcoord1.w + 0.5);
+		ivec3 c8 = ivec3(((c / 2048) % 32) * 8, ((c / 32) % 64) * 4, (c % 32) * 8);
+		vec3 scale = vec3(1.0 / (8.0 * 31.0), 1.0 / (4.0 * 63.0), 1.0 / (8.0 * 31.0));
+		if (fade >= 256) {
+			if (index == 127) {
+				gl_FragColor = vec4(Rgb565(c), 0.0);
+				return;
+			}
+			ivec3 shaded = (c8 * index) / 128;
+			gl_FragColor = vec4(min(vec3(shaded / ivec3(8, 4, 8)) * vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0), vec3_splat(1.0)), 0.0);
+			return;
+		}
+		int amount = max(fade, 0);
+		vec3 source = vec3((c8 * amount) / 256) * (float(index) / 128.0);
+		gl_FragColor = vec4(source * scale, float((256 - amount) * index) / 32768.0);
+		return;
+	}
+
+	if (kind == 12 || kind == 13) {
+		int c = int(v_texcoord1.z + 0.5);
+		ivec3 c8 = ivec3((c / 65536) % 256, (c / 256) % 256, c % 256);
+		vec3 scale = vec3(1.0 / (8.0 * 31.0), 1.0 / (4.0 * 63.0), 1.0 / (8.0 * 31.0));
+		if (kind == 12) {
+			ivec3 added = (c8 * index) / 128;
+			gl_FragColor = vec4(vec3(added / ivec3(8, 4, 8)) * vec3(1.0 / 31.0, 1.0 / 63.0, 1.0 / 31.0), 0.0);
+			return;
+		}
+		int weight = index - 1;
+		float t = float(weight) / 128.0 - 1.0;
+		float front = floor((t * t * t + 1.0) * 128.0);
+		float back = floor((1.0 - t * t * t) * 128.0);
+		float cov = float(Fetch16(s_abuf, Ring(area, u_ring[1])));
+		gl_FragColor = vec4(vec3(c8) * (cov * front / 32768.0) * scale, cov * back / 32768.0);
+		return;
 	}
 
 	if (kind == 10) {
