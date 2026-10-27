@@ -70,6 +70,7 @@
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
+#include "spawnman.h"
 #include "tube.h"
 #include "unit.h"
 #include "unittype.h"
@@ -515,6 +516,11 @@ void DriveLocomotionClass::Unlimbo(void)
 bool DriveLocomotionClass::Process(void)
 {
 	Set_Slope(LinkedTo->Get_Cell_Ptr()->Ramp);
+
+	// gamemd 0x4B2630 returns true while CountLaunchingSpawns is nonzero; the Drive caller's use of that result is not fully traced, so MissileLaunchHoldsMove can turn this off.
+	if (Rule->IsMissileLaunchHoldsMove && DestinationCoord != COORD_NONE && LinkedTo->SpawnManager && LinkedTo->SpawnManager->Launching_Count() > 0) {
+		return(false);
+	}
 
 	/*
 	**	If the unit is following a track, then continue

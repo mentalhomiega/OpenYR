@@ -144,6 +144,22 @@ int SpawnManagerClass::Docked_Count(void) const
 
 
 /// <summary>
+/// Counts the missiles still leaving the owner: each one on its pad (NODE_TAKEOFF), and each one launched and out of limbo (NODE_PREPARING).
+/// The owner's Drive move waits while this is nonzero when MissileLaunchHoldsMove is set (gamemd SpawnManagerClass::CountLaunchingSpawns, 0x6B7D80).
+/// </summary>
+int SpawnManagerClass::Launching_Count(void) const
+{
+	int count = 0;
+	for (NodeType const & node : Nodes) {
+		if (node.Status == NODE_TAKEOFF || (node.Status == NODE_PREPARING && node.Unit != NULL && !node.Unit->IsInLimbo && node.Unit->Class->IsMissileSpawn)) {
+			count++;
+		}
+	}
+	return(count);
+}
+
+
+/// <summary>
 /// Forgets a spawn or target that is leaving the game. A lost spawn is replaced after the
 /// regeneration delay.
 /// </summary>
@@ -319,7 +335,8 @@ void SpawnManagerClass::AI(void)
 				if (owner_attacked || (node.IsMissile && owner_moving)) {
 					break;
 				}
-				NextSpawnFrame = Frame + (SpawnType->IsMissileSpawn ? 9 : 20);
+				// gamemd reads MissileSpawn from the launching object's type (0x6B7392), not from the spawn's type.
+				NextSpawnFrame = Frame + (Owner->TClass->IsMissileSpawn ? 9 : 20);
 				Launch(node, index);
 				break;
 

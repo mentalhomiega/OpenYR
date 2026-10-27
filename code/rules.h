@@ -1077,6 +1077,9 @@ class RulesClass
 		// Lets a SubjectToWalls shot fly through walls owned by its owner's allies.
 		bool IsAlliedWallTransparency;
 
+		// Set by MissileLaunchHoldsMove: a spawner's move waits while a missile it launched is on its pad or taking off.
+		bool IsMissileLaunchHoldsMove;
+
 		// The fastest a falling object drops, in leptons a frame (negative), with and without a parachute.
 		int ParachuteMaxFallRate;
 		int NoParachuteMaxFallRate;
