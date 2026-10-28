@@ -755,6 +755,16 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (ATLAS_ROWS + arenarows > (std::size_t)TEXTURE_LIMIT || zshaperows > (std::size_t)TEXTURE_LIMIT) {
 		return(false);
 	}
+	// Offsets reach the shader as floats, which hold every whole number only up to 2^24.
+	std::size_t const exact = std::size_t(1) << 24;
+	if (GPU_ATLAS_BYTES + list.PixelArena.size() > exact || list.ZShapeArena.size() > exact || (std::size_t)area.Width * area.Height > exact) {
+		return(false);
+	}
+	for (GpuRing const * ring : { &pass.DepthRing, &pass.AlphaRing }) {
+		if (pass.Persistent && ring->Values != NULL && (std::size_t)ring->Width * ring->Height > exact) {
+			return(false);
+		}
+	}
 	int waves = 0;
 	int shadows = 0;
 	for (GpuBlit const & blit : list.Blits) {

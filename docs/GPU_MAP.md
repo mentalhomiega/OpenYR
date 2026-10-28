@@ -78,7 +78,8 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   The software lifts some pixels from ones the wave has already shifted, so the ripple can differ by
   a pixel. A pass with more than 8 waves is drawn in software.
 - A pass that would not fit the GPU's limits (more than 8 waves, an area or arena past the texture
-  size, too many vertices for the frame) is drawn in software. If the GPU still cannot take the kept
+  size, too many vertices for the frame) is drawn in software. So is a map view of more than
+  16,777,216 pixels, such as 7680x4320, because the shader reads positions as 32-bit floats. If the GPU still cannot take the kept
   pass when the frame is presented, that frame shows the last GPU picture and the next pass is drawn
   in software.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
