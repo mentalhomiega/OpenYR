@@ -3147,6 +3147,9 @@ int Main_Menu(unsigned int timeout)
 
 	timeout = 0;
 
+	// A style picked during the last game takes effect on the way back to the menu.
+	Apply_Interface_Choice();
+
 	if (Options.IsClassicMenus) {
 		char * background = Get_New_Menu()->Background;
 		Load_Title_Screen(background, HiddenSurface, &CCPalette);
@@ -7491,14 +7494,14 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 	}
 
 	if (composite_rect.Is_Valid()) {
-		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height);
+		CompositeSurface = new DSurface(composite_rect.Width, composite_rect.Height, true);
 		CompositeSurface->Fill(0);
 
 		DebugString("CompositeSurface (%dx%d)\n", composite_rect.Width, composite_rect.Height);
 	}
 
 	if (tile_rect.Is_Valid()) {
-		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height);
+		TileSurface = new DSurface(tile_rect.Width, tile_rect.Height, true);
 		TileSurface->Fill(0);
 
 		DebugString("TileSurface (%dx%d)\n", tile_rect.Width, tile_rect.Height);

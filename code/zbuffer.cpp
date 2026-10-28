@@ -12,6 +12,7 @@
 #include "zbuffer.h"
 
 #include "bsurface.h"
+#include "writewatch.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -34,7 +35,8 @@ ZBuffer::ZBuffer(Rect rect) :
 {
 	Bounds = rect;
 	BufferSize = BufferWidth * BufferHeight;
-	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ZBUFFER_BPP);
+	// The GPU map pass uploads only the pages written since it last took the buffer.
+	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ZBUFFER_BPP, WriteWatch_Alloc((std::size_t)BufferWidth * BufferHeight * ZBUFFER_BPP));
 
 	Fill(ZBUFFER_COLOR);
 
@@ -86,6 +88,8 @@ void ZBuffer::Release_Surface(void)
 {
 	delete SurfacePtr;
 //	SurfacePtr = NULL;
+	WriteWatch_Free(BufferStart);
+	BufferStart = NULL;
 }
 
 

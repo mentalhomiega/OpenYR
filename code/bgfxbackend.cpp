@@ -15,6 +15,7 @@
 
 #include "dbgprint.h"
 #include "except.h"
+#include "gpumap.h"
 
 #include "bgfxviews.hh"
 #include "hdrcolour.h"
@@ -105,6 +106,41 @@ static TileGridClass _KeyedGrid;
 static TileGridClass _MaskGrid;
 static std::vector<TileRect> _Rects;
 static std::vector<unsigned char> _KeyedMaskEffective;
+
+// The rows of the picture that changed since a frame texture's copy was last compared with it. Known is
+// false when any row may have changed.
+struct ChangedRows {
+	std::vector<unsigned char> Rows;
+	bool Known = false;
+
+	void Note(unsigned char const * rows, int count)
+	{
+		if (rows == NULL || count <= 0 || (Known && (int)Rows.size() != count)) {
+			Known = false;
+			return;
+		}
+		if (!Known) {
+			return;
+		}
+		for (int y = 0; y < count; y++) {
+			Rows[y] |= rows[y];
+		}
+	}
+
+	// The rows to pass to a compare of a picture height rows high; null when every row must be read.
+	unsigned char const * For(int height) const
+	{
+		return((Known && (int)Rows.size() == height) ? Rows.data() : NULL);
+	}
+
+	void Restart(int height)
+	{
+		Rows.assign((size_t)std::max(height, 0), 0);
+		Known = true;
+	}
+};
+static ChangedRows _FrameRows;
+static ChangedRows _KeyedRows;
 
 // True when the keyed mask texture was brought up to date with the keyed frame texture in the same present,
 // and whether that present had a mask.
@@ -667,7 +703,8 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 
 	unsigned char const * source = (unsigned char const *)pixels;
 	_KeyedGrid.Resize(_FrameWidth, _FrameHeight);
-	_KeyedDiff.Compare(source, pitch, _KeyedGrid);
+	_KeyedDiff.Compare(source, pitch, _KeyedGrid, _KeyedRows.For(_FrameHeight));
+	_KeyedRows.Restart(_FrameHeight);
 	Verify_Diff(_KeyedDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
 	Send_Tiles(_KeyedFrameTexture, _KeyedGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
 		Widen_Tile(dest, destpitch, source, pitch, rect, true);
@@ -1139,6 +1176,7 @@ void Backend_Shutdown(void)
 		return;
 	}
 
+	GpuMap_Shutdown();
 	Destroy_Prescale_Target();
 	Destroy_Layer();
 	Destroy_Targets();
@@ -1292,7 +1330,18 @@ void Backend_Set_VSync(bool vsync)
 /// </summary>
 static bool Present_With_Layer(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const & layer, BackendEmissive const * emissive)
 {
-	if (layer.Pixels != NULL) {
+	bgfx::TextureHandle layertexture = _LayerTexture;
+	int layerwidth = _LayerWidth;
+	int layerheight = _LayerHeight;
+	if (layer.Gpu) {
+		layertexture.idx = GpuMap_Texture();
+		if (!bgfx::isValid(layertexture)) {
+			return(false);
+		}
+		layerwidth = layer.Width;
+		layerheight = layer.Height;
+		_LayerMask.Uploaded = false;
+	} else if (layer.Pixels != NULL) {
 		if (!Upload_Layer(layer)) {
 			return(false);
 		}
@@ -1329,7 +1378,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	unsigned int const clamp = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
 
 	// The map keeps whole pixels while it is drawn at its own size or larger, and is smoothed when shrunk.
-	bool const layer_shrunk = layer.DestWidth < _LayerWidth || layer.DestHeight < _LayerHeight;
+	bool const layer_shrunk = layer.DestWidth < layerwidth || layer.DestHeight < layerheight;
 	// The debug view shows the layer's mask alone, since it covers the same area as the frame.
 	// Masks follow the colour in the same order: the layer's mask, or zero, over the layer, then the
 	// keyed mask over the frame, which blends so that keyed pixels keep the layer's mask.
@@ -1344,7 +1393,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	}
 
 	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
-	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : _LayerTexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
 	}
 	if (layer_masked) {
@@ -1425,7 +1474,8 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		unsigned char const * source = (unsigned char const *)pixels;
 		if (_FrameIs565 || _ConvertBuffer != NULL) {
 			_Grid.Resize(_FrameWidth, _FrameHeight);
-			_FrameDiff.Compare(source, pitch, _Grid);
+			_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
+			_FrameRows.Restart(_FrameHeight);
 			Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
 			if (_FrameIs565) {
 				Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
@@ -1536,6 +1586,19 @@ void Backend_End_Frame(void)
 	}
 	_MaskDrawn = false;
 	_LastFrame = bgfx::frame();
+	GpuMap_After_Frame(_LastFrame);
+	if (Perf_Enabled) {
+		bgfx::Stats const * stats = bgfx::getStats();
+		if (stats->gpuTimerFreq > 0 && stats->gpuTimeEnd > stats->gpuTimeBegin) {
+			Perf_Add_Time(PERF_PRESENT_GPU_TIME, (double)(stats->gpuTimeEnd - stats->gpuTimeBegin) * 1000.0 / (double)stats->gpuTimerFreq);
+		}
+	}
+}
+
+
+bool Backend_Is_Running(void)
+{
+	return(_Initialized);
 }
 
 
@@ -1615,6 +1678,13 @@ void Backend_Log_Resource_Counts(char const * when)
 				when, (unsigned int)stats->numTextures, (long long)stats->textureMemoryUsed, (unsigned int)stats->numFrameBuffers,
 				(unsigned int)stats->numIndexBuffers, (unsigned int)stats->numVertexBuffers, (unsigned int)stats->numDynamicIndexBuffers,
 				(unsigned int)stats->numDynamicVertexBuffers, (long long)stats->rtMemoryUsed);
+}
+
+
+void Backend_Note_Changed_Rows(unsigned char const * rows, int count)
+{
+	_FrameRows.Note(rows, count);
+	_KeyedRows.Note(rows, count);
 }
 
 

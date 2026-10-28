@@ -52,6 +52,8 @@
 
 #include "autotest.h"
 #include "bullet.h"
+#include "goptions.h"
+#include "gpudraw.h"
 
 #include "_convert.h"
 #include "_map.h"
@@ -1794,6 +1796,10 @@ void BulletClass::Detonate(Coord const & coord)
 			if (Warhead->IsCLDisableBlue) disabled |= SpotLightClass::DISABLE_BLUE;
 		}
 		Combat_Lighting(blast_coord, Strength, Warhead, true, disabled);
+	}
+
+	if (anim != NULL && !nullified && Options.Shockwaves) {
+		GpuDraw_Add_Shockwave(blast_coord, Strength);
 	}
 
 	if (anim != NULL) {

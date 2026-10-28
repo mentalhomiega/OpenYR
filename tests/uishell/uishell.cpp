@@ -933,6 +933,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) override { Calls.push_back(on ? "fullscreen on" : "fullscreen off"); }
 		virtual void Set_VSync(bool on) override { Calls.push_back(on ? "vsync on" : "vsync off"); }
 		virtual void Set_Integer_Scaling(bool on) override { Calls.push_back(on ? "integer scaling on" : "integer scaling off"); }
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override { Calls.push_back(std::string("gpu effects ") + (render ? "1" : "0") + (softshadows ? "1" : "0") + (shockwaves ? "1" : "0") + (bloom ? "1" : "0") + (water ? "1" : "0") + (clouds ? "1" : "0") + (weather ? "1" : "0")); }
 		virtual void Set_Filter(int mode) override { Calls.push_back("filter " + std::to_string(mode)); }
 		virtual void Set_Frame_Rate(int rate) override { Calls.push_back("frame rate " + std::to_string(rate)); }
 		virtual void Set_Cursor_Scale(int scale) override { Calls.push_back("cursor scale " + std::to_string(scale)); }
@@ -3011,6 +3012,7 @@ static UIDisplayState Graphics_Fixture(void)
 	UIDisplayState state = Display_Fixture();
 	state.Page = UI_TAB_GRAPHICS;
 	state.ModernInterface = true;
+	state.ModernInterfaceRunning = true;
 	state.HDRActive = true;
 	state.RowCounts = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
 	state.RowCount = 2;
@@ -3194,6 +3196,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		RecordingDisplayServiceClass service;
 		UIDisplayState state = Display_Fixture();
 		state.Page = UI_TAB_GRAPHICS;
+		state.InGame = true;
 		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
@@ -3216,6 +3219,8 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(presenter.State.ModernInterface && rows != nullptr && !rows->HasAttribute("disabled") && row != nullptr && !row->IsClassSet("disabled") && preview != nullptr && !preview->IsClassSet("disabled"), "ticking the modern interface enables the drop-down and its mock live");
+		Rml::Element * notice = document->GetElementById("restart-notice");
+		Check(notice != nullptr && notice->IsVisible(), "a restart notice shows while the chosen interface differs from the running one");
 
 		if (modern != nullptr) {
 			Click(context, modern);
@@ -3224,6 +3229,64 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 			context.Update();
 		}
 		Check(!presenter.State.ModernInterface && rows != nullptr && rows->HasAttribute("disabled") && preview != nullptr && preview->IsClassSet("disabled"), "unticking the modern interface greys them again");
+		Check(notice != nullptr && !notice->IsVisible(), "the restart notice goes once the choice matches the running interface");
+
+		presenter.State.InGame = false;
+		if (modern != nullptr) {
+			Click(context, modern);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		}
+		Check(presenter.State.ModernInterface && notice != nullptr && !notice->IsVisible(), "the main menu switches the interface at once, so it shows no notice");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Graphics_Fixture();
+		UIDisplayPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the graphics view prepares for the GPU drawing switches");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * gpu = document->GetElementById("gpu-render");
+		Rml::Element * soft = document->GetElementById("soft-shadows");
+		Rml::Element * waves = document->GetElementById("shockwaves");
+		Rml::Element * glow = document->GetElementById("bloom");
+		Rml::Element * water = document->GetElementById("water-ripples");
+		Rml::Element * clouds = document->GetElementById("cloud-shadows");
+		Rml::Element * weather = document->GetElementById("weather");
+		auto sync = [&](Rml::Element * element) {
+			if (element != nullptr) {
+				Click(context, element);
+				presenter.Drain();
+				view->Sync();
+				context.Update();
+			}
+		};
+		Check(gpu != nullptr && soft != nullptr && waves != nullptr && !gpu->HasAttribute("disabled") && soft->HasAttribute("disabled") && waves->HasAttribute("disabled") && glow != nullptr && glow->HasAttribute("disabled") && water != nullptr && water->HasAttribute("disabled") && clouds != nullptr && clouds->HasAttribute("disabled") && weather != nullptr && weather->HasAttribute("disabled"), "every GPU effect switch is greyed while GPU drawing is off");
+
+		sync(soft);
+		Check(!presenter.State.SoftShadows, "a greyed soft shadows switch does not turn on");
+
+		sync(gpu);
+		Check(presenter.State.GpuRender && soft != nullptr && !soft->HasAttribute("disabled") && waves != nullptr && !waves->HasAttribute("disabled"), "ticking GPU drawing enables its effect switches live");
+
+		sync(waves);
+		sync(glow);
+		sync(water);
+		sync(clouds);
+		sync(weather);
+		Drive(presenter, "ok");
+		long const applied = std::count_if(service.Calls.begin(), service.Calls.end(), [](std::string const & call) { return(call.rfind("gpu effects", 0) == 0); });
+		Check(applied == 1 && std::find(service.Calls.begin(), service.Calls.end(), "gpu effects 1011111") != service.Calls.end(), "accepting applies the GPU drawing switches together");
 
 		view->Release();
 		context.Update();
@@ -3647,9 +3710,11 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 	}
 
 	{
-		// The Graphics page: picture, interface, HDR, picture level and renderer, then the footer.
+		// The Graphics page: picture, interface, GPU drawing, HDR, picture level and renderer, then the footer.
 		RecordingDisplayServiceClass service;
-		UIDisplayPresenterClass presenter(service, Graphics_Fixture());
+		UIDisplayState state = Graphics_Fixture();
+		state.GpuRender = true;
+		UIDisplayPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 		Check(Rml(*view).Prepare(context), "the graphics view prepares for the tab order");
@@ -3665,7 +3730,7 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		char const * const order[] = {
 			"filter", "integer-scaling", "framerate", "stretch", "modern-interface", "sidebar-rows", "sidebar-opacity", "classic-menus",
-			"bitmap-font", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
+			"bitmap-font", "gpu-render", "soft-shadows", "shockwaves", "bloom", "water-ripples", "cloud-shadows", "weather", "hdr", "highlights", "paper-white", "peak-brightness", "brightness", "gamma", "renderer",
 			"footer-reset", "footer-cancel", "footer-ok"
 		};
 		bool in_order = true;

@@ -30,6 +30,7 @@
 #include "msgbox.h"
 #include "newmenu.h"
 #include "sdl/sdlwindow.h"
+#include "shellmap.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
@@ -248,6 +249,37 @@ bool Change_Display_Mode(int width, int height)
 	DebugString("Mode change complete.\n");
 
 	return(true);
+}
+
+
+/// <summary>
+/// Switches the running interface to the style chosen in the settings when they differ. Call it
+/// only from the menus: every drawing surface is rebuilt and the menu battle starts over, so a
+/// switch is skipped while that battle is loading or running a frame.
+/// </summary>
+void Apply_Interface_Choice(void)
+{
+	if (Options.ModernInterface == Options.IsModernInterfaceChosen) {
+		return;
+	}
+
+	Shellmap_Stop();
+	if (Shellmap_Running()) {
+		return;
+	}
+
+	bool const was = Options.ModernInterface;
+	Options.ModernInterface = Options.IsModernInterfaceChosen;
+	if (!Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight)) {
+		Options.ModernInterface = was;
+		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+	}
+	DebugString("Interface style is now %s\n", Options.ModernInterface ? "Modern" : "Classic");
+
+	Map.Lay_Out_Radar();
+	Map.Reposition_Sidebar();
+	Draw_Menu_Background();
+	Shellmap_Start();
 }
 
 

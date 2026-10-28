@@ -84,9 +84,10 @@ void Emissive_After_Fill(Surface & dest, Rect const & rect)
 /// <summary>
 /// Writes the draw strength to the pixels of one RLE row that the blitter draws. The row starts
 /// at mask and the source is the RLE data after the row's length word. zbuf and zshape follow
-/// the blitter's depth test and are NULL when the surface has no depth buffer.
+/// the blitter's depth test and are NULL when the surface has no depth buffer. A drawn pixel keeps
+/// the bits of keep that it already had.
 /// </summary>
-void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin)
+void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin, bool writedepth, unsigned char keep)
 {
 	unsigned char const * sptr = (unsigned char const *)source;
 
@@ -124,7 +125,10 @@ void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int
 			drawn = (zmin - offset) < (int)*zbuf;
 		}
 		if (drawn) {
-			*mask = strength;
+			*mask = (unsigned char)(strength | (*mask & keep));
+			if (writedepth && zbuf != NULL) {
+				*zbuf = (unsigned short)(zmin - (zshape != NULL ? *zshape : 0));
+			}
 		}
 
 		length--;

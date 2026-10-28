@@ -49,6 +49,7 @@
 #include "zbuffer.h"
 
 #include "draw.hh"
+#include "gpudraw.h"
 
 #include <algorithm>
 
@@ -696,7 +697,10 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 								green = (int)(green * alpha) >> 7;
 								blue = (int)(blue * alpha) >> 7;
 							}
-							LogicalSurface->Put_Pixel(pixel, (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue));
+							unsigned short const colour = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
+							if (!GpuDraw_Pixel(*LogicalSurface, pixel, colour)) {
+								LogicalSurface->Put_Pixel(pixel, colour);
+							}
 						}
 					}
 				}

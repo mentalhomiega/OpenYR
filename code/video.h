@@ -102,7 +102,15 @@ bool Video_Map_Layer_Supported(void);
 // VIDEO_LAYER_KEY, from the next present on. Call it after each draw of the surface; a NULL
 // surface removes the layer.
 void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect const & dest);
+
+// Draws the GPU map texture (gpumap.h), drawn from the map area source, under the frame area dest
+// until the next Video_Set_Map_Layer.
+void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest);
 void Video_Present_If_Dirty(void);
+// Notes that a copy changed only the visible surface rows whose entries are non-zero. before is the
+// surface's change count just before the copy and after its count just after; null rows mean the copy
+// may have changed any row.
+void Video_Note_Visible_Rows(unsigned char const * rows, int count, unsigned before, unsigned after);
 void Video_Present_Now(void);
 
 VideoScaleInfo const & Video_Get_Scale_Info(void);
@@ -119,5 +127,18 @@ unsigned int Video_Frame_Time(int index);
 
 std::uint64_t Video_Present_Count(void);
 std::uint64_t Video_Frame_Upload_Count(void);
+
+// The presentdigest autotest step: on logs a PRESENT_DIGEST line at each present that reaches the presenter.
+void Video_Set_Present_Digest(bool enabled);
+
+// The drawdigest autotest step: on logs a DRAW_DIGEST line for each map view passed to Video_Note_Draw_Digest.
+void Video_Set_Draw_Digest(bool enabled);
+void Video_Note_Draw_Digest(Surface const & surface, Rect const & area);
+
+// The drawprobe autotest step: counts the call stacks that lock the target surface, logged when it is turned off.
+void Video_Set_Draw_Probe(bool enabled);
+void Video_Draw_Probe_Target(Surface const * surface);
+void Video_Draw_Probe_Note_Lock(Surface const * surface);
+void Video_Draw_Probe_Note_Blit(Surface const * surface, char const * kind, int pixels);
 
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);

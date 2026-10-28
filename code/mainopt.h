@@ -10,6 +10,7 @@
 #pragma once
 
 bool Change_Display_Mode(int width, int height);
+void Apply_Interface_Choice(void);
 void Main_Options_Dialog(void);
 void Display_Options_Dialog(int page);
 struct UIDisplayMode;

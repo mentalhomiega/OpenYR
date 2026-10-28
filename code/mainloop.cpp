@@ -742,12 +742,14 @@ void Sync_Delay(void)
 		unsigned int const period = std::max<unsigned int>(FrameTimer, 1);
 		unsigned int const spacing = std::max(1000 / render_frame_rate, 1);
 		unsigned int next_draw = timeGetTime();
+		bool skipped_slot = false;
 		while (FrameTimer) {
 			Call_Back();
 			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
 				unsigned int const now = timeGetTime();
 				// A draw is skipped when less time is left before the next game frame than recent draws took, so drawing never slows the game.
 				if ((int)(now - next_draw) >= 0 && FrameTimer > RenderCost) {
+					skipped_slot = false;
 					next_draw = now + spacing;
 					KeyNumType input = KN_NONE;
 					int x, y;
@@ -759,6 +761,9 @@ void Sync_Delay(void)
 					RenderBlend = 1.0;
 					Note_Render_Cost(timeGetTime() - now);
 					stat_draws++;
+				} else if ((int)(now - next_draw) >= 0 && !skipped_slot) {
+					skipped_slot = true;
+					Perf_Count(PERF_COUNT_DRAWS_SKIPPED);
 				}
 			} else {
 				UI_Serve_Screen();

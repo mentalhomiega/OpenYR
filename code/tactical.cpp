@@ -15,6 +15,8 @@
 #include "perfstat.h"
 
 #include "playerdisplay.h"
+#include "gpudraw.h"
+#include "shadowplane.h"
 #include "tactical.h"
 #include "flyingtext.h"
 
@@ -46,6 +48,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "emissive.h"
 #include "emissive_surface.h"
 #include "linetrail.h"
 #include "radbeam.h"
@@ -1045,6 +1048,14 @@ void Tactical::Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool
 }
 
 
+static void Fill_Outside_Map(Surface & surface, Rect const & rect)
+{
+	if (!GpuDraw_Fill(surface, rect, TBLACK)) {
+		surface.Fill_Rect(rect, TBLACK);
+	}
+}
+
+
 /// <summary>
 /// Blacks out the parts of the tactical view that the map does not reach.
 /// </summary>
@@ -1062,19 +1073,19 @@ void Tactical::Render_Outside_Map(Surface & surface)
 	int bottom = TacticalRect.Y + maximum.Y + TacticalRect.Height / 2 - TacPixelY;
 
 	if (left > TacticalRect.X) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height));
 	}
 
 	if (right < TacticalRect.X + TacticalRect.Width) {
-		surface.Fill_Rect(Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height), TBLACK);
+		Fill_Outside_Map(surface, Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height));
 	}
 
 	if (top > TacticalRect.Y) {
-		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y));
 	}
 
 	if (bottom < TacticalRect.Y + TacticalRect.Height) {
-		surface.Fill_Rect(Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom), TBLACK);
+		Fill_Outside_Map(surface, Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom));
 	}
 }
 
@@ -1273,6 +1284,8 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			// The strip draws repaint colour without touching the emissive mask, so the mask in each strip starts clear.
 			Emissive_After_Fill(*LogicalSurface, xpanrect);
 			Emissive_After_Fill(*LogicalSurface, ypanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, fullredraw ? TacticalRect : xpanrect);
+			ShadowPlane_After_Fill(*LogicalSurface, ypanrect);
 			Wipe_Depth(fullredraw, xoffset, yoffset, bounds);
 			{
 				PerfScope shroud_scope(PERF_DRAW_SHROUD);
@@ -1303,9 +1316,15 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	LastTacPixelX = TacPixelX;
 	LastTacPixelY = TacPixelY;
 
-	if (drawpass == DRAW_PASS_BACKGROUND || drawpass == DRAW_PASS_FULL) {
+	if ((drawpass == DRAW_PASS_BACKGROUND && !GpuDraw_Tiles_Left()) || drawpass == DRAW_PASS_FULL) {
 		PerfScope tilecopy_scope(PERF_DRAW_TILECOPY);
 		LogicalSurface->Blit_From(TacticalRect, *TileSurface, TacticalRect);
+		if (drawpass == DRAW_PASS_FULL || !GpuDraw_Planned()) {
+			ShadowPlane_Darken(*LogicalSurface, TacticalRect, DSurface::Get_Halfbright_Mask());
+		}
+	} else if (drawpass == DRAW_PASS_BACKGROUND && Emissive_Is_Enabled()) {
+		// The pixels stay behind for the GPU pass, but the emissive values the last frame's objects left must go.
+		Emissive_After_Bit_Blit(*LogicalSurface, TacticalRect.X, TacticalRect.Y, *TileSurface, TacticalRect.X, TacticalRect.Y, TacticalRect.Width, TacticalRect.Height);
 	}
 
 	if (drawpass == DRAW_PASS_FOREGROUND || drawpass == DRAW_PASS_FULL) {
@@ -1452,9 +1471,8 @@ static ShapeSet const * Caption_Art(void)
 /// Draws the caption across the middle of the tactical view.
 /// As gamemd does (0x6d4e20), the caption art, frame CaptionStyle of GRFXTXT.SHP, is centred in
 /// the area of the view that is not under the sidebar. Without the art or its palette, or when
-/// the style names no frame of it, the text is painted in white instead. The routine paints on the composite surface, so it does nothing unless
-/// that surface can hand out a device context for the text, and it stays quiet while the map editor
-/// is running.
+/// the style names no frame of it, the text is printed centred in the view in the interface's text
+/// colour instead. Nothing is drawn while the map editor is running.
 /// </summary>
 /// <param name="text">The text to display. A NULL or empty string draws nothing.</param>
 void Tactical::Draw_Screen_Text(wchar_t const * text)
@@ -1483,23 +1501,9 @@ void Tactical::Draw_Screen_Text(wchar_t const * text)
 	if (text == NULL || !wcslen(text)) {
 		return;
 	}
-	if (CompositeSurface->Is_GDI_Backed()) {
-		DSurface * surface = (DSurface *)CompositeSurface;
-		Rect rect = TacticalRect;
-		HDC hdc = surface->GetDC();
-		if (hdc != NULL) {
-			HFONT font = CreateFont(28, 20, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_RASTER_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FF_SWISS | DEFAULT_PITCH, NULL);
-			HGDIOBJ h = SelectObject(hdc, font);
-			Point2D point = Point2D(TacticalRect.Width / 2, TacticalRect.Height / 2);
-			SetBkMode(hdc, TRANSPARENT);
-			SetTextAlign(hdc, TA_CENTER);
-			SetTextColor(hdc, RGB(255, 255, 255));
-			TextOutW(hdc, rect.X + point.X, rect.Y + point.Y, text, (int)wcslen(text));
-			SelectObject(hdc, h);
-			DeleteObject(font);
-			surface->ReleaseDC(hdc);
-		}
-	}
+	std::string const line = Wide_To_UTF8(text);
+	Point2D const point(TacticalRect.X + TacticalRect.Width / 2, TacticalRect.Y + TacticalRect.Height / 2);
+	Simple_Text_Print(line.c_str(), *CompositeSurface, TacticalRect, point, ColorSchemes[GadgetClass::Get_Color_Scheme()], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT | TPF_FULLSHADOW), 1);
 }
 
 

@@ -22,6 +22,7 @@
 #include "cell.h"
 #include "combat.h"
 #include "dsurface.h"
+#include "gpudraw.h"
 #include "globals.h"
 #include "goptions.h"
 #include "logic.h"
@@ -60,6 +61,9 @@ int IntensityTable[_INTENSITY_TABLE_SIZE];
 int const _stride_counts[_INTENSITY_TABLE_SIZE] = {0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3};
 int const _facing_row_steps[FACING_COUNT] = {-1, -1, 0, 1, 1, 1, 0, -1};
 int const _facing_col_steps[FACING_COUNT] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+// Set while Draw_Sonic records its pixels for the GPU map pass.
+static bool _sonic_recording = false;
 
 bool _tables_calculated = false;
 
@@ -185,16 +189,38 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 	int radius = RadiusTable[y][abs(x - WaveStartMiddle.X - xoff)];
 	int amplitude = abs(SineTable[WaveEC + radius]);
 
+	if (_sonic_recording && GpuDraw_Line_Pixel(x, yscreen, amplitude + 1)) {
+		return;
+	}
+
 	// A replacement lifted from outside the view would carry interface pixels or memory
 	// past the frame into the wave, so such a pixel keeps its own color and only tints.
-	int count = _stride_counts[amplitude];
-	int srow = yscreen + count * _facing_row_steps[Direction];
-	int scol = x + count * _facing_col_steps[Direction];
+	Point2D shift = Sonic_Shift(amplitude, Direction);
 
 	unsigned short color = *buffer;
-	if (cliprect.Is_Point_Within(Point2D(scol, srow))) {
+	if (cliprect.Is_Point_Within(Point2D(x + shift.X, yscreen + shift.Y))) {
 		color = buffer[WaveIntensityTable[amplitude]];
 	}
+	*buffer = Sonic_Tint(color, amplitude, Type == WAVE_MAGNETRON);
+}
+
+
+/// <summary>
+/// Returns how far from a pixel at the given wave amplitude the sonic wave lifts its replacement.
+/// </summary>
+Point2D WaveClass::Sonic_Shift(int amplitude, FacingType facing)
+{
+	int count = _stride_counts[amplitude];
+	return(Point2D(count * _facing_col_steps[facing], count * _facing_row_steps[facing]));
+}
+
+
+/// <summary>
+/// Returns color tinted the way the sonic wave tints a pixel at the given amplitude; the magnetron
+/// beam tints toward violet instead (0x760190).
+/// </summary>
+unsigned short WaveClass::Sonic_Tint(unsigned short color, int amplitude, bool magnetron)
+{
 	int mult = IntensityTable[amplitude];
 
 	RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(color);
@@ -202,18 +228,16 @@ void WaveClass::Set_Sonic_Pixel(int x, int xoff, int y, int yscreen, unsigned sh
 	int green = rgb.Get_Green();
 	int blue = rgb.Get_Blue();
 
-	// The magnetron beam tints toward violet instead (0x760190).
-	if (Type == WAVE_MAGNETRON) {
+	if (magnetron) {
 		red += (((mult / 2) * red) >> 8);
 		blue += ((blue * mult * 4) >> 8);
-		*buffer = DSurface::Build_Hicolor_Pixel(std::min(255, red), green, std::min(255, blue));
-		return;
+		return((unsigned short)DSurface::Build_Hicolor_Pixel(std::min(255, red), green, std::min(255, blue)));
 	}
 
 	green += ((green * mult) >> 8);
 	blue += ((blue * mult) >> 8);
 
-	*buffer = DSurface::Build_Hicolor_Pixel(red, std::min(255, green), std::min(255, blue));
+	return((unsigned short)DSurface::Build_Hicolor_Pixel(red, std::min(255, green), std::min(255, blue)));
 }
 
 
@@ -630,6 +654,7 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 			int endy = std::min(DrawData.Count + starty - 1, cliprect.Height + cliprect.Y);
 
 			Init_Offset_Tables();
+			_sonic_recording = GpuDraw_Line_Begin(*LogicalSurface, GPU_LINE_SONIC, Direction + (Type == WAVE_MAGNETRON ? 8 : 0), IntensityTable[0]);
 
 			if (Direction > FACING_NE && Direction < FACING_W) {
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
@@ -789,6 +814,10 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 						index--;
 					}
 				}
+			}
+			if (_sonic_recording) {
+				GpuDraw_Line_End();
+				_sonic_recording = false;
 			}
 		}
 

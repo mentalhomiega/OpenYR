@@ -44,11 +44,13 @@
 #include "_zbuffer.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "shadowplane.h"
 #include "bsurface.h"
 #include "rect.h"
 #include "zshapewindow.h"
 
 #include <algorithm>
+#include <typeinfo>
 #include <vector>
 
 
@@ -133,6 +135,12 @@ bool From_Buffer(Surface & surface, Rect const & rect, Buffer const & buffer)
 	BSurface from(rect.Width, rect.Height, surface.Bytes_Per_Pixel(), buffer);
 	return(surface.Blit_From(rect, from, Rect(0, 0, rect.Width, rect.Height)));
 }
+
+
+void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels) = NULL;
+BlitRecordSource Blit_Record_Source = {};
+bool (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha) = NULL;
+bool (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha) = NULL;
 
 
 /***********************************************************************************************
@@ -228,9 +236,13 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (!XSurface::Prep_For_Blit(dest, dcliprect, drect, source, scliprect, srect, overlapped, dbuffer, sbuffer)) {
 		return(false);
 	}
+	if (Blit_Probe_Hook != NULL) Blit_Probe_Hook(&dest, typeid(blitter).name(), drect.Width * drect.Height);
 
 	if (Emissive_Is_Enabled()) {
 		Emissive_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
+	}
+	if (ShadowPlane_Is_Enabled()) {
+		ShadowPlane_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
 	}
 
 	/*
@@ -306,6 +318,9 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (drect.Width * dest.Bytes_Per_Pixel() == dest.Stride() && dest.Stride() == source.Stride()) {
 
 		int length = std::min(srect.Height*srect.Width, drect.Height*drect.Width);
+		if (Blit_Record_Bit != NULL) {
+			Blit_Record_Bit(dest, blitter, 0, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, alpha);
+		}
 		if (overlapped) {
 			blitter.BlitBackward(dbuffer, sbuffer, length);
 		} else {
@@ -348,6 +363,13 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		**	This perform a line-by-line pixel copy.
 		*/
 		int height = std::min(srect.Height, drect.Height);
+		if (Blit_Record_Bit != NULL) {
+			if (overlapped) {
+				Blit_Record_Bit(dest, blitter, 0, 0, 0, 0, NULL, 0, 0, 0, 0, 0, 0, alpha);
+			} else if (Blit_Record_Bit(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, (unsigned char const *)sbuffer, sstride, current_z, z_fraction, z_step_numerator, z_step_denominator, gradient->WrapIncrement, alpha)) {
+				height = 0;
+			}
+		}
 		if (overlapped) {
 			for (int y = 0; y < height; y++) {
 				blitter.BlitBackward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha);
@@ -500,6 +522,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	if (!Blit_Clip(drect, dcliprect, srect, scliprect)) {
 		return(false);
 	}
+	if (Blit_Probe_Hook != NULL) Blit_Probe_Hook(&dest, typeid(blitter).name(), drect.Width * drect.Height);
 
 	/*
 	**	Determine the top and left skip margins. These require special handling
@@ -580,6 +603,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		dest.Unlock();
 		return(false);
 	}
+	Blit_Record_Source = { sbuffer, source.Get_Width(), source.Get_Height(), topmargin };
 
 	/*
 	**	Skip any top margin lines. This must be manually performed on a line
@@ -598,23 +622,55 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 
 	unsigned char * emissive = NULL;
 	int emissive_pitch = 0;
+	// A draw that writes zero leaves a row with no lit pixel unchanged, so such rows are skipped.
+	unsigned char const * emissive_lit = NULL;
 	if (Emissive_Is_Enabled()) {
 		if (EmissivePlane * plane = Emissive_Plane_For(&dest)) {
 			emissive = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
 			emissive_pitch = plane->Pitch;
+			if (Emissive_Draw_Strength != 0) {
+				Emissive_Mark_Rows(*plane, dcliprect.Y + drect.Y, height);
+			} else if (plane->Lit != NULL) {
+				emissive_lit = plane->Lit + dcliprect.Y + drect.Y;
+			}
 		}
 	}
 
+	unsigned char * shadow = NULL;
+	int shadow_pitch = 0;
+	unsigned char shadow_value = 0;
+	bool shadow_depth = false;
+	bool shadow_write = false;
+	if (ShadowPlane_Is_Enabled()) {
+		if (EmissivePlane * plane = ShadowPlane_For_RLE(dest, blitter, shadow_value, shadow_depth, shadow_write)) {
+			shadow = plane->Pixels + (dcliprect.Y + drect.Y) * plane->Pitch + dcliprect.X + drect.X;
+			shadow_pitch = plane->Pitch;
+		}
+	}
+
+	// A shadow drawn into the tile layer marks its plane and leaves the pixels alone.
+	bool consumed = shadow != NULL && shadow_value != 0;
+	if (Blit_Record_RLE != NULL && !consumed) {
+		consumed = Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
+	}
 	for (int y = 0; y < height; y++) {
 
 		/*
 		**	Blit the correct sub-portion to the destination surface.
 		*/
-		if (emissive != NULL) {
+		if (emissive != NULL && (emissive_lit == NULL || emissive_lit[y] != 0)) {
 			Emissive_RLE_Row(emissive, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, Emissive_Draw_Strength, DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z);
+		}
+		if (emissive != NULL) {
 			emissive += emissive_pitch;
 		}
-		blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);
+		if (shadow != NULL) {
+			Emissive_RLE_Row(shadow, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, shadow_value, shadow_depth && DepthBuffer != NULL ? zbuffer_offset : NULL, zshape != NULL ? (signed char const *)zshapelock : NULL, current_z, consumed && shadow_write, consumed ? SHADOWPLANE_WATER : 0);
+			shadow += shadow_pitch;
+		}
+		if (!consumed) {
+			blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);
+		}
 
 		/*
 		**	Advance the source and dest pointers for the next line processing.

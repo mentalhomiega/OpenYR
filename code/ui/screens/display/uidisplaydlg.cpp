@@ -155,6 +155,23 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 			Video_Refresh_Scaling();
 		}
 
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) override
+		{
+			Options.GpuRender = render;
+			Options.SoftShadows = softshadows;
+			Options.Shockwaves = shockwaves;
+			Options.Bloom = bloom;
+			Options.WaterRipples = water;
+			Options.CloudShadows = clouds;
+			// Ticking the switch keeps a Rain or Snow chosen in RA2MD.INI.
+			if (!weather) {
+				Options.Weather = WEATHER_NONE;
+			} else if (Options.Weather == WEATHER_NONE) {
+				Options.Weather = WEATHER_MAP;
+			}
+			Apply_HDR_Highlights();
+		}
+
 		virtual void Set_Filter(int mode) override
 		{
 			Options.ScaleMode = mode;
@@ -416,6 +433,8 @@ void UI_Display_State(UIDisplayState & state)
 	state.SystemCursor = Options.SystemCursor;
 	state.ClassicMenus = Options.IsClassicMenus;
 	state.ModernInterface = Options.IsModernInterfaceChosen;
+	state.ModernInterfaceRunning = Options.ModernInterface;
+	state.InGame = GameActive;
 	state.BitmapSystemFont = Options.BitmapSystemFont;
 	state.ShowFPS = Options.ShowFPS;
 	state.FrameLimit = Fill_Choices(state.FrameLimits, {
@@ -476,6 +495,13 @@ void UI_Display_State(UIDisplayState & state)
 	state.Fullscreen = !WindowedMode;
 	state.VSync = Options.VSync;
 	state.IntegerScaling = Options.IntegerScaling;
+	state.GpuRender = Options.GpuRender;
+	state.SoftShadows = Options.SoftShadows;
+	state.Shockwaves = Options.Shockwaves;
+	state.Bloom = Options.Bloom;
+	state.WaterRipples = Options.WaterRipples;
+	state.CloudShadows = Options.CloudShadows;
+	state.Weather = Options.Weather != WEATHER_NONE;
 	state.Highlights = (Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED) ? 1 : 0;
 	state.HDRActive = Video_HDR_Active();
 	state.ColorBlindMode = Fill_Choices(state.ColorBlindModes, {

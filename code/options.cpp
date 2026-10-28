@@ -241,6 +241,18 @@ OptionsClass::OptionsClass(void) :
 	ShowFrameGraph(false),
 	RenderFrameRate(RENDER_FRAME_RATE_MATCH_DISPLAY),
 	FrameRateLimit(-1),
+	GpuRender(false),
+	SoftShadows(false),
+	SoftShadowRadius(3),
+	Shockwaves(false),
+	Bloom(false),
+	BloomStrength(100),
+	WaterRipples(false),
+	WaterRippleStrength(100),
+	CloudShadows(false),
+	CloudShadowStrength(100),
+	Weather(WEATHER_NONE),
+	WeatherStrength(100),
 	VSync(true),
 	HDRHighlights(HDR_HIGHLIGHTS_ENHANCED),
 	Renderer(0),
@@ -600,13 +612,14 @@ static char const * Scale_Mode_Name(int mode)
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
 /// <summary>
-/// Turns the emissive masks on for Enhanced highlights while HDR output is on, and for the debug view.
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
+/// the debug view.
 /// The masks follow the renderer, so this is called again once the renderer has started.
 /// </summary>
 void Apply_HDR_Highlights(void)
 {
 	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
-	Emissive_Set_Enabled(enhanced || Emissive_Debug_View());
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
 }
 
 
@@ -719,6 +732,20 @@ void OptionsClass::Load_Settings(void)
 	ShowFrameGraph = ConfigINI.Get_Bool("Video", "ShowFrameGraph", ShowFrameGraph);
 	RenderFrameRate = std::clamp(ConfigINI.Get_Int("Video", "RenderFrameRate", RenderFrameRate), -1, 1000);
 	FrameRateLimit = ConfigINI.Get_Int("Video", "FrameRateLimit", FrameRateLimit);
+	GpuRender = ConfigINI.Get_Bool("Video", "GpuRender", GpuRender);
+	SoftShadows = ConfigINI.Get_Bool("Video", "SoftShadows", SoftShadows);
+	SoftShadowRadius = std::clamp(ConfigINI.Get_Int("Video", "SoftShadowRadius", SoftShadowRadius), 1, 16);
+	Shockwaves = ConfigINI.Get_Bool("Video", "Shockwaves", Shockwaves);
+	Bloom = ConfigINI.Get_Bool("Video", "Bloom", Bloom);
+	BloomStrength = std::clamp(ConfigINI.Get_Int("Video", "BloomStrength", BloomStrength), 1, 400);
+	WaterRipples = ConfigINI.Get_Bool("Video", "WaterRipples", WaterRipples);
+	WaterRippleStrength = std::clamp(ConfigINI.Get_Int("Video", "WaterRippleStrength", WaterRippleStrength), 1, 400);
+	CloudShadows = ConfigINI.Get_Bool("Video", "CloudShadows", CloudShadows);
+	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
+	char weathername[16];
+	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
+	Weather = stricmp(weathername, "Map") == 0 ? WEATHER_MAP : stricmp(weathername, "Rain") == 0 ? WEATHER_RAIN : stricmp(weathername, "Snow") == 0 ? WEATHER_SNOW : WEATHER_NONE;
+	WeatherStrength = std::clamp(ConfigINI.Get_Int("Video", "WeatherStrength", WeatherStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
@@ -914,6 +941,19 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "RenderFrameRate", RenderFrameRate);
 	ConfigINI.Put_Int("Video", "FrameRateLimit", FrameRateLimit);
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
+	ConfigINI.Put_Bool("Video", "GpuRender", GpuRender);
+	ConfigINI.Put_Bool("Video", "SoftShadows", SoftShadows);
+	ConfigINI.Put_Int("Video", "SoftShadowRadius", SoftShadowRadius);
+	ConfigINI.Put_Bool("Video", "Shockwaves", Shockwaves);
+	ConfigINI.Put_Bool("Video", "Bloom", Bloom);
+	ConfigINI.Put_Int("Video", "BloomStrength", BloomStrength);
+	ConfigINI.Put_Bool("Video", "WaterRipples", WaterRipples);
+	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
+	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
+	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
+	static char const * const _weathernames[] = { "None", "Map", "Rain", "Snow" };
+	ConfigINI.Put_String("Video", "Weather", _weathernames[std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW)]);
+	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
 	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));

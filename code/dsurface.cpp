@@ -53,10 +53,14 @@
 #include "dbgprint.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "gpudraw.h"
 #include "misc.h"
+#include "shadowplane.h"
 #include "video.h"
+#include "writewatch.h"
 
 #include <algorithm>
+#include <cstring>
 #include <math.h>
 #include <utility>
 
@@ -82,6 +86,15 @@ bool DSurface::AllowStretchBlits = true;
 int DSurface::PrimaryColorMode = COLORMODE_565;
 
 
+// Change values are unique across every surface, so a surface made again at the same address
+// cannot repeat a value an earlier one had.
+static unsigned Next_Change(void)
+{
+	static unsigned _Last = 0;
+	return(++_Last);
+}
+
+
 /***********************************************************************************************
  * DSurface::DSurface -- Off screen direct draw surface constructor.                           *
  *                                                                                             *
@@ -104,6 +117,12 @@ int DSurface::PrimaryColorMode = COLORMODE_565;
  *   02/07/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 DSurface::DSurface(int width, int height) :
+	DSurface(width, height, false)
+{
+}
+
+
+DSurface::DSurface(int width, int height, bool watched) :
 	BASECLASS(width, height),
 	BytesPerPixel(2),
 	IsPrimary(false),
@@ -111,8 +130,18 @@ DSurface::DSurface(int width, int height) :
 	GDIDC(NULL),
 	GDIOldBitmap(NULL),
 	GDIBuffer(NULL),
-	Pitch(0)
+	Pitch(0),
+	IsWatched(watched),
+	Changes(Next_Change())
 {
+	if (watched) {
+		// The same row layout a bitmap would have, so the pixels are addressed the same way.
+		Pitch = (width * 2 + 3) & ~3;
+		GDIBuffer = WriteWatch_Alloc((std::size_t)Pitch * height);
+		std::memset(GDIBuffer, 0, (std::size_t)Pitch * height);
+		return;
+	}
+
 	/*
 	 * BITMAPINFO carries room for a single color entry, but a bitfields bitmap is
 	 * described by three masks following the header, so the header is declared with
@@ -164,6 +193,16 @@ DSurface::DSurface(int width, int height) :
 }
 
 
+bool DSurface::Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const
+{
+	if (!IsWatched) {
+		runs.clear();
+		return(false);
+	}
+	return(WriteWatch_Take(GDIBuffer, (std::size_t)Pitch * Get_Height(), runs));
+}
+
+
 /***********************************************************************************************
  * DSurface::~DSurface -- Destructor for a direct draw surface object.                         *
  *                                                                                             *
@@ -182,6 +221,7 @@ DSurface::~DSurface(void)
 {
 	// The emissive plane is keyed by this address, which a later surface may be allocated at.
 	Emissive_Forget(this);
+	ShadowPlane_Forget(this);
 
 	/*
 	 * GDI will not free a bitmap that is still selected into a context, so the one the
@@ -201,6 +241,9 @@ DSurface::~DSurface(void)
 		GDIBitmap = NULL;
 	}
 
+	if (IsWatched) {
+		WriteWatch_Free(GDIBuffer);
+	}
 	GDIBuffer = NULL;
 }
 
@@ -267,6 +310,7 @@ HDC DSurface::GetDC(void)
 	 * drawing on them, which is what it did when this context came from DirectDraw.
 	 */
 	LockCount++;
+	Changes = Next_Change();
 	return(GDIDC);
 }
 
@@ -360,12 +404,20 @@ int DSurface::Stride(void) const
  * HISTORY:                                                                                    *
  *   02/07/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
+void (*Surface_Lock_Hook)(Surface const * surface) = NULL;
+
+
 void * DSurface::Lock(Point2D point) const
 {
 	if (GDIBuffer == NULL) return(NULL);
 	if (point.X < 0 || point.Y < 0) return(NULL);
 
 	BASECLASS::Lock();
+	Changes = Next_Change();
+	Video_Draw_Probe_Note_Lock(this);
+	if (Surface_Lock_Hook != NULL) {
+		Surface_Lock_Hook(this);
+	}
 	return(((char *)GDIBuffer) + point.Y * Stride() + point.X * Bytes_Per_Pixel());
 }
 
@@ -512,6 +564,7 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	GdiFlush();
 
 	SetStretchBltMode(GDIDC, COLORONCOLOR);
+	Changes = Next_Change();
 	bool result = StretchBlt(GDIDC, drect.X, drect.Y, drect.Width, drect.Height,
 		source.GDIDC, srect.X, srect.Y, srect.Width, srect.Height, SRCCOPY) != 0;
 
@@ -520,6 +573,9 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	// A stretched picture has no mask of its own, so the area it covers reads as ordinary.
 	if (result && Emissive_Is_Enabled()) {
 		Emissive_After_Fill(*this, drect);
+	}
+	if (result) {
+		ShadowPlane_After_Fill(*this, drect);
 	}
 
 	if (result && IsPrimary) {
@@ -578,10 +634,15 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 {
 	if (GDIBuffer == NULL || !fillrect.Is_Valid()) return(false);
 
-	bool result = BASECLASS::Fill_Rect(cliprect, fillrect, color);
+	Rect const area = Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect()));
+	// A fill the GPU draws still clears the glow and shadow planes under it.
+	bool result = GpuDraw_Fill(*this, area, (unsigned short)color) || BASECLASS::Fill_Rect(cliprect, fillrect, color);
 
 	if (result && Emissive_Is_Enabled()) {
-		Emissive_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
+		Emissive_After_Fill(*this, area);
+	}
+	if (result) {
+		ShadowPlane_After_Fill(*this, area);
 	}
 
 	if (result && IsPrimary) {
@@ -1132,6 +1193,16 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 
 
 /// <summary>
+/// Returns the colour weight out of 256 an antialiased line gives a pixel at index out of 256 of the
+/// line's full weight.
+/// </summary>
+int DSurface::Antialiased_Line_Weight(int index)
+{
+	return((int)((pow((double)index / 128.0 - 1.0, 3.0) + 1.0) * 128.0));
+}
+
+
+/// <summary>
 /// Draws a clipped, antialiased, depth shaded line.
 /// This routine draws the laser and beam weapon effects, and the radial indicator lines
 /// of a building. The line is depth tested against the depth buffer so that it passes
@@ -1159,7 +1230,7 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 	if (!onetime) {
 		onetime = true;
 		for (int i = 0; i <= 256; i++) {
-			GradientTable[i] = (int)((pow((double)i / 128.0 - 1.0, 3.0) + 1.0) * 128.0);
+			GradientTable[i] = Antialiased_Line_Weight(i);
 		}
 	}
 
@@ -1254,6 +1325,18 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 		return(false);
 	}
 
+	// While the GPU draws the object pass, each step records the line pixel and its neighbour with the
+	// colour weight each takes.
+	bool const record = GpuDraw_Is_Rendering(*this) && GpuDraw_Line_Begin(*this, GPU_LINE_ANTIALIASED,
+		(red << 16) | (green << 8) | blue, (blend_red ? GPU_LINE_RED : 0) | (blend_green ? GPU_LINE_GREEN : 0) | (blend_blue ? GPU_LINE_BLUE : 0));
+	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
+	auto const record_pair = [&](void const * line, int lidx, void const * neighbor, int oidx) {
+		std::ptrdiff_t const loffset = (char const *)line - origin;
+		std::ptrdiff_t const noffset = (char const *)neighbor - origin;
+		GpuDraw_Line_Pixel((int)(loffset % Stride()) / 2, (int)(loffset / Stride()), std::clamp(lidx, 0, 254) + 1);
+		GpuDraw_Line_Pixel((int)(noffset % Stride()) / 2, (int)(noffset / Stride()), std::clamp(oidx, 0, 254) + 1);
+	};
+
 	/*
 	 * Distances to x, y and alpha.
 	 */
@@ -1304,7 +1387,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 					do {
 						int cov = *abuffer;
 						if (z < *zbuffer) {
-							if (cov) {
+							if (cov && record) {
+								record_pair((char *)buffer + 2 * xoff, (int)((double)weight * intensity), (char *)buffer + neighoff, (int)((double)otherweight * intensity));
+							} else if (cov) {
 								int lidx = (int)((double)weight * intensity);
 								int oidx = (int)((double)otherweight * intensity);
 								int lbk = GradientTable[256 - lidx];
@@ -1411,7 +1496,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 					do {
 						int cov = *abuffer;
 						if (z < *zbuffer) {
-							if (cov) {
+							if (cov && record) {
+								record_pair((char *)buffer + byteoff, (int)((double)weight * intensity), (char *)buffer + byteoff + 2, (int)((double)otherweight * intensity));
+							} else if (cov) {
 								int lidx = (int)((double)weight * intensity);
 								int oidx = (int)((double)otherweight * intensity);
 								int nbk = GradientTable[256 - oidx];
@@ -1523,7 +1610,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 					do {
 						int cov = *abuffer;
 						if (z < *zbuffer) {
-							if (cov) {
+							if (cov && record) {
+								record_pair((char *)buffer + 2 * xoff, (int)((double)weight * intensity), (char *)buffer + neighoff, (int)((double)otherweight * intensity));
+							} else if (cov) {
 								int lidx = (int)((double)weight * intensity);
 								int oidx = (int)((double)otherweight * intensity);
 								int nf = GradientTable[oidx];
@@ -1622,7 +1711,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 					do {
 						int cov = *abuffer;
 						if (z < *zbuffer) {
-							if (cov) {
+							if (cov && record) {
+								record_pair((char *)buffer + byteoff, (int)((double)weight * intensity), (char *)buffer + byteoff + 2, (int)((double)otherweight * intensity));
+							} else if (cov) {
 								int lidx = (int)((double)weight * intensity);
 								int oidx = (int)((double)otherweight * intensity);
 								int lf = GradientTable[lidx];
@@ -1712,10 +1803,16 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 			}
 		}
 
+		if (record) {
+			GpuDraw_Line_End();
+		}
 		Unlock();
 		return(true);
 	}
 
+	if (record) {
+		GpuDraw_Line_End();
+	}
 	Unlock();
 	return(false);
 
@@ -1934,6 +2031,30 @@ bool DSurface::Draw_Ping_Pong_Gradient_Line(Rect const & cliprect, Point2D const
 
 
 /// <summary>
+/// Returns the pixel a depth-shaded line plots over under. The line's colour is scaled by value / 127,
+/// value being the alpha buffer's; a fade below 256 first blends the colour into under by fade / 256.
+/// </summary>
+unsigned short DSurface::Shade_Line_Pixel(unsigned short under, unsigned color, int value, int fade)
+{
+	int const red = (unsigned char)(((unsigned short)color >> RedRight) << RedLeft);
+	int const green = (unsigned char)(((unsigned short)color >> GreenRight) << GreenLeft);
+	int const blue = (unsigned char)(((unsigned short)color >> BlueRight) << BlueLeft);
+	if (fade >= 256) {
+		if (value == 127) {
+			return((unsigned short)color);
+		}
+		return((unsigned short)((((red * value) >> 7 >> RedLeft) << RedRight) | (((green * value) >> 7 >> GreenLeft) << GreenRight) | (((blue * value) >> 7 >> BlueLeft) << BlueRight)));
+	}
+	int const amount = std::max(fade, 0);
+	int const keep = 256 - amount;
+	int const r = ((((((under >> RedRight) << RedLeft) & 0xFF) * keep) >> 8) + ((red * amount) >> 8)) * value >> 7;
+	int const g = ((((((under >> GreenRight) << GreenLeft) & 0xFF) * keep) >> 8) + ((green * amount) >> 8)) * value >> 7;
+	int const b = ((((((under >> BlueRight) << BlueLeft) & 0xFF) * keep) >> 8) + ((blue * amount) >> 8)) * value >> 7;
+	return((unsigned short)(((r >> RedLeft) << RedRight) | ((g >> GreenLeft) << GreenRight) | ((b >> BlueLeft) << BlueRight)));
+}
+
+
+/// <summary>
 /// Draws a clipped, depth-tested, alpha-masked colored line into the locked DSurface.
 /// Uses the global DepthBuffer for the Z-test and the global AlphaBuffer for a per-pixel
 /// brightness value (0..127) that darkens the source color. The depth endpoints are
@@ -2057,44 +2178,21 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 	unsigned short z = (unsigned short)(zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
 	int zwidth = DepthBuffer->Get_Buffer_Width();
 
-	int red;
-	int green;
-	int blue;
-
-	if (buffer != NULL) {
-		/// Decompose the source color into its gun components so each plotted pixel
-		/// can be darkened by the alpha-buffer brightness value.
-		RGBClass rgb(
-			(unsigned char)(((unsigned short)color >> RedRight) << RedLeft),
-			(unsigned char)(((unsigned short)color >> GreenRight) << GreenLeft),
-			(unsigned char)(((unsigned short)color >> BlueRight) << BlueLeft));
-		red = rgb.Get_Red();
-		green = rgb.Get_Green();
-		blue = rgb.Get_Blue();
-	} else {
+	if (buffer == NULL) {
 		return(false);
 	}
 
-	/*
-	 * Plots one pixel. A fade below 256 blends the color into what is there by fade/256 first; either way
-	 * the alpha-buffer value v then scales the result.
-	 */
+	// While the GPU draws the object pass, the line's pixels are recorded at the depth and alpha tested here.
+	bool const record = GpuDraw_Line_Begin(*this, GPU_LINE_SHADED, (unsigned short)color, fade);
+	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
 	auto const plot = [&](unsigned short * pixel, int v) {
-		if (fade >= 256) {
-			if (v != 127) {
-				*pixel = (unsigned short)((((red * v) >> 7 >> RedLeft) << RedRight) | (((green * v) >> 7 >> GreenLeft) << GreenRight) | (((blue * v) >> 7 >> BlueLeft) << BlueRight));
-			} else {
-				*pixel = (unsigned short)color;
+		if (record) {
+			std::ptrdiff_t const offset = (char const *)pixel - origin;
+			if (GpuDraw_Line_Pixel((int)(offset % Stride()) / 2, (int)(offset / Stride()), v)) {
+				return;
 			}
-			return;
 		}
-		int const amount = std::max(fade, 0);
-		int const keep = 256 - amount;
-		unsigned short const under = *pixel;
-		int const r = ((((((under >> RedRight) << RedLeft) & 0xFF) * keep) >> 8) + ((red * amount) >> 8)) * v >> 7;
-		int const g = ((((((under >> GreenRight) << GreenLeft) & 0xFF) * keep) >> 8) + ((green * amount) >> 8)) * v >> 7;
-		int const b = ((((((under >> BlueRight) << BlueLeft) & 0xFF) * keep) >> 8) + ((blue * amount) >> 8)) * v >> 7;
-		*pixel = (unsigned short)(((r >> RedLeft) << RedRight) | ((g >> GreenLeft) << GreenRight) | ((b >> BlueLeft) << BlueRight));
+		*pixel = Shade_Line_Pixel(*pixel, color, v, fade);
 	};
 
 	/*
@@ -2280,6 +2378,9 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 		}
 	}
 
+	if (record) {
+		GpuDraw_Line_End();
+	}
 	Unlock();
 	return(true);
 }
@@ -2297,7 +2398,7 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 /// <param name="blue_add">The amount to add to the blue gun.</param>
 /// <returns>The brightened pixel, in the surface format.</returns>
 /// <remarks>This is gamemd's routine at 0x4BE9D0.</remarks>
-static unsigned short Add_Beam_Light(unsigned short pixel, int red_add, int green_add, int blue_add)
+unsigned short DSurface::Add_Beam_Light(unsigned short pixel, int red_add, int green_add, int blue_add)
 {
 	RGBClass const under = DSurface::Deconstruct_Hicolor_Pixel(pixel);
 	int red = under.Get_Red() + red_add;
@@ -2483,6 +2584,10 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 		return(false);
 	}
 
+	// While the GPU draws the object pass, the line's pixels are recorded at the depth and alpha tested here.
+	bool const record = GpuDraw_Line_Begin(*this, GPU_LINE_ADDITIVE, (red << 16) | (green << 8) | blue, 0);
+	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
+
 	/*
 	 * Distances to x, y and depth.
 	 */
@@ -2515,6 +2620,12 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 		if (z < *zbuffer) {
 			int const alpha = *abuffer;
 			unsigned short * pixel = (unsigned short *)((char *)buffer + offset);
+			if (record) {
+				std::ptrdiff_t const position = (char const *)pixel - origin;
+				if (GpuDraw_Line_Pixel((int)(position % Stride()) / 2, (int)(position / Stride()), alpha)) {
+					return;
+				}
+			}
 			*pixel = Add_Beam_Light(*pixel, (alpha * red) >> 7, (alpha * green) >> 7, (alpha * blue) >> 7);
 		}
 	};
@@ -2652,6 +2763,9 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 		}
 	}
 
+	if (record) {
+		GpuDraw_Line_End();
+	}
 	Unlock();
 	return(true);
 }

@@ -175,7 +175,7 @@ void TileDiffClass::Invalidate(void)
 }
 
 
-void TileDiffClass::Compare(void const * pixels, int pitch, TileGridClass & grid)
+void TileDiffClass::Compare(void const * pixels, int pitch, TileGridClass & grid, std::uint8_t const * rows)
 {
 	if (pixels == nullptr || Width <= 0 || Height <= 0) {
 		return;
@@ -204,6 +204,9 @@ void TileDiffClass::Compare(void const * pixels, int pitch, TileGridClass & grid
 		std::fill(changed.begin(), changed.end(), (std::uint8_t)0);
 		bool any = false;
 		for (int y = y0; y < y1; y++) {
+			if (rows != nullptr && rows[y] == 0) {
+				continue;
+			}
 			std::uint8_t const * s = source + (ptrdiff_t)y * pitch;
 			std::uint8_t const * d = &Shadow[(size_t)y * rowbytes];
 			if (Bytes_Equal(s, d, rowbytes)) {

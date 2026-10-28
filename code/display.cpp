@@ -121,6 +121,7 @@
 #include "globals.h"
 #include "hud.h"
 #include "goptions.h"
+#include "gpumap.h"
 #include "incdec.h"
 #include "infatype.h"
 #include "inline.h"
@@ -377,6 +378,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 
 		Hide_Mouse();
 
+		GpuMap_Release_References();
 		if (DepthBuffer != NULL) {
 			DebugString("Deleting ZBuffer\n");
 			delete DepthBuffer;

@@ -178,5 +178,10 @@ void UI_Settings_Run(UISettingsTab first)
 		}
 	}
 
+	// A game keeps the interface it started with; the menus switch to the chosen one at once.
+	if (!ingame) {
+		Apply_Interface_Choice();
+	}
+
 	Options.Save_Settings();
 }

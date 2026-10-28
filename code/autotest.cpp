@@ -231,6 +231,11 @@
 **	fps					writes the game frames counted in the last whole second, which the game's FPS readout shows
 **	log <text>				writes the text to the log
 **	uploadverify <0|1>		1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches
+**	presentdigest <0|1>		1 logs a PRESENT_DIGEST line at each present: the game frame, the present index, and a hash of the frame and the map layer; 0 stops the lines
+**	drawdigest <0|1>		1 logs a DRAW_DIGEST line at each draw of the map view: the game frame, the draw index, and a hash of the map view's pixels; 0 stops the lines
+**	drawprobe <0|1>		1 counts the call stacks that lock the map view during its foreground pass; 0 logs a DRAW_PROBE line per stack with its count
+**	gpureplay <0|1>		1 records each object pass of the map view and logs a GPU_REPLAY line comparing a replay of the record with it; 0 stops
+**	gpucheck <0|1>		1 also draws each recorded pass on the GPU and logs a GPU_DIFF line comparing it with the map view; 0 stops
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
 **	loadshot <name>			saves what the window shows each time a loading screen is
@@ -283,6 +288,7 @@
 #include "event.h"
 #include "globals.h"
 #include "goptions.h"
+#include "gpudraw.h"
 #include "hangwatch.h"
 #include "house.h"
 #include "houstype.h"
@@ -2531,9 +2537,57 @@ static void Waypoint_Probe_Step(StepType const & step)
 }
 
 
+// presentdigest, drawdigest, gpureplay, gpucheck and drawprobe switch the drawing checks on and off. True when
+// the step was one of them.
+static bool Draw_Check_Step(StepType const & step)
+{
+	if (step.Command == "presentdigest") {
+		// presentdigest <0|1>: 1 logs a PRESENT_DIGEST line at each present that reaches the presenter; 0 stops the lines.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		Video_Set_Present_Digest(on);
+		DebugString("AUTOTEST presentdigest %d\n", (int)on);
+		return(true);
+	}
+	if (step.Command == "drawdigest") {
+		// drawdigest <0|1>: 1 logs a DRAW_DIGEST line for each draw of the map view; 0 stops the lines.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		Video_Set_Draw_Digest(on);
+		DebugString("AUTOTEST drawdigest %d\n", (int)on);
+		return(true);
+	}
+	if (step.Command == "gpureplay") {
+		// gpureplay <0|1>: 1 records each object pass of the map view and logs how far a replay of the record is from it.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		GpuDraw_Set_Replay_Check(on);
+		DebugString("AUTOTEST gpureplay %d\n", (int)on);
+		return(true);
+	}
+	if (step.Command == "gpucheck") {
+		// gpucheck <0|1>: 1 draws each object pass of the map view on the GPU too and logs how far it is from the map view.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		GpuDraw_Set_Gpu_Check(on);
+		DebugString("AUTOTEST gpucheck %d\n", (int)on);
+		return(true);
+	}
+	if (step.Command == "drawprobe") {
+		// drawprobe <0|1>: 1 counts the call stacks that lock the map view in its foreground pass; 0 logs them.
+		bool const on = std::atoi(step.Argument.c_str()) != 0;
+		Video_Set_Draw_Probe(on);
+		DebugString("AUTOTEST drawprobe %d\n", (int)on);
+		return(true);
+	}
+	return(false);
+}
+
+
 void Run(StepType const & step)
 {
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
+
+	// The drawing checks sit before the chain below, which is nested too deeply to take another branch.
+	if (Draw_Check_Step(step)) {
+		return;
+	}
 
 	// bridge x y and bridgecensus: see Bridge_Cell_Step and Bridge_Census_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "bridge") {

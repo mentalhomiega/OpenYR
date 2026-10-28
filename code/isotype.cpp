@@ -14,6 +14,7 @@
 #include "always.h"
 
 #include "isotype.h"
+#include "shadowplane.h"
 
 #include "_alpha.h"
 #include "_convert.h"
@@ -1932,6 +1933,9 @@ void IsometricTileTypeClass::Draw_Tile(LightConvertClass * drawer, int subtile, 
 						IsoDrawData.RowStartCol = (unsigned char *)&_iso_start_cols[table_off];
 						IsoDrawData.RowRunLength = (unsigned char *)&_iso_run_lengths[std::max(0, right_clip)][table_off];
 					}
+					if (!depth_only) {
+						ShadowPlane_After_Tile(surface, x, y, cliprect, _tilemask, ISO_DRAW_WIDTH, ISO_DRAW_HEIGHT, tileptr->Land_Type(subtile) == LAND_WATER);
+					}
 					IsoDrawData.SurfacePitch = surface.Stride();
 					IsoDrawData.DestPtr = (unsigned short *)surface.Lock(Point2D(lock_x, work.Y));
 					if (IsoDrawData.DestPtr == NULL) {
@@ -2398,6 +2402,7 @@ void IsometricTileTypeClass::Draw_Tile(LightConvertClass * drawer, int subtile, 
 							}
 						}
 						if (extra_ok) {
+							ShadowPlane_After_Extra(surface, record->ExtraX - record->X + x, record->ExtraY - record->Y + y, cliprect, (unsigned char const *)record + record->ExtraOffset, record->ExtraWidth, record->ExtraHeight);
 							IsoDrawData.ImageRowStep = record->ExtraWidth - IsoDrawData.SpanWidth;
 							IsoDrawData.SurfacePitch = surface.Stride() - IsoDrawData.SpanWidth * surface.Bytes_Per_Pixel();
 							if (use_z) {

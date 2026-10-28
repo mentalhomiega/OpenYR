@@ -30,18 +30,33 @@ the cell.
 
 ## Perf lines
 
-Each second the log gets four lines, followed by the count line:
+Each second the log gets a window line, the frame, draw, present and gap lines, and the count line:
 
 ```text
 Perf: window 1000 ms, 60 game frames, 233 draws, 184 presents
 Perf frame ms avg/p95/max: logic 1.36/2.06/2.61, ...
 Perf draw ms avg/p95/max: total 4.74/7.34/38.89, ...
 Perf present ms avg/p95/max: total 2.34/3.23/17.14, ...
-Perf count: objects 32925, voxels 4120, ...
+Perf gap ms avg/p95/max: present 16.68/17.05/31.20
+Perf count: objects 32925, voxels 4120, ..., draws skipped 3
 ```
 
 Each phase reads `average/p95/worst` in milliseconds over the samples taken in that second. The p95
 is the nearest-rank 95th percentile. Counts are totals for the second.
+
+`present.gputime` is the GPU time of the newest frame the GPU finished, from `bgfx::getStats`. bgfx
+measures it a frame or more behind the present that records it, so read it as the GPU cost per present,
+not as part of `present.total`. A present whose renderer gives no GPU timer adds zero.
+
+The gap line has one sample per present that reaches the presenter: the time from that present's start
+to the start of the next one. Its worst value is the longest interval between two presents in the second.
+
+## Skipped draws
+
+With `RenderFrameRate` above zero, the wait between two game frames redraws the view each
+`1000 / RenderFrameRate` ms. A due redraw is skipped when less time is left in the wait than the last
+redraw took (`mainloop.cpp`, `Sync_Delay`). `draws skipped` counts a skip at most once for each interval
+between two redraws that happen, so a due redraw that is skipped again and again adds one. The counter stays at zero with `RenderFrameRate=0`, which has no such loop.
 
 | Count | Meaning |
 |---|---|
@@ -65,6 +80,7 @@ is the nearest-rank 95th percentile. Counts are totals for the second.
 | `area modify` | `Area_Modify` calls, including the calls that return 1 at once for a weapon that is not suppressive |
 | `weapon selects` | `What_Weapon_Should_I_Use` calls |
 | `ring keys`, `ring key repeats` | Ring walks with a distinct key and with a key an earlier walk in the same game frame already had. The key is the origin cell, the scanner's house, its type, its zone, the threat method and `crange`. It leaves out the exact origin coordinate, so a repeat can still find a different result |
+| `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
 
 The ring counters are taken only when the cell walk runs; they add a read of each ring cell while recording. The
 `ring keys` counts use a set cleared at each game frame, so they cost more than the other counters; expect the
@@ -85,7 +101,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/perf_bench.ps1 -
 ```
 
 The script runs `scripts/run_autotest.ps1` in the workspace that holds the worktree, at 1920x1080
-with `RenderFrameRate=240`, three computer players and game speed 1. It copies each run's debug log
+with `RenderFrameRate=240` (`-Width`, `-Height` and `-RenderFrameRate` change them), three computer players and game speed 1. It copies each run's debug log
 to `scratch-agent\perf` and prints a summary table of frames, draws and presents per second, and the
 mean, p95 and worst time for each phase and the mean count per second. The first five seconds of
 each run are left out. `-Logs <file>...` summarises logs that already exist.
@@ -123,3 +139,12 @@ weapon slot of a multi-turret vehicle. A turret and a barrel each have a cache o
 (`AuxVoxelIndex` and `AuxVoxel2Index`), so a barrel key never meets a hull key. A building's turret and
 barrel are keyed by facing, frame and pitch, and only while both recoil offsets are zero. When the buffer
 is full every cache is cleared, as before.
+
+A turreted vehicle is assembled from its hull, turret and barrel on a 160 by 160 scratch surface and then
+drawn to the map in one piece. The finished picture is cached too, keyed by the hull, turret and barrel
+keys, and copied onto the scratch surface in place of the three part draws. A picture is kept only when it
+lies wholly on the scratch surface and the buffer is less than half full, and these pictures are dropped
+whenever any type's voxel images are cleared. The APC's water image, a `NoSpawnAlt` hull and types with
+`DisableVoxelCache=yes` are not cached this way. In the first 1,500 frames of the large battle the map
+draws matched hash for hash with and without this cache. At 3840x2160 with `GpuRender` and the frame rate
+uncapped, the short benchmark rose from about 400 to about 530 pictures per second.

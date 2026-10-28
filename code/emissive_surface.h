@@ -27,8 +27,9 @@ void Emissive_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const
 // Clears the emissive values under a rectangle that was filled with a plain colour.
 void Emissive_After_Fill(Surface & dest, Rect const & rect);
 
-// Writes strength to each pixel of one RLE row that the blitter draws; zbuf and zshape are NULL without a depth buffer.
-void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin);
+// Writes strength, with the bits of keep that the pixel already has, to each pixel of one RLE row that the blitter
+// draws; zbuf and zshape are NULL without a depth buffer.
+void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin, bool writedepth = false, unsigned char keep = 0);
 
 // Writes strength along a line that lies inside the clip rectangle.
 void Emissive_Stamp_Line_On(Surface & surface, Rect const & clip, Point2D const & start, Point2D const & end, unsigned char strength);

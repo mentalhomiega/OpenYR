@@ -16,4 +16,4 @@ when_omitted:
 
 A name other than `Modern` is read as `Classic`, and the setting is written back to `RA2MD.INI` that way.
 
-The display options screen has the same choice as its "Modern in-game interface" switch. The style is read when the game starts, so a change takes effect at the next start.
+The display options screen has the same choice as its "Modern in-game interface" switch. A change made from the main menu takes effect when the screen closes with OK. A change made during a game takes effect when the game returns to the main menu, and the screen says so under the switch. The menu battle behind the main menu runs only with the modern style.

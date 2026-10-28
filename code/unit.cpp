@@ -163,6 +163,7 @@
 #include "unittype.h"
 #include "voc.h"
 #include "vox.h"
+#include "_voxel.h"
 #include "warhead.h"
 #include "weapon.h"
 
@@ -171,11 +172,49 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 char const * const UnitClass::INI_NAME = "Units";
 
 Rect UnitCompositeDirtyRect(RECT_NONE);
+
+namespace {
+
+struct VoxelCompositeKey {
+	void const * Type;
+	int Body;
+	int Turret;
+	int Barrel;
+
+	bool operator == (VoxelCompositeKey const &) const = default;
+};
+
+struct VoxelCompositeHash {
+	std::size_t operator () (VoxelCompositeKey const & key) const
+	{
+		std::uint64_t hash = std::uint64_t(reinterpret_cast<std::uintptr_t>(key.Type));
+		for (int const part : {key.Body, key.Turret, key.Barrel}) {
+			hash = hash * 0x9E3779B97F4A7C15ull + unsigned(part);
+		}
+		return(std::size_t(hash ^ (hash >> 32)));
+	}
+};
+
+// Finished turreted vehicle pictures on the scratch surface; the entries live in VoxelStaticBuffer.
+std::unordered_map<VoxelCompositeKey, StaticBufferClass::Entry *, VoxelCompositeHash> VoxelComposites;
+unsigned VoxelCompositesGeneration = 0;
+
+void Sync_Voxel_Composites()
+{
+	if (VoxelCompositesGeneration != ObjectTypeClass::VoxelIndexGeneration) {
+		VoxelComposites.clear();
+		VoxelCompositesGeneration = ObjectTypeClass::VoxelIndexGeneration;
+	}
+}
+
+}
 
 
 int UnitClass::Visceroid_Fire_List[FACING_COUNT] = { 100, 105, 110, 115, 120, 125, 90, 95 };
@@ -2870,15 +2909,8 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 	UnitCompositeDirtyRect = RECT_NONE;
 
-	if (strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && HeightAGL < LEVEL_LEPTON_H) {
-		Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-	} else {
-		if (Class->IsNoSpawnAlt && Class->NoSpawnAltVoxel.VoxLib != NULL && SpawnManager && SpawnManager->Docked_Count() == 0) {
-			Draw_Voxel(Class->NoSpawnAltVoxel, 0, key, &Class->NoSpawnAltVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-		} else {
-			Draw_Voxel(Class->Voxel, frame, key, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
-		}
-	}
+	bool const apc_in_water = strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && HeightAGL < LEVEL_LEPTON_H;
+	bool const no_spawn_alt = Class->IsNoSpawnAlt && Class->NoSpawnAltVoxel.VoxLib != NULL && SpawnManager && SpawnManager->Docked_Count() == 0;
 
 	/*
 	**	If there is a turret, then it must be rendered as well. This may include
@@ -2915,50 +2947,92 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	};
 	ShapeFlags_Type const part_flags = has_turret ? ShapeFlags_Type(flags | SHAPE_NOTRANS) : flags;
 
-	if (Class->IsTurretEquipped && turret->VoxLib != NULL) {
-		// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
-		int turret_frame = frame;
-		if (frame == 0 && turret->MotLib != NULL && turret->MotLib->Get_Frame_Count() > 0) {
-			turret_frame = TurretAnimFrame % turret->MotLib->Get_Frame_Count();
+	bool const turret_drawn = Class->IsTurretEquipped && turret->VoxLib != NULL;
+
+	// A body at rest on its first frame lets the turret play its own frames (UnitClass::DrawAsVXL, 0x73B470).
+	int turret_frame = frame;
+	if (turret_drawn && frame == 0 && turret->MotLib != NULL && turret->MotLib->Get_Frame_Count() > 0) {
+		turret_frame = TurretAnimFrame % turret->MotLib->Get_Frame_Count();
+	}
+
+	int const turret_key = part_key(turret_frame, 64);
+	int const barrel_key = part_key(int(BarrelPitch.Current().As_Dir32()), 32);
+
+	/*
+	 * The finished hull, turret and barrel picture is cached too, keyed by the three part keys, which fix
+	 * every input of the composition. A cached picture is copied whole onto the scratch surface in place
+	 * of the part draws; it holds the same pixels because draws onto the scratch surface read neither the
+	 * depth buffer nor the brightness.
+	 */
+	VoxelCompositeKey const composite_key{Class, key, turret_key, barrel_key};
+	bool const composite_cacheable = turret_drawn && !apc_in_water && !no_spawn_alt && !Class->IsDisableVoxelCache && frame >= 0 && frame < 32 && turret_key != -1 && barrel_key != -1;
+	StaticBufferClass::Entry const * composite = NULL;
+	if (composite_cacheable) {
+		Sync_Voxel_Composites();
+		auto const found = VoxelComposites.find(composite_key);
+		if (found != VoxelComposites.end()) {
+			composite = found->second;
+		}
+	}
+
+	if (composite != NULL) {
+		Perf_Count(PERF_COUNT_VOXEL_HIT);
+		Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
+	} else {
+		if (apc_in_water) {
+			Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		} else if (no_spawn_alt) {
+			Draw_Voxel(Class->NoSpawnAltVoxel, 0, key, &Class->NoSpawnAltVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
+		} else {
+			Draw_Voxel(Class->Voxel, frame, key, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 		}
 
-		main_matrix.Translate_X(Class->TurretOffset / 8);
-		main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
+		if (turret_drawn) {
+			main_matrix.Translate_X(Class->TurretOffset / 8);
+			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
-		// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
-		// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
-		Matrix3D barrel_matrix = main_matrix;
-		Vector3 vec2 = main_matrix.Get_Translation();
-		barrel_matrix.Translate(-vec2);
-		barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
-		barrel_matrix.Translate(vec2);
+			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
+			// The barrel pitches about the turret origin, not FireFLH, as DrawAsVXL does (0x73BB6E-0x73BBBD).
+			Matrix3D barrel_matrix = main_matrix;
+			Vector3 vec2 = main_matrix.Get_Translation();
+			barrel_matrix.Translate(-vec2);
+			barrel_matrix.Rotate_Y(-BarrelPitch.Current().As_Radian32());
+			barrel_matrix.Translate(vec2);
 
-		int const turret_key = part_key(turret_frame, 64);
-		int const barrel_key = part_key(int(BarrelPitch.Current().As_Dir32()), 32);
+			bool draw_barrel;
+			if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
+				draw_barrel = false;
+				if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+					Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+				}
+			} else {
+				draw_barrel = true;
+			}
 
-		bool draw_barrel;
-		if (SecondaryFacing.Current().As_Dir4() <= 0 || SecondaryFacing.Current().As_Dir4() >= 3) {
-			draw_barrel = false;
-			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+			Draw_Voxel(*turret, turret_frame, turret_key, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, part_flags);
+
+			if (draw_barrel) {
+				if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
+					Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+				}
 			}
 		} else {
-			draw_barrel = true;
-		}
-
-		Draw_Voxel(*turret, turret_frame, turret_key, &Class->AuxVoxelIndex, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * main_matrix, brightness, part_flags);
-
-		if (draw_barrel) {
-			if (barrel->VoxLib != NULL && barrel->MotLib != NULL) {
-				Draw_Voxel(*barrel, 0, barrel_key, &Class->AuxVoxel2Index, cliprect, drawpoint + offset, Get_Isometric_View_Matrix() * barrel_matrix, brightness, part_flags);
+			voxl = &Class->AuxVoxel2;
+			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
+				main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
+				main_matrix.Translate(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
+				Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
 			}
 		}
-	} else {
-		voxl = &Class->AuxVoxel2;
-		if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
-			main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
-			main_matrix.Translate(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
-			Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
+
+		// A picture is kept only while it lies wholly on the scratch surface and the shared buffer is under half full.
+		Rect const dirty = UnitCompositeDirtyRect;
+		if (composite_cacheable && dirty.Is_Valid() && Intersect(dirty, LogicalSurface->Get_Rect()) == dirty && VoxelStaticBuffer.Used() < VoxelStaticBuffer.Capacity() / 2) {
+			Sync_Voxel_Composites();
+			StaticBufferClass::Entry * entry = VoxelStaticBuffer.Add(*LogicalSurface, dirty, short(dirty.X - drawpoint.X), short(dirty.Y - drawpoint.Y));
+			if (entry != NULL) {
+				VoxelComposites[composite_key] = entry;
+			}
 		}
 	}
 

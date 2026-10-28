@@ -33,6 +33,7 @@ enum BackendScaleMode {
 // with the SDR back buffer instead, and Backend_HDR_Active reports which it has.
 bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawableheight, BackendRenderer renderer, bool vsync, bool hdr);
 void Backend_Shutdown(void);
+bool Backend_Is_Running(void);
 
 // True when the frame reaches the window as HDR10, through the composite pass.
 bool Backend_HDR_Active(void);
@@ -70,6 +71,9 @@ struct BackendLayer
 	int DestY;
 	int DestWidth;
 	int DestHeight;
+
+	// The picture is the GPU map texture (gpumap.h) instead of Pixels.
+	bool Gpu;
 };
 
 // Emissive masks for the frame and the layer, one byte per pixel laid out like their pictures. A
@@ -86,6 +90,11 @@ struct BackendEmissive
 	int LayerWidth;
 	int LayerHeight;
 };
+
+// Names the rows of the next present's picture that may differ from the picture of the present before it.
+// Null rows, or a count other than the picture's height, means any row may differ. The rows stay noted
+// until the frame textures that use them have been brought up to date.
+void Backend_Note_Changed_Rows(unsigned char const * rows, int count);
 
 bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);
 

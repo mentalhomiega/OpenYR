@@ -21,6 +21,7 @@
 #include "csf.h"
 #include "dialog.hh"
 #include "globals.h"
+#include "gpudraw.h"
 #include "house.h"
 #include "ion.h"
 #include "playerdisplay.h"
@@ -374,6 +375,8 @@ void LightningStormClass::Bolt(Coord const & from)
 
 	int const level = cellptr.Height;
 	coord.Z = level * LEVEL_LEPTON_H + (cellptr.IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
+
+	GpuDraw_Add_Flash();
 
 	if (Rule->LightningSounds.Count() > 0) {
 		Sound_Effect((VocType)Rule->LightningSounds.Pick(Scen->RandomNumber()), coord);

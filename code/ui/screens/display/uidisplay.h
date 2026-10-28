@@ -61,6 +61,7 @@ class UIDisplayServiceClass
 		virtual void Set_Fullscreen(bool on) = 0;
 		virtual void Set_VSync(bool on) = 0;
 		virtual void Set_Integer_Scaling(bool on) = 0;
+		virtual void Set_Gpu_Effects(bool render, bool softshadows, bool shockwaves, bool bloom, bool water, bool clouds, bool weather) = 0;
 		virtual void Set_Filter(int mode) = 0;
 		virtual void Set_Frame_Rate(int rate) = 0;
 		virtual void Set_Cursor_Scale(int scale) = 0;
@@ -100,6 +101,9 @@ struct UIDisplayState
 	bool SystemCursor = false;
 	bool ClassicMenus = false;
 	bool ModernInterface = false;
+	// The interface running now. In a game a choice that differs waits for the main menu; the menus switch at once.
+	bool ModernInterfaceRunning = false;
+	bool InGame = false;
 	bool BitmapSystemFont = false;
 	bool ShowFPS = false;
 	std::vector<UIDisplayChoice> FrameLimits;
@@ -115,6 +119,13 @@ struct UIDisplayState
 	bool Fullscreen = false;
 	bool VSync = false;
 	bool IntegerScaling = false;
+	bool GpuRender = false;
+	bool SoftShadows = false;
+	bool Shockwaves = false;
+	bool Bloom = false;
+	bool WaterRipples = false;
+	bool CloudShadows = false;
+	bool Weather = false;
 	std::vector<UIDisplayChoice> Filters;
 	int Filter = 0;
 	std::vector<UIDisplayChoice> FrameRates;
@@ -198,6 +209,13 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		bool InitialFullscreen;
 		bool InitialVSync;
 		bool InitialIntegerScaling;
+		bool InitialGpuRender;
+		bool InitialSoftShadows;
+		bool InitialShockwaves;
+		bool InitialBloom;
+		bool InitialWaterRipples;
+		bool InitialCloudShadows;
+		bool InitialWeather;
 		int InitialFilter;
 		int InitialFrameRate;
 		int InitialCursorScale;

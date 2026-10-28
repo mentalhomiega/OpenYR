@@ -51,9 +51,11 @@ enum PerfPhase : unsigned char {
 	PERF_DRAW_OVERLAY,          // orders, placement, rubber band, indicators and screen text
 	PERF_DRAW_HUD,              // sidebar and radar (GScreenClass::Draw_It)
 	PERF_DRAW_UI,               // panel backdrops, buttons, messages and tool tips
+	PERF_DRAW_GPUMAP,           // GpuDraw_End: reading the map area and buffers and submitting the GPU map pass
 	PERF_PRESENT_TOTAL,         // one present, from the presenter's start to its end
 	PERF_PRESENT_UPLOAD,        // Backend_Present: texture uploads and the frame's passes
 	PERF_PRESENT_GPU,           // Backend_End_Frame: bgfx::frame, which can wait for the GPU
+	PERF_PRESENT_GPU_TIME,      // GPU time of the newest frame the GPU finished, as bgfx reports it
 	PERF_PHASE_COUNT
 };
 
@@ -87,6 +89,7 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_WEAPON_SELECTS,  // What_Weapon_Should_I_Use calls
 	PERF_COUNT_RING_KEYS,       // distinct ring-walk keys in a game frame
 	PERF_COUNT_RING_KEY_REPEATS,    // ring walks whose key an earlier walk in the same game frame had
+	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
 	PERF_COUNTER_COUNT
 };
 
@@ -98,6 +101,9 @@ void Perf_Set_Enabled(bool enabled);
 void Perf_Add_Count(PerfCounter counter, std::uint64_t amount);
 void Perf_Begin(PerfPhase phase);
 void Perf_End(PerfPhase phase);
+
+// Adds a time measured elsewhere to a phase of the current sample while recording is on.
+void Perf_Add_Time(PerfPhase phase, double milliseconds);
 
 // Adds to a counter while recording is on.
 inline void Perf_Count(PerfCounter counter, std::uint64_t amount = 1)
@@ -137,6 +143,9 @@ class PerfScope
 // Ends a draw and records its sample of the draw phases.
 void Perf_Draw_End(void);
 
+// Starts a present: its gap from the previous present's start is sampled.
+void Perf_Present_Begin(void);
+
 // Ends a present and records its sample of the present phases.
 void Perf_Present_End(void);
 
@@ -162,7 +171,12 @@ class PerfDrawSample
 class PerfPresentSample
 {
 	public:
-		PerfPresentSample(void) = default;
+		PerfPresentSample(void)
+		{
+			if (Perf_Enabled) {
+				Perf_Present_Begin();
+			}
+		}
 		~PerfPresentSample()
 		{
 			if (Perf_Enabled) {

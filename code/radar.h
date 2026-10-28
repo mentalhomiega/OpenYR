@@ -117,6 +117,7 @@ class RadarClass: public DisplayClass
 		*/
 		virtual void One_Time(void) override;   // One-time inits
 		virtual void Init_Clear(void) override; // Clears all to known state
+		void Lay_Out_Radar(void);
 
 		void Post_Load_Radar_Fixup(void);
 

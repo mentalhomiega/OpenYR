@@ -37,6 +37,24 @@
 
 #include "zgrad.hh"
 
+// Called for each clipped blit with its destination, blitter type name and pixel area while set; the drawprobe step sets it.
+extern void (*Blit_Probe_Hook)(Surface const * dest, char const * kind, int pixels);
+
+// Called with each blit's clipped destination, source rows and depth state just before it is drawn,
+// while set; the GPU draw recorder (gpudraw.cpp) sets them. A true result means the GPU draws the
+// blit, and the blit writes no colour to dest.
+// The whole source image of the RLE blit being recorded, set by RLE_Blit just before it calls Blit_Record_RLE.
+struct BlitRecordSource
+{
+	void const * Base;
+	int Width;
+	int Height;
+	int Top;
+};
+extern BlitRecordSource Blit_Record_Source;
+extern bool (*Blit_Record_RLE)(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha);
+extern bool (*Blit_Record_Bit)(Surface const & dest, Blitter const & blitter, int x, int y, int width, int height, unsigned char const * pixels, int pitch, int z, int zfraction, int znumerator, int zdenominator, int zwrap, int alpha);
+
 bool Bit_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, Blitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);
 bool RLE_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rect const & sourcerect, RLEBlitter const & blitter, int zdepth = 0, ZGradientType zgrad = ZGRAD_135DEG, int alpha = 1000, int = 0);
 

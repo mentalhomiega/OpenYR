@@ -31,6 +31,13 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	InitialFullscreen(State.Fullscreen),
 	InitialVSync(State.VSync),
 	InitialIntegerScaling(State.IntegerScaling),
+	InitialGpuRender(State.GpuRender),
+	InitialSoftShadows(State.SoftShadows),
+	InitialShockwaves(State.Shockwaves),
+	InitialBloom(State.Bloom),
+	InitialWaterRipples(State.WaterRipples),
+	InitialCloudShadows(State.CloudShadows),
+	InitialWeather(State.Weather),
 	InitialFilter(State.Filter),
 	InitialFrameRate(State.FrameRate),
 	InitialCursorScale(State.CursorScale),
@@ -199,6 +206,13 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		// A frame rate of -1 is match the display, and highlights 1 is Enhanced.
 		State.Filter = Index_Of(State.Filters, VIDEO_SCALE_PIXELART, State.Filter);
 		State.IntegerScaling = false;
+		State.GpuRender = false;
+		State.SoftShadows = false;
+		State.Shockwaves = false;
+		State.Bloom = false;
+		State.WaterRipples = false;
+		State.CloudShadows = false;
+		State.Weather = false;
 		State.FrameRate = Index_Of(State.FrameRates, -1, State.FrameRate);
 		State.Renderer = Index_Of(State.Renderers, 0, State.Renderer);
 		State.HDROutput = Index_Of(State.HDROutputs, VIDEO_HDR_AUTOMATIC, State.HDROutput);
@@ -325,6 +339,41 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "integerscaling") {
 		State.IntegerScaling = (intent.Value != 0);
 
+	} else if (intent.Name == "gpurender") {
+		if (State.ModernInterface) {
+			State.GpuRender = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "softshadows") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.SoftShadows = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "shockwaves") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Shockwaves = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "bloom") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Bloom = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "waterripples") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.WaterRipples = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "cloudshadows") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.CloudShadows = (intent.Value != 0);
+		}
+
+	} else if (intent.Name == "weather") {
+		if (State.ModernInterface && State.GpuRender) {
+			State.Weather = (intent.Value != 0);
+		}
+
 	} else if (intent.Name == "filter") {
 		State.Filter = Pick_Choice(State.Filters, intent.Value, InitialFilter);
 
@@ -422,6 +471,11 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		}
 		if (State.IntegerScaling != InitialIntegerScaling) {
 			Service.Set_Integer_Scaling(State.IntegerScaling);
+		}
+		if (State.GpuRender != InitialGpuRender || State.SoftShadows != InitialSoftShadows || State.Shockwaves != InitialShockwaves || State.Bloom != InitialBloom || State.WaterRipples != InitialWaterRipples
+			|| State.CloudShadows != InitialCloudShadows
+			|| State.Weather != InitialWeather) {
+			Service.Set_Gpu_Effects(State.GpuRender, State.SoftShadows, State.Shockwaves, State.Bloom, State.WaterRipples, State.CloudShadows, State.Weather);
 		}
 		if (Choice_Changed(State.Filters, State.Filter, InitialFilter)) {
 			Service.Set_Filter(State.Filters[State.Filter].Value);
@@ -624,6 +678,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("fullscreen");
 			Model.DirtyVariable("vsync");
 			Model.DirtyVariable("integerscaling");
+			Model.DirtyVariable("gpurender");
+			Model.DirtyVariable("softshadows");
+			Model.DirtyVariable("shockwaves");
+			Model.DirtyVariable("bloom");
+			Model.DirtyVariable("waterripples");
+			Model.DirtyVariable("cloudshadows");
+			Model.DirtyVariable("weather");
 			Model.DirtyVariable("filter");
 			Model.DirtyVariable("framerate");
 			Model.DirtyVariable("cursorscale");
@@ -689,6 +750,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("systemcursor", &state.SystemCursor)
 				&& model.Bind("classicmenus", &state.ClassicMenus)
 				&& model.Bind("moderninterface", &state.ModernInterface)
+				&& model.Bind("moderninterfacerunning", &state.ModernInterfaceRunning)
+				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("bitmapfont", &state.BitmapSystemFont)
 				&& model.Bind("showfps", &state.ShowFPS)
 				&& model.Bind("framelimits", &state.FrameLimits)
@@ -700,6 +763,13 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("fullscreen", &state.Fullscreen)
 				&& model.Bind("vsync", &state.VSync)
 				&& model.Bind("integerscaling", &state.IntegerScaling)
+				&& model.Bind("gpurender", &state.GpuRender)
+				&& model.Bind("softshadows", &state.SoftShadows)
+				&& model.Bind("shockwaves", &state.Shockwaves)
+				&& model.Bind("bloom", &state.Bloom)
+				&& model.Bind("waterripples", &state.WaterRipples)
+				&& model.Bind("cloudshadows", &state.CloudShadows)
+				&& model.Bind("weather", &state.Weather)
 				&& model.Bind("filters", &state.Filters)
 				&& model.Bind("filter", &state.Filter)
 				&& model.Bind("framerates", &state.FrameRates)

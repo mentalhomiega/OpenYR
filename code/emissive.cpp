@@ -85,6 +85,14 @@ bool Equals_Ignore_Case(char const * text, char const * word)
 	return(*text == *word);
 }
 
+void Free_Binding(Binding & binding)
+{
+	delete [] binding.Plane.Pixels;
+	delete [] binding.Plane.Lit;
+	binding.Plane = EmissivePlane{NULL, 0, 0, 0};
+	binding.Surface = NULL;
+}
+
 }
 
 
@@ -225,8 +233,9 @@ EmissivePlane * Emissive_Bind(void const * surface, int width, int height)
 	}
 
 	delete [] plane.Pixels;
-	plane.Pixels = new unsigned char[(size_t)width * height];
-	std::memset(plane.Pixels, 0, (size_t)width * height);
+	delete [] plane.Lit;
+	plane.Pixels = new unsigned char[(size_t)width * height]();
+	plane.Lit = new unsigned char[(size_t)height]();
 	plane.Width = width;
 	plane.Height = height;
 	plane.Pitch = width;
@@ -248,12 +257,7 @@ void Emissive_Retain(void const * const * keep, int count)
 			}
 		}
 		if (!kept) {
-			delete [] binding.Plane.Pixels;
-			binding.Plane.Pixels = NULL;
-			binding.Plane.Width = 0;
-			binding.Plane.Height = 0;
-			binding.Plane.Pitch = 0;
-			binding.Surface = NULL;
+			Free_Binding(binding);
 		}
 	}
 }
@@ -266,12 +270,7 @@ void Emissive_Forget(void const * surface)
 	}
 	for (Binding & binding : _Bindings) {
 		if (binding.Surface == surface) {
-			delete [] binding.Plane.Pixels;
-			binding.Plane.Pixels = NULL;
-			binding.Plane.Width = 0;
-			binding.Plane.Height = 0;
-			binding.Plane.Pitch = 0;
-			binding.Surface = NULL;
+			Free_Binding(binding);
 		}
 	}
 }
@@ -280,12 +279,7 @@ void Emissive_Forget(void const * surface)
 void Emissive_Release_All(void)
 {
 	for (Binding & binding : _Bindings) {
-		delete [] binding.Plane.Pixels;
-		binding.Plane.Pixels = NULL;
-		binding.Plane.Width = 0;
-		binding.Plane.Height = 0;
-		binding.Plane.Pitch = 0;
-		binding.Surface = NULL;
+		Free_Binding(binding);
 	}
 }
 
@@ -299,8 +293,25 @@ void Emissive_Fill_Rect(EmissivePlane & plane, int x, int y, int width, int heig
 	if (left >= right || top >= bottom) {
 		return;
 	}
+	bool const whole = left == 0 && right == plane.Width;
 	for (int row = top; row < bottom; row++) {
+		if (value == 0 && !Emissive_Row_Lit(plane, row)) {
+			continue;
+		}
 		std::memset(plane.Pixels + row * plane.Pitch + left, value, (size_t)(right - left));
+		if (plane.Lit != NULL && (value != 0 || whole)) {
+			plane.Lit[row] = value != 0;
+		}
+	}
+}
+
+
+void Emissive_Mark_Rows(EmissivePlane & plane, int top, int count)
+{
+	int const first = std::max(top, 0);
+	int const last = std::min(top + count, plane.Height);
+	if (plane.Lit != NULL && first < last) {
+		std::memset(plane.Lit + first, 1, (size_t)(last - first));
 	}
 }
 
@@ -320,9 +331,21 @@ void Emissive_Copy_Rect(EmissivePlane & dest, int dx, int dy, EmissivePlane cons
 
 	// Rows run bottom up when a copy within one plane moves down, so no source row is overwritten first.
 	bool const reverse = dest.Pixels == source.Pixels && dy > sy;
+	bool const whole = dx == 0 && width == dest.Width;
 	for (int step = 0; step < height; step++) {
 		int const row = reverse ? height - 1 - step : step;
-		std::memmove(dest.Pixels + (dy + row) * dest.Pitch + dx, source.Pixels + (sy + row) * source.Pitch + sx, (size_t)width);
+		unsigned char * out = dest.Pixels + (dy + row) * dest.Pitch + dx;
+		if (Emissive_Row_Lit(source, sy + row)) {
+			std::memmove(out, source.Pixels + (sy + row) * source.Pitch + sx, (size_t)width);
+			if (dest.Lit != NULL) {
+				dest.Lit[dy + row] = 1;
+			}
+		} else if (Emissive_Row_Lit(dest, dy + row)) {
+			std::memset(out, 0, (size_t)width);
+			if (dest.Lit != NULL && whole) {
+				dest.Lit[dy + row] = 0;
+			}
+		}
 	}
 }
 
@@ -340,6 +363,9 @@ void Emissive_Stamp_Segment(EmissivePlane & plane, int clipx, int clipy, int cli
 	for (;;) {
 		if (x >= clipx && x < clipx + clipwidth && y >= clipy && y < clipy + clipheight && x >= 0 && x < plane.Width && y >= 0 && y < plane.Height) {
 			plane.Pixels[y * plane.Pitch + x] = value;
+			if (plane.Lit != NULL) {
+				plane.Lit[y] = 1;
+			}
 		}
 		if (x == x1 && y == y1) {
 			break;

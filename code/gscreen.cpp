@@ -47,6 +47,9 @@
 
 #include "gscreen.h"
 
+#include "gpudraw.h"
+#include "gpumap.h"
+
 #include "_bench.h"
 #include "_convert.h"
 #include "convert.h"
@@ -71,8 +74,167 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "lstorm.h"
+#include "scenario.h"
+#include "theater.h"
 #include "emissive.h"
 #include "emissive_surface.h"
+#include "shadowplane.h"
+#include "dsurface.h"
+#include "video.h"
+
+#include <algorithm>
+#include <cstdint>
+#include <utility>
+#include <vector>
+
+
+// Composite surface pixels written since an event, from the surface's write watch: for each row, a mask
+// of the column blocks written. Known is false when any pixel may have been written.
+struct CompositeRows {
+	std::vector<std::uint32_t> Rows;
+	int BlockWidth = 1;
+	bool Known = false;
+
+	static int Block_Width(int width) { return(std::max(64, (width + 31) / 32)); }
+
+	void Restart(int height, int width)
+	{
+		Rows.assign((size_t)std::max(height, 0), 0);
+		BlockWidth = Block_Width(width);
+		Known = true;
+	}
+
+	// Passes each written part of area to each, as rectangles that join the rows written in the same blocks.
+	template<class F>
+	void For_Each_Rect(Rect const & area, F each) const
+	{
+		int const left = std::max(area.X, 0);
+		int const right = area.X + area.Width;
+		if (right <= left || left >= BlockWidth * 32) {
+			return;
+		}
+		int const first = left / BlockWidth;
+		int const last = std::min((right - 1) / BlockWidth, 31);
+		std::uint32_t const area_mask = (last >= 31 ? ~std::uint32_t(0) : (std::uint32_t(1) << (last + 1)) - 1) & ~((std::uint32_t(1) << first) - 1);
+		int const bottom = std::min(area.Y + area.Height, (int)Rows.size());
+		int y = std::max(area.Y, 0);
+		while (y < bottom) {
+			std::uint32_t const mask = Rows[y] & area_mask;
+			if (mask == 0) {
+				y++;
+				continue;
+			}
+			int const top = y;
+			while (y < bottom && (Rows[y] & area_mask) == mask) {
+				y++;
+			}
+			for (int block = first; block <= last; block++) {
+				if (!(mask & (std::uint32_t(1) << block))) {
+					continue;
+				}
+				int end = block;
+				while (end + 1 <= last && (mask & (std::uint32_t(1) << (end + 1)))) {
+					end++;
+				}
+				int const x0 = std::max(left, block * BlockWidth);
+				int const x1 = std::min(right, (end + 1) * BlockWidth);
+				if (x1 > x0) {
+					each(Rect(x0, top, x1 - x0, y - top));
+				}
+				block = end;
+			}
+		}
+	}
+};
+
+// Rows written since the map layer key was last filled in, and since the composite was last copied to
+// the visible surface.
+static CompositeRows _SinceKeyFill;
+static CompositeRows _SinceCopy;
+static Rect _KeyFillRect;
+static Rect _CopySource;
+static Rect _CopyDest;
+static unsigned _VisibleChangesAfterCopy;
+static int _CopiesUntilFull;
+static std::vector<unsigned char> _CopiedRows;
+
+
+/// <summary>
+/// Adds the composite rows written since the last call to each given set. Returns false, and marks the
+/// sets unknown, when the composite cannot list its written rows.
+/// </summary>
+static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
+{
+	static std::vector<std::pair<std::size_t, std::size_t>> runs;
+	DSurface * const composite = (DSurface *)CompositeSurface;
+	int const height = composite->Get_Height();
+	int const width = composite->Get_Width();
+	int const pitch = composite->Stride();
+	int const bpp = composite->Bytes_Per_Pixel();
+	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs);
+	// Scrolling swaps the composite with the tile layer, whose watch says nothing about what the composite last held.
+	static DSurface const * last_composite = NULL;
+	if (composite != last_composite) {
+		last_composite = composite;
+		_SinceKeyFill.Known = false;
+		_SinceCopy.Known = false;
+	}
+	for (CompositeRows * rows : {first, second}) {
+		if (rows == NULL) {
+			continue;
+		}
+		if (!listed || (int)rows->Rows.size() != height || rows->BlockWidth != CompositeRows::Block_Width(width)) {
+			rows->Known = false;
+			continue;
+		}
+		if (!rows->Known) {
+			continue;
+		}
+		for (auto const & run : runs) {
+			int const top = std::min((int)(run.first / pitch), height);
+			int const bottom = std::min((int)((run.second + pitch - 1) / pitch), height);
+			for (int y = top; y < bottom; y++) {
+				std::size_t const row_start = (std::size_t)y * pitch;
+				std::size_t const begin = std::max(run.first, row_start) - row_start;
+				std::size_t const end = std::min(run.second, row_start + pitch) - row_start;
+				int const x0 = (int)(begin / bpp);
+				int const x1 = std::min(width, (int)((end + bpp - 1) / bpp));
+				if (x1 <= x0) {
+					continue;
+				}
+				int const b0 = std::min(x0 / rows->BlockWidth, 31);
+				int const b1 = std::min((x1 - 1) / rows->BlockWidth, 31);
+				rows->Rows[y] |= (b1 >= 31 ? ~std::uint32_t(0) : (std::uint32_t(1) << (b1 + 1)) - 1) & ~((std::uint32_t(1) << b0) - 1);
+			}
+		}
+	}
+	return(listed);
+}
+
+
+/// <summary>
+/// Fills dest on the composite with the map layer key. Rows nothing has written since the last fill of
+/// the same rectangle still hold the key and are left alone; the emissive values under all of dest are cleared.
+/// </summary>
+static void Fill_Map_Layer_Key(Rect const & dest)
+{
+	bool const listed = Take_Composite_Rows(&_SinceKeyFill, &_SinceCopy);
+	if (!_SinceKeyFill.Known || dest != _KeyFillRect) {
+		CompositeSurface->Fill_Rect(dest, VIDEO_LAYER_KEY);
+	} else {
+		_SinceKeyFill.For_Each_Rect(dest, [](Rect const & rect) {
+			CompositeSurface->Fill_Rect(rect, VIDEO_LAYER_KEY);
+		});
+		Emissive_After_Fill(*CompositeSurface, Intersect(dest, CompositeSurface->Get_Rect()));
+	}
+	_KeyFillRect = dest;
+	// The rows just filled go to the copy only; counting them for the next fill would refill them every frame.
+	Take_Composite_Rows(NULL, &_SinceCopy);
+	if (listed) {
+		_SinceKeyFill.Restart(CompositeSurface->Get_Height(), CompositeSurface->Get_Width());
+	}
+}
 #include "shellmap.h"
 #include "video.h"
 #include "viewzoom.h"
@@ -503,6 +665,15 @@ void GScreenClass::Render(void)
 		LogicalSurface = CompositeSurface;
 	};
 
+	// The chronoshift effect swirls a snapshot of the finished map view, which only the software pass holds.
+	bool const gpu_render = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && !Chrono_Screen_Effect_Is_Running();
+	bool const gpu_planes = Options.GpuRender && Modern_Interface() && Video_Map_Layer_Supported() && GpuMap_Supported();
+	if (ShadowPlane_Set_Enabled(gpu_planes && Options.SoftShadows, gpu_planes && Options.WaterRipples)) {
+		redraw = true;
+		TacticalMap->IsToRedraw = true;
+	}
+	ShadowPlane_Sync(CompositeSurface, TileSurface, MapCompositeSurface, MapTileSurface);
+	GpuDraw_Plan(gpu_render);
 	use_map_surfaces(true);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_PAN);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_BACKGROUND);
@@ -517,9 +688,35 @@ void GScreenClass::Render(void)
 		Draw_It(complete);
 	}
 	use_map_surfaces(true);
+	Video_Draw_Probe_Target(CompositeSurface);
+	// While zoomed, the GPU draws only the part of the map that is shown, and the presenter scales it.
+	Rect const gpu_area = zoomed ? Shown_Map_Rect() : TacticalRect;
+	GpuMap_Set_Soft_Shadows(Options.SoftShadows ? Options.SoftShadowRadius : 0);
+	GpuMap_Set_Bloom(Options.Bloom ? Options.BloomStrength : 0);
+	GpuMap_Set_Water(Options.WaterRipples ? Options.WaterRippleStrength : 0);
+	GpuMap_Set_Clouds(Options.CloudShadows ? Options.CloudShadowStrength : 0);
+	GpuWeather weather = GPU_WEATHER_NONE;
+	if (Options.Weather == WEATHER_RAIN || (Options.Weather == WEATHER_MAP && LightningStormClass::Is_Active())) {
+		weather = GPU_WEATHER_RAIN;
+	} else if (Options.Weather == WEATHER_SNOW || (Options.Weather == WEATHER_MAP && Scen != NULL && TheaterClass::As_Reference(Scen->Theater).IsArctic)) {
+		weather = GPU_WEATHER_SNOW;
+	}
+	GpuMap_Set_Weather(weather, Options.WeatherStrength);
+	GpuDraw_Begin(*CompositeSurface, gpu_area, gpu_render);
 	TacticalMap->Render(*CompositeSurface, redraw, DRAW_PASS_FOREGROUND);
+	bool gpu_drawn = false;
+	{
+		PerfScope gpumap_scope(PERF_DRAW_GPUMAP);
+		gpu_drawn = GpuDraw_End();
+	}
+	Video_Draw_Probe_Target(NULL);
+	Video_Note_Draw_Digest(*CompositeSurface, TacticalRect);
 	use_map_surfaces(false);
-	if (zoomed && Video_Map_Layer_Supported()) {
+	if (gpu_drawn) {
+		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
+		Fill_Map_Layer_Key(dest);
+		Video_Set_Gpu_Map_Layer(gpu_area, dest);
+	} else if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution. The translucent panel
 		// blends with the map, so the frame under the panel holds a copy of the map instead of the key.
 		CompositeSurface->Fill_Rect(ScreenTacticalRect, VIDEO_LAYER_KEY);
@@ -716,9 +913,49 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 	}
 
 	/*
-	 * Now blit the source surface to the visible surface
+	 * Now blit the source surface to the visible surface. A composite frame copies only the rows written
+	 * since its last copy while nothing else has changed the visible surface and the frame sits where it did;
+	 * every 120th copy is whole.
 	 */
-	VisibleSurface->Blit_From(dest_rect, *surface, src_rect, false, true);
+	DSurface * const visible = (DSurface *)VisibleSurface;
+	unsigned const before = visible->Change_Count();
+	bool const composite = (surface == CompositeSurface);
+	bool partial = false;
+	bool listed = false;
+	if (composite) {
+		listed = Take_Composite_Rows(&_SinceKeyFill, &_SinceCopy);
+		Rect const bounds = visible->Get_Rect();
+		bool const inside = dest_rect.X >= 0 && dest_rect.Y >= 0 && dest_rect.X + dest_rect.Width <= bounds.Width && dest_rect.Y + dest_rect.Height <= bounds.Height;
+		bool const unzoomed = (TacticalMap == NULL || TacticalMap->ZoomFactor == 1.0);
+		partial = listed && _SinceCopy.Known && inside && unzoomed && shake_x == 0 && shake_y == 0
+			&& before == _VisibleChangesAfterCopy && src_rect == _CopySource && dest_rect == _CopyDest && --_CopiesUntilFull > 0;
+	}
+	if (partial) {
+		_CopiedRows.assign((size_t)visible->Get_Height(), 0);
+		int const width = std::min(src_rect.Width, dest_rect.Width);
+		int const height = std::min(src_rect.Height, dest_rect.Height);
+		int const shift_x = dest_rect.X - src_rect.X;
+		int const shift = dest_rect.Y - src_rect.Y;
+		_SinceCopy.For_Each_Rect(Rect(src_rect.X, src_rect.Y, width, height), [&](Rect const & rect) {
+			VisibleSurface->Blit_From(Rect(rect.X + shift_x, rect.Y + shift, rect.Width, rect.Height), *surface, rect, false, true);
+			std::fill(_CopiedRows.begin() + (rect.Y + shift), _CopiedRows.begin() + (rect.Y + rect.Height + shift), (unsigned char)1);
+		});
+		// Emissive values can change where the pixels did not, so all of them follow.
+		Emissive_After_Bit_Blit(*VisibleSurface, dest_rect.X, dest_rect.Y, *surface, src_rect.X, src_rect.Y, width, height);
+		Video_Note_Visible_Rows(_CopiedRows.data(), (int)_CopiedRows.size(), before, visible->Change_Count());
+	} else {
+		VisibleSurface->Blit_From(dest_rect, *surface, src_rect, false, true);
+		Video_Note_Visible_Rows(NULL, 0, before, visible->Change_Count());
+		_CopiesUntilFull = 120;
+	}
+	if (composite) {
+		if (listed) {
+			_SinceCopy.Restart(CompositeSurface->Get_Height(), CompositeSurface->Get_Width());
+		}
+		_CopySource = src_rect;
+		_CopyDest = dest_rect;
+		_VisibleChangesAfterCopy = visible->Change_Count();
+	}
 
 	Video_Present_If_Dirty();
 }

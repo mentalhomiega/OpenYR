@@ -35,6 +35,10 @@
 #include "win.h"
 #include "xsurface.h"
 
+#include <cstddef>
+#include <utility>
+#include <vector>
+
 
 enum DSurfaceColorMode {
 	COLORMODE_INVALID = -1,
@@ -48,6 +52,10 @@ enum DSurfaceColorMode {
 // A concrete surface whose pixels are a GDI device independent bitmap in system memory.
 // The bitmap is permanently selected into a memory device context, so the surface can be
 // drawn to either as raw 16 bit pixels through Lock or with GDI through GetDC.
+// Called with the surface at each lock of a DSurface while set; the GPU draw recorder sets it.
+extern void (*Surface_Lock_Hook)(Surface const * surface);
+
+
 class DSurface : public XSurface
 {
 		typedef XSurface BASECLASS;
@@ -59,6 +67,12 @@ class DSurface : public XSurface
 		**	Constructs a working surface (not visible).
 		*/
 		DSurface(int width, int height);
+
+		/*
+		 * Constructs a working surface whose written pages Written_Runs lists. It has no
+		 * device context, so GetDC yields NULL and a stretched blit from it runs in software.
+		 */
+		DSurface(int width, int height, bool watched);
 
 		/*
 		**	Get/Release a windows device context for the surface pixels.
@@ -108,6 +122,17 @@ class DSurface : public XSurface
 		void * Get_Buffer(void) const {return(GDIBuffer);}
 
 		/*
+		 * Takes a new value, never used by any surface before, with every lock, device
+		 * context and stretched blit into this surface. A value that has not moved since
+		 * an earlier read means the pixels are the same.
+		 */
+		unsigned Change_Count(void) const {return(Changes);}
+
+		// Fills runs with the byte ranges of Get_Buffer written since the last call and starts
+		// listing anew. False means the surface does not list its writes, so every byte counts as written.
+		bool Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
+
+		/*
 		**	Queries information about the surface.
 		*/
 		virtual int Bytes_Per_Pixel(void) const override;
@@ -117,7 +142,7 @@ class DSurface : public XSurface
 		 * This surface owns a device context, so GetDC yields one that draws on these
 		 * same pixels.
 		 */
-		virtual bool Is_GDI_Backed(void) const override {return(true);}
+		virtual bool Is_GDI_Backed(void) const override {return(!IsWatched);}
 
 		virtual bool Can_Blit(void) const;
 
@@ -137,6 +162,9 @@ class DSurface : public XSurface
 		static int Build_Hicolor_Pixel(RGBClass const & rgb);
 		static RGBClass Deconstruct_Hicolor_Pixel(unsigned short pixel);
 		static unsigned short Blend_Pixel(unsigned short src_color, unsigned short dst_color, int level);
+		static unsigned short Shade_Line_Pixel(unsigned short under, unsigned color, int value, int fade);
+		static unsigned short Add_Beam_Light(unsigned short pixel, int red_add, int green_add, int blue_add);
+		static int Antialiased_Line_Weight(int index);
 		static void Build_Remap_Table(unsigned short * table, int count, PaletteClass const & palette);
 		static unsigned short Get_Halfbright_Mask(void) {return(HalfbrightMask);}
 		static unsigned short Get_Quarterbright_Mask(void) {return(QuarterbrightMask);}
@@ -180,6 +208,11 @@ class DSurface : public XSurface
 		 */
 		void * GDIBuffer;
 		int Pitch;
+
+		// The pixels came from WriteWatch_Alloc instead of a bitmap.
+		bool IsWatched;
+
+		mutable unsigned Changes;
 
 	public:
 		/*

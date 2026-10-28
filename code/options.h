@@ -46,6 +46,15 @@ enum HDRHighlightsMode {
 	HDR_HIGHLIGHTS_ENHANCED
 };
 
+// The weather the GPU map pass draws: Map rains while a lightning storm rages, snows on maps whose
+// theater sets IsArctic and draws nothing elsewhere, and Rain and Snow fall on every map.
+enum WeatherMode {
+	WEATHER_NONE,
+	WEATHER_MAP,
+	WEATHER_RAIN,
+	WEATHER_SNOW
+};
+
 // The faction tint of the modern menus. Random picks one of the three when the game starts.
 enum MenuThemeType {
 	MENU_THEME_RANDOM,
@@ -292,6 +301,35 @@ class OptionsClass {
 
 		// Caps the presents per second: zero is unlimited, and a negative value follows the display's refresh rate.
 		int FrameRateLimit;
+
+		// Draws the map view's objects on the GPU in the modern interface, on Direct3D 11.
+		// Experimental; a pass the GPU cannot draw falls back to software.
+		bool GpuRender;
+
+		// With GpuRender, shadows are drawn as one blurred mask over the ground, SoftShadowRadius
+		// pixels soft, instead of halving each pixel they cover.
+		bool SoftShadows;
+		int SoftShadowRadius;
+
+		// With GpuRender, each weapon blast sends a ring through the map picture that bends it.
+		bool Shockwaves;
+
+		// With GpuRender, lasers, lamps, fire and other emissive parts of the map glow, at
+		// BloomStrength percent.
+		bool Bloom;
+		int BloomStrength;
+
+		// With GpuRender, the water of the map ripples, at WaterRippleStrength percent.
+		bool WaterRipples;
+		int WaterRippleStrength;
+
+		// With GpuRender, the map is shaded under slowly drifting clouds, at CloudShadowStrength percent.
+		bool CloudShadows;
+		int CloudShadowStrength;
+
+		// With GpuRender, rain or snow falls over the map, as a WeatherMode, at WeatherStrength percent.
+		int Weather;
+		int WeatherStrength;
 
 		/*
 		 * If presents are to wait for the display's refresh, then this flag will be true.

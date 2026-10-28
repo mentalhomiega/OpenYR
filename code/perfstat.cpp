@@ -34,8 +34,8 @@ enum PerfDomain {
 char const * const Phase_Names[PERF_PHASE_COUNT] = {
 	"logic", "triggers", "teams", "objects", "infantry", "unit", "building", "aircraft", "other",
 	"pathfind", "threat", "ring", "eval", "map", "tactical", "factories", "houses", "queue", "wait",
-	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui",
-	"total", "upload", "gpu",
+	"total", "terrain", "shroud", "tilecopy", "objects", "voxels", "particles", "fx", "overlay", "hud", "ui", "gpumap",
+	"total", "upload", "gpu", "gputime",
 };
 
 // Counter names in the order of PerfCounter.
@@ -44,7 +44,7 @@ char const * const Counter_Names[PERF_COUNTER_COUNT] = {
 	"particles", "paths", "threats", "object ai", "upload bytes", "uploads",
 	"scans ring", "scans air", "scans full", "scan targeting", "scan mission", "scan team", "scan house",
 	"ring cells", "ring empty", "ring wall", "cell candidates", "object evals", "area modify", "weapon selects",
-	"ring keys", "ring key repeats",
+	"ring keys", "ring key repeats", "draws skipped",
 };
 
 struct PhaseState {
@@ -63,6 +63,11 @@ struct Summary {
 PhaseState Phases[PERF_PHASE_COUNT];
 std::uint64_t Counts[PERF_COUNTER_COUNT];
 Clock::time_point WindowStart;
+
+// Milliseconds from one present's start to the next, one per present after the first in a recording.
+std::vector<double> PresentGaps;
+Clock::time_point LastPresentStart;
+bool HasLastPresentStart = false;
 
 PerfDomain Domain_Of(int phase)
 {
@@ -84,6 +89,8 @@ void Clear_State(void)
 		state.Samples.clear();
 	}
 	std::fill(std::begin(Counts), std::end(Counts), 0);
+	PresentGaps.clear();
+	HasLastPresentStart = false;
 	WindowStart = Clock::now();
 }
 
@@ -163,6 +170,9 @@ void Emit_Second(Clock::time_point now)
 	Append_Phases(line, DOMAIN_PRESENT);
 	DebugString("Perf present ms avg/p95/max: %s\n", line.c_str());
 
+	Summary const gap = Summarise(PresentGaps);
+	DebugString("Perf gap ms avg/p95/max: present %.2f/%.2f/%.2f\n", gap.Average, gap.P95, gap.Worst);
+
 	line.clear();
 	for (int counter = 0; counter < PERF_COUNTER_COUNT; counter++) {
 		char entry[96];
@@ -225,6 +235,14 @@ void Perf_End(PerfPhase phase)
 }
 
 
+void Perf_Add_Time(PerfPhase phase, double milliseconds)
+{
+	if (Perf_Enabled && milliseconds > 0.0) {
+		Phases[phase].Accumulated += (std::int64_t)(milliseconds * 1000000.0);
+	}
+}
+
+
 void Perf_Frame_End(void)
 {
 	if (!Perf_Enabled) {
@@ -239,6 +257,17 @@ void Perf_Draw_End(void)
 {
 	Push_Samples(DOMAIN_DRAW);
 	Tick();
+}
+
+
+void Perf_Present_Begin(void)
+{
+	Clock::time_point const now = Clock::now();
+	if (HasLastPresentStart) {
+		PresentGaps.push_back(std::chrono::duration<double, std::milli>(now - LastPresentStart).count());
+	}
+	LastPresentStart = now;
+	HasLastPresentStart = true;
 }
 
 

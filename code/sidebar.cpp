@@ -716,6 +716,17 @@ void SidebarClass::Init_For_House(void)
 	TabIcons = false;
 	if (Modern_Interface()) {
 		Use_Hud_Icons();
+	} else {
+		// The interface style can change at the main menu, after an earlier game gave these buttons icons.
+		for (ShapeButtonClass * button : {&Repair, &Upgrade, &Power, &BeaconButton, &OptionsButton}) {
+			button->IsHudIcon = false;
+		}
+		for (int i = 0; i < COLUMNS; i++) {
+			StripClass::UpButton[i].IsHudIcon = false;
+			StripClass::DownButton[i].IsHudIcon = false;
+			TabButton[i].IsHudIcon = false;
+		}
+		OptionsButton.Label.clear();
 	}
 }
 
