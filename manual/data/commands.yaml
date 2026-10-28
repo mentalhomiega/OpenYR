@@ -2995,6 +2995,19 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:replay
+  route_id: replay
+  kind: launch
+  title: Replay playback
+  description: Plays back a recorded skirmish in place of the launch file. The file is looked for in the
+    Replays folder when the path names no folder. The game ignores the player's orders and compares its
+    state with the hashes the recording holds.
+  audience: player
+  availability: *id001
+  syntax: -REPLAY=<file>
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:tournament-time
   route_id: tournament-time
   kind: launch

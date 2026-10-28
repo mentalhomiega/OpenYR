@@ -591,6 +591,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
+  - id: launch:replay
+    title: Replay playback
+    syntax: -REPLAY=<file>
+    description: Plays back a recorded skirmish in place of the launch file. The file is looked for in the Replays folder when the path names no folder. The game ignores the player's orders and compares its state with the hashes the recording holds.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-REPLAY=' }
   - id: launch:tournament-time
     title: Tournament time limit
     syntax: -TIME=<minutes>

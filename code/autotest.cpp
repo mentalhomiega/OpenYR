@@ -238,6 +238,10 @@
 **	gpucheck <0|1>		1 also draws each recorded pass on the GPU and logs a GPU_DIFF line comparing it with the map view; 0 stops
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
+**	recordreplay <name>	records the skirmish to Replays/<name> in the user directory; it applies from the start,
+**							whatever the frame
+**	playreplay <name>		plays the recorded events of Replays/<name> in place of the orders given; it applies from
+**							the start, whatever the frame
 **	loadshot <name>			saves what the window shows each time a loading screen is
 **							complete, as <name>-<count>.tga in the screenshots folder; it
 **							applies from the start, whatever the frame
@@ -258,6 +262,9 @@
 #include "combat.h"
 #include "perfstat.h"
 #include "session.h"
+#include "replay.h"
+#include "spawner.h"
+#include "statehash.h"
 #include "rulesreload.h"
 
 #include "_command.h"
@@ -982,32 +989,6 @@ void Dump(void)
 }
 
 
-void Hash_Value(unsigned int & hash, unsigned int value)
-{
-	for (int byte = 0; byte < 4; byte++) {
-		hash = (hash ^ ((value >> (byte * 8)) & 0xFF)) * 16777619u;
-	}
-}
-
-
-template<class T>
-void Hash_Technos(unsigned int & hash, DynamicVectorClass<T *> & list)
-{
-	Hash_Value(hash, list.Count());
-	for (int index = 0; index < list.Count(); index++) {
-		T * object = list[index];
-		Hash_Value(hash, object->PositionCoord.X);
-		Hash_Value(hash, object->PositionCoord.Y);
-		Hash_Value(hash, object->PositionCoord.Z);
-		Hash_Value(hash, object->PrimaryFacing.Current().As_Int());
-		Hash_Value(hash, object->Strength);
-		Hash_Value(hash, object->Get_Mission());
-		Hash_Value(hash, object->IsInLimbo);
-		Hash_Value(hash, Houses.ID(object->House));
-	}
-}
-
-
 template<class T>
 void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
 {
@@ -1054,30 +1035,8 @@ void Log_State_Parts(void)
 /// </summary>
 void Log_State_Hash(void)
 {
-	unsigned int hash = 2166136261u;
-	Hash_Technos(hash, Buildings);
-	Hash_Technos(hash, Units);
-	Hash_Technos(hash, Aircraft);
-	Hash_Technos(hash, Infantry);
-	for (int index = 0; index < Houses.Count(); index++) {
-		Hash_Value(hash, Houses[index]->Credits);
-	}
-	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
-	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
-		hash = (hash ^ random[index]) * 16777619u;
-	}
+	unsigned int const hash = Compute_Sim_State_Hash().State;
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
-}
-
-
-template<class T>
-void Hash_Targets(unsigned int & hash, DynamicVectorClass<T *> & list)
-{
-	for (int index = 0; index < list.Count(); index++) {
-		AbstractClass const * target = list[index]->TarCom;
-		Hash_Value(hash, target != NULL ? target->What_Am_I() : -1);
-		Hash_Value(hash, target != NULL ? target->Fetch_ID() : -1);
-	}
 }
 
 
@@ -1089,11 +1048,7 @@ void Hash_Targets(unsigned int & hash, DynamicVectorClass<T *> & list)
 /// </summary>
 void Log_State_CRC(void)
 {
-	unsigned int targets = 2166136261u;
-	Hash_Targets(targets, Buildings);
-	Hash_Targets(targets, Units);
-	Hash_Targets(targets, Aircraft);
-	Hash_Targets(targets, Infantry);
+	unsigned int const targets = Compute_Sim_State_Hash().Targets;
 	CRCEngine objects = Object_CRCs();
 	DebugString("AUTOTEST statecrc frame %d objects %08X targets %08X\n", Frame, (unsigned int)objects(), targets);
 }
@@ -5687,6 +5642,16 @@ bool AutoTest_Load(char const * filename)
 		// The first loading screen comes before any game frame.
 		if (std::strcmp(command, "loadshot") == 0) {
 			LoadShotName = text;
+		}
+		// recordreplay and playreplay take effect when the script is read, before the game starts.
+		if (std::strcmp(command, "recordreplay") == 0) {
+			Replay_Set_Recording(true, text.c_str());
+			continue;
+		}
+		if (std::strcmp(command, "playreplay") == 0) {
+			Replay_Request_Playback(text.c_str());
+			Spawner_Request();
+			continue;
 		}
 		// requirera2 is kept when the script is read, so it needs no step.
 		if (std::strcmp(command, "requirera2") == 0) {

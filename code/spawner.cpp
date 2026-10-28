@@ -16,6 +16,8 @@
 
 #include "addon.h"
 #include "autotest.h"
+#include "ramfile.h"
+#include "replay.h"
 #include "savemgr.h"
 #include "campaign.h"
 #include "ccfile.h"
@@ -591,14 +593,31 @@ bool Spawner_Prepare(bool & gameloaded)
 		return(false);
 	}
 
-	CCFileClass file("SPAWN.INI");
-	if (!file.Is_Available()) {
-		return(Spawner_Refuse("SPAWN.INI is missing, and it says what to launch."));
+	// A replay supplies the launch file text it was recorded from.
+	std::string launch_text;
+	if (Replay_Is_Requested()) {
+		std::string fault;
+		if (!Replay_Launch_Text(launch_text, fault)) {
+			return(Spawner_Refuse("%s", fault.c_str()));
+		}
+	} else {
+		CCFileClass file("SPAWN.INI");
+		if (!file.Is_Available()) {
+			return(Spawner_Refuse("SPAWN.INI is missing, and it says what to launch."));
+		}
+		if (file.Open(FileClass::READ)) {
+			launch_text.resize(static_cast<std::size_t>(std::max(0, file.Size())));
+			int const got = launch_text.empty() ? 0 : file.Read(launch_text.data(), static_cast<int>(launch_text.size()));
+			launch_text.resize(static_cast<std::size_t>(std::max(0, got)));
+			file.Close();
+		}
 	}
 
 	CCINIClass ini;
-	ini.Load(file, false);
+	RAMFileClass launch_file(launch_text.data(), static_cast<int>(launch_text.size()));
+	ini.Load(launch_file, false);
 	SpawnConfig.Read_INI(ini);
+	Replay_Note_Launch(launch_text, SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Skirmish);
 
 	SpawnConsumed = true;
 
