@@ -1,0 +1,15 @@
+; Kirov airship (Soviet): run with -Country 8 (Russians). The Kirov is ordered to force-fire at an empty cell, so it
+; flies to the cell's centre and hovers exactly over it, where its horizontal distance to the target is 0.
+; Expected: the Kirov keeps dropping a bomb (an `AUTOTEST detonate ... BlimpBombP` line) about every 50 frames
+; until the run ends, and `cloak ZEP` shows `fire 0` or `fire 3` (OK or rearming) once it hovers. Before the fix it
+; dropped 2 bombs while approaching, then showed `fire 8` (out of range) for the rest of the run.
+30 command CenterBase
+40 select SMCV
+45 command DeployObject
+300 own NAPOWR 56 40
+310 grantunit ZEP 60 46
+2500 forceattack ZEP 60 52
+3500 where ZEP
+4500 where ZEP
+5500 where ZEP
+6100 quit
