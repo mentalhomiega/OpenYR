@@ -102,8 +102,12 @@ void Test_Plane(void)
 	Check(Mark(2, 2) == 0 && Mark(3, 2) == 0 && Mark(1, 1) == 0 && Mark(2, 0) == 0, "a shadow leaves the plane clear outside its pixels");
 
 	std::vector<unsigned short> darkened = tilepixels;
-	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK);
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK, false);
 	Check(Same(darkened, reference), "darkening a copy through the plane matches the shadow blitter");
+	darkened = tilepixels;
+	darkened[1 * W + 2] = DRAWN;
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK, true);
+	Check(darkened[1 * W + 2] == DRAWN && darkened[1 * W + 5] == (unsigned short)((GROUND >> 1) & HALF_MASK), "with terrain only, a draw over a shadow keeps its colour and shadowed terrain darkens");
 
 	RLE_Blit(tile, Rect(0, 1, 4, 2), source, Rect(0, 0, 4, 2), xlat);
 	Check(Mark(2, 1) == 0 && Mark(3, 1) == 0, "an opaque draw clears the plane under its pixels");
@@ -162,7 +166,7 @@ void Test_Water(void)
 	Check(tilepixels[0] == (unsigned short)((GROUND >> 1) & HALF_MASK) && Mark(0, 0) == SHADOWPLANE_WATER, "without kept shadows a shadow darkens the water and leaves it marked");
 
 	std::vector<unsigned short> darkened(W * H, GROUND);
-	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK);
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK, false);
 	Check(std::count(darkened.begin(), darkened.end(), GROUND) == W * H, "water marks do not darken");
 
 	unsigned char const extra[2] = { 5, 0 };
@@ -181,7 +185,7 @@ void Test_Water(void)
 	RLE_Blit(tile, Rect(0, 0, 4, 2), source, Rect(0, 0, 4, 2), darken);
 	Check(Mark(0, 0) == (SHADOWPLANE_SHADOW | SHADOWPLANE_WATER) && Mark(2, 1) == (SHADOWPLANE_SHADOW | SHADOWPLANE_WATER) && Mark(1, 1) == SHADOWPLANE_WATER, "a kept shadow on water keeps the water bit");
 	std::fill(darkened.begin(), darkened.end(), GROUND);
-	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK);
+	ShadowPlane_Darken_Copy(tile, Rect(0, 0, W, H), darkened.data(), HALF_MASK, false);
 	Check(darkened[0] == (unsigned short)((GROUND >> 1) & HALF_MASK) && darkened[1 * W + 1] == GROUND, "a shadow on water darkens and bare water does not");
 
 	ShadowPlane_Set_Enabled(true, false);

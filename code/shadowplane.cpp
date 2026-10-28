@@ -275,22 +275,36 @@ void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short hal
 }
 
 
-void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigned short * pixels, unsigned short halfmask)
+void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigned short * pixels, unsigned short halfmask, bool terrain_only)
 {
 	EmissivePlane const * plane = ShadowPlane_For(&surface);
 	if (plane == NULL) {
 		return;
+	}
+	unsigned short const * terrain = NULL;
+	if (terrain_only) {
+		if (surface.Bytes_Per_Pixel() != 2 || surface.Get_Width() < plane->Width || surface.Get_Height() < plane->Height) {
+			return;
+		}
+		terrain = (unsigned short const *)surface.Lock();
+		if (terrain == NULL) {
+			return;
+		}
 	}
 	for (int y = 0; y < area.Height; y++) {
 		if (area.Y + y < 0 || area.Y + y >= plane->Height) {
 			continue;
 		}
 		unsigned char const * marks = plane->Pixels + (area.Y + y) * plane->Pitch;
+		unsigned short const * ground = terrain != NULL ? (unsigned short const *)((char const *)terrain + (std::size_t)(area.Y + y) * surface.Stride()) : NULL;
 		unsigned short * row = pixels + (std::size_t)y * area.Width;
 		for (int x = std::max(0, -area.X); x < area.Width && area.X + x < plane->Width; x++) {
-			if ((marks[area.X + x] & SHADOWPLANE_SHADOW) != 0) {
+			if ((marks[area.X + x] & SHADOWPLANE_SHADOW) != 0 && (ground == NULL || ground[area.X + x] == row[x])) {
 				row[x] = (unsigned short)((row[x] >> 1) & halfmask);
 			}
 		}
+	}
+	if (terrain != NULL) {
+		surface.Unlock();
 	}
 }

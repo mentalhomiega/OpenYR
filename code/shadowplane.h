@@ -68,5 +68,7 @@ void ShadowPlane_After_Extra(Surface & dest, int x, int y, Rect const & clip, un
 // with halfmask (DSurface::Get_Halfbright_Mask).
 void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short halfmask);
 
-// Darkens a copy of area, row by row with the area's width, through the plane of surface.
-void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigned short * pixels, unsigned short halfmask);
+// Darkens a copy of area, row by row with the area's width, through the plane of surface. With
+// terrain_only set, a pixel is darkened only while it still equals surface's own pixel, so draws
+// already made over the terrain keep their colour.
+void ShadowPlane_Darken_Copy(Surface const & surface, Rect const & area, unsigned short * pixels, unsigned short halfmask, bool terrain_only);

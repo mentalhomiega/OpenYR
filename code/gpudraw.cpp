@@ -893,8 +893,9 @@ static bool Finish_Render(Surface & target)
 	_CleanPasses = 0;
 	// The recorded draws land over the ones the record does not hold, which drew in order. Without
 	// the terrain copy, those draws went to a target the base no longer comes from, and are lost.
+	// A base read from the target holds those draws over unshaded terrain, so only terrain is shaded.
 	if (TileSurface != NULL) {
-		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask());
+		ShadowPlane_Darken_Copy(*TileSurface, _Area, base.data(), DSurface::Get_Halfbright_Mask(), !tilesleft);
 	}
 	Replay(base);
 	Write_Area(target, _Area, base);
