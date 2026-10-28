@@ -3009,6 +3009,12 @@ int FootClass::Do_MISSION_ENTER(void)
 					Assign_Destination(RouteQueue[0], false);
 					RouteQueue.Delete_Index(0);
 				}
+			} else if (TClass->IsTeleporter) {
+				// A teleporter is given its destination again each time, as gamemd's Mission_Enter does
+				// (0x4D9290), because its locomotor refuses a destination while it holds after a jump.
+				AbstractClass * destination = NavCom;
+				NavCom = NULL;
+				Assign_Destination(destination, true);
 			}
 		}
 
