@@ -14,6 +14,7 @@
 #pragma once
 
 #include "cncnet/cncnetroom.h"
+#include "nettiming.h"
 
 #include <cstdint>
 #include <map>
@@ -58,3 +59,10 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 // adaptive network timing; false plays gamemd's.
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
 	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing = true);
+
+// The network choices in a room's options (FrameSendRate, MaxAhead and Protocol). A key that is absent or out of
+// range is no choice, so a room that never set one gives the defaults.
+NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::string> const & options);
+
+// The room option keys that hold these choices; a default value has no key.
+std::map<std::string, std::string> CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions const & network);

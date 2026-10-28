@@ -237,6 +237,40 @@ static int Spawn_Side(CnCNetMatchSeatType const & seat)
 }
 
 
+NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::string> const & options)
+{
+	NetTiming::HostNetworkOptions network;
+	// The host's word is checked as the game checks a launch file, so a value out of range is no choice.
+	int const frame_send_rate = CnCNet_Option_Number(options, "FrameSendRate", 0, 0, 1000);
+	int const max_ahead = CnCNet_Option_Number(options, "MaxAhead", 0, 0, 1000);
+	int const protocol = CnCNet_Option_Number(options, "Protocol", 2, 0, 1000);
+	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
+		network.Timing.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
+	}
+	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
+		network.Timing.MaxAhead = static_cast<unsigned int>(max_ahead);
+	}
+	network.Protocol = NetTiming::Host_Protocol_Is_Valid(protocol) ? protocol : 2;
+	return(network);
+}
+
+
+std::map<std::string, std::string> CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions const & network)
+{
+	std::map<std::string, std::string> values;
+	if (network.Timing.FrameSendRate != 0) {
+		values["FrameSendRate"] = std::to_string(network.Timing.FrameSendRate);
+	}
+	if (network.Timing.MaxAhead != 0) {
+		values["MaxAhead"] = std::to_string(network.Timing.MaxAhead);
+	}
+	if (network.Protocol != 2) {
+		values["Protocol"] = std::to_string(network.Protocol);
+	}
+	return(values);
+}
+
+
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
 	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing)
 {
@@ -263,10 +297,25 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	line("Host", CnCNetLobbyClass::Same_Nick(match.Seats.front().Name, own_name) ? "yes" : "no");
 	line("Port", std::to_string(own->TunnelId));
 	line("Seed", std::to_string(match.Seed));
-	line("FrameSendRate", "7");
-	line("Protocol", "2");
+	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(options);
+	if (network.Is_Default()) {
+		// The client's own defaults, which the game reads as no choice.
+		line("FrameSendRate", "7");
+		line("Protocol", "2");
+	} else {
+		// HostTiming makes the game take these literally. A value left out is the policy's.
+		line("HostTiming", "yes");
+		if (network.Timing.FrameSendRate != 0) {
+			line("FrameSendRate", std::to_string(network.Timing.FrameSendRate));
+		}
+		if (network.Timing.MaxAhead != 0) {
+			line("MaxAhead", std::to_string(network.Timing.MaxAhead));
+		}
+		line("Protocol", std::to_string(network.Protocol));
+	}
 	// Only the host's choice counts, since the host sets the timing for every player.
-	line("TimingPolicy", adaptive_timing ? "Adaptive" : "Gamemd");
+	// The host's send period and look-ahead are defined against gamemd's timing, so any choice plays that policy.
+	line("TimingPolicy", adaptive_timing && network.Is_Default() ? "Adaptive" : "Gamemd");
 	line("GameID", "1");
 	line("Credits", Number_Option(options, "Credits", 10000));
 	line("UnitCount", Number_Option(options, "UnitCount", 10));
