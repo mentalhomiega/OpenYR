@@ -1,0 +1,39 @@
+; Neutral tech buildings (CAOILD, CAPOWR, CAMACH, CAHOSP, CAAIRP, CAOUTP, CASLAB) are placed under the Civilian side, and
+; an engineer captures the derrick. The banimstate lines list each building's animation slots; the screenshots show the art.
+; CAMOV01, CAWASH19 and CALA10 are civilian buildings without NeedsEngineer; their ActiveAnim runs from the start.
+; Expected, from gamemd's BuildingClass::PlayAnim (0x451890) and DisableStuff (0x452480): a NeedsEngineer structure that no
+; engineer has taken has its Powered slots frozen (disabled 1) and keeps the non-Powered ones running. A capture resumes them.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/tech-building-anims.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/scratch-agent/tech-building-anims/run" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAOILD 66 40
+101 neutral CAPOWR 70 40
+102 neutral CAMACH 74 40
+103 neutral CAHOSP 66 44
+104 neutral CAAIRP 70 44
+105 neutral CAOUTP 75 44
+106 neutral CASLAB 66 48
+107 neutral CAMOV01 80 40
+108 neutral CAWASH19 80 46
+109 neutral CALA10 60 52
+110 own ENGINEER 62 40
+120 view 70 44
+130 reveal
+200 banimstate CAOILD
+200 banimstate CAPOWR
+200 banimstate CAMACH
+200 banimstate CAHOSP
+200 banimstate CAAIRP
+200 banimstate CAOUTP
+200 banimstate CASLAB
+200 banimstate CAMOV01
+200 banimstate CAWASH19
+200 banimstate CALA10
+210 command ScreenCapture
+214 command ScreenCapture
+300 capture ENGINEER 66 40
+520 banimstate CAOILD
+530 command ScreenCapture
+534 command ScreenCapture
+600 quit
