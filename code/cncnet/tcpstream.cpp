@@ -192,21 +192,39 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 	} else {
 		// getaddrinfo cannot be interrupted, so a caller that may be stopped looks the name up on its own thread
 		// and waits for it in slices.
+		// The thread may still be inside getaddrinfo when the stream and its own network reference are gone, and
+		// Winsock must stay up until it is out, so the thread gets a reference of its own, taken here before it
+		// starts.
 		auto const lookup = std::make_shared<LookupType>();
-		std::thread([lookup, host, service, hints]() {
+#if defined(_WIN32)
+		WSADATA thread_data;
+		bool const thread_network = WSAStartup(MAKEWORD(2, 2), &thread_data) == 0;
+#endif
+		std::thread([lookup, host, service, hints
+#if defined(_WIN32)
+			, thread_network
+#endif
+			]() {
 			addrinfo * answer = nullptr;
 			int const result = getaddrinfo(host.c_str(), service.c_str(), &hints, &answer);
-			std::lock_guard<std::mutex> guard(lookup->Lock);
-			if (lookup->Abandoned) {
-				if (result == 0 && answer != nullptr) {
-					freeaddrinfo(answer);
+			{
+				std::lock_guard<std::mutex> guard(lookup->Lock);
+				if (lookup->Abandoned) {
+					if (result == 0 && answer != nullptr) {
+						freeaddrinfo(answer);
+					}
+				} else {
+					lookup->Result = result;
+					lookup->Found = answer;
+					lookup->Done = true;
+					lookup->Ready.notify_all();
 				}
-				return;
 			}
-			lookup->Result = result;
-			lookup->Found = answer;
-			lookup->Done = true;
-			lookup->Ready.notify_all();
+#if defined(_WIN32)
+			if (thread_network) {
+				WSACleanup();
+			}
+#endif
 		}).detach();
 		int const waited = TCP_Wait_Sliced(LOOKUP_LIMIT_MS, STOP_SLICE_MS, stop, [&lookup](int slice_ms) {
 			std::unique_lock<std::mutex> guard(lookup->Lock);
