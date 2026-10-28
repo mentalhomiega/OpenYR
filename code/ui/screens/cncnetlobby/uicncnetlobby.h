@@ -32,6 +32,7 @@ struct UICnCNetGameRow
 	std::string Players;
 	std::string Status;         // "Open", "Locked", "Password", "Full" or "Other version"; never shown by colour alone.
 	std::string Tip;
+	std::string Hover;          // The whole row in words, for the hover tip: the columns cut long names short.
 	bool Joinable = false;
 	bool Selected = false;
 };
@@ -122,6 +123,7 @@ class UICnCNetLobbyPresenterClass : public UIPresenterClass
 		UICnCNetLobbyChoice Choice = UICnCNetLobbyChoice::NONE;
 		std::string JoinChannel;
 		std::string JoinHost;
+		std::string JoinName;
 
 		// Ready to show the lobby again after a room closes.
 		void Reopen(void);

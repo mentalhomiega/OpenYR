@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <map>
 #include <set>
 #include <sstream>
 #include <utility>
@@ -135,11 +136,35 @@ void UIScenarioPresenterClass::Rebuild(void)
 		State.Players = 0;
 	}
 
+	// The map lists can name one file twice, such as an official map in two packets. A file is listed once, at its
+	// first place. Two different files with one name are told apart by their file names.
+	std::map<std::string, int> first_of_file;
+	std::map<std::string, int> named;
+	std::vector<int> listed(State.Entries.size(), -1);
+	for (int index = 0; index < (int)State.Entries.size(); index++) {
+		UIScenarioEntry const & entry = State.Entries[index];
+		std::string const file = Lower(entry.File);
+		std::map<std::string, int>::iterator const known = file.empty() ? first_of_file.end() : first_of_file.find(file);
+		if (known == first_of_file.end()) {
+			first_of_file[file.empty() ? std::to_string(index) + "#" : file] = index;
+			named[Lower(entry.Label)]++;
+			listed[index] = index;
+		} else {
+			listed[index] = known->second;
+		}
+	}
+	if (State.Selected >= 0 && State.Selected < (int)State.Entries.size()) {
+		State.Selected = listed[State.Selected];
+	}
+
 	// Every word of the search must appear in the map's name or in its file name.
 	std::vector<std::string> const words = Words_Of(State.Filter);
 	State.Rows.clear();
 	for (int index = 0; index < (int)State.Entries.size(); index++) {
 		UIScenarioEntry const & entry = State.Entries[index];
+		if (listed[index] != index) {
+			continue;
+		}
 		if (State.Players != 0 && entry.Players != State.Players) {
 			continue;
 		}
@@ -153,7 +178,12 @@ void UIScenarioPresenterClass::Rebuild(void)
 			}
 		}
 		if (all) {
-			State.Rows.push_back(UIScenarioRow{entry.Label, Count_Text(entry.Players), index});
+			std::string text = entry.Label;
+			if (named[Lower(entry.Label)] > 1) {
+				std::size_t const dot = entry.File.rfind('.');
+				text += " (" + entry.File.substr(0, dot == std::string::npos ? std::string::npos : dot) + ")";
+			}
+			State.Rows.push_back(UIScenarioRow{text, Count_Text(entry.Players), index});
 		}
 	}
 
@@ -185,10 +215,11 @@ void UIScenarioPresenterClass::Rebuild(void)
 		Service.Preview(State.Selected, State.Preview);
 	}
 
-	if (State.Rows.size() == State.Entries.size()) {
-		State.Summary = std::to_string(State.Entries.size()) + (State.Entries.size() == 1 ? " map" : " maps");
+	std::size_t const maps = first_of_file.size();
+	if (State.Rows.size() == maps) {
+		State.Summary = std::to_string(maps) + (maps == 1 ? " map" : " maps");
 	} else {
-		State.Summary = "Showing " + std::to_string(State.Rows.size()) + " of " + std::to_string(State.Entries.size()) + " maps";
+		State.Summary = "Showing " + std::to_string(State.Rows.size()) + " of " + std::to_string(maps) + " maps";
 	}
 
 	State.Detail.clear();

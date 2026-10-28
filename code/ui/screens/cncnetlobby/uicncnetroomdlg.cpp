@@ -283,6 +283,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Flush(void);
 		void Own_Setup(int side, int color, int start, int team);
 		int Playing_Count(void) const;
+		std::string Start_Note(CnCNetRoomPlayerType const * self, bool map_ready) const;
 
 		CnCNetSessionClass & Network;
 		CnCNetRoomClass TheRoom;
@@ -633,6 +634,9 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		UINetPlayerRow row;
 		row.Name = player.Name;
 		row.Note = TheRoom.Build_Problem(player);
+		row.Kickable = !player.Host;
+		row.ColorName = (player.Color >= 0 && player.Color < COLOR_COUNT) ? std::string(Fetch_String(COLOR_NAMES[player.Color])) : std::string("Random");
+		row.Status = player.Host ? "Host" : player.Ready ? "Ready" : "Not ready";
 		row.Color = (player.Color >= 0 && player.Color < MAX_MPLAYER_COLORS) ? UI_Color_Text(PlayerColorTable[player.Color]) : std::string(PLAIN);
 		if (player.Side == CNCNET_SPECTATOR_SIDE) {
 			row.House = "nodi.pcx";
@@ -654,8 +658,10 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 		if (player.Host) {
 			row.Mark = "wolhost.pcx";
+			row.MarkHint = "Host: this player runs the room and starts the game";
 		} else if (player.Ready) {
 			row.Mark = "wolacpt.pcx";
+			row.MarkHint = "Ready: this player has accepted and is waiting for the host to start";
 		}
 		state.Players.push_back(row);
 
@@ -682,17 +688,25 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		if (std::any_of(TheRoom.Players().begin(), TheRoom.Players().end(),
 				[&](CnCNetRoomPlayerType const & player) { return(!TheRoom.Build_Problem(player).empty()); })) {
 			UINetChatLine blocked;
-			blocked.Text = "The game cannot start until every player is on your OpenYR build. Remove the players marked below.";
+			blocked.Text = "The game cannot start until every player is on your OpenYR build. Remove the players with a note under their name.";
 			blocked.Color = PLAIN;
 			state.Chat.push_back(blocked);
 		}
 	}
+	// The match's network options are one line above the chat, not a chat line, so they stay in view and in one row.
+	state.NetworkLine.clear();
+	state.NetworkTip.clear();
 	if (TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
-		UINetChatLine timing;
-		timing.Text = "Network: " + NetTiming::Describe_Host_Options(NetworkOptions)
-			+ (TheRoom.Is_Host() ? ". Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion." : ".");
-		timing.Color = PLAIN;
-		state.Chat.push_back(timing);
+		std::string const described = NetTiming::Describe_Host_Options(NetworkOptions);
+		state.NetworkLine = "Network: " + described;
+		state.NetworkTip = "Network options for this match: " + described + "."
+			+ (TheRoom.Is_Host() ? " Change them with the chat commands /FrameSendRate, /MaxAhead and /ProtocolVersion." : " The host sets them.");
+		if (TheRoom.Is_Host()) {
+			UINetChatLine commands;
+			commands.Text = "Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion.";
+			commands.Color = PLAIN;
+			state.Chat.push_back(commands);
+		}
 	}
 	if (!TheRoom.Is_Host() && TheRoom.Build_Differs_From_Host()) {
 		UINetChatLine line;
@@ -773,6 +787,84 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
 		&& !TheRoom.Build_Differs_From_Host();
 	state.CanGo = Can_Start();
+
+	state.RoomTitle = Setup.RoomName.empty() ? (TheRoom.Is_Host() ? Setup.Nick : Setup.HostNick) + "'s game" : Setup.RoomName;
+	state.RoomChannel = TheRoom.Channel();
+	state.RoomTip = UI_CnCNet_Plain_Markup("Room channel " + TheRoom.Channel());
+	state.StartNote = Start_Note(self, map_ready);
+	state.LeaveLabel = TheRoom.Is_Host() ? "Close room" : "Leave room";
+	state.LeaveTip = TheRoom.Is_Host() ? "Close this room and go back to the CnCNet lobby. Everyone in it is sent back too."
+		: "Leave this room and go back to the CnCNet lobby.";
+}
+
+
+/// <summary>
+/// One line that says why Go! or Accept is off, or what happens next, so a disabled button is never a mystery.
+/// </summary>
+std::string CnCNetRoomServiceClass::Start_Note(CnCNetRoomPlayerType const * self, bool map_ready) const
+{
+	auto const list = [](std::vector<std::string> const & names) {
+		std::string text;
+		for (std::size_t index = 0; index < names.size(); ++index) {
+			text += (index == 0 ? "" : index + 1 == names.size() ? " and " : ", ") + names[index];
+		}
+		return(text);
+	};
+
+	if (!TheRoom.Is_Host()) {
+		if (TheRoom.Status() == CnCNetRoomStatus::JOINING || TheRoom.Status() == CnCNetRoomStatus::WAITING_HOST) {
+			return("Waiting for the host to let you in...");
+		}
+		if (TheRoom.Build_Differs_From_Host()) {
+			return("Your OpenYR build differs from the host's. Update it to the host's build to get ready.");
+		}
+		if (!map_ready) {
+			return("You need the host's map, the same file, before you can get ready.");
+		}
+		if (self != nullptr && self->Ready) {
+			return("You are ready. Waiting for the host to start the game.");
+		}
+		return("Press Accept when you are ready to play.");
+	}
+
+	if (TheRoom.Status() != CnCNetRoomStatus::IN_ROOM) {
+		return("Opening the room...");
+	}
+	std::vector<std::string> unready;
+	std::vector<std::string> blocked;
+	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
+		if (player.Host) {
+			continue;
+		}
+		if (!TheRoom.Build_Problem(player).empty()) {
+			blocked.push_back(player.Name);
+		} else if (!player.Ready) {
+			unready.push_back(player.Name);
+		}
+	}
+	if (TheRoom.Players().size() < 2) {
+		return("Waiting for another player to join this room. Go! needs at least two players.");
+	}
+	if (TheRoom.Pending_Count() > 0) {
+		return("Waiting for " + std::to_string(TheRoom.Pending_Count()) + (TheRoom.Pending_Count() == 1 ? " person" : " people")
+			+ " who just joined to answer.");
+	}
+	if (!blocked.empty()) {
+		return("Cannot start: " + list(blocked) + (blocked.size() == 1 ? " is" : " are") + " not on your OpenYR build. Remove them to go on.");
+	}
+	if (!unready.empty()) {
+		if (unready.size() > 3) {
+			return("Waiting for " + std::to_string(unready.size()) + " players to get ready.");
+		}
+		return("Waiting for " + list(unready) + " to get ready.");
+	}
+	if (Playing_Count() + Session.Options.AIPlayers == 0) {
+		return("Nobody is set to play. Put a player on a side, or add an AI player.");
+	}
+	if (Playing_Count() + Session.Options.AIPlayers > Map_Player_Limit()) {
+		return("This map holds " + std::to_string(Map_Player_Limit()) + " players. Remove players or AI players.");
+	}
+	return("Everyone is ready. Press Go! to start the game.");
 }
 
 

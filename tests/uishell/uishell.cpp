@@ -4821,6 +4821,39 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 }
 
 
+void Test_Scenario_Duplicates(void)
+{
+	struct Map { char const * Label; char const * File; };
+	static Map const maps[] = {
+		{"The Alamo (2)", "XMP29U2.MAP"},
+		{"Dustbowl (2)", "XDustbowl.MAP"},
+		{"The Alamo (2)", "XMP29MW.MAP"},
+		{"Dustbowl (2)", "xdustbowl.map"},
+		{"Ice Age", "ICE.MAP"},
+	};
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (Map const & map : maps) {
+		UIScenarioEntry entry;
+		entry.Label = map.Label;
+		entry.File = map.File;
+		entry.Players = 2;
+		state.Entries.push_back(entry);
+	}
+	state.Selected = 3;
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	std::string text;
+	for (UIScenarioRow const & row : presenter.State.Rows) {
+		text += row.Label + "|";
+	}
+	Check(text == "Dustbowl (2)|Ice Age|The Alamo (2) (XMP29MW)|The Alamo (2) (XMP29U2)|", "a file listed twice shows once, and two files with one name show their file names");
+	Check(presenter.State.Selected == 1, "a highlight on the second listing of a file moves to its first");
+	Check(presenter.State.Summary == "4 maps", "the summary counts files, not listings");
+}
+
+
 void Test_Scenario_List(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -5306,8 +5339,9 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 
 	Drive(presenter, "kick");
 	Check(service.Kicked.empty(), "the kick button does nothing while nobody is picked");
+	Check(!presenter.State.CanKick && !presenter.State.KickTip.empty(), "and it is off, with a tip that says to pick a player first");
 	Drive(presenter, "pick", 1);
-	Check(presenter.State.Players[1].Selected, "a picked row is marked");
+	Check(presenter.State.Players[1].Selected && presenter.State.CanKick, "a picked row is marked and turns the kick button on");
 	Drive(presenter, "kick");
 	Check(service.Kicked.size() == 1 && service.Kicked[0] == "Guest", "the kick button reports who was picked");
 	Check(!presenter.State.Players[1].Selected, "and lets them go again");
@@ -6632,6 +6666,7 @@ void Test_Documents(void)
 		Test_Colour_Picker(*context, system);
 		Test_Scenario_Screen(*context, system);
 		Test_Scenario_List(*context, system);
+		Test_Scenario_Duplicates();
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);

@@ -10,6 +10,7 @@
 #include "ui/screens/cncnetlobby/uicncnetlobby.h"
 
 #include "cncnet/cncnetroom.h"
+#include "ui/screens/cncnetlobby/uicncnetroom.h"
 #include "cncnet/cncnetsession.h"
 #include "ui/rml/rmlview.h"
 
@@ -163,6 +164,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 					Choice = UICnCNetLobbyChoice::JOIN;
 					JoinChannel = game.Listing.RoomChannel;
 					JoinHost = game.HostNick;
+					JoinName = game.Listing.RoomName;
 					Result = UI_RESULT_ACCEPTED;
 					break;
 				}
@@ -272,7 +274,7 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 		bool const full = static_cast<int>(listing.Players.size()) >= listing.MaxPlayers;
 		if (!game->Compatible) {
 			row.Status = "Other version";
-			row.Tip = "This game runs version " + listing.GameVersion + ", so it cannot be joined from this build.";
+			row.Tip = "This game runs version " + UI_CnCNet_Plain_Markup(listing.GameVersion) + ", so it cannot be joined from this build.";
 		} else if (listing.Locked) {
 			row.Status = "Locked";
 			row.Tip = "The host has locked this game.";
@@ -286,6 +288,7 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 			row.Status = "Open";
 			row.Tip = "Hosted by " + game->HostNick + ".";
 		}
+		row.Hover = UI_CnCNet_Plain_Markup(row.Name + ", map " + row.Map + ", " + row.Players + " players. ") + row.Tip;
 		row.Joinable = row.Status == "Open" || row.Status == "Password";
 		row.Selected = CnCNetLobbyClass::Same_Nick(game->HostNick, SelectedHost);
 		if (row.Selected) {
@@ -321,7 +324,7 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 	} else if (!password_problem.empty()) {
 		State.JoinTip = password_problem;
 	} else {
-		State.JoinTip = "Join " + selected->Name + ".";
+		State.JoinTip = "Join " + UI_CnCNet_Plain_Markup(selected->Name) + ".";
 	}
 	State.CanHost = State.Online && !State.Password.empty() && password_problem.empty();
 	State.HostTip = !State.Online ? "Not connected." : State.Password.empty()
@@ -335,6 +338,7 @@ void UICnCNetLobbyPresenterClass::Reopen(void)
 	Choice = UICnCNetLobbyChoice::NONE;
 	JoinChannel.clear();
 	JoinHost.clear();
+	JoinName.clear();
 	Revision = 0;
 	ViewedSent.clear();
 	Refresh();
@@ -492,6 +496,7 @@ class UICnCNetLobbyViewClass : public UIRmlViewClass
 			game.RegisterMember("players", &UICnCNetGameRow::Players);
 			game.RegisterMember("status", &UICnCNetGameRow::Status);
 			game.RegisterMember("tip", &UICnCNetGameRow::Tip);
+			game.RegisterMember("hover", &UICnCNetGameRow::Hover);
 			game.RegisterMember("joinable", &UICnCNetGameRow::Joinable);
 			game.RegisterMember("selected", &UICnCNetGameRow::Selected);
 			tab.RegisterMember("label", &UICnCNetTabRow::Label);

@@ -29,6 +29,7 @@ UINetLobbyPresenterClass::UINetLobbyPresenterClass(UINetLobbyServiceClass & serv
 	Opened(State.Kind)
 {
 	Settle_Colour(State);
+	Mark_Picked();
 }
 
 
@@ -142,8 +143,16 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			Mark_Picked();
 		}
 	} else if (intent.Name == "kick") {
-		if (!Picked.empty()) {
-			Service.Kick(Picked);
+		std::vector<std::string> kicking;
+		for (std::string const & name : Picked) {
+			std::vector<UINetPlayerRow>::const_iterator const row = std::find_if(State.Players.begin(), State.Players.end(),
+				[&name](UINetPlayerRow const & entry) { return(entry.Name == name); });
+			if (row != State.Players.end() && row->Kickable) {
+				kicking.push_back(name);
+			}
+		}
+		if (!kicking.empty()) {
+			Service.Kick(kicking);
 			Picked.clear();
 			Mark_Picked();
 		}
@@ -297,8 +306,32 @@ void UINetLobbyPresenterClass::Refresh(void)
 
 void UINetLobbyPresenterClass::Mark_Picked(void)
 {
+	// A player who has left the list is no longer picked.
+	Picked.erase(std::remove_if(Picked.begin(), Picked.end(), [this](std::string const & name) {
+		return(std::none_of(State.Players.begin(), State.Players.end(), [&name](UINetPlayerRow const & row) { return(row.Name == name); }));
+	}), Picked.end());
+
+	std::string removable;
+	bool host_picked = false;
 	for (UINetPlayerRow & row : State.Players) {
 		row.Selected = std::find(Picked.begin(), Picked.end(), row.Name) != Picked.end();
+		if (row.Selected) {
+			if (row.Kickable) {
+				removable += (removable.empty() ? "" : ", ") + row.Name;
+			} else {
+				host_picked = true;
+			}
+		}
+	}
+
+	// The kick button is on only when it has someone to remove, and its tip says what it will do or what to do first.
+	State.CanKick = !removable.empty();
+	if (State.CanKick) {
+		State.KickTip = "Remove " + removable + " from the game.";
+	} else if (host_picked) {
+		State.KickTip = "You cannot remove yourself. Pick another player, or use the leave button.";
+	} else {
+		State.KickTip = "Click a player in the list first, then use this to remove that player from the game.";
 	}
 }
 
@@ -386,6 +419,9 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			row.RegisterMember("house", &UINetPlayerRow::House);
 			row.RegisterMember("hint", &UINetPlayerRow::Hint);
 			row.RegisterMember("mark", &UINetPlayerRow::Mark);
+			row.RegisterMember("markhint", &UINetPlayerRow::MarkHint);
+			row.RegisterMember("colorname", &UINetPlayerRow::ColorName);
+			row.RegisterMember("status", &UINetPlayerRow::Status);
 			row.RegisterMember("detail", &UINetPlayerRow::Detail);
 			row.RegisterMember("note", &UINetPlayerRow::Note);
 			row.RegisterMember("selected", &UINetPlayerRow::Selected);
@@ -396,7 +432,17 @@ class UINetLobbyViewClass : public UIRmlViewClass
 				&& model.RegisterArray<std::vector<UINetPlayerRow>>()
 				&& model.Bind("players", &state.Players)
 				&& model.Bind("chat", &state.Chat)
-				&& model.Bind("say", &state.Say));
+				&& model.Bind("say", &state.Say)
+				&& model.Bind("roomtitle", &state.RoomTitle)
+				&& model.Bind("roomchannel", &state.RoomChannel)
+				&& model.Bind("roomtip", &state.RoomTip)
+				&& model.Bind("networkline", &state.NetworkLine)
+				&& model.Bind("networktip", &state.NetworkTip)
+				&& model.Bind("startnote", &state.StartNote)
+				&& model.Bind("leavelabel", &state.LeaveLabel)
+				&& model.Bind("leavetip", &state.LeaveTip)
+				&& model.Bind("cankick", &state.CanKick)
+				&& model.Bind("kicktip", &state.KickTip));
 		}
 
 		void Sync_Shared(void)
@@ -405,6 +451,16 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			Model.DirtyVariable("chat");
 
 			Model.DirtyVariable("say");
+			Model.DirtyVariable("roomtitle");
+			Model.DirtyVariable("roomchannel");
+			Model.DirtyVariable("roomtip");
+			Model.DirtyVariable("networkline");
+			Model.DirtyVariable("networktip");
+			Model.DirtyVariable("startnote");
+			Model.DirtyVariable("leavelabel");
+			Model.DirtyVariable("leavetip");
+			Model.DirtyVariable("cankick");
+			Model.DirtyVariable("kicktip");
 
 			Show_Newest_Chat();
 		}

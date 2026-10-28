@@ -440,9 +440,10 @@ class OpenYRHostBot(Bot):
         self.server.cmd_notice(self.client, [self.room, '\x01%s %s\x01' % (command, arguments)])
 
     def send_players(self):
-        rows = ['%s,-1,0,-1,-1,H' % escape(self.client.nick)]
+        # Each row ends with its flags (H host, R ready, O runs OpenYR) and the build it announced.
+        rows = ['%s,-1,0,-1,-1,HO,%s' % (escape(self.client.nick), escape(self.build))]
         for nick, seat in self.seats.items():
-            rows.append('%s,%s,%s' % (escape(nick), ','.join(str(v) for v in seat['setup']), 'R' if seat['ready'] else ''))
+            rows.append('%s,%s,%s,%s' % (escape(nick), ','.join(str(v) for v in seat['setup']), 'RO' if seat['ready'] else 'O', escape(self.build)))
         self.send('OYRPLAYERS', '|'.join(rows))
 
     def receive(self, line):

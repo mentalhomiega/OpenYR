@@ -10,7 +10,7 @@
 
 #reveal
 {
-	width: 900dp;
+	width: 960dp;
 	height: 600dp;
 	top: 50%;
 	margin-top: -300dp;
@@ -59,7 +59,7 @@
 
 #left
 {
-	width: 430dp;
+	width: 490dp;
 	margin-right: 16dp;
 }
 
@@ -98,14 +98,15 @@
 	padding-left: 2dp;
 }
 
-.col-name { width: 150dp; overflow: hidden; white-space: nowrap; }
-.col-map { width: 130dp; overflow: hidden; white-space: nowrap; }
-.col-players { width: 55dp; }
-.col-status { width: 85dp; white-space: nowrap; }
+/* A name that does not fit ends in an ellipsis, and the row's hover tip gives the whole game and map. */
+.col-name { width: 170dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.col-map { width: 150dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.col-players { width: 54dp; white-space: nowrap; }
+.col-status { width: 90dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 #games
 {
-	height: 330dp;
+	height: 322dp;
 }
 
 #games .item.game
@@ -130,7 +131,7 @@
 #detail
 {
 	margin: 2dp 0 0 0;
-	height: 34dp;
+	height: 49dp;
 	line-height: 15dp;
 	white-space: pre-wrap;
 }
@@ -207,7 +208,7 @@
 	margin: 0;
 	padding-left: 2dp;
 	line-height: 15dp;
-	white-space: pre-wrap;
+	white-space: pre-line;
 }
 
 #chat .time { color: #9ab08a; margin-right: 4dp; }
@@ -242,12 +243,23 @@
 	width: 130dp;
 }
 
+#sayrow
+{
+	margin-top: 6dp;
+}
+
+#saylabel
+{
+	margin-right: 6dp;
+	white-space: nowrap;
+}
+
 #say
 {
 	height: 21dp;
-	margin: 6dp 0 0 0;
+	margin: 0;
 	box-sizing: border-box;
-	width: 100%;
+	flex: 1;
 }
 
 #buttons

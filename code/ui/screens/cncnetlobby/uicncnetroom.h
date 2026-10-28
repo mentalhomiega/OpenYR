@@ -13,6 +13,25 @@
 
 #include <string>
 
+// Hover tips are shown as markup, so text that came from other players must not carry any.
+inline std::string UI_CnCNet_Plain_Markup(std::string const & text)
+{
+	std::string safe;
+	for (char c : text) {
+		if (c == '&') {
+			safe += "&amp;";
+		} else if (c == '<') {
+			safe += "&lt;";
+		} else if (c == '>') {
+			safe += "&gt;";
+		} else {
+			safe.push_back(c);
+		}
+	}
+	return(safe);
+}
+
+
 class CnCNetSessionClass;
 class CnCNetTunnelChoiceClass;
 
@@ -24,7 +43,7 @@ struct UICnCNetRoomSetupType
 	std::string Channel;
 	std::string HostNick;           // Guests only.
 	std::string Password;
-	std::string RoomName;           // Hosts only; the name the game list shows.
+	std::string RoomName;           // The name the game list shows; the room screen's title. Guests take it from the listing they joined.
 	std::string GameVersion;
 	std::string BroadcastChannel;
 	std::string Tunnel;             // A relay to use whatever the tunnel list says, as host:port; hosts only unless it is on this machine, which guests accept too. Empty picks one from the list.

@@ -833,13 +833,36 @@ body.netgame #players .cell-house { width: 26dp; }
 body.netgame #players .cell-name { width: 420dp; }
 body.netgame #players .cell-detail { width: 150dp; }
 
+/* The CnCNet room has a column for everything a player has chosen, spelled out, under headings: the host's and
+   the ready mark are pictures, and the name's color is not the only way to tell the players apart. */
+body.netgame.teams #cap-players { top: 64dp; }
+body.netgame.teams #roomtitle { left: 100dp; top: 64dp; width: 330dp; height: 20dp; line-height: 20dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--t-text-hot, #ffffff); }
+body.netgame.teams #roomchannel { display: block; left: 440dp; top: 64dp; width: 228dp; height: 20dp; line-height: 20dp; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12dp; color: var(--t-muted, #a99bc9); }
+body.netgame.teams #player-head { display: block; left: 28dp; top: 86dp; width: 640dp; height: 16dp; line-height: 16dp; font-size: 12dp; color: var(--t-muted, #a99bc9); }
+body.netgame.teams #player-head span { display: inline-block; vertical-align: top; overflow: hidden; white-space: nowrap; }
+body.netgame.teams #player-head .head-mark { width: 24dp; margin-left: 6dp; }
+body.netgame.teams #player-head .head-house { width: 26dp; }
+body.netgame.teams #player-head .head-name, body.netgame.teams #players .cell-name { width: 170dp; }
+body.netgame.teams #player-head .head-side, body.netgame.teams #players .cell-side { display: inline-block; vertical-align: top; width: 110dp; overflow: hidden; white-space: nowrap; }
+body.netgame.teams #player-head .head-color, body.netgame.teams #players .cell-color { display: inline-block; vertical-align: top; width: 84dp; overflow: hidden; white-space: nowrap; }
+body.netgame.teams #player-head .head-status, body.netgame.teams #players .cell-status { display: inline-block; vertical-align: top; width: 90dp; overflow: hidden; white-space: nowrap; }
+body.netgame.teams #player-head .head-detail, body.netgame.teams #players .cell-detail { width: 110dp; text-align: left; }
+body.netgame.teams #players { top: 102dp; height: 168dp; }
+
 body.netgame #cap-team { left: 28dp; top: 287dp; }
 body.netgame #team { left: 76dp; top: 282dp; width: 120dp; height: 28dp; }
 body.netgame #cap-start { left: 220dp; top: 287dp; }
 body.netgame #start { left: 270dp; top: 282dp; width: 180dp; height: 28dp; }
+body.netgame.teams #cap-team { top: 283dp; }
+body.netgame.teams #team { top: 278dp; }
+body.netgame.teams #cap-start { top: 283dp; }
+body.netgame.teams #start { top: 278dp; }
 
 body.netgame #chat { left: 28dp; top: 326dp; width: 640dp; height: 214dp; }
 body.netgame #chat .line { line-height: 18dp; }
+body.netgame.teams #cap-chat { display: block; left: 28dp; top: 314dp; }
+body.netgame.teams #netline { display: block; left: 200dp; top: 314dp; width: 468dp; height: 20dp; line-height: 20dp; text-align: right; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12dp; color: var(--t-muted, #a99bc9); }
+body.netgame.teams #chat { top: 336dp; height: 204dp; }
 body.netgame #say { left: 28dp; top: 548dp; width: 640dp; height: 28dp; padding: 0 4dp; }
 
 body.netgame #pick { left: 696dp; top: 24dp; width: 316dp; height: 30dp; padding-top: 6dp; }
@@ -901,7 +924,31 @@ body.netgame #kick .label
 	display: inline;
 }
 
-body.netgame #cancel, body.netgame #go, body.netgame #accept
+/* The values a guest cannot change keep the quiet box of the host's screen; the classic art's red edge read as an error. */
+body.netgame.guest #settings .trough, body.netgame.guest #settings .trough-edge
+{
+	decorator: none;
+	border-color: var(--t-disabled-edge, #2c2638);
+}
+
+/* The CnCNet lobby's column headings start where the rows' text does: the row's 8dp padding and 3dp edge. */
+body[data-model="cncnetlobby"] .heading
+{
+	padding-left: 12dp;
+}
+
+body.netgame #kick.disabled, body.netgame #kick.disabled:active, body.netgame #kick.disabled:hover
+{
+	border-color: var(--t-disabled-edge, #2c2638);
+	color: var(--t-disabled-text, #5f5873);
+	decorator: vertical-gradient(var(--t-disabled-top, #1c1825) var(--t-disabled-bottom, #141119));
+}
+
+/* What Go! or Accept is waiting for, in words, in the gap beside the buttons. */
+body.netgame #startnote { left: 164dp; top: 594dp; width: 588dp; height: 30dp; line-height: 15dp; overflow: hidden; font-size: 13dp; }
+body.netgame.guest #startnote { left: 28dp; width: 724dp; }
+
+body.netgame #cancel, body.netgame #leave, body.netgame #go, body.netgame #accept
 {
 	top: 594dp;
 	width: 120dp;
@@ -909,7 +956,7 @@ body.netgame #cancel, body.netgame #go, body.netgame #accept
 	padding-top: 6dp;
 }
 
-body.netgame #cancel { left: 760dp; }
+body.netgame #cancel, body.netgame #leave { left: 760dp; }
 body.netgame #go, body.netgame #accept { left: 892dp; }
 
 /* The Settings screen: a column of tabs down the left, with the page to its right. The whole screen is one
