@@ -11,7 +11,9 @@
 
 #include "cncnet/cncnethttp.h"
 
+#include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iterator>
 #include <mutex>
 #include <thread>
@@ -41,8 +43,15 @@ void CnCNetTunnelChoiceClass::Start(std::string const & url, std::string const &
 		std::string note;
 		if (CnCNet_Http_Get(url, 10000, 1 << 20, text, error) && !CnCNet_Parse_Tunnel_List(text).empty()) {
 			if (!cache_file.empty()) {
-				std::ofstream file(cache_file, std::ios::binary | std::ios::trunc);
-				file << text;
+				// A list written whole under another name replaces the cache, so a thread that reads the cache never sees half a list.
+				std::filesystem::path const temporary = cache_file + "." + std::to_string(std::hash<std::thread::id>()(std::this_thread::get_id())) + ".tmp";
+				{
+					std::ofstream file(temporary, std::ios::binary | std::ios::trunc);
+					file << text;
+				}
+				std::error_code ignored;
+				std::filesystem::rename(temporary, cache_file, ignored);
+				std::filesystem::remove(temporary, ignored);
 			}
 		} else {
 			note = error.empty() ? "The tunnel list from " + url + " had no usable tunnel." : error;

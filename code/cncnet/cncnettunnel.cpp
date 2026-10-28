@@ -27,6 +27,7 @@
 #endif
 
 #include <cstring>
+#include <thread>
 
 
 namespace {
@@ -58,6 +59,14 @@ NativeSocket Native(intptr_t handle)
 }
 
 }
+
+
+// Shared with a lookup thread that may outlive the bridge, so it holds nothing of the bridge's.
+struct CnCNetTunnelBridgeClass::ResolutionType
+{
+	std::atomic<int> State{0};      // 0 while looking, 1 resolved, 2 failed.
+	std::vector<uint8_t> Address;
+};
 
 
 CnCNetTunnelBridgeClass::~CnCNetTunnelBridgeClass(void)
@@ -111,18 +120,44 @@ bool CnCNetTunnelBridgeClass::Start(std::string const & relay_host, uint16_t rel
 	NetworkStarted = true;
 #endif
 
-	addrinfo hints{};
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_DGRAM;
-	addrinfo * found = nullptr;
-	std::string const port = std::to_string(relay_port);
-	if (getaddrinfo(relay_host.c_str(), port.c_str(), &hints, &found) != 0 || found == nullptr) {
-		error = "The tunnel " + relay_host + " could not be found.";
-		Stop();
-		return(false);
+	RelayReady = false;
+	RelayFailed = false;
+	RelayAddress.clear();
+	Resolution.reset();
+	sockaddr_in literal{};
+	literal.sin_family = AF_INET;
+	literal.sin_port = htons(relay_port);
+	if (inet_pton(AF_INET, relay_host.c_str(), &literal.sin_addr) == 1) {
+		RelayAddress.assign(reinterpret_cast<uint8_t const *>(&literal), reinterpret_cast<uint8_t const *>(&literal) + sizeof(literal));
+		RelayReady = true;
+	} else {
+		std::shared_ptr<ResolutionType> const lookup = std::make_shared<ResolutionType>();
+		Resolution = lookup;
+		std::thread([lookup, relay_host, relay_port](void) {
+#if defined(_WIN32)
+			WSADATA started;
+			bool const network = WSAStartup(MAKEWORD(2, 2), &started) == 0;
+#endif
+			addrinfo hints{};
+			hints.ai_family = AF_INET;
+			hints.ai_socktype = SOCK_DGRAM;
+			addrinfo * found = nullptr;
+			std::string const port = std::to_string(relay_port);
+			if (getaddrinfo(relay_host.c_str(), port.c_str(), &hints, &found) == 0 && found != nullptr) {
+				lookup->Address.assign(reinterpret_cast<uint8_t const *>(found->ai_addr),
+					reinterpret_cast<uint8_t const *>(found->ai_addr) + found->ai_addrlen);
+				freeaddrinfo(found);
+				lookup->State = 1;
+			} else {
+				lookup->State = 2;
+			}
+#if defined(_WIN32)
+			if (network) {
+				WSACleanup();
+			}
+#endif
+		}).detach();
 	}
-	RelayAddress.assign(reinterpret_cast<uint8_t const *>(found->ai_addr), reinterpret_cast<uint8_t const *>(found->ai_addr) + found->ai_addrlen);
-	freeaddrinfo(found);
 
 	NativeSocket game = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	NativeSocket relay = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -164,6 +199,7 @@ void CnCNetTunnelBridgeClass::Stop(void)
 	if (Worker.joinable()) {
 		Worker.join();
 	}
+	Resolution.reset();
 	if (GameSocket != -1) {
 		Close_Native(Native(GameSocket));
 		GameSocket = -1;
@@ -191,6 +227,17 @@ void CnCNetTunnelBridgeClass::Run(void)
 	uint8_t buffer[2048];
 
 	while (!Stopping) {
+		if (!RelayReady && Resolution) {
+			int const state = Resolution->State;
+			if (state == 1) {
+				RelayAddress = Resolution->Address;
+				RelayReady = true;
+			} else if (state == 2) {
+				RelayFailed = true;
+				Resolution.reset();
+			}
+		}
+
 		fd_set readable;
 		FD_ZERO(&readable);
 		FD_SET(game, &readable);
@@ -209,7 +256,7 @@ void CnCNetTunnelBridgeClass::Run(void)
 				game_from = from;
 				game_known = true;
 				std::optional<uint32_t> const peer = Receiver(buffer, static_cast<std::size_t>(read), PeerIds);
-				if (peer.has_value()) {
+				if (peer.has_value() && RelayReady) {
 					std::vector<uint8_t> const envelope = Wrap(LocalId, *peer, buffer, static_cast<std::size_t>(read));
 					sendto(relay, reinterpret_cast<char const *>(envelope.data()), static_cast<int>(envelope.size()), 0,
 						reinterpret_cast<sockaddr const *>(RelayAddress.data()), static_cast<AddressLength>(RelayAddress.size()));
@@ -223,7 +270,7 @@ void CnCNetTunnelBridgeClass::Run(void)
 			AddressLength from_length = sizeof(from);
 			int const read = recvfrom(relay, reinterpret_cast<char *>(buffer), sizeof(buffer), 0, reinterpret_cast<sockaddr *>(&from), &from_length);
 			sockaddr_in const * relay_address = reinterpret_cast<sockaddr_in const *>(RelayAddress.data());
-			bool const from_relay = from.sin_addr.s_addr == relay_address->sin_addr.s_addr && from.sin_port == relay_address->sin_port;
+			bool const from_relay = RelayReady && from.sin_addr.s_addr == relay_address->sin_addr.s_addr && from.sin_port == relay_address->sin_port;
 			if (read > 8 && game_known && from_relay) {
 				sendto(game, reinterpret_cast<char const *>(buffer + 8), read - 8, 0,
 					reinterpret_cast<sockaddr const *>(&game_from), sizeof(game_from));

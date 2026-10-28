@@ -18,6 +18,7 @@
 #include "cncnet/ircclient.h"
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
 #include <string_view>
@@ -77,6 +78,9 @@ struct CnCNetRoomConfigType
 	std::string Notice;         // Host only: said in the channel once for every player who joins; empty says nothing.
 	CnCNetRoomLimitsType Limits;
 	uint64_t HelloTimeoutMS = 20000;
+	// Guest only: whether this machine can play a match with the host's current options. A start is
+	// ignored while it returns false. Empty accepts every start.
+	std::function<bool(std::map<std::string, std::string> const &)> Options_Playable;
 };
 
 
@@ -114,6 +118,9 @@ class CnCNetRoomClass
 		std::vector<CnCNetRoomPlayerType> const & Players(void) const { return(PlayerList); }
 		std::map<std::string, std::string> const & Options(void) const { return(OptionList); }
 		std::map<std::string, std::string> const & Start_Info(void) const { return(StartList); }
+
+		// The options as they were when the match started; later changes do not touch it.
+		std::map<std::string, std::string> const & Start_Options(void) const { return(StartOptions); }
 		CnCNetRoomPlayerType const * Find_Player(std::string const & name) const;
 		uint64_t Revision(void) const { return(Changes); }
 
@@ -124,6 +131,8 @@ class CnCNetRoomClass
 		// Guest only: the host's row names a different build than ours.
 		bool Build_Differs_From_Host(void) const;
 
+		// A guest acts on a start only when it is ready, the start comes from the host, its build matches the
+		// host's and Options_Playable accepts the host's options; any other start is ignored.
 		void Apply(IRCEventType const & event, uint64_t now);
 		void Tick(uint64_t now);
 
@@ -185,9 +194,25 @@ class CnCNetRoomClass
 		std::vector<PendingType> Pending;
 		std::map<std::string, std::string> OptionList;
 		std::map<std::string, std::string> StartList;
+		std::map<std::string, std::string> StartOptions;
 		std::vector<CnCNetRoomSendType> Outgoing;
 		uint64_t Changes = 0;
 };
+
+
+// The index in local_files of the map file a host's Map option names, matched without regard to case by plain
+// file name. -1 when the name has a path, a drive, a stream or a parent reference, or is not in local_files.
+int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files);
+
+
+// The whole number a host sent for an option, held between low and high. fallback when the option is absent or
+// is not a whole number; a number too large for an int counts as its sign's limit.
+int CnCNet_Option_Number(std::map<std::string, std::string> const & options, std::string const & key, int fallback, int low, int high);
+
+
+// Why a password cannot key a room, in plain words; empty when it can. A space, a comma or a control character
+// would split the channel mode or the join into more parameters, and a leading colon would make the join read the rest as text.
+std::string CnCNet_Room_Password_Problem(std::string_view password);
 
 
 // A room channel name from a random number: the prefix, "#cncnet-yr-game" by default, and seven digits.

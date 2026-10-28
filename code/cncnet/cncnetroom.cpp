@@ -13,6 +13,7 @@
 #include "cncnet/cncnetsha1.h"
 
 #include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <cstdio>
 
@@ -55,20 +56,27 @@ int Hex_Digit(char ch)
 }
 
 
+// Control characters never survive unescaping: a value that reaches a text file cannot add a line to it.
 std::string Unescape(std::string_view text)
 {
 	std::string plain;
+	auto const push = [&plain](char ch) {
+		unsigned char const byte = static_cast<unsigned char>(ch);
+		if (byte >= 0x20 && byte != 0x7F) {
+			plain.push_back(ch);
+		}
+	};
 	for (std::size_t index = 0; index < text.size(); ++index) {
 		if (text[index] == '%' && index + 2 < text.size()) {
 			int const high = Hex_Digit(text[index + 1]);
 			int const low = Hex_Digit(text[index + 2]);
 			if (high >= 0 && low >= 0) {
-				plain.push_back(static_cast<char>(high * 16 + low));
+				push(static_cast<char>(high * 16 + low));
 				index += 2;
 				continue;
 			}
 		}
-		plain.push_back(text[index]);
+		push(text[index]);
 	}
 	return(plain);
 }
@@ -346,7 +354,13 @@ void CnCNetRoomClass::Guest_Message(IRCEventType const & event)
 			Close(split == std::string::npos ? std::string("The host refused to let you join.") : Unescape(std::string_view(event.Text).substr(split + 1)));
 		}
 	} else if (event.Command == START && CurrentStatus == CnCNetRoomStatus::IN_ROOM) {
+		CnCNetRoomPlayerType const * self = Find_Player(Config.OwnNick);
+		if (self == nullptr || !self->Ready || !CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick) || Build_Differs_From_Host()
+				|| (Config.Options_Playable && !Config.Options_Playable(OptionList))) {
+			return;
+		}
 		StartList = Decode_Map(event.Text);
+		StartOptions = OptionList;
 		CurrentStatus = CnCNetRoomStatus::STARTING;
 		Changed();
 	}
@@ -569,6 +583,7 @@ bool CnCNetRoomClass::Start(std::map<std::string, std::string> info)
 		return(false);
 	}
 	StartList = std::move(info);
+	StartOptions = OptionList;
 	CurrentStatus = CnCNetRoomStatus::STARTING;
 	Changed();
 	Send_CTCP(START, Encode_Map(StartList));
@@ -583,6 +598,7 @@ void CnCNetRoomClass::Return_To_Room(void)
 	}
 	CurrentStatus = CnCNetRoomStatus::IN_ROOM;
 	StartList.clear();
+	StartOptions.clear();
 	for (CnCNetRoomPlayerType & player : PlayerList) {
 		if (!player.Host) {
 			player.Ready = false;
@@ -719,6 +735,57 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 		players.push_back(player);
 	}
 	return(players);
+}
+
+
+int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files)
+{
+	if (named.empty() || named.find_first_of("/\\:") != std::string_view::npos || named.find("..") != std::string_view::npos
+		|| std::any_of(named.begin(), named.end(), [](char ch) { return(static_cast<unsigned char>(ch) < 0x20 || ch == 0x7F); })) {
+		return(-1);
+	}
+	for (std::size_t index = 0; index < local_files.size(); ++index) {
+		std::string const & file = local_files[index];
+		if (file.size() == named.size() && std::equal(file.begin(), file.end(), named.begin(),
+				[](char a, char b) { return(std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b))); })) {
+			return(static_cast<int>(index));
+		}
+	}
+	return(-1);
+}
+
+
+int CnCNet_Option_Number(std::map<std::string, std::string> const & options, std::string const & key, int fallback, int low, int high)
+{
+	auto const found = options.find(key);
+	if (found == options.end()) {
+		return(fallback);
+	}
+	std::string const & text = found->second;
+	long long value = 0;
+	auto const result = std::from_chars(text.data(), text.data() + text.size(), value);
+	if (result.ec == std::errc::result_out_of_range) {
+		return(!text.empty() && text.front() == '-' ? low : high);
+	}
+	if (result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+		return(fallback);
+	}
+	return(static_cast<int>(std::clamp<long long>(value, low, high)));
+}
+
+
+std::string CnCNet_Room_Password_Problem(std::string_view password)
+{
+	if (!password.empty() && password.front() == ':') {
+		return("The password cannot start with a colon.");
+	}
+	if (std::any_of(password.begin(), password.end(), [](char ch) {
+			unsigned char const byte = static_cast<unsigned char>(ch);
+			return(byte <= 0x20 || byte == 0x7F || ch == ',');
+		})) {
+		return("The password cannot contain spaces or commas.");
+	}
+	return(std::string());
 }
 
 

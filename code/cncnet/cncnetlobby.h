@@ -118,6 +118,10 @@ class CnCNetLobbyClass
 		// clears the list; past MaxRoomMessages the oldest are dropped.
 		std::vector<IRCEventType> Take_Room_Messages(void);
 
+		// Whether a channel from a game listing can be joined as a room: it starts with RoomPrefix, is not the
+		// broadcast channel and holds no comma, space or control character, which a JOIN would read as more channels.
+		bool Valid_Room_Channel(std::string const & channel) const;
+
 		static bool Same_Nick(std::string const & a, std::string const & b);
 
 	private:

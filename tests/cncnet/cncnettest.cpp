@@ -42,11 +42,14 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <map>
 #include <optional>
 #include <random>
+#include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -480,7 +483,14 @@ void Test_Room_Encoding(void)
 	std::map<std::string, std::string> const options{{"Map", "Lake; North=1|2,%"}, {"Credits", "10000"}, {"Line", "a\r\nb"}};
 	std::string const encoded = CnCNetRoomClass::Encode_Map(options);
 	Check(encoded.find_first_of("\r\n|,") == std::string::npos, "room encoding: separators and line breaks are escaped");
-	Check(CnCNetRoomClass::Decode_Map(encoded) == options, "room encoding: options survive a round trip");
+	std::map<std::string, std::string> const decoded_options = CnCNetRoomClass::Decode_Map(encoded);
+	Check(decoded_options.at("Map") == options.at("Map") && decoded_options.at("Credits") == "10000",
+		"room encoding: options survive a round trip");
+	Check(decoded_options.at("Line").find_first_of(std::string("\r\n\0", 3)) == std::string::npos && decoded_options.at("Line") == "ab",
+		"room encoding: a line break in a value cannot survive decoding");
+	Check(CnCNetRoomClass::Decode_Map("Map=x.map%0ALoadSaveGame=yes%0D%00%7F;Other=a%0Ab").at("Map") == "x.mapLoadSaveGame=yes"
+		&& CnCNetRoomClass::Decode_Map("K%0AInjected=1=v").count("KInjected") == 1,
+		"room encoding: escaped control characters are dropped from keys and values");
 
 	std::vector<CnCNetRoomPlayerType> players(2);
 	players[0].Name = "Host";
@@ -496,6 +506,28 @@ void Test_Room_Encoding(void)
 		&& decoded[1].Name == "Guest[1]" && decoded[1].Side == 9 && decoded[1].Start == 3 && decoded[1].Team == 1 && decoded[1].Ready,
 		"room encoding: players survive a round trip");
 	Check(CnCNetRoomClass::Decode_Players("bad|,1,2,3,4,|x,1").empty(), "room encoding: malformed players are skipped");
+}
+
+
+void Test_Local_Map(void)
+{
+	std::vector<std::string> const local = {"ALLIES01.MAP", "Lake.map", "ra2_dune.map"};
+	Check(CnCNet_Find_Local_Map("lake.MAP", local) == 1, "local map: a listed name matches without regard to case");
+	Check(CnCNet_Find_Local_Map("ALLIES01.MAP", local) == 0, "local map: the first listed name is found");
+	Check(CnCNet_Find_Local_Map("other.map", local) == -1, "local map: an unlisted name is not found");
+	Check(CnCNet_Find_Local_Map("", local) == -1, "local map: an empty name is not found");
+	Check(CnCNet_Find_Local_Map("Lake.map", {}) == -1, "local map: nothing is found in an empty list");
+	Check(CnCNet_Find_Local_Map("..\\..\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("../Lake.map", local) == -1,
+		"local map: a parent reference is refused");
+	Check(CnCNet_Find_Local_Map("maps\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("maps/Lake.map", local) == -1,
+		"local map: a path is refused even when its file name is listed");
+	Check(CnCNet_Find_Local_Map("C:\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("C:Lake.map", local) == -1,
+		"local map: a drive is refused");
+	Check(CnCNet_Find_Local_Map("\\\\attacker.example@80\\x\\a.map", local) == -1, "local map: a UNC path is refused");
+	Check(CnCNet_Find_Local_Map("Lake.map:stream", local) == -1, "local map: a stream name is refused");
+	Check(CnCNet_Find_Local_Map(std::string_view("Lake.map\0x", 10), local) == -1 && CnCNet_Find_Local_Map("Lake.map\n", local) == -1,
+		"local map: a control character is refused");
+	Check(CnCNet_Find_Local_Map("..", {".."}) == -1, "local map: a parent reference is refused even when the list holds it");
 }
 
 
@@ -699,6 +731,116 @@ void Test_Room(void)
 	std::vector<IRCEventType> const messages = lobby.Take_Room_Messages();
 	Check(messages.size() == 2 && messages[0].Kind == IRCEventKind::JOINED && messages[1].Kind == IRCEventKind::QUIT,
 		"lobby: room joins and quits reach the room, chat joins do not");
+}
+
+
+// Brings a guest into the host's room with the options delivered, and optionally ready.
+void Seat_Guest(CnCNetRoomClass & host, CnCNetRoomClass & guest, bool ready)
+{
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	Deliver(guest, "Guest", {&host}, 200);
+	Deliver(host, "Host", {&guest}, 300);
+	if (ready) {
+		guest.Set_Ready(true);
+		Deliver(guest, "Guest", {&host}, 400);
+		Deliver(host, "Host", {&guest}, 400);
+	}
+}
+
+
+void Test_Guest_Start(void)
+{
+	IRCEventType const start = Room_Event(IRCEventKind::CTCP, "Host", ROOM, "OYRSTART", "Seed=5");
+
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 100);
+	Seat_Guest(host, guest, false);
+	guest.Apply(start, 450);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM && guest.Start_Info().empty(), "guest start: a start before the guest is ready is ignored");
+
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 500);
+	Deliver(host, "Host", {&guest}, 500);
+	guest.Apply(Room_Event(IRCEventKind::CTCP, "Mallory", ROOM, "OYRSTART", "Seed=5"), 550);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM, "guest start: a start from somebody other than the host is ignored");
+	guest.Apply(start, 600);
+	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5" && guest.Start_Options().at("Map") == "Lake",
+		"guest start: a ready guest starts on the host's start");
+	guest.Apply(Room_Event(IRCEventKind::CTCP, "Host", ROOM, "OYROPTS", "Map=Island"), 650);
+	Check(guest.Options().at("Map") == "Island" && guest.Start_Options().at("Map") == "Lake",
+		"guest start: options that arrive after the start do not change the started match");
+
+	bool playable = false;
+	CnCNetRoomConfigType picky = Room_Config("Guest", "b1");
+	picky.Options_Playable = [&playable](std::map<std::string, std::string> const & options) { return(playable && options.count("Map") != 0); };
+	CnCNetRoomClass host_picky = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass picky_guest = CnCNetRoomClass::Guest(picky, 100);
+	Seat_Guest(host_picky, picky_guest, true);
+	picky_guest.Apply(start, 700);
+	Check(picky_guest.Status() == CnCNetRoomStatus::IN_ROOM, "guest start: a start is ignored when the guest cannot play the host's map");
+	playable = true;
+	picky_guest.Apply(start, 710);
+	Check(picky_guest.Status() == CnCNetRoomStatus::STARTING, "guest start: the same start is taken once the guest can play the map");
+
+	CnCNetRoomClass host_old = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass old_guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b2"), 100);
+	Seat_Guest(host_old, old_guest, true);
+	old_guest.Apply(start, 800);
+	Check(old_guest.Build_Differs_From_Host() && old_guest.Status() == CnCNetRoomStatus::IN_ROOM,
+		"guest start: a start is ignored when the guest's build differs from the host's");
+}
+
+
+void Test_Room_Channel_And_Password(void)
+{
+	CnCNetLobbyClass lobby{CnCNetLobbyConfigType()};
+	Check(lobby.Valid_Room_Channel("#cncnet-yr-game1234567") && lobby.Valid_Room_Channel("#CNCNET-YR-GAME0000001"),
+		"room channel: a channel under the room prefix is valid");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr") && !lobby.Valid_Room_Channel("0") && !lobby.Valid_Room_Channel(""),
+		"room channel: the chat channel, a bare 0 and an empty name are refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-games") && !lobby.Valid_Room_Channel("#cncnet-yr-game"),
+		"room channel: the broadcast channel and the bare prefix are refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-game1,#cncnet-yr") && !lobby.Valid_Room_Channel("#cncnet-yr-game1 2")
+		&& !lobby.Valid_Room_Channel("#cncnet-yr-game1\x07") && !lobby.Valid_Room_Channel("#cncnet-yr-game1\r\nJOIN #x"),
+		"room channel: a comma, a space or a control character is refused");
+	Check(!lobby.Valid_Room_Channel("cncnet-yr-game1234567") && !lobby.Valid_Room_Channel("&cncnet-yr-game1234567"),
+		"room channel: a name that does not start with # is refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-game" + std::string(60, '1')), "room channel: a name past the channel length is refused");
+
+	CnCNetGameListingType bad = Sample_Listing();
+	bad.RoomChannel = "#cncnet-yr";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	bad.RoomChannel = "#a,#b";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host2", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	bad.RoomChannel = "0";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host3", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	Check(lobby.Games().empty(), "room channel: a listing with an unusable room channel is not listed");
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", CnCNet_Format_Game_Listing(Sample_Listing()), "GAME"), 2);
+	Check(lobby.Games().size() == 1, "room channel: a listing with a good room channel is listed");
+
+	Check(CnCNet_Room_Password_Problem("secret").empty() && CnCNet_Room_Password_Problem("p@ss:word!").empty(), "password: plain passwords pass");
+	Check(!CnCNet_Room_Password_Problem("my game").empty() && !CnCNet_Room_Password_Problem("a,b").empty()
+		&& !CnCNet_Room_Password_Problem("tab\there").empty() && !CnCNet_Room_Password_Problem("line\nbreak").empty(),
+		"password: a space, a comma or a control character is refused");
+	Check(!CnCNet_Room_Password_Problem(":secret").empty(), "password: a leading colon is refused");
+	Check(CnCNet_Room_Password_Problem("my game") == "The password cannot contain spaces or commas.", "password: the refusal says why");
+}
+
+
+void Test_Option_Number(void)
+{
+	std::map<std::string, std::string> const options = {{"Speed", "-50"}, {"Level", "99"}, {"Credits", "5000"}, {"Text", "abc"},
+		{"Huge", "99999999999999999999"}, {"Tiny", "-99999999999999999999"}, {"Mixed", "7x"}, {"Empty", ""}, {"Wide", "3000000000"}};
+	Check(CnCNet_Option_Number(options, "Speed", 3, 0, 6) == 0, "option number: a negative number is held at the low limit");
+	Check(CnCNet_Option_Number(options, "Level", 3, 0, 2) == 2, "option number: a number past the range is held at the high limit");
+	Check(CnCNet_Option_Number(options, "Credits", 3, 2500, 10000) == 5000, "option number: a number in range is kept");
+	Check(CnCNet_Option_Number(options, "Text", 3, 0, 6) == 3 && CnCNet_Option_Number(options, "Mixed", 4, 0, 9) == 4
+		&& CnCNet_Option_Number(options, "Empty", 5, 0, 9) == 5, "option number: text that is not a whole number leaves the own value");
+	Check(CnCNet_Option_Number(options, "Missing", 6, 0, 9) == 6, "option number: an absent option leaves the own value");
+	Check(CnCNet_Option_Number(options, "Huge", 3, 0, 10) == 10 && CnCNet_Option_Number(options, "Tiny", 3, 1, 10) == 1
+		&& CnCNet_Option_Number(options, "Wide", 3, 0, 10) == 10, "option number: a number too large for an int is held at the limit");
 }
 
 
@@ -919,6 +1061,29 @@ void Test_Spawn(void)
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
 	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
 
+	std::map<std::string, std::string> const hostile = {{"Map", "x.map\nLoadSaveGame=yes\r\n[GlobalFlags]"}, {"MapName", "a\r\nSyncLog=yes"},
+		{"Credits", "5000\nBindAddress=1.2.3.4"}, {"GameSpeed", std::string("2\0\nCampaignID=1", 15)}, {"Extra", "1"}};
+	std::string const clean_ini = CnCNet_Spawn_Ini(match, hostile, "guest", 40000);
+	std::set<std::string> keys;
+	std::size_t line_start = 0;
+	bool lines_ok = true;
+	while (line_start < clean_ini.size()) {
+		std::size_t const end = clean_ini.find('\n', line_start);
+		std::string const row = clean_ini.substr(line_start, end - line_start);
+		line_start = end + 1;
+		if (!row.empty() && row[0] != '[') {
+			keys.insert(row.substr(0, row.find('=')));
+		}
+		lines_ok = lines_ok && row.find('\r') == std::string::npos && row.find('\0') == std::string::npos;
+	}
+	Check(lines_ok && keys.count("LoadSaveGame") == 0 && keys.count("SyncLog") == 0 && keys.count("BindAddress") == 0 && keys.count("CampaignID") == 0
+		&& keys.count("Extra") == 0 && !Has(clean_ini, "\n[GlobalFlags]"), "spawn: values from a peer cannot add a line, a key or a section");
+	Check(Has(clean_ini, "Credits=5000\n") && Has(clean_ini, "GameSpeed=2\n"), "spawn: numeric options are written as numbers");
+
+	std::map<std::string, std::string> bad_info = CnCNet_Match_Info(match);
+	bad_info["Names"] = "Host,gu\nest";
+	Check(!CnCNet_Read_Match(bad_info, read), "spawn: a seat name with a line break is refused");
+
 	CnCNetRoomPlayerType watcher;
 	watcher.Name = "Watcher";
 	watcher.Side = CNCNET_SPECTATOR_SIDE;
@@ -1055,6 +1220,20 @@ void Test_Tunnel_Bridge(void)
 		}
 		bridge.Stop();
 		Check(bridge.Sent() == 1 && bridge.Received() == 1 && !bridge.Is_Running(), "bridge: counts and stops");
+
+		std::string named_error;
+		bool const named = bridge.Start("localhost", relay_port, 7, {9}, named_error);
+		Check(named && !bridge.Relay_Failed(), "bridge: a relay named by a host name starts without waiting for the lookup");
+		for (int wait = 0; named && wait < 100 && !bridge.Relay_Resolved() && !bridge.Relay_Failed(); ++wait) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+		Check(bridge.Relay_Resolved() && !bridge.Relay_Failed(), "bridge: the host name is resolved by the bridge");
+		if (named && bridge.Relay_Resolved()) {
+			Send_To(game, Loopback(bridge.Game_Port()), {0, 7, 0, 9, 'z'});
+			std::optional<std::vector<uint8_t>> const wrapped_by_name = Receive(relay, 2000);
+			Check(wrapped_by_name.has_value(), "bridge: a datagram reaches a relay that was named");
+		}
+		bridge.Stop();
 	}
 
 	Close_Test_Socket(relay);
@@ -1084,8 +1263,12 @@ int main(void)
 	Test_Lobby();
 	Test_SHA1();
 	Test_Room_Encoding();
+	Test_Local_Map();
 	Test_Room();
+	Test_Room_Channel_And_Password();
+	Test_Option_Number();
 	Test_Room_Notice();
+	Test_Guest_Start();
 	Test_Build_Identity();
 	Test_Build_Gate();
 	Test_Tunnel_List();
