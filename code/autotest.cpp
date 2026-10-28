@@ -458,6 +458,8 @@ bool PostWinContinue = false;
 // Set by a continuelose line; a lost game then carries on to its score screen instead of ending the run.
 bool ContinueAfterLose = false;
 bool PostLoseContinue = false;
+// Set by a requirera2 line; the run then ends if the mission was read without Red Alert 2 house numbering.
+bool RequireRA2 = false;
 
 // Frames a wait step waits for its condition when its line gives no timeout.
 int const Wait_Default_Timeout = 3000;
@@ -5664,6 +5666,11 @@ bool AutoTest_Load(char const * filename)
 		if (std::strcmp(command, "loadshot") == 0) {
 			LoadShotName = text;
 		}
+		// requirera2 is kept when the script is read, so it needs no step.
+		if (std::strcmp(command, "requirera2") == 0) {
+			RequireRA2 = true;
+			continue;
+		}
 		// continuewin and continuelose are kept when the script is read, so they need no step.
 		if (std::strcmp(command, "continuewin") == 0) {
 			ContinueAfterWin = true;
@@ -5801,6 +5808,21 @@ void AutoTest_Game_Over(bool won)
 		return;
 	}
 	std::exit(0);
+}
+
+
+/// <summary>
+/// Ends an unattended run whose script has requirera2 when the mission has no Red Alert 2 house numbering.
+/// Call once the mission's INI is read, before any game frame runs.
+/// </summary>
+/// <param name="numbered">True when Red Alert 2 house numbers are converted for the mission.</param>
+void AutoTest_Require_RA2_Numbering(bool numbered)
+{
+	if (!Active || !RequireRA2 || numbered) {
+		return;
+	}
+	DebugString("AUTOTEST error: %s is a Red Alert 2 mission, but its house numbers were not converted (no Red Alert 2 campaign entry, or the RA2Rules file is missing); run with -Mods tests/autotest/ra2-campaigns\n", Scen->ScenarioName);
+	std::exit(EXIT_FAILURE);
 }
 
 

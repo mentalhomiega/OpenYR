@@ -28,6 +28,9 @@ void AutoTest_Frame(void);
 // Ends an unattended run when the game is won or lost, instead of waiting at the score screen.
 void AutoTest_Game_Over(bool won);
 
+// Ends a run whose script has requirera2 when the mission was read without Red Alert 2 house numbering.
+void AutoTest_Require_RA2_Numbering(bool numbered);
+
 // True once a won mission carried on under continuewin, or a lost one under continuelose, and for the
 // rest of the run. The score screen then takes its default instead of waiting for a click, because
 // no script step runs while it shows.

@@ -47,6 +47,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), whether the shape is an SHP (`shp`) or was made from a sheet that has none (`png-only`), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, whether the shadows come from the PNG or the SHP, and the centre pixel of its first frame |
 | `truecolourdir <path>` | Adds a directory to the places the game looks for files, so a test can supply PNG sprites without copying them into the game directory; a PNG not found before is looked for again |
 | `exportshape <NAME.SHP> <out.png>` | Writes every frame of that shape to a PNG sheet in the layout [TRUECOLOUR.md](TRUECOLOUR.md) reads, coloured with the current theater's unit palette, with index 0 transparent; when the shape has house-colour pixels, also writes `<out>_hc.png`, the matching house-colour mask. The output path is the rest of the line |
+| `requirera2` | Ends the run at load with an `AUTOTEST error` line and exit code 1 when the mission has no Red Alert 2 house numbering: no Red Alert 2 campaign entry names it (as without `-Mods tests/autotest/ra2-campaigns`), or the RA2Rules file is missing. It takes effect when the script is read, before the first game frame, whatever frame the line names |
 | `loadshot <name>` | Saves what the window shows each time a loading screen is complete, as `<name>-<count>.tga` in the `Screenshots` folder. It takes effect when the script is read, before the first game frame, whatever frame the line names |
 | `triggers [all]` | Writes the trigger types with their owner, the events they wait for and whether a live trigger of each is enabled (only the enabled ones, unless `all`), then every tag with the objects and cells it rides on, and the local and global variables that are set |
 | `typecounts` | Writes how many structure, vehicle, soldier and aircraft types there are, and any whose ID is not a plain name, which is how a list read as one name shows up |
@@ -171,6 +172,8 @@ and does nothing.
 
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
+
+The Red Alert 2 scripts, `tests/campaign/win-ra2-<mission>.txt`, begin with `0 requirera2` and need `-Mods tests/autotest/ra2-campaigns`. Without that mod the run stops at load with an `AUTOTEST error` line and exit code 1.
 
 ## Skirmish lobby
 

@@ -529,6 +529,16 @@ void HouseTypeClass::Prepare_RA2_Numbering(CCINIClass const & scenario)
 
 
 /// <summary>
+/// Reports whether Prepare_RA2_Numbering converted the running mission's house numbers. False for a mission that
+/// is not Red Alert 2's, and for one whose RA2Rules file is missing.
+/// </summary>
+bool HouseTypeClass::RA2_Numbering_Loaded(void)
+{
+	return(!RA2_Country_Order.empty());
+}
+
+
+/// <summary>
 /// Converts a house number written for Red Alert 2 into the country it names here.
 /// A number outside Red Alert 2's list, and every number outside a Red Alert 2 mission, is returned as it is.
 /// </summary>

@@ -4,6 +4,7 @@
 ; Expected: "AUTOTEST game over frame N: won" (frame 5198 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov12.txt -Campaign -Map SOV12S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+0 requirera2
 ui click more
 ui wait 300
 ui click more
