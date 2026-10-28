@@ -1,0 +1,447 @@
+; Campaign win check for Allied 6 (Red Alert 2). Sixty Apocalypse tanks (grantunit) stand in for the army a player would bring. The mission is won when both Soviet houses, BadGuy1 and BadGuy2, have nothing left ("_Win Occurs": all dead).
+; The tanks first take the 58 Soviet structures one at a time: each strikeobj names a structure by its type and exact cell, and the waitgone line after it holds the script until that structure is gone or 900 frames pass. The east base (BadGuy2) goes first, then the north base, then the west base. Two structures in the far west (the gate and guard hut at 35,83 and 34,82) hold out for the full 900 frames each.
+; From there every 300 frames the tanks are sent against the object nearest one of eight points on the map (strikeobj * ...), which hunts down the units and infantry the houses keep sending.
+; The tanks are placed at 92 to 114,150 to 158. Tanks placed a few cells further north (146 to 148) never left their cells when ordered, so they are kept out of the army.
+; Expected: "AUTOTEST game over frame N: won" (frame 31461 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all06.txt -Campaign -Map ALL06U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 900 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit APOC 92 150
+11 grantunit APOC 94 150
+12 grantunit APOC 96 150
+13 grantunit APOC 98 150
+14 grantunit APOC 100 150
+15 grantunit APOC 102 150
+16 grantunit APOC 104 150
+17 grantunit APOC 106 150
+18 grantunit APOC 108 150
+19 grantunit APOC 110 150
+20 grantunit APOC 112 150
+21 grantunit APOC 114 150
+22 grantunit APOC 92 152
+23 grantunit APOC 94 152
+24 grantunit APOC 96 152
+25 grantunit APOC 98 152
+26 grantunit APOC 100 152
+27 grantunit APOC 102 152
+28 grantunit APOC 104 152
+29 grantunit APOC 106 152
+30 grantunit APOC 108 152
+31 grantunit APOC 110 152
+32 grantunit APOC 112 152
+33 grantunit APOC 114 152
+34 grantunit APOC 92 154
+35 grantunit APOC 94 154
+36 grantunit APOC 96 154
+37 grantunit APOC 98 154
+38 grantunit APOC 100 154
+39 grantunit APOC 102 154
+40 grantunit APOC 104 154
+41 grantunit APOC 106 154
+42 grantunit APOC 108 154
+43 grantunit APOC 110 154
+44 grantunit APOC 112 154
+45 grantunit APOC 114 154
+46 grantunit APOC 92 156
+47 grantunit APOC 94 156
+48 grantunit APOC 96 156
+49 grantunit APOC 98 156
+50 grantunit APOC 100 156
+51 grantunit APOC 102 156
+52 grantunit APOC 104 156
+53 grantunit APOC 106 156
+54 grantunit APOC 108 156
+55 grantunit APOC 110 156
+56 grantunit APOC 112 156
+57 grantunit APOC 114 156
+58 grantunit APOC 92 158
+59 grantunit APOC 94 158
+60 grantunit APOC 96 158
+61 grantunit APOC 98 158
+62 grantunit APOC 100 158
+63 grantunit APOC 102 158
+64 grantunit APOC 104 158
+65 grantunit APOC 106 158
+66 grantunit APOC 108 158
+67 grantunit APOC 110 158
+68 grantunit APOC 112 158
+69 grantunit APOC 114 158
+200 strikeobj NALASR 120 132 1 all
+201 waitgone NALASR 120 132 1 900
+202 strikeobj NAWEAP 113 129 1 all
+203 waitgone NAWEAP 113 129 1 900
+204 strikeobj TESLA 117 125 1 all
+205 waitgone TESLA 117 125 1 900
+206 strikeobj NAFLAK 118 125 1 all
+207 waitgone NAFLAK 118 125 1 900
+208 strikeobj NALASR 112 123 1 all
+209 waitgone NALASR 112 123 1 900
+210 strikeobj NACNST 113 123 1 all
+211 waitgone NACNST 113 123 1 900
+212 strikeobj NAHAND 119 124 1 all
+213 waitgone NAHAND 119 124 1 900
+214 strikeobj CARUFGL 124 126 1 all
+215 waitgone CARUFGL 124 126 1 900
+216 strikeobj NALASR 110 122 1 all
+217 waitgone NALASR 110 122 1 900
+218 strikeobj NALASR 114 122 1 all
+219 waitgone NALASR 114 122 1 900
+220 strikeobj NAPOWR 111 119 1 all
+221 waitgone NAPOWR 111 119 1 900
+222 strikeobj NAPOWR 114 119 1 all
+223 waitgone NAPOWR 114 119 1 900
+224 strikeobj NAPOWR 110 117 1 all
+225 waitgone NAPOWR 110 117 1 900
+226 strikeobj NAPOWR 113 117 1 all
+227 waitgone NAPOWR 113 117 1 900
+228 strikeobj NAPOWR 110 115 1 all
+229 waitgone NAPOWR 110 115 1 900
+230 strikeobj NAPOWR 113 115 1 all
+231 waitgone NAPOWR 113 115 1 900
+232 strikeobj NAREFN 116 113 1 all
+233 waitgone NAREFN 116 113 1 900
+234 strikeobj NALASR 120 113 1 all
+235 waitgone NALASR 120 113 1 900
+236 strikeobj NARADR 112 111 1 all
+237 waitgone NARADR 112 111 1 900
+238 strikeobj NALASR 107 54 1 all
+239 waitgone NALASR 107 54 1 900
+240 strikeobj TESLA 99 55 1 all
+241 waitgone TESLA 99 55 1 900
+242 strikeobj NAREFN 101 50 1 all
+243 waitgone NAREFN 101 50 1 900
+244 strikeobj NAHAND 98 47 1 all
+245 waitgone NAHAND 98 47 1 900
+246 strikeobj NALASR 91 53 1 all
+247 waitgone NALASR 91 53 1 900
+248 strikeobj NAWEAP 93 50 1 all
+249 waitgone NAWEAP 93 50 1 900
+250 strikeobj NAFLAK 99 46 1 all
+251 waitgone NAFLAK 99 46 1 900
+252 strikeobj NAPOWR 102 43 1 all
+253 waitgone NAPOWR 102 43 1 900
+254 strikeobj NARADR 98 43 1 all
+255 waitgone NARADR 98 43 1 900
+256 strikeobj NALASR 107 41 1 all
+257 waitgone NALASR 107 41 1 900
+258 strikeobj NAPOWR 93 43 1 all
+259 waitgone NAPOWR 93 43 1 900
+260 strikeobj NALASR 92 42 1 all
+261 waitgone NALASR 92 42 1 900
+262 strikeobj NALASR 100 34 1 all
+263 waitgone NALASR 100 34 1 900
+264 strikeobj NALASR 97 34 1 all
+265 waitgone NALASR 97 34 1 900
+266 strikeobj TESLA 102 33 1 all
+267 waitgone TESLA 102 33 1 900
+268 strikeobj TESLA 95 33 1 all
+269 waitgone TESLA 95 33 1 900
+270 strikeobj NAPOWR 103 28 1 all
+271 waitgone NAPOWR 103 28 1 900
+272 strikeobj NAPOWR 103 26 1 all
+273 waitgone NAPOWR 103 26 1 900
+274 strikeobj NAFLAK 102 26 1 all
+275 waitgone NAFLAK 102 26 1 900
+276 strikeobj NAPOWR 92 28 1 all
+277 waitgone NAPOWR 92 28 1 900
+278 strikeobj NACNST 97 26 1 all
+279 waitgone NACNST 97 26 1 900
+280 strikeobj NAFLAK 95 26 1 all
+281 waitgone NAFLAK 95 26 1 900
+282 strikeobj NAPOWR 92 26 1 all
+283 waitgone NAPOWR 92 26 1 900
+284 strikeobj TESLA 99 24 1 all
+285 waitgone TESLA 99 24 1 900
+286 strikeobj NAPOWR 101 23 1 all
+287 waitgone NAPOWR 101 23 1 900
+288 strikeobj NAPOWR 94 23 1 all
+289 waitgone NAPOWR 94 23 1 900
+290 strikeobj NAPOWR 103 21 1 all
+291 waitgone NAPOWR 103 21 1 900
+292 strikeobj CARUFGL 101 20 1 all
+293 waitgone CARUFGL 101 20 1 900
+294 strikeobj NAFLAK 99 20 1 all
+295 waitgone NAFLAK 99 20 1 900
+296 strikeobj CARUFGL 96 20 1 all
+297 waitgone CARUFGL 96 20 1 900
+298 strikeobj NAPOWR 92 21 1 all
+299 waitgone NAPOWR 92 21 1 900
+300 strikeobj NALASR 62 62 1 all
+301 waitgone NALASR 62 62 1 900
+302 strikeobj NALASR 62 58 1 all
+303 waitgone NALASR 62 58 1 900
+304 strikeobj NAREFN 60 59 1 all
+305 waitgone NAREFN 60 59 1 900
+306 strikeobj NALASR 58 80 1 all
+307 waitgone NALASR 58 80 1 900
+308 strikeobj NAREFN 56 81 1 all
+309 waitgone NAREFN 56 81 1 900
+310 strikeobj NALASR 58 84 1 all
+311 waitgone NALASR 58 84 1 900
+312 strikeobj GAGATE_A 35 83 1 all
+313 waitgone GAGATE_A 35 83 1 900
+314 strikeobj CAGARD01 34 82 1 all
+315 waitgone CAGARD01 34 82 1 900
+325 strikeobj * 40 120 100 all
+425 strikeobj * 40 120 100 all
+525 strikeobj * 40 120 100 all
+625 strikeobj * 100 65 100 all
+725 strikeobj * 100 65 100 all
+825 strikeobj * 100 65 100 all
+925 strikeobj * 125 90 100 all
+1025 strikeobj * 125 90 100 all
+1125 strikeobj * 125 90 100 all
+1225 strikeobj * 50 130 100 all
+1325 strikeobj * 50 130 100 all
+1425 strikeobj * 50 130 100 all
+1525 strikeobj * 70 45 100 all
+1625 strikeobj * 70 45 100 all
+1725 strikeobj * 70 45 100 all
+1825 strikeobj * 35 80 100 all
+1925 strikeobj * 35 80 100 all
+2025 strikeobj * 35 80 100 all
+2125 strikeobj * 95 30 100 all
+2225 strikeobj * 95 30 100 all
+2325 strikeobj * 95 30 100 all
+2425 strikeobj * 120 120 100 all
+2525 strikeobj * 120 120 100 all
+2625 strikeobj * 120 120 100 all
+2725 strikeobj * 40 120 100 all
+2825 strikeobj * 40 120 100 all
+2925 strikeobj * 40 120 100 all
+3025 strikeobj * 100 65 100 all
+3125 strikeobj * 100 65 100 all
+3225 strikeobj * 100 65 100 all
+3325 strikeobj * 125 90 100 all
+3425 strikeobj * 125 90 100 all
+3525 strikeobj * 125 90 100 all
+3625 strikeobj * 50 130 100 all
+3725 strikeobj * 50 130 100 all
+3825 strikeobj * 50 130 100 all
+3925 strikeobj * 70 45 100 all
+4025 strikeobj * 70 45 100 all
+4125 strikeobj * 70 45 100 all
+4225 strikeobj * 35 80 100 all
+4325 strikeobj * 35 80 100 all
+4425 strikeobj * 35 80 100 all
+4525 strikeobj * 95 30 100 all
+4625 strikeobj * 95 30 100 all
+4725 strikeobj * 95 30 100 all
+4825 strikeobj * 120 120 100 all
+4925 strikeobj * 120 120 100 all
+5025 strikeobj * 120 120 100 all
+5125 strikeobj * 40 120 100 all
+5225 strikeobj * 40 120 100 all
+5325 strikeobj * 40 120 100 all
+5425 strikeobj * 100 65 100 all
+5525 strikeobj * 100 65 100 all
+5625 strikeobj * 100 65 100 all
+5725 strikeobj * 125 90 100 all
+5825 strikeobj * 125 90 100 all
+5925 strikeobj * 125 90 100 all
+6025 strikeobj * 50 130 100 all
+6125 strikeobj * 50 130 100 all
+6225 strikeobj * 50 130 100 all
+6325 strikeobj * 70 45 100 all
+6425 strikeobj * 70 45 100 all
+6525 strikeobj * 70 45 100 all
+6625 strikeobj * 35 80 100 all
+6725 strikeobj * 35 80 100 all
+6825 strikeobj * 35 80 100 all
+6925 strikeobj * 95 30 100 all
+7025 strikeobj * 95 30 100 all
+7125 strikeobj * 95 30 100 all
+7225 strikeobj * 120 120 100 all
+7325 strikeobj * 120 120 100 all
+7425 strikeobj * 120 120 100 all
+7525 strikeobj * 40 120 100 all
+7625 strikeobj * 40 120 100 all
+7725 strikeobj * 40 120 100 all
+7825 strikeobj * 100 65 100 all
+7925 strikeobj * 100 65 100 all
+8025 strikeobj * 100 65 100 all
+8125 strikeobj * 125 90 100 all
+8225 strikeobj * 125 90 100 all
+8325 strikeobj * 125 90 100 all
+8425 strikeobj * 50 130 100 all
+8525 strikeobj * 50 130 100 all
+8625 strikeobj * 50 130 100 all
+8725 strikeobj * 70 45 100 all
+8825 strikeobj * 70 45 100 all
+8925 strikeobj * 70 45 100 all
+9025 strikeobj * 35 80 100 all
+9125 strikeobj * 35 80 100 all
+9225 strikeobj * 35 80 100 all
+9325 strikeobj * 95 30 100 all
+9425 strikeobj * 95 30 100 all
+9525 strikeobj * 95 30 100 all
+9625 strikeobj * 120 120 100 all
+9725 strikeobj * 120 120 100 all
+9825 strikeobj * 120 120 100 all
+9925 strikeobj * 40 120 100 all
+10025 strikeobj * 40 120 100 all
+10125 strikeobj * 40 120 100 all
+10225 strikeobj * 100 65 100 all
+10325 strikeobj * 100 65 100 all
+10425 strikeobj * 100 65 100 all
+10525 strikeobj * 125 90 100 all
+10625 strikeobj * 125 90 100 all
+10725 strikeobj * 125 90 100 all
+10825 strikeobj * 50 130 100 all
+10925 strikeobj * 50 130 100 all
+11025 strikeobj * 50 130 100 all
+11125 strikeobj * 70 45 100 all
+11225 strikeobj * 70 45 100 all
+11325 strikeobj * 70 45 100 all
+11425 strikeobj * 35 80 100 all
+11525 strikeobj * 35 80 100 all
+11625 strikeobj * 35 80 100 all
+11725 strikeobj * 95 30 100 all
+11825 strikeobj * 95 30 100 all
+11925 strikeobj * 95 30 100 all
+12025 strikeobj * 120 120 100 all
+12125 strikeobj * 120 120 100 all
+12225 strikeobj * 120 120 100 all
+12325 strikeobj * 40 120 100 all
+12425 strikeobj * 40 120 100 all
+12525 strikeobj * 40 120 100 all
+12625 strikeobj * 100 65 100 all
+12725 strikeobj * 100 65 100 all
+12825 strikeobj * 100 65 100 all
+12925 strikeobj * 125 90 100 all
+13025 strikeobj * 125 90 100 all
+13125 strikeobj * 125 90 100 all
+13225 strikeobj * 50 130 100 all
+13325 strikeobj * 50 130 100 all
+13425 strikeobj * 50 130 100 all
+13525 strikeobj * 70 45 100 all
+13625 strikeobj * 70 45 100 all
+13725 strikeobj * 70 45 100 all
+13825 strikeobj * 35 80 100 all
+13925 strikeobj * 35 80 100 all
+14025 strikeobj * 35 80 100 all
+14125 strikeobj * 95 30 100 all
+14225 strikeobj * 95 30 100 all
+14325 strikeobj * 95 30 100 all
+14425 strikeobj * 120 120 100 all
+14525 strikeobj * 120 120 100 all
+14625 strikeobj * 120 120 100 all
+14725 strikeobj * 40 120 100 all
+14825 strikeobj * 40 120 100 all
+14925 strikeobj * 40 120 100 all
+15025 strikeobj * 100 65 100 all
+15125 strikeobj * 100 65 100 all
+15225 strikeobj * 100 65 100 all
+15325 strikeobj * 125 90 100 all
+15425 strikeobj * 125 90 100 all
+15525 strikeobj * 125 90 100 all
+15625 strikeobj * 50 130 100 all
+15725 strikeobj * 50 130 100 all
+15825 strikeobj * 50 130 100 all
+15925 strikeobj * 70 45 100 all
+16025 strikeobj * 70 45 100 all
+16125 strikeobj * 70 45 100 all
+16225 strikeobj * 35 80 100 all
+16325 strikeobj * 35 80 100 all
+16425 strikeobj * 35 80 100 all
+16525 strikeobj * 95 30 100 all
+16625 strikeobj * 95 30 100 all
+16725 strikeobj * 95 30 100 all
+16825 strikeobj * 120 120 100 all
+16925 strikeobj * 120 120 100 all
+17025 strikeobj * 120 120 100 all
+17125 strikeobj * 40 120 100 all
+17225 strikeobj * 40 120 100 all
+17325 strikeobj * 40 120 100 all
+17425 strikeobj * 100 65 100 all
+17525 strikeobj * 100 65 100 all
+17625 strikeobj * 100 65 100 all
+17725 strikeobj * 125 90 100 all
+17825 strikeobj * 125 90 100 all
+17925 strikeobj * 125 90 100 all
+18025 strikeobj * 50 130 100 all
+18125 strikeobj * 50 130 100 all
+18225 strikeobj * 50 130 100 all
+18325 strikeobj * 70 45 100 all
+18425 strikeobj * 70 45 100 all
+18525 strikeobj * 70 45 100 all
+18625 strikeobj * 35 80 100 all
+18725 strikeobj * 35 80 100 all
+18825 strikeobj * 35 80 100 all
+18925 strikeobj * 95 30 100 all
+19025 strikeobj * 95 30 100 all
+19125 strikeobj * 95 30 100 all
+19225 strikeobj * 120 120 100 all
+19325 strikeobj * 120 120 100 all
+19425 strikeobj * 120 120 100 all
+19525 strikeobj * 40 120 100 all
+19625 strikeobj * 40 120 100 all
+19725 strikeobj * 40 120 100 all
+19825 strikeobj * 100 65 100 all
+19925 strikeobj * 100 65 100 all
+20025 strikeobj * 100 65 100 all
+20125 strikeobj * 125 90 100 all
+20225 strikeobj * 125 90 100 all
+20325 strikeobj * 125 90 100 all
+20425 strikeobj * 50 130 100 all
+20525 strikeobj * 50 130 100 all
+20625 strikeobj * 50 130 100 all
+20725 strikeobj * 70 45 100 all
+20825 strikeobj * 70 45 100 all
+20925 strikeobj * 70 45 100 all
+21025 strikeobj * 35 80 100 all
+21125 strikeobj * 35 80 100 all
+21225 strikeobj * 35 80 100 all
+21325 strikeobj * 95 30 100 all
+21425 strikeobj * 95 30 100 all
+21525 strikeobj * 95 30 100 all
+21625 strikeobj * 120 120 100 all
+21725 strikeobj * 120 120 100 all
+21825 strikeobj * 120 120 100 all
+21925 strikeobj * 40 120 100 all
+22025 strikeobj * 40 120 100 all
+22125 strikeobj * 40 120 100 all
+22225 strikeobj * 100 65 100 all
+22325 strikeobj * 100 65 100 all
+22425 strikeobj * 100 65 100 all
+22525 strikeobj * 125 90 100 all
+22625 strikeobj * 125 90 100 all
+22725 strikeobj * 125 90 100 all
+22825 strikeobj * 50 130 100 all
+22925 strikeobj * 50 130 100 all
+23025 strikeobj * 50 130 100 all
+23125 strikeobj * 70 45 100 all
+23225 strikeobj * 70 45 100 all
+23325 strikeobj * 70 45 100 all
+23425 strikeobj * 35 80 100 all
+23525 strikeobj * 35 80 100 all
+23625 strikeobj * 35 80 100 all
+23725 strikeobj * 95 30 100 all
+23825 strikeobj * 95 30 100 all
+23925 strikeobj * 95 30 100 all
+24025 strikeobj * 120 120 100 all
+24125 strikeobj * 120 120 100 all
+24225 strikeobj * 120 120 100 all
+24325 strikeobj * 40 120 100 all
+24425 strikeobj * 40 120 100 all
+24525 strikeobj * 40 120 100 all
+24625 strikeobj * 100 65 100 all
+24725 strikeobj * 100 65 100 all
+24825 strikeobj * 100 65 100 all
+24925 strikeobj * 125 90 100 all
+25025 strikeobj * 125 90 100 all
+25125 strikeobj * 125 90 100 all
+25225 strikeobj * 50 130 100 all
+25325 strikeobj * 50 130 100 all
+25425 strikeobj * 50 130 100 all
