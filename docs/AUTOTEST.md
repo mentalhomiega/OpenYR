@@ -16,7 +16,7 @@ A command runs once the game frame reaches its frame, in file order.
 
 | Command | Effect |
 | --- | --- |
-| `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture` |
+| `command <Name>` | Runs a registered command, such as `CenterBase`, `DeployObject` or `ScreenCapture`. The menu scripts have a `ui command <Name>` step that does the same on a clock instead of a frame, so it still runs while a replay is paused |
 | `hotkey <key>` | Writes the name of the command that key is bound to, or `none`. A letter or a single digit is read as that character; any other number is a virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt |
 | `chrono <frames>` | Starts the chronoshift screen effect for that many frames per swirl, as the Chrono Screen Effect trigger action does |
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |

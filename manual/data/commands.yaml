@@ -2154,6 +2154,37 @@ registered_commands:
     source: code/init.cpp
     class: QuickLoadCommandClass
     guard: null
+- id: ReplayPause
+  route_id: replaypause
+  kind: registered
+  title: Pause replay
+  description: Pauses and resumes a replay. It does nothing in any other game.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: ReplayPauseCommandClass
+    guard: null
+- id: ReplayFast
+  route_id: replayfast
+  kind: registered
+  title: Fast replay
+  description: Plays a replay without the frame limit of the game speed, and back at the game speed on
+    the next press. It does nothing in any other game.
+  category: Interface
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: ReplayFastCommandClass
+    guard: null
 - id: ChatToAll
   route_id: chattoall
   kind: registered
