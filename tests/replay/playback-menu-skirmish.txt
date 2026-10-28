@@ -1,0 +1,11 @@
+; Plays back Replays/replay-menu-test.rep, which record-menu-skirmish.txt wrote from a skirmish started in the lobby. The
+; replay's launch file text was written from the lobby's setup, so the game starts through the launch file path and must reach
+; the same hashes. The orders below would change the match if they were not ignored.
+; Run: scripts/run_autotest.ps1 -Script src-agent23/tests/replay/playback-menu-skirmish.txt -Build agent23 -Map XMP29U2.MAP -Seconds 300 -Filter "REPLAY|AUTOTEST hash"
+0 playreplay replay-menu-test.rep
+1 hash 300
+40 select AMCV
+60 command DeployObject
+2500 produce E1
+2600 order E1 40 90
+3300 quit

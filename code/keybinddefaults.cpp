@@ -120,6 +120,8 @@ std::vector<HotkeyEntry> const Extra_Table = {
 	{ "ChatToAllies", 8 },
 	{ "DeleteWaypoint", 46 },
 	{ "ReloadRules", 850 },
+	{ "ReplayPause", 19 },
+	{ "ReplayFast", 107 },
 };
 
 // The defaults of the builds before KEYBOARD_DEFAULTS_VERSION. Saved files hold these keys for the
@@ -318,6 +320,8 @@ std::vector<HotkeyEntry> const Modern_Table = {
 	{ "SetView3", 626 },
 	{ "SetView4", 627 },
 	{ "ReloadRules", 850 },
+	{ "ReplayPause", 19 },
+	{ "ReplayFast", 107 },
 	{ "TeamCenter_10", 1072, 1 },
 	{ "TeamCenter_1", 1073, 1 },
 	{ "TeamCenter_2", 1074, 1 },
@@ -368,6 +372,19 @@ int Held_Binding_Version(std::string const & command)
 		return(5);
 	}
 	return(3);
+}
+
+
+/// <summary>
+/// Returns the version of the build that added the press binding of a command OpenTS adds to the defaults,
+/// or 0 for a command that no later version added.
+/// </summary>
+int Added_Command_Version(std::string const & command)
+{
+	if (command == "ReplayPause" || command == "ReplayFast") {
+		return(6);
+	}
+	return(0);
 }
 
 
@@ -470,9 +487,22 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 		return;
 	}
 
-	// A file of version 2 to 4 predates some Held entries, which Held_Binding_Version gives. Its other
-	// bindings are kept as saved.
+	// A file of version 2 to 5 predates some Held entries, which Held_Binding_Version gives, and the
+	// commands Added_Command_Version names. Its other bindings are kept as saved.
 	if (version >= 2) {
+		for (HotkeyEntry const & entry : current) {
+			if (version >= Added_Command_Version(entry.Command) || Names_Command(entries, entry.Command)) {
+				continue;
+			}
+			bool taken = false;
+			for (HotkeyEntry const & other : entries) {
+				taken = taken || (other.Key == entry.Key && other.Trigger == entry.Trigger);
+			}
+			if (!taken) {
+				entries.push_back(entry);
+			}
+		}
+
 		for (HotkeyEntry const & entry : current) {
 			if (entry.Trigger != HOTKEY_HELD || Names_Command(entries, entry.Command)) {
 				continue;

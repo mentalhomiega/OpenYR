@@ -31,10 +31,12 @@
 #include "rules.h"
 #include "scenario.h"
 #include "session.h"
+#include "spawner.h"
 #include "statehash.h"
 
 #include <algorithm>
 #include <cstdlib>
+#include <ctime>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -55,8 +57,12 @@ std::uint32_t HashInterval = ReplayFile::DEFAULT_HASH_INTERVAL;
 ReplayFile::HashType LastHash;
 bool AtExitRegistered = false;
 
+ReplayFile::ResultType MatchResult = ReplayFile::ResultType::UNKNOWN;
+
 bool IsRequested = false;
 bool IsPlaying = false;
+bool IsPaused = false;
+bool IsFast = false;
 std::string PlaybackFault;
 ReplayFile::ReplayType Playback;
 std::size_t NextEvent = 0;
@@ -98,10 +104,10 @@ std::string Recording_Path(void)
 }
 
 
-/// <summary>Checksum of the scenario file as the game finds it.</summary>
-std::uint32_t Map_Checksum(void)
+/// <summary>Checksum of the scenario file of that name as the game finds it, or 0 when it is not on hand.</summary>
+std::uint32_t Map_Checksum(char const * name)
 {
-	CCFileClass file(Scen->ScenarioName);
+	CCFileClass file(name);
 	if (!file.Is_Available() || !file.Open(FileClass::READ)) {
 		return(0);
 	}
@@ -125,7 +131,7 @@ ReplayFile::HeaderType Current_Identity(void)
 	header.Modified = OPENTS_COMMIT_DIRTY != 0;
 	header.Architecture = OPENTS_ARCH;
 	header.Map = Scen->ScenarioName;
-	header.MapCrc = Map_Checksum();
+	header.MapCrc = Map_Checksum(Scen->ScenarioName);
 	header.RulesCrc = static_cast<std::uint32_t>(RulesClass::Get_Rule_Unique_ID());
 	header.ArtCrc = static_cast<std::uint32_t>(RulesClass::Get_Art_Unique_ID());
 	header.AiCrc = static_cast<std::uint32_t>(RulesClass::Get_AI_Unique_ID());
@@ -134,6 +140,26 @@ ReplayFile::HeaderType Current_Identity(void)
 	header.GameSpeed = Options.GameSpeed;
 	header.LocalHouse = PlayerPtr != NULL ? PlayerPtr->HeapID : -1;
 	return(header);
+}
+
+
+/// <summary>Adds what a list of recordings shows: the map's title, the time and the seats.</summary>
+void Describe_Match(ReplayFile::HeaderType & header)
+{
+	header.MapTitle = Session.Options.ScenarioDescription;
+	header.Recorded = static_cast<std::uint32_t>(std::time(nullptr));
+
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		header.Players.push_back({Session.Players[index]->Name, false});
+	}
+	for (int index = 0; index < Session.Computers.Count(); index++) {
+		NodeNameType const & node = *Session.Computers[index];
+		std::string name = node.Name;
+		if (name.empty()) {
+			name = "Computer";
+		}
+		header.Players.push_back({name, true});
+	}
 }
 
 
@@ -185,8 +211,9 @@ void Finish_Recording(void)
 		return;
 	}
 	IsRecording = false;
-	Writer.Finish(LastHash);
-	DebugString("REPLAY recorded to frame %u\n", LastHash.Frame);
+	Writer.Finish(LastHash, MatchResult);
+	DebugString("REPLAY recorded to frame %u, %s\n", LastHash.Frame,
+		MatchResult == ReplayFile::ResultType::WON ? "won" : MatchResult == ReplayFile::ResultType::LOST ? "lost" : "no result");
 }
 
 
@@ -319,6 +346,8 @@ void Replay_Request_Playback(char const * path)
 	}
 
 	IsPlaying = true;
+	IsPaused = false;
+	IsFast = false;
 	NextEvent = 0;
 	NextHash = 0;
 	HashesChecked = 0;
@@ -369,6 +398,26 @@ int Replay_Seed(void)
 }
 
 
+/// <summary>
+/// Judges a recording against this game before any match is started: the build, the map file and the
+/// mods. The rules, art and AI checksums can be judged only once the match has loaded, where playback
+/// judges them again.
+/// </summary>
+/// <returns>The reason the recording cannot be played, or an empty string.</returns>
+std::string Replay_Playability(ReplayFile::HeaderType const & recorded)
+{
+	ReplayFile::HeaderType current = recorded;
+	current.Version = OPENTS_VERSION_PACKED;
+	current.Commit = OPENTS_COMMIT;
+	current.Mods = ModSync::Encode(ModSync::Describe(Active_Mods()));
+	current.MapCrc = Map_Checksum(recorded.Map.c_str());
+	if (current.MapCrc == 0) {
+		return("The map " + recorded.Map + " is not on this machine.");
+	}
+	return(ReplayFile::Find_Incompatibility(recorded, current));
+}
+
+
 void Replay_Note_Launch(std::string const & text, bool is_skirmish)
 {
 	LaunchText = text;
@@ -397,22 +446,42 @@ bool Replay_Begin(void)
 		}
 		if (!fault.empty()) {
 			IsPlaying = false;
-			return(Refuse(fault));
+			bool const from_menu = Spawner_Is_Menu_Replay();
+			Refuse(fault);
+
+			// Ending the game here lets the menus take over; any other launch has nowhere to go back to.
+			if (from_menu) {
+				GameActive = false;
+				return(true);
+			}
+			return(false);
 		}
+		IsPaused = false;
+		IsFast = false;
 		return(true);
 	}
 
 	if (!RecordingEnabled) {
 		return(true);
 	}
-	if (!LaunchIsSkirmish || LaunchText.empty() || Session.Type != GAME_SKIRMISH || Session.LoadGame) {
-		DebugString("REPLAY not recording: only a skirmish started from a launch file can be recorded\n");
+
+	// A launch file's text is the match as it was asked for; a menu's skirmish is written out from the session.
+	std::string launch = LaunchText;
+	bool skirmish = LaunchIsSkirmish;
+	if (!Spawner_Is_Active()) {
+		launch = Spawner_Describe_Session();
+		skirmish = !launch.empty();
+	}
+	if (!skirmish || launch.empty() || Session.Type != GAME_SKIRMISH || Session.LoadGame) {
+		DebugString("REPLAY not recording: only a skirmish can be recorded\n");
 		return(true);
 	}
 
 	ReplayFile::HeaderType header = Current_Identity();
 	header.HashInterval = HashInterval;
-	header.SpawnIni = LaunchText;
+	header.SpawnIni = launch;
+	Describe_Match(header);
+	MatchResult = ReplayFile::ResultType::UNKNOWN;
 
 	std::string const path = Recording_Path();
 	if (!Writer.Open(path.c_str(), header)) {
@@ -425,6 +494,15 @@ bool Replay_Begin(void)
 	Register_At_Exit();
 	DebugString("REPLAY recording to %s (map %s, seed %08X, mapcrc %08X, rules %08X, art %08X, ai %08X)\n", path.c_str(),
 		header.Map.c_str(), header.Seed, header.MapCrc, header.RulesCrc, header.ArtCrc, header.AiCrc);
+	if (!Spawner_Is_Active()) {
+		std::size_t start = 0;
+		while (start < launch.size()) {
+			std::size_t end = launch.find('\n', start);
+			end = (end == std::string::npos) ? launch.size() : end;
+			DebugString("REPLAY launch text: %s\n", launch.substr(start, end - start).c_str());
+			start = end + 1;
+		}
+	}
 	return(true);
 }
 
@@ -514,4 +592,82 @@ void Replay_Frame_End(void)
 void Replay_Finish(void)
 {
 	Replay_At_Exit();
+}
+
+
+void Replay_Note_Game_Over(bool won)
+{
+	if (IsRecording) {
+		MatchResult = won ? ReplayFile::ResultType::WON : ReplayFile::ResultType::LOST;
+	}
+}
+
+
+/// <summary>
+/// Drops a replay that has ended or been refused. The verdict was given before this, and the
+/// request is gone, so a game started afterwards is not played from a replay.
+/// </summary>
+void Replay_Release(void)
+{
+	IsRequested = false;
+	IsPlaying = false;
+	IsPaused = false;
+	IsFast = false;
+	PlaybackFault.clear();
+	Playback = ReplayFile::ReplayType();
+}
+
+
+void Replay_Toggle_Pause(void)
+{
+	if (IsPlaying) {
+		IsPaused = !IsPaused;
+	}
+}
+
+
+void Replay_Toggle_Fast(void)
+{
+	if (IsPlaying) {
+		IsFast = !IsFast;
+	}
+}
+
+
+bool Replay_Is_Paused(void)
+{
+	return(IsPlaying && IsPaused);
+}
+
+
+bool Replay_Is_Fast(void)
+{
+	return(IsPlaying && IsFast);
+}
+
+
+/// <summary>
+/// The label for the view: the frame played of the frames recorded, and whether playback is paused,
+/// fast, or past the end of the recording.
+/// </summary>
+std::string Replay_Label_Text(void)
+{
+	if (!IsPlaying) {
+		return(std::string());
+	}
+
+	std::string label = "Replay";
+	if (Playback.IsComplete) {
+		char numbers[48];
+		std::snprintf(numbers, sizeof(numbers), " %d / %u", std::max(Frame, 0), Playback.End.Frame);
+		label += numbers;
+	}
+	if (Playback.IsComplete && Frame > static_cast<int>(Playback.End.Frame)) {
+		label += " - ended";
+	} else if (IsPaused) {
+		label += " - paused";
+	} else if (IsFast) {
+		label += " - fast";
+	}
+	return(label);
 }

@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "replayfile.h"
+
 #include <string>
 
 class EventClass;
@@ -63,3 +65,21 @@ void Replay_Frame_End(void);
 
 // Writes the end of a recording or the verdict of a playback. Safe to call more than once.
 void Replay_Finish(void);
+
+// Called when the match is decided for the player: won, or lost. A recording keeps the result.
+void Replay_Note_Game_Over(bool won);
+
+// Forgets the replay that was asked for, so that the next game started from the menus is an ordinary one.
+void Replay_Release(void);
+
+// Pause and faster play of a replay. Fast play removes the pacing of the frames; the simulation is unchanged.
+void Replay_Toggle_Pause(void);
+void Replay_Toggle_Fast(void);
+bool Replay_Is_Paused(void);
+bool Replay_Is_Fast(void);
+
+// The reason a recording cannot be played by this game, judged before a match starts; empty when it can.
+std::string Replay_Playability(ReplayFile::HeaderType const & recorded);
+
+// The text of the small label drawn over the view during playback, or an empty string outside playback.
+std::string Replay_Label_Text(void);

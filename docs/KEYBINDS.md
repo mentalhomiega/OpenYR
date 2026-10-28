@@ -60,6 +60,7 @@ Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAtt
 - `PlaceBeacon` and `Delete` work on beacons, which this build does not have. In a single-player game they do nothing, as in gamemd. In a multiplayer game they report that beacons are not available.
 - `Taunt_1` to `Taunt_8` play taunts in multiplayer games in gamemd. In a single-player game they do nothing. In a multiplayer game they report that taunts are not available.
 - `MultiplayerDebug` toggles the multiplayer debug display. gamemd registers the command only when the game starts with `-MPDEBUG`, and nothing in its code turns the display on at start. This build always lists the command, and `-MPDEBUG` still starts the display shown. The display uses gamemd's labels. It does not show gamemd's `NFT`, `LNFT`, `Rout resp` or `MC resp` lines, and gamemd's display has no `FrameSendRate` line.
+- `ReplayPause` (Pause) and `ReplayFast` (numeric keypad plus) work only while a replay plays, in both schemes. Keyboard file version 6 adds them: a file of version 2 to 5 gains each key when the file names no command on it. [REPLAYS.md](REPLAYS.md) describes what they do.
 - `PageUser` sends an event whose gamemd identity the decompile does not settle. `CursorCheat` shows a cell readout, and `ExtraSyncChecking` toggles extra sync logging. We have not ported them.
 
 ## Upgrading existing keyboard files

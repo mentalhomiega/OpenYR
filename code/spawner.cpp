@@ -44,6 +44,7 @@
 #include <algorithm>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <string>
 #include <winsock.h>
 
@@ -544,6 +545,214 @@ static void Spawner_Setup_Session(void)
 
 
 /// <summary>
+/// Describes the skirmish a menu committed to the session as launch file text, so that a launch
+/// can start the same match again: the options, the person's seat, the computers' seats with their
+/// countries, colors, difficulties and start positions, and which seats are allied.
+/// </summary>
+/// <returns>The text, or an empty string when the session holds no skirmish with a person in it.</returns>
+std::string Spawner_Describe_Session(void)
+{
+	if (Session.Type != GAME_SKIRMISH || Session.Players.Count() < 1) {
+		return(std::string());
+	}
+
+	SpawnerConfigClass config;
+	config.ScenarioName = Scen->ScenarioName;
+	config.MapName = Session.Options.ScenarioDescription;
+	config.Bases = Session.Options.Bases;
+	config.Credits = Session.Options.Credits;
+	config.BridgeDestroy = Session.Options.BridgeDestruction;
+	config.Crates = Session.Options.Goodies;
+	config.ShortGame = Session.Options.ShortGame;
+	config.BuildOffAlly = Session.Options.BuildOffAlly;
+	config.SuperWeapons = Session.Options.SWAllowed;
+	config.GameSpeed = Session.Options.GameSpeed;
+	config.MultiEngineer = Session.Options.CrapEngineers;
+	config.UnitCount = Session.Options.UnitCount;
+	config.AIPlayers = Session.Computers.Count();
+	config.AIDifficulty = (int)Session.Options.AIDifficulty;
+	config.AlliesAllowed = Session.Options.AlliesAllowed;
+	config.HarvesterTruce = Session.Options.HarvTruce;
+	config.FogOfWar = Session.Options.FogOfWar;
+	config.MCVRedeploy = Session.Options.MCVRedeploy;
+	config.AutoDeployMCV = Session.Options.AutoDeployMCV;
+	config.Seed = Seed;
+	config.TechLevel = BuildLevel;
+	config.Firestorm = Addon_Enabled(ADDON_FIRESTORM);
+	config.CoachMode = Session.Options.CoachMode;
+	config.AutoSurrender = !Session.Options.AITakeover;
+	config.AttackNeutralUnits = Session.Options.AttackNeutralUnits;
+	config.ScrapMetal = Session.Options.ScrapMetal;
+	config.AINamesByDifficulty = true;
+
+	int const humans = std::min(Session.Players.Count(), SpawnerConfigClass::SLOT_COUNT);
+	int const computers = std::min(Session.Computers.Count(), SpawnerConfigClass::SLOT_COUNT - humans);
+	config.HumanCount = humans;
+	config.AIPlayers = computers;
+	config.LocalSlot = 0;
+
+	for (int index = 0; index < humans + computers; index++) {
+		bool const human = index < humans;
+		NodeNameType const & node = human ? *Session.Players[index] : *Session.Computers[index - humans];
+		SpawnerConfigClass::SlotType & slot = config.Slots[index];
+
+		slot.Occupancy = human ? SpawnerConfigClass::OccupancyType::Human : SpawnerConfigClass::OccupancyType::Computer;
+		slot.Name = node.Name;
+		slot.Color = node.Player.Color;
+		slot.CustomColor = human ? node.Player.CustomColor : 0;
+		slot.Country = node.Player.House;
+		slot.Handicap = human ? -1 : node.Player.Handicap;
+		slot.IsSpectator = human && node.Player.IsObserver;
+		slot.StartingPosition = node.Player.SpawnChoice;
+
+		int allies = 0;
+		for (int seat = 0; seat < SpawnerConfigClass::SLOT_COUNT; seat++) {
+			if ((node.Player.AlliesMask & (1u << seat)) != 0) {
+				slot.Alliances[allies++] = seat;
+			}
+		}
+	}
+
+	return(config.Write_INI());
+}
+
+
+namespace
+{
+
+/// What a replay started from the menus changes in the menus' own state, kept to put it back.
+struct MenuStateType
+{
+	bool Held = false;
+	GameOptionsType Options;
+	char Handle[sizeof(Session.Handle)];
+	int House = 0;
+	int ColorIdx = 0;
+	int PrefColor = 0;
+	unsigned int CustomColor = 0;
+	unsigned int PrefCustomColor = 0;
+	int GameSpeed = 0;
+	int BuildLevel = 0;
+	int CustomSeed = 0;
+	int AutosaveInterval = 0;
+	int CampaignSlot = 0;
+	int SkirmishSlot = 0;
+	bool AddonEnabled = false;
+	AddonType RequiredAddon = ADDON_BASE_GAME;
+	bool SkipScoreScreen = false;
+	bool QuickMatch = false;
+	bool PlayMovies = false;
+	char LoadScreen[sizeof(Session.LoadScreen)];
+	int LoadScreenX = 0;
+	int LoadScreenY = 0;
+	char DifficultyName[sizeof(Session.DifficultyName)];
+};
+
+MenuStateType MenuState;
+
+}
+
+
+/// <summary>
+/// Starts the replay file as the launch file would, from the menus. The menus' own settings are put
+/// back by Spawner_Release when the replay has ended, or here when it cannot be played.
+/// </summary>
+/// <param name="gameloaded">Set when the launch resumed a saved game; a replay never does.</param>
+/// <returns>bool; Is the replay ready to start?</returns>
+bool Spawner_Play_Replay(char const * path, bool & gameloaded)
+{
+	if (SpawnConsumed || MenuState.Held) {
+		return(false);
+	}
+
+	MenuState.Held = true;
+	MenuState.Options = Session.Options;
+	std::memcpy(MenuState.Handle, Session.Handle, sizeof(MenuState.Handle));
+	MenuState.House = Session.House;
+	MenuState.ColorIdx = Session.ColorIdx;
+	MenuState.PrefColor = Session.PrefColor;
+	MenuState.CustomColor = Session.CustomColor;
+	MenuState.PrefCustomColor = Session.PrefCustomColor;
+	MenuState.GameSpeed = Options.GameSpeed;
+	MenuState.BuildLevel = BuildLevel;
+	MenuState.CustomSeed = CustomSeed;
+	MenuState.AutosaveInterval = SaveManager.Autosave.Interval();
+	MenuState.CampaignSlot = SaveManager.Autosave.Campaign_Slot();
+	MenuState.SkirmishSlot = SaveManager.Autosave.Skirmish_Slot();
+	MenuState.AddonEnabled = Addon_Enabled(ADDON_FIRESTORM);
+	MenuState.RequiredAddon = Get_Required_Addon();
+	MenuState.SkipScoreScreen = Session.SkipScoreScreen;
+	MenuState.QuickMatch = Session.QuickMatch;
+	MenuState.PlayMovies = Session.PlayMovies;
+	std::memcpy(MenuState.LoadScreen, Session.LoadScreen, sizeof(MenuState.LoadScreen));
+	MenuState.LoadScreenX = Session.LoadScreenX;
+	MenuState.LoadScreenY = Session.LoadScreenY;
+	std::memcpy(MenuState.DifficultyName, Session.DifficultyName, sizeof(MenuState.DifficultyName));
+
+	Replay_Request_Playback(path);
+	Spawner_Request();
+	if (!Spawner_Prepare(gameloaded)) {
+		Spawner_Release();
+		return(false);
+	}
+	return(true);
+}
+
+
+bool Spawner_Is_Menu_Replay(void)
+{
+	return(MenuState.Held);
+}
+
+
+/// <summary>
+/// Gives the menus back what a replay started with Spawner_Play_Replay changed, so that the next game
+/// they start is the one the player sets up. A game started from a launch file keeps what it has.
+/// </summary>
+void Spawner_Release(void)
+{
+	if (!MenuState.Held) {
+		return;
+	}
+	MenuState.Held = false;
+
+	SpawnRequested = false;
+	SpawnConsumed = false;
+	SpawnConfig = SpawnerConfigClass();
+	Replay_Release();
+
+	Session.Options = MenuState.Options;
+	std::memcpy(Session.Handle, MenuState.Handle, sizeof(Session.Handle));
+	Session.House = MenuState.House;
+	Session.ColorIdx = MenuState.ColorIdx;
+	Session.PrefColor = MenuState.PrefColor;
+	Session.CustomColor = MenuState.CustomColor;
+	Session.PrefCustomColor = MenuState.PrefCustomColor;
+	Options.GameSpeed = MenuState.GameSpeed;
+	BuildLevel = MenuState.BuildLevel;
+	CustomSeed = MenuState.CustomSeed;
+	SaveManager.Autosave.Set_Interval(MenuState.AutosaveInterval);
+	SaveManager.Autosave.Seed_Slots(MenuState.CampaignSlot, MenuState.SkirmishSlot);
+	Disable_Addon(ADDON_ANY);
+	if (MenuState.AddonEnabled) {
+		Enable_Addon(ADDON_FIRESTORM);
+	}
+	Set_Required_Addon(MenuState.RequiredAddon);
+	Session.SkipScoreScreen = MenuState.SkipScoreScreen;
+	Session.QuickMatch = MenuState.QuickMatch;
+	Session.PlayMovies = MenuState.PlayMovies;
+	std::memcpy(Session.LoadScreen, MenuState.LoadScreen, sizeof(Session.LoadScreen));
+	Session.LoadScreenX = MenuState.LoadScreenX;
+	Session.LoadScreenY = MenuState.LoadScreenY;
+	std::memcpy(Session.DifficultyName, MenuState.DifficultyName, sizeof(Session.DifficultyName));
+
+	Clear_Vector(&Session.Players);
+	Clear_Vector(&Session.Computers);
+	Session.Type = GAME_NORMAL;
+}
+
+
+/// <summary>
 /// Records that a client asked the game to launch what SPAWN.INI describes.
 /// </summary>
 void Spawner_Request(void)
@@ -617,6 +826,11 @@ bool Spawner_Prepare(bool & gameloaded)
 	RAMFileClass launch_file(launch_text.data(), static_cast<int>(launch_text.size()));
 	ini.Load(launch_file, false);
 	SpawnConfig.Read_INI(ini);
+
+	// A replay has no score to keep, so the match ends on its own when it is decided.
+	if (Replay_Is_Playing()) {
+		SpawnConfig.SkipScoreScreen = true;
+	}
 	Replay_Note_Launch(launch_text, SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Skirmish);
 
 	SpawnConsumed = true;

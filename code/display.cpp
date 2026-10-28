@@ -133,6 +133,7 @@
 #include "overtype.h"
 #include "palette.h"
 #include "queue.h"
+#include "replay.h"
 #include "rules.h"
 #include "saveload.h"
 #include "savestream.h"
@@ -2130,6 +2131,17 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 		}
 	} attack_move_scope;
 
+	// A replay is watched, not played: a click selects and inspects, and places, sells, repairs and targets nothing.
+	if (Replay_Is_Playing()) {
+		if (PendingObjectPtr || IsPlaceBeaconMode) {
+			IsTentative = false;
+			return;
+		}
+		if (action != ACTION_SELECT && action != ACTION_TOGGLE_SELECT && action != ACTION_NONE) {
+			action = ACTION_NONE;
+		}
+	}
+
 	if (object != NULL && ScenarioActive && GameActive && !Debug_Map && object->Visual_Character() == VISUAL_HIDDEN) {
 		object = NULL;
 	}
@@ -3981,6 +3993,11 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 	char waypoint_id = 0;
 
 	if (Debug_Map) {
+		return;
+	}
+
+	// A replay runs the orders it recorded. A click on the map selects and inspects but gives no order.
+	if (Replay_Is_Playing()) {
 		return;
 	}
 

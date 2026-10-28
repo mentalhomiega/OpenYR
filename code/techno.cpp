@@ -197,6 +197,7 @@
 #include "psystype.h"
 #include "queue.h"
 #include "revent.h"
+#include "replay.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
@@ -5737,6 +5738,11 @@ bool Attack_Move_Key_Held(void)
  *=============================================================================================*/
 void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
+	// A replay runs the orders it recorded, so the player's order gets no answer and no event.
+	if (Replay_Is_Playing()) {
+		return;
+	}
+
 	// A paralyzed foot, such as a giant squid's victim, takes no move order: no voice, no mission (FootClass::CellClickedAction, 0x4D7D50, via TechnoClass::IsControllable, 0x700C40). Attacks still go through.
 	if ((mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE) && Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
 		return;

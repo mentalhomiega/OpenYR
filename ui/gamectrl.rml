@@ -41,6 +41,7 @@
 				<label class="check setting" id="switch-rally" desc="Makes the force-move key also set the rally point of a building."><span class="caption">Rally With Force-Move</span><input type="checkbox" id="rally" data-attrif-checked="rally" data-event-click="queue('rally', rally ? 0 : 1)"/></label>
 				<label class="check setting" id="switch-sorting" desc="Keeps the sidebar cameos in a fixed order."><span class="caption">Sort Sidebar</span><input type="checkbox" id="sorting" data-attrif-checked="sorting" data-event-click="queue('sorting', sorting ? 0 : 1)"/></label>
 				<label class="check setting" id="switch-background" desc="Keeps the game running while its window is not the active one."><span class="caption">Play In Background</span><input type="checkbox" id="background" data-attrif-checked="background" data-event-click="queue('background', background ? 0 : 1)"/></label>
+				<label class="check setting" id="switch-replays" desc="Records each skirmish you play to the Replays folder, so you can watch it again from the main menu. Off by default."><span class="caption">Record replays</span><input type="checkbox" id="replays" data-attrif-checked="replays" data-event-click="queue('replays', replays ? 0 : 1)"/></label>
 				<label class="check setting" id="switch-debug-mode" desc="Turns on the debug keys and views, for testing."><span class="caption">Debug mode (for testing)</span><input type="checkbox" id="debug-mode" data-attrif-checked="debugmode" data-event-click="queue('debugmode', debugmode ? 0 : 1)"/></label>
 			</div>
 

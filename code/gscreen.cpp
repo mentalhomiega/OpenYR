@@ -75,6 +75,7 @@
 #include "surface.h"
 #include "tactical.h"
 #include "lstorm.h"
+#include "replay.h"
 #include "scenario.h"
 #include "theater.h"
 #include "emissive.h"
@@ -607,6 +608,17 @@ static void Draw_Frame_Rates(Surface & surface)
 }
 
 
+/// <summary>
+/// Draws the replay label at the top centre of the game view, so that a replay is never mistaken for a live game.
+/// </summary>
+static void Draw_Replay_Label(Surface & surface)
+{
+	std::string const label = Replay_Label_Text();
+	Fancy_Text_Print("%s", surface, surface.Get_Rect(), Point2D(ScreenTacticalRect.X + ScreenTacticalRect.Width / 2, ScreenTacticalRect.Y + 6),
+		Fetch_Scheme_By_Name("Yellow"), TBLACK, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW | TPF_CENTER), label.c_str());
+}
+
+
 /***********************************************************************************************
  * GScreenClass::Render -- General drawing dispatcher an display update function.              *
  *                                                                                             *
@@ -769,6 +781,10 @@ void GScreenClass::Render(void)
 
 		if (Options.ShowFPS) {
 			Draw_Frame_Rates(*LogicalSurface);
+		}
+
+		if (hud && Replay_Is_Playing()) {
+			Draw_Replay_Label(*LogicalSurface);
 		}
 
 		if (hud && ToolTips != NULL) {

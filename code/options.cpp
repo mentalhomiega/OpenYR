@@ -933,6 +933,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
+	ConfigINI.Put_Bool("Options", "RecordReplays", Replay_Is_Recording_Enabled());
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);
 	ConfigINI.Put_Int("Video", "ScreenWidth", ScreenWidth);

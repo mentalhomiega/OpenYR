@@ -364,10 +364,19 @@ void Test_Grid_Modifier(void)
 	Upgrade_Hotkeys(removed, 3, KEYBOARD_SCHEME_MODERN);
 	Check(Find(removed, "ForceFire") == nullptr && Find(removed, "ForceMove") == nullptr, "a version 3 file does not regain the held modifiers it omits");
 
-	// A version 3 Classic file gains nothing, and a version 4 file is taken as saved.
+	// A version 3 Classic file gains attack move and the replay keys, and a version 4 file is taken as saved.
 	std::vector<HotkeyEntry> classic = { { "CenterBase", 36 } };
 	Upgrade_Hotkeys(classic, 3, KEYBOARD_SCHEME_CLASSIC);
-	Check(Find(classic, "GridBuildModifier") == nullptr && classic.size() == 2 && Key_Of(classic, "AttackMove") == 0x300, "a version 3 Classic file gains no grid modifier, only attack move");
+	Check(Find(classic, "GridBuildModifier") == nullptr && classic.size() == 4 && Key_Of(classic, "AttackMove") == 0x300
+		&& Key_Of(classic, "ReplayPause") == 19 && Key_Of(classic, "ReplayFast") == 107, "a version 3 Classic file gains no grid modifier, only attack move and the replay keys");
+
+	// A version 5 file gains the replay keys when it does not name the commands and the keys are free, and keeps what it names.
+	std::vector<HotkeyEntry> five = { { "CenterBase", 36 }, { "ReplayFast", 120 } };
+	Upgrade_Hotkeys(five, 5, KEYBOARD_SCHEME_CLASSIC);
+	Check(five.size() == 3 && Key_Of(five, "ReplayPause") == 19 && Key_Of(five, "ReplayFast") == 120, "a version 5 file gains the replay pause key and keeps the fast key it names");
+	std::vector<HotkeyEntry> held = { { "Options", 19 } };
+	Upgrade_Hotkeys(held, 5, KEYBOARD_SCHEME_CLASSIC);
+	Check(Find(held, "ReplayPause") == nullptr && Key_Of(held, "ReplayFast") == 107, "a replay key that another command holds is not given");
 	std::vector<HotkeyEntry> current = { { "CenterBase", 36 } };
 	Upgrade_Hotkeys(current, KEYBOARD_DEFAULTS_VERSION, KEYBOARD_SCHEME_MODERN);
 	Check(current.size() == 1, "a version 4 file gets no defaults for the commands it omits");
