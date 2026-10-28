@@ -185,7 +185,7 @@ An aircraft's test reads no terrain at all. Height, walls, cliffs, water and occ
 
 Before a route is planned, the engine checks that the destination is reachable on the zone map, which is rebuilt when the ground changes. The zone map is built in three stages:
 
-1. Every cell gets one of seven **blockage ratings**.
+1. Every cell gets one of eight **blockage ratings**.
 2. Each of the ten [movement zone](/reference/enums/movement-zone/) classes accepts some ratings and refuses the others.
 3. Each connected run of accepted cells becomes one of that class's [movement zones](/glossary/#movement-zone). A destination outside the object's zone is unreachable.
 
@@ -197,7 +197,8 @@ A cell takes the first rating in this table that fits. The rating ignores the ob
 | Crushable | The cell has a [`Crushable=yes`](/keys/crushable/) overlay |
 | Blocked | The cell has a wall overlay |
 | Impassable | The overlay's land type prices `Wheel=` at exactly zero |
-| Water | The land type is `Water` or `Beach`, whatever those sections say |
+| Water | The land type is `Water`, whatever that section says |
+| Beach | The land type is `Beach`, whatever that section says |
 | Impassable | The cell's land type prices `Wheel=` at `0.01` or below, or an active firestorm wall stands there |
 | Partly blocked | A terrain object covers some, but not all, of the places infantry could stand in the cell |
 | Blocked | A terrain object covers all of those places |
@@ -205,7 +206,7 @@ A cell takes the first rating in this table that fits. The rating ignores the ob
 
 Because only `Wheel=` is read, a land type priced at zero for `Wheel` is rated impassable even when its `Track=` or `Hover=` figure is generous. Every class except `Subterannean` and `Fly` then loses all of that ground.
 
-Water and beach cells are rated by land type alone. A hovercraft therefore needs both a `[Water] Hover=` figure above zero, for the per-step test, and a movement zone that accepts water, for the zone map. Neither setting covers for the other.
+Water and beach cells are rated by land type alone. A hovercraft therefore needs both a `[Water] Hover=` figure above zero, for the per-step test, and a movement zone that accepts water, for the zone map. A ship whose class is `Water` is routed over water only, so a beach cell ends its zone; `WaterBeach` also accepts beach. Neither setting covers for the other.
 
 The two impassable thresholds differ. A cell whose own land type has a `Wheel=` figure of `0.005` lets a wheeled vehicle step in, but it is rated impassable, so most classes cannot plan a route to it.
 
@@ -216,8 +217,9 @@ The table below shows which classes accept each rating. A movement zone name mea
 | Open land | All ten |
 | Crushable | `Crusher`, `Destroyer`, `AmphibiousDestroyer`, `AmphibiousCrusher`, `Subterannean`, `InfantryDestroyer`, `Fly` |
 | Blocked | `Destroyer`, `AmphibiousDestroyer`, `Subterannean`, `InfantryDestroyer`, `Fly` |
-| Water | `Amphibious`, `AmphibiousCrusher`, `AmphibiousDestroyer`, `Fly` |
-| Partly blocked | `Infantry`, `InfantryDestroyer`, `Fly` |
+| Beach | `Amphibious`, `AmphibiousCrusher`, `AmphibiousDestroyer`, `WaterBeach`, `Fly` |
+| Water | `Amphibious`, `AmphibiousCrusher`, `AmphibiousDestroyer`, `Water`, `WaterBeach`, `Fly` |
+| Partly blocked | `AmphibiousDestroyer`, `Infantry`, `InfantryDestroyer`, `Fly` |
 | Impassable | `Subterannean`, `Fly` |
 | Outside | None |
 
