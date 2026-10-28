@@ -361,6 +361,8 @@ static bool Spawner_Wire_Network(void)
 {
 	// Create_Connections reads both to set the start timing, so they are set before it runs.
 	Session.NetworkTimingAdaptive = SpawnConfig.AdaptiveTiming;
+	Session.NetworkTimingChoice = SpawnConfig.TimingChoice;
+	Session.CommProtocol = SpawnConfig.Protocol == 0 ? COMM_PROTOCOL_SINGLE_NO_COMP : COMM_PROTOCOL_MULTI_E_COMP;
 	Session.NetworkThroughTunnel = SpawnConfig.TunnelPort != 0;
 
 	if (SpawnConfig.TunnelPort != 0) {

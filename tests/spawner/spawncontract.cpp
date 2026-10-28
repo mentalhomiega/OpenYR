@@ -613,9 +613,8 @@ int main(void)
 			"[Settings]\n"
 			"Credits=7000\n"
 			"Seed=42\n"
-			"Protocol=2\n"
-			"FrameSendRate=3\n"
-			"MaxAhead=100\n"
+			"Protocol=0\n"
+			"FrameSendRate=2\n"
 			"PreCalcMaxAhead=1\n"
 			"MaxLatencyLevel=2\n"
 			"SomeFutureClientKey=1\n";
@@ -623,7 +622,45 @@ int main(void)
 		SpawnerConfigClass a = Read(plain, sizeof(plain) - 1);
 		SpawnerConfigClass b = Read(noisy, sizeof(noisy) - 1);
 		Check(a.Session_Identity_CRC() == b.Session_Identity_CRC(),
-			"timing and unknown keys cannot move a match's identity");
+			"the client's default timing keys and unknown keys cannot move a match's identity");
+		Check(!b.TimingChoice.Is_Set() && b.Protocol == 2, "the client's defaults (send period 2, protocol 0) are no choice");
+
+		char const seven[] = "[Settings]\nFrameSendRate=7\nProtocol=2\n";
+		Check(!Read(seven, sizeof(seven) - 1).TimingChoice.Is_Set(), "the client's default send period 7 is no choice");
+	}
+
+	/*
+	 * A host's send period, look-ahead and protocol are shared by the machines, so they are part of
+	 * the identity once chosen: machines that start with different ones would stall each other.
+	 */
+	{
+		char const plain[] = "[Settings]\nCredits=7000\n";
+		char const period[] = "[Settings]\nCredits=7000\nFrameSendRate=4\n";
+		char const ahead[] = "[Settings]\nCredits=7000\nMaxAhead=40\n";
+		char const literal[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=2\nMaxAhead=30\nProtocol=0\n";
+		char const literal_default[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=7\n";
+		char const out_of_range[] = "[Settings]\nCredits=7000\nHostTiming=yes\nFrameSendRate=11\nMaxAhead=3\nProtocol=1\n";
+		char const unchosen_protocol[] = "[Settings]\nCredits=7000\nProtocol=0\n";
+
+		SpawnerConfigClass const base = Read(plain, sizeof(plain) - 1);
+		SpawnerConfigClass const a = Read(period, sizeof(period) - 1);
+		SpawnerConfigClass const b = Read(ahead, sizeof(ahead) - 1);
+		SpawnerConfigClass const c = Read(literal, sizeof(literal) - 1);
+		SpawnerConfigClass const d = Read(literal_default, sizeof(literal_default) - 1);
+		SpawnerConfigClass const e = Read(out_of_range, sizeof(out_of_range) - 1);
+		SpawnerConfigClass const f = Read(unchosen_protocol, sizeof(unchosen_protocol) - 1);
+
+		Check(a.TimingChoice.FrameSendRate == 4 && a.TimingChoice.MaxAhead == 0, "a send period other than the client's defaults is a choice");
+		Check(b.TimingChoice.FrameSendRate == 0 && b.TimingChoice.MaxAhead == 40, "a look-ahead is a choice");
+		Check(c.TimingChoice.FrameSendRate == 2 && c.TimingChoice.MaxAhead == 30 && c.Protocol == 0, "HostTiming=yes takes every value literally");
+		Check(d.TimingChoice.FrameSendRate == 7, "HostTiming=yes takes the client's default send period as a choice");
+		Check(!e.TimingChoice.Is_Set() && e.Protocol == 2, "values out of range are no choice");
+		Check(f.Protocol == 2, "a protocol the host did not choose is not read");
+		Check(a.Session_Identity_CRC() != base.Session_Identity_CRC(), "a chosen send period moves the identity");
+		Check(b.Session_Identity_CRC() != base.Session_Identity_CRC(), "a chosen look-ahead moves the identity");
+		Check(c.Session_Identity_CRC() != base.Session_Identity_CRC() && c.Session_Identity_CRC() != a.Session_Identity_CRC(),
+			"a chosen protocol moves the identity");
+		Check(e.Session_Identity_CRC() == base.Session_Identity_CRC(), "values out of range leave the identity alone");
 	}
 
 	/*

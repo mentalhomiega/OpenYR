@@ -321,6 +321,15 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(AutoSurrender);
 
 	// ConnTimeout, ReconnectTimeout and TimingPolicy are each machine's own, so they are left out on purpose.
+	// A host's send period and look-ahead are shared: machines that start with different ones would stall.
+	// They count only when chosen, so a match that chose nothing keeps the identity it always had.
+	if (TimingChoice.Is_Set()) {
+		crc(static_cast<int>(TimingChoice.FrameSendRate));
+		crc(static_cast<int>(TimingChoice.MaxAhead));
+	}
+	if (Protocol != 2) {
+		crc(Protocol);
+	}
 
 	for (bool flag : GlobalFlags) {
 		crc(flag);
@@ -566,6 +575,25 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	ConnTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout));
 	ReconnectTimeout = Clamp_Timeout(ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout));
 	AdaptiveTiming = Read_Text(ini, SETTINGS, "TimingPolicy", "") == "Adaptive";
+
+	// A value outside the range the game accepts is passed over, like a key it does not know.
+	FrameSendRate = ini.Get_Int(SETTINGS, "FrameSendRate", FrameSendRate);
+	MaxAhead = ini.Get_Int(SETTINGS, "MaxAhead", MaxAhead);
+	Protocol = ini.Get_Int(SETTINGS, "Protocol", Protocol);
+	HostTiming = Spawn_Bool(ini, SETTINGS, "HostTiming", HostTiming);
+	TimingChoice = NetTiming::HostTimingChoice();
+	if (FrameSendRate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(FrameSendRate))) {
+		TimingChoice.FrameSendRate = static_cast<unsigned int>(FrameSendRate);
+	}
+	if (MaxAhead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(MaxAhead))) {
+		TimingChoice.MaxAhead = static_cast<unsigned int>(MaxAhead);
+	}
+	// The client writes these keys in every game, with defaults of its own. Those read as no choice unless
+	// the file says the host chose (HostTiming=yes), as the lobby built into the game says.
+	if (!HostTiming && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
+		TimingChoice.FrameSendRate = 0;
+	}
+	Protocol = HostTiming && Protocol == 0 ? 0 : 2;
 
 	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);

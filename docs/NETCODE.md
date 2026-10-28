@@ -181,6 +181,22 @@ MA counts frames, so its time depends on F. A look-ahead of 30 frames is 500 ms 
 
 The game starts with the rate and look-ahead in [Start values](#start-values). Before the change, a network game started at 30 fps and waited for the first timing event.
 
+## Host choice
+
+The host can fix the send period (FSR), the look-ahead (MA) or both for a match. The built-in CnCNet lobby and the LAN lobby take the chat commands `/FrameSendRate`, `/MaxAhead` and `/ProtocolVersion` (alias `/Protocol`). A launch file carries the choice as `FrameSendRate`, `MaxAhead` and `Protocol`. Without a choice, nothing in this page changes. The code is `NetTiming::HostTimingChoice` and `NetTiming::HostNetworkOptions` in `code/nettiming.h`, kept in `Session.NetworkTimingChoice`.
+
+- **Ranges.** FSR is 1 to 10. MA is 4 to 250. A value outside its range is refused by the command and passed over in a launch file. MA is rounded up to a whole number of send periods and held at or below 250, and it is at least `3 * FSR` (4 for FSR 1), the smallest the TIMING event accepts. FSR 7 with MA 30 plays 7/35.
+- **Start.** `Network_Start_Timing` puts the choice over the game-speed table. A chosen MA replaces the tunnel's extra 20 frames.
+- **Evaluation.** The master still evaluates every 256 frames. `Gamemd_Timing_Settings` uses the chosen FSR in place of the 10 or 5 and returns the chosen MA, so the TIMING event it sends repeats the choice. With only FSR chosen, MA still follows the round trip, aligned to the chosen FSR. A chosen option also applies to the never-measured round trip case (MA 250 under the chosen FSR).
+- **Adaptive table.** It ignores the choice. The built-in CnCNet lobby writes `TimingPolicy=Gamemd` when the host chose anything.
+- **Identity.** A chosen value is part of the session identity, so the out-of-sync report shows a mismatch. The identity of a match without a choice is unchanged.
+- **Launch file defaults.** The CnCNet client forces `FrameSendRate=2` and `Protocol=0` in its game options and shows 7 and 2 as its host command defaults. A file with FSR 2 or 7, no `MaxAhead` and no `HostTiming=yes` is no choice, so stock-client games keep gamemd's timing. A host who wants exactly 2 or 7 through the stock client cannot get it; the built-in lobby writes `HostTiming=yes`.
+- **LAN.** The host's choice travels in the `NET_GO` packet (`GlobalPacketType::ResponseTime.Options`, packed by `Pack_Host_Options`). A start with no choice is the short packet older builds send.
+
+### Protocol 0
+
+`Protocol=0` selects `COMM_PROTOCOL_SINGLE_NO_COMP`. The queue sends an uncompressed packet every frame, TIMING and NETWORK_REPORT events are refused, and the send period is 1. `Session::Reset_Network_Timing` sets MA to the chosen value, or to the game-speed start value, and the frame rate to the speed's rate. These stay for the match. Protocol 1 (single frame, compressed) is not offered.
+
 ## Launch file keys
 
 | Key (`[Settings]`) | Effect |
@@ -189,7 +205,10 @@ The game starts with the rate and look-ahead in [Start values](#start-values). B
 | `TimingPolicy` | `Adaptive` selects the [adaptive table](#adaptive-policy). Any other value, or no key, plays gamemd's timing. Each machine reads its own value, so the key is left out of the session identity. |
 | `ReconnectTimeout` | Longest frame stall, in ticks, before the game gives up. Default 2400 (40 s). The value is clamped to 60 through 36000. |
 | `ConnTimeout` | Longest wait for loading progress. Default 3600 (60 s). It does not apply to frame stalls. |
-| `Protocol`, `FrameSendRate`, `MaxAhead`, `PreCalcMaxAhead` | Not read. `tests/spawner/spawncontract.cpp` checks that they do not change the match identity. |
+| `FrameSendRate`, `MaxAhead` | The host's send period (1 to 10) and look-ahead (4 to 250). See [Host choice](#host-choice). The CnCNet client's defaults (`FrameSendRate` 2 or 7 with no `MaxAhead`) count as no choice. |
+| `HostTiming` | `yes` takes `FrameSendRate`, `MaxAhead` and `Protocol` literally, including the client's default values. The built-in lobby writes it. |
+| `Protocol` | `0` plays protocol 0, only with `HostTiming=yes`. Any other value plays protocol 2. |
+| `PreCalcMaxAhead` | Not read. |
 
 ## Comparison with gamemd
 

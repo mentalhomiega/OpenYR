@@ -551,6 +551,14 @@ void SessionClass::Reset_Network_Timing(unsigned int frame)
 		}
 		MaxMaxAhead = MaxAhead;
 		NetworkPeerLag = 0;
+	} else if (CommProtocol == COMM_PROTOCOL_SINGLE_NO_COMP) {
+		// Protocol 0 sends every frame and takes no timing events, so the look-ahead set here holds for the match.
+		// The host's choice names it; otherwise it is the look-ahead gamemd's timing starts with.
+		FrameSendRate = 1;
+		MaxAhead = NetworkTimingChoice.MaxAhead != 0 ? NetworkTimingChoice.MaxAhead : Network_Start_Timing().MaxAhead;
+		MaxMaxAhead = MaxAhead;
+		DesiredFrameRate = static_cast<int>(NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+		NetworkPeerLag = 0;
 	}
 	NetworkTimingReports.Reset();
 	NetworkTimingPolicy.Reset(frame);
@@ -624,7 +632,7 @@ NetTiming::TimingSettings SessionClass::Network_Start_Timing(void) const
 	if (NetworkTimingAdaptive) {
 		return(NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG));
 	}
-	return(NetTiming::Gamemd_Start_Settings(Options.GameSpeed, NetworkThroughTunnel));
+	return(NetTiming::Apply_Host_Choice(NetTiming::Gamemd_Start_Settings(Options.GameSpeed, NetworkThroughTunnel), NetworkTimingChoice));
 }
 
 

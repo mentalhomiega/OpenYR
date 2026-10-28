@@ -95,7 +95,13 @@ param(
     [int]$RelaySeed = 1,
     # Largest envelope the relay accepts. The CnCNet server source reads into 1024 bytes, and a global
     # message is 1076 bytes here, so a run at 1024 loses those messages. 2048 is the test's own setting.
-    [ValidateRange(1024, 65535)][int]$RelayBuffer = 1024
+    [ValidateRange(1024, 65535)][int]$RelayBuffer = 1024,
+    # The host's network timing choice, written into both launch files as FrameSendRate, MaxAhead and
+    # Protocol. 0 writes no key (Runner style) or the CnCNet client's own default (CnCNet style), which the
+    # game reads as no choice. FrameSendRate is 1 to 10 and MaxAhead 4 to 250 (rounded up to whole send periods).
+    [ValidateRange(0, 99)][int]$FrameSendRate = 0,
+    [ValidateRange(0, 999)][int]$MaxAhead = 0,
+    [ValidateRange(-1, 2)][int]$Protocol = -1
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -199,6 +205,17 @@ foreach ($user in $userList) { New-Item -ItemType Directory -Force $user | Out-N
 # The GameMode line in [Settings]; empty when -GameMode is 0. The CnCNet writer below has no known
 # key for the mode, so the line it gets is the runner's own.
 $modeLine = if ($GameMode -gt 0) { "GameMode=$GameMode`r`n" } else { '' }
+# The timing lines of the launch file. The Runner style writes a key only when it was asked for. The CnCNet
+# style always writes the client's defaults (send period 7, protocol 2, no look-ahead), as the client does.
+# The Runner style adds HostTiming=yes, which makes the game take the values literally.
+$timingLines = ''
+if ($FrameSendRate -gt 0 -or $MaxAhead -gt 0 -or $Protocol -ge 0) { $timingLines += "HostTiming=yes`r`n" }
+if ($FrameSendRate -gt 0) { $timingLines += "FrameSendRate=$FrameSendRate`r`n" }
+if ($MaxAhead -gt 0) { $timingLines += "MaxAhead=$MaxAhead`r`n" }
+if ($Protocol -ge 0) { $timingLines += "Protocol=$Protocol`r`n" }
+$cncnetFrameSendRate = if ($FrameSendRate -gt 0) { $FrameSendRate } else { 7 }
+$cncnetMaxAheadLine = if ($MaxAhead -gt 0) { "MaxAhead=$MaxAhead`r`n" } else { '' }
+$cncnetProtocol = if ($Protocol -ge 0) { $Protocol } else { 2 }
 
 $aiBlock = ''
 if ($AICountries -and $AI -gt 0) {
@@ -223,6 +240,7 @@ Host=$HostFlag
 BindAddress=127.0.0.1
 AIPlayers=$AI
 $modeLine
+$timingLines
 Credits=10000
 UnitCount=0
 GameSpeed=$GameSpeed
@@ -284,8 +302,9 @@ CustomLoadScreen=
 AIPlayers=$AI
 $modeLine
 Seed=$Seed
-FrameSendRate=7
-Protocol=2
+FrameSendRate=$cncnetFrameSendRate
+$cncnetMaxAheadLine
+Protocol=$cncnetProtocol
 GameID=1
 Host=$HostFlag
 Port=$Port

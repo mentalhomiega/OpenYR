@@ -338,6 +338,7 @@ struct GlobalPacketType {
 		} Message;
 		struct {
 			int OneWay;							// one-way response time
+			unsigned int Options;				// NET_GO: the host's network choices, NetTiming::Pack_Host_Options; zero when none
 		} ResponseTime;
 		struct {
 			int Why;							// why were we rejected from the game?
@@ -642,6 +643,9 @@ class SessionClass
 		int NetworkTimingPolicyOwner;
 		// False uses gamemd's timing; true keeps the adaptive rung table (the spawner's TimingPolicy=Adaptive).
 		bool NetworkTimingAdaptive = false;
+		// The send period and look-ahead the host chose for the match; zero leaves a value to gamemd's timing.
+		// The adaptive policy does not read it.
+		NetTiming::HostTimingChoice NetworkTimingChoice;
 		// Set when the match runs through a tunnel. gamemd adds 20 to the start look-ahead then.
 		bool NetworkThroughTunnel = false;
 		// Frames the most-behind peer was last heard at, behind this machine. Drives the local pacing.

@@ -11,6 +11,7 @@
 #include "nettiming.h"
 
 #include <algorithm>
+#include <cctype>
 #include <limits>
 #include <numeric>
 
@@ -523,6 +524,203 @@ namespace NetTiming
 		unsigned int const max_ahead = Gamemd_Max_Ahead(Round_Trip_Ticks(worst_round_trip), frame_rate, frame_send_rate,
 			current_max_ahead, GAMEMD_LATENCY_STAGE);
 		return(TimingSettings{frame_send_rate, max_ahead});
+	}
+
+
+	/// <summary>Rounds a look-ahead up to whole send periods, within the smallest and largest the game accepts.</summary>
+	unsigned int Host_Max_Ahead_For(unsigned int max_ahead, unsigned int frame_send_rate)
+	{
+		frame_send_rate = std::clamp(frame_send_rate, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
+		unsigned int const minimum = Settings_For_Rung(frame_send_rate).MaxAhead;
+		unsigned int const ceiling = MAXIMUM_MAX_AHEAD - (MAXIMUM_MAX_AHEAD % frame_send_rate);
+		std::uint64_t const aligned = Divide_Round_Up(std::max(max_ahead, minimum), frame_send_rate) * frame_send_rate;
+		return(static_cast<unsigned int>(std::min<std::uint64_t>(aligned, ceiling)));
+	}
+
+
+	TimingSettings Apply_Host_Choice(TimingSettings settings, HostTimingChoice choice)
+	{
+		if (!choice.Is_Set()) {
+			return(settings);
+		}
+		if (Host_Frame_Send_Rate_Is_Valid(choice.FrameSendRate)) {
+			settings.FrameSendRate = choice.FrameSendRate;
+		}
+		// A chosen look-ahead stands; otherwise the policy's look-ahead is kept whole under the chosen send period.
+		unsigned int const wanted = Host_Max_Ahead_Is_Valid(choice.MaxAhead) && choice.MaxAhead != 0 ? choice.MaxAhead : settings.MaxAhead;
+		settings.MaxAhead = Host_Max_Ahead_For(wanted, settings.FrameSendRate);
+		return(settings);
+	}
+
+
+	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
+		HostTimingChoice choice)
+	{
+		unsigned int const frame_send_rate = Host_Frame_Send_Rate_Is_Valid(choice.FrameSendRate)
+			? choice.FrameSendRate : Gamemd_Frame_Send_Rate(frame_rate);
+		unsigned int const max_ahead = Gamemd_Max_Ahead(Round_Trip_Ticks(worst_round_trip), frame_rate, frame_send_rate,
+			current_max_ahead, GAMEMD_LATENCY_STAGE);
+		return(Apply_Host_Choice(TimingSettings{frame_send_rate, max_ahead}, choice));
+	}
+
+
+	namespace
+	{
+		std::string Lower(std::string_view text)
+		{
+			std::string lower(text);
+			for (char & ch : lower) {
+				ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+			}
+			return(lower);
+		}
+
+		std::string_view Trim(std::string_view text)
+		{
+			while (!text.empty() && (text.front() == ' ' || text.front() == '\t')) {
+				text.remove_prefix(1);
+			}
+			while (!text.empty() && (text.back() == ' ' || text.back() == '\t' || text.back() == '\r' || text.back() == '\n')) {
+				text.remove_suffix(1);
+			}
+			return(text);
+		}
+
+		// A whole number of up to five digits.
+		bool Parse_Number(std::string_view text, unsigned int & value)
+		{
+			if (text.empty() || text.size() > 5) {
+				return(false);
+			}
+			unsigned int number = 0;
+			for (char ch : text) {
+				if (ch < '0' || ch > '9') {
+					return(false);
+				}
+				number = number * 10 + static_cast<unsigned int>(ch - '0');
+			}
+			value = number;
+			return(true);
+		}
+
+		std::string Frames(unsigned int value, char const * automatic)
+		{
+			return(value == 0 ? std::string(automatic) : std::to_string(value) + (value == 1 ? " frame" : " frames"));
+		}
+	}
+
+
+	std::string Describe_Host_Options(HostNetworkOptions const & options)
+	{
+		std::string text = "send period " + Frames(options.Timing.FrameSendRate, "automatic");
+		unsigned int look_ahead = options.Timing.MaxAhead;
+		// A look-ahead is a whole number of send periods, so with both chosen the game plays the rounded one.
+		if (look_ahead != 0 && options.Timing.FrameSendRate != 0) {
+			look_ahead = Host_Max_Ahead_For(look_ahead, options.Timing.FrameSendRate);
+		}
+		text += ", look-ahead " + Frames(look_ahead, "automatic");
+		text += ", protocol " + std::to_string(options.Protocol);
+		return(text);
+	}
+
+
+	HostCommandResult Apply_Host_Command(std::string_view line, HostNetworkOptions & options)
+	{
+		HostCommandResult result;
+		line = Trim(line);
+		if (line.empty() || line.front() != '/') {
+			return(result);
+		}
+
+		std::size_t const space = line.find_first_of(" \t");
+		std::string const name = Lower(line.substr(1, space == std::string_view::npos ? std::string_view::npos : space - 1));
+		std::string const argument = space == std::string_view::npos ? std::string() : Lower(Trim(line.substr(space)));
+
+		enum class Command { SendPeriod, LookAhead, Protocol, Other };
+		Command command = Command::Other;
+		if (name == "framesendrate") {
+			command = Command::SendPeriod;
+		} else if (name == "maxahead") {
+			command = Command::LookAhead;
+		} else if (name == "protocolversion" || name == "protocol") {
+			command = Command::Protocol;
+		}
+		if (command == Command::Other) {
+			return(result);
+		}
+		result.Recognised = true;
+
+		if (argument.empty()) {
+			switch (command) {
+				case Command::SendPeriod: result.Message = "Syntax: /FrameSendRate <1 to 10, or auto>. Now: send period "
+					+ Frames(options.Timing.FrameSendRate, "automatic") + "."; break;
+				case Command::LookAhead: result.Message = "Syntax: /MaxAhead <4 to 250, or auto>. Now: look-ahead "
+					+ Frames(options.Timing.MaxAhead, "automatic") + "."; break;
+				default: result.Message = "Syntax: /ProtocolVersion <0 or 2>. Now: protocol " + std::to_string(options.Protocol) + "."; break;
+			}
+			return(result);
+		}
+
+		bool const automatic = argument == "auto" || argument == "default";
+		unsigned int value = 0;
+		bool const parsed = automatic || Parse_Number(argument, value);
+		HostNetworkOptions const before = options;
+		switch (command) {
+			case Command::SendPeriod:
+				if (!parsed || (value != 0 && !Host_Frame_Send_Rate_Is_Valid(value))) {
+					result.Message = "FrameSendRate must be 1 to 10 frames, or auto.";
+					return(result);
+				}
+				options.Timing.FrameSendRate = value;
+				break;
+			case Command::LookAhead:
+				if (!parsed || !Host_Max_Ahead_Is_Valid(value)) {
+					result.Message = "MaxAhead must be 4 to 250 frames, or auto.";
+					return(result);
+				}
+				options.Timing.MaxAhead = value;
+				break;
+			default:
+				if (!parsed || (!automatic && !Host_Protocol_Is_Valid(static_cast<int>(value)))) {
+					result.Message = "ProtocolVersion only allows the values 0 and 2.";
+					return(result);
+				}
+				options.Protocol = automatic ? 2 : static_cast<int>(value);
+				break;
+		}
+		result.Changed = !(options == before);
+		result.Message = std::string(result.Changed ? "Set: " : "Unchanged: ") + Describe_Host_Options(options) + ".";
+		return(result);
+	}
+
+
+	// Bit 31 marks a word that holds options; bits 0 to 7 hold the send period, 8 to 15 the look-ahead, and bit 16 is set for protocol 0.
+	std::uint32_t Pack_Host_Options(HostNetworkOptions const & options)
+	{
+		if (options.Is_Default()) {
+			return(0);
+		}
+		return(0x80000000u | (options.Timing.FrameSendRate & 0xFFu) | ((options.Timing.MaxAhead & 0xFFu) << 8) | (options.Protocol == 0 ? 0x10000u : 0u));
+	}
+
+
+	std::optional<HostNetworkOptions> Unpack_Host_Options(std::uint32_t packed)
+	{
+		HostNetworkOptions options;
+		if (packed == 0) {
+			return(options);
+		}
+		if ((packed & 0x80000000u) == 0 || (packed & 0x7FFE0000u) != 0) {
+			return(std::nullopt);
+		}
+		options.Timing.FrameSendRate = packed & 0xFFu;
+		options.Timing.MaxAhead = (packed >> 8) & 0xFFu;
+		options.Protocol = (packed & 0x10000u) != 0 ? 0 : 2;
+		if ((options.Timing.FrameSendRate != 0 && !Host_Frame_Send_Rate_Is_Valid(options.Timing.FrameSendRate))
+			|| !Host_Max_Ahead_Is_Valid(options.Timing.MaxAhead)) {
+			return(std::nullopt);
+		}
+		return(options);
 	}
 
 

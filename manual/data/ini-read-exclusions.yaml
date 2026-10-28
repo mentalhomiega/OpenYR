@@ -220,7 +220,7 @@ site_exclusions:
     reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.
   - path: code/spawnerconfig.cpp
     function: SpawnerConfigClass::Read_INI
-    keys: [AIDifficulty, AIPlayers, AutoSaveGame, AutoSaveInterval, CampaignID, ConnTimeout, Credits, DifficultyModeComputer, DifficultyModeHuman, GameMode, GameSpeed, NextSPAutoSaveId, NextSkirmishAutoSaveId, Port, ReconnectTimeout, Seed, TechLevel, UnitCount]
+    keys: [AIDifficulty, AIPlayers, AutoSaveGame, AutoSaveInterval, CampaignID, ConnTimeout, Credits, DifficultyModeComputer, DifficultyModeHuman, FrameSendRate, GameMode, GameSpeed, MaxAhead, NextSPAutoSaveId, NextSkirmishAutoSaveId, Port, Protocol, ReconnectTimeout, Seed, TechLevel, UnitCount]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
   - path: code/mpmodeparse.cpp

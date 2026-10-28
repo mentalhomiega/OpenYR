@@ -1635,8 +1635,9 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 	NetTiming::TimingSettings const current = Session.Network_Timing_Target();
 	// A round trip that no connection has measured in 512 frames is treated as the slowest link, as the adaptive policy does.
 	NetTiming::TimingSettings const settings = census.RequiresConservativeTiming
-		? NetTiming::TimingSettings{NetTiming::MAXIMUM_TIMING_RUNG, NetTiming::MAXIMUM_MAX_AHEAD}
-		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead);
+		? NetTiming::Apply_Host_Choice(NetTiming::TimingSettings{NetTiming::MAXIMUM_TIMING_RUNG, NetTiming::MAXIMUM_MAX_AHEAD},
+			Session.NetworkTimingChoice)
+		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice);
 
 	if (Debug_SyncLog) {
 		DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
