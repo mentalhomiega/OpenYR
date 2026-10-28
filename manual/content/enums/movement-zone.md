@@ -12,15 +12,15 @@ values:
   - { constant: MZONE_NORMAL, value: 0, input: "Normal", meaning: "Open land only." }
   - { constant: MZONE_CRUSHER, value: 1, input: "Crusher", meaning: "Open land and cells with a crushable overlay." }
   - { constant: MZONE_DESTROYER, value: 2, input: "Destroyer", meaning: "Crusher cells, plus wall cells and cells a terrain object fills completely." }
-  - { constant: MZONE_AMPHIBIOUS_DESTROYER, value: 3, input: "AmphibiousDestroyer", meaning: "Destroyer cells, plus water and beach." }
+  - { constant: MZONE_AMPHIBIOUS_DESTROYER, value: 3, input: "AmphibiousDestroyer", meaning: "Destroyer cells, plus water, beach and cells a terrain object partly fills." }
   - { constant: MZONE_AMPHIBIOUS_CRUSHER, value: 4, input: "AmphibiousCrusher", meaning: "Crusher cells, plus water and beach." }
   - { constant: MZONE_AMPHIBIOUS, value: 5, input: "Amphibious", meaning: "Open land, water and beach." }
   - { constant: MZONE_SUBTERANNEAN, value: 6, input: "Subterannean", meaning: "Every cell in the playable area except water, beach and cells a terrain object partly fills.", note: "The accepted token preserves the engine's historical spelling." }
   - { constant: MZONE_INFANTRY, value: 7, input: "Infantry", meaning: "Open land and cells a terrain object partly fills." }
   - { constant: MZONE_INFANTRY_DESTROYER, value: 8, input: "InfantryDestroyer", meaning: "Infantry cells, plus cells with a crushable overlay, wall cells and cells a terrain object fills completely." }
   - { constant: MZONE_FLYER, value: 9, input: "Fly", meaning: "Every cell in the playable area." }
-  - { constant: MZONE_WATER, value: 10, input: "Water", meaning: "Water only." }
-  - { constant: MZONE_WATER_BEACH, value: 11, input: "WaterBeach", meaning: "The same cells as Water." }
+  - { constant: MZONE_WATER, value: 10, input: "Water", meaning: "Water cells only; a beach cell ends its zone." }
+  - { constant: MZONE_WATER_BEACH, value: 11, input: "WaterBeach", meaning: "Water cells and beach cells." }
   - { constant: MZONE_CRUSHER_ALL, value: 12, input: "CrusherAll", meaning: "The same cells as Crusher." }
 ---
 

@@ -4684,8 +4684,14 @@ void CellClass::Recalc_Passability(void)
 		}
 	}
 
-	if (Land == LAND_WATER || Land == LAND_BEACH) {
+	// gamemd (0x00483c80) keeps beach apart from water, so a ship's zone ends at the shore.
+	if (Land == LAND_WATER) {
 		Passability = PASSABLE_WATER;
+		return;
+	}
+
+	if (Land == LAND_BEACH) {
+		Passability = PASSABLE_BEACH;
 		return;
 	}
 

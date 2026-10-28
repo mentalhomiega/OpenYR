@@ -1,0 +1,169 @@
+; Campaign win check for Allied 5 (Red Alert 2). Thirty Apocalypse tanks (grantunit, standing in for the army a player would bring) clear the Soviet base round the Battle Lab (NATECH at 100,94) while the three spies wait; only the tanks are ordered (the AttackerTypeID APOC), so Tanya, whose death loses the mission, stays out of the fight.
+; Frames 200 to 1000 take the Tesla coils at the south gate, 1000 to 2000 the rest of the south base, 2000 to 3000 the coils round the lab, 3000 to 4500 the north end. At 4500 the spies are ordered to capture the Battle Lab; "BattleLab Entered" springs at about frame 5850 and the map enlarges. Twenty more tanks arrive at 6300 and go for the missile silos (NAMISL), first the Orange Team's at 56,63, then the Yellow Team's at 65,40. With both gone "Victory 1" and "Victory 2" follow.
+; Expected: "AUTOTEST game over frame N: won" (frame 12108 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all05.txt -Campaign -Map ALL05S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit APOC 96 128
+11 grantunit APOC 98 128
+12 grantunit APOC 100 128
+13 grantunit APOC 102 128
+14 grantunit APOC 104 128
+15 grantunit APOC 106 128
+16 grantunit APOC 108 128
+17 grantunit APOC 110 128
+18 grantunit APOC 112 128
+19 grantunit APOC 114 128
+20 grantunit APOC 96 130
+21 grantunit APOC 98 130
+22 grantunit APOC 100 130
+23 grantunit APOC 102 130
+24 grantunit APOC 104 130
+25 grantunit APOC 106 130
+26 grantunit APOC 108 130
+27 grantunit APOC 110 130
+28 grantunit APOC 112 130
+29 grantunit APOC 114 130
+30 grantunit APOC 96 132
+31 grantunit APOC 98 132
+32 grantunit APOC 100 132
+33 grantunit APOC 102 132
+34 grantunit APOC 104 132
+35 grantunit APOC 106 132
+36 grantunit APOC 108 132
+37 grantunit APOC 110 132
+38 grantunit APOC 112 132
+39 grantunit APOC 114 132
+200 strikeobj TESLA 100 110 12 all APOC
+300 strikeobj TESLA 100 110 12 all APOC
+400 strikeobj TESLA 100 110 12 all APOC
+500 strikeobj TESLA 100 110 12 all APOC
+600 strikeobj TESLA 100 110 12 all APOC
+700 strikeobj TESLA 100 110 12 all APOC
+800 strikeobj TESLA 100 110 12 all APOC
+900 strikeobj TESLA 100 110 12 all APOC
+1000 strikeobj * 100 112 12 all APOC
+1100 strikeobj * 100 112 12 all APOC
+1200 strikeobj * 100 112 12 all APOC
+1300 strikeobj * 100 112 12 all APOC
+1400 strikeobj * 100 112 12 all APOC
+1500 strikeobj * 100 112 12 all APOC
+1600 strikeobj * 100 112 12 all APOC
+1700 strikeobj * 100 112 12 all APOC
+1800 strikeobj * 100 112 12 all APOC
+1900 strikeobj * 100 112 12 all APOC
+2000 strikeobj TESLA 100 94 22 all APOC
+2100 strikeobj TESLA 100 94 22 all APOC
+2200 strikeobj TESLA 100 94 22 all APOC
+2300 strikeobj TESLA 100 94 22 all APOC
+2400 strikeobj TESLA 100 94 22 all APOC
+2500 strikeobj TESLA 100 94 22 all APOC
+2600 strikeobj TESLA 100 94 22 all APOC
+2700 strikeobj TESLA 100 94 22 all APOC
+2800 strikeobj TESLA 100 94 22 all APOC
+2900 strikeobj TESLA 100 94 22 all APOC
+3000 strikeobj * 100 76 10 all APOC
+3100 strikeobj * 100 76 10 all APOC
+3200 strikeobj * 100 76 10 all APOC
+3300 strikeobj * 100 76 10 all APOC
+3400 strikeobj * 100 76 10 all APOC
+3500 strikeobj * 100 76 10 all APOC
+3600 strikeobj * 100 76 10 all APOC
+3700 strikeobj * 100 76 10 all APOC
+3800 strikeobj * 100 76 10 all APOC
+3900 strikeobj * 100 76 10 all APOC
+4000 strikeobj * 100 76 10 all APOC
+4100 strikeobj * 100 76 10 all APOC
+4200 strikeobj * 100 76 10 all APOC
+4300 strikeobj * 100 76 10 all APOC
+4400 strikeobj * 100 76 10 all APOC
+4500 spy SPY 100 94
+6300 grantunit APOC 96 134
+6301 grantunit APOC 98 134
+6302 grantunit APOC 100 134
+6303 grantunit APOC 102 134
+6304 grantunit APOC 104 134
+6305 grantunit APOC 106 134
+6306 grantunit APOC 108 134
+6307 grantunit APOC 110 134
+6308 grantunit APOC 112 134
+6309 grantunit APOC 114 134
+6310 grantunit APOC 96 136
+6311 grantunit APOC 98 136
+6312 grantunit APOC 100 136
+6313 grantunit APOC 102 136
+6314 grantunit APOC 104 136
+6315 grantunit APOC 106 136
+6316 grantunit APOC 108 136
+6317 grantunit APOC 110 136
+6318 grantunit APOC 112 136
+6319 grantunit APOC 114 136
+6400 strikeobj NAMISL 56 63 5 all APOC
+6500 strikeobj NAMISL 56 63 5 all APOC
+6600 strikeobj NAMISL 56 63 5 all APOC
+6700 strikeobj NAMISL 56 63 5 all APOC
+6800 strikeobj NAMISL 56 63 5 all APOC
+6900 strikeobj NAMISL 56 63 5 all APOC
+7000 strikeobj NAMISL 56 63 5 all APOC
+7100 strikeobj NAMISL 56 63 5 all APOC
+7200 strikeobj NAMISL 56 63 5 all APOC
+7300 strikeobj NAMISL 56 63 5 all APOC
+7400 strikeobj NAMISL 56 63 5 all APOC
+7500 strikeobj NAMISL 56 63 5 all APOC
+7600 strikeobj NAMISL 56 63 5 all APOC
+7700 strikeobj NAMISL 56 63 5 all APOC
+7800 strikeobj NAMISL 56 63 5 all APOC
+7900 strikeobj NAMISL 56 63 5 all APOC
+8000 strikeobj NAMISL 56 63 5 all APOC
+8100 strikeobj NAMISL 56 63 5 all APOC
+8200 strikeobj NAMISL 56 63 5 all APOC
+8300 strikeobj NAMISL 56 63 5 all APOC
+8400 strikeobj NAMISL 56 63 5 all APOC
+8500 strikeobj NAMISL 56 63 5 all APOC
+8600 strikeobj NAMISL 56 63 5 all APOC
+8700 strikeobj NAMISL 56 63 5 all APOC
+8800 strikeobj NAMISL 56 63 5 all APOC
+8900 strikeobj NAMISL 56 63 5 all APOC
+9000 strikeobj NAMISL 56 63 5 all APOC
+9100 strikeobj NAMISL 56 63 5 all APOC
+9200 strikeobj NAMISL 56 63 5 all APOC
+9300 strikeobj NAMISL 56 63 5 all APOC
+9400 strikeobj NAMISL 56 63 5 all APOC
+9500 strikeobj NAMISL 56 63 5 all APOC
+9600 strikeobj NAMISL 56 63 5 all APOC
+9700 strikeobj NAMISL 56 63 5 all APOC
+9800 strikeobj NAMISL 56 63 5 all APOC
+9900 strikeobj NAMISL 56 63 5 all APOC
+10000 strikeobj NAMISL 56 63 5 all APOC
+10100 strikeobj NAMISL 56 63 5 all APOC
+10200 strikeobj NAMISL 56 63 5 all APOC
+10300 strikeobj NAMISL 56 63 5 all APOC
+10400 strikeobj NAMISL 56 63 5 all APOC
+10500 strikeobj NAMISL 56 63 5 all APOC
+10600 strikeobj NAMISL 56 63 5 all APOC
+10700 strikeobj NAMISL 56 63 5 all APOC
+10800 strikeobj NAMISL 56 63 5 all APOC
+10900 strikeobj NAMISL 56 63 5 all APOC
+11000 strikeobj NAMISL 65 40 5 all APOC
+11100 strikeobj NAMISL 65 40 5 all APOC
+11200 strikeobj NAMISL 65 40 5 all APOC
+11300 strikeobj NAMISL 65 40 5 all APOC
+11400 strikeobj NAMISL 65 40 5 all APOC
+11500 strikeobj NAMISL 65 40 5 all APOC
+11600 strikeobj NAMISL 65 40 5 all APOC
+11700 strikeobj NAMISL 65 40 5 all APOC
+11800 strikeobj NAMISL 65 40 5 all APOC
+11900 strikeobj NAMISL 65 40 5 all APOC
+12000 strikeobj NAMISL 65 40 5 all APOC
+12100 strikeobj NAMISL 65 40 5 all APOC
