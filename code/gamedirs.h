@@ -55,5 +55,8 @@ std::string Saved_Game_Name(char const * filename);
 
 std::string Screenshot_Name(char const * filename);
 
+// Where a replay is kept, in the same way as a screenshot.
+std::string Replay_Name(char const * filename);
+
 std::vector<std::string> Parse_Search_Folders(char const * list);
 std::vector<std::string> Search_Files(char const * pattern);

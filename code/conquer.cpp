@@ -69,6 +69,7 @@
 #include "_keyboar.h"
 #include "_map.h"
 #include "_palette.h"
+#include "replay.h"
 #include "_rules.h"
 #include "_source.h"
 #include "_surface.h"
@@ -483,6 +484,8 @@ void Main_Game(int argc, char * argv[])
 		TacticalActive = false;
 
 		DebugString("Game loop finished. Average FPS = %d\n", SecondsPassed ? TotalFrames / SecondsPassed : 0);
+
+		Replay_Finish();
 
 		Print_MP_Stats();
 

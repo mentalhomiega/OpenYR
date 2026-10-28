@@ -258,6 +258,8 @@
 #include "combat.h"
 #include "perfstat.h"
 #include "session.h"
+#include "replay.h"
+#include "spawner.h"
 #include "statehash.h"
 #include "rulesreload.h"
 
@@ -5636,6 +5638,16 @@ bool AutoTest_Load(char const * filename)
 		// The first loading screen comes before any game frame.
 		if (std::strcmp(command, "loadshot") == 0) {
 			LoadShotName = text;
+		}
+		// recordreplay and playreplay take effect when the script is read, before the game starts.
+		if (std::strcmp(command, "recordreplay") == 0) {
+			Replay_Set_Recording(true, text.c_str());
+			continue;
+		}
+		if (std::strcmp(command, "playreplay") == 0) {
+			Replay_Request_Playback(text.c_str());
+			Spawner_Request();
+			continue;
 		}
 		// requirera2 is kept when the script is read, so it needs no step.
 		if (std::strcmp(command, "requirera2") == 0) {

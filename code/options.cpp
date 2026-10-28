@@ -103,6 +103,7 @@
 #include "colourblind.h"
 #include "emissive.h"
 #include "goptions.h"
+#include "replay.h"
 
 
 char const * const OptionsClass::HotkeyName = "WinHotkeys";
@@ -703,6 +704,12 @@ void OptionsClass::Load_Settings(void)
 		Perf_Set_Enabled(true);
 	}
 	DebugString("PerfLog is %s\n", Perf_Enabled == true ? "ON" : "OFF");
+
+	// Records each skirmish started from a launch file to the Replays folder.
+	if (ConfigINI.Get_Bool("Options", "RecordReplays", false)) {
+		Replay_Set_Recording(true);
+	}
+	DebugString("RecordReplays is %s\n", Replay_Is_Recording_Enabled() ? "ON" : "OFF");
 
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
 	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");

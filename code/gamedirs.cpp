@@ -33,6 +33,8 @@ static char const * const SavedGamesFolder = "Saved Games";
 
 static char const * const ScreenshotsFolder = "Screenshots";
 
+static char const * const ReplaysFolder = "Replays";
+
 
 static std::string Trim_Path(std::string const & path)
 {
@@ -305,6 +307,15 @@ std::string Saved_Game_Name(char const * filename)
 std::string Screenshot_Name(char const * filename)
 {
 	return(Own_Folder_Name(ScreenshotsFolder, filename));
+}
+
+
+/// <summary>
+/// Names a replay inside the Replays folder, making the folder on every call.
+/// </summary>
+std::string Replay_Name(char const * filename)
+{
+	return(Own_Folder_Name(ReplaysFolder, filename));
 }
 
 

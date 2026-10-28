@@ -186,6 +186,7 @@
 #include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shellmap.h"
+#include "replay.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
@@ -1327,6 +1328,10 @@ restart:
 			}
 		}
 
+		if (!Replay_Begin()) {
+			return(false);
+		}
+
 		/*
 		**	Save initialization values if we're recording this game.
 		*/
@@ -1603,6 +1608,13 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
+		// Plays a recorded skirmish in place of the launch file's match.
+		if (strnicmp(string, "-REPLAY=", strlen("-REPLAY=")) == 0) {
+			Replay_Request_Playback(&original[strlen("-REPLAY=")]);
+			Spawner_Request();
+			continue;
+		}
+
 		if (memcmp(string, "-TIME=", 6) == 0) {
 			sscanf(&string[6], "%d", &TournamentTime);
 		}
@@ -1850,6 +1862,9 @@ void Init_Random(void)
 		/*
 		**	Set the optional user-specified seed
 		*/
+		if (Replay_Is_Playing()) {
+			CustomSeed = Replay_Seed();
+		}
 		if (CustomSeed != 0) {
 			Seed = CustomSeed;
 		} else {
