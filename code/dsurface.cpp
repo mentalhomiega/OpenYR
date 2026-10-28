@@ -634,17 +634,15 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 {
 	if (GDIBuffer == NULL || !fillrect.Is_Valid()) return(false);
 
-	if (GpuDraw_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())), (unsigned short)color)) {
-		return(true);
-	}
-
-	bool result = BASECLASS::Fill_Rect(cliprect, fillrect, color);
+	Rect const area = Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect()));
+	// A fill the GPU draws still clears the glow and shadow planes under it.
+	bool result = GpuDraw_Fill(*this, area, (unsigned short)color) || BASECLASS::Fill_Rect(cliprect, fillrect, color);
 
 	if (result && Emissive_Is_Enabled()) {
-		Emissive_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
+		Emissive_After_Fill(*this, area);
 	}
 	if (result) {
-		ShadowPlane_After_Fill(*this, Intersect(fillrect.Bias_To(cliprect), Intersect(cliprect, Get_Rect())));
+		ShadowPlane_After_Fill(*this, area);
 	}
 
 	if (result && IsPrimary) {
