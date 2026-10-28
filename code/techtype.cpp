@@ -1476,8 +1476,6 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 {
 //	//assert(IsActive);
 
-	bool is_within_ground_firing_angle;
-
 	// A weapon with Range=-2 reaches anything (TechnoClass::InRange, 0x6F7220).
 	if (target != NULL && weapon != NULL && weapon->Range == -2 * CELL_LEPTON_W) {
 		return(true);
@@ -1506,8 +1504,6 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 			if (!Is_Projectile_Trajectory_Valid(weapon->MaxSpeed, dist, height, gravity) || (Map[tcoord].IsUnderBridge && tcoord.Z - coord.Z >= 3 * LEVEL_LEPTON_H)) {
 				return(false);
 			}
-			Coord dist2d = Coord(coord.X - tcoord.X, coord.Y - tcoord.Y, 0);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		} else {
 
 			BuildingClass const * building = target->As_BuildingClass();
@@ -1532,30 +1528,10 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 					return(false);
 				}
 			}
-
-			/*
-			 * A ground weapon cannot hit a target that is too high above it -- the
-			 * target must be no higher than the horizontal distance to it.
-			 */
-			Coord coord1 = coord;
-			Coord coord2 = tcoord;
-			if (!weapon->Bullet->IsAntiAircraft) {
-				Point2D dist2d = Point2D(coord1 - coord2);
-				if (tcoord.Z - coord.Z >= dist2d.Gamemd_Length()) {
-					return(false);
-				}
-			}
-
-			Point2D dist2d = Point2D(coord1 - coord2);
-			is_within_ground_firing_angle = coord.Z - tcoord.Z < dist2d.Gamemd_Length();
 		}
 
-		if (!is_within_ground_firing_angle) {
-			int hoffset = Map[coord].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0;
-			if (coord.Z <= hoffset + Map.Get_Height_GL(coord)) {
-				return(false);
-			}
-		}
+		// gamemd tests no firing angle after the range (TechnoClass::InRange, 0x6F7220), so a Kirov directly over
+		// its target, or a unit on a cliff firing straight down, still has the target in range.
 		return(true);
 	}
 
