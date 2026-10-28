@@ -26,11 +26,19 @@
 	<span class="caption" id="mapname">{{mapname}}</span>
 
 	<span class="caption" id="cap-players">Players:</span>
+	<span id="roomtitle" data-if="roomtitle != ''" data-attr-tip="roomtip">{{roomtitle}}</span>
+	<span id="roomchannel" data-if="roomtitle != ''">{{roomchannel}}</span>
+	<div id="player-head" data-if="hasteams">
+		<span class="head-mark"></span><span class="head-house"></span><span class="head-name">Player</span><span class="head-side">Side</span><span class="head-color">Color</span><span class="head-status">Status</span><span class="head-detail">Team / Start</span>
+	</div>
 	<div id="players" class="list"><div class="rows">
 		<div class="item" data-for="row : players" data-class-selected="row.selected" data-class-noted="row.note != ''" data-event-click="queue('pick', it_index)">
-			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
+			<span class="cell-mark" data-attr-tip="row.markhint"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
 			<span class="cell-house" data-attr-tip="row.hint"><img data-attr-src="row.house"/></span>
 			<span class="cell-name" data-style-color="row.color">{{row.name}}</span>
+			<span class="cell-side" data-if="hasteams">{{row.hint}}</span>
+			<span class="cell-color" data-if="hasteams">{{row.colorname}}</span>
+			<span class="cell-status" data-if="hasteams">{{row.status}}</span>
 			<span class="cell-detail" data-if="hasteams">{{row.detail}}</span>
 			<div class="cell-note" data-if="row.note != ''">{{row.note}}</div>
 		</div>
@@ -65,17 +73,21 @@
 		<label class="check" id="switch-engineer"><input type="checkbox" data-attrif-checked="engineer" data-attrif-disabled="!host" data-event-click="queue('engineer', engineer ? 0 : 1)"/>Multi Engineer</label>
 	</div>
 
+	<span class="caption" id="cap-chat" data-if="hasteams">Chat (Enter sends):</span>
+	<span id="netline" data-if="networkline != ''" data-attr-tip="networktip">{{networkline}}</span>
 	<div id="chat" class="list log"><div class="rows">
 		<p class="line" data-for="line : chat" data-style-color="line.color">{{line.text}}</p>
 	</div></div>
-	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
+	<input type="text" id="say" maxlength="255" tip="Type here, then press Enter to send your message to everyone in the room." data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
 
 	<div id="map" class="frame"><surface id="preview"/></div>
 
-	<button id="kick" data-if="host" tip="Select a player in the list, then click here to remove that player from the room" data-event-click="queue('kick')"><span class="label">Kick Player</span></button>
-	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
-	<button id="go" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
-	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-event-click="queue('accept')">Accept</button>
+	<button id="kick" data-if="host" data-class-disabled="!cankick" data-attr-tip="kicktip" data-event-click="queue('kick')"><span class="label">Kick Player</span></button>
+	<span id="startnote" data-if="startnote != ''">{{startnote}}</span>
+	<button id="cancel" data-if="leavelabel == ''" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	<button id="leave" data-if="leavelabel != ''" data-attr-tip="leavetip" data-event-click="queue('cancel')">{{leavelabel}}</button>
+	<button id="go" data-if="host" data-class-disabled="!cango" data-attr-tip="startnote" data-event-click="queue('go')">Go!</button>
+	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-attr-tip="startnote" data-event-click="queue('accept')">Accept</button>
 	<div id="picker" data-class-open="pickopen">
 		<div id="picker-panel" class="frame">
 			<span class="caption">Choose a color</span>

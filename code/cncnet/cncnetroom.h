@@ -159,6 +159,9 @@ class CnCNetRoomClass
 		void Remove_Player(std::string const & name, std::string const & reason);
 		bool Can_Start(void) const;
 
+		// Host only: how many people have joined the channel but not said hello yet; they hold the start back.
+		std::size_t Pending_Count(void) const { return(Pending.size()); }
+
 		// False when the room cannot start or the start message would pass CNCNET_ROOM_LINE_LIMIT; Take_Problem
 		// then says why in the second case.
 		bool Start(std::map<std::string, std::string> info);

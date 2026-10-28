@@ -220,7 +220,7 @@ bool UI_CnCNet_Lobby_Dialog(void)
 		setup.Channel = setup.Host ? CnCNet_Room_Channel(random(), config.Lobby.RoomPrefix) : presenter.JoinChannel;
 		setup.HostNick = setup.Host ? setup.Nick : presenter.JoinHost;
 		setup.Password = presenter.State.Password;
-		setup.RoomName = setup.Nick + "'s game";
+		setup.RoomName = setup.Host || presenter.JoinName.empty() ? setup.Nick + "'s game" : presenter.JoinName;
 		setup.GameVersion = version;
 		setup.BroadcastChannel = config.Lobby.BroadcastChannel;
 		setup.Tunnel = tunnel;

@@ -85,9 +85,13 @@ struct UINetPlayerRow
 	std::string House;
 	std::string Hint;
 	std::string Mark;
+	std::string MarkHint;   // What the mark picture means, in words, such as "Host" or "Ready".
 	std::string Detail;     // Team and start, where the lobby has them.
 	std::string Note;       // A line under the name, such as a different build; empty for none.
+	std::string ColorName;  // The player's color in words, where the lobby shows a color column.
+	std::string Status;     // "Host", "Ready" or "Not ready", where the lobby shows a status column.
 	bool Selected = false;
+	bool Kickable = true;   // False for the host's own row.
 };
 
 
@@ -100,6 +104,19 @@ struct UINetLobbyState
 
 	std::string Handle;
 	std::string Say;
+
+	/// A room's name and channel, shown above the player list; empty where the lobby has no named room.
+	std::string RoomTitle;
+	std::string RoomChannel;
+	std::string RoomTip;    // The hover tip of the room's title. Shown as markup, so it holds no text that others chose.
+	/// One line about the match's network options, with the longer text for its hover tip; empty for none.
+	std::string NetworkLine;
+	std::string NetworkTip;
+	/// Says in words why Go! or Accept is off, or what happens next; empty for none.
+	std::string StartNote;
+	/// What the leave button says; empty keeps the stock Cancel.
+	std::string LeaveLabel;
+	std::string LeaveTip;
 
 	std::vector<UINetOption> Games;
 	int Game = 0;
@@ -157,6 +174,9 @@ struct UINetLobbyState
 
 	bool CanAccept = false;
 	bool CanGo = true;
+	/// Set by the presenter: whether a player the host may remove is picked in the list, and the kick button's tip.
+	bool CanKick = false;
+	std::string KickTip;
 };
 
 

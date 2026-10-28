@@ -119,8 +119,13 @@
 #players .item.noted { height: 26dp; }
 #players .cell-note { padding-left: 25dp; line-height: 12dp; color: #ffd27a; white-space: nowrap; overflow: hidden; }
 
-/* CnCNet rooms also pick a team and a start, so the player list gives up a row for the two drop-downs. */
+/* CnCNet rooms also pick a team and a start, so the player list gives up a row for the two drop-downs. The
+   classic room is too small for the extra columns, so the modern theme adds them; here the host and ready marks
+   say what they mean on hover, and the room's name sits on the Players line. */
 .teams #players { height: 84dp; }
+#roomtitle { left: 80dp; top: 67dp; width: 170dp; height: 17dp; line-height: 17dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#roomchannel, #player-head, #cap-chat, #netline, #startnote { display: none; }
+#players .cell-side, #players .cell-color, #players .cell-status { display: none; }
 #cap-team { left: 27dp; top: 182dp; }
 #team { box-sizing: border-box; margin: 0; left: 64dp; top: 179dp; width: 56dp; height: 22dp; }
 #cap-start { left: 126dp; top: 182dp; }
@@ -250,6 +255,9 @@
 .guest #switch-short { width: 127dp; }
 
 #chat { left: 27dp; top: 211dp; width: 384dp; height: 106dp; }
+.teams #cap-chat { display: block; left: 27dp; top: 205dp; }
+.teams #netline { display: block; left: 150dp; top: 205dp; width: 262dp; height: 17dp; line-height: 17dp; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 11dp; text-align: right; color: #c8c8c8; }
+.teams #chat { top: 223dp; height: 94dp; }
 
 #say
 {
@@ -268,7 +276,7 @@
 	margin: 0;
 	padding-left: 2dp;
 	line-height: 14dp;
-	white-space: pre-wrap;
+	white-space: pre-line;
 }
 
 #kick
@@ -297,8 +305,17 @@
 	decorator: image(wodkick.pcx scale-none left top);
 }
 
-#cancel { left: 436dp; top: 357dp; width: 80dp; }
+#kick.disabled, #kick.disabled:active
+{
+	opacity: 0.4;
+}
+
+/* What Go! or Accept is waiting for, in the gap between the kick button and the others. */
+.teams #startnote { display: block; left: 64dp; top: 352dp; width: 362dp; height: 28dp; line-height: 14dp; overflow: hidden; font-size: 12dp; }
+.guest #startnote { left: 27dp; width: 385dp; }
+
+#cancel, #leave { left: 436dp; top: 357dp; width: 80dp; }
 #go { left: 531dp; top: 357dp; width: 82dp; }
 
-.guest #cancel { left: 418dp; top: 352dp; width: 88dp; }
+.guest #cancel, .guest #leave { left: 418dp; top: 352dp; width: 88dp; }
 #accept { left: 525dp; top: 352dp; width: 88dp; }
