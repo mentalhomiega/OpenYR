@@ -151,6 +151,10 @@ static bgfx::UniformHandle _RippleInfoUniform = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _PostTexture = BGFX_INVALID_HANDLE;
 static bgfx::FrameBufferHandle _PostTarget = BGFX_INVALID_HANDLE;
 static bool _PostShown = false;
+// Set while the target holds a picture the GPU drew.
+static bool _TargetDrawn = false;
+// Set when the kept pass could not be submitted; the next pass is then drawn in software.
+static bool _SubmitFailed = false;
 static bgfx::UniformHandle _RingUniform = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _SnapshotSampler = BGFX_INVALID_HANDLE;
 // The tile layer's shadow plane, kept between passes so only changed rows go up.
@@ -254,6 +258,7 @@ static void Destroy_Target(void)
 		_PostTexture = BGFX_INVALID_HANDLE;
 	}
 	_PostShown = false;
+	_TargetDrawn = false;
 	for (int i = 0; i < 2; i++) {
 		if (bgfx::isValid(_GlowTarget[i])) {
 			bgfx::destroy(_GlowTarget[i]);
@@ -736,6 +741,39 @@ static void Submit_Glow(GpuMapPass const & pass, Rect const & area)
 }
 
 
+// Checks the limits Submit_Pass rejects a pass for that are known when it is kept, so a pass the GPU
+// cannot draw is drawn in software rather than leaving the map's key colour on screen.
+static bool Pass_Fits(GpuMapPass const & pass)
+{
+	GpuDrawList const & list = *pass.List;
+	Rect const & area = pass.Area;
+	if (area.Width <= 0 || area.Height <= 0 || area.Width > TEXTURE_LIMIT || area.Height > TEXTURE_LIMIT) {
+		return(false);
+	}
+	std::size_t const arenarows = (list.PixelArena.size() + ARENA_WIDTH - 1) / ARENA_WIDTH;
+	std::size_t const zshaperows = (list.ZShapeArena.size() + ARENA_WIDTH - 1) / ARENA_WIDTH;
+	if (ATLAS_ROWS + arenarows > (std::size_t)TEXTURE_LIMIT || zshaperows > (std::size_t)TEXTURE_LIMIT) {
+		return(false);
+	}
+	int waves = 0;
+	int shadows = 0;
+	for (GpuBlit const & blit : list.Blits) {
+		if (blit.Line >= 0 && blit.LineKind == GPU_LINE_SONIC) {
+			waves++;
+		}
+		if (blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN) {
+			shadows++;
+		}
+	}
+	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
+		return(false);
+	}
+	// At most the vertices Submit_Pass takes, which allocates them later in the same frame.
+	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (_SoftShadowRadius > 0 ? shadows + 2 : 0)) * 6);
+	return(bgfx::getAvailTransientVertexBuffer(vertices, _Layout) >= vertices);
+}
+
+
 static bool Submit_Pass(GpuMapPass const & pass)
 {
 	if (!Start()) {
@@ -1022,7 +1060,11 @@ static bool _HasKept = false;
 
 bool GpuMap_Draw(GpuMapPass const & pass)
 {
-	if (!Start()) {
+	if (!Start() || !Pass_Fits(pass)) {
+		return(false);
+	}
+	if (_SubmitFailed) {
+		_SubmitFailed = false;
 		return(false);
 	}
 	_Kept = pass;
@@ -1101,8 +1143,15 @@ std::uint16_t GpuMap_Texture(void)
 {
 	if (_HasKept) {
 		_HasKept = false;
-		if (!Submit_Pass(_Kept)) {
-			return(bgfx::kInvalidHandle);
+		if (Submit_Pass(_Kept)) {
+			_TargetDrawn = true;
+		} else {
+			// The map area holds the key colour, so this frame shows the last picture, if one of the
+			// same size, and the next pass is drawn in software.
+			_SubmitFailed = true;
+			if (!_TargetDrawn || _TargetWidth != _Kept.Area.Width || _TargetHeight != _Kept.Area.Height) {
+				return(bgfx::kInvalidHandle);
+			}
 		}
 	}
 	return(_PostShown ? _PostTexture.idx : _TargetTexture.idx);

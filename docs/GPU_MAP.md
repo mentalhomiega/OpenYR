@@ -77,6 +77,10 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
 - A sonic or magnetron wave lifts each shifted pixel from the picture as it stood before the wave.
   The software lifts some pixels from ones the wave has already shifted, so the ripple can differ by
   a pixel. A pass with more than 8 waves is drawn in software.
+- A pass that would not fit the GPU's limits (more than 8 waves, an area or arena past the texture
+  size, too many vertices for the frame) is drawn in software. If the GPU still cannot take the kept
+  pass when the frame is presented, that frame shows the last GPU picture and the next pass is drawn
+  in software.
 - While the chronoshift screen effect runs, the pass is drawn in software, because the effect swirls a
   picture of the finished map view.
 - At 3840x2160 the first 1,500 frames of the large battle benchmark drew 254 pictures per second
