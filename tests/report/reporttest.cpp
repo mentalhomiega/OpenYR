@@ -9,8 +9,9 @@
 
 // Pins the parts of report sending that need no game: the ReportUpload and
 // ReportURL decision, the crash folders still to ask about, which files go in a
-// report, the 4 MB cap on the deflated zip, the zip itself, the session key that
-// groups an out-of-sync match, the note, the waiting folder, and what a send's
+// report, the 4 MB cap on the deflated zip, the end of a log too large to read whole,
+// the zip itself, the session key that groups an out-of-sync match and the head of its
+// SYNC file, the note, the waiting folder, and what a send's
 // HTTP status does to a queued report. Nothing here opens a socket; the files live
 // in a temporary folder.
 //
@@ -271,6 +272,63 @@ void Test_Cap(fs::path const & root)
 }
 
 
+// A log over REPORT_WHOLE_READ_MAX is zipped from its last REPORT_MAX_BYTES, from the first
+// whole line there. A file over the limit that is not a log is left out without being read.
+void Test_Tail(fs::path const & root)
+{
+	fs::path const tail = root / "tail";
+	std::string full;
+	for (int line = 0; full.size() < 20u * 1024u * 1024u; line++) {
+		char text[64];
+		std::snprintf(text, sizeof(text), "line %08d of the debug log\n", line);
+		full += text;
+	}
+	std::string const last = full.substr(full.size() - REPORT_MAX_BYTES);
+	std::string const expected_end = last.substr(last.find('\n') + 1);
+	Write(tail / "DEBUG.LOG", full);
+	Write(tail / "minidump.dmp", std::string(20u * 1024u * 1024u, 'm'));
+	Write(tail / "small.log", "short\n");
+	std::vector<ReportFileType> const files = { File(tail / "DEBUG.LOG"), File(tail / "minidump.dmp"), File(tail / "small.log") };
+
+	std::vector<ReportFileType> kept;
+	std::vector<ReportFileType> left_out;
+	std::string zip;
+	std::string error;
+	Check(Report_Build_Zip(files, REPORT_MAX_BYTES, kept, left_out, zip, error), "a 20 MB log, a 20 MB dump and a short log build into a zip");
+	Check(kept.size() == 2 && kept[0].Name == "DEBUG.LOG" && kept[1].Name == "small.log" && kept[0].Size == full.size()
+		&& kept[0].Sent == expected_end.size(), "the log keeps its size on disk, with only its end sent");
+	Check(left_out.size() == 1 && left_out[0].Name == "minidump.dmp", "a dump over 8 MB that is not a log is left out");
+	std::vector<ZipEntryType> const expected = { { "DEBUG.LOG", 8, expected_end }, { "small.log", 0, "short\n" } };
+	Check(Verify_Zip(zip, expected), "the zip holds the end of the log from its first whole line, and the short log");
+	Check(zip.size() <= REPORT_MAX_BYTES, "the zip with the tail stays within 4 MB");
+
+	std::string const list = Report_File_List_Text(kept, left_out, zip.size());
+	Check(list.find("DEBUG.LOG  4.0 MB (the end of a 20.0 MB file)\n") != std::string::npos,
+		"the dialog says the log is only the end of the file");
+	Check(list.find("Left out, over 8.0 MB and not a log: minidump.dmp  20.0 MB\n") != std::string::npos,
+		"the dialog says the dump was left out without being read");
+}
+
+
+// The session key reads only the first REPORT_SESSION_HEAD_LINES lines, so the rest of a long SYNC file is not read.
+void Test_Session_Head(fs::path const & root)
+{
+	std::string sync = "TS Sync\nLocal house: H2 Americans\nSession identity: (lobby) scenario=XMP29U2.MAP seed=00c0ffee players=6\nSeed: 00c0ffee\n";
+	for (int line = 0; line < 100000; line++) {
+		sync += "object 1 2 3 4 5 6 7 8 9\n";
+	}
+	sync += "Seed: 0badbeef\n";
+	Write(root / "sync" / "SYNC_H2.LOG", sync);
+
+	std::string const head = Report_Read_Session_Head(root / "sync" / "SYNC_H2.LOG");
+	std::string const key = Report_Desync_Session_Key(head);
+	Check(head.size() < sync.size() / 100 && key == Report_Desync_Session_Key(sync)
+		&& key == "(lobby) scenario=XMP29U2.MAP seed=00c0ffee players=6 seed 00c0ffee",
+		"the session key of a long SYNC file comes from its head alone");
+	Check(Report_Read_Session_Head(root / "sync" / "missing.LOG").empty(), "a SYNC file that cannot be opened has an empty head");
+}
+
+
 void Test_Zip(fs::path const & root)
 {
 	Check(Report_Crc32("123456789", 9) == 0xCBF43926u, "CRC-32 of 123456789 is the standard check value");
@@ -418,8 +476,10 @@ int main(int argc, char ** argv)
 	Test_Wanted();
 	Test_Folders(root);
 	Test_Cap(root);
+	Test_Tail(root);
 	Test_Zip(root);
 	Test_Session_Key();
+	Test_Session_Head(root);
 	Test_Meta();
 	Test_Classify();
 	Test_Queue(root);

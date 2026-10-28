@@ -59,6 +59,7 @@ struct ReportFileType
 	std::string Name;				// The name inside the zip.
 	std::filesystem::path Path;
 	std::uintmax_t Size = 0;
+	std::uintmax_t Sent = 0;		// Bytes in the zip; set for each kept file, and below Size when only the end was read.
 };
 
 // The receiver that reports go to unless [Options] ReportURL names another. The INI
@@ -68,6 +69,13 @@ constexpr char const REPORT_DEFAULT_URL[] = "https://94-237-94-104.sslip.io/repo
 // The largest report as sent: the zip, with its files deflated, in bytes. A file whose
 // entry would take the zip past it is left out, and named in the dialog as left out.
 constexpr std::uintmax_t REPORT_MAX_BYTES = 4 * 1024 * 1024;
+
+// A file larger than this is not read whole. A log that large is zipped from its last
+// REPORT_MAX_BYTES; any other file that large is left out without being read.
+constexpr std::uintmax_t REPORT_WHOLE_READ_MAX = 2 * REPORT_MAX_BYTES;
+
+// The lines of a SYNC file that the session key reads.
+constexpr int REPORT_SESSION_HEAD_LINES = 64;
 
 // A report that fails with a retryable result is dropped once this many game starts
 // have each failed to send it.
@@ -106,8 +114,9 @@ bool Report_Wanted_File(std::string const & name);
 std::vector<ReportFileType> Report_Folder_Files(std::filesystem::path const & folder);
 
 // Deflates the files into a zip, in order. A file whose entry would take the zip past
-// max_bytes goes to left_out, and the files after it are still tried. Returns false with
-// the reason in error when a file cannot be read.
+// max_bytes goes to left_out, and the files after it are still tried. A file over
+// REPORT_WHOLE_READ_MAX goes to left_out unread unless it is a log, which is zipped from
+// its end. Returns false with the reason in error when a file cannot be read.
 bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t max_bytes,
 	std::vector<ReportFileType> & kept, std::vector<ReportFileType> & left_out, std::string & zip, std::string & error);
 
@@ -123,6 +132,10 @@ std::string Report_File_List_Text(std::vector<ReportFileType> const & kept, std:
 // the game id and the random seed from the head of a SYNC_H*.LOG. Empty when
 // the text has neither.
 std::string Report_Desync_Session_Key(std::string const & sync_text);
+
+// The first REPORT_SESSION_HEAD_LINES lines of a SYNC file, which is all the session key
+// reads. Empty when the file cannot be opened.
+std::string Report_Read_Session_Head(std::filesystem::path const & sync_file);
 
 // The note that rides with a report. timestamp is UTC, as 2026-10-24T01:02:03Z.
 std::string Report_Meta_Json(std::string const & commit, ReportKind kind, std::string const & timestamp,

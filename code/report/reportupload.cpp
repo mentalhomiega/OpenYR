@@ -110,6 +110,14 @@ bool Write_File(fs::path const & path, std::string const & bytes)
 }
 
 
+// Whether a file is a log or text file. Only these are zipped from their end when they are too large to read whole.
+bool Is_Log_Name(std::string const & name)
+{
+	std::string const extension = fs::path(Lower(name)).extension().string();
+	return(extension == ".log" || extension == ".txt");
+}
+
+
 // Deflates data as raw deflate, the form a zip entry holds. Returns false when miniz cannot allocate.
 bool Deflate_Raw(std::string const & data, std::string & packed)
 {
@@ -248,7 +256,34 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 			error = "Could not read " + file.Path.string() + ".";
 			return(false);
 		}
-		std::string const data((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+		stream.seekg(0, std::ios::end);
+		std::streamoff const on_disk = stream.tellg();
+		if (on_disk < 0) {
+			error = "Could not read " + file.Path.string() + ".";
+			return(false);
+		}
+		bool const too_large = static_cast<std::uintmax_t>(on_disk) > REPORT_WHOLE_READ_MAX;
+		if (too_large && !Is_Log_Name(file.Name)) {
+			left_out.push_back(file);
+			continue;
+		}
+
+		// A log too large to read whole is read from its last REPORT_MAX_BYTES. The first line
+		// of that part is cut, because the read starts in the middle of it.
+		std::string data;
+		if (too_large) {
+			stream.seekg(on_disk - static_cast<std::streamoff>(REPORT_MAX_BYTES), std::ios::beg);
+			data.resize(static_cast<std::size_t>(REPORT_MAX_BYTES));
+			stream.read(&data[0], static_cast<std::streamsize>(REPORT_MAX_BYTES));
+			data.resize(static_cast<std::size_t>(stream.gcount()));
+			std::size_t const line_end = data.find('\n');
+			if (line_end != std::string::npos) {
+				data.erase(0, line_end + 1);
+			}
+		} else {
+			stream.seekg(0, std::ios::beg);
+			data.assign((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+		}
 		if (data.size() > 0xFFFFFFFFu || file.Name.size() > 0xFFFF) {
 			left_out.push_back(file);
 			continue;
@@ -300,7 +335,10 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 		Put32(central, 0);							// External attributes.
 		Put32(central, offset);
 		central += file.Name;
-		kept.push_back(file);
+		ReportFileType sent = file;
+		sent.Size = static_cast<std::uintmax_t>(on_disk);
+		sent.Sent = data.size();
+		kept.push_back(sent);
 	}
 
 	std::uint32_t const central_offset = static_cast<std::uint32_t>(entries.size());
@@ -346,12 +384,20 @@ std::string Report_File_List_Text(std::vector<ReportFileType> const & kept, std:
 	std::string text;
 	std::uintmax_t total = 0;
 	for (ReportFileType const & file : kept) {
-		text += file.Name + "  " + Size_Text(file.Size) + "\n";
-		total += file.Size;
+		text += file.Name + "  " + Size_Text(file.Sent);
+		if (file.Sent < file.Size) {
+			text += " (the end of a " + Size_Text(file.Size) + " file)";
+		}
+		text += "\n";
+		total += file.Sent;
 	}
 	text += "Total: " + Size_Text(total) + ", " + Size_Text(zip_bytes) + " zipped\n";
 	for (ReportFileType const & file : left_out) {
-		text += "Left out, the report would pass " + Size_Text(REPORT_MAX_BYTES) + ": " + file.Name + "  " + Size_Text(file.Size) + "\n";
+		if (file.Size > REPORT_WHOLE_READ_MAX && !Is_Log_Name(file.Name)) {
+			text += "Left out, over " + Size_Text(REPORT_WHOLE_READ_MAX) + " and not a log: " + file.Name + "  " + Size_Text(file.Size) + "\n";
+		} else {
+			text += "Left out, the report would pass " + Size_Text(REPORT_MAX_BYTES) + ": " + file.Name + "  " + Size_Text(file.Size) + "\n";
+		}
 	}
 	return(text);
 }
@@ -363,7 +409,7 @@ std::string Report_Desync_Session_Key(std::string const & sync_text)
 	std::string seed;
 	std::size_t start = 0;
 	// The header is the first few dozen lines; the object lists after it are long.
-	for (int line_number = 0; line_number < 64 && start < sync_text.size(); line_number++) {
+	for (int line_number = 0; line_number < REPORT_SESSION_HEAD_LINES && start < sync_text.size(); line_number++) {
 		std::size_t end = sync_text.find('\n', start);
 		if (end == std::string::npos) {
 			end = sync_text.size();
@@ -380,6 +426,19 @@ std::string Report_Desync_Session_Key(std::string const & sync_text)
 		return(std::string());
 	}
 	return(identity + " seed " + seed);
+}
+
+
+std::string Report_Read_Session_Head(fs::path const & sync_file)
+{
+	std::ifstream stream(sync_file, std::ios::binary);
+	std::string head;
+	std::string line;
+	for (int count = 0; count < REPORT_SESSION_HEAD_LINES && std::getline(stream, line); count++) {
+		head += line;
+		head += '\n';
+	}
+	return(head);
 }
 
 

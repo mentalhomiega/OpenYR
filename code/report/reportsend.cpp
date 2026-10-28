@@ -279,9 +279,7 @@ void Report_After_Match(void)
 			file.Size = fs::file_size(path, error);
 			files.push_back(file);
 		}
-		std::ifstream sync(PendingDesyncPath, std::ios::binary);
-		std::string const text((std::istreambuf_iterator<char>(sync)), std::istreambuf_iterator<char>());
-		session_key = Report_Desync_Session_Key(text);
+		session_key = Report_Desync_Session_Key(Report_Read_Session_Head(PendingDesyncPath));
 		Offer_Report(settings, ReportKind::Desync, files, session_key);
 		PendingDesyncPath.clear();
 	}
