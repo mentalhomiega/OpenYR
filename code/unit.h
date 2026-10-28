@@ -235,6 +235,8 @@ class UnitClass : public FootClass
 		virtual void Unit_Draw_Voxel(Point2D xyoff, Rect rect, int intensity) const;
 		virtual void Unit_Draw_Shape(Point2D xyoff, Rect rect, int intensity) const;
 		virtual void Unit_Blit_Voxel(Surface& surface, Point2D xyoff, Rect rect, int alpha) const;
+		bool Is_Composite_Fudged(void) const;
+		bool Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness, StaticBufferClass::Entry const & entry) const;
 
 		/*
 		**	User I/O.

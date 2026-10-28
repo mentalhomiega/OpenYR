@@ -116,6 +116,7 @@
 #include "astar.h"
 #include "bench.h"
 #include "blit.h"
+#include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
 #include "bullet.h"
@@ -128,6 +129,8 @@
 #include "dbgprint.h"
 #include "draw.h"
 #include "drive.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "fog.h"
 #include "house.h"
 #include "houstype.h"
@@ -149,6 +152,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "session.h"
+#include "shadowplane.h"
 #include "shapeset.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -2693,6 +2697,23 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 
 
 /// <summary>
+/// Whether the composite is blitted in two pieces, so that the upper half of a vehicle too tall for a
+/// bridge sorts above the deck.
+/// </summary>
+bool UnitClass::Is_Composite_Fudged(void) const
+{
+	if (!Class->IsTooBigToFitUnderBridge) {
+		return(false);
+	}
+	if (Is_Z_Fudge_Bridge() && Get_Z_Fudge_Column() == 0) {
+		return(true);
+	}
+	RadioClass * radio = Contact_With_Whom();
+	return(NavCom != NULL && radio != NULL && radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory);
+}
+
+
+/// <summary>
 /// Transfers the composed unit image to the destination surface.
 /// This routine is the last step of drawing a turreted vehicle. The image built up on the
 /// scratch surface is blitted out with whatever cloaking or translucency effect the unit's
@@ -2705,23 +2726,10 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 /// <param name="brightness">The lighting level to blit the unit at.</param>
 void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness) const
 {
-	bool fudge = false;
+	bool const fudge = Is_Composite_Fudged();
 	Point2D pt;
 	pt.Y = (2 * (80 - UnitCompositeDirtyRect.Y) - UnitCompositeDirtyRect.Height) / 2;
 	pt.X = (2 * (80 - UnitCompositeDirtyRect.X) - UnitCompositeDirtyRect.Width) / 2;
-
-	if (Class->IsTooBigToFitUnderBridge) {
-		if (Is_Z_Fudge_Bridge() && Get_Z_Fudge_Column() == 0) {
-			fudge = true;
-		} else {
-			RadioClass * radio = Contact_With_Whom();
-			if (NavCom != NULL) {
-				if (radio != NULL && radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory) {
-					fudge = true;
-				}
-			}
-		}
-	}
 
 	Blitter const * blitter = NULL;
 	int predoffset = 0;
@@ -2795,6 +2803,64 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	}
 
 
+}
+
+
+/// <summary>
+/// Draws a cached turret composite straight to the destination surface, with the pixels, depth and
+/// emissive values the scratch surface route gives.
+/// A composite is already run-length encoded, so no scratch surface or second copy is needed. A composite
+/// wholly outside the clip draws nothing.
+/// </summary>
+/// <param name="surface">The surface to blit the composite onto.</param>
+/// <param name="drawpoint">The pixel position to center the unit upon.</param>
+/// <param name="cliprect">The clipping rectangle to draw within.</param>
+/// <param name="brightness">The lighting level to blit the unit at.</param>
+/// <param name="entry">The cached composite, captured from the scratch surface with the unit at (80, 80).</param>
+/// <returns>Returns false, with nothing drawn, for a vehicle that is not in the plain visual state, is
+/// sinking, warping or sorted in two pieces, a draw that the clip cuts, or a pass with the shadow plane
+/// on or an emissive draw strength set. Those go through the scratch surface.</returns>
+bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness, StaticBufferClass::Entry const & entry) const
+{
+	if (IsSinking || SinkingYOffset > 0 || IsBeingWarpedOut || Is_Chrono_Warping() || Is_Composite_Fudged() || Visual_Character() != VISUAL_NORMAL || Mirage_Shimmer_Flags() != 0) {
+		return(false);
+	}
+	if ((Emissive_Is_Enabled() && Emissive_Draw_Strength != 0) || ShadowPlane_Is_Enabled() || entry.Width == 0 || entry.Height == 0) {
+		return(false);
+	}
+
+	// The scratch route centres the dirty rectangle, which is the entry's rectangle, on the drawpoint.
+	Rect const dirty(Point2D(entry.X + 80, entry.Y + 80), entry.Width, entry.Height);
+	Point2D pt;
+	pt.Y = (2 * (80 - dirty.Y) - dirty.Height) / 2;
+	pt.X = (2 * (80 - dirty.X) - dirty.Width) / 2;
+	Rect const rect(drawpoint.X - dirty.Width / 2 - pt.X, drawpoint.Y - dirty.Height / 2 - pt.Y, dirty.Width, dirty.Height);
+
+	// A composite wholly outside the clip draws nothing in the scratch route either. A clipped one takes
+	// a different depth start there, so it goes that way.
+	Rect const window(0, 0, cliprect.Width, cliprect.Height);
+	Rect const visible = Intersect(rect, window);
+	if (!visible.Is_Valid() || visible.Width <= 0 || visible.Height <= 0) {
+		return(true);
+	}
+	if (!(Intersect(cliprect, surface.Get_Rect()) == cliprect) || !(visible == rect)) {
+		return(false);
+	}
+
+	ConvertClass * converter = Effect_Converter(ColorSchemes[House_Display_Scheme(House)]);
+	RLEBlitter const * blitter = converter->RLEBlitter_From_Flags(ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD));
+	if (blitter == NULL) {
+		return(false);
+	}
+
+	// The scratch route clears the emissive values under the whole rectangle, transparent pixels included.
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(surface, cliprect.X + rect.X, cliprect.Y + rect.Y, *LogicalSurface, dirty.X, dirty.Y, dirty.Width, dirty.Height);
+	}
+
+	BSurface bsurface(entry.Width, entry.Height, 1, entry.Data);
+	RLE_Blit(surface, cliprect, rect, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, 0, NULL, Point2D());
+	return(true);
 }
 
 
@@ -2979,9 +3045,14 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		}
 	}
 
+	bool composite_drawn = false;
 	if (composite != NULL) {
 		Perf_Count(PERF_COUNT_VOXEL_HIT);
-		Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
+		if (Unit_Blit_Composite(*old_surface, xdrawpoint, xcliprect, Iron_Curtain_Brightness(brightness), *composite)) {
+			composite_drawn = true;
+		} else {
+			Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
+		}
 	} else {
 		if (apc_in_water) {
 			Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
@@ -3045,8 +3116,10 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		if (SinkingYOffset > 0) {
 			rect = Intersect(rect, Rect(0, 0, TacticalRect.Width, SinkingYOffset - TacticalMap->TacPixelY));
 		}
-		Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
-		LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
+		if (!composite_drawn) {
+			Unit_Blit_Voxel(*old_surface, xdrawpoint, rect, Iron_Curtain_Brightness(brightness));
+			LogicalSurface->Fill_Rect(UnitCompositeDirtyRect, TBLACK);
+		}
 		LogicalSurface = old_surface;
 		IsCompositingToEightBitSurface = false;
 	}
