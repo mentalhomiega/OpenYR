@@ -1133,7 +1133,7 @@ BEGIN
     TXT_BEACON_PLACED       "Beacon placed."
     TXT_BEACON_SELECT_HINT  "Select the beacon and press Enter to write a message for it."
     TXT_BEACON_TEXT_PROMPT  "Beacon message: "
-    TXT_REPORT_ASK          "Send this %s report to the OpenYR developers?\n\n%s\nThe logs contain player nicknames and details of this PC, such as its Windows version, processor and graphics card."
+    TXT_REPORT_ASK          "Send this %s report to the OpenYR developers?\n\n%s\nThe logs contain player nicknames and details of this PC, such as its Windows version, processor and graphics card. Crash dumps and logs can also contain chat text and folder names."
     TXT_REPORT_SEND         "Send"
     TXT_REPORT_DONT_SEND    "Don't send"
     TXT_REPORT_KIND_CRASH   "crash"
