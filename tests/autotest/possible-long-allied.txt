@@ -1,0 +1,42 @@
+; Anything is Possible (Possible.yrm, NEWURBAN) played for about ten game minutes as the Allied tester did: a deployed MCV,
+; power, refinery, barracks and war factory, then an Air Force Command (the Allied radar) with its Harriers and more
+; structures placed beside it, while the map's day and night loop runs its sunrise, sunset and lamp triggers. The map is
+; a game file and is not in the repository: copy it to build\<runner>-autotest-user\Possible.yrm first.
+; Run: scripts/run_autotest.ps1 -Build agent6 -Script src-agent6/tests/autotest/possible-long-allied.txt -Map Possible.yrm -Country 1 -Width 1912 -Height 1000 -RenderFrameRate 30 -Seconds 600 -Filter "AUTOTEST +(place|building GAAIRC|frame 9001)|Exception"
+; Expected: no Exception line, a GAAIRC among the "building" lines of the last dump, and the run ends at frame 9001.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+200 own GAREFN 100 40
+210 own GAPOWR 96 40
+211 own GAPOWR 96 43
+300 produce GAPILE
+600 place GAPILE
+750 place GAPILE
+900 place GAPILE
+1200 produce GAWEAP
+1500 place GAWEAP
+1650 place GAWEAP
+1800 place GAWEAP
+2100 produce GAAIRC
+2400 place GAAIRC
+2550 place GAAIRC
+2700 place GAAIRC
+3000 produce GAPOWR
+3300 place GAPOWR
+3450 place GAPOWR
+3600 place GAPOWR
+3900 produce GAAIRC
+4200 place GAAIRC
+4350 place GAAIRC
+4500 place GAAIRC
+4800 produce GAPILE
+5100 place GAPILE
+5250 place GAPILE
+5400 place GAPILE
+6000 produce ORCA
+6020 produce ORCA
+6040 produce ORCA
+7000 dump
+9000 dump
+9001 quit
