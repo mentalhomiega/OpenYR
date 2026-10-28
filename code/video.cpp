@@ -667,7 +667,7 @@ static void Present(void)
 	}
 
 	// Masks are passed only while they are kept; the layer's mask follows the layer picture when it is fresh.
-	BackendEmissive emissive = {NULL, 0, 0, 0, NULL, 0, 0, 0};
+	BackendEmissive emissive = {NULL, 0, 0, 0, NULL, 0, 0, 0, NULL};
 	BackendEmissive const * emissiveptr = NULL;
 	Backend_Set_Emissive_View(Emissive_Debug_View());
 	// Bloom keeps the masks on for the map pass alone, so Classic highlights stay classic under HDR.
@@ -678,6 +678,7 @@ static void Present(void)
 			emissive.FramePitch = frame->Pitch;
 			emissive.FrameWidth = frame->Width;
 			emissive.FrameHeight = frame->Height;
+			emissive.FrameLit = frame->Lit;
 			emissiveptr = &emissive;
 		}
 		if (layerptr != NULL && layer.Pixels != NULL) {

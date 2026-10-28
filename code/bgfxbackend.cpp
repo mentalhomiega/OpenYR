@@ -111,6 +111,12 @@ static TileGridClass _MaskGrid;
 static std::vector<TileRect> _Rects;
 static std::vector<unsigned char> _KeyedMaskEffective;
 
+// The rows of the frame's mask that may have held a value when the keyed mask copy was last compared, and the
+// rows to compare this time. A row in neither is zero now and was zero then, so the copy already holds it.
+static std::vector<unsigned char> _KeyedMaskLit;
+static std::vector<unsigned char> _KeyedMaskRows;
+static bool _KeyedMaskLitKnown = false;
+
 // The rows of the picture that changed since a frame texture's copy was last compared with it. Known is
 // false when any row may have changed.
 struct ChangedRows {
@@ -727,7 +733,7 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 /// the frame has the layer key. Red is zero wherever no mask is given or the mask's readable size does
 /// not reach. False means it could not be made.
 /// </summary>
-static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch, int maskwidth, int maskheight)
+static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char const * mask, int maskpitch, int maskwidth, int maskheight, unsigned char const * lit)
 {
 	_KeyedMaskUploaded = false;
 	bool const wascurrent = _KeyedMaskCurrent;
@@ -763,10 +769,24 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 		if (full) {
 			_KeyedMaskDiff.Invalidate();
 		}
-		_KeyedMaskDiff.Compare(value, valuepitch, _MaskGrid);
+		bool const listed = lit != NULL && value == mask;
+		unsigned char const * rows = NULL;
+		if (listed && _KeyedMaskDiff.Is_Valid() && _KeyedMaskLitKnown && (int)_KeyedMaskLit.size() == _FrameHeight) {
+			_KeyedMaskRows.resize((size_t)_FrameHeight);
+			for (int y = 0; y < _FrameHeight; y++) {
+				_KeyedMaskRows[y] = (lit[y] | _KeyedMaskLit[y]) != 0;
+			}
+			rows = _KeyedMaskRows.data();
+		}
+		_KeyedMaskDiff.Compare(value, valuepitch, _MaskGrid, rows);
 		Verify_Diff(_KeyedMaskDiff, value, valuepitch, _FrameWidth, _FrameHeight, 1);
+		if (listed) {
+			_KeyedMaskLit.assign(lit, lit + _FrameHeight);
+		}
+		_KeyedMaskLitKnown = listed;
 	} else {
 		_KeyedMaskDiff.Invalidate();
+		_KeyedMaskLitKnown = false;
 	}
 	if (full) {
 		_MaskGrid.Mark_All();
@@ -1371,7 +1391,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 		_FrameUploaded = false;
 		// The keyed mask is made from the same pixels, so it keys out exactly where the keyed frame does.
 		if (_HdrActive) {
-			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0, emissive != NULL ? emissive->FrameWidth : 0, emissive != NULL ? emissive->FrameHeight : 0);
+			Upload_Keyed_Mask(pixels, pitch, emissive != NULL ? emissive->Frame : NULL, emissive != NULL ? emissive->FramePitch : 0, emissive != NULL ? emissive->FrameWidth : 0, emissive != NULL ? emissive->FrameHeight : 0, emissive != NULL ? emissive->FrameLit : NULL);
 		} else {
 			_KeyedMaskCurrent = false;
 		}
