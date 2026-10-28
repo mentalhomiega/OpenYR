@@ -21,6 +21,7 @@
 #include "cell.h"
 #include "dbgprint.h"
 #include "foot.h"
+#include "infantry.h"
 #include "_map.h"
 #include "_rules.h"
 #include "globals.h"
@@ -183,6 +184,45 @@ void TeleportLocomotionClass::Stop_Moving(void)
 		return;
 	}
 	DestinationCoord = COORD_NONE;
+}
+
+
+/// <summary>
+/// Chooses where a soldier ordered into a vehicle, aircraft or structure lands when the jump is
+/// onto the cell that holds its target. The occupants of that cell are ignored, as gamemd's
+/// destination choice (0x718B70) does for an infantry destination on an Enter, Capture or Patrol
+/// mission, so the soldier stands on the cell with its target and its arrival there can board it.
+/// </summary>
+/// <param name="dest">The coordinate the teleport was ordered to.</param>
+/// <returns>Coord; The spot to set the soldier down at, or COORD_NONE when the destination is not
+/// the cell of the soldier's target or the soldier cannot stand there.</returns>
+Coord TeleportLocomotionClass::Target_Cell_Spot(Coord const & dest) const
+{
+	if (LinkedTo->RTTI != RTTI_INFANTRY || LinkedTo->NavCom == NULL) {
+		return(COORD_NONE);
+	}
+	MissionType const mission = LinkedTo->Get_Mission();
+	if (mission != MISSION_ENTER && mission != MISSION_CAPTURE && mission != MISSION_PATROL) {
+		return(COORD_NONE);
+	}
+
+	Cell const cell = dest.As_Cell();
+	AbstractClass * const target = LinkedTo->NavCom;
+	bool ignore_contents = false;
+	if (target->RTTI == RTTI_UNIT || target->RTTI == RTTI_AIRCRAFT) {
+		ignore_contents = static_cast<ObjectClass *>(target)->Get_Cell() == cell;
+	} else if (target->RTTI == RTTI_BUILDING) {
+		ignore_contents = Map[cell].Cell_Building() == target;
+	}
+	if (!ignore_contents || !Map.In_Local_Radar(cell)) {
+		return(COORD_NONE);
+	}
+
+	Coord const spot = Map[cell].Closest_Free_Spot(dest, true, Map[cell].IsUnderBridge);
+	if (spot == COORD_NONE || LinkedTo->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
+		return(COORD_NONE);
+	}
+	return(spot);
 }
 
 
@@ -365,7 +405,11 @@ void TeleportLocomotionClass::Start_Warp(void)
 		return;
 	}
 
-	Coord const landing = Landing_Spot(DestinationCoord);
+	Coord landing = Target_Cell_Spot(DestinationCoord);
+	bool const boarding = landing != COORD_NONE;
+	if (!boarding) {
+		landing = Landing_Spot(DestinationCoord);
+	}
 	int const distance = Warp_Distance(landing);
 	int const delay = Warp_Delay(landing);
 	DestinationCoord = COORD_NONE;
@@ -394,9 +438,6 @@ void TeleportLocomotionClass::Start_Warp(void)
 	LinkedTo->Mark(MARK_DOWN);
 	WarpPhase = TELEPORT_HOLD;
 	WarpEnd = Frame + delay;
-	// A landing ends the move, as a walking locomotor's arrival does; otherwise the owner's
-	// mission orders the same destination again once the hold ends.
-	LinkedTo->Assign_Destination(NULL);
 	// gamemd creates the WarpOut anim here as well (0x719788 reads Rules+0x33C), not WarpIn (+0x338).
 	if (Rule->WarpOut != NULL) {
 		new AnimClass(Rule->WarpOut, landing);
@@ -407,8 +448,25 @@ void TeleportLocomotionClass::Start_Warp(void)
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST   warp in %s cell %d,%d frame %d hold until %d distance %d factor %d minimum %d range %d trigger %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd, distance, Rule->ChronoDistanceFactor, Rule->ChronoMinimumDelay, Rule->ChronoRangeMinimum, (int)Rule->ChronoTrigger);
 	}
-	LinkedTo->Per_Cell_Process(PCP_END);
-	LinkedTo->Look();
+	// A soldier landing on the cell of the transport it was ordered into is processed with the order
+	// still set so that the arrival boards it (gamemd: 0x7196AB, before SetDestination(NULL) at 0x719733).
+	// Any other landing ends the move first, as a walking locomotor's arrival does; otherwise the owner's
+	// mission orders the same destination again once the hold ends. Processing the arrival can end the
+	// piggyback and destroy this locomotor, so the unit is kept in a local.
+	FootClass * const foot = LinkedTo;
+	if (!boarding) {
+		foot->Assign_Destination(NULL);
+	}
+	foot->Per_Cell_Process(PCP_END);
+	if (!foot->IsActive) {
+		return;
+	}
+	if (boarding) {
+		foot->Assign_Destination(NULL);
+	}
+	if (!foot->IsInLimbo) {
+		foot->Look();
+	}
 }
 
 
