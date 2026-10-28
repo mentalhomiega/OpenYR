@@ -153,6 +153,10 @@ A cached picture of a vehicle in the normal visual state, not sinking, not warpi
 
 A vehicle whose shadow and turret picture are both cached no longer builds its draw and shadow matrices: the locomotor reports the cache keys without them, and the matrices are built only for a missing image. The time per voxel unit fell by about 1,000 of about 5,500 processor cycles.
 
+A turretless vehicle whose hull image is cached no longer builds its draw matrix either, and passes the draw an identity matrix that a cached image never reads. Per `Unit_Draw_Voxel` call the median fell from about 5,900 to about 5,100 processor cycles in three alternating pairs of a benchmark with 10 armoured personnel carriers and 10 harvesters.
+
+The presenter compares the frame's emissive mask with its copy only in rows that the mask's `Lit` flags say may hold a value, now or at the previous compare. Every other row is zero in both, so the copy already holds it. Where no row is lit, which is the usual case with `GpuRender`, the compare reads nothing. In three clean alternating pairs of the 4K benchmark `present.upload` fell from about 0.29 to about 0.21 ms and `present.total` from about 0.63 to about 0.50 ms.
+
 The modern build panel is drawn eight pixels at a time. At 3840x2160 the `ui` phase of a picture fell from about 0.45 ms to about 0.09 ms with this change and the write watch change below.
 
 The frame surface's write watch (`WriteWatch_Take` with `steady`) stops resetting a page that two takes in a row found written, because the next write to a reset page is a page fault of about 1,700 cycles. Such a page is reported as written in every take until a full reset, every 32 takes, so the areas redrawn every frame, such as the build panel, cost no faults, and a page that stops being written is still refilled and copied for up to 32 pictures. Only the frame surface uses it. In four alternating pairs of the 4K benchmark the draw phase fell from about 1.45 ms to about 1.1 ms per picture in quiet pairs.
