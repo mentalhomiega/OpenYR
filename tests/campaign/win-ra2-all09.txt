@@ -3,7 +3,7 @@
 ; Until frame 2000 every order attacks the enemy object nearest to the Soviet village at 58,76 (strikeobj *); then the one nearest
 ; to 80,105, which works through the Soviet base and the two Mayan Prism Pyramids. The map makes the pyramids (MAYAN) significant,
 ; so "_Win" needs them gone as well as every BadGuy1 structure.
-; Expected: "AUTOTEST game over frame N: won" (frame 7869 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 8005 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all09.txt -Campaign -Map ALL09T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2

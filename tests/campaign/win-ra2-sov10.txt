@@ -1,6 +1,6 @@
 ; Campaign win check for Soviet 10 (Red Alert 2). Thirty-six Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order.
 ; The airships fly west over the Allied bases and bomb the Weather Control Device (GAWEAT) at 17,95. Its destruction springs "WCD Destroyed" and starts the win.
-; Expected: "AUTOTEST game over frame N: won" (frame 7246 in the last run). Before the jump-jet Stop_Moving fix this script crashed the game when a Kirov was stopped with no cell to land in.
+; Expected: "AUTOTEST game over frame N: won" (frame 7245 in the last run). Before the jump-jet Stop_Moving fix this script crashed the game when a Kirov was stopped with no cell to land in.
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov10.txt -Campaign -Map SOV10T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2

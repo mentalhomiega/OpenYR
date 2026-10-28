@@ -3,7 +3,7 @@
 ; to BadGuy2 and "Win (Nukes KIA)" is enabled. Then eighty-one Grizzly and twenty-seven Prism tanks (grantunit, as a chronoshift
 ; would bring them) appear by the Soviet base, and each order attacks one Nuclear Missile Silo (NAMISL) until it is gone.
 ; The silos' destruction springs "Win (Nukes KIA)" and the chain ends in "Win (Game Over)".
-; Expected: "AUTOTEST game over frame N: won" (frame 20302 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 20589 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all11.txt -Campaign -Map ALL11T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 720 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2

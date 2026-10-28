@@ -2,7 +2,7 @@
 ; build; everything after is an order. The tanks destroy the German refineries and harvester next to the start, then drive south, destroy the American base soldier by
 ; soldier and building by building (strikeobj, nearest first), and the Dreadnoughts on the east coast sink the American destroyers. The win waits for every German and
 ; American structure, vehicle, ship and soldier, which includes the harvester that drives away from the refineries and the engineers that run out of a dead yard.
-; Expected: "AUTOTEST game over frame N: won" (frame 19541 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 19717 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov02.txt -Campaign -Map SOV02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 1200 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2

@@ -5,7 +5,7 @@
 ; The tanks then destroy the Psychic Beacon (NAPSYB at 47,100) before the mission timer runs out, attack the enemy object nearest to
 ; the beacon until frame 2400 (BadGuy2's base), then the one nearest to 50,85, which works north through BadGuy1's base and its hunters.
 ; "_Win Occurred" needs BadGuy1 and BadGuy2 with nothing left.
-; Expected: "AUTOTEST game over frame N: won" (frame 7869 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 7733 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all08.txt -Campaign -Map ALL08U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2
