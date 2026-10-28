@@ -49,6 +49,9 @@ ReplayFile::HeaderType Sample_Header(void)
 	header.GameSpeed = 1;
 	header.HashInterval = 30;
 	header.LocalHouse = -1;
+	header.MapTitle = "Dustbowl";
+	header.Recorded = 1790000000u;
+	header.Players = {{"Tester", false}, {"Hard AI", true}};
 	header.SpawnIni = "[Settings]\r\nScenario=XMP29U2.MAP\r\nSeed=1\r\n";
 	return(header);
 }
@@ -78,7 +81,7 @@ std::string Temp_Path(void)
 
 
 // Writes a recording of two events and two hashes, with an end record when asked.
-void Write_Sample(std::string const & path, bool finish)
+void Write_Sample(std::string const & path, bool finish, ReplayFile::ResultType result = ReplayFile::ResultType::WON)
 {
 	ReplayFile::WriterClass writer;
 	Check(writer.Open(path.c_str(), Sample_Header()), "a recording opens its file");
@@ -114,7 +117,7 @@ void Write_Sample(std::string const & path, bool finish)
 		hash.Frame = 345;
 		hash.State = 7;
 		hash.Targets = 8;
-		writer.Finish(hash);
+		writer.Finish(hash, result);
 	}
 }
 
@@ -143,6 +146,9 @@ int main(void)
 		Check(got.Seed == 0xFFFFFFFEu && got.GameSpeed == 1 && got.HashInterval == 30 && got.LocalHouse == -1,
 			"the seed, speed, hash interval and house are kept, negative values included");
 		Check(got.SpawnIni == sample.SpawnIni, "the launch file text is kept with its line breaks");
+		Check(got.MapTitle == "Dustbowl" && got.Recorded == 1790000000u, "the map title and the recording time are kept");
+		Check(got.Players.size() == 2 && got.Players[0].Name == "Tester" && !got.Players[0].IsComputer
+			&& got.Players[1].Name == "Hard AI" && got.Players[1].IsComputer, "the seats are kept with their names and kinds");
 
 		Check(replay.Events.size() == 2 && replay.Hashes.size() == 2, "each event and hash is read");
 		Check(replay.Events[0].Frame == 300 && replay.Events[0].Type == 10 && replay.Events[0].EventFrame == 299
@@ -154,6 +160,23 @@ int main(void)
 			"a hash keeps both of its words");
 		Check(replay.IsComplete && replay.End.Frame == 345 && replay.End.State == 7 && replay.End.Targets == 8,
 			"the end record names the last frame and its hash");
+		Check(replay.Result == ReplayFile::ResultType::WON, "the end record keeps the result");
+	}
+
+	/*
+	 * The result is kept as written, and a recording that has none reads as unknown.
+	 */
+	{
+		ReplayFile::ReplayType replay;
+		Write_Sample(path, true, ReplayFile::ResultType::LOST);
+		Check(ReplayFile::Load(path.c_str(), replay) == ReplayFile::LoadResult::OK && replay.Result == ReplayFile::ResultType::LOST,
+			"a lost match is read back as lost");
+		Write_Sample(path, true, ReplayFile::ResultType::UNKNOWN);
+		Check(ReplayFile::Load(path.c_str(), replay) == ReplayFile::LoadResult::OK && replay.IsComplete
+			&& replay.Result == ReplayFile::ResultType::UNKNOWN, "a match left before it was decided has no result");
+		Write_Sample(path, false);
+		Check(ReplayFile::Load(path.c_str(), replay) == ReplayFile::LoadResult::OK && replay.Result == ReplayFile::ResultType::UNKNOWN,
+			"a recording with no end record has no result");
 	}
 
 	/*
@@ -191,6 +214,10 @@ int main(void)
 		std::vector<std::uint8_t> other = bytes;
 		other[8] = static_cast<std::uint8_t>(ReplayFile::REVISION + 1);
 		Check(ReplayFile::Parse(other, replay) == ReplayFile::LoadResult::OTHER_REVISION, "another revision is refused");
+
+		std::vector<std::uint8_t> older = bytes;
+		older[8] = 1;
+		Check(ReplayFile::Parse(older, replay) == ReplayFile::LoadResult::OTHER_REVISION, "a revision 1 replay is refused");
 
 		std::vector<std::uint8_t> header_cut(bytes.begin(), bytes.begin() + 40);
 		Check(ReplayFile::Parse(header_cut, replay) == ReplayFile::LoadResult::DAMAGED, "a file cut inside its header is damaged");

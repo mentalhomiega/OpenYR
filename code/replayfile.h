@@ -22,8 +22,8 @@
  *   magic "OYRREPLY", revision, header fields, then records until the end of the file
  *
  * A record is a one-byte tag followed by its fields: E for an event, H for a state hash and Z
- * for the end of the recording. A recording that ended with a crash has no Z record and is
- * still read as far as it goes.
+ * for the end of the recording, which also names the result the player had. A recording that
+ * ended with a crash has no Z record and is still read as far as it goes.
  *
  * The file module knows nothing of the engine. The event payload is the bytes the engine chose to
  * store, and the reader returns them untouched.
@@ -31,13 +31,32 @@
 namespace ReplayFile
 {
 	// Bump when a field is added, removed or reordered. A reader refuses any other revision.
-	constexpr std::uint32_t REVISION = 1;
+	constexpr std::uint32_t REVISION = 2;
 
 	// Frames between two state hash records.
 	constexpr std::uint32_t DEFAULT_HASH_INTERVAL = 30;
 
 	// A payload or text field longer than this marks a damaged file.
 	constexpr std::uint32_t FIELD_LIMIT = 16u * 1024u * 1024u;
+
+	// A header that lists more seats than this is damaged.
+	constexpr std::uint32_t PLAYER_LIMIT = 64;
+
+	// One seat of the match, as a list of recordings shows it.
+	struct PlayerType
+	{
+		std::string Name;
+		bool IsComputer = false;
+	};
+
+	// How the recording player's match ended. A recording that was left before the game was decided,
+	// or that ended with a crash, has no result.
+	enum class ResultType : std::uint8_t
+	{
+		UNKNOWN = 0,
+		WON = 1,
+		LOST = 2,
+	};
 
 	struct HeaderType
 	{
@@ -68,6 +87,12 @@ namespace ReplayFile
 
 		// The launch file text that starts the same match.
 		std::string SpawnIni;
+
+		// What a list of recordings shows: the map's title, the seconds since 1970 the recording
+		// started, and the seats in house order. Playback does not read them.
+		std::string MapTitle;
+		std::uint32_t Recorded = 0;
+		std::vector<PlayerType> Players;
 	};
 
 	// One executed event. Frame is the frame it ran on, EventFrame the frame the event itself
@@ -94,9 +119,11 @@ namespace ReplayFile
 		std::vector<EventType> Events;
 		std::vector<HashType> Hashes;
 
-		// Present only when the recording ended normally. End.Frame is the last frame played.
+		// Present only when the recording ended normally. End.Frame is the last frame played, which is
+		// the length of the match in frames.
 		bool IsComplete = false;
 		HashType End;
+		ResultType Result = ResultType::UNKNOWN;
 	};
 
 	enum class LoadResult
@@ -133,7 +160,7 @@ namespace ReplayFile
 			bool Is_Open(void) const { return(File != nullptr); }
 			void Add_Event(EventType const & event);
 			void Add_Hash(HashType const & hash);
-			void Finish(HashType const & end);
+			void Finish(HashType const & end, ResultType result = ResultType::UNKNOWN);
 			void Close(void);
 
 		private:

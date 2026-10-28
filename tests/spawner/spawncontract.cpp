@@ -1339,6 +1339,61 @@ int main(void)
 		Check(Read(none, sizeof(none) - 1).Slots[0].CustomColor == 0, "a seat without ColorRGB keeps the stock color");
 	}
 
+	/*
+	 * A reading written back out is read as the same match: the session identity covers every value the
+	 * course of the match depends on, and the names and the free color come back too. A skirmish started
+	 * from the menus is replayed this way.
+	 */
+	{
+		std::string const text = Read(_Skirmish, sizeof(_Skirmish) - 1).Write_INI();
+		SpawnerConfigClass const first = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		SpawnerConfigClass const second = Read(text.c_str(), (int)text.size());
+		Check(first.Session_Identity_CRC() == second.Session_Identity_CRC(), "a skirmish written out is the same match when read again");
+		Check(second.Slots[0].Name == "Commander" && second.HumanCount == 1 && second.LocalSlot == 0, "the person's seat keeps its name");
+		Check(second.Slots[1].StartingPosition == first.Slots[1].StartingPosition && second.Slots[2].Handicap == first.Slots[2].Handicap,
+			"the computers keep their start positions and difficulties");
+
+		SpawnerConfigClass built;
+		built.ScenarioName = "XMP29U2.MAP";
+		built.MapName = "The Alamo (2)";
+		built.Credits = 7500;
+		built.GameSpeed = 2;
+		built.TechLevel = 6;
+		built.AIPlayers = 2;
+		built.AIDifficulty = 2;
+		built.Seed = 123456;
+		built.AINamesByDifficulty = true;
+		built.HumanCount = 1;
+		built.Slots[0].Occupancy = OccupancyType::Human;
+		built.Slots[0].Name = "Tester";
+		built.Slots[0].Country = 3;
+		built.Slots[0].Color = 2;
+		built.Slots[0].CustomColor = Player_Color_From_RGB(RGBClass(40, 160, 255));
+		built.Slots[0].StartingPosition = 1;
+		built.Slots[0].Alliances[0] = 2;
+		built.Slots[1].Occupancy = OccupancyType::Computer;
+		built.Slots[1].Country = -1;
+		built.Slots[1].Color = 4;
+		built.Slots[1].Handicap = 0;
+		built.Slots[1].StartingPosition = -1;
+		built.Slots[2].Occupancy = OccupancyType::Computer;
+		built.Slots[2].Country = 5;
+		built.Slots[2].Color = 6;
+		built.Slots[2].Handicap = 2;
+		built.Slots[2].StartingPosition = 0;
+		built.Slots[2].Alliances[0] = 0;
+
+		std::string const built_text = built.Write_INI();
+		SpawnerConfigClass const again = Read(built_text.c_str(), (int)built_text.size());
+		Check(again.Session_Identity_CRC() == built.Session_Identity_CRC(), "a match built in code is the same match when read again");
+		Check(again.ScenarioName == "XMP29U2.MAP" && again.MapName == "The Alamo (2)" && again.Seed == 123456 && again.AINamesByDifficulty,
+			"the map, its title, the seed and the naming of computers come back");
+		Check(again.Slots[0].Name == "Tester" && again.Slots[0].CustomColor != 0 && again.Slots[1].Country == -1 && again.Slots[2].Alliances[0] == 0
+			&& again.Slots[0].Alliances[0] == 2 && again.Slots[1].Occupancy == OccupancyType::Computer, "the seats keep their kinds, countries and alliances");
+		std::string fault;
+		Check(again.Is_Playable(10, 8, fault), "a match written out can be launched");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

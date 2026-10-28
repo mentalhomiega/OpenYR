@@ -68,6 +68,10 @@ class SpawnerConfigClass
 		};
 
 		void Read_INI(INIClass const & ini);
+
+		// The launch file text that Read_INI reads back into the same match. A person's seat is written
+		// as a section and a computer's by position, so a game started from the menus can be launched again.
+		std::string Write_INI(void) const;
 		LaunchType Launch_Type(void) const;
 		int Session_Identity_CRC(void) const;
 

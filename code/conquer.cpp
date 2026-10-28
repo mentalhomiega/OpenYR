@@ -70,6 +70,7 @@
 #include "_map.h"
 #include "_palette.h"
 #include "replay.h"
+#include "spawner.h"
 #include "_rules.h"
 #include "_source.h"
 #include "_surface.h"
@@ -486,6 +487,7 @@ void Main_Game(int argc, char * argv[])
 		DebugString("Game loop finished. Average FPS = %d\n", SecondsPassed ? TotalFrames / SecondsPassed : 0);
 
 		Replay_Finish();
+		Spawner_Release();
 
 		Print_MP_Stats();
 

@@ -64,6 +64,13 @@ void Put_Header(std::vector<std::uint8_t> & out, HeaderType const & header)
 	Put_U32(out, header.HashInterval);
 	Put_U32(out, static_cast<std::uint32_t>(header.LocalHouse));
 	Put_Text(out, header.SpawnIni);
+	Put_Text(out, header.MapTitle);
+	Put_U32(out, header.Recorded);
+	Put_U32(out, static_cast<std::uint32_t>(header.Players.size()));
+	for (PlayerType const & player : header.Players) {
+		Put_Text(out, player.Name);
+		Put_U8(out, player.IsComputer ? 1 : 0);
+	}
 }
 
 
@@ -161,9 +168,28 @@ bool Get_Header(ReaderClass & reader, HeaderType & header)
 		&& reader.Get_I32(header.GameSpeed)
 		&& reader.Get_U32(header.HashInterval)
 		&& reader.Get_I32(header.LocalHouse)
-		&& reader.Get_Text(header.SpawnIni);
+		&& reader.Get_Text(header.SpawnIni)
+		&& reader.Get_Text(header.MapTitle)
+		&& reader.Get_U32(header.Recorded);
 	header.Modified = modified != 0;
-	return(read);
+	if (!read) {
+		return(false);
+	}
+
+	std::uint32_t count = 0;
+	if (!reader.Get_U32(count) || count > PLAYER_LIMIT) {
+		return(false);
+	}
+	for (std::uint32_t index = 0; index < count; index++) {
+		PlayerType player;
+		std::uint8_t computer = 0;
+		if (!reader.Get_Text(player.Name) || !reader.Get_U8(computer)) {
+			return(false);
+		}
+		player.IsComputer = computer != 0;
+		header.Players.push_back(std::move(player));
+	}
+	return(true);
 }
 
 
@@ -238,9 +264,12 @@ LoadResult Parse(std::vector<std::uint8_t> const & bytes, ReplayType & replay)
 			}
 			replay.Hashes.push_back(hash);
 		} else if (tag == TAG_END) {
-			if (!Get_Hash(reader, replay.End)) {
+			std::uint8_t result = 0;
+			if (!Get_Hash(reader, replay.End) || !reader.Get_U8(result)) {
 				break;
 			}
+			replay.Result = result == static_cast<std::uint8_t>(ResultType::WON) ? ResultType::WON
+				: result == static_cast<std::uint8_t>(ResultType::LOST) ? ResultType::LOST : ResultType::UNKNOWN;
 			replay.IsComplete = true;
 			if (!reader.At_End()) {
 				return(LoadResult::DAMAGED);
@@ -389,15 +418,16 @@ void WriterClass::Add_Hash(HashType const & hash)
 
 
 /// <summary>
-/// Writes the end record, which names the last frame played, and closes the file.
+/// Writes the end record, which names the last frame played and the result, and closes the file.
 /// </summary>
-void WriterClass::Finish(HashType const & end)
+void WriterClass::Finish(HashType const & end, ResultType result)
 {
 	std::vector<std::uint8_t> bytes;
 	Put_U8(bytes, TAG_END);
 	Put_U32(bytes, end.Frame);
 	Put_U32(bytes, end.State);
 	Put_U32(bytes, end.Targets);
+	Put_U8(bytes, static_cast<std::uint8_t>(result));
 	Put(bytes);
 	Close();
 }

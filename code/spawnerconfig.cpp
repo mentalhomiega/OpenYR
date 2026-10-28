@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <sstream>
 #include <vector>
 
 
@@ -595,4 +596,135 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	}
 
 	Read_Slots(ini);
+}
+
+
+namespace {
+
+char const * Yes_No(bool value)
+{
+	return(value ? "yes" : "no");
+}
+
+
+/// <summary>Writes the packed free color of a seat as the ColorRGB entry Read_Free_Color reads.</summary>
+void Write_Free_Color(std::ostringstream & out, unsigned int custom)
+{
+	if (!Player_Color_Is_Custom(custom)) {
+		return;
+	}
+	RGBClass const rgb = Player_Color_Preview(custom);
+	out << "ColorRGB=" << (int)rgb.Get_Red() << "," << (int)rgb.Get_Green() << "," << (int)rgb.Get_Blue() << "\n";
+}
+
+}
+
+
+/// <summary>
+/// Writes this reading as launch file text. Only the entries that decide the match are written, in the
+/// shape Read_INI and Read_Slots expect: the seat on this machine in [Settings], the other people in
+/// [Other1] on, and the computer seats by position in the numbered sections.
+/// </summary>
+std::string SpawnerConfigClass::Write_INI(void) const
+{
+	static char const * const _ordinals[SLOT_COUNT] = {
+		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
+		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
+	};
+
+	std::ostringstream out;
+	out << "[Settings]\n";
+	out << "Scenario=" << ScenarioName << "\n";
+	if (!MapName.empty()) {
+		out << "UIMapName=" << MapName << "\n";
+	}
+	out << "IsSinglePlayer=" << Yes_No(IsCampaign) << "\n";
+	out << "Bases=" << Yes_No(Bases) << "\n";
+	out << "Credits=" << Credits << "\n";
+	out << "BridgeDestroy=" << Yes_No(BridgeDestroy) << "\n";
+	out << "Crates=" << Yes_No(Crates) << "\n";
+	out << "ShortGame=" << Yes_No(ShortGame) << "\n";
+	out << "BuildOffAlly=" << Yes_No(BuildOffAlly) << "\n";
+	out << "SuperWeapons=" << Yes_No(SuperWeapons) << "\n";
+	out << "GameSpeed=" << GameSpeed << "\n";
+	out << "MultiEngineer=" << Yes_No(MultiEngineer) << "\n";
+	out << "UnitCount=" << UnitCount << "\n";
+	out << "AIPlayers=" << AIPlayers << "\n";
+	out << "AIDifficulty=" << AIDifficulty << "\n";
+	out << "AlliesAllowed=" << Yes_No(AlliesAllowed) << "\n";
+	out << "GameMode=" << GameMode << "\n";
+	out << "HarvesterTruce=" << Yes_No(HarvesterTruce) << "\n";
+	out << "FogOfWar=" << Yes_No(FogOfWar) << "\n";
+	out << "MCVRedeploy=" << Yes_No(MCVRedeploy) << "\n";
+	out << "AutoDeployMCV=" << Yes_No(AutoDeployMCV) << "\n";
+	out << "Seed=" << Seed << "\n";
+	out << "TechLevel=" << TechLevel << "\n";
+	out << "Firestorm=" << Yes_No(Firestorm) << "\n";
+	out << "CoachMode=" << Yes_No(CoachMode) << "\n";
+	out << "AutoSurrender=" << Yes_No(AutoSurrender) << "\n";
+	out << "AttackNeutralUnits=" << Yes_No(AttackNeutralUnits) << "\n";
+	out << "ScrapMetal=" << Yes_No(ScrapMetal) << "\n";
+	out << "DifficultyBasedAINames=" << Yes_No(AINamesByDifficulty) << "\n";
+
+	// The local person first: the reader gives [Settings] the first seat, and sorts the people by color.
+	int other = 1;
+	for (int pass = 0; pass < 2; pass++) {
+		for (int index = 0; index < SLOT_COUNT; index++) {
+			SlotType const & slot = Slots[index];
+			if (slot.Occupancy != OccupancyType::Human || (pass == 0) != (index == LocalSlot)) {
+				continue;
+			}
+
+			if (pass == 1) {
+				out << "\n[Other" << other++ << "]\n";
+			}
+			out << "Name=" << slot.Name << "\n";
+			out << "Side=" << slot.Country << "\n";
+			out << "Color=" << slot.Color << "\n";
+			Write_Free_Color(out, slot.CustomColor);
+			if (slot.IsSpectator) {
+				out << "IsSpectator=yes\n";
+			}
+		}
+	}
+
+	out << "\n[HouseCountries]\n";
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		if (Slots[index].Occupancy == OccupancyType::Computer) {
+			out << "Multi" << index + 1 << "=" << Slots[index].Country << "\n";
+		}
+	}
+	out << "\n[HouseColors]\n";
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		if (Slots[index].Occupancy == OccupancyType::Computer) {
+			out << "Multi" << index + 1 << "=" << Slots[index].Color << "\n";
+		}
+	}
+	out << "\n[HouseHandicaps]\n";
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		if (Slots[index].Occupancy == OccupancyType::Computer) {
+			out << "Multi" << index + 1 << "=" << Slots[index].Handicap << "\n";
+		}
+	}
+	out << "\n[SpawnLocations]\n";
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		if (Slots[index].Occupancy != OccupancyType::Empty) {
+			out << "Multi" << index + 1 << "=" << Slots[index].StartingPosition << "\n";
+		}
+	}
+
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		SlotType const & slot = Slots[index];
+		int written = 0;
+		std::ostringstream allies;
+		for (int ally : slot.Alliances) {
+			if (ally >= 0 && ally < SLOT_COUNT && written < SLOT_COUNT) {
+				allies << _ordinals[written++] << "=" << ally << "\n";
+			}
+		}
+		if (written > 0) {
+			out << "\n[Multi" << index + 1 << "_Alliances]\n" << allies.str();
+		}
+	}
+	return(out.str());
 }

@@ -64,6 +64,7 @@
 #include "shellmap.h"
 
 #include "autotest.h"
+#include "replay.h"
 #include "_bench.h"
 #include "_deploymentconfig.h"
 #include "_keyboar.h"
@@ -1313,6 +1314,7 @@ void Clear_Scenario(void)
  *=============================================================================================*/
 void Do_Win(void)
 {
+	Replay_Note_Game_Over(true);
 	AutoTest_Game_Over(true);
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
@@ -1487,6 +1489,7 @@ void Do_Win(void)
  *=============================================================================================*/
 void Do_Lose(void)
 {
+	Replay_Note_Game_Over(false);
 	AutoTest_Game_Over(false);
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
