@@ -1,0 +1,28 @@
+; A human player's dug-in soldier on the attack mission (InfantryClass::Mission_Attack, 0x51F3E0, and vt_entry_428, 0x51F330).
+; It does not walk to its target. Each run of the mission keeps the target while the deploy weapon reaches it, and otherwise takes the
+; greatest threat in range or no target, and then goes back to Guard (EnterIdleMode) when it has none.
+; The GGI is ordered onto a structure 22 cells off, out of reach: it is meant to drop the order and stand guard.
+; The E1 (a GI, which also digs in) is ordered onto a structure 4 cells off, in reach: it keeps the order and fires.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Script src-agent27/tests/autotest/infantry-dugin-attack.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST   soldier|Exception"
+; Expected: at frame 200 the GGI and the E1 are dug in on Guard. At frame 260 the GGI is on Guard with no target; the E1 is on Attack
+; with a target. At frame 400 the far structure is untouched and the near one is damaged or gone.
+30 own GGI 54 40
+31 enemy GAPOWR 54 62
+32 own E1 62 40
+33 enemy GAPOWR 62 44
+60 select GGI
+61 command DeployObject
+70 select E1
+71 command DeployObject
+200 where GGI
+200 where E1
+210 strike GGI 54 62
+211 strike E1 62 44
+260 where GGI
+260 where E1
+261 where GAPOWR
+400 where GGI
+400 where E1
+401 where GAPOWR
+420 quit

@@ -1,0 +1,16 @@
+; A computer's dug-in soldier that is put on the hunt mission with no target packs up first (InfantryClass::Mission_Hunt, 0x51F540, which plays the
+; Undeploy sequence) before FootClass::Mission_Hunt looks for a target.
+; The computer's GGI digs in by itself on Area Guard (InfantryClass::Mission_AreaGuard, 0x51F640, which runs the guard helper 0x521320 as Mission_Guard
+; does) once the AI's frame delay has passed.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Script src-agent27/tests/autotest/infantry-hunt-undeploy.txt -Seconds 90 -Filter "AUTOTEST   (where|soldier)|Exception"
+; Expected: the where lines at frames 190 and 195 show the GGI dug in (soldier line: deployed 1, do 29) on Area Guard. At frame 202, two frames after the hunt
+; order, it is packing up (do 32, the Undeploy sequence) on the Hunt mission, and at frames 220 and 260 it stands or walks undeployed (deployed 0).
+30 enemy GGI 54 50
+190 where GGI
+195 where GGI
+200 hunt GGI
+202 where GGI
+220 where GGI
+260 where GGI
+280 quit

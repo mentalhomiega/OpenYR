@@ -3618,7 +3618,45 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 		}
 	}
 
+	// A human player's dug-in soldier never walks to its target. It keeps the target while its deploy weapon reaches it, takes the greatest
+	// threat in range when it does not, and goes back to idle with none (InfantryClass::Mission_Attack, 0x51F3E0, calling vt_entry_428, 0x51F330).
+	if (House->Is_Human_Player() && Is_Deployed()) {
+		Refresh_Deployed_Target();
+		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+	}
+
 	return(BASECLASS::Do_MISSION_ATTACK());
+}
+
+
+/// <summary>
+/// The hunt mission for a soldier. A computer's soldier that holds a structure as its target goes to it when it infiltrates or can
+/// garrison it, and a dug-in one with no target packs up, as InfantryClass::Mission_Hunt (0x51F540) does. Anything else is
+/// FootClass::Mission_Hunt.
+/// </summary>
+/// <returns>The delay in game frames before the hunt mission runs again.</returns>
+int InfantryClass::Do_MISSION_HUNT(void)
+{
+	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+		if (Class->IsCapture) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(1);
+		}
+		// A garrison is entered on the Enter mission, as in Do_MISSION_ATTACK.
+		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_ENTER);
+			return(1);
+		}
+	}
+
+	if (!House->Is_Human_Player() && Is_Deployed() && TarCom == NULL) {
+		Do_Action(DO_UNDEPLOY, false, false);
+		return(1);
+	}
+
+	return(BASECLASS::Do_MISSION_HUNT());
 }
 
 
@@ -5055,6 +5093,21 @@ int InfantryClass::Do_MISSION_GUARD(void)
 }
 
 
+/// <summary>
+/// Handles the area guard mission for this infantry. The guard helper runs before the normal area guard mission, as
+/// InfantryClass::Mission_AreaGuard (0x51F640) does, so a computer's Deployer soldier digs in from this mission too.
+/// </summary>
+/// <returns>The delay in game frames before this mission should be processed again.</returns>
+int InfantryClass::Do_MISSION_GUARD_AREA(void)
+{
+	int const deploy_delay = Do_Guard_Deploy();
+	if (deploy_delay >= 0) {
+		return(deploy_delay);
+	}
+	return(BASECLASS::Do_MISSION_GUARD_AREA());
+}
+
+
 ClassID InfantryClass::Class_ID(void) const
 {
 	return(ClassID_InfantryClass);
@@ -5183,6 +5236,11 @@ void InfantryClass::Refresh_Deployed_Target(void)
 		if (target != NULL) {
 			return;
 		}
+	}
+
+	// With nothing to shoot, a soldier that is not on Guard goes back to idle, unless it is a jumpjet (vt_entry_428, 0x51F330).
+	if (CurrentMission != MISSION_GUARD && !Class->IsJumpJet) {
+		Enter_Idle_Mode(false, true);
 	}
 }
 

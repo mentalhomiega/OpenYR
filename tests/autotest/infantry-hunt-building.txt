@@ -1,0 +1,47 @@
+; A computer's soldier on the hunt mission that holds a structure as its target (InfantryClass::Mission_Hunt, 0x51F540). An Infiltrate=yes
+; soldier goes to the structure on the Capture mission. An Occupier=yes or Assaulter=yes soldier that can garrison it does the same
+; (gamemd names the Capture mission for the garrison too; ours uses Enter, as the same branch of Mission_Attack does). That test comes before the
+; C4 one, so a TANY or GHOST (C4 and Infiltrate) captures. Any other soldier carries on with FootClass::Mission_Hunt (0x4D5350): a soldier
+; with the C4 ability but not Infiltrate goes to its structure on the Sabotage mission whether or not the structure takes C4 (the mission then ends at once when it
+; does not, FootClass::Mission_Capture), an engineer captures, and the rest approach the target.
+; Stock soldiers with Infiltrate=yes are ENGINEER, SPY, TANY, GHOST and PTROOP. E2 has Occupier=yes. GAPOWR takes C4, CAMISC01 does not,
+; and CAHSE02 is a neutral house a soldier may garrison. The mod infantry-hunt-rules gives an elite E1 the C4 ability, with no Infiltrate=yes on the type (Infiltrate=yes follows C4=yes, Engineer=yes and Agent=yes in the type flags, so only the ability makes a C4 soldier without it).
+; Expected at frame 150: the computer's SPY, TANY (on CAMISC01) and GHOST (on GAPOWR) are on Capture, its ENGINEER on Capture, its E2 (on CAHSE02) on Enter, its elite E1
+; (on CAMISC01, which takes no C4) on Sabotage, and its SHK still on Hunt, walking toward its target. Before the change they all stayed on Hunt except
+; the ENGINEER, and the GHOST took the Sabotage mission.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Mods "E:\Claude ra2 decomp\src-agent27\tests\autotest\infantry-hunt-rules" -Script src-agent27/tests/autotest/infantry-hunt-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST settarget|Exception"
+30 own GAPOWR 60 52
+31 own CAMISC01 66 46
+32 neutral CAHSE02 66 52
+33 own GAPOWR 60 40
+40 enemy SPY 54 50
+41 enemy TANY 54 51
+42 enemy E1 76 46
+43 enemy E2 54 53
+44 enemy GHOST 54 54
+46 enemy ENGINEER 54 56
+47 enemy SHK 54 57
+50 settarget SPY 60 52 computer hunt
+51 settarget TANY 66 46 computer hunt
+51 rank E1 2
+52 settarget E1 66 46 computer hunt
+53 settarget E2 66 52 computer hunt
+54 settarget GHOST 60 40 computer hunt
+56 settarget ENGINEER 60 52 computer hunt
+57 settarget SHK 60 52 computer hunt
+150 where SPY
+150 where TANY
+150 where E1
+150 where SHK
+150 where E2
+150 where GHOST
+150 where ENGINEER
+300 where SPY
+300 where TANY
+300 where E1
+300 where SHK
+300 where E2
+300 where GHOST
+300 where ENGINEER
+310 quit
