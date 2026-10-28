@@ -1048,7 +1048,15 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 	}
 
 	if (blocked) {
-		Cell const nearby = Map.Nearby_Location(cell, foot->TClass->Speed, -1, foot->TClass->MZone);
+		// The search takes the cells of the zone the unit stands in now, tracked vehicles' passability, and a
+		// flyer or wall-destroyer as a plain walker (0x718260).
+		MZoneType mzone = foot->TClass->MZone;
+		if (mzone == MZONE_FLYER || mzone == MZONE_DESTROYER) {
+			mzone = MZONE_NORMAL;
+		} else if (mzone == MZONE_AMPHIBIOUS_DESTROYER) {
+			mzone = MZONE_AMPHIBIOUS;
+		}
+		Cell const nearby = Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(foot->Get_Cell(), mzone, true), mzone, cellptr->IsUnderBridge);
 		if (nearby == CELL_NONE) {
 			Chrono_Kill(foot);
 			return;
