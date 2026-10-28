@@ -275,6 +275,7 @@ Each machine writes its own file, with itself in `[Settings]` and the other peop
 - the same people, with the same `Name`, `Side` and `Color`;
 - the same entries in `[HouseColors]`, `[HouseCountries]`, `[HouseHandicaps]`, `[SpawnLocations]`, the `[MultiN_Alliances]` sections and `[IsSpectator]`, and the same `IsSpectator` in each person's section;
 - the same `[Tunnel]` section, when the match is played through a tunnel.
+- the same `FrameSendRate`, `MaxAhead` and `Protocol`, when the host chose them.
 
 The keys under [What a player is shown](#what-a-player-is-shown) and the two waits below may differ between machines.
 
@@ -297,6 +298,8 @@ Through a tunnel, each `Port` entry of `[Settings]` and `[OtherN]` holds a tunne
 `ReconnectTimeout`, 2400 ticks (about 38 seconds) by default, is how long a machine may go quiet during play. The [reconnect dialog](/systems/reconnect-dialog/) counts it down.
 
 `TimingPolicy=Adaptive` makes this machine's timing master use the [adaptive table](/systems/network-synchronization/#adaptive-policy). Any other value, or no key, plays the [default timing](/systems/network-synchronization/#timing-policy). Only the master's choice matters, because the master sends the timing that every machine applies.
+
+`FrameSendRate` and `MaxAhead` set the match's send period and look-ahead for the whole match. `FrameSendRate` is `1` to `10` frames and `MaxAhead` is `4` to `250` frames; a value outside its range is passed over. The look-ahead is rounded up to a whole number of send periods, and a look-ahead left out follows the [default timing](/systems/network-synchronization/#timing-policy) with the chosen send period. The CnCNet client writes `FrameSendRate=2` or `FrameSendRate=7` in every game, so those two values with no `MaxAhead` count as no choice. `HostTiming=yes` makes the game take the values as written, including `2` and `7`. `Protocol=0` plays [protocol 0](/systems/network-synchronization/#protocol-0) and is read only with `HostTiming=yes`; any other value plays protocol 2. Every machine must write the same values; machines that start with different ones stall or go out of sync. A chosen value changes the session identity described under [A game against other machines](#a-game-against-other-machines).
 
 Each machine applies its own waits, so files that differ do not put the match out of step. Writing the same values everywhere is still the better choice, since the machine with the shortest wait is the first to drop a slow machine.
 
@@ -331,7 +334,7 @@ A game against other machines, new or resumed, is also refused when:
 
 ## What the game does not take from a launch file
 
-The game sets how far ahead the machines run and how often they exchange their orders. `TimingPolicy` chooses between its two policies, and no other launch-file key changes these. `FrameSendRate`, `MaxAhead` and `Protocol` are not read either, though the client writes them. The game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
+The game sets how far ahead the machines run and how often they exchange their orders. `TimingPolicy` chooses between its two policies, and the host's `FrameSendRate`, `MaxAhead` and `Protocol` choose the values the default policy keeps. `PreCalcMaxAhead` is not read. Without a choice, the game takes its timing from its own settings and from the timing messages the machines exchange. `MapHash` is not read either; the machines compare the scenarios they loaded instead.
 
 `AimableSams` is not read: a defense whose weapon reaches only the air can be aimed at a chosen aircraft, which [`SAM`](/keys/sam/) owns.
 

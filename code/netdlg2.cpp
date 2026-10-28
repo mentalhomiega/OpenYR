@@ -310,12 +310,36 @@ void Net2Request_House_And_Color(int house, int color, unsigned int custom)
 }
 
 
+// The host's network choices for the LAN game being set up. The host sets them with chat commands and sends them
+// in NET_GO; a guest keeps what NET_GO carried. Every lobby that opens starts from the defaults.
+static NetTiming::HostNetworkOptions Lan_Network_Options;
+
+
+/// <summary>
+/// Puts the LAN game's network choices into the session, after PregameSetup has reset the protocol.
+/// </summary>
+static void Net2Apply_Network_Options(void)
+{
+	Session.NetworkTimingChoice = Lan_Network_Options.Timing;
+	Session.CommProtocol = Lan_Network_Options.Protocol == 0 ? COMM_PROTOCOL_SINGLE_NO_COMP : COMM_PROTOCOL_MULTI_E_COMP;
+}
+
+
 /// <summary>
 /// Shows a line of chat locally and sends it to the other players in the game this machine
 /// hosts or has joined, or otherwise to every contact in the game browser.
 /// </summary>
 void Net2Send_Chat(char const * text)
 {
+	// The host's network commands set the match's timing and are not sent as chat.
+	if (Net2LobbyPhase == NET2_LOBBY_HOST && text != NULL && text[0] == '/') {
+		NetTiming::HostCommandResult const result = NetTiming::Apply_Host_Command(text, Lan_Network_Options);
+		if (result.Recognised) {
+			PMessagePrintf(ColorSystem, "%s", result.Message.c_str());
+			return;
+		}
+	}
+
 	GlobalPacketType gpacket;
 	memset(&gpacket, 0, sizeof(gpacket));
 
@@ -621,6 +645,9 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 {
 	Net2_Clear_Chat_Log();
+	if (phase == NET2_LOBBY_HOST || phase == NET2_LOBBY_GUEST) {
+		Lan_Network_Options = NetTiming::HostNetworkOptions();
+	}
 
 	Net2LobbyPhase = phase;
 	Net2_Enter_Lobby(phase);
@@ -1087,6 +1114,7 @@ bool Net2Remote_Connect(void)
 			MultiplayerMapPreview = NULL;
 
 			PregameSetup();
+			Net2Apply_Network_Options();
 
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
@@ -1111,6 +1139,7 @@ bool Net2Remote_Connect(void)
 			}
 
 			PregameSetup();
+			Net2Apply_Network_Options();
 
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
@@ -1127,6 +1156,7 @@ bool Net2Remote_Connect(void)
 			memset(&gpacket, 0, sizeof(gpacket));
 			gpacket.Command = NET_GO;
 			gpacket.ResponseTime.OneWay = Session.MaxAhead;
+			gpacket.ResponseTime.Options = NetTiming::Pack_Host_Options(Lan_Network_Options);
 			for (int i = 1; i < Session.Players.Count(); i++) {
 				Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &(Session.Players[i]->Address));
 			}
@@ -2201,6 +2231,23 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		else if (Session.GPacket.Command==NET_GO || Session.GPacket.Command==NET_LOADGAME) {
 			if ( JoinState==JOIN_CONFIRMED) {
+				if (Session.GPacket.Command == NET_GO) {
+					// A host that chose nothing sends the short packet, which leaves these at the defaults.
+					NetTiming::HostNetworkOptions received_options;
+					if (Session.GPacketlen >= static_cast<int>(offsetof(GlobalPacketType, ResponseTime) + sizeof(GlobalPacketType::ResponseTime))) {
+						std::optional<NetTiming::HostNetworkOptions> const unpacked = NetTiming::Unpack_Host_Options(Session.GPacket.ResponseTime.Options);
+						if (!unpacked) {
+							DebugString("Dropped a start packet with unreadable network options.\n");
+							continue;
+						}
+						received_options = *unpacked;
+					}
+					Lan_Network_Options = received_options;
+					if (!received_options.Is_Default()) {
+						PMessagePrintf(ColorSystem, "The host chose: %s.", NetTiming::Describe_Host_Options(received_options).c_str());
+					}
+					Net2Apply_Network_Options();
+				}
 				if (Session.GPacket.Command == NET_GO && Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 					int const max_ahead = Session.GPacket.ResponseTime.OneWay;
 					if (max_ahead < 0) {

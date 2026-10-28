@@ -1233,6 +1233,29 @@ void Test_Spawn(void)
 	Check(Has(ini, "TimingPolicy=Adaptive\n"), "spawn: adaptive timing by default");
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, false), "TimingPolicy=Gamemd\n"), "spawn: gamemd timing when asked");
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
+	Check(Has(ini, "FrameSendRate=7\nProtocol=2\n") && !Has(ini, "HostTiming") && !Has(ini, "MaxAhead"), "spawn: no network choice writes the client's defaults");
+
+	std::map<std::string, std::string> chosen = options;
+	chosen["FrameSendRate"] = "6";
+	chosen["MaxAhead"] = "40";
+	chosen["Protocol"] = "0";
+	std::string const chosen_ini = CnCNet_Spawn_Ini(match, chosen, "Guest", 40000);
+	Check(Has(chosen_ini, "HostTiming=yes\nFrameSendRate=6\nMaxAhead=40\nProtocol=0\n"), "spawn: the host's network choices are written literally");
+	Check(Has(chosen_ini, "TimingPolicy=Gamemd\n"), "spawn: a network choice plays gamemd's timing even when adaptive was asked");
+	chosen.erase("FrameSendRate");
+	chosen.erase("Protocol");
+	Check(Has(CnCNet_Spawn_Ini(match, chosen, "Guest", 40000), "HostTiming=yes\nMaxAhead=40\nProtocol=2\n"), "spawn: a look-ahead alone leaves the send period out");
+	std::map<std::string, std::string> bad = options;
+	bad["FrameSendRate"] = "99";
+	bad["MaxAhead"] = "2";
+	bad["Protocol"] = "1";
+	Check(Has(CnCNet_Spawn_Ini(match, bad, "Guest", 40000), "FrameSendRate=7\nProtocol=2\n"), "spawn: network choices out of range are no choice");
+	NetTiming::HostNetworkOptions round_trip;
+	round_trip.Timing.FrameSendRate = 3;
+	round_trip.Timing.MaxAhead = 24;
+	round_trip.Protocol = 0;
+	Check(CnCNet_Network_Options(CnCNet_Network_Option_Values(round_trip)) == round_trip, "spawn: network choices survive the room options");
+	Check(CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions()).empty(), "spawn: the defaults add no room options");
 	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
 
 	std::map<std::string, std::string> const hostile = {{"Map", "x.map\nLoadSaveGame=yes\r\n[GlobalFlags]"}, {"MapName", "a\r\nSyncLog=yes"},

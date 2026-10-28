@@ -11,6 +11,7 @@
 #pragma once
 
 #include "house.hh"
+#include "nettiming.h"
 
 #include <array>
 #include <string>
@@ -142,6 +143,17 @@ class SpawnerConfigClass
 		// TimingPolicy=Adaptive selects the adaptive rung table. Any other value, and the default, plays
 		// gamemd's timing. Each machine's own, like the timeouts.
 		bool AdaptiveTiming = false;
+		// The send period and look-ahead the host chose, from FrameSendRate and MaxAhead. The CnCNet client writes
+		// its default send period (7) with no look-ahead when its host chose nothing, which reads as no choice.
+		// Shared by every machine, so it is part of the session identity. Unset plays gamemd's timing.
+		NetTiming::HostTimingChoice TimingChoice;
+		// The file's own values, as written. Read_INI settles TimingChoice and Protocol from them.
+		int FrameSendRate = 0;
+		int MaxAhead = 0;
+		// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
+		bool HostTiming = false;
+		// The network protocol the match plays: 2, or 0 when the host chose it.
+		int Protocol = 2;
 
 		// A debugging aid that logs the frame check value each frame. It does not change the match,
 		// so it stays out of the session identity.

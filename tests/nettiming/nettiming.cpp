@@ -618,6 +618,79 @@ namespace
 	}
 
 
+	void Test_Host_Choice(void)
+	{
+		using namespace NetTiming;
+
+		Expect("no choice leaves settings alone", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{}) == (TimingSettings{10, 40}));
+		Expect("a chosen send period realigns the look-ahead", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{6, 0}) == (TimingSettings{6, 42}));
+		Expect("a chosen look-ahead is rounded up to whole send periods", Apply_Host_Choice(TimingSettings{4, 20}, HostTimingChoice{4, 30}) == (TimingSettings{4, 32}));
+		Expect("a chosen look-ahead alone keeps the policy's send period", Apply_Host_Choice(TimingSettings{10, 40}, HostTimingChoice{0, 100}) == (TimingSettings{10, 100}));
+		Expect("the look-ahead is at least three send periods", Host_Max_Ahead_For(4, 6) == 18u && Host_Max_Ahead_For(4, 1) == 4u);
+		Expect("the look-ahead never passes 250", Host_Max_Ahead_For(250, 7) == 245u && Host_Max_Ahead_For(250, 10) == 250u);
+		for (unsigned int rate = 1; rate <= 10; ++rate) {
+			for (unsigned int ahead : {4u, 9u, 30u, 100u, 250u}) {
+				unsigned int const settled = Host_Max_Ahead_For(ahead, rate);
+				Expect("a settled look-ahead is a valid timing value", settled % rate == 0 && Timing_Settings_Are_Valid(TimingSettings{rate, settled}));
+			}
+		}
+
+		Expect("send periods 1 to 10 are valid", Host_Frame_Send_Rate_Is_Valid(1) && Host_Frame_Send_Rate_Is_Valid(10) && !Host_Frame_Send_Rate_Is_Valid(0) && !Host_Frame_Send_Rate_Is_Valid(11));
+		Expect("look-aheads 0 and 4 to 250 are valid", Host_Max_Ahead_Is_Valid(0) && Host_Max_Ahead_Is_Valid(4) && Host_Max_Ahead_Is_Valid(250) && !Host_Max_Ahead_Is_Valid(3) && !Host_Max_Ahead_Is_Valid(251));
+
+		// The master keeps the choice at every evaluation, whatever round trip it measures.
+		for (Milliseconds rtt : {0u, 80u, 400u, 3000u}) {
+			TimingSettings const kept = Gamemd_Timing_Settings(rtt, 45, 40, HostTimingChoice{6, 30});
+			Expect("an evaluation keeps a chosen send period and look-ahead", kept == (TimingSettings{6, 30}));
+			TimingSettings const period_only = Gamemd_Timing_Settings(rtt, 45, 40, HostTimingChoice{6, 0});
+			Expect("an evaluation with a chosen send period yields valid settings",
+				period_only.FrameSendRate == 6 && Timing_Settings_Are_Valid(period_only));
+		}
+		Expect("an unset choice gives gamemd's own settings", Gamemd_Timing_Settings(83, 45, 40, HostTimingChoice{}) == Gamemd_Timing_Settings(83, 45, 40));
+
+		HostNetworkOptions options;
+		HostCommandResult result = Apply_Host_Command("/FrameSendRate 6", options);
+		Expect("/framesendrate sets the send period", result.Recognised && result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("  /maxahead 40  ", options);
+		Expect("/maxahead sets the look-ahead", result.Recognised && result.Changed && options.Timing.MaxAhead == 40);
+		Expect("the summary shows the settled look-ahead", Describe_Host_Options(options) == "send period 6 frames, look-ahead 42 frames, protocol 2");
+		result = Apply_Host_Command("/protocolversion 0", options);
+		Expect("/protocolversion 0 is accepted", result.Recognised && result.Changed && options.Protocol == 0);
+		result = Apply_Host_Command("/protocolversion 1", options);
+		Expect("protocol 1 is refused", result.Recognised && !result.Changed && options.Protocol == 0);
+		result = Apply_Host_Command("/protocol 2", options);
+		Expect("/protocol is an alias", result.Changed && options.Protocol == 2);
+		result = Apply_Host_Command("/framesendrate 11", options);
+		Expect("a send period of 11 is refused", result.Recognised && !result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("/framesendrate 0x5", options);
+		Expect("a send period that is not a number is refused", result.Recognised && !result.Changed && options.Timing.FrameSendRate == 6);
+		result = Apply_Host_Command("/maxahead 3", options);
+		Expect("a look-ahead of 3 is refused", result.Recognised && !result.Changed && options.Timing.MaxAhead == 40);
+		result = Apply_Host_Command("/maxahead 251", options);
+		Expect("a look-ahead of 251 is refused", result.Recognised && !result.Changed && options.Timing.MaxAhead == 40);
+		result = Apply_Host_Command("/maxahead", options);
+		Expect("a command with no value shows the current one", result.Recognised && !result.Changed && result.Message.find("40") != std::string::npos);
+		result = Apply_Host_Command("/maxahead auto", options);
+		Expect("auto leaves the look-ahead to the policy", result.Changed && options.Timing.MaxAhead == 0);
+		result = Apply_Host_Command("/framesendrate 0", options);
+		Expect("0 leaves the send period to the policy", result.Changed && options.Timing.FrameSendRate == 0 && options.Is_Default());
+		result = Apply_Host_Command("/kick someone", options);
+		Expect("another command is not recognised", !result.Recognised);
+		result = Apply_Host_Command("hello", options);
+		Expect("chat is not recognised", !result.Recognised);
+
+		Expect("the default packs to zero", Pack_Host_Options(HostNetworkOptions{}) == 0u);
+		for (HostNetworkOptions const & sample : {HostNetworkOptions{{6, 40}, 2}, HostNetworkOptions{{0, 250}, 0}, HostNetworkOptions{{10, 0}, 2}, HostNetworkOptions{{0, 0}, 0}}) {
+			std::optional<HostNetworkOptions> const back = Unpack_Host_Options(Pack_Host_Options(sample));
+			Expect("options survive packing", back && *back == sample);
+		}
+		Expect("a packed word without the marker is refused", !Unpack_Host_Options(0x00000604u));
+		Expect("a packed word with a send period of 11 is refused", !Unpack_Host_Options(0x8000000Bu));
+		Expect("a packed word with a look-ahead of 3 is refused", !Unpack_Host_Options(0x80000300u));
+		Expect("a packed word with stray bits is refused", !Unpack_Host_Options(0x80020000u));
+	}
+
+
 	void Test_Census(void)
 	{
 		using namespace NetTiming;
@@ -1445,6 +1518,7 @@ int main(void)
 	Test_Frame_Pacer();
 	Test_Speed_Reaches_Frame_Rate();
 	Test_Gamemd_Timing();
+	Test_Host_Choice();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

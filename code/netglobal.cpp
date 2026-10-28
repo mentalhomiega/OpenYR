@@ -215,7 +215,17 @@ namespace NetGlobal
 
 			case NET_GO:
 			case NET_LOADGAME:
-				return(HEADER_SIZE + sizeof(GlobalPacketType::ResponseTime));
+			{
+				// The host's network choices follow the look-ahead only when it chose any, so a start with
+				// none is the short packet every build has sent.
+				std::size_t const short_length = HEADER_SIZE + sizeof(int);
+				std::size_t const full_length = HEADER_SIZE + sizeof(GlobalPacketType::ResponseTime);
+				unsigned int chosen = 0;
+				if (available >= full_length) {
+					std::memcpy(&chosen, static_cast<char const *>(packet) + short_length, sizeof(chosen));
+				}
+				return(chosen != 0 ? full_length : short_length);
+			}
 
 			case NET_PROGRESS_REPORT:
 				return(HEADER_SIZE + sizeof(GlobalPacketType::Progress));

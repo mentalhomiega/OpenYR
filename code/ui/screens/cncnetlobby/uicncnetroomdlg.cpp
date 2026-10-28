@@ -31,6 +31,7 @@
 #include "misc.h"
 #include "mods.h"
 #include "netshare.h"
+#include "nettiming.h"
 #include "opents_build.h"
 #include "rules.h"
 #include "sdl/sdlwindow.h"
@@ -276,6 +277,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 
 	private:
 		void Take_Options(std::map<std::string, std::string> const & options);
+		bool Host_Command(char const * text);
 		void Publish(void);
 		void Broadcast(bool closed);
 		void Flush(void);
@@ -297,6 +299,9 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		std::string PreviewMap;
 		int StartLimit = -1;
 		int PlayerLimit = -1;
+		// The host's choices for the match's send period, look-ahead and protocol. The host sets them with chat
+		// commands; a guest copies what the host sent.
+		NetTiming::HostNetworkOptions NetworkOptions;
 		UIMapPreviewImage Preview;
 };
 
@@ -493,6 +498,39 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, 1, 10);
 	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, 1, MPLAYER_BUILD_LEVEL_MAX);
 	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, MIN_MONEY, std::max(MIN_MONEY, Rule->MPMaxMoney));
+
+	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(values);
+	if (!(network == NetworkOptions)) {
+		NetworkOptions = network;
+		Note("The host set the network options: " + NetTiming::Describe_Host_Options(NetworkOptions) + ".");
+	}
+}
+
+
+/// <summary>
+/// Runs a chat line that starts with a slash. Returns true when it was one of the network commands, whether
+/// or not it changed anything. A guest is told that only the host can use them.
+/// </summary>
+bool CnCNetRoomServiceClass::Host_Command(char const * text)
+{
+	NetTiming::HostNetworkOptions trial = NetworkOptions;
+	NetTiming::HostCommandResult const result = NetTiming::Apply_Host_Command(text, trial);
+	if (!result.Recognised) {
+		return(false);
+	}
+	if (!TheRoom.Is_Host()) {
+		Note("Only the host can set the network options. Now: " + NetTiming::Describe_Host_Options(NetworkOptions) + ".");
+		return(true);
+	}
+	Note(result.Message);
+	if (result.Changed) {
+		NetworkOptions = trial;
+		if (!trial.Is_Default()) {
+			Note("A chosen option plays gamemd's timing for the whole match, with no adaptive changes.");
+		}
+		Publish();
+	}
+	return(true);
 }
 
 
@@ -509,7 +547,11 @@ void CnCNetRoomServiceClass::Publish(void)
 			limits.MaxPlayers = PlayerLimit;
 			TheRoom.Set_Limits(limits);
 		}
-		TheRoom.Set_Options(Session_Options());
+		std::map<std::string, std::string> options = Session_Options();
+		for (auto const & entry : CnCNet_Network_Option_Values(NetworkOptions)) {
+			options[entry.first] = entry.second;
+		}
+		TheRoom.Set_Options(options);
 		Flush();
 	}
 }
@@ -645,6 +687,13 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			state.Chat.push_back(blocked);
 		}
 	}
+	if (TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
+		UINetChatLine timing;
+		timing.Text = "Network: " + NetTiming::Describe_Host_Options(NetworkOptions)
+			+ (TheRoom.Is_Host() ? ". Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion." : ".");
+		timing.Color = PLAIN;
+		state.Chat.push_back(timing);
+	}
 	if (!TheRoom.Is_Host() && TheRoom.Build_Differs_From_Host()) {
 		UINetChatLine line;
 		line.Text = "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.";
@@ -729,6 +778,9 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 
 void CnCNetRoomServiceClass::Say(char const * text)
 {
+	if (text != nullptr && text[0] == '/' && Host_Command(text)) {
+		return;
+	}
 	if (text != nullptr && text[0] != '\0') {
 		Network.Say(TheRoom.Channel(), text);
 	}

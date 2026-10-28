@@ -29,6 +29,18 @@ Under the default timing, each frame lasts 1000 divided by the frame rate in who
 
 The [adaptive table](#adaptive-policy) is the other option.
 
+### The host's choice
+
+A host can fix the send period, the look-ahead, or both for the whole match. In the built-in CnCNet lobby and the LAN lobby, the host types `/FrameSendRate 1` to `10`, `/MaxAhead 4` to `250`, or `auto` in place of the number. A command with no number shows the current value. The lobby shows the options to every player, and a player who is not the host is told that only the host can change them.
+
+A chosen send period replaces the 10 or 5 above at the start and at every evaluation. A chosen look-ahead replaces the computed one, rounded up to a whole number of send periods and held at 250 or below, so `/FrameSendRate 7` with `/MaxAhead 30` plays `7/35`. With only a send period chosen, the look-ahead still follows the round trip. The master keeps sending timing events, and every one carries the chosen values. A chosen option plays gamemd's timing in the CnCNet lobby even where the adaptive table is the default, because the adaptive table has no fixed values.
+
+A match without a choice is unchanged.
+
+### Protocol 0
+
+`/ProtocolVersion 0` plays protocol 0, and `/ProtocolVersion 2` returns to the default protocol 2. Protocol 0 sends a packet every frame, with the orders uncompressed and no send period. It takes no timing events, so the look-ahead is fixed at the start: the host's `/MaxAhead` value, or else the starting look-ahead for the game speed in the table above. Frame rate follows the game speed and is not lowered for a slow machine.
+
 ## Adaptive policy
 
 This section describes the adaptive table. It runs only when the [launch file](/formats/spawn-ini/#a-game-against-other-machines) sets `TimingPolicy=Adaptive`. The built-in CnCNet lobby writes that line unless its settings ask for gamemd's timing. Under the adaptive table, a compressed game packs a run of frames into one packet. It starts at `2/6` and then adjusts both settings during play. Every player reports its measurements, and one player, the [master](/systems/out-of-sync-recovery/#the-master), evaluates the reports and sends each new timing to everyone.

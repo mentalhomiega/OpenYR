@@ -1012,6 +1012,18 @@ void Test_Global_Wire_Lengths(void)
 	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == sizeof(packet),
 		"options text of the largest size needs the whole packet");
 
+	// A start carries the host's network choices only when it chose some; a start with none is the short packet.
+	std::memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_GO;
+	packet.ResponseTime.OneWay = 40;
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == HEADER + sizeof(int),
+		"a start with no network choices is the short packet");
+	packet.ResponseTime.Options = 0x80000604u;
+	Check(NetGlobal::Send_Length(&packet, sizeof(packet)) == HEADER + sizeof(GlobalPacketType::ResponseTime),
+		"a start with network choices carries them");
+	Check(NetGlobal::Required_Length(&packet, HEADER + sizeof(int)) == HEADER + sizeof(int),
+		"a short start is not read past its end");
+
 	// A caller that asks for less than the requirement keeps what it asked for.
 	std::memset(&packet, 0, sizeof(packet));
 	packet.Command = NET_QUERY_GAME;
