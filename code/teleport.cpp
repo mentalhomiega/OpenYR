@@ -140,9 +140,11 @@ Coord TeleportLocomotionClass::Destination(void)
 
 /// <summary>
 /// Orders the object to teleport to the location specified.
-/// The jump is made when this locomotor is next processed, not here. An order given while the
-/// object holds at its destination is refused, as gamemd's TeleportLocomotionClass::Move_To
-/// (0x718100) does while IsWarpingIn (TechnoClass vtable +0x1D8).
+/// The destination is chosen here, as gamemd's TeleportLocomotionClass::Move_To (0x718100, with the
+/// choice at 0x718B70) does, and the jump is made when this locomotor is next processed. An order
+/// given while the object holds at its destination is refused (IsWarpingIn, TechnoClass vtable
+/// +0x1D8). When no destination can be chosen the object's own destination is dropped and it does
+/// not jump.
 /// </summary>
 /// <param name="to">The coordinate to teleport the object to.</param>
 void TeleportLocomotionClass::Move_To(Coord to)
@@ -153,12 +155,22 @@ void TeleportLocomotionClass::Move_To(Coord to)
 	if (WarpPhase == TELEPORT_HOLD) {
 		return;
 	}
-	DestinationCoord = to;
+	DestinationCoord = Choose_Destination(to);
 	if (AutoTest_Active()) {
 		Cell const to_cell = to.As_Cell();
 		DebugString("AUTOTEST   warp order %s cell %d,%d to %d,%d distance %d frame %d\n",
 			LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y,
 			Warp_Distance(to), Frame);
+		if (DestinationCoord != COORD_NONE) {
+			Cell const chosen = DestinationCoord.As_Cell();
+			DebugString("AUTOTEST   warp destination %s cell %d,%d spot %d,%d frame %d\n", LinkedTo->TClass->Name(), chosen.X, chosen.Y, DestinationCoord.X, DestinationCoord.Y, Frame);
+		} else {
+			DebugString("AUTOTEST   warp refused %s cell %d,%d to %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, to_cell.X, to_cell.Y, Frame);
+		}
+	}
+	if (DestinationCoord == COORD_NONE) {
+		// Nowhere to land: the order ends here, as SetDestination(NULL) at 0x71820F does.
+		LinkedTo->Assign_Destination(NULL);
 	}
 }
 
@@ -188,84 +200,97 @@ void TeleportLocomotionClass::Stop_Moving(void)
 
 
 /// <summary>
-/// Chooses where a soldier ordered into a vehicle, aircraft or structure lands when the jump is
-/// onto the cell that holds its target. The occupants of that cell are ignored, as gamemd's
-/// destination choice (0x718B70) does for an infantry destination on an Enter, Capture or Patrol
-/// mission, so the soldier stands on the cell with its target and its arrival there can board it.
+/// Does a soldier on an Enter, Capture, Eaten or Patrol order land on the cell of the unit, aircraft or
+/// structure it was ordered to? Then the occupants of that cell are ignored when it picks a spot,
+/// as gamemd's destination choice (0x718B70) does, so the soldier stands on the cell with its target
+/// and its arrival there can board it.
 /// </summary>
 /// <param name="dest">The coordinate the teleport was ordered to.</param>
-/// <returns>Coord; The spot to set the soldier down at, or COORD_NONE when the destination is not
-/// the cell of the soldier's target or the soldier cannot stand there.</returns>
-Coord TeleportLocomotionClass::Target_Cell_Spot(Coord const & dest) const
+/// <returns>bool; Is the destination the cell of the soldier's target?</returns>
+bool TeleportLocomotionClass::Targets_Cell(Coord const & dest) const
 {
 	if (LinkedTo->RTTI != RTTI_INFANTRY || LinkedTo->NavCom == NULL) {
-		return(COORD_NONE);
+		return(false);
 	}
 	MissionType const mission = LinkedTo->Get_Mission();
-	if (mission != MISSION_ENTER && mission != MISSION_CAPTURE && mission != MISSION_PATROL) {
-		return(COORD_NONE);
+	if (mission != MISSION_ENTER && mission != MISSION_CAPTURE && mission != MISSION_EATEN && mission != MISSION_PATROL) {
+		return(false);
 	}
 
 	Cell const cell = dest.As_Cell();
 	AbstractClass * const target = LinkedTo->NavCom;
-	bool ignore_contents = false;
 	if (target->RTTI == RTTI_UNIT || target->RTTI == RTTI_AIRCRAFT) {
-		ignore_contents = static_cast<ObjectClass *>(target)->Get_Cell() == cell;
-	} else if (target->RTTI == RTTI_BUILDING) {
-		ignore_contents = Map[cell].Cell_Building() == target;
+		return(static_cast<ObjectClass *>(target)->Get_Cell() == cell);
 	}
-	if (!ignore_contents || !Map.In_Local_Radar(cell)) {
-		return(COORD_NONE);
+	if (target->RTTI == RTTI_BUILDING) {
+		return(Map[cell].Cell_Building() == target);
 	}
-
-	Coord const spot = Map[cell].Closest_Free_Spot(dest, true, Map[cell].IsUnderBridge);
-	if (spot == COORD_NONE || LinkedTo->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
-		return(COORD_NONE);
-	}
-	return(spot);
+	return(false);
 }
 
 
 /// <summary>
-/// Chooses the coordinate the object is set down at. A cell it cannot stand on is replaced by the
-/// nearest cell it can, keeping its offset inside the cell. An infantryman standing exactly on
-/// the spot is removed first, as MakeRoom (0x718260) does for an infantry destination.
+/// Chooses the coordinate an ordered jump sets the object down at (gamemd 0x718B70).
+/// A vehicle or aircraft lands in the middle of the cell it was sent to. When it cannot enter that
+/// cell it lands in the middle of the cell the nearest-cell search picks instead, which takes
+/// the frame number to choose among the cells it finds. A soldier lands on the free spot in the cell
+/// that is nearest the coordinate; when it cannot enter, and its order has an object as its
+/// target, it looks near that target. Nothing is moved off the cell and nothing is destroyed.
 /// </summary>
-/// <param name="dest">The coordinate the teleport was ordered to.</param>
-/// <returns>Coord; The coordinate to set the object down at.</returns>
-Coord TeleportLocomotionClass::Landing_Spot(Coord const & dest)
+/// <param name="to">The coordinate the teleport was ordered to.</param>
+/// <returns>Coord; The coordinate to set the object down at, or COORD_NONE when it has nowhere to
+/// land and the order ends.</returns>
+Coord TeleportLocomotionClass::Choose_Destination(Coord const & to) const
 {
-	Cell const cell = dest.As_Cell();
-	ObjectClass * occupier = Map[cell].Cell_Occupier();
-	if (LinkedTo->RTTI == RTTI_INFANTRY && occupier != NULL && occupier != LinkedTo && occupier->RTTI == RTTI_INFANTRY && occupier->PositionCoord == dest) {
-		occupier->Delete_Me();
+	if (to == COORD_NONE) {
+		return(COORD_NONE);
+	}
+	Cell const cell = to.As_Cell();
+	if (!Map.In_Radar(cell)) {
+		return(COORD_NONE);
 	}
 
-	Coord spot = dest;
-	bool const soldier = LinkedTo->RTTI == RTTI_INFANTRY;
-	// A harvester's dock cell can lie inside the structure it docks with. The landing keeps that cell
-	// instead of moving the harvester off it.
-	bool docking = false;
-	if (LinkedTo->RTTI == RTTI_UNIT) {
-		BuildingClass const * target = Map[cell].Cell_Building();
-		UnitTypeClass const * type = static_cast<UnitClass const *>(LinkedTo)->Class;
-		for (int index = 0; target != NULL && index < type->Dock.Count(); index++) {
-			if (type->Dock[index] == target->Class) {
-				docking = true;
-			}
+	// The object counts as on a bridge when it stands well above the ground of a cell that has one.
+	bool const on_bridge = Map[cell].IsUnderBridge && LinkedTo->PositionCoord.Z > Map.Get_Height_GL(to) + LEVEL_LEPTON_H * 3;
+	TechnoTypeClass const * type = LinkedTo->TClass;
+
+	if (LinkedTo->RTTI != RTTI_INFANTRY) {
+		Cell target = cell;
+		if (LinkedTo->Can_Enter_Cell(&Map[target]) != MOVE_OK) {
+			target = Map.Nearby_Location(target, type->Speed, Map.Get_Cell_Zone(target, type->MZone, on_bridge), type->MZone, on_bridge);
 		}
-	}
-	if (!Map.In_Local_Radar(cell) || (!docking && !Map[cell].Is_Clear_To_Move(LinkedTo->TClass->Speed, soldier, false, -1, LinkedTo->TClass->MZone))) {
-		Cell const nearby = Map.Nearby_Location(cell, LinkedTo->TClass->Speed, Map.Get_Cell_Zone(cell, LinkedTo->TClass->MZone, false), LinkedTo->TClass->MZone, false, Point2D(1, 1), false, true, false, true, cell);
-		if (nearby != CELL_NONE) {
-			Coord const inside = dest - Map[cell].As_Coord();
-			spot = Map[nearby].As_Coord() + inside;
+		if (target == CELL_NONE) {
+			return(COORD_NONE);
 		}
+		Coord spot(target, 0);
+		spot.Z = Map.Get_Height_GL(spot);
+		return(spot);
 	}
 
-	// The object stands on the ground at the spot, as MakeRoom (0x718260) sets its height.
-	spot.Z = Map.Get_Height_GL(spot);
-	return(spot);
+	bool const ignore = Targets_Cell(to);
+	Coord spot = Map[cell].Closest_Free_Spot(to, ignore, on_bridge);
+	if (spot != COORD_NONE && LinkedTo->Can_Enter_Cell(&Map[spot.As_Cell()]) != MOVE_OK) {
+		spot = COORD_NONE;
+	}
+	if (spot != COORD_NONE) {
+		return(spot);
+	}
+
+	// A soldier whose order has an object as its target lands near that object instead.
+	AbstractClass * const nav = LinkedTo->NavCom;
+	if (nav == NULL || dynamic_cast<ObjectClass const *>(nav) == NULL) {
+		return(COORD_NONE);
+	}
+	Cell const near_target = nav->Destination_Coord().As_Cell();
+	if (!Map.In_Radar(near_target)) {
+		return(COORD_NONE);
+	}
+	int const zone = Map.Get_Cell_Zone(near_target, type->MZone, LinkedTo->IsOnBridge);
+	Cell const nearby = Map.Nearby_Location(near_target, type->Speed, zone, type->MZone, Map[near_target].IsUnderBridge, Point2D(1, 1), false, true);
+	if (nearby == CELL_NONE) {
+		return(COORD_NONE);
+	}
+	return(Map[nearby].Closest_Free_Spot(Coord(nearby, 0), ignore, on_bridge));
 }
 
 
@@ -359,7 +384,10 @@ void TeleportLocomotionClass::Begin_Chrono_Warp(Coord to, int countdown)
 /// </summary>
 void TeleportLocomotionClass::Land_Chrono_Warp(void)
 {
-	Coord landing = Landing_Spot(DestinationCoord);
+	// The object is set down on the coordinate it was sent to, even where it cannot stand: gamemd looks for
+	// another cell only for a structure or tree (Chrono_Shift), and Chrono_Land deals with the rest.
+	Coord landing = DestinationCoord;
+	landing.Z = Map.Get_Height_GL(landing);
 	DestinationCoord = COORD_NONE;
 	WarpPhase = TELEPORT_IDLE;
 	bool const bridge = Map[landing.As_Cell()].IsUnderBridge;
@@ -405,11 +433,9 @@ void TeleportLocomotionClass::Start_Warp(void)
 		return;
 	}
 
-	Coord landing = Target_Cell_Spot(DestinationCoord);
-	bool const boarding = landing != COORD_NONE;
-	if (!boarding) {
-		landing = Landing_Spot(DestinationCoord);
-	}
+	// The destination was chosen when the order came in (Choose_Destination).
+	Coord const landing = DestinationCoord;
+	bool const boarding = Targets_Cell(landing);
 	int const distance = Warp_Distance(landing);
 	int const delay = Warp_Delay(landing);
 	DestinationCoord = COORD_NONE;

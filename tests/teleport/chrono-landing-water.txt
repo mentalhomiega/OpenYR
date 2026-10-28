@@ -1,0 +1,26 @@
+; A chronosphere warp sets a unit down on the cell it was sent to even when the unit cannot stand there, as gamemd's
+; chrono landing (0x718260) does: it only looks for another cell when a structure or tree stands on the landing spot.
+; A vehicle sent onto water sinks there (0x7187A0), and a soldier sent onto water is destroyed.
+; Lostlake.mmx: land at 78,45, open water at 82,45 (the amphibious transport test uses the same cells).
+; A Rhino (HTNK) is sphered on land at 78,45 and warped onto the water at 82,45.
+; Expected: "chrono landed HTNK cell 82,45 frame 130" (not a land cell many cells away), the Rhino still listed at frame 200
+; while it sinks, and no "where HTNK" line from frame 260 on because the sunk Rhino is gone.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Map Lostlake.mmx -Country 8 -Script src-agent14/tests/teleport/chrono-landing-water.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 200 -Filter "AUTOTEST|Exception"
+20 own GAPOWR 76 40
+30 own HTNK 78 45
+31 terrain 82 45
+32 terrain 78 45
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 78 45
+70 fire ChronoWarpSpecial 82 45
+71 where HTNK
+100 where HTNK
+140 where HTNK
+200 where HTNK
+260 where HTNK
+330 where HTNK
+400 where HTNK
+500 where HTNK
+520 quit
