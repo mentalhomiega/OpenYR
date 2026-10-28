@@ -2917,8 +2917,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		has_turret = true;
 	}
 
+	// The cache keys come first. A shadow or turret composite found in the cache needs no matrix, so the matrices
+	// are built only when one is missing.
+	LocomotionClass * const locomotor = static_cast<LocomotionClass *>(Locomotion.get());
 	int key = 0;
-	main_matrix = Locomotion->Shadow_Matrix(&key);
+	locomotor->Shadow_Key(&key);
 
 	if (!IsSinking) {
 		Point2D shadow_drawpoint = xdrawpoint;
@@ -2945,7 +2948,11 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			}
 		}
 
-		Draw_Voxel_Shadow(Class->Voxel, Class->ShadowIndex, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint, Get_Isometric_View_Matrix() * main_matrix, true);
+		if (!Draw_Cached_Voxel_Shadow(Class->Voxel, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint)) {
+			int shadow_key = 0;
+			main_matrix = Locomotion->Shadow_Matrix(&shadow_key);
+			Draw_Voxel_Shadow(Class->Voxel, Class->ShadowIndex, key, &Class->ShadowVoxelIndex, xcliprect, shadow_drawpoint, Get_Isometric_View_Matrix() * main_matrix, true);
+		}
 	}
 
 	Surface * old_surface = LogicalSurface;
@@ -2957,13 +2964,9 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		IsCompositingToEightBitSurface = true;
 	}
 
-	if (UseVoxelCache) {
-		key = 0;
-	} else {
-		key = -1;
-	}
-
-	main_matrix = Locomotion->Draw_Matrix(&key);
+	int const key_seed = UseVoxelCache ? 0 : -1;
+	key = key_seed;
+	locomotor->Draw_Key(&key);
 
 	// The pose the locomotor folded into the key (ramp and facing), which the turret and barrel keys build on.
 	int const pose = key;
@@ -3054,6 +3057,9 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
 		}
 	} else {
+		int matrix_key = key_seed;
+		main_matrix = Locomotion->Draw_Matrix(&matrix_key);
+
 		if (apc_in_water) {
 			Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 		} else if (no_spawn_alt) {

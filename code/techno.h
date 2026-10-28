@@ -950,6 +950,7 @@ class TechnoClass :	public RadioClass,
 
 		void Techno_Blit_Voxel(StaticBufferClass::Entry const & cache, Point2D const & point, Rect const & cliprect, ShapeFlags_Type flags, int brightness) const;
 		void Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const;
+		bool Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const;
 		SurfaceRegion Techno_Render_Voxel_Object(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int frame, ShapeFlags_Type flags, int brightness) const;
 		SurfaceRegion Techno_Render_Voxel_Shadow(VoxelDataStruct const & voxeldata, Matrix3D const & matrix, Point2D const & point, Rect const & cliprect, int layer_index, ShapeFlags_Type flags, bool cached) const;
 

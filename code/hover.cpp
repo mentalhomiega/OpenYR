@@ -140,19 +140,22 @@ void HoverLocomotionClass::Gravity_AI(void)
 /// </summary>
 /// <param name="key">Pointer to the render cache key to update; may be NULL.</param>
 /// <returns>Returns with the matrix to render the object with.</returns>
-Matrix3D HoverLocomotionClass::Draw_Matrix(int *key)
+Matrix3D HoverLocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 {
 	if (!Is_Powered()) {
 		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
-		Matrix3D mtx = Get_Slope_Matrix(ramp);
-		mtx.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+		Matrix3D mtx(true);
+		if (matrix) {
+			mtx = Get_Slope_Matrix(ramp);
+			mtx.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+		}
 		if (key != NULL && *key != -1) {
 			*key = 32 * (ramp + (*key << 6));
 			*key |= LinkedTo->PrimaryFacing.Current().As_Dir32();
 		}
 		return(mtx);
 	}
-	return(BASECLASS::Draw_Matrix(key));
+	return(BASECLASS::Build_Draw_Matrix(key, matrix));
 }
 
 

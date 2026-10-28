@@ -1360,8 +1360,9 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 /// </summary>
 /// <param name="key">Optional cache key for the resulting orientation. It may be NULL, and
 /// is set to -1 for an attitude that is not worth caching.</param>
+/// <param name="matrix">Ignored: an aircraft always builds the matrix, as its key and matrix are folded together.</param>
 /// <returns>Returns with the matrix to draw the aircraft with.</returns>
-Matrix3D FlyLocomotionClass::Draw_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 {
 	Matrix3D mtx;
 	mtx.Make_Identity();
@@ -1555,8 +1556,9 @@ void FlyLocomotionClass::Land_If_Allowed(void)
 /// </summary>
 /// <param name="key">Optional cache key for the shadow orientation. It may be NULL, and a
 /// value of -1 marks the shadow as not worth caching.</param>
+/// <param name="build">Ignored: the aircraft shadow always builds the matrix.</param>
 /// <returns>Returns with the matrix to draw the shadow with.</returns>
-Matrix3D FlyLocomotionClass::Shadow_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Build_Shadow_Matrix(int * key, bool build)
 {
 	int ramp = Map[(Coord const &)LinkedTo->PositionCoord].Ramp;
 	if (LinkedTo->TClass->IsDropship) {

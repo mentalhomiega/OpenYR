@@ -78,11 +78,13 @@ void LocomotionClass::Link_To_Object(void *pointer)
 /// <param name="key">Optional cache key for the voxel renderer, which the facing is folded
 /// into. May be NULL, and a key of -1 means the drawing is not to be cached.</param>
 /// <returns>Returns with the matrix to transform the object by.</returns>
-Matrix3D LocomotionClass::Draw_Matrix(int *key)
+Matrix3D LocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 {
 	Matrix3D draw_matrix(true);
 
-	draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+	if (matrix) {
+		draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+	}
 
 	if (key && *key != -1) {
 		*key *= 32;
@@ -100,12 +102,15 @@ Matrix3D LocomotionClass::Draw_Matrix(int *key)
 /// <param name="key">Optional cache key for the voxel renderer, which the slope and facing are
 /// folded into. May be NULL, and a key of -1 means the shadow is not to be cached.</param>
 /// <returns>Returns with the matrix to transform the shadow by.</returns>
-Matrix3D LocomotionClass::Shadow_Matrix(int *key)
+Matrix3D LocomotionClass::Build_Shadow_Matrix(int *key, bool matrix)
 {
 	int ramp = Map[LinkedTo->Get_Coord()].Ramp;
 
-	Matrix3D draw_matrix(Get_Slope_Matrix(ramp));
-	draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+	Matrix3D draw_matrix(true);
+	if (matrix) {
+		draw_matrix = Get_Slope_Matrix(ramp);
+		draw_matrix.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
+	}
 
 	if (key && *key != -1) {
 		*key = 32 * (ramp + (*key << 6));

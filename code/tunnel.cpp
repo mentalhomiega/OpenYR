@@ -457,7 +457,7 @@ void TunnelLocomotionClass::Process_Emerging(void)
 /// </summary>
 /// <param name="key">The shape cache key to fold this pose into. May be NULL.</param>
 /// <returns>Returns with the matrix to draw the unit with.</returns>
-Matrix3D TunnelLocomotionClass::Draw_Matrix(int * key)
+Matrix3D TunnelLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 {
 	if (State == STATE_IDLE) {
 		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
@@ -466,10 +466,10 @@ Matrix3D TunnelLocomotionClass::Draw_Matrix(int * key)
 			*key = ramp + (*key << 6);
 		}
 		mtx.Make_Identity();
-		if (ramp != 0) {
-			mtx = Get_Slope_Matrix(ramp) * BASECLASS::Draw_Matrix(key);
+		if (ramp != 0 && matrix) {
+			mtx = Get_Slope_Matrix(ramp) * BASECLASS::Build_Draw_Matrix(key, true);
 		} else {
-			mtx = BASECLASS::Draw_Matrix(key);
+			mtx = BASECLASS::Build_Draw_Matrix(key, matrix);
 		}
 		return(mtx);
 	}
@@ -513,12 +513,14 @@ Matrix3D TunnelLocomotionClass::Draw_Matrix(int * key)
 			theta = 0.0;
 			break;
 	}
-	Matrix3D mtx = BASECLASS::Draw_Matrix(key);
+	Matrix3D mtx = BASECLASS::Build_Draw_Matrix(key, matrix);
 	if (key != NULL && *key != -1) {
 		*key = *key << 8;
 		*key |= (int(theta * 32.0) & 64-1);
 	}
-	mtx.Rotate_Y(theta);
+	if (matrix) {
+		mtx.Rotate_Y(theta);
+	}
 	return(mtx);
 }
 

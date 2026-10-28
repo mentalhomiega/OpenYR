@@ -31,7 +31,7 @@ class RocketLocomotionClass : public LocomotionClass
 		virtual void Stop_Moving(void) override;
 		virtual bool Process(void) override;
 		virtual LayerType In_Which_Layer(void) override;
-		virtual Matrix3D Draw_Matrix(int * key) override;
+		virtual Matrix3D Build_Draw_Matrix(int * key, bool matrix) override;
 		virtual bool Is_To_Have_Shadow(void) override {return(false);}
 
 		// True from the start of the climb onward, which is the phase gamemd's missile IsInAir reads (slot 0x80, 0x661F90).
