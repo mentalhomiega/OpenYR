@@ -319,13 +319,23 @@ static bool Bind_Color_Picker(Rml::DataModelConstructor & model, UIColorPickStat
 	preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
 	preset.RegisterMember("taken", &UIColorPresetOption::Taken);
 	preset.RegisterMember("caption", &UIColorPresetOption::Caption);
+	Rml::StructHandle<UIColorRampStep> step = model.RegisterStruct<UIColorRampStep>();
+	if (!step) {
+		return(false);
+	}
+	step.RegisterMember("color", &UIColorRampStep::Color);
 	return(model.RegisterArray<std::vector<UIColorPresetOption>>()
+		&& model.RegisterArray<std::vector<UIColorRampStep>>()
 		&& model.Bind("pickopen", &picker.Open)
 		&& model.Bind("pickswatch", &picker.Swatch)
 		&& model.Bind("picknotice", &picker.Notice)
 		&& model.Bind("pickvalue", &picker.Value)
 		&& model.Bind("pickstyle", &picker.MarkerStyle)
-		&& model.Bind("pickpresets", &picker.Presets));
+		&& model.Bind("pickpresets", &picker.Presets)
+		&& model.Bind("pickrgb", &picker.ReadRGB)
+		&& model.Bind("pickhsv", &picker.ReadHSV)
+		&& model.Bind("picknear", &picker.Nearest)
+		&& model.Bind("pickramp", &picker.Ramp));
 }
 
 /// <summary>Marks the picker's variables as changed in a document model.</summary>
@@ -337,6 +347,10 @@ static void Dirty_Color_Picker(Rml::DataModelHandle model)
 	model.DirtyVariable("pickvalue");
 	model.DirtyVariable("pickstyle");
 	model.DirtyVariable("pickpresets");
+	model.DirtyVariable("pickrgb");
+	model.DirtyVariable("pickhsv");
+	model.DirtyVariable("picknear");
+	model.DirtyVariable("pickramp");
 }
 
 

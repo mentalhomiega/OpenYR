@@ -508,6 +508,10 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("pickvalue");
 			Model.DirtyVariable("pickstyle");
 			Model.DirtyVariable("pickpresets");
+			Model.DirtyVariable("pickrgb");
+			Model.DirtyVariable("pickhsv");
+			Model.DirtyVariable("picknear");
+			Model.DirtyVariable("pickramp");
 
 			Show_Preview();
 			Show_Picker();
@@ -575,11 +579,17 @@ class UISkirmishViewClass : public UIRmlViewClass
 			preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
 			preset.RegisterMember("taken", &UIColorPresetOption::Taken);
 			preset.RegisterMember("caption", &UIColorPresetOption::Caption);
+			Rml::StructHandle<UIColorRampStep> step = model.RegisterStruct<UIColorRampStep>();
+			if (!step) {
+				return(false);
+			}
+			step.RegisterMember("color", &UIColorRampStep::Color);
 
 			UISkirmishState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
 				&& model.RegisterArray<std::vector<UISkirmishSlot>>()
 				&& model.RegisterArray<std::vector<UIColorPresetOption>>()
+				&& model.RegisterArray<std::vector<UIColorRampStep>>()
 				&& model.Bind("handle", &state.Handle)
 				&& model.Bind("kinds", &state.Kinds)
 				&& model.Bind("sides", &state.Sides)
@@ -613,7 +623,11 @@ class UISkirmishViewClass : public UIRmlViewClass
 				&& model.Bind("picknotice", &state.Picker.Notice)
 				&& model.Bind("pickvalue", &state.Picker.Value)
 				&& model.Bind("pickstyle", &state.Picker.MarkerStyle)
-				&& model.Bind("pickpresets", &state.Picker.Presets));
+				&& model.Bind("pickpresets", &state.Picker.Presets)
+				&& model.Bind("pickrgb", &state.Picker.ReadRGB)
+				&& model.Bind("pickhsv", &state.Picker.ReadHSV)
+				&& model.Bind("picknear", &state.Picker.Nearest)
+				&& model.Bind("pickramp", &state.Picker.Ramp));
 		}
 
 	private:

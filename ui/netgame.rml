@@ -86,6 +86,13 @@
 					<input type="range" id="picker-value" min="96" max="255" data-attr-value="pickvalue" data-event-change="queue('pickvalue', ev.value)"/>
 					<span class="chip big" id="picker-chip" style="background-color: #000000"></span>
 				</div>
+				<div id="picker-info">
+					<span class="info-line">{{pickrgb}}</span>
+					<span class="info-line">{{pickhsv}}</span>
+					<span class="info-line">{{picknear}}</span>
+					<span class="info-line">Unit remap ramp</span>
+					<div id="picker-ramp"><span class="ramp-step" data-for="step : pickramp" data-style-background-color="step.color"></span></div>
+				</div>
 			</div>
 			<div id="presets" class="grid">
 				<button class="preset" data-for="preset : pickpresets" data-class-taken="preset.taken" data-style-background-color="preset.color" data-style-color="preset.textcolor" data-event-click="queue('pickpreset', preset.value)">{{preset.caption}}</button>

@@ -87,6 +87,35 @@ void Test_Ramp_Matches_Reference(void)
 	Check(mismatches == 0, "every ramp step matches the reference formula");
 }
 
+/// The ramp from the literal constants of gamemd's scheme builder (0068c500): the cosine angle
+/// starts at 0.19634954 for step 0 and at 0.34906585 + 0.08144870 * i after, the sine angle at
+/// 0.87266463 + 0.04654211 * i, and both products are truncated toward zero.
+void Test_Ramp_Matches_Gamemd_Constants(void)
+{
+	int mismatches = 0;
+	for (int hue = 0; hue < 256; hue += 5) {
+		for (int saturation = 0; saturation < 256; saturation += 3) {
+			for (int value = 0; value < 256; value += 3) {
+				HSVClass const base((unsigned char)hue, (unsigned char)saturation, (unsigned char)value);
+				for (int step = 0; step < 16; step++) {
+					double cosine_angle = (double)step * 0.08144869842640204 + 0.3490658503988659;
+					double const sine_angle = (double)step * 0.046542113386515455 + 0.8726646259971648;
+					if (step == 0) {
+						cosine_angle = 0.19634954084936207;
+					}
+					int const want_saturation = (int)(std::sin(sine_angle) * saturation);
+					int const want_value = (int)(std::cos(cosine_angle) * value);
+					HSVClass const got = Player_Ramp_Entry(base, step);
+					if (got.Get_Hue() != hue || got.Get_Saturation() != want_saturation || got.Get_Value() != want_value) {
+						mismatches++;
+					}
+				}
+			}
+		}
+	}
+	Check(mismatches == 0, "every ramp step matches the constants gamemd builds a color scheme from");
+}
+
 void Test_Ramp_Is_Sensible(void)
 {
 	// A bright base gives lighter steps with a lower saturation and a darker last step.
@@ -199,6 +228,7 @@ void Test_Presets(void)
 int main(void)
 {
 	Test_Ramp_Matches_Reference();
+	Test_Ramp_Matches_Gamemd_Constants();
 	Test_Ramp_Is_Sensible();
 	Test_Packing();
 	Test_Distance();
