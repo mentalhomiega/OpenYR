@@ -1,0 +1,167 @@
+; A Magnetron on the west bank of the Allied 3 high bridge (ALL03UMD.MAP) lifts an enemy Rhino (HTNK) that is placed at ground
+; level under the span, and pulls it toward itself, up through the deck. A move order at frame 220 releases the Rhino in the air over the deck, at about 900 leptons.
+; The deck is on row 78 from x 64 to 84, over water. The lift lines give the Rhino's cell, whether it is on the bridge
+; (onbridge) and its height (z) every frame from the release.
+; Expected: the Rhino lands on the deck with onbridge 1 and z at the deck height, and keeps its strength. Before the fix it
+; landed at ground height under the deck, with onbridge 0 and z 0.
+; Run: scripts/run_autotest.ps1 -Script tests/magnetron/drop-on-bridge.txt -Build <build> -Campaign -Map ALL03UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|Exception"
+; Yuri's soldiers and the two houses that mind-control are cleared first, so nothing takes the Magnetron.
+20 reveal
+30 killhouse Arabs 0
+30 killhouse French 0
+31 killhouse YuriCountry 3
+40 own TELE 58 78
+41 houseunit HTNK@Arabs 70 78
+43 view 64 78
+50 where TELE
+50 where HTNK
+60 strike TELE 70 78
+70 lift HTNK
+80 lift HTNK
+90 lift HTNK
+100 lift HTNK
+110 lift HTNK
+120 lift HTNK
+130 lift HTNK
+140 lift HTNK
+150 lift HTNK
+160 lift HTNK
+170 lift HTNK
+180 lift HTNK
+190 lift HTNK
+200 lift HTNK
+210 lift HTNK
+220 move TELE 50 78
+220 lift HTNK
+221 lift HTNK
+222 lift HTNK
+223 lift HTNK
+224 lift HTNK
+225 lift HTNK
+226 lift HTNK
+227 lift HTNK
+228 lift HTNK
+229 lift HTNK
+230 lift HTNK
+231 lift HTNK
+232 lift HTNK
+233 lift HTNK
+234 lift HTNK
+235 lift HTNK
+236 lift HTNK
+237 lift HTNK
+238 lift HTNK
+239 lift HTNK
+240 lift HTNK
+241 lift HTNK
+242 lift HTNK
+243 lift HTNK
+244 lift HTNK
+245 lift HTNK
+246 lift HTNK
+247 lift HTNK
+248 lift HTNK
+249 lift HTNK
+250 lift HTNK
+251 lift HTNK
+252 lift HTNK
+253 lift HTNK
+254 lift HTNK
+255 lift HTNK
+256 lift HTNK
+257 lift HTNK
+258 lift HTNK
+259 lift HTNK
+260 lift HTNK
+261 lift HTNK
+262 lift HTNK
+263 lift HTNK
+264 lift HTNK
+265 lift HTNK
+266 lift HTNK
+267 lift HTNK
+268 lift HTNK
+269 lift HTNK
+270 lift HTNK
+271 lift HTNK
+272 lift HTNK
+273 lift HTNK
+274 lift HTNK
+275 lift HTNK
+276 lift HTNK
+277 lift HTNK
+278 lift HTNK
+279 lift HTNK
+280 lift HTNK
+281 lift HTNK
+282 lift HTNK
+283 lift HTNK
+284 lift HTNK
+285 lift HTNK
+286 lift HTNK
+287 lift HTNK
+288 lift HTNK
+289 lift HTNK
+290 lift HTNK
+291 lift HTNK
+292 lift HTNK
+293 lift HTNK
+294 lift HTNK
+295 lift HTNK
+296 lift HTNK
+297 lift HTNK
+298 lift HTNK
+299 lift HTNK
+300 lift HTNK
+301 lift HTNK
+302 lift HTNK
+303 lift HTNK
+304 lift HTNK
+305 lift HTNK
+306 lift HTNK
+307 lift HTNK
+308 lift HTNK
+309 lift HTNK
+310 lift HTNK
+311 lift HTNK
+312 lift HTNK
+313 lift HTNK
+314 lift HTNK
+315 lift HTNK
+316 lift HTNK
+317 lift HTNK
+318 lift HTNK
+319 lift HTNK
+320 lift HTNK
+321 lift HTNK
+322 lift HTNK
+323 lift HTNK
+324 lift HTNK
+325 lift HTNK
+326 lift HTNK
+327 lift HTNK
+328 lift HTNK
+329 lift HTNK
+330 lift HTNK
+331 lift HTNK
+332 lift HTNK
+333 lift HTNK
+334 lift HTNK
+335 lift HTNK
+336 lift HTNK
+337 lift HTNK
+338 lift HTNK
+339 lift HTNK
+340 lift HTNK
+341 lift HTNK
+342 lift HTNK
+343 lift HTNK
+344 lift HTNK
+345 lift HTNK
+346 lift HTNK
+347 lift HTNK
+348 lift HTNK
+349 lift HTNK
+350 where HTNK
+351 where TELE
+352 quit
