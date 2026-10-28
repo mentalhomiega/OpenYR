@@ -294,6 +294,17 @@ bool Hotkey_Accepts_Modifier_Only(std::string const & command)
 }
 
 
+int Hotkey_Held_Key(std::vector<HotkeyEntry> const & entries, std::string const & command, int slot)
+{
+	for (HotkeyEntry const & entry : entries) {
+		if (entry.Command == command && entry.Slot == slot && (entry.Trigger == HOTKEY_HELD || Hotkey_Is_Modifier_Only(entry.Key))) {
+			return(entry.Key);
+		}
+	}
+	return(0);
+}
+
+
 namespace
 {
 

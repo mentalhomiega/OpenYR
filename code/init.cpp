@@ -7117,12 +7117,8 @@ static void Run_Hotkey_Fires(std::vector<HotkeyTimingClass::Fire> const & fires)
 /// </summary>
 static KeyNumType Held_Key_Of(char const * command, int slot)
 {
-	for (HotkeyEntry const & entry : HotkeyBindings) {
-		if (entry.Command == command && entry.Slot == slot && entry.Trigger == HOTKEY_HELD) {
-			return((KeyNumType)entry.Key);
-		}
-	}
-	return(KN_NONE);
+	int const key = Hotkey_Held_Key(HotkeyBindings, command, slot);
+	return((key != 0) ? (KeyNumType)key : KN_NONE);
 }
 
 

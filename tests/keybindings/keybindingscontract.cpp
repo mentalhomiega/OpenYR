@@ -33,6 +33,7 @@ int const KEY_G = 71;
 int const KEY_Q = 81;
 int const KEY_SHIFT_BIT = 0x100;
 int const KEY_CTRL_BIT = 0x200;
+int const KEY_ALT_BIT = 0x400;
 int const KEY_CTRL = 17;
 int const KEY_ESC = 27;
 int const KEY_F10 = 121;
@@ -405,6 +406,25 @@ void Test_Modifier_Only(void)
 }
 
 
+void Test_Held_Key(void)
+{
+	// The held modifiers read their slot's key as held state. A modifier-only binding counts under any trigger; a plain key
+	// counts only as a Held binding, because a Press of a plain key runs from the press table instead.
+	int const KEY_CTRL_ALT = KEY_CTRL_BIT | KEY_ALT_BIT;
+	std::vector<HotkeyEntry> const entries = {
+		{ "ForceFire", KEY_CTRL, 0, HOTKEY_HELD },
+		{ "ForceFire", KEY_CTRL_ALT, 1, HOTKEY_PRESS },
+		{ "SelectModifier", KEY_SHIFT_BIT, 0, HOTKEY_DOUBLE },
+		{ "QueueMove", KEY_X, 0, HOTKEY_PRESS },
+	};
+	Check(Hotkey_Held_Key(entries, "ForceFire", 0) == KEY_CTRL, "a held Ctrl binding is read as the held key");
+	Check(Hotkey_Held_Key(entries, "ForceFire", 1) == KEY_CTRL_ALT, "a Ctrl and Alt binding with a Press is read as the held key");
+	Check(Hotkey_Held_Key(entries, "SelectModifier", 0) == KEY_SHIFT_BIT, "a modifier-only binding with a Double is read as the held key");
+	Check(Hotkey_Held_Key(entries, "QueueMove", 0) == 0, "a plain key with a Press is not read as the held key");
+	Check(Hotkey_Held_Key(entries, "ForceMove", 0) == 0 && Hotkey_Held_Key(entries, "ForceFire", 1) != KEY_CTRL, "an empty slot reads no key and slots stay apart");
+}
+
+
 void Test_Attack_Move_Default(void)
 {
 	// Classic attack move is Ctrl with Shift held, a held binding with no key; Modern keeps its A press.
@@ -671,6 +691,7 @@ int main(void)
 	Test_Grid_Modifier();
 	Test_Attack_Move_Default();
 	Test_Modifier_Only();
+	Test_Held_Key();
 	Test_Timing_Ranges();
 	Test_Held_State();
 	Test_Timing();

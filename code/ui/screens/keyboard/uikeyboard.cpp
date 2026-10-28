@@ -444,6 +444,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				capture->AddEventListener(Rml::EventId::Keyup, this);
 				capture->AddEventListener(Rml::EventId::Mousedown, this);
 				capture->AddEventListener(Rml::EventId::Mousescroll, this);
+				capture->AddEventListener(Rml::EventId::Blur, this);
 			}
 		}
 
@@ -486,6 +487,13 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				}
 			}
 
+			// A modifier released after the box lost the focus sends no keyup here, so the held modifiers are forgotten at the blur.
+			if (event.GetId() == Rml::EventId::Blur && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
+				DownModifiers = 0;
+				ChordModifiers = 0;
+				ChordKeyed = false;
+			}
+
 			if (event.GetId() == Rml::EventId::Keyup && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
 				int const modifier = Modifier_Bit((Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0));
 				if (modifier != 0) {
@@ -505,7 +513,10 @@ class UIKeyboardViewClass : public UIRmlViewClass
 					event.StopPropagation();
 					return;
 				}
-				ChordKeyed = true;
+				// A key joins the chord only while a modifier is down; a plain press must not block the next modifier-only capture.
+				if (DownModifiers != 0) {
+					ChordKeyed = true;
+				}
 
 				// Backspace and Delete clear the slot. Escape with nothing captured closes the screen through the base view.
 				if (key == Rml::Input::KI_BACK || key == Rml::Input::KI_DELETE) {

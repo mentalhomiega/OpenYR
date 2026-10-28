@@ -87,6 +87,10 @@ bool Hotkey_Is_Modifier_Only(int key);
 // something with one; a command that needs a press would never fire.
 bool Hotkey_Accepts_Modifier_Only(std::string const & command);
 
+// The key of the command's binding in the slot when the command reads it as held state, or 0 when it has none there.
+// A modifier-only binding counts under any trigger, since the press table never carries that key.
+int Hotkey_Held_Key(std::vector<HotkeyEntry> const & entries, std::string const & command, int slot);
+
 // One line of a keyboard file: a name and its value, as the file writes them.
 struct HotkeyFileLine
 {

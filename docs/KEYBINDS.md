@@ -45,7 +45,11 @@ While the scenario's input is locked, keyboard bindings do not fire, and the pre
 
 Grid hotkeys for the sidebar are not in either scheme. They would take the Q, W, E and R tab keys and the A, S, D and X command keys.
 
-The keyboard page refuses a key press that cannot be a binding and says why in its notice: Shift, Ctrl or Alt on its own, the left and right mouse buttons, and a key the page cannot name. A binding is one key with its Shift, Control and Alt bits, so the page cannot capture a chord of two modifiers. A modifier alone is also the held key that `ForceFire`, `ForceMove` and `SelectModifier` read, so another command bound to it would clash with them. Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held, and `TechnoClass::Player_Assign_Mission` applies that to a ground click. The notice for Attack move names that chord.
+The keyboard page refuses a key press that cannot be a binding and says why in its notice. It refuses the left and right mouse buttons, a key the page cannot name, and Shift, Control or Alt, alone or in a combination, for every command except the six that read the held key: `AttackMove`, `ForceFire`, `ForceMove`, `SelectModifier`, `QueueMove` and `GridBuildModifier`.
+
+Those six take a modifier-only binding under any trigger, and the game reads it as held. A binding is one key with its Shift, Control and Alt bits; a modifier-only binding has no key. The page captures it when the last modifier is released with no other key pressed in the chord. The page does not let another command take a modifier-only key, so none of them clashes with a held key.
+
+Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held, and `TechnoClass::Player_Assign_Mission` applies that to a ground click. The notice for Attack move names that chord.
 
 ## New command behaviour
 
