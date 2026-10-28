@@ -48,6 +48,20 @@ bool CnCNetLobbyClass::Same_Nick(std::string const & a, std::string const & b)
 }
 
 
+bool CnCNetLobbyClass::Valid_Room_Channel(std::string const & channel) const
+{
+	std::size_t const prefix = Config.RoomPrefix.size();
+	if (channel.size() <= prefix || channel.size() > 50 || channel.front() != '#' || Same_Nick(channel, Config.BroadcastChannel)
+			|| !Same_Nick(channel.substr(0, prefix), Config.RoomPrefix)) {
+		return(false);
+	}
+	return(std::none_of(channel.begin(), channel.end(), [](char ch) {
+		unsigned char const byte = static_cast<unsigned char>(ch);
+		return(byte <= 0x20 || byte == 0x7F || ch == ',');
+	}));
+}
+
+
 /// <summary>
 /// Updates the lobby from one IRC event. now is the caller's clock in
 /// milliseconds; it stamps chat lines and game listings.
@@ -406,7 +420,7 @@ void CnCNetLobbyClass::Remove_Games_Of(std::string const & nick)
 void CnCNetLobbyClass::Game_Listing(std::string const & nick, std::string const & arguments, uint64_t now)
 {
 	std::optional<CnCNetGameListingType> listing = CnCNet_Parse_Game_Listing(arguments);
-	if (!listing || listing->Revision != "A") {
+	if (!listing || listing->Revision != "A" || !Valid_Room_Channel(listing->RoomChannel)) {
 		return;
 	}
 

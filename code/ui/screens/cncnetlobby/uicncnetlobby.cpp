@@ -9,6 +9,7 @@
 
 #include "ui/screens/cncnetlobby/uicncnetlobby.h"
 
+#include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsession.h"
 #include "ui/rml/rmlview.h"
 
@@ -307,7 +308,8 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 		State.GameCount = std::to_string(shown.size()) + " of " + std::to_string(total) + " games shown";
 	}
 	UICnCNetGameRow const * selected = State.Game >= 0 ? &State.Games[State.Game] : nullptr;
-	State.CanJoin = State.Online && selected != nullptr && selected->Joinable && !State.Password.empty();
+	std::string const password_problem = CnCNet_Room_Password_Problem(State.Password);
+	State.CanJoin = State.Online && selected != nullptr && selected->Joinable && !State.Password.empty() && password_problem.empty();
 	if (!State.Online) {
 		State.JoinTip = "Not connected.";
 	} else if (selected == nullptr) {
@@ -316,12 +318,14 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 		State.JoinTip = selected->Tip;
 	} else if (State.Password.empty()) {
 		State.JoinTip = "Type the game's password first. Test games are private.";
+	} else if (!password_problem.empty()) {
+		State.JoinTip = password_problem;
 	} else {
 		State.JoinTip = "Join " + selected->Name + ".";
 	}
-	State.CanHost = State.Online && !State.Password.empty();
+	State.CanHost = State.Online && !State.Password.empty() && password_problem.empty();
 	State.HostTip = !State.Online ? "Not connected." : State.Password.empty()
-		? "Type a password for your game first. Test games are private." : "Host a game with this password.";
+		? "Type a password for your game first. Test games are private." : !password_problem.empty() ? password_problem : "Host a game with this password.";
 }
 
 

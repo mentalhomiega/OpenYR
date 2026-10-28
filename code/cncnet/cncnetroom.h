@@ -205,6 +205,11 @@ class CnCNetRoomClass
 int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files);
 
 
+// Why a password cannot key a room, in plain words; empty when it can. A space, a comma or a control character
+// would split the channel mode or the join into more parameters, and a leading colon would make the join read the rest as text.
+std::string CnCNet_Room_Password_Problem(std::string_view password);
+
+
 // A room channel name from a random number: the prefix, "#cncnet-yr-game" by default, and seven digits.
 std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix = "#cncnet-yr-game");
 

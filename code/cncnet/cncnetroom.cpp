@@ -755,6 +755,21 @@ int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const
 }
 
 
+std::string CnCNet_Room_Password_Problem(std::string_view password)
+{
+	if (!password.empty() && password.front() == ':') {
+		return("The password cannot start with a colon.");
+	}
+	if (std::any_of(password.begin(), password.end(), [](char ch) {
+			unsigned char const byte = static_cast<unsigned char>(ch);
+			return(byte <= 0x20 || byte == 0x7F || ch == ',');
+		})) {
+		return("The password cannot contain spaces or commas.");
+	}
+	return(std::string());
+}
+
+
 std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix)
 {
 	char digits[8];

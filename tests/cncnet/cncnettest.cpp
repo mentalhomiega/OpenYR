@@ -793,6 +793,42 @@ void Test_Guest_Start(void)
 }
 
 
+void Test_Room_Channel_And_Password(void)
+{
+	CnCNetLobbyClass lobby{CnCNetLobbyConfigType()};
+	Check(lobby.Valid_Room_Channel("#cncnet-yr-game1234567") && lobby.Valid_Room_Channel("#CNCNET-YR-GAME0000001"),
+		"room channel: a channel under the room prefix is valid");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr") && !lobby.Valid_Room_Channel("0") && !lobby.Valid_Room_Channel(""),
+		"room channel: the chat channel, a bare 0 and an empty name are refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-games") && !lobby.Valid_Room_Channel("#cncnet-yr-game"),
+		"room channel: the broadcast channel and the bare prefix are refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-game1,#cncnet-yr") && !lobby.Valid_Room_Channel("#cncnet-yr-game1 2")
+		&& !lobby.Valid_Room_Channel("#cncnet-yr-game1\x07") && !lobby.Valid_Room_Channel("#cncnet-yr-game1\r\nJOIN #x"),
+		"room channel: a comma, a space or a control character is refused");
+	Check(!lobby.Valid_Room_Channel("cncnet-yr-game1234567") && !lobby.Valid_Room_Channel("&cncnet-yr-game1234567"),
+		"room channel: a name that does not start with # is refused");
+	Check(!lobby.Valid_Room_Channel("#cncnet-yr-game" + std::string(60, '1')), "room channel: a name past the channel length is refused");
+
+	CnCNetGameListingType bad = Sample_Listing();
+	bad.RoomChannel = "#cncnet-yr";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	bad.RoomChannel = "#a,#b";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host2", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	bad.RoomChannel = "0";
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host3", "#cncnet-yr-games", CnCNet_Format_Game_Listing(bad), "GAME"), 1);
+	Check(lobby.Games().empty(), "room channel: a listing with an unusable room channel is not listed");
+	lobby.Apply(Make_Event(IRCEventKind::CTCP, "Host", "#cncnet-yr-games", CnCNet_Format_Game_Listing(Sample_Listing()), "GAME"), 2);
+	Check(lobby.Games().size() == 1, "room channel: a listing with a good room channel is listed");
+
+	Check(CnCNet_Room_Password_Problem("secret").empty() && CnCNet_Room_Password_Problem("p@ss:word!").empty(), "password: plain passwords pass");
+	Check(!CnCNet_Room_Password_Problem("my game").empty() && !CnCNet_Room_Password_Problem("a,b").empty()
+		&& !CnCNet_Room_Password_Problem("tab\there").empty() && !CnCNet_Room_Password_Problem("line\nbreak").empty(),
+		"password: a space, a comma or a control character is refused");
+	Check(!CnCNet_Room_Password_Problem(":secret").empty(), "password: a leading colon is refused");
+	Check(CnCNet_Room_Password_Problem("my game") == "The password cannot contain spaces or commas.", "password: the refusal says why");
+}
+
+
 void Test_Room_Notice(void)
 {
 	CnCNetRoomConfigType config = Room_Config("Host", "b1");
@@ -1214,6 +1250,7 @@ int main(void)
 	Test_Room_Encoding();
 	Test_Local_Map();
 	Test_Room();
+	Test_Room_Channel_And_Password();
 	Test_Room_Notice();
 	Test_Guest_Start();
 	Test_Build_Identity();
