@@ -2,7 +2,7 @@
 ; The tanks drive north in two legs and destroy the Allied base structure by structure (strikeobj, in the order the groups stand on the map). Four Soviet engineers
 ; (grantunit, standing in for the engineers a player would train) then enter the Allied Battle Lab at 101,27, which makes the Soviet ally build the Psychic Beacon. The tanks
 ; stand beside the beacon and beat off the Allied drop-pod teams until its 300 second countdown ends and the win chain runs.
-; Expected: "AUTOTEST game over frame N: won" (frame 19678 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 19694 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov03.txt -Campaign -Map SOV03U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2
