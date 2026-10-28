@@ -12,6 +12,8 @@
 #include "point.h"
 #include "rect.h"
 
+#include <vector>
+
 class ConvertClass;
 class FontClass;
 class ShapeSet;
@@ -83,4 +85,8 @@ class ScoreStageClass
 		bool Mounted;
 		int StageWidth;
 		int StageHeight;
+		ShapeSet const * KeyedShape;
+		int KeyedWidth;
+		int KeyedHeight;
+		std::vector<std::vector<float>> KeyedFrames;
 };
