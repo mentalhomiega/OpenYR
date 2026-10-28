@@ -214,6 +214,7 @@ class InfantryClass : public FootClass
 		virtual int Do_MISSION_ATTACK(void) override;
 		virtual int Do_MISSION_HUNT(void) override;
 		virtual int Do_MISSION_GUARD(void) override;
+		virtual int Do_MISSION_GUARD_AREA(void) override;
 		virtual int Do_MISSION_UNLOAD(void) override;
 		virtual int Do_MISSION_MOVE(void) override;
 		virtual void Berzerk(void) override;

@@ -5093,6 +5093,21 @@ int InfantryClass::Do_MISSION_GUARD(void)
 }
 
 
+/// <summary>
+/// Handles the area guard mission for this infantry. The guard helper runs before the normal area guard mission, as
+/// InfantryClass::Mission_AreaGuard (0x51F640) does, so a computer's Deployer soldier digs in from this mission too.
+/// </summary>
+/// <returns>The delay in game frames before this mission should be processed again.</returns>
+int InfantryClass::Do_MISSION_GUARD_AREA(void)
+{
+	int const deploy_delay = Do_Guard_Deploy();
+	if (deploy_delay >= 0) {
+		return(deploy_delay);
+	}
+	return(BASECLASS::Do_MISSION_GUARD_AREA());
+}
+
+
 ClassID InfantryClass::Class_ID(void) const
 {
 	return(ClassID_InfantryClass);
