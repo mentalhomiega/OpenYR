@@ -22,4 +22,7 @@ void WriteWatch_Free(void * memory);
 // Fills runs with the byte ranges, relative to memory, of the pages written since the last call
 // (all of them on the first call) and starts listing anew. False means writes to the block are not
 // listed on this system, and every byte must be treated as written.
-bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pair<std::size_t, std::size_t>> & runs);
+// With steady set, a page written in two takes in a row is reported by every take until a full reset
+// that happens every 32 takes, whether or not it is written again, and its writes stop costing a page fault.
+// Set it for a block that many of the same pages are written in every frame.
+bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady = false);

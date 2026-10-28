@@ -201,13 +201,13 @@ DSurface::DSurface(int width, int height, bool watched) :
 }
 
 
-bool DSurface::Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const
+bool DSurface::Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady) const
 {
 	if (!IsWatched) {
 		runs.clear();
 		return(false);
 	}
-	return(WriteWatch_Take(GDIBuffer, (std::size_t)Pitch * Get_Height(), runs));
+	return(WriteWatch_Take(GDIBuffer, (std::size_t)Pitch * Get_Height(), runs, steady));
 }
 
 
