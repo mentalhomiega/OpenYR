@@ -173,7 +173,7 @@ static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
 	int const width = composite->Get_Width();
 	int const pitch = composite->Stride();
 	int const bpp = composite->Bytes_Per_Pixel();
-	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs);
+	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs, true);
 	// Scrolling swaps the composite with the tile layer, whose watch says nothing about what the composite last held.
 	static unsigned last_composite_serial = 0;
 	unsigned const composite_serial = composite->Get_Serial();

@@ -47,8 +47,15 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		virtual Coord Head_To_Coord(void) override;
 		virtual MoveType Can_Enter_Cell(Cell cell) override;
 		virtual bool Is_To_Have_Shadow(void) override;
-		virtual Matrix3D Draw_Matrix(int *key) override;
-		virtual Matrix3D Shadow_Matrix(int *key) override;
+		virtual Matrix3D Draw_Matrix(int *key) override {return(Build_Draw_Matrix(key, true));}
+		virtual Matrix3D Shadow_Matrix(int *key) override {return(Build_Shadow_Matrix(key, true));}
+
+		/*
+		 * Update a voxel cache key exactly as Draw_Matrix and Shadow_Matrix do, without building the
+		 * matrix. A caller that finds its image in the cache never needs the matrix.
+		 */
+		void Draw_Key(int *key) {Build_Draw_Matrix(key, false);}
+		void Shadow_Key(int *key) {Build_Shadow_Matrix(key, false);}
 		virtual Point2D Draw_Point(void) override;
 		virtual Point2D Shadow_Point(void) override;
 		virtual VisualType Visual_Character(bool flag) override;
@@ -103,6 +110,13 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		virtual void Post_Load(void);
 
 	protected:
+
+		/*
+		 * Draw_Matrix and Shadow_Matrix share these. They fold the pose into the key and, only when
+		 * matrix is true, build the matrix; with it false they return an identity matrix.
+		 */
+		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix);
+		virtual Matrix3D Build_Shadow_Matrix(int *key, bool matrix);
 
 		/*
 		 * These carry the record a class describes through Serialize. A class calls these

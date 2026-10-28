@@ -136,7 +136,8 @@ class DSurface : public XSurface
 
 		// Fills runs with the byte ranges of Get_Buffer written since the last call and starts
 		// listing anew. False means the surface does not list its writes, so every byte counts as written.
-		bool Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
+		// With steady set, pages written in consecutive calls are listed in every call; see WriteWatch_Take.
+		bool Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady = false) const;
 
 		/*
 		**	Queries information about the surface.

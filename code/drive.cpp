@@ -418,11 +418,18 @@ BOOL DriveLocomotionClass::Is_Angled(void) const
 /// </summary>
 /// <param name="key">Pointer to the voxel cache key to be updated. May be NULL.</param>
 /// <returns>Returns with the matrix the unit is to be rendered through.</returns>
-Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
+Matrix3D DriveLocomotionClass::Build_Draw_Matrix(int *key, bool matrix)
 {
 	Matrix3D m;
 
 	if (!Is_Angled()) {
+		if (!matrix) {
+			if (key) {
+				*key = -1;
+			}
+			return(Matrix3D(true));
+		}
+
 		Matrix3D m1, m2;
 		m1.Make_Identity();
 		m2.Make_Identity();
@@ -459,7 +466,7 @@ Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 			*key = -1;
 		}
 
-		Matrix3D basemtx(BASECLASS::Draw_Matrix(key));
+		Matrix3D basemtx(BASECLASS::Build_Draw_Matrix(key, true));
 		Matrix3D slopemtx = Get_Slope_Matrix();
 		m = (((m1 * slopemtx) * basemtx) * m2);
 		return(m);
@@ -471,7 +478,12 @@ Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 		*key = keybase + CurrentRamp;
 	}
 
-	Matrix3D basemtx(BASECLASS::Draw_Matrix(key));
+	if (!matrix) {
+		BASECLASS::Build_Draw_Matrix(key, false);
+		return(Matrix3D(true));
+	}
+
+	Matrix3D basemtx(BASECLASS::Build_Draw_Matrix(key, true));
 	Matrix3D slopemtx = Get_Slope_Matrix();
 	m = (slopemtx * basemtx);
 	return(m);

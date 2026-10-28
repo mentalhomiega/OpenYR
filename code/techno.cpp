@@ -8332,12 +8332,8 @@ void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, in
 		key = -1;
 	}
 
-	if (key != -1) {
-		StaticBufferClass::Entry * entry = (*cache)[key];
-		if (entry != NULL) {
-			Techno_Blit_Voxel(*entry, point, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), NORMAL_LIGHT);
-			return;
-		}
+	if (Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, point)) {
+		return;
 	}
 
 	if (key == -1 || force_cache) {
@@ -8359,6 +8355,32 @@ void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, in
 			Techno_Draw_Voxel_Shadow(voxeldata, layer_index, key, cache, cliprect, point, matrix, false);
 		}
 	}
+}
+
+
+/// <summary>
+/// Draws the voxel shadow from the cache, when that is all the shadow needs.
+/// A shadow that is not to be drawn at all (cloaked, a type without one, a failed library) counts as done.
+/// </summary>
+/// <returns>Returns true when nothing more is to be drawn, false when the shadow must be rendered.</returns>
+bool TechnoClass::Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const
+{
+	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
+		return(true);
+	}
+
+	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
+		key = -1;
+	}
+
+	if (key != -1) {
+		StaticBufferClass::Entry * entry = (*cache)[key];
+		if (entry != NULL) {
+			Techno_Blit_Voxel(*entry, point, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), NORMAL_LIGHT);
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

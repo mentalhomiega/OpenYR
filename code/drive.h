@@ -68,7 +68,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
 		virtual Coord Head_To_Coord(void) override;
-		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Matrix3D Build_Draw_Matrix(int *key, bool matrix) override;
 		virtual int Z_Adjust(void) override;
 		virtual ZGradientType Z_Gradient(void) override;
 		virtual bool Process(void) override;

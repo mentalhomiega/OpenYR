@@ -141,12 +141,14 @@ LayerType RocketLocomotionClass::In_Which_Layer(void)
 }
 
 
-Matrix3D RocketLocomotionClass::Draw_Matrix(int * key)
+Matrix3D RocketLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 {
 	Matrix3D mtx;
 	mtx.Make_Identity();
-	mtx.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
-	mtx.Rotate_Y(-CurrentPitch);
+	if (matrix) {
+		mtx.Rotate_Z(LinkedTo->SecondaryFacing.Current().As_Radian32());
+		mtx.Rotate_Y(-CurrentPitch);
+	}
 	if (key != NULL) {
 		*key = -1;
 	}

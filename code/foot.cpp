@@ -4259,6 +4259,22 @@ void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_i
 
 
 /// <summary>
+/// Draws the ground shadow from the voxel cache when that settles the draw.
+/// This does what Draw_Voxel_Shadow does for a shadow that is cached or not wanted, and needs no matrix
+/// for it; the caller builds the matrix only when this returns false.
+/// </summary>
+/// <returns>Returns true when the shadow is done (drawn from the cache, or none is to be drawn), false
+/// when Draw_Voxel_Shadow must render it.</returns>
+bool FootClass::Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeldata, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point) const
+{
+	if (Locomotion == nullptr || Locomotion->Is_To_Have_Shadow() != (bool)true) {
+		return(true);
+	}
+	return(Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, Point2D(Locomotion->Shadow_Point()) + point));
+}
+
+
+/// <summary>
 /// Fetches the speed this object should be traveling at.
 /// This is the type's maximum speed after the owner country's speed multiplier for the type's
 /// category, the object's own speed bias, any veteran speed ability, and the object's current

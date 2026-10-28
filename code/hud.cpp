@@ -33,8 +33,15 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <iterator>
+#include <utility>
 #include <vector>
+
+#if defined(__SSE2__) || defined(_M_IX86) || defined(_M_X64)
+#include <emmintrin.h>
+#define HUD_PANEL_SSE2 1
+#endif
 
 
 bool Modern_Interface(void)
@@ -478,6 +485,64 @@ HudBlendTable const & Hud_Blend_Table(int opacity)
 	return(table);
 }
 
+
+// The colours that mark panel background, and the table that blends them with the map.
+struct HudPanelColours {
+	unsigned short Fill;
+	unsigned short Well;
+	HudBlendTable const * Blend;
+};
+
+
+// A background pixel over the map layer key becomes the layer's tint key and over anything else is blended with it;
+// any other pixel is copied.
+inline unsigned short Panel_Pixel(unsigned short pixel, unsigned short target, HudPanelColours const & colours)
+{
+	bool const is_fill = pixel == colours.Fill;
+	if (!is_fill && pixel != colours.Well) {
+		return(pixel);
+	}
+	if (target == VIDEO_LAYER_KEY) {
+		return(is_fill ? VIDEO_LAYER_TINT_KEYS[0] : VIDEO_LAYER_TINT_KEYS[1]);
+	}
+	return(is_fill ? colours.Blend->Fill[target] : colours.Blend->Well[target]);
+}
+
+
+// Draws count panel pixels from in over out, in a span that crosses no solid area.
+void Panel_Span(unsigned short const * in, unsigned short * out, int count, HudPanelColours const & colours)
+{
+	int x = 0;
+#ifdef HUD_PANEL_SSE2
+	__m128i const fill = _mm_set1_epi16(static_cast<short>(colours.Fill));
+	__m128i const well = _mm_set1_epi16(static_cast<short>(colours.Well));
+	__m128i const key = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_KEY));
+	__m128i const tint_fill = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_TINT_KEYS[0]));
+	__m128i const tint_well = _mm_set1_epi16(static_cast<short>(VIDEO_LAYER_TINT_KEYS[1]));
+	for (; x + 8 <= count; x += 8) {
+		__m128i const pixel = _mm_loadu_si128(reinterpret_cast<__m128i const *>(in + x));
+		__m128i const is_fill = _mm_cmpeq_epi16(pixel, fill);
+		__m128i const background = _mm_or_si128(is_fill, _mm_cmpeq_epi16(pixel, well));
+		if (_mm_movemask_epi8(background) == 0) {
+			_mm_storeu_si128(reinterpret_cast<__m128i *>(out + x), pixel);
+			continue;
+		}
+		__m128i const target = _mm_loadu_si128(reinterpret_cast<__m128i const *>(out + x));
+		if (_mm_movemask_epi8(_mm_andnot_si128(_mm_cmpeq_epi16(target, key), background)) == 0) {
+			__m128i const tint = _mm_or_si128(_mm_and_si128(is_fill, tint_fill), _mm_andnot_si128(is_fill, tint_well));
+			_mm_storeu_si128(reinterpret_cast<__m128i *>(out + x), _mm_or_si128(_mm_and_si128(background, tint), _mm_andnot_si128(background, pixel)));
+			continue;
+		}
+		for (int i = x; i < x + 8; i++) {
+			out[i] = Panel_Pixel(in[i], out[i], colours);
+		}
+	}
+#endif
+	for (; x < count; x++) {
+		out[x] = Panel_Pixel(in[x], out[x], colours);
+	}
+}
+
 }
 
 
@@ -525,37 +590,40 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 	Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
 	Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
 
+	HudPanelColours const colours = {static_cast<unsigned short>(fill_pixel), static_cast<unsigned short>(well_pixel), &blend};
 	for (int y = 0; y < dest.Height; y++) {
 		int const sy = source_rect.Y + y;
+		unsigned short const * const row_in = in + sy * in_stride + source_rect.X;
+		unsigned short * const row_out = out + (dest.Y + y) * out_stride + dest.X;
 
-		// Only the solid areas that cross this row can hold a pixel that must stay opaque.
-		Rect crossing[std::size(solid)];
+		// The solid areas that cross this row, as spans of x from the left of the copied part.
+		std::pair<int, int> crossing[std::size(solid)];
 		int crossings = 0;
 		for (Rect const & rect : solid) {
 			if (sy >= rect.Y && sy < rect.Y + rect.Height) {
-				crossing[crossings++] = rect;
-			}
-		}
-
-		for (int x = 0; x < dest.Width; x++) {
-			int const sx = source_rect.X + x;
-			unsigned short const pixel = in[sy * in_stride + sx];
-			unsigned short & target = out[(dest.Y + y) * out_stride + dest.X + x];
-
-			bool background = (pixel == fill_pixel || pixel == well_pixel);
-			for (int index = 0; background && index < crossings; index++) {
-				if (sx >= crossing[index].X && sx < crossing[index].X + crossing[index].Width) {
-					background = false;
+				int const left = std::clamp(rect.X - source_rect.X, 0, dest.Width);
+				int const right = std::clamp(rect.X + rect.Width - source_rect.X, 0, dest.Width);
+				if (right > left) {
+					crossing[crossings++] = {left, right};
 				}
 			}
+		}
+		std::sort(crossing, crossing + crossings);
 
-			if (!background) {
-				target = pixel;
-			} else if (target == VIDEO_LAYER_KEY) {
-				target = (pixel == fill_pixel) ? VIDEO_LAYER_TINT_KEYS[0] : VIDEO_LAYER_TINT_KEYS[1];
-			} else {
-				target = (pixel == fill_pixel) ? blend.Fill[target] : blend.Well[target];
+		// Solid pixels are copied as drawn; the spans between them are drawn as panel.
+		int x = 0;
+		for (int index = 0; index < crossings; index++) {
+			int const left = std::max(crossing[index].first, x);
+			if (left > x) {
+				Panel_Span(row_in + x, row_out + x, left - x, colours);
 			}
+			if (crossing[index].second > left) {
+				std::memcpy(row_out + left, row_in + left, static_cast<std::size_t>(crossing[index].second - left) * sizeof(unsigned short));
+				x = crossing[index].second;
+			}
+		}
+		if (x < dest.Width) {
+			Panel_Span(row_in + x, row_out + x, dest.Width - x, colours);
 		}
 	}
 
