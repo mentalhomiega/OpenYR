@@ -101,12 +101,11 @@ bool Same_File(char const * a, char const * b)
 
 int Find_Scenario(std::string const & file)
 {
+	std::vector<std::string> names;
 	for (int index = 0; index < Session.Scenarios.Count(); index++) {
-		if (Same_File(Session.Scenarios[index]->Get_Filename(), file.c_str())) {
-			return(index);
-		}
+		names.emplace_back(Session.Scenarios[index]->Get_Filename());
 	}
-	return(-1);
+	return(CnCNet_Find_Local_Map(file, names));
 }
 
 
@@ -231,6 +230,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		uint64_t OptionsRevision = 0;
 		uint64_t NextBroadcast = 0;
 		bool AskedSetup = false;
+		bool MapMissing = false;
 		std::string ClosedReason;
 		std::string PreviewMap;
 		int StartLimit = -1;
@@ -391,14 +391,19 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 {
 	GameOptionsType & options = Session.Options;
 	auto const map = values.find("Map");
-	if (map != values.end() && !Same_File(map->second.c_str(), Session.ScenarioFileName)) {
+	if (map != values.end()) {
 		int const index = Find_Scenario(map->second);
-		if (index >= 0 && CCFileClass(map->second.c_str()).Is_Available()) {
-			Session.Options.ScenarioIndex = index;
-			Select_Scenario_Session(index);
+		if (index < 0) {
+			if (!MapMissing || Session.ScenarioFileName[0] != '\0') {
+				Select_Scenario_Session(-1);
+			}
+			MapMissing = true;
 		} else {
-			Select_Scenario_Session(-1);
-			std::snprintf(Session.ScenarioFileName, sizeof(Session.ScenarioFileName), "%s", map->second.c_str());
+			MapMissing = false;
+			if (!Same_File(Session.Scenarios[index]->Get_Filename(), Session.ScenarioFileName)) {
+				Session.Options.ScenarioIndex = index;
+				Select_Scenario_Session(index);
+			}
 		}
 	}
 	auto const name = values.find("MapName");
@@ -598,7 +603,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	// A guest whose map is missing or differs from the host's cannot get ready: the match would not start or would go out of sync.
 	state.MapName = Session.Options.ScenarioDescription;
 	bool map_ready = true;
-	if (Session.ScenarioFileName[0] != '\0' && !CCFileClass(Session.ScenarioFileName).Is_Available()) {
+	if (MapMissing || (Session.ScenarioFileName[0] != '\0' && !CCFileClass(Session.ScenarioFileName).Is_Available())) {
 		state.MapName += " (you do not have this map)";
 		map_ready = false;
 	} else if (!TheRoom.Is_Host()) {
@@ -613,7 +618,10 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	}
 	if (PreviewMap != Session.ScenarioFileName) {
 		PreviewMap = Session.ScenarioFileName;
-		UI_Map_File_Preview_Image(PreviewMap.c_str(), Preview);
+		Preview = UIMapPreviewImage();
+		if (!PreviewMap.empty()) {
+			UI_Map_File_Preview_Image(PreviewMap.c_str(), Preview);
+		}
 	}
 	state.Preview = Preview;
 
@@ -900,6 +908,11 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	if (own == nullptr) {
 		return("The host started the match without you.");
 	}
+	if (!TheRoom.Is_Host() && (MapMissing || Session.ScenarioFileName[0] == '\0' || !CCFileClass(Session.ScenarioFileName).Is_Available())) {
+		return("You do not have the host's map.");
+	}
+	std::map<std::string, std::string> options = TheRoom.Options();
+	options["Map"] = Session.ScenarioFileName;
 
 	CnCNetTunnelBridgeClass bridge;
 	std::string error;
@@ -913,7 +926,7 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	char policy[32];
 	ConfigINI.Get_String("CnCNet", "TimingPolicy", "Adaptive", policy, sizeof(policy));
 	bool const adaptive = _stricmp(policy, "Gamemd") != 0;
-	std::string const ini = CnCNet_Spawn_Ini(match, TheRoom.Options(), Setup.Nick, bridge.Game_Port(), adaptive);
+	std::string const ini = CnCNet_Spawn_Ini(match, options, Setup.Nick, bridge.Game_Port(), adaptive);
 	std::string const spawn_path = User_Directory() + "SPAWN.INI";
 	{
 		std::ofstream file(spawn_path, std::ios::binary | std::ios::trunc);

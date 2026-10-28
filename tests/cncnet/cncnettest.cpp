@@ -499,6 +499,28 @@ void Test_Room_Encoding(void)
 }
 
 
+void Test_Local_Map(void)
+{
+	std::vector<std::string> const local = {"ALLIES01.MAP", "Lake.map", "ra2_dune.map"};
+	Check(CnCNet_Find_Local_Map("lake.MAP", local) == 1, "local map: a listed name matches without regard to case");
+	Check(CnCNet_Find_Local_Map("ALLIES01.MAP", local) == 0, "local map: the first listed name is found");
+	Check(CnCNet_Find_Local_Map("other.map", local) == -1, "local map: an unlisted name is not found");
+	Check(CnCNet_Find_Local_Map("", local) == -1, "local map: an empty name is not found");
+	Check(CnCNet_Find_Local_Map("Lake.map", {}) == -1, "local map: nothing is found in an empty list");
+	Check(CnCNet_Find_Local_Map("..\\..\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("../Lake.map", local) == -1,
+		"local map: a parent reference is refused");
+	Check(CnCNet_Find_Local_Map("maps\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("maps/Lake.map", local) == -1,
+		"local map: a path is refused even when its file name is listed");
+	Check(CnCNet_Find_Local_Map("C:\\Lake.map", local) == -1 && CnCNet_Find_Local_Map("C:Lake.map", local) == -1,
+		"local map: a drive is refused");
+	Check(CnCNet_Find_Local_Map("\\\\attacker.example@80\\x\\a.map", local) == -1, "local map: a UNC path is refused");
+	Check(CnCNet_Find_Local_Map("Lake.map:stream", local) == -1, "local map: a stream name is refused");
+	Check(CnCNet_Find_Local_Map(std::string_view("Lake.map\0x", 10), local) == -1 && CnCNet_Find_Local_Map("Lake.map\n", local) == -1,
+		"local map: a control character is refused");
+	Check(CnCNet_Find_Local_Map("..", {".."}) == -1, "local map: a parent reference is refused even when the list holds it");
+}
+
+
 char const * const ROOM = "#cncnet-yr-game1234567";
 
 
@@ -1084,6 +1106,7 @@ int main(void)
 	Test_Lobby();
 	Test_SHA1();
 	Test_Room_Encoding();
+	Test_Local_Map();
 	Test_Room();
 	Test_Room_Notice();
 	Test_Build_Identity();

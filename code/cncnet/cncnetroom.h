@@ -190,6 +190,11 @@ class CnCNetRoomClass
 };
 
 
+// The index in local_files of the map file a host's Map option names, matched without regard to case by plain
+// file name. -1 when the name has a path, a drive, a stream or a parent reference, or is not in local_files.
+int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files);
+
+
 // A room channel name from a random number: the prefix, "#cncnet-yr-game" by default, and seven digits.
 std::string CnCNet_Room_Channel(uint32_t random, std::string const & prefix = "#cncnet-yr-game");
 

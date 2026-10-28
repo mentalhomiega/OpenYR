@@ -13,6 +13,7 @@
 #include "cncnet/cncnetsha1.h"
 
 #include <algorithm>
+#include <cctype>
 #include <charconv>
 #include <cstdio>
 
@@ -719,6 +720,23 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 		players.push_back(player);
 	}
 	return(players);
+}
+
+
+int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files)
+{
+	if (named.empty() || named.find_first_of("/\\:") != std::string_view::npos || named.find("..") != std::string_view::npos
+		|| std::any_of(named.begin(), named.end(), [](char ch) { return(static_cast<unsigned char>(ch) < 0x20 || ch == 0x7F); })) {
+		return(-1);
+	}
+	for (std::size_t index = 0; index < local_files.size(); ++index) {
+		std::string const & file = local_files[index];
+		if (file.size() == named.size() && std::equal(file.begin(), file.end(), named.begin(),
+				[](char a, char b) { return(std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b))); })) {
+			return(static_cast<int>(index));
+		}
+	}
+	return(-1);
 }
 
 
