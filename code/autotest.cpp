@@ -197,7 +197,8 @@
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
 **							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon,
 **							then how the local player is shown it (visual: the Visual_Character values, its sensed cell, whether it is
-**							ready to cloak and its CloakDelay), then the checks of Is_Ready_To_Cloak (recloak: its rearm, immobilizing
+**							ready to cloak and its CloakDelay), whether the local player's radar plots it (radar: plotted, and how it
+**							counts as detected), then the checks of Is_Ready_To_Cloak (recloak: its rearm, immobilizing
 **							state, radio contact, and whether its target is close enough to fire at)
 **	animlog <TypeID>		writes each object of that type, whoever owns it, with its walk counter and the body voxel frame it draws,
 **							its turret frame and facings, whether its locomotor is moving, its firing state, its target, and whether a DiskLaser ring is active
@@ -4740,6 +4741,11 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   visual %s character %d raw %d sensed %d height %d locked %d cloakable %d recloak %d ready %d delay %d stage %d owned %d\n",
 					techno->TClass->Name(), (int)techno->Visual_Character(false), (int)techno->Visual_Character(true), (int)techno->Is_Sensed_By_Player(),
 					(int)techno->HeightAGL, (int)techno->IsLocked, (int)techno->IsCloakable, (int)techno->Is_Allowed_To_Recloak(), (int)techno->Is_Ready_To_Cloak(), (int)techno->CloakDelay, techno->CloakingDevice.Fetch_Stage(), (int)techno->IsOwnedByPlayer);
+				// radar: whether the local player's radar plots the object, and how it counts as detected when it only shows because
+				// the player senses it (the DetectedType).
+				DetectedType detected = DETECTED_NONE;
+				bool const plotted = techno->Is_Radar_Visible(detected);
+				DebugString("AUTOTEST   radar %s plotted %d detected %d\n", techno->TClass->Name(), (int)plotted, (int)detected);
 				DebugString("AUTOTEST   sight %s range %d increase %d\n", techno->TClass->Name(), techno->TClass->SightRange, (int)techno->SightIncrease);
 				DebugString("AUTOTEST   facing %s body %d desired %d turret %d desired %d rotating %d paralysis %d moving %d\n", techno->TClass->Name(), (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
 					(int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256(), (int)techno->PrimaryFacing.Is_Rotating(), techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->ParalysisTimer : -1,
