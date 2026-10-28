@@ -101,8 +101,13 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   4K benchmark on a busy machine, this raised the rate from about 119 to 140 pictures per second.
 - Cached voxel images, such as vehicle shadows and the hulls of vehicles without a turret, are decoded
   once into an atlas of up to 4 MB that the GPU keeps, and later passes refer to it instead of copying
-  their pixels. The atlas is emptied when the cached voxel images are cleared or it fills. In four
+  their pixels. The voxel images leave the atlas when the cached voxel images are cleared, and the atlas is emptied when it fills. In four
   alternating pairs of the 4K benchmark it raised the rate from about 486 to about 508 pictures per second.
+- Frames of shapes, such as infantry, animations and buildings, join the same atlas, including frames drawn with
+  a depth shape. A frame is found by the address of its data. The atlas keeps a copy of the frame's compressed rows and
+  compares them once per pass, so a frame whose memory was freed and reused for another shape is decoded again. The
+  benchmark's atlas held about 400 images in 1.3 MB without filling. It cut the objects phase of a draw by about 0.07
+  ms at 4K, from about 0.38 ms to 0.31 ms, and the picture rate stayed within the run-to-run spread.
 - The modern build panel's background stays translucent at `SidebarOpacity` over the GPU map. Where the
   frame holds the map layer key, the panel writes one of two tint keys, and the presenter blends the
   panel's fill or well colour over the map there. The result is within 8 of 255 per channel of the

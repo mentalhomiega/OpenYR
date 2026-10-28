@@ -63,39 +63,31 @@ static unsigned _BaseTilesCount = 0;
 
 
 static GpuAtlas _Atlas;
-static std::unordered_map<void const *, std::uint32_t> _AtlasImages;
+
+// One decoded image in the atlas. A shape frame also keeps its compressed rows in _AtlasKept, since
+// the shape's memory can be freed and reused for another shape; Kept is NO_KEPT for a voxel image.
+struct AtlasImage
+{
+	std::uint32_t Offset;
+	int Width;
+	int Height;
+	std::uint32_t Kept;
+	unsigned Checked;
+};
+static constexpr std::uint32_t NO_KEPT = 0xFFFFFFFFu;
+
+static std::unordered_map<void const *, AtlasImage> _AtlasImages;
+static std::vector<unsigned char> _AtlasKept;
 static unsigned _AtlasGeneration = 0;
-// Set when the voxel images changed or the atlas filled during the pass; the atlas is unused until the next pass empties it.
+// Counts the passes; a shape frame is compared with its kept rows once a pass.
+static unsigned _AtlasPass = 1;
+// Set when the atlas filled during the pass; the atlas is unused until the next pass empties it.
 static bool _AtlasStale = false;
 
 
-// Returns the atlas offset of the whole source image of the RLE blit being recorded, decoding it on first
-// use, or -1 when the source is not a cached voxel image or the atlas cannot take it.
-static std::int64_t Atlas_Image(void)
+// Decodes the whole RLE source image into out, Width bytes a row, and returns the size of its compressed rows.
+static std::size_t Decode_Image(BlitRecordSource const & source, unsigned char * out)
 {
-	BlitRecordSource const & source = Blit_Record_Source;
-	if (!VoxelStaticBuffer.Contains(source.Base) || source.Width <= 0 || source.Height <= 0) {
-		return(-1);
-	}
-	if (ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
-		_AtlasStale = true;
-	}
-	if (_AtlasStale) {
-		return(-1);
-	}
-	auto const found = _AtlasImages.find(source.Base);
-	if (found != _AtlasImages.end()) {
-		return(found->second);
-	}
-	std::size_t const size = (std::size_t)source.Width * source.Height;
-	// A full atlas is emptied at the next pass; until then images are copied into the arena.
-	if (_Atlas.Bytes.size() + size > GPU_ATLAS_BYTES) {
-		_AtlasStale = true;
-		return(-1);
-	}
-	std::uint32_t const offset = (std::uint32_t)_Atlas.Bytes.size();
-	_Atlas.Bytes.resize(_Atlas.Bytes.size() + size);
-	unsigned char * out = &_Atlas.Bytes[offset];
 	unsigned char const * row = (unsigned char const *)source.Base;
 	for (int r = 0; r < source.Height; r++) {
 		unsigned char const * data = row + sizeof(unsigned short);
@@ -119,7 +111,71 @@ static std::int64_t Atlas_Image(void)
 		out += source.Width;
 		row += *(unsigned short const *)row;
 	}
-	_AtlasImages.emplace(source.Base, offset);
+	return((std::size_t)(row - (unsigned char const *)source.Base));
+}
+
+
+// Whether the rows at source are the ones kept for the image. Each row's length is compared before
+// its bytes are read, so a source that is another shape is never read past its own rows.
+static bool Rows_Match(BlitRecordSource const & source, AtlasImage const & image)
+{
+	unsigned char const * live = (unsigned char const *)source.Base;
+	unsigned char const * kept = &_AtlasKept[image.Kept];
+	for (int r = 0; r < source.Height; r++) {
+		unsigned short const length = *(unsigned short const *)live;
+		if (length != *(unsigned short const *)kept || std::memcmp(live, kept, length) != 0) {
+			return(false);
+		}
+		live += length;
+		kept += length;
+	}
+	return(true);
+}
+
+
+// Returns the atlas offset of the whole source image of the RLE blit being recorded, decoding it on first
+// use, or -1 when the atlas cannot take it. A shape frame is looked up by address and compared with the rows
+// kept from when it was decoded.
+static std::int64_t Atlas_Image(void)
+{
+	BlitRecordSource const & source = Blit_Record_Source;
+	if (source.Width <= 0 || source.Height <= 0) {
+		return(-1);
+	}
+	bool const voxel = VoxelStaticBuffer.Contains(source.Base);
+	if (voxel && ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
+		return(-1);
+	}
+	if (_AtlasStale) {
+		return(-1);
+	}
+	auto found = _AtlasImages.find(source.Base);
+	if (found != _AtlasImages.end()) {
+		AtlasImage & image = found->second;
+		if (image.Kept == NO_KEPT || image.Checked == _AtlasPass) {
+			return(image.Offset);
+		}
+		if (image.Width == source.Width && image.Height == source.Height && Rows_Match(source, image)) {
+			image.Checked = _AtlasPass;
+			return(image.Offset);
+		}
+		_AtlasImages.erase(found);
+	}
+	std::size_t const size = (std::size_t)source.Width * source.Height;
+	// A full atlas is emptied at the next pass; until then images are copied into the arena.
+	if (_Atlas.Bytes.size() + size > GPU_ATLAS_BYTES) {
+		_AtlasStale = true;
+		return(-1);
+	}
+	std::uint32_t const offset = (std::uint32_t)_Atlas.Bytes.size();
+	_Atlas.Bytes.resize(_Atlas.Bytes.size() + size);
+	std::size_t const compressed = Decode_Image(source, &_Atlas.Bytes[offset]);
+	AtlasImage image = { offset, source.Width, source.Height, NO_KEPT, _AtlasPass };
+	if (!voxel) {
+		image.Kept = (std::uint32_t)_AtlasKept.size();
+		_AtlasKept.insert(_AtlasKept.end(), (unsigned char const *)source.Base, (unsigned char const *)source.Base + compressed);
+	}
+	_AtlasImages.emplace(source.Base, image);
 	return(offset);
 }
 
@@ -176,11 +232,17 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 		_List.Unsupported++;
 		return(false);
 	}
-	// A cached voxel image is read from the atlas at the clipped corner, so no pixels are copied.
-	std::int64_t const image = zshape == NULL ? Atlas_Image() : -1;
+	// A cached image is read from the atlas at the clipped corner, so no colour indices are copied.
+	std::int64_t const image = Atlas_Image();
 	if (image >= 0) {
 		BlitRecordSource const & source = Blit_Record_Source;
-		Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zdenominator, zwrap, alpha, image + (std::int64_t)source.Top * source.Width + leftmargin, source.Width);
+		GpuBlit & atlased = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha, image + (std::int64_t)source.Top * source.Width + leftmargin, source.Width);
+		if (zshape != NULL) {
+			atlased.ZShape = (std::int32_t)_List.ZShapeArena.size();
+			for (int r = 0; r < height; r++) {
+				_List.ZShapeArena.insert(_List.ZShapeArena.end(), zshape + r * zshapepitch, zshape + r * zshapepitch + width);
+			}
+		}
 		_LockedBlits++;
 		return(_Render);
 	}
@@ -976,12 +1038,19 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 void GpuDraw_Begin(Surface & target, Rect const & area, bool render)
 {
 	GpuMap_Drop();
-	if (_AtlasStale || ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
+	_AtlasPass++;
+	if (_AtlasStale) {
 		_Atlas.Bytes.clear();
+		_AtlasKept.clear();
 		_AtlasImages.clear();
 		_Atlas.Epoch++;
-		_AtlasGeneration = ObjectTypeClass::VoxelIndexGeneration;
 		_AtlasStale = false;
+	}
+	if (ObjectTypeClass::VoxelIndexGeneration != _AtlasGeneration) {
+		for (auto it = _AtlasImages.begin(); it != _AtlasImages.end();) {
+			it = it->second.Kept == NO_KEPT ? _AtlasImages.erase(it) : std::next(it);
+		}
+		_AtlasGeneration = ObjectTypeClass::VoxelIndexGeneration;
 	}
 	_List.Blits.clear();
 	_List.PixelArena.clear();
