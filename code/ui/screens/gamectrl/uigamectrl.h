@@ -46,6 +46,7 @@ class UIGameControlsServiceClass
 		virtual void Set_Sidebar_Sorting(bool on) = 0;
 		virtual void Set_Autosave_Interval(int frames) = 0;
 		virtual void Set_Debug_Mode(bool on) = 0;
+		virtual void Set_Record_Replays(bool on) = 0;
 		virtual void Save(void) = 0;
 };
 
@@ -77,6 +78,7 @@ struct UIGameControlsState
 	bool AircraftBodyPick = true;
 	bool SidebarSorting = false;
 	bool DebugMode = false;
+	bool RecordReplays = false;
 	std::vector<UIGameControlsChoice> Autosaves;
 	int Autosave = 0;
 
@@ -128,6 +130,7 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		bool InitialSidebarSorting;
 		int InitialAutosave;
 		bool InitialDebugMode;
+		bool InitialRecordReplays;
 };
 
 

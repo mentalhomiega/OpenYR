@@ -43,7 +43,8 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 	InitialAircraftBodyPick(State.AircraftBodyPick),
 	InitialSidebarSorting(State.SidebarSorting),
 	InitialAutosave(State.Autosave),
-	InitialDebugMode(State.DebugMode)
+	InitialDebugMode(State.DebugMode),
+	InitialRecordReplays(State.RecordReplays)
 {
 	Update_Names();
 }
@@ -83,6 +84,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.SidebarSorting = (intent.Value != 0);
 	} else if (intent.Name == "debugmode") {
 		State.DebugMode = (intent.Value != 0);
+	} else if (intent.Name == "replays") {
+		State.RecordReplays = (intent.Value != 0);
 	} else if (intent.Name == "autosave") {
 		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
 	} else if (intent.Name == "ok") {
@@ -115,6 +118,7 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		State.SimulateUnfocused = false;
 		State.SidebarSorting = true;
 		State.DebugMode = false;
+		State.RecordReplays = false;
 		for (int index = 0; index < (int)State.Autosaves.size(); index++) {
 			if (State.Autosaves[index].Value == 10800) {	// Options.AutoSaveInterval's default, in frames
 				State.Autosave = index;
@@ -166,6 +170,9 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.DebugMode != InitialDebugMode) {
 		Service.Set_Debug_Mode(State.DebugMode);
 	}
+	if (State.RecordReplays != InitialRecordReplays) {
+		Service.Set_Record_Replays(State.RecordReplays);
+	}
 	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
 	}
@@ -215,6 +222,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("background");
 			Model.DirtyVariable("sorting");
 			Model.DirtyVariable("debugmode");
+			Model.DirtyVariable("replays");
 			Model.DirtyVariable("autosave");
 		}
 
@@ -255,6 +263,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 				&& model.Bind("background", &state.SimulateUnfocused)
 				&& model.Bind("sorting", &state.SidebarSorting)
 				&& model.Bind("debugmode", &state.DebugMode)
+				&& model.Bind("replays", &state.RecordReplays)
 				&& model.Bind("autosaves", &state.Autosaves)
 				&& model.Bind("autosave", &state.Autosave));
 		}

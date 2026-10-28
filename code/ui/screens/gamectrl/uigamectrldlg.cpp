@@ -20,6 +20,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "queue.h"
+#include "replay.h"
 #include "savemgr.h"
 #include "session.h"
 #include "spawner.h"
@@ -138,6 +139,11 @@ class UIGameControlsEngineServiceClass : public UIGameControlsServiceClass
 			Debug_Mode_Set(on);
 		}
 
+		virtual void Set_Record_Replays(bool on) override
+		{
+			Replay_Set_Recording(on);
+		}
+
 		virtual void Set_Autosave_Interval(int frames) override
 		{
 			Options.AutoSaveInterval = frames;
@@ -209,6 +215,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.AircraftBodyPick = Options.AircraftBodyPick;
 	state.SidebarSorting = Options.SidebarSorting;
 	state.DebugMode = Options.DebugMode;
+	state.RecordReplays = Replay_Is_Recording_Enabled();
 
 	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;

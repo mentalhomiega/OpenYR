@@ -1735,6 +1735,7 @@ class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
 		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
 		virtual void Set_Alt_To_Rally(bool on) override { Calls.push_back(on ? "rally on" : "rally off"); }
 		virtual void Set_Simulate_Unfocused(bool on) override { Calls.push_back(on ? "background on" : "background off"); }
+		virtual void Set_Record_Replays(bool on) override { Calls.push_back(on ? "replays on" : "replays off"); }
 		virtual void Set_Aircraft_Body_Pick(bool on) override { Calls.push_back(on ? "airpick on" : "airpick off"); }
 		virtual void Set_Sidebar_Sorting(bool on) override { Calls.push_back(on ? "sorting on" : "sorting off"); }
 		virtual void Set_Autosave_Interval(int frames) override { Calls.push_back("autosave " + std::to_string(frames)); }
