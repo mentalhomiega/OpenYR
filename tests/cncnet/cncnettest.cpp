@@ -46,6 +46,7 @@
 #include <map>
 #include <optional>
 #include <random>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -480,7 +481,14 @@ void Test_Room_Encoding(void)
 	std::map<std::string, std::string> const options{{"Map", "Lake; North=1|2,%"}, {"Credits", "10000"}, {"Line", "a\r\nb"}};
 	std::string const encoded = CnCNetRoomClass::Encode_Map(options);
 	Check(encoded.find_first_of("\r\n|,") == std::string::npos, "room encoding: separators and line breaks are escaped");
-	Check(CnCNetRoomClass::Decode_Map(encoded) == options, "room encoding: options survive a round trip");
+	std::map<std::string, std::string> const decoded_options = CnCNetRoomClass::Decode_Map(encoded);
+	Check(decoded_options.at("Map") == options.at("Map") && decoded_options.at("Credits") == "10000",
+		"room encoding: options survive a round trip");
+	Check(decoded_options.at("Line").find_first_of(std::string("\r\n\0", 3)) == std::string::npos && decoded_options.at("Line") == "ab",
+		"room encoding: a line break in a value cannot survive decoding");
+	Check(CnCNetRoomClass::Decode_Map("Map=x.map%0ALoadSaveGame=yes%0D%00%7F;Other=a%0Ab").at("Map") == "x.mapLoadSaveGame=yes"
+		&& CnCNetRoomClass::Decode_Map("K%0AInjected=1=v").count("KInjected") == 1,
+		"room encoding: escaped control characters are dropped from keys and values");
 
 	std::vector<CnCNetRoomPlayerType> players(2);
 	players[0].Name = "Host";
@@ -940,6 +948,29 @@ void Test_Spawn(void)
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, false), "TimingPolicy=Gamemd\n"), "spawn: gamemd timing when asked");
 	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
 	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
+
+	std::map<std::string, std::string> const hostile = {{"Map", "x.map\nLoadSaveGame=yes\r\n[GlobalFlags]"}, {"MapName", "a\r\nSyncLog=yes"},
+		{"Credits", "5000\nBindAddress=1.2.3.4"}, {"GameSpeed", std::string("2\0\nCampaignID=1", 15)}, {"Extra", "1"}};
+	std::string const clean_ini = CnCNet_Spawn_Ini(match, hostile, "guest", 40000);
+	std::set<std::string> keys;
+	std::size_t line_start = 0;
+	bool lines_ok = true;
+	while (line_start < clean_ini.size()) {
+		std::size_t const end = clean_ini.find('\n', line_start);
+		std::string const row = clean_ini.substr(line_start, end - line_start);
+		line_start = end + 1;
+		if (!row.empty() && row[0] != '[') {
+			keys.insert(row.substr(0, row.find('=')));
+		}
+		lines_ok = lines_ok && row.find('\r') == std::string::npos && row.find('\0') == std::string::npos;
+	}
+	Check(lines_ok && keys.count("LoadSaveGame") == 0 && keys.count("SyncLog") == 0 && keys.count("BindAddress") == 0 && keys.count("CampaignID") == 0
+		&& keys.count("Extra") == 0 && !Has(clean_ini, "\n[GlobalFlags]"), "spawn: values from a peer cannot add a line, a key or a section");
+	Check(Has(clean_ini, "Credits=5000\n") && Has(clean_ini, "GameSpeed=2\n"), "spawn: numeric options are written as numbers");
+
+	std::map<std::string, std::string> bad_info = CnCNet_Match_Info(match);
+	bad_info["Names"] = "Host,gu\nest";
+	Check(!CnCNet_Read_Match(bad_info, read), "spawn: a seat name with a line break is refused");
 
 	CnCNetRoomPlayerType watcher;
 	watcher.Name = "Watcher";

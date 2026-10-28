@@ -56,20 +56,27 @@ int Hex_Digit(char ch)
 }
 
 
+// Control characters never survive unescaping: a value that reaches a text file cannot add a line to it.
 std::string Unescape(std::string_view text)
 {
 	std::string plain;
+	auto const push = [&plain](char ch) {
+		unsigned char const byte = static_cast<unsigned char>(ch);
+		if (byte >= 0x20 && byte != 0x7F) {
+			plain.push_back(ch);
+		}
+	};
 	for (std::size_t index = 0; index < text.size(); ++index) {
 		if (text[index] == '%' && index + 2 < text.size()) {
 			int const high = Hex_Digit(text[index + 1]);
 			int const low = Hex_Digit(text[index + 2]);
 			if (high >= 0 && low >= 0) {
-				plain.push_back(static_cast<char>(high * 16 + low));
+				push(static_cast<char>(high * 16 + low));
 				index += 2;
 				continue;
 			}
 		}
-		plain.push_back(text[index]);
+		push(text[index]);
 	}
 	return(plain);
 }

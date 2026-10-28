@@ -15,6 +15,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <set>
+#include <string_view>
 
 
 namespace {
@@ -60,6 +61,26 @@ std::string Option(std::map<std::string, std::string> const & options, char cons
 {
 	auto const found = options.find(key);
 	return(found == options.end() || found->second.empty() ? std::string(fallback) : found->second);
+}
+
+
+std::string Number_Option(std::map<std::string, std::string> const & options, char const * key, int fallback)
+{
+	auto const found = options.find(key);
+	return(std::to_string(found == options.end() ? fallback : std::atoi(found->second.c_str())));
+}
+
+
+std::string Without_Controls(std::string_view text)
+{
+	std::string clean;
+	for (char ch : text) {
+		unsigned char const byte = static_cast<unsigned char>(ch);
+		if (byte >= 0x20 && byte != 0x7F) {
+			clean.push_back(ch);
+		}
+	}
+	return(clean);
 }
 
 
@@ -189,7 +210,7 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 		seat.Start = std::atoi(starts[index].c_str());
 		seat.Team = std::atoi(teams[index].c_str());
 		seat.TunnelId = static_cast<uint32_t>(std::strtoul(ids[index].c_str(), nullptr, 10));
-		if (seat.Name.empty() || seat.TunnelId == 0 || seat.TunnelId > 65535) {
+		if (seat.Name.empty() || Without_Controls(seat.Name) != seat.Name || seat.TunnelId == 0 || seat.TunnelId > 65535) {
 			return(false);
 		}
 		match.Seats.push_back(seat);
@@ -219,7 +240,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	}
 
 	std::string ini = "[Settings]\n";
-	auto const line = [&ini](std::string const & key, std::string const & value) { ini += key + "=" + value + "\n"; };
+	auto const line = [&ini](std::string const & key, std::string const & value) { ini += Without_Controls(key) + "=" + Without_Controls(value) + "\n"; };
 	line("Name", own->Name);
 	line("Scenario", Option(options, "Map", ""));
 	line("UIMapName", Option(options, "MapName", ""));
@@ -236,12 +257,12 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	// Only the host's choice counts, since the host sets the timing for every player.
 	line("TimingPolicy", adaptive_timing ? "Adaptive" : "Gamemd");
 	line("GameID", "1");
-	line("Credits", Option(options, "Credits", "10000"));
-	line("UnitCount", Option(options, "UnitCount", "10"));
-	line("TechLevel", Option(options, "TechLevel", "10"));
-	line("GameSpeed", Option(options, "GameSpeed", "0"));
-	line("AIPlayers", Option(options, "AIPlayers", "0"));
-	line("AIDifficulty", Option(options, "AIDifficulty", "1"));
+	line("Credits", Number_Option(options, "Credits", 10000));
+	line("UnitCount", Number_Option(options, "UnitCount", 10));
+	line("TechLevel", Number_Option(options, "TechLevel", 10));
+	line("GameSpeed", Number_Option(options, "GameSpeed", 0));
+	line("AIPlayers", Number_Option(options, "AIPlayers", 0));
+	line("AIDifficulty", Number_Option(options, "AIDifficulty", 1));
 	line("Bases", Yes_No(options, "Bases", true));
 	line("ShortGame", Yes_No(options, "ShortGame", false));
 	line("Crates", Yes_No(options, "Crates", false));
