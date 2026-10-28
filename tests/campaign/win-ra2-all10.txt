@@ -1,0 +1,286 @@
+; Campaign win check for Allied 10 (Red Alert 2). Twenty-eight Prism tanks, twenty-one Grizzly tanks and twenty-one Mirage tanks (grantunit)
+; stand in for the army a player would build from the base; everything after is an order.
+; One group drives to each German base. The Soviet waves level the German bases (their ammunition dumps blow up when attacked),
+; and the Soviet houses send MCVs to build there; from frame 2600 every order attacks the enemy object nearest to 111,50 (strikeobj *),
+; which clears the waves, the MCVs and the new bases. The win needs the three Soviet houses (BadGuy1 to 3) with nothing left.
+; Expected: "AUTOTEST game over frame N: won" (frame 8501 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all10.txt -Campaign -Map ALL10S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit SREF 126 110
+11 grantunit SREF 128 110
+12 grantunit SREF 130 110
+13 grantunit SREF 132 110
+14 grantunit SREF 134 110
+15 grantunit SREF 136 110
+16 grantunit SREF 138 110
+17 grantunit SREF 126 112
+18 grantunit SREF 128 112
+19 grantunit SREF 130 112
+20 grantunit SREF 132 112
+21 grantunit SREF 134 112
+22 grantunit SREF 136 112
+23 grantunit SREF 138 112
+24 grantunit SREF 126 114
+25 grantunit SREF 128 114
+26 grantunit SREF 130 114
+27 grantunit SREF 132 114
+28 grantunit SREF 134 114
+29 grantunit SREF 136 114
+30 grantunit SREF 138 114
+31 grantunit SREF 126 116
+32 grantunit SREF 128 116
+33 grantunit SREF 130 116
+34 grantunit SREF 132 116
+35 grantunit SREF 134 116
+36 grantunit SREF 136 116
+37 grantunit SREF 138 116
+38 grantunit MTNK 126 118
+39 grantunit MTNK 128 118
+40 grantunit MTNK 130 118
+41 grantunit MTNK 132 118
+42 grantunit MTNK 134 118
+43 grantunit MTNK 136 118
+44 grantunit MTNK 138 118
+45 grantunit MTNK 126 120
+46 grantunit MTNK 128 120
+47 grantunit MTNK 130 120
+48 grantunit MTNK 132 120
+49 grantunit MTNK 134 120
+50 grantunit MTNK 136 120
+51 grantunit MTNK 138 120
+52 grantunit MTNK 126 122
+53 grantunit MTNK 128 122
+54 grantunit MTNK 130 122
+55 grantunit MTNK 132 122
+56 grantunit MTNK 134 122
+57 grantunit MTNK 136 122
+58 grantunit MTNK 138 122
+59 grantunit MGTK 126 124
+60 grantunit MGTK 128 124
+61 grantunit MGTK 130 124
+62 grantunit MGTK 132 124
+63 grantunit MGTK 134 124
+64 grantunit MGTK 136 124
+65 grantunit MGTK 138 124
+66 grantunit MGTK 126 126
+67 grantunit MGTK 128 126
+68 grantunit MGTK 130 126
+69 grantunit MGTK 132 126
+70 grantunit MGTK 134 126
+71 grantunit MGTK 136 126
+72 grantunit MGTK 138 126
+73 grantunit MGTK 126 128
+74 grantunit MGTK 128 128
+75 grantunit MGTK 130 128
+76 grantunit MGTK 132 128
+77 grantunit MGTK 134 128
+78 grantunit MGTK 136 128
+79 grantunit MGTK 138 128
+100 move SREF 82 66
+101 move MTNK 111 50
+102 move MGTK 145 82
+2600 strikeobj * 111 50 200 all
+2700 strikeobj * 111 50 200 all
+2800 strikeobj * 111 50 200 all
+2900 strikeobj * 111 50 200 all
+3000 strikeobj * 111 50 200 all
+3000 counts BadGuy1
+3000 counts BadGuy2
+3000 counts BadGuy3
+3100 strikeobj * 111 50 200 all
+3200 strikeobj * 111 50 200 all
+3300 strikeobj * 111 50 200 all
+3400 strikeobj * 111 50 200 all
+3500 strikeobj * 111 50 200 all
+3600 strikeobj * 111 50 200 all
+3700 strikeobj * 111 50 200 all
+3800 strikeobj * 111 50 200 all
+3900 strikeobj * 111 50 200 all
+4000 strikeobj * 111 50 200 all
+4100 strikeobj * 111 50 200 all
+4200 strikeobj * 111 50 200 all
+4300 strikeobj * 111 50 200 all
+4400 strikeobj * 111 50 200 all
+4500 strikeobj * 111 50 200 all
+4600 strikeobj * 111 50 200 all
+4700 strikeobj * 111 50 200 all
+4800 strikeobj * 111 50 200 all
+4900 strikeobj * 111 50 200 all
+5000 strikeobj * 111 50 200 all
+5100 strikeobj * 111 50 200 all
+5200 strikeobj * 111 50 200 all
+5300 strikeobj * 111 50 200 all
+5400 strikeobj * 111 50 200 all
+5500 strikeobj * 111 50 200 all
+5600 strikeobj * 111 50 200 all
+5700 strikeobj * 111 50 200 all
+5800 strikeobj * 111 50 200 all
+5900 strikeobj * 111 50 200 all
+6000 strikeobj * 111 50 200 all
+6000 counts BadGuy1
+6000 counts BadGuy2
+6000 counts BadGuy3
+6100 strikeobj * 111 50 200 all
+6200 strikeobj * 111 50 200 all
+6300 strikeobj * 111 50 200 all
+6400 strikeobj * 111 50 200 all
+6500 strikeobj * 111 50 200 all
+6600 strikeobj * 111 50 200 all
+6700 strikeobj * 111 50 200 all
+6800 strikeobj * 111 50 200 all
+6900 strikeobj * 111 50 200 all
+7000 strikeobj * 111 50 200 all
+7100 strikeobj * 111 50 200 all
+7200 strikeobj * 111 50 200 all
+7300 strikeobj * 111 50 200 all
+7400 strikeobj * 111 50 200 all
+7500 strikeobj * 111 50 200 all
+7600 strikeobj * 111 50 200 all
+7700 strikeobj * 111 50 200 all
+7800 strikeobj * 111 50 200 all
+7900 strikeobj * 111 50 200 all
+8000 strikeobj * 111 50 200 all
+8100 strikeobj * 111 50 200 all
+8200 strikeobj * 111 50 200 all
+8300 strikeobj * 111 50 200 all
+8400 strikeobj * 111 50 200 all
+8500 strikeobj * 111 50 200 all
+8600 strikeobj * 111 50 200 all
+8700 strikeobj * 111 50 200 all
+8800 strikeobj * 111 50 200 all
+8900 strikeobj * 111 50 200 all
+9000 strikeobj * 111 50 200 all
+9000 counts BadGuy1
+9000 counts BadGuy2
+9000 counts BadGuy3
+9100 strikeobj * 111 50 200 all
+9200 strikeobj * 111 50 200 all
+9300 strikeobj * 111 50 200 all
+9400 strikeobj * 111 50 200 all
+9500 strikeobj * 111 50 200 all
+9600 strikeobj * 111 50 200 all
+9700 strikeobj * 111 50 200 all
+9800 strikeobj * 111 50 200 all
+9900 strikeobj * 111 50 200 all
+10000 strikeobj * 111 50 200 all
+10100 strikeobj * 111 50 200 all
+10200 strikeobj * 111 50 200 all
+10300 strikeobj * 111 50 200 all
+10400 strikeobj * 111 50 200 all
+10500 strikeobj * 111 50 200 all
+10600 strikeobj * 111 50 200 all
+10700 strikeobj * 111 50 200 all
+10800 strikeobj * 111 50 200 all
+10900 strikeobj * 111 50 200 all
+11000 strikeobj * 111 50 200 all
+11100 strikeobj * 111 50 200 all
+11200 strikeobj * 111 50 200 all
+11300 strikeobj * 111 50 200 all
+11400 strikeobj * 111 50 200 all
+11500 strikeobj * 111 50 200 all
+11600 strikeobj * 111 50 200 all
+11700 strikeobj * 111 50 200 all
+11800 strikeobj * 111 50 200 all
+11900 strikeobj * 111 50 200 all
+12000 strikeobj * 111 50 200 all
+12000 counts BadGuy1
+12000 counts BadGuy2
+12000 counts BadGuy3
+12100 strikeobj * 111 50 200 all
+12200 strikeobj * 111 50 200 all
+12300 strikeobj * 111 50 200 all
+12400 strikeobj * 111 50 200 all
+12500 strikeobj * 111 50 200 all
+12600 strikeobj * 111 50 200 all
+12700 strikeobj * 111 50 200 all
+12800 strikeobj * 111 50 200 all
+12900 strikeobj * 111 50 200 all
+13000 strikeobj * 111 50 200 all
+13100 strikeobj * 111 50 200 all
+13200 strikeobj * 111 50 200 all
+13300 strikeobj * 111 50 200 all
+13400 strikeobj * 111 50 200 all
+13500 strikeobj * 111 50 200 all
+13600 strikeobj * 111 50 200 all
+13700 strikeobj * 111 50 200 all
+13800 strikeobj * 111 50 200 all
+13900 strikeobj * 111 50 200 all
+14000 strikeobj * 111 50 200 all
+14100 strikeobj * 111 50 200 all
+14200 strikeobj * 111 50 200 all
+14300 strikeobj * 111 50 200 all
+14400 strikeobj * 111 50 200 all
+14500 strikeobj * 111 50 200 all
+14600 strikeobj * 111 50 200 all
+14700 strikeobj * 111 50 200 all
+14800 strikeobj * 111 50 200 all
+14900 strikeobj * 111 50 200 all
+15000 strikeobj * 111 50 200 all
+15000 counts BadGuy1
+15000 counts BadGuy2
+15000 counts BadGuy3
+15100 strikeobj * 111 50 200 all
+15200 strikeobj * 111 50 200 all
+15300 strikeobj * 111 50 200 all
+15400 strikeobj * 111 50 200 all
+15500 strikeobj * 111 50 200 all
+15600 strikeobj * 111 50 200 all
+15700 strikeobj * 111 50 200 all
+15800 strikeobj * 111 50 200 all
+15900 strikeobj * 111 50 200 all
+16000 strikeobj * 111 50 200 all
+16100 strikeobj * 111 50 200 all
+16200 strikeobj * 111 50 200 all
+16300 strikeobj * 111 50 200 all
+16400 strikeobj * 111 50 200 all
+16500 strikeobj * 111 50 200 all
+16600 strikeobj * 111 50 200 all
+16700 strikeobj * 111 50 200 all
+16800 strikeobj * 111 50 200 all
+16900 strikeobj * 111 50 200 all
+17000 strikeobj * 111 50 200 all
+17100 strikeobj * 111 50 200 all
+17200 strikeobj * 111 50 200 all
+17300 strikeobj * 111 50 200 all
+17400 strikeobj * 111 50 200 all
+17500 strikeobj * 111 50 200 all
+17600 strikeobj * 111 50 200 all
+17700 strikeobj * 111 50 200 all
+17800 strikeobj * 111 50 200 all
+17900 strikeobj * 111 50 200 all
+18000 strikeobj * 111 50 200 all
+18000 counts BadGuy1
+18000 counts BadGuy2
+18000 counts BadGuy3
+18100 strikeobj * 111 50 200 all
+18200 strikeobj * 111 50 200 all
+18300 strikeobj * 111 50 200 all
+18400 strikeobj * 111 50 200 all
+18500 strikeobj * 111 50 200 all
+18600 strikeobj * 111 50 200 all
+18700 strikeobj * 111 50 200 all
+18800 strikeobj * 111 50 200 all
+18900 strikeobj * 111 50 200 all
+19000 strikeobj * 111 50 200 all
+19100 strikeobj * 111 50 200 all
+19200 strikeobj * 111 50 200 all
+19300 strikeobj * 111 50 200 all
+19400 strikeobj * 111 50 200 all
+19500 strikeobj * 111 50 200 all
+19600 strikeobj * 111 50 200 all
+19700 strikeobj * 111 50 200 all
+19800 strikeobj * 111 50 200 all
+19900 strikeobj * 111 50 200 all
+20000 strikeobj * 111 50 200 all

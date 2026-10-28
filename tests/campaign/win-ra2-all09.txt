@@ -1,0 +1,265 @@
+; Campaign win check for Allied 9 (Red Alert 2). Thirty-five Prism tanks and thirty-five Grizzly tanks (grantunit) stand in for the army
+; a player would gather after the SEALs land; they are placed on the land west of the landing zone (the cells to the east are water).
+; Until frame 2000 every order attacks the enemy object nearest to the Soviet village at 58,76 (strikeobj *); then the one nearest
+; to 80,105, which works through the Soviet base and the two Mayan Prism Pyramids. The map makes the pyramids (MAYAN) significant,
+; so "_Win" needs them gone as well as every BadGuy1 structure.
+; Expected: "AUTOTEST game over frame N: won" (frame 7869 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all09.txt -Campaign -Map ALL09T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 400 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit SREF 54 44
+11 grantunit SREF 56 44
+12 grantunit SREF 58 44
+13 grantunit SREF 60 44
+14 grantunit SREF 62 44
+15 grantunit SREF 64 44
+16 grantunit SREF 66 44
+17 grantunit SREF 54 46
+18 grantunit SREF 56 46
+19 grantunit SREF 58 46
+20 grantunit SREF 60 46
+21 grantunit SREF 62 46
+22 grantunit SREF 64 46
+23 grantunit SREF 66 46
+24 grantunit SREF 54 48
+25 grantunit SREF 56 48
+26 grantunit SREF 58 48
+27 grantunit SREF 60 48
+28 grantunit SREF 62 48
+29 grantunit SREF 64 48
+30 grantunit SREF 66 48
+31 grantunit SREF 54 50
+32 grantunit SREF 56 50
+33 grantunit SREF 58 50
+34 grantunit SREF 60 50
+35 grantunit SREF 62 50
+36 grantunit SREF 64 50
+37 grantunit SREF 66 50
+38 grantunit SREF 54 52
+39 grantunit SREF 56 52
+40 grantunit SREF 58 52
+41 grantunit SREF 60 52
+42 grantunit SREF 62 52
+43 grantunit SREF 64 52
+44 grantunit SREF 66 52
+45 grantunit MTNK 54 54
+46 grantunit MTNK 56 54
+47 grantunit MTNK 58 54
+48 grantunit MTNK 60 54
+49 grantunit MTNK 62 54
+50 grantunit MTNK 64 54
+51 grantunit MTNK 66 54
+52 grantunit MTNK 54 56
+53 grantunit MTNK 56 56
+54 grantunit MTNK 58 56
+55 grantunit MTNK 60 56
+56 grantunit MTNK 62 56
+57 grantunit MTNK 64 56
+58 grantunit MTNK 66 56
+59 grantunit MTNK 54 58
+60 grantunit MTNK 56 58
+61 grantunit MTNK 58 58
+62 grantunit MTNK 60 58
+63 grantunit MTNK 62 58
+64 grantunit MTNK 64 58
+65 grantunit MTNK 66 58
+66 grantunit MTNK 54 60
+67 grantunit MTNK 56 60
+68 grantunit MTNK 58 60
+69 grantunit MTNK 60 60
+70 grantunit MTNK 62 60
+71 grantunit MTNK 64 60
+72 grantunit MTNK 66 60
+73 grantunit MTNK 54 62
+74 grantunit MTNK 56 62
+75 grantunit MTNK 58 62
+76 grantunit MTNK 60 62
+77 grantunit MTNK 62 62
+78 grantunit MTNK 64 62
+79 grantunit MTNK 66 62
+200 strikeobj * 58 76 18 all
+300 strikeobj * 58 76 18 all
+400 strikeobj * 58 76 18 all
+500 strikeobj * 58 76 18 all
+600 strikeobj * 58 76 18 all
+700 strikeobj * 58 76 18 all
+800 strikeobj * 58 76 18 all
+900 strikeobj * 58 76 18 all
+1000 strikeobj * 58 76 18 all
+1100 strikeobj * 58 76 18 all
+1200 strikeobj * 58 76 18 all
+1300 strikeobj * 58 76 18 all
+1400 strikeobj * 58 76 18 all
+1500 strikeobj * 58 76 18 all
+1600 strikeobj * 58 76 18 all
+1700 strikeobj * 58 76 18 all
+1800 strikeobj * 58 76 18 all
+1900 strikeobj * 58 76 18 all
+2000 strikeobj * 58 76 18 all
+2000 counts BadGuy1
+2000 counts Balabos
+2100 strikeobj * 80 105 80 all
+2200 strikeobj * 80 105 80 all
+2300 strikeobj * 80 105 80 all
+2400 strikeobj * 80 105 80 all
+2500 strikeobj * 80 105 80 all
+2600 strikeobj * 80 105 80 all
+2700 strikeobj * 80 105 80 all
+2800 strikeobj * 80 105 80 all
+2900 strikeobj * 80 105 80 all
+3000 strikeobj * 80 105 80 all
+3100 strikeobj * 80 105 80 all
+3200 strikeobj * 80 105 80 all
+3300 strikeobj * 80 105 80 all
+3400 strikeobj * 80 105 80 all
+3500 strikeobj * 80 105 80 all
+3600 strikeobj * 80 105 80 all
+3700 strikeobj * 80 105 80 all
+3800 strikeobj * 80 105 80 all
+3900 strikeobj * 80 105 80 all
+4000 strikeobj * 80 105 80 all
+4000 counts BadGuy1
+4000 counts Balabos
+4100 strikeobj * 80 105 80 all
+4200 strikeobj * 80 105 80 all
+4300 strikeobj * 80 105 80 all
+4400 strikeobj * 80 105 80 all
+4500 strikeobj * 80 105 80 all
+4600 strikeobj * 80 105 80 all
+4700 strikeobj * 80 105 80 all
+4800 strikeobj * 80 105 80 all
+4900 strikeobj * 80 105 80 all
+5000 strikeobj * 80 105 80 all
+5100 strikeobj * 80 105 80 all
+5200 strikeobj * 80 105 80 all
+5300 strikeobj * 80 105 80 all
+5400 strikeobj * 80 105 80 all
+5500 strikeobj * 80 105 80 all
+5600 strikeobj * 80 105 80 all
+5700 strikeobj * 80 105 80 all
+5800 strikeobj * 80 105 80 all
+5900 strikeobj * 80 105 80 all
+6000 strikeobj * 80 105 80 all
+6000 counts BadGuy1
+6000 counts Balabos
+6100 strikeobj * 80 105 80 all
+6200 strikeobj * 80 105 80 all
+6300 strikeobj * 80 105 80 all
+6400 strikeobj * 80 105 80 all
+6500 strikeobj * 80 105 80 all
+6600 strikeobj * 80 105 80 all
+6700 strikeobj * 80 105 80 all
+6800 strikeobj * 80 105 80 all
+6900 strikeobj * 80 105 80 all
+7000 strikeobj * 80 105 80 all
+7100 strikeobj * 80 105 80 all
+7200 strikeobj * 80 105 80 all
+7300 strikeobj * 80 105 80 all
+7400 strikeobj * 80 105 80 all
+7500 strikeobj * 80 105 80 all
+7600 strikeobj * 80 105 80 all
+7700 strikeobj * 80 105 80 all
+7800 strikeobj * 80 105 80 all
+7900 strikeobj * 80 105 80 all
+8000 strikeobj * 80 105 80 all
+8000 counts BadGuy1
+8000 counts Balabos
+8100 strikeobj * 80 105 80 all
+8200 strikeobj * 80 105 80 all
+8300 strikeobj * 80 105 80 all
+8400 strikeobj * 80 105 80 all
+8500 strikeobj * 80 105 80 all
+8600 strikeobj * 80 105 80 all
+8700 strikeobj * 80 105 80 all
+8800 strikeobj * 80 105 80 all
+8900 strikeobj * 80 105 80 all
+9000 strikeobj * 80 105 80 all
+9100 strikeobj * 80 105 80 all
+9200 strikeobj * 80 105 80 all
+9300 strikeobj * 80 105 80 all
+9400 strikeobj * 80 105 80 all
+9500 strikeobj * 80 105 80 all
+9600 strikeobj * 80 105 80 all
+9700 strikeobj * 80 105 80 all
+9800 strikeobj * 80 105 80 all
+9900 strikeobj * 80 105 80 all
+10000 strikeobj * 80 105 80 all
+10000 counts BadGuy1
+10000 counts Balabos
+10100 strikeobj * 80 105 80 all
+10200 strikeobj * 80 105 80 all
+10300 strikeobj * 80 105 80 all
+10400 strikeobj * 80 105 80 all
+10500 strikeobj * 80 105 80 all
+10600 strikeobj * 80 105 80 all
+10700 strikeobj * 80 105 80 all
+10800 strikeobj * 80 105 80 all
+10900 strikeobj * 80 105 80 all
+11000 strikeobj * 80 105 80 all
+11100 strikeobj * 80 105 80 all
+11200 strikeobj * 80 105 80 all
+11300 strikeobj * 80 105 80 all
+11400 strikeobj * 80 105 80 all
+11500 strikeobj * 80 105 80 all
+11600 strikeobj * 80 105 80 all
+11700 strikeobj * 80 105 80 all
+11800 strikeobj * 80 105 80 all
+11900 strikeobj * 80 105 80 all
+12000 strikeobj * 80 105 80 all
+12000 counts BadGuy1
+12000 counts Balabos
+12100 strikeobj * 80 105 80 all
+12200 strikeobj * 80 105 80 all
+12300 strikeobj * 80 105 80 all
+12400 strikeobj * 80 105 80 all
+12500 strikeobj * 80 105 80 all
+12600 strikeobj * 80 105 80 all
+12700 strikeobj * 80 105 80 all
+12800 strikeobj * 80 105 80 all
+12900 strikeobj * 80 105 80 all
+13000 strikeobj * 80 105 80 all
+13100 strikeobj * 80 105 80 all
+13200 strikeobj * 80 105 80 all
+13300 strikeobj * 80 105 80 all
+13400 strikeobj * 80 105 80 all
+13500 strikeobj * 80 105 80 all
+13600 strikeobj * 80 105 80 all
+13700 strikeobj * 80 105 80 all
+13800 strikeobj * 80 105 80 all
+13900 strikeobj * 80 105 80 all
+14000 strikeobj * 80 105 80 all
+14000 counts BadGuy1
+14000 counts Balabos
+14100 strikeobj * 80 105 80 all
+14200 strikeobj * 80 105 80 all
+14300 strikeobj * 80 105 80 all
+14400 strikeobj * 80 105 80 all
+14500 strikeobj * 80 105 80 all
+14600 strikeobj * 80 105 80 all
+14700 strikeobj * 80 105 80 all
+14800 strikeobj * 80 105 80 all
+14900 strikeobj * 80 105 80 all
+15000 strikeobj * 80 105 80 all
+15100 strikeobj * 80 105 80 all
+15200 strikeobj * 80 105 80 all
+15300 strikeobj * 80 105 80 all
+15400 strikeobj * 80 105 80 all
+15500 strikeobj * 80 105 80 all
+15600 strikeobj * 80 105 80 all
+15700 strikeobj * 80 105 80 all
+15800 strikeobj * 80 105 80 all
+15900 strikeobj * 80 105 80 all
+16000 strikeobj * 80 105 80 all
+16000 counts BadGuy1
+16000 counts Balabos
