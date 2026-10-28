@@ -64,6 +64,9 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 
+		virtual bool In_Air(void) const override;
+		virtual bool On_Ground(void) const override;
+
 
 		/*
 		 * IFlyControl methods.

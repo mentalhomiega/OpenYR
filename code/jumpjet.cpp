@@ -592,6 +592,9 @@ void JumpjetLocomotionClass::Process_Hover(void)
 			if (Let_Go_At_Arrival()) {
 				return;
 			}
+			if (Relocate_If_Claimed(headto.As_Cell())) {
+				return;
+			}
 			if (Stays_Aloft()) {
 				Arrive_Aloft();
 			} else if (LinkedTo->TarCom == NULL) {
@@ -623,6 +626,63 @@ bool JumpjetLocomotionClass::Let_Go_At_Arrival(void)
 	}
 	FlightLevel = 0;
 	holder->Release_Locomotor(true);
+	return(true);
+}
+
+
+/// <summary>
+/// Tells whether another jumpjet holds the cell. A jumpjet holds the cell it is over once it is grounded
+/// or hovering with no move in hand. gamemd keeps a per-cell claim (CellClass::TryAssignJumpjet, 0x487D70)
+/// that a jumpjet leaves in place when it flies off; this test follows the jumpjets' states instead.
+/// </summary>
+/// <param name="cell">The cell to test.</param>
+/// <returns>bool; Is the cell held by a jumpjet other than this one?</returns>
+bool JumpjetLocomotionClass::Cell_Claimed_By_Other(Cell const & cell) const
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass const * techno = Technos[index];
+		if (techno == NULL || !techno->Is_Foot()) {
+			continue;
+		}
+
+		FootClass const * foot = static_cast<FootClass const *>(techno);
+		if (foot == LinkedTo || !foot->IsActive || foot->IsInLimbo || foot->Locomotion == NULL) {
+			continue;
+		}
+
+		JumpjetLocomotionClass const * jumpjet = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+		if (jumpjet == NULL || jumpjet->IsMoving || (jumpjet->CurrentState != GROUNDED && jumpjet->CurrentState != HOVERING)) {
+			continue;
+		}
+
+		if (foot->Get_Cell() == cell) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Sends the jumpjet to a random neighbouring cell when the cell it has reached is held by another
+/// jumpjet, as gamemd does on arrival (JumpjetLocomotionClass, 0x54BA30 and 0x54BFF0). The neighbour
+/// is picked with the synchronised random number generator, so every machine picks the same one.
+/// A neighbour off the map does not take the unit, which settles on the held cell instead.
+/// </summary>
+/// <param name="cell">The cell the jumpjet has arrived at.</param>
+/// <returns>bool; Was the jumpjet sent on to another cell?</returns>
+bool JumpjetLocomotionClass::Relocate_If_Claimed(Cell const & cell)
+{
+	if (!Cell_Claimed_By_Other(cell)) {
+		return(false);
+	}
+
+	Cell const neighbour = Adjacent_Cell(cell, (FacingType)Random_Pick(0, 7));
+	if (!Map.Is_Valid(neighbour)) {
+		return(false);
+	}
+
+	Move_To(Map[neighbour].Center_Coord());
 	return(true);
 }
 
@@ -670,6 +730,10 @@ void JumpjetLocomotionClass::Process_Cruise(void)
 		}
 		// A held vehicle is let go on reaching the spot next to its holder, and falls from there (JumpjetLocomotionClass, 0x54C1A9).
 		if (Let_Go_At_Arrival()) {
+			return;
+		}
+		// A jump jet that arrives on a cell another jump jet holds moves on (JumpjetLocomotionClass, 0x54BA30).
+		if (Relocate_If_Claimed(position.As_Cell())) {
 			return;
 		}
 		// A BalloonHover unit stays in the air at its destination (JumpjetLocomotionClass, 0x54BD30).
@@ -764,6 +828,11 @@ void JumpjetLocomotionClass::Process_Descent(void)
 			if (Map[LinkedTo->Get_Coord()].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 				height -= BRIDGE_LEPTON_HEIGHT;
 			}
+		}
+
+		// A jump jet about to touch down on a cell another jump jet holds climbs away instead (JumpjetLocomotionClass, 0x54BA30).
+		if (height == 0 && Relocate_If_Claimed(HeadToCoord.As_Cell())) {
+			return;
 		}
 
 		if (height == 0) {

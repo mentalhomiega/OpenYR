@@ -101,6 +101,12 @@ bool RocketLocomotionClass::Is_Moving(void)
 }
 
 
+bool RocketLocomotionClass::Is_Airborne(void) const
+{
+	return(MissionState >= STATE_CLIMB);
+}
+
+
 Coord RocketLocomotionClass::Destination(void)
 {
 	return(DestinationCoord);

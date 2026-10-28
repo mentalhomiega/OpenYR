@@ -272,6 +272,7 @@
 #include "_map.h"
 #include "beacon.h"
 #include "queue.h"
+#include "rocket.h"
 #include "_rules.h"
 #include "_tactica.h"
 #include "audio/audioengine.h"
@@ -1871,9 +1872,13 @@ static void Air_Probe_Step(StepType const & step)
 			for (ObjectClass const * link = Map[cell].Cell_Occupier(false); link != NULL && !ground_chain; link = link->Next) ground_chain = link == techno;
 			bool bridge_chain = false;
 			for (ObjectClass const * link = Map[cell].Cell_Occupier(true); link != NULL && !bridge_chain; link = link->Next) bridge_chain = link == techno;
-			DebugString("AUTOTEST   airborne %s of %s cell %d,%d agl %d in_air %d layer %d obj_layer %d on_bridge %d down %d ground_chain %d bridge_chain %d\n",
+			// phase is the flight phase of a rocket locomotor (0 none, 1 pause, 2 tilt, 3 climb, 4 cruise, 5 dive), or -1 for another locomotor.
+			FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+			RocketLocomotionClass const * rocket = foot != NULL ? dynamic_cast<RocketLocomotionClass const *>(foot->Locomotion.get()) : NULL;
+			int const phase = rocket != NULL ? rocket->Flight_Phase() : -1;
+			DebugString("AUTOTEST   airborne %s of %s cell %d,%d agl %d in_air %d layer %d obj_layer %d on_bridge %d down %d ground_chain %d bridge_chain %d phase %d\n",
 				techno->TClass->Name(), techno->House->Class->Name(), cell.X, cell.Y, (int)techno->HeightAGL, (int)techno->In_Air(), (int)techno->In_Which_Layer(), (int)techno->Layer,
-				(int)techno->IsOnBridge, (int)techno->IsDown, (int)ground_chain, (int)bridge_chain);
+				(int)techno->IsOnBridge, (int)techno->IsDown, (int)ground_chain, (int)bridge_chain, phase);
 		}
 	} else if (step.Command == "rocket") {
 		// rocket <TypeID>: each foot object of the type with its coordinate in leptons, its height above ground, its flat and

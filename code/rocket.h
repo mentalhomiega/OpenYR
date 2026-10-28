@@ -34,6 +34,10 @@ class RocketLocomotionClass : public LocomotionClass
 		virtual Matrix3D Draw_Matrix(int * key) override;
 		virtual bool Is_To_Have_Shadow(void) override {return(false);}
 
+		// True from the start of the climb onward, which is the phase gamemd's missile IsInAir reads (slot 0x80, 0x661F90).
+		bool Is_Airborne(void) const;
+		int Flight_Phase(void) const {return(MissionState);}
+
 	private:
 		enum MissionStateType {
 			STATE_NONE,
