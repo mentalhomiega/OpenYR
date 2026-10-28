@@ -3058,10 +3058,18 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			Techno_Blit_Voxel(*composite, drawpoint, cliprect, SHAPE_NOTRANS, brightness);
 		}
 	} else {
-		int matrix_key = key_seed;
-		main_matrix = Locomotion->Draw_Matrix(&matrix_key);
+		// A hull with no turret or barrel to place found in the cache needs no matrix.
+		bool const hull_only = !turret_drawn && !(Class->AuxVoxel2.VoxLib != NULL && Class->AuxVoxel2.MotLib != NULL);
+		VoxelIndexClass * const hull_cache = no_spawn_alt ? &Class->NoSpawnAltVoxelIndex : &Class->VoxelIndex;
+		bool const hull_cached = hull_only && !apc_in_water && key != -1 && !Class->IsDisableVoxelCache && (*hull_cache)[key] != NULL;
+		if (!hull_cached) {
+			int matrix_key = key_seed;
+			main_matrix = Locomotion->Draw_Matrix(&matrix_key);
+		}
 
-		if (apc_in_water) {
+		if (hull_cached) {
+			Draw_Voxel(no_spawn_alt ? Class->NoSpawnAltVoxel : Class->Voxel, no_spawn_alt ? 0 : frame, key, hull_cache, rect, drawpoint, Matrix3D(true), brightness, flags);
+		} else if (apc_in_water) {
 			Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 		} else if (no_spawn_alt) {
 			Draw_Voxel(Class->NoSpawnAltVoxel, 0, key, &Class->NoSpawnAltVoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);

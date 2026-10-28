@@ -93,6 +93,8 @@ struct BackendEmissive
 	int LayerPitch;
 	int LayerWidth;
 	int LayerHeight;
+	// One byte per row of the frame's mask, zero only where the whole row is zero; null when any row may hold a value.
+	unsigned char const * FrameLit = NULL;
 };
 
 // Names the rows of the next present's picture that may differ from the picture of the present before it.
