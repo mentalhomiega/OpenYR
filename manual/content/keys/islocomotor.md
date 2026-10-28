@@ -11,7 +11,7 @@ A warhead with `IsLocomotor=yes` does no damage. Its firer first lets go of any 
 
 A held vehicle rises into the air, cannot be selected, takes no orders and cannot fire. Its holder pulls it toward itself to two cells away every 15 frames. A held vehicle's carried aircraft or missiles are lost. While the holder holds a vehicle, its beam fires at no vehicle; it fires at a structure, or at a new target once the beam has gone.
 
-The holder lets go when it attacks something else, is ordered to move or stop, or is destroyed or removed. A vehicle let go in the air is stunned and falls straight down. It takes no orders while it falls, and it is destroyed when it lands. A held vehicle killed in the air falls the same way. A vehicle let go on the ground gets its own locomotor back at once.
+The holder lets go when it attacks something else, is ordered to move or stop, or is destroyed or removed. A vehicle let go in the air is stunned and falls straight down. It takes no orders while it falls, and it is destroyed when it lands. A held vehicle killed in the air falls the same way. A vehicle that falls through the height of a bridge deck lands on the deck, standing on it and crushing the soldiers there. A vehicle let go on the ground gets its own locomotor back at once.
 
 ```ini title="rulesmd.ini"
 [MyMagnetWH] ; example Warhead

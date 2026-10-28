@@ -4643,7 +4643,7 @@ void Run(StepType const & step)
 					}
 				}
 			}
-			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()));
+			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d onbridge %d z %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()), (int)techno->IsOnBridge, techno->PositionCoord.Z);
 		}
 	} else if (step.Command == "spots") {
 		// spots <TypeID>: each live object of that type, whoever owns it, with its cell, the sub-cell spot its
@@ -5444,6 +5444,9 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST movie %s\n", step.Argument.c_str());
 		Play_Movie(step.Argument.c_str());
 		DebugString("AUTOTEST movie %s done\n", step.Argument.c_str());
+	} else if (step.Command == "ranking") {
+		// ranking: the scenario's par times (easy, normal, hard, in seconds), its four rank labels and the elapsed mission time.
+		DebugString("AUTOTEST   ranking par %d %d %d elapsed %d under [%s] [%s] over [%s] [%s]\n", Scen->ParTime[0] / TIMER_SECOND, Scen->ParTime[1] / TIMER_SECOND, Scen->ParTime[2] / TIMER_SECOND, (int)Scen->ElapsedTimer / TIMER_SECOND, Scen->UnderParTitle, Scen->UnderParMessage, Scen->OverParTitle, Scen->OverParMessage);
 	} else if (step.Command == "skipscore") {
 		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
 		// SkipScoreScreen does, so the run reaches the lobby without a key press.

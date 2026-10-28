@@ -828,6 +828,7 @@ void JumpjetLocomotionClass::Process_Descent(void)
 void JumpjetLocomotionClass::Process_Crashing(void)
 {
 	// The fall is truncated to whole leptons (JumpjetLocomotionClass, 0x54CAD2).
+	int const top = LinkedTo->PositionCoord.Z;
 	Coord fallen = LinkedTo->PositionCoord;
 	fallen.Z = static_cast<int>(fallen.Z - CrashSpeed);
 	if (LinkedTo->IsAttackedByLocomotor) {
@@ -835,20 +836,22 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 	}
 	LinkedTo->Set_Coord(fallen);
 
-	int height = LinkedTo->HeightAGL;
-	if (!LinkedTo->IsOnBridge) {
-		if (Map[LinkedTo->Get_Coord()].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
-			height -= BRIDGE_LEPTON_HEIGHT;
-		}
+	// A fall that passes down through the height of a bridge deck ends on the deck, and any other fall
+	// ends on the ground (JumpjetLocomotionClass, 0x54CA90).
+	bool on_deck = false;
+	if (Map[LinkedTo->Get_Coord()].IsUnderBridge) {
+		int const deck = Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT;
+		on_deck = top >= deck && deck > LinkedTo->PositionCoord.Z;
 	}
-	if (height > 0) {
+	if (!on_deck && LinkedTo->HeightAGL > 0) {
 		return;
 	}
 
 	Coord landed = LinkedTo->PositionCoord;
-	landed.Z = Map.Get_Height_GL(landed);
+	landed.Z = Map.Get_Height_GL(landed) + (on_deck ? BRIDGE_LEPTON_HEIGHT : 0);
 	LinkedTo->Set_Speed(0.0);
 	LinkedTo->Mark(MARK_UP);
+	LinkedTo->IsOnBridge = on_deck;
 	LinkedTo->Set_Coord(landed);
 	HeadToCoord = COORD_NONE;
 	IsMoving = false;

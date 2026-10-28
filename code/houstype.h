@@ -167,6 +167,7 @@ class HouseTypeClass : public AbstractTypeClass
 		static HousesType From_Name(char const * name);
 		static void Prepare_RA2_Numbering(CCINIClass const & scenario);
 		static HousesType From_RA2_Number(HousesType number);
+		static bool Set_RA2_Numbering(bool enabled);
 		static void One_Time(void);
 		static HouseTypeClass * Find_Or_Make(char const * ininame);
 
