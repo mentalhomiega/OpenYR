@@ -4329,6 +4329,9 @@ void Run(StepType const & step)
 			}
 		}
 		DebugString("AUTOTEST   runtrigger %s: %d actions\n", step.Argument.c_str(), ran);
+	} else if (step.Command == "restart") {
+		// restart: asks for the Restart mission command, as the options menu does in a campaign.
+		PlayerRestarts = true;
 	} else if (step.Command == "triggers") {
 		// triggers [all]: what the map's trigger system holds right now.
 		bool const everything = step.Argument == "all";
@@ -4343,6 +4346,10 @@ void Run(StepType const & step)
 				}
 			}
 			if (!everything && enabled == 0) continue;
+			int event_count = 0;
+			for (TEventClass const * event = type->FirstEvent; event != NULL; event = event->Next) event_count++;
+			int action_count = 0;
+			for (TActionClass const * action = type->FirstAction; action != NULL; action = action->Next) action_count++;
 			std::string events;
 			for (TEventClass const * event = type->FirstEvent; event != NULL; event = event->Next) {
 				char text[160];
@@ -4360,7 +4367,7 @@ void Run(StepType const & step)
 				if (need == NEED_AIRCRAFT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < AircraftTypes.Count() ? AircraftTypes[event->Data.Value]->Name() : "NOAIRCRAFT");
 				events += ")";
 			}
-			DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, events.c_str());
+			DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d event count %d action count %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, event_count, action_count, events.c_str());
 		}
 		for (int index = 0; index < Tags.Count(); index++) {
 			TagClass const * tag = Tags[index];
