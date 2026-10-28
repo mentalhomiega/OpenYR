@@ -484,8 +484,9 @@ HudBlendTable const & Hud_Blend_Table(int opacity)
 /// <summary>
 /// Copies a part of the sidebar surface onto the frame for the modern build panel.
 /// The panel's fill and well pixels are blended over the map beneath them at Options.SidebarOpacity
-/// percent. Every other pixel is copied as drawn, including all of the radar and the buttons, and so
-/// is any pixel where the frame holds no map, which is one the video map layer keys out.
+/// percent. Where the frame holds the video map layer key instead of the map, they become the layer's tint keys,
+/// which the presenter blends over the map layer. Every other pixel is copied as drawn, including all of the radar
+/// and the buttons.
 /// While emissive masks are on, the emissive values under the panel are updated as Bit_Blit updates them,
 /// so map glow behind the panel does not light it.
 /// </summary>
@@ -519,6 +520,10 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 	HudLayout const layout = Hud_Layout();
 	Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
 	HudBlendTable const & blend = Hud_Blend_Table(opacity);
+	RGBClass const fill = Hud_Fill_Color();
+	RGBClass const well = Hud_Well_Color();
+	Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
+	Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
 
 	for (int y = 0; y < dest.Height; y++) {
 		int const sy = source_rect.Y + y;
@@ -544,8 +549,10 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 				}
 			}
 
-			if (!background || target == VIDEO_LAYER_KEY) {
+			if (!background) {
 				target = pixel;
+			} else if (target == VIDEO_LAYER_KEY) {
+				target = (pixel == fill_pixel) ? VIDEO_LAYER_TINT_KEYS[0] : VIDEO_LAYER_TINT_KEYS[1];
 			} else {
 				target = (pixel == fill_pixel) ? blend.Fill[target] : blend.Well[target];
 			}

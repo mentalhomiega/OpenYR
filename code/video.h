@@ -95,6 +95,12 @@ class Surface;
 // The frame colour that shows the map layer through it.
 unsigned short const VIDEO_LAYER_KEY = 0xF81F;
 
+// Frame colours drawn over the map layer as the tints Video_Set_Layer_Tint sets.
+unsigned short const VIDEO_LAYER_TINT_KEYS[2] = {0xF83F, 0xF85F};
+
+// Sets the colour and opacity, 0 to 100 percent, that frame pixels of VIDEO_LAYER_TINT_KEYS[index] show over the map layer.
+void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity);
+
 // Whether the presenter can draw the map as its own layer under the frame.
 bool Video_Map_Layer_Supported(void);
 

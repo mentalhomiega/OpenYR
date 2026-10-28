@@ -103,6 +103,10 @@ ticked, and GPU drawing is greyed out without the modern interface. Ticking **We
   once into an atlas of up to 4 MB that the GPU keeps, and later passes refer to it instead of copying
   their pixels. The atlas is emptied when the cached voxel images are cleared or it fills. In four
   alternating pairs of the 4K benchmark it raised the rate from about 486 to about 508 pictures per second.
+- The modern build panel's background stays translucent at `SidebarOpacity` over the GPU map. Where the
+  frame holds the map layer key, the panel writes one of two tint keys, and the presenter blends the
+  panel's fill or well colour over the map there. The result is within 8 of 255 per channel of the
+  software picture.
 
 ## Rebuilding the shaders
 

@@ -493,6 +493,15 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 }
 
 
+void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity)
+{
+	auto const channel = [](int value) {
+		return((unsigned char)std::clamp(value, 0, 255));
+	};
+	Backend_Set_Layer_Tint(index, channel(red), channel(green), channel(blue), channel((std::clamp(opacity, 0, 100) * 255 + 50) / 100));
+}
+
+
 void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest)
 {
 	_LayerSurface = NULL;
