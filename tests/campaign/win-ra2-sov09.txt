@@ -1,0 +1,26 @@
+; Campaign win check for Soviet 9 (Red Alert 2). The President (PRES, French) arrives at frame 525 and stands by his limousine at 63,59 inside a ring of SEALs and Allied Tesla coils. The mission is won when the Africans house attacks him ("Pres is Captured", Attacked by house 5) and lost when anything else damages him ("Pres is Dead", first damage).
+; Eight Yuri Primes of the Africans (houseunit, the force the mission drops at waypoint AL) are placed at frame 561, six cells south of him and out of the SEALs' splash on him, and ordered at 569 to attack him with strikeobj ... YURIPR. A Yuri Prime's mind control shot offers the President's tag the attacked events before the capture is tried, which springs "Pres is Captured".
+; Expected: "AUTOTEST game over frame N: won" (frame 666 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov09.txt -Campaign -Map SOV09U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 100 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+561 houseunit YURIPR@Africans 59 68
+562 houseunit YURIPR@Africans 61 68
+563 houseunit YURIPR@Africans 63 68
+564 houseunit YURIPR@Africans 65 68
+565 houseunit YURIPR@Africans 67 68
+566 houseunit YURIPR@Africans 69 68
+567 houseunit YURIPR@Africans 62 69
+568 houseunit YURIPR@Africans 64 69
+569 strikeobj PRES 63 62 6 all YURIPR
