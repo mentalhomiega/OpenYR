@@ -1583,7 +1583,40 @@ void FootClass::Approach_Target(void)
 					}
 					if (reaches) {
 						trycell = trycoord.As_Cell();
-						if (Map.In_Local_Radar(trycell) && clear_to_move(trycell)) {
+						bool const usable = Map.In_Local_Radar(trycell);
+						bool clear = usable && clear_to_move(trycell);
+
+						/*
+						**	A spot the unit cannot enter, a wall or another object's cell for one, is not dropped. A vehicle
+						**	steps off it, one adjacent cell after another, and takes the first cell its weapon reaches from
+						**	that it can enter (FootClass::ApproachTarget, 0x4D6342 to 0x4D6723). Each step starts from the
+						**	cell the last one reached, so the eight steps walk N, NE+N, and so on, not the eight neighbours of the
+						**	first spot; the reach test uses a ground height of 0.
+						*/
+						if (usable && !clear && RTTI != RTTI_INFANTRY) {
+							Cell const spot = trycell;
+							Cell walk = spot;
+							for (int step = 0; step < 8; step++) {
+								walk = walk + AdjacentCell[step];
+								if (!Map.Is_Valid(walk)) continue;
+								Coord const centre = Coord(walk.X * CELL_LEPTON_W + CELL_LEPTON_W / 2, walk.Y * CELL_LEPTON_H + CELL_LEPTON_H / 2, 0);
+								bool near_reach = TClass->In_Range(centre, TarCom, approach_weapon) && Clear_Line_Of_Fire(centre, TarCom, approach_weapon);
+								if (!near_reach && TClass->IsCloseRange) {
+									Coord const at = TarCom->Center_Coord();
+									near_reach = Gamemd_Length_2D(centre.X - at.X, centre.Y - at.Y) < 307.2;
+								}
+								if (near_reach && clear_to_move(walk)) {
+									trycell = walk;
+									clear = true;
+									break;
+								}
+							}
+							if (!clear) {
+								trycell = spot;
+							}
+						}
+
+						if (clear) {
 
 							int maxdist = std::max(abs(trycell.X - tcell.X), abs(trycell.Y - tcell.Y));
 							CellClass * cellptr = &Map[trycell];
