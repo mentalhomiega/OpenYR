@@ -16,6 +16,7 @@
 #include "crc.h"
 #include "findmake.h"
 #include "globals.h"
+#include "houstype.h"
 #include "savestream.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -272,9 +273,11 @@ bool ScriptTypeClass::Read_INI(CCINIClass const & ini)
 /// filled in, and tagged with the supplied scope.
 /// </summary>
 /// <param name="ini">The INI database to read the script types from.</param>
-/// <param name="scope">The scope to assign to every script type read in.</param>
+/// <param name="scope">The scope to assign to every script type read in. Only local scripts, a mission's
+/// own, have their house numbers converted for a Red Alert 2 mission.</param>
 void ScriptTypeClass::Read_All(CCINIClass const & ini, INIScopeType scope)
 {
+	bool const converting = HouseTypeClass::Set_RA2_Numbering(scope == SCOPE_LOCAL);
 	int len = ini.Entry_Count("ScriptTypes");
 	for (int index = 0; index < len; index++) {
 		char const * entry = ini.Get_Entry("ScriptTypes", index);
@@ -289,6 +292,7 @@ void ScriptTypeClass::Read_All(CCINIClass const & ini, INIScopeType scope)
 		script->Read_INI(ini);
 		script->Scope = scope;
 	}
+	HouseTypeClass::Set_RA2_Numbering(converting);
 }
 
 

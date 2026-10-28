@@ -490,6 +490,9 @@ namespace
 // Empty unless the running mission is a Red Alert 2 one.
 std::vector<std::string> RA2_Country_Order;
 
+// False while numbers are being read from a file that follows Yuri's Revenge's numbering.
+bool RA2_Numbering_Enabled = true;
+
 }
 
 
@@ -502,6 +505,7 @@ std::vector<std::string> RA2_Country_Order;
 void HouseTypeClass::Prepare_RA2_Numbering(CCINIClass const & scenario)
 {
 	RA2_Country_Order.clear();
+	RA2_Numbering_Enabled = true;
 	if (!Scenario_Is_From_RA2()) {
 		return;
 	}
@@ -530,11 +534,24 @@ void HouseTypeClass::Prepare_RA2_Numbering(CCINIClass const & scenario)
 /// </summary>
 HousesType HouseTypeClass::From_RA2_Number(HousesType number)
 {
-	if (number < 0 || number >= (int)RA2_Country_Order.size()) {
+	if (!RA2_Numbering_Enabled || number < 0 || number >= (int)RA2_Country_Order.size()) {
 		return(number);
 	}
 	HousesType const type = From_Name(RA2_Country_Order[number].c_str());
 	return(type == HOUSE_NONE ? number : type);
+}
+
+
+/// <summary>
+/// Turns the Red Alert 2 conversion of house numbers on or off.
+/// The conversion is off while a file that numbers its houses as Yuri's Revenge does is read.
+/// </summary>
+/// <returns>bool; Was the conversion on before this call?</returns>
+bool HouseTypeClass::Set_RA2_Numbering(bool enabled)
+{
+	bool const previous = RA2_Numbering_Enabled;
+	RA2_Numbering_Enabled = enabled;
+	return(previous);
 }
 
 
