@@ -931,6 +931,13 @@ body.netgame.guest #settings .trough, body.netgame.guest #settings .trough-edge
 	border-color: var(--t-disabled-edge, #2c2638);
 }
 
+/* A guest's slider grip takes the disabled slider colour; the classic grip art's red outline read as an error. */
+body.netgame.guest #settings input[type='range'] sliderbar
+{
+	decorator: none;
+	background-color: var(--t-disabled-check, #5f4a80);
+}
+
 /* The CnCNet lobby's column headings start where the rows' text does: the row's 8dp padding and 3dp edge. */
 body[data-model="cncnetlobby"] .heading
 {
