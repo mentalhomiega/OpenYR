@@ -1,0 +1,223 @@
+; Campaign win check for Soviet 7 (Red Alert 2). Twenty-four Apocalypse tanks and 28 Flak Tracks stand round the Battle Lab (NATECH at 76,65), which "LabDestroyed" counts: the mission is lost when it falls or an enemy engineer or spy reaches it.
+; Three things threaten the lab. Allied Harriers (the 5 at frame 25000 and the 2 of the last wave) fly in from 96,139 and bomb it, so 20 Flak Tracks stand on their route (82-88,92-96 and 78-84,78-80), a second set granted at 38100 for the last wave, after the first set has been worn down. Prism tanks (SREF) outrange the Apocalypse tanks and fire at the lab from the east and north, so 12 Rhinos (HTNK) are granted at frame 60 and 16 more at 38120, and every 300 frames they are sent against the nearest Prism tank (strikeobj SREF ... HTNK).
+; From frame 38400 the Rhinos strike every 100 frames to clear "Massive Last Attempt". Once "PlayerWin1" is enabled at frame 38250, BadGuy1 must have no unit left ("UNITS_DEAD"): its two Engineers at 41,81 and 98,21 hunt from frame 40500 and are struck from frame 41000.
+; Expected: "AUTOTEST game over frame N: won" (frame 42085 in the last run).
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov07.txt -Campaign -Map SOV07S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+1 triggerlog 1
+10 grantunit APOC 68 64
+11 grantunit APOC 70 64
+12 grantunit APOC 72 64
+13 grantunit APOC 74 64
+14 grantunit APOC 76 64
+15 grantunit APOC 78 64
+16 grantunit APOC 68 66
+17 grantunit APOC 70 66
+18 grantunit APOC 72 66
+19 grantunit APOC 74 66
+20 grantunit APOC 76 66
+21 grantunit APOC 78 66
+22 grantunit APOC 68 68
+23 grantunit APOC 70 68
+24 grantunit APOC 72 68
+25 grantunit APOC 74 68
+26 grantunit APOC 76 68
+27 grantunit APOC 78 68
+28 grantunit APOC 68 70
+29 grantunit APOC 70 70
+30 grantunit APOC 72 70
+31 grantunit APOC 74 70
+32 grantunit APOC 76 70
+33 grantunit APOC 78 70
+40 grantunit HTK 68 58
+41 grantunit HTK 70 58
+42 grantunit HTK 72 58
+43 grantunit HTK 74 58
+44 grantunit HTK 68 60
+45 grantunit HTK 70 60
+46 grantunit HTK 72 60
+47 grantunit HTK 74 60
+50 grantunit HTK 82 92
+51 grantunit HTK 84 92
+52 grantunit HTK 86 92
+53 grantunit HTK 88 92
+54 grantunit HTK 82 94
+55 grantunit HTK 84 94
+56 grantunit HTK 86 94
+57 grantunit HTK 88 94
+58 grantunit HTK 82 96
+59 grantunit HTK 84 96
+60 grantunit HTK 86 96
+60 grantunit HTNK 84 68
+61 grantunit HTK 88 96
+61 grantunit HTNK 86 68
+62 grantunit HTK 78 78
+62 grantunit HTNK 88 68
+63 grantunit HTK 80 78
+63 grantunit HTNK 90 68
+64 grantunit HTK 82 78
+64 grantunit HTNK 84 70
+65 grantunit HTK 84 78
+65 grantunit HTNK 86 70
+66 grantunit HTK 78 80
+66 grantunit HTNK 88 70
+67 grantunit HTK 80 80
+67 grantunit HTNK 90 70
+68 grantunit HTK 82 80
+68 grantunit HTNK 84 72
+69 grantunit HTK 84 80
+69 grantunit HTNK 86 72
+70 grantunit HTNK 88 72
+71 grantunit HTNK 90 72
+30000 strikeobj SREF 100 72 100 land HTNK
+30300 strikeobj SREF 100 72 100 land HTNK
+30600 strikeobj SREF 100 72 100 land HTNK
+30900 strikeobj SREF 100 72 100 land HTNK
+31200 strikeobj SREF 100 72 100 land HTNK
+31500 strikeobj SREF 100 72 100 land HTNK
+31800 strikeobj SREF 100 72 100 land HTNK
+32100 strikeobj SREF 100 72 100 land HTNK
+32400 strikeobj SREF 100 72 100 land HTNK
+32700 strikeobj SREF 100 72 100 land HTNK
+33000 strikeobj SREF 100 72 100 land HTNK
+33300 strikeobj SREF 100 72 100 land HTNK
+33600 strikeobj SREF 100 72 100 land HTNK
+33900 strikeobj SREF 100 72 100 land HTNK
+34200 strikeobj SREF 100 72 100 land HTNK
+34500 strikeobj SREF 100 72 100 land HTNK
+34800 strikeobj SREF 100 72 100 land HTNK
+35100 strikeobj SREF 100 72 100 land HTNK
+35400 strikeobj SREF 100 72 100 land HTNK
+35700 strikeobj SREF 100 72 100 land HTNK
+36000 strikeobj SREF 100 72 100 land HTNK
+36300 strikeobj SREF 100 72 100 land HTNK
+36600 strikeobj SREF 100 72 100 land HTNK
+36900 strikeobj SREF 100 72 100 land HTNK
+37200 strikeobj SREF 100 72 100 land HTNK
+37500 strikeobj SREF 100 72 100 land HTNK
+37800 strikeobj SREF 100 72 100 land HTNK
+38100 strikeobj SREF 100 72 100 land HTNK
+38100 grantunit HTK 82 92
+38101 grantunit HTK 84 92
+38102 grantunit HTK 86 92
+38103 grantunit HTK 88 92
+38104 grantunit HTK 82 94
+38105 grantunit HTK 84 94
+38106 grantunit HTK 86 94
+38107 grantunit HTK 88 94
+38108 grantunit HTK 82 96
+38109 grantunit HTK 84 96
+38110 grantunit HTK 86 96
+38111 grantunit HTK 88 96
+38112 grantunit HTK 78 78
+38113 grantunit HTK 80 78
+38114 grantunit HTK 82 78
+38115 grantunit HTK 84 78
+38116 grantunit HTK 78 80
+38117 grantunit HTK 80 80
+38118 grantunit HTK 82 80
+38119 grantunit HTK 84 80
+38120 grantunit HTNK 82 58
+38121 grantunit HTNK 84 58
+38122 grantunit HTNK 86 58
+38123 grantunit HTNK 88 58
+38124 grantunit HTNK 82 60
+38125 grantunit HTNK 84 60
+38126 grantunit HTNK 86 60
+38127 grantunit HTNK 88 60
+38128 grantunit HTNK 82 62
+38129 grantunit HTNK 84 62
+38130 grantunit HTNK 86 62
+38131 grantunit HTNK 88 62
+38132 grantunit HTNK 82 64
+38133 grantunit HTNK 84 64
+38134 grantunit HTNK 86 64
+38135 grantunit HTNK 88 64
+38400 strikeobj SREF 100 72 100 land HTNK
+38400 strikeobj SREF 90 70 100 land HTNK
+38500 strikeobj SREF 90 70 100 land HTNK
+38600 strikeobj SREF 90 70 100 land HTNK
+38700 strikeobj SREF 100 72 100 land HTNK
+38700 strikeobj SREF 90 70 100 land HTNK
+38800 strikeobj SREF 90 70 100 land HTNK
+38900 strikeobj SREF 90 70 100 land HTNK
+39000 strikeobj SREF 100 72 100 land HTNK
+39000 strikeobj SREF 90 70 100 land HTNK
+39100 strikeobj SREF 90 70 100 land HTNK
+39200 strikeobj SREF 90 70 100 land HTNK
+39300 strikeobj SREF 100 72 100 land HTNK
+39300 strikeobj SREF 90 70 100 land HTNK
+39400 strikeobj SREF 90 70 100 land HTNK
+39500 strikeobj SREF 90 70 100 land HTNK
+39600 strikeobj SREF 100 72 100 land HTNK
+39600 strikeobj SREF 90 70 100 land HTNK
+39700 strikeobj SREF 90 70 100 land HTNK
+39800 strikeobj SREF 90 70 100 land HTNK
+39900 strikeobj SREF 100 72 100 land HTNK
+39900 strikeobj SREF 90 70 100 land HTNK
+40000 strikeobj SREF 90 70 100 land HTNK
+40100 strikeobj SREF 90 70 100 land HTNK
+40200 strikeobj SREF 100 72 100 land HTNK
+40200 strikeobj SREF 90 70 100 land HTNK
+40300 strikeobj SREF 90 70 100 land HTNK
+40400 strikeobj SREF 90 70 100 land HTNK
+40500 strikeobj SREF 100 72 100 land HTNK
+40500 strikeobj SREF 90 70 100 land HTNK
+40600 strikeobj SREF 90 70 100 land HTNK
+40700 strikeobj SREF 90 70 100 land HTNK
+40800 strikeobj SREF 100 72 100 land HTNK
+40800 strikeobj SREF 90 70 100 land HTNK
+40900 strikeobj SREF 90 70 100 land HTNK
+41000 strikeobj SREF 90 70 100 land HTNK
+41000 strikeobj ENGINEER 41 81 15 land HTNK
+41001 strikeobj ENGINEER 98 21 15 land APOC
+41100 strikeobj SREF 100 72 100 land HTNK
+41100 strikeobj SREF 90 70 100 land HTNK
+41200 strikeobj SREF 90 70 100 land HTNK
+41300 strikeobj SREF 90 70 100 land HTNK
+41300 strikeobj ENGINEER 41 81 15 land HTNK
+41301 strikeobj ENGINEER 98 21 15 land APOC
+41400 strikeobj SREF 100 72 100 land HTNK
+41400 strikeobj SREF 90 70 100 land HTNK
+41500 strikeobj SREF 90 70 100 land HTNK
+41600 strikeobj SREF 90 70 100 land HTNK
+41600 strikeobj ENGINEER 41 81 15 land HTNK
+41601 strikeobj ENGINEER 98 21 15 land APOC
+41700 strikeobj SREF 100 72 100 land HTNK
+41700 strikeobj SREF 90 70 100 land HTNK
+41800 strikeobj SREF 90 70 100 land HTNK
+41900 strikeobj SREF 90 70 100 land HTNK
+41900 strikeobj ENGINEER 41 81 15 land HTNK
+41901 strikeobj ENGINEER 98 21 15 land APOC
+42000 strikeobj SREF 100 72 100 land HTNK
+42000 strikeobj SREF 90 70 100 land HTNK
+42100 strikeobj SREF 90 70 100 land HTNK
+42200 strikeobj SREF 90 70 100 land HTNK
+42200 strikeobj ENGINEER 41 81 15 land HTNK
+42201 strikeobj ENGINEER 98 21 15 land APOC
+42300 strikeobj SREF 100 72 100 land HTNK
+42300 strikeobj SREF 90 70 100 land HTNK
+42400 strikeobj SREF 90 70 100 land HTNK
+42500 strikeobj SREF 90 70 100 land HTNK
+42500 strikeobj ENGINEER 41 81 15 land HTNK
+42501 strikeobj ENGINEER 98 21 15 land APOC
+42600 strikeobj SREF 100 72 100 land HTNK
+42600 strikeobj SREF 90 70 100 land HTNK
+42700 strikeobj SREF 90 70 100 land HTNK
+42800 strikeobj SREF 90 70 100 land HTNK
+42800 strikeobj ENGINEER 41 81 15 land HTNK
+42801 strikeobj ENGINEER 98 21 15 land APOC
+42900 strikeobj SREF 100 72 100 land HTNK
+42900 strikeobj SREF 90 70 100 land HTNK
+43000 strikeobj SREF 90 70 100 land HTNK
