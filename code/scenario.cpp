@@ -137,6 +137,7 @@
 #include "newmenu.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "parasite.h"
 #include "partsys.h"
 #include "pcx.h"
 #include "preview.h"
@@ -1137,6 +1138,7 @@ void Post_Load_Game(void)
 	BuildingTypeClass::Post_Load_Game();
 	TiberiumClass::Post_Load_Game();
 	VeinholeMonsterClass::Init(Scen->Theater);
+	Rebuild_Grapple_Holders();
 
 	Map.Post_Load_Radar_Fixup();
 
