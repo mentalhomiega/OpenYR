@@ -1212,38 +1212,35 @@ void GpuMap_Release_References(void)
 }
 
 
+template<class Handle>
+static void Release_Handle(Handle & handle)
+{
+	if (bgfx::isValid(handle)) {
+		bgfx::destroy(handle);
+		handle = BGFX_INVALID_HANDLE;
+	}
+}
+
+
 void GpuMap_Shutdown(void)
 {
 	GpuMap_Release_References();
 	Destroy_Target();
 	Destroy_Stores();
+	// The samplers exist only once the main program has built.
 	if (bgfx::isValid(_Program)) {
-		bgfx::destroy(_Program);
-		_Program = BGFX_INVALID_HANDLE;
 		for (bgfx::UniformHandle & sampler : _Samplers) {
-			bgfx::destroy(sampler);
+			Release_Handle(sampler);
 		}
-		bgfx::destroy(_BlurProgram);
-		bgfx::destroy(_BlurUniform);
-		bgfx::destroy(_MaskSampler);
-		bgfx::destroy(_ShadowSampler);
-		_BlurProgram = BGFX_INVALID_HANDLE;
-		bgfx::destroy(_PostProgram);
-		bgfx::destroy(_SceneSampler);
-		bgfx::destroy(_RippleUniform);
-		bgfx::destroy(_RippleInfoUniform);
-		bgfx::destroy(_RingUniform);
-		_PostProgram = BGFX_INVALID_HANDLE;
-		if (bgfx::isValid(_GlowProgram)) {
-			bgfx::destroy(_GlowProgram);
-			_GlowProgram = BGFX_INVALID_HANDLE;
-		}
-		bgfx::destroy(_GlowUniform);
-		bgfx::destroy(_WaterUniform);
-		bgfx::destroy(_WorldUniform);
-		bgfx::destroy(_WeatherUniform);
-		bgfx::destroy(_GlowMaskSampler);
-		bgfx::destroy(_GlowSampler);
+	}
+	Release_Handle(_Program);
+	for (bgfx::ProgramHandle * program : { &_BlurProgram, &_PostProgram, &_GlowProgram }) {
+		Release_Handle(*program);
+	}
+	for (bgfx::UniformHandle * uniform : { &_BlurUniform, &_MaskSampler, &_ShadowSampler, &_SceneSampler, &_RippleUniform, &_RippleInfoUniform,
+		&_RingUniform, &_SnapshotSampler, &_TileShadowSampler, &_GlowUniform, &_WaterUniform, &_WorldUniform, &_WeatherUniform,
+		&_GlowMaskSampler, &_GlowSampler }) {
+		Release_Handle(*uniform);
 	}
 	_Ready = false;
 	_Failed = false;
