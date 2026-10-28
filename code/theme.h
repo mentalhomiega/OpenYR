@@ -33,6 +33,7 @@
 #pragma once
 
 #include "audio/audiohandle.h"
+#include "custommusic.h"
 #include "stimer.h"
 #include "vector.h"
 
@@ -61,6 +62,7 @@ struct ThemeControl {
 	bool Normal;			// Allowed in normal game play?
 	bool Repeat;			// Always repeat this score?
 	bool StartFailed = false;	// The last attempt to open the file failed.
+	bool Custom = false;		// One of the player's own tracks, from the Music folder.
 	bool Available;			// Is the score available?
 	float Measured;			// Seconds the file states; 0 if none, -1 until measured.
 	std::vector<SideType> Owners;	// Sides that may hear this score; empty for all.
@@ -109,6 +111,12 @@ class ThemeClass
 		 */
 		DynamicVectorClass<ThemeControl *> Themes;
 
+		// Which scores the playlist offers, and how many of the player's own are playable.
+		CustomMusicModeType CustomMode = CUSTOM_MUSIC_BOTH;
+		int CustomCount = 0;
+		bool Mode_Allows(ThemeType theme) const;
+		void Scan_Custom(void);
+
 		// The score that last ended with nothing after it; the next pick continues from it.
 		ThemeType LastEnded;
 
@@ -152,6 +160,7 @@ class ThemeClass
 			DEFAULT_FADE_OUT_MS = 1500,	// The 60 maintenance ticks the old driver took to fade.
 			FADE_CUT_MS = 100,			// How quickly a newer fade cuts an older one short.
 			RETRY_MS = 1000,
+			MAX_CUSTOM_TRACKS = 500,	// The most tracks read from the Music folder.
 			PAUSE_FADE_MS = 250			// Pauses and resumes without a crossfade take this long.
 		};
 
@@ -165,6 +174,7 @@ class ThemeClass
 		bool Is_Regular(ThemeType theme) const {return(theme != THEME_NONE && Themes[theme]->Normal);}
 		char const * Base_Name(ThemeType index) const;
 		char const * Full_Name(ThemeType index) const;
+		char const * File_Name(ThemeType index) const {return((unsigned)index < (unsigned)Themes.Count() ? Themes[index]->File : "");}
 		int Max_Themes(void) const {return(Themes.Count());}
 		AudioHandle Play_Song(ThemeType index);
 		bool Still_Playing(void) const;
@@ -180,6 +190,9 @@ class ThemeClass
 		void End_Interruption(void);
 		void Set_Storm_Level(bool storm, bool instant);
 		void Set_Shuffle(bool on) {IsShuffle = on;}
+		void Set_Custom_Mode(CustomMusicModeType mode) {CustomMode = mode;}
+		bool Is_Custom(ThemeType index) const {return((unsigned)index < (unsigned)Themes.Count() && Themes[index]->Custom);}
+		int Custom_Count(void) const {return(CustomCount);}
 		void Set_Repeat(bool on);
 		bool Is_Shuffle(void) const {return(IsShuffle);}
 

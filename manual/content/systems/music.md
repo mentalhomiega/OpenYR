@@ -2,7 +2,7 @@
 title: Music
 summary: Music tracks fade out or crossfade when another is queued, and pause with all other game sound while the game is in the background.
 category: audio-speech
-keys: [ScoreVolume, IsScoreRepeat, IsScoreShuffle]
+keys: [ScoreVolume, IsScoreRepeat, IsScoreShuffle, CustomMusic]
 ---
 
 The game plays one music track at a time; two overlap only while one fades out as the other starts. [THEME.INI](/formats/theme-ini/) declares the tracks, and each track streams from the file its [`Sound=`](/keys/sound/) names, or from the file named after its ID. The file can be a `.WAV`, `.OGG`, `.FLAC`, `.MP3` or `.AUD` file; [AUD audio](/formats/aud/) explains where the game looks for it. A track's [`Volume=`](/keys/volume/#scope-themes) sets its loudness relative to the other tracks.
@@ -58,6 +58,10 @@ A track with [`Repeat=yes`](/keys/repeat/) starts again from its beginning each 
 A repeating track gives way to any queued track, including one queued by a Play music theme action or a Play music team mission, however the repeating track was started. A request for the next allowed track leaves a repeating track playing, as it would pick that track again.
 
 A track that was started immediately, and that does not repeat, ends without a queued successor. During a game, the next allowed track then follows, chosen as if the ended track had been picked from the playlist. Outside a game, for example on the score screen or in the menus, the music stops unless another track has been queued.
+
+## Custom tracks
+
+Audio files (`.WAV`, `.OGG`, `.FLAC` and `.MP3`) in the `Music` folder of the user directory are added to the end of the track list when the game starts, titled with their file names. They are allowed for every side and mission, and they shuffle, repeat and respond to the next and previous track commands like any other track. A file that cannot be opened as audio is left out. [`CustomMusic`](/keys/custommusic/) chooses whether the list holds the declared tracks, the custom ones or both. No scenario, trigger action or team mission can name a custom track.
 
 ## Focus and volume
 

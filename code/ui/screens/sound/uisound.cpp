@@ -25,6 +25,7 @@ UISoundPresenterClass::UISoundPresenterClass(UISoundServiceClass & service, UISo
 	InitialMovie = State.Movie;
 	InitialShuffle = State.Shuffle;
 	InitialRepeat = State.Repeat;
+	InitialCustomMusic = State.CustomMusic;
 }
 
 
@@ -93,6 +94,13 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 			Service.Set_Shuffle(false);
 		}
 
+	} else if (intent.Name == "custommusic") {
+		if (intent.Value >= 0 && intent.Value < 3 && intent.Value != State.CustomMusic) {
+			State.CustomMusic = intent.Value;
+			Service.Set_Custom_Music(State.CustomMusic);
+			Refresh_Tracks();
+		}
+
 	} else if (intent.Name == "select") {
 		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Tracks.size()) ? intent.Value : -1;
 
@@ -126,6 +134,7 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		if (State.Repeat) {
 			Execute(UIIntent{ "repeat", 0, "" });
 		}
+		Execute(UIIntent{ "custommusic", 0, "" });
 
 	} else if (intent.Name == "cancel") {
 		// Cancel puts back the levels and switches the screen opened with.
@@ -140,6 +149,9 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		if (State.Repeat != InitialRepeat) {
 			Service.Set_Repeat(InitialRepeat);
 		}
+		if (State.CustomMusic != InitialCustomMusic) {
+			Service.Set_Custom_Music(InitialCustomMusic);
+		}
 		Result = UI_RESULT_CANCELLED;
 	}
 }
@@ -147,6 +159,22 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 
 void UISoundPresenterClass::Refresh(void)
 {
+}
+
+
+void UISoundPresenterClass::Refresh_Tracks(void)
+{
+	int const playing = (State.Selected >= 0 && State.Selected < (int)State.Tracks.size()) ? State.Tracks[State.Selected].Theme : -1;
+	State.Tracks = Service.Tracks();
+	State.Selected = -1;
+	for (int index = 0; index < (int)State.Tracks.size(); index++) {
+		if (State.Tracks[index].Theme == playing) {
+			State.Selected = index;
+		}
+	}
+	if (State.Selected < 0 && !State.Tracks.empty()) {
+		State.Selected = 0;
+	}
 }
 
 
@@ -183,6 +211,8 @@ class UISoundViewClass : public UIRmlViewClass
 			Model.DirtyVariable("movie");
 			Model.DirtyVariable("shuffle");
 			Model.DirtyVariable("repeat");
+			Model.DirtyVariable("custommusic");
+			Model.DirtyVariable("tracks");
 			Model.DirtyVariable("selected");
 		}
 
@@ -196,8 +226,17 @@ class UISoundViewClass : public UIRmlViewClass
 			track.RegisterMember("label", &UISoundTrack::Label);
 			track.RegisterMember("theme", &UISoundTrack::Theme);
 
+			Rml::StructHandle<UISoundChoice> choice = model.RegisterStruct<UISoundChoice>();
+			if (!choice) {
+				return(false);
+			}
+			choice.RegisterMember("label", &UISoundChoice::Label);
+
 			UISoundState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISoundTrack>>()
+				&& model.RegisterArray<std::vector<UISoundChoice>>()
+				&& model.Bind("custommusics", &state.CustomMusics)
+				&& model.Bind("custommusic", &state.CustomMusic)
 				&& model.Bind("score", &state.Score)
 				&& model.Bind("sound", &state.Sound)
 				&& model.Bind("voice", &state.Voice)

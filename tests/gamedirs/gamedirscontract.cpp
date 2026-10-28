@@ -577,6 +577,10 @@ void Test_Screenshots_Folder(void)
 	Check(Screenshot_Name("SCRN0002.png") == expected + "\\SCRN0002.png",
 		"and naming the next capture still answers");
 	Check(File_Exists(expected), "which makes the folder again");
+
+	std::string const music = Root + "\\User\\Shots\\Music";
+	Check(Music_Folder() == music + "\\", "the music folder is inside the user directory and ends in a separator");
+	Check(File_Exists(music), "asking for the music folder makes it");
 }
 
 

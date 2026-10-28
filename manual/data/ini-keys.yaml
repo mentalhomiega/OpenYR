@@ -10374,6 +10374,24 @@ CustomColor:
       source: code/session.cpp
       guard: null
     level: SessionClass
+CustomMusic:
+  key: CustomMusic
+  scopes:
+  - applies_to:
+    - client settings
+    file: ra2md.ini
+    section:
+      kind: literal
+      name: Audio
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: customname
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 CustomPalette:
   key: CustomPalette
   scopes:

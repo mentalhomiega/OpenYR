@@ -205,6 +205,7 @@ OptionsClass::OptionsClass(void) :
 	ScriptedCameraZoom(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
+	CustomMusic(CUSTOM_MUSIC_BOTH),
 	IsSidebarOnRight(true),
 	ModernInterface(true),
 	IsModernInterfaceChosen(true),
@@ -348,6 +349,17 @@ void OptionsClass::Set_Repeat(bool on)
 	IsScoreRepeat = on;
 	Theme.Set_Repeat(on);
 	DebugString("ScoreRepeat is %s\n", IsScoreRepeat == true ? "ON" : "OFF");
+}
+
+
+/// <summary>
+/// Chooses whether the playlist offers the stock scores, the tracks in the Music folder, or both.
+/// </summary>
+void OptionsClass::Set_Custom_Music(CustomMusicModeType mode)
+{
+	CustomMusic = mode;
+	Theme.Set_Custom_Mode(mode);
+	DebugString("CustomMusic is %s\n", Custom_Music_Mode_Name(mode));
 }
 
 
@@ -792,6 +804,14 @@ void OptionsClass::Load_Settings(void)
 	Set_Repeat(ConfigINI.Get_Bool("Audio", "IsScoreRepeat", IsScoreRepeat));
 	Set_Shuffle(ConfigINI.Get_Bool("Audio", "IsScoreShuffle", IsScoreShuffle));
 
+	CustomMusicModeType custom = CUSTOM_MUSIC_BOTH;
+	std::string const customname = ConfigINI.Get_String("Audio", "CustomMusic", Custom_Music_Mode_Name(custom));
+	if (!Custom_Music_Mode_From_Name(customname.c_str(), custom)) {
+		DebugString("CustomMusic=%s is not Both, Stock or Custom; using Both.\n", customname.c_str());
+		custom = CUSTOM_MUSIC_BOTH;
+	}
+	Set_Custom_Music(custom);
+
 	SoundLatency = ConfigINI.Get_Int("Audio", "SoundLatency", SoundLatency);
 	DebugString("Emulated sound card latency default = %d\n", SoundLatency);
 
@@ -989,6 +1009,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Float("Audio", "MovieVolume", MovieVolume);
 	ConfigINI.Put_Bool("Audio", "IsScoreRepeat", IsScoreRepeat);
 	ConfigINI.Put_Bool("Audio", "IsScoreShuffle", IsScoreShuffle);
+	ConfigINI.Put_String("Audio", "CustomMusic", Custom_Music_Mode_Name(CustomMusic));
 	ConfigINI.Put_Int("Audio", "SoundLatency", SoundLatency);
 	Save_Seen_Movies();
 
@@ -1023,6 +1044,7 @@ void OptionsClass::Set(void)
 	Set_Score_Volume(ScoreVolume, false);
 	Set_Repeat(IsScoreRepeat);
 	Set_Shuffle(IsScoreShuffle);
+	Set_Custom_Music(CustomMusic);
 	Map.Toggle_Cameo_Text(SidebarCameoText);
 	TechnoClass::Set_Action_Lines(ActionLines);
 }

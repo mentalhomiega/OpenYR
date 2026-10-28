@@ -31,6 +31,11 @@ A command runs once the game frame reaches its frame, in file order.
 | `gpureplay <0\|1>` | `1` records each blit of the map view's object pass, replays the record over the picture the pass started from, and logs a `GPU_REPLAY` line per pass: the game frame, the blits recorded, the draws the record cannot hold (other blitter kinds and other writes such as particle pixels), the pixels where the replay differs from the real picture, and the first such pixel. `0` stops |
 | `gpucheck <0\|1>` | `1` records each object pass of the map view as `gpureplay` does, draws the record on the GPU over the picture the pass started from, reads the result back, and logs a `GPU_DIFF` line: the game frame, the blits, the pixels compared, the pixels that differ, the largest difference in one 565 channel, and the first differing pixel relative to the map view. Direct3D 11 only; a pass is skipped while the previous one is still being read back. `0` stops |
 | `presentdigest <0\|1>` | `1` logs one `PRESENT_DIGEST` line at each present that reaches the presenter, with the game frame, the present index and a hash of the frame and the map layer. `0` stops the lines. See [Comparing presented frames](#comparing-presented-frames) |
+| `musicstage` | Writes sample files into the `Music` folder of the user directory unless they are there: two valid WAV tracks, an empty MP3, a text file named `.ogg` and a text file |
+| `musicscan` | Reads the `Music` folder again and logs each track found or skipped, as the game does at start-up |
+| `musicmode <Both\|Stock\|Custom>` | Sets `CustomMusic` and logs how many tracks the music list then offers, and how many of those are custom |
+| `musiclist` | Logs each custom track with its title, whether the list allows it and its length in seconds |
+| `musicopen <n>` | Opens the n-th custom track's stream at no volume, counting from 0, logs `opened` or `failed`, and closes it |
 | `perflog <0\|1>` | Turns the once-a-second Perf lines on or off, as `PerfLog=` under `[Options]` does. The format is in [PERFORMANCE.md](PERFORMANCE.md) |
 | `move <TypeID> <x> <y>` | Orders the player-controlled units, infantry and aircraft of that type (see `select`) to the cell; structures are not moved |
 | `stop <TypeID>` | Sends the Stop command's idle event to the player's objects of that type that can move or fire. It logs how many it sent |
