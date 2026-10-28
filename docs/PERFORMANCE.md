@@ -150,3 +150,9 @@ draws matched hash for hash with and without this cache. At 3840x2160 with `GpuR
 uncapped, the short benchmark rose from about 400 to about 530 pictures per second.
 
 A cached picture of a vehicle in the normal visual state, not sinking, not warping and not split across a bridge is blitted straight to the map without the scratch surface, with the same pixels, depth and emissive values. A picture wholly outside the clip, like a voxel image or shadow there, is not drawn at all. In the short benchmark at 3840x2160 the time per voxel unit fell by about a third. Rows of a blit that the GPU recorder holds are walked only when they have emissive values to clear.
+
+A vehicle whose shadow and turret picture are both cached no longer builds its draw and shadow matrices: the locomotor reports the cache keys without them, and the matrices are built only for a missing image. The time per voxel unit fell by about 1,000 of about 5,500 processor cycles.
+
+The modern build panel is drawn eight pixels at a time. At 3840x2160 the `ui` phase of a picture fell from about 0.45 ms to about 0.09 ms with this change and the write watch change below.
+
+The frame surface's write watch (`WriteWatch_Take` with `steady`) stops resetting a page that two takes in a row found written, because the next write to a reset page is a page fault of about 1,700 cycles. Such a page is reported as written in every take until a full reset, every 32 takes, so the areas redrawn every frame, such as the build panel, cost no faults, and a page that stops being written is still refilled and copied for up to 32 pictures. Only the frame surface uses it. In four alternating pairs of the 4K benchmark the draw phase fell from about 1.45 ms to about 1.1 ms per picture in quiet pairs.
