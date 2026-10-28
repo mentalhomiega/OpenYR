@@ -27,6 +27,8 @@ The developer guides are split by subject:
 - [Network timing](NETCODE.md) — how a network game schedules orders, how the
   timing policy picks its values, how it compares with gamemd, and measured
   order delays.
+- [Replays](REPLAYS.md) — recording a skirmish, the replay file, playback and
+  the state hashes that prove a replay reached the same result.
 - [Multiplayer game modes](MULTIPLAYER_MODES.md) — the modes gamemd defines
   in `MPModesMD.ini`, the virtual slots of its mode class, and what the port
   applies from them.

@@ -238,6 +238,10 @@
 **	gpucheck <0|1>		1 also draws each recorded pass on the GPU and logs a GPU_DIFF line comparing it with the map view; 0 stops
 **	searchdir <path>		adds a directory the game searches for files; it is added as the
 **							script is read, before the game reads any file, whatever the frame
+**	recordreplay <name>	records the skirmish to Replays/<name> in the user directory; it applies from the start,
+**							whatever the frame
+**	playreplay <name>		plays the recorded events of Replays/<name> in place of the orders given; it applies from
+**							the start, whatever the frame
 **	loadshot <name>			saves what the window shows each time a loading screen is
 **							complete, as <name>-<count>.tga in the screenshots folder; it
 **							applies from the start, whatever the frame
