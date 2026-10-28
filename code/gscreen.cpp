@@ -716,6 +716,8 @@ void GScreenClass::Render(void)
 		Rect const dest = zoomed ? ScreenTacticalRect : TacticalRect;
 		Fill_Map_Layer_Key(dest);
 		Video_Set_Gpu_Map_Layer(gpu_area, dest);
+		// The new map pass is shown at the next present even when nothing in the frame changed.
+		Video_Mark_Dirty();
 	} else if (zoomed && Video_Map_Layer_Supported()) {
 		// The presenter draws the map under the frame at the window's own resolution. The translucent panel
 		// blends with the map, so the frame under the panel holds a copy of the map instead of the key.
