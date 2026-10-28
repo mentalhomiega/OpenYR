@@ -253,6 +253,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	Adjacent(3),
 	ToBuild(RTTI_NONE),
 	ExitCoordinate(0, 0, 0),
+	IsExitCoordSet(false),
 	ExitList(NULL),
 	StartFace(DIR_N),
 	Power(0),
@@ -1493,7 +1494,10 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsICBMLauncher = ini.Get_Bool(Name(), "ICBMLauncher", IsICBMLauncher);
 		IsArtillary = ini.Get_Bool(Name(), "Artillary", IsArtillary);
 
-		ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
+		if (ini.Is_Present(Name(), "ExitCoord")) {
+			ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
+			IsExitCoordSet = true;
+		}
 
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
 		IsBaseDefense = ini.Get_Bool(Name(), "IsBaseDefense", IsBaseDefense);
@@ -1555,9 +1559,9 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 			Size = size;
 		}
 
-		// Without an ExitCoord key a weapons factory releases at the offset gamemd's GetCoords gives (0x447AC0), as GetExitCoords (0x44F640) falls back to it.
-		if (IsWeaponsFactory && !ini.Is_Present(Name(), "ExitCoord")) {
-			ExitCoordinate = Coord(Width() * CELL_LEPTON_W / 2 - CELL_LEPTON_W / 2, Height() * CELL_LEPTON_H / 2 - CELL_LEPTON_H / 2, 0);
+		// A weapons factory with no ExitCoord from any INI releases at the offset gamemd's GetCoords gives (0x447AC0), as GetExitCoords (0x44F640) falls back to it.
+		if (IsWeaponsFactory && !IsExitCoordSet) {
+			ExitCoordinate = Default_Exit_Coord();
 		}
 
 		MidPoint = ArtINI.Get_Int(Graphic_Name(), "MidPoint", MidPoint);
@@ -2368,6 +2372,16 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 
 
 /// <summary>
+/// Returns the ExitCoord a weapons factory releases at when no INI sets one.
+/// It is half the foundation in leptons, less half a cell on each axis.
+/// </summary>
+Coord BuildingTypeClass::Default_Exit_Coord(void) const
+{
+	return(Coord(Width() * CELL_LEPTON_W / 2 - CELL_LEPTON_W / 2, Height() * CELL_LEPTON_H / 2 - CELL_LEPTON_H / 2, 0));
+}
+
+
+/// <summary>
 /// Re-attaches the artwork and shared tables this building type names.
 /// The art is fetched again once the members have been read, and the footprint and exit
 /// lists are re-attached from the shared tables that match this building's size.
@@ -2375,6 +2389,9 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 void BuildingTypeClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
+
+	// The save does not record whether an INI set ExitCoord, so a loaded value equal to the default counts as unset.
+	IsExitCoordSet = ExitCoordinate != Default_Exit_Coord();
 
 	Fetch_Building_Voxel_Image();
 	if (IsDemandLoad) {

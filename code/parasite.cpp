@@ -11,7 +11,9 @@
 
 #include "parasite.h"
 
+#include <algorithm>
 #include <cmath>
+#include <vector>
 
 #include "_map.h"
 #include "_rules.h"
@@ -45,6 +47,9 @@ constexpr double Squid_Splash_Reach = 64.0;
 
 // The radians per facing step that a bite's roll turns by (ParasiteClass::Update, 0x629FD0; TechnoClass::vt_entry_3D8, 0x70B280).
 constexpr double Bite_Turn_Per_Facing = -9.587672516830327e-05;
+
+// The parasites whose grapple holds an animation. A removed animation checks only these, not every techno.
+std::vector<ParasiteClass *> GrappleHolders;
 
 
 /// <summary>
@@ -93,6 +98,30 @@ ParasiteClass::ParasiteClass(TechnoClass * owner) :
 	GrappleAnimFrame(0),
 	GrappleAnimDelay(0)
 {
+}
+
+
+ParasiteClass::~ParasiteClass(void)
+{
+	if (GrappleAnim != nullptr) {
+		Set_Grapple_Anim(nullptr);
+	}
+}
+
+
+/// <summary>
+/// Sets the grapple animation and keeps the grapple holder list in step with it. A parasite is
+/// on that list exactly while it holds an animation.
+/// </summary>
+void ParasiteClass::Set_Grapple_Anim(AnimClass * anim)
+{
+	GrappleAnim = anim;
+	auto const found = std::find(GrappleHolders.begin(), GrappleHolders.end(), this);
+	if (anim != nullptr && found == GrappleHolders.end()) {
+		GrappleHolders.push_back(this);
+	} else if (anim == nullptr && found != GrappleHolders.end()) {
+		GrappleHolders.erase(found);
+	}
 }
 
 
@@ -230,7 +259,7 @@ void ParasiteClass::Update_Squid(void)
 			{
 				AnimType const type = AnimTypeClass::From_Name("SQDG");
 				if (type != ANIM_NONE && AnimTypes[type] != nullptr) {
-					GrappleAnim = new AnimClass(AnimTypes[type], where);
+					Set_Grapple_Anim(new AnimClass(AnimTypes[type], where));
 				}
 			}
 			GrappleState = GrappleStage::Grab;
@@ -383,7 +412,7 @@ void ParasiteClass::Reset_Grapple(void)
 	GrappleAnimDelay = 0;
 	GrappleState = GrappleStage::Start;
 	AnimClass * const anim = GrappleAnim;
-	GrappleAnim = nullptr;
+	Set_Grapple_Anim(nullptr);
 	if (anim != nullptr) {
 		anim->Delete_Me();
 	}
@@ -497,7 +526,7 @@ void ParasiteClass::Detach(AbstractClass const * target)
 		return;
 	}
 	if (target == GrappleAnim) {
-		GrappleAnim = nullptr;
+		Set_Grapple_Anim(nullptr);
 		return;
 	}
 	// A victim leaving the map or dying lets the parasite out where it stood, without the exit paralysis (ParasiteClass::PointerExpired, 0x62A260).
@@ -518,4 +547,31 @@ void ParasiteClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(GrappleState);
 	stream.Serialize(GrappleAnimFrame);
 	stream.Serialize(GrappleAnimDelay);
+}
+
+
+/// <summary>
+/// Clears each grapple that holds target, which is an animation being removed. The list is
+/// walked from its end, since a parasite that drops its animation leaves the list.
+/// </summary>
+void Detach_Grapple_Holders(AbstractClass const * target)
+{
+	for (std::size_t index = GrappleHolders.size(); index-- > 0; ) {
+		GrappleHolders[index]->Detach(target);
+	}
+}
+
+
+/// <summary>
+/// Replaces the grapple holder list with every parasite whose GrappleAnim is set now.
+/// </summary>
+void Rebuild_Grapple_Holders(void)
+{
+	GrappleHolders.clear();
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * const techno = Technos[index];
+		if (techno->ParasiteImUsing && techno->ParasiteImUsing->GrappleAnim != nullptr) {
+			GrappleHolders.push_back(&techno->ParasiteImUsing.value());
+		}
+	}
 }

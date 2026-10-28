@@ -169,6 +169,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		*/
 		Coord ExitCoordinate;
 
+		// Set once an INI gives ExitCoord, so a later INI that omits the key keeps the value. Not saved; Post_Load infers it for a loaded type.
+		bool IsExitCoordSet;
+
 		/*
 		**	When determine which cell to head toward when exiting a building, use the
 		**	list elaborated by this variable. There are directions of exit that are
@@ -1195,6 +1198,7 @@ class BuildingTypeClass : public TechnoTypeClass
 		static Cell const ExitLists[BSIZE_COUNT][30];
 
 		void Init_Anim(BStateType state, int start, int count, int rate) const;
+		Coord Default_Exit_Coord(void) const;
 };
 
 inline BuildingTypeClass * AbstractClass::As_BuildingTypeClass(void) { return(dynamic_cast<BuildingTypeClass *>(this)); }
