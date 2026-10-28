@@ -2646,7 +2646,8 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	if ((Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) && cellptr->Overlay != OVERLAY_NONE) {
 		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
 
-		if (optr->IsCrushable) {
+		// A CrusherAll vehicle crushes any wall, not only a crushable one (UnitClass::PerCellProcess, 0x73AFD4).
+		if (optr->IsCrushable || (optr->IsWall && Class->MZone == MZONE_CRUSHER_ALL)) {
 			Sound_Effect(optr->CrushSound, Center_Coord());
 			cellptr->Reduce_Wall(-1);
 			IsCrushing = false;
@@ -4493,7 +4494,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	allies, then record that it is crushable and let the normal logic take over. The end
 			**	result should cause this unit to consider the cell passable.
 			*/
-			if (optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) {
+			// A CrusherAll vehicle takes any wall as a crusher takes a crushable one (UnitClass::CanReach, 0x73F42E).
+			if ((optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) || Class->MZone == MZONE_CRUSHER_ALL) {
 				if (House->Is_Ally(cellptr->Owner)) {
 					if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
 				}
