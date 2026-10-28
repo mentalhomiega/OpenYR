@@ -25,6 +25,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "hangwatch.h"
+#include "init.h"
 
 #include <algorithm>
 #include <cctype>
@@ -257,7 +258,8 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread
-/// without pumping messages, for testing the hang watchdog) and quit.
+/// without pumping messages, for testing the hang watchdog), command (runs the registered command of that
+/// name, as its key does; the in-game script's command step cannot run while a replay is paused) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
 {
@@ -493,7 +495,11 @@ void UIScript_Tick(Rml::Context * context)
 			} else if (step.Command == "stall") {
 				// Holds the main thread without pumping messages, so the hang watchdog reports it.
 				Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
-			} else if (step.Command == "movie") {
+			} else if (step.Command == "command") {
+			Execute_Command(step.Argument.c_str());
+			WaitUntil = now + 300;
+			return;
+		} else if (step.Command == "movie") {
 			Play_Movie(step.Argument.c_str());
 			WaitUntil = Now_Milliseconds() + 300;
 			return;

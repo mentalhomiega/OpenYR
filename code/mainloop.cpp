@@ -57,6 +57,7 @@
 #include "nettiming.h"
 #include "pcx.h"
 #include "queue.h"
+#include "replay.h"
 #include "rules.h"
 #include "savemgr.h"
 #include "scenario.h"
@@ -229,7 +230,7 @@ static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		// Fast-forward removes only the pacing; the work done in each tick is unchanged.
-		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD)) {
+		if (Debug_Cheat_Active(DebugCheat::FAST_FORWARD) || Replay_Is_Fast()) {
 			return(0);
 		}
 		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
@@ -357,6 +358,28 @@ bool Main_Loop(void)
 		Call_Back();
 		if (GameInFocus) {
 			Map.Render();
+		}
+		Sleep(10);
+		return(!GameActive);
+	}
+
+	/*
+	**	A paused replay keeps the view drawn and answers the keys and the mouse, so that it can be
+	**	resumed, but runs no frame.
+	*/
+	if (Replay_Is_Paused()) {
+		Call_Back();
+		if (SpecialDialog == SDLG_NONE && GameInFocus) {
+			UIShell.Tick();
+			Map.Input(input, x, y);
+			Hotkey_Poll();
+			if (input) {
+				Keyboard_Process(input);
+			}
+			Apply_Pending_View_Zoom();
+			Map.Render();
+		} else {
+			Hotkey_Reset_Pending();
 		}
 		Sleep(10);
 		return(!GameActive);
