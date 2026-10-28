@@ -323,6 +323,7 @@ RulesClass::RulesClass(void) :
 	ChronoMinimumDelay(0),
 	ChronoRangeMinimum(0),
 	ChronoErasedSuperWeapons(false),
+	UndeployScattersInfantry(false),
 	TreeStrength(25),
 	TeamDelays(),
 	AIHateDelays(),
@@ -1965,6 +1966,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		ChronoMinimumDelay = ini.Get_Int(GENERAL, "ChronoMinimumDelay", ChronoMinimumDelay);
 		ChronoRangeMinimum = ini.Get_Int(GENERAL, "ChronoRangeMinimum", ChronoRangeMinimum);
 		ChronoErasedSuperWeapons = ini.Get_Bool(GENERAL, "ChronoErasedSuperWeapons", ChronoErasedSuperWeapons);
+		UndeployScattersInfantry = ini.Get_Bool(GENERAL, "UndeployScattersInfantry", UndeployScattersInfantry);
 		AISafeDistance = ini.Get_Int(GENERAL, "AISafeDistance", AISafeDistance);
 		PurifierBonus = ini.Get_Float(GENERAL, "PurifierBonus", PurifierBonus);
 		AIVirtualPurifiers = ini.Get_IntList(GENERAL, "AIVirtualPurifiers", AIVirtualPurifiers);
@@ -3552,6 +3554,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ChronoMinimumDelay);
 	stream.Serialize(ChronoRangeMinimum);
 	stream.Serialize(ChronoErasedSuperWeapons);
+	stream.Serialize(UndeployScattersInfantry);
 	stream.Serialize(LightningFrequency);
 	stream.Serialize(LightningRandomness);
 	stream.Serialize(LightningDamage);

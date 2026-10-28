@@ -1,0 +1,20 @@
+; A player's deployed Slave Miner (YAREFN) is sold while one of its slaves is still on the cell the SMIN will appear on, with UndeployScattersInfantry=yes (slave-undeploy-scatter-on.ini).
+; The sale starts 20 frames after the refinery appears, the window in which a slave stands on that cell. Expected: an "Undeploy: YAREFN waits for soldiers to leave" line, no "Slave: YAREFN's slaves are freed" line, an SMIN owned by Americans after the sale, and slaves still owned by it.
+; slave-undeploy-scatter-off.txt is the same script without the key: the slaves are freed and no SMIN appears.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/slave-undeploy-scatter-on.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 200 -Filter "AUTOTEST|Slave: |Undeploy: |Exception"
+5 rules E:/Claude ra2 decomp/src-agent26/tests/autotest/slave-undeploy-scatter-on.ini
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 reveal
+30 view 62 38
+40 own SMIN 62 38
+41 own HTNK 58 40
+50 waitowns Americans YAREFN 1 2000
+60 where SLAV
+70 sell 61 39
+80 waitowns Americans SMIN 1 900
+90 where SMIN
+100 where SLAV
+110 where YAREFN
+120 houses
+150 quit
