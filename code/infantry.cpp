@@ -3618,6 +3618,13 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 		}
 	}
 
+	// A human player's dug-in soldier never walks to its target. It keeps the target while its deploy weapon reaches it, takes the greatest
+	// threat in range when it does not, and goes back to idle with none (InfantryClass::Mission_Attack, 0x51F3E0, calling vt_entry_428, 0x51F330).
+	if (House->Is_Human_Player() && Is_Deployed()) {
+		Refresh_Deployed_Target();
+		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+	}
+
 	return(BASECLASS::Do_MISSION_ATTACK());
 }
 
@@ -5214,6 +5221,11 @@ void InfantryClass::Refresh_Deployed_Target(void)
 		if (target != NULL) {
 			return;
 		}
+	}
+
+	// With nothing to shoot, a soldier that is not on Guard goes back to idle, unless it is a jumpjet (vt_entry_428, 0x51F330).
+	if (CurrentMission != MISSION_GUARD && !Class->IsJumpJet) {
+		Enter_Idle_Mode(false, true);
 	}
 }
 
