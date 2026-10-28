@@ -589,7 +589,9 @@ void ScoreClass::Draw_Emblem(ShapeSet const * animation, int frame, Rect const &
 
 /// <summary>
 /// Waits for the player to click the Continue button, with the emblem animation playing while the
-/// screen is up. A left click outside the button, and any key, does nothing.
+/// screen is up. A left click outside the button, and any key, does nothing: gamemd's dialog 259 procedure
+/// (0x6c8ff0) closes only on the button's command (0x423), ignores Esc's cancel command, and its dialog
+/// initialisation returns false, so nothing gives the button keyboard focus for Enter or Space to press it.
 /// </summary>
 /// <param name="animation">The emblem animation to play, or NULL to wait with a still picture.</param>
 /// <param name="box">The stage area each animation frame is drawn into.</param>
