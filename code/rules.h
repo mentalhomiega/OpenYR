@@ -2705,6 +2705,13 @@ class RulesClass
 		bool ChronoErasedSuperWeapons;
 
 		/*
+		 * Whether a structure that packs up into a vehicle first moves allied soldiers off the cell
+		 * the vehicle appears on and waits a few seconds for it to clear. When it is false a soldier
+		 * on that cell makes the vehicle fail to appear, and the sale is refunded.
+		 */
+		bool UndeployScattersInfantry;
+
+		/*
 		 * This is how often an ion storm throws a lightning bolt, expressed as a chance
 		 * in 1000 per game frame.
 		 */

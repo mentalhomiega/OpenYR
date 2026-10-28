@@ -258,6 +258,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	AnimToTrack(NULL),
 	LastStrength(0),
 	PlacementDelay(0),
+	UndeployWaitStart(0),
 	IsOn(true),
 	IsNominal(false),
 	LastSuperWeaponIndex(-1),
@@ -5561,6 +5562,55 @@ bool BuildingClass::Can_Be_Undeployed(void)
 }
 
 
+/// <summary>
+/// Decides whether the undeploy may place its vehicle on the given cell now.
+/// The result is true at once unless UndeployScattersInfantry is set and only allied soldiers
+/// stand on the cell. Those soldiers are told to step off, and the result stays false until
+/// they have left or five seconds have passed. A vehicle or an enemy on the cell never delays
+/// the undeploy.
+/// </summary>
+bool BuildingClass::Undeploy_Cell_Ready(Cell const & cell)
+{
+	if (!Rule->UndeployScattersInfantry || !Map.In_Radar(cell)) {
+		return(true);
+	}
+
+	CellClass * cellptr = &Map[cell];
+	bool allied_infantry = false;
+	for (ObjectClass * occupier = cellptr->Cell_Occupier(); occupier != NULL; occupier = occupier->Next) {
+		if (occupier == this || occupier->RTTI == RTTI_BUILDING || occupier->RTTI == RTTI_TERRAIN) {
+			continue;
+		}
+		if (occupier->RTTI != RTTI_INFANTRY || !((InfantryClass *)occupier)->House->Is_Ally(House)) {
+			return(true);
+		}
+		allied_infantry = true;
+	}
+
+	if (!allied_infantry) {
+		return(true);
+	}
+
+	if (UndeployWaitStart == 0) {
+		UndeployWaitStart = Frame + 1;
+		DebugString("Undeploy: %s waits for soldiers to leave %d,%d\n", Class->Name(), cell.X, cell.Y);
+	} else if (Frame + 1 - UndeployWaitStart >= 5 * TICKS_PER_SECOND) {
+		DebugString("Undeploy: %s stops waiting for %d,%d\n", Class->Name(), cell.X, cell.Y);
+		return(true);
+	}
+
+	for (ObjectClass * occupier = cellptr->Cell_Occupier(); occupier != NULL; occupier = occupier->Next) {
+		if (occupier->RTTI == RTTI_INFANTRY) {
+			InfantryClass * soldier = (InfantryClass *)occupier;
+			if (soldier->NavCom == NULL || soldier->NavCom == cellptr) {
+				soldier->Scatter(COORD_NONE, true, true);
+			}
+		}
+	}
+	return(false);
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Mission_Deconstruction -- Handles building deconstruction.                   *
  *                                                                                             *
@@ -5804,6 +5854,12 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						PrimaryFacing.Set_Desired(Class->StartFace);
 						return(1);
 					}
+
+					Cell const undeploy_cell = Class->Is_Mobile_Deployer() ? PositionCoord.As_Cell() : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE)).As_Cell();
+					if (!Undeploy_Cell_Ready(undeploy_cell)) {
+						return(1);
+					}
+					UndeployWaitStart = 0;
 
 					ScenarioInit++;
 					UnitClass * unit = new UnitClass(Class->UndeploysInto, House);
@@ -10880,6 +10936,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LastStrength);
 	stream.Serialize(AnimToTrack);
 	stream.Serialize(PlacementDelay);
+	stream.Serialize(UndeployWaitStart);
 	stream.Serialize(Anims);
 	stream.Serialize(AnimStates);
 	stream.Serialize(Occupants);
@@ -11002,6 +11059,7 @@ void BuildingClass::Compute_CRC(CRCEngine & crc) const
 		crc(AnimToTrack->Fetch_ID());
 	}
 	crc((int)PlacementDelay);
+	crc(UndeployWaitStart);
 	crc(TurretIndex);
 	crc(LaserFenceFrame);
 	crc(FirestormWallFrame);

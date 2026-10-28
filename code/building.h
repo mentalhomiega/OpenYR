@@ -127,6 +127,12 @@ class BuildingClass : public TechnoClass
 		CDTimerClass<FrameTimerClass> PlacementDelay;
 
 		/*
+		**	The frame (plus one) at which this structure began waiting for allied soldiers to leave the
+		**	cell it undeploys onto, or zero when it is not waiting.
+		*/
+		int UndeployWaitStart;
+
+		/*
 		 * These are the animations this building currently has running, one slot per BAnimType.
 		 */
 		AnimClass * Anims[BANIM_COUNT];
@@ -663,6 +669,7 @@ class BuildingClass : public TechnoClass
 		virtual int Do_MISSION_MISSILE(void) override;
 		virtual int Do_MISSION_OPEN(void) override;
 		bool Can_Be_Undeployed(void);
+		bool Undeploy_Cell_Ready(Cell const & cell);
 		virtual int Apparent_Brightness(int brightness = 1000) const override;
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		void Assign_Rally_Point(Cell const & cell);

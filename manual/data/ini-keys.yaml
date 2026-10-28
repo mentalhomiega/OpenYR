@@ -41977,6 +41977,24 @@ UndeployDelay:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+UndeployScattersInfantry:
+  key: UndeployScattersInfantry
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: UndeployScattersInfantry
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 UndeploySound:
   key: UndeploySound
   scopes:
