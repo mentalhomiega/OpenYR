@@ -174,6 +174,8 @@ and does nothing.
 `tests/campaign/win-<mission>.txt` holds one script for each of the fourteen missions. Each forces what the map's triggers wait for, with `killhouse`, `killtag`, `own` and
 `setlocal`, and the mission is won when the log has `AUTOTEST game over frame N: won`. The log also has an `AUTOTEST   sprung` line for every trigger that runs, with the frame it ran in.
 
+`win-all04-remote-refineries.txt` plays Allied 4 the way a player does: it destroys the Yuri base and every unit by type and leaves the two Slave Miners that deployed far from the base. The mission is won with those refineries still standing.
+
 The Red Alert 2 scripts, `tests/campaign/win-ra2-<mission>.txt`, begin with `0 requirera2` and need `-Mods tests/autotest/ra2-campaigns`. Without that mod the run stops at load with an `AUTOTEST error` line and exit code 1.
 
 ## Skirmish lobby

@@ -546,14 +546,17 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
 			**	exceptions.
 			*/
 			case TEVENT_UNITS_DESTROYED:
-				if (house->CurUnits > 0 || house->CurInfantry > 0) return(false);
+				// The stock event reads the active unit and soldier counts (0x5564 and 0x5578, TEventClass check at 0x71F12F),
+				// which count what stands out of limbo. A deployed Slave Miner refinery is a building there, not a unit.
+				if (house->AUQuantity.Total() > 0 || house->AIQuantity.Total() > 0) return(false);
 				break;
 
 			/*
 			**	Verify that all buildings and units have been destroyed.
 			*/
 			case TEVENT_ALL_DESTROYED:
-				if (house->CurBuildings > 0 || house->CurUnits > 0 || house->CurInfantry > 0) return(false);
+				// Owned structures, then the active unit and soldier counts (TEventClass check at 0x71F189), as the units event.
+				if (house->CurBuildings > 0 || house->AUQuantity.Total() > 0 || house->AIQuantity.Total() > 0) return(false);
 				break;
 
 			/*

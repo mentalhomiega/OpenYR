@@ -1,0 +1,46 @@
+; Campaign win check for Allied 4, played as a player would: the Bio Reactors fall (Einstein), the Psychic Dominator
+; dies, then Yuri's base buildings and every unit and soldier in it are destroyed, type after type, in sweeps. The two Yuri
+; Slave Miners deploy into Yuri Ore Refineries far from the base (cells 128,72 and 101,34) and a player never goes there.
+; The Destroyed All event of the game (HouseClass counts at 0x5564 and 0x5578 read by the event at 0x71f189) counts the
+; buildings that are not deployed harvesters, and the units and soldiers that stand out of limbo, so a deployed refinery
+; does not hold the mission up. Expected: "AUTOTEST game over frame N: won", with the two refineries still standing.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-all04-remote-refineries.txt -Campaign -Map ALL04DMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(win|game over|counts|killtag)|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+200 counts YuriCountry
+300 killtag 09275E6C
+301 killtag 0A82822C
+320 kill YACNST
+320 kill YAWEAP
+320 kill YABRCK
+320 kill NAPSIS
+320 kill NACLON
+320 kill YATECH
+320 kill YAGGUN
+320 kill YAPOWR
+320 kill YAPSYT
+340 kill YTNK
+340 kill LTNK
+340 kill YHVR
+340 kill SMIN
+340 kill INIT
+340 kill YURI
+400 kill INIT
+400 kill YURI
+400 kill YTNK
+400 kill LTNK
+500 kill INIT
+500 kill YURI
+600 counts YuriCountry
+700 listhouse YuriCountry
+1500 quit
