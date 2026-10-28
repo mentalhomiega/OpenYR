@@ -210,6 +210,7 @@
 #include "ui/screens/cncnetlobby/uicncnetlobby.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/movies/uimovies.h"
+#include "ui/screens/replays/uireplays.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uienginehost.h"
@@ -1193,6 +1194,19 @@ restart:
 				case SEL_VERSION: {
 					selection = SEL_NONE;
 					Version_Dialog();
+					break;
+				}
+
+				/*
+				**	Play a recorded skirmish. A replay that cannot start leaves the menu as it was.
+				*/
+				case SEL_REPLAYS: {
+					selection = SEL_NONE;
+					std::string file;
+					if (UI_Replays_Dialog(file) && Spawner_Play_Replay(file.c_str(), gameloaded)) {
+						process = false;
+						Theme.Stop(true);
+					}
 					break;
 				}
 
@@ -3041,6 +3055,7 @@ static int const MENU_BACK = 104;
 static int const MENU_PLAY_MOVIES = 105;
 static int const MENU_CNCNET = 106;
 static int const MENU_CNCNET_LOBBY = 107;
+static int const MENU_REPLAYS = 108;
 
 
 // The text of a string table label, or the fallback when the table lacks it.
@@ -3128,6 +3143,9 @@ static int Menu_Selection(int choice)
 			UI_CnCNet_Lobby_Dialog();
 			return(SEL_NONE);
 
+		case MENU_REPLAYS:
+			return(SEL_REPLAYS);
+
 		case MENU_NETWORK:
 		case MENU_SKIRMISH:
 			Session.Type = (choice == MENU_NETWORK) ? GAME_IPX : GAME_SKIRMISH;
@@ -3189,6 +3207,9 @@ int Main_Menu(unsigned int timeout)
 		}
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
+		if (!Options.IsClassicMenus) {
+			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Replays", "Replays"), MENU_REPLAYS, true});
+		}
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
 		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
@@ -5950,6 +5971,50 @@ class QuickLoadCommandClass : public CommandClass
 };
 
 
+class ReplayPauseCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("ReplayPause");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Pause replay");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Pauses and resumes a replay. It does nothing in any other game.");
+		}
+
+		virtual void Execute(void) const {
+			Replay_Toggle_Pause();
+		}
+};
+
+
+class ReplayFastCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const {
+			return("ReplayFast");
+		}
+		virtual char const * Get_Display_Name(void) const {
+			return("Fast replay");
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_INTERFACE)));
+		}
+		virtual char const * Get_Description(void) const {
+			return("Plays a replay without the frame limit of the game speed, and back at the game speed on the next press. It does nothing in any other game.");
+		}
+
+		virtual void Execute(void) const {
+			Replay_Toggle_Fast();
+		}
+};
+
+
 class ChatToAllCommandClass : public CommandClass
 {
 	public:
@@ -7001,6 +7066,9 @@ static void Init_Commands(void)
 	AllCommands.Add(new QuickSaveCommandClass);
 	AllCommands.Add(new QuickLoadCommandClass);
 
+	AllCommands.Add(new ReplayPauseCommandClass);
+	AllCommands.Add(new ReplayFastCommandClass);
+
 	const CommandClass * chatallcmd = new ChatToAllCommandClass;
 	AllCommands.Add(chatallcmd);
 
@@ -7114,13 +7182,38 @@ static bool Key_Has_Binding(int key)
 
 
 /// <summary>
+/// Returns whether a replay in play refuses the command: the commands that order the selection, set an
+/// order mode or save and load the game. Selection, view and interface commands work as usual.
+/// </summary>
+static bool Replay_Refuses_Command(CommandClass const * command)
+{
+	if (!Replay_Is_Playing()) {
+		return(false);
+	}
+
+	static char const * const refused[] = {
+		"ToggleRepair", "ToggleSell", "PlanningMode", "WaypointMode", "DeleteWaypoint", "AttackMove", "PlaceBeacon", "Delete",
+		"RepeatLastBuilding", "RepeatLastInfantry", "RepeatLastUnit", "RepeatLastAircraft", "ManualPlace", "QuickSave", "QuickLoad",
+		"ChatToAll", "ChatToAllies",
+	};
+	char const * name = command->Get_Unique_Name();
+	for (char const * entry : refused) {
+		if (strcmp(name, entry) == 0) {
+			return(true);
+		}
+	}
+	return(strcmp(command->Get_Category(), Fetch_String(TXT_CONTROL)) == 0);
+}
+
+
+/// <summary>
 /// Runs the command of each fired binding, in the order given.
 /// </summary>
 static void Run_Hotkey_Fires(std::vector<HotkeyTimingClass::Fire> const & fires)
 {
 	for (HotkeyTimingClass::Fire const & fire : fires) {
 		CommandClass const * command = (fire.Trigger == HOTKEY_PRESS) ? HotkeyCommands[fire.Key] : HotkeyTriggered[Hotkey_Trigger_Index(fire.Key, fire.Trigger)];
-		if (command != NULL) {
+		if (command != NULL && !Replay_Refuses_Command(command)) {
 			command->Execute();
 		}
 	}

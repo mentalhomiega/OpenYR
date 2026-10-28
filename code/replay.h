@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "replayfile.h"
+
 #include <string>
 
 class EventClass;
@@ -75,6 +77,9 @@ void Replay_Toggle_Pause(void);
 void Replay_Toggle_Fast(void);
 bool Replay_Is_Paused(void);
 bool Replay_Is_Fast(void);
+
+// The reason a recording cannot be played by this game, judged before a match starts; empty when it can.
+std::string Replay_Playability(ReplayFile::HeaderType const & recorded);
 
 // The text of the small label drawn over the view during playback, or an empty string outside playback.
 std::string Replay_Label_Text(void);

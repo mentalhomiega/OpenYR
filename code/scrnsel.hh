@@ -27,5 +27,6 @@ enum {
 	SEL_INTERNET_RETURN,			// retired; slot kept to keep the button order aligned
 	SEL_VIEW_CREDITS,
 	SEL_VERSION,
+	SEL_REPLAYS,					// list the recorded skirmishes and play one
 	SEL_NONE,						// placeholder default value
 };

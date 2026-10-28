@@ -1,0 +1,128 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 600dp;
+	height: 396dp;
+	top: 50%;
+	margin-top: -198dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#title
+{
+	height: 18dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#heads, #replays .item
+{
+	display: flex;
+	align-items: center;
+	white-space: nowrap;
+}
+
+#heads
+{
+	margin-top: 8dp;
+	height: 16dp;
+	line-height: 16dp;
+	padding: 0 4dp;
+}
+
+#replays
+{
+	margin-top: 2dp;
+	height: 214dp;
+}
+
+#replays .item
+{
+	height: 20dp;
+	line-height: 18dp;
+}
+
+#replays .item.refused
+{
+	opacity: 0.55;
+}
+
+.map
+{
+	flex: 0 0 auto;
+	width: 126dp;
+	overflow: hidden;
+	margin-right: 8dp;
+}
+
+.players
+{
+	flex: 1 1 0;
+	overflow: hidden;
+	margin-right: 8dp;
+}
+
+.date
+{
+	flex: 0 0 auto;
+	width: 104dp;
+	margin-right: 8dp;
+}
+
+.length
+{
+	flex: 0 0 auto;
+	width: 46dp;
+	margin-right: 8dp;
+	text-align: right;
+}
+
+.result
+{
+	flex: 0 0 auto;
+	width: 40dp;
+}
+
+#status
+{
+	margin-top: 6dp;
+	height: 32dp;
+	line-height: 16dp;
+	overflow: hidden;
+	color: #ff7070;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 6dp;
+}
+
+#buttons button
+{
+	width: 110dp;
+	white-space: nowrap;
+}
+
+#play
+{
+	margin-left: 74dp;
+}
+
+#delete, #back
+{
+	margin-left: 36dp;
+}

@@ -104,10 +104,10 @@ std::string Recording_Path(void)
 }
 
 
-/// <summary>Checksum of the scenario file as the game finds it.</summary>
-std::uint32_t Map_Checksum(void)
+/// <summary>Checksum of the scenario file of that name as the game finds it, or 0 when it is not on hand.</summary>
+std::uint32_t Map_Checksum(char const * name)
 {
-	CCFileClass file(Scen->ScenarioName);
+	CCFileClass file(name);
 	if (!file.Is_Available() || !file.Open(FileClass::READ)) {
 		return(0);
 	}
@@ -131,7 +131,7 @@ ReplayFile::HeaderType Current_Identity(void)
 	header.Modified = OPENTS_COMMIT_DIRTY != 0;
 	header.Architecture = OPENTS_ARCH;
 	header.Map = Scen->ScenarioName;
-	header.MapCrc = Map_Checksum();
+	header.MapCrc = Map_Checksum(Scen->ScenarioName);
 	header.RulesCrc = static_cast<std::uint32_t>(RulesClass::Get_Rule_Unique_ID());
 	header.ArtCrc = static_cast<std::uint32_t>(RulesClass::Get_Art_Unique_ID());
 	header.AiCrc = static_cast<std::uint32_t>(RulesClass::Get_AI_Unique_ID());
@@ -395,6 +395,26 @@ bool Replay_Launch_Text(std::string & text, std::string & fault)
 int Replay_Seed(void)
 {
 	return(static_cast<int>(Playback.Header.Seed));
+}
+
+
+/// <summary>
+/// Judges a recording against this game before any match is started: the build, the map file and the
+/// mods. The rules, art and AI checksums can be judged only once the match has loaded, where playback
+/// judges them again.
+/// </summary>
+/// <returns>The reason the recording cannot be played, or an empty string.</returns>
+std::string Replay_Playability(ReplayFile::HeaderType const & recorded)
+{
+	ReplayFile::HeaderType current = recorded;
+	current.Version = OPENTS_VERSION_PACKED;
+	current.Commit = OPENTS_COMMIT;
+	current.Mods = ModSync::Encode(ModSync::Describe(Active_Mods()));
+	current.MapCrc = Map_Checksum(recorded.Map.c_str());
+	if (current.MapCrc == 0) {
+		return("The map " + recorded.Map + " is not on this machine.");
+	}
+	return(ReplayFile::Find_Incompatibility(recorded, current));
 }
 
 
