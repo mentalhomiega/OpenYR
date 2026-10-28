@@ -35,6 +35,12 @@ struct UIColorPresetOption
 	std::string Caption;
 };
 
+// One step of the remap ramp preview, as a CSS color.
+struct UIColorRampStep
+{
+	std::string Color;
+};
+
 // One player's color as another lobby row sees it, for the duplicate check.
 struct UIColorPickRival
 {
@@ -55,6 +61,13 @@ struct UIColorPickState
 	// The inline style that places the marker over the chosen hue and saturation, in dp.
 	std::string MarkerStyle = "left: 0dp; top: 0dp";
 	std::string Swatch = "#000000";
+	// The chosen color as numbers, for a player who cannot rely on the swatch: RGB with its hex form, then
+	// hue, saturation and brightness. Nearest names the closest of the eight standard lobby colors.
+	std::string ReadRGB;
+	std::string ReadHSV;
+	std::string Nearest;
+	// The sixteen steps of the remap ramp that units are drawn with, lightest first.
+	std::vector<UIColorRampStep> Ramp;
 	std::string Notice;
 	std::vector<UIColorPresetOption> Presets;
 	int Generation = 0;

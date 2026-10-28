@@ -27,6 +27,12 @@
 #field-marker { position: absolute; left: 0dp; top: 0dp; width: 10dp; height: 10dp; margin-left: -7dp; margin-top: -7dp; border: 2dp #000000; pointer-events: none; }
 #field-marker-core { position: absolute; left: 0dp; top: 0dp; width: 6dp; height: 6dp; border: 2dp #ffffff; }
 
+/* The numbers and the remap ramp sit beside the slider, so the choice can be read without the swatch. */
+#picker-info { margin-left: 14dp; width: 300dp; }
+#picker-info .info-line { display: block; height: 16dp; line-height: 16dp; font-size: 10dp; }
+#picker-ramp { display: flex; margin-top: 2dp; border: 1dp #00000099; }
+.ramp-step { display: block; width: 16dp; height: 40dp; }
+
 #presets { display: flex; flex-wrap: wrap; margin-top: 8dp; }
 /* The kit's button decorator is opaque, so a preset drops it to show its swatch. */
 .preset, .preset:active { width: 78dp; height: 28dp; margin: 2dp; padding: 5dp 2dp 0 2dp; border: 1dp #000000; decorator: none; font-size: 9dp; line-height: 10dp; color: #ffffff; }

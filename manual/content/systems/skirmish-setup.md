@@ -33,7 +33,14 @@ A row that holds nobody has its country, color, start and team boxes disabled. A
 
 - The country box offers Random and the countries whose [`Multiplay=`](/keys/multiplay/) entry is on. A computer player given Random draws its country as it does in a game started from a launch file; the person's Random is settled when the game starts.
 - The color box offers the eight lobby colors listed under [`Color`](/keys/color/). Colors never repeat: choosing one that another row holds hands that row the color this row had.
+- The color button opens the free color picker, which also sets a color that is not one of the eight. See [Free colors](#free-colors).
 - The start box offers Random and the numbers of the map's start positions, as the map editor numbers its waypoints from 1. A numbered start is held by one row at a time, and choosing a start another playing row holds swaps the two. Rows set to Random draw from the positions nobody named.
+
+## Free colors
+
+The picker in the modern menus holds a square for hue and saturation, a slider for brightness, and 22 presets: the eight lobby colors, then 14 more, seven of which are chosen to stay apart for people with red-green color blindness. It shows the chosen color as red, green and blue values with the hex code, as hue, saturation and brightness, and by the name of the closest of the eight lobby colors. A strip of sixteen steps shows the shades that the player's units and buildings are drawn from, lightest first.
+
+A color with a brightness below 96 is raised to 96. The picker refuses a color that looks too much like another row's color to someone with normal, red-blind or green-blind vision, and says so. Two lobby colors are never compared, since the lobby already keeps them apart. A row with a free color keeps its lobby color as its seat, and the free color decides only how the row is drawn: the game plays the same with any color. The color goes to the other machines of a network game with the rest of the player's choices. A game started from a launch file gives a seat a free color with [`ColorRGB=`](/formats/spawn-ini/).
 
 ## Teams
 
@@ -52,7 +59,7 @@ Each computer player plays at the difficulty its row names. Hard AI gives the ho
 Leaving the screen, whether to play or to cancel, writes the setup to `[Skirmish]` in `RA2MD.INI`:
 
 - `Map` holds the file name of the chosen map.
-- `Slot1` to `Slot8` hold the rows. Each value holds five numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, and the team.
+- `Slot1` to `Slot8` hold the rows. Each value holds six numbers separated by commas: the choice for the seat (0 Open, 1 Closed, 2 Easy AI, 3 Medium AI, 4 Hard AI), the country's number in the rules' list or `-1` for Random, the color position, the start number or `0` for Random, the team, and the free color, which is `0` for the lobby color.
 - `Units`, `Credits`, `Tech` and `Speed` hold the unit count, the credits, the tech level and the game speed. `Bases`, `Crates`, `Fog`, `Bridges`, `Redeploy`, `ShortGame`, `Engineer`, `SuperWeapons` and `BuildOffAlly` hold the switches as `0` or `1`.
 
 The screen reads these keys each time it opens. The setup therefore comes back after a game started from the screen ends, after a cancel, and after the game is closed and started again. A switch or number the file lacks leaves that setting at the rules' value.

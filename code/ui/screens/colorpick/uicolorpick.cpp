@@ -91,6 +91,44 @@ bool Clashes_With(RGBClass const & candidate, bool candidate_custom, std::vector
 	return(false);
 }
 
+// The name of the stock lobby color that looks closest to a color.
+char const * Nearest_Standard_Name(RGBClass const & rgb)
+{
+	int nearest = 0;
+	double nearest_distance = 0.0;
+	for (int index = 0; index < PLAYER_COLOR_SEATS; index++) {
+		double const distance = Player_Color_Distance(rgb, UI_Stock_Color_RGB(index));
+		if (index == 0 || distance < nearest_distance) {
+			nearest = index;
+			nearest_distance = distance;
+		}
+	}
+	return(Player_Color_Preset_At(nearest).Name);
+}
+
+// Brings the swatch, the numbers, the nearest standard color and the remap ramp preview in line with the chosen color.
+void Show_Choice(UIColorPickState & state)
+{
+	RGBClass const rgb = UI_Color_Pick_Color(state);
+	state.Swatch = UI_Color_CSS(rgb);
+
+	char text[96];
+	std::snprintf(text, sizeof(text), "Red %d, green %d, blue %d (%c%02X%02X%02X)", rgb.Get_Red(), rgb.Get_Green(), rgb.Get_Blue(),
+		'#', (unsigned)rgb.Get_Red(), (unsigned)rgb.Get_Green(), (unsigned)rgb.Get_Blue());
+	state.ReadRGB = text;
+	std::snprintf(text, sizeof(text), "Hue %d, saturation %d%%, brightness %d%%", state.Hue * 360 / 256, state.Saturation * 100 / 255, state.Value * 100 / 255);
+	state.ReadHSV = text;
+	state.Nearest = std::string("Closest standard color: ") + Nearest_Standard_Name(rgb);
+
+	HSVClass const base((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value);
+	state.Ramp.clear();
+	for (int step = 0; step < 16; step++) {
+		UIColorRampStep entry;
+		entry.Color = UI_Color_CSS(RGBClass(Player_Ramp_Entry(base, step)));
+		state.Ramp.push_back(entry);
+	}
+}
+
 }
 
 
@@ -221,7 +259,7 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 	state.Custom = Player_Color_Is_Custom(custom) ? custom : 0;
 	Load_HSV(state, state.Custom != 0 ? state.Custom : Player_Color_From_RGB(UI_Stock_Color_RGB(state.Seat)));
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
 }
 
@@ -240,7 +278,7 @@ void UI_Color_Pick_Field(UIColorPickState & state, int x, int y)
 	state.Saturation = 255 - (y * 255) / (UI_COLOR_FIELD_SIZE - 1);
 	state.Custom = Player_Color_Pack(HSVClass((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value));
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 }
 
 
@@ -258,7 +296,7 @@ void UI_Color_Pick_Value(UIColorPickState & state, int value)
 
 	state.Value = chosen;
 	state.Custom = Player_Color_Pack(HSVClass((unsigned char)state.Hue, (unsigned char)state.Saturation, (unsigned char)state.Value));
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
 }
 
@@ -283,7 +321,7 @@ void UI_Color_Pick_Preset(UIColorPickState & state, int index)
 		Load_HSV(state, state.Custom);
 	}
 	Place_Marker(state);
-	state.Swatch = UI_Color_CSS(UI_Color_Pick_Color(state));
+	Show_Choice(state);
 	state.Generation++;
 }
 
