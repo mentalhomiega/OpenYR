@@ -8458,6 +8458,17 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Shadow(VoxelDataStruct const & vo
 /// <param name="brightness">The brightness to draw the image with.</param>
 void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Point2D const & point, Rect const & cliprect, ShapeFlags_Type flags, int brightness) const
 {
+	Rect const dest(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height);
+
+	if (RTTI == RTTI_UNIT) {
+		UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, dest);
+	}
+
+	// An image wholly outside the clip draws nothing, so its converter and blitter are not looked up.
+	if (dest.X >= cliprect.Width || dest.Y >= cliprect.Height || dest.X + dest.Width <= 0 || dest.Y + dest.Height <= 0) {
+		return;
+	}
+
 	BSurface bsurface(entry.Width, entry.Height, 1, entry.Data);
 	flags = ShapeFlags_Type(flags & ~SHAPE_REMAP);
 
@@ -8475,13 +8486,8 @@ void TechnoClass::Techno_Blit_Voxel(StaticBufferClass::Entry const & entry, Poin
 		predoffset = Get_Predator_Offset();
 	}
 
-	if (RTTI == RTTI_UNIT) {
-		Rect r = Rect(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height);
-		UnitCompositeDirtyRect = Union(UnitCompositeDirtyRect, r);
-	}
-
 	if (blitter != NULL) {
-		RLE_Blit(*LogicalSurface, cliprect, Rect(Point2D(entry.X, entry.Y) + point, entry.Width, entry.Height), bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
+		RLE_Blit(*LogicalSurface, cliprect, dest, bsurface, bsurface.Get_Rect(), bsurface.Get_Rect(), *blitter, Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset, NULL, Point2D());
 	}
 }
 

@@ -148,3 +148,5 @@ whenever any type's voxel images are cleared. The APC's water image, a `NoSpawnA
 `DisableVoxelCache=yes` are not cached this way. In the first 1,500 frames of the large battle the map
 draws matched hash for hash with and without this cache. At 3840x2160 with `GpuRender` and the frame rate
 uncapped, the short benchmark rose from about 400 to about 530 pictures per second.
+
+A cached picture of a vehicle in the normal visual state, not sinking, not warping and not split across a bridge is blitted straight to the map without the scratch surface, with the same pixels, depth and emissive values. A picture wholly outside the clip, like a voxel image or shadow there, is not drawn at all. In the short benchmark at 3840x2160 the time per voxel unit fell by about a third. Rows of a blit that the GPU recorder holds are walked only when they have emissive values to clear.

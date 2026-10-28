@@ -50,6 +50,8 @@
 #include "zshapewindow.h"
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <typeinfo>
 #include <vector>
 
@@ -452,6 +454,27 @@ bool RLE_Blit(Surface & dest, Rect const & destrect, Surface const & source, Rec
 }
 
 
+// Whether count bytes of an emissive row are all zero, so that clearing them changes nothing.
+static bool Emissive_Span_Is_Clear(unsigned char const * values, int count)
+{
+	while (count >= 8) {
+		std::uint64_t word;
+		std::memcpy(&word, values, sizeof(word));
+		if (word != 0) {
+			return(false);
+		}
+		values += 8;
+		count -= 8;
+	}
+	while (count-- > 0) {
+		if (*values++ != 0) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * RLE_Blit -- Blits a rectangle of RLE compressed data to a surface.                          *
  *                                                                                             *
@@ -652,6 +675,20 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	bool consumed = shadow != NULL && shadow_value != 0;
 	if (Blit_Record_RLE != NULL && !consumed) {
 		consumed = Blit_Record_RLE(dest, blitter, dcliprect.X + drect.X, dcliprect.Y + drect.Y, srect.Width, height, sbuffer, leftmargin, current_z, z_fraction, z_step_numerator, z_step_denominator, grad->WrapIncrement, zshape != NULL ? (signed char const *)zshapelock : NULL, zshapew, alpha);
+	}
+
+	// A recorded blit writes no pixels, so its rows have nothing to do unless they clear emissive values.
+	if (consumed && shadow == NULL) {
+		bool marked = false;
+		if (emissive != NULL) {
+			marked = emissive_lit == NULL;
+			for (int y = 0; !marked && y < height; y++) {
+				marked = emissive_lit[y] != 0 && !Emissive_Span_Is_Clear(emissive + y * emissive_pitch, srect.Width);
+			}
+		}
+		if (!marked) {
+			height = 0;
+		}
 	}
 	for (int y = 0; y < height; y++) {
 
