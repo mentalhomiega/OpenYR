@@ -16,6 +16,8 @@
 #include "bsurface.h"
 #include "csf.h"
 #include "dsurface.h"
+#include "emissive.h"
+#include "emissive_surface.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -484,6 +486,8 @@ HudBlendTable const & Hud_Blend_Table(int opacity)
 /// The panel's fill and well pixels are blended over the map beneath them at Options.SidebarOpacity
 /// percent. Every other pixel is copied as drawn, including all of the radar and the buttons, and so
 /// is any pixel where the frame holds no map, which is one the video map layer keys out.
+/// While emissive masks are on, the emissive values under the panel are updated as Bit_Blit updates them,
+/// so map glow behind the panel does not light it.
 /// </summary>
 /// <param name="surface">The frame the panel is copied onto.</param>
 /// <param name="dest">The place on the frame, which must lie inside it.</param>
@@ -546,6 +550,10 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 				target = (pixel == fill_pixel) ? blend.Fill[target] : blend.Well[target];
 			}
 		}
+	}
+
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(surface, dest.X, dest.Y, source, source_rect.X, source_rect.Y, dest.Width, dest.Height);
 	}
 
 	source.Unlock();
