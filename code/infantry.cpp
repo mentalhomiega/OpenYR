@@ -3622,6 +3622,37 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 }
 
 
+/// <summary>
+/// The hunt mission for a soldier. A computer's soldier that holds a structure as its target goes to it when it infiltrates or can
+/// garrison it, and a dug-in one with no target packs up, as InfantryClass::Mission_Hunt (0x51F540) does. Anything else is
+/// FootClass::Mission_Hunt.
+/// </summary>
+/// <returns>The delay in game frames before the hunt mission runs again.</returns>
+int InfantryClass::Do_MISSION_HUNT(void)
+{
+	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+		if (Class->IsCapture) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(1);
+		}
+		// A garrison is entered on the Enter mission, as in Do_MISSION_ATTACK.
+		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_ENTER);
+			return(1);
+		}
+	}
+
+	if (!House->Is_Human_Player() && Is_Deployed() && TarCom == NULL) {
+		Do_Action(DO_UNDEPLOY, false, false);
+		return(1);
+	}
+
+	return(BASECLASS::Do_MISSION_HUNT());
+}
+
+
 /***********************************************************************************************
  * InfantryClass::What_Action -- Determines what action to perform for the cell specified.     *
  *                                                                                             *

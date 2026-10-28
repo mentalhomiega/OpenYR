@@ -1109,8 +1109,9 @@ int FootClass::Do_MISSION_HUNT(void)
 				Commence();
 			}
 		} else {
+			// Any structure target sends a C4 soldier to sabotage it; Mission_Capture drops the order for one that cannot take C4 (FootClass::Mission_Hunt, 0x4D5416).
 			BuildingClass * building = dynamic_cast<BuildingClass *>(TarCom);
-			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL && building->Class->Can_Plant_C4()) {
+			if (infantry != NULL && (infantry->Class->IsBomber || infantry->Has_Ability(ABILITY_C4)) && building != NULL) {
 				Assign_Destination(TarCom);
 				Assign_Mission(MISSION_SABOTAGE);
 				if (Ready_To_Commence()) {
@@ -1123,6 +1124,10 @@ int FootClass::Do_MISSION_HUNT(void)
 					Commence();
 				}
 			} else {
+				// A soldier drops its destination before it approaches again (FootClass::Mission_Hunt, 0x4D54BE).
+				if (infantry != NULL) {
+					Assign_Destination(NULL);
+				}
 				Approach_Target();
 			}
 		}

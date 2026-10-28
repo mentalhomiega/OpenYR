@@ -212,6 +212,7 @@ class InfantryClass : public FootClass
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const override;
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;
+		virtual int Do_MISSION_HUNT(void) override;
 		virtual int Do_MISSION_GUARD(void) override;
 		virtual int Do_MISSION_UNLOAD(void) override;
 		virtual int Do_MISSION_MOVE(void) override;

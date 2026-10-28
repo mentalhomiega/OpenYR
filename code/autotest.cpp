@@ -2327,6 +2327,7 @@ static void Set_Target_Step(StepType const & step)
 	std::vector<std::string> const words = Line_Words(step.Line);
 	bool const computer = Word(words, 5) == "computer" || Word(words, 6) == "computer";
 	bool const attack = Word(words, 5) == "attack" || Word(words, 6) == "attack";
+	bool const hunt = Word(words, 5) == "hunt" || Word(words, 6) == "hunt";
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
@@ -2336,6 +2337,8 @@ static void Set_Target_Step(StepType const & step)
 			techno->Assign_Target(target);
 			if (attack) {
 				techno->Assign_Mission(MISSION_ATTACK);
+			} else if (hunt) {
+				techno->Assign_Mission(MISSION_HUNT);
 			}
 		}
 	}
