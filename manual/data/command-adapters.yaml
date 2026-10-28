@@ -497,6 +497,7 @@ fixed_exclusions:
   - sites:
       - { file: code/init.cpp, function: Apply_Hotkeys, expression: KN_NONE }
       - { file: code/init.cpp, function: Grid_Modifier_Held, expression: KN_NONE }
+      - { file: code/init.cpp, function: Held_Key_Of, expression: KN_NONE }
       - { file: code/techno.cpp, function: Attack_Move_Key_Held, expression: KN_NONE }
     reason: Empty-slot sentinel. An unbound first slot takes the second slot's key, and an unbound modifier is never held.
   - site: { file: code/init.cpp, function: Hotkey_Wheel, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
