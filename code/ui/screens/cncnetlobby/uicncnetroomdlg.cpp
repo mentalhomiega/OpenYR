@@ -149,6 +149,26 @@ std::string Map_SHA1(char const * name)
 }
 
 
+// The local file for the map in the host's options, or empty when this machine lacks it or holds a different copy.
+std::string Playable_Map(std::map<std::string, std::string> const & options)
+{
+	auto const map = options.find("Map");
+	int const index = map == options.end() ? -1 : Find_Scenario(map->second);
+	if (index < 0) {
+		return(std::string());
+	}
+	std::string const file = Session.Scenarios[index]->Get_Filename();
+	if (!CCFileClass(file.c_str()).Is_Available()) {
+		return(std::string());
+	}
+	auto const hash = options.find("MapSHA1");
+	if (hash != options.end() && !hash->second.empty() && hash->second != Map_SHA1(file.c_str())) {
+		return(std::string());
+	}
+	return(file);
+}
+
+
 // The map's start positions as waypoint numbers, read again only when the file name changes.
 std::vector<int> const & Map_Starts(char const * name)
 {
@@ -908,11 +928,14 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	if (own == nullptr) {
 		return("The host started the match without you.");
 	}
-	if (!TheRoom.Is_Host() && (MapMissing || Session.ScenarioFileName[0] == '\0' || !CCFileClass(Session.ScenarioFileName).Is_Available())) {
-		return("You do not have the host's map.");
+	std::map<std::string, std::string> options = TheRoom.Start_Options();
+	if (!TheRoom.Is_Host()) {
+		std::string const file = Playable_Map(options);
+		if (file.empty()) {
+			return("You do not have the host's map, or your copy differs from the host's.");
+		}
+		options["Map"] = file;
 	}
-	std::map<std::string, std::string> options = TheRoom.Options();
-	options["Map"] = Session.ScenarioFileName;
 
 	CnCNetTunnelBridgeClass bridge;
 	std::string error;
@@ -971,6 +994,7 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 
 	// The match runs in its own process. Until it ends, the lobby hides its window and pauses its menu
 	// battle and music, so the match gets the processor; the room keeps its connection served.
+	bool relay_failed = false;
 	uint64_t const frames_at_start = Shellmap_Frame_Count();
 	Shellmap_Pause();
 	Theme.Pause();
@@ -983,6 +1007,10 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 		}
 		Main_Window_Pump_Events();
 		Service();
+		if (bridge.Relay_Failed()) {
+			relay_failed = true;
+			TerminateProcess(process.hProcess, 1);
+		}
 	}
 	DWORD code = 0;
 	GetExitCodeProcess(process.hProcess, &code);
@@ -995,6 +1023,9 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	DebugString("[CnCNet] Match ended with code %lu; the bridge sent %llu and received %llu datagrams.\n", static_cast<unsigned long>(code),
 		static_cast<unsigned long long>(bridge.Sent()), static_cast<unsigned long long>(bridge.Received()));
 	bridge.Stop();
+	if (relay_failed) {
+		return("The tunnel " + match.TunnelHost + " could not be found.");
+	}
 	return(code == 0 ? "The match has ended." : "The match ended with exit code " + std::to_string(code) + ".");
 #else
 	bridge.Stop();
@@ -1016,6 +1047,8 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 	DebugString("[CnCNet] Room build id %s.\n", config.Build.c_str());
 	if (setup.Host) {
 		config.Notice = setup.Notice;
+	} else {
+		config.Options_Playable = [](std::map<std::string, std::string> const & options) { return(!Playable_Map(options).empty()); };
 	}
 
 	if (setup.Host && (Session.ScenarioFileName[0] == '\0' || !CCFileClass(Session.ScenarioFileName).Is_Available())) {

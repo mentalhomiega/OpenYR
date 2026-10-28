@@ -42,12 +42,14 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdio>
 #include <map>
 #include <optional>
 #include <random>
 #include <set>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace {
@@ -732,6 +734,65 @@ void Test_Room(void)
 }
 
 
+// Brings a guest into the host's room with the options delivered, and optionally ready.
+void Seat_Guest(CnCNetRoomClass & host, CnCNetRoomClass & guest, bool ready)
+{
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
+	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	host.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
+	Deliver(guest, "Guest", {&host}, 200);
+	Deliver(host, "Host", {&guest}, 300);
+	if (ready) {
+		guest.Set_Ready(true);
+		Deliver(guest, "Guest", {&host}, 400);
+		Deliver(host, "Host", {&guest}, 400);
+	}
+}
+
+
+void Test_Guest_Start(void)
+{
+	IRCEventType const start = Room_Event(IRCEventKind::CTCP, "Host", ROOM, "OYRSTART", "Seed=5");
+
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 100);
+	Seat_Guest(host, guest, false);
+	guest.Apply(start, 450);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM && guest.Start_Info().empty(), "guest start: a start before the guest is ready is ignored");
+
+	guest.Set_Ready(true);
+	Deliver(guest, "Guest", {&host}, 500);
+	Deliver(host, "Host", {&guest}, 500);
+	guest.Apply(Room_Event(IRCEventKind::CTCP, "Mallory", ROOM, "OYRSTART", "Seed=5"), 550);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM, "guest start: a start from somebody other than the host is ignored");
+	guest.Apply(start, 600);
+	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5" && guest.Start_Options().at("Map") == "Lake",
+		"guest start: a ready guest starts on the host's start");
+	guest.Apply(Room_Event(IRCEventKind::CTCP, "Host", ROOM, "OYROPTS", "Map=Island"), 650);
+	Check(guest.Options().at("Map") == "Island" && guest.Start_Options().at("Map") == "Lake",
+		"guest start: options that arrive after the start do not change the started match");
+
+	bool playable = false;
+	CnCNetRoomConfigType picky = Room_Config("Guest", "b1");
+	picky.Options_Playable = [&playable](std::map<std::string, std::string> const & options) { return(playable && options.count("Map") != 0); };
+	CnCNetRoomClass host_picky = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass picky_guest = CnCNetRoomClass::Guest(picky, 100);
+	Seat_Guest(host_picky, picky_guest, true);
+	picky_guest.Apply(start, 700);
+	Check(picky_guest.Status() == CnCNetRoomStatus::IN_ROOM, "guest start: a start is ignored when the guest cannot play the host's map");
+	playable = true;
+	picky_guest.Apply(start, 710);
+	Check(picky_guest.Status() == CnCNetRoomStatus::STARTING, "guest start: the same start is taken once the guest can play the map");
+
+	CnCNetRoomClass host_old = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass old_guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b2"), 100);
+	Seat_Guest(host_old, old_guest, true);
+	old_guest.Apply(start, 800);
+	Check(old_guest.Build_Differs_From_Host() && old_guest.Status() == CnCNetRoomStatus::IN_ROOM,
+		"guest start: a start is ignored when the guest's build differs from the host's");
+}
+
+
 void Test_Room_Notice(void)
 {
 	CnCNetRoomConfigType config = Room_Config("Host", "b1");
@@ -1108,6 +1169,20 @@ void Test_Tunnel_Bridge(void)
 		}
 		bridge.Stop();
 		Check(bridge.Sent() == 1 && bridge.Received() == 1 && !bridge.Is_Running(), "bridge: counts and stops");
+
+		std::string named_error;
+		bool const named = bridge.Start("localhost", relay_port, 7, {9}, named_error);
+		Check(named && !bridge.Relay_Failed(), "bridge: a relay named by a host name starts without waiting for the lookup");
+		for (int wait = 0; named && wait < 100 && !bridge.Relay_Resolved() && !bridge.Relay_Failed(); ++wait) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+		}
+		Check(bridge.Relay_Resolved() && !bridge.Relay_Failed(), "bridge: the host name is resolved by the bridge");
+		if (named && bridge.Relay_Resolved()) {
+			Send_To(game, Loopback(bridge.Game_Port()), {0, 7, 0, 9, 'z'});
+			std::optional<std::vector<uint8_t>> const wrapped_by_name = Receive(relay, 2000);
+			Check(wrapped_by_name.has_value(), "bridge: a datagram reaches a relay that was named");
+		}
+		bridge.Stop();
 	}
 
 	Close_Test_Socket(relay);
@@ -1140,6 +1215,7 @@ int main(void)
 	Test_Local_Map();
 	Test_Room();
 	Test_Room_Notice();
+	Test_Guest_Start();
 	Test_Build_Identity();
 	Test_Build_Gate();
 	Test_Tunnel_List();

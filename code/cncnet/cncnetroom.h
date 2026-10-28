@@ -18,6 +18,7 @@
 #include "cncnet/ircclient.h"
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <string>
 #include <string_view>
@@ -77,6 +78,9 @@ struct CnCNetRoomConfigType
 	std::string Notice;         // Host only: said in the channel once for every player who joins; empty says nothing.
 	CnCNetRoomLimitsType Limits;
 	uint64_t HelloTimeoutMS = 20000;
+	// Guest only: whether this machine can play a match with the host's current options. A start is
+	// ignored while it returns false. Empty accepts every start.
+	std::function<bool(std::map<std::string, std::string> const &)> Options_Playable;
 };
 
 
@@ -114,6 +118,9 @@ class CnCNetRoomClass
 		std::vector<CnCNetRoomPlayerType> const & Players(void) const { return(PlayerList); }
 		std::map<std::string, std::string> const & Options(void) const { return(OptionList); }
 		std::map<std::string, std::string> const & Start_Info(void) const { return(StartList); }
+
+		// The options as they were when the match started; later changes do not touch it.
+		std::map<std::string, std::string> const & Start_Options(void) const { return(StartOptions); }
 		CnCNetRoomPlayerType const * Find_Player(std::string const & name) const;
 		uint64_t Revision(void) const { return(Changes); }
 
@@ -124,6 +131,8 @@ class CnCNetRoomClass
 		// Guest only: the host's row names a different build than ours.
 		bool Build_Differs_From_Host(void) const;
 
+		// A guest acts on a start only when it is ready, the start comes from the host, its build matches the
+		// host's and Options_Playable accepts the host's options; any other start is ignored.
 		void Apply(IRCEventType const & event, uint64_t now);
 		void Tick(uint64_t now);
 
@@ -185,6 +194,7 @@ class CnCNetRoomClass
 		std::vector<PendingType> Pending;
 		std::map<std::string, std::string> OptionList;
 		std::map<std::string, std::string> StartList;
+		std::map<std::string, std::string> StartOptions;
 		std::vector<CnCNetRoomSendType> Outgoing;
 		uint64_t Changes = 0;
 };

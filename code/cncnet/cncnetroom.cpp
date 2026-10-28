@@ -354,7 +354,13 @@ void CnCNetRoomClass::Guest_Message(IRCEventType const & event)
 			Close(split == std::string::npos ? std::string("The host refused to let you join.") : Unescape(std::string_view(event.Text).substr(split + 1)));
 		}
 	} else if (event.Command == START && CurrentStatus == CnCNetRoomStatus::IN_ROOM) {
+		CnCNetRoomPlayerType const * self = Find_Player(Config.OwnNick);
+		if (self == nullptr || !self->Ready || !CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick) || Build_Differs_From_Host()
+				|| (Config.Options_Playable && !Config.Options_Playable(OptionList))) {
+			return;
+		}
 		StartList = Decode_Map(event.Text);
+		StartOptions = OptionList;
 		CurrentStatus = CnCNetRoomStatus::STARTING;
 		Changed();
 	}
@@ -577,6 +583,7 @@ bool CnCNetRoomClass::Start(std::map<std::string, std::string> info)
 		return(false);
 	}
 	StartList = std::move(info);
+	StartOptions = OptionList;
 	CurrentStatus = CnCNetRoomStatus::STARTING;
 	Changed();
 	Send_CTCP(START, Encode_Map(StartList));
@@ -591,6 +598,7 @@ void CnCNetRoomClass::Return_To_Room(void)
 	}
 	CurrentStatus = CnCNetRoomStatus::IN_ROOM;
 	StartList.clear();
+	StartOptions.clear();
 	for (CnCNetRoomPlayerType & player : PlayerList) {
 		if (!player.Host) {
 			player.Ready = false;
