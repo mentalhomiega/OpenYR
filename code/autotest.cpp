@@ -5143,6 +5143,8 @@ void Run(StepType const & step)
 			if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
 			DebugString("AUTOTEST   banimstate %s at %d,%d health %d/%d bstate %d stage %d rate %d power %d house %s\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 				(int)building->Strength, (int)building->Class->MaxStrength, (int)building->BState, building->Fetch_Stage(), building->Fetch_Rate(), (int)building->Is_Powered_On(), building->House->Class->Name());
+			DebugString("AUTOTEST     buildup start %d count %d rate %d ready %d mission %d queue %d\n", building->Class->Anims[BSTATE_CONSTRUCTION].Start, building->Class->Anims[BSTATE_CONSTRUCTION].Count,
+				building->Class->Anims[BSTATE_CONSTRUCTION].Rate, (int)building->IsReadyToCommence, (int)building->Mission, (int)building->MissionQueue);
 			for (int slot = 0; slot < BANIM_COUNT; slot++) {
 				AnimClass const * anim = building->Anims[slot];
 				char const * wanted = building->Class->AnimData[slot].Anim;
