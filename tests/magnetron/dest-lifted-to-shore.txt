@@ -1,0 +1,48 @@
+; A Magnetron on the shore at 83,76 lifts an enemy Destroyer (DEST) from the bay at 83,71 and the beam flies it to the free spot beside the Magnetron,
+; which is on land, and lets it go there. A surface ship let go onto ground it cannot enter is destroyed as a Boomer is (gamemd 0x54D019 sends
+; Notice 0x117C, handler 0x746209 bursts the Crush and C4 warheads and deletes it), so no 'lift' line follows the landing and 'where DEST' lists nothing.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Map XMP08T2.MAP -Script src-agent15/tests/magnetron/dest-lifted-to-shore.txt -Seconds 170
+300 own TELE 83 76
+301 spawn DEST 83 71
+302 reveal
+303 view 83 75
+310 strike TELE 83 71
+320 lift DEST
+328 lift DEST
+336 lift DEST
+344 lift DEST
+352 lift DEST
+360 lift DEST
+368 lift DEST
+376 lift DEST
+384 lift DEST
+392 lift DEST
+400 lift DEST
+408 lift DEST
+416 lift DEST
+424 lift DEST
+432 lift DEST
+440 lift DEST
+448 lift DEST
+456 lift DEST
+464 lift DEST
+472 lift DEST
+480 lift DEST
+488 lift DEST
+496 lift DEST
+504 lift DEST
+512 lift DEST
+520 lift DEST
+528 lift DEST
+536 lift DEST
+544 lift DEST
+552 lift DEST
+560 lift DEST
+568 lift DEST
+576 lift DEST
+584 lift DEST
+592 lift DEST
+600 lift DEST
+610 where DEST
+610 where TELE
+612 quit
