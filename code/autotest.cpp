@@ -258,6 +258,7 @@
 #include "combat.h"
 #include "perfstat.h"
 #include "session.h"
+#include "statehash.h"
 #include "rulesreload.h"
 
 #include "_command.h"
@@ -982,32 +983,6 @@ void Dump(void)
 }
 
 
-void Hash_Value(unsigned int & hash, unsigned int value)
-{
-	for (int byte = 0; byte < 4; byte++) {
-		hash = (hash ^ ((value >> (byte * 8)) & 0xFF)) * 16777619u;
-	}
-}
-
-
-template<class T>
-void Hash_Technos(unsigned int & hash, DynamicVectorClass<T *> & list)
-{
-	Hash_Value(hash, list.Count());
-	for (int index = 0; index < list.Count(); index++) {
-		T * object = list[index];
-		Hash_Value(hash, object->PositionCoord.X);
-		Hash_Value(hash, object->PositionCoord.Y);
-		Hash_Value(hash, object->PositionCoord.Z);
-		Hash_Value(hash, object->PrimaryFacing.Current().As_Int());
-		Hash_Value(hash, object->Strength);
-		Hash_Value(hash, object->Get_Mission());
-		Hash_Value(hash, object->IsInLimbo);
-		Hash_Value(hash, Houses.ID(object->House));
-	}
-}
-
-
 template<class T>
 void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
 {
@@ -1054,30 +1029,8 @@ void Log_State_Parts(void)
 /// </summary>
 void Log_State_Hash(void)
 {
-	unsigned int hash = 2166136261u;
-	Hash_Technos(hash, Buildings);
-	Hash_Technos(hash, Units);
-	Hash_Technos(hash, Aircraft);
-	Hash_Technos(hash, Infantry);
-	for (int index = 0; index < Houses.Count(); index++) {
-		Hash_Value(hash, Houses[index]->Credits);
-	}
-	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
-	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
-		hash = (hash ^ random[index]) * 16777619u;
-	}
+	unsigned int const hash = Compute_Sim_State_Hash().State;
 	DebugString("AUTOTEST hash frame %d %08X buildings %d units %d aircraft %d infantry %d\n", Frame, hash, Buildings.Count(), Units.Count(), Aircraft.Count(), Infantry.Count());
-}
-
-
-template<class T>
-void Hash_Targets(unsigned int & hash, DynamicVectorClass<T *> & list)
-{
-	for (int index = 0; index < list.Count(); index++) {
-		AbstractClass const * target = list[index]->TarCom;
-		Hash_Value(hash, target != NULL ? target->What_Am_I() : -1);
-		Hash_Value(hash, target != NULL ? target->Fetch_ID() : -1);
-	}
 }
 
 
@@ -1089,11 +1042,7 @@ void Hash_Targets(unsigned int & hash, DynamicVectorClass<T *> & list)
 /// </summary>
 void Log_State_CRC(void)
 {
-	unsigned int targets = 2166136261u;
-	Hash_Targets(targets, Buildings);
-	Hash_Targets(targets, Units);
-	Hash_Targets(targets, Aircraft);
-	Hash_Targets(targets, Infantry);
+	unsigned int const targets = Compute_Sim_State_Hash().Targets;
 	CRCEngine objects = Object_CRCs();
 	DebugString("AUTOTEST statecrc frame %d objects %08X targets %08X\n", Frame, (unsigned int)objects(), targets);
 }
