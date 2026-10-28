@@ -86,7 +86,10 @@ ScoreStageClass::ScoreStageClass(void) :
 	Drawer(NULL),
 	Mounted(false),
 	StageWidth(STAGE_WIDTH),
-	StageHeight(STAGE_HEIGHT)
+	StageHeight(STAGE_HEIGHT),
+	KeyedShape(NULL),
+	KeyedWidth(0),
+	KeyedHeight(0)
 {
 }
 
@@ -160,6 +163,8 @@ void ScoreStageClass::Close(void)
 		TextConverter = NULL;
 	}
 	Font = NULL;
+	KeyedShape = NULL;
+	KeyedFrames.clear();
 	if (BaseSurface != NULL) {
 		delete BaseSurface;
 		BaseSurface = NULL;
@@ -420,6 +425,9 @@ void ScoreStageClass::Load_Palette(char const * name)
 	if (Drawer != NULL) {
 		delete Drawer;
 	}
+	// Cached frames were drawn through the previous palette's drawer.
+	KeyedShape = NULL;
+	KeyedFrames.clear();
 	Drawer = new ConvertClass(CCPalette, CCPalette, *StageSurface);
 }
 
@@ -490,24 +498,14 @@ void ScoreStageClass::Draw_Shape_At(ShapeSet const * shapes, int frame, int x, i
 }
 
 
-/// <summary>
-/// Draws one frame of a shape set into a box on the stage, stretched to fill it, with its dark blue
-/// background left out so that it blends into what is already on the stage. The background is the dark blue
-/// pixels that have no bright pixel within a few pixels of them, and the frame's own edge fades out.
-/// </summary>
-/// <param name="box">The stage area the frame fills.</param>
-/// <remarks>The frame is drawn through the drawer Load_Palette made.</remarks>
-void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect const & box)
-{
-	if (shapes == NULL || Drawer == NULL || box.Width <= 0 || box.Height <= 0) {
-		return;
-	}
+namespace {
 
-	int const width = shapes->Get_Width();
-	int const height = shapes->Get_Height();
+// Returns one frame as premultiplied RGBA, four floats a pixel, with the dark blue surround keyed out.
+std::vector<float> Key_Frame(ShapeSet const * shapes, int frame, ConvertClass & drawer, int width, int height)
+{
 	DSurface picture(width, height);
 	picture.Fill(0);
-	Draw_Shape(picture, *Drawer, shapes, frame, Point2D(0, 0), picture.Get_Rect(), SHAPE_WIN_REL);
+	Draw_Shape(picture, drawer, shapes, frame, Point2D(0, 0), picture.Get_Rect(), SHAPE_WIN_REL);
 
 	// Which pixels are the plate rather than its dark blue surround, then that spread over a few pixels so
 	// that dark detail inside the plate stays solid and the plate's edge is soft.
@@ -561,6 +559,43 @@ void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect 
 		source[at * 4 + 1] = colors[at * 3 + 1] * alpha;
 		source[at * 4 + 2] = colors[at * 3 + 2] * alpha;
 		source[at * 4 + 3] = alpha;
+	}
+	return(source);
+}
+
+}
+
+
+/// <summary>
+/// Draws one frame of a shape set into a box on the stage, stretched to fill it, with its dark blue
+/// background left out so that it blends into what is already on the stage. The background is the dark blue
+/// pixels that have no bright pixel within a few pixels of them, and the frame's own edge fades out.
+/// </summary>
+/// <param name="box">The stage area the frame fills.</param>
+/// <remarks>The frame is drawn through the drawer Load_Palette made. Each frame is keyed on first use and kept until the stage closes, the palette changes, or another shape is drawn.</remarks>
+void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect const & box)
+{
+	if (shapes == NULL || Drawer == NULL || box.Width <= 0 || box.Height <= 0) {
+		return;
+	}
+
+	int const width = shapes->Get_Width();
+	int const height = shapes->Get_Height();
+	int const count = shapes->Get_Count();
+	if (width <= 0 || height <= 0 || frame < 0 || frame >= count) {
+		return;
+	}
+
+	// Frames are cached by the shape's address; Close or Load_Palette must run before a new shape can reuse a freed address.
+	if (KeyedShape != shapes || KeyedWidth != width || KeyedHeight != height || KeyedFrames.size() != (size_t)count) {
+		KeyedShape = shapes;
+		KeyedWidth = width;
+		KeyedHeight = height;
+		KeyedFrames.assign((size_t)count, std::vector<float>());
+	}
+	std::vector<float> & source = KeyedFrames[(size_t)frame];
+	if (source.empty()) {
+		source = Key_Frame(shapes, frame, *Drawer, width, height);
 	}
 
 	for (int dy = 0; dy < box.Height; dy++) {
