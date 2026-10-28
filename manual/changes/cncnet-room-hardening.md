@@ -29,3 +29,5 @@ The tunnel list cache is written under a temporary name and moved into place, so
 The host's player list and start message are kept within 430 bytes, the most a chat server relays whole. Eight players with 15-character nicks fit. When a list or start would be longer, the host is told in the room chat to use shorter names or fewer players, and the start does not go out; before this change the server cut the message and guests got a wrong relay port or an unreadable start. A guest also refuses a start message that lacks the end marker or the right seat count.
 
 Pressing Back while the lobby is still connecting returns within about a tenth of a second. Before this change the lobby window stopped answering for 8 seconds or more.
+
+The built-in lobby keeps at most 50 private conversations. When a new player messages you past that, the oldest conversation with nothing unread closes, or the oldest unread one if all have unread lines. The conversation you have open stays. Before this change, private messages from many nicks opened tabs without limit.

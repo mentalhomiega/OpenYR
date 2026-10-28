@@ -87,6 +87,7 @@ struct CnCNetLobbyConfigType
 	std::string RoomPrefix = "#cncnet-yr-game";
 	std::size_t MaxLines = 200;
 	std::size_t MaxRoomMessages = 256;
+	std::size_t MaxPrivate = 50;
 };
 
 
@@ -103,6 +104,11 @@ class CnCNetLobbyClass
 		void Add_System_Line(std::string const & channel, std::string const & text, uint64_t now);
 		void Add_Own_Line(std::string const & channel, std::string const & text, uint64_t now);
 		void Mark_Read(std::string const & channel);
+
+		// Names the conversation the player has open. It is never dropped to make room for a new private
+		// conversation. Past MaxPrivate conversations, a new sender replaces the oldest conversation with
+		// nothing unread; when all have unread lines, the oldest one that is not open.
+		void Set_Viewed(std::string const & channel) { ViewedChannel = channel; }
 
 		CnCNetStatus Status(void) const { return(CurrentStatus); }
 		std::string const & Status_Text(void) const { return(StatusText); }
@@ -127,6 +133,7 @@ class CnCNetLobbyClass
 	private:
 		CnCNetChannelType * Channel(std::string const & name, bool create, bool is_private = false);
 		void Remove_Channel(std::string const & name);
+		bool Make_Room_For_Private(void);
 		void Add_Line(CnCNetChannelType & channel, CnCNetLineKind kind, std::string const & nick, std::string const & text, uint64_t now);
 		void Add_User(CnCNetChannelType & channel, CnCNetUserType user);
 		void Remove_User(CnCNetChannelType & channel, std::string const & nick);
@@ -139,6 +146,7 @@ class CnCNetLobbyClass
 		CnCNetStatus CurrentStatus = CnCNetStatus::OFFLINE;
 		std::string StatusText;
 		std::string OwnNick;
+		std::string ViewedChannel;
 		std::vector<CnCNetChannelType> ChannelList;
 		std::vector<CnCNetGameType> GameList;
 		std::vector<IRCEventType> RoomMessages;

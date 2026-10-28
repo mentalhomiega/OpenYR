@@ -444,6 +444,76 @@ void Test_Lobby(void)
 }
 
 
+void Test_Lobby_Private_Cap(void)
+{
+	CnCNetLobbyConfigType config;
+	config.MaxPrivate = 3;
+	config.MaxLines = 4;
+	CnCNetLobbyClass lobby(config);
+	lobby.Apply(Make_Event(IRCEventKind::WELCOME, "", "", "Me"), 0);
+	lobby.Apply(Make_Event(IRCEventKind::JOINED, "Me", "#cncnet-yr", "yr.me"), 1);
+
+	auto count_private = [&lobby]() {
+		int total = 0;
+		for (CnCNetChannelType const & channel : lobby.Channels()) {
+			total += channel.Private ? 1 : 0;
+		}
+		return(total);
+	};
+
+	for (int line = 0; line < 10; ++line) {
+		lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "A", "Me", "x"), 10 + line);
+	}
+	CnCNetChannelType const * first = lobby.Find_Channel("A");
+	Check(first && first->Lines.size() == 4, "private cap: a conversation keeps no more than MaxLines");
+
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "B", "Me", "x"), 30);
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "C", "Me", "x"), 31);
+	Check(count_private() == 3, "private cap: conversations up to the limit are all kept");
+
+	lobby.Mark_Read("B");
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "D", "Me", "x"), 32);
+	Check(count_private() == 3 && lobby.Find_Channel("B") == nullptr && lobby.Find_Channel("A") && lobby.Find_Channel("C") && lobby.Find_Channel("D"),
+		"private cap: the oldest conversation with nothing unread is dropped");
+
+	lobby.Mark_Read("A");
+	lobby.Mark_Read("D");
+	lobby.Set_Viewed("a");
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "E", "Me", "x"), 33);
+	Check(count_private() == 3 && lobby.Find_Channel("A") && lobby.Find_Channel("D") == nullptr && lobby.Find_Channel("E"),
+		"private cap: the open conversation is kept, the next read one is dropped");
+
+	lobby.Mark_Read("A");
+	lobby.Mark_Read("E");
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "F", "Me", "x"), 34);
+	Check(lobby.Find_Channel("A") && lobby.Find_Channel("C") && lobby.Find_Channel("E") == nullptr && lobby.Find_Channel("F"),
+		"private cap: a newer read conversation goes before an older unread one");
+
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "C", "Me", "again"), 35);
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "A", "Me", "again"), 36);
+	Check(lobby.Find_Channel("A") && lobby.Find_Channel("C") && lobby.Find_Channel("F") && count_private() == 3,
+		"private cap: a message from an existing conversation drops nothing");
+
+	lobby.Apply(Make_Event(IRCEventKind::MESSAGE, "G", "Me", "x"), 37);
+	Check(lobby.Find_Channel("A") && lobby.Find_Channel("C") == nullptr && lobby.Find_Channel("F") && lobby.Find_Channel("G"),
+		"private cap: with every conversation unread, the oldest not open is dropped");
+
+	lobby.Add_Own_Line("H", "hello", 38);
+	Check(count_private() == 3 && lobby.Find_Channel("H") && lobby.Find_Channel("A") && lobby.Find_Channel("F") == nullptr,
+		"private cap: our own message to a new nick follows the same rule");
+
+	CnCNetLobbyConfigType single;
+	single.MaxPrivate = 1;
+	CnCNetLobbyClass tiny(single);
+	tiny.Apply(Make_Event(IRCEventKind::WELCOME, "", "", "Me"), 0);
+	tiny.Apply(Make_Event(IRCEventKind::MESSAGE, "A", "Me", "x"), 1);
+	tiny.Set_Viewed("A");
+	tiny.Apply(Make_Event(IRCEventKind::MESSAGE, "B", "Me", "x"), 2);
+	Check(tiny.Find_Channel("A") != nullptr && tiny.Find_Channel("B") == nullptr, "private cap: when only the open conversation could go, the newcomer is refused");
+	Check(lobby.Find_Channel("#cncnet-yr") != nullptr, "private cap: public channels are never dropped");
+}
+
+
 void Test_Quit(void)
 {
 	IRCClientClass client = Registered_Client(0);
@@ -1595,6 +1665,7 @@ int main(void)
 	Test_Events();
 	Test_Quit();
 	Test_Lobby();
+	Test_Lobby_Private_Cap();
 	Test_SHA1();
 	Test_Room_Encoding();
 	Test_Local_Map();

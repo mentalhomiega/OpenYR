@@ -355,11 +355,44 @@ CnCNetChannelType * CnCNetLobbyClass::Channel(std::string const & name, bool cre
 	if (!create || name.empty()) {
 		return(nullptr);
 	}
+	if (is_private && !Make_Room_For_Private()) {
+		return(nullptr);
+	}
 	CnCNetChannelType channel;
 	channel.Name = name;
 	channel.Private = is_private;
 	ChannelList.push_back(std::move(channel));
 	return(&ChannelList.back());
+}
+
+
+bool CnCNetLobbyClass::Make_Room_For_Private(void)
+{
+	std::size_t count = 0;
+	for (CnCNetChannelType const & channel : ChannelList) {
+		count += channel.Private ? 1 : 0;
+	}
+	if (count < Config.MaxPrivate) {
+		return(true);
+	}
+	auto victim = ChannelList.end();
+	for (auto it = ChannelList.begin(); it != ChannelList.end(); ++it) {
+		if (!it->Private || Same_Nick(it->Name, ViewedChannel)) {
+			continue;
+		}
+		if (it->Unread == 0) {
+			victim = it;
+			break;
+		}
+		if (victim == ChannelList.end()) {
+			victim = it;
+		}
+	}
+	if (victim == ChannelList.end()) {
+		return(false);
+	}
+	ChannelList.erase(victim);
+	return(true);
 }
 
 

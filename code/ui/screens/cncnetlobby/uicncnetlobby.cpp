@@ -336,6 +336,7 @@ void UICnCNetLobbyPresenterClass::Reopen(void)
 	JoinChannel.clear();
 	JoinHost.clear();
 	Revision = 0;
+	ViewedSent.clear();
 	Refresh();
 }
 
@@ -347,11 +348,23 @@ void UICnCNetLobbyPresenterClass::Build_Chat(void)
 	std::vector<UICnCNetTabRow> tabs;
 	tabs.push_back(UICnCNetTabRow{"Lobby", ChatChannel, false, false});
 
+	// A conversation the lobby dropped to stay within its limit loses its tab.
+	for (std::size_t index = SeenPrivate.size(); index-- > 0;) {
+		if (Lobby.Find_Channel(SeenPrivate[index]) == nullptr) {
+			Unlist(OpenedTabs, SeenPrivate[index]);
+			Unlist(ClosedTabs, SeenPrivate[index]);
+			SeenPrivate.erase(SeenPrivate.begin() + static_cast<std::ptrdiff_t>(index));
+		}
+	}
+
 	for (CnCNetChannelType const & channel : Lobby.Channels()) {
 		if (CnCNetLobbyClass::Same_Nick(channel.Name, ChatChannel) || channel.Name.rfind("#cncnet-yr-games", 0) == 0) {
 			continue;
 		}
 		if (channel.Private) {
+			if (!Listed(SeenPrivate, channel.Name)) {
+				SeenPrivate.push_back(channel.Name);
+			}
 			if (Listed(ClosedTabs, channel.Name)) {
 				if (channel.Unread == 0) {
 					continue;
@@ -391,6 +404,10 @@ void UICnCNetLobbyPresenterClass::Build_Chat(void)
 	}
 	State.Tabs = std::move(tabs);
 	SelectedChannel = State.Tabs[State.Tab].Channel;
+	if (SelectedChannel != ViewedSent) {
+		ViewedSent = SelectedChannel;
+		Session.Set_Viewed(SelectedChannel);
+	}
 
 	CnCNetChannelType const * channel = Lobby.Find_Channel(SelectedChannel);
 	uint64_t const now = CnCNet_Clock();

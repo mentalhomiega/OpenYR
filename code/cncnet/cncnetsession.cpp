@@ -138,6 +138,13 @@ void CnCNetSessionClass::Mark_Read(std::string const & channel)
 }
 
 
+void CnCNetSessionClass::Set_Viewed(std::string const & channel)
+{
+	std::lock_guard<std::mutex> guard(Lock);
+	Lobby.Set_Viewed(channel);
+}
+
+
 void CnCNetSessionClass::Note(std::string const & channel, std::string const & text)
 {
 	std::lock_guard<std::mutex> guard(Lock);
