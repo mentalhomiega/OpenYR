@@ -19,6 +19,7 @@
 #include "shadowplane.h"
 #include "tactical.h"
 #include "flyingtext.h"
+#include "utf16.h"
 
 #include "_alpha.h"
 #include "_convert.h"
@@ -4415,7 +4416,15 @@ void Tactical::Serialize(SaveStreamClass & stream)
 {
 	BASECLASS::Serialize(stream);
 
-	stream.Serialize(ScreenText);
+	// The caption is saved as UTF-16 code units, so the layout is the same on every platform.
+	char16_t caption[ARRAY_SIZE(ScreenText)] = {};
+	if (stream.Is_Saving()) {
+		UTF16::From_Wide(ScreenText, caption);
+	}
+	stream.Serialize(caption);
+	if (stream.Is_Loading() && !stream.Was_Error()) {
+		UTF16::To_Wide(caption, ScreenText);
+	}
 	stream.Serialize(CaptionStyle);
 	stream.Serialize(LastAIFrame);
 	stream.Serialize(field_58);
