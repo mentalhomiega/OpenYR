@@ -27,11 +27,16 @@
 #endif
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <mutex>
 #include <random>
 #include <set>
+#include <thread>
 
 
 namespace {
@@ -72,6 +77,33 @@ std::vector<std::string_view> Fields(std::string_view line)
 int Number(std::string_view text)
 {
 	return(std::atoi(std::string(text).c_str()));
+}
+
+
+bool Same_Name(std::string_view a, std::string_view b)
+{
+	return(std::equal(a.begin(), a.end(), b.begin(), b.end(),
+		[](char x, char y) { return(std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y))); }));
+}
+
+
+// An address written as four numbers; nothing for any other text.
+std::optional<uint32_t> Literal_IPv4(std::string const & text)
+{
+	in_addr address{};
+	if (inet_pton(AF_INET, text.c_str(), &address) != 1) {
+		return(std::nullopt);
+	}
+	return(static_cast<uint32_t>(address.s_addr));
+}
+
+
+std::string Dotted(uint32_t address)
+{
+	in_addr value{};
+	value.s_addr = address;
+	char text[INET_ADDRSTRLEN] = {};
+	return(inet_ntop(AF_INET, &value, text, sizeof(text)) != nullptr ? std::string(text) : std::string());
 }
 
 }
@@ -241,4 +273,109 @@ std::optional<std::size_t> CnCNet_Pick_Tunnel(std::vector<CnCNetTunnelEntryType>
 		}
 	}
 	return(best);
+}
+
+
+CnCNetTunnelCheckType CnCNet_Check_Tunnel(std::vector<CnCNetTunnelEntryType> const & listed, std::string_view host, uint16_t port,
+	CnCNetResolveFunction const & resolve)
+{
+	CnCNetTunnelCheckType check;
+	if (listed.empty()) {
+		check.Result = CnCNetTunnelListing::NO_LIST;
+		return(check);
+	}
+	check.Result = CnCNetTunnelListing::NOT_LISTED;
+	std::string const named(host);
+	std::optional<uint32_t> const literal = Literal_IPv4(named);
+	if (literal.has_value()) {
+		check.Address = Dotted(*literal);
+	}
+
+	for (CnCNetTunnelEntryType const & tunnel : listed) {
+		if (tunnel.Port == port && Same_Name(tunnel.Host, host)) {
+			check.Result = CnCNetTunnelListing::LISTED;
+			return(check);
+		}
+	}
+
+	std::optional<uint32_t> address = literal;
+	if (!address.has_value() && resolve) {
+		address = resolve(named);
+	}
+	if (!address.has_value()) {
+		check.Result = CnCNetTunnelListing::UNRESOLVED;
+		return(check);
+	}
+	check.Address = Dotted(*address);
+
+	for (CnCNetTunnelEntryType const & tunnel : listed) {
+		if (tunnel.Port != port) {
+			continue;
+		}
+		std::optional<uint32_t> const own = Literal_IPv4(tunnel.Host);
+		std::optional<uint32_t> const listed_address = own.has_value() ? own : (resolve ? resolve(tunnel.Host) : std::nullopt);
+		if (listed_address.has_value() && *listed_address == *address) {
+			check.Result = CnCNetTunnelListing::LISTED;
+			return(check);
+		}
+	}
+	return(check);
+}
+
+
+std::optional<uint32_t> CnCNet_Resolve_IPv4(std::string const & host, int timeout_ms)
+{
+	struct LookupType
+	{
+		std::mutex Lock;
+		std::condition_variable Finished;
+		bool Done = false;
+		std::optional<uint32_t> Address;
+	};
+	std::shared_ptr<LookupType> const lookup = std::make_shared<LookupType>();
+	std::thread([lookup, host](void) {
+#if defined(_WIN32)
+		WSADATA started;
+		bool const network = WSAStartup(MAKEWORD(2, 2), &started) == 0;
+#endif
+		std::optional<uint32_t> address;
+		addrinfo hints{};
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_DGRAM;
+		addrinfo * found = nullptr;
+		if (getaddrinfo(host.c_str(), nullptr, &hints, &found) == 0 && found != nullptr) {
+			address = static_cast<uint32_t>(reinterpret_cast<sockaddr_in const *>(found->ai_addr)->sin_addr.s_addr);
+			freeaddrinfo(found);
+		}
+#if defined(_WIN32)
+		if (network) {
+			WSACleanup();
+		}
+#endif
+		std::lock_guard<std::mutex> guard(lookup->Lock);
+		lookup->Address = address;
+		lookup->Done = true;
+		lookup->Finished.notify_all();
+	}).detach();
+
+	std::unique_lock<std::mutex> guard(lookup->Lock);
+	if (!lookup->Finished.wait_for(guard, std::chrono::milliseconds(timeout_ms), [&lookup](void) { return(lookup->Done); })) {
+		return(std::nullopt);
+	}
+	return(lookup->Address);
+}
+
+
+bool CnCNet_Is_Local_Relay(std::string_view configured, std::string_view host, uint16_t port)
+{
+	std::size_t const colon = configured.rfind(':');
+	if (colon == std::string_view::npos || colon == 0) {
+		return(false);
+	}
+	std::string_view const configured_host = configured.substr(0, colon);
+	if (!Same_Name(configured_host, "127.0.0.1") && !Same_Name(configured_host, "localhost")) {
+		return(false);
+	}
+	int const configured_port = Number(configured.substr(colon + 1));
+	return(configured_port > 0 && configured_port == port && Same_Name(configured_host, host));
 }

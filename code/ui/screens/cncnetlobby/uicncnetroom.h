@@ -27,8 +27,8 @@ struct UICnCNetRoomSetupType
 	std::string RoomName;           // Hosts only; the name the game list shows.
 	std::string GameVersion;
 	std::string BroadcastChannel;
-	std::string Tunnel;             // Hosts only; a relay to use whatever the tunnel list says, as host:port. Empty picks one from the list.
-	CnCNetTunnelChoiceClass const * Choice = nullptr;   // Hosts only; the tunnels measured from the list.
+	std::string Tunnel;             // A relay to use whatever the tunnel list says, as host:port; hosts only unless it is on this machine, which guests accept too. Empty picks one from the list.
+	CnCNetTunnelChoiceClass const * Choice = nullptr;   // The tunnels from the list; guests accept a match only on one of these.
 	std::string Map;                // Hosts only; a map file to start the room on, or empty for the last one.
 	std::string Notice;             // Hosts only; said in the room once for every player who joins.
 	std::string MatchArguments;     // Added to the command line of the copy that plays the match.

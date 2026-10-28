@@ -47,6 +47,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -252,6 +253,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		bool Begin_Match(std::string & error);
 		std::string Play_Match(void);
 		void Return_To_Room(std::string const & outcome);
+		std::string Relay_Refusal(std::string const & host, uint16_t port, bool own);
 		void Note(std::string const & text) { Network.Note(TheRoom.Channel(), text); }
 
 		virtual void Read(UINetLobbyState & state) override;
@@ -290,6 +292,8 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		bool AskedSetup = false;
 		bool MapMissing = false;
 		std::string ClosedReason;
+		std::string VerifiedRelay;
+		std::chrono::steady_clock::time_point NextRelayLookup;
 		std::string PreviewMap;
 		int StartLimit = -1;
 		int PlayerLimit = -1;
@@ -880,6 +884,57 @@ bool CnCNetRoomServiceClass::Can_Start(void)
 
 
 /// <summary>
+/// Why this machine will not play through the relay host:port, in plain words, or empty when it will. A relay is
+/// accepted when the CnCNet tunnel list holds it, or when it is the loopback relay this machine's own settings
+/// name, which is how the local test setups run. A relay named by a host name is looked up once; the address
+/// found is kept in VerifiedRelay for Play_Match, and further lookups wait 15 seconds so a host cannot keep the
+/// window busy with names.
+/// </summary>
+std::string CnCNetRoomServiceClass::Relay_Refusal(std::string const & host, uint16_t port, bool own)
+{
+	VerifiedRelay.clear();
+	if (CnCNet_Is_Local_Relay(Setup.Tunnel, host, port)) {
+		return(std::string());
+	}
+	std::string const subject = own ? "Your relay" : "The host's relay";
+	CnCNetTunnelListType const list = Setup.Choice != nullptr ? Setup.Choice->List() : CnCNetTunnelListType();
+	if (Setup.Choice != nullptr && !list.Ready) {
+		return(std::string("The CnCNet tunnel list is still loading, so the match did not start.")
+			+ (own ? " Try again in a moment." : " Ask the host to start again in a moment."));
+	}
+
+	auto const begin = std::chrono::steady_clock::now();
+	bool const may_look_up = begin >= NextRelayLookup;
+	bool looked_up = false;
+	CnCNetTunnelCheckType const check = CnCNet_Check_Tunnel(list.Tunnels, host, port,
+		[&](std::string const & name) -> std::optional<uint32_t> {
+			auto const spent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+			if (!may_look_up || spent >= 3000) {
+				return(std::nullopt);
+			}
+			looked_up = true;
+			return(CnCNet_Resolve_IPv4(name, static_cast<int>(3000 - spent)));
+		});
+	if (looked_up) {
+		NextRelayLookup = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+	}
+
+	switch (check.Result) {
+		case CnCNetTunnelListing::LISTED:
+			VerifiedRelay = check.Address;
+			return(std::string());
+		case CnCNetTunnelListing::NO_LIST:
+			return("The CnCNet tunnel list could not be loaded, so the match did not start.");
+		case CnCNetTunnelListing::UNRESOLVED:
+			return(subject + " name " + host.substr(0, 60) + " could not be looked up, so the match did not start.");
+		default:
+			break;
+	}
+	return(subject + " " + host.substr(0, 60) + ":" + std::to_string(port) + " is not on the CnCNet tunnel list, so the match did not start.");
+}
+
+
+/// <summary>
 /// Settles the host's match and tells the room it has started. False with the
 /// reason in error when the tunnel setting cannot be read or the room cannot start.
 /// </summary>
@@ -901,6 +956,12 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 	if (colon == 0 || port <= 0 || port > 65535) {
 		error = "The tunnel setting \"" + tunnel + "\" is not host:port.";
 		return(false);
+	}
+	if (!Setup.Tunnel.empty()) {
+		error = Relay_Refusal(tunnel.substr(0, colon), static_cast<uint16_t>(port), true);
+		if (!error.empty()) {
+			return(false);
+		}
 	}
 
 	std::vector<int> sides;
@@ -986,11 +1047,13 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 
 	CnCNetTunnelBridgeClass bridge;
 	std::string error;
-	if (!bridge.Start(match.TunnelHost, match.TunnelPort, (match_key << 16) | own->TunnelId, peers, error)) {
+	// A guest plays through the address its check found, not through a second lookup of the host's name.
+	std::string const relay_host = !TheRoom.Is_Host() && !VerifiedRelay.empty() ? VerifiedRelay : match.TunnelHost;
+	if (!bridge.Start(relay_host, match.TunnelPort, (match_key << 16) | own->TunnelId, peers, error)) {
 		return(error);
 	}
 
-	DebugString("[CnCNet] Match via tunnel %s:%u, own tunnel id %08x, %zu peers, bridge port %u.\n", match.TunnelHost.c_str(),
+	DebugString("[CnCNet] Match via tunnel %s:%u, own tunnel id %08x, %zu peers, bridge port %u.\n", relay_host.c_str(),
 		static_cast<unsigned>(match.TunnelPort), (match_key << 16) | own->TunnelId, peers.size(), static_cast<unsigned>(bridge.Game_Port()));
 	// [CnCNet] TimingPolicy=Gamemd plays gamemd's online timing, which schedules every order 30 frames ahead or more.
 	char policy[32];
@@ -1092,10 +1155,19 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 	config.HostNick = setup.HostNick;
 	config.Build = CnCNet_Build_Identity(OPENTS_COMMIT, OPENTS_COMMIT_DIRTY != 0, OPENTS_ARCH, OPENTS_VERSION_PACKED);
 	DebugString("[CnCNet] Room build id %s.\n", config.Build.c_str());
+	// The guest's start check needs the service, which is built from this config; messages arrive only after it exists.
+	CnCNetRoomServiceClass * service_for_start = nullptr;
 	if (setup.Host) {
 		config.Notice = setup.Notice;
 	} else {
 		config.Options_Playable = [](std::map<std::string, std::string> const & options) { return(!Playable_Map(options).empty()); };
+		config.Start_Refusal = [&service_for_start](std::map<std::string, std::string> const & info) {
+			CnCNetMatchType match;
+			if (!CnCNet_Read_Match(info, match)) {
+				return(std::string("The host's start message could not be read, so the match did not start."));
+			}
+			return(service_for_start->Relay_Refusal(match.TunnelHost, match.TunnelPort, false));
+		};
 	}
 
 	if (setup.Host && (Session.ScenarioFileName[0] == '\0' || !CCFileClass(Session.ScenarioFileName).Is_Available())) {
@@ -1126,6 +1198,7 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 	CnCNetRoomServiceClass service(session, setup.Host
 		? CnCNetRoomClass::Host(config, Session_Options(), now)
 		: CnCNetRoomClass::Guest(config, now), setup);
+	service_for_start = &service;
 	if (setup.Host) {
 		service.Service();
 	}

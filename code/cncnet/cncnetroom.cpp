@@ -361,7 +361,15 @@ void CnCNetRoomClass::Guest_Message(IRCEventType const & event)
 				|| (Config.Options_Playable && !Config.Options_Playable(OptionList))) {
 			return;
 		}
-		StartList = Decode_Map(event.Text);
+		std::map<std::string, std::string> info = Decode_Map(event.Text);
+		if (Config.Start_Refusal) {
+			std::string const reason = Config.Start_Refusal(info);
+			if (!reason.empty()) {
+				ProblemText = reason;
+				return;
+			}
+		}
+		StartList = std::move(info);
 		StartOptions = OptionList;
 		CurrentStatus = CnCNetRoomStatus::STARTING;
 		Changed();

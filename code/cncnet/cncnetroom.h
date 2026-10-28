@@ -87,6 +87,10 @@ struct CnCNetRoomConfigType
 	// Guest only: whether this machine can play a match with the host's current options. A start is
 	// ignored while it returns false. Empty accepts every start.
 	std::function<bool(std::map<std::string, std::string> const &)> Options_Playable;
+	// Guest only: why this machine will not play the match a start message describes, in plain words, or
+	// empty to play it. It gets the start message's fields. A refused start leaves the guest in the room,
+	// which shows the reason through Take_Problem. Empty accepts every start.
+	std::function<std::string(std::map<std::string, std::string> const &)> Start_Refusal;
 };
 
 
@@ -139,6 +143,7 @@ class CnCNetRoomClass
 
 		// A guest acts on a start only when it is ready, the start comes from the host, its build matches the
 		// host's and Options_Playable accepts the host's options; any other start is ignored.
+		// A start that Start_Refusal refuses is ignored as well, and its reason becomes the room's problem text.
 		void Apply(IRCEventType const & event, uint64_t now);
 		void Tick(uint64_t now);
 
@@ -158,7 +163,8 @@ class CnCNetRoomClass
 		// then says why in the second case.
 		bool Start(std::map<std::string, std::string> info);
 
-		// A problem the host should be told about, in plain words, such as a message that was too long to send.
+		// A problem the player should be told about, in plain words, such as a message that was too long to send
+		// or a start a guest refused.
 		// Empty when there is none; reading it clears it.
 		std::string Take_Problem(void);
 

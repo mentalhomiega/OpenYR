@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 
 struct CnCNetTunnelChoiceType
@@ -32,6 +33,15 @@ struct CnCNetTunnelChoiceType
 };
 
 
+// The tunnels the list names, before any is pinged.
+struct CnCNetTunnelListType
+{
+	bool Ready = false;         // The list has been read, from the download or from the kept copy.
+	std::vector<CnCNetTunnelEntryType> Tunnels;     // Empty when Ready and no list could be loaded.
+	std::string Note;           // Where the list came from, or why it did not.
+};
+
+
 class CnCNetTunnelChoiceClass
 {
 	public:
@@ -43,6 +53,9 @@ class CnCNetTunnelChoiceClass
 
 		// The best tunnel with room for `players` clients, from what has come in so far.
 		CnCNetTunnelChoiceType Poll(int players) const;
+
+		// The tunnels on the list, available as soon as the list is read and before the pings come back.
+		CnCNetTunnelListType List(void) const;
 
 	private:
 		struct SharedType;

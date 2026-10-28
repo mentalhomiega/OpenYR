@@ -1,0 +1,53 @@
+; Attack-move onto fogged ground, with fog of war on (the -Settings line below). An E1 is granted on 60,42 and walks to 66,46,
+; so 67,47 is seen and mapped. It then walks back west to 50,42, which leaves 67,47 mapped but under the fog. "cell" logs
+; mapped, visible and fogmapped for 67,47 before each order. A plain click there is the control and gives a Move. Then the
+; E1 walks back west, which fogs 67,47 again, and an armed AttackMove click there should give Attack Move to 67,47.
+; The shape lines give the mouse shape over the fogged cell: 18 is MOUSE_CAN_MOVE and 21 is MOUSE_CAN_ATTACK. At this view
+; (view 60 42), 380,420 is cell 67,47. No enemy stands near 67,47.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-fog.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+35 grantunit E1 60 42
+40 select E1
+45 selected
+46 where PTRUCK
+50 move E1 66 46
+200 where E1
+300 where E1
+302 cell 67 47
+500 move E1 50 42
+900 where E1
+1000 where E1
+1100 where E1
+1200 where E1
+1202 cell 67 47
+1204 windowmove 380 420
+1206 shape
+1210 windowclick 380 420
+1300 where E1
+1400 where E1
+1500 where E1
+1600 where E1
+1700 where E1
+1800 where E1
+1900 where E1
+1950 where E1
+2000 move E1 50 42
+2400 where E1
+2500 where E1
+2600 where E1
+2700 where E1
+2702 cell 67 47
+2710 command AttackMove
+2712 windowmove 380 420
+2714 shape
+2716 windowclick 380 420
+2740 where E1
+2800 where E1
+2900 where E1
+3000 where E1
+3100 where E1
+3200 where E1
+3300 where E1
+3400 where E1
+3500 quit

@@ -797,6 +797,30 @@ void Test_Guest_Start(void)
 }
 
 
+void Test_Guest_Start_Refusal(void)
+{
+	IRCEventType const start = Room_Event(IRCEventKind::CTCP, "Host", ROOM, "OYRSTART", "Seed=5;Tunnel=198.51.100.7:50001");
+	std::string refusal = "The host's relay 198.51.100.7:50001 is not on the CnCNet tunnel list.";
+	std::map<std::string, std::string> seen;
+	CnCNetRoomConfigType config = Room_Config("Guest", "b1");
+	config.Start_Refusal = [&refusal, &seen](std::map<std::string, std::string> const & info) { seen = info; return(refusal); };
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config("Host", "b1"), {{"Map", "Lake"}}, 0);
+	CnCNetRoomClass guest = CnCNetRoomClass::Guest(config, 100);
+	Seat_Guest(host, guest, true);
+
+	guest.Apply(start, 300);
+	Check(guest.Status() == CnCNetRoomStatus::IN_ROOM && guest.Start_Info().empty() && guest.Start_Options().empty(),
+		"start refusal: a refused start leaves the guest in the room with no match");
+	Check(seen.count("Tunnel") != 0 && seen.at("Tunnel") == "198.51.100.7:50001", "start refusal: the check sees the start message's relay");
+	Check(guest.Take_Problem() == refusal && guest.Take_Problem().empty(), "start refusal: the reason is the room's problem text, read once");
+
+	refusal.clear();
+	guest.Apply(start, 310);
+	Check(guest.Status() == CnCNetRoomStatus::STARTING && guest.Start_Info().at("Seed") == "5" && guest.Take_Problem().empty(),
+		"start refusal: the same start is taken once the check has no objection");
+}
+
+
 void Test_Room_Channel_And_Password(void)
 {
 	CnCNetLobbyClass lobby{CnCNetLobbyConfigType()};
@@ -1000,6 +1024,82 @@ void Test_Tunnel_List(void)
 	Check(CnCNet_Pick_Tunnel(tunnels, 3) == std::optional<std::size_t>(0), "tunnel pick: a tunnel with no room for the match or no answer is skipped");
 	tunnels[0].PingMS = -1;
 	Check(!CnCNet_Pick_Tunnel(tunnels, 3).has_value(), "tunnel pick: nothing when none answered with room");
+}
+
+
+uint32_t Address_Of(char const * text)
+{
+	in_addr address{};
+	inet_pton(AF_INET, text, &address);
+	return(static_cast<uint32_t>(address.s_addr));
+}
+
+
+void Test_Tunnel_Listed(void)
+{
+	std::string const list =
+		"address;country;countrycode;name;password;clients;maxclients;official;latitude;longitude;version;distance\r\n"
+		"51.75.126.186:50001;France;FR;[EU]Hottwire.me;0;2;100;2;0;0;3;0\r\n"
+		"149.28.164.124:50001;Australia;AU;CnCNet Australia;0;4;250;2;0;0;3;0\r\n"
+		"Relay.Example.org:50002;Japan;JP;CnCNet Japan;0;4;250;1;0;0;3;0\r\n";
+	std::vector<CnCNetTunnelEntryType> const listed = CnCNet_Parse_Tunnel_List(list);
+	Check(listed.size() == 3, "tunnel check: the fixture list has three tunnels");
+
+	int lookups = 0;
+	std::map<std::string, uint32_t> dns = {
+		{"Relay.Example.org", Address_Of("203.0.113.9")},
+		{"mirror.example.net", Address_Of("149.28.164.124")},
+		{"evil.example.net", Address_Of("198.51.100.66")},
+	};
+	CnCNetResolveFunction const resolve = [&](std::string const & name) -> std::optional<uint32_t> {
+		++lookups;
+		auto const found = dns.find(name);
+		return(found == dns.end() ? std::nullopt : std::optional<uint32_t>(found->second));
+	};
+
+	CnCNetTunnelCheckType check = CnCNet_Check_Tunnel(listed, "51.75.126.186", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::LISTED && check.Address == "51.75.126.186" && lookups == 0,
+		"tunnel check: a listed address and port is accepted without a lookup");
+	check = CnCNet_Check_Tunnel(listed, "198.51.100.7", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED, "tunnel check: an address that is not listed is refused");
+	check = CnCNet_Check_Tunnel(listed, "51.75.126.186", 50009, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED, "tunnel check: an unlisted port on a listed address is refused");
+	check = CnCNet_Check_Tunnel(listed, "51.75.126.186", 50002, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED, "tunnel check: another listed tunnel's port on this address is refused");
+	check = CnCNet_Check_Tunnel({}, "51.75.126.186", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::NO_LIST, "tunnel check: no list refuses even an address that would have been listed");
+
+	lookups = 0;
+	check = CnCNet_Check_Tunnel(listed, "relay.example.ORG", 50002, resolve);
+	Check(check.Result == CnCNetTunnelListing::LISTED && lookups == 0, "tunnel check: a listed host name matches without regard to case and without a lookup");
+	check = CnCNet_Check_Tunnel(listed, "mirror.example.net", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::LISTED && check.Address == "149.28.164.124",
+		"tunnel check: a host name that resolves to a listed address and port is accepted, and gives that address");
+	check = CnCNet_Check_Tunnel(listed, "mirror.example.net", 50003, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED, "tunnel check: a host name that resolves to a listed address on an unlisted port is refused");
+	check = CnCNet_Check_Tunnel(listed, "evil.example.net", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED && check.Address == "198.51.100.66",
+		"tunnel check: a host name that resolves to an unlisted address is refused");
+	check = CnCNet_Check_Tunnel(listed, "nowhere.example.net", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::UNRESOLVED, "tunnel check: a host name that does not resolve is refused");
+	check = CnCNet_Check_Tunnel(listed, "203.0.113.9", 50002, resolve);
+	Check(check.Result == CnCNetTunnelListing::LISTED, "tunnel check: an address matches a listed host name that resolves to it");
+	check = CnCNet_Check_Tunnel(listed, "mirror.example.net", 50001, CnCNetResolveFunction());
+	Check(check.Result == CnCNetTunnelListing::UNRESOLVED, "tunnel check: a host name is refused when nothing can look it up");
+	check = CnCNet_Check_Tunnel(listed, "127.0.0.1", 50001, resolve);
+	Check(check.Result == CnCNetTunnelListing::NOT_LISTED, "tunnel check: a loopback address is not on the list");
+
+	Check(CnCNet_Is_Local_Relay("127.0.0.1:50000", "127.0.0.1", 50000) && CnCNet_Is_Local_Relay("localhost:50000", "LOCALHOST", 50000),
+		"local relay: the loopback relay the settings name is accepted");
+	Check(!CnCNet_Is_Local_Relay("127.0.0.1:50000", "127.0.0.1", 50001) && !CnCNet_Is_Local_Relay("127.0.0.1:50000", "198.51.100.7", 50000)
+		&& !CnCNet_Is_Local_Relay("127.0.0.1:50000", "localhost", 50000),
+		"local relay: another port, another address or another spelling is not");
+	Check(!CnCNet_Is_Local_Relay("", "127.0.0.1", 50000) && !CnCNet_Is_Local_Relay("198.51.100.7:50000", "198.51.100.7", 50000)
+		&& !CnCNet_Is_Local_Relay("51.75.126.186:50001", "51.75.126.186", 50001) && !CnCNet_Is_Local_Relay("127.0.0.1", "127.0.0.1", 50000),
+		"local relay: without a loopback relay in the settings nothing is accepted, and a relay on another machine never is");
+
+	std::optional<uint32_t> const own = CnCNet_Resolve_IPv4("127.0.0.1", 5000);
+	Check(own.has_value() && *own == Address_Of("127.0.0.1"), "resolve: an address written as numbers resolves to itself without network access");
 }
 
 
@@ -1503,9 +1603,11 @@ int main(void)
 	Test_Option_Number();
 	Test_Room_Notice();
 	Test_Guest_Start();
+	Test_Guest_Start_Refusal();
 	Test_Build_Identity();
 	Test_Build_Gate();
 	Test_Tunnel_List();
+	Test_Tunnel_Listed();
 	Test_Spawn();
 	Test_Room_Line_Limit();
 	Test_Match_End_Marker();

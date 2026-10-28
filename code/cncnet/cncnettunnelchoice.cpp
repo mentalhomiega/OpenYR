@@ -23,6 +23,8 @@ struct CnCNetTunnelChoiceClass::SharedType
 {
 	std::mutex Lock;
 	bool Done = false;
+	bool ListReady = false;
+	std::vector<CnCNetTunnelEntryType> Listed;
 	std::vector<CnCNetTunnelEntryType> Tunnels;
 	std::string Note;           // Where the list came from, or why it did not.
 };
@@ -64,11 +66,16 @@ void CnCNetTunnelChoiceClass::Start(std::string const & url, std::string const &
 		}
 
 		std::vector<CnCNetTunnelEntryType> tunnels = CnCNet_Parse_Tunnel_List(text);
+		{
+			std::lock_guard<std::mutex> guard(shared->Lock);
+			shared->Listed = tunnels;
+			shared->Note = note;
+			shared->ListReady = true;
+		}
 		CnCNet_Ping_Tunnels(tunnels, 2, 1000, 12);
 
 		std::lock_guard<std::mutex> guard(shared->Lock);
 		shared->Tunnels = std::move(tunnels);
-		shared->Note = note;
 		shared->Done = true;
 	}).detach();
 }
@@ -96,4 +103,15 @@ CnCNetTunnelChoiceType CnCNetTunnelChoiceClass::Poll(int players) const
 	choice.PingMS = tunnel.PingMS;
 	choice.Text = "Tunnel " + tunnel.Name + " (" + tunnel.Host + ":" + std::to_string(tunnel.Port) + "), " + std::to_string(tunnel.PingMS) + " ms.";
 	return(choice);
+}
+
+
+CnCNetTunnelListType CnCNetTunnelChoiceClass::List(void) const
+{
+	CnCNetTunnelListType list;
+	std::lock_guard<std::mutex> guard(Shared->Lock);
+	list.Ready = Shared->ListReady;
+	list.Tunnels = Shared->Listed;
+	list.Note = Shared->Note;
+	return(list);
 }

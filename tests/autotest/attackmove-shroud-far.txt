@@ -1,0 +1,41 @@
+; Attack-move onto shrouded ground several cells away, with fog of war on. An E1 stands on 60,42 and is not moved before the
+; first order, so cells 6 to 8 away are unseen. "cell" logs mapped, visible and fogmapped before each order. First an armed
+; AttackMove click on 52,40 (screen 60,90 at view 60 42), then, after the E1 comes back to 60,42, an armed click on 54,40
+; (screen 140,120). Each order should give Attack Move to its cell and the E1 should reach it. Clicks outside the map
+; area (the right-hand panel and the command bar) are ignored, so these points stay inside it.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-shroud-far.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+33 cell 52 40
+34 cell 54 40
+35 grantunit E1 60 42
+40 select E1
+45 selected
+200 cell 52 40
+202 command AttackMove
+204 windowmove 60 90
+206 shape
+208 windowclick 60 90
+240 where E1
+300 where E1
+400 where E1
+500 where E1
+600 where E1
+700 where E1
+800 cell 52 40
+900 move E1 60 42
+1100 where E1
+1200 cell 54 40
+1202 command AttackMove
+1204 windowmove 140 120
+1206 shape
+1208 windowclick 140 120
+1240 where E1
+1300 where E1
+1400 where E1
+1500 where E1
+1600 where E1
+1700 where E1
+1800 where E1
+1900 where E1
+2000 quit

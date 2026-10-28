@@ -1,0 +1,30 @@
+; Attack-move onto shrouded ground, with fog of war on (the -Settings line below). 67,47 is never seen before the order: the
+; cell logs mapped 0 at frame 34 and frame 210, before and after the E1 is granted on 60,42. The E1 is then ordered onto 67,47
+; by an armed AttackMove click, which should give Attack Move to 67,47 and bring the E1 east, as a plain move into the shroud
+; does. The shape lines give the mouse shape over the shrouded cell: 18 is MOUSE_CAN_MOVE and 21 is MOUSE_CAN_ATTACK. At this
+; view (view 60 42), 380,420 is cell 67,47.
+; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-shroud.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+34 cell 67 47
+35 grantunit E1 60 42
+40 select E1
+45 selected
+210 cell 67 47
+212 windowmove 380 420
+214 shape
+216 command AttackMove
+218 windowmove 380 420
+220 shape
+222 windowclick 380 420
+260 where E1
+300 where E1
+400 where E1
+500 where E1
+600 where E1
+700 where E1
+800 where E1
+900 where E1
+1000 where E1
+1100 where E1
+1200 quit

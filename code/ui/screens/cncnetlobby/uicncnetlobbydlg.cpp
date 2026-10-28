@@ -200,6 +200,9 @@ bool UI_CnCNet_Lobby_Dialog(void)
 		}
 		tunnel = "127.0.0.1:50000";
 	}
+	std::size_t const tunnel_colon = tunnel.rfind(':');
+	bool const local_relay = tunnel_colon != std::string::npos
+		&& CnCNet_Is_Local_Relay(tunnel, tunnel.substr(0, tunnel_colon), static_cast<uint16_t>(std::atoi(tunnel.c_str() + tunnel_colon + 1)));
 	CnCNetTunnelChoiceClass tunnels;
 
 	std::mt19937 random{std::random_device{}()};
@@ -224,7 +227,8 @@ bool UI_CnCNet_Lobby_Dialog(void)
 		setup.Choice = &tunnels;
 		setup.Map = Setting("HostMap", "");
 		setup.Notice = Setting("RoomNotice", DEFAULT_NOTICE);
-		if (setup.Host && tunnel.empty()) {
+		// A relay on this machine needs no list; every other relay must be on it, for guests as well as hosts.
+		if (!local_relay) {
 			tunnels = CnCNetTunnelChoiceClass();
 			tunnels.Start(Setting("TunnelListURL", "https://cncnet.org/master-list"), User_Directory() + "cncnet_tunnels.txt");
 		}
