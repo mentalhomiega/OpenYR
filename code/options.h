@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "custommusic.h"
 #include "keyboard.h"
 #include "video.h"
 
@@ -83,6 +84,7 @@ class OptionsClass {
 		void Fixup_Palette(void) const;
 		void Set_Shuffle(bool on);
 		void Set_Repeat(bool on);
+		void Set_Custom_Music(CustomMusicModeType mode);
 		void Set_Score_Volume(float volume, bool feedback);
 		void Set_Sound_Volume(float volume, bool feedback);
 		void Set_Voice_Volume(float volume, bool feedback);
@@ -410,6 +412,7 @@ class OptionsClass {
 		float MovieVolume;				// Volume for movies, including the in-game radar movies.
 		bool IsScoreRepeat;				// Score should repeat?
 		bool IsScoreShuffle;			// Score list should shuffle?
+		CustomMusicModeType CustomMusic;	// Whether the playlist has the stock scores, the Music folder, or both.
 
 		/*
 		 * This is how far ahead of the movie the sound card is assumed to be running, expressed

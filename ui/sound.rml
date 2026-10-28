@@ -34,6 +34,10 @@
 				<input type="range" id="movie" min="0" max="10" step="1" data-attr-value="movie" data-attrif-disabled="!enabled" data-event-change="queue('movie', ev.value)"/><span class="value">{{movie}}</span>
 			</div>
 
+			<div class="setting" id="row-custommusic" desc="Chooses what the music list plays: the game's tracks, your own tracks, or both. Your own tracks are the audio files (WAV, OGG, FLAC or MP3) in the Music folder of the user directory. With none there, the game's tracks play whatever this says."><span class="caption">Custom music</span><select id="custommusic" data-value="custommusic" data-attrif-disabled="!enabled" data-event-change="queue('custommusic', ev.value)">
+				<option data-for="entry : custommusics" data-attr-value="it_index">{{entry.label}}</option>
+			</select></div>
+
 			<div id="music" data-if="ingame">
 				<p class="section">Music</p>
 				<div class="setting" id="music-buttons-row" desc="Starts or stops the music that is playing now.">

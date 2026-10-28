@@ -861,8 +861,13 @@ class RecordingSoundServiceClass : public UISoundServiceClass
 		virtual void Set_Movie_Volume(float volume, bool feedback) override { Record("movie", volume, feedback); }
 		virtual void Set_Shuffle(bool on) override { Calls.push_back(on ? "shuffle on" : "shuffle off"); }
 		virtual void Set_Repeat(bool on) override { Calls.push_back(on ? "repeat on" : "repeat off"); }
+		virtual void Set_Custom_Music(int mode) override { Calls.push_back("custom music " + std::to_string(mode)); }
+		virtual std::vector<UISoundTrack> Tracks(void) override { return(ListedTracks); }
 		virtual void Play(int theme) override { Calls.push_back("play " + std::to_string(theme)); }
 		virtual void Stop(void) override { Calls.push_back("stop"); }
+
+		// What the music list offers after the playlist source changes.
+		std::vector<UISoundTrack> ListedTracks;
 
 		std::string Joined(void) const
 		{
@@ -1711,6 +1716,17 @@ void Test_Sound_Presenter(void)
 	Drive(presenter, "stop");
 	Check(service.Joined() == "stop", "stop fades the music out");
 	service.Calls.clear();
+
+	service.ListedTracks.push_back({ "01 - Custom [1:00]", 30 });
+	Drive(presenter, "custommusic", 2);
+	Check(presenter.State.CustomMusic == 2 && service.Joined() == "custom music 2", "choosing custom music only changes the playlist source");
+	Check(presenter.State.Tracks.size() == 1 && presenter.State.Tracks[0].Theme == 30 && presenter.State.Selected == 0, "the music list is read again after the source changes");
+	service.Calls.clear();
+
+	Drive(presenter, "custommusic", 2);
+	Drive(presenter, "custommusic", 3);
+	Drive(presenter, "custommusic", -1);
+	Check(presenter.State.CustomMusic == 2 && service.Calls.empty(), "an unchanged or unknown playlist source does nothing");
 
 	Drive(presenter, "ok");
 	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0; unit 0.3; movie 0.0", "OK re-applies the levels without feedback and closes");
@@ -2571,6 +2587,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		state.Tracks.push_back({ "02 - Second [2:30]", 6 });
 		state.Tracks.push_back({ "03 - Third [4:05]", 9 });
 		state.Selected = 1;
+		state.CustomMusics = { { "Stock and custom tracks" }, { "Stock tracks only" }, { "Custom tracks only" } };
 
 		UISoundPresenterClass presenter(service, state);
 		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
@@ -2594,6 +2611,10 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 			}
 		}
 		Check(sliders == 5, "the sound screen has five sliders");
+
+		Rml::ElementList selects;
+		document->GetElementsByTagName(selects, "select");
+		Check(selects.size() == 1 && selects[0]->GetId() == "custommusic", "the sound screen has the custom music choice");
 
 		Rml::Element * score = document->GetElementById("score");
 		Check(score != nullptr && score->GetAttribute<int>("value", -1) == 7, "the music slider starts at the music level");

@@ -1,0 +1,15 @@
+; Checks the player's Music folder: the sample files are found, the unplayable ones are skipped with a log line, the good ones open and decode, and the
+; custom music setting changes which tracks the playlist offers. The runner sets every volume to 0, so nothing is heard.
+; Expected: "Music: skipping" lines for Stage Empty.mp3 and Stage Broken.ogg, "musiclist 2 tracks" with Stage Mono and Stage Stereo allowed, "musicopen 0" and "musicopen 1" opened and "musicopen 2" not on the list,
+; "musicmode Stock" with no custom track, "musicmode Custom" with only the 2 custom tracks, and "musicmode Both" with the stock tracks and the 2 custom ones.
+; Run: scripts/run_autotest.ps1 -Script tests/autotest/custom-music.txt -Seconds 60 -Filter "AUTOTEST +music|Music:|Exception"
+1 musicstage
+5 musicscan
+10 musiclist
+15 musicopen 0
+20 musicopen 1
+25 musicopen 2
+30 musicmode Stock
+35 musicmode Custom
+40 musicmode Both
+45 musiclist

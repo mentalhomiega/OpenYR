@@ -355,6 +355,7 @@
 #include "video.h"
 #include "bgfxbackend.h"
 #include "gamedirs.h"
+#include "theme.h"
 #include "_rect.h"
 #include "vox.h"
 #include "_voxel.h"
@@ -393,6 +394,7 @@ extern int VoxelNormalTableEntryCount[];
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <set>
@@ -3825,6 +3827,89 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST   evafile %s: %s %s\n", step.Argument.c_str(), file.empty() ? "-" : file.c_str(), handle.Is_Valid() ? "opened" : "failed");
 		if (handle.Is_Valid()) {
 			AudioEngine.Stop_Stream(handle);
+		}
+	} else if (step.Command == "musicstage") {
+		// musicstage: writes sample files into the Music folder unless they are there: two WAV tracks, an empty MP3, a text file posing as an OGG and a text file.
+		std::string const folder = Music_Folder();
+		for (int stereo = 0; stereo < 2; stereo++) {
+			std::string const path = folder + (stereo ? "Stage Stereo.wav" : "Stage Mono.wav");
+			std::ifstream exists(path, std::ios::binary);
+			if (exists) {
+				continue;
+			}
+			unsigned const rate = 22050, channels = stereo ? 2 : 1, frames = rate;
+			std::vector<unsigned char> wav;
+			auto put32 = [&wav](unsigned value) { for (int i = 0; i < 4; i++) wav.push_back((unsigned char)(value >> (8 * i))); };
+			auto put16 = [&wav](unsigned value) { for (int i = 0; i < 2; i++) wav.push_back((unsigned char)(value >> (8 * i))); };
+			wav.insert(wav.end(), { 'R', 'I', 'F', 'F' });
+			put32(36 + frames * channels * 2);
+			wav.insert(wav.end(), { 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ' });
+			put32(16);
+			put16(1);
+			put16(channels);
+			put32(rate);
+			put32(rate * channels * 2);
+			put16(channels * 2);
+			put16(16);
+			wav.insert(wav.end(), { 'd', 'a', 't', 'a' });
+			put32(frames * channels * 2);
+			for (unsigned frame = 0; frame < frames; frame++) {
+				int const sample = ((frame / 25) & 1) ? 6000 : -6000;
+				for (unsigned channel = 0; channel < channels; channel++) {
+					put16((unsigned)(sample & 0xFFFF));
+				}
+			}
+			std::ofstream out(path, std::ios::binary);
+			out.write((char const *)wav.data(), (std::streamsize)wav.size());
+		}
+		{ std::ofstream out(folder + "Stage Empty.mp3", std::ios::binary); }
+		{ std::ofstream out(folder + "Stage Broken.ogg", std::ios::binary); out << "This is not an Ogg file."; }
+		{ std::ofstream out(folder + "Stage Notes.txt", std::ios::binary); out << "Not music."; }
+		DebugString("AUTOTEST   musicstage %s\n", folder.c_str());
+	} else if (step.Command == "musicscan") {
+		// musicscan: reads the Music folder again, as the game does at start-up.
+		Theme.Scan();
+	} else if (step.Command == "musicmode") {
+		// musicmode <Both|Stock|Custom>: sets the custom music option and logs how many tracks the playlist then offers.
+		CustomMusicModeType mode = CUSTOM_MUSIC_BOTH;
+		if (!Custom_Music_Mode_From_Name(step.Argument.c_str(), mode)) {
+			DebugString("AUTOTEST   musicmode %s: unknown\n", step.Argument.c_str());
+		} else {
+			Options.Set_Custom_Music(mode);
+			int allowed = 0, custom = 0;
+			for (ThemeType theme = THEME_FIRST; theme < Theme.Max_Themes(); theme = ThemeType(theme + 1)) {
+				if (Theme.Is_Allowed(theme)) {
+					allowed++;
+					custom += Theme.Is_Custom(theme) ? 1 : 0;
+				}
+			}
+			DebugString("AUTOTEST   musicmode %s: %d allowed, %d custom\n", Custom_Music_Mode_Name(mode), allowed, custom);
+		}
+	} else if (step.Command == "musiclist") {
+		// musiclist: every custom track the theme player holds, with its title, whether the playlist allows it and how long it plays.
+		DebugString("AUTOTEST   musiclist %d tracks\n", Theme.Custom_Count());
+		for (ThemeType theme = THEME_FIRST; theme < Theme.Max_Themes(); theme = ThemeType(theme + 1)) {
+			if (Theme.Is_Custom(theme)) {
+				DebugString("AUTOTEST   music %d \"%s\" allowed %d length %d\n", (int)theme, Theme.Full_Name(theme), (int)Theme.Is_Allowed(theme), Theme.Track_Length(theme));
+			}
+		}
+	} else if (step.Command == "musicopen") {
+		// musicopen <n>: opens the stream of the n-th custom track, counting from 0, with no volume and closes it again.
+		int wanted = std::atoi(step.Argument.c_str());
+		int seen = 0;
+		bool found = false;
+		for (ThemeType theme = THEME_FIRST; theme < Theme.Max_Themes() && !found; theme = ThemeType(theme + 1)) {
+			if (Theme.Is_Custom(theme) && seen++ == wanted) {
+				found = true;
+				AudioHandle handle = AudioEngine.Open_Stream(Theme.File_Name(theme), AUDIO_GROUP_MUSIC, 0.0f, false);
+				DebugString("AUTOTEST   musicopen %d \"%s\": %s\n", wanted, Theme.Full_Name(theme), handle.Is_Valid() ? "opened" : "failed");
+				if (handle.Is_Valid()) {
+					AudioEngine.Stop_Stream(handle);
+				}
+			}
+		}
+		if (!found) {
+			DebugString("AUTOTEST   musicopen %d: not on the list\n", wanted);
 		}
 	} else if (step.Command == "maps") {
 		// maps: every XMP<nn><letter><digit>.MAP multiplayer map the file system finds.

@@ -580,6 +580,17 @@ float AudioEngineClass::Stream_Seconds(char const * filename)
 }
 
 
+bool AudioEngineClass::Can_Decode(char const * filename)
+{
+	if (filename == nullptr || filename[0] == '\0') {
+		return(false);
+	}
+	std::unique_ptr<CCFileByteSourceClass> source(new CCFileByteSourceClass(filename));
+	AudioFileStreamProducerClass producer;
+	return(source->Is_Open() && producer.Open(std::move(source), false) && producer.Rate() != 0);
+}
+
+
 bool AudioEngineClass::Find_Named_File(char const * basename, char * filename, size_t size)
 {
 	if (filename == nullptr || size == 0) {

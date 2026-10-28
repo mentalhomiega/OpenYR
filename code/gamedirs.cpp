@@ -35,6 +35,8 @@ static char const * const ScreenshotsFolder = "Screenshots";
 
 static char const * const ReplaysFolder = "Replays";
 
+static char const * const MusicFolder = "Music";
+
 
 static std::string Trim_Path(std::string const & path)
 {
@@ -316,6 +318,20 @@ std::string Screenshot_Name(char const * filename)
 std::string Replay_Name(char const * filename)
 {
 	return(Own_Folder_Name(ReplaysFolder, filename));
+}
+
+
+/// <summary>
+/// Names the folder the player's own music goes in, ending in a separator, making it on
+/// every call so the player can find it before the first track is dropped in.
+/// </summary>
+std::string Music_Folder(void)
+{
+	std::string const path = UserDirectory + MusicFolder;
+
+	CreateDirectory(path.c_str(), NULL);
+
+	return(path + (char)std::filesystem::path::preferred_separator);
 }
 
 
