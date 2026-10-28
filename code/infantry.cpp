@@ -3124,11 +3124,12 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 {
 	PerfScope threat_scope(PERF_FRAME_THREAT);
 	/*
-	**	Engineers consider only buildings that can be captured as being a threat. All others
-	**	are ignored. If there is a building that needs to be recaptured and it is nearby
-	**	then automatically head toward it to recapture it.
+	**	A computer's engineer (Engineer=yes, whether or not it carries a weapon) considers only buildings that can
+	**	be captured as being a threat. If there is a building that needs to be recaptured and it is nearby
+	**	then automatically head toward it to recapture it. A spy or any other Infiltrate=yes soldier gets
+	**	no such treatment (InfantryClass::GreatestThreat, 0x51E140).
 	*/
-	if (!House->Is_Human_Player() && Class->IsCapture && !Is_Weapon_Equipped()) {
+	if (!House->Is_Human_Player() && Class->IsEngineer) {
 		if (House->ToCapture != NULL && Distance_To(House->ToCapture) < 15 * CELL_LEPTON) {
 			return(House->ToCapture);
 		}
@@ -3165,13 +3166,6 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	*/
 	if (Is_Weapon_Equipped() && PrimaryWeapon->WarheadPtr->IsOrganic) {
 		threat = ThreatType(threat & ~(THREAT_BUILDINGS|THREAT_VEHICLES|THREAT_BOATS|THREAT_AIR));
-	}
-
-	/*
-	**	Human controlled infantry don't automatically fire upon buildings.
-	*/
-	if (Is_Weapon_Equipped() && House->Is_Human_Player()) {
-		threat = ThreatType(threat & ~THREAT_BUILDINGS);
 	}
 
 	/*
@@ -3607,11 +3601,21 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 		return(1);
 	}
 
-	// A player's C4 soldier shoots a structure it may not arm instead of walking into it (InfantryClass::Mission_Attack, 0x51F3E0).
-	if (Class->IsCapture && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING && (!is_c4 || !House->Is_Human_Player())) {
-		Assign_Destination(TarCom);
-		Assign_Mission(MISSION_CAPTURE);
-		return(1);
+	// Only a computer's soldier turns an attack on a structure into a capture: an Infiltrate=yes soldier, or an Occupier=yes or
+	// Assaulter=yes one that can garrison the structure. A player's soldier fires its weapon instead, and an unarmed one such as an
+	// engineer does nothing (InfantryClass::Mission_Attack, 0x51F3E0).
+	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+		if (Class->IsCapture) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(1);
+		}
+		// A garrison is entered on the Enter mission here, as a player's garrison order gives it.
+		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_ENTER);
+			return(1);
+		}
 	}
 
 	return(BASECLASS::Do_MISSION_ATTACK());

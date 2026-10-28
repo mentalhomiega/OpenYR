@@ -1,0 +1,51 @@
+; A soldier given the attack mission on a structure (InfantryClass::Mission_Attack, 0x51F3E0). A computer's soldier goes to the structure when it has
+; Infiltrate=yes (the Capture mission), or has Occupier=yes or Assaulter=yes and can garrison the structure (the Enter mission, which is also what a
+; player's garrison order gives). A C4 soldier of either side plants its charge when the structure takes C4 (the Sabotage mission). A player's soldier
+; otherwise keeps the attack mission.
+; Stock soldiers with Infiltrate=yes are ENGINEER, SPY, TANY, GHOST and PTROOP. E1 and E2 have Occupier=yes. GAPOWR takes C4, CAMISC01 does not,
+; and CAHSE02 is a neutral house a soldier may garrison.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-attack-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST strike|AUTOTEST settarget|Exception"
+; Expected at frame 150 (mission): the player's ENGINEER, SPY, E1 and TANY (on CAMISC01) are on Attack, and GHOST (on GAPOWR) is on Sabotage.
+; The computer's ENGINEER, SPY and TANY (on CAMISC01) are on Capture, its GHOST (on GAPOWR) on Sabotage, its E2 (on CAHSE02) on Enter,
+; and its E1 (on GAPOWR, which it cannot garrison) on Attack.
+30 enemy GAPOWR 60 40
+31 enemy CAMISC01 66 40
+32 neutral CAHSE02 66 52
+33 own GAPOWR 60 52
+34 own CAMISC01 66 46
+35 own ENGINEER 54 38
+36 own SPY 54 39
+37 own E1 54 40
+38 own GHOST 54 41
+39 own TANY 54 42
+40 enemy ENGINEER 54 50
+41 enemy SPY 54 51
+42 enemy E1 54 52
+43 enemy GHOST 54 53
+44 enemy TANY 54 54
+45 enemy E2 54 55
+46 strike ENGINEER 60 40
+47 strike SPY 60 40
+48 strike E1 60 40
+49 strike GHOST 60 40
+50 strike TANY 66 40
+51 settarget ENGINEER 60 52 computer attack
+52 settarget SPY 60 52 computer attack
+53 settarget E1 60 52 computer attack
+54 settarget GHOST 60 52 computer attack
+55 settarget TANY 66 46 computer attack
+56 settarget E2 66 52 computer attack
+150 where ENGINEER
+150 where SPY
+150 where E1
+150 where GHOST
+150 where TANY
+150 where E2
+300 where ENGINEER
+300 where SPY
+300 where E1
+300 where GHOST
+300 where TANY
+300 where E2
+310 quit
