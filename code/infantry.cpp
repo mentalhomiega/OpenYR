@@ -1028,12 +1028,16 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							tech->Scatter_Incoming_Infantry();
 						}
 					}
+				} else if (!Class->IsAgent) {
+					// A soldier that infiltrates but is neither engineer nor agent takes nothing and walks out (0x519630).
+					Assign_Destination(NULL);
+					Scatter(tech->Center_Coord(), true, true);
+					BEnd(BENCH_PCP);
+					return;
 				} else {
-					if (Class->IsAgent) {
-						// The announcer file names the infiltration lines as the building gives up its secrets instead.
-						if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
-						((BuildingClass *)tech)->Spied_By(House);
-					}
+					// The announcer file names the infiltration lines as the building gives up its secrets instead.
+					if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
+					((BuildingClass *)tech)->Spied_By(House);
 				}
 				if (Tag) {
 					Tag->Spring(TEVENT_DESTROYED_ANY, this);
