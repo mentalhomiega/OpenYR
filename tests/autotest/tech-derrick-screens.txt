@@ -1,0 +1,21 @@
+; A neutral oil derrick (CAOILD) shot before and after an engineer captures it, with the view on the derrick so its pump can be seen.
+; Before the capture its pumping ActiveAnim (CAOILD_A) is frozen, so the shots at frames 200 and 216 show the same pump pose and
+; only the flame/flag animation (CAOILD_F, ActiveAnimTwoPowered=no) moves. After the capture at frame 300 the pump runs, so the shots at
+; frames 520 and 528 differ. gamemd freezes a NeedsEngineer structure's Powered animations at placement (DisableStuff, 0x452480)
+; and resumes them in SetOwningHouse (0x448260).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/tech-derrick-screens.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir "E:/Claude ra2 decomp/scratch-agent/tech-building-anims/derrick" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 neutral CAOILD 66 40
+110 own ENGINEER 62 40
+120 view 66 40
+130 reveal
+200 banimstate CAOILD
+200 command ScreenCapture
+216 command ScreenCapture
+300 capture ENGINEER 66 40
+520 banimstate CAOILD
+520 command ScreenCapture
+528 command ScreenCapture
+600 quit
