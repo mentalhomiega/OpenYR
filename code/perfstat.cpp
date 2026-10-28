@@ -83,15 +83,19 @@ PerfDomain Domain_Of(int phase)
 
 void Clear_State(void)
 {
+	Clock::time_point const now = Clock::now();
 	for (PhaseState & state : Phases) {
-		state.Depth = 0;
+		// A phase still open keeps its depth so its PerfScope ends it balanced; its clock restarts here.
+		if (state.Depth > 0) {
+			state.Started = now;
+		}
 		state.Accumulated = 0;
 		state.Samples.clear();
 	}
 	std::fill(std::begin(Counts), std::end(Counts), 0);
 	PresentGaps.clear();
 	HasLastPresentStart = false;
-	WindowStart = Clock::now();
+	WindowStart = now;
 }
 
 
@@ -229,7 +233,8 @@ void Perf_Begin(PerfPhase phase)
 void Perf_End(PerfPhase phase)
 {
 	PhaseState & state = Phases[phase];
-	if (--state.Depth == 0) {
+	// An end with no open begin leaves the depth at zero.
+	if (state.Depth > 0 && --state.Depth == 0) {
 		state.Accumulated += std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - state.Started).count();
 	}
 }
