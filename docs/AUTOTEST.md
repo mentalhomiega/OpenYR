@@ -79,6 +79,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `trigaction <number>[@<House>] <value> <waypoint>` | Carries out the trigger action with that number for the player's house, or for the named house with an underscore in place of a space, as a trigger would. The value fills the action's number, house or time field and the waypoint its waypoint field. The log gets `done` or `failed` |
 | `hash [frames]` | Writes a hash of the game state to the debug log, and again every that many frames when given; `hash 0` logs once and stops the repeats |
 | `statecrc [frames]` | Writes two checksums to the debug log, now and again every that many frames when given: `objects`, which is `Object_CRCs` over every object's `Compute_CRC`, and `targets`, which covers each object's `TarCom`. Neither one is used by multiplayer sync, and logging them does not change the game; `statecrc 0` logs once and stops the repeats |
+| `syncrec on`, `syncrec <path>` | `on` starts the desync recorder: it keeps the recent scenario random draws, facings, targets, missions and animations with the code that made each one, and the debug log gets an `AUTOTEST syncrec outside frame logic` line, once per place in the code, for each of them made outside a game frame's logic, such as while drawing or waiting for the next frame. With a path, the step writes the recorded entries to that file in the out-of-sync report's format. The path cannot hold a space. Recording does not change the game |
 | `speed <TypeID> [interval]` | Writes the current and target speed of the player's objects of that type that fly or jump, with their cell, height, mission and destination. A flying object's speed is a fraction of its full speed; a jump-jet object's is in leptons per frame. Repeats every interval frames when given |
 | `sell <x> <y>` | Starts selling the player's structure on that cell, as the sell cursor's click does |
 | `infiltrate barracks\|warfactory` | Marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans |
@@ -246,6 +247,12 @@ strength, mission, limbo state and owner, each house's credits, and the scenario
 state. Logging it does not change the game. Run the same script, map and seed in two builds; the
 first frame whose hash differs is where their gameplay diverged. A script that starts with
 `1 hash 60` logs once a second at 60 game frames a second.
+
+## Pacing
+
+The game must play the same at any frame pacing: a frame that takes longer, the draws between frames, and the fast-forward cheat change only how fast the frames come. `tests/autotest/pacing-determinism.txt` and `pacing-determinism-fast.txt` play one skirmish both ways and log the `hash` every 4 frames; their header gives the runs and the `scripts/compare_digests.py --hash` comparison, which should print `identical`. Both turn on `syncrec`, so a log line names the code if something changes the game outside a frame's logic.
+
+`GameSpeed` is part of the game rather than the pacing. As in Yuri's Revenge, it scales the rate of some animations, such as infantry idle animations, and so it changes when those objects act. To compare pacing, keep `GameSpeed` the same in both runs and use the fast-forward cheat (`command DebugFastForward` with `DebugMode=yes` under `[Options]`) for the fast run.
 
 ## Comparing presented frames
 

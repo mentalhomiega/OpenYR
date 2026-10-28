@@ -64,6 +64,7 @@
 #include "session.h"
 #include "stats.h"
 #include "stimer.h"
+#include "syncrechook.h"
 #include "surface.h"
 #include "tactical.h"
 #include "theme.h"
@@ -471,6 +472,7 @@ bool Main_Loop(void)
 	*/
 	{
 		PerfScope logic_scope(PERF_FRAME_LOGIC);
+		Sync_Enter_Frame_Logic();
 		Logic.AI();
 	}
 	AutoTest_Frame();
@@ -494,6 +496,7 @@ bool Main_Loop(void)
 		PerfScope queue_scope(PERF_FRAME_QUEUE);
 		Queue_AI();
 	}
+	Sync_Leave_Frame_Logic();
 
 	Call_Back();
 

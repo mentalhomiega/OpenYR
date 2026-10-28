@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Compares the picture digests of two debug logs and reports the first difference.
+"""Compares the picture or game-state digests of two debug logs and reports the first difference.
 
-Run with `python -I scripts/compare_digests.py [--present] [--first] <a.log> <b.log>`. By default it
-compares the DRAW_DIGEST lines of the drawdigest autotest step; `--present` compares the PRESENT_DIGEST
-lines of the presentdigest step instead (docs/AUTOTEST.md). Lines are paired by game frame and by their
-order within that frame, so a line missing from one log does not shift the pairing of the others.
-`--first` keeps only the first line of each game frame.
+Run with `python -I scripts/compare_digests.py [--present|--hash] [--first] <a.log> <b.log>`. By
+default it compares the DRAW_DIGEST lines of the drawdigest autotest step; `--present` compares the
+PRESENT_DIGEST lines of the presentdigest step instead, and `--hash` the `AUTOTEST hash` lines of the
+hash step (docs/AUTOTEST.md). Lines are paired by game frame and by their order within that frame,
+so a line missing from one log does not shift the pairing of the others. `--first` keeps only the
+first line of each game frame.
 
 Exit codes: 0 when every line in both logs has the same hash (and layer); 3 when a hash or layer
 differs, or a line appears in only one log; 4 when the logs share no line; 1 for a usage or read error.
@@ -17,6 +18,7 @@ import sys
 PATTERNS = {
     "draw": re.compile(r"DRAW_DIGEST frame (-?\d+) draw (\d+) hash (\S+)()"),
     "present": re.compile(r"PRESENT_DIGEST frame (-?\d+) present (\d+) hash (\S+) layer (\S+)"),
+    "hash line": re.compile(r"AUTOTEST hash frame (-?\d+) ()(\S+)()"),
 }
 
 
@@ -35,7 +37,8 @@ def read_digests(path, pattern, first_only):
                 per_frame[frame] = ordinal + 1
                 if first_only and ordinal > 0:
                     continue
-                digests[(frame, ordinal)] = (int(match.group(2)), match.group(3), match.group(4))
+                index = int(match.group(2)) if match.group(2) else ordinal
+                digests[(frame, ordinal)] = (index, match.group(3), match.group(4))
     except OSError as error:
         print(f"compare_digests: cannot read {path}: {error}", file=sys.stderr)
         sys.exit(1)
@@ -46,14 +49,14 @@ def main(argv):
     args = argv[1:]
     kind = "draw"
     first_only = False
-    while args and args[0] in ("--present", "--first"):
-        if args[0] == "--present":
-            kind = "present"
+    while args and args[0] in ("--present", "--hash", "--first"):
+        if args[0] in ("--present", "--hash"):
+            kind = "present" if args[0] == "--present" else "hash line"
         else:
             first_only = True
         args = args[1:]
     if len(args) != 2:
-        print("usage: python -I scripts/compare_digests.py [--present] [--first] <a.log> <b.log>", file=sys.stderr)
+        print("usage: python -I scripts/compare_digests.py [--present|--hash] [--first] <a.log> <b.log>", file=sys.stderr)
         return 1
 
     a = read_digests(args[0], PATTERNS[kind], first_only)

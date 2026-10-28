@@ -73,5 +73,13 @@ uint32_t Sync_Take_Draw_Digest(unsigned & count);
 void Sync_Recorder_Arm(void);
 void Sync_Recorder_Disarm(void);
 
+// While on and recording, the debug log names each call site, once, that draws a scenario random
+// number or records a facing, target, mission or animation outside a game frame's logic.
+void Sync_Check_Outside_Logic(bool on);
+
+// Main_Loop brackets each game frame's logic with these.
+void Sync_Enter_Frame_Logic(void);
+void Sync_Leave_Frame_Logic(void);
+
 // Supplies the printer with the engine's enumeration names for the report.
 SyncNamesType const & Sync_Engine_Names(void);

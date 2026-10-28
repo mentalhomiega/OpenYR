@@ -1,0 +1,6 @@
+; Pacing check, fast half: pacing-determinism.txt with the fast-forward cheat on from frame 1. The cheat needs DebugMode=yes
+; under [Options]. See pacing-determinism.txt for the runs and the comparison.
+1 syncrec on
+1 hash 4
+1 command DebugFastForward
+6000 quit

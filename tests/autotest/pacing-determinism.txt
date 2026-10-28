@@ -1,0 +1,10 @@
+; Pacing check, paced half: a skirmish with three computer houses that the player leaves alone, logging the state hash every
+; 4 frames to frame 6000. pacing-determinism-fast.txt is the same game with the fast-forward cheat on, which removes the
+; frame pacing and the draws between frames. Run both, then compare their logs:
+;   scripts/run_autotest.ps1 -Script tests/autotest/pacing-determinism.txt -AIPlayers 3 -AICountries 5,6,7 -RenderFrameRate 144 -Seconds 300 -Settings "[Options]`nDebugMode=yes" > paced.log
+;   scripts/run_autotest.ps1 -Script tests/autotest/pacing-determinism-fast.txt -AIPlayers 3 -AICountries 5,6,7 -Seconds 300 -Settings "[Options]`nDebugMode=yes" > fast.log
+;   python -I scripts/compare_digests.py --hash paced.log fast.log
+; Expected: "identical" (1500 hash lines in each log), and no "AUTOTEST syncrec outside frame logic" line in either log.
+1 syncrec on
+1 hash 4
+6000 quit
