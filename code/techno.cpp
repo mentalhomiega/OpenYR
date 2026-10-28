@@ -4402,6 +4402,11 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 		return(false);
 	}
 
+	// An object held by a locomotor warhead, or off the ground, does not start to cloak (TechnoClass::IsReadyToCloak, 0x6FBDC0).
+	if (IsAttackedByLocomotor || HeightAGL > 0) {
+		return(false);
+	}
+
 	/*
 	**	All tests passed, so this object is allowed to begin cloaking.
 	*/
