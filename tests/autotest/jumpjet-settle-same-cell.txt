@@ -1,0 +1,15 @@
+; Two Rocketeers (JUMPJET) are ordered onto the same cell from one cell. gamemd's jump jet locomotor claims a cell
+; for a jump jet that settles on it (CellClass::TryAssignJumpjet, 0x487D70, reads the cell's jump jet slot), and a
+; jump jet that arrives on a cell another jump jet has claimed picks one of the eight neighbours at random
+; (RandomRanged 0..7) and flies there (JumpjetLocomotionClass arrival code, 0x54BFF0 and 0x54BA30). So once both
+; have settled they should stand on different cells. The where lines give each Rocketeer's cell.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Script tests/autotest/jumpjet-settle-same-cell.txt -Map XMP29U2.MAP -Seconds 150 -Filter "AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 grantunit JUMPJET 60 30
+41 grantunit JUMPJET 60 30
+60 move JUMPJET 70 30
+150 where JUMPJET
+250 where JUMPJET
+350 where JUMPJET
+351 quit

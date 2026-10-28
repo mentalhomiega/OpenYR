@@ -66,6 +66,8 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		void Process_Hover(void);
 		void Arrive_Aloft(void);
 		bool Let_Go_At_Arrival(void);
+		bool Cell_Claimed_By_Other(Cell const & cell) const;
+		bool Relocate_If_Claimed(Cell const & cell);
 		void Process_Cruise(void);
 		void Process_Descent(void);
 		void Process_Crashing(void);
