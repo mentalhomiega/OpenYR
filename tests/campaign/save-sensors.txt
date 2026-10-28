@@ -1,0 +1,28 @@
+; A mobile unit with SensorsSight keeps its sensor coverage across a campaign save. The save at frame 150 is
+; loaded at frame 200 (the load crashed in FootClass::Serialize before the radius was restored after loading).
+; Expect the load to finish, the sensors lines to show 44 units laying coverage with a radius again, the
+; coverage to follow the submarines once they move at frame 300, and the cells sensed for the player to
+; match a run without the save and load: 199 at frame 100, 496 at 260, 307 at 500, 285 at 700.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/save-sensors.txt -Campaign -Map SOV05UMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sensor|sensors|game over)|SAVING GAME|LOADING|Exception"
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+30 trigaction 47 0 0
+100 sensors
+150 command QuickSave
+200 command QuickLoad
+260 sensors
+300 move SUB 125 25
+301 move SQD 125 25
+500 sensors
+700 sensors
+900 quit

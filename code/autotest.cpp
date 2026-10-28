@@ -4960,6 +4960,27 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
 			}
 		}
+	} else if (step.Command == "sensors") {
+		// sensors: each vehicle, soldier or aircraft laying down SensorsSight coverage, with the cell and radius it
+		// last laid it for and whether its own cell counts as sensed for its owner.
+		int total = 0;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (!techno->Is_Foot() || techno->TClass->SensorsSight <= 0) {
+				continue;
+			}
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			bool const sensed = foot->SensorCell != CELL_NONE && foot->SensorHouse != NULL && Map[foot->SensorCell].Is_Sensed(foot->SensorHouse);
+			total += foot->SensorCell != CELL_NONE;
+			DebugString("AUTOTEST   sensor frame %d %s of %s cell %d,%d sensor cell %d,%d radius %d of %d sensed %d\n", Frame, techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+				foot->SensorCell.X, foot->SensorCell.Y, foot->SensorRadius, techno->TClass->SensorsSight, (int)sensed);
+		}
+		int sensed_cells = 0;
+		Map.Reset_Iterator();
+		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+			sensed_cells += cell->Is_Sensed(PlayerPtr);
+		}
+		DebugString("AUTOTEST   sensors frame %d laying coverage %d, cells sensed for the player %d\n", Frame, total, sensed_cells);
 	} else if (step.Command == "partsys") {
 		// partsys: each live particle system, with the object it rides on.
 		for (int index = 0; index < ParticleSystems.Count(); index++) {

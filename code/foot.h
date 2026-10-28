@@ -360,11 +360,12 @@ class FootClass : public TechnoClass
 		bool IsPiggybackEndPending;
 
 		// The cell, house and radius that SensorsSight coverage was last laid down for. The
-		// radius is not saved; it is rebuilt on load from the type, which is fixed at creation.
+		// radius is not saved; Restore_Sensor_Radii rebuilds it from the type once a load has resolved the pointers.
 		Cell SensorCell;
 		HouseClass * SensorHouse;
 		int SensorRadius;
 		void Update_Sensors(bool lift);
+		static void Restore_Sensor_Radii(void);
 
 		// Called from UnitClass::AI and AircraftClass::AI; see the definition for the gate.
 		void Airborne_Look(void);

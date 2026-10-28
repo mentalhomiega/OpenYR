@@ -1139,6 +1139,7 @@ void Post_Load_Game(void)
 	TiberiumClass::Post_Load_Game();
 	VeinholeMonsterClass::Init(Scen->Theater);
 	Rebuild_Grapple_Holders();
+	FootClass::Restore_Sensor_Radii();
 
 	Map.Post_Load_Radar_Fixup();
 

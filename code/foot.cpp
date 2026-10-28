@@ -4341,9 +4341,6 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDeploying);
 	stream.Serialize(SensorCell);
 	stream.Serialize(SensorHouse);
-	if (!stream.Is_Saving()) {
-		SensorRadius = SensorCell != CELL_NONE ? TClass->SensorsSight : 0;
-	}
 	stream.Serialize(IsFiring);
 	stream.Serialize(IsRotating);
 	stream.Serialize(IsUnloading);
@@ -5506,6 +5503,23 @@ void FootClass::Airborne_Look(void)
 	if (SightTimer == 0) {
 		Look();
 		SightTimer = TICKS_PER_SECOND;
+	}
+}
+
+
+/// <summary>
+/// Rebuilds the radius that every loaded object's sensor coverage was laid down with.
+/// Call once the swizzler has resolved the type pointers; the radius is not saved, and the type
+/// is not known while the object's own record is being read.
+/// </summary>
+void FootClass::Restore_Sensor_Radii(void)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * const techno = Technos[index];
+		if (techno->Is_Foot()) {
+			FootClass * const foot = static_cast<FootClass *>(techno);
+			foot->SensorRadius = foot->SensorCell != CELL_NONE ? foot->TClass->SensorsSight : 0;
+		}
 	}
 }
 
