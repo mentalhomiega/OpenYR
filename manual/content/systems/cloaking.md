@@ -93,6 +93,7 @@ Any of the following refuses the attempt:
 - its weapon is still reloading;
 - its target is within range of the weapon chosen for it;
 - the [`CloakDelay`](/keys/cloakdelay/) countdown is still running;
+- the object is above the ground, or a locomotor warhead such as a Magnetron holds it;
 - for a structure, a [`Sensors=yes`](/keys/sensors/) object stands within one cell of its footprint, and that object's owner does not consider the structure allied.
 
 If nothing refuses, an object whose health is above [`ConditionRed`](/keys/conditionred/) starts hiding at once. At or below `ConditionRed`, each frame's attempt succeeds with a 4% chance, so the cloak starts at an unpredictable moment.
@@ -176,7 +177,7 @@ Arrays of one house may overlap, and each adds one count to its cells. A cell at
 
 ### Mobile sensors
 
-A vehicle, infantryman or aircraft with a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, whatever its `Sensors` flag, for its owner, every cell whose distance from the cell it stands on is less than that many cells. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers and dolphins use this to find submarines.
+A vehicle, infantryman or aircraft with a positive [`SensorsSight`](/keys/sensorssight/#scope-aircrafttype) marks as sensed, whatever its `Sensors` flag, for its owner, every cell whose distance from the cell it stands on is less than that many cells. The coverage moves with it as it enters each new cell, follows it to a new owner, and is lifted when it leaves the map. Destroyers, dolphins, giant squids and submarines use this to find submarines, so a submarine shows shadowy to an enemy whose own submarine or squid is within its `SensorsSight`, 7 cells for a Typhoon and 8 for a Boomer.
 
 ### What sensing changes
 

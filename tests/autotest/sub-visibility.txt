@@ -1,0 +1,16 @@
+; Neutral Typhoon subs (SUB) on the XMP08T2 lake, seen by a player destroyer (DEST) at 86,70. An idle sub cloaks, which is how it
+; submerges, and the local player sees a cloaked object only when a cell it senses holds it (TechnoClass::VisualCharacter, 0x703860;
+; CellClass::Is_Sensed, 0x4870D0). The destroyer senses the cells less than 8 away (SensorsSight=8, FootClass::AddSensorsAt, 0x4DE7B0).
+; Expected, on the visual lines (character is what the player sees: 3 shadowy, 5 hidden; raw 5 is the cloak alone):
+;   - the sub at 75,65 is 12 cells off: character 5, sensed 0, and the radar line reads plotted 0;
+;   - the sub at 81,68 is 5.4 cells off: character 3, sensed 1, and the radar line reads plotted 1 (detected stays 0 because a neutral house counts as an ally);
+;   - after the destroyer dies at frame 110 its coverage is lifted: both read character 5, sensed 0, plotted 0.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script tests/autotest/sub-visibility.txt -Map XMP08T2.MAP -Seconds 90
+30 command CenterBase
+30 own DEST 86 70
+30 neutral SUB 75 65
+30 neutral SUB 81 68
+100 where SUB
+110 kill DEST 1
+200 where SUB
+300 quit
