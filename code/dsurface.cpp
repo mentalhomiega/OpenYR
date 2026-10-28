@@ -95,6 +95,13 @@ static unsigned Next_Change(void)
 }
 
 
+static unsigned Next_Serial(void)
+{
+	static unsigned _Last = 0;
+	return(++_Last);
+}
+
+
 /***********************************************************************************************
  * DSurface::DSurface -- Off screen direct draw surface constructor.                           *
  *                                                                                             *
@@ -132,7 +139,8 @@ DSurface::DSurface(int width, int height, bool watched) :
 	GDIBuffer(NULL),
 	Pitch(0),
 	IsWatched(watched),
-	Changes(Next_Change())
+	Changes(Next_Change()),
+	Serial(Next_Serial())
 {
 	if (watched) {
 		// The same row layout a bitmap would have, so the pixels are addressed the same way.

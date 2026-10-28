@@ -174,9 +174,10 @@ static bool Take_Composite_Rows(CompositeRows * first, CompositeRows * second)
 	int const bpp = composite->Bytes_Per_Pixel();
 	bool const listed = pitch > 0 && bpp > 0 && composite->Written_Runs(runs);
 	// Scrolling swaps the composite with the tile layer, whose watch says nothing about what the composite last held.
-	static DSurface const * last_composite = NULL;
-	if (composite != last_composite) {
-		last_composite = composite;
+	static unsigned last_composite_serial = 0;
+	unsigned const composite_serial = composite->Get_Serial();
+	if (composite_serial != last_composite_serial) {
+		last_composite_serial = composite_serial;
 		_SinceKeyFill.Known = false;
 		_SinceCopy.Known = false;
 	}

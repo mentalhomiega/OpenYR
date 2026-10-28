@@ -128,6 +128,12 @@ class DSurface : public XSurface
 		 */
 		unsigned Change_Count(void) const {return(Changes);}
 
+		/*
+		 * The serial of each surface constructed in this process differs from every other, so a surface
+		 * allocated at the address of a freed one has a new serial. Writes do not change it.
+		 */
+		unsigned Get_Serial(void) const {return(Serial);}
+
 		// Fills runs with the byte ranges of Get_Buffer written since the last call and starts
 		// listing anew. False means the surface does not list its writes, so every byte counts as written.
 		bool Written_Runs(std::vector<std::pair<std::size_t, std::size_t>> & runs) const;
@@ -213,6 +219,8 @@ class DSurface : public XSurface
 		bool IsWatched;
 
 		mutable unsigned Changes;
+
+		unsigned Serial;
 
 	public:
 		/*
