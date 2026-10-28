@@ -1,0 +1,164 @@
+; Armed vehicles ordered at a neutral GAPILL behind a vertical wall segment of seven cells at x 63, the vehicle at x 56 and the target at x 66.
+; The walls leave both ends open. The ring tests in wall-breakers.txt cover a target walled in on all sides.
+;   row 40: a Rhino 120mm (AP, Wall=yes) against GAWALL, a connecting wall (FootClass::ApproachTarget, 0x4D5690; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
+;           Expected: the Rhino stops at 61 40, its shells strike the wall, and the cells at 63 40 and 63 41 are clear by frame 1100.
+;   row 52: a Grizzly 105mm against GASAND, which ConnectsToOverlay (0x480510) does not count as a wall (only overlay indices 2, 26 and 243 count).
+;           Expected: the Grizzly drives to 64 48, round the end of the segment, and fires from there; the sandbags stay.
+;   row 76: an Apocalypse against NAWALL, a connecting wall. Expected: it stops at 61 76 and shoots the wall away.
+;   row 88: a Lasher against CAFNCB, a fence that is not a connecting wall. Expected: it drives to 64 84 round the segment.
+; where lines every 30 frames show the position and target; the final cell lines show which wall cells survived.
+30 command CenterBase
+300 own HTNK 56 40
+301 neutral GAPILL 66 40
+302 own MTNK 56 52
+303 neutral GAPILL 66 52
+304 own APOC 56 76
+305 neutral GAPILL 66 76
+306 own LTNK 56 88
+307 neutral GAPILL 66 88
+320 ewall GAWALL 63 37
+321 ewall GAWALL 63 38
+322 ewall GAWALL 63 39
+323 ewall GAWALL 63 40
+324 ewall GAWALL 63 41
+325 ewall GAWALL 63 42
+326 ewall GAWALL 63 43
+327 ewall GASAND 63 49
+328 ewall GASAND 63 50
+329 ewall GASAND 63 51
+330 ewall GASAND 63 52
+331 ewall GASAND 63 53
+332 ewall GASAND 63 54
+333 ewall GASAND 63 55
+334 ewall NAWALL 63 73
+335 ewall NAWALL 63 74
+336 ewall NAWALL 63 75
+337 ewall NAWALL 63 76
+338 ewall NAWALL 63 77
+339 ewall NAWALL 63 78
+340 ewall NAWALL 63 79
+341 ewall CAFNCB 63 85
+342 ewall CAFNCB 63 86
+343 ewall CAFNCB 63 87
+344 ewall CAFNCB 63 88
+345 ewall CAFNCB 63 89
+346 ewall CAFNCB 63 90
+347 ewall CAFNCB 63 91
+400 reveal
+410 canfire HTNK 66 40
+410 canfire MTNK 66 52
+410 canfire APOC 66 76
+410 canfire LTNK 66 88
+420 strike HTNK 66 40
+420 strike MTNK 66 52
+420 strike APOC 66 76
+420 strike LTNK 66 88
+430 where HTNK
+430 where MTNK
+430 where APOC
+430 where LTNK
+460 where HTNK
+460 where MTNK
+460 where APOC
+460 where LTNK
+490 where HTNK
+490 where MTNK
+490 where APOC
+490 where LTNK
+520 where HTNK
+520 where MTNK
+520 where APOC
+520 where LTNK
+550 where HTNK
+550 where MTNK
+550 where APOC
+550 where LTNK
+580 where HTNK
+580 where MTNK
+580 where APOC
+580 where LTNK
+610 where HTNK
+610 where MTNK
+610 where APOC
+610 where LTNK
+640 where HTNK
+640 where MTNK
+640 where APOC
+640 where LTNK
+670 where HTNK
+670 where MTNK
+670 where APOC
+670 where LTNK
+700 where HTNK
+700 where MTNK
+700 where APOC
+700 where LTNK
+730 where HTNK
+730 where MTNK
+730 where APOC
+730 where LTNK
+760 where HTNK
+760 where MTNK
+760 where APOC
+760 where LTNK
+790 where HTNK
+790 where MTNK
+790 where APOC
+790 where LTNK
+820 where HTNK
+820 where MTNK
+820 where APOC
+820 where LTNK
+850 where HTNK
+850 where MTNK
+850 where APOC
+850 where LTNK
+880 where HTNK
+880 where MTNK
+880 where APOC
+880 where LTNK
+910 where HTNK
+910 where MTNK
+910 where APOC
+910 where LTNK
+940 where HTNK
+940 where MTNK
+940 where APOC
+940 where LTNK
+970 where HTNK
+970 where MTNK
+970 where APOC
+970 where LTNK
+1000 where HTNK
+1000 where MTNK
+1000 where APOC
+1000 where LTNK
+1030 where HTNK
+1030 where MTNK
+1030 where APOC
+1030 where LTNK
+1060 where HTNK
+1060 where MTNK
+1060 where APOC
+1060 where LTNK
+1090 where HTNK
+1090 where MTNK
+1090 where APOC
+1090 where LTNK
+1100 cell 63 39
+1100 cell 63 40
+1100 cell 63 41
+1100 cell 66 40
+1100 cell 63 51
+1100 cell 63 52
+1100 cell 63 53
+1100 cell 66 52
+1100 cell 63 75
+1100 cell 63 76
+1100 cell 63 77
+1100 cell 66 76
+1100 cell 63 87
+1100 cell 63 88
+1100 cell 63 89
+1100 cell 66 88
+1110 quit
