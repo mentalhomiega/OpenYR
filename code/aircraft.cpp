@@ -119,6 +119,7 @@
 #include "mono.h"
 #include "partsys.h"
 #include "queue.h"
+#include "rocket.h"
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
@@ -3425,6 +3426,42 @@ void AircraftClass::Scatter(Coord const & , bool, bool )
 	if (!Current_Mission_Control().IsScatter) return;
 
 	Enter_Idle_Mode();
+}
+
+
+/// <summary>
+/// Tells whether the aircraft is in the air. A V3 or Dreadnought missile is in the air from the start of
+/// its climb, by its rocket locomotor's flight phase, not by its height. This is gamemd's
+/// AircraftClass::IsInAir (0x41B920), which calls the locomotor's slot 0x80. Other aircraft use the height test.
+/// </summary>
+/// <returns>bool; Is the aircraft flying?</returns>
+bool AircraftClass::In_Air(void) const
+{
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+		return(ObjectClass::In_Air());
+	}
+	if (IsInLimbo) {
+		return(false);
+	}
+	RocketLocomotionClass const * rocket = dynamic_cast<RocketLocomotionClass const *>(Locomotion.get());
+	if (rocket == NULL) {
+		return(ObjectClass::In_Air());
+	}
+	return(rocket->Is_Airborne());
+}
+
+
+/// <summary>
+/// Tells whether the aircraft is resting on the ground. For a V3 or Dreadnought missile this is the
+/// complement of In_Air, as gamemd's AircraftClass::IsOnFloor (0x41B980) decides. An aircraft in limbo is never on the ground.
+/// </summary>
+/// <returns>bool; Is the aircraft on the ground?</returns>
+bool AircraftClass::On_Ground(void) const
+{
+	if (Class != Rule->V3Rocket.Type && Class != Rule->DMisl.Type) {
+		return(ObjectClass::On_Ground());
+	}
+	return(!IsInLimbo && !In_Air());
 }
 
 
