@@ -359,7 +359,10 @@ void TeleportLocomotionClass::Begin_Chrono_Warp(Coord to, int countdown)
 /// </summary>
 void TeleportLocomotionClass::Land_Chrono_Warp(void)
 {
-	Coord landing = Landing_Spot(DestinationCoord);
+	// The object is set down on the coordinate it was sent to, even where it cannot stand: gamemd looks for
+	// another cell only for a structure or tree (Chrono_Shift), and Chrono_Land deals with the rest.
+	Coord landing = DestinationCoord;
+	landing.Z = Map.Get_Height_GL(landing);
 	DestinationCoord = COORD_NONE;
 	WarpPhase = TELEPORT_IDLE;
 	bool const bridge = Map[landing.As_Cell()].IsUnderBridge;
