@@ -246,6 +246,12 @@ state. Logging it does not change the game. Run the same script, map and seed in
 first frame whose hash differs is where their gameplay diverged. A script that starts with
 `1 hash 60` logs once a second at 60 game frames a second.
 
+## Pacing
+
+The game must play the same at any frame pacing: a frame that takes longer, the draws between frames, and the fast-forward cheat change only how fast the frames come. `tests/autotest/pacing-determinism.txt` and `pacing-determinism-fast.txt` play one skirmish both ways and log the `hash` every 4 frames; their header gives the runs and the `scripts/compare_digests.py --hash` comparison, which should print `identical`. Both turn on `syncrec`, so a log line names the code if something changes the game outside a frame's logic.
+
+`GameSpeed` is part of the game rather than the pacing. As in Yuri's Revenge, it scales the rate of some animations, such as infantry idle animations, and so it changes when those objects act. To compare pacing, keep `GameSpeed` the same in both runs and use the fast-forward cheat (`command DebugFastForward` with `DebugMode=yes` under `[Options]`) for the fast run.
+
 ## Comparing presented frames
 
 `presentdigest 1` logs one line at each present that reaches the presenter:
