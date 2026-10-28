@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <string>
 #include <vector>
 #include <fs_ocornut_imgui.bin.h>
@@ -84,6 +85,9 @@ static unsigned int _ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER;
 static bool _FrameIs565 = false;
 static unsigned int * _ConvertBuffer = NULL;
 static unsigned int _ConvertTable[65536];
+// The keyed frame's widening: the layer key is see-through and the tint keys are their tints.
+static unsigned int _KeyedTable[65536];
+static unsigned int _LayerTints[std::size(BACKEND_LAYER_TINT_KEYS)];
 
 // The layer under the frame, and the frame copy with see-through key pixels drawn over it.
 static bgfx::TextureHandle _LayerTexture = BGFX_INVALID_HANDLE;
@@ -312,6 +316,11 @@ static void Build_Convert_Table(void)
 
 		_ConvertTable[pixel] = 0xFF000000 | (red << 16) | (green << 8) | blue;
 	}
+	std::copy(std::begin(_ConvertTable), std::end(_ConvertTable), _KeyedTable);
+	_KeyedTable[BACKEND_LAYER_KEY] = 0;
+	for (size_t index = 0; index < std::size(_LayerTints); index++) {
+		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = _LayerTints[index];
+	}
 }
 
 
@@ -500,7 +509,7 @@ static void Copy_Tile(unsigned char * dest, int destpitch, unsigned char const *
 
 /// <summary>
 /// Widens a rectangle of 565 pixels to 32 bits. With keyed set, the layer key pixels become zero, which is
-/// see-through.
+/// see-through, and the tint key pixels become their tints.
 /// </summary>
 static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const * source, int sourcepitch, TileRect const & rect, bool keyed)
 {
@@ -509,7 +518,7 @@ static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const 
 		unsigned int * out = (unsigned int *)(dest + (ptrdiff_t)y * destpitch);
 		if (keyed) {
 			for (int x = 0; x < rect.Width; x++) {
-				out[x] = (in[x] == BACKEND_LAYER_KEY) ? 0 : _ConvertTable[in[x]];
+				out[x] = _KeyedTable[in[x]];
 			}
 		} else {
 			for (int x = 0; x < rect.Width; x++) {
@@ -1547,6 +1556,24 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 	}
 	return(shown);
+}
+
+
+void Backend_Set_Layer_Tint(int index, unsigned char red, unsigned char green, unsigned char blue, unsigned char opacity)
+{
+	if (index < 0 || index >= (int)std::size(_LayerTints)) {
+		return;
+	}
+	unsigned int const tint = ((unsigned int)opacity << 24) | ((unsigned int)red << 16) | ((unsigned int)green << 8) | blue;
+	if (_LayerTints[index] == tint) {
+		return;
+	}
+	_LayerTints[index] = tint;
+	if (_ConvertTable[0xFFFF] != 0) {
+		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = tint;
+	}
+	// The keyed frame texture holds the old tint wherever the frame did not change.
+	_KeyedDiff.Invalidate();
 }
 
 

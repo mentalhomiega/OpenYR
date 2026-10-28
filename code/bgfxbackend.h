@@ -58,6 +58,10 @@ void Backend_Set_VSync(bool vsync);
 // The frame's pixels of this 565 colour are see-through while a layer is drawn under the frame.
 unsigned short const BACKEND_LAYER_KEY = 0xF81F;
 
+// While a layer is drawn under the frame, the frame's pixels of these 565 colours are drawn as the tints that
+// Backend_Set_Layer_Tint sets, blended over the layer.
+unsigned short const BACKEND_LAYER_TINT_KEYS[2] = {0xF83F, 0xF85F};
+
 // A picture drawn under the frame, showing through its BACKEND_LAYER_KEY pixels. Pixels is the
 // top left pixel of the picture in 565, or NULL to draw the picture uploaded last; the
 // destination is in window pixels.
@@ -100,6 +104,8 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 // Shows the emissive masks in place of the pictures; the red channel carries the mask value.
 void Backend_Set_Emissive_View(bool masks);
+// Sets the tint for frame pixels of BACKEND_LAYER_TINT_KEYS[index]; opacity runs from 0, see-through, to 255.
+void Backend_Set_Layer_Tint(int index, unsigned char red, unsigned char green, unsigned char blue, unsigned char opacity);
 void Backend_End_Frame(void);
 
 void Backend_Build_Ortho_Projection(float * result, int width, int height);
