@@ -1,0 +1,33 @@
+; An infantryman on the Capture mission that reaches the building it was sent to takes it as follows (InfantryClass cell arrival,
+; 0x519630): an engineer captures or damages it, an agent infiltrates it and is used up, and any other soldier (a C4 soldier
+; such as TANY, GHOST or PTROOP, or an E1) takes nothing: its destination is cleared and it walks out of the building's cell.
+; Before the change those soldiers were deleted on arrival.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-capture-arrival.txt -Seconds 90 -Filter "AUTOTEST   where|AUTOTEST capture|AUTOTEST spy|Exception"
+; Expected: at frame 400 TANY, GHOST, PTROOP and E1 are all still on the map (a where line each) with nav -1,-1 and strength
+; unchanged, not on a cell of their building; GAPOWR is still the computer's, and the building under SPY's order is
+; the one it infiltrated, so SPY has no where line.
+30 spawn GAPOWR 60 40
+31 spawn GAPOWR 60 46
+32 own TANY 58 42
+33 own GHOST 58 43
+34 own PTROOP 58 44
+35 own E1 58 45
+36 own SPY 58 47
+40 capture TANY 60 40
+41 capture GHOST 60 40
+42 capture PTROOP 60 40
+43 capture E1 60 40
+44 spy SPY 60 46
+200 where TANY
+201 where GHOST
+202 where PTROOP
+203 where E1
+204 where SPY
+400 where TANY
+401 where GHOST
+402 where PTROOP
+403 where E1
+404 where SPY
+405 where GAPOWR
+410 quit

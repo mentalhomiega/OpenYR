@@ -453,6 +453,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		DeathAnims = TGet_TypeList<AnimTypeClass>(ini, Name(), "DeathAnims", DeathAnims, 0x80);
 		if (IsBomber) IsCapture = true;
 		if (IsEngineer) IsCapture = true;
+		if (IsAgent) IsCapture = true;
 		IsWebImmune = ini.Get_Bool(Name(), "IsWebImmune", IsWebImmune);
 		IsCrawling = ArtINI.Get_Bool(Graphic_Name(), "Crawls", IsCrawling);
 		FireLaunch = ArtINI.Get_Int(Graphic_Name(), "FireUp", FireLaunch);

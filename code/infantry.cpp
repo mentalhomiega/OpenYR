@@ -1028,12 +1028,16 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							tech->Scatter_Incoming_Infantry();
 						}
 					}
+				} else if (!Class->IsAgent) {
+					// A soldier that infiltrates but is neither engineer nor agent takes nothing and walks out (0x519630).
+					Assign_Destination(NULL);
+					Scatter(tech->Center_Coord(), true, true);
+					BEnd(BENCH_PCP);
+					return;
 				} else {
-					if (Class->IsAgent) {
-						// The announcer file names the infiltration lines as the building gives up its secrets instead.
-						if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
-						((BuildingClass *)tech)->Spied_By(House);
-					}
+					// The announcer file names the infiltration lines as the building gives up its secrets instead.
+					if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
+					((BuildingClass *)tech)->Spied_By(House);
 				}
 				if (Tag) {
 					Tag->Spring(TEVENT_DESTROYED_ANY, this);
@@ -1489,11 +1493,11 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	BASECLASS::Assign_Target(target);
 
 	/*
-	**	If this is an infantry that can only capture, then also assign its destination to the
-	**	target specified. A spy checks the building's Spyable flag rather than Capturable, and
-	**	its MakeupKit weapon does not stop the assignment (gamemd InfantryClass::SetTarget, 0x51B1F0).
+	**	If this infantry can infiltrate, then also assign its destination to the target
+	**	specified. A spy checks the building's Spyable flag rather than Capturable. A weapon
+	**	does not stop the assignment (gamemd InfantryClass::SetTarget, 0x51B1F0).
 	*/
-	if (NavCom == NULL && Class->IsCapture && (Class->IsAgent || !Is_Weapon_Equipped())) {
+	if (NavCom == NULL && Class->IsCapture) {
 		if (target != NULL && target->RTTI == RTTI_BUILDING) {
 			BuildingClass const * building = (BuildingClass const *)target;
 			if (Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable) {

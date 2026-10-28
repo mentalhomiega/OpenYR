@@ -2314,6 +2314,26 @@ static void Hut_Action_Step(StepType const & step)
 
 
 /// <summary>
+/// Gives every object of a type a target and no other order: InfantryClass::Assign_Target on the object that stands on a cell.
+/// </summary>
+/// <param name="step">The type in the argument, and the target's cell in X and Y. A fifth word, "computer", picks the objects of
+/// that type that neither the player nor an ally owns; otherwise the player's objects are picked.</param>
+static void Set_Target_Step(StepType const & step)
+{
+	bool const computer = Word(Line_Words(step.Line), 5) == "computer";
+	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
+	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
+	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
+		if (owned && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			techno->Assign_Target(target);
+		}
+	}
+}
+
+
+/// <summary>
 /// Clicks the building on a cell with the player's object of a type, through the object path a real click takes.
 /// </summary>
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
@@ -2623,6 +2643,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "hutclick") {
 		Hut_Click_Step(step);
+		return;
+	}
+	if (step.Command == "settarget") {
+		Set_Target_Step(step);
 		return;
 	}
 	if (step.Command == "hutc4") {
