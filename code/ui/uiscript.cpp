@@ -249,7 +249,7 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// returns only when that screen closes, and the steps after it run from that loop's ticks.
 /// Steps: wait (milliseconds), waitfor (an element id, up to 20 seconds), click (an element
 /// id), pointer (an element id and two fractions of its box, where the mouse is pressed and released),
-/// set (a slider's id and the value to give it, separated by a space),
+/// set (a slider's id and the value to give it, separated by a space; a text box's id alone empties it),
 /// xbutton (an element id and 1 or 2: a press of Mouse 4 or Mouse 5 at its centre, through the window events),
 /// wclick (an element id: a left click at its centre, through the window events),
 /// press (a button's label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only
@@ -343,10 +343,12 @@ void UIScript_Tick(Rml::Context * context)
 			// box, as typing it and leaving the box would.
 			std::size_t const space = step.Argument.find(' ');
 			Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
-			if (element == nullptr || space == std::string::npos) {
+			bool const text_box = element != nullptr && element->GetAttribute<Rml::String>("type", "") == "text";
+			if (element == nullptr || (space == std::string::npos && !text_box)) {
 				DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
 			} else {
-				std::string const value = step.Argument.substr(space + 1);
+				// A text box given no value is emptied.
+				std::string const value = space == std::string::npos ? std::string() : step.Argument.substr(space + 1);
 				element->SetAttribute("value", value);
 				if (element->GetAttribute<Rml::String>("type", "") == "text") {
 					Rml::Dictionary parameters;

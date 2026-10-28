@@ -4797,10 +4797,10 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	Rml::ElementDocument * document = Rml(*view).Document();
 	Rml::Element * dialog = document->GetElementById("reveal");
-	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(540.0f, 326.0f), "the map dialog is the size its template comes to");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(620.0f, 412.0f), "the map dialog is the size its template comes to");
 
 	Rml::Element * maps = document->GetElementById("maps");
-	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 232.0f), "the mission list is its template's rect, frame and all");
+	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(330.0f, 232.0f), "the mission list is its template's rect, frame and all");
 
 	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the map dialog holds a surface for the preview");
 
@@ -4818,6 +4818,85 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	view->Release();
 	context.Update();
+}
+
+
+void Test_Scenario_List(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	struct Map { char const * Label; char const * File; int Players; };
+	static Map const maps[] = {
+		{"Zebra Crossing", "XMP05.MAP", 4},
+		{"Map 10", "XMP10.MAP", 2},
+		{"alpha", "BETA.MAP", 8},
+		{"Map 2", "XMP02.MAP", 2},
+		{"Ghost Town", "UNKNOWN.MAP", 0},
+		{"Dune Patrol (4)", "DUNE.MAP", 4},
+	};
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (Map const & map : maps) {
+		UIScenarioEntry entry;
+		entry.Label = map.Label;
+		entry.File = map.File;
+		entry.Players = map.Players;
+		state.Entries.push_back(entry);
+	}
+	state.Selected = 3;
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	auto labels = [&]() {
+		std::string text;
+		for (UIScenarioRow const & row : presenter.State.Rows) {
+			text += row.Label + "|";
+		}
+		return(text);
+	};
+
+	Check(labels() == "alpha|Dune Patrol (4)|Ghost Town|Map 2|Map 10|Zebra Crossing|", "the list starts in name order, ignoring case, with numbers by value");
+	Check(presenter.State.Selected == 3 && service.Asked == 0, "the map that was highlighted stays highlighted when the list opens");
+	Check(presenter.State.Summary == "6 maps", "the summary counts every map when nothing is filtered");
+	Check(presenter.State.Counts.size() == 4 && presenter.State.Counts[0].Value == 0 && presenter.State.Counts[1].Value == 2
+		&& presenter.State.Counts[3].Value == 8, "the player count choices are Any number and each count a map has");
+
+	Drive(presenter, "order", UI_SCENARIO_ORDER_PLAYERS);
+	Check(labels() == "Map 2|Map 10|Dune Patrol (4)|Zebra Crossing|alpha|Ghost Town|", "ordered by players, maps with fewer starts come first and an unknown count last");
+
+	Drive(presenter, "order", UI_SCENARIO_ORDER_NAME);
+	Drive(presenter, "players", 4);
+	Check(labels() == "Dune Patrol (4)|Zebra Crossing|", "the player count filter keeps maps with exactly that many starts");
+	Check(presenter.State.Selected == 5 && service.Row == 5, "a highlighted map the filter hides gives way to the first row, with its picture");
+	Check(presenter.State.Summary == "Showing 2 of 6 maps", "the summary says how many maps show");
+	Drive(presenter, "players", 0);
+
+	Drive(presenter, "search", 0, "ZEBRA");
+	Check(labels() == "Zebra Crossing|", "the search ignores case");
+	Drive(presenter, "search", 0, "xmp10");
+	Check(labels() == "Map 10|", "the search also matches the file name");
+	Drive(presenter, "search", 0, "map 2");
+	Check(labels() == "Map 2|", "every word of the search must match");
+	Drive(presenter, "search", 0, "nothing here");
+	Check(presenter.State.Rows.empty(), "a search with no match leaves an empty list");
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value(), "and OK does nothing then");
+	Drive(presenter, "search", 0, "");
+
+	Drive(presenter, "select", 0);
+	Drive(presenter, "step", 1);
+	Check(presenter.State.Selected == 0, "stepping down from the last row stays on it");
+	Drive(presenter, "step", -2);
+	Check(presenter.State.Selected == 3, "stepping up goes by rows of the list as shown");
+	Drive(presenter, "step", -100);
+	Check(presenter.State.Selected == 2, "a long step stops at the first row");
+
+	Drive(presenter, "search", 0, "dune");
+	Drive(presenter, "ok");
+	Check(presenter.Choice == UI_SCENARIO_ACCEPT && presenter.State.Selected == 5, "OK takes the highlighted map of the filtered list");
+
+	(void)context;
+	Check(system.Problems == problems, "the map list raises no RmlUi warning or error");
 }
 
 
@@ -6552,6 +6631,7 @@ void Test_Documents(void)
 		Test_Skirmish_Layouts(*context, system);
 		Test_Colour_Picker(*context, system);
 		Test_Scenario_Screen(*context, system);
+		Test_Scenario_List(*context, system);
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);

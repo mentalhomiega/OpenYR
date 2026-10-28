@@ -686,9 +686,13 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	}
 	if (PreviewMap != Session.ScenarioFileName) {
 		PreviewMap = Session.ScenarioFileName;
-		Preview = UIMapPreviewImage();
+		// The view redraws only when the picture's generation changes, so a new map continues the count.
 		if (!PreviewMap.empty()) {
 			UI_Map_File_Preview_Image(PreviewMap.c_str(), Preview);
+		} else {
+			int const generation = Preview.Generation + 1;
+			Preview = UIMapPreviewImage();
+			Preview.Generation = generation;
 		}
 	}
 	state.Preview = Preview;

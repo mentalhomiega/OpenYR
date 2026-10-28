@@ -15,14 +15,34 @@
 </head>
 <body template="dialog" data-model="scenario">
 	<p id="title">Select Multiplayer Map</p>
+	<div id="filters">
+		<span class="caption" id="searchlabel">Search:</span><input type="text" id="search" maxlength="40" tip="Type part of a map's name or file name. Up and Down choose a map, Enter picks it." data-value="filter" data-event-change="queue('search', 0, ev.value)"/>
+		<span class="caption" id="playerslabel">Players:</span><select id="players" tip="Show only maps with this many start positions" data-event-change="queue('players', ev.value)">
+			<option data-for="c : counts" data-attr-value="c.value" data-attrif-selected="c.value == players">{{c.label}}</option>
+		</select>
+		<span class="caption" id="orderlabel">Sort by:</span><select id="order" tip="The order of the list" data-event-change="queue('order', ev.value)">
+			<option value="0" data-attrif-selected="order == 0">Name</option>
+			<option value="1" data-attrif-selected="order == 1">Players</option>
+		</select>
+	</div>
 	<div id="columns">
-		<div id="maps" class="list"><div class="rows">
-			<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{entry.label}}</div>
-		</div></div>
-		<div id="map" class="frame"><surface id="preview"/></div>
+		<div id="left">
+			<div class="heading"><span class="col-name">Map</span><span class="col-players">Players</span></div>
+			<div id="maps" class="list"><div class="rows">
+				<div class="item" data-for="row : rows" data-class-selected="row.index == selected" data-event-click="queue('select', row.index)" data-event-dblclick="queue('ok')"><span class="col-name">{{row.label}}</span><span class="col-players">{{row.count}}</span></div>
+				<p id="nomaps" data-if="rows.size == 0">No map matches.</p>
+			</div></div>
+			<p id="summary">{{summary}}</p>
+		</div>
+		<div id="side">
+			<div id="map" class="frame"><surface id="preview"/></div>
+			<p id="detail">{{detail}}</p>
+			<p id="file" data-if="file != ''">File: {{file}}</p>
+			<p id="hint">Type to search. Up and Down choose, Enter picks, Esc cancels.</p>
+		</div>
 	</div>
 	<div id="buttons">
-		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="ok" data-class-disabled="rows.size == 0" data-event-click="queue('ok')">[[TXT_OK]]</button>
 		<button id="random" data-event-click="queue('random')">Create Random Map</button>
 		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
 	</div>

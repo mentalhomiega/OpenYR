@@ -1,0 +1,30 @@
+; Hosts a room in the built-in CnCNet lobby against the local IRC stand-in and opens the map picker from the room.
+; Start the stand-in first, with the game's build id (the "[CnCNet] Room build id" line in its debug log):
+;   python scripts/cncnet_irc_standin.py --port 16668 --bots 1 --game-version 9.3.5 --openyr-build "<build id>" --room-password test
+; then run from the workspace root with -Settings "[CnCNet]`nNativeLobby=yes`nServers=127.0.0.1:16668".
+ui waitfor backdrop
+ui wait 2000
+ui press CnCNet
+ui wait 2500
+ui press Online lobby
+ui wait 34000
+ui set password test
+ui wait 500
+ui shot room-1-browser
+ui press Host game
+ui wait 20000
+ui shot room-3-host
+ui press Multiplayer Map
+ui wait 2500
+ui shot room-4-map
+ui set search xmp03
+ui wait 800
+ui shot room-5-map-search
+ui key return
+ui wait 1500
+ui shot room-6-host-after
+ui wait 4000
+ui shot room-7-host-later
+ui press Cancel
+ui wait 2000
+ui quit
