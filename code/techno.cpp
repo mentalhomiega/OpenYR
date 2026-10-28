@@ -12354,7 +12354,8 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 
 /// <summary>
 /// Crushes what stands where this vehicle lands after a locomotor let it go in the air
-/// (JumpjetLocomotionClass, 0x54CA90). Only the first object on the cell, apart from this one,
+/// (JumpjetLocomotionClass, 0x54CA90). A vehicle that lands on a bridge deck checks the objects on
+/// the deck, and any other checks the ground. Only the first object on the cell, apart from this one,
 /// decides what happens. A vehicle or structure there blocks the landing and is left alone. A
 /// soldier is crushed, and so is everything after it on the cell. Any other object takes damage
 /// from CrushWarhead equal to its strength, ignoring its defenses; with no CrushWarhead it takes
@@ -12364,7 +12365,7 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 /// <returns>bool; Is the landing blocked by a vehicle or structure on the cell?</returns>
 bool TechnoClass::Crush_On_Landing(void)
 {
-	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(false);
+	ObjectClass * object = Map[Get_Coord()].Cell_Occupier(IsOnBridge);
 	if (object == this && object != NULL) {
 		object = object->Next;
 	}
