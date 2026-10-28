@@ -37,6 +37,7 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	RA2ArtFile = ini.Get_String("Files", "RA2Art", RA2ArtFile.c_str());
 	RA2RulesFile = ini.Get_String("Files", "RA2Rules", RA2RulesFile.c_str());
 	RA2EvaFile = ini.Get_String("Files", "RA2Eva", RA2EvaFile.c_str());
+	RA2AudioFile = ini.Get_String("Files", "RA2Audio", RA2AudioFile.c_str());
 	AIFile = ini.Get_String("Files", "AI", AIFile.c_str());
 	AIExpansionFile = ini.Get_String("Files", "AIExpansion", AIExpansionFile.c_str());
 	SoundFile = ini.Get_String("Files", "Sound", SoundFile.c_str());

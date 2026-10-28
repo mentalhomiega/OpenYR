@@ -13,7 +13,12 @@
 #include "audio/audiodecode.h"
 #include "audio/audiodevice.h"
 #include "_rand.h"
+#include "_deploymentconfig.h"
+#include "_mixfile.h"
+#include "_pk.h"
 #include "ccfile.h"
+#include "deploymentconfig.h"
+#include "mixfile.h"
 #include "dbgprint.h"
 #include "random.h"
 
@@ -213,7 +218,44 @@ class CCFileReaderClass : public AudioAssetReaderClass
 				}
 				return(ok);
 			}
-			return(false);
+			return(Read_From_Ra2_Bag(name, bytes));
+		}
+
+		// Red Alert 2's missions speak announcer lines whose samples are in its own sample archive, AUDIO.MIX, as loose WAV
+		// members or in its AUDIO.IDX and AUDIO.BAG. The game mounts only AUDIOMD.MIX when it has it, so that archive is
+		// opened here, on the first sample nothing else holds, and read by member name, since the mounted archive has members of
+		// the same names.
+		bool Read_From_Ra2_Bag(std::string const & name, std::vector<uint8_t> & bytes)
+		{
+			if (!Ra2Tried) {
+				Ra2Tried = true;
+				CCFileClass probe(DeploymentConfig.RA2AudioFile.c_str());
+				if (!DeploymentConfig.RA2AudioFile.empty() && probe.Is_Available()
+					&& (AudioMix == NULL || _stricmp(AudioMix->Filename, probe.File_Name()) != 0)) {
+					Ra2Mix.reset(new MixFileClass(DeploymentConfig.RA2AudioFile.c_str(), &FastKey));
+					std::vector<unsigned char> index;
+					if (Ra2Mix->Read_Member("AUDIO.IDX", index)) {
+						Ra2Index.Load_Index(index.data(), index.size());
+					}
+				}
+			}
+			if (Ra2Mix == nullptr) {
+				return(false);
+			}
+
+			if (Ra2Mix->Read_Member((name + ".WAV").c_str(), bytes) && !bytes.empty()) {
+				return(true);
+			}
+			AudioBagClass::EntryType const * entry = Ra2Index.Find(name.c_str());
+			if (entry == nullptr || entry->Size == 0) {
+				return(false);
+			}
+			std::vector<unsigned char> data;
+			if (!Ra2Mix->Read_Member("AUDIO.BAG", data, (int)entry->Offset, (int)entry->Size)) {
+				return(false);
+			}
+			bytes = AudioBagClass::Make_Wav(*entry, data.data(), data.size());
+			return(true);
 		}
 
 		struct BagFileType {
@@ -224,6 +266,11 @@ class CCFileReaderClass : public AudioAssetReaderClass
 		// The indexes found, AUDIO.IDX first.
 		std::vector<BagFileType> Bags;
 		bool BagTried = false;
+
+		// Red Alert 2's sample archive and its index, opened on the first sample the other bags lack.
+		std::unique_ptr<MixFileClass> Ra2Mix;
+		AudioBagClass Ra2Index;
+		bool Ra2Tried = false;
 };
 
 

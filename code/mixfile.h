@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 class PKey;
 
@@ -49,6 +50,10 @@ class MixFileClass : public Node<MixFileClass *>
 		MixFileClass * Next_Attached(void) {MixFileClass * next = Next(); return(next->Is_Valid() ? next : NULL);}
 		int Member_Count(void) const {return(Count);}
 		bool Member_Size(char const * filename, int * size) const;
+
+		// Reads a member of this archive alone, whichever other archive holds a member of the same name. The count -1 reads to the
+		// end of the member. Returns false when the member is not here or the range does not lie inside it.
+		bool Read_Member(char const * filename, std::vector<unsigned char> & bytes, int start = 0, int count = -1) const;
 
 		// Makes Retrieve of a member of this archive return memory even though the archive is not
 		// cached: the member is read from the file on its first Retrieve and kept until the

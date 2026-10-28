@@ -46,6 +46,8 @@ class DeploymentConfigClass
 		std::string RA2RulesFile = "RULES.INI";
 		// Red Alert 2's announcer file, whose lines its missions speak.
 		std::string RA2EvaFile = "EVA.INI";
+		// Red Alert 2's sample archive, whose announcer lines its missions speak and Yuri's Revenge's sample archive lacks.
+		std::string RA2AudioFile = "AUDIO.MIX";
 		std::string AIFile = "AIMD.INI";
 		std::string AIExpansionFile = "";
 		std::string SoundFile = "SOUNDMD.INI";

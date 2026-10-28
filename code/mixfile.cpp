@@ -59,6 +59,7 @@
 #include "xstraw.h"
 
 #include <climits>
+#include <cstring>
 
 
 //template<class T> int Compare(T const *obj1, T const *obj2) {
@@ -701,6 +702,64 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	*/
 	assert(1);//BG
 	return(false);
+}
+
+
+/// <summary>
+/// Reads the named member of this archive, or part of it, even when an archive attached before this one holds a member of the
+/// same name.
+/// </summary>
+/// <param name="filename">The member's name, in any case.</param>
+/// <param name="bytes">Receives the bytes read.</param>
+/// <param name="start">The first byte of the member to read.</param>
+/// <param name="count">How many bytes to read, or -1 for the rest of the member.</param>
+/// <returns>bool; Was the whole range read?</returns>
+bool MixFileClass::Read_Member(char const * filename, std::vector<unsigned char> & bytes, int start, int count) const
+{
+	bytes.clear();
+	if (filename == NULL || HeaderBuffer == NULL || strlen(filename) >= _MAX_PATH || start < 0) {
+		return(false);
+	}
+
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+
+	SubBlock key;
+	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
+	SubBlock const * block = Binary_Search<SubBlock>(HeaderBuffer, Count, key);
+	if (block == NULL || start > block->Size) {
+		return(false);
+	}
+	int const available = block->Size - start;
+	if (count < 0) {
+		count = available;
+	} else if (count > available) {
+		return(false);
+	}
+	if (count == 0) {
+		return(true);
+	}
+
+	bytes.resize((size_t)count);
+	if (Data != NULL) {
+		std::memcpy(bytes.data(), (char const *)Data + block->Offset + start, (size_t)count);
+		return(true);
+	}
+
+	CCFileClass file(Filename);
+	if (!file.Open(FileClass::READ)) {
+		bytes.clear();
+		return(false);
+	}
+	file.Bias(0);
+	file.Bias(DataStart);
+	file.Seek(block->Offset + start, SEEK_SET);
+	if (file.Read(bytes.data(), count) != count) {
+		bytes.clear();
+		return(false);
+	}
+	return(true);
 }
 
 
