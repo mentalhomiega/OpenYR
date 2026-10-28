@@ -2521,6 +2521,18 @@ static void Waypoint_Probe_Step(StepType const & step)
 		TechnoClass * over = attack ? Techno_Over_Cell(Cell(step.X, step.Y)) : NULL;
 		Map.Active_Click(over, Cell(step.X, step.Y), attack ? ACTION_ATTACK : ACTION_MOVE);
 		DebugString("AUTOTEST   wpsend %s %d,%d over %s\n", attack ? "attack" : "move", step.X, step.Y, over != NULL ? over->TClass->Name() : "ground");
+	} else if (step.Command == "padstate") {
+		// padstate <TypeID>: each building of the type, whoever owns it, with the objects in each of its radio slots.
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass const * building = Buildings[index];
+			if (stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+			std::string slots;
+			for (int slot = 0; slot < building->Link_Count(); slot++) {
+				TechnoClass const * linked = building->Link(slot);
+				slots += (slot > 0 ? "," : "") + std::string(linked != NULL ? linked->TClass->Name() : "-");
+			}
+			DebugString("AUTOTEST   padstate %s of %s cell %d,%d links %d slots %s\n", building->Class->Name(), building->House->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y, building->Link_Count(), slots.c_str());
+		}
 	} else if (step.Command == "wpstate") {
 		// wpstate <TypeID>: each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status, ammo,
 		// the waypoint path it follows and the next waypoint, and its radio contact.
@@ -2673,7 +2685,7 @@ void Run(StepType const & step)
 		return;
 	}
 
-	if (step.Command == "waypoint" || step.Command == "wpsend" || step.Command == "wpstate") {
+	if (step.Command == "waypoint" || step.Command == "wpsend" || step.Command == "wpstate" || step.Command == "padstate") {
 		Waypoint_Probe_Step(step);
 		return;
 	}
@@ -3502,7 +3514,9 @@ void Run(StepType const & step)
 	} else if (step.Command == "follow") {
 		FollowType = step.Argument;
 	} else if (step.Command == "enter") {
-		// enter <TypeID> x y: the player's objects of that type enter the structure, or else the vehicle, on that cell.
+		// enter <TypeID> x y [enemy]: the player's objects of that type enter the structure, or else the vehicle, on that cell.
+		// With enemy, the objects of the type that the player does not own and is not allied with enter it instead.
+		bool const enemy_enters = Word(Line_Words(step.Line), 5) == "enemy";
 		TechnoClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 		if (building == NULL) {
 			building = Map[Cell(step.X, step.Y)].Cell_Unit();
@@ -3510,7 +3524,8 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST enter %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 		for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			bool const owned = enemy_enters ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
+			if (techno->Is_Foot() && owned && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Assign_Mission(MISSION_ENTER);
 				techno->Assign_Destination(building);
 			}

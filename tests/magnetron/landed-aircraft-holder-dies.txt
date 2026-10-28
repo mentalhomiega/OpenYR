@@ -1,0 +1,37 @@
+; Same set-up as landed-aircraft.txt: the player's Magnetron (TELE) lifts an enemy Harrier (ORCA) from its Air Force Command pad (GAAIRC).
+; The Magnetron is destroyed at frame 640 while it holds the Harrier, 280 leptons above its pad. The Harrier is let go in the air and falls onto the
+; pad structure. The landing is blocked, so it explodes with CrushWarhead and C4Warhead as a Rhino dropped on a structure does (drop-on-building.txt).
+; The pad's four radio slots stay empty throughout.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/magnetron/landed-aircraft-holder-dies.txt -Seconds 200
+300 enemy GAAIRC 62 40
+310 spawn ORCA 62 44
+320 view 60 42
+330 enter ORCA 62 40 enemy
+540 own TELE 54 40
+541 reveal
+561 padstate GAAIRC
+565 strikeobj ORCA 63 40 3 land TELE
+580 lift ORCA
+580 lift TELE
+620 lift ORCA
+620 lift TELE
+636 lift ORCA
+636 lift TELE
+640 kill TELE 1
+644 lift ORCA
+644 wpstate ORCA
+644 padstate GAAIRC
+660 lift ORCA
+660 wpstate ORCA
+660 padstate GAAIRC
+700 lift ORCA
+700 wpstate ORCA
+700 padstate GAAIRC
+760 lift ORCA
+760 wpstate ORCA
+760 padstate GAAIRC
+820 lift ORCA
+820 wpstate ORCA
+820 padstate GAAIRC
+900 where ORCA
+910 quit
