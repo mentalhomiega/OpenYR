@@ -221,8 +221,11 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 	}
 
 	if (to != COORD_NONE) {
-		// A held vehicle picks its landing spot as a hover unit does, so the spot can be over water (gamemd's reel-in uses SpeedType Hover, 0x54B2C7).
-		SpeedType const speed = LinkedTo->IsAttackedByLocomotor ? SPEED_HOVER : LinkedTo->TClass->Speed;
+		// gamemd searches for the spot with SpeedType Hover and the Fly movement zone whatever the unit's own speed type is (JumpjetLocomotionClass::Move_To, 0x54B2C7 and 0x54B36A).
+		// A held vehicle, and an aircraft that a locomotor warhead carries, take that search so that their spot can be over water or beside a structure.
+		// The hold flag is set only after the carrier's first destination is assigned, so the holder link is read as well.
+		bool const held = LinkedTo->IsAttackedByLocomotor || LinkedTo->LocomotorSource != NULL || LinkedTo->RTTI == RTTI_AIRCRAFT;
+		SpeedType const speed = held ? SPEED_HOVER : LinkedTo->TClass->Speed;
 		Cell cell = Map.Nearby_Location(to.As_Cell(), speed, -1, MZONE_FLYER, Map[to].IsUnderBridge);
 		Coord free = Closest_Free_Spot(cell);
 		if (free != COORD_NONE) {
