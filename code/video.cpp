@@ -630,7 +630,8 @@ static void Present(void)
 	BackendEmissive emissive = {NULL, 0, 0, 0, NULL, 0, 0, 0};
 	BackendEmissive const * emissiveptr = NULL;
 	Backend_Set_Emissive_View(Emissive_Debug_View());
-	if (Emissive_Is_Enabled()) {
+	// Bloom keeps the masks on for the map pass alone, so Classic highlights stay classic under HDR.
+	if (Emissive_Is_Enabled() && (Emissive_Debug_View() || Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED)) {
 		// Each mask's extent is the part of its plane readable from the pointer, so the presenter never reads past it.
 		if (EmissivePlane const * frame = Emissive_Plane_For(VisibleSurface)) {
 			emissive.Frame = frame->Pixels;
