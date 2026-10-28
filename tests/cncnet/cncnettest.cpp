@@ -1671,6 +1671,28 @@ void Test_TCP_Stop(void)
 #else
 	close(static_cast<int>(listener.Handle));
 #endif
+
+	// A stopped connect leaves its host name lookup running on a thread of its own, and the last Winsock
+	// reference used to go while that thread was still inside getaddrinfo, which freed memory it was reading.
+	// The loop drops the last reference at different moments of the lookup; it fails by crashing, and only
+	// some of the time without the thread holding a reference of its own.
+	for (int round = 0; round < 150; ++round) {
+#if defined(_WIN32)
+		WSADATA again;
+		WSAStartup(MAKEWORD(2, 2), &again);
+#endif
+		{
+			TCPStreamClass stream;
+			std::string error;
+			std::atomic<bool> already{true};
+			stream.Connect("localhost", 1, 8000, error, &already);
+		}
+		std::this_thread::sleep_for(std::chrono::microseconds(round % 40 * 50));
+#if defined(_WIN32)
+		WSACleanup();
+#endif
+	}
+	Check(true, "tcp stop: dropping the last network reference while a stopped lookup runs does not crash");
 }
 
 
