@@ -1586,8 +1586,15 @@ void BulletClass::Detonate(Coord const & coord)
 	if (warhead->IsMindControl) {
 		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
 		if (Payback != NULL && Payback->CaptureManager && target != NULL) {
+			// The hit offers the target's tag the attacked events before the capture is tried (BulletClass::Detonate, 0x469210).
+			if (target->IsActive && target->Tag != NULL) {
+				target->Tag->Spring(TEVENT_ATTACKED, target, CELL_NONE, false, Payback);
+				if (target->IsActive && target->Tag != NULL) {
+					target->Tag->Spring(TEVENT_ATTACKED_BY, target, CELL_NONE, false, Payback);
+				}
+			}
 			bool const players = Payback->House->Is_Player_Control() || target->House->Is_Player_Control();
-			if (Payback->CaptureManager->Capture_Unit(target) && players) {
+			if (target->IsActive && Payback->CaptureManager->Capture_Unit(target) && players) {
 				Sound_Effect(Rule->YuriMindControlSound, target->PositionCoord);
 			}
 		}
