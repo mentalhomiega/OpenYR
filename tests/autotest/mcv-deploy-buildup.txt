@@ -1,0 +1,19 @@
+; An Allied MCV (AMCV) turns to the deploy facing and unpacks into a Construction Yard (GACNST), which plays its
+; 29-stage buildup (GACNSTMK) once at one stage per game frame before it opens. gamemd's Unlimbo queues the construction
+; and TryToDeploy (0x7393C0) sets IsReadyToCommence; its first update commits the queued mission and clears the flag.
+; Before the fix the flag stayed set, so the buildup ended on its first frame: banimstate showed bstate 0 stage 0 at
+; frame 71 and bstate 1 at 72. Now bstate 0 shows stages 0 to 27 at frames 71 to 98 and bstate 1 (idle) from frame 99.
+; banimstate also logs the construction control (start, count, rate) of the type, here start 0 count 29 rate 1.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/mcv-deploy-buildup.txt -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST frame|banimstate GACNST|buildup"
+10 reveal
+30 select AMCV
+45 command DeployObject
+70 banimstate GACNST
+71 banimstate GACNST
+72 banimstate GACNST
+80 banimstate GACNST
+90 banimstate GACNST
+98 banimstate GACNST
+99 banimstate GACNST
+110 banimstate GACNST
+120 quit

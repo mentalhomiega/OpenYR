@@ -2231,7 +2231,11 @@ bool UnitClass::Try_To_Deploy(void)
 					*/
 					building->Revealed(House);
 
-					building->IsReadyToCommence = true;
+					// gamemd sets the flag so that the queued construction starts on the first update. Unlimbo has already
+					// started it, and a flag left set would end the buildup after one frame.
+					if (building->MissionQueue != MISSION_NONE) {
+						building->IsReadyToCommence = true;
+					}
 
 					/*
 					**	When the MCV deploys, always consider production to have started
