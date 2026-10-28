@@ -755,6 +755,25 @@ int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const
 }
 
 
+int CnCNet_Option_Number(std::map<std::string, std::string> const & options, std::string const & key, int fallback, int low, int high)
+{
+	auto const found = options.find(key);
+	if (found == options.end()) {
+		return(fallback);
+	}
+	std::string const & text = found->second;
+	long long value = 0;
+	auto const result = std::from_chars(text.data(), text.data() + text.size(), value);
+	if (result.ec == std::errc::result_out_of_range) {
+		return(!text.empty() && text.front() == '-' ? low : high);
+	}
+	if (result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+		return(fallback);
+	}
+	return(static_cast<int>(std::clamp<long long>(value, low, high)));
+}
+
+
 std::string CnCNet_Room_Password_Problem(std::string_view password)
 {
 	if (!password.empty() && password.front() == ':') {

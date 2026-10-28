@@ -205,6 +205,11 @@ class CnCNetRoomClass
 int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files);
 
 
+// The whole number a host sent for an option, held between low and high. fallback when the option is absent or
+// is not a whole number; a number too large for an int counts as its sign's limit.
+int CnCNet_Option_Number(std::map<std::string, std::string> const & options, std::string const & key, int fallback, int low, int high);
+
+
 // Why a password cannot key a room, in plain words; empty when it can. A space, a comma or a control character
 // would split the channel mode or the join into more parameters, and a leading colon would make the join read the rest as text.
 std::string CnCNet_Room_Password_Problem(std::string_view password);

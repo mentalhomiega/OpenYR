@@ -829,6 +829,21 @@ void Test_Room_Channel_And_Password(void)
 }
 
 
+void Test_Option_Number(void)
+{
+	std::map<std::string, std::string> const options = {{"Speed", "-50"}, {"Level", "99"}, {"Credits", "5000"}, {"Text", "abc"},
+		{"Huge", "99999999999999999999"}, {"Tiny", "-99999999999999999999"}, {"Mixed", "7x"}, {"Empty", ""}, {"Wide", "3000000000"}};
+	Check(CnCNet_Option_Number(options, "Speed", 3, 0, 6) == 0, "option number: a negative number is held at the low limit");
+	Check(CnCNet_Option_Number(options, "Level", 3, 0, 2) == 2, "option number: a number past the range is held at the high limit");
+	Check(CnCNet_Option_Number(options, "Credits", 3, 2500, 10000) == 5000, "option number: a number in range is kept");
+	Check(CnCNet_Option_Number(options, "Text", 3, 0, 6) == 3 && CnCNet_Option_Number(options, "Mixed", 4, 0, 9) == 4
+		&& CnCNet_Option_Number(options, "Empty", 5, 0, 9) == 5, "option number: text that is not a whole number leaves the own value");
+	Check(CnCNet_Option_Number(options, "Missing", 6, 0, 9) == 6, "option number: an absent option leaves the own value");
+	Check(CnCNet_Option_Number(options, "Huge", 3, 0, 10) == 10 && CnCNet_Option_Number(options, "Tiny", 3, 1, 10) == 1
+		&& CnCNet_Option_Number(options, "Wide", 3, 0, 10) == 10, "option number: a number too large for an int is held at the limit");
+}
+
+
 void Test_Room_Notice(void)
 {
 	CnCNetRoomConfigType config = Room_Config("Host", "b1");
@@ -1251,6 +1266,7 @@ int main(void)
 	Test_Local_Map();
 	Test_Room();
 	Test_Room_Channel_And_Password();
+	Test_Option_Number();
 	Test_Room_Notice();
 	Test_Guest_Start();
 	Test_Build_Identity();

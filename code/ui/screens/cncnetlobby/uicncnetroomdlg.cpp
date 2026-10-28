@@ -51,6 +51,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <optional>
 #include <random>
 #include <string>
 
@@ -197,6 +198,43 @@ int Map_Player_Limit(void)
 
 
 std::map<std::string, std::string> Session_Options(void);
+
+
+// A guest's own game setup, put back when the guest leaves the room, since the host's options are copied over it.
+class GuestSetupGuardClass
+{
+	public:
+		GuestSetupGuardClass(void) :
+			Options(Session.Options),
+			Level(BuildLevel),
+			Length(Session.ScenarioFileLength),
+			Official(Session.ScenarioIsOfficial)
+		{
+			std::memcpy(File, Session.ScenarioFileName, sizeof(File));
+			std::memcpy(Digest, Session.ScenarioDigest, sizeof(Digest));
+		}
+
+		~GuestSetupGuardClass(void)
+		{
+			Session.Options = Options;
+			BuildLevel = Level;
+			Session.ScenarioFileLength = Length;
+			Session.ScenarioIsOfficial = Official;
+			std::memcpy(Session.ScenarioFileName, File, sizeof(File));
+			std::memcpy(Session.ScenarioDigest, Digest, sizeof(Digest));
+		}
+
+		GuestSetupGuardClass(GuestSetupGuardClass const &) = delete;
+		GuestSetupGuardClass & operator=(GuestSetupGuardClass const &) = delete;
+
+	private:
+		GameOptionsType Options;
+		int Level;
+		char File[sizeof(Session.ScenarioFileName)];
+		char Digest[sizeof(Session.ScenarioDigest)];
+		unsigned int Length;
+		bool Official;
+};
 
 
 // Runs one game room for the setup screen. The host keeps the options in
@@ -439,12 +477,12 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 	options.BridgeDestruction = Option_Bool(values, "Bridges", options.BridgeDestruction);
 	options.CrapEngineers = Option_Bool(values, "MultiEngineer", options.CrapEngineers);
 	options.MCVRedeploy = Option_Bool(values, "MCVRedeploy", options.MCVRedeploy);
-	options.GameSpeed = Option_Int(values, "GameSpeed", options.GameSpeed);
-	options.AIPlayers = Option_Int(values, "AIPlayers", options.AIPlayers);
-	options.AIDifficulty = static_cast<DiffType>(Option_Int(values, "AIDifficulty", options.AIDifficulty));
-	options.UnitCount = Option_Int(values, "UnitCount", options.UnitCount);
-	BuildLevel = Option_Int(values, "TechLevel", BuildLevel);
-	options.Credits = Option_Int(values, "Credits", options.Credits);
+	options.GameSpeed = CnCNet_Option_Number(values, "GameSpeed", options.GameSpeed, 0, 6);
+	options.AIPlayers = CnCNet_Option_Number(values, "AIPlayers", options.AIPlayers, 0, 6);
+	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, "AIDifficulty", options.AIDifficulty, 0, 2));
+	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, 1, 10);
+	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, 1, MPLAYER_BUILD_LEVEL_MAX);
+	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, MIN_MONEY, std::max(MIN_MONEY, Rule->MPMaxMoney));
 }
 
 
@@ -1068,6 +1106,11 @@ UICnCNetRoomResult UI_CnCNet_Room_Dialog(CnCNetSessionClass & session, UICnCNetR
 		} else {
 			DebugString("[CnCNet] HostMap=%s is not a map in the list.\n", setup.Map.c_str());
 		}
+	}
+
+	std::optional<GuestSetupGuardClass> guest_setup;
+	if (!setup.Host) {
+		guest_setup.emplace();
 	}
 
 	uint64_t const now = CnCNet_Clock();
