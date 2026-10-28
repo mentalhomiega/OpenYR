@@ -5444,6 +5444,9 @@ void Run(StepType const & step)
 		DebugString("AUTOTEST movie %s\n", step.Argument.c_str());
 		Play_Movie(step.Argument.c_str());
 		DebugString("AUTOTEST movie %s done\n", step.Argument.c_str());
+	} else if (step.Command == "ranking") {
+		// ranking: the scenario's par times (easy, normal, hard, in seconds), its four rank labels and the elapsed mission time.
+		DebugString("AUTOTEST   ranking par %d %d %d elapsed %d under [%s] [%s] over [%s] [%s]\n", Scen->ParTime[0] / TIMER_SECOND, Scen->ParTime[1] / TIMER_SECOND, Scen->ParTime[2] / TIMER_SECOND, (int)Scen->ElapsedTimer / TIMER_SECOND, Scen->UnderParTitle, Scen->UnderParMessage, Scen->OverParTitle, Scen->OverParMessage);
 	} else if (step.Command == "skipscore") {
 		// skipscore: a multiplayer or skirmish win passes over its score screen, as a launch file's
 		// SkipScoreScreen does, so the run reaches the lobby without a key press.

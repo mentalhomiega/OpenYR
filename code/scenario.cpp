@@ -3809,6 +3809,11 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsMPAIBaseNodes);
 	stream.Serialize(TeamsPresent);
 	stream.Serialize(SourceFile);
+	stream.Serialize(ParTime);
+	stream.Serialize(UnderParTitle);
+	stream.Serialize(UnderParMessage);
+	stream.Serialize(OverParTitle);
+	stream.Serialize(OverParMessage);
 }
 
 

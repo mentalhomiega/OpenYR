@@ -1,0 +1,23 @@
+; A campaign save keeps the mission's par times and rank labels. The save at frame 150 is loaded at frame 200,
+; and the `ranking` line after the load must show the same par times and labels as the one before the save,
+; not the 1-minute par time and GUI:No... labels a scenario has before its INI is read. The win then ends the mission.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/save-par-time.txt -Campaign -Map SOV04DMD.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(ranking|game over)|SAVING GAME|LOADING|Exception"
+; The mission locks the input at its start, so action 47 (Unlock input) runs first; a save made under the lock writes nothing.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+30 trigaction 47 0 0
+100 ranking
+150 command QuickSave
+200 command QuickLoad
+260 ranking
+300 setlocal 29 1
+900 quit
