@@ -4481,6 +4481,13 @@ bool AircraftClass::Crash(TechnoClass * source)
 		return(false);
 	}
 
+	// A vehicle a locomotor warhead holds or is dropping has the holder's jumpjet carrier in place of its flight locomotor, and
+	// the carrier has no crash flight for an aircraft. It is destroyed where it hangs, as a held vehicle that cannot crash is
+	// (UnitClass::Destroy, 0x737C90), so it is not left in the air with no strength.
+	if (IsAttackedByLocomotor) {
+		return(false);
+	}
+
 	if (HeightAGL > 0) {
 		if (Strength > 0) {
 			if (source != NULL && Tag != NULL) {
