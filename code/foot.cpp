@@ -929,7 +929,9 @@ int FootClass::Do_MISSION_CAPTURE(void)
 	/*
 	**	If there is a valid TarCom but the NavCom isn't set, then set the NavCom accordingly.
 	*/
-	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL && (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer)) {
+	// A soldier with C4, the C4 ability, Engineer, Occupier, Assaulter or Infiltrate sets out for its target structure (FootClass::Mission_Capture, 0x4D4B20).
+	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL
+		&& (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer || inf->Class->IsOccupier || inf->Class->IsAssaulter || inf->Class->IsCapture)) {
 		Assign_Destination(TarCom);
 	}
 
@@ -950,7 +952,8 @@ int FootClass::Do_MISSION_CAPTURE(void)
 		}
 	}
 
-	if (TarCom == NULL && !House->Is_Human_Player()) {
+	// A computer's object with no target goes hunting, except an Occupier=yes soldier, which stays on the Capture mission (0x4D4C14).
+	if (TarCom == NULL && !House->Is_Human_Player() && (inf == NULL || !inf->Class->IsOccupier)) {
 		Assign_Target(NULL);
 		Assign_Destination(NULL);
 		Assign_Mission(MISSION_HUNT);
