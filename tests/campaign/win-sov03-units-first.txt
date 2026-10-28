@@ -1,0 +1,27 @@
+; Campaign win check for Soviet 3 with the kills in the other order: every Yuri vehicle and soldier is destroyed first, then the Psychic Dominator,
+; then the soldiers the Dominator's fire sale lets out of the Bio Reactors are swept up. The map's win waits for the Dominator tag to die, a delay, and
+; then Yuri having no active units and soldiers, so the win must come however the two are ordered.
+; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-sov03-units-first.txt -Campaign -Map SOV03UMD.MAP -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST +(sprung|win|game over|counts|killhouse|killtag)|Exception"
+; With -Difficulty 0, 1 or 2 it plays the same on Easy, Normal and Hard.
+; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click more
+ui wait 300
+ui click resume
+300 killhouse YuriCountry 2
+380 counts YuriCountry
+400 killtag 0995424C
+500 killhouse YuriCountry 2
+560 counts YuriCountry
+620 killhouse YuriCountry 2
+680 counts YuriCountry
+900 killhouse YuriCountry 2
+1000 counts YuriCountry
+1600 quit

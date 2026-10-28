@@ -3294,7 +3294,8 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "counts") {
-		// counts <House>: the owned counts a map event reads (an underscore stands for a space in the name).
+		// counts <House>: the owned counts, then the active unit and soldier counts the Destroyed all events read
+		// (an underscore stands for a space in the name).
 		std::string house_name = step.Argument;
 		std::replace(house_name.begin(), house_name.end(), '_', ' ');
 		HouseClass * owner = House_From_Name(house_name.c_str());
@@ -3302,7 +3303,7 @@ void Run(StepType const & step)
 			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) owner = Houses[index];
 		}
 		if (owner != NULL) {
-			DebugString("AUTOTEST   counts %s units %d buildings %d infantry %d aircraft %d\n", step.Argument.c_str(), owner->CurUnits, owner->CurBuildings, owner->CurInfantry, owner->CurAircraft);
+			DebugString("AUTOTEST   counts %s units %d buildings %d infantry %d aircraft %d active units %d infantry %d\n", step.Argument.c_str(), owner->CurUnits, owner->CurBuildings, owner->CurInfantry, owner->CurAircraft, owner->AUQuantity.Total(), owner->AIQuantity.Total());
 		} else {
 			DebugString("AUTOTEST   counts %s: no such house\n", step.Argument.c_str());
 		}
