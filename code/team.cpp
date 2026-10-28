@@ -4241,7 +4241,7 @@ RTTIType TeamClass::Fetch_RTTI(void) const
 /// structures are considered unless own_only is false. Distance runs to each structure's centre,
 /// and an exact tie goes to the structure listed last.
 /// </summary>
-void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only)
+void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only, MissionType mission)
 {
 	std::map<BuildingClass const *, int> sent;
 
@@ -4266,8 +4266,14 @@ void TeamClass::Send_Members_Into(bool (*accepts)(BuildingClass const * building
 		if (best != NULL) {
 			DebugString("Team %s sends %s into %s\n", Class->Name(), member->TClass->Name(), best->Class->Name());
 			Remove(member);
-			member->Assign_Mission(MISSION_ENTER);
-			member->Assign_Destination(best);
+			if (mission == MISSION_ENTER) {
+				member->Assign_Mission(MISSION_ENTER);
+				member->Assign_Destination(best);
+			} else {
+				// A garrison is entered on the Capture mission, with the destination set first (FootClass::GarrisonStructure, 0x4DFE00).
+				member->Assign_Destination(best);
+				member->Assign_Mission(mission);
+			}
 			sent[best]++;
 		}
 		member = next;
@@ -4319,7 +4325,7 @@ void TeamClass::TMission_GARRISON_STRUCTURE(TeamMissionClass *, bool)
 {
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
 		return(member->RTTI == RTTI_INFANTRY && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
-	}, false);
+	}, false, MISSION_CAPTURE);
 }
 
 
@@ -4333,5 +4339,5 @@ void TeamClass::TMission_ENTER_BATTLE_BUNKER(TeamMissionClass *, bool)
 {
 	Send_Members_Into([](BuildingClass const * building, FootClass const * member, int sent) {
 		return(member->RTTI == RTTI_INFANTRY && building->Class->Level >= 0 && building->Can_Be_Occupied_By((InfantryClass const *)member) && building->Occupants.Count() + sent < building->Class->MaxNumberOccupants);
-	});
+	}, true, MISSION_CAPTURE);
 }

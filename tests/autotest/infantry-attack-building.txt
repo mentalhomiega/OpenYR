@@ -1,5 +1,5 @@
 ; A soldier given the attack mission on a structure (InfantryClass::Mission_Attack, 0x51F3E0). A computer's soldier goes to the structure when it has
-; Infiltrate=yes (the Capture mission), or has Occupier=yes or Assaulter=yes and can garrison the structure (the Enter mission, which is also what a
+; Infiltrate=yes (the Capture mission), or has Occupier=yes or Assaulter=yes and can garrison the structure (the Capture mission, which is also what a
 ; player's garrison order gives). A C4 soldier of either side plants its charge when the structure takes C4 (the Sabotage mission). A player's soldier
 ; otherwise keeps the attack mission.
 ; Stock soldiers with Infiltrate=yes are ENGINEER, SPY, TANY, GHOST and PTROOP. E1 and E2 have Occupier=yes. GAPOWR takes C4, CAMISC01 does not,
@@ -7,7 +7,7 @@
 ; Run from the repository root:
 ;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-attack-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST strike|AUTOTEST settarget|Exception"
 ; Expected at frame 150 (mission): the player's ENGINEER, SPY, E1 and TANY (on CAMISC01) are on Attack, and GHOST (on GAPOWR) is on Sabotage.
-; The computer's ENGINEER, SPY and TANY (on CAMISC01) are on Capture, its GHOST (on GAPOWR) on Sabotage, its E2 (on CAHSE02) on Enter,
+; The computer's ENGINEER, SPY and TANY (on CAMISC01) are on Capture, its GHOST (on GAPOWR) on Sabotage, its E2 (on CAHSE02) on Capture,
 ; and its E1 (on GAPOWR, which it cannot garrison) on Attack.
 30 enemy GAPOWR 60 40
 31 enemy CAMISC01 66 40
