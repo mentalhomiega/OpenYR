@@ -46,11 +46,13 @@ namespace {
 // The out-of-sync report this seat wrote during the match now running, if any.
 std::string PendingDesyncPath;
 
+// Both are never freed: the sender thread may still be inside an upload when the game exits.
+
 // Whether the sender is already working through the waiting folder.
-std::atomic<bool> Sending(false);
+std::atomic<bool> & Sending = *new std::atomic<bool>(false);
 
 // The reports whose send failed during this run. The sender thread is the only user.
-std::set<std::string> FailedThisRun;
+std::set<std::string> & FailedThisRun = *new std::set<std::string>();
 
 // How long one upload may take before it is left for the next start.
 constexpr int SEND_TIMEOUT_MS = 30000;
