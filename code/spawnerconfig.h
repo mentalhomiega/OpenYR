@@ -147,11 +147,6 @@ class SpawnerConfigClass
 		// its default send period (7) with no look-ahead when its host chose nothing, which reads as no choice.
 		// Shared by every machine, so it is part of the session identity. Unset plays gamemd's timing.
 		NetTiming::HostTimingChoice TimingChoice;
-		// The file's own values, as written. Read_INI settles TimingChoice and Protocol from them.
-		int FrameSendRate = 0;
-		int MaxAhead = 0;
-		// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
-		bool HostTiming = false;
 		// The network protocol the match plays: 2, or 0 when the host chose it.
 		int Protocol = 2;
 

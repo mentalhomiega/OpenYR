@@ -578,23 +578,24 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	AdaptiveTiming = Read_Text(ini, SETTINGS, "TimingPolicy", "") == "Adaptive";
 
 	// A value outside the range the game accepts is passed over, like a key it does not know.
-	FrameSendRate = ini.Get_Int(SETTINGS, "FrameSendRate", FrameSendRate);
-	MaxAhead = ini.Get_Int(SETTINGS, "MaxAhead", MaxAhead);
+	int const frame_send_rate = ini.Get_Int(SETTINGS, "FrameSendRate", 0);
+	int const max_ahead = ini.Get_Int(SETTINGS, "MaxAhead", 0);
 	Protocol = ini.Get_Int(SETTINGS, "Protocol", Protocol);
-	HostTiming = Spawn_Bool(ini, SETTINGS, "HostTiming", HostTiming);
+	// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
+	bool const host_timing = Spawn_Bool(ini, SETTINGS, "HostTiming", false);
 	TimingChoice = NetTiming::HostTimingChoice();
-	if (FrameSendRate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(FrameSendRate))) {
-		TimingChoice.FrameSendRate = static_cast<unsigned int>(FrameSendRate);
+	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
+		TimingChoice.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
 	}
-	if (MaxAhead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(MaxAhead))) {
-		TimingChoice.MaxAhead = static_cast<unsigned int>(MaxAhead);
+	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
+		TimingChoice.MaxAhead = static_cast<unsigned int>(max_ahead);
 	}
 	// The client writes these keys in every game, with defaults of its own. Those read as no choice unless
 	// the file says the host chose (HostTiming=yes), as the lobby built into the game says.
-	if (!HostTiming && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
+	if (!host_timing && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
 		TimingChoice.FrameSendRate = 0;
 	}
-	Protocol = HostTiming && Protocol == 0 ? 0 : 2;
+	Protocol = host_timing && Protocol == 0 ? 0 : 2;
 
 	QuickMatch = Spawn_Bool(ini, SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = Spawn_Bool(ini, SETTINGS, "SkipScoreScreen", SkipScoreScreen);
