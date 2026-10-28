@@ -23,3 +23,7 @@ A game listing whose room channel does not start with the room prefix, is the br
 When the host's tunnel is named by a host name instead of an address, the lookup runs on its own thread, so the room window keeps answering. If the name cannot be found, the second game window is closed and the room shows "The tunnel ... could not be found." An address given as an IPv4 number works as before. A tunnel the host picks that is not on the CnCNet list is still used.
 
 The tunnel list cache is written under a temporary name and moved into place, so two Host clicks close together no longer leave a half-written cache.
+
+The host's player list and start message are kept within 430 bytes, the most a chat server relays whole. Eight players with 15-character nicks fit. When a list or start would be longer, the host is told in the room chat to use shorter names or fewer players, and the start does not go out; before this change the server cut the message and guests got a wrong relay port or an unreadable start. A guest also refuses a start message that lacks the end marker or the right seat count.
+
+Pressing Back while the lobby is still connecting returns within about a tenth of a second. Before this change the lobby window stopped answering for 8 seconds or more.

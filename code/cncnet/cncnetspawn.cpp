@@ -167,16 +167,24 @@ std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & mat
 		{"Starts", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Start)); })},
 		{"Teams", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.Team)); })},
 		{"Ids", Join_Seats(match, [](CnCNetMatchSeatType const & seat) { return(std::to_string(seat.TunnelId)); })},
+		// The room message is sent with its keys in sorted order, so a message cut short by the chat server loses the
+		// last key first. ZEnd sorts after every other key and Count says how many seats the lists hold.
+		{"Count", std::to_string(match.Seats.size())},
+		{"ZEnd", "1"},
 	});
 }
 
 
 bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMatchType & match)
 {
-	for (char const * key : {"Seed", "Tunnel", "Names", "Sides", "Colors", "Starts", "Teams", "Ids"}) {
+	for (char const * key : {"Seed", "Tunnel", "Names", "Sides", "Colors", "Starts", "Teams", "Ids", "Count", "ZEnd"}) {
 		if (info.find(key) == info.end()) {
 			return(false);
 		}
+	}
+	// A message that lost its tail has no end marker; one cut inside a list has the wrong count.
+	if (info.at("ZEnd") != "1") {
+		return(false);
 	}
 	match = CnCNetMatchType();
 	match.Seed = std::atoi(info.at("Seed").c_str());
@@ -199,6 +207,9 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 	std::vector<std::string> const teams = Split(info.at("Teams"));
 	std::vector<std::string> const ids = Split(info.at("Ids"));
 	std::size_t const count = names.size();
+	if (info.at("Count") != std::to_string(count)) {
+		return(false);
+	}
 	if (count == 0 || sides.size() != count || colors.size() != count || starts.size() != count || teams.size() != count || ids.size() != count) {
 		return(false);
 	}

@@ -210,7 +210,7 @@ void CnCNetSessionClass::Run(void)
 
 			TCPStreamClass stream;
 			std::string error;
-			if (!stream.Connect(server.Host, port, Config.ConnectTimeoutMS, error)) {
+			if (!stream.Connect(server.Host, port, Config.ConnectTimeoutMS, error, &Stopping)) {
 				continue;
 			}
 			reached = true;

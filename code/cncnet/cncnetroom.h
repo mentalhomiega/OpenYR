@@ -22,11 +22,17 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <cstddef>
 #include <vector>
 
 
 // Raised when the room messages change in a way older builds cannot read.
 inline constexpr int CNCNET_ROOM_PROTOCOL = 1;
+
+
+// The longest room message line, in bytes, the host sends. A chat server cuts a relayed line at 512 bytes
+// after it adds the sender's prefix (60 to 80 bytes) and the line end, so a longer line arrives cut.
+inline constexpr std::size_t CNCNET_ROOM_LINE_LIMIT = 430;
 
 
 enum class CnCNetRoomStatus
@@ -147,7 +153,14 @@ class CnCNetRoomClass
 		void Set_Limits(CnCNetRoomLimitsType const & limits);
 		void Remove_Player(std::string const & name, std::string const & reason);
 		bool Can_Start(void) const;
+
+		// False when the room cannot start or the start message would pass CNCNET_ROOM_LINE_LIMIT; Take_Problem
+		// then says why in the second case.
 		bool Start(std::map<std::string, std::string> info);
+
+		// A problem the host should be told about, in plain words, such as a message that was too long to send.
+		// Empty when there is none; reading it clears it.
+		std::string Take_Problem(void);
 
 		// After our copy of a started match has ended: back in the room with every
 		// guest unready, so the same players can set up another match.
@@ -197,7 +210,13 @@ class CnCNetRoomClass
 		std::map<std::string, std::string> StartOptions;
 		std::vector<CnCNetRoomSendType> Outgoing;
 		uint64_t Changes = 0;
+		std::string ProblemText;
+		bool PlayersTooLong = false;
 };
+
+
+// The length in bytes of the chat line a room message becomes, with its line end.
+std::size_t CnCNet_Room_Line_Length(std::string const & channel, std::string_view command, std::string_view arguments);
 
 
 // The index in local_files of the map file a host's Map option names, matched without regard to case by plain

@@ -29,13 +29,15 @@ char const * const REFUSE = "OYRREFUSE";
 char const * const START = "OYRSTART";
 
 
-std::string Escape(std::string_view text)
+// Commas separate the fields of a player row, so a name needs them escaped; an option value is cut at ';'
+// only, and its commas stay as they are to keep the line short.
+std::string Escape(std::string_view text, bool commas = true)
 {
 	static char const digits[] = "0123456789ABCDEF";
 	std::string escaped;
 	for (char ch : text) {
 		unsigned char const byte = static_cast<unsigned char>(ch);
-		if (byte < 0x20 || byte == 0x7F || ch == ';' || ch == ',' || ch == '=' || ch == '|' || ch == '%') {
+		if (byte < 0x20 || byte == 0x7F || ch == ';' || (commas && ch == ',') || ch == '=' || ch == '|' || ch == '%') {
 			escaped.push_back('%');
 			escaped.push_back(digits[byte >> 4]);
 			escaped.push_back(digits[byte & 15]);
@@ -582,12 +584,27 @@ bool CnCNetRoomClass::Start(std::map<std::string, std::string> info)
 	if (!Can_Start()) {
 		return(false);
 	}
+	std::string const arguments = Encode_Map(info);
+	std::size_t const length = CnCNet_Room_Line_Length(Config.Channel, START, arguments);
+	if (length > CNCNET_ROOM_LINE_LIMIT) {
+		ProblemText = "The start message is " + std::to_string(length) + " bytes, over the " + std::to_string(CNCNET_ROOM_LINE_LIMIT)
+			+ " the chat server passes on whole. Use shorter player names or fewer players.";
+		return(false);
+	}
 	StartList = std::move(info);
 	StartOptions = OptionList;
 	CurrentStatus = CnCNetRoomStatus::STARTING;
 	Changed();
-	Send_CTCP(START, Encode_Map(StartList));
+	Send_CTCP(START, arguments);
 	return(true);
+}
+
+
+std::string CnCNetRoomClass::Take_Problem(void)
+{
+	std::string problem;
+	problem.swap(ProblemText);
+	return(problem);
 }
 
 
@@ -644,7 +661,19 @@ void CnCNetRoomClass::Send_Options(void)
 
 void CnCNetRoomClass::Send_Players(void)
 {
-	Send_CTCP(PLAYERS, Encode_Players(PlayerList), "oyrplayers:" + Config.Channel);
+	std::string const arguments = Encode_Players(PlayerList);
+	std::size_t const length = CnCNet_Room_Line_Length(Config.Channel, PLAYERS, arguments);
+	if (length > CNCNET_ROOM_LINE_LIMIT) {
+		// The host is told once per overlong list, not on every change.
+		if (!PlayersTooLong) {
+			PlayersTooLong = true;
+			ProblemText = "The player list is " + std::to_string(length) + " bytes, over the " + std::to_string(CNCNET_ROOM_LINE_LIMIT)
+				+ " the chat server passes on whole, so guests no longer see changes to it. Use shorter player names or fewer players.";
+		}
+		return;
+	}
+	PlayersTooLong = false;
+	Send_CTCP(PLAYERS, arguments, "oyrplayers:" + Config.Channel);
 }
 
 
@@ -664,7 +693,7 @@ std::string CnCNetRoomClass::Encode_Map(std::map<std::string, std::string> const
 		if (!text.empty()) {
 			text.push_back(';');
 		}
-		text += Escape(key) + "=" + Escape(value);
+		text += Escape(key, false) + "=" + Escape(value, false);
 	}
 	return(text);
 }
@@ -816,4 +845,10 @@ std::string CnCNet_Build_Short(std::string_view build)
 		return(std::string());
 	}
 	return(std::string(build.substr(0, slash)));
+}
+
+
+std::size_t CnCNet_Room_Line_Length(std::string const & channel, std::string_view command, std::string_view arguments)
+{
+	return(IRC_Format_Line("NOTICE", {channel, CTCP_Wrap(command, arguments)}).size() + 2);
 }

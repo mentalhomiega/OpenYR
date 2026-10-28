@@ -318,6 +318,12 @@ bool CnCNetRoomServiceClass::Service(void)
 	}
 	TheRoom.Tick(now);
 
+	// A message the room could not send whole is shown to the host in the room's chat.
+	std::string const problem = TheRoom.Take_Problem();
+	if (!problem.empty()) {
+		Note(problem);
+	}
+
 	if (!TheRoom.Is_Host() && TheRoom.Revision() != OptionsRevision) {
 		OptionsRevision = TheRoom.Revision();
 		Take_Options(TheRoom.Options());
@@ -908,7 +914,10 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		Map_Starts(Session.ScenarioFileName),
 		tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
-		error = "The match could not start: every guest must be ready and on your OpenYR build.";
+		error = TheRoom.Take_Problem();
+		if (error.empty()) {
+			error = "The match could not start: every guest must be ready and on your OpenYR build.";
+		}
 		return(false);
 	}
 	Broadcast(true);

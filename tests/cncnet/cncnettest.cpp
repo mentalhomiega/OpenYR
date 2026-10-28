@@ -11,7 +11,7 @@
 // building, CTCP, the line buffer, the GAME listing layout, and the client's
 // registration, keepalive, nickname retry and send pacing, SHA-1 and room keys,
 // the OpenYR game room protocol, the launch file a started room writes, and the
-// tunnel bridge. Only the bridge test opens sockets, all on the loopback address.
+// tunnel bridge. Only the bridge and TCP stream tests open sockets, all on the loopback address.
 
 #include "cncnet/cncnetgame.h"
 #include "cncnet/cncnetlobby.h"
@@ -22,6 +22,7 @@
 #include "cncnet/cncnettunnellist.h"
 #include "cncnet/ircclient.h"
 #include "cncnet/ircmessage.h"
+#include "cncnet/tcpstream.h"
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -42,6 +43,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <map>
@@ -482,7 +484,9 @@ void Test_Room_Encoding(void)
 {
 	std::map<std::string, std::string> const options{{"Map", "Lake; North=1|2,%"}, {"Credits", "10000"}, {"Line", "a\r\nb"}};
 	std::string const encoded = CnCNetRoomClass::Encode_Map(options);
-	Check(encoded.find_first_of("\r\n|,") == std::string::npos, "room encoding: separators and line breaks are escaped");
+	Check(encoded.find_first_of("\r\n|") == std::string::npos && std::count(encoded.begin(), encoded.end(), ';') == 2,
+		"room encoding: separators and line breaks are escaped");
+	Check(encoded.find("Lake%3B North%3D1%7C2,%25") != std::string::npos, "room encoding: a comma in an option value stays as it is");
 	std::map<std::string, std::string> const decoded_options = CnCNetRoomClass::Decode_Map(encoded);
 	Check(decoded_options.at("Map") == options.at("Map") && decoded_options.at("Credits") == "10000",
 		"room encoding: options survive a round trip");
@@ -1246,6 +1250,236 @@ void Test_Tunnel_Bridge(void)
 
 }
 
+// 8 players with the longest nicks the lobby allows, as the line limit is meant for.
+CnCNetRoomClass Full_Host(std::vector<std::string> & names, bool ready)
+{
+	std::string const build = CnCNet_Build_Identity("a48ea63", false, "x64", 0x20000);
+	CnCNetRoomClass host = CnCNetRoomClass::Host(Room_Config(names[0], build), {{"Map", "Lake"}}, 0);
+	host.Apply(Room_Event(IRCEventKind::JOINED, names[0], ROOM), 0);
+	for (std::size_t index = 1; index < names.size(); ++index) {
+		host.Apply(Room_Event(IRCEventKind::JOINED, names[index], ROOM), 100);
+		host.Apply(Room_Event(IRCEventKind::CTCP, names[index], ROOM, "OYRHELLO", "1;" + build), 110);
+		if (ready) {
+			host.Apply(Room_Event(IRCEventKind::CTCP, names[index], ROOM, "OYRREADY", "1"), 120);
+		}
+	}
+	return(host);
+}
+
+
+std::vector<std::string> Long_Names(std::size_t count, std::size_t length)
+{
+	std::vector<std::string> names;
+	for (std::size_t index = 0; index < count; ++index) {
+		std::string name = "P" + std::to_string(index);
+		name.resize(length, 'x');
+		names.push_back(name);
+	}
+	return(names);
+}
+
+
+bool Sent_Command(std::vector<CnCNetRoomSendType> const & sent, std::string const & command)
+{
+	return(Sent(sent, CnCNetRoomSendKind::CTCP, command));
+}
+
+
+void Test_Room_Line_Limit(void)
+{
+	std::vector<int> const sides{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	std::vector<std::string> names = Long_Names(8, 15);
+	CnCNetRoomClass host = Full_Host(names, true);
+	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
+	Check(host.Players().size() == 8 && Sent_Command(sent, "OYRPLAYERS") && host.Take_Problem().empty(),
+		"line limit: eight players with 15-character nicks list fit in one line");
+	std::mt19937 random(7);
+	CnCNetMatchType const match = CnCNet_Settle_Match(host.Players(), sides, 8, {0, 1, 2, 3, 4, 5, 6, 7}, "tunnel-eu.cncnet.example", 50001, random);
+	std::map<std::string, std::string> const info = CnCNet_Match_Info(match);
+	Check(CnCNet_Room_Line_Length(ROOM, "OYRSTART", CnCNetRoomClass::Encode_Map(info)) <= CNCNET_ROOM_LINE_LIMIT,
+		"line limit: eight players with 15-character nicks make a start line within the limit");
+	Check(host.Can_Start() && host.Start(info) && Sent_Command(host.Take_Outgoing(), "OYRSTART") && host.Take_Problem().empty(),
+		"line limit: that start is sent");
+
+	// Nicks of 30 characters push both lines past the limit.
+	std::vector<std::string> long_names = Long_Names(8, 30);
+	CnCNetRoomClass crowded = Full_Host(long_names, true);
+	sent = crowded.Take_Outgoing();
+	Check(crowded.Players().size() == 8, "line limit: eight players with 30-character nicks join");
+	std::string const problem = crowded.Take_Problem();
+	Check(problem.find("player list") != std::string::npos && problem.find(std::to_string(CNCNET_ROOM_LINE_LIMIT)) != std::string::npos,
+		"line limit: the host is told when the player list is too long to send");
+	Check(crowded.Take_Problem().empty(), "line limit: the host is told about the player list once");
+	crowded.Apply(Room_Event(IRCEventKind::CTCP, long_names[3], ROOM, "OYRREADY", "0"), 200);
+	Check(!Sent_Command(crowded.Take_Outgoing(), "OYRPLAYERS") && crowded.Take_Problem().empty(),
+		"line limit: later changes to a too-long list are not sent and not repeated");
+
+	crowded.Apply(Room_Event(IRCEventKind::CTCP, long_names[3], ROOM, "OYRREADY", "1"), 210);
+	crowded.Take_Outgoing();
+	std::mt19937 random_long(7);
+	CnCNetMatchType const long_match = CnCNet_Settle_Match(crowded.Players(), sides, 8, {0, 1, 2, 3, 4, 5, 6, 7}, "tunnel-eu.cncnet.example", 50001, random_long);
+	Check(crowded.Can_Start() && !crowded.Start(CnCNet_Match_Info(long_match)), "line limit: a start line over the limit is refused");
+	Check(crowded.Status() == CnCNetRoomStatus::IN_ROOM && crowded.Start_Info().empty() && !Sent_Command(crowded.Take_Outgoing(), "OYRSTART"),
+		"line limit: a refused start sends nothing and leaves the room as it was");
+	Check(crowded.Take_Problem().find("start message") != std::string::npos, "line limit: the host is told why the start was refused");
+
+	// Once enough players leave, the same room sends again.
+	for (std::size_t index = 7; index >= 3; --index) {
+		crowded.Apply(Room_Event(IRCEventKind::PARTED, long_names[index], ROOM), 300);
+	}
+	Check(Sent_Command(crowded.Take_Outgoing(), "OYRPLAYERS"), "line limit: the player list is sent again once it fits");
+}
+
+
+void Test_Match_End_Marker(void)
+{
+	CnCNetRoomPlayerType host;
+	host.Name = "Host";
+	host.Host = true;
+	CnCNetRoomPlayerType guest;
+	guest.Name = "guest";
+	std::mt19937 random(99);
+	CnCNetMatchType const match = CnCNet_Settle_Match({host, guest}, {0, 1, 2}, 8, {0, 1, 2, 3}, "127.0.0.1", 50001, random);
+	std::map<std::string, std::string> info = CnCNet_Match_Info(match);
+
+	CnCNetMatchType read;
+	Check(CnCNet_Read_Match(info, read), "end marker: a whole start message is read");
+	std::map<std::string, std::string> without_end = info;
+	without_end.erase("ZEnd");
+	Check(!CnCNet_Read_Match(without_end, read), "end marker: a start without the end marker is refused");
+	std::map<std::string, std::string> without_count = info;
+	without_count.erase("Count");
+	Check(!CnCNet_Read_Match(without_count, read), "end marker: a start without the seat count is refused");
+	std::map<std::string, std::string> wrong_count = info;
+	wrong_count["Count"] = "3";
+	Check(!CnCNet_Read_Match(wrong_count, read), "end marker: a seat count that differs from the lists is refused");
+	std::map<std::string, std::string> wrong_end = info;
+	wrong_end["ZEnd"] = "";
+	Check(!CnCNet_Read_Match(wrong_end, read), "end marker: an empty end marker is refused");
+
+	// The message as the guest decodes it, cut at every length: only the whole text is accepted.
+	std::string const text = CnCNetRoomClass::Encode_Map(info);
+	Check(text.size() > 20 && text.rfind("ZEnd=1") == text.size() - 6, "end marker: the end marker comes last in the message");
+	int accepted = 0;
+	for (std::size_t length = 0; length <= text.size(); ++length) {
+		CnCNetMatchType cut;
+		if (CnCNet_Read_Match(CnCNetRoomClass::Decode_Map(text.substr(0, length)), cut)) {
+			++accepted;
+		}
+	}
+	Check(accepted == 1, "end marker: a start message cut at any point short of its end is refused");
+
+	// A cut inside the port digits, the case that used to give a wrong relay port, is refused too.
+	std::size_t const port_at = text.find("Tunnel=127.0.0.1:50001");
+	Check(port_at != std::string::npos && !CnCNet_Read_Match(CnCNetRoomClass::Decode_Map(text.substr(0, port_at + 22 - 2)), read),
+		"end marker: a start cut inside the relay port is refused");
+}
+
+
+struct TestListener
+{
+	uintptr_t Handle = ~static_cast<uintptr_t>(0);
+	uint16_t Port = 0;
+};
+
+
+TestListener Loopback_Listener(void)
+{
+	TestListener listener;
+	TestSocket const handle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	sockaddr_in address{};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	bind(handle, reinterpret_cast<sockaddr *>(&address), sizeof(address));
+	listen(handle, 4);
+#if defined(_WIN32)
+	int length = sizeof(address);
+#else
+	socklen_t length = sizeof(address);
+#endif
+	getsockname(handle, reinterpret_cast<sockaddr *>(&address), &length);
+	listener.Handle = static_cast<uintptr_t>(handle);
+	listener.Port = ntohs(address.sin_port);
+	return(listener);
+}
+
+
+void Test_TCP_Stop(void)
+{
+	using Clock = std::chrono::steady_clock;
+	auto const milliseconds = [](Clock::time_point since) { return(std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - since).count()); };
+
+	// The sliced wait.
+	std::vector<int> slices;
+	auto const record_nothing = [&slices](int slice_ms) { slices.push_back(slice_ms); return(0); };
+	Check(TCP_Wait_Sliced(250, 100, nullptr, record_nothing) == 0 && slices == std::vector<int>({100, 100, 50}),
+		"tcp stop: a wait that runs out is cut into slices that add up to the time");
+	slices.clear();
+	Check(TCP_Wait_Sliced(250, 100, nullptr, [&slices](int slice_ms) { slices.push_back(slice_ms); return(slices.size() == 2 ? 1 : 0); }) == 1 && slices.size() == 2,
+		"tcp stop: a wait ends when the socket is ready");
+	slices.clear();
+	Check(TCP_Wait_Sliced(250, 100, nullptr, [&slices](int slice_ms) { slices.push_back(slice_ms); return(-1); }) == -1 && slices.size() == 1,
+		"tcp stop: a wait ends when the socket fails");
+	std::atomic<bool> stopped{true};
+	Check(TCP_Wait_Sliced(8000, 100, &stopped, record_nothing) == -2 && slices.size() == 1, "tcp stop: a wait that was stopped before it began does not wait");
+
+	std::atomic<bool> stop{false};
+	std::thread stopper([&stop]() {
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+		stop = true;
+	});
+	Clock::time_point began = Clock::now();
+	int const result = TCP_Wait_Sliced(8000, 100, &stop, [](int slice_ms) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(slice_ms));
+		return(0);
+	});
+	long long const took = milliseconds(began);
+	stopper.join();
+	Check(result == -2 && took >= 200 && took < 1000, "tcp stop: stopping ends an 8 second wait within a slice or two");
+
+#if defined(_WIN32)
+	WSADATA data;
+	WSAStartup(MAKEWORD(2, 2), &data);
+#endif
+	TestListener const listener = Loopback_Listener();
+	{
+		TCPStreamClass stream;
+		std::string error;
+		std::atomic<bool> never{false};
+		Check(stream.Connect("127.0.0.1", listener.Port, 2000, error, &never) && stream.Is_Open() && error.empty(),
+			"tcp stop: a connection to an address works with a stop flag that is not set");
+	}
+	{
+		TCPStreamClass stream;
+		std::string error;
+		std::atomic<bool> never{false};
+		Check(stream.Connect("localhost", listener.Port, 2000, error, &never) && stream.Is_Open(),
+			"tcp stop: a connection to a host name works with a stop flag that is not set");
+	}
+	{
+		TCPStreamClass stream;
+		std::string error;
+		Check(stream.Connect("127.0.0.1", listener.Port, 2000, error) && stream.Is_Open(), "tcp stop: a connection works without a stop flag");
+	}
+	{
+		TCPStreamClass stream;
+		std::string error;
+		std::atomic<bool> already{true};
+		began = Clock::now();
+		Check(!stream.Connect("127.0.0.1", listener.Port, 8000, error, &already) && error == "stopped" && !stream.Is_Open() && milliseconds(began) < 500,
+			"tcp stop: a stopped connect to an address returns at once");
+		began = Clock::now();
+		Check(!stream.Connect("localhost", listener.Port, 8000, error, &already) && error == "stopped" && !stream.Is_Open() && milliseconds(began) < 500,
+			"tcp stop: a stopped connect to a host name returns at once");
+	}
+#if defined(_WIN32)
+	closesocket(static_cast<SOCKET>(listener.Handle));
+	WSACleanup();
+#else
+	close(static_cast<int>(listener.Handle));
+#endif
+}
+
 
 int main(void)
 {
@@ -1273,6 +1507,9 @@ int main(void)
 	Test_Build_Gate();
 	Test_Tunnel_List();
 	Test_Spawn();
+	Test_Room_Line_Limit();
+	Test_Match_End_Marker();
+	Test_TCP_Stop();
 	Test_Tunnel_Envelope();
 	Test_Tunnel_Bridge();
 

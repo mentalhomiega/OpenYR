@@ -29,7 +29,12 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <thread>
 
 
 namespace {
@@ -102,6 +107,45 @@ int Wait(NativeSocket handle, bool for_write, int wait_ms)
 }
 
 
+namespace {
+
+constexpr int STOP_SLICE_MS = 100;
+constexpr int LOOKUP_LIMIT_MS = 20000;
+
+
+// What a lookup thread leaves for the caller. The thread owns the answer until the caller takes it; a caller
+// that stopped waiting leaves it to the thread, which frees it.
+struct LookupType
+{
+	std::mutex Lock;
+	std::condition_variable Ready;
+	bool Done = false;
+	bool Abandoned = false;
+	int Result = -1;
+	addrinfo * Found = nullptr;
+};
+
+}
+
+
+int TCP_Wait_Sliced(int total_ms, int slice_ms, std::atomic<bool> const * stop, std::function<int(int)> const & wait_once)
+{
+	slice_ms = std::max(slice_ms, 1);
+	for (int waited = 0; ; waited += slice_ms) {
+		if (stop != nullptr && stop->load()) {
+			return(-2);
+		}
+		if (waited >= total_ms) {
+			return(0);
+		}
+		int const result = wait_once(std::min(slice_ms, total_ms - waited));
+		if (result != 0) {
+			return(result);
+		}
+	}
+}
+
+
 TCPStreamClass::~TCPStreamClass(void)
 {
 	Close();
@@ -118,7 +162,7 @@ TCPStreamClass::~TCPStreamClass(void)
 /// the time given for each attempt. On failure, error says why and the stream
 /// stays closed.
 /// </summary>
-bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeout_ms, std::string & error)
+bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeout_ms, std::string & error, std::atomic<bool> const * stop)
 {
 	Close();
 
@@ -140,13 +184,57 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 
 	addrinfo * found = nullptr;
 	std::string const service = std::to_string(port);
-	if (getaddrinfo(host.c_str(), service.c_str(), &hints, &found) != 0 || found == nullptr) {
-		error = "could not look up " + host;
-		return(false);
+	if (stop == nullptr) {
+		if (getaddrinfo(host.c_str(), service.c_str(), &hints, &found) != 0 || found == nullptr) {
+			error = "could not look up " + host;
+			return(false);
+		}
+	} else {
+		// getaddrinfo cannot be interrupted, so a caller that may be stopped looks the name up on its own thread
+		// and waits for it in slices.
+		auto const lookup = std::make_shared<LookupType>();
+		std::thread([lookup, host, service, hints]() {
+			addrinfo * answer = nullptr;
+			int const result = getaddrinfo(host.c_str(), service.c_str(), &hints, &answer);
+			std::lock_guard<std::mutex> guard(lookup->Lock);
+			if (lookup->Abandoned) {
+				if (result == 0 && answer != nullptr) {
+					freeaddrinfo(answer);
+				}
+				return;
+			}
+			lookup->Result = result;
+			lookup->Found = answer;
+			lookup->Done = true;
+			lookup->Ready.notify_all();
+		}).detach();
+		int const waited = TCP_Wait_Sliced(LOOKUP_LIMIT_MS, STOP_SLICE_MS, stop, [&lookup](int slice_ms) {
+			std::unique_lock<std::mutex> guard(lookup->Lock);
+			lookup->Ready.wait_for(guard, std::chrono::milliseconds(slice_ms), [&lookup]() { return(lookup->Done); });
+			return(lookup->Done ? 1 : 0);
+		});
+		std::lock_guard<std::mutex> guard(lookup->Lock);
+		if (waited != 1 || !lookup->Done) {
+			lookup->Abandoned = !lookup->Done;
+			error = waited == -2 ? "stopped" : "could not look up " + host;
+			if (lookup->Done && lookup->Found != nullptr) {
+				freeaddrinfo(lookup->Found);
+			}
+			return(false);
+		}
+		if (lookup->Result != 0 || lookup->Found == nullptr) {
+			error = "could not look up " + host;
+			return(false);
+		}
+		found = lookup->Found;
 	}
 
 	error = "could not reach " + host;
 	for (addrinfo * entry = found; entry != nullptr; entry = entry->ai_next) {
+		if (stop != nullptr && stop->load()) {
+			error = "stopped";
+			break;
+		}
 		NativeSocket const handle = socket(entry->ai_family, entry->ai_socktype, entry->ai_protocol);
 #if defined(_WIN32)
 		if (handle == INVALID_SOCKET) {
@@ -163,7 +251,14 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 		}
 
 		bool connected = connect(handle, entry->ai_addr, static_cast<int>(entry->ai_addrlen)) == 0;
-		if (!connected && Would_Block() && Wait(handle, true, timeout_ms) == 1) {
+		bool const pending = !connected && Would_Block();
+		int const ready = pending ? TCP_Wait_Sliced(timeout_ms, STOP_SLICE_MS, stop, [handle](int slice_ms) { return(Wait(handle, true, slice_ms)); }) : 0;
+		if (ready == -2) {
+			Close_Native(handle);
+			error = "stopped";
+			break;
+		}
+		if (ready == 1) {
 			int socket_error = 0;
 #if defined(_WIN32)
 			int size = sizeof(socket_error);

@@ -11,6 +11,7 @@ opents_add_test(CnCNetTest
         cncnet/cncnetspawn.cpp
         cncnet/cncnettunnel.cpp
         cncnet/cncnettunnellist.cpp
+        cncnet/tcpstream.cpp
 )
 if(WIN32)
     target_link_libraries(CnCNetTest PRIVATE ws2_32)
