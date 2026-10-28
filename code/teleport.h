@@ -89,8 +89,8 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		std::unique_ptr<ILocomotion> Piggybackee;
 
 		int Warp_Distance(Coord const & to) const;
-		Coord Landing_Spot(Coord const & dest);
-		Coord Target_Cell_Spot(Coord const & dest) const;
+		bool Targets_Cell(Coord const & dest) const;
+		Coord Choose_Destination(Coord const & to) const;
 		int Warp_Delay(Coord const & to) const;
 		void Start_Warp(void);
 		void Land_Chrono_Warp(void);
