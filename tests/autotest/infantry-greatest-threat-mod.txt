@@ -1,0 +1,31 @@
+; The target a soldier picks for itself with the map-wide Greatest_Threat scan, for soldier flags the stock rules do not combine
+; (InfantryClass::GreatestThreat, 0x51E140). Run with the mod infantry-threat-rules, which makes CIV1 an unarmed Infiltrate=yes soldier, CIV2 an unarmed
+; VehicleThief=yes one, CIV3 an unarmed Engineer=yes one and E2 an armed Engineer=yes one. The targets are those of infantry-greatest-threat.txt, with E1 for E2.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Mods "E:\Claude ra2 decomp\src-agent18\tests\autotest\infantry-threat-rules" -Script src-agent18/tests/autotest/infantry-greatest-threat-mod.txt -Seconds 60 -Filter "AUTOTEST   threat|Exception"
+; Expected: the computer's CIV3 and E2 pick the player's GAPOWR, because gamemd tests Engineer=yes whether or not the soldier is armed. Its CIV1
+; (Infiltrate=yes alone) picks nothing. CIV2 of either side picks the Grizzly: an unarmed thief considers vehicles only. The player's CIV1
+; and CIV3 pick nothing, and the player's E2 picks the computer's GAPOWR, since an Engineer=yes soldier considers only structures.
+30 enemy GAPOWR 60 40
+31 enemy E1 63 40
+32 enemy MTNK 63 43
+33 own GAPOWR 60 52
+34 own E1 63 52
+35 own MTNK 63 55
+36 own CIV1 54 38
+37 own CIV2 54 39
+38 own CIV3 54 40
+39 own E2 54 41
+40 enemy CIV1 54 50
+41 enemy CIV2 54 51
+42 enemy CIV3 54 52
+43 enemy E2 54 53
+70 threat CIV1
+70 threat CIV2
+70 threat CIV3
+70 threat E2
+70 threat CIV1 computer
+70 threat CIV2 computer
+70 threat CIV3 computer
+70 threat E2 computer
+90 quit

@@ -2319,11 +2319,14 @@ static void Hut_Action_Step(StepType const & step)
 /// <summary>
 /// Gives every object of a type a target and no other order: InfantryClass::Assign_Target on the object that stands on a cell.
 /// </summary>
-/// <param name="step">The type in the argument, and the target's cell in X and Y. A fifth word, "computer", picks the objects of
-/// that type that neither the player nor an ally owns; otherwise the player's objects are picked.</param>
+/// <param name="step">The type in the argument, and the target's cell in X and Y. A word after those, "computer", picks the objects of
+/// that type that neither the player nor an ally owns; otherwise the player's objects are picked. A word "attack" also gives each object
+/// the attack mission.</param>
 static void Set_Target_Step(StepType const & step)
 {
-	bool const computer = Word(Line_Words(step.Line), 5) == "computer";
+	std::vector<std::string> const words = Line_Words(step.Line);
+	bool const computer = Word(words, 5) == "computer" || Word(words, 6) == "computer";
+	bool const attack = Word(words, 5) == "attack" || Word(words, 6) == "attack";
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
@@ -2331,6 +2334,35 @@ static void Set_Target_Step(StepType const & step)
 		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
 		if (owned && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			techno->Assign_Target(target);
+			if (attack) {
+				techno->Assign_Mission(MISSION_ATTACK);
+			}
+		}
+	}
+}
+
+
+/// <summary>
+/// Writes the target that each object of a type would pick for itself: the map-wide scan of Greatest_Threat with no limits, the one a hunting
+/// or an idle soldier makes.
+/// </summary>
+/// <param name="step">The type in the argument. A fourth word, "computer", picks the objects of that type that neither the player nor an
+/// ally owns; otherwise the player's objects are picked.</param>
+static void Threat_Probe_Step(StepType const & step)
+{
+	bool const computer = Word(Line_Words(step.Line), 3) == "computer";
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
+		if (owned && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			AbstractClass * target = techno->Greatest_Threat(THREAT_NORMAL, techno->Center_Coord(), false);
+			ObjectClass * object = target != NULL ? target->As_ObjectClass() : NULL;
+			if (object != NULL && object->Is_Techno()) {
+				TechnoClass * hit = static_cast<TechnoClass *>(object);
+				DebugString("AUTOTEST   threat %s at %d,%d -> %s at %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, hit->TClass->Name(), hit->Get_Cell().X, hit->Get_Cell().Y);
+			} else {
+				DebugString("AUTOTEST   threat %s at %d,%d -> %s\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, target != NULL ? "(not a techno)" : "(none)");
+			}
 		}
 	}
 }
@@ -2650,6 +2682,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "settarget") {
 		Set_Target_Step(step);
+		return;
+	}
+	if (step.Command == "threat") {
+		Threat_Probe_Step(step);
 		return;
 	}
 	if (step.Command == "hutc4") {
