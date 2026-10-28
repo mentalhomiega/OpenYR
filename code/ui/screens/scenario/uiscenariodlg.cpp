@@ -25,6 +25,8 @@
 #include "ui/uiview.h"
 #include "win.h"
 
+#include <map>
+#include <string>
 #include <utility>
 
 
@@ -93,12 +95,36 @@ UIScenarioServiceClass & UI_Scenario_Service(void)
 }
 
 
+/// The number of start positions in the map. A map is read once per run, except the generated one, whose size changes.
+static int Start_Count(int index)
+{
+	static std::map<std::string, int> known;
+
+	std::string const file = Session.Scenarios[index]->Get_Filename();
+	bool const generated = stricmp(file.c_str(), RANDOM_MAP_FILE_NAME) == 0;
+	if (!generated) {
+		auto const found = known.find(file);
+		if (found != known.end()) {
+			return(found->second);
+		}
+	}
+
+	int const count = RandomMapWaypointCount(index);
+	if (!generated) {
+		known[file] = count;
+	}
+	return(count);
+}
+
+
 void UI_Scenario_State(UIScenarioState & state)
 {
 	state.Entries.clear();
 	for (int index = 0; index < Session.Scenarios.Count(); index++) {
 		UIScenarioEntry entry;
 		entry.Label = Session.Scenarios[index]->Description();
+		entry.File = Session.Scenarios[index]->Get_Filename();
+		entry.Players = Start_Count(index);
 		state.Entries.push_back(entry);
 	}
 

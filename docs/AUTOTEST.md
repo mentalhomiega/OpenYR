@@ -206,6 +206,8 @@ The unit test `skirmishsetup` (CTest name `skirmishsetup`) restores saved rows o
 start spots and checks the fallbacks for a missing country or start, a kind past the list, and clashing
 colors and starts. It needs no game data.
 
+`tests/autotest/map-picker.txt` opens the map picker from the skirmish lobby, searches, filters by player count, orders by players, walks the list with the keys and picks a map with Enter, with a `ui shot` after each step. `tests/autotest/cncnet-room-ui.txt` opens the same picker from a hosted CnCNet room; its header gives the stand-in command. A `ui set` step with only a text box's id empties the box.
+
 ## Solo skirmish
 
 A skirmish with no computer player is a solo game: the person plays alone, and the game does not end

@@ -10,10 +10,10 @@
 
 #reveal
 {
-	width: 540dp;
-	height: 326dp;
+	width: 620dp;
+	height: 412dp;
 	top: 50%;
-	margin-top: -163dp;
+	margin-top: -206dp;
 }
 
 #content
@@ -23,23 +23,105 @@
 
 #title
 {
-	width: 472dp;
+	width: 555dp;
 	height: 20dp;
 	line-height: 17dp;
 	text-align: center;
 }
 
+#filters
+{
+	display: flex;
+	align-items: center;
+	margin-top: 3dp;
+	height: 26dp;
+}
+
+#filters .caption
+{
+	margin-right: 5dp;
+	line-height: 24dp;
+}
+
+#search
+{
+	width: 150dp;
+	height: 18dp;
+	margin: 0 12dp 0 0;
+}
+
+#players
+{
+	width: 112dp;
+	margin: 0 12dp 0 0;
+}
+
+#order
+{
+	width: 86dp;
+	margin: 0;
+}
+
 #columns
 {
 	display: flex;
-	margin-top: 3dp;
+	margin-top: 6dp;
+}
+
+#left
+{
+	width: 330dp;
+	margin-right: 18dp;
+}
+
+.heading, #maps .item
+{
+	display: flex;
+}
+
+.heading
+{
+	height: 16dp;
+	line-height: 15dp;
+	padding-left: 2dp;
+	font-weight: bold;
+}
+
+.col-name
+{
+	width: 232dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.col-players
+{
+	width: 70dp;
+	white-space: nowrap;
 }
 
 #maps
 {
-	width: 263dp;
+	width: 330dp;
 	height: 232dp;
-	margin-right: 17dp;
+}
+
+#nomaps
+{
+	margin: 8dp 0 0 4dp;
+}
+
+#summary
+{
+	margin: 4dp 0 0 2dp;
+	height: 16dp;
+	line-height: 15dp;
+}
+
+#side
+{
+	width: 195dp;
+	margin-top: 16dp;
 }
 
 #map
@@ -47,7 +129,6 @@
 	position: relative;
 	width: 195dp;
 	height: 132dp;
-	margin-top: 54dp;
 }
 
 #preview
@@ -59,6 +140,26 @@
 	height: 131dp;
 }
 
+#detail
+{
+	margin: 8dp 0 0 0;
+	line-height: 17dp;
+}
+
+#file
+{
+	line-height: 17dp;
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+#hint
+{
+	margin: 10dp 0 0 0;
+	line-height: 15dp;
+	white-space: pre-wrap;
+}
+
 #buttons
 {
 	display: flex;
@@ -68,13 +169,13 @@
 #ok
 {
 	width: 76dp;
-	margin-right: 89dp;
+	margin-right: 126dp;
 }
 
 #random
 {
 	width: 160dp;
-	margin-right: 74dp;
+	margin-right: 117dp;
 }
 
 #cancel
