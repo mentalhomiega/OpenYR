@@ -1489,11 +1489,11 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	BASECLASS::Assign_Target(target);
 
 	/*
-	**	If this is an infantry that can only capture, then also assign its destination to the
-	**	target specified. A spy checks the building's Spyable flag rather than Capturable, and
-	**	its MakeupKit weapon does not stop the assignment (gamemd InfantryClass::SetTarget, 0x51B1F0).
+	**	If this infantry can infiltrate, then also assign its destination to the target
+	**	specified. A spy checks the building's Spyable flag rather than Capturable. A weapon
+	**	does not stop the assignment (gamemd InfantryClass::SetTarget, 0x51B1F0).
 	*/
-	if (NavCom == NULL && Class->IsCapture && (Class->IsAgent || !Is_Weapon_Equipped())) {
+	if (NavCom == NULL && Class->IsCapture) {
 		if (target != NULL && target->RTTI == RTTI_BUILDING) {
 			BuildingClass const * building = (BuildingClass const *)target;
 			if (Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable) {

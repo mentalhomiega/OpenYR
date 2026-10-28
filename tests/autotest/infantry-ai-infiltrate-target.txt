@@ -1,0 +1,24 @@
+; Computer-owned infiltrators take buildings by being given them as a target. TANY plants C4 on a structure that can take
+; it (the Sabotage mission), and an ENGINEER captures a Capturable structure it reaches. Both get the building as their
+; destination as soon as it is their target (InfantryClass::SetTarget, 0x51B1F0).
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Map XMP29U2.MAP -Script src-agent18/tests/autotest/infantry-ai-infiltrate-target.txt -Seconds 90 -Filter "AUTOTEST   where|Exception"
+; Expected: the where lines at frame 52 give both soldiers a nav at their building (61,41 and 61,47). At frame 150 the ENGINEER is
+; gone and the GAPOWR at 60,46 belongs to Africans (the computer starts selling it); the GAPOWR at 60,40 is still the player's with C4 on
+; it. At frame 200 neither GAPOWR is left, and TANY is alive afterwards.
+30 own GAPOWR 60 40
+31 own GAPOWR 60 46
+32 enemy TANY 58 42
+33 enemy ENGINEER 58 47
+45 settarget TANY 60 40 computer
+46 settarget ENGINEER 60 46 computer
+52 where TANY
+53 where ENGINEER
+100 where GAPOWR
+100 where ENGINEER
+150 where GAPOWR
+150 where ENGINEER
+200 where GAPOWR
+200 where ENGINEER
+300 where TANY
+320 quit
