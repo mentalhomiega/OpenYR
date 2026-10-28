@@ -26,6 +26,9 @@
 #include "except.h"
 #include "session.h"
 #include "win.h"
+#include "dbgprint.h"
+
+#include <set>
 
 
 static uintptr_t ModuleBase = 0;
@@ -51,6 +54,43 @@ static uint32_t Sync_Caller_RVA(unsigned caller)
 	// The image is large address aware, so an address outside it can carry the flag bit itself
 	// and loses it here. Such an address only says the call came from elsewhere.
 	return(SYNC_CALLER_EXTERN | ((uint32_t)address & ~SYNC_CALLER_EXTERN));
+}
+
+
+static bool OutsideLogicCheck = false;
+static bool InFrameLogic = false;
+static std::set<uint64_t> OutsideLogicSeen;
+
+
+void Sync_Check_Outside_Logic(bool on)
+{
+	OutsideLogicCheck = on;
+	OutsideLogicSeen.clear();
+}
+
+
+void Sync_Enter_Frame_Logic(void)
+{
+	InFrameLogic = true;
+}
+
+
+void Sync_Leave_Frame_Logic(void)
+{
+	InFrameLogic = false;
+}
+
+
+static void Note_Outside_Logic(char const * what, uint32_t rva)
+{
+	if (!OutsideLogicCheck || InFrameLogic) {
+		return;
+	}
+	if (OutsideLogicSeen.insert(((uint64_t)(uintptr_t)what << 32) | rva).second) {
+		char caller[256];
+		Sync_Format_Caller(caller, sizeof(caller), rva);
+		DebugString("AUTOTEST syncrec outside frame logic: %s at frame %d from %s\n", what, Frame, caller);
+	}
 }
 
 
@@ -155,6 +195,9 @@ void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, in
 		Scenario_Draw_Count++;
 	}
 	SyncRecorder.Add_Random(entry);
+	if (entry.Kind == SYNC_RANDOM_CRITICAL) {
+		Note_Outside_Logic("scenario random draw", entry.Caller);
+	}
 }
 
 
@@ -176,6 +219,7 @@ void Sync_Record_Facing_Impl(DirType const & facing, unsigned caller)
 	entry.Facing = (int16_t)(int)facing.As_Dir256();
 	entry.Kind = SYNC_FACING_SET;
 	SyncRecorder.Add_Facing(entry);
+	Note_Outside_Logic("facing", entry.Caller);
 }
 
 
@@ -189,6 +233,7 @@ void Sync_Record_Target_Impl(AbstractClass const & subject, AbstractClass const 
 	entry.TargetRTTI = (int8_t)(target != nullptr ? target->Fetch_RTTI() : RTTI_NONE);
 	entry.TargetID = (target != nullptr ? target->Fetch_ID() : 0);
 	SyncRecorder.Add_Target(entry);
+	Note_Outside_Logic("target", entry.Caller);
 }
 
 
@@ -203,6 +248,7 @@ void Sync_Record_Mission_Impl(ObjectClass const & subject, int before, int after
 	entry.After = (int8_t)after;
 	entry.Kind = (uint8_t)kind;
 	SyncRecorder.Add_Mission(entry);
+	Note_Outside_Logic("mission", entry.Caller);
 }
 
 
@@ -217,6 +263,7 @@ void Sync_Record_Anim_Impl(AnimClass const & anim, Coord const & coord, unsigned
 	entry.Y = coord.Y;
 	entry.Z = coord.Z;
 	SyncRecorder.Add_Anim(entry);
+	Note_Outside_Logic("animation", entry.Caller);
 }
 
 

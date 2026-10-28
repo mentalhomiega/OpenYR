@@ -310,6 +310,7 @@
 #include "side.h"
 #include "rules.h"
 #include "saveload.h"
+#include "syncrechook.h"
 #include "scenario.h"
 #include "shapeset.h"
 #include "script.h"
@@ -5569,6 +5570,21 @@ void Run(StepType const & step)
 		// statecrc [interval]: logs the object and target checksums now, and every interval frames after when one is given.
 		StateCRCInterval = std::max(0, std::atoi(step.Argument.c_str()));
 		Log_State_CRC();
+	} else if (step.Command == "syncrec") {
+		// syncrec on|<path>: "on" starts the desync recorder's histories afresh and the outside-frame-logic check; a path writes the histories to that file.
+		if (step.Argument == "on") {
+			SyncRecorder.Reset();
+			SyncRecorder.Set_Recording(true);
+			Sync_Check_Outside_Logic(true);
+			DebugString("AUTOTEST syncrec on frame %d\n", Frame);
+		} else {
+			FILE * fp = std::fopen(step.Argument.c_str(), "wt");
+			if (fp != NULL) {
+				SyncRecorder.Print_All(fp, Sync_Engine_Names());
+				std::fclose(fp);
+			}
+			DebugString("AUTOTEST syncrec %s: %s\n", step.Argument.c_str(), fp != NULL ? "written" : "failed");
+		}
 	} else if (step.Command == "log") {
 		// The step line itself is the log entry.
 	} else if (step.Command == "searchdir") {
