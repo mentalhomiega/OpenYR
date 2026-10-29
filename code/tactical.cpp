@@ -3841,10 +3841,12 @@ void Tactical::Draw_Beacons(void)
 
 
 /// <summary>
-/// Draws rally point lines for the player's selected production buildings. For every selected,
-/// player-owned factory that has a rally point assigned, a green dashed line is drawn from the
-/// building to its rally point cell. Rally points that fall under a high bridge are raised by
-/// the bridge height so the line terminates at the correct screen position.
+/// Draws rally point lines for the player's selected production buildings, as gamemd's
+/// TacticalClass::RenderLinkLines (0x6DA9D0) does. For every selected, player-owned factory that
+/// has a rally point assigned, a dashed line runs from the building's center to its rally point
+/// cell, two pixels thick in the owner's color with a black line under it. Rally points that fall
+/// under a high bridge are raised by the bridge height so the line ends at the correct screen
+/// position.
 /// </summary>
 /// <param name="inshroud">Should the line be drawn through shrouded/unmapped cells?</param>
 void Tactical::Draw_Rally_Points(bool inshroud)
@@ -3868,7 +3870,7 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 
 		/*
 		 * Only player-owned, selected, factory buildings with an assigned rally
-		 * point (and not currently deconstructing) should display a rally line.
+		 * point should display a rally line.
 		 */
 		if (object->What_Am_I() != RTTI_BUILDING) {
 			continue;
@@ -3896,10 +3898,6 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 			continue;
 		}
 
-		if (building->CurrentMission == MISSION_DECONSTRUCTION) {
-			continue;
-		}
-
 		/*
 		 * Compute the screen-space start point at the building's center.
 		 */
@@ -3922,10 +3920,18 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 		end += Point2D(TacticalRect.X, TacticalRect.Y);
 
 		/*
-		 * Clip the line to the tactical view and draw it as a marching green dash.
+		 * Draw the line three times, each clipped to the tactical view and each with the same
+		 * dash phase: black two pixels below the center line, then the owner's color one pixel
+		 * below it and on it.
 		 */
-		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
-			LogicalSurface->Draw_Masked_Dashed_Line(start, end, DSurface::Build_Hicolor_Pixel(0, 255, 0), _pattern, phase, inshroud);
+		int const shadow = DSurface::Build_Hicolor_Pixel(0, 0, 0);
+		int const color = DSurface::Build_Hicolor_Pixel(House_Display_RGB(building->House));
+		for (int pass = 0; pass < 3; pass++) {
+			Point2D from = start + Point2D(0, 2 - pass);
+			Point2D to = end + Point2D(0, 2 - pass);
+			if (Clip_Line_To_Rect(from, to, TacticalRect)) {
+				LogicalSurface->Draw_Masked_Dashed_Line(from, to, pass == 0 ? shadow : color, _pattern, phase, inshroud);
+			}
 		}
 	}
 }
