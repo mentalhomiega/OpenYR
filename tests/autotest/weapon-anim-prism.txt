@@ -1,0 +1,23 @@
+; A Prism Tower (ATESLA) and a second one beside it shoot enemy soldiers (E1), one every 25 frames,. The towers need power: two Allied power plants (GAPOWR) stand beside them.
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50): the beam is a laser from the tower's firing point (its PrimaryFirePixelOffset), 3 lines thick, or 5 while another
+; tower supports it, and it lasts the weapon's LaserDuration. The screenshots (every 2 frames) show the beam.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/weapon-anim-prism.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/weapon-effect-anims/prism" -Filter "AUTOTEST|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPOWR 50 40
+41 own GAPOWR 50 43
+42 own ATESLA 55 44
+43 own ATESLA 55 47
+60 view 58 45
+61 zoom 2
+95 record 2
+100 enemy E1 63 43
+125 enemy E1 64 44
+150 enemy E1 63 45
+175 enemy E1 64 43
+200 enemy E1 63 44
+225 enemy E1 64 45
+250 enemy E1 63 43
+275 enemy E1 64 44
+330 record 0
+331 quit

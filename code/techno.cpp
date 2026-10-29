@@ -5565,6 +5565,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
 					Coord anim_coord = fire_coord;
 					AnimClass * anim = new AnimClass(a, anim_coord);
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
+					}
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
 						anim->ZAdjust = std::min(zadjust, 0);
