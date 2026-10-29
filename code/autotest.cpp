@@ -1184,10 +1184,29 @@ static void Terrain_Step(StepType const & step)
 		int damage = 100;
 		ResultType const result = terrain->Take_Damage(damage, 0, warhead, NULL, false);
 		DebugString("AUTOTEST treehit %s at %d,%d: strength %d -> %d damage %d result %d removed %d\n", terrain->Class->Name(), step.X, step.Y, before, (int)terrain->Strength, damage, (int)result, (int)(Map[Cell(step.X, step.Y)].Cell_Terrain() == NULL));
+	} else if (step.Command == "terrainonore") {
+		TerrainType const type = TerrainTypeClass::From_Name(step.Argument.c_str());
+		if (type == TERRAIN_NONE) {
+			DebugString("AUTOTEST terrainonore %s: no such terrain type\n", step.Argument.c_str());
+			return;
+		}
+		Map.Reset_Iterator();
+		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+			if (cell->Tiberium_Value() > 0 && cell->Cell_Terrain() == NULL && Map.In_Radar(cell->CellID)) {
+				int const before = cell->Overlay;
+				// Placed as the scenario reader does, which skips the runtime placement tests.
+				ScenarioInit++;
+				new TerrainClass(TerrainTypes[type], cell->CellID);
+				ScenarioInit--;
+				DebugString("AUTOTEST terrainonore %s at %d,%d: overlay %d -> %d, terrain %d\n", step.Argument.c_str(), cell->CellID.X, cell->CellID.Y, before, (int)cell->Overlay, cell->Cell_Terrain() != NULL ? 1 : 0);
+				return;
+			}
+		}
+		DebugString("AUTOTEST terrainonore %s: no ore cell\n", step.Argument.c_str());
 	} else {
 		for (int index = 0; index < Terrains.Count(); index++) {
 			TerrainClass * terrain = Terrains[index];
-			DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune);
+			DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d overlay %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune, (int)Map[terrain->Get_Cell()].Overlay);
 		}
 	}
 }
@@ -2991,7 +3010,7 @@ void Run(StepType const & step)
 		return;
 	}
 
-	if (step.Command == "treehit" || step.Command == "trees") {
+	if (step.Command == "treehit" || step.Command == "trees" || step.Command == "terrainonore") {
 		Terrain_Step(step);
 		return;
 	}
