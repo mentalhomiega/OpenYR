@@ -666,11 +666,11 @@ class HouseClass : public AbstractClass
 		AbstractClass * ToCapture;
 
 		/*
-		**	This value shows who is spying on this house's radar facilities.
-		**	This is used for the other side to be able to update their radar
-		**	map based on the cells that this house's units reveal.
+		**	The countries that have spied on this house's radar facilities. Every house
+		**	of a country shares its bit, as gamemd's RadarVisibleTo does. The other side
+		**	uses it to update their radar map from the cells this house's units reveal.
 		*/
-		HouseSet RadarSpied;
+		CountrySet RadarSpied;
 
 		/*
 		**	Running score, based on units destroyed and units lost.

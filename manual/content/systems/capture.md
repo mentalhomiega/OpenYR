@@ -208,9 +208,9 @@ When a structure drops below half strength or below `ConditionRed`, the game rea
 
 ### Infiltrating it
 
-A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. Without [EVAMD.INI](/formats/eva-ini/), EVA announces the infiltration when the spy belongs to a player-controlled house; with it, the announcement depends on the effect, as listed below. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's house is recorded as spying on that structure; there is no alliance test. Capturing a structure clears the capturing house's spy record on it.
+A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. Without [EVAMD.INI](/formats/eva-ini/), EVA announces the infiltration when the spy belongs to a player-controlled house; with it, the announcement depends on the effect, as listed below. A spy that walks into a structure of its own house does nothing more. Otherwise the spy's country is recorded as spying on that structure, so every house of that country has the spy's view of it; there is no alliance test. Capturing a structure clears the capturing house's country from that record.
 
-When the spying player selects a spied structure, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
+When a player whose country has spied on a structure selects it, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
 
 One effect then follows, decided by the first row that fits the structure's type, as in Yuri's Revenge:
 

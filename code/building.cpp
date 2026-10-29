@@ -4940,8 +4940,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		}
 
 		/*
-		**	Make sure the capturer isn't spying on his own building, and if
-		**	it was a radar facility, update the target house's RadarSpied field.
+		**	Clear the capturer's country from the spied bits, since it now owns this
+		**	building. If it was a radar facility, update the target house's RadarSpied field.
 		*/
 		if (SpiedBy[newowner]) {
 			SpiedBy.Clear(newowner);
@@ -5139,8 +5139,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 		Look(false);
 
 		/*
-		**	If it was spied upon by the player who just captured it, clear the
-		**	spiedby flag for that house.
+		**	If the capturer's country had spied on it, clear that country's spiedby bit.
 		*/
 		if (SpiedBy[newowner]) {
 			SpiedBy.Clear(newowner);
@@ -12295,7 +12294,8 @@ static void Speak_Stolen_Tech(bool victim, bool spy)
 
 /// <summary>
 /// Records that a spy has infiltrated this building.
-/// This routine is called when a spy makes it inside. The spying house is handed whatever
+/// This routine is called when a spy makes it inside. The spy's country is recorded, so every
+/// house of that country sees the building's spied view, and the house is handed whatever
 /// intelligence this building type is worth -- radar coverage and power plant readings.
 /// </summary>
 /// <param name="house">The house that has gained the intelligence.</param>

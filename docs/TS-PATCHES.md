@@ -104,7 +104,7 @@ A row's link goes to the change record, or where there is none, to the manual pa
 | `manual_aim_sams.asm` | With `AimableSams` in the launch file, let the player aim an anti-air defense. | Reworked: the player can always aim an anti-air defense at an aircraft in range. [aimable-anti-air-defenses] |
 | `allow_crate_overlay_in_multiplayer.asm` | In DTA and Rubicon, kept crates a map places in multiplayer games. | Ported. The match's Crates option controls random crates only. [map-crates-in-every-game-type] |
 | `attack_neutral_units.asm` | Stopped every house targeting a building whose weapon has no range. | Reworked: only a player's units outside a team pass it over, as they already did an unarmed building. [attack-neutral-units] |
-| `spy_fix.asm` | Kept spy effects per player instead of per country. | Ported. [spy-marks-its-own-house] |
+| `spy_fix.asm` | Kept spy effects per player instead of per country. | Not followed: Yuri's Revenge keys spy effects by country, as gamemd does, so every house of the spy's country shares them. [spy-bit-shared-by-country] |
 | `spy_fix.asm` | Let computer players see through disguises. | Reworked: `AIDetectDisguise` for computer players and `DetectDisguise=` per type, both off by default. [disguise-detection] |
 | `no_charge_power_needed.asm` | Let `Charges=yes` weapons fire on low power. | Ported. A `Powered=yes` structure that draws power still stops, as it did under the patch. [charging-defenses-through-low-power] |
 
@@ -501,7 +501,7 @@ yet.
 [spawn-house-alliances]: ../manual/changes/spawn-house-alliances.md
 [spawn-house-base-nodes]: ../manual/changes/spawn-house-base-nodes.md
 [spawn-houses]: ../manual/changes/spawn-houses.md
-[spy-marks-its-own-house]: ../manual/changes/spy-marks-its-own-house.md
+[spy-bit-shared-by-country]: ../manual/changes/spy-bit-shared-by-country.md
 [stacking-crate-upgrades]: ../manual/changes/stacking-crate-upgrades.md
 [stop-holds-position]: ../manual/changes/stop-holds-position.md
 [superweapon-teardown-player-guard]: ../manual/changes/superweapon-teardown-player-guard.md
