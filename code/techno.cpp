@@ -10552,7 +10552,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
 	if (RTTI == RTTI_BUILDING && ((BuildingClass*)this)->Class->Power > 0) {
 		char buffer[128];
 		sprintf(buffer, Fetch_String(TXT_POWER_DRAIN), House->Power_Output(), House->Power_Drain());
-		Plain_Text_Print(buffer, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, buffer, point2, true, cliprect);
 	}
 
 	/*
@@ -10566,7 +10566,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
 				pritext = TXT_PRI;
 			}
 		}
-		Plain_Text_Print(pritext, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, Fetch_String(pritext), point2, true, cliprect);
 	}
 }
 
