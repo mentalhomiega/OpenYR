@@ -1357,6 +1357,12 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_CHEM_MISSILE:
 			if (IsReady) {
 				if (IsOneTime && IsPresent) {
+					/*
+					 * A one-time missile needs no silo. Its NukePayload shell appears 20000 leptons
+					 * above the target and falls straight down at 100 leptons a frame, under the
+					 * PSIWARN marker the shell takes over (SuperClass::Launch, 0x6CC390; the weapon
+					 * is the one RulesClass names NukePayload, which the silo's carrier also drops).
+					 */
 					Cell target = cell;
 					Coord start = target.As_Coord();
 					start.Z = Map.Get_Height_GL(start);
@@ -1364,29 +1370,36 @@ void SuperClass::Place(Cell const & cell, bool player)
 						start.Z += BRIDGE_LEPTON_HEIGHT;
 					}
 
-					// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
-					if (Class->Type == SUPER_MULTI_MISSILE) {
-						Sound_Effect(Rule->DigSound, start);
+					WeaponTypeClass const * wtype = WeaponTypeClass::Find_Or_Make(Class->Type == SUPER_CHEM_MISSILE ? "ChemLauncher" : "NukePayload");
+					BulletClass * bullet = NULL;
+					if (wtype != NULL && wtype->Bullet != NULL) {
+						bullet = Create_Bullet(wtype->Bullet, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);
+					}
+					if (bullet != NULL) {
+						bullet->Weapon = wtype;
+						Coord const above(start.X, start.Y, start.Z + 20000);
+						if (!bullet->Unlimbo(above, TVelocity3D<double>(0.0, 0.0, -100.0))) {
+							delete bullet;
+							bullet = NULL;
+						}
 					}
 
-					Cell closest = Map.Closest_Edge_Cell(start);
-
-					WeaponTypeClass const * wtype;
-					if (Class->Type == SUPER_CHEM_MISSILE) {
-						wtype = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
-					} else {
-						wtype = Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
+					// The warning belongs to the shell and goes when the shell does (HouseClass::PsiWarn, 0x43B5E0).
+					AnimType const warning = Anim_From_Name("PSIWARN");
+					if (warning != ANIM_NONE) {
+						AnimClass * marker = new AnimClass(AnimTypes[warning], target.As_Coord(), 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER), 0);
+						marker->OwnerHouse = (HousesType)House->HeapID;
+						marker->AttachedBullet = bullet;
 					}
 
-					BulletTypeClass const * btype = wtype->Bullet;
-					BulletClass * bullet = Create_Bullet(btype, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);
-
-					if (bullet) {
-						TVelocity3D<double> velocity = TVelocity3D<double>(DIR_E, DIR_N, 100);
-						bullet->Unlimbo(closest, velocity);
-					}
-					if (Class->Type == SUPER_MULTI_MISSILE) {
-						Speak_Eva("EVA_NuclearMissileLaunched");
+					if (bullet != NULL) {
+						if (Class->Type == SUPER_MULTI_MISSILE) {
+							Speak_Eva("EVA_NuclearMissileLaunched");
+						}
+						// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
+						if (Class->Type == SUPER_MULTI_MISSILE) {
+							Sound_Effect(Rule->DigSound, start);
+						}
 					}
 					if (player) {
 						Map.IsTargettingMode = SUPER_NONE;
