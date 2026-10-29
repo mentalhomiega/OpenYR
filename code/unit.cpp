@@ -176,6 +176,7 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -185,6 +186,10 @@ char const * const UnitClass::INI_NAME = "Units";
 Rect UnitCompositeDirtyRect(RECT_NONE);
 
 namespace {
+
+// Voxel units per lepton that DrawAsVXL (0x73B470) places the turret and the turretless barrel by: a cell's 362.04
+// lepton diagonal spans 60 pixels (0xB1D008, set at 0x7351D0).
+double const VOXEL_UNITS_PER_LEPTON = 1.0 / (std::sqrt(2.0 * 256.0 * 256.0) / 60.0);
 
 struct VoxelCompositeKey {
 	void const * Type;
@@ -3078,7 +3083,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		}
 
 		if (turret_drawn) {
-			main_matrix.Translate_X(Class->TurretOffset / 8);
+			main_matrix.Translate_X(float(Class->TurretOffset * VOXEL_UNITS_PER_LEPTON));
 			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
 			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
@@ -3110,7 +3115,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			voxl = &Class->AuxVoxel2;
 			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
 				main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
-				main_matrix.Translate(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
+				main_matrix.Translate(float(Get_Class_Weapon_Data(0)->FireFLH.X * VOXEL_UNITS_PER_LEPTON), 0, float(Get_Class_Weapon_Data(0)->FireFLH.Z * VOXEL_UNITS_PER_LEPTON));
 				Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
 			}
 		}
