@@ -248,15 +248,15 @@ void ParticleClass::Gas_Behavior_AI(void)
 				dy = (int)abs(Scen->RandomNumber()) % 3 - 1;
 			}
 			GasDrift += Point2D(dx, dy);
-			if (GasDrift.X < -5) {
-				GasDrift.X = -5;
-			} else if (GasDrift.X > 5) {
-				GasDrift.X = 5;
+			if (GasDrift.X < -2) {
+				GasDrift.X = -2;
+			} else if (GasDrift.X > 2) {
+				GasDrift.X = 2;
 			}
-			if (GasDrift.Y < -5) {
-				GasDrift.Y = -5;
-			} else if (GasDrift.Y > 5) {
-				GasDrift.Y = 5;
+			if (GasDrift.Y < -2) {
+				GasDrift.Y = -2;
+			} else if (GasDrift.Y > 2) {
+				GasDrift.Y = 2;
 			}
 		}
 
