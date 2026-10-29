@@ -36,6 +36,8 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
+#include "_tactica.h"
+#include "tactical.h"
 #include "tracker.h"
 #include "unittype.h"
 #include "vanimtype.h"
@@ -45,6 +47,7 @@
 #include "voc.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <new.h>
 
 
@@ -167,6 +170,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	UnloadingClass(NULL),
 	VoiceSelect(),
 	VoiceSelectEnslaved(),
+	VoiceSelectDeactivated(),
 	VoiceMove(),
 	VoiceSpecialAttack(),
 	VoiceAttack(),
@@ -344,6 +348,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
 	DamageSmokeOffset(0,0,0),
+	DamSmkOffScrnRel(false),
 	DestroyParticleSystems(),
 	DestroySmokeOffset(0,0,0),
 	ShadowIndex(0),
@@ -1142,6 +1147,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceSelectEnslaved = ini.Get_VocType_List(ini, IniName, "VoiceSelectEnslaved", VoiceSelectEnslaved);
+		VoiceSelectDeactivated = ini.Get_VocType_List(ini, IniName, "VoiceSelectDeactivated", VoiceSelectDeactivated);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
 		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
 		DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
@@ -1193,6 +1199,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
 		DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
+		DamSmkOffScrnRel = ini.Get_Bool(Name(), "DamSmkOffScrnRel", DamSmkOffScrnRel);
 		DestroyParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DestroyParticleSystems", DestroyParticleSystems);
 		DestroySmokeOffset = ini.Get_Offset(Name(), "DestroySmokeOffset", DestroySmokeOffset);
 		IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
@@ -1487,11 +1494,6 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 	}
 
 	if (target != NULL && weapon != NULL) {
-		// A weapon with no projectile cannot reach a target.
-		if (weapon->Bullet == NULL) {
-			return(false);
-		}
-
 		// A target in the air is reached AirRangeBonus farther (TechnoClass::InRange, 0x6F7274).
 		int range = weapon->Range + bonus;
 		if (target->In_Air()) {
@@ -1674,6 +1676,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnloadingClass);
 	stream.Serialize(VoiceSelect);
 	stream.Serialize(VoiceSelectEnslaved);
+	stream.Serialize(VoiceSelectDeactivated);
 	stream.Serialize(VoiceMove);
 	stream.Serialize(VoiceSpecialAttack);
 	stream.Serialize(VoiceAttack);
@@ -1888,6 +1891,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
 	stream.Serialize(DamageSmokeOffset);
+	stream.Serialize(DamSmkOffScrnRel);
 	stream.Serialize(DestroyParticleSystems);
 	stream.Serialize(DestroySmokeOffset);
 	stream.Serialize(ShadowIndex);
@@ -2019,6 +2023,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Max_Pips());
 	crc(VoiceSelect.Count());
 	crc(VoiceSelectEnslaved.Count());
+	crc(VoiceSelectDeactivated.Count());
 	crc(VoiceMove.Count());
 	crc(VoiceSpecialAttack.Count());
 	crc(VoiceAttack.Count());
@@ -2126,6 +2131,26 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 		crc(AlternativeFLH[seat].Y);
 		crc(AlternativeFLH[seat].Z);
 	}
+}
+
+
+/// <summary>
+/// Fetches the offset that this type's damage smoke and spark particle systems are placed at, from the object's anchor.
+/// Without DamSmkOffScrnRel the offset is DamageSmokeOffset as written. With it, X and Y are projected through the
+/// tactical view's coordinate-to-pixel matrix and truncated to whole pixels, then used as lepton values, and Z lifts the
+/// particle on the screen. With no tactical map to project through, the offset is returned as written.
+/// </summary>
+/// <returns>Returns with the offset in leptons.</returns>
+Coord TechnoTypeClass::Particle_System_Offset(void) const
+{
+	if (!DamSmkOffScrnRel || TacticalMap == NULL) {
+		return(Coord(DamageSmokeOffset.X, DamageSmokeOffset.Y, DamageSmokeOffset.Z));
+	}
+
+	Vector3 const pixel = TacticalMap->CoordToPixelMatrix * Vector3((float)DamageSmokeOffset.X, (float)DamageSmokeOffset.Y, 0.0f);
+	int const z = DamageSmokeOffset.Z;
+	int const lift = (int)std::sqrt(2.0 * (10.0 * z) * (10.0 * z));
+	return(Coord((int)pixel.X - 10 * z, (int)pixel.Y - 10 * z, z >= 0 ? -lift : lift));
 }
 
 

@@ -2038,15 +2038,7 @@ bool AircraftClass::Active_Click_With(ActionType action, Cell const & cell, bool
  *=============================================================================================*/
 void AircraftClass::Player_Assign_Mission(MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	if (AllowVoice) {
-		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Unit_Voice_Effect(Weapon_Attack_Voice(target));
-		} else if (mission == MISSION_ATTACK) {
-			Response_Attack();
-		} else {
-			Response_Move();
-		}
-	}
+	Order_Voice(mission, target);
 	TargetClass dest(destination);
 	TargetClass targ(target);
 	Queue_Mission(TargetClass(this), mission, targ, dest);
@@ -4253,7 +4245,7 @@ LONG AircraftClass::Is_Strafe(void)
 		return(false);
 	}
 	WeaponTypeClass *weapon = data->Weapon;
-	if (weapon == NULL || weapon->Bullet == NULL) {
+	if (weapon == NULL) {
 		return(false);
 	}
 	if (weapon->Bullet->ROT > 1) {
