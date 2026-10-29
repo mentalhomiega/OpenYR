@@ -351,9 +351,6 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsGattlingSoundPlaying(false),
 	TurretSound(),
 	IsTurretSoundPlaying(false),
-	QueuedVoice(VOC_NONE),
-	PlayedVoice(VOC_NONE),
-	VoiceChannel(),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -1445,31 +1442,7 @@ bool TechnoClass::Pips_Visible_To_Player(void) const
 
 
 /// <summary>
-/// Draws the bomb icon that counts down over an object carrying a bomb the player sees
-/// (TechnoClass::DrawExtras, 0x6F5190).
-/// </summary>
-void TechnoClass::Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) const
-{
-	if (Is_Bomb_Visible()) {
-		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		if (_bombcurs != NULL) {
-			int frame = 0;
-			if (Rule->IvanTimedDelay >= 6) {
-				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
-			}
-			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
-				frame++;
-			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-	}
-}
-
-
-/// <summary>
-/// Draws the decorations that appear after the object's body, in the order TechnoClass::DrawExtras
-/// (0x6F5190) draws them: the bomb icon, a structure's repair wrench, the rank insignia, then the
-/// selection box, condition indicator and pips.
+/// Draws the decorations that appear after the object's body.
 /// Every object the player can see wears its rank insignia. A selected object, or a
 /// submerged one the player's sensors have picked up, gets its selection box and its
 /// condition indicator drawn over it, plus its pips when the player is allied to its owner
@@ -1489,10 +1462,6 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	}
 
 	bool pips_shown = Pips_Visible_To_Player();
-
-	// TechnoClass::DrawExtras (0x6F5190) draws the bomb icon first, then a structure's wrench, then the rank insignia.
-	Draw_Bomb_Icon(point, cliprect);
-	Draw_Wrench_Icon(cliprect);
 
 	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
 	if (Is_Decoration_Visible()) {
@@ -1560,6 +1529,21 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
+		}
+	}
+
+	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
+	if (Is_Bomb_Visible()) {
+		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
+		if (_bombcurs != NULL) {
+			int frame = 0;
+			if (Rule->IvanTimedDelay >= 6) {
+				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+			}
+			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
+				frame++;
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
 	}
 
@@ -3779,8 +3763,6 @@ void TechnoClass::AI(void)
 
 	Retire_Airstrike_Planes();
 
-	Voice_AI();
-
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
 		IsBerzerk = false;
 	}
@@ -4160,7 +4142,7 @@ void TechnoClass::AI(void)
 		if (ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL && sparks.Count() > 0) {
 			double probability = HealthRatio < Rule->ConditionRed ? Rule->ConditionRedSparkingProbability : Rule->ConditionYellowSparkingProbability;
 			if (Random_Double(0.0, 1.0) < probability) {
-				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->Particle_System_Offset(), NULL, this);
+				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->DamageSmokeOffset, NULL, this);
 			}
 		}
 	}
@@ -4476,17 +4458,12 @@ bool TechnoClass::Select(void)
 	if (BASECLASS::Select()) {
 
 		/*
-		**	The attached tag sees the selection, whoever owns the object and however many objects are
-		**	selected with it (TechnoClass::Select, 0x6FBFA0).
-		*/
-		if (Tag != NULL) {
-			Tag->Spring(TEVENT_SELECTED, this);
-		}
-
-		/*
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Control() && AllowVoice) {
+			if (Tag != NULL) {
+				Tag->Spring(TEVENT_SELECTED, this);
+			}
 			Response_Select();
 		}
 		return(true);
@@ -5760,12 +5737,12 @@ void TechnoClass::Draw_Target_Laser(void) const
 
 
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
-static AudioHandle Play_Unit_Voice(VocType voc)
+static void Play_Unit_Voice(VocType voc)
 {
 	if (voc != VOC_NONE) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
-	return(Unit_Voice_Effect(voc));
+	Unit_Voice_Effect(voc);
 }
 
 
@@ -5832,7 +5809,39 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		return;
 	}
 
-	Order_Voice(mission, target);
+	/*
+	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
+	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
+	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest). Any other order, such as guard,
+	 * plays a VoiceSpecialAttack entry, or nothing when that list is empty.
+	 */
+	if (AllowVoice) {
+		VocType voice = VOC_NONE;
+		if (mission == MISSION_ENTER) {
+			voice = TClass->VoiceEnter;
+		} else if (mission == MISSION_CAPTURE) {
+			voice = TClass->VoiceCapture != VOC_NONE ? TClass->VoiceCapture : TClass->VoiceEnter;
+		} else if (mission == MISSION_HARVEST) {
+			voice = TClass->VoiceHarvest;
+		}
+
+		// A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier, and never with the move voice (TechnoClass::ClickedMission, 0x6FFBE0).
+		if (mission == MISSION_UNLOAD) {
+			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
+			Play_Unit_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+		} else
+		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
+			Play_Unit_Voice(Weapon_Attack_Voice(target));
+		} else if (mission == MISSION_ATTACK) {
+			Response_Attack();
+		} else if (voice != VOC_NONE) {
+			Play_Unit_Voice(voice);
+		} else if (mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE || mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_HARVEST) {
+			Response_Move();
+		} else if (TClass->VoiceSpecialAttack.Count() > 0) {
+			Play_Unit_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
+		}
+	}
 
 	/*
 	**	Cooerce the movement mission into a queued movement mission if the ALT key was
@@ -7181,7 +7190,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 
 				if (ParticleSystems[3] == NULL && systems.Count() > 0 && HeightAGL > -10) {
-					Coord spawn = TClass->Particle_System_Offset();
+					Coord spawn = TClass->DamageSmokeOffset;
 					ParticleSystems[3] = new ParticleSystemClass(systems[Scen->RandomNumber(0, systems.Count() - 1)], Get_Coord() + spawn, NULL, this, COORD_NONE);
 				}
 			}
@@ -9961,10 +9970,10 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	// A slave of a Slave Miner answers with its enslaved lines, and a shut-down object with its deactivated lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
-	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : (IsDeactivated ? TClass->VoiceSelectDeactivated : TClass->VoiceSelect);
-	if (voices.Count()) {
-		Queue_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
+	// A slave of a Slave Miner answers with its enslaved lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : TClass->VoiceSelect;
+	if (AllowVoice && voices.Count()) {
+		Play_Unit_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -9986,8 +9995,8 @@ void TechnoClass::Response_Select(void)
  *=============================================================================================*/
 void TechnoClass::Response_Move(void)
 {
-	if (TClass->VoiceMove.Count()) {
-		Queue_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
+	if (AllowVoice && TClass->VoiceMove.Count()) {
+		Play_Unit_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -10035,116 +10044,8 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 
 void TechnoClass::Response_Attack(void)
 {
-	if (TClass->VoiceAttack.Count()) {
-		Queue_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
-	}
-}
-
-
-/// <summary>
-/// Whether this object may answer an order or a selection now. During a group order only the
-/// first selected object may, as gamemd's MoveFeedback is cleared after the first object is
-/// handled; otherwise AllowVoice decides.
-/// </summary>
-bool TechnoClass::May_Speak(void) const
-{
-	return(VoiceSpeaker != NULL ? VoiceSpeaker == this : AllowVoice);
-}
-
-
-/// <summary>
-/// Puts a voice reply on this object's queue (TechnoClass::QueueVoice, 0x708D90). Only the
-/// player's own objects answer, and a reply waiting already is replaced. The reply is played
-/// by Voice_AI.
-/// </summary>
-void TechnoClass::Queue_Voice(VocType voc)
-{
-	if (voc != VOC_NONE && May_Speak() && House->Is_Player_Control()) {
-		QueuedVoice = voc;
-	}
-}
-
-
-/// <summary>
-/// Plays the waiting reply when this object's own voice channel is idle (TechnoClass::Update, 0x6F9E50). A reply
-/// waits for the one still playing, and is dropped when it is the same reply that plays.
-/// </summary>
-void TechnoClass::Voice_AI(void)
-{
-	if (QueuedVoice == VOC_NONE) {
-		return;
-	}
-	if (!VoiceChannel.Is_Playing()) {
-		PlayedVoice = QueuedVoice;
-		VoiceChannel = Play_Unit_Voice(QueuedVoice);
-		QueuedVoice = VOC_NONE;
-	} else if (PlayedVoice == QueuedVoice) {
-		QueuedVoice = VOC_NONE;
-	}
-}
-
-
-/// <summary>
-/// Gives the voice reply to an order the player gave (TechnoClass::ClickedMission, 0x6FFBE0). A harvest, enter or
-/// capture order uses the type's VoiceHarvest, VoiceEnter or VoiceCapture and falls back to the move voice (capture
-/// falls back to VoiceEnter first). A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
-/// Any other order, such as guard, plays a VoiceSpecialAttack entry, or nothing when that list is empty.
-/// </summary>
-void TechnoClass::Order_Voice(MissionType mission, AbstractClass * target)
-{
-	switch (mission) {
-		case MISSION_HARVEST:
-			if (TClass->VoiceHarvest != VOC_NONE) {
-				Queue_Voice(TClass->VoiceHarvest);
-			} else {
-				Response_Move();
-			}
-			break;
-
-		case MISSION_ATTACK: {
-			VocType const weapon_voice = Weapon_Attack_Voice(target);
-			if (weapon_voice != VOC_NONE) {
-				Queue_Voice(weapon_voice);
-			} else {
-				Response_Attack();
-			}
-			break;
-		}
-
-		case MISSION_MOVE:
-		case MISSION_ATTACK_MOVE:
-			Response_Move();
-			break;
-
-		case MISSION_ENTER:
-			if (TClass->VoiceEnter != VOC_NONE) {
-				Queue_Voice(TClass->VoiceEnter);
-			} else {
-				Response_Move();
-			}
-			break;
-
-		case MISSION_CAPTURE:
-			if (TClass->VoiceCapture != VOC_NONE) {
-				Queue_Voice(TClass->VoiceCapture);
-			} else if (TClass->VoiceEnter != VOC_NONE) {
-				Queue_Voice(TClass->VoiceEnter);
-			} else {
-				Response_Move();
-			}
-			break;
-
-		case MISSION_UNLOAD: {
-			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
-			Queue_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
-			break;
-		}
-
-		default:
-			if (TClass->VoiceSpecialAttack.Count() > 0) {
-				Queue_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
-			}
-			break;
+	if (AllowVoice && TClass->VoiceAttack.Count()) {
+		Play_Unit_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -10710,8 +10611,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 /// <param name="point2">The point the text is centered on.</param>
 void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & cliprect) const
 {
-	// A primary building shows its tag instead of the power figures (DrawExtraInfo, 0x70AA60).
-	if (RTTI == RTTI_BUILDING && !IsLeader && ((BuildingClass*)this)->Class->Power > 0) {
+	if (RTTI == RTTI_BUILDING && ((BuildingClass*)this)->Class->Power > 0) {
 		char buffer[128];
 		sprintf(buffer, Fetch_String(TXT_POWER_DRAIN), House->Power_Output(), House->Power_Drain());
 		Draw_House_Label(House, buffer, point2, true, cliprect);

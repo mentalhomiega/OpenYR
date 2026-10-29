@@ -15,7 +15,6 @@
 **	options					opens the options menu, as Escape does during play
 **	select <TypeID>			selects every object of that type the player owns
 **	produce <TypeID>		starts building that type
-**	produceai <TypeID> x y	starts building that type in the structure on that cell, as a computer house's factory does
 **	place <TypeID>			places a finished structure at the first legal cell near the
 **							player's construction yard
 **	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
@@ -362,9 +361,6 @@
 #include "_rect.h"
 #include "vox.h"
 #include "_voxel.h"
-#include "_vanim.h"
-#include "vanim.h"
-#include "vanimtype.h"
 #include "voxlib.h"
 #include "motlib.h"
 #include "mixfile.h"
@@ -3035,33 +3031,6 @@ void Run(StepType const & step)
 		return;
 	}
 
-	if (step.Command == "psoffset") {
-		// psoffset <TypeID>: writes the DamageSmokeOffset and DamSmkOffScrnRel of the type, and the offset its damage smoke and spark systems are placed at.
-		TechnoTypeClass const * type = Find_Type(step.Argument);
-		if (type != NULL) {
-			Coord const offset = type->Particle_System_Offset();
-			DebugString("AUTOTEST   psoffset %s smoke %d,%d,%d screen %d particle %d,%d,%d\n", type->Name(),
-				type->DamageSmokeOffset.X, type->DamageSmokeOffset.Y, type->DamageSmokeOffset.Z, (int)type->DamSmkOffScrnRel, offset.X, offset.Y, offset.Z);
-		}
-		return;
-	}
-
-	if (step.Command == "vanims") {
-		// vanims [TypeID]: writes each live voxel animation, or only those of the named type, with its position and cell.
-		int shown = 0;
-		for (int index = 0; index < VoxelAnims.Count(); index++) {
-			VoxelAnimClass const * anim = VoxelAnims[index];
-			if (anim == NULL || anim->Class == NULL) continue;
-			if (!step.Argument.empty() && stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
-			Coord const where = anim->Get_Coord();
-			DebugString("AUTOTEST   vanim frame %d %s at %d,%d,%d cell %d,%d\n", Frame, anim->Class->Name(), where.X, where.Y, where.Z,
-				where.As_Cell().X, where.As_Cell().Y);
-			shown++;
-		}
-		DebugString("AUTOTEST   vanims: %d of %d\n", shown, VoxelAnims.Count());
-		return;
-	}
-
 	if (step.Command == "particles") {
 		// particles [TypeID]: writes each live particle, or only those of the named type, with its animation state, speed, translucency, drift and position.
 		int shown = 0;
@@ -3448,26 +3417,6 @@ void Run(StepType const & step)
 				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
 			}
 		}
-	} else if (step.Command == "produceai") {
-		// produceai <TypeID> x y: starts building that type in the structure on that cell, the way BuildingClass::Factory_AI
-		// starts a computer house's production, so the structure's own factory holds the object. A structure that is
-		// already producing is left alone. The queue runs only the player's events, so this changes this copy only.
-		TechnoTypeClass const * type = Find_Type(step.Argument);
-		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
-		if (type != NULL && building != NULL && building->House != NULL && building->Factory == NULL) {
-			building->Factory = new FactoryClass;
-			if (building->Factory->Set(*type, *building->House, false)) {
-				building->House->Production_Begun(building->Factory->Get_Object());
-				building->Factory->Start(false);
-				DebugString("AUTOTEST produceai %s for %s at %d,%d started\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
-			} else {
-				delete building->Factory;
-				building->Factory = NULL;
-				DebugString("AUTOTEST produceai %s for %s at %d,%d refused\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
-			}
-		} else {
-			DebugString("AUTOTEST produceai %s at %d,%d: no structure, type or free factory\n", step.Argument.c_str(), step.X, step.Y);
-		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);
 	} else if (step.Command == "placeat") {
@@ -3514,33 +3463,6 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
 				DebugString("AUTOTEST   planmove %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
 				techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
-			}
-		}
-	} else if (step.Command == "plantbomb") {
-		// plantbomb <TypeID>: fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier.
-		TechnoClass * planter = NULL;
-		for (int index = 0; planter == NULL && index < Infantry.Count(); index++) {
-			if (Infantry[index]->House == PlayerPtr && !Infantry[index]->IsInLimbo) {
-				planter = Infantry[index];
-			}
-		}
-		for (int index = 0; planter != NULL && index < Technos.Count(); index++) {
-			TechnoClass * techno = Technos[index];
-			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				techno->Plant_Bomb(planter);
-				DebugString("AUTOTEST   plantbomb %s at %d,%d detonates at frame %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->BombDetonateFrame);
-			}
-		}
-	} else if (step.Command == "planguard") {
-		// planguard <TypeID> x y: the player's objects of that type are given a guard area order on the cell, as the guard area
-		// action gives them. While planning is on, the order is recorded as a planned leg.
-		Cell const cell(step.X, step.Y);
-		PlanningRecordScope const recording(Map.IsPlanningMode);
-		for (int index = 0; index < Technos.Count(); index++) {
-			TechnoClass * techno = Technos[index];
-			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
-				DebugString("AUTOTEST   planguard %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
-				techno->Player_Assign_Mission(MISSION_GUARD_AREA, &Map[cell]);
 			}
 		}
 	} else if (step.Command == "forceattack") {
@@ -5033,7 +4955,7 @@ void Run(StepType const & step)
 					}
 				}
 			}
-			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d onbridge %d z %d doing %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()), (int)techno->IsOnBridge, techno->PositionCoord.Z, techno->RTTI == RTTI_INFANTRY ? (int)static_cast<InfantryClass const *>(techno)->Doing : -1);
+			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d onbridge %d z %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()), (int)techno->IsOnBridge, techno->PositionCoord.Z);
 		}
 	} else if (step.Command == "spots") {
 		// spots <TypeID>: each live object of that type, whoever owns it, with its cell, the sub-cell spot its
