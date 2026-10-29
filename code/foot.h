@@ -252,6 +252,10 @@ class FootClass : public TechnoClass
 		// Whether the object was sinking last frame, so the sinking sounds play once as it starts.
 		bool WasSinking;
 
+		// The frames a unit holds after a chronosphere warp has set it down (gamemd keeps this at unit+0x284). A landing the warp
+		// had to move to another cell sets it to ChronoDelay (0x719983), and it then stays for every later warp of the unit.
+		int ChronoArrivalHold;
+
 		// The sound from the type's MoveSound list playing while the object moves, and the frames
 		// it keeps playing after the object stops.
 		AudioHandle MoveSoundHandle;

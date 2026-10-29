@@ -14,20 +14,36 @@
 
 #include <memory>
 
+class HouseClass;
+class TechnoClass;
+
 
 /*
  * Where a teleport stands. An order is carried out the next time the locomotor is processed:
  * the object leaves its cell and is set down at the destination in that same call, and then it
  * holds still for the arrival delay. gamemd has no wait before that jump (0x7192F0, 0x719715).
- * A chronosphere warp is the exception: TELEPORT_WARP_OUT holds the object on its cell for the
- * chronosphere countdown (0x719973, 0x719B23) before the jump.
+ * A chronosphere warp is the exception. It runs gamemd's stage machine (0x7192F0, stage at
+ * locomotor +0x34): the object waits on its cell for 60 frames (TELEPORT_WARP_OUT, stage 1); then
+ * it leaves the map and the landing cell is cleared (TELEPORT_CLEAR, stage 2, 0x718260 with
+ * argument 0), again each frame while the cell had to be changed (TELEPORT_RECLEAR, stage 3); it is
+ * set down (TELEPORT_LAND, stage 4, argument 1); the landing is checked for Iron Curtained
+ * neighbours and water (TELEPORT_ARRIVE, stage 5, 0x7187A0); and it holds for the arrival hold
+ * (TELEPORT_HOLD, stage 6).
  */
 enum TeleportWarpPhase
 {
 	TELEPORT_IDLE = 0,
 	TELEPORT_WARP_OUT = 1,
 	TELEPORT_HOLD = 2,
+	TELEPORT_CLEAR = 3,
+	TELEPORT_RECLEAR = 4,
+	TELEPORT_LAND = 5,
+	TELEPORT_ARRIVE = 6,
 };
+
+
+// Destroys a unit with a C4 hit that ignores its defences, as gamemd's chronosphere stages do; house gets the credit for it.
+void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL);
 
 
 class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
@@ -55,8 +71,11 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Is_Ok_To_End(void) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybackee != nullptr);}
 
-		// Holds the object on its cell for countdown frames, then sets it down at to (chronosphere warps only).
+		// Holds the object on its cell for countdown frames, then runs the landing stages that set it down at to (chronosphere warps only).
 		void Begin_Chrono_Warp(Coord to, int countdown);
+
+		// The warp-out wait of a chronosphere warp, in frames (gamemd sets it at 0x7197E4).
+		static constexpr int CHRONO_WAIT_FRAMES = 60;
 
 		virtual bool Is_Stationary(void);
 
@@ -93,5 +112,18 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		Coord Choose_Destination(Coord const & to) const;
 		int Warp_Delay(Coord const & to) const;
 		void Start_Warp(void);
-		void Land_Chrono_Warp(void);
+
+		// What clearing the landing cell of a chronosphere warp came to.
+		enum ClearResult
+		{
+			CLEAR_DEAD,		// The arriving object was destroyed; this locomotor may be gone.
+			CLEAR_MOVED,	// The landing cell had to be changed.
+			CLEAR_OK,		// The cell is clear.
+		};
+
+		void Chrono_Clear_Stage(bool first);
+		void Chrono_Land_Stage(void);
+		void Chrono_Arrive_Stage(void);
+		ClearResult Clear_Landing(void);
+		bool Check_Landing(void);
 };

@@ -76,6 +76,7 @@
 #include "sun.h"
 #include "suprtype.h"
 #include "swizzle.h"
+#include "teleport.h"
 #include "tracker.h"
 #include "unit.h"
 #include "vector.h"
@@ -1001,90 +1002,19 @@ void SuperClass::Stop_Pre_Click_Anim(void)
 }
 
 
-static void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL)
-{
-	if (techno->IsActive && !techno->IsInLimbo) {
-		int damage = techno->TClass->MaxStrength;
-		techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false, house);
-	}
-}
-
-
 /// <summary>
-/// Starts the chronosphere warp of a unit the chronosphere picked, to the coordinate (0x718260, 0x7187A0).
-/// Whatever stands on the landing spot is destroyed, except the other units in moving; an
-/// infantryman crushes only infantry on its own spot. The unit dies instead if something
-/// there is under the Iron Curtain or the spot is off the map, and moves to the nearest free
-/// cell if a structure or tree stands there or the spot is the far edge of a bridge strip. The unit then stays on its cell for ChronoDelay
-/// frames and lands (TeleportLocomotionClass::Land_Chrono_Warp). A vehicle set down on water it
-/// cannot cross sinks there, and anything else set down where it cannot move is destroyed.
+/// Starts the chronosphere warp of a unit the chronosphere picked, to the coordinate (SuperClass::Launch, 0x6CCC3D).
+/// The unit stays on its cell for 60 frames and then goes through the landing stages of
+/// TeleportLocomotionClass (0x7192F0), where the landing cell is cleared of whatever stands there
+/// on that frame, not on this one, and the landing is checked for Iron Curtained neighbours and water.
+/// A spot off the map destroys the unit at once.
 /// </summary>
-static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootClass *> const & moving)
+static void Chrono_Shift(FootClass * foot, Coord dest)
 {
-	Cell cell = dest.As_Cell();
-	if (!Map.In_Radar(cell)) {
+	if (!Map.In_Radar(dest.As_Cell())) {
 		Chrono_Kill(foot);
 		return;
 	}
-
-	DynamicVectorClass<TechnoClass *> crushed;
-	bool blocked = false;
-	CellClass * cellptr = &Map[cell];
-	for (ObjectClass * object = cellptr->Cell_Occupier(cellptr->IsUnderBridge); object != NULL; object = object->Next) {
-		if (object == foot || (object->Is_Foot() && moving.ID((FootClass *)object) != -1)) {
-			continue;
-		}
-		if (object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained()) {
-			Chrono_Kill(foot);
-			return;
-		}
-		if (object->RTTI == RTTI_BUILDING || object->RTTI == RTTI_TERRAIN) {
-			blocked = true;
-		} else if (!object->Is_Foot()) {
-			continue;
-		} else if (foot->RTTI != RTTI_INFANTRY || object->RTTI != RTTI_INFANTRY || (object->PositionCoord.X == dest.X && object->PositionCoord.Y == dest.Y)) {
-			crushed.Add((TechnoClass *)object);
-		}
-	}
-
-	// The far edge of a bridge's under-strip cannot be stood on, so it also sends the unit to a nearby cell (0x718449).
-	if (cellptr->IsUnderBridge && !cellptr->IsBridgeTraversable) {
-		blocked = true;
-	}
-
-	if (blocked) {
-		// The search takes the cells of the zone the unit stands in now, tracked vehicles' passability, and a
-		// flyer or wall-destroyer as a plain walker (0x718260).
-		MZoneType mzone = foot->TClass->MZone;
-		if (mzone == MZONE_FLYER || mzone == MZONE_DESTROYER) {
-			mzone = MZONE_NORMAL;
-		} else if (mzone == MZONE_AMPHIBIOUS_DESTROYER) {
-			mzone = MZONE_AMPHIBIOUS;
-		}
-		Cell const nearby = Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(foot->Get_Cell(), mzone, true), mzone, cellptr->IsUnderBridge);
-		if (nearby == CELL_NONE) {
-			Chrono_Kill(foot);
-			return;
-		}
-		dest.X += (nearby.X - cell.X) * CELL_LEPTON_W;
-		dest.Y += (nearby.Y - cell.Y) * CELL_LEPTON_H;
-	} else {
-		// A unit that may not be crushed, or a vehicle under infantry when ChronoInfantryCrush is off, destroys the arriving unit instead.
-		for (int index = 0; index < crushed.Count(); index++) {
-			TechnoClass const * victim = crushed[index];
-			if (!victim->TClass->IsChronoshiftCrushable || (foot->RTTI == RTTI_INFANTRY && victim->RTTI != RTTI_INFANTRY && !Rule->IsChronoInfantryCrush)) {
-				Chrono_Kill(foot);
-				return;
-			}
-		}
-		for (int index = 0; index < crushed.Count(); index++) {
-			Chrono_Kill(crushed[index]);
-		}
-	}
-
-	TechnoTypeClass const * type = foot->TClass;
-	VocType const out_sound = type->ChronoOutSound != VOC_NONE ? type->ChronoOutSound : Rule->ChronoOutSound;
-	Sound_Effect(out_sound, foot->Center_Coord());
 
 	// The unit keeps its place and its team while the warp runs, and lands through its teleport locomotor.
 	foot->Begin_Chrono_Warp(dest);
@@ -1158,7 +1088,7 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 			Coord dest = foot->PositionCoord;
 			dest.X += to.X - from.X;
 			dest.Y += to.Y - from.Y;
-			Chrono_Shift(foot, dest, moving);
+			Chrono_Shift(foot, dest);
 		}
 	}
 }

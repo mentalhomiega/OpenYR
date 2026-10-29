@@ -3,7 +3,7 @@
 ; A vehicle sent onto water sinks there (0x7187A0), and a soldier sent onto water is destroyed.
 ; Lostlake.mmx: land at 78,45, open water at 82,45 (the amphibious transport test uses the same cells).
 ; A Rhino (HTNK) is sphered on land at 78,45 and warped onto the water at 82,45.
-; Expected: "chrono landed HTNK cell 82,45 frame 130" (not a land cell many cells away), the Rhino still listed at frame 200
+; Expected: "chrono landed HTNK cell 82,45 frame 132" (not a land cell many cells away), the Rhino still listed at frame 200
 ; while it sinks, and no "where HTNK" line from frame 260 on because the sunk Rhino is gone.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent14 -Map Lostlake.mmx -Country 8 -Script src-agent14/tests/teleport/chrono-landing-water.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 200 -Filter "AUTOTEST|Exception"
 20 own GAPOWR 76 40

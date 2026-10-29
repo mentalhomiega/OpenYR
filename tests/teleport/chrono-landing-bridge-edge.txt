@@ -1,36 +1,41 @@
 ; A chronosphere warp onto the far edge of a bridge's under-strip sets the unit down on a nearby cell (0x718449: a cell with the
 ; bridge flag 0x100 but without 0x200 counts as blocked, the same as a cell with a structure; 0x200 is our IsBridgeTraversable).
-; Carville.mmx has an east-west bridge on row 63 from column 50 to 54. A Rhino (HTNK) is sphered and warped in turn onto 52,61
-; (trial 1), 52,62 (trial 2), 52,63 (trial 3), 52,64 (trial 4) and 52,65 (trial 5); the "chrono landed" line names where it set down.
-; Expected: trial 1, the far edge of the strip, lands next door on 51,60 (frame 130); trials 2 to 5 land on the cell they target
-; (52,62 at frame 220, 52,63 at 310, 52,64 at 400, 52,65 at 490).
+; Carville.mmx has an east-west bridge on row 63 from column 50 to 54. A new Rhino (HTNK) at 52,58 is sphered and warped in turn onto
+; 52,61 (trial 1), 52,62 (trial 2), 52,63 (trial 3), 52,64 (trial 4) and 52,65 (trial 5); the "chrono landed" line names where it set down.
+; A unit whose landing was moved keeps the ChronoDelay hold for later warps (0x719983), so each trial has a Rhino of its own.
+; Expected: trial 1, the far edge of the strip, lands on a cell next to it, not on 52,61 (the search takes the game frame, so the cell
+; can differ between builds' frame offsets); trials 2 to 5 land on the cell they target, 62 frames after the warp is fired (63 for trial 1, whose landing is moved).
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-landing-bridge-edge.txt -Map Carville.mmx -Seconds 300 -Filter "AUTOTEST   (where|chrono)|Exception"
 20 own GAPOWR 46 58
-30 own HTNK 52 58
 35 reveal
+35 own HTNK 52 58
 40 grant ChronoSphereSpecial
 41 grant ChronoWarpSpecial
 60 fire ChronoSphereSpecial 52 58
 70 fire ChronoWarpSpecial 52 61
-140 where HTNK
-141 grant ChronoSphereSpecial
-142 grant ChronoWarpSpecial
-150 fire ChronoSphereSpecial 51 60
-160 fire ChronoWarpSpecial 52 62
-230 where HTNK
-231 grant ChronoSphereSpecial
-232 grant ChronoWarpSpecial
-240 fire ChronoSphereSpecial 52 62
-250 fire ChronoWarpSpecial 52 63
-320 where HTNK
-321 grant ChronoSphereSpecial
-322 grant ChronoWarpSpecial
-330 fire ChronoSphereSpecial 52 63
-340 fire ChronoWarpSpecial 52 64
-410 where HTNK
-411 grant ChronoSphereSpecial
-412 grant ChronoWarpSpecial
-420 fire ChronoSphereSpecial 52 64
-430 fire ChronoWarpSpecial 52 65
-500 where HTNK
-520 quit
+150 where HTNK
+135 own HTNK 52 58
+140 grant ChronoSphereSpecial
+141 grant ChronoWarpSpecial
+160 fire ChronoSphereSpecial 52 58
+170 fire ChronoWarpSpecial 52 62
+250 where HTNK
+235 own HTNK 52 58
+240 grant ChronoSphereSpecial
+241 grant ChronoWarpSpecial
+260 fire ChronoSphereSpecial 52 58
+270 fire ChronoWarpSpecial 52 63
+350 where HTNK
+335 own HTNK 52 58
+340 grant ChronoSphereSpecial
+341 grant ChronoWarpSpecial
+360 fire ChronoSphereSpecial 52 58
+370 fire ChronoWarpSpecial 52 64
+450 where HTNK
+435 own HTNK 52 58
+440 grant ChronoSphereSpecial
+441 grant ChronoWarpSpecial
+460 fire ChronoSphereSpecial 52 58
+470 fire ChronoWarpSpecial 52 65
+550 where HTNK
+580 quit
