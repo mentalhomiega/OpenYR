@@ -15,11 +15,11 @@
 60 fire ChronoSphereSpecial 56 24
 70 fire ChronoWarpSpecial 60 24
 73 liveanims CHRONOSK
+84 record 5
 97 liveanims CHRONOSK
 121 liveanims CHRONOSK
 145 liveanims CHRONOSK
 169 liveanims CHRONOSK
 193 liveanims CHRONOSK
-84 record 5
 210 record 0
 230 quit

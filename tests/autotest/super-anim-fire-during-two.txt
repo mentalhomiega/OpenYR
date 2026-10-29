@@ -1,0 +1,52 @@
+; A Soviet Iron Curtain (NAIRON) is fired while SuperAnimTwo (slot 15, NAIRON_F) is still playing. gamemd's BuildingClass::UpdateAnimations (0x4509D0) removes only SuperAnimThree (slot 16)
+; when a fired weapon starts charging again, and starts SuperAnimFour (slot 17) only when it removed that one, so SuperAnimTwo plays to its end, SuperAnimThree follows it (AnimExpired 0x451B40),
+; and the next update removes that and plays SuperAnimFour. Before the fix the structure ended SuperAnimTwo at the shot and started SuperAnimFour at once.
+; Expected: the weapon is ready at frame 114 and fired at frame 120. The banimstate lines show slot 15 still playing (stage 1 to 9) until about frame 170, no slot 17 before that, and slot 17 (NAIRON_H) from frame 174, once slot 15 has played out and slot 16 has had its one update. Slot 16 returns at frame 216, when the weapon is ready again.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/autotest/super-anim-fire-during-two.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 120 -Filter "AUTOTEST   banimstate|AUTOTEST     slot 1[4-7]|AUTOTEST   fire|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+5 rules E:/Claude ra2 decomp/src-agent18/tests/autotest/super-anim-fire-during-two.ini
+10 command CenterBase
+20 own NAPOWR 50 40
+21 own NAPOWR 50 44
+22 own NAIRON 56 44
+23 own HTNK 40 40
+30 reveal
+31 view 57 45
+40 supers
+108 banimstate NAIRON
+114 banimstate NAIRON
+120 banimstate NAIRON
+120 fire IronCurtainSpecial 40 40
+121 banimstate NAIRON
+125 banimstate NAIRON
+126 banimstate NAIRON
+127 banimstate NAIRON
+132 banimstate NAIRON
+138 banimstate NAIRON
+144 banimstate NAIRON
+150 banimstate NAIRON
+156 banimstate NAIRON
+162 banimstate NAIRON
+168 banimstate NAIRON
+174 banimstate NAIRON
+180 banimstate NAIRON
+186 banimstate NAIRON
+192 banimstate NAIRON
+198 banimstate NAIRON
+204 banimstate NAIRON
+210 banimstate NAIRON
+216 banimstate NAIRON
+222 banimstate NAIRON
+228 banimstate NAIRON
+234 banimstate NAIRON
+240 banimstate NAIRON
+246 banimstate NAIRON
+252 banimstate NAIRON
+258 banimstate NAIRON
+264 banimstate NAIRON
+270 banimstate NAIRON
+276 banimstate NAIRON
+282 banimstate NAIRON
+288 banimstate NAIRON
+294 banimstate NAIRON
+300 quit
