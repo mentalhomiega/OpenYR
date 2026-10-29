@@ -167,6 +167,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	UnloadingClass(NULL),
 	VoiceSelect(),
 	VoiceSelectEnslaved(),
+	VoiceSelectDeactivated(),
 	VoiceMove(),
 	VoiceSpecialAttack(),
 	VoiceAttack(),
@@ -1142,6 +1143,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		VoiceSpecialAttack = ini.Get_VocType_List(ini, IniName, "VoiceSpecialAttack", VoiceSpecialAttack);
 		VoiceSelect = ini.Get_VocType_List(ini, IniName, "VoiceSelect", VoiceSelect);
 		VoiceSelectEnslaved = ini.Get_VocType_List(ini, IniName, "VoiceSelectEnslaved", VoiceSelectEnslaved);
+		VoiceSelectDeactivated = ini.Get_VocType_List(ini, IniName, "VoiceSelectDeactivated", VoiceSelectDeactivated);
 		VoiceAttack = ini.Get_VocType_List(ini, IniName, "VoiceAttack", VoiceAttack);
 		VoiceDie = ini.Get_VocType_List(ini, IniName, "VoiceDie", VoiceDie);
 		DieSound = ini.Get_VocType_List(ini, IniName, "DieSound", DieSound);
@@ -1669,6 +1671,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(UnloadingClass);
 	stream.Serialize(VoiceSelect);
 	stream.Serialize(VoiceSelectEnslaved);
+	stream.Serialize(VoiceSelectDeactivated);
 	stream.Serialize(VoiceMove);
 	stream.Serialize(VoiceSpecialAttack);
 	stream.Serialize(VoiceAttack);
@@ -2014,6 +2017,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(Max_Pips());
 	crc(VoiceSelect.Count());
 	crc(VoiceSelectEnslaved.Count());
+	crc(VoiceSelectDeactivated.Count());
 	crc(VoiceMove.Count());
 	crc(VoiceSpecialAttack.Count());
 	crc(VoiceAttack.Count());

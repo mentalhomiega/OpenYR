@@ -143,6 +143,7 @@ extern bool							ScoresPresent;
 extern bool							DrawShapeShadows;
 extern int							TournamentTime;
 extern bool							AllowVoice;
+extern ObjectClass const *			VoiceSpeaker;
 extern bool							PlayerWins;
 extern bool							PlayerLoses;
 extern bool							PlayerRestarts;

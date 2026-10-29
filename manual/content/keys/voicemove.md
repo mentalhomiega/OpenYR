@@ -18,6 +18,6 @@ The deploy key plays no response from this list.
 
 One entry is picked at random and played as a sound without a place, so it does not fade with the object's distance from the view; see [Placed sounds](/systems/sound-effects/#placed-sounds).
 
-An order given to a group produces at most one response. For an order given by clicking, only the first object the order reaches can answer, so the group is silent if that object has no list or the order does not apply to it.
+An order given to a group produces at most one response. For an order given by clicking, only the first object selected can answer, so the group is silent if that object has no list or the order does not apply to it. An object that is still speaking finishes first; see [`VoiceSelect`](/keys/voiceselect/).
 
 Names are matched as described in [Writing the list](/keys/voiceselect/#writing-the-list).

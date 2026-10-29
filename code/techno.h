@@ -342,6 +342,15 @@ class TechnoClass :	public RadioClass,
 		bool IsTurretSoundPlaying;
 
 		/*
+		 * The one voice reply this object has waiting, the reply its own voice channel last
+		 * started, and that channel. A new reply replaces the waiting one, and starts only when
+		 * the channel is idle (TechnoClass::QueueVoice, 0x708D90; TechnoClass::Update, 0x6F9E50).
+		 */
+		VocType QueuedVoice;
+		VocType PlayedVoice;
+		AudioHandle VoiceChannel;
+
+		/*
 		 * This is where this object last plotted on the radar, in radar pixels. The radar's
 		 * tracking table is keyed by it, so a moved object untracks here before plotting anew.
 		 */
@@ -846,6 +855,10 @@ class TechnoClass :	public RadioClass,
 		virtual void Response_Move(void);
 		virtual void Response_Attack(void);
 		VocType Weapon_Attack_Voice(AbstractClass * target) const;
+		bool May_Speak(void) const;
+		void Queue_Voice(VocType voc);
+		void Voice_AI(void);
+		void Order_Voice(MissionType mission, AbstractClass * target);
 		virtual void Player_Assign_Mission(MissionType order, AbstractClass * target=NULL, AbstractClass * destination=NULL);
 		Coord Predict_Target_Coord(void) const;
 
@@ -1103,3 +1116,35 @@ inline TechnoClass const * AbstractClass::As_TechnoClass(void) const
 {
 	return(dynamic_cast<TechnoClass const *>(this));
 }
+
+
+/// <summary>
+/// Selects several objects with one reply. Selecting through this scope lets the first object that is selected
+/// speak, and keeps the rest quiet, as gamemd clears MoveFeedback after the first object of a group select. A
+/// scope made with speaks false keeps every object quiet, as gamemd's type select does.
+/// </summary>
+class SelectionVoiceScope
+{
+	public:
+		explicit SelectionVoiceScope(bool speaks = true)
+		{
+			AllowVoice = speaks;
+		}
+
+		~SelectionVoiceScope()
+		{
+			AllowVoice = true;
+		}
+
+		bool Select(ObjectClass * object)
+		{
+			bool const selected = object->Select();
+			if (selected) {
+				AllowVoice = false;
+			}
+			return(selected);
+		}
+
+		SelectionVoiceScope(SelectionVoiceScope const &) = delete;
+		SelectionVoiceScope & operator=(SelectionVoiceScope const &) = delete;
+};

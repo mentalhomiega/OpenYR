@@ -1,0 +1,32 @@
+; One reply answers a selection and a group order, whichever objects are in the group. gamemd clears MoveFeedback after the
+; first object of the selection is handled (DisplayClass::ExecuteCommandOnSelectedObjects, 0x4AE750; the rubber band and
+; Select, 0x6DA5C0 and 0x6FBFA0), so the first selected object speaks and the others stay silent, even when it is a tank
+; standing next to the target and the soldiers are farther away. Two soldiers (56,44 and 56,45) and a tank (62,44) are
+; banded with a drag, then selected in two orders, then sent to a cell. Coordinates are window pixels at 800x600.
+; Expected: the band logs one Select reply; the move after "select MTNK, selectadd E1" logs one reply, the tank's
+; (GenAllVehicleMove); the move after "select E1, selectadd MTNK" logs one reply, the soldier's (GIMove).
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/voice-group-order.txt -Width 800 -Height 600 -Seconds 60 -Filter "Voice:|AUTOTEST frame|AUTOTEST   selected|Exception"
+32 view 60 44
+35 reveal
+40 grantunit E1 56 44
+41 grantunit E1 56 45
+42 grantunit MTNK 62 44
+50 windowpress 200 200
+51 hold 01
+52 windowmove 350 280
+53 windowmove 520 400
+54 windowrelease 520 400
+55 release 01
+56 selected
+60 select MTNK
+61 selectadd E1
+62 selected
+68 windowmove 520 330
+70 mapclick 520 330
+71 selected
+120 select E1
+121 selectadd MTNK
+122 selected
+128 windowmove 520 300
+130 mapclick 520 300
+300 quit

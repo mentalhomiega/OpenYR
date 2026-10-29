@@ -3606,7 +3606,10 @@ void Tactical::Detach(AbstractClass const * target, bool all)
  *=============================================================================================*/
 void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectClass * object))
 {
-	AllowVoice = true;
+	// A callback's selection decides for itself whether its objects speak.
+	if (select_callback == NULL) {
+		AllowVoice = true;
+	}
 
 	if (rect.Is_Valid()) {
 

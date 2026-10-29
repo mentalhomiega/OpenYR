@@ -1,0 +1,29 @@
+; A selection of many objects gives one reply, and a select of every object of a type gives none. gamemd clears MoveFeedback
+; after the first object of a team select (0x7311C0) and for the whole of a type select (Game::UICommands_TypeSelect,
+; 0x7327D0), and sets it again afterward. Three soldiers (and later three conscripts) are granted. Expected log lines:
+; - TeamSelect_1 on three team members: one "Voice: GISelect".
+; - NextObject right after it: one select reply, whichever object it picks (the voice is not left switched off by the team select).
+; - SelectType pressed twice (the second press widens the sweep to the map) with one conscript selected and two more on the map: all three end selected and no "Voice:" line follows.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/voice-bulk-select.txt -Width 800 -Height 600 -Seconds 60 -Filter "Voice:|AUTOTEST frame|AUTOTEST   selected|Exception"
+32 view 60 44
+35 reveal
+40 grantunit E1 58 44
+41 grantunit E1 58 45
+42 grantunit E1 59 44
+60 select E1
+70 command TeamCreate_1
+80 select NOBODY
+90 command TeamSelect_1
+91 selected
+100 select NOBODY
+101 command NextObject
+102 selected
+110 select NOBODY
+111 grantunit E2 59 45
+112 select E2
+113 grantunit E2 60 45
+114 grantunit E2 60 44
+120 command SelectType
+120 command SelectType
+121 selected
+200 quit

@@ -351,6 +351,9 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsGattlingSoundPlaying(false),
 	TurretSound(),
 	IsTurretSoundPlaying(false),
+	QueuedVoice(VOC_NONE),
+	PlayedVoice(VOC_NONE),
+	VoiceChannel(),
 	IsForceShielded(false),
 	RadarPos(0,0),
 	Group(-1),
@@ -3776,6 +3779,8 @@ void TechnoClass::AI(void)
 
 	Retire_Airstrike_Planes();
 
+	Voice_AI();
+
 	if (IsBerzerk && BerzerkDuration > 0 && --BerzerkDuration == 0) {
 		IsBerzerk = false;
 	}
@@ -4471,12 +4476,17 @@ bool TechnoClass::Select(void)
 	if (BASECLASS::Select()) {
 
 		/*
+		**	The attached tag sees the selection, whoever owns the object and however many objects are
+		**	selected with it (TechnoClass::Select, 0x6FBFA0).
+		*/
+		if (Tag != NULL) {
+			Tag->Spring(TEVENT_SELECTED, this);
+		}
+
+		/*
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Control() && AllowVoice) {
-			if (Tag != NULL) {
-				Tag->Spring(TEVENT_SELECTED, this);
-			}
 			Response_Select();
 		}
 		return(true);
@@ -5750,12 +5760,12 @@ void TechnoClass::Draw_Target_Laser(void) const
 
 
 // Plays a unit's voice line. The name is logged as the line is given, so a muted run shows it too.
-static void Play_Unit_Voice(VocType voc)
+static AudioHandle Play_Unit_Voice(VocType voc)
 {
 	if (voc != VOC_NONE) {
 		DebugString("Voice: %s\n", Voc_Name(voc));
 	}
-	Unit_Voice_Effect(voc);
+	return(Unit_Voice_Effect(voc));
 }
 
 
@@ -5822,39 +5832,7 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		return;
 	}
 
-	/*
-	 * An enter order uses VoiceEnter, a capture order VoiceCapture or else VoiceEnter, and a
-	 * harvest order VoiceHarvest; each falls back to the move voice (TechnoClass::ClickedMission,
-	 * 0x6FFBE0, and VoiceEnter, VoiceCapture and VoiceHarvest). Any other order, such as guard,
-	 * plays a VoiceSpecialAttack entry, or nothing when that list is empty.
-	 */
-	if (AllowVoice) {
-		VocType voice = VOC_NONE;
-		if (mission == MISSION_ENTER) {
-			voice = TClass->VoiceEnter;
-		} else if (mission == MISSION_CAPTURE) {
-			voice = TClass->VoiceCapture != VOC_NONE ? TClass->VoiceCapture : TClass->VoiceEnter;
-		} else if (mission == MISSION_HARVEST) {
-			voice = TClass->VoiceHarvest;
-		}
-
-		// A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier, and never with the move voice (TechnoClass::ClickedMission, 0x6FFBE0).
-		if (mission == MISSION_UNLOAD) {
-			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
-			Play_Unit_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
-		} else
-		if (mission == MISSION_ATTACK && Weapon_Attack_Voice(target) != VOC_NONE) {
-			Play_Unit_Voice(Weapon_Attack_Voice(target));
-		} else if (mission == MISSION_ATTACK) {
-			Response_Attack();
-		} else if (voice != VOC_NONE) {
-			Play_Unit_Voice(voice);
-		} else if (mission == MISSION_MOVE || mission == MISSION_ATTACK_MOVE || mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_HARVEST) {
-			Response_Move();
-		} else if (TClass->VoiceSpecialAttack.Count() > 0) {
-			Play_Unit_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
-		}
-	}
+	Order_Voice(mission, target);
 
 	/*
 	**	Cooerce the movement mission into a queued movement mission if the ALT key was
@@ -9983,10 +9961,10 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	// A slave of a Slave Miner answers with its enslaved lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
-	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : TClass->VoiceSelect;
-	if (AllowVoice && voices.Count()) {
-		Play_Unit_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
+	// A slave of a Slave Miner answers with its enslaved lines, and a shut-down object with its deactivated lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : (IsDeactivated ? TClass->VoiceSelectDeactivated : TClass->VoiceSelect);
+	if (voices.Count()) {
+		Queue_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -10008,8 +9986,8 @@ void TechnoClass::Response_Select(void)
  *=============================================================================================*/
 void TechnoClass::Response_Move(void)
 {
-	if (AllowVoice && TClass->VoiceMove.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
+	if (TClass->VoiceMove.Count()) {
+		Queue_Voice((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -10057,8 +10035,116 @@ VocType TechnoClass::Weapon_Attack_Voice(AbstractClass * target) const
 
 void TechnoClass::Response_Attack(void)
 {
-	if (AllowVoice && TClass->VoiceAttack.Count()) {
-		Play_Unit_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+	if (TClass->VoiceAttack.Count()) {
+		Queue_Voice((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+	}
+}
+
+
+/// <summary>
+/// Whether this object may answer an order or a selection now. During a group order only the
+/// first selected object may, as gamemd's MoveFeedback is cleared after the first object is
+/// handled; otherwise AllowVoice decides.
+/// </summary>
+bool TechnoClass::May_Speak(void) const
+{
+	return(VoiceSpeaker != NULL ? VoiceSpeaker == this : AllowVoice);
+}
+
+
+/// <summary>
+/// Puts a voice reply on this object's queue (TechnoClass::QueueVoice, 0x708D90). Only the
+/// player's own objects answer, and a reply waiting already is replaced. The reply is played
+/// by Voice_AI.
+/// </summary>
+void TechnoClass::Queue_Voice(VocType voc)
+{
+	if (voc != VOC_NONE && May_Speak() && House->Is_Player_Control()) {
+		QueuedVoice = voc;
+	}
+}
+
+
+/// <summary>
+/// Plays the waiting reply when this object's own voice channel is idle (TechnoClass::Update, 0x6F9E50). A reply
+/// waits for the one still playing, and is dropped when it is the same reply that plays.
+/// </summary>
+void TechnoClass::Voice_AI(void)
+{
+	if (QueuedVoice == VOC_NONE) {
+		return;
+	}
+	if (!VoiceChannel.Is_Playing()) {
+		PlayedVoice = QueuedVoice;
+		VoiceChannel = Play_Unit_Voice(QueuedVoice);
+		QueuedVoice = VOC_NONE;
+	} else if (PlayedVoice == QueuedVoice) {
+		QueuedVoice = VOC_NONE;
+	}
+}
+
+
+/// <summary>
+/// Gives the voice reply to an order the player gave (TechnoClass::ClickedMission, 0x6FFBE0). A harvest, enter or
+/// capture order uses the type's VoiceHarvest, VoiceEnter or VoiceCapture and falls back to the move voice (capture
+/// falls back to VoiceEnter first). A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
+/// Any other order, such as guard, plays a VoiceSpecialAttack entry, or nothing when that list is empty.
+/// </summary>
+void TechnoClass::Order_Voice(MissionType mission, AbstractClass * target)
+{
+	switch (mission) {
+		case MISSION_HARVEST:
+			if (TClass->VoiceHarvest != VOC_NONE) {
+				Queue_Voice(TClass->VoiceHarvest);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_ATTACK: {
+			VocType const weapon_voice = Weapon_Attack_Voice(target);
+			if (weapon_voice != VOC_NONE) {
+				Queue_Voice(weapon_voice);
+			} else {
+				Response_Attack();
+			}
+			break;
+		}
+
+		case MISSION_MOVE:
+		case MISSION_ATTACK_MOVE:
+			Response_Move();
+			break;
+
+		case MISSION_ENTER:
+			if (TClass->VoiceEnter != VOC_NONE) {
+				Queue_Voice(TClass->VoiceEnter);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_CAPTURE:
+			if (TClass->VoiceCapture != VOC_NONE) {
+				Queue_Voice(TClass->VoiceCapture);
+			} else if (TClass->VoiceEnter != VOC_NONE) {
+				Queue_Voice(TClass->VoiceEnter);
+			} else {
+				Response_Move();
+			}
+			break;
+
+		case MISSION_UNLOAD: {
+			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
+			Queue_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+			break;
+		}
+
+		default:
+			if (TClass->VoiceSpecialAttack.Count() > 0) {
+				Queue_Voice((VocType)TClass->VoiceSpecialAttack.Pick(NonCriticalRandomNumber));
+			}
+			break;
 	}
 }
 
