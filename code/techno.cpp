@@ -5614,12 +5614,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 
 				if (weapon->IsSonic) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target);
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
 				}
 
-				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL && target->Is_Techno()) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
+				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
 				}
 
 				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
