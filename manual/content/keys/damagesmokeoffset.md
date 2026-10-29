@@ -10,12 +10,12 @@ when_omitted:
 ```ini title="rules.ini"
 [MYTANK] ; a UnitType registered in [VehicleTypes]
 DamageParticleSystems=MYSPARKSYS,MYSMOKESYS ; ParticleSystemTypes registered in [ParticleSystems]
-DamageSmokeOffset=0,0,90 ; sparks and smoke start 90 leptons above the tank
+DamageSmokeOffset=0,0,90 ; the smoke starts 90 leptons above the tank
 ```
 
 The offset is three lepton distances, X, Y and Z, added to the object's anchor point when one of its [`DamageParticleSystems`](/keys/damageparticlesystems/) is created. X and Y are map directions, so the offset does not turn with the object's facing.
 
-Sparks are anchored at the object's center and smoke at its position. On a vehicle, infantryman or aircraft these are the same point. On a structure the center is the middle of its footprint and the position is its reference cell, so the two anchors differ horizontally but not in height.
+Smoke is anchored at the object's position. Sparks start only on cyborg infantry, where the object's center and position are the same point.
 
 A smoke system then moves with a vehicle, infantryman or aircraft, so on those the offset sets where the plume sits on the object. A spark burst stays at the point where it started.
 

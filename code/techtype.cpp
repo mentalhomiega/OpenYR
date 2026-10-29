@@ -365,7 +365,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsRequiresStolenAlliedTech(false),
 	IsRequiresStolenSovietTech(false),
 	IsRequiresStolenThirdTech(false),
-	IsDamageSparks(true),
+	IsDamageSparks(false),
 	IsTargetLaser(false),
 	IsImmuneToVeins(false),
 	IsTiberiumHeal(false),

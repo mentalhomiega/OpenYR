@@ -1028,7 +1028,8 @@ class TechnoTypeClass : public ObjectTypeClass
 		/*
 		 * If this object throws sparks once it has been hurt, then this flag will be true. The
 		 * spark system is picked from the DamageParticleSystems list and appears once the
-		 * object drops below the condition yellow health level.
+		 * object drops below the condition yellow health level. Only Cyborg infantry set it, as
+		 * in gamemd (TechnoTypeClass::DamageSparks).
 		 */
 		bool IsDamageSparks;
 

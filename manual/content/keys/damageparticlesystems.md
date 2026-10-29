@@ -36,6 +36,6 @@ The smoke is attached at the object's position plus `DamageSmokeOffset`. Healing
 
 An object runs at most one spark system and one smoke system at a time, so a longer list widens the choice, not the count.
 
-:::caution[A cyborg's sparks depend on the last rules file]
-An InfantryType gives off sparks only if it is `Cyborg=yes`; every other kind of object can spark. Every rules file the game reads, including the scenario, switches an InfantryType's sparks off unless that file contains the type's section and the type is `Cyborg=yes`. A `Cyborg=yes` type therefore sparks only when the last rules file read for the scenario also contains its section.
+:::caution[Only cyborgs spark, and it depends on the last rules file]
+Only an InfantryType with `Cyborg=yes` gives off sparks. A vehicle, aircraft or structure never does, even when its list names a `Spark` entry. Every rules file the game reads, including the scenario, switches an InfantryType's sparks off unless that file contains the type's section and the type is `Cyborg=yes`. A `Cyborg=yes` type therefore sparks only when the last rules file read for the scenario also contains its section.
 :::

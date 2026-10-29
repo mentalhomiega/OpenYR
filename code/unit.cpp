@@ -176,6 +176,7 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <unordered_map>
 #include <vector>
@@ -185,6 +186,10 @@ char const * const UnitClass::INI_NAME = "Units";
 Rect UnitCompositeDirtyRect(RECT_NONE);
 
 namespace {
+
+// Voxel units per lepton that DrawAsVXL (0x73B470) places the turret and the turretless barrel by: a cell's 362.04
+// lepton diagonal spans 60 pixels (0xB1D008, set at 0x7351D0).
+double const VOXEL_UNITS_PER_LEPTON = 1.0 / (std::sqrt(2.0 * 256.0 * 256.0) / 60.0);
 
 struct VoxelCompositeKey {
 	void const * Type;
@@ -736,12 +741,23 @@ void UnitClass::AI(void)
  *=============================================================================================*/
 void UnitClass::Rotation_AI(void)
 {
+	// The turret weapon of a vehicle with several turrets is the current one (TechnoClass::GetTurretWeapon, 0x70E1A0).
+	WeaponTypeClass const * turret_weapon = NULL;
+	if (Class->IsTurretEquipped) {
+		int const which = Class->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0;
+		turret_weapon = Get_Class_Weapon_Data(which)->Weapon;
+	}
+
 	// A TurretSpins turret keeps turning from its own facing whatever it targets, so it is not aimed (UnitClass::UpdateRotation, 0x736990).
 	if (TarCom != NULL && !IsRotating && !Class->IsRadarEquipped) {
 		DirType dir = Direction(TarCom);
 
 		if (Class->IsTurretEquipped) {
-			SecondaryFacing.Set_Desired(dir);
+
+			// A turret does not turn toward a target for an OmniFire weapon, or for a vehicle whose turret has no weapon.
+			if (turret_weapon != NULL && !turret_weapon->IsOmniFire) {
+				SecondaryFacing.Set_Desired(dir);
+			}
 		} else {
 
 			/*
@@ -769,14 +785,18 @@ void UnitClass::Rotation_AI(void)
 				**	If no further rotation is necessary, flag that the rotation
 				**	has stopped.
 				*/
-				if (!Class->IsRadarEquipped) {
-					IsRotating = SecondaryFacing.Is_Rotating();
-				}
-			} else {
-				if (TarCom == NULL) {
+				IsRotating = SecondaryFacing.Is_Rotating();
+			} else if (TarCom == NULL) {
+
+				// An idle turret stays where it is for GuardAreaTargetingDelay plus 5 frames after a shot, and while the
+				// vehicle is deployed or bunkered. Then it turns toward where the vehicle is heading, or back to the hull
+				// (UnitClass::UpdateRotation, 0x736990).
+				bool const settled = Frame - LastFireFrame >= Rule->GuardAreaTargetingDelay + 5 && BunkerLinkedItem == NULL;
+				bool const deployed = Class->IsSimpleDeployer && IsSimpleDeployed;
+				if (settled && !deployed) {
 					if (NavCom == NULL) {
 						SecondaryFacing.Set_Desired(PrimaryFacing.Current());
-					} else {
+					} else if (!IsAttackedByLocomotor) {
 						SecondaryFacing.Set_Desired(Direction(NavCom));
 					}
 				}
@@ -3078,7 +3098,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 		}
 
 		if (turret_drawn) {
-			main_matrix.Translate_X(Class->TurretOffset / 8);
+			main_matrix.Translate_X(float(Class->TurretOffset * VOXEL_UNITS_PER_LEPTON));
 			main_matrix.Rotate_Z(SecondaryFacing.Current().As_Radian32() - PrimaryFacing.Current().As_Radian32());
 
 			// The voxel draw has no turret recoil: gamemd's UnitClass::DrawAsVXL (0x73B470) does not move the turret back.
@@ -3110,7 +3130,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			voxl = &Class->AuxVoxel2;
 			if (voxl->VoxLib != NULL && voxl->MotLib != NULL) {
 				main_matrix.Rotate_Y(-(BarrelPitch.Current().As_Radian32() - main_matrix.Get_Y_Rotation()));
-				main_matrix.Translate(Get_Class_Weapon_Data(0)->FireFLH.X / 8, 0, Get_Class_Weapon_Data(0)->FireFLH.Z / 8);
+				main_matrix.Translate(float(Get_Class_Weapon_Data(0)->FireFLH.X * VOXEL_UNITS_PER_LEPTON), 0, float(Get_Class_Weapon_Data(0)->FireFLH.Z * VOXEL_UNITS_PER_LEPTON));
 				Draw_Voxel(Class->AuxVoxel2, frame, -1, &Class->VoxelIndex, cliprect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, SHAPE_NORMAL);
 			}
 		}
