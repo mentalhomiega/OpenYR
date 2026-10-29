@@ -5617,8 +5617,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target);
 				}
 
-				// A magnetron beam is drawn while none is showing (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && Wave == NULL && target->Is_Techno()) {
+				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL && target->Is_Techno()) {
 					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
 				}
 
@@ -5630,8 +5630,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Electric_Zap(target, which, weapon);
 				}
 
-				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
-				if (weapon->IsRadBeam) {
+				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
+				if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
 					RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}

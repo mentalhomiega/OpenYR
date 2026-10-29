@@ -1,0 +1,14 @@
+; A Tesla Coil (TESLA) shoots an enemy soldier with CoilBolt, which the overlay beam-effect-exclusive.ini makes a radiation beam weapon as well as an electric bolt one.
+; Expected, from gamemd's TechnoClass::Fire (0x6FDD50): the shot draws one effect, chosen in the order laser, electric bolt, radiation beam, radiation eruption, magnetron
+; beam, so only the bolt is made and each shot writes one AUTOTEST beam end line (the bolt's). A radiation beam also asks for an end point, so two lines per shot would
+; mean both effects were made.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/beam-effect-exclusive.txt -Country 8 -Seconds 120 -Filter "AUTOTEST beam end|AUTOTEST enemy|Exception"
+10 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/beam-effect-exclusive.ini
+30 command CenterBase
+35 reveal
+40 own NAPOWR 50 40
+41 own NAPOWR 50 43
+42 own TESLA 55 44
+100 enemy E1 61 44
+200 enemy E1 61 45
+300 quit
