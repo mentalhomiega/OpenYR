@@ -1235,13 +1235,12 @@ void BuildingClass::Draw_Wrench(Rect const & cliprect) const
 
 
 /// <summary>
-/// Draws the decorations that follow the structure's body: the repair wrench first, then those
-/// every object wears.
+/// Draws the repair wrench where TechnoClass::Draw_Post_Render asks for it, after the bomb icon
+/// and before the rank insignia.
 /// </summary>
-void BuildingClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect) const
+void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 {
 	Draw_Wrench(cliprect);
-	TechnoClass::Draw_Post_Render(point, cliprect);
 }
 
 

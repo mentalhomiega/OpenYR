@@ -3465,6 +3465,33 @@ void Run(StepType const & step)
 				techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
 			}
 		}
+	} else if (step.Command == "plantbomb") {
+		// plantbomb <TypeID>: fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier.
+		TechnoClass * planter = NULL;
+		for (int index = 0; planter == NULL && index < Infantry.Count(); index++) {
+			if (Infantry[index]->House == PlayerPtr && !Infantry[index]->IsInLimbo) {
+				planter = Infantry[index];
+			}
+		}
+		for (int index = 0; planter != NULL && index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Plant_Bomb(planter);
+				DebugString("AUTOTEST   plantbomb %s at %d,%d detonates at frame %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->BombDetonateFrame);
+			}
+		}
+	} else if (step.Command == "planguard") {
+		// planguard <TypeID> x y: the player's objects of that type are given a guard area order on the cell, as the guard area
+		// action gives them. While planning is on, the order is recorded as a planned leg.
+		Cell const cell(step.X, step.Y);
+		PlanningRecordScope const recording(Map.IsPlanningMode);
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
+				DebugString("AUTOTEST   planguard %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
+				techno->Player_Assign_Mission(MISSION_GUARD_AREA, &Map[cell]);
+			}
+		}
 	} else if (step.Command == "forceattack") {
 		// forceattack <TypeID> x y: the player's objects of that type force-attack the object on that cell, or the ground
 		// there when no object stands on it. Autotests report Ctrl as not held, so the order is given as the Ctrl+click

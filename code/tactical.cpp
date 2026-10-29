@@ -1338,7 +1338,6 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 		{
 			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
 			Draw_Waypoints(false);
-			Draw_Planned_Orders(false);
 			Draw_Rally_Points(false);
 			Draw_Placement(false);
 		}
@@ -1388,7 +1387,7 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
 			Draw_Rubber_Band();
 			Draw_Waypoints(true);
-			Draw_Planned_Orders(true);
+			Draw_Planned_Orders();
 			Draw_Rally_Points(true);
 			Draw_Placement(true);
 			Draw_Placement_Range();
@@ -4011,7 +4010,14 @@ void Tactical::Draw_Waypoints(bool inshroud)
 	Dash_Table_Restore const dashtable;
 
 	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
-	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
+
+	// The number is printed in color scheme 2, or 0 on a snow theater, as gamemd does (0x6DAD60). Each [Colors]
+	// entry makes two schemes, so scheme 2 is the plain one of the second entry (Gold) and scheme 0 the first
+	// entry's (LightGold) in the stock rules.
+	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? 0 : 2;
+	if (coloridx >= ColorSchemes.Count()) {
+		coloridx = 0;
+	}
 
 	for (PathType path = PATH_FIRST; path < PATH_COUNT; path++) {
 		PlayerPtr->Ensure_Path(path);
@@ -4097,63 +4103,55 @@ static bool Planned_Leg_Coord(xTargetClass const & leg, Coord & coord)
 
 
 /// <summary>
-/// Draws the planned orders of the local player's units over the tactical view.
-/// Each plan runs from its unit through the destination of each leg still to run. The leg in
-/// progress is drawn unnumbered, and each queued order is marked with the waypoint cursor and
-/// its index in the queue. Every leg is an animated dashed line.
+/// Blends a color toward another by factor / 256, as gamemd's color blend (0x6612C0) does: each
+/// channel moves by the distance to the target times the factor, divided by 256 and truncated.
 /// </summary>
-/// <param name="inshroud">Draw the plans under shroud rather than the visible ones?</param>
-void Tactical::Draw_Planned_Orders(bool inshroud)
+static RGBClass Planned_Blend(RGBClass const & from, RGBClass const & toward, int factor)
 {
-	if (Debug_Map) {
+	auto channel = [factor](int value, int target) {
+		int const step = (target - value) * factor;
+		return(value + ((step + (step < 0 ? 255 : 0)) >> 8));
+	};
+	return(RGBClass(channel(from.Get_Red(), toward.Get_Red()), channel(from.Get_Green(), toward.Get_Green()), channel(from.Get_Blue(), toward.Get_Blue())));
+}
+
+
+/// <summary>
+/// Draws the planned orders of the local player's units over the tactical view, while planning mode
+/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
+/// through the destination of each leg still to run.
+/// </summary>
+/// <remarks>
+/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
+/// is four solid lines in black, or in white for a selected unit, with an outline square at
+/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
+/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
+/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
+/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
+/// (timeGetTime), which only moves the picture and never the game state.
+/// </remarks>
+void Tactical::Draw_Planned_Orders(void)
+{
+	if (Debug_Map || !Map.IsPlanningMode) {
 		return;
 	}
 
-	Dash_Table_Restore const dashtable;
-
-	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = Map.Get_Mouse_Start_Frame(MOUSE_WAYPOINT);
-	frame += WaypointAnimCounter % Map.Get_Mouse_Frame_Count(MOUSE_WAYPOINT);
-
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
-	unsigned color = MouseDrawer->Convert_Pixel(3);
-	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
-
-	auto draw_leg = [&](Coord const & from, Coord const & to) {
-		Point2D start;
-		Point2D end;
-		Coord_To_Pixel(from, start);
-		Coord_To_Pixel(to, end);
-		start.Y += TacticalRect.Y;
-		end.Y += TacticalRect.Y;
-
-		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
-			phase = LogicalSurface->Draw_Masked_Dashed_Line(start, end, color, Draw_WaypointPoint_Line_Style, phase, inshroud);
-		}
+	// Four on, four off, as the table at 0x836880 reads.
+	static bool pattern[16] = {
+		true, true, true, true, false, false, false, false,
+		true, true, true, true, false, false, false, false
 	};
 
-	/*
-	 * The marker is drawn only when the place lies within the padded view and on the requested
-	 * side of the shroud. A negative index leaves the marker unnumbered.
-	 */
-	auto draw_marker = [&](Coord const & at, int index) {
-		Point2D pixel;
-		bool onscreen = Coord_To_Pixel(at, pixel) && (Map.Is_Shrouded(at) == inshroud);
-		pixel.Y += TacticalRect.Y;
-		if (!onscreen) {
-			return;
-		}
-
-		Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
-		Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
-
-		if (index >= 0) {
-			char buffer[8];
-			sprintf(buffer, "%d", index);
-			Point2D label(pixel.X - 1, pixel.Y - (TacticalRect.Y + 1) - 25);
-			Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, label, ColorSchemes[coloridx], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
-		}
+	struct Leg
+	{
+		Point2D From;
+		Point2D To;
+		MissionType Mission;
+		bool IsSelected;
+		bool IsRunning;
+		RGBClass Owner;
 	};
+	std::vector<Leg> legs;
 
 	for (int footindex = 0; footindex < Feet.Count(); footindex++) {
 		FootClass * foot = Feet[footindex];
@@ -4164,11 +4162,23 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 			continue;
 		}
 
+		auto add_leg = [&](Coord const & from, Coord const & to, MissionType mission) {
+			Leg leg;
+			Coord_To_Pixel(from, leg.From);
+			Coord_To_Pixel(to, leg.To);
+			leg.From += Point2D(TacticalRect.X, TacticalRect.Y);
+			leg.To += Point2D(TacticalRect.X, TacticalRect.Y);
+			leg.Mission = mission;
+			leg.IsSelected = foot->IsSelected;
+			leg.IsRunning = foot->IsPlanRunning;
+			leg.Owner = House_Display_RGB(foot->House);
+			legs.push_back(leg);
+		};
+
 		Coord from = foot->Center_Coord();
 		Coord to;
 		if (Planned_Leg_Coord(foot->PlannedLeg, to)) {
-			draw_leg(from, to);
-			draw_marker(to, -1);
+			add_leg(from, to, foot->HasPlannedRunningOrder ? foot->PlannedRunningOrder.Mission : MISSION_NONE);
 			from = to;
 		}
 
@@ -4176,13 +4186,98 @@ void Tactical::Draw_Planned_Orders(bool inshroud)
 			PlannedOrderClass const & order = foot->PlannedOrders[index];
 			xTargetClass const & place = order.Destination.Is_Valid() ? order.Destination : order.Target;
 			if (Planned_Leg_Coord(place, to)) {
-				draw_leg(from, to);
-				draw_marker(to, index);
+				add_leg(from, to, order.Mission);
 				from = to;
 			}
 		}
 	}
+
+	if (legs.empty()) {
+		return;
+	}
+
+	RGBClass const black(0, 0, 0);
+	RGBClass const white(255, 255, 255);
+	int const phase = (((int)(0u - (unsigned)timeGetTime())) >> 5) & 0xf;
+
+	// A line is moved sideways by the offset: up or down when it runs more across than down, otherwise left or right.
+	auto draw_line = [&](Leg const & leg, int offset, unsigned color, bool animated) {
+		Point2D start = leg.From;
+		Point2D end = leg.To;
+		Point2D const shift = abs(end.X - start.X) > abs(end.Y - start.Y) ? Point2D(0, offset) : Point2D(offset, 0);
+		start += shift;
+		end += shift;
+		if (Clip_Line_To_Rect(start, end, TacticalRect)) {
+			if (animated) {
+				LogicalSurface->Draw_Dashed_Line(start, end, color, pattern, phase);
+			} else {
+				LogicalSurface->Draw_Line(TacticalRect, start, end, color);
+			}
+		}
+	};
+
+	// The cursor frame of a leg's order, or -1 for none: area guard and attack move legs carry one.
+	auto icon_frame = [](Leg const & leg) {
+		if (leg.Mission == MISSION_GUARD_AREA) {
+			return(Map.Get_Mouse_Start_Frame(MOUSE_CURSOR_4C));
+		}
+		if (leg.Mission == MISSION_ATTACK_MOVE) {
+			return(Map.Get_Mouse_Start_Frame(MOUSE_CURSOR_4D));
+		}
+		return(-1);
+	};
+
+	// The middle of a leg, rounded toward zero; a leg has a box when it is longer than 36 pixels.
+	auto has_box = [](Leg const & leg, Point2D & middle) {
+		double const dx = leg.From.X - leg.To.X;
+		double const dy = leg.From.Y - leg.To.Y;
+		middle = Point2D((leg.From.X + leg.To.X) / 2, (leg.From.Y + leg.To.Y) / 2);
+		return((int)sqrt(dx * dx + dy * dy) > 36);
+	};
+
+	auto pixel = [](RGBClass const & rgb) {
+		return((unsigned)DSurface::Build_Hicolor_Pixel(rgb));
+	};
+
+	for (Leg const & leg : legs) {
+		unsigned const node = pixel(leg.IsSelected ? white : black);
+		for (int offset = -1; offset <= 2; offset++) {
+			draw_line(leg, offset, node, false);
+		}
+
+		Point2D middle;
+		if (icon_frame(leg) != -1 && has_box(leg, middle)) {
+			LogicalSurface->Draw_Rect(TacticalRect, Rect(middle.X - 10, middle.Y - 10, 21, 21), node);
+		}
+	}
+
+	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
+	for (Leg const & leg : legs) {
+		unsigned const node = pixel(leg.IsSelected ? white : black);
+		unsigned const branch = pixel(leg.IsRunning ? Planned_Blend(leg.Owner, white, 0x64) : Planned_Blend(leg.Owner, black, 0x50));
+		for (int offset = 0; offset <= 1; offset++) {
+			draw_line(leg, offset, branch, true);
+		}
+
+		int const frame = icon_frame(leg);
+		Point2D middle;
+		if (frame != -1 && has_box(leg, middle)) {
+			Rect box(middle.X - 9, middle.Y - 9, 19, 19);
+			LogicalSurface->Draw_Rect(TacticalRect, box, branch);
+			LogicalSurface->Fill_Rect(TacticalRect, Rect(box.X + 1, box.Y + 1, box.Width - 2, box.Height - 2), node);
+
+			// The cursor is centred by hand, one pixel left of the middle, in window coordinates.
+			Point2D corner(middle.X - TacticalRect.X - mouseshapes->Get_Width() / 2 - 1, middle.Y - TacticalRect.Y - mouseshapes->Get_Height() / 2);
+			Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, corner, TacticalRect, SHAPE_WIN_REL);
+		}
+	}
+
+	for (Leg const & leg : legs) {
+		unsigned const mark = pixel(Planned_Blend(leg.Owner, black, 0x50));
+		LogicalSurface->Fill_Rect(TacticalRect, Rect(leg.To.X - 3, leg.To.Y - 3, 6, 6), mark);
+	}
 }
+
 
 
 /// <summary>

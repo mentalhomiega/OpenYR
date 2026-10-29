@@ -561,7 +561,7 @@ class BuildingClass : public TechnoClass
 		virtual void Draw_Radial_Indicator(void) const override;
 		// Draws the weapon range ring of a selected defence when the Show defence range option is on.
 		void Draw_Defence_Range(void) const;
-		virtual void Draw_Post_Render(Point2D const & point, Rect const & cliprect) const override;
+		virtual void Draw_Wrench_Icon(Rect const & cliprect) const override;
 		void Draw_Wrench(Rect const & cliprect) const;
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);

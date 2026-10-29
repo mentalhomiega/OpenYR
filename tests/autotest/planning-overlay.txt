@@ -1,17 +1,22 @@
-; Planned-order overlay: each planned leg is drawn from its unit through the destinations queued after it.
-; A queued destination carries the waypoint cursor and its index in the queue, from 0. The leg in progress
-; is drawn with no index. Run in a skirmish on the default map, as planning-legs.txt does. The screenshots
-; come from ScreenCapture, so the runner copies them with -ShotDir.
+; Planned-order overlay: while planning is on, each planned leg is drawn from its unit through the destinations queued after it,
+; as gamemd's planning overlay does (0x63B0A0 and 0x63B150). Nothing is drawn with planning off. A leg is four solid lines, black
+; or white for a selected unit, under a two pixel animated line in the owner's colour that is dim until the plan runs and bright
+; once it does; each destination has a small filled square and no number. Run in a skirmish on the default map, as planning-legs.txt does.
+; The screenshots come from ScreenCapture, so the runner copies them with -ShotDir.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/planning-overlay.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 150 -ShotDir <folder>
 ; Expected:
-;   frame 340: planning is on; three queued legs, indexes 0, 1 and 2 (planstate: orders 3 running 0).
-;   frame 352: the first leg is in progress; indexes 0 and 1 are queued (planstate: orders 2 running 1).
-;   frame 700: the second leg is in progress; index 0 is queued (planstate: orders 1 running 1).
+;   frame 341: planning is on; three queued legs, each with a white band under a dim dashed line, and a square at each of
+;              three destinations (planstate: orders 3 running 0).
+;   frame 352: planning is off, so no legs are drawn.
+;   frame 354: planning is on again; the leg in progress and the two queued legs have a bright dashed line (orders 2 running 1).
+;   frame 702: the second leg is in progress with a bright line; one queued leg follows it (orders 1 running 1).
 ;   frame 1412: planning is on again with the second batch of legs queued behind the running leg.
 ;   frame 1502: a normal order cleared the plan, so no legs are drawn for E1.
 30 command CenterBase
 300 grantunit E1 60 63
 305 reveal
 306 view 65 65
+310 select E1
 320 planning 1
 330 clickcell E1 70 63
 331 clickcell E1 70 68
@@ -21,8 +26,13 @@
 350 planning 0
 351 planstate E1
 352 command ScreenCapture
+353 planning 1
+354 command ScreenCapture
+355 planning 0
 700 planstate E1
-701 command ScreenCapture
+701 planning 1
+702 command ScreenCapture
+703 planning 0
 1400 planning 1
 1410 clickcell E1 62 72
 1411 clickcell E1 58 72
