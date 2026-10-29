@@ -1,0 +1,28 @@
+; A Chrono Legionnaire (CLEG, Teleporter=yes) built at a barracks with a rally point jumps to the rally cell as it is set down.
+; gamemd flags a soldier while it is unlimboed (TechnoClass::Unlimbo, 0x6F6E1B), and a jump ordered then clears the destination
+; cell first (TeleportLocomotionClass::Move_To, 0x71816F -> CellClass::ScatterContent, 0x481670).
+; A rifleman (E1) stands on the rally cell 62,36 of the barracks (GAPILE) and the CLEG is released. Expected: "warp order CLEG"
+; names 62,36, and the E1 is given a destination next to it ("where E1" shows nav 63,36 or another cell, not -1,-1). The barracks
+; then sends the CLEG to its exit cell, so it does not stay on 62,36. The build takes about 1000 frames (DebugInstantBuild does not shorten it).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/cleg-exit-scatter.txt -Seconds 200 -Filter "AUTOTEST   (warp|where)|Exception"
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugInstantBuild
+22 command DebugUnlockAll
+23 reveal
+30 view 62 36
+40 own GAPOWR 52 30
+41 own GAPILE 56 34
+42 own GATECH 52 36
+45 own E1 62 36
+50 rally GAPILE 62 36
+70 where E1
+80 produce CLEG
+500 place CLEG
+900 place CLEG
+1000 place CLEG
+1010 where E1
+1020 where CLEG
+1100 where E1
+1100 where CLEG
+1150 quit

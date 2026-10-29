@@ -155,6 +155,10 @@ void TeleportLocomotionClass::Move_To(Coord to)
 	if (WarpPhase == TELEPORT_HOLD) {
 		return;
 	}
+	// A soldier ordered to jump while it is being set down on the map moves everything off the cell it jumps to first (0x71816F).
+	if (LinkedTo->IsBeingPlaced && LinkedTo->RTTI == RTTI_INFANTRY) {
+		Map[to.As_Cell()].Incoming(COORD_NONE, true, true, false);
+	}
 	DestinationCoord = Choose_Destination(to);
 	if (AutoTest_Active()) {
 		Cell const to_cell = to.As_Cell();
@@ -285,7 +289,8 @@ Coord TeleportLocomotionClass::Choose_Destination(Coord const & to) const
 	if (!Map.In_Radar(near_target)) {
 		return(COORD_NONE);
 	}
-	int const zone = Map.Get_Cell_Zone(near_target, type->MZone, LinkedTo->IsOnBridge);
+	// The zone is the one of the soldier's own destination cell, judged with ObjectClass::IsOnBridge (vtable +0xBC).
+	int const zone = Map.Get_Cell_Zone(LinkedTo->Destination_Coord().As_Cell(), type->MZone, LinkedTo->Is_Moving_Onto_Bridge());
 	Cell const nearby = Map.Nearby_Location(near_target, type->Speed, zone, type->MZone, Map[near_target].IsUnderBridge, Point2D(1, 1), false, true);
 	if (nearby == CELL_NONE) {
 		return(COORD_NONE);
