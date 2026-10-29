@@ -1,0 +1,18 @@
+; On the Potomac river, under the high bridge on row 49 (the cells at 83,48 to 83,50 are covered by it), a player destroyer (DEST) at 83,56 shells a neutral destroyer at 83,50. Then, with both
+; ships gone, a player destroyer at 83,38 shells a neutral one at 83,44, in open water north of the bridge.
+; Expected, from gamemd's FUN_0048A4F0 (0x48A4F0): a Conventional warhead that explodes on a water cell never shows the SplashList animation when the cell has cell flag 0x100 (IsUnderBridge, set by
+; Set_Under_Bridge, 0x47E040) or the blast is two or more levels above the floor. The AUTOTEST explode lines at 83,50 give land 2 (water) and anim none; the ones at 83,44 give land 2 and a splash animation.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/splash-under-bridge.txt -Map Potomac.mmx -Seconds 150 -Filter "AUTOTEST explode|AUTOTEST   cell [0-9]|Exception"
+30 command CenterBase
+35 reveal
+40 cell 83 50
+41 cell 83 44
+50 neutral DEST 83 50
+51 own DEST 83 56
+90 strike DEST 83 50
+300 kill DEST 1
+301 kill DEST
+310 neutral DEST 83 44
+311 own DEST 83 38
+350 strike DEST 83 44
+600 quit

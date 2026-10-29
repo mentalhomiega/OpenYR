@@ -589,7 +589,7 @@ AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, 
 		return(NULL);
 	}
 
-	if (land == LAND_WATER && warhead->IsConventional && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
+	if (land == LAND_WATER && warhead->IsConventional && !Map[coord].IsUnderBridge && coord.Z < Map.Get_Height_GL(coord) + 2 * LEVEL_LEPTON_H) {
 		if (Rule->SplashList.Count()) {
 			int val = std::max(0, std::min(damage, DAMAGE_PER_SPLASH_ANIM * Rule->SplashList.Count() - 1));
 			return(Rule->SplashList[val / DAMAGE_PER_SPLASH_ANIM]);
