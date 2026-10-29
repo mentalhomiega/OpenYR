@@ -127,6 +127,8 @@
 #include "tracker.h"
 #include "tube.h"
 #include "uicontrol.h"
+#include "dbgprint.h"
+#include "jumpjet.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -1285,6 +1287,69 @@ void FootClass::Stun(void)
 	Path[0] = FACING_NONE;
 	Stop_Driver();
 	BASECLASS::Stun();
+}
+
+
+/// <summary>
+/// Sends a destroyed or doomed soldier or vehicle falling out of the sky (FootClass::Crash, 0x4DEBB0).
+/// The object is stunned, its cargo dies with it, and a vehicle is set rocking. Its jumpjet locomotor
+/// then drops it spinning to the ground, where Land_Crashed ends it. An object on the ground, or one
+/// a locomotor warhead holds, or one without a jumpjet locomotor to fall with, does not crash.
+/// </summary>
+/// <param name="source">The object responsible for the kill. This may be NULL.</param>
+/// <returns>bool; Was the object sent into a crash?</returns>
+bool FootClass::Crash(TechnoClass * source)
+{
+	// Nothing else can carry an object down, so one that cannot fall is destroyed where it is.
+	if (HeightAGL <= 0 || IsAttackedByLocomotor || dynamic_cast<JumpjetLocomotionClass const *>(Locomotion.get()) == NULL) {
+		return(false);
+	}
+
+	if (Strength > 0) {
+		if (source != NULL && Tag != NULL) {
+			Tag->Spring(TEVENT_FIRST_DAMAGED, this);
+		}
+		if (Tag != NULL && IsActive) {
+			Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
+		}
+		if (Tag != NULL) {
+			if (IsActive && source != NULL) {
+				Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
+			}
+		}
+		if (!IsActive) {
+			return(true);
+		}
+		Record_The_Kill(source);
+		if (!IsActive) {
+			return(true);
+		}
+		Strength = 0;
+	}
+
+	DebugString("Crash: %s falls from %d leptons\n", TClass->Name(), HeightAGL);
+	IsCrashing = true;
+	Transmit_Message(RADIO_OVER_OUT);
+	Stun();
+	Kill_Cargo(source);
+
+	// The crash sound and voice start as the fall does (FootClass::Update, 0x4D9920).
+	Sound_Effect(TClass->CrashingSound, Center_Coord());
+	if (House->Is_Player_Control()) {
+		Unit_Voice_Effect(TClass->VoiceCrashing, Center_Coord());
+	}
+
+	// A soldier does not rock as it falls.
+	if (RTTI != RTTI_INFANTRY && ScenarioInit == 0) {
+		RockingSidewaysPerFrame = Random_Double(0.10, 0.25);
+		if (Random_Pick(0, 1) == 0) {
+			RockingSidewaysPerFrame = -RockingSidewaysPerFrame;
+		}
+		RockingForwardsPerFrame = Random_Double(0.0, 0.1);
+	}
+
+	Detach_This_From_All(this, false);
+	return(true);
 }
 
 

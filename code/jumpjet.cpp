@@ -351,6 +351,11 @@ void JumpjetLocomotionClass::Begin_Crash(void)
 	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
 	FlightLevel = -5;
 	CurrentState = CRASHING;
+
+	// A soldier starts its air death sequence as it begins to fall (0x54B028).
+	if (LinkedTo->RTTI == RTTI_INFANTRY) {
+		static_cast<InfantryClass *>(LinkedTo)->Do_Action(DO_AIR_DEATH_START, false);
+	}
 }
 
 
@@ -404,6 +409,8 @@ char const * JumpjetLocomotionClass::State_Name(void) const
 			return("DESCENDING");
 		case CRASHING:
 			return("CRASHING");
+		case CRASHED:
+			return("CRASHED");
 	}
 	return("INVALID");
 }
@@ -953,11 +960,26 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 
 	// A vehicle that crashed on its own, rather than being let go by a locomotor warhead, ends where it lands:
 	// it explodes and is removed, and crushes nothing (JumpjetLocomotionClass, 0x54D019, and notice 0x117C).
-	if (!LinkedTo->IsAttackedByLocomotor && LinkedTo->LetGoBy == NULL && LinkedTo->LetGoByHouse == NULL && LinkedTo->RTTI == RTTI_UNIT) {
-		LinkedTo->Set_Coord(landed);
-		IsLanding = false;
-		static_cast<UnitClass *>(LinkedTo)->Land_Crashed();
-		return;
+	// A soldier plays its last air death sequence there, and stays on the ground until the sequence ends.
+	if (!LinkedTo->IsAttackedByLocomotor && LinkedTo->LetGoBy == NULL && LinkedTo->LetGoByHouse == NULL) {
+		if (LinkedTo->RTTI == RTTI_UNIT) {
+			LinkedTo->Set_Coord(landed);
+			IsLanding = false;
+			static_cast<UnitClass *>(LinkedTo)->Land_Crashed();
+			return;
+		}
+		if (LinkedTo->RTTI == RTTI_INFANTRY) {
+			LinkedTo->Set_Coord(landed);
+			IsLanding = false;
+			CurrentSpeed = 0;
+			TargetSpeed = 0;
+			FlightLevel = 0;
+			HeadToCoord = COORD_NONE;
+			IsMoving = false;
+			CurrentState = CRASHED;
+			static_cast<InfantryClass *>(LinkedTo)->Land_Crashed();
+			return;
+		}
 	}
 	LinkedTo->Set_Speed(0.0);
 	LinkedTo->Mark(MARK_UP);
@@ -1082,7 +1104,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 
 	// A crashing vehicle's height is set by Process_Crashing, not by the flight level.
 	bool moved = false;
-	if (CurrentState != CRASHING && height_diff < desired_height) {
+	if (CurrentState != CRASHING && CurrentState != CRASHED && height_diff < desired_height) {
 		int height_agl = LinkedTo->HeightAGL;
 		if ((Map[LinkedTo->Get_Coord()].IsUnderBridge) && !LinkedTo->IsOnBridge) {
 			if (LinkedTo->PositionCoord.Z >= Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT) {
@@ -1101,7 +1123,7 @@ void JumpjetLocomotionClass::Movement_AI(void)
 		}
 		moved = true;
 	}
-	if (CurrentState != CRASHING && height_diff > desired_height) {
+	if (CurrentState != CRASHING && CurrentState != CRASHED && height_diff > desired_height) {
 		// A descent moves one JumpjetClimb step, or the rest of the way when less than a step is left.
 		if (desired_height <= height_diff - LinkedTo->TClass->JumpjetClimb) {
 			height = static_cast<int>(height - LinkedTo->TClass->JumpjetClimb);
