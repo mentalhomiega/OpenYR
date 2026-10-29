@@ -4463,12 +4463,17 @@ bool TechnoClass::Select(void)
 	if (BASECLASS::Select()) {
 
 		/*
+		**	The attached tag sees the selection, whoever owns the object and however many objects are
+		**	selected with it (TechnoClass::Select, 0x6FBFA0).
+		*/
+		if (Tag != NULL) {
+			Tag->Spring(TEVENT_SELECTED, this);
+		}
+
+		/*
 		**	Speak a confirmation of selection.
 		*/
 		if (House->Is_Player_Control() && AllowVoice) {
-			if (Tag != NULL) {
-				Tag->Spring(TEVENT_SELECTED, this);
-			}
 			Response_Select();
 		}
 		return(true);
