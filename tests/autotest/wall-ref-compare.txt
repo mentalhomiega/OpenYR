@@ -2,7 +2,7 @@
 ; Reference: scratch-agent/yr-ref-walls/RESULT.md, captured from gamemd with CnCNet-Spawner.dll only, the same geometry, a Rhino 120mm (HTNK) on each run.
 ; Eight cases, run one after another (the Rhino of a case is killed before the next one is placed); each case lasts 800 frames.
 ;   cases 1 to 4: a seven-cell column of GAWALL, NAWALL, GASAND, CAFNCB at x 63, the Rhino at x 56 and the pillbox at x 66, both ends open (x 56 to 66, y 40, 50, 60, 70).
-;   cases 5 to 8: the pillbox at x 86 with all eight neighbours walled in GAWALL, NAWALL, GASAND, CAFNCB, the Rhino at x 76 (y 40, 50, 60, 70).
+;   cases 5 to 8: the pillbox at x 86 with all eight neighbours walled in GAWALL, NAWALL, GASAND, CAFNCB, the Rhino at x 76 (y 40, 80, 60, 70; row 50 holds the map building CASTL02 at x 80 to 83, which makes a Rhino there pick another spot).
 ; Plain YR, as seen in screenshots:
 ;   column GAWALL: the Rhino drives up to the wall, shoots it, the shells open a gap, then it fires at the pillbox.
 ;   column NAWALL: the same (concrete and Soviet wall behave alike).
@@ -211,18 +211,18 @@
 4260 cell 85 39
 4260 cell 86 40
 4280 kill HTNK 1
-4300 own HTNK 76 50
-4301 neutral GAPILL 86 50
-4302 ewall NAWALL 85 49
-4303 ewall NAWALL 85 50
-4304 ewall NAWALL 85 51
-4305 ewall NAWALL 86 49
-4306 ewall NAWALL 86 51
-4307 ewall NAWALL 87 49
-4308 ewall NAWALL 87 50
-4309 ewall NAWALL 87 51
-4370 canfire HTNK 86 50
-4380 forceattack HTNK 86 50
+4300 own HTNK 76 80
+4301 neutral GAPILL 86 80
+4302 ewall NAWALL 85 79
+4303 ewall NAWALL 85 80
+4304 ewall NAWALL 85 81
+4305 ewall NAWALL 86 79
+4306 ewall NAWALL 86 81
+4307 ewall NAWALL 87 79
+4308 ewall NAWALL 87 80
+4309 ewall NAWALL 87 81
+4370 canfire HTNK 86 80
+4380 forceattack HTNK 86 80
 4390 where HTNK
 4420 where HTNK
 4450 where HTNK
@@ -246,12 +246,12 @@
 4990 where HTNK
 5020 where HTNK
 5050 where HTNK
-5060 cell 85 50
-5060 cell 87 50
-5060 cell 86 49
-5060 cell 86 51
-5060 cell 85 49
-5060 cell 86 50
+5060 cell 85 80
+5060 cell 87 80
+5060 cell 86 79
+5060 cell 86 81
+5060 cell 85 79
+5060 cell 86 80
 5080 kill HTNK 1
 5100 own HTNK 76 60
 5101 neutral GAPILL 86 60
