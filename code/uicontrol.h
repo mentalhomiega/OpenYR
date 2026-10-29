@@ -80,14 +80,14 @@ class UIControlsClass
 		RGBClass NavComQueueLineColor = RGBClass(74, 77, 255);
 		RGBClass NavComQueueLineDropShadowColor = RGBClass(0, 0, 0);
 
-		Point2D UnitGroupNumberOffset = Point2D(-4, -4);
-		Point2D InfantryGroupNumberOffset = Point2D(-4, -4);
-		Point2D BuildingGroupNumberOffset = Point2D(-4, -4);
-		Point2D AircraftGroupNumberOffset = Point2D(-4, -4);
-		Point2D UnitWithPipGroupNumberOffset = Point2D(-4, -8);
-		Point2D InfantryWithPipGroupNumberOffset = Point2D(-4, -8);
-		Point2D BuildingWithPipGroupNumberOffset = Point2D(-4, -8);
-		Point2D AircraftWithPipGroupNumberOffset = Point2D(-4, -8);
+		Point2D UnitGroupNumberOffset = Point2D(-4, -36);
+		Point2D InfantryGroupNumberOffset = Point2D(-4, -39);
+		Point2D BuildingGroupNumberOffset = Point2D(-4, -36);
+		Point2D AircraftGroupNumberOffset = Point2D(-4, -36);
+		Point2D UnitWithPipGroupNumberOffset = Point2D(-4, -36);
+		Point2D InfantryWithPipGroupNumberOffset = Point2D(-4, -39);
+		Point2D BuildingWithPipGroupNumberOffset = Point2D(-4, -36);
+		Point2D AircraftWithPipGroupNumberOffset = Point2D(-4, -36);
 
 		// The colors of the relationship view: the local player, allies and enemies.
 		RGBClass PlayerColorOwn = RGBClass(0, 114, 178);

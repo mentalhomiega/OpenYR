@@ -171,6 +171,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "font.h"
 #include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
@@ -230,8 +231,10 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstring>
 #include <intrin.h>
 #include <set>
+#include <string>
 #include <tuple>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
@@ -10276,6 +10279,31 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Prints a short label in a black box edged in a house's color, as gamemd does for an object's control
+/// group number and its primary tag (TechnoClass::DrawPipScalePips, 0x709A90, and DrawExtraInfo, 0x70AA60).
+/// </summary>
+/// <param name="point">The label's top-left corner, or the middle of its top edge when centered.</param>
+static void Draw_House_Label(HouseClass const * house, char const * text, Point2D const & point, bool centered, Rect const & cliprect)
+{
+	ColorScheme * scheme = ColorSchemes[(house->Scheme >= 0 && house->Scheme < ColorSchemes.Count()) ? house->Scheme : 0];
+	FontClass const * font = Font_From_TPF(TextPrintType(TPF_EFNT));
+	int width = 0;
+	int lines = 1;
+	for (char const * line = text; ; ) {
+		char const * end = strpbrk(line, "\r\n");
+		width = std::max(width, font->String_Pixel_Width(end != NULL ? std::string(line, end).c_str() : line));
+		if (end == NULL) break;
+		lines++;
+		line = end + 1;
+	}
+	Rect const box((centered ? point.X - width / 2 : point.X) - 1, point.Y, width + 2, font->Get_Height() * lines);
+	LogicalSurface->Fill_Rect(cliprect, box, scheme->Converter->Convert_Pixel(BLACK));
+	LogicalSurface->Draw_Rect(cliprect, box, scheme->Converter->Convert_Pixel(scheme->Color));
+	Simple_Text_Print(text, *LogicalSurface, cliprect, point, scheme, TBLACK, TextPrintType(TPF_EFNT|TPF_FULLSHADOW|(centered ? TPF_CENTER : 0)), 1);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.
@@ -10507,7 +10535,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		sprintf(group_text, "%d", group < 10 ? group : 0);
 
 		Point2D offset = UIControls.Group_Number_Offset(RTTI, Class_Of()->Max_Pips() != 0);
-		Plain_Text_Print(group_text, *LogicalSurface, rect, bottomleft + offset, WHITE, TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, group_text, bottomleft + offset, false, rect);
 	}
 }
 

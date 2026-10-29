@@ -392,14 +392,14 @@ SystemCursor=no
 
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
-| [`AircraftGroupNumberOffset`](../manual/content/keys/aircraftgroupnumberoffset.md) | `-4,-4` | Where a selected aircraft whose type has no pips prints its control group number. | OpenTS |
-| [`AircraftWithPipGroupNumberOffset`](../manual/content/keys/aircraftwithpipgroupnumberoffset.md) | `-4,-8` | Where a selected aircraft whose type has pips prints its control group number. | OpenTS |
-| [`BuildingGroupNumberOffset`](../manual/content/keys/buildinggroupnumberoffset.md) | `-4,-4` | Where a selected structure whose type has no pips prints its control group number. | OpenTS |
-| [`BuildingWithPipGroupNumberOffset`](../manual/content/keys/buildingwithpipgroupnumberoffset.md) | `-4,-8` | Where a selected structure whose type has pips prints its control group number. | OpenTS |
-| [`InfantryGroupNumberOffset`](../manual/content/keys/infantrygroupnumberoffset.md) | `-4,-4` | Where a selected infantry unit whose type has no pips prints its control group number. | OpenTS |
-| [`InfantryWithPipGroupNumberOffset`](../manual/content/keys/infantrywithpipgroupnumberoffset.md) | `-4,-8` | Where a selected infantry unit whose type has pips prints its control group number. | OpenTS |
-| [`UnitGroupNumberOffset`](../manual/content/keys/unitgroupnumberoffset.md) | `-4,-4` | Where a selected vehicle whose type has no pips prints its control group number. | OpenTS |
-| [`UnitWithPipGroupNumberOffset`](../manual/content/keys/unitwithpipgroupnumberoffset.md) | `-4,-8` | Where a selected vehicle whose type has pips prints its control group number. | OpenTS |
+| [`AircraftGroupNumberOffset`](../manual/content/keys/aircraftgroupnumberoffset.md) | `-4,-36` | Where a selected aircraft whose type has no pips prints its control group number. | OpenTS |
+| [`AircraftWithPipGroupNumberOffset`](../manual/content/keys/aircraftwithpipgroupnumberoffset.md) | `-4,-36` | Where a selected aircraft whose type has pips prints its control group number. | OpenTS |
+| [`BuildingGroupNumberOffset`](../manual/content/keys/buildinggroupnumberoffset.md) | `-4,-36` | Where a selected structure whose type has no pips prints its control group number. | OpenTS |
+| [`BuildingWithPipGroupNumberOffset`](../manual/content/keys/buildingwithpipgroupnumberoffset.md) | `-4,-36` | Where a selected structure whose type has pips prints its control group number. | OpenTS |
+| [`InfantryGroupNumberOffset`](../manual/content/keys/infantrygroupnumberoffset.md) | `-4,-39` | Where a selected infantry unit whose type has no pips prints its control group number. | OpenTS |
+| [`InfantryWithPipGroupNumberOffset`](../manual/content/keys/infantrywithpipgroupnumberoffset.md) | `-4,-39` | Where a selected infantry unit whose type has pips prints its control group number. | OpenTS |
+| [`UnitGroupNumberOffset`](../manual/content/keys/unitgroupnumberoffset.md) | `-4,-36` | Where a selected vehicle whose type has no pips prints its control group number. | OpenTS |
+| [`UnitWithPipGroupNumberOffset`](../manual/content/keys/unitwithpipgroupnumberoffset.md) | `-4,-36` | Where a selected vehicle whose type has pips prints its control group number. | OpenTS |
 
 ## Other game files
 
