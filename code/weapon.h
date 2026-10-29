@@ -71,9 +71,12 @@ class WeaponTypeClass : public AbstractTypeClass
 		virtual void Compute_CRC(CRCEngine &) const override;
 
 		static WeaponTypeClass *Find_Or_Make(const char * name);
+		// Unlike Find_Or_Make, returns NULL for a name no rules file declared, and never creates a weapon.
+		static WeaponTypeClass *Find_Declared(const char * name);
 
 		char const * Name(void) const {return(IniName);}
 		bool Read_INI(CCINIClass const & ini);
+		void Ensure_Defaults(void);
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
 		bool Anim_Picks_By_Facing(void) const;
