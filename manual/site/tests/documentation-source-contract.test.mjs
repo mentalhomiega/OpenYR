@@ -1458,8 +1458,8 @@ test('A type can set how many pips its row has', () => {
 		[
 			'return(MaxPips.value_or(10));',
 			'return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));',
-			'return(MaxPips.value_or(5));',
-			'return(std::min(MaxPassengers, MaxPips.value_or(5)));',
+			'return(MaxPips.value_or(Fetch_RTTI() == RTTI_INFANTRYTYPE ? 3 : 5));',
+			'return(std::min(MaxPassengers, MaxPips.value_or(MaxPassengers)));',
 			'return(MaxPips.value_or(8));',
 		],
 		'every pip scale keeps its own length as the default',
