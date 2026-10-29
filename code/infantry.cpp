@@ -627,7 +627,11 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 
 		if (delthis) {
-			Delete_Me();
+			// A Crashable soldier killed in the air falls instead of vanishing. Any other, or one that cannot
+			// fall, is deleted (InfantryClass::Destroy, 0x517FA0).
+			if (!Class->IsCrashable || !Crash(NULL)) {
+				Delete_Me();
+			}
 		}
 		return(res);
 	}
@@ -2915,6 +2919,18 @@ bool InfantryClass::Do_Action(DoType todo, bool force, bool randomize)
 }
 
 
+/// <summary>
+/// Ends the fall of a soldier that crashed in the air (UnitClass and InfantryClass notice 0x117C,
+/// 0x522A60). The soldier plays its last air death sequence where it landed and is removed when the
+/// sequence ends. Nothing under it is crushed.
+/// </summary>
+void InfantryClass::Land_Crashed(void)
+{
+	DebugString("Crash: %s lands at %d,%d\n", Class->Name(), Get_Cell().X, Get_Cell().Y);
+	Do_Action(DO_AIR_DEATH_FINISH, true);
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Stop_Driver -- Stops the infantry from moving any further.                   *
  *                                                                                             *
@@ -4413,6 +4429,13 @@ void InfantryClass::Doing_AI(void)
 						new AnimClass(Rule->DeadBodies.Pick(Scen->RandomNumber), Center_Coord());
 					}
 					Delete_Me();
+				}
+				break;
+
+			// A soldier that crashed in the air falls once its first air death sequence has played out (FUN_00520AE0).
+			case DO_AIR_DEATH_START:
+				if (Fetch_Stage() >= Class->DoControls[Doing].Count) {
+					Do_Action(DO_AIR_DEATH_FALLING, true);
 				}
 				break;
 

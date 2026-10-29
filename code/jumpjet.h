@@ -103,6 +103,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 			CRUISING,
 			DESCENDING,
 			CRASHING,
+			CRASHED,
 		} CurrentState;
 
 		/*
