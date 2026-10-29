@@ -3298,6 +3298,7 @@ void Run(StepType const & step)
 		// selectadd <TypeID>: adds the player's objects of that type to the selection, as a shift-click would.
 		For_Player_Objects<UnitClass>(Units, step.Argument, [](UnitClass * object) {object->Select();});
 		For_Player_Objects<InfantryClass>(Infantry, step.Argument, [](InfantryClass * object) {object->Select();});
+		For_Player_Objects<BuildingClass>(Buildings, step.Argument, [](BuildingClass * object) {object->Select();});
 		For_Player_Objects<AircraftClass>(Aircraft, step.Argument, [](AircraftClass * object) {object->Select();});
 	} else if (step.Command == "produce") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
