@@ -4011,7 +4011,13 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
 
-	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? BLACK : LTGREY;
+	// The number is printed in color scheme 2, or 0 on a snow theater, as gamemd does (0x6DAD60). Each [Colors]
+	// entry makes two schemes, so scheme 2 is the plain one of the second entry (Gold) and scheme 0 the first
+	// entry's (LightGold) in the stock rules.
+	int coloridx = TheaterClass::As_Reference(Scen->Theater).IsArctic ? 0 : 2;
+	if (coloridx >= ColorSchemes.Count()) {
+		coloridx = 0;
+	}
 
 	for (PathType path = PATH_FIRST; path < PATH_COUNT; path++) {
 		PlayerPtr->Ensure_Path(path);
