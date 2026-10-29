@@ -127,8 +127,8 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	if (Class->IsNormalized) {
 		Point2D delta(origin.X - target.X, origin.Y - target.Y);
 
-		float abs_vx = abs(MovementDirection.X * Speed);
-		float abs_vy = abs(MovementDirection.Y * Speed);
+		float abs_vx = abs((int)(MovementDirection.X * Speed));
+		float abs_vy = abs((int)(MovementDirection.Y * Speed));
 
 		float min_time = 9999.0f;
 
