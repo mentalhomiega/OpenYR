@@ -10564,6 +10564,20 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	}
 
 	/*
+	**	Show that the owner's hospitals mend soldiers and organic vehicles, or its machine shops other
+	**	vehicles, with a cross or a spanner that blinks while this one is hurt (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) {
+		bool const infantry = RTTI == RTTI_INFANTRY || TClass->IsOrganic;
+		if (House->Self_Heal_Points(infantry) > 0) {
+			int const frames = infantry ? Rule->SelfHealInfantryFrames : Rule->SelfHealUnitFrames;
+			bool const blink = frames > 0 && (Frame % frames) <= 5 && Strength < TClass->MaxStrength;
+			Point2D const icon = xy + (RTTI == RTTI_UNIT ? Point2D(38, -32) : Point2D(19, -35));
+			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)Class_Of()->PipShapes, infantry ? 13 : 20, icon, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|(blink ? SHAPE_DARKEN : 0)));
+		}
+	}
+
+	/*
 	**	Display whether this unit is a leader unit or not.
 	*/
 	if (RTTI != RTTI_BUILDING) {
