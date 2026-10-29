@@ -1012,26 +1012,7 @@ int AircraftClass::Exit_Object(TechnoClass * unit)
  *=============================================================================================*/
 int AircraftClass::Paradrop_Cargo(void)
 {
-	FootClass * passenger = Cargo.Detach_Object();
-	if (passenger) {
-		if (!passenger->Paradrop(Center_Coord())) {
-			Cargo.Attach(passenger);
-			passenger->Hidden();
-		} else {
-
-			/*
-			**	Play a sound effect of the parachute opening.
-			*/
-			Sound_Effect(Rule->ChuteSound, PositionCoord);
-
-			// A soldier's guard or hunt mission is queued by InfantryClass::Paradrop and starts on landing; the aircraft keeps its own mission.
-			if (Team != NULL) {
-				Team->Remove(passenger);
-			}
-//			Arm = Rearm_Delay(IsSecondShot);
-			Arm = 0;
-		}
-	}
+	Drop_Paratrooper();
 	return(Arm);
 }
 
@@ -4363,8 +4344,9 @@ int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
 
 /// <summary>
 /// Drops the first paratrooper aboard half a cell to one side of the plane's path, alternating
-/// sides (0x415C60). A paratrooper that cannot land on the cell below stays aboard. Each drop
-/// gives the plane five more passes.
+/// sides by the parity of Ammo (AircraftClass::Unload_Passenger_Paradrop, 0x415C60). Both the
+/// overfly mission and Fire use it. A paratrooper that cannot land on the cell below stays
+/// aboard. A drop gives the plane five more passes and resets its Arm timer.
 /// </summary>
 void AircraftClass::Drop_Paratrooper(void)
 {
@@ -4382,10 +4364,13 @@ void AircraftClass::Drop_Paratrooper(void)
 			spot.Z = PositionCoord.Z;
 			if (passenger->Paradrop(spot)) {
 				Sound_Effect(Rule->ChuteSound, PositionCoord);
+
+				// A soldier's guard or hunt mission is queued by InfantryClass::Paradrop and starts on landing; the aircraft keeps its own mission.
 				if (Team != NULL) {
 					Team->Remove(passenger);
 				}
 				ParadropPasses = 5;
+				Arm = 0;
 				return;
 			}
 		}
