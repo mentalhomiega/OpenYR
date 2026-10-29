@@ -1,11 +1,15 @@
 ---
 key: Construction
-summary: Parsed sound that the engine never plays.
-no_effect: true
-see_also: [BuildingSlam, BuildingDrop, CrumbleSound]
+summary: The sound a structure makes as its construction begins, when its type has no BuildupSound.
+see_also: [BuildupSound, BuildingSlam, BuildingDrop, CrumbleSound]
 when_omitted:
   kind: value
   value: none
 ---
 
-The name suggests a sound for a structure going up, but nothing plays it. The sounds a structure makes as it appears come from two other settings: [`BuildingSlam`](/keys/buildingslam/) when the player places one, and [`BuildingDrop`](/keys/buildingdrop/) when the player's vehicle deploys into one.
+A structure whose type sets no [`BuildupSound`](/keys/buildupsound/) plays this sound at its position when its construction animation begins. With neither set, the structure is silent. Placing a structure plays [`BuildingSlam`](/keys/buildingslam/), and a vehicle deploying into one plays [`BuildingDrop`](/keys/buildingdrop/).
+
+```ini title="rulesmd.ini"
+[AudioVisual]
+Construction=BuildingGoingUp ; a sound ID registered in SOUND.INI
+```

@@ -1,0 +1,16 @@
+; A structure with no BuildupSound plays the rules' Construction sound when its construction begins. gamemd's
+; BuildingClass::Mission_Construction (0x449A50) uses the type's BuildupSound and falls back to Rules->Construction.
+; The test mod names PowerOn there. A GAPOWR placed by the player plays PowerOn once as it goes up, and no GAPOWR
+; plays it again afterward. Expected log: one "Sound: PowerOn at" line near frame 150 for the placed building.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/construction-sound.txt -Mods src-agent14/tests/autotest/construction-sound-rules -Settings "[Options]<newline>DebugMode=yes" -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST|Exception|Sound: PowerOn"
+20 own GACNST 50 30
+30 command CenterBase
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 reveal
+100 produce GAPOWR
+145 sounds 1
+150 place GAPOWR
+200 sounds 0
+210 quit

@@ -5503,7 +5503,8 @@ int BuildingClass::Do_MISSION_CONSTRUCTION(void)
 		case INITIAL:
 			Begin_Mode(BSTATE_CONSTRUCTION);
 			Transmit_Message(RADIO_BUILDING);
-			Sound_Effect(Class->BuildupSound, PositionCoord);
+			// A type with no BuildupSound plays the rules' Construction sound (BuildingClass::Mission_Construction, 0x449A50).
+			Sound_Effect(Class->BuildupSound != VOC_NONE ? Class->BuildupSound : Rule->Construction, PositionCoord);
 			IsToDisplay = true;
 			Status = DURING;
 			break;
