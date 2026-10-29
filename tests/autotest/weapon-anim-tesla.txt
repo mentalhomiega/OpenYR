@@ -9,7 +9,7 @@
 41 own NAPOWR 50 43
 42 own TESLA 55 44
 43 own SHK 55 47
-60 view 58 45
+60 view 61 45
 61 zoom 2
 95 record 2
 100 enemy E1 63 43
