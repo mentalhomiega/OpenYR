@@ -1,0 +1,21 @@
+; A computer team whose script line is "Spy on bldg @ waypt" (15) with the player's construction yard on the waypoint (waypoint 1 of
+; XMP29U2.MAP). The team's attack coordination gives its Infiltrate=yes member the Capture mission and the building as its target
+; (the member's own target assignment sets the destination), as the team routine at 0x6EB490 does for script action 0xF; the spy then walks
+; in and is used up, and the team goes on to its next line. Run with -AICountries 1.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/ai-spy-team.txt -AICountries 1 -Seconds 150 -Filter "AUTOTEST   where|AUTOTEST   wpcell|AUTOTEST team|TEAMTRACE|Exception"
+; Expected: at 360 the spy is on Capture with GACNST as its target (its nav is set by 500, when it is walking in); the team is gone by frame
+; 560 (TEAMTRACE gone) and the spy has no where line at 900.
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+1 teamtrace 1
+100 wpcell 1
+300 spawn SPY 62 28
+310 teamini E:\Claude ra2 decomp\src-agent19\tests\autotest\ai-spy-team.ini
+320 team TSTSPYT
+360 where SPY
+500 where SPY
+900 where SPY
+1000 teams
+1100 quit
