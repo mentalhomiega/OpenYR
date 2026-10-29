@@ -1,0 +1,30 @@
+; The text a selected building shows over itself (BuildingClass::Draw_Overlays, TechnoClass::Draw_Text_Overlay): the power
+; figures on a power plant, the Primary tag on the primary factory, and nothing on a computer's power plant the player has
+; neither allied nor spied on. gamemd draws the figures and the tag from TechnoClass::DrawExtraInfo (0x70AA60), gated by
+; DrawInfoTipAndSpiedSelection (0x43E7B0) on IsSelected and on Owner->Is_Ally(CurrentPlayer) or the spy bit.
+; Run on XMP29U2.MAP as the Americans with the cheats that -Settings turns on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/selection-text-overlay.txt -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120 -ShotDir scratch-agent/spied-factory-overlay -Filter "AUTOTEST|Exception"
+; Expected in the three window shots: the selected own power plant shows "Power = n" over "Drain = n" in a black box edged in
+; the owner's color; the selected war factory shows "Primary" in such a box and no figures; the selected computer power plant
+; shows no box at all.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy NAPOWR 50 26
+35 reveal
+36 view 56 30
+100 cellpixel 60 30
+101 cellpixel 60 34
+102 cellpixel 50 26
+300 windowclick 632 390
+310 windowshot sel-text-powerplant
+320 windowclick 512 450
+330 windowshot sel-text-warfactory
+340 windowclick 452 180
+350 windowshot sel-text-enemy-powerplant
+400 quit
