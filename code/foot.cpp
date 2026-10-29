@@ -4184,7 +4184,7 @@ void FootClass::AI(void)
 // this frame or the locomotor reports movement, unless the object is falling, crashing, or a
 // DirectRocker-linked unit that is not Pushy. A playing sound is re-aimed at the object's place on
 // every update, as gamemd's FootClass::Update (0x4DA530) does through AudioController::PlayEvent
-// (0x750D40), and it ends three updates after the object stops.
+// (0x750D40). After the object stops, the sound plays on for three updates and ends on the fourth.
 void FootClass::Update_Move_Sound(bool stepped)
 {
 	bool const moving = stepped || (Locomotion != NULL && Locomotion->Is_Moving_Now());
