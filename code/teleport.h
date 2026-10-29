@@ -112,6 +112,7 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		Coord Choose_Destination(Coord const & to) const;
 		int Warp_Delay(Coord const & to) const;
 		void Start_Warp(void);
+		void End_Wait_Or_Hold(void);
 
 		// What clearing the landing cell of a chronosphere warp came to.
 		enum ClearResult
