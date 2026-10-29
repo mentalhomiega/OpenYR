@@ -8313,7 +8313,7 @@ void BuildingClass::Write_INI(CCINIClass & ini)
  *=============================================================================================*/
 Coord BuildingClass::Target_Coord(void) const
 {
-	return(BASECLASS::Target_Coord());
+	return(BASECLASS::Target_Coord() + Class->TargetCoordOffset);
 }
 
 

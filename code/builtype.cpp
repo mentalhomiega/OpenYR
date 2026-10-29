@@ -254,6 +254,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	ToBuild(RTTI_NONE),
 	ExitCoordinate(0, 0, 0),
 	IsExitCoordSet(false),
+	TargetCoordOffset(0, 0, 0),
 	ExitList(NULL),
 	StartFace(DIR_N),
 	Power(0),
@@ -1493,6 +1494,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsCanPlaceAnywhere = ini.Get_Bool(Name(), "PlaceAnywhere", IsCanPlaceAnywhere);
 		IsICBMLauncher = ini.Get_Bool(Name(), "ICBMLauncher", IsICBMLauncher);
 		IsArtillary = ini.Get_Bool(Name(), "Artillary", IsArtillary);
+		TargetCoordOffset = ini.Get_Point(Name(), "TargetCoordOffset", Point3D(TargetCoordOffset));
 
 		if (ini.Is_Present(Name(), "ExitCoord")) {
 			ExitCoordinate = ini.Get_Point(Name(), "ExitCoord", Point3D(ExitCoordinate));
@@ -2441,6 +2443,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Adjacent);
 	stream.Serialize(ToBuild);
 	stream.Serialize(ExitCoordinate);
+	stream.Serialize(TargetCoordOffset);
 	// ExitList -- a shared exit table, re-attached by size as this loads.
 	stream.Serialize(StartFace);
 	stream.Serialize(Power);

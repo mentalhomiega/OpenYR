@@ -4948,6 +4948,23 @@ int TechnoClass::Rearm_Delay(int which) const
 
 
 /// <summary>
+/// Fetches the point an electric bolt or radiation beam ends on. An object is aimed at by its target
+/// point, which for a structure is its center plus the type's TargetCoordOffset, and a cell by its
+/// center (FUN_006FD460, 0x6FD460, and FUN_006FD620, 0x6FD620).
+/// </summary>
+static Coord Beam_Target_Coord(AbstractClass * target)
+{
+	ObjectClass * object = target->As_ObjectClass();
+	Coord const coord = object != NULL ? object->Target_Coord() : target->Center_Coord();
+	if (AutoTest_Active()) {
+		Coord const center = target->Center_Coord();
+		DebugString("AUTOTEST beam end %d,%d,%d center %d,%d,%d\n", coord.X, coord.Y, coord.Z, center.X, center.Y, center.Z);
+	}
+	return(coord);
+}
+
+
+/// <summary>
 /// Draws an electric bolt from the weapon's mounting to the target, as gamemd's FUN_006FD460 and
 /// FUN_006FD570 do (GetFLH). A vehicle's first bolt follows its mounting while the bolt lasts.
 /// </summary>
@@ -4971,7 +4988,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 
 	EBoltClass * bolt = new EBoltClass;
 	bolt->IsAlternateColor = weapon->IsAlternateColor;
-	bolt->Fire(source, target->Center_Coord(), zadjust);
+	bolt->Fire(source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
 
@@ -5616,7 +5633,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
 				if (weapon->IsRadBeam) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+					RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}
 
 				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).

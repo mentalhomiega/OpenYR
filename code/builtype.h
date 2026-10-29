@@ -172,6 +172,9 @@ class BuildingTypeClass : public TechnoTypeClass
 		// Set once an INI gives ExitCoord, so a later INI that omits the key keeps the value. Not saved; Post_Load infers it for a loaded type.
 		bool IsExitCoordSet;
 
+		// The offset from the structure's center that beams and bolts aimed at it end on (the rules' TargetCoordOffset).
+		Coord TargetCoordOffset;
+
 		/*
 		**	When determine which cell to head toward when exiting a building, use the
 		**	list elaborated by this variable. There are directions of exit that are
