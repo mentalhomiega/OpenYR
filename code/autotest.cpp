@@ -368,6 +368,7 @@
 #include "shapeset.h"
 #include "_pk.h"
 #include "particle.h"
+#include "ptype.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "pcx.h"
@@ -3027,6 +3028,22 @@ void Run(StepType const & step)
 			shown++;
 		}
 		DebugString("AUTOTEST   liveanims: %d of %d\n", shown, Anims.Count());
+		return;
+	}
+
+	if (step.Command == "particles") {
+		// particles [TypeID]: writes each live particle, or only those of the named type, with its animation state, speed, translucency, drift and position.
+		int shown = 0;
+		for (int index = 0; index < Particles.Count(); index++) {
+			ParticleClass const * particle = Particles[index];
+			if (particle == NULL || particle->Class == NULL) continue;
+			if (!step.Argument.empty() && stricmp(particle->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Coord const where = particle->Get_Coord();
+			DebugString("AUTOTEST   particle frame %d %s state %d advance %d translucency %d speed %.3f drift %d,%d,%d at %d,%d,%d\n", Frame, particle->Class->Name(), (int)particle->StateAI, (int)particle->StateAIAdvance,
+				(int)particle->Translucency, (double)particle->Speed, particle->GasDrift.X, particle->GasDrift.Y, particle->GasDrift.Z, where.X, where.Y, where.Z);
+			shown++;
+		}
+		DebugString("AUTOTEST   particles: %d of %d\n", shown, Particles.Count());
 		return;
 	}
 
