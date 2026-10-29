@@ -859,6 +859,7 @@ class TechnoClass :	public RadioClass,
 		void Queue_Voice(VocType voc);
 		void Voice_AI(void);
 		void Order_Voice(MissionType mission, AbstractClass * target);
+		virtual VocType Deploy_Voice(void) const;
 		virtual void Player_Assign_Mission(MissionType order, AbstractClass * target=NULL, AbstractClass * destination=NULL);
 		Coord Predict_Target_Coord(void) const;
 

@@ -671,6 +671,7 @@ class BuildingClass : public TechnoClass
 		virtual int Do_MISSION_MISSILE(void) override;
 		virtual int Do_MISSION_OPEN(void) override;
 		bool Can_Be_Undeployed(void);
+		virtual VocType Deploy_Voice(void) const override;
 		bool Undeploy_Cell_Ready(Cell const & cell);
 		virtual int Apparent_Brightness(int brightness = 1000) const override;
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;

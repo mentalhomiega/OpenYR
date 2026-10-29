@@ -10085,6 +10085,16 @@ void TechnoClass::Voice_AI(void)
 
 
 /// <summary>
+/// The reply to a deploy order (TechnoClass::VoiceDeploy, 0x708E00): VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
+/// </summary>
+VocType TechnoClass::Deploy_Voice(void) const
+{
+	bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
+	return(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+}
+
+
+/// <summary>
 /// Gives the voice reply to an order the player gave (TechnoClass::ClickedMission, 0x6FFBE0). A harvest, enter or
 /// capture order uses the type's VoiceHarvest, VoiceEnter or VoiceCapture and falls back to the move voice (capture
 /// falls back to VoiceEnter first). A deploy order answers with VoiceDeploy, or VoiceUndeploy from a dug-in soldier.
@@ -10134,11 +10144,9 @@ void TechnoClass::Order_Voice(MissionType mission, AbstractClass * target)
 			}
 			break;
 
-		case MISSION_UNLOAD: {
-			bool const dug_in = RTTI == RTTI_INFANTRY && static_cast<InfantryClass const *>(this)->Is_Deployed();
-			Queue_Voice(dug_in ? TClass->VoiceUndeploy : TClass->VoiceDeploy);
+		case MISSION_UNLOAD:
+			Queue_Voice(Deploy_Voice());
 			break;
-		}
 
 		default:
 			if (TClass->VoiceSpecialAttack.Count() > 0) {
