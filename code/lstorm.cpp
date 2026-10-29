@@ -15,10 +15,12 @@
 #include "_rules.h"
 #include "anim.h"
 #include "animtype.h"
+#include "autotest.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
 #include "csf.h"
+#include "dbgprint.h"
 #include "dialog.hh"
 #include "globals.h"
 #include "gpudraw.h"
@@ -258,19 +260,29 @@ void LightningStormClass::AI(void)
 		}
 	}
 
-	for (int index = Clouds.Count() - 1; index >= 0; index--) {
-		if (Cloud_Finished(Clouds[index])) {
-			Clouds.Delete_Index(index);
+	// A storm that has run its time ends on the first frame that starts with no cloud left, so the light
+	// returns a frame after the last cloud is dropped from the list (LightningStorm::Update, 0x53A6C0).
+	if (Clouds.Count() < 1) {
+		if (IsTimeToEnd) {
+			if (IsActive) {
+				IsActive = false;
+				Owner = NULL;
+				IonStormClass::Update_Special_Lighting();
+				if (AutoTest_Active()) {
+					DebugString("AUTOTEST storm ends at frame %d\n", Frame);
+				}
+			}
+			IsTimeToEnd = false;
 		}
-	}
-
-	if (Clouds.Count() == 0 && IsTimeToEnd) {
-		if (IsActive) {
-			IsActive = false;
-			Owner = NULL;
-			IonStormClass::Update_Special_Lighting();
+	} else {
+		for (int index = Clouds.Count() - 1; index >= 0; index--) {
+			if (Cloud_Finished(Clouds[index])) {
+				Clouds.Delete_Index(index);
+			}
 		}
-		IsTimeToEnd = false;
+		if (Clouds.Count() < 1 && AutoTest_Active()) {
+			DebugString("AUTOTEST storm drops its last cloud at frame %d\n", Frame);
+		}
 	}
 
 	if (!IsActive || IsTimeToEnd) {

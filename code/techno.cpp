@@ -166,6 +166,7 @@
 #include "combat.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "ovrlight.h"
 #include "dialog.h"
 #include "draw.h"
 #include "dsurface.h"
@@ -6819,6 +6820,12 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * The Iron Curtain turns away any damage that is not forced. Healing still gets through.
 	 */
 	if (Is_Iron_Curtained() && !forced && !negative) {
+		// The hit makes a flash over the object, blue for a force shield, as big as a blast of twice the damage (TechnoClass::ReceiveDamage, 0x701A93).
+		int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
+		Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
+		}
 		damage = 0;
 		return(RESULT_NONE);
 	}
@@ -8691,6 +8698,57 @@ void TechnoClass::Disarm_Bomb(void)
 
 
 /// <summary>
+/// Plays ChronoSparkle1 over a warped object, as the updates of the object kinds do (UnitClass,
+/// InfantryClass, AircraftClass and BuildingClass, gamemd 0x7360C0, 0x51BAB0, 0x414BB0 and
+/// 0x43FB20). It plays every 24 frames while the object is erased by a temporal beam or holds at
+/// its chronoshift landing. A unit or soldier gets it 120 leptons east and south of its position,
+/// an aircraft or structure on its position. A garrisonable structure plays one at each muzzle
+/// flash point of an occupant slot instead, one frame apart, with a depth adjustment of -200.
+/// </summary>
+static void Chrono_Sparkle(TechnoClass const * techno)
+{
+	if (Rule->ChronoSparkle1 == NULL) {
+		return;
+	}
+	switch (techno->RTTI) {
+		case RTTI_UNIT:
+		case RTTI_INFANTRY:
+			if (Frame % 24 == 0) {
+				new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord + Coord(120, 120, 0));
+			}
+			break;
+
+		case RTTI_AIRCRAFT:
+			if (Frame % 24 == 0) {
+				new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord);
+			}
+			break;
+
+		case RTTI_BUILDING: {
+			BuildingTypeClass const * type = ((BuildingClass const *)techno)->Class;
+			if (type->MaxNumberOccupants == 0) {
+				if (Frame % 24 == 0) {
+					new AnimClass(Rule->ChronoSparkle1, techno->PositionCoord);
+				}
+				break;
+			}
+			int const slots = std::min<int>(type->MaxNumberOccupants, BuildingTypeClass::MUZZLE_FLASH_COUNT);
+			for (int slot = 0; slot < slots; slot++) {
+				if ((Frame + slot) % 24 == 0) {
+					AnimClass * anim = new AnimClass(Rule->ChronoSparkle1, techno->Render_Coord() + Coord(TacticalMap->Pixel_To_Lepton(type->MuzzleFlash[slot]), 0));
+					anim->ZAdjust = -200;
+				}
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
+
+/// <summary>
 /// Steps the warp holding this object and keeps a warped object frozen (UnitClass::Update,
 /// 0x7360C0, and the other kinds' updates): ChronoSparkle1 plays over it every 24 frames, and
 /// it drops its target and destination.
@@ -8704,6 +8762,9 @@ bool TechnoClass::Temporal_AI(void)
 		if (!IsActive) {
 			return(true);
 		}
+	}
+	if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+		Chrono_Sparkle(this);
 	}
 	if (Is_Chrono_Warping()) {
 		// A soldier killed while it holds after a jump keeps its AI, so its death sequence advances (gamemd's InfantryClass::Update, 0x51BAB0, runs past IsWarpingIn).
@@ -8720,9 +8781,6 @@ bool TechnoClass::Temporal_AI(void)
 
 	if (!IsBeingWarpedOut) {
 		return(false);
-	}
-	if (Frame % 24 == 0 && Rule->ChronoSparkle1 != NULL) {
-		new AnimClass(Rule->ChronoSparkle1, PositionCoord + Coord(120, 120, 0));
 	}
 	if (TarCom != NULL) {
 		Assign_Target(NULL);
