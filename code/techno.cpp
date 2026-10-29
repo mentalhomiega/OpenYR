@@ -10382,6 +10382,12 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	ShapeSet const * pip_shapes = (ShapeSet const *)Class_Of()->PipShapes;
 	ShapeSet const * pips2 = (ShapeSet const *)Class_Of()->Pip2Shapes;
 
+	// A structure on the Tiberium scale, a refinery or a silo, shows no pips and no group number
+	// (TechnoClass::DrawPipScalePips, 0x709A90).
+	if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		return;
+	}
+
 	if (RTTI != RTTI_BUILDING) {
 		xy = bottomleft + Point2D(-5, 0);
 		offset = Point2D(4, 0);
@@ -10538,21 +10544,6 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 			}
 
 		}
-		/*
-		**
-		*/
-		else if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
-			int _pips = pips;
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				int shape = PIP_EMPTY;
-				if (_pips > 0) {
-					shape = PIP_GREEN;
-					_pips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
-
 		/*
 		**
 		*/
