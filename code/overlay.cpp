@@ -114,7 +114,14 @@ OverlayClass::OverlayClass(OverlayTypeClass const * ttype, Cell const & pos, Hou
 
 	if (pos != CELL_NONE) {
 		ToOwn = house;
-		Unlimbo(Coord(pos));
+		Coord const coord(pos);
+
+		// Only this constructor holds a refused overlay, so it is queued for deletion, as Mark queues the overlays it marks down.
+		if (Map[coord].Cell_Terrain() != NULL) {
+			Delete_Me();
+		} else {
+			Unlimbo(coord);
+		}
 		ToOwn = HOUSE_NONE;
 	}
 }
@@ -134,6 +141,19 @@ OverlayClass::~OverlayClass(void)
 		OverlayClass::Limbo();
 	}
 	Class = NULL;
+}
+
+
+/// <summary>
+/// Places the overlay on the map at the coordinate, unless the cell there holds a terrain object.
+/// </summary>
+/// <returns>bool; Was the overlay placed? False leaves it in limbo, whether the cell holds a terrain object or the base placement refuses it.</returns>
+bool OverlayClass::Unlimbo(Coord const & coord, Dir256 facing)
+{
+	if (Map[coord].Cell_Terrain() != NULL) {
+		return(false);
+	}
+	return(BASECLASS::Unlimbo(coord, facing));
 }
 
 

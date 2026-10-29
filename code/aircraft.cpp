@@ -1749,6 +1749,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 					mission = MISSION_UNLOAD;
 				}
 			} else if (Team == NULL) {
+				// Unlike the non-loaner branch below, the target is cleared first (AircraftClass::EnterIdleMode, 0x4176F0).
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
 				mission = MISSION_RETREAT;
 			}
 		} else {
