@@ -349,6 +349,12 @@ class BuildingTypeClass : public TechnoTypeClass
 		ShapeSet const * UnderRoofDoorAnim;
 
 		/*
+		 * This is the shape data a LeaveRubble structure leaves behind in place of frame 3 of its
+		 * own image. Its first frame is the rubble, and it casts no shadow.
+		 */
+		ShapeSet const * RubbleShape;
+
+		/*
 		 * This is the shape data for a factory's door, animated open and shut as the building
 		 * unloads. Its frame is interpolated across the DoorStages by the door timer.
 		 */

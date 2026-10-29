@@ -32690,6 +32690,24 @@ RoughTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Rubble:
+  key: Rubble
+  scopes:
+  - applies_to:
+    - BuildingType
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Ruggedness:
   key: Ruggedness
   scopes:
