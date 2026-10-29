@@ -1,0 +1,76 @@
+; Mouse shape of an armed attack-move over ground and over an enemy (gamemd: DisplayClass::ConvertAction, 0x004AAE90, which calls
+; FUN_0070F0B0 and then FUN_00731BF0). The arm is the AttackMove command, or Ctrl with Shift over selected units that can all
+; attack-move. A move or an attack under the arm shows MOUSE_CAN_ATTACK_2 (71), in reach or not. Without the arm a move shows
+; MOUSE_CAN_MOVE (18), an attack in reach shows MOUSE_STAY_ATTACK (20), and an attack out of reach shows MOUSE_CAN_ATTACK (21).
+; The shape lines log the shape the last hover set. The enemy is a Grizzly (MTNK) in part 1 and a harvester (HARV) in parts 2 and 4.
+; An E1 cannot target a power plant in these rules, so no building is used as an enemy.
+; View 60 42: cell (x,y) is at window pixel 320+30*((x-60)-(y-42)), 240+15*((x-60)+(y-42)).
+; Part 1: an HTNK at 60,42 and an enemy Grizzly at 64,48, out of the Rhino's reach. Expected: 18 on ground at 62,45, 21 on the
+;   Grizzly unarmed, 71 on the Grizzly once armed, 71 on ground once armed. The armed click on ground consumes the arm.
+; Part 2: an E1 at 62,47 beside an enemy harvester at 64,48, in reach. Expected: 20 on the harvester unarmed, 18 on ground unarmed,
+;   71 on ground and on the harvester with Ctrl and Shift held. Ctrl and Shift give no arm once released: 20 again.
+; Part 3: a player-owned power plant (GAPOWR) joins the selection. A structure cannot attack-move, so the chord arms nothing: 18 on
+;   ground and 21 on the enemy harvester (two selected objects, so not 20). A harvester has a weapon in these rules, so it is not used.
+; Part 4: E1 alone, unarmed 20 on the enemy harvester, then armed 71 on it and 71 on ground.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/attackmove-cursor.txt -Width 640 -Height 480 -Seconds 120 -RenderFrameRate 30 -Filter "AUTOTEST|Exception"
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 grantunit HTNK 60 42
+41 spawn MTNK 64 48
+50 select HTNK
+52 selected
+54 windowmove 290 315
+56 shape
+58 windowmove 260 390
+60 shape
+62 command AttackMove
+64 windowmove 260 390
+66 shape
+67 command ScreenCapture
+68 windowmove 290 315
+70 shape
+72 windowclick 290 315
+120 kill MTNK
+122 spawn HARV 64 48
+124 grantunit E1 62 47
+130 select E1
+132 selected
+134 windowmove 260 390
+136 shape
+138 windowmove 350 375
+140 shape
+142 hold 17
+144 hold 16
+146 windowmove 350 375
+148 shape
+149 command ScreenCapture
+150 windowmove 260 390
+152 shape
+154 release 16
+156 release 17
+158 windowmove 260 390
+160 shape
+170 own GAPOWR 56 52
+172 selectadd GAPOWR
+174 selected
+176 hold 17
+178 hold 16
+180 windowmove 350 375
+182 shape
+184 windowmove 260 390
+186 shape
+188 release 16
+190 release 17
+200 select E1
+202 selected
+204 windowmove 260 390
+206 shape
+208 command AttackMove
+210 windowmove 260 390
+212 shape
+213 command ScreenCapture
+214 windowmove 350 375
+216 shape
+218 windowclick 350 375
+240 quit
