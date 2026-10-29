@@ -706,7 +706,10 @@ int InfantryClass::Shape_Number(void) const
 	**	is prone.
 	*/
 	DoType doit = Doing;
-	if (doit == DO_NOTHING) doit = DO_STAND_READY;
+	// With no sequence the soldier stands ready, or treads water over a water cell that is not under a bridge (InfantryClass::DrawShape, 0x518D80).
+	if (doit == DO_NOTHING) {
+		doit = (Map[Get_Cell()].Land_Type() == LAND_WATER && !IsOnBridge) ? DO_TREAD : DO_STAND_READY;
+	}
 
 	/*
 	**	The infantry shape is always modulo the number of animation frames
