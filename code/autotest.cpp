@@ -3194,6 +3194,30 @@ void Run(StepType const & step)
 		return;
 	}
 
+	// repairon <TypeID>: starts repairing the player's structures of that type, as a click with the repair cursor does.
+	if (step.Command == "repairon") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+				building->Repair(1);
+				DebugString("AUTOTEST repairon %s repairing %d\n", building->Class->Name(), (int)building->IsRepairing);
+			}
+		}
+		return;
+	}
+
+	// poweroff <TypeID>: turns off the player's structures of that type, as a click with the power cursor does.
+	if (step.Command == "poweroff") {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * building = Buildings[index];
+			if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
+				building->Turn_Off();
+				DebugString("AUTOTEST poweroff %s on %d\n", building->Class->Name(), (int)building->IsOn);
+			}
+		}
+		return;
+	}
+
 	// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell, skipping the nearby-cell search an Alt-click makes.
 	if (step.Command == "rally") {
 		for (int index = 0; index < Buildings.Count(); index++) {
