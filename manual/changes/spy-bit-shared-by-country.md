@@ -1,12 +1,13 @@
 ---
-title: Record a spy against its own house
+title: Share a spy's knowledge with every house of its country
 category: fix
 release: 0.2.0
 targets:
 - type: system
   id: capture
   effect: changed
-credit: [ZivDero]
+credit:
+- MentalHomiega
 ---
 
-When several players played the same country, a spy that entered a structure gave its gains to all of them. Each of them saw a selected spied structure's power figures, Primary tag and pips, and what a spied factory was producing. Once a radar structure was spied on, each of them also saw what the victim's objects saw. Now only the house that owns the spy gains them.
+A spy's knowledge of a structure now belongs to its country, as in Yuri's Revenge. Every house of that country sees what the spy saw: a selected spied structure's power figures, Primary tag and pips, and the cameo of what a spied factory is producing. Before, only the house that owns the spy had it, so a second player of the same country saw none of it. A spied radar structure's record is kept by country too, though no player-visible sight depends on it yet. A save from an earlier build no longer loads.
