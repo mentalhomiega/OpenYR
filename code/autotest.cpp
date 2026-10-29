@@ -2364,6 +2364,28 @@ static void Hut_Action_Step(StepType const & step)
 /// <param name="step">The type in the argument, and the target's cell in X and Y. A word after those, "computer", picks the objects of
 /// that type that neither the player nor an ally owns; otherwise the player's objects are picked. A word "attack" also gives each object
 /// the attack mission.</param>
+/// <summary>
+/// Finds the house a script names: a spawn name or IniName (an underscore stands for a space), or #n for the house at position n.
+/// </summary>
+/// <param name="name">The name as the script writes it.</param>
+/// <returns>Returns the house, or NULL when no house has that name.</returns>
+static HouseClass * House_Named_By_Step(std::string name)
+{
+	std::replace(name.begin(), name.end(), '_', ' ');
+	if (!name.empty() && name[0] == '#') {
+		int const position = std::atoi(name.c_str() + 1);
+		return(position >= 0 && position < Houses.Count() ? Houses[position] : NULL);
+	}
+	HouseClass * owner = House_From_Name(name.c_str());
+	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+		if (stricmp(Houses[index]->IniName, name.c_str()) == 0) {
+			owner = Houses[index];
+		}
+	}
+	return(owner);
+}
+
+
 static void Set_Target_Step(StepType const & step)
 {
 	std::vector<std::string> const words = Line_Words(step.Line);
@@ -3112,6 +3134,21 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "spyon") {
+		// spyon <House> x y: the named house's spy has infiltrated the structure on that cell, which is the call a spy's entry
+		// makes (BuildingClass::Spied_By). The spy's walk in is not part of this step.
+		HouseClass * spy = House_Named_By_Step(step.Argument);
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		if (spy == NULL) {
+			DebugString("AUTOTEST spyon %s: no such house\n", step.Argument.c_str());
+		} else if (building == NULL) {
+			DebugString("AUTOTEST spyon %s at %d,%d: no structure\n", step.Argument.c_str(), step.X, step.Y);
+		} else {
+			building->Spied_By(spy);
+			DebugString("AUTOTEST spyon %s %s at %d,%d: spied by %s\n", spy->Class->Name(), building->Class->Name(), step.X, step.Y, spy->Class->Name());
+		}
+		return;
+	}
 	if (step.Command == "infiltrate") {
 		// infiltrate barracks|warfactory: marks the player's house as having spied on that building, as a spy's infiltration does.
 		if (step.Argument == "barracks") {

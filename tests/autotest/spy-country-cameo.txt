@@ -1,0 +1,32 @@
+; Two houses of one country. The player is the Americans, and the computer house at position 1 of the house list is also
+; the Americans (run with -AIPlayers 2 -AICountries 0,9). The Yuri barracks belongs to Neutral (position 3), which neither
+; computer house is allied with (the houses command at 40 shows the allies; the two computer houses are allied with each
+; other). spyon makes the American computer house's spy infiltrate the barracks, the call a spy's entry makes
+; (BuildingClass::Spied_By). The player, a different house of the same country, then sees the barracks' pips and the cameo
+; of the Yuri Clone it builds: pips at 600 read allied 0, and pips after spyon read allied 1. gamemd keys the spy bit
+; (DisplayProductionTo) by the country index (BuildingClass::DrawInfoTipAndSpiedSelection, 0x43E7B0, tests
+; 1 << CurrentPlayer->Type->ArrayIndex2), so every house of the spy's country shares it.
+; Run from the repository root:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spy-country-cameo.txt -AIPlayers 2 -AICountries 0,9 -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; The window shots are TGA files in the user folder's Screenshots folder.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+34 houseunit YABRCK@#3 50 26
+36 reveal
+37 view 52 28
+40 houses
+600 pips YABRCK 50 26
+610 cellpixel 50 26
+612 produceai YURI 50 26
+620 windowshot spy-c0-unspied
+630 spyon #1 50 26
+640 pips YABRCK 50 26
+650 windowclick 512 180
+660 windowshot spy-c1-spied-selected
+670 pips YABRCK 50 26
+700 quit
