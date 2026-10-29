@@ -88,7 +88,7 @@
 **	own <TypeID> x y		puts an object owned by the player on that cell
 **	face <dir256> x y		turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north)
 **	voxelshade <type>		writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight
-**	team <TeamTypeID>		makes a team of that type for that computer house, holding all its free units, active at once
+**	team <TeamTypeID> [plane]	makes a team of that type for that computer house, holding all its free units, active at once. With plane, it holds the house's first free aircraft instead, added with Team::Add so the aircraft keeps its mission and target
 **	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
 **							actions that look at attached objects see the map's trigger of that type
 **	typecounts				writes how many types of each kind there are, and any whose ID is not a plain name
@@ -5475,18 +5475,32 @@ void Run(StepType const & step)
 		TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
 		TeamClass * team = enemy != NULL && type != NULL ? type->Create_One_Of(enemy) : NULL;
 		int added = 0;
-		if (team != NULL) {
-			team->IsForcedActive = true;
-			for (int index = 0; index < Technos.Count(); index++) {
-				TechnoClass * techno = Technos[index];
-				if (techno->House == enemy && techno->Is_Foot() && !techno->IsInLimbo && ((FootClass *)techno)->Team == NULL && techno->RTTI != RTTI_AIRCRAFT) {
-					if (team->Add((FootClass *)techno)) {
-						added++;
+		if (team != NULL && step.Line.size() > 6 && step.Line.compare(step.Line.size() - 6, 6, " plane") == 0) {
+			// The first free aircraft joins with Team::Add, not Recruit, which would clear its target (TeamClass::Recruit, 0x6EAA90).
+			AircraftClass * plane = NULL;
+			for (int index = 0; plane == NULL && index < Aircraft.Count(); index++) {
+				if (Aircraft[index]->House == enemy && !Aircraft[index]->IsInLimbo && Aircraft[index]->Team == NULL) {
+					plane = Aircraft[index];
+				}
+			}
+			if (plane != NULL && team->Add(plane)) {
+				added++;
+			}
+			DebugString("AUTOTEST team %s plane: %s, %d members, heap %d\n", step.Argument.c_str(), plane != NULL ? plane->TClass->Name() : "no free aircraft", added, type->Fetch_Heap_ID());
+		} else {
+			if (team != NULL) {
+				team->IsForcedActive = true;
+				for (int index = 0; index < Technos.Count(); index++) {
+					TechnoClass * techno = Technos[index];
+					if (techno->House == enemy && techno->Is_Foot() && !techno->IsInLimbo && ((FootClass *)techno)->Team == NULL && techno->RTTI != RTTI_AIRCRAFT) {
+						if (team->Add((FootClass *)techno)) {
+							added++;
+						}
 					}
 				}
 			}
+			DebugString("AUTOTEST team %s: %s, %d members, heap %d\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added, type != NULL ? type->Fetch_Heap_ID() : -1);
 		}
-		DebugString("AUTOTEST team %s: %s, %d members, heap %d\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added, type != NULL ? type->Fetch_Heap_ID() : -1);
 	} else if (step.Command == "teamtrace" || step.Command == "buildtrace") {
 		// teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
 		// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
