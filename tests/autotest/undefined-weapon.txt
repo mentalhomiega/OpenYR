@@ -7,10 +7,14 @@
 ; gamemd (WeaponTypeClass::LoadFromINI, 0x772080) leaves a weapon with no section with a NULL projectile, and the range test
 ; (FootClass::ApproachTarget, 0x4D5690, calls FUN_006F7220) reads that projectile without a NULL check, so gamemd crashes.
 ; Ours gives such a weapon the default projectile and warhead and logs one line for it.
+; A second rules step, at frame 150, names SectionDeath, a projectile SectionBullet and a warhead SectionWarhead through rule
+; keys that are read after the type lists, with a section for each in the same file. Each type must read its own section:
+; SectionDeath uses InvisibleLow and HE, SectionBullet has ROT 9 and High, SectionWarhead has spread 4. The log notes each of
+; the three as created after its list was read. gamemd leaves such a type unread.
 ; Expected: one log line for each of GhostGun, KeylessGun, NoWarheadGun, UndefinedDeath and LateDeath, a where report for each
-; unit and the pillbox, "Death weapon: MTNK sets off UndefinedDeath" and "Death weapon: MTNK sets off LateDeath" for the two
-; Grizzlies, no Exception, and "AUTOTEST quit". Before the fix the LateDeath line is missing, and its log line too.
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/undefined-weapon-rules -Script src-agent15/tests/autotest/undefined-weapon.txt -Seconds 90 -Filter "\] has no|AUTOTEST   where|AUTOTEST   kill|Death weapon|AUTOTEST quit|Exception"
+; unit and the pillbox, "Death weapon: MTNK sets off UndefinedDeath" and "Death weapon: MTNK sets off LateDeath" for the first two
+; Grizzlies, "sets off SectionDeath" for the third, no Exception, and "AUTOTEST quit". Before the fix the LateDeath line is missing, and its log line too.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/undefined-weapon-rules -Script src-agent15/tests/autotest/undefined-weapon.txt -Seconds 90 -Filter "\] has no|AUTOTEST   where|AUTOTEST   kill|Death weapon|typedump|created after|AUTOTEST quit|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 63
@@ -35,5 +39,11 @@
 130 own MTNK 70 65
 140 kill MTNK 1
 141 where MTNK
+150 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/undefined-weapon-section-last.ini
+151 typedump SectionDeath
+152 typedump SectionBullet
+153 typedump SectionWarhead
+160 own MTNK 70 67
+170 kill MTNK 1
 200 where E2
 300 quit
