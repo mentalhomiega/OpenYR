@@ -1,0 +1,87 @@
+; Damaged vehicles and sparks. A Grizzly (MTNK), a Rhino (HTNK) and an Apocalypse (APOC) are hurt to 30 percent, below
+; ConditionYellow. gamemd sets TechnoTypeClass::DamageSparks only for Cyborg
+; infantry (InfantryTypeClass::LoadFromINI, 0x5237C0), so TechnoClass::Update (0x6FA2C0) starts no SparkSys on a
+; vehicle although its DamageParticleSystems lists one; only the SmallGreySSys smoke starts, with a hit.
+; Expected: no partsys line names SparkSys; the SmallGreySSys lines appear after the damage verb hits them.
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/vehicle-damage-sparks.txt -Build agentNN -Seconds 90 -Filter "AUTOTEST   partsys|Exception"
+30 command CenterBase
+35 reveal
+40 own MTNK 52 53
+40 own HTNK 54 53
+40 own APOC 56 53
+60 hurt MTNK 30
+60 hurt HTNK 30
+60 hurt APOC 30
+70 damage MTNK 1
+70 damage HTNK 1
+70 damage APOC 1
+90 partsys
+96 partsys
+102 partsys
+108 partsys
+114 partsys
+120 partsys
+126 partsys
+132 partsys
+138 partsys
+144 partsys
+150 partsys
+156 partsys
+162 partsys
+168 partsys
+174 partsys
+180 partsys
+186 partsys
+192 partsys
+198 partsys
+204 partsys
+210 partsys
+216 partsys
+222 partsys
+228 partsys
+234 partsys
+240 partsys
+246 partsys
+252 partsys
+258 partsys
+264 partsys
+270 partsys
+276 partsys
+282 partsys
+288 partsys
+294 partsys
+300 partsys
+306 partsys
+312 partsys
+318 partsys
+324 partsys
+330 partsys
+336 partsys
+342 partsys
+348 partsys
+354 partsys
+360 partsys
+366 partsys
+372 partsys
+378 partsys
+384 partsys
+390 partsys
+396 partsys
+402 partsys
+408 partsys
+414 partsys
+420 partsys
+426 partsys
+432 partsys
+438 partsys
+444 partsys
+450 partsys
+456 partsys
+462 partsys
+468 partsys
+474 partsys
+480 partsys
+486 partsys
+492 partsys
+498 partsys
+501 quit

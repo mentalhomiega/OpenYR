@@ -1,0 +1,30 @@
+; Siege Chopper (SCHP) deploys on open ground and packs up again. A screenshot every few frames shows the SCHPDEPL animation
+; step by step and the deployed gun (SCHD).
+; Run: scripts/run_autotest.ps1 -Script src-agentNN/tests/autotest/siege-chopper-deploy-shots.txt -Build agentNN -RenderFrameRate 30 -ShotDir <dir> -Width 800 -Height 600 -Seconds 120
+30 command CenterBase
+35 reveal
+40 grantunit SCHP 52 53
+50 view 54 53
+52 zoom 2
+60 windowmove 795 595
+70 select SCHP
+75 command ScreenCapture
+80 command DeployObject
+85 command ScreenCapture
+95 command ScreenCapture
+105 command ScreenCapture
+115 command ScreenCapture
+130 command ScreenCapture
+150 command ScreenCapture
+170 command ScreenCapture
+200 command ScreenCapture
+240 command ScreenCapture
+300 command DeployObject
+305 command ScreenCapture
+315 command ScreenCapture
+325 command ScreenCapture
+340 command ScreenCapture
+360 command ScreenCapture
+380 command ScreenCapture
+420 command ScreenCapture
+450 quit
