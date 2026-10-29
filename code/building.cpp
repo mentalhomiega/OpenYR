@@ -9891,7 +9891,10 @@ bool BuildingClass::Release_Passenger(void)
 		if (placed) {
 			passenger->House->Tracking_Release(passenger);
 			passenger->Enter_Idle_Mode();
-			Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
+			// gamemd's BuildingClass::Mission_Unload (0x44DBAF) checks the structure's InfantryAbsorb flag, not the passenger's kind.
+			if (Class->IsInfantryAbsorb) {
+				Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
+			}
 		} else {
 			delete passenger;
 		}
