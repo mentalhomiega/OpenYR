@@ -124,6 +124,7 @@
 #include "mono.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "partsys.h"
 #include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
@@ -380,6 +381,23 @@ InfantryClass::~InfantryClass(void)
 }
 
 
+// A virus death of a NotHuman soldier or a paradropper leaves no animation. gamemd builds the InfantryVirus animation, spawns one more
+// particle of its particle type at the soldier and destroys the animation (InfantryClass::Destroy, 0x517FA0).
+static void Spawn_Virus_Cloud(Coord const & coord)
+{
+	if (Rule->InfantryVirus == NULL) {
+		return;
+	}
+	AnimClass * anim = new AnimClass(Rule->InfantryVirus, coord);
+	if (anim != NULL) {
+		if (anim->Class->SpawnsParticle != PARTICLE_NONE && GasSystem != NULL) {
+			GasSystem->Spawn_Particle(ParticleTypes[anim->Class->SpawnsParticle], coord);
+		}
+		delete anim;
+	}
+}
+
+
 /***********************************************************************************************
  * InfantryClass::Take_Damage -- Applies damage to the infantry unit.                          *
  *                                                                                             *
@@ -488,8 +506,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 			// A soldier killed while parachuting always bursts apart, whatever the warhead.
 			if (Doing == DO_PARADROP) {
-				if (infdeath == 8 && Rule->InfantryVirus != NULL) {
-					new AnimClass(Rule->InfantryVirus, PositionCoord);
+				if (infdeath == 8) {
+					Spawn_Virus_Cloud(PositionCoord);
 				}
 				infdeath = 3;
 			}
@@ -518,8 +536,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				bool const own_death = Class->IsNotHuman && Doing != DO_PARADROP;
 				if (own_death) {
 					Do_Action(DO_GUN_DEATH, true);
-					if (infdeath == 8 && Rule->InfantryVirus != NULL) {
-						new AnimClass(Rule->InfantryVirus, PositionCoord);
+					if (infdeath == 8) {
+						Spawn_Virus_Cloud(PositionCoord);
 					}
 					infdeath = 1;
 				}

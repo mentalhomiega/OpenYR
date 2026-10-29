@@ -366,6 +366,7 @@
 #include "mouse.h"
 #include "shapeset.h"
 #include "_pk.h"
+#include "particle.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "pcx.h"
@@ -2579,6 +2580,27 @@ static void Waypoint_Probe_Step(StepType const & step)
 
 // presentdigest, drawdigest, gpureplay, gpucheck and drawprobe switch the drawing checks on and off. True when
 // the step was one of them.
+// cloudcheck <SoldierTypeID>: whether the type is NotHuman, how many InfantryVirus animations the map holds and how many particles of the InfantryVirus
+// animation's particle type are live, so a virus death can be told from an animation to a bare particle.
+static void Cloud_Check_Step(StepType const & step)
+{
+	InfantryTypeClass const * type = NULL;
+	for (int index = 0; index < InfantryTypes.Count(); index++) {
+		if (stricmp(InfantryTypes[index]->Name(), step.Argument.c_str()) == 0) type = InfantryTypes[index];
+	}
+	AnimTypeClass const * virus = Rule->InfantryVirus;
+	int anims = 0;
+	for (int index = 0; virus != NULL && index < Anims.Count(); index++) {
+		anims += Anims[index]->Class == virus;
+	}
+	int particles = 0;
+	for (int index = 0; virus != NULL && virus->SpawnsParticle != PARTICLE_NONE && index < Particles.Count(); index++) {
+		particles += Particles[index]->Class == ParticleTypes[virus->SpawnsParticle];
+	}
+	DebugString("AUTOTEST   cloudcheck %s nothuman %d virusanims %d virusparticles %d\n", step.Argument.c_str(), type != NULL ? (int)type->IsNotHuman : -1, anims, particles);
+}
+
+
 // crushcheck <CrusherTypeID> <SoldierTypeID>: for each vehicle of the first type and each soldier of the second, whether the vehicle may crush the soldier
 // (UnitClass::Can_Crush), with the soldier's sequence and its dug-in crush protection.
 static void Crush_Check_Step(StepType const & step)
@@ -2706,6 +2728,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "hutclick") {
 		Hut_Click_Step(step);
+		return;
+	}
+	if (step.Command == "cloudcheck") {
+		Cloud_Check_Step(step);
 		return;
 	}
 	if (step.Command == "crushcheck") {
