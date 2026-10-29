@@ -4,7 +4,7 @@ summary: How many pips a selected object's pip row holds.
 see_also: [PipScale, Passengers, Ammo, Storage, MaxCharge, "system:transports"]
 when_omitted:
   kind: context-dependent
-  note: "The length the object's pip scale gives. That is five for `Tiberium` (three for a soldier), ten for `Power` and eight for `Charge`, for `Ammo` it is the type's `Ammo` value, at most five, and for `Passengers` it is the type's `Passengers` value. A structure using `Power` gets six pips per cell of footprint width instead."
+  note: "The length the object's pip scale gives. That is five for `Tiberium` (three for a soldier), ten for `Power` and eight for `Charge`, for `Ammo` it is the type's `Ammo` value, and for `Passengers` it is the type's `Passengers` value. A structure using `Power` gets six pips per cell of footprint width instead."
 ---
 
 ```ini title="rules.ini"
