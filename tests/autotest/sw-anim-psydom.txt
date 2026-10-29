@@ -1,0 +1,37 @@
+; Psychic Dominator, seen as a player sees it: DominatorFirstAnim (PDFXCLD, the great head) forms over the target, the lighting turns purple, the shockwave ring and
+; DominatorSecondAnim (PDFXLOC) go off when the first animation is DominatorFireAtPercentage (20) percent through, and enemy units in DominatorCaptureRange join
+; the player. The AUTOTEST   where lines give the owner of the enemy tank before the blast and after it; liveanims counts the two animations.
+; Destroying a structure beside the ore field at 75,40 with the blast hangs the game, so the test stands elsewhere.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sw-anim-psydom.txt -Width 800 -Height 600 -Seconds 200 -RenderFrameRate 30 -Filter "AUTOTEST   where|AUTOTEST   liveanims|AUTOTEST psydom|Exception"
+20 own GAPOWR 38 44
+30 view 42 50
+32 spawn MTNK 42 50
+33 spawn E1 43 51
+35 reveal
+40 grant PsychicDominatorSpecial
+50 where MTNK
+56 windowshot swpd-a0-before
+60 fire PsychicDominatorSpecial 42 50
+62 liveanims PDFXCLD
+62 liveanims PDFXLOC
+64 windowshot swpd-a1
+68 windowshot swpd-a2
+72 windowshot swpd-a3
+76 windowshot swpd-a4
+80 windowshot swpd-a5
+84 liveanims PDFXCLD
+84 liveanims PDFXLOC
+88 windowshot swpd-a6
+92 windowshot swpd-a7
+96 windowshot swpd-a8
+104 windowshot swpd-a9
+112 windowshot swpd-b0
+120 windowshot swpd-b1
+130 windowshot swpd-b2
+140 liveanims PDFXCLD
+140 liveanims PDFXLOC
+140 where MTNK
+150 windowshot swpd-b3
+170 windowshot swpd-b4
+200 windowshot swpd-b5
+260 quit

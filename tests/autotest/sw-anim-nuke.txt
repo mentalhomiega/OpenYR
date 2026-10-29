@@ -1,0 +1,51 @@
+; Nuclear missile, seen as a player sees it. A missile silo at 60,46 fires at 42,50. The first group of shots follows the silo:
+; the door opening, NukeTakeOff at the launch frame and the missile climbing out of the top of the screen. The second group
+; shows the target: the PSIWARN marker, the payload falling, the NUKEBALL build-up, the flash, the blast and the mushroom.
+; The AUTOTEST nuke lines give the launch, release, build-up and blast frames; liveanims counts the take-off, warning, smoke,
+; build-up and blast animations on the frames named.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/sw-anim-nuke.txt -Width 800 -Height 600 -Seconds 200 -RenderFrameRate 30 -Filter "AUTOTEST nuke|AUTOTEST missile|AUTOTEST   liveanims|Exception"
+; Shots are TGA files named swnuke-* in the Screenshots folder of the build's autotest user directory.
+20 own GAPOWR 56 40
+22 own NAMISL 60 46
+24 own E1 41 50
+35 reveal
+60 view 60 46
+62 grant NukeSpecial
+62 windowshot swnuke-a0-silo-before
+63 fire NukeSpecial 42 50
+64 liveanims NUKETO
+64 liveanims PSIWARN
+66 windowshot swnuke-a1-launch
+67 liveanims NUKETO
+70 windowshot swnuke-a2-climb
+74 windowshot swnuke-a3-climb
+80 windowshot swnuke-a4-climb
+90 windowshot swnuke-a5-gone
+100 view 42 50
+120 liveanims PSIWARN
+130 windowshot swnuke-b0-target-warning
+250 windowshot swnuke-b1-before-payload
+260 liveanims NUKEPUFF
+262 windowshot swnuke-b2-payload-high
+300 windowshot swnuke-b3-descent
+350 windowshot swnuke-b4-descent
+400 windowshot swnuke-b5-descent
+440 windowshot swnuke-b6-descent
+455 liveanims NUKEBALL
+460 windowshot swnuke-b7-lowdescent
+464 liveanims NUKEBALL
+465 windowshot swnuke-b8-buildup
+470 windowshot swnuke-b9-buildup
+476 windowshot swnuke-c0-buildup-late
+482 windowshot swnuke-c1-prefire
+485 liveanims NUKEANIM
+486 windowshot swnuke-c2-blast
+488 windowshot swnuke-c3-blast
+492 windowshot swnuke-c4-blast
+498 windowshot swnuke-c5-blast
+506 windowshot swnuke-c6-blast
+520 windowshot swnuke-c7-blast
+540 windowshot swnuke-c8-mushroom
+570 windowshot swnuke-c9-fade
+600 windowshot swnuke-d0-after
+640 quit
