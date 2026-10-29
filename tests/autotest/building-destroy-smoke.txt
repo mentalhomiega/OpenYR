@@ -1,0 +1,16 @@
+; Destroyed structure smoke. The mod building-destroy-smoke-rules gives the Allied Barracks (GAPILE) DestroyParticleSystems=SparkSys,BigGreySmokeSys
+; and DestroySmokeOffset=100,200,300. gamemd (BuildingClass::Destroy, 0x4415F0) keeps only the smoke behaving systems of that list and starts
+; one at the structure's location plus the offset.
+; Expected: the first partsys step after the kill (frame 101) lists one BigGreySmokeSys at 16100,16200,508, the structure's location plus 100,200,300, and
+; no SparkSys. The system ends with the structure, so later steps list only the global gas system.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/building-destroy-smoke-rules -Script src-agent15/tests/autotest/building-destroy-smoke.txt -Seconds 90 -Filter "AUTOTEST   partsys|AUTOTEST   (kill|where)|Exception"
+30 command CenterBase
+35 reveal
+40 own GAPILE 62 62
+60 where GAPILE
+100 kill GAPILE 1
+101 partsys
+103 partsys
+106 partsys
+110 partsys
+130 quit

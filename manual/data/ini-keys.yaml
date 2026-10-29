@@ -11933,6 +11933,40 @@ DestroyAnim:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DestroyParticleSystems:
+  key: DestroyParticleSystems
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of ParticleSystemTypes
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: DestroyParticleSystems
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+DestroySmokeOffset:
+  key: DestroySmokeOffset
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: offset (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: TechnoTypeClass
+      member: DestroySmokeOffset
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 DestroyWalls:
   key: DestroyWalls
   scopes:
@@ -27614,7 +27648,7 @@ OreTwinkleChance:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: '50'
       declared_in: RulesClass
       member: OreTwinkleChance
       source: code/rules.cpp
