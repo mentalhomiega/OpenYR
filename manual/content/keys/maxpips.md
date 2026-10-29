@@ -4,17 +4,17 @@ summary: How many pips a selected object's pip row holds.
 see_also: [PipScale, Passengers, Ammo, Storage, MaxCharge, "system:transports"]
 when_omitted:
   kind: context-dependent
-  note: "The length the object's pip scale gives. That is five for `Tiberium`, ten for `Power` and eight for `Charge`, and for `Ammo` and `Passengers` it is the type's `Ammo` or `Passengers` value, at most five. A structure using `Tiberium` or `Power` gets six pips per cell of footprint width instead."
+  note: "The length the object's pip scale gives. That is five for `Tiberium`, ten for `Power` and eight for `Charge`, for `Ammo` it is the type's `Ammo` value, at most five, and for `Passengers` it is the type's `Passengers` value. A structure using `Tiberium` or `Power` gets six pips per cell of footprint width instead."
 ---
 
 ```ini title="rules.ini"
 [MYAPC]           ; a UnitType registered in [VehicleTypes]
 Passengers=12
 PipScale=Passengers
-MaxPips=12
+MaxPips=6
 ```
 
-`MaxPips` sets how many pips the row has, replacing the default length of the type's [`PipScale`](/keys/pipscale/). The example transport shows twelve passenger pips instead of five. A type with no `PipScale` has no row, so the key does nothing for it.
+`MaxPips` sets how many pips the row has, replacing the default length of the type's [`PipScale`](/keys/pipscale/). The example transport shows six passenger pips instead of its twelve. A type with no `PipScale` has no row, so the key does nothing for it.
 
 Some rows stay capped by another value:
 

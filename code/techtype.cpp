@@ -1446,7 +1446,7 @@ int TechnoTypeClass::Max_Pips(void) const
 			return(MaxPips.value_or(5));
 
 		case PIPSCALE_PASSENGERS:
-			return(std::min(MaxPassengers, MaxPips.value_or(5)));
+			return(std::min(MaxPassengers, MaxPips.value_or(MaxPassengers)));
 
 		case PIPSCALE_CHARGE:
 			return(MaxPips.value_or(8));

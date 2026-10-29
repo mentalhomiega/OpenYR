@@ -236,6 +236,7 @@
 #include <set>
 #include <string>
 #include <tuple>
+#include <vector>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
@@ -10402,29 +10403,45 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 
 	/*
 	**	Transporter type objects have a different graphic representation for the pips. The
-	**	pip color represents the type of occupant.
+	**	pip color represents the type of occupant. TechnoClass::DrawPipScalePips (0x709A90)
+	**	lays the row out from the end: the first passenger takes the last pips, one pip for each
+	**	point of size, with a soldier's own color leading and the pips behind it white, and a
+	**	vehicle blue. A structure that absorbs its owner's units shows one pip per passenger.
 	*/
 	if (TClass->Max_Passengers() > 0) {
+		int const count = std::max(Class_Of()->Max_Pips(), 0);
+		std::vector<int> slots(count, PIP_EMPTY);
+		bool const absorber = RTTI == RTTI_BUILDING && (((BuildingClass const *)this)->Class->IsInfantryAbsorb || ((BuildingClass const *)this)->Class->IsUnitAbsorb);
+
 		ObjectClass const * object = Cargo.Attached_Object();
-		int remaining = (object != NULL) ? object->TClass->Size : 0;
-
-		for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-			PipEnum pip = PIP_EMPTY;
-
-			if (object != NULL) {
-				pip = PIP_GREEN;
-				if (object->RTTI == RTTI_INFANTRY) {
-					pip = ((InfantryClass *)object)->Class->Pip;
-				}
-
-				// A passenger claims as many pips as it claims hold space.
-				remaining--;
-				if (remaining <= 0) {
-					object = object->Next;
-					remaining = (object != NULL) ? object->TClass->Size : 0;
+		int last = absorber ? 0 : Cargo.Total_Size() - 1;
+		for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
+			int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
+			if (absorber) {
+				if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
+				last++;
+				continue;
+			}
+			if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
+				for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
+					if (last >= 0 && last < count) slots[last] = PIP_WHITE;
+					last--;
 				}
 			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			if (last >= 0 && last < count) slots[last] = shape;
+			last--;
+		}
+
+		// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
+		int first = 0;
+		Point2D gap(0, 0);
+		if (TClass->IsGunner && count > 0) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			first = 1;
+			gap = offset * 2;
+		}
+		for (int index = first; index < count; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
 
 	} else {
