@@ -10624,7 +10624,8 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 /// <param name="point2">The point the text is centered on.</param>
 void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & cliprect) const
 {
-	if (RTTI == RTTI_BUILDING && ((BuildingClass*)this)->Class->Power > 0) {
+	// A primary building shows its tag instead of the power figures (DrawExtraInfo, 0x70AA60).
+	if (RTTI == RTTI_BUILDING && !IsLeader && ((BuildingClass*)this)->Class->Power > 0) {
 		char buffer[128];
 		sprintf(buffer, Fetch_String(TXT_POWER_DRAIN), House->Power_Output(), House->Power_Drain());
 		Draw_House_Label(House, buffer, point2, true, cliprect);

@@ -15,6 +15,7 @@
 **	options					opens the options menu, as Escape does during play
 **	select <TypeID>			selects every object of that type the player owns
 **	produce <TypeID>		starts building that type
+**	produceai <TypeID> x y	starts building that type in the structure on that cell, as a computer house's factory does
 **	place <TypeID>			places a finished structure at the first legal cell near the
 **							player's construction yard
 **	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
@@ -3416,6 +3417,26 @@ void Run(StepType const & step)
 			} else {
 				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
 			}
+		}
+	} else if (step.Command == "produceai") {
+		// produceai <TypeID> x y: starts building that type in the structure on that cell, the way BuildingClass::Factory_AI
+		// starts a computer house's production, so the structure's own factory holds the object. A structure that is
+		// already producing is left alone. The queue runs only the player's events, so this changes this copy only.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
+		if (type != NULL && building != NULL && building->House != NULL && building->Factory == NULL) {
+			building->Factory = new FactoryClass;
+			if (building->Factory->Set(*type, *building->House, false)) {
+				building->House->Production_Begun(building->Factory->Get_Object());
+				building->Factory->Start(false);
+				DebugString("AUTOTEST produceai %s for %s at %d,%d started\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
+			} else {
+				delete building->Factory;
+				building->Factory = NULL;
+				DebugString("AUTOTEST produceai %s for %s at %d,%d refused\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
+			}
+		} else {
+			DebugString("AUTOTEST produceai %s at %d,%d: no structure, type or free factory\n", step.Argument.c_str(), step.X, step.Y);
 		}
 	} else if (step.Command == "place") {
 		Place(step.Argument);

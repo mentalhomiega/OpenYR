@@ -1,0 +1,33 @@
+; A spy that infiltrates an enemy Yuri barracks (YABRCK) shows the cameo of what that barracks is building over it while the
+; player has it selected (BuildingClass::DrawInfoTipAndSpiedSelection, 0x43E7B0). The barracks is the first computer house's
+; (Africans), and the Yuri Clone is started in it the way BuildingClass::Factory_AI starts a computer house's production.
+; Run on XMP29U2.MAP as the Americans, with the cheats that -Settings turns on:
+;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/spied-factory-cameo.txt -Settings "[Options]<newline>DebugMode=yes" -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200 -Filter "AUTOTEST|Exception"
+; The window shots are TGA files in the user folder's Screenshots folder.
+; Expected: spy-a0-unselected has no cameo. spy-a1-selected, taken 18 frames after the Yuri Clone starts, shows its cameo
+; (portrait and name) centred on the barracks, with the barracks' Primary tag hidden under it. The cameo is still there at
+; frame 1300; by frame 1500 the clone has left and spy-a4-selected shows the Primary tag alone.
+10 command CenterBase
+20 command DebugInfiniteMoney
+21 command DebugUnlockAll
+22 command DebugInstantBuild
+30 own GAPOWR 60 30
+31 own GAPILE 64 30
+32 own GAWEAP 60 34
+33 own GAYARD 70 36
+34 enemy YABRCK 50 26
+35 reveal
+36 view 52 28
+600 own SPY 52 26
+605 spy SPY 50 26
+900 where SPY
+905 factories
+910 cellpixel 50 26
+912 produceai YURI 50 26
+915 windowshot spy-a0-unselected
+920 windowclick 512 180
+930 windowshot spy-a1-selected
+1100 windowshot spy-a2-selected
+1300 windowshot spy-a3-selected
+1500 windowshot spy-a4-selected
+1700 quit
