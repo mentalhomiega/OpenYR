@@ -438,7 +438,7 @@ void TerrainClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		}
 		Draw_Shape(*LogicalSurface, *drawer, shapedata, shapenum, drawpoint, cliprect, flags, NULL, zadjust - 12, ZGRAD_90DEG, tint);
 		if (DrawShapeShadows) {
-			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shapedata, shapenum + shapedata->Get_Count() / 2, drawpoint, cliprect, ShapeFlags_Type(flags|SHAPE_DARKEN), NULL, zadjust - 2);
+			Draw_Shape(*LogicalSurface, *cellptr.Drawer, shapedata, shapenum + shapedata->Get_Count() / 2, drawpoint, cliprect, ShapeFlags_Type(flags|SHAPE_DARKEN), NULL, zadjust - 3);
 		}
 	}
 }
