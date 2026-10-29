@@ -156,6 +156,7 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "psystype.h"
 #include "playerdisplay.h"
 #include "queue.h"
 #include "revent.h"
@@ -2644,6 +2645,19 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 								anim->AlternativeDrawer = Remap_Converter();
 								anim->AlternativeBrightness = Apparent_Brightness();
 							}
+						}
+					}
+
+					// A destroyed structure starts one of its smoke systems from DestroyParticleSystems at DestroySmokeOffset (BuildingClass::Destroy, 0x4415F0).
+					{
+						DynamicVectorClass<ParticleSystemTypeClass const *> smokes;
+						for (int index = Class->DestroyParticleSystems.Count() - 1; index >= 0; index--) {
+							if (Class->DestroyParticleSystems[index]->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
+								smokes.Add(Class->DestroyParticleSystems[index]);
+							}
+						}
+						if (smokes.Count() > 0 && HeightAGL > -10) {
+							new ParticleSystemClass(smokes[Scen->RandomNumber(0, smokes.Count() - 1)], Get_Coord() + Class->DestroySmokeOffset, NULL, this, COORD_NONE);
 						}
 					}
 

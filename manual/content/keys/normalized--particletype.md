@@ -10,10 +10,10 @@ when_omitted:
 
 `Normalized=yes` paces a [`Fire`](/keys/behaveslike/#scope-particletype) particle's animation to the distance it is fired across, so flames fired at near and far targets both reach [`FinalDamageState`](/keys/finaldamagestate/) at roughly the end of their flight. The particle ignores [`StateAIAdvance`](/keys/stateaiadvance/) and works out its own interval, in frames per state, when it is created:
 
-1. Divide the distance from its starting point to its target by its starting [`Velocity`](/keys/velocity/). This is its flight time in frames.
+1. Take its starting [`Velocity`](/keys/velocity/) along each horizontal axis, dropping the fraction, and divide the distance to its target along that axis by it. The smaller result is its flight time in frames, and an axis it does not move along gives no result.
 2. Divide the flight time by one more than `FinalDamageState`, add one, and drop the fraction.
 
-For example, a flame with `Velocity=28` and `FinalDamageState=14` aimed 1,280 leptons away has a flight time of about 46 frames, which gives an interval of 4 frames per state.
+For example, a flame with `Velocity=28` and `FinalDamageState=14` aimed 1,280 leptons away along a horizontal axis has a flight time of about 46 frames, which gives an interval of 4 frames per state.
 
 The frame added in step 2 makes the sequence run somewhat longer than the flight, most noticeably for short flights. The calculation also ignores [`Deacc`](/keys/deacc/) and assumes the flame keeps its starting speed. A flame that slows down therefore covers less ground in each state, and reaches `FinalDamageState` closer to where it started.
 

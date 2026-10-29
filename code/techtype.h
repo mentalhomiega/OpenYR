@@ -919,6 +919,14 @@ class TechnoTypeClass : public ObjectTypeClass
 		TPoint3D<int> DamageSmokeOffset;
 
 		/*
+		 * These are the smoke systems a structure of this type starts when it is destroyed, and the
+		 * offset from its location that the system starts at. A smoke behaving system is picked
+		 * from the list at random.
+		 */
+		TypeList<ParticleSystemTypeClass const *> DestroyParticleSystems;
+		TPoint3D<int> DestroySmokeOffset;
+
+		/*
 		 * This is the voxel layer that this object's shadow is cast from. A model whose
 		 * silhouette is dominated by one part can throw a shadow shaped like that part instead
 		 * of like the whole body.

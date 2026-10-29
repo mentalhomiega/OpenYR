@@ -1,0 +1,18 @@
+; Poison gas drift. A GI (E1) walks onto a gas crate, which releases a gas cloud at the crate. gamemd keeps the sideways drift
+; of a gas particle between -2 and 2 leptons on each axis (ParticleClass behavior AI for Gas, 0x62BD50); smoke drifts up to 5.
+; The particles step lists each GasCloud1 particle with its drift.
+; Expected: every GasCloud1 line has drift X and Y within -2..2, and some reach 2 or -2 after the first 60 frames.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/particle-gas-drift.txt -Seconds 90 -Filter "AUTOTEST   particle|AUTOTEST crate|Exception"
+30 command CenterBase
+35 reveal
+40 own E1 52 53
+45 crate gas 52 55
+50 move E1 52 55
+240 particles GasCloud1
+300 particles GasCloud1
+360 particles GasCloud1
+420 particles GasCloud1
+480 particles GasCloud1
+540 particles GasCloud1
+600 particles GasCloud1
+601 quit

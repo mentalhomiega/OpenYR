@@ -344,6 +344,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
 	DamageSmokeOffset(0,0,0),
+	DestroyParticleSystems(),
+	DestroySmokeOffset(0,0,0),
 	ShadowIndex(0),
 	Capacity(0),
 	TurretNotExportedOnGround(false),
@@ -1191,6 +1193,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
 		DamageSmokeOffset = ini.Get_Offset(Name(), "DamageSmokeOffset", DamageSmokeOffset);
+		DestroyParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DestroyParticleSystems", DestroyParticleSystems);
+		DestroySmokeOffset = ini.Get_Offset(Name(), "DestroySmokeOffset", DestroySmokeOffset);
 		IsNominal = ini.Get_Bool(Name(), "Nominal", IsNominal);
 		IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
 		IsNoShadow = ini.Get_Bool(Name(), "NoShadow", IsNoShadow);
@@ -1879,6 +1883,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
 	stream.Serialize(DamageSmokeOffset);
+	stream.Serialize(DestroyParticleSystems);
+	stream.Serialize(DestroySmokeOffset);
 	stream.Serialize(ShadowIndex);
 	stream.Serialize(Capacity);
 	stream.Serialize(TurretNotExportedOnGround);
@@ -2014,6 +2020,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(VoiceDie.Count());
 	crc(VoiceFeedback.Count());
 	crc(DamageParticleSystems.Count());
+	crc(DestroyParticleSystems.Count());
 	crc(MZone);
 	crc(ThreatRange);
 	crc(MaxDebris);

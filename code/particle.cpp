@@ -127,8 +127,8 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	if (Class->IsNormalized) {
 		Point2D delta(origin.X - target.X, origin.Y - target.Y);
 
-		float abs_vx = abs(MovementDirection.X * Speed);
-		float abs_vy = abs(MovementDirection.Y * Speed);
+		float abs_vx = abs((int)(MovementDirection.X * Speed));
+		float abs_vy = abs((int)(MovementDirection.Y * Speed));
 
 		float min_time = 9999.0f;
 
@@ -248,15 +248,15 @@ void ParticleClass::Gas_Behavior_AI(void)
 				dy = (int)abs(Scen->RandomNumber()) % 3 - 1;
 			}
 			GasDrift += Point2D(dx, dy);
-			if (GasDrift.X < -5) {
-				GasDrift.X = -5;
-			} else if (GasDrift.X > 5) {
-				GasDrift.X = 5;
+			if (GasDrift.X < -2) {
+				GasDrift.X = -2;
+			} else if (GasDrift.X > 2) {
+				GasDrift.X = 2;
 			}
-			if (GasDrift.Y < -5) {
-				GasDrift.Y = -5;
-			} else if (GasDrift.Y > 5) {
-				GasDrift.Y = 5;
+			if (GasDrift.Y < -2) {
+				GasDrift.Y = -2;
+			} else if (GasDrift.Y > 2) {
+				GasDrift.Y = 2;
 			}
 		}
 
@@ -713,11 +713,11 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 
 
 /// <summary>
-/// Handles drifting a smoke particle for this game frame.
-/// The prevailing wind carries the smoke sideways while it settles toward the
+/// Handles drifting a gas particle for this game frame.
+/// The prevailing wind carries the gas sideways while it settles toward the
 /// ground, and it is never allowed to sink into the terrain.
 /// </summary>
-void ParticleClass::Smoke_Motion_AI(void)
+void ParticleClass::Gas_Motion_AI(void)
 {
 	Coord coord = Get_Coord();
 
@@ -748,12 +748,12 @@ void ParticleClass::Smoke_Motion_AI(void)
 
 
 /// <summary>
-/// Handles drifting a gas particle for this game frame.
-/// The cloud rises at its own speed while the prevailing wind and its accumulated
-/// drift push it sideways. A cloud that would rise up through a bridge deck is
+/// Handles drifting a smoke particle for this game frame.
+/// The puff rises at its own speed while the prevailing wind and its accumulated
+/// drift push it sideways. A puff that would rise up through a bridge deck is
 /// flagged for death instead of passing through it.
 /// </summary>
-void ParticleClass::Gas_Motion_AI(void)
+void ParticleClass::Smoke_Motion_AI(void)
 {
 	static const double _level_scale = 2.5;
 
@@ -819,16 +819,14 @@ void ParticleClass::Motion_AI(void)
 {
 	switch (Class->BehavesLike)
 	{
-		case PSYS_BEHAVIOR_GAS:
+		case BEHAVIOR_GAS:
+		case BEHAVIOR_WEAKGAS:
 			Gas_Motion_AI();
 			break;
-		case PSYS_BEHAVIOR_SMOKE:
+		case BEHAVIOR_SMOKE:
 			Smoke_Motion_AI();
 			break;
-		case PSYS_BEHAVIOR_WEAKGAS:
-			Smoke_Motion_AI();
-			break;
-		case PSYS_BEHAVIOR_FIRE:
+		case BEHAVIOR_FIRE:
 			Fire_Motion_AI();
 			break;
 		default:
