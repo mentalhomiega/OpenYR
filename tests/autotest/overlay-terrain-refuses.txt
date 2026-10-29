@@ -1,0 +1,15 @@
+; An overlay will not be placed on a cell that holds a terrain object, as gamemd's OverlayClass::Unlimbo (0x5FD270)
+; and the OverlayClass constructor (0x5FC380) check with CellClass::GetTerrain. The wall is the overlay that the
+; base placement would accept here: a wall's Is_Clear_To_Build test ignores terrain when it has no building to place.
+; terrainonore places a tree on the first ore cell and clears the ore; the wall then targets that cell.
+; Expected: the wall line reports overlay -1 (not placed), and the cell line after it still reports overlay -1.
+; Before the fix the wall was placed (overlay 2 on XMP29U2.MAP cell 17,59).
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/overlay-terrain-refuses.txt -Map XMP29U2.MAP -Width 800 -Height 600 -Seconds 60 -Filter "AUTOTEST terrainonore|AUTOTEST   cell|AUTOTEST wall|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+100 terrainonore TREE01
+101 cell 17 59
+102 wall GAWALL 17 59
+103 cell 17 59
+110 quit
