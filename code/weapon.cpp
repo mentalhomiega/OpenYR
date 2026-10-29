@@ -49,6 +49,7 @@
 #include "animtype.h"
 #include "bullettype.h"
 #include "combat.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -62,6 +63,8 @@
 #include "warhead.h"
 
 #include <cstring>
+#include <set>
+#include <string>
 
 
 /***********************************************************************************************
@@ -193,7 +196,8 @@ WeaponTypeClass::~WeaponTypeClass(void)
  *=============================================================================================*/
 bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 {
-	if (ini.Is_Present(IniName)) {
+	bool const has_section = ini.Is_Present(IniName);
+	if (has_section) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
 		IsMagBeam = ini.Get_Bool(IniName, "IsMagBeam", IsMagBeam);
@@ -272,10 +276,32 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		WarheadPtr = TGet_Class(ini, IniName, "Warhead", WarheadPtr);
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
-
-		return(true);
 	}
-	return(false);
+
+	// A weapon with no projectile or warhead gets the default ones, so it fires without a NULL pointer.
+	// gamemd crashes on a NULL projectile instead (its range test reads the projectile unchecked).
+	bool const no_projectile = Bullet == NULL;
+	bool const no_warhead = WarheadPtr == NULL;
+	if (no_projectile || no_warhead) {
+		// Each rules layer reads every weapon again, so each weapon is logged once per run.
+		static std::set<std::string> logged;
+		if (logged.insert(Name()).second) {
+			if (no_projectile && no_warhead) {
+				DebugString("[%s] has no projectile or warhead; it uses the default projectile and warhead.\n", Name());
+			} else if (no_projectile) {
+				DebugString("[%s] has no projectile (no section, or Projectile= names none); it uses the default projectile.\n", Name());
+			} else {
+				DebugString("[%s] has no warhead (no section, or Warhead= names none); it uses the default warhead.\n", Name());
+			}
+		}
+		if (no_projectile) {
+			Bullet = BulletTypeClass::Find_Or_Make("<missing>");
+		}
+		if (no_warhead) {
+			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
+		}
+	}
+	return(has_section);
 }
 
 
