@@ -4545,10 +4545,10 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	/*
-	**	If there is no weapon, then firing is not allowed.
+	**	If there is no weapon, or it has no projectile, then firing is not allowed.
 	*/
 	weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon == NULL) {
+	if (weapon == NULL || weapon->Bullet == NULL) {
 		goto CANT_FIRE;
 	}
 
@@ -5243,10 +5243,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	WeaponTypeClass * weapon = Get_Class_Weapon_Data(which)->Weapon;
 
 	/*
-	**	If this object doesn't have a weapon, then it is obvious that firing
+	**	If this object doesn't have a weapon, or the weapon has no projectile, then it is obvious that firing
 	**	cannot ever succeed. Return with failure flag.
 	*/
-	if (weapon == NULL) return(NULL);
+	if (weapon == NULL || weapon->Bullet == NULL) return(NULL);
 
 	BulletTypeClass const & btype = *weapon->Bullet;
 
@@ -9703,7 +9703,7 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	/*
 	**	Don't allow retaliation if it isn't equipped with a weapon that can deal with the threat.
 	*/
-	if (source->RTTI == RTTI_AIRCRAFT && !wdata->Weapon->Bullet->IsAntiAircraft) return(false);
+	if (source->RTTI == RTTI_AIRCRAFT && (wdata->Weapon->Bullet == NULL || !wdata->Weapon->Bullet->IsAntiAircraft)) return(false);
 
 	/*
 	**	Tanya is not allowed to retaliate against buildings in the normal sense while in guard mode. That

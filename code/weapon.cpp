@@ -49,6 +49,7 @@
 #include "animtype.h"
 #include "bullettype.h"
 #include "combat.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -62,6 +63,8 @@
 #include "warhead.h"
 
 #include <cstring>
+#include <set>
+#include <string>
 
 
 /***********************************************************************************************
@@ -193,7 +196,8 @@ WeaponTypeClass::~WeaponTypeClass(void)
  *=============================================================================================*/
 bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 {
-	if (ini.Is_Present(IniName)) {
+	bool const has_section = ini.Is_Present(IniName);
+	if (has_section) {
 		AmbientDamage = ini.Get_Int(IniName, "AmbientDamage", AmbientDamage);
 		IsSonic = ini.Get_Bool(IniName, "IsSonic", IsSonic);
 		IsMagBeam = ini.Get_Bool(IniName, "IsMagBeam", IsMagBeam);
@@ -272,10 +276,21 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 
 		WarheadPtr = TGet_Class(ini, IniName, "Warhead", WarheadPtr);
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
-
-		return(true);
 	}
-	return(false);
+
+	// A weapon with no projectile cannot fire. Threat checks still read its warhead, so it gets the default one.
+	if (Bullet == NULL) {
+		if (WarheadPtr == NULL) {
+			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
+		}
+
+		// Each rules layer reads every weapon again, so the warning is written once per weapon name.
+		static std::set<std::string> warned;
+		if (warned.insert(Name()).second) {
+			DebugString("[%s] has no projectile (no section, or Projectile= names none), so it cannot fire.\n", Name());
+		}
+	}
+	return(has_section);
 }
 
 
@@ -345,6 +360,9 @@ ArmorType Armor_From_Name(char const * name)
  *=============================================================================================*/
 ThreatType WeaponTypeClass::Allowed_Threats(void) const
 {
+	if (Bullet == NULL) {
+		return(THREAT_NORMAL);
+	}
 	if (Bullet->IsAntiVehicle) {
 		return(THREAT_VEHICLES);
 	}

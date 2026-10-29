@@ -4253,7 +4253,7 @@ LONG AircraftClass::Is_Strafe(void)
 		return(false);
 	}
 	WeaponTypeClass *weapon = data->Weapon;
-	if (weapon == NULL) {
+	if (weapon == NULL || weapon->Bullet == NULL) {
 		return(false);
 	}
 	if (weapon->Bullet->ROT > 1) {

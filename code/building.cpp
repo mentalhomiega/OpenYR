@@ -3130,7 +3130,7 @@ void BuildingClass::Assign_Target(AbstractClass * target)
 		}
 	} else {
 		// A target the weapon cannot reach with a clear line is refused (BuildingClass::SetTarget, 0x443B90, IsCloseEnoughToAttack).
-		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !Is_Close_Enough(target, What_Weapon_Should_I_Use(target))) {
+		if (target != NULL && PrimaryWeapon != NULL && (PrimaryWeapon->Bullet == NULL || !PrimaryWeapon->Bullet->IsAntiAircraft) && !Is_Close_Enough(target, What_Weapon_Should_I_Use(target))) {
 			target = NULL;
 			BASECLASS::Assign_Target(target);
 			if (Class->IsTickTank || Class->IsArtillary || Class->IsJuggernaut) {
@@ -4491,7 +4491,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 	// gets none even against an airborne object (BuildingClass::MouseOverObject, 0x447210, AG read at 0x447394).
 	// The weapon must also be able to take the shot (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
-		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || !PrimaryWeapon->Bullet->IsAntiGround) {
+		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || PrimaryWeapon->Bullet == NULL || !PrimaryWeapon->Bullet->IsAntiGround) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;
@@ -4573,7 +4573,7 @@ ActionType BuildingClass::What_Action(Cell const & cell, bool check_fog, bool di
 	**	is held down.
 	*/
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
-		if (!PrimaryWeapon->Bullet->IsAntiGround) {
+		if (PrimaryWeapon->Bullet == NULL || !PrimaryWeapon->Bullet->IsAntiGround) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;
@@ -6787,7 +6787,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 					WeaponTypeClass const * weap = SuperWeaponTypes[LastSuperWeaponIndex]->Weapon;
 					BulletTypeClass const * bullet_type = weap->Bullet;
 					WarheadTypeClass const * warhead = weap->WarheadPtr;
-					BulletClass * bullet = Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true);
+					BulletClass * bullet = bullet_type != NULL ? Create_Bullet(bullet_type, targ, this, weap->Attack, warhead, MPH_LIGHT_SPEED, true) : NULL;
 					if (bullet) {
 						// The warning passes to the missile bullet and stays up until that bullet is removed.
 						if (PsiWarnAnim != NULL) {

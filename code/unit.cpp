@@ -3307,7 +3307,7 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 			nmtx.Translate(-flh);
 
 			FacingClass face = BarrelPitch;
-			if (PrimaryWeapon->Bullet->IsInvisible) {
+			if (PrimaryWeapon->Bullet != NULL && PrimaryWeapon->Bullet->IsInvisible) {
 				Dir256 dir256 = face.Current().As_Dir256();
 				if (dir256 > DIR_E && dir256 <= DIR_S) {
 					dir256 = (Dir256)((dir256 - DIR_E) / 3 + DIR_E);
@@ -4833,7 +4833,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 				**	this vehicle should avoid the cell altogether.
 				*/
 				if (!Class->IsCrusher && !Has_Ability(ABILITY_CRUSHER)) {
-					if (Class->IsTrain || (PrimaryWeapon != NULL && PrimaryWeapon->Bullet->IsAntiGround)) {
+					if (Class->IsTrain || (PrimaryWeapon != NULL && PrimaryWeapon->Bullet != NULL && PrimaryWeapon->Bullet->IsAntiGround)) {
 						retval = MOVE_DESTROYABLE;
 					} else {
 						return(MOVE_NO);

@@ -1901,7 +1901,7 @@ static void Air_Probe_Step(StepType const & step)
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		for (int slot = 0; type != NULL && slot < TechnoTypeClass::WEAPON_SLOT_COUNT; slot++) {
 			WeaponTypeClass const * weapon = type->Weapons[slot].Weapon;
-			if (weapon != NULL) {
+			if (weapon != NULL && weapon->Bullet != NULL) {
 				DebugString("AUTOTEST   weapon %s slot %d %s AA %d AG %d range %d\n", type->Name(), slot, weapon->Name(), (int)weapon->Bullet->IsAntiAircraft, (int)weapon->Bullet->IsAntiGround, (int)weapon->Range);
 			}
 		}

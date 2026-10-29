@@ -2761,7 +2761,7 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 
 	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
 	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 50, false);
+	BulletClass * bullet = bullet_type != NULL ? Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 50, false) : NULL;
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
@@ -2792,7 +2792,7 @@ bool TActionClass::TAction_CHEM_MISSILE(HouseClass * , ObjectClass * , TriggerCl
 
 	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
 	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 20, false);
+	BulletClass * bullet = bullet_type != NULL ? Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 20, false) : NULL;
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);

@@ -1487,6 +1487,11 @@ bool TechnoTypeClass::In_Range(Coord const & coord, AbstractClass * target, Weap
 	}
 
 	if (target != NULL && weapon != NULL) {
+		// A weapon with no projectile cannot reach a target.
+		if (weapon->Bullet == NULL) {
+			return(false);
+		}
+
 		// A target in the air is reached AirRangeBonus farther (TechnoClass::InRange, 0x6F7274).
 		int range = weapon->Range + bonus;
 		if (target->In_Air()) {
