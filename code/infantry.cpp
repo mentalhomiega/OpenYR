@@ -871,10 +871,10 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 
 	if (why == PCP_END) {
 
-		// A soldier that reaches the structure it was sent to garrison goes inside, as gamemd's
-		// InfantryClass cell arrival (0x519630) does; one that may no longer enter is turned away.
+		// A soldier that reaches the structure it was sent to garrison on the Capture mission goes inside, as gamemd's
+		// InfantryClass cell arrival (0x519630, the branch at 0x51967F) does; one that may no longer enter is turned away.
 		// An Assaulter that is not an Occupier kills the occupants instead of joining them, then steps away.
-		if (Mission == MISSION_ENTER && (Class->IsOccupier || Class->IsAssaulter) && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING && ((BuildingClass *)NavCom)->Class->IsCanBeOccupied) {
+		if (Mission == MISSION_CAPTURE && (Class->IsOccupier || Class->IsAssaulter) && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
 			BuildingClass * building = (BuildingClass *)NavCom;
 			if (building == cellptr->Cell_Building()) {
 				if (building->Can_Be_Occupied_By(this)) {
@@ -1365,12 +1365,6 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 		if (!In_Radio_Contact()) {
 			TechnoClass * techno = Dynamic_Cast<TechnoClass *>(target);
 
-			// A soldier heading into a structure to garrison it walks straight in without a radio
-			// handshake, so several soldiers can head for the same structure at once.
-			if (techno != NULL && techno->RTTI == RTTI_BUILDING && (Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass *)techno)->Class->IsCanBeOccupied) {
-				ArchiveTarget = target;
-				techno = NULL;
-			}
 			if (techno != NULL) {
 
 				/*
@@ -3501,11 +3495,6 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 			action = Combat_Damage() < 0 ? ACTION_ATTACK : ACTION_CAPTURE;
 			break;
 
-		// A garrison Capture is carried out as an Enter order, which walks the soldier into the structure.
-		case ACTION_CAPTURE:
-			action = Is_Garrison_Click(this, object, is_waypoint) ? ACTION_ENTER : ACTION_CAPTURE;
-			break;
-
 		case ACTION_DAMAGE:
 			action = ACTION_CAPTURE;
 			break;
@@ -3610,10 +3599,9 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 			Assign_Mission(MISSION_CAPTURE);
 			return(1);
 		}
-		// A garrison is entered on the Enter mission here, as a player's garrison order gives it.
 		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
 			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_ENTER);
+			Assign_Mission(MISSION_CAPTURE);
 			return(1);
 		}
 	}
@@ -3643,10 +3631,9 @@ int InfantryClass::Do_MISSION_HUNT(void)
 			Assign_Mission(MISSION_CAPTURE);
 			return(1);
 		}
-		// A garrison is entered on the Enter mission, as in Do_MISSION_ATTACK.
 		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
 			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_ENTER);
+			Assign_Mission(MISSION_CAPTURE);
 			return(1);
 		}
 	}

@@ -929,7 +929,9 @@ int FootClass::Do_MISSION_CAPTURE(void)
 	/*
 	**	If there is a valid TarCom but the NavCom isn't set, then set the NavCom accordingly.
 	*/
-	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL && (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer)) {
+	// A soldier with C4, the C4 ability, Engineer, Occupier, Assaulter or Infiltrate sets out for its target structure (FootClass::Mission_Capture, 0x4D4B20).
+	if (Is_Target_Building(TarCom) && NavCom == NULL && inf != NULL
+		&& (inf->Class->IsBomber || inf->Has_Ability(ABILITY_C4) || inf->Class->IsEngineer || inf->Class->IsOccupier || inf->Class->IsAssaulter || inf->Class->IsCapture)) {
 		Assign_Destination(TarCom);
 	}
 
@@ -950,7 +952,8 @@ int FootClass::Do_MISSION_CAPTURE(void)
 		}
 	}
 
-	if (TarCom == NULL && !House->Is_Human_Player()) {
+	// A computer's object with no target goes hunting, except an Occupier=yes soldier, which stays on the Capture mission (0x4D4C14).
+	if (TarCom == NULL && !House->Is_Human_Player() && (inf == NULL || !inf->Class->IsOccupier)) {
 		Assign_Target(NULL);
 		Assign_Destination(NULL);
 		Assign_Mission(MISSION_HUNT);
@@ -2978,33 +2981,6 @@ int FootClass::Do_MISSION_ENTER(void)
 				ArchiveTarget = grinder;
 				if (NavCom == NULL) {
 					Assign_Destination(grinder);
-				}
-				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-			}
-			ArchiveTarget = NULL;
-			Assign_Destination(NULL);
-			Enter_Idle_Mode();
-			return(Current_Mission_Control().Normal_Delay());
-		}
-	}
-
-	/*
-	 * A soldier sent to garrison a structure remembers it and keeps walking there, trying again
-	 * if its path gives out; it goes inside on arrival. It gives up once the structure cannot
-	 * take it.
-	 */
-	if (RTTI == RTTI_INFANTRY && (static_cast<InfantryClass *>(this)->Class->IsOccupier || static_cast<InfantryClass *>(this)->Class->IsAssaulter)) {
-		BuildingClass * building = NULL;
-		if (NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
-			building = (BuildingClass *)NavCom;
-		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
-			building = (BuildingClass *)ArchiveTarget;
-		}
-		if (building != NULL && building->Class->IsCanBeOccupied) {
-			if (building->Can_Be_Occupied_By(static_cast<InfantryClass *>(this))) {
-				ArchiveTarget = building;
-				if (NavCom == NULL) {
-					Assign_Destination(building);
 				}
 				return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 			}

@@ -392,7 +392,7 @@ class TeamClass : public AbstractClass
 		void TMission_ATTACK_WAYPOINT_OBJECT(TeamMissionClass * mission, bool);
 		void TMission_ENTER_GRINDER(TeamMissionClass * mission, bool);
 		void TMission_GARRISON_STRUCTURE(TeamMissionClass * mission, bool);
-		void Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only = true);
+		void Send_Members_Into(bool (*accepts)(BuildingClass const * building, FootClass const * member, int sent), bool own_only = true, MissionType mission = MISSION_ENTER);
 		LEPTON Stray_Distance(void);
 		void Chrono_Prep(TeamMissionClass * mission, bool by_building);
 		void Gather_Near(FootClass * leader, Coord const & base, Coord const & toward);

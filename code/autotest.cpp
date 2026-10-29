@@ -2328,12 +2328,19 @@ static void Set_Target_Step(StepType const & step)
 	bool const computer = Word(words, 5) == "computer" || Word(words, 6) == "computer";
 	bool const attack = Word(words, 5) == "attack" || Word(words, 6) == "attack";
 	bool const hunt = Word(words, 5) == "hunt" || Word(words, 6) == "hunt";
+	// capturedest sets the structure as the destination of the Capture mission with no target, as a team's garrison mission does.
+	bool const capturedest = Word(words, 5) == "capturedest" || Word(words, 6) == "capturedest";
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
 		if (owned && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			if (capturedest) {
+				techno->Assign_Destination(target);
+				techno->Assign_Mission(MISSION_CAPTURE);
+				continue;
+			}
 			techno->Assign_Target(target);
 			if (attack) {
 				techno->Assign_Mission(MISSION_ATTACK);
