@@ -675,17 +675,57 @@ int FootClass::Do_MISSION_MOVE(void)
 
 /// <summary>
 /// Handles the attack-move state machine. The unit travels to its destination, breaks off to engage a
-/// threat it can reach, and resumes travel to the same destination once that target is gone.
+/// threat it can reach, and resumes travel to the same destination once that target is gone. An attack-move
+/// on an object or a cell has no destination: the unit pursues that target, and takes a threat within reach
+/// first while the target is out of reach (FootClass::UpdateAttackMove, 0x4DF3A0, with MegaTarget).
 /// </summary>
 /// <returns>The delay in game frames before this mission should be processed again.</returns>
 int FootClass::Do_MISSION_ATTACK_MOVE(void)
 {
 	enum {
 		ATTACK_MOVE_TRAVEL,		/// travelling; a threat within reach is taken
-		ATTACK_MOVE_ENGAGE		/// fighting the target until it is gone or out of reach
+		ATTACK_MOVE_ENGAGE,		/// fighting the target until it is gone or out of reach
+		ATTACK_MOVE_PURSUE		/// pursuing the ordered target, kept in ArchiveTarget, and taking a threat within reach on the way
 	};
 
+	// The order's target is kept in ArchiveTarget, which a travelling attack-move leaves empty until it engages.
+	if (Status == ATTACK_MOVE_TRAVEL && ArchiveTarget != NULL) {
+		Status = ATTACK_MOVE_PURSUE;
+	}
+
 	switch (Status) {
+
+		case ATTACK_MOVE_PURSUE: {
+			AbstractClass * ordered = ArchiveTarget;
+
+			// The ordered target is gone, so the order ends and the unit idles.
+			if (ordered == NULL || (ordered->As_ObjectClass() != NULL && !ordered->As_ObjectClass()->IsActive)) {
+				ArchiveTarget = NULL;
+				Assign_Target(NULL);
+				Enter_Idle_Mode();
+				return(1);
+			}
+
+			// The unit holds the target while it is within reach. Out of reach, it keeps a threat it took while that stays within reach,
+			// and otherwise scans for another threat within reach and falls back to the ordered target.
+			if (Is_Close_Enough(ordered, What_Weapon_Should_I_Use(ordered))) {
+				if (TarCom == NULL) {
+					Assign_Target(ordered);
+				}
+			} else if (TarCom == NULL || TarCom == ordered || !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
+				Perf_Count(PERF_COUNT_SCAN_MISSION);
+				AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
+				ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
+				AbstractClass * next = (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) ? target : ordered;
+				if (TarCom != next) {
+					Assign_Target(next);
+				}
+			}
+			if (TarCom != NULL) {
+				Approach_Target();
+			}
+			break;
+		}
 
 		case ATTACK_MOVE_TRAVEL: {
 			Perf_Count(PERF_COUNT_SCAN_MISSION);
@@ -1429,11 +1469,11 @@ void FootClass::Approach_Target(void)
 
 		// A CanApproachTarget=no object, a magnetron holding its victim, a vehicle in a bunker or a passenger
 		// of an open-topped transport forgets a target out of reach instead of chasing it. An attack order
-		// still chases, as do a human player's area guard and a computer player's hunt
+		// still chases, as does an attack-move (gamemd runs one as Attack), a human player's area guard and a computer player's hunt
 		// (FootClass::ApproachTarget, 0x4D5690).
 		bool const can_approach = TClass->IsCanApproachTarget && LocomotorTarget == NULL && BunkerLinkedItem == NULL && !IsInOpenToppedTransport;
 		if (!inrange && !can_approach) {
-			bool const chase = CurrentMission == MISSION_ATTACK
+			bool const chase = CurrentMission == MISSION_ATTACK || CurrentMission == MISSION_ATTACK_MOVE
 				|| (CurrentMission == MISSION_GUARD_AREA && House->Is_Human_Player())
 				|| (CurrentMission == MISSION_HUNT && !House->Is_Human_Player());
 			if (!chase) {

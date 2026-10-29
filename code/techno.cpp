@@ -5774,6 +5774,41 @@ bool AttackMoveOrdering = false;
 
 
 /// <summary>
+/// Returns whether Ctrl and Shift are both held, gamemd's key chord for an attack-move.
+/// </summary>
+static bool Force_Attack_Keys_Held(void)
+{
+	return((Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2)));
+}
+
+
+/// <summary>
+/// Whether this object can take an attack-move order (TechnoClass::CanAttackOnTheMove, 0x70F090): a soldier or a vehicle
+/// with a primary weapon and no PreventAttackMove=yes. A structure or an aircraft cannot.
+/// </summary>
+bool TechnoClass::Can_Attack_Move(void) const
+{
+	return(Is_Foot() && TClass->Can_Attack_Move());
+}
+
+
+/// <summary>
+/// Whether every selected object can attack-move. Ctrl with Shift gives an attack-move only then
+/// (AllSelectedCanAttackForced, 0x731BF0), and the AttackMove command arms only then (0x731AF0).
+/// </summary>
+bool All_Selected_Can_Attack_Move(void)
+{
+	for (int index = 0; index < CurrentObject.Count(); index++) {
+		ObjectClass const * object = CurrentObject[index];
+		if (object != NULL && (!object->Is_Techno() || !static_cast<TechnoClass const *>(object)->Can_Attack_Move())) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Returns whether the attack-move key is held down. Clicks made while it is held are attack-moves, as the armed click is.
 /// </summary>
 bool Attack_Move_Key_Held(void)
@@ -5816,14 +5851,13 @@ void TechnoClass::Player_Assign_Mission(MissionType mission, AbstractClass * tar
 		return;
 	}
 
-	// A ground order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are held,
-	// and only for a type that can attack-move (TechnoClass::ClickedMission, 0x6FFBE0).
-	bool const ground_move = (mission == MISSION_MOVE && target == NULL && destination != NULL && destination->What_Am_I() == RTTI_CELL);
-	bool const ground_attack = (mission == MISSION_ATTACK && target != NULL && target->What_Am_I() == RTTI_CELL);
-	bool const ctrlshift = (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2)) && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
-	if ((ground_move || ground_attack) && Is_Foot() && (AttackMoveOrdering || ctrlshift) && TClass->Can_Attack_Move()) {
-		destination = (mission == MISSION_MOVE) ? destination : target;
-		target = NULL;
+	// A move or an attack order becomes an attack-move while the attack-move mode is in use, or while Ctrl and Shift are
+	// held and every selected object can attack-move, and only for an object that can (TechnoClass::ClickedMission,
+	// 0x6FFBE0, with 0x731BF0). Whatever the order names stays as it is: a move keeps its destination, a cell or an object,
+	// and an attack keeps its target, a cell, an enemy or any other object.
+	bool const move_order = (mission == MISSION_MOVE && target == NULL && destination != NULL);
+	bool const attack_order = (mission == MISSION_ATTACK && target != NULL);
+	if ((move_order || attack_order) && Can_Attack_Move() && (AttackMoveOrdering || (Force_Attack_Keys_Held() && All_Selected_Can_Attack_Move()))) {
 		mission = MISSION_ATTACK_MOVE;
 	}
 
@@ -5905,6 +5939,12 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		bool altdown = !disallow_force && (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
 		bool ctrldown = !disallow_force && (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2));
 		bool shiftdown = !disallow_force && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
+
+		// Ctrl with Shift is the attack-move chord, and counts as neither key here: no force fire and no toggled selection (TechnoClass::MouseOverObject, 0x6FFEC0).
+		if (ctrldown && shiftdown) {
+			ctrldown = false;
+			shiftdown = false;
+		}
 
 		/*
 		**	Special guard area mission is possible if both the control and the
@@ -6054,6 +6094,12 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 	bool ctrldown = !disallow_force && (Keyboard->Down(Options.KeyForceAttack1) || Keyboard->Down(Options.KeyForceAttack2));
 	bool shiftdown = !disallow_force && (Keyboard->Down(Options.KeySelect1) || Keyboard->Down(Options.KeySelect2));
 	bool altdown = !disallow_force && (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
+
+	// Ctrl with Shift is the attack-move chord, and counts as neither key here (TechnoClass::MouseOverCell, 0x700600).
+	if (ctrldown && shiftdown) {
+		ctrldown = false;
+		shiftdown = false;
+	}
 
 	/*
 	 * When fog of war is enabled and the fogged imagery is being examined, then

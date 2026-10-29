@@ -4575,6 +4575,13 @@ class AttackMoveCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
+			// gamemd arms the order only when every selected object can attack-move, and says so when none is selected or one cannot (0x731AF0).
+			if (CurrentObject.Count() == 0) {
+				Session.Messages.Add_Message(NULL, 0, "No units are selected.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+			} else if (!All_Selected_Can_Attack_Move()) {
+				Session.Messages.Add_Message(NULL, 0, "A selected unit cannot attack-move.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+				return;
+			}
 			AttackMoveArmed = true;
 		}
 };
