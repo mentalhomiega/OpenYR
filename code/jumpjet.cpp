@@ -19,6 +19,8 @@
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
+#include "infantry.h"
+#include "infatype.h"
 #include "inline.h"
 #include "ion.h"
 #include "mouse.h"
@@ -1128,8 +1130,14 @@ void JumpjetLocomotionClass::Movement_AI(void)
 	}
 
 	// A held vehicle keeps its body facing while its locomotor heads for the holder (JumpjetLocomotionClass, 0x54D610).
+	// A hovering JumpJetTurn soldier turns toward its target instead of toward its heading.
 	if (!LinkedTo->IsAttackedByLocomotor) {
-		LinkedTo->PrimaryFacing.Set(Facing.Current());
+		InfantryClass const * soldier = (LinkedTo->RTTI == RTTI_INFANTRY) ? static_cast<InfantryClass const *>(LinkedTo) : NULL;
+		if (soldier != NULL && soldier->Class->IsJumpJetTurn && CurrentState == HOVERING && LinkedTo->TarCom != NULL) {
+			LinkedTo->PrimaryFacing.Set(LinkedTo->Direction(LinkedTo->TarCom));
+		} else {
+			LinkedTo->PrimaryFacing.Set(Facing.Current());
+		}
 	}
 
 	if (need_to_mark) {

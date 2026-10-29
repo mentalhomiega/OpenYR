@@ -1,0 +1,22 @@
+; A dug-in soldier of a type without DeployFire takes no target. gamemd's InfantryClass::SetTarget (0x51B1F0) leaves the base target assignment out for such a
+; soldier, null included, but still resets its sequence to Deployed when the target changes. A rifleman (E1, with DeployFire=no from the test mod) is given a target
+; (the settarget at frame 40 assigns it while the soldier is not dug in), digs in at frame 61, is given the same target again once dug in (frame 130) and is sent the Stop command
+; at frame 210, which assigns a null target.
+; infstate gives the soldier's sequence (DoType 28 is Deploy, 29 Deployed) and tardir, the direction of its target (-1 for none).
+; Expected: tardir is 4 at frame 41 and -1 from frame 62 on (the soldier does not take the second target at frame 130), and it stays Deployed (29) after the Stop.
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/infantry-deployed-target.txt -Mods src-agent22/tests/autotest/infantry-deployed-target-rules -Map XMP29U2.MAP -Seconds 90 -Filter "AUTOTEST   infstate|AUTOTEST settarget|Exception"
+30 own E1 54 40
+31 enemy GAPOWR 54 52
+40 settarget E1 54 52
+41 infstate E1
+60 select E1
+61 command DeployObject
+62 infstate E1
+125 infstate E1
+130 settarget E1 54 52
+131 infstate E1
+200 infstate E1
+210 stop E1
+211 infstate E1
+220 infstate E1
+260 quit

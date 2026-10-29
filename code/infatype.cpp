@@ -107,6 +107,7 @@ InfantryTypeClass::InfantryTypeClass(char const * ininame) :
 	OccupyPip(PIP_PERSON_GREEN),
 	IsDeployer(false),
 	IsDeployedCrushable(true),
+	IsJumpJetTurn(false),
 	HarvestRate(0),
 	DeploySound(VOC_NONE),
 	EnterWaterSound(VOC_NONE),
@@ -439,6 +440,7 @@ bool InfantryTypeClass::Read_INI(CCINIClass const & ini)
 		IsAssaulter = ini.Get_Bool(Name(), "Assaulter", IsAssaulter);
 		IsDeployer = ini.Get_Bool(Name(), "Deployer", IsDeployer);
 		IsDeployedCrushable = ini.Get_Bool(Name(), "DeployedCrushable", IsDeployedCrushable);
+		IsJumpJetTurn = ini.Get_Bool(Name(), "JumpJetTurn", IsJumpJetTurn);
 		HarvestRate = ini.Get_Int(Name(), "HarvestRate", HarvestRate);
 		DeploySound = ini.Get_VocType(Name(), "DeploySound", DeploySound);
 		UndeploySound = ini.Get_VocType(Name(), "UndeploySound", UndeploySound);
@@ -547,6 +549,7 @@ void InfantryTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsAssaulter);
 	crc(UndeployDelay);
 	crc(IsDeployedCrushable);
+	crc(IsJumpJetTurn);
 	crc(DeathAnims.Count());
 }
 
@@ -603,6 +606,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAssaulter);
 	stream.Serialize(IsDeployer);
 	stream.Serialize(IsDeployedCrushable);
+	stream.Serialize(IsJumpJetTurn);
 	stream.Serialize(HarvestRate);
 	stream.Serialize(DeploySound);
 	stream.Serialize(EnterWaterSound);

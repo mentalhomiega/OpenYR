@@ -105,6 +105,10 @@ class InfantryClass : public FootClass
 		// Set when a computer's soldier stops to dig in (InfantryClass::Do_Guard_Deploy, 0x521320).
 		bool ShouldDeploy;
 
+		// Set when a DeployedCrushable=no soldier finishes digging in and cleared when it finishes packing up. While it is
+		// set, vehicles cannot crush the soldier (InfantryClass::Doing_AI, 0x520AE0; ObjectClass::IsCrushable, 0x5F6CD0).
+		bool IsDugInSafe;
+
 		// Whether an AmphibiousDestroyer soldier was last animated on land (1), in water (0) or neither yet (2).
 		int LandState;
 

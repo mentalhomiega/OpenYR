@@ -124,6 +124,7 @@
 #include "mono.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "partsys.h"
 #include "playerdisplay.h"
 #include "rules.h"
 #include "savestream.h"
@@ -271,6 +272,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	IsZoneCheat(false),
 	WasSelected(false),
 	ShouldDeploy(false),
+	IsDugInSafe(false),
 	LandState(2),
 	Fear(FEAR_NONE)
 {
@@ -376,6 +378,23 @@ InfantryClass::~InfantryClass(void)
 	Infantry.Delete(this);
 	TargetTracker.Remove_Index(Fetch_ID());
 	IsActive = false;
+}
+
+
+// A virus death of a NotHuman soldier or a paradropper leaves no animation. gamemd builds the InfantryVirus animation, spawns one more
+// particle of its particle type at the soldier and destroys the animation (InfantryClass::Destroy, 0x517FA0).
+static void Spawn_Virus_Cloud(Coord const & coord)
+{
+	if (Rule->InfantryVirus == NULL) {
+		return;
+	}
+	AnimClass * anim = new AnimClass(Rule->InfantryVirus, coord);
+	if (anim != NULL) {
+		if (anim->Class->SpawnsParticle != PARTICLE_NONE && GasSystem != NULL) {
+			GasSystem->Spawn_Particle(ParticleTypes[anim->Class->SpawnsParticle], coord);
+		}
+		delete anim;
+	}
 }
 
 
@@ -487,8 +506,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 			// A soldier killed while parachuting always bursts apart, whatever the warhead.
 			if (Doing == DO_PARADROP) {
-				if (infdeath == 8 && Rule->InfantryVirus != NULL) {
-					new AnimClass(Rule->InfantryVirus, PositionCoord);
+				if (infdeath == 8) {
+					Spawn_Virus_Cloud(PositionCoord);
 				}
 				infdeath = 3;
 			}
@@ -517,8 +536,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				bool const own_death = Class->IsNotHuman && Doing != DO_PARADROP;
 				if (own_death) {
 					Do_Action(DO_GUN_DEATH, true);
-					if (infdeath == 8 && Rule->InfantryVirus != NULL) {
-						new AnimClass(Rule->InfantryVirus, PositionCoord);
+					if (infdeath == 8) {
+						Spawn_Virus_Cloud(PositionCoord);
 					}
 					infdeath = 1;
 				}
@@ -687,7 +706,10 @@ int InfantryClass::Shape_Number(void) const
 	**	is prone.
 	*/
 	DoType doit = Doing;
-	if (doit == DO_NOTHING) doit = DO_STAND_READY;
+	// With no sequence the soldier stands ready, or treads water over a water cell that is not under a bridge (InfantryClass::DrawShape, 0x518D80).
+	if (doit == DO_NOTHING) {
+		doit = (Map[Get_Cell()].Land_Type() == LAND_WATER && !IsOnBridge) ? DO_TREAD : DO_STAND_READY;
+	}
 
 	/*
 	**	The infantry shape is always modulo the number of animation frames
@@ -695,7 +717,7 @@ int InfantryClass::Shape_Number(void) const
 	*/
 	int shapenum = Fetch_Stage() % std::max(Class->DoControls[doit].Count, 1);
 
-	if (Is_JumpJet() && TarCom != NULL) {
+	if (Is_JumpJet() && TarCom != NULL && !Class->IsJumpJetTurn) {
 
 		/*
 		**	If facing makes a difference, then the shape number will be incremented
@@ -1464,11 +1486,6 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 {
 	Sync_Record_Target(*this, target, (unsigned)(uintptr_t)_ReturnAddress());
 
-	// A dug-in soldier that cannot fire while deployed takes no target.
-	if (target != NULL && Is_Deployed() && !Class->IsDeployFire) {
-		return;
-	}
-
 	if (target != TarCom && Strength > 0) {
 		IsFiring = false;
 		if (IsProne) {
@@ -1481,6 +1498,12 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	// Changing the target ends a DirectRocker link on both units (InfantryClass::SetTarget, 0x51B1F0).
 	if (target != TarCom) {
 		Clear_Direct_Rocker_Link();
+	}
+
+	// A dug-in soldier that cannot fire while deployed keeps its target whatever it is told, null included
+	// (InfantryClass::SetTarget, 0x51B1F0).
+	if (Is_Deployed() && !Class->IsDeployFire) {
+		return;
 	}
 
 	Path[0] = FACING_NONE;
@@ -2242,6 +2265,11 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 	**	If this unit cannot fire while moving, then bail.
 	*/
 	if (Speed > 0.1 || (NavCom != NULL && Doing != DO_NOTHING && !MasterDoControls[Doing].Interrupt)) {
+		return(FIRE_MOVING);
+	}
+
+	// A JumpJetTurn soldier holds its fire while its jumpjet locomotor is in transit (InfantryClass::GetFireError, 0x51C8B0).
+	if (Is_JumpJet() && Class->IsJumpJetTurn && Locomotion->Is_Moving_Now()) {
 		return(FIRE_MOVING);
 	}
 
@@ -4330,6 +4358,14 @@ void InfantryClass::Doing_AI(void)
 	}
 
 	if (Doing == DO_NOTHING || Fetch_Stage() >= Class->DoControls[Doing].Count) {
+		if (!Class->IsDeployedCrushable) {
+			if (Doing == DO_DEPLOY) {
+				IsDugInSafe = true;
+			} else if (Doing == DO_UNDEPLOY) {
+				IsDugInSafe = false;
+			}
+		}
+
 		switch (Doing) {
 			default:
 				if (ProneStruggleTimer == 0) {
@@ -4744,6 +4780,7 @@ void InfantryClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsZoneCheat);
 	stream.Serialize(WasSelected);
 	stream.Serialize(ShouldDeploy);
+	stream.Serialize(IsDugInSafe);
 	stream.Serialize(LandState);
 	stream.Serialize(ProneStruggleTimer);
 	stream.Serialize(LookTimer);

@@ -1,0 +1,80 @@
+; A Guardian GI (GGI, Deployer=yes, DeployedCrushable=no) digs in and packs up again beside a Rhino tank (HTNK, a crusher). gamemd sets the soldier's
+; crush protection when its Deploy sequence ends and clears it when its Undeploy sequence ends (InfantryClass::AnimationUpdate, 0x520AE0, field +0xA9 as
+; dwords, which ObjectClass::IsCrushable, 0x5F6CD0, reads), so the soldier can be crushed while it is still digging in and cannot be while it packs up.
+; The crushcheck lines give the soldier's sequence (DoType 28 Deploy, 29 Deployed, 32 Undeploy), its protection flag and whether the tank may crush it.
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/infantry-deployed-crushable.txt -Map XMP29U2.MAP -Seconds 90 -Filter "AUTOTEST   crushcheck|Exception"
+; Expected: cancrush 1 before frame 60 and while doing is 28 (Deploy); cancrush 0 once doing is 29 (Deployed) and still while doing is 32 (Undeploy);
+; cancrush 1 again after the Undeploy sequence ends.
+30 own GGI 54 40
+31 grantunit HTNK 54 44
+50 crushcheck HTNK GGI
+60 select GGI
+61 command DeployObject
+62 crushcheck HTNK GGI
+66 crushcheck HTNK GGI
+70 crushcheck HTNK GGI
+74 crushcheck HTNK GGI
+78 crushcheck HTNK GGI
+82 crushcheck HTNK GGI
+86 crushcheck HTNK GGI
+90 crushcheck HTNK GGI
+94 crushcheck HTNK GGI
+98 crushcheck HTNK GGI
+102 crushcheck HTNK GGI
+106 crushcheck HTNK GGI
+110 crushcheck HTNK GGI
+114 crushcheck HTNK GGI
+118 crushcheck HTNK GGI
+122 crushcheck HTNK GGI
+126 crushcheck HTNK GGI
+130 crushcheck HTNK GGI
+134 crushcheck HTNK GGI
+138 crushcheck HTNK GGI
+142 crushcheck HTNK GGI
+146 crushcheck HTNK GGI
+150 crushcheck HTNK GGI
+154 crushcheck HTNK GGI
+158 crushcheck HTNK GGI
+162 crushcheck HTNK GGI
+166 crushcheck HTNK GGI
+170 crushcheck HTNK GGI
+174 crushcheck HTNK GGI
+178 crushcheck HTNK GGI
+182 crushcheck HTNK GGI
+186 crushcheck HTNK GGI
+190 crushcheck HTNK GGI
+194 crushcheck HTNK GGI
+198 crushcheck HTNK GGI
+210 select GGI
+211 command DeployObject
+212 crushcheck HTNK GGI
+215 crushcheck HTNK GGI
+218 crushcheck HTNK GGI
+221 crushcheck HTNK GGI
+224 crushcheck HTNK GGI
+227 crushcheck HTNK GGI
+230 crushcheck HTNK GGI
+233 crushcheck HTNK GGI
+236 crushcheck HTNK GGI
+239 crushcheck HTNK GGI
+242 crushcheck HTNK GGI
+245 crushcheck HTNK GGI
+248 crushcheck HTNK GGI
+251 crushcheck HTNK GGI
+254 crushcheck HTNK GGI
+257 crushcheck HTNK GGI
+260 crushcheck HTNK GGI
+263 crushcheck HTNK GGI
+266 crushcheck HTNK GGI
+269 crushcheck HTNK GGI
+272 crushcheck HTNK GGI
+275 crushcheck HTNK GGI
+278 crushcheck HTNK GGI
+281 crushcheck HTNK GGI
+284 crushcheck HTNK GGI
+287 crushcheck HTNK GGI
+290 crushcheck HTNK GGI
+293 crushcheck HTNK GGI
+296 crushcheck HTNK GGI
+299 crushcheck HTNK GGI
+310 quit
