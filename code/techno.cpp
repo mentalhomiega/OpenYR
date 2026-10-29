@@ -10493,6 +10493,23 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 			}
 		}
 
+		/*
+		**	A mind controller shows a pip for each unit it may hold, lit for each one it does hold, and
+		**	after them a red pip while it holds more than that, white as the overload strikes.
+		*/
+		else if (TClass->PipScale == PIPSCALE_MINDCONTROL) {
+			if (CaptureManager) {
+				int const count = CaptureManager->Max_Nodes();
+				int const held = CaptureManager->Controlled_Count();
+				for (int index = 0; index < count; index++) {
+					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+				}
+				if (CaptureManager->Is_Overloading()) {
+					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+				}
+			}
+		}
+
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
 			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
 			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.

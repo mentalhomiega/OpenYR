@@ -14,6 +14,7 @@ values:
   - { constant: PIPSCALE_PASSENGERS, value: 3, input: "Passengers", meaning: "Passenger space in use." }
   - { constant: PIPSCALE_POWER, value: 4, input: "Power", meaning: "Nothing. The row has a length, but no pips are drawn in it." }
   - { constant: PIPSCALE_CHARGE, value: 5, input: "Charge", meaning: "A vehicle's stored charge against its MaxCharge. Any other kind of object shows the row empty." }
+  - { constant: PIPSCALE_MINDCONTROL, value: 6, input: "MindControl", meaning: "The units a mind controller holds, against the Damage of its primary weapon." }
 ---
 
 A **pip** is one of the small markers drawn in a row beneath a selected object. [`PipScale`](/keys/pipscale/) chooses the quantity that row counts, in any letter case, and that page gives each scale's row length and how the row fills. The [pip colors](/reference/enums/pip-color/) are a separate list.

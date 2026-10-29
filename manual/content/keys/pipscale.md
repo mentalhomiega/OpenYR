@@ -18,6 +18,7 @@ The row appears under a selected object and under the object beneath the mouse. 
 | `Passengers` | [`Passengers`](/keys/passengers/) | the passengers on board |
 | `Power` | 10 | nothing is drawn |
 | `Charge` | 8 | a vehicle's charge as a share of [`MaxCharge`](/keys/maxcharge/) |
+| `MindControl` | the primary weapon's `Damage` | the units the object holds, as lit pips, and a red pip after the row while it holds more than it should |
 
 [`MaxPips`](/keys/maxpips/) replaces these lengths. The `Ammo` and `Passengers` rows stay capped by the type's `Ammo` and `Passengers` values.
 
