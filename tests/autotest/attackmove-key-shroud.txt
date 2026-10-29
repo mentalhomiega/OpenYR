@@ -3,7 +3,7 @@
 ; unit's mission. Shroud: 67,47 is never seen before the first click, at the window point 380,420 (view 60 42). The first
 ; hover has no key held, the second has A (AttackMove, key 65) held, and the click goes with the key held. Fog: the group
 ; walks to 66,46, which maps 67,47, then back to 50,42, which leaves 67,47 under the fog. A held-key hover and click follow.
-; Shape codes: 18 MOUSE_CAN_MOVE, 21 MOUSE_CAN_ATTACK. Tooltip id 600 is the tactical map's help id.
+; Shape codes: 18 MOUSE_CAN_MOVE, 71 MOUSE_CAN_ATTACK_2 (the armed cursor). Tooltip id 600 is the tactical map's help id.
 ; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-key-shroud.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
 30 scheme Modern
 32 view 60 42

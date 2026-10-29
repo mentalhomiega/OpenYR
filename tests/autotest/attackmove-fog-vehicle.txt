@@ -3,7 +3,7 @@
 ; so 67,47 is seen and mapped. It then walks back west to 50,42, which leaves 67,47 mapped but under the fog. "cell" logs
 ; mapped, visible and fogmapped for 67,47 before each order. A plain click there is the control and gives a Move. Then the
 ; E1 walks back west, which fogs 67,47 again, and an armed AttackMove click there should give Attack Move to 67,47.
-; The shape lines give the mouse shape over the fogged cell: 18 is MOUSE_CAN_MOVE and 21 is MOUSE_CAN_ATTACK. At this view
+; The shape lines give the mouse shape over the fogged cell: 18 is MOUSE_CAN_MOVE and 71 is MOUSE_CAN_ATTACK_2, the armed cursor. At this view
 ; (view 60 42), 380,420 is cell 67,47. No enemy stands near 67,47.
 ; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/attackmove-fog.txt -Width 640 -Height 480 -Seconds 150 -Settings "[Settings]`nFogOfWar=yes" -Filter "AUTOTEST|Exception"
 30 scheme Modern
