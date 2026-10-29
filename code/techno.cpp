@@ -10979,7 +10979,7 @@ void TechnoClass::Rocking_AI(void)
 		return;
 	}
 
-	if (IsRocking) {
+	if (IsRocking || IsCrashing) {
 		AngleRotatedForwards += RockingForwardsPerFrame;
 		AngleRotatedSideways += RockingSidewaysPerFrame;
 		// A crashing balloon hover object cannot roll past 45 degrees either way or pitch past 45 degrees nose down.

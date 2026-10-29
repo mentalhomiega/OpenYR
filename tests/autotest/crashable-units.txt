@@ -1,0 +1,75 @@
+; A destroyed vehicle with Crashable=yes does not vanish in the air. Frame 150 destroys a player Kirov (ZEP, BalloonHover), a Siege
+; Chopper (SCHP) and a Floating Disc (DISK), each flying north over open ground; a second Kirov dies over a power plant, and a third after it has reached its hover point. gamemd
+; (UnitClass::ReceiveDamage 0x737C90, FootClass::Crash 0x4DEBB0, JumpjetLocomotionClass 0x54AF33 and 0x54CA90, UnitClass notice
+; 0x746100) explodes the vehicle where it dies, then sets IsCrashing, rocks it and drops it by JumpjetCrash leptons a frame while it
+; keeps its heading speed and turns 45/256 of a circle a frame. On reaching the ground it explodes again (BalloonHover types set off
+; their death weapon instead) and is removed; it crushes nothing and the structure under the second Kirov takes only that blast.
+; Observed on 2026-10-29: the vehicles stay in the air with crashing 1 and strength 0 and fall at 12, 40 and 15 leptons a frame
+; (before the fix they were deleted at frame 150 with no fall).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/crashable-units.txt -Map XMP08T2.MAP -Seconds 240 -Filter "AUTOTEST   lift|AUTOTEST   rock|Crash:|Death weapon|Exception"
+20 reveal
+30 view 88 62
+31 grantunit ZEP 86 66
+32 grantunit SCHP 90 66
+33 grantunit DISK 94 66
+34 grantunit ZEP 98 66
+35 own GAPOWR 97 64
+90 move ZEP 86 58
+90 move SCHP 90 58
+90 move DISK 94 58
+90 move ZEP 98 58
+140 lift ZEP
+140 lift SCHP
+140 lift DISK
+150 lift ZEP
+150 kill ZEP 1
+150 kill SCHP 1
+150 kill DISK 1
+152 lift ZEP
+152 lift SCHP
+152 lift DISK
+152 rock ZEP
+152 rock SCHP
+152 rock DISK
+155 record 4
+158 lift ZEP
+158 lift SCHP
+158 lift DISK
+164 lift ZEP
+164 lift SCHP
+164 lift DISK
+170 lift ZEP
+170 lift SCHP
+170 lift DISK
+176 lift ZEP
+176 lift SCHP
+176 lift DISK
+182 lift ZEP
+182 lift SCHP
+182 lift DISK
+190 lift ZEP
+190 lift SCHP
+190 lift DISK
+200 lift ZEP
+200 lift SCHP
+200 lift DISK
+220 lift ZEP
+220 lift SCHP
+220 lift DISK
+260 lift ZEP
+260 lift SCHP
+260 lift DISK
+300 record 0
+310 grantunit ZEP 86 70
+320 move ZEP 86 66
+650 lift ZEP
+700 lift ZEP
+740 lift ZEP
+740 kill ZEP 1
+742 lift ZEP
+750 lift ZEP
+770 lift ZEP
+800 lift ZEP
+840 lift ZEP
+900 lift ZEP
+940 quit

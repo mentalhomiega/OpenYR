@@ -119,7 +119,8 @@ bool JumpjetLocomotionClass::Process(void)
 	Facing.Set_ROT(LinkedTo->TClass->JumpjetTurnRate);
 	LayerType layer = In_Which_Layer();
 
-	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING)) {
+	// A hovering vehicle that crashed has no move in hand, and still has to start its fall.
+	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING) || LinkedTo->IsCrashing) {
 		Movement_AI();
 		if (!LinkedTo->IsActive) {
 			return(false);
@@ -133,6 +134,12 @@ bool JumpjetLocomotionClass::Process(void)
 					return(false);
 				}
 			}
+		}
+
+		// A vehicle that crashed in the air starts to fall now, keeping its speed and heading. A held vehicle
+		// that was let go is already falling (JumpjetLocomotionClass, 0x54AF33).
+		if (LinkedTo->IsCrashing && CurrentState != CRASHING && !LinkedTo->IsAttackedByLocomotor && LinkedTo->HeightAGL > 0) {
+			Begin_Crash();
 		}
 
 		switch (CurrentState) {
@@ -327,6 +334,23 @@ void JumpjetLocomotionClass::Begin_Fall(void)
 		IsMoving = false;
 		CurrentState = CRASHING;
 	}
+}
+
+
+/// <summary>
+/// Starts the fall of a vehicle that crashed in the air without being held. Unlike a held
+/// vehicle, it keeps flying at its present speed along its heading while it falls and spins
+/// (JumpjetLocomotionClass, 0x54AF33).
+/// </summary>
+void JumpjetLocomotionClass::Begin_Crash(void)
+{
+	if (HeadToCoord != COORD_NONE && IsLanding) {
+		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+		IsLanding = false;
+	}
+	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
+	FlightLevel = -5;
+	CurrentState = CRASHING;
 }
 
 
@@ -907,6 +931,9 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 	fallen.Z = static_cast<int>(fallen.Z - CrashSpeed);
 	if (LinkedTo->IsAttackedByLocomotor) {
 		CrashSpeed += 1.0;
+	} else {
+		// A vehicle that crashed on its own keeps turning on the spot, 45 units of a 256 circle each frame (0x54CB35).
+		Facing.Set_Desired(Facing.Current() + DirType(0x2d00));
 	}
 	LinkedTo->Set_Coord(fallen);
 
@@ -923,6 +950,15 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 
 	Coord landed = LinkedTo->PositionCoord;
 	landed.Z = Map.Get_Height_GL(landed) + (on_deck ? BRIDGE_LEPTON_HEIGHT : 0);
+
+	// A vehicle that crashed on its own, rather than being let go by a locomotor warhead, ends where it lands:
+	// it explodes and is removed, and crushes nothing (JumpjetLocomotionClass, 0x54D019, and notice 0x117C).
+	if (!LinkedTo->IsAttackedByLocomotor && LinkedTo->LetGoBy == NULL && LinkedTo->LetGoByHouse == NULL && LinkedTo->RTTI == RTTI_UNIT) {
+		LinkedTo->Set_Coord(landed);
+		IsLanding = false;
+		static_cast<UnitClass *>(LinkedTo)->Land_Crashed();
+		return;
+	}
 	LinkedTo->Set_Speed(0.0);
 	LinkedTo->Mark(MARK_UP);
 	LinkedTo->IsOnBridge = on_deck;
