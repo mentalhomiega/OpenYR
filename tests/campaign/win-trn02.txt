@@ -1,8 +1,10 @@
 ; Campaign win check for Boot Camp day 2 (Red Alert 2): plays the tutorial through with a player's orders and no debug shortcut.
 ; The Mobile Construction Vehicle drives out to open ground and deploys. The base builds a power plant, a refinery and a barracks one after the
 ; other (a structure is placed when its build time has passed), the barracks trains about 40 GIs, and the GIs advance on Red's base in steps.
-; Red's soldiers are attacked first (a deployed GI shoots from beyond a GI's range, so the group is ordered onto each one), then the
-; Construction Yard (attack E1), then each building that is left (strikeobj). Expected: "AUTOTEST game over frame N: won".
+; Red's soldiers are attacked first, as one group, one cluster at a time: Red's idle GIs dig in on Area Guard (as gamemd's InfantryClass::Mission_AreaGuard
+; does) and a dug-in GI shoots from beyond a GI's range, so a stream of GIs walking past them is shot down. The east pair (54,49) goes first because the
+; walk to the rest passes it, then the ones at 42,51, 42,55 and 42,59. Then the Construction Yard (attack E1) and each building that is left (strikeobj).
+; Expected: "AUTOTEST game over frame 29202: won".
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-trn02.txt -Campaign -Map TRN02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 900 -Filter "AUTOTEST +(sprung|win|game over|wait)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 ui click more
@@ -92,11 +94,17 @@ ui click resume
 12720 move E1 42 49
 12800 waitcell E1 42 49 3 900
 12900 move E1 41 52
-13300 move E1 42 52
-13700 move E1 43 52
-14100 move E1 41 53
-14500 move E1 42 53
-14900 move E1 43 53
+13000 strikeobj E1 54 49 3 all
+13200 strikeobj E1 54 49 3 all
+13400 strikeobj E1 54 49 3 all
+13600 strikeobj E1 54 49 3 all
+13800 strikeobj E1 42 51 2 all
+14000 strikeobj E1 42 51 2 all
+14200 strikeobj E1 42 54 3 all
+14400 strikeobj E1 42 54 3 all
+14600 strikeobj E1 42 59 3 all
+14800 strikeobj E1 42 59 3 all
+15000 strikeobj E1 42 59 3 all
 15300 strikeobj E1 44 55 20 all
 15550 strikeobj E1 44 55 20 all
 15800 strikeobj E1 44 55 20 all
