@@ -1307,7 +1307,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 						start.Z += BRIDGE_LEPTON_HEIGHT;
 					}
 
-					WeaponTypeClass const * wtype = WeaponTypeClass::Find_Or_Make(Class->Type == SUPER_CHEM_MISSILE ? "ChemLauncher" : "NukePayload");
+					WeaponTypeClass const * wtype = WeaponTypeClass::Find_Declared(Class->Type == SUPER_CHEM_MISSILE ? "ChemLauncher" : "NukePayload");
 					BulletClass * bullet = NULL;
 					if (wtype != NULL && wtype->Bullet != NULL) {
 						bullet = Create_Bullet(wtype->Bullet, &Map[start], NULL, wtype->Attack, wtype->WarheadPtr, wtype->MaxSpeed, false);

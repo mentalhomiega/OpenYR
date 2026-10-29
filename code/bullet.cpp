@@ -2099,7 +2099,7 @@ void BulletClass::Nuke_Maker(void)
 	if (TarCom == NULL) {
 		return;
 	}
-	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Or_Make("NukePayload");
+	WeaponTypeClass const * weapon = WeaponTypeClass::Find_Declared("NukePayload");
 	if (weapon == NULL || weapon->Bullet == NULL) {
 		return;
 	}

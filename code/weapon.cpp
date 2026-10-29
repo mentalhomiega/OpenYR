@@ -569,6 +569,17 @@ WeaponTypeClass * WeaponTypeClass::Find_Or_Make(const char *name)
 }
 
 
+/// <summary>
+/// Finds a weapon that a rules file declared, without creating one.
+/// </summary>
+/// <returns>Returns with the weapon of that name, or NULL when no rules file declared it.</returns>
+WeaponTypeClass * WeaponTypeClass::Find_Declared(const char *name)
+{
+	WeaponType const type = From_Name(name);
+	return(type != WEAPON_NONE ? Weapons[type] : NULL);
+}
+
+
 /***********************************************************************************************
  * Weapon_From_Name -- Conver ASCII name to weapon type ID number.                             *
  *                                                                                             *
