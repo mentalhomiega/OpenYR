@@ -1,0 +1,26 @@
+; Passenger pips: a gunner IFV with a Guardian GI, an amphibious transport with soldiers and a Battle Fortress with conscripts.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-passenger-pips.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 200
+; Expected in the shot: the IFV shows one pip, filled; the amphibious transport shows a row of twelve pips with its passengers filling the left end; the Battle Fortress shows five pips.
+30 command CenterBase
+35 reveal
+40 own FV 60 40
+41 own GGI 56 40
+42 own SAPC 64 40
+43 own E1 56 44
+44 own E1 57 44
+45 own E1 58 44
+46 own HTK 68 40
+47 own E2 66 44
+48 own E2 67 44
+49 own FV 60 46
+50 own SAPC 64 46
+51 own HTK 68 46
+60 view 64 44
+100 enter GGI 60 40
+101 enter E1 64 40
+102 enter E2 68 40
+200 select FV
+201 selectadd SAPC
+202 selectadd HTK
+500 windowshot a3-pips
+510 quit

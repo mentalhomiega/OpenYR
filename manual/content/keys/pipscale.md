@@ -14,10 +14,11 @@ The row appears under a selected object and under the object beneath the mouse. 
 | Value | Row length | What fills it |
 | --- | --- | --- |
 | `Ammo` | [`Ammo`](/keys/ammo/), at most 5; the whole `Ammo` when [`PipWrap`](/keys/pipwrap/) is set | remaining ammunition as a share of `Ammo`, drawn as filled markers with no empty ones behind them; at least one marker shows while any ammunition is left. [`PipWrap`](/keys/pipwrap/) arranges the markers in columns instead |
-| `Tiberium` | 5 on a vehicle | stored Tiberium as a share of [`Storage`](/keys/storage/) |
-| `Passengers` | [`Passengers`](/keys/passengers/), at most 5 | the passengers on board |
+| `Tiberium` | 5 on a vehicle, 3 on a soldier | stored Tiberium as a share of [`Storage`](/keys/storage/). A structure draws nothing |
+| `Passengers` | [`Passengers`](/keys/passengers/) | the passengers on board |
 | `Power` | 10 | nothing is drawn |
 | `Charge` | 8 | a vehicle's charge as a share of [`MaxCharge`](/keys/maxcharge/) |
+| `MindControl` | the primary weapon's `Damage` | the units the object holds, as lit pips, and a red pip after the row while it holds more than it should |
 
 [`MaxPips`](/keys/maxpips/) replaces these lengths. The `Ammo` and `Passengers` rows stay capped by the type's `Ammo` and `Passengers` values.
 
@@ -29,10 +30,10 @@ Passengers=5
 PipScale=Passengers
 ```
 
-On a structure, the `Tiberium` and `Power` rows default to six pips per cell of footprint width, or to [`MaxPips`](/keys/maxpips/) where the type sets it. Under `Tiberium`, that length is capped by the structure's [`Storage`](/keys/storage/), so a structure with no `Storage` shows no row. A [`Weeder=yes`](/keys/weeder/#scope-buildingtype) structure is capped by [`[General] WeedCapacity`](/keys/weedcapacity/) instead, and its row shows how much weed its whole house holds.
+A structure under `Tiberium`, such as a refinery, shows no pips and no group number, whatever its `Storage`. On a structure, the `Power` row defaults to six pips per cell of footprint width, or to [`MaxPips`](/keys/maxpips/) where the type sets it, and draws no pips.
 
-A type with [`Passengers`](/keys/passengers/) above zero always shows its passengers, whatever its `PipScale`. Each passenger fills as many pips as its [`Size`](/keys/size/#scope-aircrafttype), and at least one, in the colors that [`Pip`](/keys/pip/) describes. Free space is empty. The scale still sets the row's length, so passengers past the end of the row get no pip. A transport with `PipScale=Ammo`, for example, shows its passengers in a row sized by its ammunition.
+A type with [`Passengers`](/keys/passengers/) above zero always shows its passengers, whatever its `PipScale`. Each passenger fills as many pips as its [`Size`](/keys/size/#scope-aircrafttype), and at least one. A soldier's first pip has the color that [`Pip`](/keys/pip/) describes, a vehicle's first pip is blue, and any further pips of either are white. A type with [`Gunner=yes`](/keys/gunner/) shows its first pip apart from the others, with a gap of two pips after it. Free space is empty. The scale still sets the row's length, so passengers past the end of the row get no pip. A transport with `PipScale=Ammo`, for example, shows its passengers in a row sized by its ammunition.
 
-A vehicle set to `Tiberium` shows the first Tiberium type as green pips and every other type as blue pips.
+A vehicle or soldier set to `Tiberium` shows gems, the second Tiberium type, as blue pips from the left, then every other type as yellow pips. A soldier's row starts 11 pixels further right than a vehicle's.
 
 Omitting the key keeps the value an earlier rules file set. A value that matches none of the [pip scales](/reference/enums/pip-scale/) replaces it with none, which removes the row.

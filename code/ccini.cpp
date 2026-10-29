@@ -642,12 +642,13 @@ static struct
 {
 	char const * Name;
 	PipScaleType Index;
-} _pipscales[5] = {
+} _pipscales[6] = {
 	{ "Ammo", PIPSCALE_AMMO },
 	{ "Tiberium", PIPSCALE_TIBERIUM },
 	{ "Passengers", PIPSCALE_PASSENGERS },
 	{ "Power", PIPSCALE_POWER },
-	{ "Charge", PIPSCALE_CHARGE }
+	{ "Charge", PIPSCALE_CHARGE },
+	{ "MindControl", PIPSCALE_MINDCONTROL }
 };
 
 

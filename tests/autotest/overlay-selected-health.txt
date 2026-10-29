@@ -1,0 +1,43 @@
+; Selected Allied soldiers, vehicles and structures at full, yellow and red health, all in control group 1.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-selected-health.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120
+; Expected in the three window shots: each vehicle and soldier has a health bar above it with a black box holding the digit 1 at its left end, edged in the owner's color; each structure has a long bar along its upper left edge and the digit 1 box below its near corner; the power plant's power figures and the war factory's Primary tag sit in boxes of the same kind. Bars are green, then yellow-orange at 45 percent, then red at 20 percent.
+30 command CenterBase
+35 reveal
+40 own E1 56 40
+41 own ENGINEER 58 40
+42 own MTNK 60 40
+43 own FV 62 40
+44 own SREF 64 40
+45 own GAPOWR 56 44
+46 own GAWEAP 60 44
+47 own GAPILL 66 44
+60 view 62 42
+70 select E1
+71 selectadd ENGINEER
+72 selectadd MTNK
+73 selectadd FV
+74 selectadd SREF
+75 selectadd GAPOWR
+76 selectadd GAWEAP
+77 selectadd GAPILL
+80 command TeamCreate_1
+100 windowshot a1-full
+110 hurt E1 45
+111 hurt ENGINEER 45
+112 hurt MTNK 45
+113 hurt FV 45
+114 hurt SREF 45
+115 hurt GAPOWR 45
+116 hurt GAWEAP 45
+117 hurt GAPILL 45
+130 windowshot a1-yellow
+140 hurt E1 20
+141 hurt ENGINEER 20
+142 hurt MTNK 20
+143 hurt FV 20
+144 hurt SREF 20
+145 hurt GAPOWR 20
+146 hurt GAWEAP 20
+147 hurt GAPILL 20
+160 windowshot a1-red
+170 quit

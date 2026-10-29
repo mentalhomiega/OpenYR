@@ -37,6 +37,8 @@ class CaptureManagerClass
 		bool Is_Overloading(void) const;
 		bool Cannot_Control_Any_More(void) const;
 		int Controlled_Count(void) const {return((int)Nodes.size());}
+		int Max_Nodes(void) const {return(MaxControlNodes);}
+		bool Is_Overload_Pip_Lit(void) const {return(OverloadPipState > 0);}
 		TechnoClass * Controlled(int index) const {return(Nodes[index].Unit);}
 		bool Holds(TechnoClass const * unit) const;
 		HouseClass * Original_Owner_Of(TechnoClass const * unit) const;

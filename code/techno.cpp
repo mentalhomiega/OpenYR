@@ -171,6 +171,7 @@
 #include "draw.h"
 #include "dsurface.h"
 #include "ebolt.h"
+#include "font.h"
 #include "radbeam.h"
 #include "fog.h"
 #include "globals.h"
@@ -230,9 +231,12 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstring>
 #include <intrin.h>
 #include <set>
+#include <string>
 #include <tuple>
+#include <vector>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;
@@ -1424,16 +1428,16 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 
 
 /// <summary>
-/// Tells whether the local player sees this object's pips. Allies and spies see them, every
-/// player sees a passive house's structure, and PipsDrawForAll shows them to all. Matches
+/// Tells whether the local player sees this object's pips. Allies and spies see them, and every
+/// player sees a structure of a passive house or one with PipsDrawForAll. Matches
 /// gamemd's TechnoClass::DrawHealthBar (0x6F64A0).
 /// </summary>
 bool TechnoClass::Pips_Visible_To_Player(void) const
 {
-	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr] || TClass->IsPipsDrawForAll) {
+	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr]) {
 		return(true);
 	}
-	return(RTTI == RTTI_BUILDING && House->Class->IsMultiplayPassive);
+	return(RTTI == RTTI_BUILDING && (TClass->IsPipsDrawForAll || House->Class->IsMultiplayPassive));
 }
 
 
@@ -10285,6 +10289,31 @@ bool TechnoClass::Enter_Idle_Mode(bool, bool)
 
 
 /// <summary>
+/// Prints a short label in a black box edged in a house's color, as gamemd does for an object's control
+/// group number and its primary tag (TechnoClass::DrawPipScalePips, 0x709A90, and DrawExtraInfo, 0x70AA60).
+/// </summary>
+/// <param name="point">The label's top-left corner, or the middle of its top edge when centered.</param>
+static void Draw_House_Label(HouseClass const * house, char const * text, Point2D const & point, bool centered, Rect const & cliprect)
+{
+	ColorScheme * scheme = ColorSchemes[(house->Scheme >= 0 && house->Scheme < ColorSchemes.Count()) ? house->Scheme : 0];
+	FontClass const * font = Font_From_TPF(TextPrintType(TPF_EFNT));
+	int width = 0;
+	int lines = 1;
+	for (char const * line = text; ; ) {
+		char const * end = strpbrk(line, "\r\n");
+		width = std::max(width, font->String_Pixel_Width(end != NULL ? std::string(line, end).c_str() : line));
+		if (end == NULL) break;
+		lines++;
+		line = end + 1;
+	}
+	Rect const box((centered ? point.X - width / 2 : point.X) - 1, point.Y, width + 2, font->Get_Height() * lines);
+	LogicalSurface->Fill_Rect(cliprect, box, scheme->Converter->Convert_Pixel(BLACK));
+	LogicalSurface->Draw_Rect(cliprect, box, scheme->Converter->Convert_Pixel(scheme->Color));
+	Simple_Text_Print(text, *LogicalSurface, cliprect, point, scheme, TBLACK, TextPrintType(TPF_EFNT|TPF_FULLSHADOW|(centered ? TPF_CENTER : 0)), 1);
+}
+
+
+/// <summary>
 /// Draws the rank insignia of a veteran, an elite or a below-rookie object. It is drawn
 /// whether or not the object is selected, so the caller is responsible for testing that the
 /// player may see the object.
@@ -10362,10 +10391,30 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	ShapeSet const * pip_shapes = (ShapeSet const *)Class_Of()->PipShapes;
 	ShapeSet const * pips2 = (ShapeSet const *)Class_Of()->Pip2Shapes;
 
+	// A structure on the Tiberium scale, a refinery or a silo, shows no pips and no group number
+	// (TechnoClass::DrawPipScalePips, 0x709A90).
+	if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		return;
+	}
+
 	if (RTTI != RTTI_BUILDING) {
 		xy = bottomleft + Point2D(-5, 0);
 		offset = Point2D(4, 0);
 		pip_shapes = pips2;
+	}
+	if (RTTI == RTTI_INFANTRY) {
+		xy.X += 11;
+	}
+
+	/*
+	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
+	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (TClass->SpawnsNumber > 0) {
+		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
+		for (int index = 0; index < TClass->SpawnsNumber; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
 	}
 
 	if (RTTI == RTTI_BUILDING) {
@@ -10383,29 +10432,45 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 
 	/*
 	**	Transporter type objects have a different graphic representation for the pips. The
-	**	pip color represents the type of occupant.
+	**	pip color represents the type of occupant. TechnoClass::DrawPipScalePips (0x709A90)
+	**	lays the row out from the end: the first passenger takes the last pips, one pip for each
+	**	point of size, with a soldier's own color leading and the pips behind it white, and a
+	**	vehicle blue. A structure that absorbs its owner's units shows one pip per passenger.
 	*/
 	if (TClass->Max_Passengers() > 0) {
+		int const count = std::max(Class_Of()->Max_Pips(), 0);
+		std::vector<int> slots(count, PIP_EMPTY);
+		bool const absorber = RTTI == RTTI_BUILDING && (((BuildingClass const *)this)->Class->IsInfantryAbsorb || ((BuildingClass const *)this)->Class->IsUnitAbsorb);
+
 		ObjectClass const * object = Cargo.Attached_Object();
-		int remaining = (object != NULL) ? object->TClass->Size : 0;
-
-		for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-			PipEnum pip = PIP_EMPTY;
-
-			if (object != NULL) {
-				pip = PIP_GREEN;
-				if (object->RTTI == RTTI_INFANTRY) {
-					pip = ((InfantryClass *)object)->Class->Pip;
-				}
-
-				// A passenger claims as many pips as it claims hold space.
-				remaining--;
-				if (remaining <= 0) {
-					object = object->Next;
-					remaining = (object != NULL) ? object->TClass->Size : 0;
+		int last = absorber ? 0 : Cargo.Total_Size() - 1;
+		for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
+			int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
+			if (absorber) {
+				if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
+				last++;
+				continue;
+			}
+			if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
+				for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
+					if (last >= 0 && last < count) slots[last] = PIP_WHITE;
+					last--;
 				}
 			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			if (last >= 0 && last < count) slots[last] = shape;
+			last--;
+		}
+
+		// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
+		int first = 0;
+		Point2D gap(0, 0);
+		if (TClass->IsGunner && count > 0) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			first = 1;
+			gap = offset * 2;
+		}
+		for (int index = first; index < count; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
 
 	} else {
@@ -10420,29 +10485,46 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	Check if it's a harvester, to show the right type of pips for the
 		**	various minerals it could have harvested.
 		*/
-		if (RTTI == RTTI_UNIT && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		if (RTTI != RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
 
-			int iron = Storage.Get_Amount(0);
-			int nickel = Storage.Get_Total_Amount() - iron;
-			int greenpips   = TClass->Max_Pips() * (double(iron) / TClass->Capacity) + 0.5;
-			int bluepips  = TClass->Max_Pips() * (double(nickel) / TClass->Capacity) + 0.5;
+			// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
+			// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
+			int const count = Class_Of()->Max_Pips();
+			double const capacity = TClass->Capacity;
+			double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
+			int orepips = (int)(ore / capacity * count + 0.5);
+			int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
 
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
+			for (int index = 0; index < count; index++) {
 				int shape = PIP_EMPTY;
-				if (bluepips > 0) {
+				if (gempips > 0) {
 					shape = PIP_BLUE;
-					bluepips--;
-				} else if (greenpips > 0) {
-					shape = PIP_GREEN;
-					greenpips--;
+					gempips--;
+				} else if (orepips > 0) {
+					shape = PIP_YELLOW;
+					orepips--;
 				}
 				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 			}
 		}
 
 		/*
-		**
+		**	A mind controller shows a pip for each unit it may hold, lit for each one it does hold, and
+		**	after them a red pip while it holds more than that, white as the overload strikes.
 		*/
+		else if (TClass->PipScale == PIPSCALE_MINDCONTROL) {
+			if (CaptureManager) {
+				int const count = CaptureManager->Max_Nodes();
+				int const held = CaptureManager->Controlled_Count();
+				for (int index = 0; index < count; index++) {
+					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+				}
+				if (CaptureManager->Is_Overloading()) {
+					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+				}
+			}
+		}
+
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
 			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
 			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
@@ -10474,25 +10556,24 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		/*
 		**
 		*/
-		else if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
-			int _pips = pips;
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				int shape = PIP_EMPTY;
-				if (_pips > 0) {
-					shape = PIP_GREEN;
-					_pips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
-
-		/*
-		**
-		*/
 		else if (TClass->PipScale == PIPSCALE_CHARGE) {
 			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 			}
+		}
+	}
+
+	/*
+	**	Show that the owner's hospitals mend soldiers and organic vehicles, or its machine shops other
+	**	vehicles, with a cross or a spanner that blinks while this one is hurt (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (RTTI == RTTI_INFANTRY || RTTI == RTTI_UNIT) {
+		bool const infantry = RTTI == RTTI_INFANTRY || TClass->IsOrganic;
+		if (House->Self_Heal_Points(infantry) > 0) {
+			int const frames = infantry ? Rule->SelfHealInfantryFrames : Rule->SelfHealUnitFrames;
+			bool const blink = frames > 0 && (Frame % frames) <= 5 && Strength < TClass->MaxStrength;
+			Point2D const icon = xy + (RTTI == RTTI_UNIT ? Point2D(38, -32) : Point2D(19, -35));
+			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)Class_Of()->PipShapes, infantry ? 13 : 20, icon, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|(blink ? SHAPE_DARKEN : 0)));
 		}
 	}
 
@@ -10516,7 +10597,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		sprintf(group_text, "%d", group < 10 ? group : 0);
 
 		Point2D offset = UIControls.Group_Number_Offset(RTTI, Class_Of()->Max_Pips() != 0);
-		Plain_Text_Print(group_text, *LogicalSurface, rect, bottomleft + offset, WHITE, TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, group_text, bottomleft + offset, false, rect);
 	}
 }
 
@@ -10533,7 +10614,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
 	if (RTTI == RTTI_BUILDING && ((BuildingClass*)this)->Class->Power > 0) {
 		char buffer[128];
 		sprintf(buffer, Fetch_String(TXT_POWER_DRAIN), House->Power_Output(), House->Power_Drain());
-		Plain_Text_Print(buffer, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, buffer, point2, true, cliprect);
 	}
 
 	/*
@@ -10547,7 +10628,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
 				pritext = TXT_PRI;
 			}
 		}
-		Plain_Text_Print(pritext, *LogicalSurface, cliprect, point2, WHITE, TBLACK, TextPrintType(TPF_CENTER|TPF_FULLSHADOW|TPF_EFNT), 0, 1);
+		Draw_House_Label(House, Fetch_String(pritext), point2, true, cliprect);
 	}
 }
 

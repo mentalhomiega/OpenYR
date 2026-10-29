@@ -43,7 +43,7 @@ Write a color as three numbers from 0 to 255 for red, green and blue, separated 
 
 ## Control group numbers
 
-An object whose pips are drawn also shows its group number when its group is one of the ten the player's control groups use. The number is the group's key, `1` to `9`, or `0` for the tenth group. Eight `[Pips]` keys set where it is printed, one pair for each kind of object:
+An object whose pips are drawn also shows its group number when its group is one of the ten the player's control groups use. The number is the group's key, `1` to `9`, or `0` for the tenth group, printed in a black box edged in the owner's color. Eight `[Pips]` keys set where it is printed, one pair for each kind of object:
 
 | Object | Without pips | With pips |
 | --- | --- | --- |
@@ -59,7 +59,7 @@ Each value is two whole numbers, a horizontal and a vertical offset in pixels, s
 - for a structure, or a vehicle with [`IsCoreDefender=yes`](/keys/iscoredefender/#scope-unittype), that point is the left-hand corner of its footprint at ground level;
 - for any other object, it is 10 pixels left of and 10 pixels below the object's position.
 
-The defaults are `-4,-4` without pips and `-4,-8` with pips. A value that does not start with two comma-separated numbers keeps the default, and anything after the second number is ignored.
+The defaults are `-4,-36` for vehicles, structures and aircraft and `-4,-39` for infantry, whether or not the type has pips, which puts the number beside the left end of the health bar. A value that does not start with two comma-separated numbers keeps the default, and anything after the second number is ignored.
 
 Vinifera reads the same eight keys from `[Ingame]`, so move them to `[Pips]` when reusing a Vinifera file. Setting all eight to `-8,-33` gives the position Twisted Insurrection uses.
 

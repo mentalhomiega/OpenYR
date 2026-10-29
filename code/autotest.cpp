@@ -3317,6 +3317,7 @@ void Run(StepType const & step)
 		// selectadd <TypeID>: adds the player's objects of that type to the selection, as a shift-click would.
 		For_Player_Objects<UnitClass>(Units, step.Argument, [](UnitClass * object) {object->Select();});
 		For_Player_Objects<InfantryClass>(Infantry, step.Argument, [](InfantryClass * object) {object->Select();});
+		For_Player_Objects<BuildingClass>(Buildings, step.Argument, [](BuildingClass * object) {object->Select();});
 		For_Player_Objects<AircraftClass>(Aircraft, step.Argument, [](AircraftClass * object) {object->Select();});
 	} else if (step.Command == "produce") {
 		TechnoTypeClass const * type = Find_Type(step.Argument);
@@ -4332,6 +4333,15 @@ void Run(StepType const & step)
 			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 				techno->Storage.Increase_Amount(techno->TClass->Capacity, 0);
 				DebugString("AUTOTEST   load %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+			}
+		}
+	} else if (step.Command == "loadgems") {
+		// loadgems <TypeID>: puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Storage.Increase_Amount(techno->TClass->Capacity / 4, 1);
+				DebugString("AUTOTEST   loadgems %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
 			}
 		}
 	} else if (step.Command == "canrepair") {

@@ -4,25 +4,24 @@ summary: How many pips a selected object's pip row holds.
 see_also: [PipScale, Passengers, Ammo, Storage, MaxCharge, "system:transports"]
 when_omitted:
   kind: context-dependent
-  note: "The length the object's pip scale gives. That is five for `Tiberium`, ten for `Power` and eight for `Charge`, and for `Ammo` and `Passengers` it is the type's `Ammo` or `Passengers` value, at most five. A structure using `Tiberium` or `Power` gets six pips per cell of footprint width instead."
+  note: "The length the object's pip scale gives. That is five for `Tiberium` (three for a soldier), ten for `Power` and eight for `Charge`, for `Ammo` it is the type's `Ammo` value, at most five, and for `Passengers` it is the type's `Passengers` value. A structure using `Power` gets six pips per cell of footprint width instead."
 ---
 
 ```ini title="rules.ini"
 [MYAPC]           ; a UnitType registered in [VehicleTypes]
 Passengers=12
 PipScale=Passengers
-MaxPips=12
+MaxPips=6
 ```
 
-`MaxPips` sets how many pips the row has, replacing the default length of the type's [`PipScale`](/keys/pipscale/). The example transport shows twelve passenger pips instead of five. A type with no `PipScale` has no row, so the key does nothing for it.
+`MaxPips` sets how many pips the row has, replacing the default length of the type's [`PipScale`](/keys/pipscale/). The example transport shows six passenger pips instead of its twelve. A type with no `PipScale` has no row, so the key does nothing for it.
 
 Some rows stay capped by another value:
 
 - Under `PipScale=Ammo` or `PipScale=Passengers`, the row holds at most the type's [`Ammo`](/keys/ammo/) or [`Passengers`](/keys/passengers/) value. `MaxPips=20` on a transport with `Passengers=6` draws six pips.
 - Under `PipScale=Ammo` with [`PipWrap`](/keys/pipwrap/) set, `MaxPips` is ignored and the pips number the type's `Ammo`.
-- On a structure under `PipScale=Tiberium`, the row holds at most the structure's [`Storage`](/keys/storage/), or [`[General] WeedCapacity`](/keys/weedcapacity/) on a [`Weeder=yes`](/keys/weeder/#scope-buildingtype) structure.
 
-On a structure under `PipScale=Tiberium` or `PipScale=Power`, the key replaces the default of six pips per cell of footprint width.
+On a structure under `PipScale=Power`, the key replaces the default of six pips per cell of footprint width.
 
 Under `PipScale=Power`, no pips are drawn unless the type also sets `Passengers` above `0`. Such a type shows passenger pips across the length `PipScale=Power` gives.
 
