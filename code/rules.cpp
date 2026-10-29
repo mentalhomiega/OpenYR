@@ -1115,6 +1115,13 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Radiation(ini);
 	Elevation_Model(ini);
 
+	// Combat_Damage and the sections after Objects can create weapons after the read loop above.
+	// Those weapons have not been read yet, so they take the defaults and launch speed here; a later rules pass can still read them.
+	for (int windex = 0; windex < Weapons.Count(); windex++) {
+		Weapons[windex]->Ensure_Defaults();
+		Weapons[windex]->Init_Max_Speed();
+	}
+
 	BEnd(BENCH_RULES);
 
 	return(true);
@@ -4094,10 +4101,6 @@ bool RulesClass::Objects(CCINIClass const & ini)
 
 	for (int whead = 0; whead < ::Warheads.Count(); whead++) {
 		::Warheads[whead]->Read_INI(ini);
-	}
-
-	for (windex = 0; windex < Weapons.Count(); windex++) {
-		Weapons[windex]->Init_Max_Speed();
 	}
 
 	for (int tindex = 0; tindex < TerrainTypes.Count(); tindex++) {

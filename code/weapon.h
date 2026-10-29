@@ -74,6 +74,7 @@ class WeaponTypeClass : public AbstractTypeClass
 
 		char const * Name(void) const {return(IniName);}
 		bool Read_INI(CCINIClass const & ini);
+		void Ensure_Defaults(void);
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
 		bool Anim_Picks_By_Facing(void) const;

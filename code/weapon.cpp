@@ -278,7 +278,19 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
 	}
 
-	// A weapon with no projectile or warhead gets the default ones, so it fires without a NULL pointer.
+	Ensure_Defaults();
+	return(has_section);
+}
+
+
+/// <summary>
+/// Gives a weapon with no projectile or warhead the default ones, so that it can fire.
+/// A pointer that is already set stays as it is, and each weapon name is logged once per run.
+/// </summary>
+/// <remarks>Read_INI calls this for each weapon it reads. RulesClass::Addition calls it for every
+/// weapon when the rules pass ends, which covers the weapons no Read_INI pass reached.</remarks>
+void WeaponTypeClass::Ensure_Defaults(void)
+{
 	// gamemd crashes on a NULL projectile instead (its range test reads the projectile unchecked).
 	bool const no_projectile = Bullet == NULL;
 	bool const no_warhead = WarheadPtr == NULL;
@@ -301,7 +313,6 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
 		}
 	}
-	return(has_section);
 }
 
 

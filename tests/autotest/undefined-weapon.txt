@@ -1,12 +1,16 @@
 ; Weapons with no projectile or warhead. The mod undefined-weapon-rules gives the GI (E1) GhostGun, which has no section, and
 ; the Conscript (E2) KeylessGun, which has no Projectile=. The stock GGI fires NoWarheadGun, which has a projectile but no
-; Warhead=. The pillbox (GAPILL) fires GhostGun, and a Conscript attacks it.
+; Warhead=. The pillbox (GAPILL) fires GhostGun, and a Conscript attacks it. The mod also makes the Mobile Grizzly (MTNK)
+; explode with no weapon, so its death sets off the rules' DeathWeapon, UndefinedDeath, which has no section. A later
+; rules step, at frame 125, sets DeathWeapon to LateDeath, a weapon nothing declared before. That file is read last, so
+; no read pass reaches LateDeath; the second Grizzly, killed after it, must still fire it.
 ; gamemd (WeaponTypeClass::LoadFromINI, 0x772080) leaves a weapon with no section with a NULL projectile, and the range test
 ; (FootClass::ApproachTarget, 0x4D5690, calls FUN_006F7220) reads that projectile without a NULL check, so gamemd crashes.
 ; Ours gives such a weapon the default projectile and warhead and logs one line for it.
-; Expected: one log line for each of GhostGun, KeylessGun and NoWarheadGun, a where report for each unit and the pillbox, no
-; Exception, and "AUTOTEST quit".
-; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/undefined-weapon-rules -Script src-agent15/tests/autotest/undefined-weapon.txt -Seconds 90 -Filter "\] has no|AUTOTEST   where|AUTOTEST quit|Exception"
+; Expected: one log line for each of GhostGun, KeylessGun, NoWarheadGun, UndefinedDeath and LateDeath, a where report for each
+; unit and the pillbox, "Death weapon: MTNK sets off UndefinedDeath" and "Death weapon: MTNK sets off LateDeath" for the two
+; Grizzlies, no Exception, and "AUTOTEST quit". Before the fix the LateDeath line is missing, and its log line too.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Mods src-agent15/tests/autotest/undefined-weapon-rules -Script src-agent15/tests/autotest/undefined-weapon.txt -Seconds 90 -Filter "\] has no|AUTOTEST   where|AUTOTEST   kill|Death weapon|AUTOTEST quit|Exception"
 30 command CenterBase
 35 reveal
 40 own E1 66 63
@@ -24,5 +28,12 @@
 101 where E2
 102 where GGI
 103 where GAPILL
+110 own MTNK 70 63
+120 kill MTNK 1
+121 where MTNK
+125 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/undefined-weapon-death-last.ini
+130 own MTNK 70 65
+140 kill MTNK 1
+141 where MTNK
 200 where E2
 300 quit
