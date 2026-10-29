@@ -6,9 +6,10 @@
 ; does not, FootClass::Mission_Capture), an engineer captures, and the rest approach the target.
 ; Stock soldiers with Infiltrate=yes are ENGINEER, SPY, TANY, GHOST and PTROOP. E2 has Occupier=yes. GAPOWR takes C4, CAMISC01 does not,
 ; and CAHSE02 is a neutral house a soldier may garrison. The mod infantry-hunt-rules gives an elite E1 the C4 ability, with no Infiltrate=yes on the type (Infiltrate=yes follows C4=yes, Engineer=yes and Agent=yes in the type flags, so only the ability makes a C4 soldier without it).
-; Expected at frame 150: the computer's SPY, TANY (on CAMISC01) and GHOST (on GAPOWR) are on Capture, its ENGINEER on Capture, its E2 (on CAHSE02) on Capture, its elite E1
-; (on CAMISC01, which takes no C4) on Sabotage, and its SHK still on Hunt, walking toward its target. Before the change they all stayed on Hunt except
-; the ENGINEER, and the GHOST took the Sabotage mission.
+; Expected at frame 150: the computer's SPY, TANY (on CAMISC01) and GHOST (on GAPOWR) are on Capture, its ENGINEER on Capture, its E2 (on CAHSE02) on Capture, its SHK still on Hunt, walking toward its target, and its elite E1
+; (on CAMISC01, which takes no C4) on Area Guard. The E1 takes the Sabotage mission, which ends at once because the structure takes no C4; FootClass::Mission_Capture
+; (0x4D4B20, shared with Sabotage) then leaves an Occupier=yes soldier with no target on its idle mission, where any other soldier would go back to Hunt and loop.
+; Before the change they all stayed on Hunt except the ENGINEER, and the GHOST took the Sabotage mission.
 ; Run from the repository root:
 ;   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent27 -Map XMP29U2.MAP -Mods "E:\Claude ra2 decomp\src-agent27\tests\autotest\infantry-hunt-rules" -Script src-agent27/tests/autotest/infantry-hunt-building.txt -Seconds 120 -Filter "AUTOTEST   where|AUTOTEST settarget|Exception"
 30 own GAPOWR 60 52
