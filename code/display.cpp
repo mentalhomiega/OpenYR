@@ -4032,6 +4032,9 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		action = ACTION_MOVE;
 	}
 
+	// Only the first selected object answers the order, whichever object is handled first (gamemd clears MoveFeedback after the first of the selection).
+	VoiceSpeaker = CurrentObject.Count() > 0 ? CurrentObject[0] : NULL;
+
 	for (index = 0; index < CurrentObject.Count(); index++) {
 		// A planning click leaves each unit's house waypoint path alone.
 		if (!IsPlanningMode) {
@@ -4216,6 +4219,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 		}
 	}
 	AllowVoice = true;
+	VoiceSpeaker = NULL;
 }
 
 

@@ -247,6 +247,13 @@ bool AllowVoice = true;
 
 
 /***************************************************************************
+**	While a group order is given, the one object whose voice may answer it
+**	(the first of the selection), or NULL when AllowVoice alone decides.
+*/
+ObjectClass const * VoiceSpeaker = NULL;
+
+
+/***************************************************************************
 **	This is the current frame number. This number is guaranteed to count
 **	upward at the rate of one per game logic process. The target rate is 15
 **	per second. This value is saved and restored with the saved game.

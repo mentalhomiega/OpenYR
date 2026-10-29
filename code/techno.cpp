@@ -10024,12 +10024,13 @@ void TechnoClass::Response_Attack(void)
 
 
 /// <summary>
-/// Whether this object may answer an order or a selection now: only while AllowVoice is set, which a group order
-/// clears after its first object (gamemd's MoveFeedback).
+/// Whether this object may answer an order or a selection now. During a group order only the
+/// first selected object may, as gamemd's MoveFeedback is cleared after the first object is
+/// handled; otherwise AllowVoice decides.
 /// </summary>
 bool TechnoClass::May_Speak(void) const
 {
-	return(AllowVoice);
+	return(VoiceSpeaker != NULL ? VoiceSpeaker == this : AllowVoice);
 }
 
 
