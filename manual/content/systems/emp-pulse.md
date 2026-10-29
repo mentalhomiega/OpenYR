@@ -79,7 +79,7 @@ A UnitType with [`IsMobileEMP=yes`](/keys/ismobileemp/) starts with [`StartCharg
 With a full charge, deploying fires the weapon `MobileEMPulseWeapon` at the vehicle's position, resets the charge to `0`, and returns the vehicle to guard. The weapon name is hard-coded. The pulse does not stun the vehicle that fired it.
 
 :::caution[Define `MobileEMPulseWeapon`]
-Give that weapon a [`Projectile`](/keys/projectile/) and a [`Warhead`](/keys/warhead/#scope-weapontype) with `EMEffect=yes`. If either is missing, deploying still empties the charge but fires nothing. Without `EMEffect=yes`, the warhead deals ordinary blast damage around the vehicle instead of a pulse.
+Declare that weapon in `[WeaponTypes]` and give it a [`Projectile`](/keys/projectile/) and a [`Warhead`](/keys/warhead/#scope-weapontype) with `EMEffect=yes`. If no rules file declares the weapon, deploying still empties the charge but fires nothing. A declared weapon that lacks either key gets the default projectile or warhead, and the default warhead has no `EMEffect`. Without `EMEffect=yes`, the warhead deals ordinary blast damage around the vehicle instead of a pulse.
 :::
 
 ### Scripted explosion
