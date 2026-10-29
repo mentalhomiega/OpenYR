@@ -346,6 +346,7 @@
 #include "team.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "vein.h"
 #include "anim.h"
 #include "voc.h"
 #include "unit.h"
@@ -3007,6 +3008,16 @@ void Run(StepType const & step)
 			shown++;
 		}
 		DebugString("AUTOTEST   liveanims: %d of %d\n", shown, Anims.Count());
+		return;
+	}
+
+	if (step.Command == "veinholes") {
+		// veinholes: writes each veinhole monster with its cell, state, drawn frame, growth timer and the veins it has grown.
+		for (int index = 0; index < VeinholeMonsterClass::VeinholeMonsters.Count(); index++) {
+			VeinholeMonsterClass const * monster = VeinholeMonsterClass::VeinholeMonsters[index];
+			DebugString("AUTOTEST   veinhole at %d,%d state %d desired %d frame %d dead %d growth timer %d veins %d queued %d\n", monster->CellID.X, monster->CellID.Y, monster->CurrentState, monster->DesiredState, monster->ShapeFrame, (int)monster->IsDead, (int)monster->GrowthTimer, monster->VeinCount, monster->GrowthCount);
+		}
+		DebugString("AUTOTEST   veinholes: %d\n", VeinholeMonsterClass::VeinholeMonsters.Count());
 		return;
 	}
 
