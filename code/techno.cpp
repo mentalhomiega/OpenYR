@@ -9041,10 +9041,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 	**	computer must be cleared.
 	*/
 	if (TarCom == target && clear_target && (all || target->Owner_HouseClass() != House)) {
-		// A lost target with more than 10 frames left on the timer shortens the wait to a new scan.
-		if (TargetingTimer.Value() > 10 && !ScenarioInit) {
-			TargetingTimer = Random_Pick(4, 8);
-		}
+		Shorten_Targeting_Delay();
 		Assign_Target(NULL);
 		if (Has_Suspended_Mission()) {
 			Restore_Mission();
@@ -10172,6 +10169,18 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 		}
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Shortens the wait to the next area scan (gamemd 0x70F770, which a lost target and the end of a teleport's wait or hold
+/// both run): with more than 10 frames left on the targeting timer, outside scenario set-up, it restarts at a random 4 to 8 frames.
+/// </summary>
+void TechnoClass::Shorten_Targeting_Delay(void)
+{
+	if (TargetingTimer.Value() > 10 && !ScenarioInit) {
+		TargetingTimer = Random_Pick(4, 8);
+	}
 }
 
 

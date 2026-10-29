@@ -868,6 +868,7 @@ class TechnoClass :	public RadioClass,
 		bool Can_Passive_Acquire_Targets(void);
 		bool Can_Opportunity_Fire(void);
 		bool Opportunity_Fire(void);
+		void Shorten_Targeting_Delay(void);
 		virtual void Stun(void);
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;

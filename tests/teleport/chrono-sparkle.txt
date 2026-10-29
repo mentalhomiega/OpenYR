@@ -1,0 +1,25 @@
+; A chronoshifted unit has ChronoSparkle1 (CHRONOSK) drawn over it every 24 frames while it waits on its cell and while it holds after it lands
+; (IsBeingWarpedOut or IsWarpingIn in UnitClass::Update, 0x7360C0), and the warp-out animation (Rules WarpOut=, +0x33C) plays at the cell it
+; leaves and at the cell it lands on (0x71986A and 0x719B73). A Rhino (HTNK) at 56,24 is sphered and warped onto a power plant (GAPOWR) at
+; 60,24; the landing moves next to the plant, so the Rhino holds for ChronoDelay frames (see chrono-arrival-hold.txt).
+; Expected: a sparkle starts at frames 72, 96 and 120 (the wait, until 130) and at 144, 168 and 192 (the hold, until 194), so the liveanims
+; line the frame after each of those counts at least 1 CHRONOSK animation; the shots in the shot folder show the wait (frames 84-130),
+; the leave and the landing (about 130-134) and the hold (to 194).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-sparkle.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir scratch-agent/chrono-sparkle -Filter "AUTOTEST   (chrono|liveanims CHRONOSK|warp)|Exception"
+20 own GAPOWR 60 24
+30 own HTNK 56 24
+35 reveal
+40 view 58 24
+41 grant ChronoSphereSpecial
+42 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 56 24
+70 fire ChronoWarpSpecial 60 24
+73 liveanims CHRONOSK
+97 liveanims CHRONOSK
+121 liveanims CHRONOSK
+145 liveanims CHRONOSK
+169 liveanims CHRONOSK
+193 liveanims CHRONOSK
+84 record 5
+210 record 0
+230 quit

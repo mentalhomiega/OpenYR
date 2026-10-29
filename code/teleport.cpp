@@ -314,6 +314,12 @@ bool TeleportLocomotionClass::Process(void)
 	switch (WarpPhase) {
 		case TELEPORT_HOLD:
 			if (Frame >= WarpEnd) {
+				// The end of the hold runs while the phase still holds, so that ending it cannot hand the carried locomotor back and destroy this one.
+				FootClass * const foot = LinkedTo;
+				End_Wait_Or_Hold();
+				if (!foot->IsActive) {
+					break;
+				}
 				WarpPhase = TELEPORT_IDLE;
 				if (AutoTest_Active()) {
 					DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
@@ -324,7 +330,10 @@ bool TeleportLocomotionClass::Process(void)
 		case TELEPORT_WARP_OUT:
 			// Stage 1: the countdown on the cell (0x719803, with the timer check at 0x719BF0). The next stage runs on the next call.
 			if (Frame >= WarpEnd) {
-				WarpPhase = TELEPORT_CLEAR;
+				End_Wait_Or_Hold();
+				if (WarpPhase == TELEPORT_WARP_OUT) {
+					WarpPhase = TELEPORT_CLEAR;
+				}
 			}
 			break;
 
@@ -351,6 +360,24 @@ bool TeleportLocomotionClass::Process(void)
 			break;
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// The end of a wait on the cell or of a hold after a landing (gamemd 0x719BF0, which stage 1, stage 6 and the hold of a plain
+/// teleport all run). An object without a target shortens its wait to the next area scan (Shorten_Targeting_Delay, 0x70F770),
+/// scans for a target at once (Opportunity_Fire, 0x709480) and, when that finds none, goes idle.
+/// </summary>
+void TeleportLocomotionClass::End_Wait_Or_Hold(void)
+{
+	FootClass * const foot = LinkedTo;
+	if (foot->TarCom != NULL) {
+		return;
+	}
+	foot->Shorten_Targeting_Delay();
+	if (!foot->Opportunity_Fire()) {
+		foot->Enter_Idle_Mode(false, true);
+	}
 }
 
 
