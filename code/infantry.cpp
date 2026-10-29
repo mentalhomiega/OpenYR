@@ -4391,6 +4391,12 @@ void InfantryClass::Doing_AI(void)
 		}
 	}
 
+	// A paradropped soldier stands ready as soon as it lands, whatever frame its Paradrop sequence is at
+	// (FUN_00520AE0).
+	if (Doing == DO_PARADROP && !IsFalling) {
+		Do_Action(DO_STAND_READY, true);
+	}
+
 	// Frame sounds are checked even after a death sequence has removed the soldier, as in
 	// gamemd's FUN_00520AE0. They are audio only and never read back by the simulation.
 	if (Doing != DO_NOTHING && Has_Changed()) {
