@@ -1113,3 +1113,35 @@ inline TechnoClass const * AbstractClass::As_TechnoClass(void) const
 {
 	return(dynamic_cast<TechnoClass const *>(this));
 }
+
+
+/// <summary>
+/// Selects several objects with one reply. Selecting through this scope lets the first object that is selected
+/// speak, and keeps the rest quiet, as gamemd clears MoveFeedback after the first object of a group select. A
+/// scope made with speaks false keeps every object quiet, as gamemd's type select does.
+/// </summary>
+class SelectionVoiceScope
+{
+	public:
+		explicit SelectionVoiceScope(bool speaks = true)
+		{
+			AllowVoice = speaks;
+		}
+
+		~SelectionVoiceScope()
+		{
+			AllowVoice = true;
+		}
+
+		bool Select(ObjectClass * object)
+		{
+			bool const selected = object->Select();
+			if (selected) {
+				AllowVoice = false;
+			}
+			return(selected);
+		}
+
+		SelectionVoiceScope(SelectionVoiceScope const &) = delete;
+		SelectionVoiceScope & operator=(SelectionVoiceScope const &) = delete;
+};

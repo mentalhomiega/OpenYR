@@ -3365,12 +3365,13 @@ static char const * Team_Command_String(std::string & cache, char const * format
 
 static void Select_Team_Members(int team)
 {
+	// The first member selected speaks (gamemd's team select, 0x7311C0, clears MoveFeedback after it).
+	SelectionVoiceScope voice;
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
 		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control()) {
 			if (!obj->IsSelected) {
-				obj->Select();
-				AllowVoice = false;
+				voice.Select(obj);
 			}
 		}
 	}
@@ -3454,7 +3455,6 @@ class SelectTeamCommandClass : public CommandClass
 				Unselect_All();
 			}
 			Select_Team_Members(Team);
-			AllowVoice = false;
 			TechnoClass::Reset_Action_Line_Timer();
 
 			// A second press within half a second brings a team that was already selected into view.
@@ -5402,6 +5402,8 @@ class SelectSameTypeCommandClass : public CommandClass
 				return;
 			}
 
+			// Selecting every object of the same types is silent, like gamemd's type select.
+			SelectionVoiceScope const quiet(false);
 			if (widen) {
 				for (int i = 0; i < Technos.Count(); i++) {
 					TechnoClass * techno = Technos[i];
@@ -5411,8 +5413,8 @@ class SelectSameTypeCommandClass : public CommandClass
 				}
 			} else {
 				TacticalMap->Select_These(TacticalRect, Select_Callback);
-				}
 			}
+		}
 
 	private:
 		/// <summary>
@@ -5515,8 +5517,9 @@ void SelectionFilterClass::Execute(bool add_lower)
 				techno->Unselect();
 			}
 		}
-		for (TechnoClass * techno : current_tiers[best]) {
-			techno->Response_Select();
+		// One reply answers the group, the first of the tier kept.
+		if (!current_tiers[best].empty()) {
+			current_tiers[best].front()->Response_Select();
 		}
 		return;
 	}
@@ -5541,8 +5544,9 @@ void SelectionFilterClass::Execute(bool add_lower)
 			techno->Unselect();
 		}
 	}
+	SelectionVoiceScope voice;
 	for (TechnoClass * techno : last_tiers[next]) {
-		techno->Select();
+		voice.Select(techno);
 	}
 }
 
@@ -6481,8 +6485,9 @@ class CombatantSelectCommandClass : public CommandClass
 			}
 
 			Unselect_All();
+			SelectionVoiceScope voice;
 			for (TechnoClass * techno : chosen) {
-				techno->Select();
+				voice.Select(techno);
 			}
 		}
 
@@ -6552,8 +6557,9 @@ class TierNavigationClass
 
 				if (!matches.empty()) {
 					Unselect_All();
+					SelectionVoiceScope voice;
 					for (TechnoClass * techno : matches) {
-						techno->Select();
+						voice.Select(techno);
 					}
 					Shown = matches;
 					return;
@@ -6764,9 +6770,13 @@ class TypeSelectCommandClass : public CommandClass
 				}
 			}
 
-			for (TechnoClass * techno : chosen) {
-				if (Matches(techno, sought)) {
-					techno->Select();
+			// Type select is silent: gamemd clears MoveFeedback for the whole selection (Game::UICommands_TypeSelect, 0x7327D0).
+			{
+				SelectionVoiceScope const quiet(false);
+				for (TechnoClass * techno : chosen) {
+					if (Matches(techno, sought)) {
+						techno->Select();
+					}
 				}
 			}
 
