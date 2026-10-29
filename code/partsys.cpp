@@ -308,7 +308,7 @@ void ParticleSystemClass::Gas_AI(void)
 				Coord coord = spart->PositionCoord;
 				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
 				Coord ncoord = coord + spart->Class->NextParticleOffset;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
+				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
 				if (npart != NULL) {
 					SystemParticles.Add(npart);
 					npart->Speed = spart->Speed;
@@ -426,7 +426,7 @@ void ParticleSystemClass::Smoke_AI(void)
 {
 	int i;
 
-	if (Source->As_ObjectClass() != NULL && Source->What_Am_I() != RTTI_BUILDING) {
+	if (Source != NULL && Source->As_ObjectClass() != NULL && Source->What_Am_I() != RTTI_BUILDING) {
 		Set_Coord(Source->Center_Coord() + CoordOffset);
 	}
 
@@ -466,7 +466,7 @@ void ParticleSystemClass::Smoke_AI(void)
 				ncoord.Y = y + yrand;
 				ncoord.Z = z;
 				ncoord.X = x + xrand;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
+				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
 				if (npart != NULL) {
 					SystemParticles.Add(npart);
 					if (npart != NULL) {
@@ -479,7 +479,7 @@ void ParticleSystemClass::Smoke_AI(void)
 				pcoord.X = x - xrand;
 				pcoord.Y = y - yrand;
 				pcoord.Z = z;
-				ParticleClass *ppart = new ParticleClass(next, pcoord);
+				ParticleClass *ppart = new ParticleClass(next, pcoord, COORD_NONE, this);
 				if (ppart != NULL) {
 					SystemParticles.Add(ppart);
 					ppart->Speed = spart->Speed;
@@ -493,7 +493,7 @@ void ParticleSystemClass::Smoke_AI(void)
 	}
 
 	if (!IsMarkedForDeletion && IsActive && (Frame % (int)SpawnFrames) == 0) {
-		FootClass *foot = Source->As_FootClass();
+		FootClass *foot = Source != NULL ? Source->As_FootClass() : NULL;
 		if (foot == NULL || foot->CurrentTube < 0) {
 			int xrand = Scen->RandomNumber();
 			int yrand = Scen->RandomNumber();
@@ -507,7 +507,7 @@ void ParticleSystemClass::Smoke_AI(void)
 					if (SpawnFrames > Class->SpawnTranslucencyCutoff) {
 						npart->Translucency += 25;
 					}
-					npart->Speed = npart->Speed - (SpawnFrames - Class->SpawnFrames) * 0.35f;
+					npart->Speed = npart->Speed - (SpawnFrames - Class->SpawnFrames) * 0.35;
 					if (npart->Speed < 2.0) {
 						npart->Speed = 2.0;
 					}
@@ -720,7 +720,7 @@ void ParticleSystemClass::Web_AI(void)
 				Coord coord = spart->PositionCoord;
 				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
 				Coord ncoord = coord + spart->Class->NextParticleOffset;
-				ParticleClass *npart = new ParticleClass(next, ncoord);
+				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
 				if (npart != NULL) {
 					SystemParticles.Add(npart);
 					npart->Speed = spart->Speed;
