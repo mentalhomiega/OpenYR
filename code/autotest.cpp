@@ -2976,6 +2976,21 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "liveanims") {
+		// liveanims [TypeID]: writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object.
+		int shown = 0;
+		for (int index = 0; index < Anims.Count(); index++) {
+			AnimClass const * anim = Anims[index];
+			if (anim == NULL || anim->Class == NULL) continue;
+			if (!step.Argument.empty() && stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const cell = anim->Center_Coord().As_Cell();
+			DebugString("AUTOTEST   liveanim %s at %d,%d loops %d delay %d rate %d stage %d cellattached %d objectattached %d\n", anim->Class->Name(), cell.X, cell.Y, (int)anim->Loops, (int)anim->Delay, (int)anim->Fetch_Rate(), (int)anim->Fetch_Stage(), (int)anim->IsAttachedToCell, anim->xObject != NULL ? 1 : 0);
+			shown++;
+		}
+		DebugString("AUTOTEST   liveanims: %d of %d\n", shown, Anims.Count());
+		return;
+	}
+
 	if (step.Command == "treehit" || step.Command == "trees") {
 		Terrain_Step(step);
 		return;
