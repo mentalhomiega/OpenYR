@@ -3039,8 +3039,9 @@ void Run(StepType const & step)
 			if (particle == NULL || particle->Class == NULL) continue;
 			if (!step.Argument.empty() && stricmp(particle->Class->Name(), step.Argument.c_str()) != 0) continue;
 			Coord const where = particle->Get_Coord();
-			DebugString("AUTOTEST   particle frame %d %s state %d advance %d translucency %d speed %.3f drift %d,%d,%d at %d,%d,%d\n", Frame, particle->Class->Name(), (int)particle->StateAI, (int)particle->StateAIAdvance,
-				(int)particle->Translucency, (double)particle->Speed, particle->GasDrift.X, particle->GasDrift.Y, particle->GasDrift.Z, where.X, where.Y, where.Z);
+			DebugString("AUTOTEST   particle frame %d %s state %d advance %d translucency %d speed %.3f drift %d,%d,%d at %d,%d,%d from %d,%d,%d to %d,%d,%d\n", Frame, particle->Class->Name(), (int)particle->StateAI, (int)particle->StateAIAdvance,
+				(int)particle->Translucency, (double)particle->Speed, particle->GasDrift.X, particle->GasDrift.Y, particle->GasDrift.Z, where.X, where.Y, where.Z,
+				particle->FireOrigin.X, particle->FireOrigin.Y, particle->FireOrigin.Z, particle->FireTarget.X, particle->FireTarget.Y, particle->FireTarget.Z);
 			shown++;
 		}
 		DebugString("AUTOTEST   particles: %d of %d\n", shown, Particles.Count());

@@ -52,7 +52,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `canbuild <TypeID>` | Writes each house's own and acted country, the type's `RequiredHouses` and `ForbiddenHouses`, and whether `Can_Build` allows the type for that house now |
 | `anims` | Writes the first entries of the animation list to the debug log |
 | `liveanims [TypeID]` | Writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object, then how many it listed |
-| `particles [TypeID]` | Writes each live particle, or only those of the named type, with its animation state, the frames between state steps, translucency, speed, drift and position, then how many it listed |
+| `particles [TypeID]` | Writes each live particle, or only those of the named type, with its animation state, the frames between state steps, translucency, speed, drift, position and flight path, then how many it listed |
 | `veinholes` | Writes each veinhole monster with its cell, state, drawn frame, growth timer in frames, veins grown and cells queued, then how many there are |
 | `truecolour <NAME.SHP>` | Writes whether a PNG replaces that shape (see [TRUECOLOUR.md](TRUECOLOUR.md)), whether the shape is an SHP (`shp`) or was made from a sheet that has none (`png-only`), with the shape's frame count and size, the sheet's size, the frames it covers, whether it has a house-colour mask, whether the shadows come from the PNG or the SHP, and the centre pixel of its first frame |
 | `truecolourdir <path>` | Adds a directory to the places the game looks for files, so a test can supply PNG sprites without copying them into the game directory; a PNG not found before is looked for again |
