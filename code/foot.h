@@ -257,10 +257,12 @@ class FootClass : public TechnoClass
 		int ChronoArrivalHold;
 
 		// The sound from the type's MoveSound list playing while the object moves, and the frames
-		// it keeps playing after the object stops.
+		// it keeps playing after the object stops. MoveSoundVoc is the sound picked for the current
+		// move, or VOC_NONE. None of these is saved, so a loaded object starts with no move sound.
 		AudioHandle MoveSoundHandle;
 		bool IsMoveSoundPlaying;
 		int MoveSoundDelay;
+		VocType MoveSoundVoc;
 
 		/*
 		 * This is the locomotor that actually moves the object, created from the class ID
@@ -585,6 +587,10 @@ class FootClass : public TechnoClass
 
 		// Sinks a sinking object one frame. Returns true once it is too deep to see, and the caller removes it.
 		bool Advance_Sinking(void);
+
+		// Starts, re-aims and ends the MoveSound loop. The argument says whether the walk counter stepped this frame.
+		void Update_Move_Sound(bool stepped);
+
 		virtual void Sell_Back(int control) override;
 		virtual void Set_Waypoint_Path(PathType path, char index) override;
 		void Execute_Waypoint_Path(WaypointClass * waypoint);

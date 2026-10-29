@@ -3062,6 +3062,24 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "movesounds") {
+		// movesounds [TypeID]: writes each foot object, or only those of the named type, with its cell, whether its move sound is playing, the frames left before it ends, and the sound, then how many are playing.
+		int shown = 0;
+		int playing = 0;
+		for (int index = 0; index < Feet.Count(); index++) {
+			FootClass const * foot = Feet[index];
+			if (foot == NULL || foot->TClass == NULL) continue;
+			if (!step.Argument.empty() && stricmp(foot->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const cell = foot->Get_Cell();
+			DebugString("AUTOTEST   movesound frame %d %s at %d,%d playing %d delay %d sound %s\n", Frame, foot->TClass->Name(), cell.X, cell.Y,
+				foot->IsMoveSoundPlaying ? 1 : 0, foot->MoveSoundDelay, foot->IsMoveSoundPlaying ? Voc_Name(foot->MoveSoundVoc) : "none");
+			shown++;
+			if (foot->IsMoveSoundPlaying) playing++;
+		}
+		DebugString("AUTOTEST   movesounds: %d playing of %d\n", playing, shown);
+		return;
+	}
+
 	if (step.Command == "particles") {
 		// particles [TypeID]: writes each live particle, or only those of the named type, with its animation state, speed, translucency, drift and position.
 		int shown = 0;
