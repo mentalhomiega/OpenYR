@@ -177,6 +177,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsLocomotorProcessing(false),
 	IsPiggybackEndPending(false),
 	WasSinking(false),
+	ChronoArrivalHold(0),
 	MoveSoundHandle(),
 	IsMoveSoundPlaying(false),
 	MoveSoundDelay(0),
@@ -1158,8 +1159,8 @@ bool FootClass::Is_Chrono_Warping(void) const
 /// </summary>
 /// <param name="dest">Where the object goes.</param>
 /// <summary>
-/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell, under the
-/// warp-out animation, for ChronoDelay frames, then its teleport locomotor sets it down at dest. A
+/// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
+/// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
 /// is dropped.
 /// </summary>
@@ -1187,7 +1188,7 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 		Locomotion->Power_On();
 	}
 	TeleportLocomotionClass * teleport = static_cast<TeleportLocomotionClass *>(Locomotion.get());
-	teleport->Begin_Chrono_Warp(dest, Rule->ChronoDelay);
+	teleport->Begin_Chrono_Warp(dest, TeleportLocomotionClass::CHRONO_WAIT_FRAMES);
 }
 
 
@@ -4353,6 +4354,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BlockagePathDelay);
 	stream.Serialize(ParalysisTimer);
 	stream.Serialize(WasSinking);
+	stream.Serialize(ChronoArrivalHold);
 
 	/*
 	 * The locomotor is a sub-object rather than a member, so it travels as a record of

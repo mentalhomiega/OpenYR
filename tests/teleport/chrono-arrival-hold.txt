@@ -1,0 +1,25 @@
+; A chronosphere warp whose landing had to change cells (a structure stood there) gives the unit ChronoDelay frames of hold after it lands,
+; and the unit keeps that hold for every later warp (gamemd 0x719983 writes unit+0x284, and 0x7199F8 reads it for the hold timer).
+; A unit whose landing was not moved lands with no hold.
+; A Rhino (HTNK) at 40,40 is sphered and warped onto the power plant (GAPOWR) at 56,40; the landing moves next to the plant, to 57,39 as in
+; chrono-landing-blocked.txt. A second Rhino at 40,44 is warped to the empty 44,48. The first Rhino is warped again, from 57,39 to the empty 36,44.
+; Expected: "chrono arrived HTNK cell 57,39 frame 134 hold until 194"; "chrono arrived HTNK cell 44,48 frame 234 hold until 234" (no hold);
+; and "chrono arrived HTNK cell 36,44 frame 343 hold until 403", 60 frames, because the first Rhino keeps its hold.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-arrival-hold.txt -Seconds 200 -Filter "AUTOTEST   (where|chrono)|AUTOTEST frame|Exception"
+20 own GAPOWR 56 40
+30 own HTNK 40 40
+35 reveal
+40 grant ChronoSphereSpecial
+41 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 40 40
+70 fire ChronoWarpSpecial 56 40
+150 own HTNK 40 44
+160 grant ChronoSphereSpecial
+161 grant ChronoWarpSpecial
+170 fire ChronoSphereSpecial 40 44
+171 fire ChronoWarpSpecial 44 48
+260 grant ChronoSphereSpecial
+261 grant ChronoWarpSpecial
+270 fire ChronoSphereSpecial 57 39
+280 fire ChronoWarpSpecial 36 44
+450 quit
