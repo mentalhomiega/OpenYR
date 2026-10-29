@@ -10387,6 +10387,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		offset = Point2D(4, 0);
 		pip_shapes = pips2;
 	}
+	if (RTTI == RTTI_INFANTRY) {
+		xy.X += 11;
+	}
 
 	/*
 	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
@@ -10467,29 +10470,29 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	Check if it's a harvester, to show the right type of pips for the
 		**	various minerals it could have harvested.
 		*/
-		if (RTTI == RTTI_UNIT && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		if (RTTI != RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
 
-			int iron = Storage.Get_Amount(0);
-			int nickel = Storage.Get_Total_Amount() - iron;
-			int greenpips   = TClass->Max_Pips() * (double(iron) / TClass->Capacity) + 0.5;
-			int bluepips  = TClass->Max_Pips() * (double(nickel) / TClass->Capacity) + 0.5;
+			// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
+			// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
+			int const count = Class_Of()->Max_Pips();
+			double const capacity = TClass->Capacity;
+			double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
+			int orepips = (int)(ore / capacity * count + 0.5);
+			int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
 
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
+			for (int index = 0; index < count; index++) {
 				int shape = PIP_EMPTY;
-				if (bluepips > 0) {
+				if (gempips > 0) {
 					shape = PIP_BLUE;
-					bluepips--;
-				} else if (greenpips > 0) {
-					shape = PIP_GREEN;
-					greenpips--;
+					gempips--;
+				} else if (orepips > 0) {
+					shape = PIP_YELLOW;
+					orepips--;
 				}
 				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 			}
 		}
 
-		/*
-		**
-		*/
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
 			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
 			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.

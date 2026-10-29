@@ -10,7 +10,7 @@ bindings:
 source_files: [code/pip.hh, code/ccini.cpp]
 values:
   - { constant: PIPSCALE_AMMO, value: 1, input: "Ammo", meaning: "Remaining ammunition." }
-  - { constant: PIPSCALE_TIBERIUM, value: 2, input: "Tiberium", meaning: "Stored Tiberium. A Weeder=yes structure counts the weeds its house holds instead. Infantry and aircraft draw no pips." }
+  - { constant: PIPSCALE_TIBERIUM, value: 2, input: "Tiberium", meaning: "Stored Tiberium. A Weeder=yes structure counts the weeds its house holds instead. Aircraft draw no pips." }
   - { constant: PIPSCALE_PASSENGERS, value: 3, input: "Passengers", meaning: "Passenger space in use." }
   - { constant: PIPSCALE_POWER, value: 4, input: "Power", meaning: "Nothing. The row has a length, but no pips are drawn in it." }
   - { constant: PIPSCALE_CHARGE, value: 5, input: "Charge", meaning: "A vehicle's stored charge against its MaxCharge. Any other kind of object shows the row empty." }
