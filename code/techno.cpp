@@ -9943,8 +9943,8 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	// A slave of a Slave Miner answers with its enslaved lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
-	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : TClass->VoiceSelect;
+	// A slave of a Slave Miner answers with its enslaved lines, and a shut-down object with its deactivated lines, as gamemd's TechnoClass::VoiceSelect (0x708EB0) does.
+	TypeList<int> const & voices = SlaveOwner != NULL ? TClass->VoiceSelectEnslaved : (IsDeactivated ? TClass->VoiceSelectDeactivated : TClass->VoiceSelect);
 	if (voices.Count()) {
 		Queue_Voice((VocType)voices.Pick(NonCriticalRandomNumber));
 	}
