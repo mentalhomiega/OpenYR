@@ -1,0 +1,16 @@
+; Ammunition pips: gamemd draws one pip for each shot a vehicle holds (TechnoClass::GetPipMax, 0x716290, answers the type's Ammo), with no cap of five.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-ammo-pips.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120
+; Expected in the shot: the Apocalypse tank shows a row of three green pips, the Rhino tank a row of eight and the Grizzly a row of twelve, each row just above its health bar at the left.
+5 rules E:/Claude ra2 decomp/src-agent22/tests/autotest/overlay-ammo-pips.ini
+30 command CenterBase
+35 reveal
+40 own APOC 60 40
+41 own HTNK 62 40
+42 own MTNK 66 40
+50 view 64 42
+60 select APOC
+61 selectadd HTNK
+62 selectadd MTNK
+80 windowshot ap-a1
+90 ammo MTNK
+100 quit

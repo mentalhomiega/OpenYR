@@ -1,0 +1,33 @@
+; Chronosphere and Iron Curtain orbs: CHRONOAR, CHRONOFD, CHRONOTG and IRONBLST are placed by SuperClass::Launch (0x6CC390) at the picked cell's centre coordinate, lifted five leptons, and drawn centred on that point by AnimClass::DrawIt (0x422CA0) with no extra offset (YDrawOffset is 0 for all four).
+; The art itself sits above the frame centre: in the first CHRONOFD frame the sphere's pixels span 4 to 80 of 228 rows, so its centre is 72 pixels above the cell, and by the last frames the effect is centred on the cell. cellpixel logs the window pixel of the source cell and the target cell for comparison with the shots.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-superweapon-orb.txt -Width 800 -Height 600 -Seconds 150 -RenderFrameRate 30 -Filter "AUTOTEST   cellpixel|AUTOTEST   liveanims|Exception"
+20 own GAPOWR 78 44
+30 view 74 39
+35 own HTNK 76 40
+36 reveal
+40 grant ChronoSphereSpecial
+41 where HTNK
+42 cellpixel 76 40
+43 cellpixel 71 37
+62 fire ChronoSphereSpecial 76 40
+64 liveanims CHRONOAR
+66 windowshot orb-a1-placement
+70 windowshot orb-a2
+80 windowshot orb-a3
+88 grant ChronoWarpSpecial
+90 fire ChronoWarpSpecial 71 37
+92 liveanims CHRONOFD
+92 liveanims CHRONOTG
+92 liveanims WARPOUT
+94 windowshot orb-b1
+98 windowshot orb-b2
+102 windowshot orb-b3
+106 windowshot orb-b4
+110 windowshot orb-b5
+115 liveanims WARPIN
+115 liveanims WARPOUT
+116 windowshot orb-b6
+120 windowshot orb-b7
+130 windowshot orb-b8
+150 where HTNK
+160 quit

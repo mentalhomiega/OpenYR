@@ -1,0 +1,17 @@
+; Waypoint paths: a path of four waypoints placed in waypoint mode (V), one on a cell under shroud. gamemd's TacticalClass::RenderPlanningPaths (0x6DAD60) marks each waypoint with the
+; no-entry ring from MOUSE.SHA, numbers it from 0 above the ring, and joins consecutive waypoints with a line in the path colour; the selected path's line is dashed (five pixels on, three off) and the other lines are solid.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-waypoint-path.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 120
+; Expected in the shots: four ring markers numbered 0 to 3, joined by a dashed line that marches along the path.
+30 command CenterBase
+35 reveal
+40 own HTNK 60 40
+50 view 64 42
+60 select HTNK
+70 command WaypointMode
+80 waypoint any 62 38
+81 waypoint any 68 38
+82 waypoint any 68 44
+83 waypoint any 62 46
+90 windowshot wp-a1
+93 windowshot wp-a2
+110 quit

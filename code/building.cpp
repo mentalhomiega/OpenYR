@@ -1211,51 +1211,48 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 
 /// <summary>
+/// Draws the repair wrench over a structure that is being repaired.
+/// TechnoClass::DrawExtras (0x6F5190) draws it, with the decorations that follow the body,
+/// at the structure's render coordinate, the north corner of its first cell, with no offset.
+/// The wrench is hidden only while that cell is under shroud. It blinks through its seven
+/// frames over a quarter of the build's normalised 14 tick delay. gamemd loads POWEROFF.SHP
+/// but never draws it, so a structure that is switched off shows nothing.
+/// </summary>
+/// <param name="cliprect">The clipping rectangle to draw within.</param>
+void BuildingClass::Draw_Wrench(Rect const & cliprect) const
+{
+	if (!IsRepairing || Map.Is_Shrouded(PositionCoord)) {
+		return;
+	}
+
+	Point2D point;
+	TacticalMap->Coord_To_Pixel(Render_Coord(), point);
+	int frame = Options.Normalize_Delay(14) / 4;
+	if (frame < 2) frame = 2;
+	Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::WrenchShapes, 6 * (Frame % frame) / (frame - 1), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
+}
+
+
+/// <summary>
+/// Draws the decorations that follow the structure's body: the repair wrench first, then those
+/// every object wears.
+/// </summary>
+void BuildingClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect) const
+{
+	Draw_Wrench(cliprect);
+	TechnoClass::Draw_Post_Render(point, cliprect);
+}
+
+
+/// <summary>
 /// Draws the informational overlays that sit on top of the building.
-/// This routine handles the repair wrench, the power-off warning, the selection text
-/// and, for a factory the player has managed to infiltrate, the cameo of whatever is
-/// currently being produced there. Nothing is shown through shroud or fog.
+/// This routine handles the selection text and, for a factory the player has managed to
+/// infiltrate, the cameo of whatever is currently being produced there.
 /// </summary>
 /// <param name="point">The pixel location to center the overlays about.</param>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) const
 {
-	Cell cell = PositionCell;
-
-	/*
-	**	Patch for adding overlay onto weapon factory.  Only add the overlay if
-	**	the building has more than 1 hp.  Also, if the building's in radio
-	**	contact, he must be unloading a constructed vehicle, so draw that
-	**	vehicle before drawing the overlay.
-	*/
-	if (BState != BSTATE_CONSTRUCTION) {
-
-		/*
-		**	Draw any repair feedback graphic required.
-		*/
-		if (IsRepairing) {
-			if (!Map.Is_Shrouded(Center_Coord()) && (!Scen->Special.IsFogOfWar || !IsFogged) && Visual_Character() != VISUAL_HIDDEN) {
-				Point2D drawpoint = point;
-				if (!IsOn) drawpoint = point - Point2D(5, 5);
-				int frame = Options.Normalize_Delay(14) / 4;
-				if (frame < 2) frame = 2;
-				Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::WrenchShapes, 6 * (Frame % frame) / (frame - 1), drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
-
-			}
-		}
-
-		if (!IsOn && House->Is_Player_Control()) {
-			if (!Map.Is_Shrouded(Center_Coord()) && (!Scen->Special.IsFogOfWar || !IsFogged)) {
-				Point2D drawpoint = point;
-				if (IsRepairing) drawpoint = point + Point2D(10, 10);
-				int frame = Options.Normalize_Delay(14) / 4;
-				if (frame < 2) frame = 2;
-				Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::PowerOffShapes, 6 * (Frame % frame) / (frame - 1), drawpoint, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
-
-			}
-		}
-	}
-
 	if (IsSelected && (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr])) {
 		Draw_Text_Overlay(point + Point2D(-10, 10), point, cliprect);
 	}

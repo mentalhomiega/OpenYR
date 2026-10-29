@@ -1440,7 +1440,8 @@ int TechnoTypeClass::Max_Pips(void) const
 			return(MaxPips.value_or(10));
 
 		case PIPSCALE_AMMO:
-			return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(5)));
+			// TechnoTypeClass::GetPipMax (0x716290) answers the type's Ammo, so a row holds a pip for every shot.
+			return(PipWrap != 0 ? MaxAmmo : std::min(MaxAmmo, MaxPips.value_or(MaxAmmo)));
 
 		case PIPSCALE_TIBERIUM:
 			return(MaxPips.value_or(Fetch_RTTI() == RTTI_INFANTRYTYPE ? 3 : 5));
