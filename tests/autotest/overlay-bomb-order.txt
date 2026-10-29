@@ -1,0 +1,18 @@
+; Bomb icon draw order: gamemd's TechnoClass::DrawExtras (0x6F5190) draws the Ivan bomb icon first, then a structure's repair wrench, then the
+; rank insignia, so the wrench and the insignia lie over the bomb icon where they overlap. A pillbox is repaired and carries a bomb, and an elite
+; soldier carries a bomb beside it.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent22 -Script src-agent22/tests/autotest/overlay-bomb-order.txt -Width 1024 -Height 768 -RenderFrameRate 30 -Seconds 90 -ShotDir <folder>
+; Expected in the shots: on the pillbox the wrench is drawn over the bomb icon, not under it; the soldier shows the elite insignia over its bomb icon.
+30 command CenterBase
+35 reveal
+40 own GAPILL 60 40
+41 own E1 64 40
+42 elite E1
+50 view 62 42
+60 damage GAPILL 100
+70 repairon GAPILL
+75 plantbomb GAPILL
+76 plantbomb E1
+80 windowshot bo-a1
+84 windowshot bo-a2
+120 quit

@@ -1442,7 +1442,31 @@ bool TechnoClass::Pips_Visible_To_Player(void) const
 
 
 /// <summary>
-/// Draws the decorations that appear after the object's body.
+/// Draws the bomb icon that counts down over an object carrying a bomb the player sees
+/// (TechnoClass::DrawExtras, 0x6F5190).
+/// </summary>
+void TechnoClass::Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) const
+{
+	if (Is_Bomb_Visible()) {
+		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
+		if (_bombcurs != NULL) {
+			int frame = 0;
+			if (Rule->IvanTimedDelay >= 6) {
+				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
+			}
+			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
+				frame++;
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws the decorations that appear after the object's body, in the order TechnoClass::DrawExtras
+/// (0x6F5190) draws them: the bomb icon, a structure's repair wrench, the rank insignia, then the
+/// selection box, condition indicator and pips.
 /// Every object the player can see wears its rank insignia. A selected object, or a
 /// submerged one the player's sensors have picked up, gets its selection box and its
 /// condition indicator drawn over it, plus its pips when the player is allied to its owner
@@ -1462,6 +1486,10 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	}
 
 	bool pips_shown = Pips_Visible_To_Player();
+
+	// TechnoClass::DrawExtras (0x6F5190) draws the bomb icon first, then a structure's wrench, then the rank insignia.
+	Draw_Bomb_Icon(point, cliprect);
+	Draw_Wrench_Icon(cliprect);
 
 	// Rank insignia show whoever owns the object, as TechnoClass::DrawExtras (0x6F5190) draws them.
 	if (Is_Decoration_Visible()) {
@@ -1529,21 +1557,6 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			if (pips_shown) {
 				Draw_Pips(Pip_Origin(point), point, cliprect);
 			}
-		}
-	}
-
-	// The bomb icon counts down over an object carrying a bomb the player sees (TechnoClass::DrawExtras, 0x6F5190).
-	if (Is_Bomb_Visible()) {
-		static ShapeSet const * _bombcurs = (ShapeSet const *)MFCD::Retrieve("BOMBCURS.SHP");
-		if (_bombcurs != NULL) {
-			int frame = 0;
-			if (Rule->IvanTimedDelay >= 6) {
-				frame = (Frame - BombPlantFrame) / (Rule->IvanTimedDelay / 6) * 2;
-			}
-			if (Rule->IvanIconFlickerRate > 0 && Frame % (Rule->IvanIconFlickerRate * 2) >= Rule->IvanIconFlickerRate) {
-				frame++;
-			}
-			Draw_Shape(*LogicalSurface, *NormalDrawer, _bombcurs, std::min(frame, 11), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
 	}
 

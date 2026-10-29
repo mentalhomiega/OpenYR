@@ -66,6 +66,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `airstrike <TypeID>` | Writes each object of that type, whoever owns it, with the frame its next airstrike is ready, the weapon its target gets and whether that is an Airstrike weapon, and each plane its strike still has out, with its cell, mission, ammunition and target |
 | `where <TypeID>` | Writes each object of that type, whoever owns it, with its cell, mission, destination, target and strength; a soldier also gets a line with its action and whether it is dug in |
 | `animlog <TypeID>` | Writes each object of that type, whoever owns it, with its walk counter and the body voxel frame that counter selects, its turret frame and facings, whether its locomotor moves, its target, and whether a DiskLaser ring is active |
+| `plantbomb <TypeID>` | Fixes an Ivan bomb to each of the player's objects of that type, planted by the player's first soldier, as the bomb icon draws over it |
 | `planguard <TypeID> x y` | Gives each of the player's foot objects of that type a guard area order on the cell. While planning is on, the order is recorded as a planned leg |
 | `forceattack <TypeID> x y` | Orders the player's objects of that type to force-attack the object on that cell, or the ground there, as a Ctrl+click does. Autotests never report Ctrl as held, so the order is given directly |
 | `planmove <TypeID> x y` | Gives each of the player's foot objects of that type a move to the cell, as a click on the ground does. While planning is on, the move is recorded as a planned leg |

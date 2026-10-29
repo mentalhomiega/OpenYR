@@ -948,6 +948,9 @@ class TechnoClass :	public RadioClass,
 
 		virtual void Draw_Pre_Render(Point2D const & point, Rect const & cliprect) const override;
 		virtual void Draw_Post_Render(Point2D const & point, Rect const & cliprect) const override;
+		void Draw_Bomb_Icon(Point2D const & point, Rect const & cliprect) const;
+		// Draws a structure's repair wrench between the bomb icon and the rank insignia. Nothing else has one.
+		virtual void Draw_Wrench_Icon(Rect const & cliprect) const {}
 		virtual void Draw_Action_Line(void) const;
 
 		virtual void Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, int brightness, ShapeFlags_Type negflags) const;
