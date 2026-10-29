@@ -9862,7 +9862,10 @@ bool BuildingClass::Can_Absorb(FootClass const * object) const
 /// </summary>
 void BuildingClass::Absorb(FootClass * object)
 {
-	Sound_Effect(Rule->EnterBioReactorSound, Center_Coord());
+	// gamemd's InfantryClass arrival (0x51A30A) plays this for infantry only, at the infantry's own position.
+	if (object->RTTI == RTTI_INFANTRY) {
+		Sound_Effect(Rule->EnterBioReactorSound, object->Center_Coord());
+	}
 	object->Limbo();
 	Cargo.Attach(object);
 	object->House->Tracking_Absorb(object);
