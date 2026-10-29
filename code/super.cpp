@@ -1015,7 +1015,7 @@ static void Chrono_Kill(TechnoClass * techno, HouseClass * house = NULL)
 /// Whatever stands on the landing spot is destroyed, except the other units in moving; an
 /// infantryman crushes only infantry on its own spot. The unit dies instead if something
 /// there is under the Iron Curtain or the spot is off the map, and moves to the nearest free
-/// cell if a structure or tree stands there. The unit then stays on its cell for ChronoDelay
+/// cell if a structure or tree stands there or the spot is the far edge of a bridge strip. The unit then stays on its cell for ChronoDelay
 /// frames and lands (TeleportLocomotionClass::Land_Chrono_Warp). A vehicle set down on water it
 /// cannot cross sinks there, and anything else set down where it cannot move is destroyed.
 /// </summary>
@@ -1045,6 +1045,11 @@ static void Chrono_Shift(FootClass * foot, Coord dest, DynamicVectorClass<FootCl
 		} else if (foot->RTTI != RTTI_INFANTRY || object->RTTI != RTTI_INFANTRY || (object->PositionCoord.X == dest.X && object->PositionCoord.Y == dest.Y)) {
 			crushed.Add((TechnoClass *)object);
 		}
+	}
+
+	// The far edge of a bridge's under-strip cannot be stood on, so it also sends the unit to a nearby cell (0x718449).
+	if (cellptr->IsUnderBridge && !cellptr->IsBridgeTraversable) {
+		blocked = true;
 	}
 
 	if (blocked) {

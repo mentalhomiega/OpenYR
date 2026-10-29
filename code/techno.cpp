@@ -325,6 +325,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	LastFireFrame(-100),
 	Transporter(NULL),
 	IsInOpenToppedTransport(false),
+	IsBeingPlaced(false),
 	TemporalImUsing(),
 	WarpedBy(NULL),
 	IsBeingWarpedOut(false),
@@ -2060,7 +2061,10 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		House->Tracking_Active_Add(this, false);
 		PrimaryFacing.Set(dir);
 		BarrelPitch.Set(DIR_E << 8);
+		// A soldier's idle mode can order a jump, which then clears its destination cell (TechnoClass::Unlimbo, 0x6F6E1B).
+		IsBeingPlaced = (RTTI == RTTI_INFANTRY);
 		Enter_Idle_Mode(true);
+		IsBeingPlaced = false;
 		if (Ready_To_Commence()) {
 			Commence();
 		}

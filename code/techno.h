@@ -294,6 +294,9 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * Transporter;
 		bool IsInOpenToppedTransport;
 
+		// True while a soldier is being set down on the map and enters its idle mode (gamemd TechnoClass+0x1F8). A teleport it is ordered then clears the occupants off its destination cell.
+		bool IsBeingPlaced;
+
 		/*
 		 * Temporal weapons: the warp this object holds when its primary warhead is Temporal, the
 		 * owner of the warp counting this object down, and whether a warp holds this object.
