@@ -27614,7 +27614,7 @@ OreTwinkleChance:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: '50'
       declared_in: RulesClass
       member: OreTwinkleChance
       source: code/rules.cpp
