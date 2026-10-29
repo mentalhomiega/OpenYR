@@ -9801,7 +9801,8 @@ void BuildingClass::Bunker_Up(FootClass * object)
 	bool const damaged = HealthRatio <= Rule->ConditionYellow;
 	Begin_Anim(BANIM_SPECIAL_ONE, damaged);
 	Begin_Anim(BANIM_SPECIAL_TWO, damaged);
-	Sound_Effect(Rule->BunkerWallsUpSound, Center_Coord());
+	// gamemd plays the walls sounds at the structure's position, not its centre (0x45936F, 0x4594C8, 0x45960D).
+	Sound_Effect(Rule->BunkerWallsUpSound, PositionCoord);
 	Mark(MARK_CHANGE);
 }
 
@@ -9817,7 +9818,7 @@ void BuildingClass::Bunker_Down(void)
 	BunkerLinkedItem->BunkerLinkedItem = NULL;
 	BunkerLinkedItem = NULL;
 	Bunker_Walls_Down_Anims();
-	Sound_Effect(Rule->BunkerWallsDownSound, Center_Coord());
+	Sound_Effect(Rule->BunkerWallsDownSound, PositionCoord);
 	Mark(MARK_CHANGE);
 }
 
