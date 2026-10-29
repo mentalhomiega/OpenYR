@@ -2769,7 +2769,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	return fire if they are able and allowed.
 			*/
 			// The attacker replaces a current target the weapon cannot reach with a clear line (BuildingClass::ReceiveDamage, 0x442230, IsCloseEnoughToAttack).
-			// A weapon whose section is missing from the rules has no projectile, and then cannot return fire.
+			// Kept as a safety net: since the rules now give a weapon with no projectile a default one when they load (WeaponTypeClass::Read_INI), this rarely applies.
 			if (CurrentMission != MISSION_DECONSTRUCTION &&
 				!House->Is_Ally(source) &&
 				PrimaryWeapon != NULL &&
