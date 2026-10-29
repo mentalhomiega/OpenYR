@@ -89,7 +89,7 @@ An explosion damages the monster only when it is centered on the monster's cell,
 
 A destroyed monster plays its dying animation and then turns its pit into part of the field. Its own cell and the four cells beside it take vein overlay, and the four diagonal cells lose their overlay. Veins are then placed across the five-by-five block wherever the ground accepts them, which leaves the pit's corner slopes bare.
 
-The field then withers. Every [`VeinholeShrinkRate`](/keys/veinholeshrinkrate/) frames, plus a random extra of up to half as many, 1 to 4 of the monster's mature cells turn thin or lose their vein, starting with those farthest from the veinhole. Each mature cell withers once, and thin veins disappear once no mature cell remains next to them. Withering continues even while [`VeinGrowthEnabled`](/keys/veingrowthenabled/) is off. When every mature cell has withered, the monster is removed, together with any vein left in its five-by-five block, even vein another monster owns. Veins outside that block stay on the map.
+The field then withers. Every [`VeinholeShrinkRate`](/keys/veinholeshrinkrate/) frames, 1 to 4 of the monster's mature cells turn thin or lose their vein, starting with those farthest from the veinhole. Each mature cell withers once, and thin veins disappear once no mature cell remains next to them. Withering continues even while [`VeinGrowthEnabled`](/keys/veingrowthenabled/) is off. When every mature cell has withered, the monster is removed, together with any vein left in its five-by-five block, even vein another monster owns. Veins outside that block stay on the map.
 
 ## Vein fields
 
@@ -109,7 +109,7 @@ The shipped `VEINS` overlay sets [`Land=Weeds`](/keys/land/), which gives its ce
 
 ### Growth
 
-Each monster grows its own field in steps. The first step comes [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) frames after the monster is created. Each later step comes that many frames after the previous one, plus a random extra of up to half as many.
+Each monster grows its own field in steps. The first step comes [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) frames after the monster is created. Each later step comes that many frames after the previous one.
 
 A step takes the next 1 to 5 cells from the monster's growth queue. Each cell taken becomes mature if it still accepts veins.
 

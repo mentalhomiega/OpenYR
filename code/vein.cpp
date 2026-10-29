@@ -346,10 +346,10 @@ void VeinholeMonsterClass::AI(void)
 	if (GrowthTimer == 0) {
 		if (!IsDead) {
 			Grow();
-			GrowthTimer = Random_Pick(0, Rule->VeinholeGrowthRate / 2) + Rule->VeinholeGrowthRate;
+			GrowthTimer = Rule->VeinholeGrowthRate;
 		} else {
 			Shrink();
-			GrowthTimer = Random_Pick(0, Rule->VeinholeShrinkRate / 2) + Rule->VeinholeShrinkRate;
+			GrowthTimer = Rule->VeinholeShrinkRate;
 		}
 	}
 
