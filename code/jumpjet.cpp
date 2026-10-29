@@ -126,11 +126,12 @@ bool JumpjetLocomotionClass::Process(void)
 			return(false);
 		}
 
+		// A jumpjet in the air when an ion storm is up crashes, whatever its type (FootClass::Crash, called at 0x54AF28).
+		// gamemd's test for an ion storm (0x53A130) always answers no, and nothing here raises a storm, so this is not reached.
 		if (IonStormClass::Is_Ion_Storm_Active()) {
-			if (CurrentState != GROUNDED) {
-				int damage = LinkedTo->Strength;
-				ResultType result = LinkedTo->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-				if (result == RESULT_DESTROYED || result == RESULT_ALREADY_DESTROYED || !LinkedTo->IsActive || LinkedTo->IsInLimbo) {
+			if (CurrentState != GROUNDED && CurrentState != CRASHING) {
+				LinkedTo->Crash(NULL);
+				if (!LinkedTo->IsActive || LinkedTo->IsInLimbo) {
 					return(false);
 				}
 			}
