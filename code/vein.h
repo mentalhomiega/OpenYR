@@ -89,8 +89,8 @@ class VeinholeMonsterClass : public ObjectClass
 		PriorityQueueClass<CellNode> GrowthQueue;
 
 		/*
-		 * This is the countdown to the next growth step, restarted with a jittered copy of
-		 * the growth rate from the rules -- or of the shrink rate, once the monster is dead.
+		 * This is the countdown to the next growth step, restarted with the growth rate from
+		 * the rules -- or the shrink rate, once the monster is dead.
 		 */
 		CDTimerClass<FrameTimerClass> GrowthTimer;
 

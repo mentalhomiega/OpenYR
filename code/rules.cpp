@@ -546,7 +546,7 @@ RulesClass::RulesClass(void) :
 	Wake(NULL),
 	OreTwinkle(NULL),
 	WeaponNullifyAnim(NULL),
-	OreTwinkleChance(0),
+	OreTwinkleChance(50),
 	FlamingInfantry(NULL),
 	AITriggerSuccessWeightDelta(1),
 	AITriggerFailureWeightDelta(-1),

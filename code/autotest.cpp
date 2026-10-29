@@ -346,6 +346,7 @@
 #include "team.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "vein.h"
 #include "anim.h"
 #include "voc.h"
 #include "unit.h"
@@ -1203,10 +1204,29 @@ static void Terrain_Step(StepType const & step)
 		int damage = 100;
 		ResultType const result = terrain->Take_Damage(damage, 0, warhead, NULL, false);
 		DebugString("AUTOTEST treehit %s at %d,%d: strength %d -> %d damage %d result %d removed %d\n", terrain->Class->Name(), step.X, step.Y, before, (int)terrain->Strength, damage, (int)result, (int)(Map[Cell(step.X, step.Y)].Cell_Terrain() == NULL));
+	} else if (step.Command == "terrainonore") {
+		TerrainType const type = TerrainTypeClass::From_Name(step.Argument.c_str());
+		if (type == TERRAIN_NONE) {
+			DebugString("AUTOTEST terrainonore %s: no such terrain type\n", step.Argument.c_str());
+			return;
+		}
+		Map.Reset_Iterator();
+		for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
+			if (cell->Tiberium_Value() > 0 && cell->Cell_Terrain() == NULL && Map.In_Radar(cell->CellID)) {
+				int const before = cell->Overlay;
+				// Placed as the scenario reader does, which skips the runtime placement tests.
+				ScenarioInit++;
+				new TerrainClass(TerrainTypes[type], cell->CellID);
+				ScenarioInit--;
+				DebugString("AUTOTEST terrainonore %s at %d,%d: overlay %d -> %d, terrain %d\n", step.Argument.c_str(), cell->CellID.X, cell->CellID.Y, before, (int)cell->Overlay, cell->Cell_Terrain() != NULL ? 1 : 0);
+				return;
+			}
+		}
+		DebugString("AUTOTEST terrainonore %s: no ore cell\n", step.Argument.c_str());
 	} else {
 		for (int index = 0; index < Terrains.Count(); index++) {
 			TerrainClass * terrain = Terrains[index];
-			DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune);
+			DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d overlay %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune, (int)Map[terrain->Get_Cell()].Overlay);
 		}
 	}
 }
@@ -2995,7 +3015,32 @@ void Run(StepType const & step)
 		return;
 	}
 
-	if (step.Command == "treehit" || step.Command == "trees") {
+	if (step.Command == "liveanims") {
+		// liveanims [TypeID]: writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object.
+		int shown = 0;
+		for (int index = 0; index < Anims.Count(); index++) {
+			AnimClass const * anim = Anims[index];
+			if (anim == NULL || anim->Class == NULL) continue;
+			if (!step.Argument.empty() && stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Cell const cell = anim->Center_Coord().As_Cell();
+			DebugString("AUTOTEST   liveanim %s at %d,%d loops %d delay %d rate %d stage %d cellattached %d objectattached %d\n", anim->Class->Name(), cell.X, cell.Y, (int)anim->Loops, (int)anim->Delay, (int)anim->Fetch_Rate(), (int)anim->Fetch_Stage(), (int)anim->IsAttachedToCell, anim->xObject != NULL ? 1 : 0);
+			shown++;
+		}
+		DebugString("AUTOTEST   liveanims: %d of %d\n", shown, Anims.Count());
+		return;
+	}
+
+	if (step.Command == "veinholes") {
+		// veinholes: writes each veinhole monster with its cell, state, drawn frame, growth timer and the veins it has grown.
+		for (int index = 0; index < VeinholeMonsterClass::VeinholeMonsters.Count(); index++) {
+			VeinholeMonsterClass const * monster = VeinholeMonsterClass::VeinholeMonsters[index];
+			DebugString("AUTOTEST   veinhole at %d,%d state %d desired %d frame %d dead %d growth timer %d veins %d queued %d\n", monster->CellID.X, monster->CellID.Y, monster->CurrentState, monster->DesiredState, monster->ShapeFrame, (int)monster->IsDead, (int)monster->GrowthTimer, monster->VeinCount, monster->GrowthCount);
+		}
+		DebugString("AUTOTEST   veinholes: %d\n", VeinholeMonsterClass::VeinholeMonsters.Count());
+		return;
+	}
+
+	if (step.Command == "treehit" || step.Command == "trees" || step.Command == "terrainonore") {
 		Terrain_Step(step);
 		return;
 	}
