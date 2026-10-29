@@ -127,6 +127,7 @@
 **							weapon it would choose and whether that one could fire
 **	weapons <TypeID>		writes each weapon slot of the type with its bullet's AA and AG flags and range
 **	waypoint <any> x y	places a waypoint on the cell on the selected path, as a click in waypoint mode does
+**	wpcell <n>		writes the cell of the map's waypoint n and the structure on it
 **	wpsend <any> x y	gives the selected objects the follow-path order a click on the waypoint at the cell gives
 **	wpstate <TypeID>	writes each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status,
 **					ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact
@@ -2606,6 +2607,16 @@ static void Waypoint_Probe_Step(StepType const & step)
 		coord.Z = (Map[cell].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0) + Map.Get_Height_GL(coord);
 		PlayerPtr->Place_Waypoint(coord);
 		DebugString("AUTOTEST   waypoint %d,%d selected path %d waypoints on it %d\n", step.X, step.Y, (int)PlayerPtr->SelectedPath, PlayerPtr->SelectedPath == PATH_NONE ? 0 : PlayerPtr->Paths[PlayerPtr->SelectedPath]->Waypoint_Count());
+	} else if (step.Command == "wpcell") {
+		// wpcell <n>: the cell of the map's waypoint n, or that it is not set.
+		int const number = std::atoi(step.Argument.c_str());
+		if (Scen->Is_Valid_Waypoint(number)) {
+			Cell const cell = Scen->Get_Waypoint_Cell(number);
+			BuildingClass * building = Map[cell].Cell_Building();
+			DebugString("AUTOTEST   wpcell %d at %d,%d building %s\n", number, cell.X, cell.Y, building != NULL ? building->Class->Name() : "-");
+		} else {
+			DebugString("AUTOTEST   wpcell %d not set\n", number);
+		}
 	} else if (step.Command == "wpsend") {
 		// wpsend <move|attack> x y: a click on the waypoint at that cell by the selected objects. A move click is the
 		// move a click on the ground makes; an attack click is an attack on the object standing on the cell. Either
@@ -2833,7 +2844,7 @@ void Run(StepType const & step)
 		return;
 	}
 
-	if (step.Command == "waypoint" || step.Command == "wpsend" || step.Command == "wpstate" || step.Command == "padstate") {
+	if (step.Command == "waypoint" || step.Command == "wpsend" || step.Command == "wpstate" || step.Command == "padstate" || step.Command == "wpcell") {
 		Waypoint_Probe_Step(step);
 		return;
 	}
