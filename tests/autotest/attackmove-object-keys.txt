@@ -1,0 +1,45 @@
+; Attack-move keys and mode against an enemy object. Ctrl with Shift is gamemd's attack-move chord, and it applies only when every
+; selected object can attack-move (AllSelectedCanAttackForced, 0x731BF0). The AttackMove command arms only then too (0x731AF0).
+; An enemy Grizzly (MTNK) stands at 64,48, which is at window pixel 260,390 in view 60 42. A harvester (CMIN) has no weapon, so it
+; cannot attack-move.
+; Case 1: E1 selected, Ctrl and Shift held, click the Grizzly. Expected: Attack Move with the Grizzly as its target.
+; Case 2: E1 and the harvester selected, Ctrl and Shift held, click the Grizzly. Expected: E1 gets a plain Attack.
+; Case 3: E1 and the harvester selected, the AttackMove command, click the ground at 62,45 (290,315). Expected: the command is
+;   refused, so E1 gets Move to that cell.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/attackmove-object-keys.txt -Width 640 -Height 480 -Seconds 150 -Filter "AUTOTEST   where (E1|MTNK|CMIN)|AUTOTEST   selected|AUTOTEST   kill|Exception"
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 grantunit E1 59 44
+41 grantunit CMIN 58 40
+42 spawn MTNK 64 48
+50 select E1
+52 selected
+60 hold 17
+62 hold 16
+64 windowclick 260 390
+66 release 16
+68 release 17
+90 where E1
+130 kill E1 1
+132 grantunit E1 59 44
+140 select E1
+142 selectadd CMIN
+144 selected
+146 hold 17
+148 hold 16
+150 windowclick 260 390
+152 release 16
+154 release 17
+180 where E1
+182 where CMIN
+200 kill E1 1
+202 grantunit E1 59 44
+
+220 select E1
+222 selectadd CMIN
+224 command AttackMove
+226 windowclick 290 315
+250 where E1
+252 where CMIN
+280 quit

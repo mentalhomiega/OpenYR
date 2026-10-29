@@ -1,0 +1,23 @@
+; Attack-move onto an allied unit. A move order onto an allied vehicle is an attack-move too when the mode is armed (gamemd's
+; TechnoClass::ClickedMission, 0x6FFBE0, turns any Move into one), and the unit then travels to where the order named.
+; An allied Grizzly (MTNK) stands at 64,48, window pixel 260,390 in view 60 42.
+; Case 1: E1 clicks the allied Grizzly with no arm. Expected: Move.
+; Case 2: an armed E1 clicks it. Expected: Attack Move, with the Grizzly's cell as the destination and no target.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/attackmove-object-ally.txt -Width 640 -Height 480 -Seconds 100 -Filter "AUTOTEST   where (E1|MTNK)|AUTOTEST   selected|AUTOTEST alliance|Exception"
+5 alliance 1
+6 ally MTNK 64 48
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 grantunit E1 59 44
+50 select E1
+52 selected
+60 windowclick 260 390
+80 where E1
+120 kill E1 1
+122 grantunit E1 59 44
+130 select E1
+132 command AttackMove
+134 windowclick 260 390
+160 where E1
+200 quit

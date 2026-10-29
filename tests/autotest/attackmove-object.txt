@@ -1,0 +1,58 @@
+; Attack-move on an object, armed by the AttackMove command (gamemd: TechnoClass::ClickedMission, 0x6FFBE0, turns a Move or an
+; Attack order into an attack-move whatever it names; FootClass::RespondMegaEventMission, 0x4DF0E0, keeps an object or a cell
+; target as MegaTarget with no destination, and FootClass::UpdateAttackMove, 0x4DF3A0, runs it).
+; View 60 42: cell (x,y) is at window pixel 320+30*((x-60)-(y-42)), 240+15*((x-60)+(y-42)).
+; Case 1: an armed Rhino (HTNK) at 60,42 clicks an enemy Grizzly (MTNK) at 64,48, out of its reach. Expected: Attack Move with
+;   the Grizzly as its target and no destination, the Rhino closes in, fires, and the order ends when the Grizzly dies.
+; Case 2: the same click with no arm gives a soldier (E1) a plain Attack. Expected: Attack with the Grizzly as its target.
+; Case 3: an armed E1 clicks an enemy power plant (GAPOWR) at 57,40. Expected: Attack Move with the building as its target.
+; Case 4: an armed E1 clicks the open ground at 62,45. Expected: Attack Move to that cell (nav 62,45, no target), as before.
+; Case 5: an armed E1 holds Ctrl and clicks the ground at 67,47, a ground attack. Expected: Attack Move with that cell as its target and
+;   no destination; the soldier walks into range of the cell and stops there.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/attackmove-object.txt -Width 640 -Height 480 -Seconds 260 -Filter "AUTOTEST   where (HTNK|E1|MTNK|GAPOWR)|AUTOTEST   selected|AUTOTEST   kill|Exception"
+30 scheme Modern
+32 view 60 42
+35 reveal
+40 grantunit HTNK 60 42
+41 grantunit E1 59 44
+42 spawn MTNK 64 48
+50 select HTNK
+52 selected
+54 where HTNK
+56 command AttackMove
+62 windowclick 260 390
+64 where HTNK
+70 where HTNK
+90 where HTNK
+120 where HTNK
+122 where MTNK
+150 select E1
+152 selected
+154 windowclick 260 390
+156 where E1
+170 where E1
+200 kill MTNK
+202 kill HTNK 1
+210 spawn GAPOWR 57 40
+212 select E1
+214 command AttackMove
+216 windowclick 290 165
+218 where E1
+230 where E1
+260 where E1
+280 where GAPOWR
+340 where GAPOWR
+380 where E1
+420 select E1
+422 command AttackMove
+424 windowclick 290 315
+426 where E1
+440 where E1
+460 select E1
+462 command AttackMove
+464 hold 17
+466 windowclick 380 420
+468 release 17
+470 where E1
+500 where E1
+540 quit

@@ -1237,6 +1237,11 @@ void EventClass::Execute(void)
 						}
 						techno->Assign_Target(Data.MegaMission.Target.As_Abstract());
 						techno->Assign_Destination(Data.MegaMission.Destination.As_Abstract());
+
+						// An attack-move on a target alone, with no destination, pursues that target: MegaTarget in gamemd (FootClass::RespondMegaEventMission, 0x4DF0E0).
+						if (foot != NULL && Data.MegaMission.Mission == MISSION_ATTACK_MOVE && !Data.MegaMission.Destination.Is_Valid() && Data.MegaMission.Target.Is_Valid()) {
+							foot->ArchiveTarget = Data.MegaMission.Target.As_Abstract();
+						}
 					}
 				}
 

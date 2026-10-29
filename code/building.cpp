@@ -5672,9 +5672,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			// A structure that packs up into its vehicle announces it when the sale begins.
 			if (undeploys) {
 				Sound_Effect(Class->AuxSound1, PositionCoord);
-				if (House->Is_Player_Control()) {
-					Unit_Voice_Effect(Class->VoiceDeploy);
-				}
+				Queue_Voice(Deploy_Voice());
 			}
 
 			// Selling an absorber lets everyone inside out first.
@@ -7883,6 +7881,21 @@ Cell BuildingClass::Find_Exit_Cell(TechnoClass const * techno) const
 		}
 	}
 	return(CELL_NONE);
+}
+
+
+/// <summary>
+/// The reply to a deploy order or to packing up (BuildingClass::VoiceDeploy, 0x459C20). A structure that gathers and takes in
+/// resources, a Slave Miner or a harvesting refinery, answers with VoiceHarvest while its rally point is on Tiberium.
+/// Any other structure answers as an object does.
+/// </summary>
+VocType BuildingClass::Deploy_Voice(void) const
+{
+	if (ArchiveTarget != NULL && ArchiveTarget->What_Am_I() == RTTI_CELL && ((CellClass const *)ArchiveTarget)->Land_Type() == LAND_TIBERIUM &&
+		Class->IsResourceDestination && Class->IsResourceGatherer && Class->VoiceHarvest != VOC_NONE) {
+		return(Class->VoiceHarvest);
+	}
+	return(BASECLASS::Deploy_Voice());
 }
 
 

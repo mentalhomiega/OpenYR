@@ -49,7 +49,7 @@ The keyboard page refuses a key press that cannot be a binding and says why in i
 
 Those six take a modifier-only binding under any trigger, and the game reads it as held. A binding is one key with its Shift, Control and Alt bits; a modifier-only binding has no key. The page captures it when the last modifier is released with no other key pressed in the chord. The page does not let another command take a modifier-only key, so none of them clashes with a held key.
 
-Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held, and `TechnoClass::Player_Assign_Mission` applies that to a ground click. The notice for Attack move names that chord.
+Ctrl with Shift is already attack-move: gamemd's `ObjectClass::AllSelectedCanAttackForced` (`00731BF0`) passes when the force-fire and force-select keys are held and every selected object can attack-move, and `TechnoClass::Player_Assign_Mission` applies that to any move or attack click (`TechnoClass::ClickedMission`, `006FFBE0`), whatever it names. The notice for Attack move names that chord.
 
 ## New command behaviour
 
