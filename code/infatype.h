@@ -187,6 +187,11 @@ class InfantryTypeClass : public TechnoTypeClass
 		// A deployed soldier with DeployedCrushable=no cannot be crushed by a vehicle while dug in.
 		bool IsDeployedCrushable;
 
+		// A JumpJetTurn=yes jumpjet soldier turns its body toward its target while it hovers and
+		// holds its fire until it has landed or settled. Without it the soldier is drawn facing the
+		// target without turning.
+		bool IsJumpJetTurn;
+
 		// A slave shovels one bail of ore every HarvestRate frames.
 		int HarvestRate;
 		VocType DeploySound;

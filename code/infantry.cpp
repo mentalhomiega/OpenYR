@@ -695,7 +695,7 @@ int InfantryClass::Shape_Number(void) const
 	*/
 	int shapenum = Fetch_Stage() % std::max(Class->DoControls[doit].Count, 1);
 
-	if (Is_JumpJet() && TarCom != NULL) {
+	if (Is_JumpJet() && TarCom != NULL && !Class->IsJumpJetTurn) {
 
 		/*
 		**	If facing makes a difference, then the shape number will be incremented
@@ -2242,6 +2242,11 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 	**	If this unit cannot fire while moving, then bail.
 	*/
 	if (Speed > 0.1 || (NavCom != NULL && Doing != DO_NOTHING && !MasterDoControls[Doing].Interrupt)) {
+		return(FIRE_MOVING);
+	}
+
+	// A JumpJetTurn soldier holds its fire while its jumpjet locomotor is in transit (InfantryClass::GetFireError, 0x51C8B0).
+	if (Is_JumpJet() && Class->IsJumpJetTurn && Locomotion->Is_Moving_Now()) {
 		return(FIRE_MOVING);
 	}
 

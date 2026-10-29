@@ -5338,8 +5338,8 @@ void Run(StepType const & step)
 		for (int index = 0; index < Infantry.Count(); index++) {
 			InfantryClass const * soldier = Infantry[index];
 			if (soldier->IsInLimbo || stricmp(soldier->Class->Name(), step.Argument.c_str()) != 0) continue;
-			DebugString("AUTOTEST   infstate %s at %d,%d doing %d stage %d shape %d facing %d prone %d mission %d height %d fear %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
-				(int)soldier->Doing, soldier->Fetch_Stage(), soldier->Shape_Number(), (int)soldier->PrimaryFacing.Current().As_Dir8(), (int)soldier->IsProne, (int)soldier->Mission, (int)soldier->HeightAGL, (int)soldier->Fear);
+			DebugString("AUTOTEST   infstate %s at %d,%d doing %d stage %d shape %d facing %d prone %d mission %d height %d fear %d jjturn %d tardir %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
+				(int)soldier->Doing, soldier->Fetch_Stage(), soldier->Shape_Number(), (int)soldier->PrimaryFacing.Current().As_Dir8(), (int)soldier->IsProne, (int)soldier->Mission, (int)soldier->HeightAGL, (int)soldier->Fear, (int)soldier->Class->IsJumpJetTurn, soldier->TarCom != NULL ? (int)soldier->Direction(soldier->TarCom).As_Dir8() : -1);
 		}
 	} else if (step.Command == "unitstate") {
 		// unitstate <TypeID>: for each vehicle of that type, its house, cell, mission, team and whether its DeploysInto structure fits where it stands.
