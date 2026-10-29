@@ -20,6 +20,8 @@ A command runs once the game frame reaches its frame, in file order.
 | `hotkey <key>` | Writes the name of the command that key is bound to, or `none`. A letter or a single digit is read as that character; any other number is a virtual-key code, plus 256 for Shift, 512 for Control and 1024 for Alt |
 | `chrono <frames>` | Starts the chronoshift screen effect for that many frames per swirl, as the Chrono Screen Effect trigger action does |
 | `select <TypeID>` | Selects every object of that type the player controls: the player's house, and any house the map marks `PlayerControl=yes` |
+| `selectadd <TypeID>` | Adds the player's objects of that type, structures included, to the selection, as a shift-click would |
+| `loadgems <TypeID>` | Puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type. It logs how much each holds |
 | `produce <TypeID>` | Starts building that type, as a click on its cameo does. A type the house may not build has no cameo, so it is logged and not started |
 | `place <TypeID>` | Places the finished structure on the first legal cell found around the player's construction yard; a finished vehicle, aircraft or infantryman is released from its factory as the sidebar does |
 | `placeat <TypeID> x y` | Places the finished structure on that cell through the same placement event as `place`, and writes `queued` or `not legal` for the cell |

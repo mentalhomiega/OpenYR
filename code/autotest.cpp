@@ -4310,6 +4310,15 @@ void Run(StepType const & step)
 				DebugString("AUTOTEST   load %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
 			}
 		}
+	} else if (step.Command == "loadgems") {
+		// loadgems <TypeID>: puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type.
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass * techno = Technos[index];
+			if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+				techno->Storage.Increase_Amount(techno->TClass->Capacity / 4, 1);
+				DebugString("AUTOTEST   loadgems %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+			}
+		}
 	} else if (step.Command == "canrepair") {
 		BuildingClass const * building = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Cell_Building();
 		if (building != NULL) {
