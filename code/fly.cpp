@@ -916,7 +916,7 @@ void FlyLocomotionClass::Rotation_AI(void)
  *                                                                                             *
  * INPUT:   none                                                                               *
  *                                                                                             *
- * OUTPUT:  Has the helicopter reached flight level now?                                       *
+ * OUTPUT:  Always true: the take-off state ends on the first frame, as in gamemd.            *
  *                                                                                             *
  * WARNINGS:   none                                                                            *
  *                                                                                             *
@@ -925,7 +925,6 @@ void FlyLocomotionClass::Rotation_AI(void)
  *=============================================================================================*/
 bool FlyLocomotionClass::Process_Take_Off(void)
 {
-	bool took_off = false;
 	int height = LinkedTo->HeightAGL;
 	if (!LinkedTo->IsOnBridge && Map[(Coord const &)LinkedTo->PositionCoord].IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 		height -= BRIDGE_LEPTON_HEIGHT;
@@ -937,11 +936,10 @@ bool FlyLocomotionClass::Process_Take_Off(void)
 		landing_altitude = flyctrl->Landing_Altitude();
 	}
 
-	if (height >= FlightLevel) {
-		IsTakingOff = false;
-		IsLanding = false;
-		took_off = true;
-	}
+	// gamemd ends the take-off state on the first frame (0x4CE680). The climb and the speed-up that follow belong to the
+	// flight logic, so the aircraft flies off while it climbs.
+	IsTakingOff = false;
+	IsLanding = false;
 
 	int relative_height = height - landing_altitude;
 	int relative_flight_level = FlightLevel - landing_altitude;
@@ -954,7 +952,7 @@ bool FlyLocomotionClass::Process_Take_Off(void)
 		TargetSpeed = 1;
 	}
 
-	return(took_off);
+	return(true);
 }
 
 

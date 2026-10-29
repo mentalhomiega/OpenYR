@@ -10889,9 +10889,11 @@ void TechnoClass::Rocking_AI(void)
 	bool sideways_beyond_right_angle = AngleRotatedSideways > DEG_TO_RAD(90) || AngleRotatedSideways < -DEG_TO_RAD(90);
 	bool const linked = DirectRockerLinkedUnit != NULL;
 
+	// A sinking object tips by 0.01 a frame, the way its body faces (TechnoClass, 0x70B570).
 	if (IsSinking) {
-		if (AngleRotatedForwards < (float)DEG_TO_RAD(45)) {
-			AngleRotatedForwards += 0.03;
+		if (std::fabs(AngleRotatedForwards) < (float)DEG_TO_RAD(45)) {
+			int const facing = PrimaryFacing.Current().As_Dir8();
+			AngleRotatedForwards += (facing >= 1 && facing <= 5) ? 0.01 : -0.01;
 		}
 		return;
 	}
@@ -10899,6 +10901,11 @@ void TechnoClass::Rocking_AI(void)
 	if (IsRocking) {
 		AngleRotatedForwards += RockingForwardsPerFrame;
 		AngleRotatedSideways += RockingSidewaysPerFrame;
+		// A crashing balloon hover object cannot roll past 45 degrees either way or pitch past 45 degrees nose down.
+		if (TClass->IsBalloonHover) {
+			AngleRotatedForwards = std::max(AngleRotatedForwards, (float)-DEG_TO_RAD(45));
+			AngleRotatedSideways = std::clamp(AngleRotatedSideways, (float)-DEG_TO_RAD(45), (float)DEG_TO_RAD(45));
+		}
 		return;
 	}
 

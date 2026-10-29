@@ -419,7 +419,9 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		*/
 		Matrix3D matrix;
 		matrix = Locomotion->Shadow_Matrix(&key);
-		Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
+		if (!IsSinking) {
+			Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
+		}
 
 		((AircraftClass &)*this).HeightAGL = height;
 		((AircraftClass &)*this).IsOccupyingCell = occupies_cell;

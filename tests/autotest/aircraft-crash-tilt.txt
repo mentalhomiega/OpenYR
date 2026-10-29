@@ -1,0 +1,29 @@
+; Tilt of a sinking destroyer and of a crashing aircraft. gamemd's rocking step (TechnoClass 0x70B570) tips a sinking object
+; forwards 0.01 radian a frame, up to 45 degrees, one way or the other by which way its body faces (north is the back-tilting
+; side). A crashing object gains its rocking rates every frame; only a BalloonHover type is held to 45 degrees sideways either
+; way, and forwards only down to -45 degrees. The ini overlay makes the Harrier a BalloonHover type, since the Kirov, the only stock one,
+; is a vehicle.
+; The rock lines give the tilt in radians. Observed on 2026-10-29: the destroyer's forwards tilt moves by exactly 0.01 a frame
+; (0.03 before the fix); the Harrier's sideways tilt stops at -0.78539 while its forwards tilt keeps growing, since gamemd bounds
+; the forwards tilt only on the nose-down side (before the fix the sideways tilt ran on without limit too).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/aircraft-crash-tilt.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST   rock|Exception"
+10 rules E:/Claude ra2 decomp/src-agent27/tests/autotest/aircraft-crash-tilt.ini
+30 own DEST 86 70
+31 grantunit ORCA 86 66
+35 move ORCA 86 62
+60 hit ORCA:AP 9000
+61 rock ORCA
+64 rock ORCA
+68 rock ORCA
+72 rock ORCA
+76 rock ORCA
+80 rock ORCA
+84 rock ORCA
+150 rock DEST
+160 kill DEST 1
+166 rock DEST
+170 rock DEST
+180 rock DEST
+200 rock DEST
+220 rock DEST
+300 quit
