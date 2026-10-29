@@ -1,0 +1,26 @@
+; Two infantry (E1) go into a Yuri Bio Reactor (YAPOWR at 60,20) and come out again, and one E2 is ground by a
+; Yuri's Grinder (YAGRND at 70,58). The rules mod names EnterBioReactorSound SlaveMinerDeploy, LeaveBioReactorSound
+; TextBleep and EnterGrinderSound MIGMissionAborted, so each play writes a "Sound:" line.
+; gamemd's InfantryClass arrival (0x51A30A) plays EnterBioReactorSound once for each infantry that goes in, at the
+; infantry's own position and only when the structure is InfantryAbsorb. BuildingClass::Mission_Unload (0x44DBCF)
+; plays LeaveBioReactorSound once for each infantry released, at the structure's centre. The grinder plays
+; EnterGrinderSound at the grinding object's position (InfantryClass arrival, 0x5198C9).
+; Expected: two "Sound: SlaveMinerDeploy at 60,21" lines, where the soldiers stand as they go in. The reactor's
+; centre is 61,21, so before the fix both lines read 61,21. Two "Sound: TextBleep at 61,21" lines as both come out,
+; and one "Sound: MIGMissionAborted at 70,59" as E2 is ground, with its ConscriptDie line at the same cell.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/bio-reactor-grinder-sounds.txt -Mods src-agent14/tests/autotest/enter-leave-sounds-rules -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST|Exception|Sound: SlaveMiner|Sound: TextBleep|Sound: MIG"
+10 command CenterBase
+20 reveal
+25 view 64 40
+30 own YAPOWR 60 20
+31 own YAGRND 70 58
+40 own E1 58 20
+41 own E1 58 21
+42 own E2 66 56
+60 sounds 1
+100 enter E1 60 20
+130 enter E2 70 58
+200 where E1
+200 where E2
+300 unload 60 20
+400 quit

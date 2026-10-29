@@ -9798,7 +9798,8 @@ void BuildingClass::Bunker_Up(FootClass * object)
 	bool const damaged = HealthRatio <= Rule->ConditionYellow;
 	Begin_Anim(BANIM_SPECIAL_ONE, damaged);
 	Begin_Anim(BANIM_SPECIAL_TWO, damaged);
-	Sound_Effect(Rule->BunkerWallsUpSound, Center_Coord());
+	// gamemd plays the walls sounds at the structure's position, not its centre (0x45936F, 0x4594C8, 0x45960D).
+	Sound_Effect(Rule->BunkerWallsUpSound, PositionCoord);
 	Mark(MARK_CHANGE);
 }
 
@@ -9814,7 +9815,7 @@ void BuildingClass::Bunker_Down(void)
 	BunkerLinkedItem->BunkerLinkedItem = NULL;
 	BunkerLinkedItem = NULL;
 	Bunker_Walls_Down_Anims();
-	Sound_Effect(Rule->BunkerWallsDownSound, Center_Coord());
+	Sound_Effect(Rule->BunkerWallsDownSound, PositionCoord);
 	Mark(MARK_CHANGE);
 }
 
@@ -9859,7 +9860,10 @@ bool BuildingClass::Can_Absorb(FootClass const * object) const
 /// </summary>
 void BuildingClass::Absorb(FootClass * object)
 {
-	Sound_Effect(Rule->EnterBioReactorSound, Center_Coord());
+	// gamemd's InfantryClass arrival (0x51A30A) plays this for infantry only, at the infantry's own position.
+	if (object->RTTI == RTTI_INFANTRY) {
+		Sound_Effect(Rule->EnterBioReactorSound, object->Center_Coord());
+	}
 	object->Limbo();
 	Cargo.Attach(object);
 	object->House->Tracking_Absorb(object);
@@ -9885,7 +9889,10 @@ bool BuildingClass::Release_Passenger(void)
 		if (placed) {
 			passenger->House->Tracking_Release(passenger);
 			passenger->Enter_Idle_Mode();
-			Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
+			// gamemd's BuildingClass::Mission_Unload (0x44DBAF) checks the structure's InfantryAbsorb flag, not the passenger's kind.
+			if (Class->IsInfantryAbsorb) {
+				Sound_Effect(Rule->LeaveBioReactorSound, Center_Coord());
+			}
 		} else {
 			delete passenger;
 		}
