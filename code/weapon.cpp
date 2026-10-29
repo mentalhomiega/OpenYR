@@ -278,16 +278,27 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
 	}
 
-	// A weapon with no projectile cannot fire. Threat checks still read its warhead, so it gets the default one.
-	if (Bullet == NULL) {
-		if (WarheadPtr == NULL) {
-			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
+	// A weapon with no projectile or warhead gets the default ones, so it fires without a NULL pointer.
+	// gamemd crashes on a NULL projectile instead (its range test reads the projectile unchecked).
+	bool const no_projectile = Bullet == NULL;
+	bool const no_warhead = WarheadPtr == NULL;
+	if (no_projectile || no_warhead) {
+		// Each rules layer reads every weapon again, so each weapon is logged once per run.
+		static std::set<std::string> logged;
+		if (logged.insert(Name()).second) {
+			if (no_projectile && no_warhead) {
+				DebugString("[%s] has no projectile or warhead; it uses the default projectile and warhead.\n", Name());
+			} else if (no_projectile) {
+				DebugString("[%s] has no projectile (no section, or Projectile= names none); it uses the default projectile.\n", Name());
+			} else {
+				DebugString("[%s] has no warhead (no section, or Warhead= names none); it uses the default warhead.\n", Name());
+			}
 		}
-
-		// Each rules layer reads every weapon again, so the warning is written once per weapon name.
-		static std::set<std::string> warned;
-		if (warned.insert(Name()).second) {
-			DebugString("[%s] has no projectile (no section, or Projectile= names none), so it cannot fire.\n", Name());
+		if (no_projectile) {
+			Bullet = BulletTypeClass::Find_Or_Make("<missing>");
+		}
+		if (no_warhead) {
+			WarheadPtr = WarheadTypeClass::Find_Or_Make("<missing>");
 		}
 	}
 	return(has_section);
@@ -360,9 +371,6 @@ ArmorType Armor_From_Name(char const * name)
  *=============================================================================================*/
 ThreatType WeaponTypeClass::Allowed_Threats(void) const
 {
-	if (Bullet == NULL) {
-		return(THREAT_NORMAL);
-	}
 	if (Bullet->IsAntiVehicle) {
 		return(THREAT_VEHICLES);
 	}
