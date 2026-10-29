@@ -348,10 +348,11 @@ class TechnoClass :	public RadioClass,
 		Point2D RadarPos;
 
 		/*
-		**	This is a list of bits of which houses are spying on this building,
-		**	if in fact this is a building.
+		**	The countries that have spied on this building, if in fact this is a building.
+		**	Every house of a spying country shares the bit, as gamemd's DisplayProductionTo
+		**	does, so a second house of that country also sees what the spy learned.
 		*/
-		HouseSet SpiedBy;
+		CountrySet SpiedBy;
 
 		/*
 		**	If this object is part of a pseudo-team that the player is managing, then
