@@ -10388,6 +10388,17 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		pip_shapes = pips2;
 	}
 
+	/*
+	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
+	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (TClass->SpawnsNumber > 0) {
+		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
+		for (int index = 0; index < TClass->SpawnsNumber; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+
 	if (RTTI == RTTI_BUILDING) {
 		BuildingClass const * building = (BuildingClass const *)this;
 		if (building->Class->IsShowOccupantPips) {
