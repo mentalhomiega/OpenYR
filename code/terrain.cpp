@@ -71,6 +71,7 @@
 #include "incdec.h"
 #include "inline.h"
 #include "lightcon.h"
+#include "overtype.h"
 #include "rect.h"
 #include "rules.h"
 #include "savestream.h"
@@ -1013,9 +1014,11 @@ bool TerrainClass::Unlimbo(Coord const & coord, Dir256 dir)
 		RenderPixelPos += Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY);
 		RenderPixelPos.Y += Class->YDrawFudge;
 
-		if (Class->IsTiberiumSpawn) {
-			Map[coord].Overlay = OVERLAY_NONE;
-			Map[coord].OverlayData = 0;
+		// A terrain object of any kind clears the Tiberium on its cell, as TerrainClass::Unlimbo does (0x71D000).
+		CellClass & cellref = Map[coord];
+		if (cellref.Overlay != OVERLAY_NONE && OverlayTypes[cellref.Overlay]->IsTiberium) {
+			cellref.Overlay = OVERLAY_NONE;
+			cellref.OverlayData = 0;
 		}
 		return(true);
 	}
