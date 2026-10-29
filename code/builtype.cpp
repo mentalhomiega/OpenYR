@@ -268,6 +268,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	RoofDeployingAnim(NULL),
 	UnderDoorAnim(NULL),
 	UnderRoofDoorAnim(NULL),
+	RubbleShape(NULL),
 	DoorAnim(NULL),
 	SpecialZOverlay(NULL),
 	SpecialZOverlayZAdjust(0),
@@ -1132,6 +1133,14 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 		_makepath(fullname, NULL, NULL, buffer, ".SHP");
 		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
 		UnderDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+	}
+
+	RubbleShape = NULL;
+	ArtINI.Get_String(Graphic_Name(), "Rubble", "", buffer, sizeof(buffer));
+	if (strlen(buffer) != 0) {
+		_makepath(fullname, NULL, NULL, buffer, ".SHP");
+		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
+		RubbleShape = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderRoofDoorAnim", "", buffer, sizeof(buffer));
@@ -2459,6 +2468,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	// RoofDeployingAnim -- artwork, fetched from the mix files again as this loads.
 	// UnderDoorAnim
 	// UnderRoofDoorAnim
+	// RubbleShape
 	// DoorAnim
 	// SpecialZOverlay
 	stream.Serialize(SpecialZOverlayZAdjust);
@@ -2938,6 +2948,12 @@ bool BuildingTypeClass::Get_Rubble_Image(ShapeSet const * & image, int & frame, 
 {
 	if (!IsLeaveRubble) {
 		return(false);
+	}
+	if (RubbleShape != NULL) {
+		// The shadow of an art-file rubble shape is reported as absent, though its frame is still set (BuildingTypeClass::Get_Rubble_Image, 0x45F1D0).
+		image = RubbleShape;
+		frame = shadow ? RubbleShape->Get_Count() / 2 : 0;
+		return(!shadow);
 	}
 	image = (ShapeSet const *)Get_Image_Data();
 	if (image == NULL || image->Get_Count() / 2 <= 3) {

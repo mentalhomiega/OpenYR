@@ -674,7 +674,7 @@ RulesClass::RulesClass(void) :
 	PlayerJoined(VOC_NONE),
 	Construction(VOC_NONE),
 	CreditTicks(),
-	CrumbleSound(VOC_NONE),
+	BuildingDieSound(VOC_NONE),
 	BuildingSlam(VOC_NONE),
 	RadarOn(VOC_NONE),
 	RadarOff(VOC_NONE),
@@ -1227,7 +1227,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		PlayerJoined = ini.Get_VocType(AUDIOVISUAL, "PlayerJoined", PlayerJoined);
 		Construction = ini.Get_VocType(AUDIOVISUAL, "Construction", Construction);
 		CreditTicks = ini.Get_VocType_List(ini, AUDIOVISUAL, "CreditTicks", CreditTicks);
-		CrumbleSound = ini.Get_VocType(AUDIOVISUAL, "CrumbleSound", CrumbleSound);
+		// CrumbleSound is the Tiberian Sun name of this key; Yuri's Revenge reads BuildingDieSound.
+		BuildingDieSound = ini.Get_VocType(AUDIOVISUAL, "CrumbleSound", BuildingDieSound);
+		BuildingDieSound = ini.Get_VocType(AUDIOVISUAL, "BuildingDieSound", BuildingDieSound);
 		BuildingSlam = ini.Get_VocType(AUDIOVISUAL, "BuildingSlam", BuildingSlam);
 		RadarOn = ini.Get_VocType(AUDIOVISUAL, "RadarOn", RadarOn);
 		RadarOff = ini.Get_VocType(AUDIOVISUAL, "RadarOff", RadarOff);
@@ -3174,7 +3176,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PlayerJoined);
 	stream.Serialize(Construction);
 	stream.Serialize(CreditTicks);
-	stream.Serialize(CrumbleSound);
+	stream.Serialize(BuildingDieSound);
 	stream.Serialize(BuildingSlam);
 	stream.Serialize(RadarOn);
 	stream.Serialize(RadarOff);

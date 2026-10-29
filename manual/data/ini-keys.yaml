@@ -6537,6 +6537,24 @@ BuildingDamageSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BuildingDieSound:
+  key: BuildingDieSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: BuildingDieSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BuildingDrop:
   key: BuildingDrop
   scopes:
@@ -10130,7 +10148,7 @@ CrumbleSound:
     _provenance:
       default_candidate: none
       declared_in: RulesClass
-      member: CrumbleSound
+      member: BuildingDieSound
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -32689,6 +32707,24 @@ RoughTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+Rubble:
+  key: Rubble
+  scopes:
+  - applies_to:
+    - BuildingType
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: BuildingTypeClass
+      member: null
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Ruggedness:
   key: Ruggedness
   scopes:
@@ -39350,6 +39386,23 @@ Target:
       source: code/session.cpp
       guard: null
     level: SessionClass
+TargetCoordOffset:
+  key: TargetCoordOffset
+  scopes:
+  - applies_to: *id005
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: 0,0,0
+      declared_in: BuildingTypeClass
+      member: TargetCoordOffset
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 TargetDistanceCoefficient:
   key: TargetDistanceCoefficient
   scopes:
