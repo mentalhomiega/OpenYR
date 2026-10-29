@@ -285,7 +285,7 @@ void VeinholeMonsterClass::AI(void)
 		break;
 
 	case ALERT:
-		if (LogicTimer == 0 && DesiredState != DYING) {
+		if (LogicTimer == 0) {
 			if (!Map.Is_Something_Nearby(CellID, 2) && DesiredState == ALERT) {
 				DesiredState = IDLE;
 				Control.Set_Step(1);
@@ -293,13 +293,10 @@ void VeinholeMonsterClass::AI(void)
 					Control.Set_Stage(0);
 				}
 			}
-		} else if (DesiredState != DYING) {
-			DesiredState = ATTACKING;
-			Control.Set_Step(1);
-			if (Control.Fetch_Stage() < 0) {
-				Control.Set_Stage(0);
-			}
 		} else {
+			if (DesiredState != DYING) {
+				DesiredState = ATTACKING;
+			}
 			Control.Set_Step(1);
 			if (Control.Fetch_Stage() < 0) {
 				Control.Set_Stage(0);
