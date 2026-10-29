@@ -3443,7 +3443,7 @@ bool UnitClass::Can_Crush(ObjectClass const * object) const
 	*/
 	if (techno->RTTI == RTTI_INFANTRY) {
 		InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
-		if (soldier->Is_Deployed() && !soldier->Class->IsDeployedCrushable) return(false);
+		if (soldier->IsDugInSafe) return(false);
 	}
 	return(true);
 }

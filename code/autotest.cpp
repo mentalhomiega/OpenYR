@@ -2579,6 +2579,24 @@ static void Waypoint_Probe_Step(StepType const & step)
 
 // presentdigest, drawdigest, gpureplay, gpucheck and drawprobe switch the drawing checks on and off. True when
 // the step was one of them.
+// crushcheck <CrusherTypeID> <SoldierTypeID>: for each vehicle of the first type and each soldier of the second, whether the vehicle may crush the soldier
+// (UnitClass::Can_Crush), with the soldier's sequence and its dug-in crush protection.
+static void Crush_Check_Step(StepType const & step)
+{
+	std::string const & crusher = step.Argument;
+	std::string const victim = step.Line.substr(step.Line.rfind(' ') + 1);
+	for (int unit_index = 0; unit_index < Units.Count(); unit_index++) {
+		UnitClass const * unit = Units[unit_index];
+		if (unit->IsInLimbo || stricmp(unit->Class->Name(), crusher.c_str()) != 0) continue;
+		for (int index = 0; index < Infantry.Count(); index++) {
+			InfantryClass const * soldier = Infantry[index];
+			if (soldier->IsInLimbo || stricmp(soldier->Class->Name(), victim.c_str()) != 0) continue;
+			DebugString("AUTOTEST   crushcheck %s %s doing %d protected %d cancrush %d\n", unit->Class->Name(), soldier->Class->Name(), (int)soldier->Doing, (int)soldier->IsDugInSafe, (int)unit->Can_Crush(soldier));
+		}
+	}
+}
+
+
 static bool Draw_Check_Step(StepType const & step)
 {
 	if (step.Command == "presentdigest") {
@@ -2688,6 +2706,10 @@ void Run(StepType const & step)
 	}
 	if (step.Command == "hutclick") {
 		Hut_Click_Step(step);
+		return;
+	}
+	if (step.Command == "crushcheck") {
+		Crush_Check_Step(step);
 		return;
 	}
 	if (step.Command == "settarget") {

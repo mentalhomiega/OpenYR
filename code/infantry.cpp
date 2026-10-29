@@ -271,6 +271,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	IsZoneCheat(false),
 	WasSelected(false),
 	ShouldDeploy(false),
+	IsDugInSafe(false),
 	LandState(2),
 	Fear(FEAR_NONE)
 {
@@ -4335,6 +4336,14 @@ void InfantryClass::Doing_AI(void)
 	}
 
 	if (Doing == DO_NOTHING || Fetch_Stage() >= Class->DoControls[Doing].Count) {
+		if (!Class->IsDeployedCrushable) {
+			if (Doing == DO_DEPLOY) {
+				IsDugInSafe = true;
+			} else if (Doing == DO_UNDEPLOY) {
+				IsDugInSafe = false;
+			}
+		}
+
 		switch (Doing) {
 			default:
 				if (ProneStruggleTimer == 0) {
@@ -4749,6 +4758,7 @@ void InfantryClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsZoneCheat);
 	stream.Serialize(WasSelected);
 	stream.Serialize(ShouldDeploy);
+	stream.Serialize(IsDugInSafe);
 	stream.Serialize(LandState);
 	stream.Serialize(ProneStruggleTimer);
 	stream.Serialize(LookTimer);
