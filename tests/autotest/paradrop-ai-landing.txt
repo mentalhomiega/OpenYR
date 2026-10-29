@@ -1,0 +1,38 @@
+; The computer fires its paradrop super (ParaDropSpecial) with no team on its plane. Each paratrooper lands on
+; Hunt, which InfantryClass::SpawnParachuted queues for a computer soldier (gamemd 0x521760).
+; Expected: the where E2 lines with limbo 0 after the landing show mission Hunt. The tank team TSTTANKT in
+; paradrop-team-liberate.ini gives the super its leader, which Pick_Target_By_Type needs before the computer fires.
+; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/paradrop-ai-landing.txt -Width 800 -Height 600 -Seconds 150 -Filter "AUTOTEST   where E2|AUTOTEST wait|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+50 teamini E:\Claude ra2 decomp\src-agent14\tests\autotest\paradrop-team-liberate.ini
+55 spawn MTNK 48 92
+60 team TSTTANKT
+62 grantai ParaDropSpecial
+63 chargeai ParaDropSpecial 100
+70 waitowns Africans PDPLANE 1 900
+100 where PDPLANE
+110 where E2
+130 where PDPLANE
+140 where E2
+180 where PDPLANE
+190 where E2
+230 where PDPLANE
+240 where E2
+280 listhouse Africans
+290 where E2
+330 where PDPLANE
+340 where E2
+380 listhouse Africans
+390 where E2
+430 where PDPLANE
+440 where E2
+480 listhouse Africans
+490 where E2
+530 where PDPLANE
+540 where E2
+580 listhouse Africans
+590 where E2
+630 teams
+640 quit
