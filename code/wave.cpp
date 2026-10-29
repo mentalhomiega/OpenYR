@@ -18,6 +18,8 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "_zbuffer.h"
+#include "autotest.h"
+#include "dbgprint.h"
 #include "ccrand.h"
 #include "cell.h"
 #include "combat.h"
@@ -85,8 +87,8 @@ static bool Is_Within_Wave_Minimum(Coord const & source_coord, Coord const & tar
 /// while a laser wave springs up at its full length straight away.
 /// </summary>
 /// <param name="source">The object that is firing the wave.</param>
-/// <param name="target">The object that the wave is aimed at.</param>
-WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target) :
+/// <param name="target">The object or cell that the wave is aimed at.</param>
+WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, AbstractClass * target) :
 	BASECLASS(),
 	Target(target),
 	Type(type),
@@ -108,6 +110,10 @@ WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, Tec
 
 	Create_ID();
 	Waves.Add(this);
+
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST wave type %d from %d,%d,%d to %d,%d,%d at %s\n", (int)type, source_coord.X, source_coord.Y, source_coord.Z, target_coord.X, target_coord.Y, target_coord.Z, target == NULL ? "none" : (target->RTTI == RTTI_CELL ? "cell" : "object"));
+	}
 
 	if (!_tables_calculated) {
 		Init_Statics();

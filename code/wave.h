@@ -21,7 +21,7 @@ class WaveClass : public ObjectClass
 		typedef ObjectClass BASECLASS;
 
 	public:
-		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, TechnoClass * target);
+		WaveClass(Coord const & source_coord, Coord const & target_coord, TechnoClass * source, WaveType type, AbstractClass * target);
 		WaveClass(void);
 		virtual ~WaveClass(void) override;
 
@@ -66,10 +66,10 @@ class WaveClass : public ObjectClass
 
 	private:
 		/*
-		 * This is the object that the wave was fired at. A sonic wave stays tethered to it,
+		 * This is the object or cell that the wave was fired at. A sonic wave stays tethered to it,
 		 * and stops growing and fades once the firer stops aiming at it or it strays too far.
 		 */
-		TechnoClass * Target;
+		AbstractClass * Target;
 
 		/*
 		 * This specifies what kind of wave this is. It selects the drawing and logic

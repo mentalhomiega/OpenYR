@@ -5615,12 +5615,12 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 
 				if (weapon->IsSonic) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target);
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
 				}
 
-				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL && target->Is_Techno()) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
+				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
+					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
 				}
 
 				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
@@ -5647,7 +5647,18 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				 */
 				if (weapon->IsLaser) {
 					BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-					Laser_Zap(target, which, weapon, COORD_NONE);
+					// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
+					WeaponTypeClass const * beam_weapon = weapon;
+					if (building != NULL) {
+						WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
+						if (turret_weapon != NULL) {
+							beam_weapon = turret_weapon;
+						}
+					}
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
+					}
+					Laser_Zap(target, which, beam_weapon, COORD_NONE);
 					if (building != NULL) {
 						building->BuildingStage.Set_Stage(0);
 						building->BuildingStage.Set_Rate(0);
