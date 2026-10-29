@@ -2418,7 +2418,10 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 		Update_Laser_Fence_Connections(true);
 	}
 
-	Sound_Effect(Rule->CrumbleSound, PositionCoord);
+	// A type with a DieSound of its own plays that in place of the shared sound (BuildingClass::Destory, 0x4415F0).
+	if (Class->DieSound.Count() == 0) {
+		Sound_Effect(Rule->BuildingDieSound, PositionCoord);
+	}
 
 	if (Class->Width() >= 2 && Class->Height() >= 2) {
 		if (Class->Width() > 2) {

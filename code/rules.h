@@ -1199,9 +1199,10 @@ class RulesClass
 		TypeList<int> CreditTicks;
 
 		/*
-		 * This is the sound effect played as a building crumbles when it is destroyed.
+		 * This is the sound effect played as a building crumbles when it is destroyed, unless
+		 * its type names a DieSound of its own.
 		 */
-		VocType CrumbleSound;
+		VocType BuildingDieSound;
 
 		/*
 		 * This is the sound effect played as a newly completed building is placed onto
