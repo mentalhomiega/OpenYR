@@ -9280,9 +9280,20 @@ void BuildingClass::Remove_Damage_Fires(void)
 
 /// <summary>
 /// Drops every reference this building holds to an animation that is being removed. When the
-/// animation filled one of the building's slots, the animation that follows it starts: a repair
-/// bay starts the next stage of its repair animation, and a factory, grinder or repair bay
-/// returns to its active or idle animation.
+/// animation filled one of the building's slots, the animation that follows it starts, as
+/// BuildingClass::PointerExpired (0x44E8F0) and BuildingClass::AnimExpired (0x451B40) do:
+///
+///   PRODUCTION      hands back the idle animation, whether it ended or was cut short.
+///   SPECIAL_ONE     on a grinder, hands back ACTIVE_ONE, whether it ended or was cut short.
+///                   On a repair bay, starts SPECIAL_TWO while a unit is on the pad and the building
+///                   is on its repair mission, and the idle animation otherwise.
+///                   On another building with a delayed shot, starts ACTIVE_ONE if it ended.
+///   SPECIAL_THREE   on a repair bay, starts the idle animation if it ended.
+///   SUPER_TWO       starts SUPER_THREE if it ended.
+///   SUPER_FOUR      starts SUPER_ONE if it ended.
+///
+/// Ending means that the animation played to its last frame, which AnimClass flags as TimeToDie.
+/// An animation that is cut short in any other way leaves the slot empty.
 /// </summary>
 /// <param name="anim">The animation that is going away.</param>
 void BuildingClass::Detach_Anim(AnimClass * anim)
@@ -9296,30 +9307,56 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 		for (int i = 0; i < BANIM_COUNT; i++) {
 			if (Anims[i] == anim) {
 				Anims[i] = NULL;
-				if (i == BANIM_SPECIAL_ONE && Class->IsCanUnitRepair) {
-					if (In_Radio_Contact() && Mission == MISSION_REPAIR) {
-						Begin_Anim(BANIM_SPECIAL_TWO, HealthRatio <= Rule->ConditionYellow);
-					}
-				}
+				bool const damaged = HealthRatio <= Rule->ConditionYellow;
 
-				/*
-				**	An animation that ran its course hands the building back to the one it replaced,
-				**	as BuildingClass::PointerExpired (0x44E8F0) does. The production animation, which a
-				**	factory or yard plays instead of its idle one, gives the idle animation back when it
-				**	ends. A grinder that has finished chewing goes back to its active animation.
-				*/
+				// PointerExpired plays these two before AnimExpired looks at the animation, so neither asks whether it ended.
 				if (!IsInLimbo && i == BANIM_PRODUCTION) {
-					Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_IDLE, damaged);
 				}
 				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsGrinding) {
-					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_ACTIVE_ONE, damaged);
 				}
-				if (!IsInLimbo && i == BANIM_SPECIAL_ONE && Class->IsAnimDelayedFire && !Class->IsCanUnitRepair) {
-					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+
+				// AnimExpired answers only to the animations a building started itself.
+				if (!anim->IsBuildingAnim) {
+					break;
 				}
-				// The idle animation returns when this one ends, as gamemd's AnimExpired (0x451B40) does, but not during a repair (status 2 is DURING in Do_MISSION_REPAIR).
-				if (!IsInLimbo && i == BANIM_SPECIAL_THREE && Class->IsCanUnitRepair && !(Mission == MISSION_REPAIR && Status == 2)) {
-					Begin_Anim(BANIM_IDLE, HealthRatio <= Rule->ConditionYellow);
+				switch (i) {
+					case BANIM_SPECIAL_ONE:
+						if (Class->IsCanUnitRepair) {
+							// A bay with a unit on the pad goes on to the repairing animation. With no unit there, as when the
+							// unit left or was lost while the doors opened, the idle animation returns (0x451BA4 to 0x451D07).
+							if (In_Radio_Contact() && Mission == MISSION_REPAIR) {
+								Begin_Anim(BANIM_SPECIAL_TWO, damaged);
+							} else if (!IsInLimbo) {
+								Begin_Anim(BANIM_IDLE, damaged);
+							}
+						} else if (Class->IsAnimDelayedFire && anim->TimeToDie && !IsInLimbo) {
+							// The charge animation of a delayed shot gives the active animation back, for the garrisoned form while soldiers are inside (0x451C32).
+							Begin_Anim(BANIM_ACTIVE_ONE, damaged, 0, true);
+						}
+						break;
+
+					case BANIM_SPECIAL_THREE:
+						if (Class->IsCanUnitRepair && anim->TimeToDie && !IsInLimbo) {
+							Begin_Anim(BANIM_IDLE, damaged);
+						}
+						break;
+
+					case BANIM_SUPER_TWO:
+						if (anim->TimeToDie && !IsInLimbo) {
+							Begin_Anim(BANIM_SUPER_THREE, damaged);
+						}
+						break;
+
+					case BANIM_SUPER_FOUR:
+						if (anim->TimeToDie && !IsInLimbo) {
+							Begin_Anim(BANIM_SUPER_ONE, damaged);
+						}
+						break;
+
+					default:
+						break;
 				}
 				break;
 			}

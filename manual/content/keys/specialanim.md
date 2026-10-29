@@ -20,10 +20,10 @@ The three slots are not interchangeable. Which of them a structure uses depends 
 On a `UnitRepair=yes` depot the three slots are one sequence around [the repair cycle](/systems/repair/#one-step-at-a-time):
 
 - The **first** slot starts when the depot begins repairing a vehicle. Active slot one stops at the same moment.
-- The **second** slot starts when the first slot's animation plays to its end, but only if the depot is still on its repair mission and still in contact with the vehicle. It uses the damaged form when the depot is at or below [`ConditionYellow`](/keys/conditionyellow/).
+- The **second** slot starts when the first slot's animation ends, but only if the depot is still on its repair mission and still in contact with the vehicle. It uses the damaged form when the depot is at or below [`ConditionYellow`](/keys/conditionyellow/). When the depot has lost the vehicle by then, or has left its repair mission, the idle animation starts instead.
 - The **third** slot starts when the visit ends: the vehicle left, the repair finished, or the house could not pay for the next step. At that moment the second slot stops and active slot one starts again.
 
-When the third slot's animation ends, the idle animation starts again, unless a new repair has begun by then.
+When the third slot's animation plays to its end, the idle animation starts again, even when a new repair has begun by then.
 
 A depot can also leave its repair mission while the second slot is still running. On its next update it starts the third slot and stops the second, but active slot one stays empty.
 
