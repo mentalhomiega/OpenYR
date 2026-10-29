@@ -1,5 +1,11 @@
-; Allied building life cycle on XMP29U2: a GAWEAP builds up after its placement, is hurt to yellow and red health, is sold; a GAPILE is destroyed.
-; The banimstate and bshape lines give the stage, state and frame drawn; the screenshots (record every 3 frames) show the art.
+; Allied building life cycle on XMP29U2. A GAWEAP is built, placed and plays its build-up (25 stages at 2 frames each, so
+; gamemd's BuildingTypeClass::LoadBuildup rate of BuildupTime * 900 / stages, cut to a whole number), is hurt to yellow
+; (shape 1, the damaged body, once health is at or below ConditionYellow) and to red, is sold while red, and a GAPILE is
+; destroyed. Expected, from gamemd (BuildingClass::DrawIt 0x43D290, GetCurrentFrame 0x43EF90, Mission_Selling 0x449C30,
+; Destory 0x4415F0): the stage rises 0 to 24 while bstate is 0 and the structure then goes to bstate 1; a sale shows the
+; same stages backwards (shape 24 down to 0, mission 19) with the undamaged build-up frames even at red health, and
+; ends the damage fires when it begins; the destroyed structure plays BuildingGenericDie once and its explosions follow.
+; The sounds lines log every sound played in the placement, sale and destruction windows. Screenshots every 3 frames show the art.
 ; Run: scripts/run_autotest.ps1 -Build agent14 -Script src-agent14/tests/autotest/building-states-allied.txt -Settings "[Options]<newline>DebugMode=yes" -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 150 -ShotDir scratch-agent/building-states-anims/allied -Filter "AUTOTEST|Exception|Sound:"
 20 own GACNST 50 30
 30 command CenterBase
@@ -38,7 +44,6 @@
 280 banimstate GAWEAP
 282 command ScreenCapture
 310 command ScreenCapture
-320 hurt GAWEAP 100
 322 command ScreenCapture
 329 sounds 1
 330 sell 50 27
