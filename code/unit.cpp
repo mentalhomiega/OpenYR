@@ -3819,7 +3819,6 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 					}
 
 					if (passenger != NULL) {
-						Play_Transport_Sound(false);
 						/// The 8 grid wrap is deferred until each facing is tested.
 						FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
 						FacingType nextface = toface;
@@ -3850,6 +3849,8 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 
 						if (placed) {
+							// gamemd's UnitClass::Mission_Unload (0x73DC67) plays this only once the passenger is placed.
+							Play_Transport_Sound(false);
 							passenger->Assign_Mission(MISSION_MOVE);
 							passenger->Assign_Destination(&Map[newcell]);
 							if (Team != NULL) {
