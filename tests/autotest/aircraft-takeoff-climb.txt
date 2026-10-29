@@ -1,0 +1,19 @@
+; Harrier take-off: a Harrier sits on the ground by the Air Force Command and is ordered 15 cells south. The speed probe logs
+; its height, speed and mission every frame from the order. gamemd clears the taking-off state on the first frame of the take-off
+; (FlyLocomotionClass take-off step 0x4CE680), so the Harrier gains speed at once while it climbs 20 leptons a frame; it does
+; not hover up to half its flight level before it moves. Observed on 2026-10-29: from the order at frame 335 the current speed
+; rises 0.1 a frame (0.2 at frame 338, 1.0 at frame 347) while the height climbs 20 a frame to 1500; before the fix the speed stayed 0
+; until the height reached 750 (frame 372).
+; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/aircraft-takeoff-climb.txt -Seconds 120 -Filter "AUTOTEST speed|Exception"
+30 command CenterBase
+40 select AMCV
+45 command DeployObject
+300 own GAPOWR 56 40
+301 own GAPOWR 56 43
+302 own GAAIRC 60 40
+310 grantunit ORCA 60 45
+320 view 60 50
+330 speed ORCA 1
+335 move ORCA 60 60
+420 speed ORCA 0
+430 quit
