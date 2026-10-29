@@ -361,6 +361,9 @@
 #include "_rect.h"
 #include "vox.h"
 #include "_voxel.h"
+#include "_vanim.h"
+#include "vanim.h"
+#include "vanimtype.h"
 #include "voxlib.h"
 #include "motlib.h"
 #include "mixfile.h"
@@ -3028,6 +3031,22 @@ void Run(StepType const & step)
 			shown++;
 		}
 		DebugString("AUTOTEST   liveanims: %d of %d\n", shown, Anims.Count());
+		return;
+	}
+
+	if (step.Command == "vanims") {
+		// vanims [TypeID]: writes each live voxel animation, or only those of the named type, with its position and cell.
+		int shown = 0;
+		for (int index = 0; index < VoxelAnims.Count(); index++) {
+			VoxelAnimClass const * anim = VoxelAnims[index];
+			if (anim == NULL || anim->Class == NULL) continue;
+			if (!step.Argument.empty() && stricmp(anim->Class->Name(), step.Argument.c_str()) != 0) continue;
+			Coord const where = anim->Get_Coord();
+			DebugString("AUTOTEST   vanim frame %d %s at %d,%d,%d cell %d,%d\n", Frame, anim->Class->Name(), where.X, where.Y, where.Z,
+				where.As_Cell().X, where.As_Cell().Y);
+			shown++;
+		}
+		DebugString("AUTOTEST   vanims: %d of %d\n", shown, VoxelAnims.Count());
 		return;
 	}
 
