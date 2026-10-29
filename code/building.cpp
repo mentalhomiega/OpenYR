@@ -9100,7 +9100,7 @@ void BuildingClass::Update_Absorber_Anims(void)
 /// (0x4509D0). The first animation plays while the weapon charges. When it has less than
 /// ChargedAnimTime minutes left to charge, the second one takes over and plays through once.
 /// The third plays for as long as the weapon is ready, and when the weapon is fired and starts
-/// charging again, the fourth plays through once and the first begins again.
+/// charging again, the third is removed, the fourth plays through once and the first begins again.
 /// </summary>
 void BuildingClass::Update_Super_Anims(void)
 {
@@ -9132,11 +9132,11 @@ void BuildingClass::Update_Super_Anims(void)
 			}
 		}
 	} else if (Class->ChargedAnimTime < super->Control.Value() * 0.0011111111f) {
-		if (Anims[BANIM_SUPER_THREE] != NULL || Anims[BANIM_SUPER_TWO] != NULL) {
-			End_Anim(BANIM_SUPER_TWO);
+		// Only the ready animation is replaced by the fourth; a second animation still playing runs to its end (0x4509D0).
+		if (Anims[BANIM_SUPER_THREE] != NULL) {
 			End_Anim(BANIM_SUPER_THREE);
 			Begin_Anim(BANIM_SUPER_FOUR, damaged);
-		} else if (Anims[BANIM_SUPER_FOUR] == NULL && Anims[BANIM_SUPER_ONE] == NULL) {
+		} else if (Anims[BANIM_SUPER_FOUR] == NULL && Anims[BANIM_SUPER_ONE] == NULL && Anims[BANIM_SUPER_TWO] == NULL) {
 			Begin_Anim(BANIM_SUPER_ONE, damaged);
 		}
 	} else if (Anims[BANIM_SUPER_ONE] != NULL) {
