@@ -297,11 +297,14 @@ void AircraftClass::Init(void)
  *=============================================================================================*/
 bool AircraftClass::Unlimbo(Coord const & coord, Dir256 dir)
 {
+	// A MissileSpawn aircraft keeps the height it is given, as gamemd's AircraftClass::Unlimbo (0x414310) does.
 	Coord ucoord = coord;
-	if (IsALoaner || !Map.In_Local_Radar(coord)) {
-		ucoord.Z = Class->Flight_Level() + Map.Get_Height_GL(coord);
-	} else {
-		ucoord.Z = Map.Get_Height_GL(coord);
+	if (!Class->IsMissileSpawn) {
+		if (IsALoaner || !Map.In_Local_Radar(coord)) {
+			ucoord.Z = Class->Flight_Level() + Map.Get_Height_GL(coord);
+		} else {
+			ucoord.Z = Map.Get_Height_GL(coord);
+		}
 	}
 
 	if (BASECLASS::Unlimbo(ucoord, dir)) {
@@ -1729,8 +1732,9 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 	MissionType mission = (House->Is_Human_Player() || Team || !Is_Weapon_Equipped()) ? MISSION_GUARD : MISSION_GUARD_AREA;
 
+	// A MissileSpawn aircraft takes the landed branch at any height (AircraftClass::EnterIdleMode, 0x4176F0).
 	int landingalt = Landing_Altitude();
-	if (In_Which_Layer() == LAYER_GROUND || HeightAGL <= landingalt) {
+	if (In_Which_Layer() == LAYER_GROUND || HeightAGL <= landingalt || Class->IsMissileSpawn) {
 		if (IsALoaner) {
 			if (Cargo.Is_Something_Attached()) {
 
