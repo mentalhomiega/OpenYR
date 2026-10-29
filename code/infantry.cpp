@@ -1483,11 +1483,6 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 {
 	Sync_Record_Target(*this, target, (unsigned)(uintptr_t)_ReturnAddress());
 
-	// A dug-in soldier that cannot fire while deployed takes no target.
-	if (target != NULL && Is_Deployed() && !Class->IsDeployFire) {
-		return;
-	}
-
 	if (target != TarCom && Strength > 0) {
 		IsFiring = false;
 		if (IsProne) {
@@ -1500,6 +1495,12 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	// Changing the target ends a DirectRocker link on both units (InfantryClass::SetTarget, 0x51B1F0).
 	if (target != TarCom) {
 		Clear_Direct_Rocker_Link();
+	}
+
+	// A dug-in soldier that cannot fire while deployed keeps its target whatever it is told, null included
+	// (InfantryClass::SetTarget, 0x51B1F0).
+	if (Is_Deployed() && !Class->IsDeployFire) {
+		return;
 	}
 
 	Path[0] = FACING_NONE;
