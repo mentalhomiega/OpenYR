@@ -1,0 +1,340 @@
+; A Rhino ordered to force-attack (a Ctrl+click) a neutral GAPILL walled in by each wall type, compared with plain Yuri's Revenge (no Ares).
+; Reference: scratch-agent/yr-ref-walls/RESULT.md, captured from gamemd with CnCNet-Spawner.dll only, the same geometry, a Rhino 120mm (HTNK) on each run.
+; Eight cases, run one after another (the Rhino of a case is killed before the next one is placed); each case lasts 800 frames.
+;   cases 1 to 4: a seven-cell column of GAWALL, NAWALL, GASAND, CAFNCB at x 63, the Rhino at x 56 and the pillbox at x 66, both ends open (x 56 to 66, y 40, 50, 60, 70).
+;   cases 5 to 8: the pillbox at x 86 with all eight neighbours walled in GAWALL, NAWALL, GASAND, CAFNCB, the Rhino at x 76 (y 40, 50, 60, 70).
+; Plain YR, as seen in screenshots:
+;   column GAWALL: the Rhino drives up to the wall, shoots it, the shells open a gap, then it fires at the pillbox.
+;   column NAWALL: the same (concrete and Soviet wall behave alike).
+;   column GASAND and CAFNCB: the Rhino drives round the end of the segment (a Rhino crushes sandbags and fences) and fires from beside the pillbox.
+;   ring GAWALL and NAWALL: the Rhino stops about six cells out, shoots the ring until it is open and then the pillbox; it does not drive up to the wall.
+;   ring GASAND and CAFNCB: the Rhino drives up to the ring, crushes through it and sits beside the pillbox.
+; where HTNK lines every 30 frames show the cell, mission, destination, target and strength; the cell lines at the end of each case show which wall cells are left.
+; Everything here is an observation, no value is asserted.
+30 command CenterBase
+300 own HTNK 56 40
+301 neutral GAPILL 66 40
+302 ewall GAWALL 63 37
+303 ewall GAWALL 63 38
+304 ewall GAWALL 63 39
+305 ewall GAWALL 63 40
+306 ewall GAWALL 63 41
+307 ewall GAWALL 63 42
+308 ewall GAWALL 63 43
+360 reveal
+370 canfire HTNK 66 40
+380 forceattack HTNK 66 40
+390 where HTNK
+420 where HTNK
+450 where HTNK
+480 where HTNK
+510 where HTNK
+540 where HTNK
+570 where HTNK
+600 where HTNK
+630 where HTNK
+660 where HTNK
+690 where HTNK
+720 where HTNK
+750 where HTNK
+780 where HTNK
+810 where HTNK
+840 where HTNK
+870 where HTNK
+900 where HTNK
+930 where HTNK
+960 where HTNK
+990 where HTNK
+1020 where HTNK
+1050 where HTNK
+1060 cell 63 39
+1060 cell 63 40
+1060 cell 63 41
+1060 cell 66 40
+1080 kill HTNK 1
+1100 own HTNK 56 50
+1101 neutral GAPILL 66 50
+1102 ewall NAWALL 63 47
+1103 ewall NAWALL 63 48
+1104 ewall NAWALL 63 49
+1105 ewall NAWALL 63 50
+1106 ewall NAWALL 63 51
+1107 ewall NAWALL 63 52
+1108 ewall NAWALL 63 53
+1170 canfire HTNK 66 50
+1180 forceattack HTNK 66 50
+1190 where HTNK
+1220 where HTNK
+1250 where HTNK
+1280 where HTNK
+1310 where HTNK
+1340 where HTNK
+1370 where HTNK
+1400 where HTNK
+1430 where HTNK
+1460 where HTNK
+1490 where HTNK
+1520 where HTNK
+1550 where HTNK
+1580 where HTNK
+1610 where HTNK
+1640 where HTNK
+1670 where HTNK
+1700 where HTNK
+1730 where HTNK
+1760 where HTNK
+1790 where HTNK
+1820 where HTNK
+1850 where HTNK
+1860 cell 63 49
+1860 cell 63 50
+1860 cell 63 51
+1860 cell 66 50
+1880 kill HTNK 1
+1900 own HTNK 56 60
+1901 neutral GAPILL 66 60
+1902 ewall GASAND 63 57
+1903 ewall GASAND 63 58
+1904 ewall GASAND 63 59
+1905 ewall GASAND 63 60
+1906 ewall GASAND 63 61
+1907 ewall GASAND 63 62
+1908 ewall GASAND 63 63
+1970 canfire HTNK 66 60
+1980 forceattack HTNK 66 60
+1990 where HTNK
+2020 where HTNK
+2050 where HTNK
+2080 where HTNK
+2110 where HTNK
+2140 where HTNK
+2170 where HTNK
+2200 where HTNK
+2230 where HTNK
+2260 where HTNK
+2290 where HTNK
+2320 where HTNK
+2350 where HTNK
+2380 where HTNK
+2410 where HTNK
+2440 where HTNK
+2470 where HTNK
+2500 where HTNK
+2530 where HTNK
+2560 where HTNK
+2590 where HTNK
+2620 where HTNK
+2650 where HTNK
+2660 cell 63 59
+2660 cell 63 60
+2660 cell 63 61
+2660 cell 66 60
+2680 kill HTNK 1
+2700 own HTNK 56 70
+2701 neutral GAPILL 66 70
+2702 ewall CAFNCB 63 67
+2703 ewall CAFNCB 63 68
+2704 ewall CAFNCB 63 69
+2705 ewall CAFNCB 63 70
+2706 ewall CAFNCB 63 71
+2707 ewall CAFNCB 63 72
+2708 ewall CAFNCB 63 73
+2770 canfire HTNK 66 70
+2780 forceattack HTNK 66 70
+2790 where HTNK
+2820 where HTNK
+2850 where HTNK
+2880 where HTNK
+2910 where HTNK
+2940 where HTNK
+2970 where HTNK
+3000 where HTNK
+3030 where HTNK
+3060 where HTNK
+3090 where HTNK
+3120 where HTNK
+3150 where HTNK
+3180 where HTNK
+3210 where HTNK
+3240 where HTNK
+3270 where HTNK
+3300 where HTNK
+3330 where HTNK
+3360 where HTNK
+3390 where HTNK
+3420 where HTNK
+3450 where HTNK
+3460 cell 63 69
+3460 cell 63 70
+3460 cell 63 71
+3460 cell 66 70
+3480 kill HTNK 1
+3500 own HTNK 76 40
+3501 neutral GAPILL 86 40
+3502 ewall GAWALL 85 39
+3503 ewall GAWALL 85 40
+3504 ewall GAWALL 85 41
+3505 ewall GAWALL 86 39
+3506 ewall GAWALL 86 41
+3507 ewall GAWALL 87 39
+3508 ewall GAWALL 87 40
+3509 ewall GAWALL 87 41
+3570 canfire HTNK 86 40
+3580 forceattack HTNK 86 40
+3590 where HTNK
+3620 where HTNK
+3650 where HTNK
+3680 where HTNK
+3710 where HTNK
+3740 where HTNK
+3770 where HTNK
+3800 where HTNK
+3830 where HTNK
+3860 where HTNK
+3890 where HTNK
+3920 where HTNK
+3950 where HTNK
+3980 where HTNK
+4010 where HTNK
+4040 where HTNK
+4070 where HTNK
+4100 where HTNK
+4130 where HTNK
+4160 where HTNK
+4190 where HTNK
+4220 where HTNK
+4250 where HTNK
+4260 cell 85 40
+4260 cell 87 40
+4260 cell 86 39
+4260 cell 86 41
+4260 cell 85 39
+4260 cell 86 40
+4280 kill HTNK 1
+4300 own HTNK 76 50
+4301 neutral GAPILL 86 50
+4302 ewall NAWALL 85 49
+4303 ewall NAWALL 85 50
+4304 ewall NAWALL 85 51
+4305 ewall NAWALL 86 49
+4306 ewall NAWALL 86 51
+4307 ewall NAWALL 87 49
+4308 ewall NAWALL 87 50
+4309 ewall NAWALL 87 51
+4370 canfire HTNK 86 50
+4380 forceattack HTNK 86 50
+4390 where HTNK
+4420 where HTNK
+4450 where HTNK
+4480 where HTNK
+4510 where HTNK
+4540 where HTNK
+4570 where HTNK
+4600 where HTNK
+4630 where HTNK
+4660 where HTNK
+4690 where HTNK
+4720 where HTNK
+4750 where HTNK
+4780 where HTNK
+4810 where HTNK
+4840 where HTNK
+4870 where HTNK
+4900 where HTNK
+4930 where HTNK
+4960 where HTNK
+4990 where HTNK
+5020 where HTNK
+5050 where HTNK
+5060 cell 85 50
+5060 cell 87 50
+5060 cell 86 49
+5060 cell 86 51
+5060 cell 85 49
+5060 cell 86 50
+5080 kill HTNK 1
+5100 own HTNK 76 60
+5101 neutral GAPILL 86 60
+5102 ewall GASAND 85 59
+5103 ewall GASAND 85 60
+5104 ewall GASAND 85 61
+5105 ewall GASAND 86 59
+5106 ewall GASAND 86 61
+5107 ewall GASAND 87 59
+5108 ewall GASAND 87 60
+5109 ewall GASAND 87 61
+5170 canfire HTNK 86 60
+5180 forceattack HTNK 86 60
+5190 where HTNK
+5220 where HTNK
+5250 where HTNK
+5280 where HTNK
+5310 where HTNK
+5340 where HTNK
+5370 where HTNK
+5400 where HTNK
+5430 where HTNK
+5460 where HTNK
+5490 where HTNK
+5520 where HTNK
+5550 where HTNK
+5580 where HTNK
+5610 where HTNK
+5640 where HTNK
+5670 where HTNK
+5700 where HTNK
+5730 where HTNK
+5760 where HTNK
+5790 where HTNK
+5820 where HTNK
+5850 where HTNK
+5860 cell 85 60
+5860 cell 87 60
+5860 cell 86 59
+5860 cell 86 61
+5860 cell 85 59
+5860 cell 86 60
+5880 kill HTNK 1
+5900 own HTNK 76 70
+5901 neutral GAPILL 86 70
+5902 ewall CAFNCB 85 69
+5903 ewall CAFNCB 85 70
+5904 ewall CAFNCB 85 71
+5905 ewall CAFNCB 86 69
+5906 ewall CAFNCB 86 71
+5907 ewall CAFNCB 87 69
+5908 ewall CAFNCB 87 70
+5909 ewall CAFNCB 87 71
+5970 canfire HTNK 86 70
+5980 forceattack HTNK 86 70
+5990 where HTNK
+6020 where HTNK
+6050 where HTNK
+6080 where HTNK
+6110 where HTNK
+6140 where HTNK
+6170 where HTNK
+6200 where HTNK
+6230 where HTNK
+6260 where HTNK
+6290 where HTNK
+6320 where HTNK
+6350 where HTNK
+6380 where HTNK
+6410 where HTNK
+6440 where HTNK
+6470 where HTNK
+6500 where HTNK
+6530 where HTNK
+6560 where HTNK
+6590 where HTNK
+6620 where HTNK
+6650 where HTNK
+6660 cell 85 70
+6660 cell 87 70
+6660 cell 86 69
+6660 cell 86 71
+6660 cell 85 69
+6660 cell 86 70
+6680 kill HTNK 1
+6700 quit
