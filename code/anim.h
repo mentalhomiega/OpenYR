@@ -182,6 +182,15 @@ class AnimClass : public ObjectClass, public StageClass
 		 */
 		bool IsBuildingAnim;
 
+		/*
+		**	This is set for the moment an animation that has played to its end is removed (gamemd's
+		**	AnimClass TimeToDie, set by AnimClass::Update 0x423AC0 before its UnInit). A building that
+		**	loses one of its slot animations restarts the follow-on animation only for one that ended
+		**	this way, as BuildingClass::AnimExpired (0x451B40) does. The removal runs at once, so the
+		**	flag is neither saved nor part of the checksum.
+		*/
+		bool TimeToDie;
+
 		// The animation plays its frames from last to first, as a Reverse=yes type does or as Play_Backward asks.
 		bool IsReversed;
 

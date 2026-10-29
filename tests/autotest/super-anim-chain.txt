@@ -1,0 +1,128 @@
+; A Soviet Iron Curtain (NAIRON) charges, becomes ready and fires, and its SuperAnim slots (14 to 17) are logged with banimstate every 30 frames and every 6 frames around the changes.
+; Expected, from gamemd's BuildingClass::UpdateAnimations (0x4509D0) and AnimExpired (0x451B40): SuperAnim (slot 14, NAIRON_A) loops while the weapon charges; when 1 minute (900 frames) is left it is destroyed and
+; SuperAnimTwo (slot 15, NAIRON_F) plays once, then SuperAnimThree (slot 16, NAIRON_G) takes over and runs until the weapon fires; firing destroys it and SuperAnimFour (slot 17, NAIRON_H) plays once, and SuperAnimOne returns when it ends.
+; Before the fix nothing started when F ended, so the structure showed no animation between F and the weapon being ready (a minute at most).
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/super-anim-chain.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/building-anim-expired/super" -Filter "AUTOTEST   banimstate|AUTOTEST     slot 1[4-7]|AUTOTEST   super |AUTOTEST   fire|Exception"
+; Script lines must be in frame order, because the engine waits at each line until its frame.
+5 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/super-anim-chain.ini
+10 command CenterBase
+20 own NAPOWR 50 40
+21 own NAPOWR 50 44
+22 own NAIRON 56 44
+23 own HTNK 40 40
+30 reveal
+31 view 57 45
+40 supers
+60 banimstate NAIRON
+90 banimstate NAIRON
+101 command ScreenCapture
+120 banimstate NAIRON
+150 banimstate NAIRON
+156 banimstate NAIRON
+162 banimstate NAIRON
+168 banimstate NAIRON
+174 banimstate NAIRON
+180 banimstate NAIRON
+186 banimstate NAIRON
+192 banimstate NAIRON
+198 banimstate NAIRON
+204 banimstate NAIRON
+210 banimstate NAIRON
+216 banimstate NAIRON
+222 banimstate NAIRON
+228 banimstate NAIRON
+234 banimstate NAIRON
+240 banimstate NAIRON
+246 banimstate NAIRON
+252 banimstate NAIRON
+258 banimstate NAIRON
+264 banimstate NAIRON
+270 banimstate NAIRON
+276 banimstate NAIRON
+282 banimstate NAIRON
+288 banimstate NAIRON
+294 banimstate NAIRON
+300 banimstate NAIRON
+330 banimstate NAIRON
+360 banimstate NAIRON
+390 banimstate NAIRON
+401 command ScreenCapture
+420 banimstate NAIRON
+450 banimstate NAIRON
+480 banimstate NAIRON
+510 banimstate NAIRON
+540 banimstate NAIRON
+570 banimstate NAIRON
+600 banimstate NAIRON
+630 banimstate NAIRON
+660 banimstate NAIRON
+690 banimstate NAIRON
+720 banimstate NAIRON
+750 banimstate NAIRON
+780 banimstate NAIRON
+810 banimstate NAIRON
+840 banimstate NAIRON
+870 banimstate NAIRON
+881 command ScreenCapture
+900 banimstate NAIRON
+930 banimstate NAIRON
+960 banimstate NAIRON
+990 banimstate NAIRON
+1001 command ScreenCapture
+1020 banimstate NAIRON
+1050 banimstate NAIRON
+1060 banimstate NAIRON
+1066 banimstate NAIRON
+1072 banimstate NAIRON
+1078 banimstate NAIRON
+1080 banimstate NAIRON
+1084 banimstate NAIRON
+1090 banimstate NAIRON
+1096 banimstate NAIRON
+1101 command ScreenCapture
+1102 banimstate NAIRON
+1108 banimstate NAIRON
+1110 supers
+1110 banimstate NAIRON
+1114 banimstate NAIRON
+1120 fire IronCurtainSpecial 40 40
+1120 banimstate NAIRON
+1121 banimstate NAIRON
+1126 banimstate NAIRON
+1132 banimstate NAIRON
+1133 banimstate NAIRON
+1138 banimstate NAIRON
+1140 banimstate NAIRON
+1144 banimstate NAIRON
+1145 banimstate NAIRON
+1150 banimstate NAIRON
+1151 command ScreenCapture
+1156 banimstate NAIRON
+1157 banimstate NAIRON
+1162 banimstate NAIRON
+1168 banimstate NAIRON
+1169 banimstate NAIRON
+1170 banimstate NAIRON
+1174 banimstate NAIRON
+1180 banimstate NAIRON
+1181 banimstate NAIRON
+1186 banimstate NAIRON
+1192 banimstate NAIRON
+1193 banimstate NAIRON
+1198 banimstate NAIRON
+1200 banimstate NAIRON
+1201 command ScreenCapture
+1205 banimstate NAIRON
+1217 banimstate NAIRON
+1229 banimstate NAIRON
+1230 banimstate NAIRON
+1241 banimstate NAIRON
+1251 command ScreenCapture
+1253 banimstate NAIRON
+1260 banimstate NAIRON
+1265 banimstate NAIRON
+1277 banimstate NAIRON
+1289 banimstate NAIRON
+1290 banimstate NAIRON
+1300 supers
+1301 quit

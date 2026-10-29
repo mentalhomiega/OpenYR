@@ -158,6 +158,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	IsFlamingGuyEnd(false),
 	AttachedBullet(NULL),
 	IsToDelete(false),
+	TimeToDie(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
@@ -283,6 +284,7 @@ AnimClass::AnimClass(void) :
 	Loops(1),
 	AttachedBullet(NULL),
 	IsToDelete(false),
+	TimeToDie(false),
 	IsBrandNew(true),
 	IsInvisible(false),
 	IsDisabled(false),
@@ -1121,6 +1123,7 @@ void AnimClass::AI(void)
 								return;
 							}
 						}
+						TimeToDie = true;
 						Delete_Me();
 					}
 				}
