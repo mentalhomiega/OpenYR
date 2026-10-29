@@ -183,6 +183,7 @@ FootClass::FootClass(HouseClass * house) :
 	MoveSoundHandle(),
 	IsMoveSoundPlaying(false),
 	MoveSoundDelay(0),
+	MoveSoundVoc(VOC_NONE),
 	SensorCell(CELL_NONE),
 	SensorHouse(NULL),
 	SensorRadius(0),
@@ -236,6 +237,8 @@ FootClass::FootClass(HouseClass * house) :
 /// </summary>
 FootClass::~FootClass(void)
 {
+	// A sound still playing when the object is removed stops with it, as gamemd's AudioController destructor does.
+	MoveSoundHandle.Stop();
 	if (Team != NULL && GameActive) {
 		Team->Remove(this);
 	}
@@ -4100,23 +4103,6 @@ void FootClass::AI(void)
 
 	Update_Sensors(false);
 
-	// A moving object plays a sound from its MoveSound list and ends its loop three frames after it stops (FootClass::Update).
-	if (IsActive && !IsInLimbo && Locomotion && Locomotion->Is_Moving_Now() && (DirectRockerLinkedUnit == NULL || TClass->IsPushy)) {
-		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
-			MoveSoundHandle.Stop();
-			Sound_Effect((VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber()), Center_Coord(), &MoveSoundHandle);
-			IsMoveSoundPlaying = true;
-		}
-		MoveSoundDelay = 3;
-	} else if (IsMoveSoundPlaying) {
-		if (MoveSoundDelay == 0) {
-			MoveSoundHandle.End_Looping();
-			IsMoveSoundPlaying = false;
-		} else {
-			MoveSoundDelay--;
-		}
-	}
-
 	if (IsActive && ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
 		ParasiteEatingMe->ParasiteImUsing->Update();
 	}
@@ -4159,6 +4145,8 @@ void FootClass::AI(void)
 			}
 		}
 
+		bool stepped = false;
+
 		// A DirectRocker-linked unit that is not Pushy runs no locomotor step (FootClass::Update, 0x4DA530).
 		if (Locomotion != NULL && !IsSinking && !IsFalling && (DirectRockerLinkedUnit == NULL || TClass->IsPushy)) {
 			IsLocomotorProcessing = true;
@@ -4198,8 +4186,11 @@ void FootClass::AI(void)
 			}
 			if (step) {
 				TotalFramesWalked++;
+				stepped = true;
 			}
 		}
+
+		Update_Move_Sound(stepped);
 
 
 		if ((Frame & 63) == 63 && NavCom == NULL && !IsOnBridge && Get_Cell_Ptr()->Ramp == 0 && Is_On_Elevation() && HeightAGL == 0) {
@@ -4226,6 +4217,45 @@ void FootClass::AI(void)
 		}
 	}
 #endif
+}
+
+
+// Starts, re-aims and ends the MoveSound loop. A move starts a sound when the walk counter stepped
+// this frame or the locomotor reports movement, unless the object is falling, crashing, or a
+// DirectRocker-linked unit that is not Pushy. A playing sound is re-aimed at the object's place on
+// every update, as gamemd's FootClass::Update (0x4DA530) does through AudioController::PlayEvent
+// (0x750D40). After the object stops, the sound plays on for three updates and ends on the fourth.
+void FootClass::Update_Move_Sound(bool stepped)
+{
+	bool const moving = stepped || (Locomotion != NULL && Locomotion->Is_Moving_Now());
+	bool const may_move = !IsInLimbo && !IsFalling && !IsCrashing && (DirectRockerLinkedUnit == NULL || TClass->IsPushy);
+
+	if (moving && may_move) {
+		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
+			MoveSoundHandle.Stop();
+			MoveSoundHandle.Clear();
+			MoveSoundVoc = (VocType)TClass->MoveSound.Pick(NonCriticalRandomNumber());
+			IsMoveSoundPlaying = true;
+			Start_Placed_Sound(MoveSoundVoc, Center_Coord(), &MoveSoundHandle);
+		}
+		MoveSoundDelay = 3;
+	} else if (IsMoveSoundPlaying) {
+		if (MoveSoundDelay == 0 || IsFalling || IsCrashing) {
+			MoveSoundHandle.End_Looping();
+			IsMoveSoundPlaying = false;
+			MoveSoundDelay = 0;
+			MoveSoundVoc = VOC_NONE;
+		} else {
+			MoveSoundDelay--;
+		}
+	}
+
+	if (IsMoveSoundPlaying) {
+		if (LogSoundEffects) {
+			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(MoveSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
+		}
+		Play_If_In_Range(MoveSoundVoc, Center_Coord(), &MoveSoundHandle, !Voc_Never_Ends(MoveSoundVoc));
+	}
 }
 
 
@@ -4409,7 +4439,9 @@ bool FootClass::Limbo(void)
 	Update_Sensors(true);
 
 	MoveSoundHandle.Stop();
+	MoveSoundHandle.Clear();
 	IsMoveSoundPlaying = false;
+	MoveSoundVoc = VOC_NONE;
 
 	if (!IsInLimbo) {
 		Cell cell = LastAdjacencyCell;

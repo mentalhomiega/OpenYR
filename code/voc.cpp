@@ -418,6 +418,16 @@ AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * han
 }
 
 
+AudioHandle Start_Placed_Sound(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (handle != nullptr && voc != VOC_NONE && voc < Vocs.Count() && handle->Is_Valid() && handle->Type() != &Vocs[voc]->Type_Data()) {
+		handle->Stop();
+		handle->Clear();
+	}
+	return(Play_If_In_Range(voc, coord, handle, true));
+}
+
+
 void Static_Sound(VocType voc, Coord const & coord, int type)
 {
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
