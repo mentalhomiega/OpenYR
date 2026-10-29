@@ -1,0 +1,11 @@
+; Psychic Dominator over two overlapping structures: the Allied power plant placed at 72,36 shares a cell with the civilian
+; structure CATEXS07 (rubble at 70,37), and the blast destroys both. The civilian structure leaves the map first. The cell
+; at 70,37 used to keep the power plant as its occupier after that, and the next animation to look at the cell froze the
+; game. The log must reach "AUTOTEST frame 160: quit" with no "HANG" line.
+; Run: scripts/run_autotest.ps1 -Build agent19 -Script src-agent19/tests/autotest/psydom-overlap-freeze.txt -Width 800 -Height 600 -Seconds 90 -Filter "AUTOTEST frame 160|HANG|Rubble|Exception"
+20 own GAPOWR 72 36
+30 view 75 40
+35 reveal
+40 grant PsychicDominatorSpecial
+60 fire PsychicDominatorSpecial 75 40
+160 quit

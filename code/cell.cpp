@@ -1743,6 +1743,34 @@ void CellClass::Set_Under_Rail_Bridge(FacingType facing, bool state)
 }
 
 
+/// <summary>
+/// Finds the object that follows this one in the cell's occupation chain.
+/// A building has one Next link for every cell of its footprint, so when two footprints overlap the
+/// link leads to a building that does not stand on this cell. Such buildings are skipped, which keeps
+/// the cell from retaining a pointer to a building that is later deleted.
+/// </summary>
+static ObjectClass * Occupant_After(ObjectClass const * object, Cell const & cell)
+{
+	ObjectClass * next = object->Next;
+
+	while (next != NULL && next->RTTI == RTTI_BUILDING) {
+		bool stands_here = false;
+		Cell const anchor = next->PositionCell;
+		for (Cell const * offset = next->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+			if (anchor + *offset == cell) {
+				stands_here = true;
+				break;
+			}
+		}
+		if (stands_here) {
+			break;
+		}
+		next = next->Next;
+	}
+	return(next);
+}
+
+
 /***********************************************************************************************
  * CellClass::Occupy_Down -- Flag occupation of specified cell.                                *
  *                                                                                             *
@@ -1842,17 +1870,18 @@ void CellClass::Occupy_Up(ObjectClass * object, bool bridge)
 	ObjectClass * optr = Cell_Occupier(bridge);		// Working pointer to the objects in the chain.
 
 	if (optr == object) {
+		ObjectClass * following = Occupant_After(object, CellID);
 		if (bridge) {
-			BridgeOccupierPtr = object->Next;
+			BridgeOccupierPtr = following;
 		} else {
-			OccupierPtr = object->Next;
+			OccupierPtr = following;
 		}
 		object->Next = NULL;
 	} else {
 		bool found = false;
 		while (optr != NULL) {
 			if (optr->Next == object) {
-				optr->Next = object->Next;
+				optr->Next = Occupant_After(object, CellID);
 				object->Next = NULL;
 				found = true;
 				break;
