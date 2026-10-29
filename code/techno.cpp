@@ -1428,16 +1428,16 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 
 
 /// <summary>
-/// Tells whether the local player sees this object's pips. Allies and spies see them, every
-/// player sees a passive house's structure, and PipsDrawForAll shows them to all. Matches
+/// Tells whether the local player sees this object's pips. Allies and spies see them, and every
+/// player sees a structure of a passive house or one with PipsDrawForAll. Matches
 /// gamemd's TechnoClass::DrawHealthBar (0x6F64A0).
 /// </summary>
 bool TechnoClass::Pips_Visible_To_Player(void) const
 {
-	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr] || TClass->IsPipsDrawForAll) {
+	if (House->Shares_View_With(PlayerPtr) || SpiedBy[PlayerPtr]) {
 		return(true);
 	}
-	return(RTTI == RTTI_BUILDING && House->Class->IsMultiplayPassive);
+	return(RTTI == RTTI_BUILDING && (TClass->IsPipsDrawForAll || House->Class->IsMultiplayPassive));
 }
 
 
