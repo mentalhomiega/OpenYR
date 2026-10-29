@@ -1789,6 +1789,9 @@ void BulletClass::Detonate(Coord const & coord)
 
 	// gamemd selects the blast animation before it checks for a nullified shot, so an EMEffect warhead draws its random animation either way (BulletClass::Detonate, 0x469BCF).
 	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST explode frame %d %s warhead %s land %d damage %d anim %s at %d,%d,%d\n", (int)Frame, Class->Name(), Warhead != NULL ? Warhead->Name() : "none", (int)land, Strength, anim != NULL ? anim->Name() : "none", PositionCoord.X, PositionCoord.Y, PositionCoord.Z);
+	}
 
 	// A shot the Iron Curtain turned away shows WeaponNullifyAnim alone, with no light, blast or debris (BulletClass::Detonate, 0x469BDE and 0x46A2A1).
 	if (nullified) {

@@ -1,0 +1,16 @@
+; A Tesla Coil (TESLA) shoots an enemy Soviet Naval Yard (NAYARD, TargetCoordOffset=256,256,0 in the rules) and then an enemy power plant (NAPOWR, no offset).
+; Expected, from gamemd's BuildingClass::GetTargetCoords (0x4500A0) and the electric bolt creation (0x6FD460): the bolt ends on the object's target point, which is the
+; structure's center plus its type's TargetCoordOffset. The first AUTOTEST beam end line has an end 256,256,0 from its center, the later ones (power plant) have the
+; same end and center.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/beam-target-coord-offset.txt -Country 8 -Seconds 120 -Filter "AUTOTEST beam end|AUTOTEST own|AUTOTEST strike|Exception"
+30 command CenterBase
+35 reveal
+40 own NAPOWR 50 40
+41 own NAPOWR 50 43
+42 own TESLA 55 44
+60 enemy NAYARD 62 44
+80 strike TESLA 62 44
+200 kill NAYARD
+210 enemy NAPOWR 62 44
+230 strike TESLA 62 44
+350 quit

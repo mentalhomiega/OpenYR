@@ -4948,6 +4948,23 @@ int TechnoClass::Rearm_Delay(int which) const
 
 
 /// <summary>
+/// Fetches the point an electric bolt or radiation beam ends on. An object is aimed at by its target
+/// point, which for a structure is its center plus the type's TargetCoordOffset, and a cell by its
+/// center (FUN_006FD460, 0x6FD460, and FUN_006FD620, 0x6FD620).
+/// </summary>
+static Coord Beam_Target_Coord(AbstractClass * target)
+{
+	ObjectClass * object = target->As_ObjectClass();
+	Coord const coord = object != NULL ? object->Target_Coord() : target->Center_Coord();
+	if (AutoTest_Active()) {
+		Coord const center = target->Center_Coord();
+		DebugString("AUTOTEST beam end %d,%d,%d center %d,%d,%d\n", coord.X, coord.Y, coord.Z, center.X, center.Y, center.Z);
+	}
+	return(coord);
+}
+
+
+/// <summary>
 /// Draws an electric bolt from the weapon's mounting to the target, as gamemd's FUN_006FD460 and
 /// FUN_006FD570 do (GetFLH). A vehicle's first bolt follows its mounting while the bolt lasts.
 /// </summary>
@@ -4971,7 +4988,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 
 	EBoltClass * bolt = new EBoltClass;
 	bolt->IsAlternateColor = weapon->IsAlternateColor;
-	bolt->Fire(source, target->Center_Coord(), zadjust);
+	bolt->Fire(source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
 
@@ -5565,6 +5582,9 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
 					Coord anim_coord = fire_coord;
 					AnimClass * anim = new AnimClass(a, anim_coord);
+					if (AutoTest_Active()) {
+						DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
+					}
 					if (RTTI == RTTI_BUILDING) {
 						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
 						anim->ZAdjust = std::min(zadjust, 0);
@@ -5597,8 +5617,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, (TechnoClass *)target);
 				}
 
-				// A magnetron beam is drawn while none is showing (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && Wave == NULL && target->Is_Techno()) {
+				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon (TechnoClass::Fire, 0x6FDD50).
+				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL && target->Is_Techno()) {
 					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, (TechnoClass *)target);
 				}
 
@@ -5610,10 +5630,10 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Electric_Zap(target, which, weapon);
 				}
 
-				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor.
-				if (weapon->IsRadBeam) {
+				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
+				if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
 					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), target->Center_Coord(), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+					RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
 				}
 
 				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
