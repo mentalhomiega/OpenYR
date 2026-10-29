@@ -337,6 +337,9 @@ class AnimClass : public ObjectClass, public StageClass
 		 * It is not saved, so a loaded animation holds a null handle.
 		 */
 		AudioHandle StartSoundHandle;
+
+		// The sound type Start played, or VOC_NONE when it played none. Each update re-aims that sound. Not saved.
+		VocType StartSoundVoc;
 };
 
 void Shorten_Attached_Anims(ObjectClass * obj);

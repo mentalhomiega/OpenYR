@@ -72,6 +72,7 @@
 #include "combat.h"
 #include "conquer.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "emissive.h"
 #include "globals.h"
@@ -100,6 +101,7 @@
 #include "techno.h"
 #include "tiberium.h"
 #include "tracker.h"
+#include "voc.h"
 #include "zbuffer.h"
 
 #include "bench.hh"
@@ -168,7 +170,8 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	Delay(timedelay),
 	Accum(1),
 	TranslucencyLevel(0),
-	ShapeFlags(flags)
+	ShapeFlags(flags),
+	StartSoundVoc(VOC_NONE)
 {
 	Create_ID();
 	Sync_Record_Anim(*this, coord, (unsigned)(uintptr_t)_ReturnAddress());
@@ -301,7 +304,8 @@ AnimClass::AnimClass(void) :
 	IsReversed(false),
 	IsBouncing(false),
 	IsAttachedToCell(false),
-	IsToDeleteOnOverpass(false)
+	IsToDeleteOnOverpass(false),
+	StartSoundVoc(VOC_NONE)
 {
 	Anims.Add(this);
 	IsActive = true;
@@ -843,6 +847,15 @@ static bool Psychic_Warning_Seen(CellClass const & cell, HouseClass const * owne
  *=============================================================================================*/
 void AnimClass::AI(void)
 {
+	// Re-aims the start sound on every update, and starts it again once it has ended, as gamemd's
+	// AnimClass::Update (0x423AC0) does. An inert animation leaves its sound at the last place it was aimed.
+	if (!IsInert && StartSoundVoc != VOC_NONE) {
+		if (LogSoundEffects) {
+			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(StartSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
+		}
+		Play_If_In_Range(StartSoundVoc, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(StartSoundVoc));
+	}
+
 	if (Class->IsPsiWarning) {
 		HouseClass const * owner = (OwnerHouse != HOUSE_NONE && OwnerHouse < Houses.Count()) ? Houses[OwnerHouse] : NULL;
 		IsPsychicHidden = !Psychic_Warning_Seen(Map[Center_Coord()], owner);
@@ -1257,11 +1270,14 @@ void AnimClass::Start(void)
 	if (!IsInert && Class->Sound != VOC_NONE) {
 
 		/*
-		**	Play the sound effect for this animation.
+		**	Play the sound effect for this animation. Each update after this re-aims it.
 		*/
-		Sound_Effect_Fixed(Class->Sound, Center_Coord(), &StartSoundHandle);
+		StartSoundVoc = Class->Sound;
+		Start_Placed_Sound(StartSoundVoc, Center_Coord(), &StartSoundHandle);
 	} else {
 		StartSoundHandle.Stop();
+		StartSoundHandle.Clear();
+		StartSoundVoc = VOC_NONE;
 	}
 
 	/*

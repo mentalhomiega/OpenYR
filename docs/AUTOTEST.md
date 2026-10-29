@@ -52,7 +52,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `owners <TypeID>` | Writes the type's owner bits and each house's country bit to the debug log |
 | `canbuild <TypeID>` | Writes each house's own and acted country, the type's `RequiredHouses` and `ForbiddenHouses`, and whether `Can_Build` allows the type for that house now |
 | `anims` | Writes the first entries of the animation list to the debug log |
-| `liveanims [TypeID]` | Writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object, then how many it listed |
+| `liveanims [TypeID]` | Writes each live animation, or only those of the named type, with its cell, loops left, delay, rate, stage, and whether it is attached to a cell or an object, then how many it listed. With `sounds 1`, each update of an animation with a start sound writes a `Sound follows:` line at its cell |
 | `particles [TypeID]` | Writes each live particle, or only those of the named type, with its animation state, the frames between state steps, translucency, speed, drift, position and flight path, then how many it listed |
 | `vanims [TypeID]` | Writes each live voxel animation, or only those of the named type, with its position and cell, then how many it listed. With `sounds 1`, each update of an animation with a start sound writes a `Sound follows:` line at its cell |
 | `movesounds [TypeID]` | Writes each foot object, or only those of the named type, with its cell, whether its move sound is playing, the frames left before it ends, and the sound, then how many are playing. With `sounds 1`, each update of a playing move sound writes a `Sound follows:` line at its cell |
