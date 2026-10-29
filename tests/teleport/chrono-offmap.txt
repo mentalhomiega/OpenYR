@@ -1,0 +1,19 @@
+; A chronosphere shift to a spot outside the map's diamond (Map.In_Radar false). gamemd's SuperClass::Launch (0x6CC390) has no check of the
+; spot: it sets the warp flag and the destination and orders the move, so the unit waits 60 frames, leaves, and is set down by the stage
+; machine (0x7192F0); Check_Landing (0x7187A0) then decides, through CanEnterCell (vtable +0x1AC), whether it lives.
+; Expected: both units wait 60 frames on their cells (frame 125: warping), land at about frame 132, and are destroyed when the landing is checked
+; (no "chrono arrived" line, no unit at frame 140); the earlier build destroyed them at frame 70 when the warp was fired.
+; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/teleport/chrono-offmap.txt -Seconds 120 -Filter "AUTOTEST   (where|chrono|warp)|AUTOTEST frame|Exception"
+20 own HTNK 56 24
+25 own E1 57 25
+35 reveal
+41 grant ChronoSphereSpecial
+42 grant ChronoWarpSpecial
+60 fire ChronoSphereSpecial 56 24
+70 fire ChronoWarpSpecial 6 6
+80 where HTNK
+125 where HTNK
+140 where HTNK
+140 where E1
+200 where HTNK
+230 quit

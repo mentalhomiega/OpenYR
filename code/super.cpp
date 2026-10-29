@@ -1007,11 +1007,13 @@ void SuperClass::Stop_Pre_Click_Anim(void)
 /// The unit stays on its cell for 60 frames and then goes through the landing stages of
 /// TeleportLocomotionClass (0x7192F0), where the landing cell is cleared of whatever stands there
 /// on that frame, not on this one, and the landing is checked for Iron Curtained neighbours and water.
-/// A spot off the map destroys the unit at once.
+/// A spot outside the playable area destroys the unit when it lands, not at once.
 /// </summary>
 static void Chrono_Shift(FootClass * foot, Coord dest)
 {
-	if (!Map.In_Radar(dest.As_Cell())) {
+	// gamemd checks nothing here (0x6CCC3D): the unit waits, leaves and is set down, and a spot outside the playable area
+	// refuses it when the landing is checked (Check_Landing), so it is destroyed there. Only a spot outside the cell array has no cell to land on.
+	if (Map.Cell_Slot(dest.As_Cell()) < 0) {
 		Chrono_Kill(foot);
 		return;
 	}
