@@ -256,6 +256,8 @@ class UnitClass : public FootClass
 		virtual bool Deploy_To_Fire(void) const override;
 		void EMPulse_Blast(void);
 		void Explode(void);
+		bool Crash(TechnoClass * source);
+		void Land_Crashed(void);
 
 		/*
 		**	AI.
