@@ -15,6 +15,6 @@ Sparks can start only when **all of** these hold:
 
 - the type's [`DamageParticleSystems`](/keys/damageparticlesystems/) names at least one ParticleSystemType with [`BehavesLike=Spark`](/keys/behaveslike/#scope-particlesystemtype);
 - the object is less than 10 leptons below ground level;
-- the object is a vehicle, an aircraft or a structure, or infantry whose type sets [`Cyborg=yes`](/keys/cyborg/).
+- the object is infantry whose type sets [`Cyborg=yes`](/keys/cyborg/). A vehicle, an aircraft or a structure never starts sparks, whatever its `DamageParticleSystems` lists.
 
 The spark system is one of those `Spark` entries, picked at random, placed at the type's [`DamageSmokeOffset`](/keys/damagesmokeoffset/) from the object's center.
