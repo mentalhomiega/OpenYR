@@ -626,6 +626,25 @@ void PlaceAt(std::string const & name, int x, int y)
 }
 
 
+// Returns false, after logging the refusal, when the game's placement check fails for the foundation that a building
+// type would cover at cell and a structure stands on one of its cells. A unit or terrain alone does not refuse.
+bool Footprint_Free(char const * command, TechnoTypeClass const * type, Cell const & cell, HouseClass * house)
+{
+	if (type->Fetch_RTTI() != RTTI_BUILDINGTYPE) return(true);
+	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
+	if (building->Legal_Placement(cell, house)) return(true);
+	for (Cell const * offset = building->Occupy_List(true); *offset != REFRESH_EOL; offset++) {
+		Cell const covered = cell + *offset;
+		BuildingClass const * other = Map[covered].Cell_Building();
+		if (other != NULL) {
+			DebugString("AUTOTEST %s %s at %d,%d: refused: footprint overlaps %s at %d,%d\n", command, type->Name(), cell.X, cell.Y, other->Class->Name(), covered.X, covered.Y);
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
 void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
@@ -3711,15 +3730,17 @@ void Run(StepType const & step)
 		}
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (enemy != NULL && type != NULL) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(enemy));
 			Cell cell(step.X, step.Y);
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
-			if (placed) {
-				object->Assign_Mission(MISSION_GUARD);
+			if (Footprint_Free(step.Command.c_str(), type, cell, enemy)) {
+				TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(enemy));
+				ScenarioInit++;
+				bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+				ScenarioInit--;
+				if (placed) {
+					object->Assign_Mission(MISSION_GUARD);
+				}
+				DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 			}
-			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
 			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
 		}
@@ -3749,15 +3770,17 @@ void Run(StepType const & step)
 		}
 		TechnoTypeClass const * type = Find_Type(type_name);
 		if (owner != NULL && type != NULL) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
 			Cell cell(step.X, step.Y);
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
-			if (placed) {
-				object->Assign_Mission(MISSION_GUARD);
+			if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
+				TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
+				ScenarioInit++;
+				bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+				ScenarioInit--;
+				if (placed) {
+					object->Assign_Mission(MISSION_GUARD);
+				}
+				DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, placed ? "placed" : "failed");
 			}
-			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		} else {
 			DebugString("AUTOTEST houseunit %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no such house");
 		}
@@ -3784,12 +3807,14 @@ void Run(StepType const & step)
 		}
 		TechnoTypeClass const * type = Find_Type(step.Argument);
 		if (type != NULL && owner != NULL) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
 			Cell cell(step.X, step.Y);
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
-			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
+				TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
+				ScenarioInit++;
+				bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+				ScenarioInit--;
+				DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			}
 		} else {
 			DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no civilian house");
 		}
