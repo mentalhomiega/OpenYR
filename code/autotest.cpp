@@ -3034,6 +3034,17 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "psoffset") {
+		// psoffset <TypeID>: writes the DamageSmokeOffset and DamSmkOffScrnRel of the type, and the offset its damage smoke and spark systems are placed at.
+		TechnoTypeClass const * type = Find_Type(step.Argument);
+		if (type != NULL) {
+			Coord const offset = type->Particle_System_Offset();
+			DebugString("AUTOTEST   psoffset %s smoke %d,%d,%d screen %d particle %d,%d,%d\n", type->Name(),
+				type->DamageSmokeOffset.X, type->DamageSmokeOffset.Y, type->DamageSmokeOffset.Z, (int)type->DamSmkOffScrnRel, offset.X, offset.Y, offset.Z);
+		}
+		return;
+	}
+
 	if (step.Command == "vanims") {
 		// vanims [TypeID]: writes each live voxel animation, or only those of the named type, with its position and cell.
 		int shown = 0;

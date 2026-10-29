@@ -13,7 +13,7 @@ DamageParticleSystems=MYSPARKSYS,MYSMOKESYS ; ParticleSystemTypes registered in 
 DamageSmokeOffset=0,0,90 ; the smoke starts 90 leptons above the tank
 ```
 
-The offset is three lepton distances, X, Y and Z, added to the object's anchor point when one of its [`DamageParticleSystems`](/keys/damageparticlesystems/) is created. X and Y are map directions, so the offset does not turn with the object's facing.
+The offset is three lepton distances, X, Y and Z, added to the object's anchor point when one of its [`DamageParticleSystems`](/keys/damageparticlesystems/) is created. X and Y are map directions, so the offset does not turn with the object's facing. [`DamSmkOffScrnRel=yes`](/keys/damsmkoffscrnrel/) reads the three values as a screen offset instead.
 
 Smoke is anchored at the object's position. Sparks start only on cyborg infantry, where the object's center and position are the same point.
 

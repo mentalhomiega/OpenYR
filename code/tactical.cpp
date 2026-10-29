@@ -210,7 +210,8 @@ Tactical::~Tactical(void)
  * Pixel_To_Z_Lepton         - vertical pixel -> height lepton.
  * Coord_To_Cell - height-aware coord -> cell (picking).
  * Only the inverse uses a matrix (PixelToCoordMatrix); the forward path uses the integer
- * Rectangular_To_Isometric. CoordToPixelMatrix is the forward matrix but is currently unused.
+ * Rectangular_To_Isometric. CoordToPixelMatrix is the forward matrix; only the screen-relative
+ * damage smoke offset (TechnoTypeClass::Particle_System_Offset) applies it.
  */
 
 

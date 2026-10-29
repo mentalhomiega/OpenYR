@@ -437,7 +437,8 @@ class Tactical : public AbstractClass
 		/*
 		 * This is the forward isometric projection, built at construction from a 60 degree
 		 * tilt, a 45 degree rotation and the tile-to-cell scale. The forward conversions work
-		 * from the integer Rectangular_To_Isometric instead, so nothing reads it.
+		 * from the integer Rectangular_To_Isometric instead; TechnoTypeClass::Particle_System_Offset
+		 * is the only reader of this matrix.
 		 */
 		Matrix3D CoordToPixelMatrix;
 

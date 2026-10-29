@@ -4155,7 +4155,7 @@ void TechnoClass::AI(void)
 		if (ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL && sparks.Count() > 0) {
 			double probability = HealthRatio < Rule->ConditionRed ? Rule->ConditionRedSparkingProbability : Rule->ConditionYellowSparkingProbability;
 			if (Random_Double(0.0, 1.0) < probability) {
-				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->DamageSmokeOffset, NULL, this);
+				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->Particle_System_Offset(), NULL, this);
 			}
 		}
 	}
@@ -7203,7 +7203,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 
 				if (ParticleSystems[3] == NULL && systems.Count() > 0 && HeightAGL > -10) {
-					Coord spawn = TClass->DamageSmokeOffset;
+					Coord spawn = TClass->Particle_System_Offset();
 					ParticleSystems[3] = new ParticleSystemClass(systems[Scen->RandomNumber(0, systems.Count() - 1)], Get_Coord() + spawn, NULL, this, COORD_NONE);
 				}
 			}
