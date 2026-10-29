@@ -921,6 +921,13 @@ class TechnoTypeClass : public ObjectTypeClass
 		TPoint3D<int> DamageSmokeOffset;
 
 		/*
+		 * When this is true, DamageSmokeOffset is measured on the screen rather than in the world:
+		 * its X and Y go through the isometric view and its Z lifts the particle up the screen.
+		 * Particle_System_Offset applies it. It is false by default.
+		 */
+		bool DamSmkOffScrnRel;
+
+		/*
 		 * These are the smoke systems a structure of this type starts when it is destroyed, and the
 		 * offset from its location that the system starts at. A smoke behaving system is picked
 		 * from the list at random.
@@ -1372,6 +1379,7 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		WeaponDataStruct const * Get_Weapon(int which) const;
 		WeaponDataStruct const * Get_Elite_Weapon(int which) const;
+		Coord Particle_System_Offset(void) const;
 		bool Has_Multiple_Turrets(void) const { return(TurretCount > 0); }
 
 		// A weapon position outside the list is ignored.

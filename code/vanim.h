@@ -13,6 +13,7 @@
 
 #pragma once
 
+#include "audio/audiohandle.h"
 #include "bounce.h"
 #include "object.h"
 
@@ -95,4 +96,11 @@ class VoxelAnimClass : public ObjectClass, public BounceClass
 		 * when the voxel settles or splashes into water, so a wreck expires where it lands.
 		 */
 		int ECCounter;
+
+		/*
+		 * This is the handle of the sound started from the type's StartSound. It is not saved, so
+		 * a loaded animation starts its sound again on its first update. The sound is stopped
+		 * when the animation is removed.
+		 */
+		AudioHandle StartSoundHandle;
 };

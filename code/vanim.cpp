@@ -22,6 +22,7 @@
 #include "cell.h"
 #include "combat.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "draw.h"
 #include "house.h"
 #include "inline.h"
@@ -104,7 +105,7 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 	}
 
 	if (Class->StartSound != VOC_NONE) {
-		Sound_Effect(Class->StartSound, coord);
+		Play_If_In_Range(Class->StartSound, Center_Coord(), &StartSoundHandle, true);
 	}
 
 	if (Class->AttachedSystem) {
@@ -142,6 +143,7 @@ VoxelAnimClass::~VoxelAnimClass(void)
 {
 	Detach_This_From_All(this);
 	VoxelAnims.Delete(this);
+	StartSoundHandle.Stop();
 	if (AttachedParticleSys != NULL) {
 		AttachedParticleSys->Delete_Me();
 		AttachedParticleSys = NULL;
@@ -294,6 +296,18 @@ void VoxelAnimClass::AI(void)
 	if (IsToDie) {
 		Delete_Me();
 		return;
+	}
+
+	/*
+	 * The start sound is re-aimed at the current place on every update, so it follows the
+	 * animation as it flies. A sound that has ended is started again, as gamemd's
+	 * VoxelAnimClass::Update does through AudioController::PlayEvent (0x749F30, 0x750D40).
+	 */
+	if (Class->StartSound != VOC_NONE) {
+		if (LogSoundEffects) {
+			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(Class->StartSound), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
+		}
+		Play_If_In_Range(Class->StartSound, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(Class->StartSound));
 	}
 
 	/*

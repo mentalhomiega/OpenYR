@@ -1,0 +1,22 @@
+; A Rhino tank (HTNK) the player owns is killed at frame 50. Its debris pieces (DEBRISLOOP, a voxel animation with
+; the Rhino body) start OilDerrickLoop, an endless loop. gamemd's VoxelAnimClass::Update (0x749F30) calls
+; AudioController::PlayEvent (0x750D40) with the piece's current coordinate on every update, so the sound follows
+; the piece. The runner mutes sound effects, so no sound handle plays in this run; the LogSoundEffects line
+; "Sound follows" is the observable, written once per piece per update at the piece's cell. The vanims command
+; writes each piece with its position and cell.
+; Expected: two pieces at frame 51 at cell 58,40, with two "Sound follows: OilDerrickLoop at 58,40" lines per update.
+; By frame 70 the pieces have drifted to cell 57,40, one piece is gone by frame 62, and none is left
+; at frame 100. Before this change the start sound was logged once as "Sound: OilDerrickLoop" at the place of
+; creation, with no "Sound follows" line after it.
+1 sounds 1
+10 command CenterBase
+20 reveal
+25 view 58 40
+30 grantunit HTNK 58 40
+50 kill HTNK 1
+51 vanims DEBRISLOOP
+56 vanims DEBRISLOOP
+62 vanims DEBRISLOOP
+70 vanims DEBRISLOOP
+100 vanims DEBRISLOOP
+140 quit
