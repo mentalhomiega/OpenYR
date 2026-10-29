@@ -1,0 +1,16 @@
+; Terror Drone and its victim killed by other fire: a player's Terror Drone (DRON) infects a computer Rhino (HTNK) four cells east at frame 160.
+; At frame 300, after a few bites, the Rhino is destroyed by something else (kill HTNK, no attacker, 400 damage). The drone is not released:
+; FootClass::ReceiveDamage (0x4D7330) dooms a parasite whose victim takes damage above the drone's SuppressionThreshold from anyone but the parasite,
+; so the exit (ParasiteClass::PointerExpired, 0x62A260) deletes the drone. "where DRON" prints nothing after frame 300, and the order on frame 301 finds no drone.
+; Run: scripts/run_autotest.ps1 -Build agent22 -Script E:/Claude ra2 decomp/src-agent22/tests/autotest/drone-pause-other-fire.txt -Width 800 -Height 600 -Seconds 120 -Filter "AUTOTEST|Exception"
+1 view 62 62
+2 zoom 2.5
+3 reveal
+10 own DRON 60 62
+150 spawn HTNK 64 62
+160 strike DRON 64 62
+299 where DRON
+300 kill HTNK
+301 where DRON
+301 order DRON 60 66
+302 where DRON
