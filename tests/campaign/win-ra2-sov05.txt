@@ -1,6 +1,6 @@
-; Campaign win check for Soviet 5 (Red Alert 2). Twenty-four Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order.
-; The airships clear the way to the Eiffel Tower (CAPARS01 at 46,32): each strikeobj line sends them against the next pillbox, tank, IFV or soldier along the route, one target per 400 frames. Then the three Tesla Troopers the mission gives (house Other3, which the player controls) walk to cell 47,34 and energize the tower ("Tower Energized"). The tower and the Allied units that hunt it fight, and once every unit of the Allied house is dead "Win Timer" and "Win" follow.
-; Expected: "AUTOTEST game over frame N: won" (frame 11625 in the last run).
+; Campaign win check for Soviet 5 (Red Alert 2). Twenty-four Kirov airships (grantunit) stand in for the fleet a player would build; everything after is an order, and the Kirovs stay where an order leaves them (a unit that has finished a move does not acquire targets).
+; The airships clear the way to the Eiffel Tower (CAPARS01 at 46,32): each strikeobj line sends them against the next pillbox, tank, IFV or soldier along the route, one target per 400 frames. Then the three Tesla Troopers the mission gives (house Other3, which the player controls) walk to cell 47,34 and energize the tower ("Tower Energized"). The Allied units that hunt the tower arrive in waves and the airships idle after the last pillbox, so from frame 9500 a strikeobj line every 150 frames sends them against the Allied soldier, tank or IFV nearest the tower (the tesla tower and the airships thin the rest). Once every unit of the Allied house is dead "Win Timer" and "Win" follow.
+; Expected: "AUTOTEST game over frame N: won" (frame 12721 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov05.txt -Campaign -Map SOV05U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 330 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2
@@ -63,3 +63,23 @@ ui click resume
 8200 strikeobj GAPILL 49 23 4 all
 8600 strikeobj GAPILL 52 23 4 all
 9000 move SHK 47 34
+9500 strikeobj E1 48 34 10 all
+9650 strikeobj MTNK 48 34 10 all
+9800 strikeobj FV 48 34 10 all
+9950 strikeobj E1 48 34 10 all
+10100 strikeobj MTNK 48 34 10 all
+10250 strikeobj FV 48 34 10 all
+10400 strikeobj E1 48 34 10 all
+10550 strikeobj MTNK 48 34 10 all
+10700 strikeobj FV 48 34 10 all
+10850 strikeobj E1 48 34 10 all
+11000 strikeobj MTNK 48 34 10 all
+11150 strikeobj FV 48 34 10 all
+11300 strikeobj E1 48 34 10 all
+11450 strikeobj MTNK 48 34 10 all
+11600 strikeobj FV 48 34 10 all
+11750 strikeobj E1 48 34 10 all
+11900 strikeobj MTNK 48 34 10 all
+12050 strikeobj FV 48 34 10 all
+12200 strikeobj E1 48 34 10 all
+12350 strikeobj MTNK 48 34 10 all
