@@ -1256,9 +1256,10 @@ bool TeamClass::Remove(FootClass * obj, int typeindex, bool enter_idle)
 	}
 
 	/*
-	**	A unit that breaks off of a team will enter idle mode.
+	**	A unit that breaks off of a team enters idle mode unless it is falling or ScenarioInit is set
+	**	(TeamClass::LiberateMember, 0x6EA870).
 	*/
-	if (enter_idle && GameActive && obj->IsActive && !obj->IsInLimbo) {
+	if (enter_idle && ScenarioInit == 0 && obj->IsActive && !obj->IsInLimbo && !obj->IsCrashing) {
 		obj->Enter_Idle_Mode();
 	}
 
