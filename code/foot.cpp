@@ -4658,6 +4658,7 @@ void FootClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsScattering);
 	crc(IsIdle);
 	crc(IonBlastYDrawOffset);
+	crc(ChronoArrivalHold);
 }
 
 
