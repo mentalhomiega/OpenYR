@@ -4,7 +4,7 @@
 ; Before the fix nothing started when F ended, so the structure showed no animation between F and the weapon being ready (a minute at most).
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/super-anim-chain.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 200 -ShotDir "E:/Claude ra2 decomp/scratch-agent/building-anim-expired/super" -Filter "AUTOTEST   banimstate|AUTOTEST     slot 1[4-7]|AUTOTEST   super |AUTOTEST   fire|Exception"
 ; Script lines must be in frame order, because the engine waits at each line until its frame.
-5 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/super-anim-chain.ini
+5 rules super-anim-chain.ini
 10 command CenterBase
 20 own NAPOWR 50 40
 21 own NAPOWR 50 44

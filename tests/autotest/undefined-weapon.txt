@@ -31,7 +31,7 @@
 110 own MTNK 70 63
 120 kill MTNK 1
 121 where MTNK
-125 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/undefined-weapon-death-last.ini
+125 rules undefined-weapon-death-last.ini
 130 own MTNK 70 65
 140 kill MTNK 1
 141 where MTNK

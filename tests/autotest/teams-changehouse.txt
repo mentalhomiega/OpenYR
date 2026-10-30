@@ -6,7 +6,7 @@
 300 spawn MTNK 70 60
 301 spawn MTNK 71 60
 305 where MTNK
-310 teamini E:\Claude ra2 decomp\src-agent7\tests\autotest\teams-changehouse.ini
+310 teamini teams-changehouse.ini
 320 team TSTCHGT
 340 where MTNK
 400 quit

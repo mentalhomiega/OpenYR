@@ -11,7 +11,7 @@
 41 own E1 59 20
 42 own E1 59 21
 50 enter E1 60 20
-60 art E:\Claude ra2 decomp\src-agent17\tests\autotest\wreck-passengers-off.ini
+60 art wreck-passengers-off.ini
 150 where E1
 160 hit FV:AP 5000
 170 where E1

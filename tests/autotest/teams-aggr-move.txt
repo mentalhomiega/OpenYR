@@ -8,7 +8,7 @@
 301 own HARV 60 38
 310 spawn E1 72 38
 311 spawn E1 73 38
-320 teamini E:\Claude ra2 decomp\src-agent6\tests\autotest\teams-aggr-move.ini
+320 teamini teams-aggr-move.ini
 330 team TSTAGGT
 420 where E1
 500 where E1
