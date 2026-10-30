@@ -2,7 +2,8 @@
 ; The tanks first take the 58 Soviet structures one at a time: each strikeobj names a structure by its type and exact cell, and the waitgone line after it holds the script until that structure is gone or 900 frames pass. The east base (BadGuy2) goes first, then the north base, then the west base. Two structures in the far west (the gate and guard hut at 35,83 and 34,82) hold out for the full 900 frames each.
 ; From there every 300 frames the tanks are sent against the object nearest one of eight points on the map (strikeobj * ...), which hunts down the units and infantry the houses keep sending.
 ; The tanks are placed at 92 to 114,150 to 158. Tanks placed a few cells further north (146 to 148) never left their cells when ordered, so they are kept out of the army.
-; Expected: "AUTOTEST game over frame N: won" (frame 31461 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 18677 in the last run).
+; The 24 tanks placed at 150 and 152 never leave their cells when ordered (the same in older builds), and the 36 that do leave are lost before the last Soviet units in the south are hunted down, so a fresh 36 are placed at 154 to 158 at frames 12001 and 20001.
 ; Run it with fast pacing (GameSpeed=0, as in the Run line): at the normal pace the tanks that left their cells are lost before the last Soviet units are hunted down, and the mission is not won.
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all06.txt -Campaign -Map ALL06U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 900 -Settings "[Options]`nGameSpeed=0`n[Settings]`nGameSpeed=0" -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
@@ -312,6 +313,42 @@ ui click resume
 11725 strikeobj * 95 30 100 all
 11825 strikeobj * 95 30 100 all
 11925 strikeobj * 95 30 100 all
+12001 grantunit APOC 92 154
+12002 grantunit APOC 94 154
+12003 grantunit APOC 96 154
+12004 grantunit APOC 98 154
+12005 grantunit APOC 100 154
+12006 grantunit APOC 102 154
+12007 grantunit APOC 104 154
+12008 grantunit APOC 106 154
+12009 grantunit APOC 108 154
+12010 grantunit APOC 110 154
+12011 grantunit APOC 112 154
+12012 grantunit APOC 114 154
+12013 grantunit APOC 92 156
+12014 grantunit APOC 94 156
+12015 grantunit APOC 96 156
+12016 grantunit APOC 98 156
+12017 grantunit APOC 100 156
+12018 grantunit APOC 102 156
+12019 grantunit APOC 104 156
+12020 grantunit APOC 106 156
+12021 grantunit APOC 108 156
+12022 grantunit APOC 110 156
+12023 grantunit APOC 112 156
+12024 grantunit APOC 114 156
+12025 grantunit APOC 92 158
+12026 grantunit APOC 94 158
+12027 grantunit APOC 96 158
+12028 grantunit APOC 98 158
+12029 grantunit APOC 100 158
+12030 grantunit APOC 102 158
+12031 grantunit APOC 104 158
+12032 grantunit APOC 106 158
+12033 grantunit APOC 108 158
+12034 grantunit APOC 110 158
+12035 grantunit APOC 112 158
+12036 grantunit APOC 114 158
 12025 strikeobj * 120 120 100 all
 12125 strikeobj * 120 120 100 all
 12225 strikeobj * 120 120 100 all
@@ -392,6 +429,42 @@ ui click resume
 19725 strikeobj * 40 120 100 all
 19825 strikeobj * 100 65 100 all
 19925 strikeobj * 100 65 100 all
+20001 grantunit APOC 92 154
+20002 grantunit APOC 94 154
+20003 grantunit APOC 96 154
+20004 grantunit APOC 98 154
+20005 grantunit APOC 100 154
+20006 grantunit APOC 102 154
+20007 grantunit APOC 104 154
+20008 grantunit APOC 106 154
+20009 grantunit APOC 108 154
+20010 grantunit APOC 110 154
+20011 grantunit APOC 112 154
+20012 grantunit APOC 114 154
+20013 grantunit APOC 92 156
+20014 grantunit APOC 94 156
+20015 grantunit APOC 96 156
+20016 grantunit APOC 98 156
+20017 grantunit APOC 100 156
+20018 grantunit APOC 102 156
+20019 grantunit APOC 104 156
+20020 grantunit APOC 106 156
+20021 grantunit APOC 108 156
+20022 grantunit APOC 110 156
+20023 grantunit APOC 112 156
+20024 grantunit APOC 114 156
+20025 grantunit APOC 92 158
+20026 grantunit APOC 94 158
+20027 grantunit APOC 96 158
+20028 grantunit APOC 98 158
+20029 grantunit APOC 100 158
+20030 grantunit APOC 102 158
+20031 grantunit APOC 104 158
+20032 grantunit APOC 106 158
+20033 grantunit APOC 108 158
+20034 grantunit APOC 110 158
+20035 grantunit APOC 112 158
+20036 grantunit APOC 114 158
 20025 strikeobj * 100 65 100 all
 20125 strikeobj * 125 90 100 all
 20225 strikeobj * 125 90 100 all
