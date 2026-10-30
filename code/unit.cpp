@@ -5956,6 +5956,26 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (target == NavCom) return;
 
+	// A BalloonHover vehicle with a target keeps its destination and its Attack mission when it is told to stop, unless the
+	// target lies within a quarter turn of its facing (gamemd UnitClass::SetDestination, 0x741970).
+	if (target == NULL && Class->IsBalloonHover && NavCom != NULL && TarCom != NULL) {
+		bool keep = NavCom == TarCom;
+		if (!keep) {
+			CellClass const * navcell = dynamic_cast<CellClass const *>(NavCom);
+			keep = navcell != NULL && navcell->Cell_Occupier() == TarCom;
+		}
+		if (!keep) {
+			int const turn = (short)(Direction(TarCom).Raw - PrimaryFacing.Current().Raw);
+			keep = turn >= 0x4000 || turn <= -0x4000;
+		}
+		if (keep) {
+			if (Get_Mission() != MISSION_ATTACK) {
+				Set_Mission(MISSION_ATTACK);
+			}
+			return;
+		}
+	}
+
 	// A simple deployer takes no new destination while its deploy or pack-up animation runs (gamemd UnitClass::SetDestination, 0x741970).
 	if (target != NULL && Class->IsSimpleDeployer && SimpleDeployFrame != -1) {
 		return;

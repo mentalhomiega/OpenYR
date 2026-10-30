@@ -1,0 +1,48 @@
+; BalloonHover vehicles (Kirov ZEP), the Siege Chopper (SCHP) and the Rocketeer (JUMPJET) flown a few cells and then left alone to hover.
+; gamemd keeps the locomotor's moving flag set while such a unit hovers at its destination: the hover arrival (0x54BE62, 0x54BE1F) only sets the
+; flight state and clears nothing, so the unit stays in its Move mission and does not look for targets while it hovers.
+; The Rocketeer flies 12 cells, as a shorter trip is walked.
+; Expected: after the arrival (frame 300) the dump lines show "moving 1" and mission Move. An enemy infantryman placed one cell away
+; (frame 310) is not attacked (tar -1,-1 and full strength at frame 400 and 500). An explicit attack order (frame 520) kills it.
+; A guard order (select, then the G key, frame 900) makes the Siege Chopper and the Rocketeer take the infantryman that comes one cell away (frame 910). The Kirov gets the Stop command instead (frame 904), which leaves it on Guard, and takes the pillbox beside it.
+; Run: scripts/run_autotest.ps1 -Build agent25 -Script src-agent25/tests/autotest/jumpjet-hover-moving.txt -Country 8 -Seconds 200 -Filter "AUTOTEST   unit|AUTOTEST   where|Exception"
+30 command CenterBase
+35 killhouse Neutral
+40 reveal
+50 grantunit ZEP 60 45
+52 grantunit SCHP 60 55
+54 grantunit JUMPJET 60 65
+70 order ZEP 63 45
+72 order SCHP 63 55
+74 order JUMPJET 72 65
+300 dump
+310 enemy E1 64 45
+311 enemy E1 64 55
+312 enemy E1 73 65
+400 where ZEP
+400 where SCHP
+400 where JUMPJET
+400 where E1
+500 dump
+520 strike ZEP 64 45
+521 strike SCHP 64 55
+522 strike JUMPJET 73 65
+700 where E1
+710 dump
+900 select ZEP
+901 selectadd SCHP
+902 selectadd JUMPJET
+903 key G
+904 stop ZEP
+910 enemy GAPILL 65 45
+911 enemy E1 64 55
+912 enemy E1 73 65
+1000 where ZEP
+1000 where SCHP
+1000 where JUMPJET
+1000 where E1
+1000 where GAPILL
+1200 where E1
+1200 where GAPILL
+1300 dump
+1350 quit

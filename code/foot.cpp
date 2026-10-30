@@ -5669,14 +5669,14 @@ void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 
 /// <summary>
-/// Looks around once each time SightTimer expires, while this object is in the air, moving, and
-/// owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
+/// Looks around once each time SightTimer expires, while this object is in the air, moving now (a hovering
+/// jump jet is not), and owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for
 /// aircraft and vehicles. The timer runs whether or not the object qualifies. Infantry keep their
 /// own once-a-second look in InfantryClass::AI.
 /// </summary>
 void FootClass::Airborne_Look(void)
 {
-	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving() || !House->Is_Ally(PlayerPtr)) {
+	if (!IsActive || IsInLimbo || !Locomotion || !In_Air() || !Locomotion->Is_Moving_Now() || !House->Is_Ally(PlayerPtr)) {
 		return;
 	}
 	if (SightTimer == 0) {
