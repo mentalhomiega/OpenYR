@@ -4225,10 +4225,11 @@ void FootClass::AI(void)
 // DirectRocker-linked unit that is not Pushy. A playing sound is re-aimed at the object's place on
 // every update, as gamemd's FootClass::Update (0x4DA530) does through AudioController::PlayEvent
 // (0x750D40). After the object stops, the sound plays on for three updates and ends on the fourth.
+// gamemd's update does not test InLimbo here, so a limboed object that is still moving keeps the flag set.
 void FootClass::Update_Move_Sound(bool stepped)
 {
 	bool const moving = stepped || (Locomotion != NULL && Locomotion->Is_Moving_Now());
-	bool const may_move = !IsInLimbo && !IsFalling && !IsCrashing && (DirectRockerLinkedUnit == NULL || TClass->IsPushy);
+	bool const may_move = !IsFalling && !IsCrashing && (DirectRockerLinkedUnit == NULL || TClass->IsPushy);
 
 	if (moving && may_move) {
 		if (!IsMoveSoundPlaying && TClass->MoveSound.Count() > 0) {
@@ -4250,7 +4251,8 @@ void FootClass::Update_Move_Sound(bool stepped)
 		}
 	}
 
-	if (IsMoveSoundPlaying) {
+	// A loop that Limbo ended has no voc, so it is not re-aimed or restarted.
+	if (IsMoveSoundPlaying && MoveSoundVoc != VOC_NONE) {
 		if (LogSoundEffects) {
 			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(MoveSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
 		}
@@ -4438,9 +4440,10 @@ bool FootClass::Limbo(void)
 {
 	Update_Sensors(true);
 
+	// As gamemd's FootClass::Limbo (0x4DB260) does, this ends the loop and leaves IsMoveSoundPlaying alone.
+	// Clearing the voc stops the per-update follow from restarting the ended loop.
 	MoveSoundHandle.Stop();
 	MoveSoundHandle.Clear();
-	IsMoveSoundPlaying = false;
 	MoveSoundVoc = VOC_NONE;
 
 	if (!IsInLimbo) {

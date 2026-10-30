@@ -1,0 +1,29 @@
+; A player's Terror Drone (DRON, Drive locomotor, MoveSound TerrorDroneMoveLoop) is ordered to strike an enemy infantryman (E1) two cells east.
+; Its DroneJump is a LimboLaunch weapon: the drone leaves the map in the update of frame 46 (limbo 1 from frame 47) and is back on the map at frame 63.
+; gamemd's FootClass::Limbo (0x4DB260) ends the move loop's AudioController but leaves IsMoveSoundPlaying (+0x53C) alone, and the move block of
+; FootClass::Update (0x4DAA01) does not test InLimbo. DriveLocomotionClass::Stop_Moving (0x4AFE00) keeps HeadToCoord, so the drone still reports
+; Is_Moving_Now while it is in limbo. The flag therefore stays set through the jump, and neither the jump nor the landing starts a new loop.
+; Before the fix: the flag cleared on frame 47 ("playing 0"), and frame 63 started the loop again ("playing 1 sound TerrorDroneMoveLoop").
+; After the fix: from frame 47 the flag stays at 1 with no voc ("sound none"), through the landing and the walk to 63,40. It clears on frame 80,
+; once the move delay has run out, and no loop plays again while the drone stands still.
+; Expected: "Sound follows: TerrorDroneMoveLoop" lines only up to frame 46. The movesound probes show "sound TerrorDroneMoveLoop" on frame 44 and "sound none" from frame 47 on.
+; Run: scripts/run_autotest.ps1 -Build agent22 -Map XMP08T2.MAP -Script E:/Claude ra2 decomp/src-agent22/tests/autotest/limbo-move-sound.txt -Seconds 150 -Filter "AUTOTEST   movesound|Sound follows|Exception"
+1 sounds 1
+10 command CenterBase
+20 reveal
+25 view 62 40
+30 grantunit DRON 60 40
+31 enemy E1 64 40
+33 strike DRON 64 40
+44 movesounds DRON
+46 movesounds DRON
+47 movesounds DRON
+48 movesounds DRON
+62 movesounds DRON
+63 movesounds DRON
+64 movesounds DRON
+72 movesounds DRON
+76 movesounds DRON
+80 movesounds DRON
+84 movesounds DRON
+200 quit
