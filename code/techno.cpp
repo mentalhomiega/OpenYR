@@ -5817,6 +5817,16 @@ bool Attack_Move_Key_Held(void)
 }
 
 
+/// <summary>
+/// Returns whether a move or an attack under the mouse is an attack-move now: the AttackMove command is armed, the attack-move
+/// key is held, or Ctrl and Shift are held over selected objects that can all attack-move (AllSelectedCanAttackForced, 0x731BF0).
+/// </summary>
+bool Attack_Move_Pending(void)
+{
+	return(AttackMoveArmed || Attack_Move_Key_Held() || (Force_Attack_Keys_Held() && All_Selected_Can_Attack_Move()));
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Player_Assign_Mission -- Assigns a mission as result of player input.          *
  *                                                                                             *

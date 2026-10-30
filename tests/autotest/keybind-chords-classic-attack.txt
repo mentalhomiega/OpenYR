@@ -1,6 +1,6 @@
 ; Classic attack move with Ctrl and Shift held, the AttackMove binding the Classic scheme now gives (a held chord, with no key).
 ; E1 is granted at 60,42 and 380,420 is cell 67,47 at that view; 300,360 is cell 64,46. No enemy stands near.
-; Expected: the plain clicks give Move. With Ctrl and Shift held, the cursor shows the attack cursor (shape 21) over the
+; Expected: the plain clicks give Move. With Ctrl and Shift held, the cursor shows the attack-move cursor (shape 71, MOUSE_CAN_ATTACK_2) over the
 ; open ground, and the click gives Attack Move. After the keys are released, a plain click gives no attack-move: the unit
 ; already stands on 64,46, so that Move shows as Guard.
 ; Run: scripts/run_autotest.ps1 -Build agent8 -Script src-agent8/tests/autotest/keybind-chords-classic-attack.txt -Width 640 -Height 480 -Seconds 360 -Filter "AUTOTEST|Exception"

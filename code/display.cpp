@@ -1872,16 +1872,13 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 	**	0x4AAE90). Under the shroud, most actions show the plain cursor and an attack shows
 	**	the move cursor, to keep the shrouded ground a mystery.
 	*/
-	if (shadow) {
+	// An attack-move under the mouse shows MOUSE_CAN_ATTACK_2 over ground and over an object, shrouded or not. gamemd's ConvertAction
+	// (0x4AAE90) maps a move or an attack to 0x3E or 0x3F while FUN_00731BF0 holds (the arm, or Ctrl with Shift), and both show cursor 71.
+	if ((waypoint_action == ACTION_MOVE || waypoint_action == ACTION_ATTACK) && Attack_Move_Pending()) {
+		Set_Default_Mouse(MOUSE_CAN_ATTACK_2, wsmall);
+	} else if (shadow) {
 		switch (waypoint_action) {
 			case ACTION_MOVE:
-				// An armed or held attack-move shows the attack cursor under the shroud as well (ConvertAction, 0x4AAE90, shows 0x47 for 0x3E), over an object too: a move onto one is an attack-move.
-				if (AttackMoveArmed || Attack_Move_Key_Held()) {
-					Set_Default_Mouse(MOUSE_CAN_ATTACK_2, wsmall);
-					break;
-				}
-				// fall into next case.
-
 			case ACTION_ATTACK:
 				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 				break;
@@ -1951,11 +1948,6 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 		*/
 		switch (waypoint_action) {
 			case ACTION_MOVE:
-				// An armed or held attack-move shows the attack cursor wherever a click gives a move, over an object too (ConvertAction, 0x4AAE90).
-				if (AttackMoveArmed || Attack_Move_Key_Held()) {
-					Set_Default_Mouse(MOUSE_CAN_ATTACK, wsmall);
-					break;
-				}
 				Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 				break;
 

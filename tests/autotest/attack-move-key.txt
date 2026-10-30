@@ -2,7 +2,7 @@
 ; ground; holding the key keeps every click on the ground an attack-move while it is down. Ctrl with Shift and a click on the
 ; ground is gamemd's attack-move (ClickedMission, 0x006FFBE0, with AllSelectedCanAttackForced, 0x00731BF0). Ctrl with Alt is
 ; gamemd's guard-area order (TechnoClass::MouseOverCell, 0x00700600, returns GuardArea). The shape lines give the mouse
-; shape the map shows: 18 is MOUSE_CAN_MOVE, 21 is MOUSE_CAN_ATTACK (the armed cursor) and 22 is MOUSE_AREA_GUARD.
+; shape the map shows: 18 is MOUSE_CAN_MOVE, 71 is MOUSE_CAN_ATTACK_2 (the armed cursor, over ground and objects) and 22 is MOUSE_AREA_GUARD.
 ; At this view, 380,420 is cell 67,47 and 300,360 is cell 64,46. No enemy stands near, so the mission is the order alone.
 ; A mission name can lag its order by a few frames, so each where line follows its click by 40 frames.
 ; Expected: the tap gives Attack Move to 67,47, and the next plain click gives Move to 64,46. While A is held, its clicks give

@@ -37,6 +37,7 @@
 extern bool AttackMoveArmed;
 extern bool AttackMoveOrdering;
 bool Attack_Move_Key_Held(void);
+bool Attack_Move_Pending(void);
 bool All_Selected_Can_Attack_Move(void);
 
 #include "_voxel.h"
