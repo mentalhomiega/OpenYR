@@ -1,6 +1,6 @@
 ; Campaign win check for Allied 5 (Red Alert 2). Thirty Apocalypse tanks (grantunit, standing in for the army a player would bring) clear the Soviet base round the Battle Lab (NATECH at 100,94) while the three spies wait; only the tanks are ordered (the AttackerTypeID APOC), so Tanya, whose death loses the mission, stays out of the fight.
 ; Frames 200 to 1000 take the Tesla coils at the south gate, 1000 to 2000 the rest of the south base, 2000 to 3000 the coils round the lab, 3000 to 4500 the north end. At 4500 the spies are ordered to capture the Battle Lab; "BattleLab Entered" springs at about frame 5850 and the map enlarges. Twenty more tanks arrive at 6300 and go for the missile silos (NAMISL), first the Orange Team's at 56,63, then the Yellow Team's at 65,40. With both gone "Victory 1" and "Victory 2" follow.
-; Expected: "AUTOTEST game over frame N: won" (frame 11665 in the last run).
+; Expected: "AUTOTEST game over frame N: won" (frame 12725 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-all05.txt -Campaign -Map ALL05S.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2
