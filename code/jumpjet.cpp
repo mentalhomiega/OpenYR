@@ -119,8 +119,7 @@ bool JumpjetLocomotionClass::Process(void)
 	Facing.Set_ROT(LinkedTo->TClass->JumpjetTurnRate);
 	LayerType layer = In_Which_Layer();
 
-	// A hovering vehicle that crashed has no move in hand, and still has to start its fall.
-	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING) || LinkedTo->IsCrashing) {
+	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING)) {
 		Movement_AI();
 		if (!LinkedTo->IsActive) {
 			return(false);
@@ -285,7 +284,7 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 			IsLanding = false;
 		}
 		Cell cell = LinkedTo->PositionCoord.As_Cell();
-		Cell nearby = Map.Nearby_Location(cell, SPEED_TRACK);
+		Cell nearby = Map.Nearby_Location(cell, LinkedTo->TClass->Speed, -1, LinkedTo->TClass->MZone);
 		if (nearby != CELL_NONE) {
 			Coord nearby_coord = nearby.As_Coord();
 			nearby_coord.Z = Map.Get_Height_GL(nearby_coord);
@@ -621,8 +620,6 @@ void JumpjetLocomotionClass::Process_Hover(void)
 		Coord headto = HeadToCoord;
 		Coord position = LinkedTo->PositionCoord;
 		if (Point2D(headto) == Point2D(position)) {
-			// A BalloonHover unit ends its move on arrival even while it has a target, so it is
-			// no longer moving and can fire from where it hovers.
 			if (Let_Go_At_Arrival()) {
 				return;
 			}
@@ -685,7 +682,12 @@ bool JumpjetLocomotionClass::Cell_Claimed_By_Other(Cell const & cell) const
 		}
 
 		JumpjetLocomotionClass const * jumpjet = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
-		if (jumpjet == NULL || jumpjet->IsMoving || (jumpjet->CurrentState != GROUNDED && jumpjet->CurrentState != HOVERING)) {
+		if (jumpjet == NULL || (jumpjet->CurrentState != GROUNDED && jumpjet->CurrentState != HOVERING)) {
+			continue;
+		}
+
+		// A hovering unit that has reached its destination still counts as moving, so only one with somewhere else to go is passed over.
+		if (jumpjet->IsMoving && Point2D(jumpjet->HeadToCoord) != Point2D(foot->PositionCoord)) {
 			continue;
 		}
 
@@ -722,14 +724,13 @@ bool JumpjetLocomotionClass::Relocate_If_Claimed(Cell const & cell)
 
 
 /// <summary>
-/// Ends a BalloonHover unit's move at its destination while it stays in the air.
+/// Settles a unit that stays in the air at its destination. The unit keeps its moving flag and goes on
+/// hovering, so its Move mission continues and it takes no target of its own. gamemd's hover arrival
+/// (0x54BE62) changes only the flight state, and runs no per-cell arrival, which would send a soldier to idle.
 /// </summary>
 void JumpjetLocomotionClass::Arrive_Aloft(void)
 {
-	HeadToCoord = COORD_NONE;
-	IsMoving = false;
 	LinkedTo->Assign_Destination(NULL);
-	LinkedTo->Per_Cell_Process(PCP_END);
 }
 
 
