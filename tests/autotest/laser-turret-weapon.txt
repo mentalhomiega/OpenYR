@@ -3,7 +3,7 @@
 ; Expected, from gamemd's TechnoClass::Fire (0x6FDD50): a structure's beam is made from its turret weapon (TechnoClass::GetTurretWeapon, 0x70E1A0), which is the primary weapon here, whichever
 ; weapon fired. Each shot writes AUTOTEST laser zap with fired PrismShot, beam Vulcan2 and duration 33. When the fired weapon was used, the beam was PrismShot with duration 15.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/laser-turret-weapon.txt -Seconds 120 -Filter "AUTOTEST laser|AUTOTEST enemy|Exception"
-10 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/laser-turret-weapon.ini
+10 rules laser-turret-weapon.ini
 30 command CenterBase
 35 reveal
 40 own GAPILL 55 44

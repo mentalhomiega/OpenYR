@@ -404,6 +404,7 @@ extern int VoxelNormalTableEntryCount[];
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -422,6 +423,33 @@ struct ProducedTallyStruct {
 	int Count[4];
 };
 static std::map<HouseClass const *, ProducedTallyStruct> _ProducedBy;
+
+// The folder of the script being read, absolute and ending in a separator. Empty before a script is read.
+static std::string AutoTest_Script_Folder;
+
+// The folder of a script file as an absolute path with a trailing separator; empty when that cannot be worked out.
+static std::string AutoTest_Folder_Of(char const * filename)
+{
+	std::error_code error;
+	std::string folder = std::filesystem::absolute(filename, error).parent_path().string();
+	if (error) {
+		return std::string();
+	}
+	if (!folder.empty() && folder.back() != '\\' && folder.back() != '/') {
+		folder += '\\';
+	}
+	return folder;
+}
+
+// A path that a step reads from disk: a relative one is taken from the script's folder, a rooted one is kept as written.
+static std::string AutoTest_Input_Path(std::string const & path)
+{
+	std::filesystem::path const given(path);
+	if (AutoTest_Script_Folder.empty() || given.has_root_name() || given.has_root_directory()) {
+		return path;
+	}
+	return AutoTest_Script_Folder + path;
+}
 
 void AutoTest_Note_Built(HouseClass const * house, int rtti)
 {
@@ -4380,11 +4408,12 @@ void Run(StepType const & step)
 	} else if (step.Command == "rules") {
 		// rules <path>: reads that INI file over the rules, as a map's rule overrides are read.
 		CCINIClass ini;
-		RawFileClass file(step.Argument.c_str());
+		std::string const resolved = AutoTest_Input_Path(step.Argument);
+		RawFileClass file(resolved.c_str());
 		if (file.Is_Available() && ini.Load(file, false)) {
 			Rule->Addition(ini);
 		} else {
-			DebugString("AUTOTEST   rules %s: not found\n", step.Argument.c_str());
+			DebugString("AUTOTEST   rules %s: not found\n", resolved.c_str());
 		}
 	} else if (step.Command == "reload") {
 		// reload: reads the rules, art and map overrides again, as the Reload rules command does.
@@ -4392,12 +4421,13 @@ void Run(StepType const & step)
 	} else if (step.Command == "art") {
 		// art <path>: reads that INI file over the art, then has the types it names read themselves again.
 		CCINIClass ini;
-		RawFileClass file(step.Argument.c_str());
-		RawFileClass artfile(step.Argument.c_str());
+		std::string const resolved = AutoTest_Input_Path(step.Argument);
+		RawFileClass file(resolved.c_str());
+		RawFileClass artfile(resolved.c_str());
 		if (file.Is_Available() && ini.Load(file, false) && ArtINI.Load(artfile, false)) {
 			Rule->Addition(ini);
 		} else {
-			DebugString("AUTOTEST   art %s: not found\n", step.Argument.c_str());
+			DebugString("AUTOTEST   art %s: not found\n", resolved.c_str());
 		}
 	} else if (step.Command == "pcxcameo") {
 		// pcxcameo <path>: the size of that PCX cameo and two of its pixels, as the sidebar gets them.
@@ -4413,7 +4443,8 @@ void Run(StepType const & step)
 		TrueColour_Report(step.Argument.c_str());
 	} else if (step.Command == "truecolourdir") {
 		// truecolourdir <path>: adds a directory the game searches for files, PNG sprites included.
-		TrueColour_Add_Directory(step.Argument.c_str());
+		std::string const resolved = AutoTest_Input_Path(step.Argument);
+		TrueColour_Add_Directory(resolved.c_str());
 	} else if (step.Command == "extract") {
 		// extract <FILE> <out path>: copies a game file, wherever the game finds it, to the path given.
 		std::string const & argument = step.Argument;
@@ -4761,13 +4792,14 @@ void Run(StepType const & step)
 	} else if (step.Command == "teamini") {
 		// teamini <path>: reads the task forces, scripts and team types in that INI file, as a map's are read.
 		CCINIClass ini;
-		RawFileClass file(step.Argument.c_str());
+		std::string const resolved = AutoTest_Input_Path(step.Argument);
+		RawFileClass file(resolved.c_str());
 		if (file.Is_Available() && ini.Load(file, false)) {
 			TaskForceClass::Read_All(ini, SCOPE_LOCAL);
 			ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
 			TeamTypeClass::Read_All(ini, SCOPE_LOCAL);
 		} else {
-			DebugString("AUTOTEST   teamini %s: not found\n", step.Argument.c_str());
+			DebugString("AUTOTEST   teamini %s: not found\n", resolved.c_str());
 		}
 	} else if (step.Command == "reinforce") {
 		// reinforce <TeamType>: brings that team type on as a reinforcement for the player, as the trigger action does.
@@ -6143,6 +6175,8 @@ bool AutoTest_Load(char const * filename)
 		return(false);
 	}
 
+	AutoTest_Script_Folder = AutoTest_Folder_Of(filename);
+
 	char line[512];
 	while (std::fgets(line, sizeof(line), file) != NULL) {
 		char command[64] = "";
@@ -6177,7 +6211,7 @@ bool AutoTest_Load(char const * filename)
 		// A search directory has to be in place before startup reads the files it holds, such
 		// as the extra string tables, so it is added now rather than at its frame.
 		if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
-			std::string path = text;
+			std::string path = AutoTest_Input_Path(text);
 			if (path.back() != '\\' && path.back() != '/') {
 				path += '\\';
 			}

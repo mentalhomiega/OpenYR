@@ -4,7 +4,7 @@
 ; Expected: the weapon is ready at frame 114 and fired at frame 120. The banimstate lines show slot 15 still playing (stage 1 to 9) until about frame 170, no slot 17 before that, and slot 17 (NAIRON_H) from frame 174, once slot 15 has played out and slot 16 has had its one update. Slot 16 returns at frame 216, when the weapon is ready again.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent18 -Script src-agent18/tests/autotest/super-anim-fire-during-two.txt -Width 800 -Height 600 -RenderFrameRate 30 -Seconds 120 -Filter "AUTOTEST   banimstate|AUTOTEST     slot 1[4-7]|AUTOTEST   fire|Exception"
 ; Script lines must be in frame order, because the engine waits at each line until its frame.
-5 rules E:/Claude ra2 decomp/src-agent18/tests/autotest/super-anim-fire-during-two.ini
+5 rules super-anim-fire-during-two.ini
 10 command CenterBase
 20 own NAPOWR 50 40
 21 own NAPOWR 50 44

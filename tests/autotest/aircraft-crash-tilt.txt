@@ -7,7 +7,7 @@
 ; (0.03 before the fix); the Harrier's sideways tilt stops at -0.78539 while its forwards tilt keeps growing, since gamemd bounds
 ; the forwards tilt only on the nose-down side (before the fix the sideways tilt ran on without limit too).
 ; Run: scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/aircraft-crash-tilt.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST   rock|Exception"
-10 rules E:/Claude ra2 decomp/src-agent27/tests/autotest/aircraft-crash-tilt.ini
+10 rules aircraft-crash-tilt.ini
 30 own DEST 86 70
 31 grantunit ORCA 86 66
 35 move ORCA 86 62

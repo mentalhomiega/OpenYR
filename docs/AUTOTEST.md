@@ -177,6 +177,20 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2100 quit
 ```
 
+### File paths
+
+The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.
+
+| Steps | Path | A relative path is taken from |
+| --- | --- | --- |
+| `rules`, `art`, `teamini`, `searchdir`, `truecolourdir` | Read from disk, or a folder the game searches | The folder of the script file |
+| `exportshape`, `exportpal`, `extract` (second argument), `syncrec <path>` | Written to disk | The working directory |
+| `dumpfile`, `extract` (first argument), `pcxcameo`, `inifile` | A game file name, found the way the game finds its files; not a disk path | Not applicable |
+
+The script's folder is the folder of the path given to `-AUTOTEST=`, which `scripts/run_autotest.ps1` makes absolute. Under that runner the working directory is the build's `bin\Release` folder. An absolute path is used as written. If the script's folder cannot be determined, a relative path in the first row is used as written, so the game resolves it from the working directory.
+
+A relative `rules`, `art` or `teamini` path that names no file beside the script logs `not found` with the full path tried.
+
 ### Waiting for conditions
 
 A wait step pauses the script at its line until its condition holds or its timeout passes. The timeout is the optional last argument in the syntax above, in game frames counted from the frame the wait starts. It defaults to 3000 frames, about the length of a win run.

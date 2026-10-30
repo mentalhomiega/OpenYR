@@ -3,7 +3,7 @@
 ; beam, so only the bolt is made and each shot writes one AUTOTEST beam end line (the bolt's). A radiation beam also asks for an end point, so two lines per shot would
 ; mean both effects were made.
 ; Run: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/beam-effect-exclusive.txt -Country 8 -Seconds 120 -Filter "AUTOTEST beam end|AUTOTEST enemy|Exception"
-10 rules E:/Claude ra2 decomp/src-agent15/tests/autotest/beam-effect-exclusive.ini
+10 rules beam-effect-exclusive.ini
 30 command CenterBase
 35 reveal
 40 own NAPOWR 50 40
