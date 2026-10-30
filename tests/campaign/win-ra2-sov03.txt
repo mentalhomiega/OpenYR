@@ -2,7 +2,8 @@
 ; The tanks drive north in two legs and destroy the Allied base structure by structure (strikeobj, in the order the groups stand on the map). Four Soviet engineers
 ; (grantunit, standing in for the engineers a player would train) then enter the Allied Battle Lab at 101,27, which makes the Soviet ally build the Psychic Beacon. The tanks
 ; stand beside the beacon and beat off the Allied drop-pod teams until its 300 second countdown ends and the win chain runs.
-; Expected: "AUTOTEST game over frame N: won" (frame 19694 in the last run).
+; Before the engineers come, the tanks clear the Allied tanks, rifle infantry and FV that guard the lab (strikeobj, then waitgone). Left alone, the guards shot the engineers on the way in.
+; Expected: "AUTOTEST game over frame N: won" (frame 20422 in the last run).
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-ra2-sov03.txt -Campaign -Map SOV03U.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 600 -Filter "AUTOTEST +(sprung|win|game over|wait|counts)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 0 requirera2
@@ -118,6 +119,14 @@ ui click resume
 13350 strikeobj GAPILE 113 27 20 all
 13500 strikeobj GAPILE 113 27 20 all
 13650 strikeobj GAPILE 113 27 20 all
+13700 strikeobj GAPILL 113 24 4 all
+13700 strikeobj GAPILL 117 34 4 all
+13800 strikeobj MTNK 104 29 8 all
+13800 waitgone MTNK 104 29 8 1500
+13800 strikeobj E1 103 28 8 all
+13800 waitgone E1 103 28 8 1500
+13800 strikeobj FV 101 30 8 all
+13800 waitgone FV 101 30 8 900
 14000 grantunit SENGINEER 104 44
 14000 counts player
 14001 grantunit SENGINEER 106 44
