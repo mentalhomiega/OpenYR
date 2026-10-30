@@ -4921,6 +4921,7 @@ void InfantryClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsZoneCheat);
 	crc(WasSelected);
 	crc(ShouldDeploy);
+	crc(IsDugInSafe);
 }
 
 

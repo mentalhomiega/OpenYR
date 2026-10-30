@@ -2818,6 +2818,7 @@ class RulesClass
 		 * waypoint, so the legs before the attack run first. If false, the path starts at the clicked waypoint,
 		 * and the attack starts at once.
 		 */
+		// Read only when the local player clicks, so it is neither saved nor part of the checksum.
 		bool WaypointAttackFromFirst;
 
 		/*

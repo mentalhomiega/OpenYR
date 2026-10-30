@@ -378,6 +378,29 @@ CRCEngine Object_CRCs(void)
 
 
 /// <summary>
+/// Folds the checksum of every game object into one value, leaving out the object types, the
+/// scenario's timers and the per-machine state that Object_CRCs adds. Two runs of the same game give
+/// the same value, whether or not either was saved and loaded on the way.
+/// </summary>
+unsigned int Heap_CRCs(void)
+{
+	int i;
+	CRCEngine crc;
+
+#define DO_HEAP_CRC(VECTOR) \
+	for (i = 0; i < VECTOR.Count(); i++) { \
+		VECTOR[i]->Compute_CRC(crc); \
+	}
+
+	OBJECT_HEAP_LIST_INSTANCES(DO_HEAP_CRC)
+
+#undef DO_HEAP_CRC
+
+	return(crc());
+}
+
+
+/// <summary>
 /// Writes a per-heap checksum table to the out-of-sync report: one summary line per heap, then
 /// a row per live object keyed by its stable identifier. Unlike Object_CRCs this folds in no
 /// per-machine state, so two peers' tables are directly comparable.

@@ -65,5 +65,6 @@ bool Reconcile_Players(void);
 void Print_Heap_CRCs(FILE * fp);
 class CRCEngine;
 CRCEngine Object_CRCs(void);
+unsigned int Heap_CRCs(void);
 
 extern unsigned int ExpectedGameVersion;

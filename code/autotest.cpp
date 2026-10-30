@@ -1111,7 +1111,7 @@ void Log_State_CRC(void)
 {
 	unsigned int const targets = Compute_Sim_State_Hash().Targets;
 	CRCEngine objects = Object_CRCs();
-	DebugString("AUTOTEST statecrc frame %d objects %08X targets %08X\n", Frame, (unsigned int)objects(), targets);
+	DebugString("AUTOTEST statecrc frame %d objects %08X heaps %08X targets %08X\n", Frame, (unsigned int)objects(), Heap_CRCs(), targets);
 }
 
 

@@ -1,0 +1,72 @@
+; The same game as save-mixed-units.txt without its save and load; see that file for what to compare.
+;   scripts/run_autotest.ps1 -Build agent27 -Script src-agent27/tests/autotest/save-mixed-units-nosave.txt -Map XMP08T2.MAP -Width 800 -Height 600 -Seconds 300 -Filter "AUTOTEST|SAVING GAME|LOADING GAME|SWIZZLE|Exception"
+5 rules E:/Claude ra2 decomp/src-agent27/tests/autotest/slave-undeploy-scatter-on.ini
+20 reveal
+30 view 92 62
+31 grantunit ZEP 86 66
+32 grantunit JUMPJET 90 66
+33 own CLEG 94 66
+34 own DEST 86 70
+35 own GGI 98 66
+36 grantunit MTNK 96 62
+37 own YAREFN 95 69
+40 enemy NAHAND 90 60
+41 enemy NARADR 94 60
+42 own SPY 92 62
+43 own SPY 92 64
+50 select GGI
+51 command DeployObject
+60 spy SPY 90 60
+90 move ZEP 86 52
+90 move JUMPJET 90 44
+100 where YAREFN
+150 where YAREFN
+150 spyon Americans 94 60
+200 where SPY
+200 where YAREFN
+270 own GAPOWR 97 70
+280 grant ChronoSphereSpecial
+281 grant ChronoWarpSpecial
+290 view 96 62
+295 sell 95 69
+300 hash 4
+300 statecrc 4
+300 kill DEST 1
+310 fire ChronoSphereSpecial 96 62
+320 fire ChronoWarpSpecial 90 62
+336 kill ZEP 1
+336 kill JUMPJET 1
+336 own E1 96 70
+337 own E1 96 70
+338 own E1 96 70
+340 order CLEG 94 62
+340 where SMIN
+344 where CLEG
+344 where MTNK
+344 lift ZEP
+344 lift JUMPJET
+344 lift DEST
+350 where CLEG
+350 where MTNK
+350 where GGI
+350 where YAREFN
+350 lift ZEP
+350 lift JUMPJET
+350 where SMIN
+350 lift DEST
+352 where CLEG
+352 where MTNK
+352 where GGI
+352 where YAREFN
+352 lift ZEP
+352 lift JUMPJET
+360 where SMIN
+380 where SMIN
+400 where MTNK
+400 lift ZEP
+400 lift JUMPJET
+500 where CLEG
+500 where DEST
+700 hash 0
+700 statecrc 0
+701 quit
