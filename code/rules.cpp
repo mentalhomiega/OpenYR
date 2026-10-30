@@ -1058,6 +1058,83 @@ void RulesClass::Initialize(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// How far each type list had been read when RulesClass::Objects finished with it.
+/// Objects reads the lists one after another, so a type first named by a later list or by a rule
+/// key read after Objects (a DeathWeapon, the nuke projectile) is created behind its list's read.
+/// </summary>
+struct TypeReadMarks
+{
+	int SuperWeapons;
+	int Anims;
+	int Buildings;
+	int Aircraft;
+	int Units;
+	int Infantry;
+	int Weapons;
+	int Bullets;
+	int Warheads;
+	int Terrains;
+	int Smudges;
+	int Overlays;
+	int Particles;
+	int ParticleSystems;
+	int VoxelAnims;
+	int Tiberiums;
+};
+static TypeReadMarks TypeMarks;
+
+
+/// <summary>
+/// Reads the types of one list that were created after the mark, and moves the mark to the end.
+/// </summary>
+/// <returns>The number of types read.</returns>
+template<class LIST>
+static int Read_Types_From(LIST & list, int & mark, CCINIClass const & ini)
+{
+	int read = 0;
+	for (; mark < list.Count(); mark++) {
+		if (ini.Is_Present(list[mark]->Name())) {
+			DebugString("Rules: [%s] was created after its list was read; reading its section now.\n", list[mark]->Name());
+		}
+		list[mark]->Read_INI(ini);
+		read++;
+	}
+	return(read);
+}
+
+
+/// <summary>
+/// Reads the section of every type created after its list was read.
+/// A type that only a rule key names (a DeathWeapon, a special weapon's projectile) is created after
+/// its list's read pass, so without this it would keep its defaults and its section would be ignored.
+/// Reading a type can create another, so the lists are read again until none grows.
+/// gamemd (RulesClass::Read_File, 0x668A40) never reads such a type; its weapon is left with no
+/// projectile and crashes the first time it is used.
+/// </summary>
+static void Read_Late_Types(CCINIClass const & ini)
+{
+	for (int read = 1; read > 0; ) {
+		read = Read_Types_From(SuperWeaponTypes, TypeMarks.SuperWeapons, ini);
+		read += Read_Types_From(AnimTypes, TypeMarks.Anims, ArtINI);
+		read += Read_Types_From(BuildingTypes, TypeMarks.Buildings, ini);
+		read += Read_Types_From(AircraftTypes, TypeMarks.Aircraft, ini);
+		read += Read_Types_From(UnitTypes, TypeMarks.Units, ini);
+		read += Read_Types_From(InfantryTypes, TypeMarks.Infantry, ini);
+		read += Read_Types_From(Weapons, TypeMarks.Weapons, ini);
+		read += Read_Types_From(BulletTypes, TypeMarks.Bullets, ini);
+		read += Read_Types_From(::Warheads, TypeMarks.Warheads, ini);
+		read += Read_Types_From(TerrainTypes, TypeMarks.Terrains, ini);
+		read += Read_Types_From(SmudgeTypes, TypeMarks.Smudges, ini);
+		read += Read_Types_From(OverlayTypes, TypeMarks.Overlays, ini);
+		read += Read_Types_From(ParticleTypes, TypeMarks.Particles, ini);
+		read += Read_Types_From(ParticleSystemTypes, TypeMarks.ParticleSystems, ini);
+		read += Read_Types_From(VoxelAnimTypes, TypeMarks.VoxelAnims, ini);
+		read += Read_Types_From(Tiberiums, TypeMarks.Tiberiums, ini);
+	}
+}
+
+
 /***********************************************************************************************
  * RulesClass::Process -- Fetch the bulk of the rule data from the control file.               *
  *                                                                                             *
@@ -1115,8 +1192,9 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Radiation(ini);
 	Elevation_Model(ini);
 
-	// Combat_Damage and the sections after Objects can create weapons after the read loop above.
-	// Those weapons have not been read yet, so they take the defaults and launch speed here; a later rules pass can still read them.
+	// Combat_Damage and the sections after Objects can create types after the read loops in Objects.
+	// Those types have not been read yet, so they are read now, and a weapon that still names no projectile takes the defaults.
+	Read_Late_Types(ini);
 	for (int windex = 0; windex < Weapons.Count(); windex++) {
 		Weapons[windex]->Ensure_Defaults();
 		Weapons[windex]->Init_Max_Speed();
@@ -4063,28 +4141,34 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	for (int index = 0; index < SuperWeaponTypes.Count(); index++) {
 		SuperWeaponTypes[index]->Read_INI(ini);
 	}
+	TypeMarks.SuperWeapons = SuperWeaponTypes.Count();
 
 	for (int anim = 0; anim < AnimTypes.Count(); anim++) {
 		AnimTypes[anim]->Read_INI(ArtINI);
 	}
+	TypeMarks.Anims = AnimTypes.Count();
 
 	int bindex;
 	for (bindex = 0; bindex < BuildingTypes.Count(); bindex++) {
 		BuildingTypes[bindex]->Read_INI(ini);
 	}
+	TypeMarks.Buildings = BuildingTypes.Count();
 
 	for (int aindex = 0; aindex < AircraftTypes.Count(); aindex++) {
 		AircraftTypes[aindex]->Read_INI(ini);
 	}
+	TypeMarks.Aircraft = AircraftTypes.Count();
 
 	for (int uindex = 0; uindex < UnitTypes.Count(); uindex++) {
 		UnitTypes[uindex]->Read_INI(ini);
 	}
+	TypeMarks.Units = UnitTypes.Count();
 
 	for (int iindex = 0; iindex < InfantryTypes.Count(); iindex++) {
 		stricmp(InfantryTypes[iindex]->IniName, "MUTANT"); /// the result of this comparison is discarded
 		InfantryTypes[iindex]->Read_INI(ini);
 	}
+	TypeMarks.Infantry = InfantryTypes.Count();
 
 	// A projectile's AirburstWeapon can create a weapon that nothing else named, and a weapon
 	// can create a projectile, so the lists are read again from where they stood until neither grows.
@@ -4098,38 +4182,48 @@ bool RulesClass::Objects(CCINIClass const & ini)
 			BulletTypes[proj]->Read_INI(ini);
 		}
 	}
+	TypeMarks.Weapons = windex;
+	TypeMarks.Bullets = proj;
 
 	for (int whead = 0; whead < ::Warheads.Count(); whead++) {
 		::Warheads[whead]->Read_INI(ini);
 	}
+	TypeMarks.Warheads = ::Warheads.Count();
 
 	for (int tindex = 0; tindex < TerrainTypes.Count(); tindex++) {
 		TerrainTypes[tindex]->Read_INI(ini);
 	}
+	TypeMarks.Terrains = TerrainTypes.Count();
 
 	for (int sindex = 0; sindex < SmudgeTypes.Count(); sindex++) {
 		SmudgeTypes[sindex]->Read_INI(ini);
 	}
+	TypeMarks.Smudges = SmudgeTypes.Count();
 
 	for (int oindex = 0; oindex < OverlayTypes.Count(); oindex++) {
 		OverlayTypes[oindex]->Read_INI(ini);
 	}
+	TypeMarks.Overlays = OverlayTypes.Count();
 
 	for (int pindex = 0; pindex < ParticleTypes.Count(); pindex++) {
 		ParticleTypes[pindex]->Read_INI(ini);
 	}
+	TypeMarks.Particles = ParticleTypes.Count();
 
 	for (int psindex = 0; psindex < ParticleSystemTypes.Count(); psindex++) {
 		ParticleSystemTypes[psindex]->Read_INI(ini);
 	}
+	TypeMarks.ParticleSystems = ParticleSystemTypes.Count();
 
 	for (int vindex = 0; vindex < VoxelAnimTypes.Count(); vindex++) {
 		VoxelAnimTypes[vindex]->Read_INI(ini);
 	}
+	TypeMarks.VoxelAnims = VoxelAnimTypes.Count();
 
 	for (int tibindex = 0; tibindex < Tiberiums.Count(); tibindex++) {
 		Tiberiums[tibindex]->Read_INI(ini);
 	}
+	TypeMarks.Tiberiums = Tiberiums.Count();
 
 	/*
 	**	Fetch the mission control values.

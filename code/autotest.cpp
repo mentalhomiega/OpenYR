@@ -384,6 +384,7 @@ extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
+#include "_warhead.h"
 #include "radbeam.h"
 #include "rawfile.h"
 #include "armortypes.h"
@@ -1899,6 +1900,33 @@ static void Spawn_Probe_Step(StepType const & step)
 }
 
 
+// typedump [Name]: the main fields of every weapon, projectile and warhead type, or only those with that name, one line each.
+static void Type_Dump_Step(StepType const & step)
+{
+	auto wanted = [&](char const * name) { return step.Argument.empty() || stricmp(name, step.Argument.c_str()) == 0; };
+	for (int index = 0; index < Weapons.Count(); index++) {
+		WeaponTypeClass const * weapon = Weapons[index];
+		if (!wanted(weapon->Name())) continue;
+		DebugString("AUTOTEST   typedump weapon %s damage %d rof %d range %d speed %d burst %d projectile %s warhead %s\n", weapon->Name(), (int)weapon->Attack, (int)weapon->ROF,
+			(int)weapon->Range, (int)weapon->MaxSpeed, weapon->Burst, weapon->Bullet != NULL ? weapon->Bullet->Name() : "(none)", weapon->WarheadPtr != NULL ? weapon->WarheadPtr->Name() : "(none)");
+	}
+	for (int index = 0; index < BulletTypes.Count(); index++) {
+		BulletTypeClass const * bullet = BulletTypes[index];
+		if (!wanted(bullet->Name())) continue;
+		DebugString("AUTOTEST   typedump projectile %s rot %d high %d inaccurate %d floater %d aa %d ag %d\n", bullet->Name(), (int)bullet->ROT, (int)bullet->IsHigh,
+			(int)bullet->IsInaccurate, (int)bullet->IsFloater, (int)bullet->IsAntiAircraft, (int)bullet->IsAntiGround);
+	}
+	for (int index = 0; index < ::Warheads.Count(); index++) {
+		WarheadTypeClass const * warhead = ::Warheads[index];
+		if (!wanted(warhead->Name())) continue;
+		DebugString("AUTOTEST   typedump warhead %s spread %.3f spreadfactor %d walls %d rad %d verses", warhead->Name(), (double)warhead->CellSpread, (int)warhead->SpreadFactor,
+			(int)warhead->IsWallDestroyer, (int)warhead->IsRadiation);
+		for (int armor = 0; armor < (int)ARMOR_COUNT; armor++) DebugStringNoPrefix(" %.3f", warhead->Versus((ArmorType)armor));
+		DebugStringNoPrefix("\n");
+	}
+}
+
+
 static void Air_Probe_Step(StepType const & step)
 {
 	if (step.Command == "weapons") {
@@ -2835,6 +2863,11 @@ void Run(StepType const & step)
 	// weapons, airborne and rocket: see Air_Probe_Step. They sit before the chain below, which is nested too deeply to take another branch.
 	if (step.Command == "weapons" || step.Command == "airborne" || step.Command == "rocket") {
 		Air_Probe_Step(step);
+		return;
+	}
+
+	if (step.Command == "typedump") {
+		Type_Dump_Step(step);
 		return;
 	}
 
