@@ -1257,11 +1257,9 @@ void BuildingClass::Draw_Overlays(Point2D const & point, Rect const & cliprect) 
 		Draw_Text_Overlay(point + Point2D(-10, 10), point, cliprect);
 	}
 
-	/*
-	**	If this is a factory that we're spying on, or the player has the whole map, show what
-	**	it's producing
-	*/
-	if ((SpiedBy[PlayerPtr] || Session.ObiWan) && IsSelected) {
+	// Only a country that has spied on this factory sees its product, even a player given the
+	// whole map (gamemd's DisplayProductionTo test, 0x43E7B0).
+	if (SpiedBy[PlayerPtr] && IsSelected) {
 
 		/*
 		**	Fetch the factory that is associate with this building. For computer controlled buildings, the
