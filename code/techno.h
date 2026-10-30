@@ -295,7 +295,7 @@ class TechnoClass :	public RadioClass,
 		TechnoClass * Transporter;
 		bool IsInOpenToppedTransport;
 
-		// True while a soldier is being set down on the map and enters its idle mode (gamemd TechnoClass+0x1F8). A teleport it is ordered then clears the occupants off its destination cell.
+		// True while a soldier is being set down on the map and enters its idle mode (gamemd TechnoClass+0x1F8). A teleport it is ordered then clears the occupants off its destination cell. Only set inside Unlimbo, so it is not saved.
 		bool IsBeingPlaced;
 
 		/*
@@ -345,7 +345,8 @@ class TechnoClass :	public RadioClass,
 		/*
 		 * The one voice reply this object has waiting, the reply its own voice channel last
 		 * started, and that channel. A new reply replaces the waiting one, and starts only when
-		 * the channel is idle (TechnoClass::QueueVoice, 0x708D90; TechnoClass::Update, 0x6F9E50).
+		 * the channel is idle (TechnoClass::QueueVoice, 0x708D90; TechnoClass::Update, 0x6F9E50). Audio only: none of
+		 * these is saved or part of the checksum, so a loaded object has no reply waiting.
 		 */
 		VocType QueuedVoice;
 		VocType PlayedVoice;
