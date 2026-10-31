@@ -1,5 +1,5 @@
 ---
-title: Hold fire when a hovering jumpjet finishes a move
+title: Hold fire when a hovering jumpjet vehicle finishes a move
 category: fix
 release: 0.2.0
 targets:
@@ -9,4 +9,4 @@ targets:
 credit: [MentalHomiega]
 ---
 
-A Kirov, Siege Chopper or Rocketeer that flies to a cell and stops there stays on its move order and holds fire until it is given a new order, as in Yuri's Revenge. Before, it went on guard and shot at anything that came into range. An attack order, or a Guard or Stop command, still makes it fire.
+A Kirov or Siege Chopper that flies to a cell and stops there stays on its move order and holds fire until it is given a new order. An attack order, or a Guard or Stop command, still makes it fire. A Rocketeer that has stopped after a move order attacks enemies that come into range on its own.
