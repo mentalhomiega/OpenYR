@@ -10313,7 +10313,7 @@ bool TechnoClass::Can_Passive_Acquire_Targets(void)
 
 /// <summary>
 /// Whether this object may scan for a target on the move. The port of TechnoClass::CanOpportunityFire (0x709290).
-/// The balloon and special-unit clauses of the gamemd function are not ported.
+/// The special-unit clause of the gamemd function is not ported, and its balloon clause is ported for soldiers only.
 /// </summary>
 /// <returns>bool; True for a computer's aggressive, non-suicide team member on a move order with no target; otherwise
 /// the object must pass Can_Passive_Acquire_Targets, and a type without OpportunityFire scans only on the guard mission.</returns>
@@ -10324,6 +10324,15 @@ bool TechnoClass::Can_Opportunity_Fire(void)
 	}
 	if (!Can_Passive_Acquire_Targets()) {
 		return(false);
+	}
+	// A BalloonHover soldier that has flown to its destination hovers on its move order, and scans from there whether or
+	// not its type has OpportunityFire (gamemd 0x709290 tests that its destination is the cell it is over). A Rocketeer
+	// idles this way; a Kirov or Siege Chopper takes the same test in gamemd, but we keep them on their move order.
+	if (Mission == MISSION_MOVE && RTTI == RTTI_INFANTRY && TClass->IsBalloonHover) {
+		FootClass const * foot = static_cast<FootClass const *>(this);
+		if (foot->NavCom == NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving() && !foot->Locomotion->Is_Moving_Now()) {
+			return(true);
+		}
 	}
 	if (!TClass->IsOpportunityFire) {
 		if (Mission != MISSION_GUARD) {
