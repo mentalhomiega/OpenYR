@@ -426,6 +426,12 @@ class FootClass : public TechnoClass
 		bool IsPlanRunning;
 
 		/*
+		 * This is true when the unit went idle as it was placed on the map (it just left a transport, say) while
+		 * its plan runs. Its next planned order is issued on its next update, after the placing code has given its own order.
+		 */
+		bool IsPlanAdvanceDeferred;
+
+		/*
 		 * The planned order the unit is carrying out. An aircraft that must rearm takes it back to the
 		 * front of its plan, so it resumes the order after reloading. Like PlannedOrders, it is not saved.
 		 */
@@ -529,6 +535,7 @@ class FootClass : public TechnoClass
 		bool Can_Take_Planned_Order(void) const;
 		PlannedOrderBlock Planned_Order_Block(void) const;
 		bool Add_Planned_Order(PlannedOrderClass const & order);
+		bool Is_Free_For_Plan(void) const;
 		void Start_Planned_Orders(void);
 		bool Advance_Planned_Order(void);
 		void Clear_Planned_Orders(void);

@@ -9,8 +9,10 @@
 ;   frame 700: planstate E1 orders 1 running 1 (the second leg is under way, one leg still queued).
 ;   frame 1421: E1 orders 1 running 1 after two more legs are committed.
 ;   frame 1501: E1 orders 0 running 0 after the normal order at frame 1500 (the normal order clears the plan).
-;   frame 1830: E1 orders 0 running 1. The PlanningMode command and the click share frame 1820, so the
-;     hold release commits the plan on the next frame, since autotest reports no key held.
+;   frame 1830: E1 orders 1 running 1. The PlanningMode command and the click share frame 1820, so the
+;     hold release commits the plan on the next frame, since autotest reports no key held. E1 is still on the
+;     move it was given at frame 1500, and a unit on a move keeps it until it goes idle, so the leg waits.
+;   frame 2600: E1 orders 0 running 0, at 74,63 (E1 went idle and walked the waiting leg).
 30 command CenterBase
 300 grantunit E1 60 63
 305 reveal
@@ -38,4 +40,6 @@
 1820 clickcell E1 74 63
 1830 planstate E1
 1900 where E1
-2000 quit
+2600 planstate E1
+2600 where E1
+2700 quit

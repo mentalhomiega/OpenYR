@@ -1,0 +1,33 @@
+; Plan given to a unit that is walking into a transport. gamemd's plan commit (0x637e00, testing FUN_00638c70) starts
+; a plan at once only for a unit on Guard, or on an attack or guard area mission aimed at a cell. A unit on any other
+; mission, such as the enter order of a soldier walking to a transport, keeps it and takes the plan when it goes idle
+; (TechnoClass::TryNextPlanningTokenNode, 0x6385c0, from EnterIdleMode). So E1 finishes boarding and walks the planned
+; leg once the transport unloads it. Run in a skirmish on the default map, as planning-terminal.txt does.
+; Expected AUTOTEST lines:
+;   frame 345: planstate E1 orders 1 running 0 mission 7 (the enter order runs; the planned move is queued).
+;   frame 352: planstate E1 orders 1 running 1 mission 7 (the commit leaves E1 on its walk to the transport).
+;   frame 600: where E1 limbo 1 (inside the transport), planstate E1 orders 1 running 1.
+;   frame 1000: planstate E1 orders 0 running 1 mission 2 (unloaded, the planned move runs).
+30 command CenterBase
+300 grantunit SAPC 66 63
+300 grantunit E1 57 63
+305 reveal
+315 select E1
+318 clickon E1 66 63
+325 planning 1
+330 select E1
+335 clickcell E1 76 63
+345 planstate E1
+350 planning 0
+352 planstate E1
+400 where E1
+600 planstate E1
+600 where E1
+610 clickcell SAPC 70 63
+900 where SAPC
+910 unload 70 63
+1000 planstate E1
+1000 where E1
+1100 planstate E1
+1100 where E1
+1100 quit

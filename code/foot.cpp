@@ -194,6 +194,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsScattering(false),
 	IsIdle(false),
 	IsPlanRunning(false),
+	IsPlanAdvanceDeferred(false),
 	HasPlannedRunningOrder(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
@@ -2377,7 +2378,7 @@ bool FootClass::Active_Click_With(ActionType action, Cell const & cell, bool is_
 /// </summary>
 /// <param name="resume_waypoint">Should an interrupted waypoint path be resumed?</param>
 /// <returns>bool; Was other work taken up instead of going idle?</returns>
-bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
+bool FootClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 {
 	if (!IsIdle) {
 		IsIdle = true;
@@ -2400,7 +2401,11 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 			return(true);
 		}
 
-		if (Advance_Planned_Order()) {
+		// gamemd queues the next planned order as an event (TechnoClass::TryNextPlanningTokenNode, 0x6385c0), so the order
+		// reaches a unit that is placed on the map (TechnoClass::Unlimbo, 0x6F6E1B) after the order of whatever placed it.
+		if (initial && IsPlanRunning) {
+			IsPlanAdvanceDeferred = true;
+		} else if (Advance_Planned_Order()) {
 			return(true);
 		}
 
@@ -2555,14 +2560,40 @@ bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 
 
 /// <summary>
-/// Starts the unit's committed plan by issuing its first order now. Each later order is issued
+/// Tells whether the unit is idle enough for a committed plan to take it over at once.
+/// </summary>
+/// <returns>bool; True on a guard mission, and on an attack or guard area mission aimed at a cell (a guard area
+/// with no target counts too). A unit on any other mission, such as a move or an enter order, is busy.</returns>
+/// <remarks>The plan commit starts a plan only for such a unit (EventClass plan commit 0x637e00, testing 0x638c70).
+/// A busy unit keeps its order and takes the plan when it goes idle (TechnoClass::TryNextPlanningTokenNode, 0x6385c0,
+/// called from EnterIdleMode and the mission handlers). So a soldier walking to a transport still boards it.</remarks>
+bool FootClass::Is_Free_For_Plan(void) const
+{
+	if (CurrentMission == MISSION_GUARD) {
+		return(true);
+	}
+	if (CurrentMission == MISSION_ATTACK || CurrentMission == MISSION_GUARD_AREA) {
+		if (TarCom != NULL) {
+			return(TarCom->RTTI == RTTI_CELL);
+		}
+		return(CurrentMission == MISSION_GUARD_AREA);
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Starts the unit's committed plan. A unit that is free for it issues its first order now; a busy unit keeps its
+/// current order and takes the plan when it goes idle (see Is_Free_For_Plan). Each later order is issued
 /// when the unit goes idle.
 /// </summary>
 void FootClass::Start_Planned_Orders(void)
 {
 	if (PlannedOrders.Count() > 0) {
 		IsPlanRunning = true;
-		Advance_Planned_Order();
+		if (Is_Free_For_Plan()) {
+			Advance_Planned_Order();
+		}
 	}
 }
 
@@ -2651,6 +2682,7 @@ void FootClass::Clear_Planned_Orders(void)
 {
 	PlannedOrders.Clear();
 	IsPlanRunning = false;
+	IsPlanAdvanceDeferred = false;
 	HasPlannedRunningOrder = false;
 	PlannedLeg.Invalidate();
 }
@@ -4091,6 +4123,13 @@ VisualType FootClass::Visual_Character(bool raw, HouseClass const * house) const
 void FootClass::AI(void)
 {
 	BASECLASS::AI();
+
+	if (IsPlanAdvanceDeferred) {
+		IsPlanAdvanceDeferred = false;
+		if (IsActive && !IsInLimbo) {
+			Advance_Planned_Order();
+		}
+	}
 
 	// An object that starts to sink plays its VoiceSinking and its SinkingSound, or the rules' (FootClass::Update, 0x4DA530).
 	if (IsSinking != WasSinking) {
