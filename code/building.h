@@ -761,6 +761,10 @@ class BuildingClass : public TechnoClass
 		int Exit_Naval_Object(TechnoClass * base);
 		int Exit_Aircraft(TechnoClass * base);
 		int Exit_Foot(TechnoClass * base);
+		int Exit_Weapons_Factory(TechnoClass * base);
+		int Exit_Vehicle_Door(TechnoClass * base);
+		int Exit_Infantry(TechnoClass * base);
+		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
 

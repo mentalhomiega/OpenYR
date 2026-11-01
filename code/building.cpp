@@ -3345,8 +3345,6 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 /// <returns>2 when the object left, 1 when it must try again later, 0 when it could not leave.</returns>
 int BuildingClass::Exit_Foot(TechnoClass * base)
 {
-	Cell cell;
-
 	if (!Class->IsHospital) {
 
 		/*
@@ -3369,184 +3367,227 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 		}
 	}
 
-	if (!Class->IsRefinery && !Class->IsWeeder) {
+	if (Class->IsRefinery || Class->IsWeeder) {
+		return(Exit_Refinery(base));
+	}
+	if (Class->IsWeaponsFactory) {
+		return(Exit_Weapons_Factory(base));
+	}
+	if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory && !Class->IsCloning) {
+		return(Exit_Vehicle_Door(base));
+	}
+	return(Exit_Infantry(base));
+}
 
-		if (Class->IsWeaponsFactory) {
 
-			base->ArchiveTarget = Rally_Point_For(base);
+/// <summary>
+/// Drives a vehicle out of this weapons factory, or out of a free factory of the same type while this one is
+/// still unloading the previous vehicle. Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
+{
+	base->ArchiveTarget = Rally_Point_For(base);
 
-			if (Class->IsNaval) {
-				return(Exit_Naval_Object(base));
+	if (Class->IsNaval) {
+		return(Exit_Naval_Object(base));
+	}
+
+	if (Mission == MISSION_UNLOAD) {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * bldg = Buildings[index];
+			if (bldg->House == House && bldg->Class == Class && bldg != this && bldg->Mission == MISSION_GUARD && !bldg->Factory) {
+				FactoryClass * temp = Factory;
+				bldg->Factory = Factory;
+				Factory = NULL;
+				int retval = (bldg->Exit_Object(base));
+				bldg->Factory = NULL;
+				Factory = temp;
+				return(retval);
 			}
+		}
+		return(1);	// fail while we're still unloading previous
+	}
+	ScenarioInit++;
+	if (base->Unlimbo(Exit_Coord(), DIR_E)) {
+		base->Mark(MARK_UP);
+		base->Set_Coord(Exit_Coord());
+		base->Mark(MARK_DOWN);
+		Transmit_Message(RADIO_HELLO, base);
+		Transmit_Message(RADIO_TETHER, base);
+		Assign_Mission(MISSION_UNLOAD);
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
+}
 
-			if (Mission == MISSION_UNLOAD) {
-				for (int index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * bldg = Buildings[index];
-					if (bldg->House == House && bldg->Class == Class && bldg != this && bldg->Mission == MISSION_GUARD && !bldg->Factory) {
-						FactoryClass * temp = Factory;
-						bldg->Factory = Factory;
-						Factory = NULL;
-						int retval = (bldg->Exit_Object(base));
-						bldg->Factory = NULL;
-						Factory = temp;
-						return(retval);
-					}
-				}
-				return(1);	// fail while we're still unloading previous
+
+/// <summary>
+/// Puts a vehicle built by a factory other than a weapons factory at its door and sends it to the exit cell.
+/// Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
+{
+	Cell cell;
+
+	Cell exitcell = Find_Exit_Cell(base);
+	if (exitcell == CELL_NONE) {
+		return(0);
+	}
+
+	Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
+
+	ScenarioInit++;
+	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
+
+		Begin_Anim(BANIM_PRODUCTION, false);
+
+		base->Assign_Mission(MISSION_MOVE);
+		base->Assign_Destination(&Map[exitcell]);
+
+		/*
+		 * When the computer produces a unit, it has the unit guard an
+		 * area around the spot it should head to.
+		 */
+		if (!House->Is_Human_Player()) {
+			base->Assign_Mission(MISSION_GUARD_AREA);
+
+			cell = House->Where_To_Go((FootClass *)base);
+			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+				base->Assign_Archive_Target(&Map[cell]);
+				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+			} else {
+				base->Assign_Archive_Target(NULL);
 			}
-			ScenarioInit++;
-			if (base->Unlimbo(Exit_Coord(), DIR_E)) {
-				base->Mark(MARK_UP);
-				base->Set_Coord(Exit_Coord());
-				base->Mark(MARK_DOWN);
-				Transmit_Message(RADIO_HELLO, base);
-				Transmit_Message(RADIO_TETHER, base);
-				Assign_Mission(MISSION_UNLOAD);
-				ScenarioInit--;
-				return(2);
-			}
+		}
 
-		} else if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory && !Class->IsCloning) {
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
+}
 
-			Cell exitcell = Find_Exit_Cell(base);
-			if (exitcell == CELL_NONE) {
-				return(0);
-			}
 
-			Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
+/// <summary>
+/// Puts a soldier at this structure's door and sends it to the exit cell; a soldier from a barracks is also
+/// copied out of each of the owner's cloning vats. Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Infantry(TechnoClass * base)
+{
+	Cell cell;
 
-			ScenarioInit++;
-			if (base->Unlimbo(Door_Coord(exitcell), dir)) {
+	base->ArchiveTarget = Rally_Point_For(base);
 
-				Begin_Anim(BANIM_PRODUCTION, false);
+	Cell exitcell = Find_Exit_Cell(base);
+	if (exitcell == CELL_NONE) {
+		return(0);
+	}
 
-				base->Assign_Mission(MISSION_MOVE);
-				base->Assign_Destination(&Map[exitcell]);
-
-				/*
-				 * When the computer produces a unit, it has the unit guard an
-				 * area around the spot it should head to.
-				 */
-				if (!House->Is_Human_Player()) {
-					base->Assign_Mission(MISSION_GUARD_AREA);
-
-					cell = House->Where_To_Go((FootClass *)base);
-					if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-						base->Assign_Archive_Target(&Map[cell]);
-						((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-					} else {
-						base->Assign_Archive_Target(NULL);
-					}
-				}
-
-				ScenarioInit--;
-				return(2);
-			}
-
-		} else {
-
-			base->ArchiveTarget = Rally_Point_For(base);
-
-			Cell exitcell = Find_Exit_Cell(base);
-			if (exitcell == CELL_NONE) {
-				return(0);
-			}
-
-			/*
-			 * Every cloning vat of the owner releases a copy of a soldier this barracks
-			 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
-			 * get out is discarded.
-			 */
-			if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
-				for (int index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * vat = Buildings[index];
-					if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
-						TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
-						if (clone != NULL && vat->Exit_Object(clone) != 2) {
-							delete clone;
-						}
-					}
+	/*
+	 * Every cloning vat of the owner releases a copy of a soldier this barracks
+	 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
+	 * get out is discarded.
+	 */
+	if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * vat = Buildings[index];
+			if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
+				TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
+				if (clone != NULL && vat->Exit_Object(clone) != 2) {
+					delete clone;
 				}
 			}
+		}
+	}
 
-			Coord exitcellcoord(exitcell);
-			Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
+	Coord exitcellcoord(exitcell);
+	Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
 
-			ScenarioInit++;
-			if (base->Unlimbo(Door_Coord(exitcell), dir)) {
+	ScenarioInit++;
+	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
 
-				// A hospital or armory also exits its infantry here without having produced them.
-				// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
-				if (Class->ToBuild == RTTI_INFANTRYTYPE) {
-					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
-				}
+		// A hospital or armory also exits its infantry here without having produced them.
+		// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
+		if (Class->ToBuild == RTTI_INFANTRYTYPE) {
+			Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+		}
 
-				if (((FootClass *)base)->NavCom != NULL) {
-					base->ArchiveTarget = ((FootClass *)base)->NavCom;
-				}
+		if (((FootClass *)base)->NavCom != NULL) {
+			base->ArchiveTarget = ((FootClass *)base)->NavCom;
+		}
 
-				// A jump-jet infantry gets no walk to the exit cell, so its jump-jet locomotor takes over at once (BuildingClass::KickOutUnit, 0x443C60).
-				InfantryClass * flying_jumpjet = NULL;
-				if (base->Fetch_RTTI() == RTTI_INFANTRY && ((InfantryClass *)base)->Class->IsJumpJet) {
-					flying_jumpjet = (InfantryClass *)base;
-				}
+		// A jump-jet infantry gets no walk to the exit cell, so its jump-jet locomotor takes over at once (BuildingClass::KickOutUnit, 0x443C60).
+		InfantryClass * flying_jumpjet = NULL;
+		if (base->Fetch_RTTI() == RTTI_INFANTRY && ((InfantryClass *)base)->Class->IsJumpJet) {
+			flying_jumpjet = (InfantryClass *)base;
+		}
 
-				base->Assign_Mission(MISSION_MOVE);
-				if (flying_jumpjet == NULL) {
-				base->Assign_Destination(&Map[exitcell]);
-				}
+		base->Assign_Mission(MISSION_MOVE);
+		if (flying_jumpjet == NULL) {
+		base->Assign_Destination(&Map[exitcell]);
+		}
 
-				/*
-				 * When the computer produces infantry, it has the infantry guard
-				 * an area around the spot it should head to.
-				 */
-				if (!House->Is_Human_Player()) {
-					base->Assign_Mission(MISSION_GUARD_AREA);
+		/*
+		 * When the computer produces infantry, it has the infantry guard
+		 * an area around the spot it should head to.
+		 */
+		if (!House->Is_Human_Player()) {
+			base->Assign_Mission(MISSION_GUARD_AREA);
 
-					cell = House->Where_To_Go((FootClass *)base);
-					if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-						base->ArchiveTarget = &Map[cell];
-						((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-					} else {
-						base->Assign_Archive_Target(NULL);
-					}
-				}
-
-				/*
-				**	Establish radio contact so unload coordination can occur. This
-				**	radio contact should always succeed.
-				*/
-				if (Transmit_Message(RADIO_HELLO, base) == RADIO_ROGER) {
-					Transmit_Message(RADIO_UNLOAD);
-					if (flying_jumpjet != NULL) {
-						flying_jumpjet->Transmit_Message(RADIO_OVER_OUT);
-					}
-				}
-				ScenarioInit--;
-				return(2);
+			cell = House->Where_To_Go((FootClass *)base);
+			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+				base->ArchiveTarget = &Map[cell];
+				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+			} else {
+				base->Assign_Archive_Target(NULL);
 			}
+		}
+
+		/*
+		**	Establish radio contact so unload coordination can occur. This
+		**	radio contact should always succeed.
+		*/
+		if (Transmit_Message(RADIO_HELLO, base) == RADIO_ROGER) {
+			Transmit_Message(RADIO_UNLOAD);
+			if (flying_jumpjet != NULL) {
+				flying_jumpjet->Transmit_Message(RADIO_OVER_OUT);
+			}
+		}
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
+}
+
+
+/// <summary>
+/// Puts a harvester leaving this refinery south of it and has it harvest, or scatters a soldier. Returns 0
+/// whether or not the object left.
+/// </summary>
+int BuildingClass::Exit_Refinery(TechnoClass * base)
+{
+	Cell cell;
+
+	/*
+	 * A unit exits a refinery to the south west corner and heads off to
+	 * harvest. Infantry just scatters out.
+	 */
+	if (base->Fetch_RTTI() == RTTI_UNIT) {
+
+		cell = Adjacent_Cell(Center_Coord().As_Cell(), FACING_SW);
+
+		ScenarioInit++;
+		if (base->Unlimbo(Coord(Adjacent_Cell(cell, FACING_S), 0), DIR_SW)) {
+			base->PrimaryFacing.Set(DirType(DIR_S));
+			base->Assign_Mission(MISSION_HARVEST);
 		}
 
 	} else {
-
-		/*
-		 * A unit exits a refinery to the south west corner and heads off to
-		 * harvest. Infantry just scatters out.
-		 */
-		if (base->Fetch_RTTI() == RTTI_UNIT) {
-
-			cell = Adjacent_Cell(Center_Coord().As_Cell(), FACING_SW);
-
-			ScenarioInit++;
-			if (base->Unlimbo(Coord(Adjacent_Cell(cell, FACING_S), 0), DIR_SW)) {
-				base->PrimaryFacing.Set(DirType(DIR_S));
-				base->Assign_Mission(MISSION_HARVEST);
-			}
-
-		} else {
-			base->Scatter(COORD_NONE, true, false);
-			return(0);
-		}
+		base->Scatter(COORD_NONE, true, false);
+		return(0);
 	}
 	ScenarioInit--;
 	return(0);
