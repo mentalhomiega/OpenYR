@@ -119,7 +119,7 @@ bool JumpjetLocomotionClass::Process(void)
 	Facing.Set_ROT(LinkedTo->TClass->JumpjetTurnRate);
 	LayerType layer = In_Which_Layer();
 
-	if (Is_Moving() || Is_Moving_Now() || (Stays_Aloft() && CurrentState != HOVERING)) {
+	if (Is_Moving() || Is_Moving_Now() || (LinkedTo->IsAttackedByLocomotor && CurrentState != HOVERING)) {
 		Movement_AI();
 		if (!LinkedTo->IsActive) {
 			return(false);
@@ -571,8 +571,9 @@ LayerType JumpjetLocomotionClass::In_Which_Layer(void)
 /// </summary>
 void JumpjetLocomotionClass::Process_Grounded(void)
 {
-	// A BalloonHover unit takes off even with nowhere to go (JumpjetLocomotionClass, 0x54D0F0).
-	if (Is_Moving() || Stays_Aloft()) {
+	// A unit takes off only with a destination or a locomotor warhead's lift; a BalloonHover unit placed without orders stays on the ground
+	// (JumpjetLocomotionClass, 0x54B980).
+	if (Is_Moving() || LinkedTo->IsAttackedByLocomotor) {
 		LinkedTo->Set_Speed(1.0);
 		Facing.Set(LinkedTo->PrimaryFacing.Current());
 		CurrentSpeed = 0;
