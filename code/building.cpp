@@ -3415,40 +3415,8 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 
 			Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
 
-			Cell to = exitcell;
-			cell = Get_Cell();
-			int x = cell.X;
-			if (to.X >= x + Class->Width()) {
-				to.X -= 1;
-			} else if (to.X < cell.X) {
-				to.X += 1;
-			}
-			int y = cell.Y;
-			if (to.Y >= y + Class->Height()) {
-				to.Y -= 1;
-			} else if (to.Y < cell.Y) {
-				to.Y += 1;
-			}
-
-			/*
-			 * The barracks types have a special exit door location that the
-			 * exiting object should be placed at.
-			 */
-			Coord exitcoord = Coord(to, 0);
-			if (Class->IsGDIBarracks) {
-				if (exitcell.X == x + 1 && exitcell.Y == y + 2) {
-					exitcoord = exitcoord + Class->ExitCoordinate;
-				}
-			}
-			if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-			if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-
 			ScenarioInit++;
-			if (base->Unlimbo(exitcoord, dir)) {
+			if (base->Unlimbo(Door_Coord(exitcell), dir)) {
 
 				Begin_Anim(BANIM_PRODUCTION, false);
 
@@ -3478,7 +3446,6 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 		} else {
 
 			base->ArchiveTarget = Rally_Point_For(base);
-			Coord exitcoord;
 
 			Cell exitcell = Find_Exit_Cell(base);
 			if (exitcell == CELL_NONE) {
@@ -3505,40 +3472,8 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 			Coord exitcellcoord(exitcell);
 			Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
 
-			Cell to = exitcell;
-			cell = Get_Cell();
-			int x = cell.X;
-			if (to.X >= x + Class->Width()) {
-				to.X -= 1;
-			} else if (to.X < cell.X) {
-				to.X += 1;
-			}
-			int y = cell.Y;
-			if (to.Y >= y + Class->Height()) {
-				to.Y -= 1;
-			} else if (to.Y < cell.Y) {
-				to.Y += 1;
-			}
-
-			/*
-			 * The barracks types have a special exit door location that the
-			 * exiting object should be placed at.
-			 */
-			exitcoord = Coord(to, 0);
-			if (Class->IsGDIBarracks) {
-				if (exitcell.X == x + 1 && exitcell.Y == y + 2) {
-					exitcoord = exitcoord + Class->ExitCoordinate;
-				}
-			}
-			if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-			if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-
 			ScenarioInit++;
-			if (base->Unlimbo(exitcoord, dir)) {
+			if (base->Unlimbo(Door_Coord(exitcell), dir)) {
 
 				// A hospital or armory also exits its infantry here without having produced them.
 				// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
@@ -3615,6 +3550,35 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 	}
 	ScenarioInit--;
 	return(0);
+}
+
+
+/// <summary>
+/// Fetches where an object leaving this structure for the exit cell is put: the structure's edge cell next to the
+/// exit cell, or the door of a GDI, Nod or Yuri barracks when the exit cell is the one in front of that door.
+/// </summary>
+Coord BuildingClass::Door_Coord(Cell const & exitcell) const
+{
+	Cell const cell = Get_Cell();
+	Cell to = exitcell;
+	if (to.X >= cell.X + Class->Width()) {
+		to.X -= 1;
+	} else if (to.X < cell.X) {
+		to.X += 1;
+	}
+	if (to.Y >= cell.Y + Class->Height()) {
+		to.Y -= 1;
+	} else if (to.Y < cell.Y) {
+		to.Y += 1;
+	}
+
+	Coord exitcoord = Coord(to, 0);
+	if ((Class->IsGDIBarracks && exitcell.X == cell.X + 1 && exitcell.Y == cell.Y + 2) ||
+			(Class->IsNODBarracks && exitcell.X == cell.X + 2 && exitcell.Y == cell.Y + 2) ||
+			(Class->IsYuriBarracks && exitcell.X == cell.X + 2 && exitcell.Y == cell.Y + 1)) {
+		exitcoord = exitcoord + Class->ExitCoordinate;
+	}
+	return(exitcoord);
 }
 
 
