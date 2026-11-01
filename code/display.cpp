@@ -2081,6 +2081,23 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 
 void Bandbox_Selection_Callback(ObjectClass *object);
 
+/// <summary>
+/// Gives the part of the tactical view that the modern build panel covers, in view coordinates.
+/// A rubber band passes over this area without selecting what is drawn under it.
+/// </summary>
+/// <returns>The panel's rectangle, or an empty rectangle in the classic layout, whose sidebar
+/// is outside the view.</returns>
+static Rect Modern_Panel_View_Rect(void)
+{
+	if (!Modern_Interface()) {
+		return(Rect(0, 0, 0, 0));
+	}
+	Rect const panel = Hud_Layout().Panel;
+	Point2D const top_left = Screen_To_View_Offset(Point2D(panel.X - ScreenTacticalRect.X, panel.Y - ScreenTacticalRect.Y));
+	Point2D const bottom_right = Screen_To_View_Offset(Point2D(panel.X + panel.Width - ScreenTacticalRect.X, panel.Y + panel.Height - ScreenTacticalRect.Y));
+	return(Rect(top_left.X, top_left.Y, bottom_right.X - top_left.X, bottom_right.Y - top_left.Y));
+}
+
 /***********************************************************************************************
  * DisplayClass::Mouse_Left_Release -- Handles the left mouse button release.                  *
  *                                                                                             *
@@ -2194,7 +2211,8 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 				Unselect_All();
 			}
 
-			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback);
+			Rect const panel = Modern_Panel_View_Rect();
+			TacticalMap->Select_Rubber_Band(Bandbox_Selection_Callback, panel.Is_Valid() ? &panel : NULL);
 			TechnoClass::Reset_Action_Line_Timer();
 
 			IsRubberBand = false;
@@ -2440,13 +2458,7 @@ void DisplayClass::Mouse_Left_Held(Point2D const & point)
 		Rect rect = TacticalRect;
 		Point2D npoint = point;
 
-		// In the modern interface a band never reaches the panel's columns, including the rows below the panel.
-		int right = rect.Width;
-		if (Modern_Interface()) {
-			Point2D const panel_offset(Hud_Layout().Panel.X - ScreenTacticalRect.X, 0);
-			right = std::min(right, Screen_To_View_Offset(panel_offset).X);
-		}
-		int x = Bound2(npoint.X, 0, right);
+		int x = Bound2(npoint.X, 0, rect.Width);
 		int y = Bound2(npoint.Y, 0, rect.Height);
 		npoint.X = x;
 		npoint.Y = y;
