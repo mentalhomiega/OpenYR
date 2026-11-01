@@ -2328,96 +2328,83 @@ bool UnitClass::Try_To_Deploy(void)
 
 /// <summary>
 /// Breaks the radio contact of a tethered unit that has left the object it was tethered to, and gives it the
-/// orders queued while it was tethered (the tail of gamemd's per-cell routine, 0x739EC0). A unit leaving a weapons
-/// factory is released once it is off the factory's cells or has reached its destination.
+/// orders queued while it was tethered (the tail of gamemd's per-cell routine, 0x739EC0). The unit is released once
+/// it stands on no structure's cell or has reached its destination.
 /// </summary>
 void UnitClass::Break_Away_From_Contact(void)
 {
-	if (IsTethered && (Mission != MISSION_ENTER ||
-			(Dynamic_Cast<TechnoClass *>(NavCom) != NULL && Contact_With_Whom() != NavCom)
-			) &&
-			Mission != MISSION_UNLOAD) {
+	bool const entering = Mission == MISSION_ENTER && (Dynamic_Cast<TechnoClass *>(NavCom) == NULL || Contact_With_Whom() == NavCom);
+	if (!IsTethered || entering || Mission == MISSION_UNLOAD) {
+		return;
+	}
 
-		bool arrived = NavCom == NULL;
-		if (Is_Target_Cell(NavCom)) {
-			CellClass *cptr = static_cast<CellClass *>(NavCom);
-			if (cptr->CellID == PositionCoord.As_Cell()) {
-				arrived = true;
-			}
-		}
+	bool const arrived = NavCom == NULL || (Is_Target_Cell(NavCom) && static_cast<CellClass *>(NavCom)->CellID == PositionCoord.As_Cell());
 
-		/*
-		**	Special hack check to make sure that even though it has moved one
-		**	cell, if it is still on the building (e.g., service depot), have
-		**	it scatter again.
-		*/
-		if (Map[(Coord const &)PositionCoord].Cell_Building() == NULL || arrived) {
-			TechnoClass * contact = Contact_With_Whom();
-			if (arrived || contact == NULL || contact->RTTI != RTTI_BUILDING || !static_cast<BuildingClass *>(contact)->Class->IsWeaponsFactory || Map[(Coord const &)PositionCoord].Cell_Building() != contact) {
-				RadioMessageType response = Transmit_Message(RADIO_UNLOADED);
-				if (response == RADIO_RUN_AWAY) {
-					if (NavCom != NULL && NavCom != Get_Cell_Ptr()) {
+	/*
+	**	Special hack check to make sure that even though it has moved one
+	**	cell, if it is still on the building (e.g., service depot), have
+	**	it scatter again.
+	*/
+	if (Map[(Coord const &)PositionCoord].Cell_Building() == NULL || arrived) {
+		TechnoClass * contact = Contact_With_Whom();
+		RadioMessageType response = Transmit_Message(RADIO_UNLOADED);
+		if (response == RADIO_RUN_AWAY) {
+			if (NavCom != NULL && NavCom != Get_Cell_Ptr()) {
 
-						/*
-						**	Special case hack to allow automatic transition to loading
-						**	onto a transport (or other situation) if the destination
-						**	so indicates.
-						*/
-						TechnoClass * techno = Dynamic_Cast<TechnoClass *>(NavCom);
-						if (techno != NULL) {
-							Transmit_Message(RADIO_DOCKING, techno);
-						}
-					} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
-						// Only a weapons factory or a repair bay answers RADIO_RUN_AWAY.
-						Assign_Mission(MISSION_HARVEST);
+				/*
+				**	Special case hack to allow automatic transition to loading
+				**	onto a transport (or other situation) if the destination
+				**	so indicates.
+				*/
+				TechnoClass * techno = Dynamic_Cast<TechnoClass *>(NavCom);
+				if (techno != NULL) {
+					Transmit_Message(RADIO_DOCKING, techno);
+				}
+			} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
+				// Only a weapons factory or a repair bay answers RADIO_RUN_AWAY.
+				Assign_Mission(MISSION_HARVEST);
+			} else {
+				BuildingClass * building = dynamic_cast<BuildingClass *>(contact);
+				if (!House->Is_Human_Player() && building != NULL && building->Class->IsWeaponsFactory) {
+					Cell where = House->Where_To_Go(this);
+					if (where != CELL_NONE) {
+						Assign_Mission(MISSION_MOVE);
+						Assign_Destination(&Map[where]);
+						Commence();
+						ArchiveTarget = &Map[where];
+						Assign_Mission(MISSION_GUARD_AREA);
 					} else {
-						BuildingClass * building = dynamic_cast<BuildingClass *>(contact);
-						if (!House->Is_Human_Player() && building != NULL && building->Class->IsWeaponsFactory) {
-							Cell where = House->Where_To_Go(this);
-							if (where != CELL_NONE) {
-								Assign_Mission(MISSION_MOVE);
-								Assign_Destination(&Map[where]);
-								Commence();
-								ArchiveTarget = &Map[where];
-								Assign_Mission(MISSION_GUARD_AREA);
-							} else {
-								ArchiveTarget = NULL;
-							}
-						} else {
-							AbstractClass * target = ArchiveTarget;
-							if (target != NULL && target != NavCom) {
-								Assign_Destination(target);
-							} else {
-								NavCom = NULL;
-								Scatter(COORD_NONE, true);
-							}
-						}
+						ArchiveTarget = NULL;
 					}
-
 				} else {
-					if (response != RADIO_NEGATIVE && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
-						if (ArchiveTarget != NULL) {
-							Assign_Mission(MISSION_HARVEST);
-							Assign_Destination(ArchiveTarget);
-							ArchiveTarget = NULL;
-						} else {
-
-							/*
-							**	Since there is no place to go, move away to clear
-							**	the pad for another harvester.
-							*/
-							if (NavCom == NULL) {
-								Scatter(COORD_NONE, true);
-							}
-						}
+					AbstractClass * target = ArchiveTarget;
+					if (target != NULL && target != NavCom) {
+						Assign_Destination(target);
+					} else {
+						NavCom = NULL;
+						Scatter(COORD_NONE, true);
 					}
 				}
 			}
-		}
 
-		if (Map[(Coord const &)PositionCoord].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
-			Scatter(COORD_NONE, true, true);
+		} else if (response != RADIO_NEGATIVE && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
+			if (ArchiveTarget != NULL) {
+				Assign_Mission(MISSION_HARVEST);
+				Assign_Destination(ArchiveTarget);
+				ArchiveTarget = NULL;
+			} else if (NavCom == NULL) {
+
+				/*
+				**	Since there is no place to go, move away to clear
+				**	the pad for another harvester.
+				*/
+				Scatter(COORD_NONE, true);
+			}
 		}
+	}
+
+	if (Map[(Coord const &)PositionCoord].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
+		Scatter(COORD_NONE, true, true);
 	}
 }
 
