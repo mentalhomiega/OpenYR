@@ -1239,10 +1239,10 @@ test('The sidebar sweep re-checks buildability behind its rules key', () => {
 });
 
 test('A harvester let out of a factory goes to work', () => {
-	const percell = functionBody(source('code/unit.cpp'), 'void UnitClass::Per_Cell_Process(PCPType why)');
+	const release = functionBody(source('code/unit.cpp'), 'void UnitClass::Break_Away_From_Contact(void)');
 
 	assertOrdered(
-		percell,
+		release,
 		['} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {', 'Assign_Mission(MISSION_HARVEST);'],
 		'the capability alone decides it, so an armed harvester is let out to work too',
 	);
