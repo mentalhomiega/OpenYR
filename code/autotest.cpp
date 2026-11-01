@@ -1221,6 +1221,30 @@ void Log_Ore_Cells(int limit)
 }
 
 
+// shield <TypeID>: for each building of that type, its Iron Curtain and Force Shield state, the shield tint flag, whether its body draws with the shield tint, and each animation's drawer.
+static bool Shield_Check_Step(StepType const & step)
+{
+	if (step.Command != "shield") {
+		return(false);
+	}
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+		ConvertClass * scheme = building->Remap_Converter();
+		ConvertClass * tinted = building->Tinted_Converter(scheme);
+		DebugString("AUTOTEST   shield %s at %d,%d curtain %d forceshield %d tinted flag %d body tinted %d stage %d timer %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+			(int)building->Is_Iron_Curtained(), (int)building->IsForceShielded, (int)building->IsShieldTinted, tinted != scheme, building->IronTintStage, (int)building->IronTintTimer);
+		for (int slot = 0; slot < BANIM_COUNT; slot++) {
+			AnimClass const * anim = building->Anims[slot];
+			if (anim == NULL) continue;
+			char const * drawer = anim->AlternativeDrawer == NULL ? "none" : (anim->AlternativeDrawer == tinted && tinted != scheme ? "shield" : (anim->AlternativeDrawer == scheme ? "scheme" : "other"));
+			DebugString("AUTOTEST     anim %s slot %d cell drawer %d drawer %s brightness %d\n", anim->Class->Name(), slot, (int)anim->Class->IsShouldUseCellDrawer, drawer, (int)anim->AlternativeBrightness);
+		}
+	}
+	return(true);
+}
+
+
 /*
 **	treehit <Warhead> x y: hits the terrain object on that cell with 100 points of damage from the
 **	warhead, with no firer. trees: writes every terrain object on the map with its cell, strength,
@@ -2799,6 +2823,11 @@ void Run(StepType const & step)
 
 	// The drawing checks sit before the chain below, which is nested too deeply to take another branch.
 	if (Draw_Check_Step(step)) {
+		return;
+	}
+
+	// The shield check sits here for the same reason as the drawing checks.
+	if (Shield_Check_Step(step)) {
 		return;
 	}
 

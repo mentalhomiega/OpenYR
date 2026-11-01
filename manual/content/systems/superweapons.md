@@ -562,7 +562,7 @@ A warhead with [`InfDeath=9`](/keys/infdeath/) mutates the infantry it kills: ea
 
 A `Type=ForceShield` weapon plays [`ForceShieldInvokeAnim`](/keys/forceshieldinvokeanim/) over the target and the weapon's [`StartSound`](/keys/startsound/#scope-superweapontype). Every structure of the firing house or its allies whose center is less than [`ForceShieldRadius`](/keys/forceshieldradius/) cells from the target is protected for [`ForceShieldDuration`](/keys/forceshieldduration/) frames, exactly as the [Iron Curtain](#iron-curtain) protects it. The firing house then makes no power for [`ForceShieldBlackoutDuration`](/keys/forceshieldblackoutduration/) frames. The weapon's [`SpecialSound`](/keys/specialsound/) plays [`ForceShieldPlayFadeSoundTime`](/keys/forceshieldplayfadesoundtime/) frames before the protection ends.
 
-Yuri's Revenge tints shielded structures with `ForceShieldColor`, which is not drawn yet.
+A shielded structure is drawn with `ForceShieldColor`, on its body and its animations. The animations a structure's `Palette=` draws are not tinted.
 
 ### Psychic dominator
 
