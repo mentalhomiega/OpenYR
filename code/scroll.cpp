@@ -676,7 +676,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			point = Screen_To_View_Offset(Point2D(event.X - ScreenTacticalRect.X, event.Y - ScreenTacticalRect.Y));
 
 			// In the modern interface a release over the command bar or panel orders nothing and places nothing, except
-			// that a rubber band in progress still finishes; Mouse_Left_Held holds its corner to the map.
+			// that a rubber band in progress still finishes, and it skips the objects under the panel.
 			bool const over_hud = Modern_Interface() && !Point_Over_Map(Point2D(event.X, event.Y));
 			if (!over_hud || (IsRubberBand && Map.PendingObjectPtr == NULL)) {
 				Resolve_Point(point, cell, coord, object, fog, shadow);

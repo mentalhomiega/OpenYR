@@ -197,7 +197,7 @@
 **							aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret
 **							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
 **	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
-**							then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon,
+**							then whether its cell lies in the usable area (`inlocal`, MapClass::In_Local_Radar), then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon,
 **							then how the local player is shown it (visual: the Visual_Character values, its sensed cell, whether it is
 **							ready to cloak and its CloakDelay), whether the local player's radar plots it (radar: plotted, and how it
 **							counts as detected), then the checks of Is_Ready_To_Cloak (recloak: its rearm, immobilizing
@@ -5221,6 +5221,7 @@ void Run(StepType const & step)
 			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
 			DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
+			DebugString("AUTOTEST   usable %s cell %d,%d inlocal %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)Map.In_Local_Radar(techno->Get_Cell()));
 			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
 			if (techno->RTTI == RTTI_UNIT) {
 				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);

@@ -2,7 +2,7 @@
 ; E2 at 56,30 (window 1560,330, open map inside the bands below), and HTNK at 58,26 (window 1740,300, under the panel).
 ; A band is dragged with windowpress, hold 01 (the left button, held for the drag), windowmove steps and windowrelease, then
 ; release 01. Each case has a control with the same steps on the open map.
-; 1. A drag from 1500,240 to 1800,360 over the panel: the band stops at the panel's edge (x 1669), so "selected" lists E2 and
+; 1. A drag from 1500,240 to 1800,360 over the panel: the band reaches the panel but skips the objects under it, so "selected" lists E2 and
 ;    not HTNK. Nothing is ordered: E2 and HTNK keep Guard.
 ; 2. A plain click (no hold) from 1500,240 released over the panel at 1800,360, and then over HTNK at 1740,300, with E1
 ;    selected: nothing is ordered and E1 stays selected with Guard.
