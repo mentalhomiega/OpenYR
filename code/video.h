@@ -112,6 +112,11 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 // Draws the GPU map texture (gpumap.h), drawn from the map area source, under the frame area dest
 // until the next Video_Set_Map_Layer.
 void Video_Set_Gpu_Map_Layer(Rect const & source, Rect const & dest);
+
+// Sets how far past whole pixels the map is drawn, in frame pixels, for the presents that follow. The
+// presenter moves the map back by that amount, so a view between whole pixels glides. Zero is the default.
+void Video_Set_Map_Subpixel(double x, double y);
+
 void Video_Present_If_Dirty(void);
 // Notes that a copy changed only the visible surface rows whose entries are non-zero. before is the
 // surface's change count just before the copy and after its count just after; null rows mean the copy

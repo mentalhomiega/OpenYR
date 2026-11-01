@@ -91,6 +91,9 @@ std::uint64_t Battle_Frames = 0;
 
 double CameraX = 0.0;
 double CameraY = 0.0;
+// The map edge each axis is held at: -1 the low edge, 1 the high edge, 0 none.
+int EdgeX = 0;
+int EdgeY = 0;
 unsigned int LastCamera = 0;
 Coord Focus = COORD_NONE;
 unsigned int FocusUntil = 0;
@@ -446,6 +449,7 @@ void Move_Camera(unsigned int now)
 	if (LastCamera == 0) {
 		CameraX = at.X;
 		CameraY = at.Y;
+		EdgeX = EdgeY = 0;
 		LastCamera = now;
 	}
 
@@ -459,36 +463,40 @@ void Move_Camera(unsigned int now)
 		}
 		FocusUntil = now + 12000 + Dice() % 8000;
 	}
-	if (Focus == COORD_NONE) {
-		return;
+	if (Focus != COORD_NONE) {
+		// The focus is put in the middle of the view; the view's own origin is its top left corner.
+		Rect const shown = Shown_Map_Rect();
+		Point2D const focus = TacticalMap->Coord_To_Pixel_Absolute(Focus);
+		double const goal_x = focus.X - shown.Width / 2.0;
+		double const goal_y = focus.Y - shown.Height / 2.0;
+		double const dx = goal_x - CameraX;
+		double const dy = goal_y - CameraY;
+		double const distance = std::sqrt(dx * dx + dy * dy);
+		if (distance < 1.0) {
+			// A settled camera rests on whole pixels, so the map is drawn without a shift.
+			CameraX = std::round(CameraX);
+			CameraY = std::round(CameraY);
+		} else {
+			// Eases in over the last few hundred pixels so the view settles instead of stopping dead.
+			double const speed = CAMERA_SPEED * std::clamp(distance / 200.0, 0.15, 1.0);
+			double const step = std::min(distance, speed * seconds);
+			CameraX += dx / distance * step;
+			CameraY += dy / distance * step;
+		}
 	}
 
-	// The focus is put in the middle of the view; the view's own origin is its top left corner.
-	Rect const shown = Shown_Map_Rect();
-	Point2D const focus = TacticalMap->Coord_To_Pixel_Absolute(Focus);
-	double const goal_x = focus.X - shown.Width / 2.0;
-	double const goal_y = focus.Y - shown.Height / 2.0;
-	double const dx = goal_x - CameraX;
-	double const dy = goal_y - CameraY;
-	double const distance = std::sqrt(dx * dx + dy * dy);
-	if (distance < 1.0) {
-		return;
-	}
-
-	// Eases in over the last few hundred pixels so the view settles instead of stopping dead.
-	double const speed = CAMERA_SPEED * std::clamp(distance / 200.0, 0.15, 1.0);
-	double const step = std::min(distance, speed * seconds);
-	CameraX += dx / distance * step;
-	CameraY += dy / distance * step;
-
-	Point2D const want((int)std::lround(CameraX), (int)std::lround(CameraY));
+	// The view is drawn at whole pixels. The camera past them is handed to the presenter by Shellmap_Service.
+	Point2D const want((int)std::floor(CameraX), (int)std::floor(CameraY));
 	if (want.X != at.X || want.Y != at.Y) {
 		TacticalMap->Set_Tactical_Position(want);
-		Point2D const kept = TacticalMap->Get_Tactical_Position();
-		// A clamp at the map edge holds the view there rather than letting the camera drift off.
-		if (kept.X != want.X) CameraX = kept.X;
-		if (kept.Y != want.Y) CameraY = kept.Y;
+		Point2D const set = TacticalMap->Get_Tactical_Position();
+		EdgeX = (set.X > want.X) ? -1 : ((set.X < want.X) ? 1 : 0);
+		EdgeY = (set.Y > want.Y) ? -1 : ((set.Y < want.Y) ? 1 : 0);
 	}
+	Point2D const kept = TacticalMap->Get_Tactical_Position();
+	// A clamp at the map edge holds the view there; the camera does not move on past that edge.
+	if ((EdgeX < 0 && CameraX < kept.X) || (EdgeX > 0 && CameraX > kept.X)) CameraX = kept.X;
+	if ((EdgeY < 0 && CameraY < kept.Y) || (EdgeY > 0 && CameraY > kept.Y)) CameraY = kept.Y;
 }
 
 
@@ -606,6 +614,7 @@ void Shellmap_Stop(void)
 
 	DebugString("Menu battle: stopped\n");
 	Running = false;
+	Video_Set_Map_Subpixel(0.0, 0.0);
 	Free_Players(Battle);
 	Battle.PlayerPtr = nullptr;
 	PlayerWins = PlayerLoses = PlayerRestarts = PlayerAborts = false;
@@ -648,6 +657,9 @@ void Shellmap_Service(void)
 			RenderBlend = Options.Render_Frame_Rate() > 0 ? std::clamp((double)(now - LastLogic) / step, 0.0, 1.0) : 1.0;
 			TacticalMap->AI();
 			Update_Fogged_Objects();
+			// The presenter shifts the map by the camera's part past the whole pixel the view is drawn at.
+			Point2D const drawn = TacticalMap->Get_Tactical_Position();
+			Video_Set_Map_Subpixel(CameraX - drawn.X, CameraY - drawn.Y);
 			Map.Render();
 			RenderBlend = 1.0;
 		}
