@@ -1,0 +1,42 @@
+; An Allied Construction Yard (GACNST) builds and places a power plant (GAPOWR). Placement keeps the yard linked to the plant, so the yard enters bstate 2 (BuildingClass::Mission_Repair 0x44B780) for the plant's buildup and plays its production animation (GACNST_B). The art gives that state AnimActive=0,26,3 but GGCNST.SHP has 6 frames (3 body, 3 shadow), so from stage 3 on the body would draw a shadow frame. With BodyFrameFromIdle=yes (the default) the body draws its idle frame instead; with no it draws the shadow frame, the literal gamemd clamp. Expected with the default: every bshape GACNST line while bstate is 2 has drawn below 3.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/allied-yard-anim-produce.txt -Width 800 -Height 600 -RenderFrameRate 30 -Settings "[Options]<newline>DebugMode=yes" -Seconds 60 -ShotDir scratch-agent/allied-cy-frame/produce -Filter "AUTOTEST|Exception"
+; Off control: add -Mods src-agent26/tests/autotest/allied-yard-anim-produce-rules, which sets BodyFrameFromIdle=no. Expected: bshape GACNST drawn 3 while bstate is 2.
+20 own GACNST 50 30
+30 command CenterBase
+31 view 52 31
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 reveal
+100 banimstate GACNST
+110 produce GAPOWR
+150 record 2
+151 place GAPOWR
+152 bshape GACNST
+152 banimstate GACNST
+156 bshape GACNST
+156 banimstate GACNST
+160 bshape GACNST
+160 banimstate GACNST
+170 bshape GACNST
+170 banimstate GACNST
+180 bshape GACNST
+180 banimstate GACNST
+190 bshape GACNST
+190 banimstate GACNST
+200 bshape GACNST
+200 banimstate GACNST
+220 bshape GACNST
+220 banimstate GACNST
+240 bshape GACNST
+240 banimstate GACNST
+260 bshape GACNST
+260 banimstate GACNST
+280 bshape GACNST
+280 banimstate GACNST
+300 bshape GACNST
+300 banimstate GACNST
+320 bshape GACNST
+320 banimstate GACNST
+340 record 0
+341 quit
