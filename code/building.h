@@ -290,6 +290,22 @@ class BuildingClass : public TechnoClass
 		Coord PrismTargetCoord;
 		int SupportingPrisms;
 
+		/*
+		 * The steps by which a Bunker=yes structure takes a vehicle in, in the order they run, as
+		 * gamemd's TankBunkerState (BuildingClass::UpdateBunker, 0x458E50) keeps them. Idle waits for the
+		 * vehicle to stop on the structure, and Bunkered holds it.
+		 */
+		enum BunkerStateType {
+			BUNKER_IDLE,
+			BUNKER_CHECK_OCCUPANTS,
+			BUNKER_ROTATE_TO_TRACK,
+			BUNKER_MOVE_ON_TRACK,
+			BUNKER_ROTATE_IN_BUNKER,
+			BUNKER_RAISE_WALLS,
+			BUNKER_BUNKERED
+		};
+		BunkerStateType BunkerState;
+
 		// Is this Overpowerable structure charged by enough soldiers to work on its own and fire its second weapon?
 		bool IsOverpowered;
 
@@ -646,7 +662,7 @@ class BuildingClass : public TechnoClass
 		bool Takes_Walk_Ins(FootClass const * object) const;
 		bool Can_Bunker(FootClass const * object) const;
 		bool Blocks_Cell(CellClass const * cell) const;
-		void Bunker_Up(FootClass * object);
+		void Update_Bunker(void);
 		void Bunker_Down(void);
 		void Bunker_Walls_Down_Anims(void);
 		void Garrison_AI(void);

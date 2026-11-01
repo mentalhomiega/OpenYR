@@ -245,6 +245,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	PrismDelay(0),
 	PrismTargetCoord(),
 	SupportingPrisms(0),
+	BunkerState(BUNKER_IDLE),
 	IsOverpowered(false),
 	PoweredUnitHouse(NULL),
 	WasOnline(false),
@@ -506,6 +507,16 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				Grind((FootClass *)from);
 				return(RADIO_ROGER);
 			}
+			// A vehicle in contact that has stopped on a bunker starts its entry (BuildingClass::ReceiveCommand, 0x43C2D0).
+			if (Class->IsBunker) {
+				if (!Contains_Link(from)) {
+					return(RADIO_NEGATIVE);
+				}
+				BunkerState = BUNKER_IDLE;
+				IsReadyToCommence = true;
+				Assign_Mission(MISSION_REPAIR);
+				return(RADIO_ROGER);
+			}
 			if (Class->IsCanUnitRepair || Class->IsCanUnitReload || Class->IsHospital || Class->IsArmory) {
 				IsReadyToCommence = true;
 				Assign_Mission(MISSION_REPAIR);
@@ -527,6 +538,11 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 
 			if (!IsOn) {
 				return(RADIO_NEGATIVE);
+			}
+
+			// A bunker holds its vehicle where it is.
+			if (Class->IsBunker) {
+				return(RADIO_ROGER);
 			}
 
 			if (Class->IsCanUnitRepair && Contains_Link(from)) {
@@ -6382,6 +6398,12 @@ int BuildingClass::Do_MISSION_HARVEST(void)
  *=============================================================================================*/
 int BuildingClass::Do_MISSION_REPAIR(void)
 {
+	// A bunker steps its vehicle's entry every 15 frames (BuildingClass::Mission_Repair, 0x44B780).
+	if (Class->IsBunker) {
+		Update_Bunker();
+		return(15);
+	}
+
 	if (Class->IsConstructionYard) {
 		enum {
 			INITIAL,
@@ -9871,40 +9893,142 @@ bool BuildingClass::Can_Bunker(FootClass const * object) const
 
 
 /// <summary>
-/// Puts the vehicle at the middle of the bunker and raises the walls; the vehicle stays on the
-/// map and fights from there until it drives out.
+/// Takes a vehicle that has stopped on this Bunker=yes structure through its entry, one step each time
+/// the Repair mission runs, as BuildingClass::UpdateBunker (0x458E50) does. The vehicle is the structure's
+/// radio contact until the last step links it in. The structure scatters whatever else stands on its cells,
+/// turns the vehicle toward its middle, drives it onto the middle along a diagonal track, turns its hull
+/// south, starts the walls-up animations once the turn is done, and then holds the vehicle. With no vehicle
+/// in contact, the structure goes back to guarding and ends any walls-up animations it started.
+/// A vehicle whose locomotor has no tracks is put on the middle at once instead of driving there.
 /// </summary>
-void BuildingClass::Bunker_Up(FootClass * object)
+void BuildingClass::Update_Bunker(void)
 {
-	BunkerLinkedItem = object;
-	object->BunkerLinkedItem = this;
-	Cell const corner = PositionCoord.As_Cell();
-	object->Assign_Destination(NULL);
-	object->Stop_Driver();
-	// gamemd turns the hull to face south once the vehicle is in (0x459216, DirStruct 0x8000).
-	object->PrimaryFacing.Set_Desired(DIR_S);
-	object->Set_Coord(Coord(corner.X * CELL_LEPTON_W + Class->Width() * CELL_LEPTON_W / 2, corner.Y * CELL_LEPTON_H + Class->Height() * CELL_LEPTON_H / 2, object->Get_Coord().Z));
-	DebugString("Bunker: %s takes %s\n", Class->Name(), object->TClass->Name());
-	object->Assign_Mission(MISSION_GUARD);
-	bool const damaged = HealthRatio <= Rule->ConditionYellow;
-	Begin_Anim(BANIM_SPECIAL_ONE, damaged);
-	Begin_Anim(BANIM_SPECIAL_TWO, damaged);
-	// gamemd plays the walls sounds at the structure's position, not its centre (0x45936F, 0x4594C8, 0x45960D).
-	Sound_Effect(Rule->BunkerWallsUpSound, PositionCoord);
-	Mark(MARK_CHANGE);
+	TechnoClass * contact = BunkerLinkedItem != NULL ? BunkerLinkedItem : Contact_With_Whom();
+	if (contact == NULL || contact->RTTI != RTTI_UNIT) {
+		if (BunkerState == BUNKER_RAISE_WALLS) {
+			End_Anim(BANIM_SPECIAL_ONE);
+			End_Anim(BANIM_SPECIAL_TWO);
+		}
+		BunkerState = BUNKER_IDLE;
+		Assign_Mission(MISSION_GUARD);
+		return;
+	}
+	UnitClass * unit = static_cast<UnitClass *>(contact);
+	BunkerStateType const before = BunkerState;
+
+	switch (BunkerState) {
+		case BUNKER_IDLE:
+			if (unit->Get_Cell_Ptr()->Cell_Building() == this && !unit->Locomotion->Is_Moving()) {
+				for (Cell const * offset = Class->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+					TechnoClass * other = Map[PositionCell + *offset].Cell_Techno(Point2D(0x80, 0x80), false, this);
+					if (other != NULL && other != unit) {
+						other->Scatter(Get_Coord(), true, false);
+					}
+				}
+				BunkerState = BUNKER_CHECK_OCCUPANTS;
+			}
+			break;
+
+		case BUNKER_CHECK_OCCUPANTS: {
+			bool occupied = false;
+			for (Cell const * offset = Class->Occupy_List(); *offset != REFRESH_EOL; offset++) {
+				TechnoClass * other = Map[PositionCell + *offset].Cell_Techno(Point2D(0x80, 0x80), false, this);
+				if (other != NULL && other != unit) {
+					occupied = true;
+				}
+			}
+			if (!occupied) {
+				unit->PrimaryFacing.Set_Desired(::Direction(Center_Coord(), unit->PositionCoord).Right_180());
+				BunkerState = BUNKER_ROTATE_TO_TRACK;
+			}
+			break;
+		}
+
+		case BUNKER_ROTATE_TO_TRACK:
+			if (!unit->PrimaryFacing.Is_Rotating()) {
+				// A hull that is not on a diagonal takes the southwest track.
+				int track = DriveLocomotionClass::ENTER_BUNKER_SW;
+				switch (unit->PrimaryFacing.Current().Round_To_256()) {
+					case DIR_NE:
+						track = DriveLocomotionClass::ENTER_BUNKER_NE;
+						break;
+					case DIR_SE:
+						track = DriveLocomotionClass::ENTER_BUNKER_SE;
+						break;
+					case DIR_NW:
+						track = DriveLocomotionClass::ENTER_BUNKER_NW;
+						break;
+				}
+				Coord middle = Center_Coord();
+				middle.Z = unit->PositionCoord.Z;
+				unit->Locomotion->Force_Track(track, middle);
+				if (unit->Locomotion->Get_Track_Number() == -1) {
+					unit->Set_Coord(middle);
+				} else {
+					// The track ends the drive; the unit has no other destination.
+					unit->Locomotion->Move_To(COORD_NONE);
+				}
+				unit->Set_Speed(1.0);
+				BunkerState = BUNKER_MOVE_ON_TRACK;
+			}
+			break;
+
+		case BUNKER_MOVE_ON_TRACK:
+			if (unit->Get_Cell_Ptr()->Cell_Building() == this && !unit->Locomotion->Is_Moving()) {
+				unit->PrimaryFacing.Set_Desired(DIR_S);
+				BunkerState = BUNKER_ROTATE_IN_BUNKER;
+			}
+			break;
+
+		case BUNKER_ROTATE_IN_BUNKER:
+			if (!unit->PrimaryFacing.Is_Rotating()) {
+				bool const damaged = HealthRatio <= Rule->ConditionYellow;
+				Begin_Anim(BANIM_SPECIAL_ONE, damaged);
+				Begin_Anim(BANIM_SPECIAL_TWO, damaged);
+				BunkerState = BUNKER_RAISE_WALLS;
+			}
+			break;
+
+		case BUNKER_RAISE_WALLS:
+			BunkerLinkedItem = unit;
+			unit->BunkerLinkedItem = this;
+			unit->Group = -1;
+			unit->Unselect();
+			BunkerState = BUNKER_BUNKERED;
+			unit->Assign_Mission(MISSION_GUARD);
+			unit->Commence();
+			// gamemd plays the walls sounds at the structure's position, not its centre (0x45936F, 0x4594C8, 0x45960D).
+			Sound_Effect(Rule->BunkerWallsUpSound, PositionCoord);
+			Mark(MARK_CHANGE);
+			break;
+
+		case BUNKER_BUNKERED:
+			break;
+	}
+
+	if (BunkerState != before) {
+		DebugString("Bunker: %s step %d at frame %d, %s hull %d desired %d\n", Class->Name(), (int)BunkerState, (int)Frame, unit->TClass->Name(),
+			unit->PrimaryFacing.Current().As_Int(), unit->PrimaryFacing.Desired().As_Int());
+	}
 }
 
 
 /// <summary>
-/// Releases the vehicle in the bunker, if any.
+/// Releases the vehicle in the bunker, if any, and breaks radio contact with it. The vehicle drives out
+/// on its own path; gamemd's exit track (0x47) is not ported.
 /// </summary>
 void BuildingClass::Bunker_Down(void)
 {
 	if (BunkerLinkedItem == NULL) {
 		return;
 	}
-	BunkerLinkedItem->BunkerLinkedItem = NULL;
+	TechnoClass * leaving = BunkerLinkedItem;
+	leaving->BunkerLinkedItem = NULL;
 	BunkerLinkedItem = NULL;
+	if (Contains_Link(leaving)) {
+		Transmit_Message(RADIO_OVER_OUT, leaving);
+	}
+	Assign_Mission(MISSION_GUARD);
 	Bunker_Walls_Down_Anims();
 	Sound_Effect(Rule->BunkerWallsDownSound, PositionCoord);
 	Mark(MARK_CHANGE);
@@ -9913,11 +10037,12 @@ void BuildingClass::Bunker_Down(void)
 
 /// <summary>
 /// Ends the walls-up animations of a tank bunker and starts the walls-down pair (SPECIAL_THREE and
-/// SPECIAL_FOUR), as BuildingClass::EmptyBunker (0x4595C0) and ClearBunker (0x459470) do. Nothing
-/// starts once the bunker is off the map.
+/// SPECIAL_FOUR), as BuildingClass::EmptyBunker (0x4595C0) and ClearBunker (0x459470) do, and readies
+/// the bunker for the next vehicle. Nothing starts once the bunker is off the map.
 /// </summary>
 void BuildingClass::Bunker_Walls_Down_Anims(void)
 {
+	BunkerState = BUNKER_IDLE;
 	End_Anim(BANIM_SPECIAL_ONE);
 	End_Anim(BANIM_SPECIAL_TWO);
 	if (!IsInLimbo) {
@@ -11104,6 +11229,7 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrismDelay);
 	stream.Serialize(PrismTargetCoord);
 	stream.Serialize(SupportingPrisms);
+	stream.Serialize(BunkerState);
 	stream.Serialize(IsOverpowered);
 	stream.Serialize(PoweredUnitHouse);
 	stream.Serialize(WasOnline);

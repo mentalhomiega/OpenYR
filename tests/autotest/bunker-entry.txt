@@ -1,0 +1,46 @@
+; Tank Bunker entry (gamemd: BuildingClass::UpdateBunker, 0x458E50, run by the Repair mission every 15 frames). The player selects a Rhino (HTNK)
+; at 65,47, on dry land, and clicks the Tank Bunker (NATBNK) at 62,43; the bunker covers 62..63,43..44 and the tank stops on 63,44. The
+; bunker then scatters other objects off its cells, turns the hull toward the bunker's middle (DirStruct from the tank to the middle plus
+; 0x7FFF), drives the tank onto the middle on track 0x43..0x46, turns the hull south (0x8000), starts the walls anims (SPECIAL_ONE and
+; SPECIAL_TWO) once the turn is done, and then links the tank in, deselects it and plays BunkerWallsUpSound. The click goes through the
+; same Active_Click_With path as a real click on the bunker. The Bunker: lines name the step reached, its frame, and the hull and its
+; desired facing (16-bit angle as a signed number: 0 north, 16384 east, -32768 south, -16384 west). At frame 450 the player sends the
+; tank out with a move order, which takes the walls down and frees the bunker, and at frame 565 sends it in again.
+; The old repro placed the Rhino at 63,48, which is water in this map: the tank had no path and stayed on Guard.
+; Expected: "action HTNK on NATBNK: Enter" at frame 250. The step lines run in order 1 to 6. Step 2 turns the hull toward the
+; middle: desired is a diagonal (-8318, northwest, for the tank on 63,44). Step 3 shows the hull on it, the track under way. Step 4
+; sets desired to -32768 (south). Step 5, the walls starting, shows hull -32768 and desired -32768, so the hull is south before the
+; walls rise. Step 6 links the tank. "bunker NATBNK cell 62,43 holds nothing" at frames 300 and 370 (before the link), "holds HTNK"
+; at frames 400 and 440, "holds nothing" at frame 550, after the tank has driven off the bunker's cells to 65,47, and "holds HTNK"
+; at frame 740 after a second run of steps 1 to 6 (from frame 621), whose step 5 again shows hull -32768. The animlog lines show
+; primary -32768 from frame 370 on. The capture at frame 440 shows the tank in the bunker with its hull toward the lower left of
+; the screen and the walls up.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Map XMP08T2.MAP -Script src-agent24/tests/autotest/bunker-entry.txt -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Bunker:|Exception"
+30 reveal
+40 own NATBNK 62 43
+50 own HTNK 65 47
+60 view 62 43
+245 select HTNK
+250 clickon HTNK 62 43
+290 animlog HTNK
+300 bunkers
+300 animlog HTNK
+310 animlog HTNK
+325 animlog HTNK
+340 animlog HTNK
+355 animlog HTNK
+370 bunkers
+370 animlog HTNK
+385 animlog HTNK
+400 bunkers
+400 animlog HTNK
+440 bunkers
+440 command ScreenCapture
+450 clickcell HTNK 65 47
+550 bunkers
+550 animlog HTNK
+560 select HTNK
+565 clickon HTNK 62 43
+740 bunkers
+740 animlog HTNK
+760 quit

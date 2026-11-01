@@ -2858,13 +2858,35 @@ DriveLocomotionClass::TrackType const DriveLocomotionClass::Track13[] = {
 	{{0,0},DIR_E}
 };
 
+// The drive onto the middle of a tank bunker. The track starts 120 leptons from the middle on each axis and runs
+// northeast; the control table turns it to the other three diagonals.
+DriveLocomotionClass::TrackType const DriveLocomotionClass::Track14[] = {
+	{{-120,120},DIR_NE},
+	{{-112,112},DIR_NE},
+	{{-104,104},DIR_NE},
+	{{-96,96},DIR_NE},
+	{{-88,88},DIR_NE},
+	{{-80,80},DIR_NE},
+	{{-72,72},DIR_NE},
+	{{-64,64},DIR_NE},
+	{{-56,56},DIR_NE},
+	{{-48,48},DIR_NE},
+	{{-40,40},DIR_NE},
+	{{-32,32},DIR_NE},
+	{{-24,24},DIR_NE},
+	{{-16,16},DIR_NE},
+	{{-8,8},DIR_NE},
+
+	{{0,0},DIR_NE}
+};
+
 
 /*
 **	There are a limited basic number of tracks that a vehicle can follow. These
 **	are they. Each track can be interpreted differently but this is controlled
 **	by the TrackControl structure elaborated elsewhere.
 */
-DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
+DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[14] = {
 	{Track1, -1, 0, -1},
 	{Track2, -1, 0, -1},
 	{Track3, 37, 12, 22},
@@ -2877,7 +2899,8 @@ DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
 	{Track10, -1, 0, -1},
 	{Track11, -1, 0, -1},
 	{Track12, -1, 0, -1},
-	{Track13, -1, 0, -1}
+	{Track13, -1, 0, -1},
+	{Track14, -1, 0, -1}
 };
 
 
@@ -2886,7 +2909,7 @@ DriveLocomotionClass::RawTrackType const DriveLocomotionClass::RawTracks[13] = {
 **	table determines which track to use and what modifying operations need
 **	be performed on the track data.
 */
-DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[67] = {
+DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[71] = {
 	{1,	0,		DIR_N,	F_},                                                                // 0-0
 	{3,	7,		DIR_NE,	F_D},                                                               //	0-1 (raw chart)
 	{4,	9,		DIR_E,	F_D},                                                               //	0-2 (raw chart)
@@ -2954,5 +2977,9 @@ DriveLocomotionClass::TurnTrackType const DriveLocomotionClass::TrackControl[67]
 
 	{11,	11,	DIR_SW,	F_},                                                            // Backup harvester into refinery.
 	{12,	12,	DIR_SW,	F_},                                                            // Drive back into refinery.
-	{13,	13,	DIR_SW,	F_}                                                             // Drive out of weapons factory.
+	{13,	13,	DIR_SW,	F_},                                                            // Drive out of weapons factory.
+	{14,	14,	DIR_NE,	F_},                                                            // Drive onto the middle of a tank bunker, heading northeast.
+	{14,	14,	DIR_SE,	F_Y},                                                           // Drive onto the middle of a tank bunker, heading southeast.
+	{14,	14,	DIR_SW,	F_T},                                                           // Drive onto the middle of a tank bunker, heading southwest.
+	{14,	14,	DIR_NW,	F_X}                                                            // Drive onto the middle of a tank bunker, heading northwest.
 };

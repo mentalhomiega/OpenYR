@@ -116,7 +116,11 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		enum DriveLocomotionClassEnum {
 			BACKUP_INTO_REFINERY=64,    // Track to backup into refinery.
 			OUT_OF_REFINERY,            // Track to leave refinery.
-			OUT_OF_WEAPON_FACTORY       // Track to leave weapons factory.
+			OUT_OF_WEAPON_FACTORY,      // Track to leave weapons factory.
+			ENTER_BUNKER_NE,            // Tracks onto the middle of a tank bunker, heading northeast, southeast, southwest and northwest.
+			ENTER_BUNKER_SE,
+			ENTER_BUNKER_SW,
+			ENTER_BUNKER_NW
 		};
 
 		/****************************************************************************
@@ -256,8 +260,9 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		void Lay_Track(void);
 		Point2D Smooth_Turn(Point2D const & adj, Dir256 & dir);
 
-		static TurnTrackType const TrackControl[67];
-		static RawTrackType const RawTracks[13];
+		static TurnTrackType const TrackControl[71];
+		static RawTrackType const RawTracks[14];
+		static TrackType const Track14[];
 		static TrackType const Track13[];
 		static TrackType const Track12[];
 		static TrackType const Track11[];
