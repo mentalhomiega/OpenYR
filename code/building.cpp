@@ -533,120 +533,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 		**	Docking maneuver maintenance message. See if new order should be given to the
 		**	unit trying to dock.
 		*/
-		case RADIO_DOCKING: {
-			BASECLASS::Receive_Message(from, message, param);
-
-			if (!IsOn) {
-				return(RADIO_NEGATIVE);
-			}
-
-			// A bunker holds its vehicle where it is.
-			if (Class->IsBunker) {
-				return(RADIO_ROGER);
-			}
-
-			if (Class->IsCanUnitRepair && Contains_Link(from)) {
-				if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
-					return(RADIO_NEGATIVE);
-				}
-			}
-
-			/*
-			**	If this building is already in radio contact, then it might
-			**	be able to satisfy the request to load by bumping off any
-			**	preoccupying task.
-			*/
-			if (Class->IsCanUnitReload) {
-				FootClass * radio = (FootClass *)Contact_With_Whom();
-				// A sender that holds a dock, or has one free, bumps no one.
-				if (radio != NULL && radio != from && !Has_Free_Link(from)) {
-					if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
-						if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
-							radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
-							radio->Assign_Mission(MISSION_MOVE);
-							return(RADIO_ROGER);
-						}
-					}
-					return(RADIO_NEGATIVE);
-				}
-			}
-
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
-				return(RADIO_ROGER);
-			}
-
-			if (Class->IsHospital || Class->IsArmory) {
-				if (Contains_Link(from)) {
-					param = (intptr_t)&Map[Get_Coord()];
-					Transmit_Message(RADIO_MOVE_HERE, param, from);
-				} else if (!Has_Free_Link(from)) {
-					// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
-					if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
-						return(RADIO_ROGER);
-					}
-					Transmit_Message(RADIO_RUN_AWAY);
-				}
-				return(RADIO_ROGER);
-			}
-
-			/*
-			**	Establish contact with the sender when it holds no slot here and one is free
-			**	(BuildingClass::ReceiveCommand, DOCKING case).
-			*/
-			if (!Contains_Link(from) && Has_Free_Link(from)) {
-				Transmit_Message(RADIO_HELLO, from);
-			}
-
-			bool needs_to_move = false;
-
-			if (Contains_Link(from)) {
-				if (Class->IsDockUnload || Class->IsWeeder) {
-					CellClass * docking_cell = &Map[Docking_Coord_For(from)];
-					AbstractClass * navcom = ((FootClass *)from)->NavCom;
-					if (navcom != NULL && docking_cell != navcom) {
-						needs_to_move = true;
-					}
-				}
-			}
-
-			// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
-			TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
-			if (measured != NULL) {
-				if (Class->IsCanUnitRepair) {
-					if (Distance_To(measured) > CELL_LEPTON / 2) {
-						needs_to_move = true;
-					}
-				}
-			}
-
-			if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
-				param = (intptr_t)this;
-				if (Class->IsDockUnload || Class->IsWeeder) {
-					param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
-
-					/*
-					**	Tell the harvester to move to the docking pad of the building.
-					*/
-					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
-
-						/*
-						**	Since the harvester is already there, tell it to begin the backup
-						**	procedure now. If it can't, then tell it to get outta here.
-						*/
-						Transmit_Message(RADIO_TETHER, from);
-						if (Transmit_Message(RADIO_BACKUP_NOW, from) != RADIO_ROGER) {
-							from->Scatter(COORD_NONE, true, true);
-						}
-					}
-				} else if (Class->IsHelipad) {
-					param = (intptr_t)this;
-					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
-						Transmit_Message(RADIO_TETHER, from);
-					}
-				}
-			}
-			return(RADIO_ROGER);
-		}
+		case RADIO_DOCKING:
+			return(Receive_Docking(from, param));
 
 		/*
 		**	If a transport or harvester is requesting permission to head toward, dock
@@ -726,6 +614,127 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 	**	Pass along the message to the default message handler in the radio itself.
 	*/
 	return(BASECLASS::Receive_Message(from, message, param));
+}
+
+
+/// <summary>
+/// Answers RADIO_DOCKING, which an object heading for one of this structure's docks sends as it approaches,
+/// and gives the object its next order. Changes param as Receive_Message does.
+/// </summary>
+RadioMessageType BuildingClass::Receive_Docking(RadioClass * from, intptr_t & param)
+{
+	BASECLASS::Receive_Message(from, RADIO_DOCKING, param);
+
+	if (!IsOn) {
+		return(RADIO_NEGATIVE);
+	}
+
+	// A bunker holds its vehicle where it is.
+	if (Class->IsBunker) {
+		return(RADIO_ROGER);
+	}
+
+	if (Class->IsCanUnitRepair && Contains_Link(from)) {
+		if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
+			return(RADIO_NEGATIVE);
+		}
+	}
+
+	/*
+	**	If this building is already in radio contact, then it might
+	**	be able to satisfy the request to load by bumping off any
+	**	preoccupying task.
+	*/
+	if (Class->IsCanUnitReload) {
+		FootClass * radio = (FootClass *)Contact_With_Whom();
+		// A sender that holds a dock, or has one free, bumps no one.
+		if (radio != NULL && radio != from && !Has_Free_Link(from)) {
+			if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
+				if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
+					radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
+					radio->Assign_Mission(MISSION_MOVE);
+					return(RADIO_ROGER);
+				}
+			}
+			return(RADIO_NEGATIVE);
+		}
+	}
+
+	if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+		return(RADIO_ROGER);
+	}
+
+	if (Class->IsHospital || Class->IsArmory) {
+		if (Contains_Link(from)) {
+			param = (intptr_t)&Map[Get_Coord()];
+			Transmit_Message(RADIO_MOVE_HERE, param, from);
+		} else if (!Has_Free_Link(from)) {
+			// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
+			if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
+				return(RADIO_ROGER);
+			}
+			Transmit_Message(RADIO_RUN_AWAY);
+		}
+		return(RADIO_ROGER);
+	}
+
+	/*
+	**	Establish contact with the sender when it holds no slot here and one is free
+	**	(BuildingClass::ReceiveCommand, DOCKING case).
+	*/
+	if (!Contains_Link(from) && Has_Free_Link(from)) {
+		Transmit_Message(RADIO_HELLO, from);
+	}
+
+	bool needs_to_move = false;
+
+	if (Contains_Link(from)) {
+		if (Class->IsDockUnload || Class->IsWeeder) {
+			CellClass * docking_cell = &Map[Docking_Coord_For(from)];
+			AbstractClass * navcom = ((FootClass *)from)->NavCom;
+			if (navcom != NULL && docking_cell != navcom) {
+				needs_to_move = true;
+			}
+		}
+	}
+
+	// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
+	TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
+	if (measured != NULL) {
+		if (Class->IsCanUnitRepair) {
+			if (Distance_To(measured) > CELL_LEPTON / 2) {
+				needs_to_move = true;
+			}
+		}
+	}
+
+	if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
+		param = (intptr_t)this;
+		if (Class->IsDockUnload || Class->IsWeeder) {
+			param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
+
+			/*
+			**	Tell the harvester to move to the docking pad of the building.
+			*/
+			if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
+
+				/*
+				**	Since the harvester is already there, tell it to begin the backup
+				**	procedure now. If it can't, then tell it to get outta here.
+				*/
+				Transmit_Message(RADIO_TETHER, from);
+				if (Transmit_Message(RADIO_BACKUP_NOW, from) != RADIO_ROGER) {
+					from->Scatter(COORD_NONE, true, true);
+				}
+			}
+		} else if (Class->IsHelipad) {
+			param = (intptr_t)this;
+			if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
+				Transmit_Message(RADIO_TETHER, from);
+			}
+		}
+	}
+	return(RADIO_ROGER);
 }
 
 
