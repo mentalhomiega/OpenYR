@@ -179,6 +179,10 @@ into a video with `ffmpeg -framerate 30 -i SCRN%04d.png out.mp4`.
 2100 quit
 ```
 
+To add a command, write a `static void <Name>_Step(StepType const & step)` in `code/autotest.cpp`,
+add the command's name and that function to the handler table in `Run`, and add its row to the
+table above. A command missing from the handler table writes `unknown command` to the log.
+
 ### File paths
 
 The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.
