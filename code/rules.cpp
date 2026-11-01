@@ -826,6 +826,7 @@ RulesClass::RulesClass(void) :
 	LargeFire(NULL),
 	IsAnimationFires(false),
 	IsRing1Glow(false),
+	IsBodyFrameFromIdle(true),
 	Paratrooper(NULL),
 	Disguise(NULL),
 	AlliedDisguise(NULL),
@@ -1412,6 +1413,7 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		LargeFire = TGet_Class(ini, AUDIOVISUAL, "LargeFire", LargeFire);
 		IsAnimationFires = ini.Get_Bool(AUDIOVISUAL, "AnimationFires", IsAnimationFires);
 		IsRing1Glow = ini.Get_Bool(AUDIOVISUAL, "Ring1Glow", IsRing1Glow);
+		IsBodyFrameFromIdle = ini.Get_Bool(AUDIOVISUAL, "BodyFrameFromIdle", IsBodyFrameFromIdle);
 		IsAllyReveal = ini.Get_Bool(AUDIOVISUAL, "AllyReveal", IsAllyReveal);
 		ConditionGreen = 1;
 		ConditionRed = ini.Get_Float(AUDIOVISUAL, "ConditionRed", ConditionRed);

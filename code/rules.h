@@ -1755,6 +1755,14 @@ class RulesClass
 		 */
 		bool IsRing1Glow;
 
+		/*
+		 * When true, a structure whose body animation stage reaches the shadow half of its image draws
+		 * its idle body frame instead, as BuildingClass::Body_Frame explains. When false, it draws the
+		 * shadow frame, which is what gamemd's clamp produces. True by default. Read only for drawing,
+		 * so it is neither saved nor part of the checksum.
+		 */
+		bool IsBodyFrameFromIdle;
+
 		/// Unused
 		InfantryTypeClass const * Paratrooper;
 

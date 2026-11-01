@@ -506,6 +506,7 @@ class BuildingClass : public TechnoClass
 		int Set_Turret_Frame(void);
 		void Set_Turret_Index(int index);
 		int Shape_Number(void) const;
+		int Body_Frame(int frames) const;
 		int Power_Output(void) const;
 		int Power_Drain(void) const;
 		Cell Check_Point(CheckPointType cp) const;
