@@ -104,6 +104,10 @@ void Backend_Note_Changed_Rows(unsigned char const * rows, int count);
 
 bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode, BackendLayer const * layer = nullptr, BackendEmissive const * emissive = nullptr);
 
+// Moves the picture and the map layer of later presents by x and y window pixels, right and down positive.
+// Zero draws them where they are. A fractional shift samples them linearly, so they are not pixel-exact while shifted.
+void Backend_Set_Present_Shift(float x, float y);
+
 // Shows the emissive masks in place of the pictures; the red channel carries the mask value.
 void Backend_Set_Emissive_View(bool masks);
 // Sets the tint for frame pixels of BACKEND_LAYER_TINT_KEYS[index]; opacity runs from 0, see-through, to 255.

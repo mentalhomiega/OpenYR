@@ -78,6 +78,10 @@ static Rect _LayerDest;
 static bool _LayerFresh = false;
 static bool _LayerGpu = false;
 
+// Part of a view position past its whole pixels, in frame pixels, from Video_Set_Map_Subpixel.
+static double _MapSubpixelX = 0.0;
+static double _MapSubpixelY = 0.0;
+
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
 static int _RefreshRate = 60;
@@ -493,6 +497,18 @@ void Video_Set_Map_Layer(Surface const * surface, Rect const & source, Rect cons
 }
 
 
+/// <summary>
+/// Sets how far past whole pixels the map is drawn, in frame pixels, for the presents that follow.
+/// The presenter moves the picture back by that much, so the map glides between whole pixels.
+/// Zero draws the map as usual. Callers pass values from 0 up to, not including, 1.
+/// </summary>
+void Video_Set_Map_Subpixel(double x, double y)
+{
+	_MapSubpixelX = x;
+	_MapSubpixelY = y;
+}
+
+
 void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity)
 {
 	auto const channel = [](int value) {
@@ -707,6 +723,9 @@ static void Present(void)
 		_VisibleRowsKnown = true;
 		_VisibleRowsChanges = surface->Change_Count();
 	}
+
+	// The map is drawn at whole pixels, so the picture moves back by the part of the view position past them.
+	Backend_Set_Present_Shift((float)(-_MapSubpixelX * _ScaleInfo.ScaleX), (float)(-_MapSubpixelY * _ScaleInfo.ScaleY));
 
 	bool presented = false;
 	{

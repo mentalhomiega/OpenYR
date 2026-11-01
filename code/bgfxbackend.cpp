@@ -22,6 +22,7 @@
 #include "tilediff.h"
 
 #include <algorithm>
+#include <cmath>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
 #include <bx/allocator.h>
@@ -330,11 +331,17 @@ static void Build_Convert_Table(void)
 }
 
 
+// Where the next presents draw the picture and the map layer, in window pixels from their usual place.
+static float _PresentShiftX = 0.0f;
+static float _PresentShiftY = 0.0f;
+
+
 /// <summary>
-/// Submits one textured rectangle covering the given destination. False means the
-/// transient vertex memory ran out and nothing was submitted.
+/// Submits one textured rectangle from (left, top) to (right, bottom). The texture's top left
+/// corner maps to (u0, v0) and its bottom right corner to (u1, v1). False means the transient
+/// vertex memory ran out and nothing was submitted.
 /// </summary>
-static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE, unsigned int colour = 0xFFFFFFFF)
+static bool Submit_Quad_Mapped(bgfx::ViewId view, bgfx::TextureHandle texture, float left, float top, float right, float bottom, float u0, float v0, float u1, float v1, unsigned int samplerflags, bool blend, bgfx::ProgramHandle program, unsigned int colour)
 {
 	bgfx::TransientVertexBuffer buffer;
 
@@ -346,21 +353,70 @@ static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 
 	BackendVertex * vertex = (BackendVertex *)buffer.data;
 
-	const float vtop = flipv ? 1.0f : 0.0f;
-	const float vbottom = flipv ? 0.0f : 1.0f;
-
-	vertex[0] = { x, y, 0.0f, vtop, colour };
-	vertex[1] = { x + width, y, 1.0f, vtop, colour };
-	vertex[2] = { x + width, y + height, 1.0f, vbottom, colour };
-	vertex[3] = { x, y, 0.0f, vtop, colour };
-	vertex[4] = { x + width, y + height, 1.0f, vbottom, colour };
-	vertex[5] = { x, y + height, 0.0f, vbottom, colour };
+	vertex[0] = { left, top, u0, v0, colour };
+	vertex[1] = { right, top, u1, v0, colour };
+	vertex[2] = { right, bottom, u1, v1, colour };
+	vertex[3] = { left, top, u0, v0, colour };
+	vertex[4] = { right, bottom, u1, v1, colour };
+	vertex[5] = { left, bottom, u0, v1, colour };
 
 	bgfx::setVertexBuffer(0, &buffer);
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
 	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | (blend ? BGFX_STATE_BLEND_ALPHA : 0));
 	bgfx::submit(view, bgfx::isValid(program) ? program : _Program);
 	return(true);
+}
+
+
+/// <summary>
+/// Submits one textured rectangle covering the given destination. False means the
+/// transient vertex memory ran out and nothing was submitted.
+/// </summary>
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false, bgfx::ProgramHandle program = BGFX_INVALID_HANDLE, unsigned int colour = 0xFFFFFFFF)
+{
+	const float vtop = flipv ? 1.0f : 0.0f;
+	const float vbottom = flipv ? 0.0f : 1.0f;
+	return(Submit_Quad_Mapped(view, texture, x, y, x + width, y + height, 0.0f, vtop, 1.0f, vbottom, samplerflags, blend, program, colour));
+}
+
+
+/// <summary>
+/// Submits a picture covering the given destination, moved by the present shift. The rectangle
+/// reaches the strip the shift uncovers, and the clamping sampler fills that strip with the
+/// picture's edge pixels, so the picture is not stretched. Without a shift this is Submit_Quad.
+/// </summary>
+static bool Submit_Shifted_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false, bool blend = false)
+{
+	float const sx = _PresentShiftX;
+	float const sy = _PresentShiftY;
+	if (sx == 0.0f && sy == 0.0f) {
+		return(Submit_Quad(view, texture, x, y, width, height, samplerflags, flipv, blend));
+	}
+
+	float const vtop = flipv ? 1.0f : 0.0f;
+	float const vbottom = flipv ? 0.0f : 1.0f;
+	float const left = x + std::min(0.0f, sx);
+	float const top = y + std::min(0.0f, sy);
+	float const right = x + width + std::max(0.0f, sx);
+	float const bottom = y + height + std::max(0.0f, sy);
+	// Texture coordinates of the destination's own edges after the shift; the strip beyond them falls outside 0 to 1.
+	float const picleft = x + sx;
+	float const pictop = y + sy;
+	float const u0 = (left - picleft) / width;
+	float const u1 = (right - picleft) / width;
+	float const v0 = vtop + (top - pictop) / height * (vbottom - vtop);
+	float const v1 = vtop + (bottom - pictop) / height * (vbottom - vtop);
+	return(Submit_Quad_Mapped(view, texture, left, top, right, bottom, u0, v0, u1, v1, samplerflags, blend, BGFX_INVALID_HANDLE, 0xFFFFFFFFu));
+}
+
+
+/// <summary>
+/// True while the present shift is not a whole number of pixels. Such a picture is drawn with
+/// linear sampling, because point sampling would snap it back to whole pixels.
+/// </summary>
+static bool Present_Shift_Is_Fractional(void)
+{
+	return(_PresentShiftX != std::floor(_PresentShiftX) || _PresentShiftY != std::floor(_PresentShiftY));
 }
 
 
@@ -1422,7 +1478,7 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 	}
 
 	bool const layer_masked = _MaskView && _LayerMask.Uploaded;
-	if (!Submit_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | (layer_shrunk ? 0 : BGFX_SAMPLER_POINT))) {
+	if (!Submit_Shifted_Quad(VIEW_PRESENT, layer_masked ? _LayerMask.Handle : layertexture, (float)layer.DestX, (float)layer.DestY, (float)layer.DestWidth, (float)layer.DestHeight, clamp | ((layer_shrunk || Present_Shift_Is_Fractional()) ? 0 : BGFX_SAMPLER_POINT))) {
 		return(false);
 	}
 	if (layer_masked) {
@@ -1564,7 +1620,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	_FramePointSampled = (samplerflags & BGFX_SAMPLER_POINT) != 0;
 
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
-	bool const shown = Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
+	if (Present_Shift_Is_Fractional()) {
+		samplerflags &= ~BGFX_SAMPLER_POINT;
+	}
+	bool const shown = Submit_Shifted_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
 
 	// The frame mask covers the rectangle the picture covers. Without one, that rectangle is zeroed.
 	if (masks) {
@@ -1576,6 +1635,13 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 	}
 	return(shown);
+}
+
+
+void Backend_Set_Present_Shift(float x, float y)
+{
+	_PresentShiftX = x;
+	_PresentShiftY = y;
 }
 
 
