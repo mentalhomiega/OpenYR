@@ -3589,147 +3589,142 @@ Coord BuildingClass::Door_Coord(Cell const & exitcell) const
 /// <returns>2 when the structure was placed, 1 when the place is blocked for now, 0 when it could not be placed.</returns>
 int BuildingClass::Exit_Structure(TechnoClass * base)
 {
-	Cell cell;
+	if (House->Is_Human_Player()) {
+		return(0);
+	}
 
-	if (!House->Is_Human_Player()) {
+	House->Update_Production_Mode(RTTI_BUILDING);
+	House->BuildStructure = STRUCT_NONE;
 
-		House->Update_Production_Mode(RTTI_BUILDING);
-		House->BuildStructure = STRUCT_NONE;
+	/*
+	**	Find the next available spot to place this newly created building. If the
+	**	building could be placed at the desired location, fine. If not, then this
+	**	routine will return failure. The calling routine will probably abandon this
+	**	building in preference to building another.
+	*/
+	BuildingClass * building = (BuildingClass *)base;
+	BaseNodeClass * node = House->Base.Next_Buildable(building->Class->HeapID);
+	Coord placementcoord(0, 0, 0);
+	BuildingTypeClass * buildingtype = building->Class;
 
-		/*
-		**	Find the next available spot to place this newly created building. If the
-		**	building could be placed at the desired location, fine. If not, then this
-		**	routine will return failure. The calling routine will probably abandon this
-		**	building in preference to building another.
-		*/
-		BuildingClass * building = (BuildingClass *)base;
-		BaseNodeClass * node = House->Base.Next_Buildable(building->Class->HeapID);
-		Coord placementcoord(0, 0, 0);
-		BuildingTypeClass * buildingtype = building->Class;
+	// The search reports cell 0,0 when it finds no place.
+	auto search_for_place = [&]() {
+		Cell found = House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1);
+		return(found == Cell(0, 0) ? COORD_NONE : Coord(found));
+	};
 
-		// The search reports cell 0,0 when it finds no place.
-		auto search_for_place = [&]() {
-			Cell found = House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1);
-			return(found == Cell(0, 0) ? COORD_NONE : Coord(found));
-		};
+	if (node != NULL && node->CellID != Cell(0, 0)) {
 
-		if (node != NULL && node->CellID != Cell(0, 0)) {
+		if (!buildingtype->PowersUpBuilding.empty() || House->Can_Build_Here(buildingtype, node->CellID)) {
+			placementcoord = Coord(node->CellID);
+		} else {
 
-			if (!buildingtype->PowersUpBuilding.empty() || House->Can_Build_Here(buildingtype, node->CellID)) {
-				placementcoord = Coord(node->CellID);
-			} else {
+			/*
+			**	Find a suitable new spot to place.
+			*/
+			placementcoord = search_for_place();
+			if (placementcoord == COORD_NONE) {
+				return(0);
+			}
+			node->CellID = placementcoord.As_Cell();
+		}
+
+	} else {
+
+		if (buildingtype->PowersUpBuilding.empty()) {
+			placementcoord = search_for_place();
+		} else {
+			Cell const cell = House->Where_To_Place_Upgrade(buildingtype);
+			if (cell != CELL_NONE) {
+				placementcoord = Coord(cell);
+			}
+		}
+
+		if (node != NULL && placementcoord != COORD_NONE) {
+			node->CellID = placementcoord.As_Cell();
+		}
+	}
+
+	if (HouseClass::TraceBuilding) {
+		DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
+			placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
+	}
+
+	if (placementcoord == COORD_NONE) {
+		if (!buildingtype->PowersUpBuilding.empty() && House->Base.Next_Buildable(STRUCT_NONE) == node) {
+			House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
+		}
+		return(0);
+	}
+
+	Cell cellnum = placementcoord.As_Cell();
+	switch (((BuildingTypeClass *)base->Class_Of())->Flush_For_Placement(cellnum, House)) {
+
+		default:
+			return(0);
+
+		case 1:
+			/*
+			**	A temporary blockage counts against the node. Outside campaign games, a node that
+			**	fails too often is dropped, as BuildingClass::KickOutUnit (0x443C60) does.
+			*/
+			if (node != NULL) {
+				node->Attempts++;
+				if (Session.Type != GAME_NORMAL && node->Attempts > Rule->MaximumBuildingPlacementFailures) {
+					House->Base.Nodes.Delete_Index(House->Base.Nodes.ID(node));
+				}
+			}
+			return(1);
+
+		case 0:
+			if (base->Unlimbo(placementcoord)) {
+				if (node != NULL) {
+					node->Placed = true;
+					if (building->Class->HeapID == House->BuildStructure) {
+						House->BuildStructure = STRUCT_NONE;
+					}
+				}
+
+				if (base->CurrentMission == MISSION_NONE && base->MissionQueue == MISSION_CONSTRUCTION) {
+					base->Commence();
+				}
 
 				/*
-				**	Find a suitable new spot to place.
-				*/
-				placementcoord = search_for_place();
-				if (placementcoord == COORD_NONE) {
-					return(0);
-				}
-				node->CellID = placementcoord.As_Cell();
-			}
-
-		} else {
-
-			if (buildingtype->PowersUpBuilding.empty()) {
-				placementcoord = search_for_place();
-			} else {
-				cell = House->Where_To_Place_Upgrade(buildingtype);
-				if (cell != CELL_NONE) {
-					placementcoord = Coord(cell);
-				}
-			}
-
-			if (node != NULL && placementcoord != COORD_NONE) {
-				node->CellID = placementcoord.As_Cell();
-			}
-		}
-
-		if (HouseClass::TraceBuilding) {
-			DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
-				placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
-		}
-
-		if (placementcoord != COORD_NONE) {
-
-			Cell cellnum = placementcoord.As_Cell();
-			switch (((BuildingTypeClass *)base->Class_Of())->Flush_For_Placement(cellnum, House)) {
-
-				default:
-					return(0);
-
-				case 1:
-					/*
-					**	A temporary blockage counts against the node. Outside campaign games, a node that
-					**	fails too often is dropped, as BuildingClass::KickOutUnit (0x443C60) does.
-					*/
-					if (node != NULL) {
-						node->Attempts++;
-						if (Session.Type != GAME_NORMAL && node->Attempts > Rule->MaximumBuildingPlacementFailures) {
-							House->Base.Nodes.Delete_Index(House->Base.Nodes.ID(node));
+				 * When a wall tower is placed, the next base defense node is
+				 * moved to the spot the tower actually appeared at.
+				 */
+				if (building->Class == Rule->WallTower) {
+					int index = House->Base.Nodes.ID(node) + 1;
+					int count = House->Base.Nodes.Count();
+					for (; index < count; index++) {
+						if (House->Base.Nodes[index].Type >= STRUCT_FIRST && BuildingTypes[House->Base.Nodes[index].Type]->IsBaseDefense) {
+							House->Base.Nodes[index].CellID = base->Get_Coord().As_Cell();
+							break;
 						}
 					}
-					return(1);
-
-				case 0:
-					if (base->Unlimbo(placementcoord)) {
-						if (node != NULL) {
-							node->Placed = true;
-							if (building->Class->HeapID == House->BuildStructure) {
-								House->BuildStructure = STRUCT_NONE;
-							}
-						}
-
-						if (base->CurrentMission == MISSION_NONE && base->MissionQueue == MISSION_CONSTRUCTION) {
-							base->Commence();
-						}
-
-						/*
-						 * When a wall tower is placed, the next base defense node is
-						 * moved to the spot the tower actually appeared at.
-						 */
-						if (building->Class == Rule->WallTower) {
-							int index = House->Base.Nodes.ID(node) + 1;
-							int count = House->Base.Nodes.Count();
-							for (; index < count; index++) {
-								if (House->Base.Nodes[index].Type >= STRUCT_FIRST && BuildingTypes[House->Base.Nodes[index].Type]->IsBaseDefense) {
-									House->Base.Nodes[index].CellID = base->Get_Coord().As_Cell();
-									break;
-								}
-							}
-						}
-						return(2);
-					}
-					// fall through
-
-				case 2:
-					if (node == NULL) {
-						return(0);
-					} else {
-						int index = House->Base.Nodes.ID(node);
-
-						BuildingTypeClass * nodetype = BuildingTypes[node->Type];
-						if (!nodetype->IsWall && !nodetype->IsGate) {
-							Cell placecell = placementcoord.As_Cell();
-							for (int i = 0; i < House->Base.Nodes.Count(); i++) {
-								if (House->Base.Nodes[i].CellID == placecell) {
-									House->Base.Nodes[i].CellID = Cell(0, 0);
-								}
-							}
-							return(0);
-						}
-						House->Base.Nodes.Delete_Index(index);
-					}
-					break;
-			}
-
-		} else {
-
-			if (!buildingtype->PowersUpBuilding.empty()) {
-				if (House->Base.Next_Buildable(STRUCT_NONE) == node) {
-					House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
 				}
+				return(2);
 			}
+			// fall through
+
+		case 2: {
+			if (node == NULL) {
+				return(0);
+			}
+			int index = House->Base.Nodes.ID(node);
+
+			BuildingTypeClass * nodetype = BuildingTypes[node->Type];
+			if (!nodetype->IsWall && !nodetype->IsGate) {
+				Cell placecell = placementcoord.As_Cell();
+				for (int i = 0; i < House->Base.Nodes.Count(); i++) {
+					if (House->Base.Nodes[i].CellID == placecell) {
+						House->Base.Nodes[i].CellID = Cell(0, 0);
+					}
+				}
+				return(0);
+			}
+			House->Base.Nodes.Delete_Index(index);
+			break;
 		}
 	}
 	return(0);
