@@ -2487,12 +2487,17 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				BEnd(BENCH_PCP);
 				return;
 			}
-			if (grinder->Class->IsBunker && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Bunker(this)) {
-				NavCom = NULL;
-				ArchiveTarget = NULL;
-				grinder->Bunker_Up(this);
-				BEnd(BENCH_PCP);
-				return;
+			// A vehicle that stops on a free bunker takes it in as its radio contact; the bunker then drives it in step by step.
+			if (grinder->Class->IsBunker && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Bunker(this) && (!grinder->In_Radio_Contact() || grinder->Contains_Link(this))) {
+				if (Transmit_Message(RADIO_HELLO, grinder) == RADIO_ROGER) {
+					if (Transmit_Message(RADIO_IM_IN, grinder) == RADIO_ROGER) {
+						NavCom = NULL;
+						ArchiveTarget = NULL;
+						BEnd(BENCH_PCP);
+						return;
+					}
+					Transmit_Message(RADIO_OVER_OUT, grinder);
+				}
 			}
 			if (grinder->Class->IsUnitAbsorb && Get_Cell_Ptr()->Cell_Building() == grinder && grinder->Can_Absorb(this)) {
 				NavCom = NULL;
