@@ -728,10 +728,18 @@ bool JumpjetLocomotionClass::Relocate_If_Claimed(Cell const & cell)
 /// Settles a unit that stays in the air at its destination. The unit keeps its moving flag and goes on
 /// hovering, so its Move mission continues and it takes no target of its own. Then it is given the next
 /// waypoint of its path, if it has one. A hovering unit never goes idle, so Enter_Idle_Mode does not do this.
+/// A vehicle still linked to the weapons factory it left is released from it.
 /// </summary>
 void JumpjetLocomotionClass::Arrive_Aloft(void)
 {
 	LinkedTo->Assign_Destination(NULL);
+	// A vehicle that flew out of a weapons factory is released from it on reaching the door cell.
+	if (LinkedTo->RTTI == RTTI_UNIT && LinkedTo->IsTethered) {
+		static_cast<UnitClass *>(LinkedTo)->Break_Away_From_Contact();
+		if (!LinkedTo->IsActive) {
+			return;
+		}
+	}
 	LinkedTo->Advance_Waypoint_Path();
 }
 
