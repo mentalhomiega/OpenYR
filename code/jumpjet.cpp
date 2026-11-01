@@ -725,12 +725,13 @@ bool JumpjetLocomotionClass::Relocate_If_Claimed(Cell const & cell)
 
 /// <summary>
 /// Settles a unit that stays in the air at its destination. The unit keeps its moving flag and goes on
-/// hovering, so its Move mission continues and it takes no target of its own. gamemd's hover arrival
-/// (0x54BE62) changes only the flight state, and runs no per-cell arrival, which would send a soldier to idle.
+/// hovering, so its Move mission continues and it takes no target of its own. Then it is given the next
+/// waypoint of its path, if it has one. A hovering unit never goes idle, so Enter_Idle_Mode does not do this.
 /// </summary>
 void JumpjetLocomotionClass::Arrive_Aloft(void)
 {
 	LinkedTo->Assign_Destination(NULL);
+	LinkedTo->Advance_Waypoint_Path();
 }
 
 
