@@ -208,6 +208,7 @@ Bounty.Value=200
 | Key | Default | Effect | From |
 | --- | --- | --- | --- |
 | [`AnimationFires`](../manual/content/keys/animationfires.md) | `no` | Whether Flamer and Scorch animations, and damaged or destroyed structures, light SmallFire and LargeFire fires. | OpenYR |
+| [`BodyFrameFromIdle`](../manual/content/keys/bodyframefromidle.md) | `yes` | Whether a structure whose body animation reaches the shadow frames draws its idle body frame instead. | OpenYR |
 | [`BountyDisplay`](../manual/content/keys/bountydisplay.md) | `no` | Whether bounty payments are shown over the destroyed object, for destroyers that do not set Bounty.Display. | Ares |
 | [`Ring1Glow`](../manual/content/keys/ring1glow.md) | `no` | Whether an animation of type RING1 is drawn as an expanding glow on the ground instead of its shape. | OpenYR |
 | [`VoxelShadeScale`](../manual/content/keys/voxelshadescale--global-rules.md) | `16` | Sets how many palette shade rows a voxel's diffuse and highlight brightness spans. | OpenYR |

@@ -5221,6 +5221,24 @@ BlueMoldTile:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+BodyFrameFromIdle:
+  key: BodyFrameFromIdle
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsBodyFrameFromIdle
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BombAttachSound:
   key: BombAttachSound
   scopes:
