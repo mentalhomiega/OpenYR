@@ -743,6 +743,9 @@ class BuildingClass : public TechnoClass
 		void Place_Free_Unit(void);
 		void Produce_Cash_Startup(void);
 		int Exit_Naval_Object(TechnoClass * base);
+		int Exit_Aircraft(TechnoClass * base);
+		int Exit_Foot(TechnoClass * base);
+		int Exit_Structure(TechnoClass * base);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
