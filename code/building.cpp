@@ -983,7 +983,7 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 		if ((Class->IsLaserFence && (LaserFenceFrame == 12 || LaserFenceFrame == 8)) || Class->IsFirestormWall) {
 			Techno_Draw_Object(shapefile, Shape_Number(), drawpoint, cliprect, DIR_N, 256, -1 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
 		} else {
-			Techno_Draw_Object(shapefile, Shape_Number() < shapefile->Get_Count() / 2 ? Shape_Number() : shapefile->Get_Count() / 2, drawpoint, cliprect, DIR_N, 256, zadjust - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_90DEG, true, Map[cell].Brightness + Class->ExtraLight, zshapefile, 0, zdrawpoint);
+			Techno_Draw_Object(shapefile, Body_Frame(shapefile->Get_Count()), drawpoint, cliprect, DIR_N, 256, zadjust - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_90DEG, true, Map[cell].Brightness + Class->ExtraLight, zshapefile, 0, zdrawpoint);
 		}
 	}
 
@@ -1556,6 +1556,33 @@ int BuildingClass::Shape_Number(void) const
 		}
 	}
 	return(shapenum);
+}
+
+
+/// <summary>
+/// Fetches the frame of the building's image that its body is drawn from.
+/// A frame below half the image's frame count is drawn as Shape_Number gives it. A frame at or
+/// past that half is a shadow frame. With Rule->IsBodyFrameFromIdle set, it is replaced by the
+/// first frame of the idle sequence, plus one when health is at or below ConditionYellow; if that
+/// frame is itself a shadow frame, the first shadow frame is drawn. Garrison, gate, laser fence,
+/// firestorm wall and construction frames are always clamped to the first shadow frame.
+/// </summary>
+/// <param name="frames">The frame count of the building's image.</param>
+/// <returns>Returns with the frame index of the image to draw.</returns>
+int BuildingClass::Body_Frame(int frames) const
+{
+	int const shape = Shape_Number();
+	int const body = frames / 2;
+	if (shape < body) {
+		return(shape);
+	}
+
+	if (!Rule->IsBodyFrameFromIdle || BState == BSTATE_CONSTRUCTION || Class->IsGate || Class->IsCanBeOccupied || Class->IsLaserFence || Class->IsFirestormWall) {
+		return(body);
+	}
+
+	int const idle = Class->Anims[BSTATE_IDLE].Start + (HealthRatio <= Rule->ConditionYellow ? 1 : 0);
+	return(idle < body ? idle : body);
 }
 
 

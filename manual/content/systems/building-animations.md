@@ -299,6 +299,8 @@ Damaged artwork is a second block of frames after the healthy ones, shown at or 
 - In the active and auxiliary sequences, it is offset by the end of whichever of the four declared sequences ends last (its first frame plus its frame count).
 - The construction sequence has no damaged frames. Gates, laser fence sections and firestorm wall sections choose their frames differently.
 
+The body draws from the first half of the artwork. When the stage reaches the second half, which holds the shadow frames, the body draws the first idle frame instead, plus one when health is at or below `ConditionYellow`, unless that frame is itself a shadow frame. [`BodyFrameFromIdle=`](/keys/bodyframefromidle/) sets this; `no` draws the shadow frame. Gates, laser fence sections, firestorm wall sections, garrisoned structures and construction frames are not replaced.
+
 [`ExtraDamageStage`](/keys/extradamagestage/) is read but has no effect.
 
 Four more shapes are drawn with the structure, but none of them is an attached animation. Each is a shape file named in the Image ID art entry, and the structure chooses its frame, so none plays on its own:

@@ -5715,14 +5715,14 @@ void Run(StepType const & step)
 			}
 		}
 	} else if (step.Command == "bshape") {
-		// bshape <TypeID>: for each building of that type, its health, state and mission, whether its animations are the damaged forms, and the body frame drawn, which is the shape clamped to half the image's frame count as BuildingClass::DrawIt does.
+		// bshape <TypeID>: for each building of that type, its health, state and mission, whether its animations are the damaged forms, and the body frame drawn, as BuildingClass::Body_Frame gives it for the image's frame count.
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass const * building = Buildings[index];
 			if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
 			ShapeSet const * image = (ShapeSet const *)building->Get_Image_Data();
 			int shape = building->Shape_Number();
 			int frames = image != NULL ? image->Get_Count() : 0;
-			int drawn = (frames > 0 && shape >= frames / 2) ? frames / 2 : shape;
+			int drawn = frames > 0 ? building->Body_Frame(frames) : shape;
 			DebugString("AUTOTEST   bshape %s at %d,%d health %.3f yellow %.3f bstate %d mission %d shape %d drawn %d frames %d damaged anims %d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 				building->HealthRatio, Rule->ConditionYellow, (int)building->BState, (int)building->Mission, shape, drawn, frames, (int)building->IsDamagedAnims);
 		}
