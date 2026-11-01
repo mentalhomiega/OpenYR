@@ -11,6 +11,10 @@ set(OPENTS_VERSION_PRERELEASE "")
 # alone. Every other build names the commit it came from as well.
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
 
+# Names a build of the integration branch by its nightly number since the newest beta tag and
+# its commit time, for example "Nightly 3 after Beta 32, 2026-11-01 17:34".
+option(OPENTS_NIGHTLY "Name the build as a numbered nightly" OFF)
+
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
 
 # Registers the tests that take over the desktop: they raise their own window, set the keyboard
@@ -78,6 +82,7 @@ set(OPENTS_STAMP_ARGS
     "-DOPENTS_VERSION_PATCH=${PROJECT_VERSION_PATCH}"
     "-DOPENTS_VERSION_PRERELEASE=${OPENTS_VERSION_PRERELEASE}"
     "-DOPENTS_OFFICIAL_BUILD=${OPENTS_OFFICIAL_BUILD}"
+    "-DOPENTS_NIGHTLY=${OPENTS_NIGHTLY}"
     "-DOPENTS_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
     "-DOPENTS_VERSION_HEADER=${OPENTS_VERSION_HEADER}"
     "-DOPENTS_STAMP_HEADER=${OPENTS_STAMP_HEADER}"
