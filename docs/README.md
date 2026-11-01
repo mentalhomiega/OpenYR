@@ -17,6 +17,8 @@ The developer guides are split by subject:
   not, grouped by file, with its default, effect and manual page.
 - [INI checker](INICHECK.md) — reports rules keys the engine does not read
   and values it cannot read.
+- [Map lister](MAPINFO.md) — lists a map's triggers, tags, teams, scripts and
+  starting objects by name, with `--find` and `--json`.
 - [True-colour sprites](TRUECOLOUR.md) — PNG sheets drawn in place of SHP
   frames, with an optional house-colour mask.
 - [HDR output](HDR.md) — the HDR10 back buffer, the composite pass that keeps
