@@ -301,6 +301,7 @@ class UnitClass : public FootClass
 		virtual bool Enter_Idle_Mode(bool initial=false, bool=true) override;
 		virtual MoveType Can_Enter_Cell(CellClass const * cell, FacingType dir = FACING_NONE, int cell_height = -1, CellClass const * = 0, bool = true) const override;
 		virtual void Per_Cell_Process(PCPType why) override;
+		void Break_Away_From_Contact(void);
 
 		/*
 		**	File I/O.
