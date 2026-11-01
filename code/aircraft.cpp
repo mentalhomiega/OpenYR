@@ -4337,8 +4337,9 @@ int AircraftClass::Do_MISSION_PARADROP_OVERFLY(void)
 /// <summary>
 /// Drops the first paratrooper aboard half a cell to one side of the plane's path, alternating
 /// sides by the parity of Ammo (AircraftClass::Unload_Passenger_Paradrop, 0x415C60). Both the
-/// overfly mission and Fire use it. A paratrooper that cannot land on the cell below stays
-/// aboard. A drop gives the plane five more passes and resets its Arm timer.
+/// overfly mission and Fire use it. A paratrooper stays aboard when the cell below cannot be
+/// entered, or lies outside the usable area while ParadropInUsableArea is set. A drop gives the
+/// plane five more passes and resets its Arm timer.
 /// </summary>
 void AircraftClass::Drop_Paratrooper(void)
 {
@@ -4350,7 +4351,8 @@ void AircraftClass::Drop_Paratrooper(void)
 	int const turn = (Ammo & 1) ? -0x3FFF : 0x3FFF;
 	Coord const drop = Move_Coord(PositionCoord, DirType(PrimaryFacing.Current().As_Int() + turn), CELL_LEPTON_W / 2);
 	CellClass * cellptr = &Map[drop];
-	if (passenger->Can_Enter_Cell(cellptr) == MOVE_OK) {
+	bool const usable = !Rule->ParadropInUsableArea || Map.In_Local_Radar(cellptr);
+	if (usable && passenger->Can_Enter_Cell(cellptr) == MOVE_OK) {
 		Coord spot = cellptr->Closest_Free_Spot(drop);
 		if (spot != COORD_NONE) {
 			spot.Z = PositionCoord.Z;

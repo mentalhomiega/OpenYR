@@ -86,6 +86,7 @@ keys:
   - NukeSilo
   - NukeTakeOff
   - Organic
+  - ParadropInUsableArea
   - ParadropRadius
   - PermaControlledAnimationType
   - PostClick
@@ -602,7 +603,7 @@ AllyParaDropInf=E1,GGI
 AllyParaDropNum=6,2   ; two planes: six GIs and two guardian GIs
 ```
 
-The planes fly in from the firing house's [`Edge`](/keys/edge/), which is north outside a campaign. In a campaign, a house that omits `Edge` flies them in from the edge nearest its construction yard. Within [`ParadropRadius`](/keys/paradropradius/) leptons of the target, measured along the ground, a plane drops a paratrooper every 5 frames while it is over the playable map. Each one lands half a cell to the left or right of the plane's path, alternating sides, and falls under the [`Parachute`](/keys/parachute/) canopy with [`ChuteSound`](/keys/chutesound/). A paratrooper that could not stand where it would land stays aboard.
+The planes fly in from the firing house's [`Edge`](/keys/edge/), which is north outside a campaign. In a campaign, a house that omits `Edge` flies them in from the edge nearest its construction yard. Within [`ParadropRadius`](/keys/paradropradius/) leptons of the target, measured along the ground, a plane drops a paratrooper every 5 frames while it is over the playable map. Each one lands half a cell to the left or right of the plane's path, alternating sides, and falls under the [`Parachute`](/keys/parachute/) canopy with [`ChuteSound`](/keys/chutesound/). A paratrooper that could not stand where it would land stays aboard. With [`ParadropInUsableArea`](/keys/paradropinusablearea/) at its default `yes`, one whose landing cell lies outside the usable area stays aboard too.
 
 A plane that leaves the radius with paratroopers still aboard turns back for another pass. It gives up after five passes in a row in which nobody could jump. A plane that is empty or has given up flies back to its own edge and leaves the map.
 
