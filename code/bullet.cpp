@@ -1661,33 +1661,8 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
-	/*
-	 * A direct rocker warhead tips the unit it strikes and deals it no blast damage. The tip point
-	 * lies 10 leptons from the unit toward the firer, and the force is the damage times
-	 * [AudioVisual] DirectRockingCoefficient divided by 100, capped at 4 (BulletClass::Detonate,
-	 * 0x46978E to 0x4699BF). An owner-less shot or a unit under an Iron Curtain is not rocked.
-	 * The firer and the unit then link to each other (DirectRockerLinkedUnit, 0x4699AD).
-	 */
 	else if (direct_rocks) {
-		TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
-		if (Payback != NULL && target != NULL && !target->Is_Iron_Curtained()) {
-			Coord const target_coord = target->PositionCoord;
-			TPoint3D<float> toward((float)(Payback->PositionCoord.X - target_coord.X), (float)(Payback->PositionCoord.Y - target_coord.Y), (float)(Payback->PositionCoord.Z - target_coord.Z));
-			toward = toward.Normalize() * 10;
-			Coord rock_coord = target_coord;
-			rock_coord += Coord(toward.X, toward.Y, toward.Z);
-			// Strength stands for gamemd's (DamageMultiplier * Health) >> 8, which equals Strength while the multiplier is 256.
-			double const force = std::min((double)Strength * Rule->DirectRockingCoefficient / 100.0, 4.0);
-			target->Rock(rock_coord, (float)force, true);
-
-			// A building firer is not linked, because the link field is typed FootClass; gamemd links any firer.
-			if (Payback->Is_Foot()) {
-				FootClass * victim = (FootClass *)target;
-				FootClass * firer = (FootClass *)Payback;
-				victim->DirectRockerLinkedUnit = firer;
-				firer->DirectRockerLinkedUnit = victim;
-			}
-		}
+		Direct_Rock();
 	}
 
 	// A bomb disarming warhead removes the target's bomb (BombClass::Disarm, 0x4389B0).
@@ -1726,38 +1701,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	else if (warhead->IsWebby) {
-		int radius = warhead->WebRadius;
-		int radius_squared = radius * radius;
-		Cell center = Center_Coord().As_Cell();
-		int max_height = 3 * LEVEL_LEPTON_H;
-
-		for (int y = -radius; y <= radius; y++) {
-			for (int x = -radius; x <= radius; x++) {
-				if (y * y + x * x <= radius_squared) {
-					CellClass * cellptr = &Map[center + Cell(x, y)];
-					if (cellptr != NULL) {
-						Coord particle_coord = cellptr->Cell_Coord();
-						ObjectClass * occupier = NULL;
-						if (abs(particle_coord.Z - coord.Z) < max_height) {
-							occupier = cellptr->Cell_Occupier();
-						} else {
-							particle_coord = cellptr->As_Coord();
-							occupier = cellptr->Cell_Occupier(true);
-						}
-						ParticleSystemClass * psys = new ParticleSystemClass(Warhead->Particle, particle_coord);
-						psys->Spawn_Held_Particle(particle_coord, particle_coord);
-						while (occupier != NULL) {
-							ObjectClass * next = occupier->Next;
-							if (occupier->IsActive && occupier->IsDown && occupier->Strength > 0) {
-								int damage = 0;
-								occupier->Take_Damage(damage, 0, Warhead);
-							}
-							occupier = next;
-						}
-					}
-				}
-			}
-		}
+		Web(coord);
 	}
 
 	/*
@@ -1834,90 +1778,181 @@ void BulletClass::Detonate(Coord const & coord)
 		Throw_Warhead_Debris(warhead, PositionCoord);
 	}
 
-	// An Airburst projectile fires its AirburstWeapon once at each of nine cells, the eight neighbours of the cell it burst over
-	// from north clockwise and then that cell, and launches every bomblet at a speed of 50 without a lighting flash (BulletClass::Detonate, 0x4690B0).
 	if (Class->Bursts_Over_Cells()) {
-		WeaponTypeClass * weapon = Class->AirburstWeapon;
-		if (weapon == NULL || weapon->Bullet == NULL) {
-			DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
-		} else {
-			static int const offsets[9][2] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, 0}};
-			Cell const center = Center_Coord().As_Cell();
-			for (int index = 0; index < 9; index++) {
-				Cell const cell(center.X + offsets[index][0], center.Y + offsets[index][1]);
-				if (!Map.In_Radar(cell)) {
-					continue;
-				}
-				BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, 50, false);
-				if (bullet != NULL) {
-					bullet->Weapon = weapon;
-					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
-					bullet->Unlimbo(PositionCoord, velocity);
+		Airburst();
+	}
+
+	if (Class->IsSplits) {
+		Split();
+	}
+}
+
+
+/// <summary>
+/// Tips the unit this DirectRocker shot struck, toward a point 10 leptons from the unit in the firer's direction, with
+/// a force of the damage times [AudioVisual] DirectRockingCoefficient divided by 100, capped at 4, and links the firer
+/// and the unit to each other (BulletClass::Detonate, 0x46978E to 0x4699BF; DirectRockerLinkedUnit, 0x4699AD). An
+/// owner-less shot or a unit under an Iron Curtain is not rocked.
+/// </summary>
+void BulletClass::Direct_Rock(void)
+{
+	TechnoClass * target = dynamic_cast<TechnoClass *>(TarCom);
+	if (Payback != NULL && target != NULL && !target->Is_Iron_Curtained()) {
+		Coord const target_coord = target->PositionCoord;
+		TPoint3D<float> toward((float)(Payback->PositionCoord.X - target_coord.X), (float)(Payback->PositionCoord.Y - target_coord.Y), (float)(Payback->PositionCoord.Z - target_coord.Z));
+		toward = toward.Normalize() * 10;
+		Coord rock_coord = target_coord;
+		rock_coord += Coord(toward.X, toward.Y, toward.Z);
+		// Strength stands for gamemd's (DamageMultiplier * Health) >> 8, which equals Strength while the multiplier is 256.
+		double const force = std::min((double)Strength * Rule->DirectRockingCoefficient / 100.0, 4.0);
+		target->Rock(rock_coord, (float)force, true);
+
+		// A building firer is not linked, because the link field is typed FootClass; gamemd links any firer.
+		if (Payback->Is_Foot()) {
+			FootClass * victim = (FootClass *)target;
+			FootClass * firer = (FootClass *)Payback;
+			victim->DirectRockerLinkedUnit = firer;
+			firer->DirectRockerLinkedUnit = victim;
+		}
+	}
+}
+
+
+/// <summary>
+/// Webs every cell within the warhead's WebRadius of this projectile's cell: each gets the warhead's particle, and
+/// every live object on the ground there takes the warhead with no damage.
+/// </summary>
+/// <param name="coord">The location that the projectile detonates at; it decides which layer of a bridge cell is webbed.</param>
+void BulletClass::Web(Coord const & coord)
+{
+	int radius = Warhead->WebRadius;
+	int radius_squared = radius * radius;
+	Cell center = Center_Coord().As_Cell();
+	int max_height = 3 * LEVEL_LEPTON_H;
+
+	for (int y = -radius; y <= radius; y++) {
+		for (int x = -radius; x <= radius; x++) {
+			if (y * y + x * x <= radius_squared) {
+				CellClass * cellptr = &Map[center + Cell(x, y)];
+				if (cellptr != NULL) {
+					Coord particle_coord = cellptr->Cell_Coord();
+					ObjectClass * occupier = NULL;
+					if (abs(particle_coord.Z - coord.Z) < max_height) {
+						occupier = cellptr->Cell_Occupier();
+					} else {
+						particle_coord = cellptr->As_Coord();
+						occupier = cellptr->Cell_Occupier(true);
+					}
+					ParticleSystemClass * psys = new ParticleSystemClass(Warhead->Particle, particle_coord);
+					psys->Spawn_Held_Particle(particle_coord, particle_coord);
+					while (occupier != NULL) {
+						ObjectClass * next = occupier->Next;
+						if (occupier->IsActive && occupier->IsDown && occupier->Strength > 0) {
+							int damage = 0;
+							occupier->Take_Damage(damage, 0, Warhead);
+						}
+						occupier = next;
+					}
 				}
 			}
 		}
 	}
+}
 
-	if (Class->IsSplits) {
-		DynamicVectorClass<AbstractClass *> targets;
 
-		Coord split_coord = PositionCoord;
-		Cell split_cell = Center_Coord().As_Cell();
-
-		if (TarCom != NULL) {
-			ObjectClass * object = TarCom->As_ObjectClass();
-			if (object != NULL) {
-				split_coord = object->PositionCoord;
-				split_cell = object->Center_Coord().As_Cell();
+/// <summary>
+/// Fires the AirburstWeapon once at each of nine cells, the eight neighbours of the cell this projectile burst over
+/// from north clockwise and then that cell, each bomblet launched at a speed of 50 without a lighting flash
+/// (BulletClass::Detonate, 0x4690B0). Cells outside the map are skipped.
+/// </summary>
+void BulletClass::Airburst(void)
+{
+	WeaponTypeClass * weapon = Class->AirburstWeapon;
+	if (weapon == NULL || weapon->Bullet == NULL) {
+		DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
+	} else {
+		static int const offsets[9][2] = {{0, -1}, {1, -1}, {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, 0}};
+		Cell const center = Center_Coord().As_Cell();
+		for (int index = 0; index < 9; index++) {
+			Cell const cell(center.X + offsets[index][0], center.Y + offsets[index][1]);
+			if (!Map.In_Radar(cell)) {
+				continue;
+			}
+			BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, 50, false);
+			if (bullet != NULL) {
+				bullet->Weapon = weapon;
+				TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+				bullet->Unlimbo(PositionCoord, velocity);
 			}
 		}
+	}
+}
 
-		int i;
-		for (i = 0; i < Technos.Count(); i++) {
-			TechnoClass * tptr = Technos[i];
-			if (tptr->IsLocked && tptr->IsDown && tptr->Strength > 0) {
-				if (split_coord.Gamemd_Distance_To(tptr->PositionCoord) < CELL_LEPTON * 5) {
-					targets.Add(tptr);
-				}
+
+/// <summary>
+/// Splits this projectile into Cluster bomblets of its AirburstWeapon. Each goes to the target, or, when there is none
+/// or the RetargetAccuracy roll fails, to a locked object within five cells or a random cell within three.
+/// </summary>
+void BulletClass::Split(void)
+{
+	DynamicVectorClass<AbstractClass *> targets;
+
+	Coord split_coord = PositionCoord;
+	Cell split_cell = Center_Coord().As_Cell();
+
+	if (TarCom != NULL) {
+		ObjectClass * object = TarCom->As_ObjectClass();
+		if (object != NULL) {
+			split_coord = object->PositionCoord;
+			split_cell = object->Center_Coord().As_Cell();
+		}
+	}
+
+	int i;
+	for (i = 0; i < Technos.Count(); i++) {
+		TechnoClass * tptr = Technos[i];
+		if (tptr->IsLocked && tptr->IsDown && tptr->Strength > 0) {
+			if (split_coord.Gamemd_Distance_To(tptr->PositionCoord) < CELL_LEPTON * 5) {
+				targets.Add(tptr);
 			}
 		}
+	}
 
-		while (targets.Count() < Class->Cluster) {
-			Cell newcell = split_cell;
-			newcell.X += Random_Pick(-3, 3);
-			newcell.Y += Random_Pick(-3, 3);
-			targets.Add(&Map[newcell]);
-		}
+	while (targets.Count() < Class->Cluster) {
+		Cell newcell = split_cell;
+		newcell.X += Random_Pick(-3, 3);
+		newcell.Y += Random_Pick(-3, 3);
+		targets.Add(&Map[newcell]);
+	}
 
-		for (i = 0; i < Class->Cluster; i++) {
-			AbstractClass * target = TarCom;
-			if (target == NULL || Random_Double(0.0, 1.0) > Class->RetargetAccuracy) {
-				int number = Random_Pick(0, targets.Count() - 1);
+	for (i = 0; i < Class->Cluster; i++) {
+		AbstractClass * target = TarCom;
+		if (target == NULL || Random_Double(0.0, 1.0) > Class->RetargetAccuracy) {
+			int number = Random_Pick(0, targets.Count() - 1);
+			target = targets[number];
+			if (target == Payback && Random_Double(0.0, 1.0) > 0.5) {
+				number = Random_Pick(0, targets.Count() - 1);
 				target = targets[number];
-				if (target == Payback && Random_Double(0.0, 1.0) > 0.5) {
-					number = Random_Pick(0, targets.Count() - 1);
-					target = targets[number];
-				}
-				targets.Delete_Index(number);
 			}
+			targets.Delete_Index(number);
+		}
 
-			WeaponTypeClass * weapon = Class->AirburstWeapon;
-			if (weapon == NULL || weapon->Bullet == NULL) {
-				DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
-				break;
-			}
+		WeaponTypeClass * weapon = Class->AirburstWeapon;
+		if (weapon == NULL || weapon->Bullet == NULL) {
+			DebugString("Bullet %s: its airburst weapon %s has no projectile.\n", Class->Name(), weapon != NULL ? weapon->Name() : "<none>");
+			break;
+		}
 
-			if (target != NULL) {
-				const BulletTypeClass * btype = weapon->Bullet;
-				BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
-				if (bullet != NULL) {
-					/*
-					 * Send the bomblet straight down (pitch DIR_S) with a dash of
-					 * random scatter in the heading.
-					 */
-					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
-					bullet->Unlimbo(PositionCoord, velocity);
-				}
+		if (target != NULL) {
+			const BulletTypeClass * btype = weapon->Bullet;
+			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
+			if (bullet != NULL) {
+				/*
+				 * Send the bomblet straight down (pitch DIR_S) with a dash of
+				 * random scatter in the heading.
+				 */
+				TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+				bullet->Unlimbo(PositionCoord, velocity);
 			}
 		}
 	}

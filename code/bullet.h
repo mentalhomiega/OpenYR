@@ -108,6 +108,10 @@ class BulletClass : public ObjectClass
 		void Detonate(Coord const & coord);
 		void Shrapnel(void);
 		void Nuke_Maker(void);
+		void Direct_Rock(void);
+		void Web(Coord const & coord);
+		void Airburst(void);
+		void Split(void);
 		bool Start_Nuke_Blast(void);
 
 		/*
