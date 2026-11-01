@@ -425,6 +425,7 @@ RulesClass::RulesClass(void) :
 	AmerParaDropInf(),
 	AmerParaDropNum(),
 	ParadropRadius(1024),
+	ParadropInUsableArea(true),
 	SpyPlaneCamera(VOC_NONE),
 	SpyPlaneCameraFrames(16),
 	LightningStormDuration(900),
@@ -1722,6 +1723,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		AmerParaDropInf = TGet_TypeList<InfantryTypeClass>(ini, GENERAL, "AmerParaDropInf", AmerParaDropInf);
 		AmerParaDropNum = ini.Get_IntList(GENERAL, "AmerParaDropNum", AmerParaDropNum);
 		ParadropRadius = ini.Get_Int(GENERAL, "ParadropRadius", ParadropRadius);
+		ParadropInUsableArea = ini.Get_Bool(GENERAL, "ParadropInUsableArea", ParadropInUsableArea);
 		LightningStormDuration = ini.Get_Int(GENERAL, "LightningStormDuration", LightningStormDuration);
 		LightningStormDeferment = ini.Get_Int(GENERAL, "LightningDeferment", LightningStormDeferment);
 		LightningStormDamage = ini.Get_Int(GENERAL, "LightningDamage", LightningStormDamage);
@@ -3013,6 +3015,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(AmerParaDropInf);
 	stream.Serialize(AmerParaDropNum);
 	stream.Serialize(ParadropRadius);
+	stream.Serialize(ParadropInUsableArea);
 	stream.Serialize(SpyPlaneCamera);
 	stream.Serialize(SpyPlaneCameraFrames);
 	stream.Serialize(LightningStormDuration);

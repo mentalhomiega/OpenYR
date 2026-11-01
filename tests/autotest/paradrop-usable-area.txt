@@ -1,0 +1,30 @@
+; An American paradrop aimed at the four edges of the usable area of XMP29U2.MAP (LocalSize 2,4,56,50). In the
+; isometric cell space, In_Local_Radar holds cells with x+y from 69 to 170, x-y below 56 and y-x below 56. The
+; targets sit just inside the north-west (30,39: x+y 69), north-east (62,7: x-y 55), south-west (7,62: y-x 55) and
+; south-east (80,89: x+y 169) edges. A paratrooper drops half a cell to one side of its plane, so a drop on the
+; wrong side of the edge lands outside the usable area.
+; Each shot is granted fresh (the super weapon is spent when it fires). At each checkpoint, "landed E1" writes how
+; many paratroopers are on the map and how many of them lie outside the usable area, then "kill E1 1" removes them
+; before the next shot.
+; Run with ParadropInUsableArea at its default, yes. Expected: every "landed E1" line says outside 0.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/paradrop-usable-area.txt -Width 800 -Height 600 -Seconds 240 -Filter "AUTOTEST   landed|Exception"
+; Run with ParadropInUsableArea=no: add -Mods src-agent26/tests/autotest/paradrop-usable-area-rules to that command.
+; Expected: the same shots land paratroopers outside the usable area, as before the key existed, so at least one
+; "landed E1" line says outside greater than 0.
+30 command CenterBase
+100 grant AmericanParaDropSpecial
+110 fire AmericanParaDropSpecial 30 39
+750 landed E1
+751 kill E1 1
+800 grant AmericanParaDropSpecial
+810 fire AmericanParaDropSpecial 62 7
+1450 landed E1
+1451 kill E1 1
+1500 grant AmericanParaDropSpecial
+1510 fire AmericanParaDropSpecial 7 62
+2150 landed E1
+2151 kill E1 1
+2200 grant AmericanParaDropSpecial
+2210 fire AmericanParaDropSpecial 80 89
+2850 landed E1
+2900 quit

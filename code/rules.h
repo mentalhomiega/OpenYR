@@ -263,6 +263,14 @@ class RulesClass
 		TypeList<InfantryTypeClass const *> AmerParaDropInf;
 		TypeList<int> AmerParaDropNum;
 		int ParadropRadius;
+
+		/*
+		 * Whether a paratrooper lands only on a cell inside the usable map area. When this is
+		 * true, a drop onto a cell outside that area stays aboard, as one onto a cell the
+		 * paratrooper cannot enter does, and the plane tries again at its next drop. When it
+		 * is false, a paratrooper lands on any cell it can enter.
+		 */
+		bool ParadropInUsableArea;
 		VocType SpyPlaneCamera;
 		int SpyPlaneCameraFrames;
 

@@ -3169,6 +3169,23 @@ void Run(StepType const & step)
 		return;
 	}
 
+	if (step.Command == "landed") {
+		// landed <TypeID>: the live objects of the type that are on the map and not in limbo, how many of them lie outside the usable area, and the cell of each of those.
+		int landed = 0;
+		int outside = 0;
+		for (int index = 0; index < Technos.Count(); index++) {
+			TechnoClass const * techno = Technos[index];
+			if (techno->IsInLimbo || techno->Strength <= 0 || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
+			landed++;
+			if (!Map.In_Local_Radar(techno->Get_Cell())) {
+				outside++;
+				DebugString("AUTOTEST   landed outside %s cell %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y);
+			}
+		}
+		DebugString("AUTOTEST   landed %s frame %d count %d outside %d\n", step.Argument.c_str(), (int)Frame, landed, outside);
+		return;
+	}
+
 	if (step.Command == "vanims") {
 		// vanims [TypeID]: writes each live voxel animation, or only those of the named type, with its position and cell.
 		int shown = 0;
