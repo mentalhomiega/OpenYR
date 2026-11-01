@@ -5398,332 +5398,324 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 	int max_speed = weapon->MaxSpeed;
 	bullet = Create_Bullet(weapon->Bullet, target, this, firepower, weapon->WarheadPtr, max_speed, weapon->IsBright);
-	if (bullet != NULL) {
-		bullet->Weapon = weapon;
+	if (bullet == NULL) {
+		return(NULL);
+	}
+	bullet->Weapon = weapon;
+	bullet->Limbo();
+
+	/*
+	**	If this is firing from a moving platform, then the projectile is inaccurate. A jumpjet
+	**	type is exempt (TechnoClass::Fire, 0x6FDD50, reads TechnoTypeClass::JumpJet at 0xD94).
+	*/
+	if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving() && !TClass->IsJumpJet) {
+		bullet->IsInaccurate = true;
 	}
 
-	if (bullet != NULL) {
-		bullet->Limbo();
+	// An accurate shot takes its estimated damage off its target's estimated health, at the target this object
+	// has been ordered to attack (TechnoClass::Fire, 0x6FE5D4-0x6FE622).
+	if (!bullet->IsInaccurate && !bullet->Class->IsInaccurate && TarCom != NULL && TarCom->Is_Techno()) {
+		TechnoClass * estimate_target = (TechnoClass *)TarCom;
+		estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
+	}
 
-		/*
-		**	If this is firing from a moving platform, then the projectile is inaccurate. A jumpjet
-		**	type is exempt (TechnoClass::Fire, 0x6FDD50, reads TechnoTypeClass::JumpJet at 0xD94).
-		*/
-		if (Is_Foot() && ((FootClass const *)this)->Locomotion->Is_Moving() && !TClass->IsJumpJet) {
-			bullet->IsInaccurate = true;
-		}
+	Coord turret_coord = Turret_Coord(which);
+	Coord displacement = Predict_Target_Coord() - turret_coord;
 
-		// An accurate shot takes its estimated damage off its target's estimated health, at the target this object
-		// has been ordered to attack (TechnoClass::Fire, 0x6FE5D4-0x6FE622).
-		if (!bullet->IsInaccurate && !bullet->Class->IsInaccurate && TarCom != NULL && TarCom->Is_Techno()) {
-			TechnoClass * estimate_target = (TechnoClass *)TarCom;
-			estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);
-		}
-
-		Coord turret_coord = Turret_Coord(which);
-		Coord displacement = Predict_Target_Coord() - turret_coord;
-
-		/*
-		**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
-		**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
-		**	flak shell that stays visible takes a share of BallisticScatter that grows with its
-		**	distance to the target over its weapon's range.
-		*/
-		if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
-			char const * path = "A";
-			int spread = 0;
-			int distance = 0;
-			int range = 0;
-			if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
-				spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
-			} else {
-				path = "B";
-				distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
-				range = Weapon_Range(which);
-				int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
-				spread = range > 0 ? (share * distance) / range : 0;
-			}
-			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
-			Coord const aim = displacement;
-			displacement = Ballistic_Offset(displacement, spread, angle);
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
-			}
-		}
-
-		/*
-		**	If the projectile is a homing type (such as a missile), then it will
-		**	launch in the direction the turret is facing, NOT necessarily the same
-		**	direction as the target.
-		*/
-		if (btype.ROT != 0 || btype.IsDropping) {
-			dir = Fire_Direction();
-			if (btype.IsDropping) {
-				fire_coord = Center_Coord();
-			}
+	/*
+	**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
+	**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
+	**	flak shell that stays visible takes a share of BallisticScatter that grows with its
+	**	distance to the target over its weapon's range.
+	*/
+	if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
+		char const * path = "A";
+		int spread = 0;
+		int distance = 0;
+		int range = 0;
+		if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
+			spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
 		} else {
-			dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
+			path = "B";
+			distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
+			range = Weapon_Range(which);
+			int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+			spread = range > 0 ? (share * distance) / range : 0;
 		}
-
-		if (max_speed > displacement.Gamemd_Length() / 2) {
-			max_speed = displacement.Gamemd_Length() / 2;
-		}
-
-		// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
-		// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
-		int const segments = TClass->RadialFireSegments;
-		if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
-			bullet->MaxSpeed = weapon->MaxSpeed;
-			if (segments == 0) {
-				max_speed = 1;
-			}
-		}
-
-		// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
-		// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
-		if (segments > 0) {
-			double const step = -9.587672516830327e-05;
-			double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
-			double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
-			dir = DirType((int)(short)(int)raw);
-			RadialFireIndex++;
-			if (RadialFireIndex >= segments) {
-				RadialFireIndex = 0;
-			}
-		}
-
-		TVelocity3D<double> velocity;
-		velocity.Set(0.0, 0.0, 0.0);
-		velocity.Set_Yaw(dir);
-		velocity.Set_Speed((double)max_speed);
-
-		DirType pitch((DirType(DIR_E)-DirType(DIR_STEP_256)).As_Int());
-		bool valid_arc = true;
-		if (bullet->Class->IsArcing) {
-			double gravity = Rule->Gravity;
-			if (bullet->Class->IsFloater) {
-				gravity = Get_Floater_Gravity();
-			}
-
-			int planar = Point2D(displacement).Gamemd_Length();
-			valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
-		} else if (bullet->Class->IsVoxel) {
-			// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
-			pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
-		} else {
-			int abs_z = abs(displacement.Z);
-			if (abs_z > 200) {
-				double y = 20.0;
-				BuildingClass * building = TarCom->As_BuildingClass();
-				if (building != NULL) {
-					displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
-					abs_z = abs((displacement.Z));
-					if ((double)abs_z < y) {
-						y = 0.0;
-					}
-				}
-
-				double planar = Point2D(displacement).Gamemd_Length();
-				if (planar < 0.05) {
-					planar = 0.05;
-				}
-				double angle = std::atan2f((double)abs_z - y, planar);
-				if (displacement.Z < 0) {
-					angle = -angle;
-				}
-				pitch = angle;
-			}
-		}
-
-		velocity.Set_Pitch(pitch);
-
-		if (valid_arc) {
-			if (!bullet->Unlimbo(turret_coord, velocity)) {
-				delete bullet;
-				bullet = NULL;
-			} else {
-
-				if (bullet->Class->IsInvisible && object != NULL && object->IsOnBridge) {
-					bullet->IsOnBridge = true;
-				}
-
-				// gamemd starts the recoil of any object with a turret in TechnoClass::Fire (0x6FDD50), for units and buildings alike.
-				if (Is_Turret_Equipped()) {
-					Start_Turret_Recoil();
-					IsInRecoilState = TClass->IsTurretRecoil;
-				}
-
-				// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
-				// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
-				if (AutoTest_Active() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
-					TPoint3D<int> const flh = Weapon_FLH(which);
-					Coord const center = Center_Coord();
-					DebugString("AUTOTEST designator fire %s %s which %d origin %d,%d,%d center %d,%d,%d flh %d,%d,%d\n", TClass->Name(), weapon->Name(), which, fire_coord.X, fire_coord.Y, fire_coord.Z, center.X, center.Y, center.Z, flh.X, flh.Y, flh.Z);
-				}
-				if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
-				}
-				if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
-					ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
-				}
-				if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
-					Coord start = fire_coord;
-					Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
-					ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
-				}
-
-				LastFireFrame = Frame;
-				BurstIndex++;
-				Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
-				ChargeTurretDelay = (int)Arm;
-				BurstIndex %= weapon->Burst;
-
-				/*
-				**	Perform any animation effect for this weapon.
-				*/
-				AnimTypeClass const * a = NULL;
-				if (weapon->Anim.Count() > 0) {
-					int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
-					a = weapon->Anim[entry];
-				}
-				if (a == NULL && IsInOpenToppedTransport) {
-					a = weapon->OpenToppedAnim;
-				}
-				// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
-				bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
-				if (garrison_fire) {
-					a = weapon->OccupantAnim;
-				}
-
-				/*
-				**	Play any sound effect tied to this weapon type.
-				*/
-				if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
-					Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
-				}
-
-				/*
-				**	If there is a special firing animation, then create and attach it
-				**	now.
-				*/
-				if (a != NULL) {
-					// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
-					Coord anim_coord = fire_coord;
-					AnimClass * anim = new AnimClass(a, anim_coord);
-					if (AutoTest_Active()) {
-						DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
-					}
-					if (RTTI == RTTI_BUILDING) {
-						int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
-						anim->ZAdjust = std::min(zadjust, 0);
-						// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
-						if (garrison->Occupants.Count() > 0) {
-							anim->ZAdjust = -200;
-						}
-					}
-					if (anim != NULL && RTTI != RTTI_BUILDING) {
-						anim->Attach_To(this);
-					}
-				}
-
-				// A DistributedFire object moves on to another target after each shot, unless it was
-				// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
-				if (TClass->IsDistributedFire && (Get_Mission() != MISSION_ATTACK || RTTI == RTTI_BUILDING) && target->Is_Techno()) {
-					TechnoClass * shot = (TechnoClass *)target;
-					if (std::find(AttackedTargets.begin(), AttackedTargets.end(), shot) == AttackedTargets.end()) {
-						AttackedTargets.push_back(shot);
-					}
-					Assign_Target(NULL);
-				}
-
-				// The occupants of a garrison take turns to fire.
-				if (garrison_fire) {
-					garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
-				}
-
-				if (weapon->IsSonic) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
-				}
-
-				// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
-					Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
-				}
-
-				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
-					TargetingLaserTimer = UIControls.TargetLaserTime;
-				}
-
-				if (weapon->IsElectricBolt && !weapon->IsLaser) {
-					Electric_Zap(target, which, weapon);
-				}
-
-				// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
-				if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
-					bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-					RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
-				}
-
-				// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
-				if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
-					RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
-				}
-
-				/*
-				 * Laser zap animation.
-				 */
-				if (weapon->IsLaser) {
-					BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-					// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
-					WeaponTypeClass const * beam_weapon = weapon;
-					if (building != NULL) {
-						WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
-						if (turret_weapon != NULL) {
-							beam_weapon = turret_weapon;
-						}
-					}
-					if (AutoTest_Active()) {
-						DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
-					}
-					Laser_Zap(target, which, beam_weapon, COORD_NONE);
-					if (building != NULL) {
-						building->BuildingStage.Set_Stage(0);
-						building->BuildingStage.Set_Rate(0);
-					}
-					if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
-						BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
-						if (discharge != NULL) {
-							discharge->Discharge_Turret();
-						}
-					}
-				}
-
-				/*
-				**	Reduce ammunition for this object.
-				*/
-				Reduce_Ammunition();
-
-				/*
-				**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
-				**	redrawn here.
-				*/
-				Mark(MARK_CHANGE);
-
-				/*
-				**	If a projectile was fired from a unit that is hidden in the darkness,
-				**	reveal that unit and a little area around it.
-				**	Only reveal the unit if the target belongs to a human player.
-				*/
-				Reveal_Firer_On_Fire(this, target, weapon);
-			}
-		} else {
-			delete bullet;
-			bullet = NULL;
+		int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
+		Coord const aim = displacement;
+		displacement = Ballistic_Offset(displacement, spread, angle);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
 		}
 	}
+
+	/*
+	**	If the projectile is a homing type (such as a missile), then it will
+	**	launch in the direction the turret is facing, NOT necessarily the same
+	**	direction as the target.
+	*/
+	if (btype.ROT != 0 || btype.IsDropping) {
+		dir = Fire_Direction();
+		if (btype.IsDropping) {
+			fire_coord = Center_Coord();
+		}
+	} else {
+		dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
+	}
+
+	if (max_speed > displacement.Gamemd_Length() / 2) {
+		max_speed = displacement.Gamemd_Length() / 2;
+	}
+
+	// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
+	// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
+	int const segments = TClass->RadialFireSegments;
+	if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
+		bullet->MaxSpeed = weapon->MaxSpeed;
+		if (segments == 0) {
+			max_speed = 1;
+		}
+	}
+
+	// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
+	// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
+	if (segments > 0) {
+		double const step = -9.587672516830327e-05;
+		double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
+		double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
+		dir = DirType((int)(short)(int)raw);
+		RadialFireIndex++;
+		if (RadialFireIndex >= segments) {
+			RadialFireIndex = 0;
+		}
+	}
+
+	TVelocity3D<double> velocity;
+	velocity.Set(0.0, 0.0, 0.0);
+	velocity.Set_Yaw(dir);
+	velocity.Set_Speed((double)max_speed);
+
+	DirType pitch((DirType(DIR_E)-DirType(DIR_STEP_256)).As_Int());
+	bool valid_arc = true;
+	if (bullet->Class->IsArcing) {
+		double gravity = Rule->Gravity;
+		if (bullet->Class->IsFloater) {
+			gravity = Get_Floater_Gravity();
+		}
+
+		int planar = Point2D(displacement).Gamemd_Length();
+		valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
+	} else if (bullet->Class->IsVoxel) {
+		// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
+		pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
+	} else {
+		int abs_z = abs(displacement.Z);
+		if (abs_z > 200) {
+			double y = 20.0;
+			BuildingClass * building = TarCom->As_BuildingClass();
+			if (building != NULL) {
+				displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
+				abs_z = abs((displacement.Z));
+				if ((double)abs_z < y) {
+					y = 0.0;
+				}
+			}
+
+			double planar = Point2D(displacement).Gamemd_Length();
+			if (planar < 0.05) {
+				planar = 0.05;
+			}
+			double angle = std::atan2f((double)abs_z - y, planar);
+			if (displacement.Z < 0) {
+				angle = -angle;
+			}
+			pitch = angle;
+		}
+	}
+
+	velocity.Set_Pitch(pitch);
+
+	if (!valid_arc || !bullet->Unlimbo(turret_coord, velocity)) {
+		delete bullet;
+		return(NULL);
+	}
+
+	if (bullet->Class->IsInvisible && object != NULL && object->IsOnBridge) {
+		bullet->IsOnBridge = true;
+	}
+
+	// gamemd starts the recoil of any object with a turret in TechnoClass::Fire (0x6FDD50), for units and buildings alike.
+	if (Is_Turret_Equipped()) {
+		Start_Turret_Recoil();
+		IsInRecoilState = TClass->IsTurretRecoil;
+	}
+
+	// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
+	// The effects below start at fire_coord, which gamemd keeps in CStack_74 (TechnoClass::Fire, 0x6FDD50).
+	if (AutoTest_Active() && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike) {
+		TPoint3D<int> const flh = Weapon_FLH(which);
+		Coord const center = Center_Coord();
+		DebugString("AUTOTEST designator fire %s %s which %d origin %d,%d,%d center %d,%d,%d flh %d,%d,%d\n", TClass->Name(), weapon->Name(), which, fire_coord.X, fire_coord.Y, fire_coord.Z, center.X, center.Y, center.Z, flh.X, flh.Y, flh.Z);
+	}
+	if (weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE] == NULL) {
+		ParticleSystems[ATTACHED_PARTICLE_FIRE] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
+	}
+	if (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL) {
+		ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(weapon->AttachedParticleSystem, fire_coord, target, this);
+	}
+	if (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN] == NULL) {
+		Coord start = fire_coord;
+		Coord end = Railgun_Beam_Damage(start, target, (WeaponTypeClass *)weapon);
+		ParticleSystems[ATTACHED_PARTICLE_RAILGUN] = new ParticleSystemClass(weapon->AttachedParticleSystem, start, NULL, this, end);
+	}
+
+	LastFireFrame = Frame;
+	BurstIndex++;
+	Arm = IsBerzerk ? Rearm_Delay(which) / 2 : Rearm_Delay(which);
+	ChargeTurretDelay = (int)Arm;
+	BurstIndex %= weapon->Burst;
+
+	/*
+	**	Perform any animation effect for this weapon.
+	*/
+	AnimTypeClass const * a = NULL;
+	if (weapon->Anim.Count() > 0) {
+		int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
+		a = weapon->Anim[entry];
+	}
+	if (a == NULL && IsInOpenToppedTransport) {
+		a = weapon->OpenToppedAnim;
+	}
+	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
+	bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
+	if (garrison_fire) {
+		a = weapon->OccupantAnim;
+	}
+
+	/*
+	**	Play any sound effect tied to this weapon type.
+	*/
+	if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
+		Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
+	}
+
+	/*
+	**	If there is a special firing animation, then create and attach it
+	**	now.
+	*/
+	if (a != NULL) {
+		// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
+		Coord anim_coord = fire_coord;
+		AnimClass * anim = new AnimClass(a, anim_coord);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
+		}
+		if (RTTI == RTTI_BUILDING) {
+			int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
+			anim->ZAdjust = std::min(zadjust, 0);
+			// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
+			if (garrison->Occupants.Count() > 0) {
+				anim->ZAdjust = -200;
+			}
+		}
+		if (anim != NULL && RTTI != RTTI_BUILDING) {
+			anim->Attach_To(this);
+		}
+	}
+
+	// A DistributedFire object moves on to another target after each shot, unless it was
+	// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
+	if (TClass->IsDistributedFire && (Get_Mission() != MISSION_ATTACK || RTTI == RTTI_BUILDING) && target->Is_Techno()) {
+		TechnoClass * shot = (TechnoClass *)target;
+		if (std::find(AttackedTargets.begin(), AttackedTargets.end(), shot) == AttackedTargets.end()) {
+			AttackedTargets.push_back(shot);
+		}
+		Assign_Target(NULL);
+	}
+
+	// The occupants of a garrison take turns to fire.
+	if (garrison_fire) {
+		garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
+	}
+
+	if (weapon->IsSonic) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
+	}
+
+	// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
+	}
+
+	if (TClass->IsTargetLaser && House->Is_Player_Control()) {
+		TargetingLaserTimer = UIControls.TargetLaserTime;
+	}
+
+	if (weapon->IsElectricBolt && !weapon->IsLaser) {
+		Electric_Zap(target, which, weapon);
+	}
+
+	// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
+	if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
+		bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
+		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+	}
+
+	// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
+		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
+	}
+
+	/*
+	 * Laser zap animation.
+	 */
+	if (weapon->IsLaser) {
+		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
+		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
+		WeaponTypeClass const * beam_weapon = weapon;
+		if (building != NULL) {
+			WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
+			if (turret_weapon != NULL) {
+				beam_weapon = turret_weapon;
+			}
+		}
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
+		}
+		Laser_Zap(target, which, beam_weapon, COORD_NONE);
+		if (building != NULL) {
+			building->BuildingStage.Set_Stage(0);
+			building->BuildingStage.Set_Rate(0);
+		}
+		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
+			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
+			if (discharge != NULL) {
+				discharge->Discharge_Turret();
+			}
+		}
+	}
+
+	/*
+	**	Reduce ammunition for this object.
+	*/
+	Reduce_Ammunition();
+
+	/*
+	**	Firing will in all likelihood, require the unit to be redrawn. Flag it to be
+	**	redrawn here.
+	*/
+	Mark(MARK_CHANGE);
+
+	/*
+	**	If a projectile was fired from a unit that is hidden in the darkness,
+	**	reveal that unit and a little area around it.
+	**	Only reveal the unit if the target belongs to a human player.
+	*/
+	Reveal_Firer_On_Fire(this, target, weapon);
 
 	// As TechnoClass::Fire (0x6FDD50): a LimboLaunch weapon takes its firer off the map to ride the shot.
-	if (bullet != NULL && weapon->IsLimboLaunch && Is_Foot()) {
+	if (weapon->IsLimboLaunch && Is_Foot()) {
 		if (ParasiteImUsing) {
 			ParasiteImUsing->IsReselect = IsSelected && TClass->IsReselectIfLimboed;
 		}
@@ -5739,7 +5731,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	}
 
 	// A FireOnce weapon's firer drops its target after the shot (TechnoClass::Fire, 0x6FDD50).
-	if (bullet != NULL && weapon->IsFireOnce) {
+	if (weapon->IsFireOnce) {
 		Assign_Target(NULL);
 	}
 

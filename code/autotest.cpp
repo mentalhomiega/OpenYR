@@ -681,6 +681,32 @@ bool Footprint_Free(char const * command, TechnoTypeClass const * type, Cell con
 }
 
 
+// Creates an object of the type for the owner and puts it on the cell facing north, as the scenario reader does,
+// without the runtime placement tests. Returns NULL when the object could not be created or placed.
+static TechnoClass * Place_New(TechnoTypeClass const * type, HouseClass * owner, Cell const & cell)
+{
+	TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
+	ScenarioInit++;
+	bool const placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+	ScenarioInit--;
+	return(placed ? object : NULL);
+}
+
+
+// Moves the pointer to a window pixel as the mouse does, and returns the move event for a press at the same pixel.
+static WindowEvent Move_Pointer(int x, int y)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_MOUSE_MOVE;
+	event.X = x;
+	event.Y = y;
+	_CursorX = event.X;
+	_CursorY = event.Y;
+	Game_Window_Handle_Event(event);
+	return(event);
+}
+
+
 void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
@@ -3335,11 +3361,7 @@ static void Ally_Step(StepType const & step)
 	}
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
-		TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
-		Cell cell(step.X, step.Y);
-		ScenarioInit++;
-		bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-		ScenarioInit--;
+		bool const placed = Place_New(type, owner, Cell(step.X, step.Y)) != NULL;
 		DebugString("AUTOTEST %s %s at %d,%d owner %s: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, owner->Class->Name(), placed ? "placed" : "failed");
 	} else {
 		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no house allied with the player");
@@ -3810,13 +3832,7 @@ static void Click_Step(StepType const & step)
 // windowmove x y: moves the pointer to that window pixel, for the hover and placement code that reads it.
 static void Windowmove_Step(StepType const & step)
 {
-	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_MOVE;
-	event.X = std::atoi(step.Argument.c_str());
-	event.Y = step.X;
-	_CursorX = event.X;
-	_CursorY = event.Y;
-	Game_Window_Handle_Event(event);
+	Move_Pointer(std::atoi(step.Argument.c_str()), step.X);
 }
 
 
@@ -3825,13 +3841,7 @@ static void Windowmove_Step(StepType const & step)
 // of a quick pair, whose press SDL reports with Clicks 2.
 static void Windowclick_Step(StepType const & step)
 {
-	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_MOVE;
-	event.X = std::atoi(step.Argument.c_str());
-	event.Y = step.X;
-	_CursorX = event.X;
-	_CursorY = event.Y;
-	Game_Window_Handle_Event(event);
+	WindowEvent event = Move_Pointer(std::atoi(step.Argument.c_str()), step.X);
 	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = (step.Command == "windowdouble") ? 2 : 1;
@@ -3845,13 +3855,7 @@ static void Windowclick_Step(StepType const & step)
 // button there, so a drag can start on the map and end over the command bar or the panel.
 static void Windowpress_Step(StepType const & step)
 {
-	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_MOVE;
-	event.X = std::atoi(step.Argument.c_str());
-	event.Y = step.X;
-	_CursorX = event.X;
-	_CursorY = event.Y;
-	Game_Window_Handle_Event(event);
+	WindowEvent event = Move_Pointer(std::atoi(step.Argument.c_str()), step.X);
 	event.Type = (step.Command == "windowpress") ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
@@ -4088,14 +4092,11 @@ static void Spawn_Step(StepType const & step)
 	if (enemy != NULL && type != NULL) {
 		Cell cell(step.X, step.Y);
 		if (Footprint_Free(step.Command.c_str(), type, cell, enemy)) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(enemy));
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
-			if (placed) {
+			TechnoClass * object = Place_New(type, enemy, cell);
+			if (object != NULL) {
 				object->Assign_Mission(MISSION_GUARD);
 			}
-			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, object != NULL ? "placed" : "failed");
 		}
 	} else {
 		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
@@ -4132,14 +4133,11 @@ static void Houseunit_Step(StepType const & step)
 	if (owner != NULL && type != NULL) {
 		Cell cell(step.X, step.Y);
 		if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
-			if (placed) {
+			TechnoClass * object = Place_New(type, owner, cell);
+			if (object != NULL) {
 				object->Assign_Mission(MISSION_GUARD);
 			}
-			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, placed ? "placed" : "failed");
+			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, object != NULL ? "placed" : "failed");
 		}
 	} else {
 		DebugString("AUTOTEST houseunit %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no such house");
@@ -4173,10 +4171,7 @@ static void Own_Step(StepType const & step)
 	if (type != NULL && owner != NULL) {
 		Cell cell(step.X, step.Y);
 		if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
-			TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
-			ScenarioInit++;
-			bool placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-			ScenarioInit--;
+			bool const placed = Place_New(type, owner, cell) != NULL;
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		}
 	} else {
@@ -5495,13 +5490,7 @@ static void Hoverat_Step(StepType const & step)
 	Coord const centre = Map[Cell(std::atoi(step.Argument.c_str()), step.X)].Center_Coord();
 	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
 	Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
-	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_MOVE;
-	event.X = window.X;
-	event.Y = window.Y;
-	_CursorX = event.X;
-	_CursorY = event.Y;
-	Game_Window_Handle_Event(event);
+	Move_Pointer(window.X, window.Y);
 	DebugString("AUTOTEST   hoverat %d,%d pointer %d,%d\n", std::atoi(step.Argument.c_str()), step.X, window.X, window.Y);
 }
 
