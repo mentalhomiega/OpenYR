@@ -1,0 +1,25 @@
+; Same as planning-enter-transport.txt with an attack leg: a soldier walking into a transport is given a planned attack
+; on an enemy soldier 6 cells beyond the unload cell, out of the range at which a guarding soldier picks a target by itself.
+; The attack runs as planned once the transport unloads him. Run in a skirmish on the default map.
+; Expected AUTOTEST lines:
+;   frame 352: planstate E1 orders 1 running 1 mission 7 (the commit leaves E1 on his walk to the transport).
+;   frame 925: planstate E1 orders 0 running 1 mission 1 leg 1 target 1 (unloaded, the planned attack runs).
+30 command CenterBase
+300 grantunit SAPC 66 63
+300 grantunit E1 57 63
+300 spawn E1 76 63
+305 reveal
+315 select E1
+318 clickon E1 66 63
+325 planning 1
+330 select E1
+335 clickon E1 76 63
+345 planstate E1
+350 planning 0
+352 planstate E1
+600 planstate E1
+610 clickcell SAPC 70 63
+910 unload 70 63
+925 planstate E1
+925 where E1
+1100 quit
