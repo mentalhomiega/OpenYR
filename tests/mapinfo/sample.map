@@ -1,0 +1,73 @@
+; A hand-written map for the mapinfo tests. It is not a game map and holds no game data.
+[Basic]
+Player=Americans
+NewINIFormat=4
+
+[Map]
+Theater=SNOW
+Size=0,0,20,20
+LocalSize=0,0,20,20
+
+[Countries]
+0=Americans
+1=Russians
+
+[Houses]
+0=Americans
+1=Russians
+
+[Waypoints]
+0=2003
+1=4006
+
+[VariableNames]
+0=Flag,0
+
+[Triggers]
+0AB=Americans,<none>,Rocket Trigger,0,1,1,1,0
+0AC=Russians,0AB,Linked Trigger,1,0,1,1,0
+
+[Events]
+0AB=1,4,0,0
+0AC=1,1,0,1
+
+[Actions]
+0AB=3,14,0,1,0,0,0,0,A,19,7,Bonus,0,0,0,0,B,54,2,0AC,0,0,0,0,A
+
+[Tags]
+0D1=0,Rocket Tag,0AB
+
+[Units]
+0=Americans,HTNK,256,10,10,128,Guard,0D1,0,-1,0,-1,1,1
+
+[Infantry]
+0=Russians,E1,256,11,10,2,Guard,64,0D1,0,-1,0,1,1
+
+[Structures]
+1000=Americans,GAPOWR,256,5,5,0,None,1,0,1,0,0,None,None,None,0,0
+
+[TeamTypes]
+0=0E1
+
+[0E1]
+Name=Test Team
+House=Americans
+Script=0E2
+TaskForce=0E3
+Max=1
+Priority=5
+
+[ScriptTypes]
+0=0E2
+
+[0E2]
+Name=Test Script
+0=3,0
+1=16,1
+
+[TaskForces]
+0=0E3
+
+[0E3]
+Name=Test Force
+0=2,HTNK
