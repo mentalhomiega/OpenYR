@@ -297,6 +297,7 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	ProduceCashRemaining(0),
 	IsProduceCashStartupPaid(false),
 	IsShieldTinted(false),
+	IsCurtainDrawn(false),
 	HasEngineer(false),
 	SecretProduct(NULL)
 {
@@ -1739,6 +1740,13 @@ void BuildingClass::AI(void)
 		IsShieldTinted = !IsShieldTinted;
 		Update_Anim_Appearance();
 	}
+
+	// A structure under the Iron Curtain is marked every frame, so its body draws each frame with the brightness pulse, as gamemd's
+	// NeedsRedraw does (BuildingClass::UpdateAnimations). The frame the curtain ends is marked too, so the body drops the last pulse.
+	if (Is_Iron_Curtained() || IsCurtainDrawn) {
+		Mark(MARK_CHANGE);
+	}
+	IsCurtainDrawn = Is_Iron_Curtained();
 
 	// The animations a structure had when its sale began keep running out of sight (BuildingClass::DrawIt, 0x43D290).
 	if (BState == BSTATE_CONSTRUCTION && Mission == MISSION_DECONSTRUCTION) {
@@ -9265,7 +9273,7 @@ void BuildingClass::Create_Anim(char const * name, BAnimType anim, bool damaged,
 		}
 
 		if (animptr->Class->IsShouldUseCellDrawer) {
-			animptr->AlternativeDrawer = Remap_Converter();
+			animptr->AlternativeDrawer = Anim_Converter();
 			animptr->AlternativeBrightness = Apparent_Brightness();
 		}
 
@@ -9496,6 +9504,17 @@ void BuildingClass::Update_Anim_Appearance(void)
 	// gamemd BuildingClass::UpdateAnimations (0x4509D0) draws these with GetRemapColour, which is the type's palette when it sets one.
 	// Mark (0x43F180), BuildingClass::Flash (0x456E00) and SetOwningHouse (0x448260) reach this routine as well, through
 	// MARK_CHANGE, Clicked_As_Target and Change_Owner.
+	Set_Anim_Drawer(Anim_Converter(), Brightness);
+	Set_Anim_Translucency(TranslucencyLevel);
+}
+
+
+/// <summary>
+/// Returns the converter that this structure's cell-drawn animations are drawn with: its Palette= when it
+/// names one, otherwise its house's colour scheme with the shield tint added.
+/// </summary>
+ConvertClass * BuildingClass::Anim_Converter(void) const
+{
 	ConvertClass * converter = Palette_Converter();
 	if (converter == NULL) {
 		converter = ColorSchemes[House_Display_Scheme(House)]->Converter;
@@ -9504,9 +9523,7 @@ void BuildingClass::Update_Anim_Appearance(void)
 		// carries no such tint, so only house-coloured animations take it.
 		converter = Tinted_Converter(converter);
 	}
-
-	Set_Anim_Drawer(converter, Brightness);
-	Set_Anim_Translucency(TranslucencyLevel);
+	return(converter);
 }
 
 

@@ -447,6 +447,9 @@ class BuildingClass : public TechnoClass
 		// Whether the animations were last drawn with the Force Shield tint. Not saved; a load clears it and the next AI sets it again.
 		bool IsShieldTinted;
 
+		// Whether the structure was under the Iron Curtain at its last AI. Not saved; the AI sets it again.
+		bool IsCurtainDrawn;
+
 		// Set when the building changes owner. Until then a NeedsEngineer building is offline and pays no cash.
 		bool HasEngineer;
 
@@ -712,6 +715,7 @@ class BuildingClass : public TechnoClass
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);
 		ConvertClass * Tinted_Converter(ConvertClass * converter) const;
+		ConvertClass * Anim_Converter(void) const;
 		void Update_Temporal_Anims(void);
 		void Set_Anim_Translucency(int translucency);
 		bool Anim_Active(BAnimType anim) { return(Anims[anim] != NULL); }
