@@ -2021,6 +2021,79 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 }
 
 
+// Adds the mission INI files of the scenario being started to the rules, and reads its name and
+// briefing from them.
+static void Read_Mission_Files(void)
+{
+	char buffer[32];
+	CCINIClass mini;
+	CCFileClass cfile;
+
+	if (Session.Type == GAME_NORMAL) {
+		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
+		strcat(buffer, ".INI");
+		cfile.Set_Name(buffer);
+
+		// When this is the scenario file itself, a restart must apply what the launch applied.
+		if (Scen->SourceFile.Matches(buffer)) {
+			Load_Held_Scenario_File(mini, buffer, false);
+			Rule->Addition(mini);
+		} else if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+			Rule->Addition(mini);
+		}
+
+		cfile.Close();
+		if (Scen->RequiredAddOn > ADDON_FIRST) {
+			char fname[32];
+			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
+			cfile.Set_Name(fname);
+		} else {
+			cfile.Set_Name("MISSION.INI");
+		}
+
+		if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+
+			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
+				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
+			}
+
+			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
+				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
+
+				if (strlen(buffer) > 0) {
+					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
+				}
+			}
+		}
+
+		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
+		CCFileClass database("MISSIONMD.INI");
+		if (database.Is_Available()) {
+			CCINIClass missions;
+			missions.Load(database, false);
+			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
+			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
+			}
+		}
+	}
+
+	if (Session.Type == GAME_SKIRMISH) {
+		if (Just4Fun) {
+			cfile.Close();
+			cfile.Set_Name("TMCJ4F.INI");
+
+			if (cfile.Is_Available() == true) {
+				mini.Load(cfile, false);
+				Rule->Addition(mini);
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Reads a scenario from the database supplied.
 /// This is the workhorse of scenario startup. Whatever scenario was in place is cleared,
@@ -2377,74 +2450,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SmudgeClass::Read_INI(ini);
 	Call_Back();
 
-	/*
-	**
-	*/
-	CCINIClass mini;
-	CCFileClass cfile;
-
-	if (Session.Type == GAME_NORMAL) {
-		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
-		strcat(buffer, ".INI");
-		cfile.Set_Name(buffer);
-
-		// When this is the scenario file itself, a restart must apply what the launch applied.
-		if (Scen->SourceFile.Matches(buffer)) {
-			Load_Held_Scenario_File(mini, buffer, false);
-			Rule->Addition(mini);
-		} else if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-			Rule->Addition(mini);
-		}
-
-		cfile.Close();
-		if (Scen->RequiredAddOn > ADDON_FIRST) {
-			char fname[32];
-			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
-			cfile.Set_Name(fname);
-		} else {
-			cfile.Set_Name("MISSION.INI");
-		}
-
-		if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-
-			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
-				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
-			}
-
-			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
-				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
-
-				if (strlen(buffer) > 0) {
-					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
-				}
-			}
-		}
-
-		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
-		CCFileClass database("MISSIONMD.INI");
-		if (database.Is_Available()) {
-			CCINIClass missions;
-			missions.Load(database, false);
-			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
-			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
-			}
-		}
-	}
-
-	if (Session.Type == GAME_SKIRMISH) {
-		if (Just4Fun) {
-			cfile.Close();
-			cfile.Set_Name("TMCJ4F.INI");
-
-			if (cfile.Is_Available() == true) {
-				mini.Load(cfile, false);
-				Rule->Addition(mini);
-			}
-		}
-	}
+	Read_Mission_Files();
 
 	Session.Update_Progress(82);
 	Call_Back();
