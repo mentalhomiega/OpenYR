@@ -2659,13 +2659,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					 * target from the links, so the list is copied first.
 					 */
 					{
-						std::vector<TechnoClass *> docked;
-						for (int slot = 0; slot < Link_Count(); slot++) {
-							if (Link(slot) != NULL) {
-								docked.push_back(Link(slot));
-							}
-						}
-						for (TechnoClass * contact : docked) {
+						for (TechnoClass * contact : Linked_Objects()) {
 							if (!Contains_Link(contact)) {
 								continue;
 							}
@@ -5082,13 +5076,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			bool tethered;
 		};
 		std::vector<CapturedDocker> captured_dockers;
-		std::vector<TechnoClass *> dockers;
-		for (int slot = 0; slot < Link_Count(); slot++) {
-			if (Link(slot) != NULL) {
-				dockers.push_back(Link(slot));
-			}
-		}
-		for (TechnoClass * docker : dockers) {
+		for (TechnoClass * docker : Linked_Objects()) {
 			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
 			if (!Contains_Link(docker)) {
 				continue;
