@@ -9,23 +9,7 @@
 
 #include "cncnet/cncnettunnellist.h"
 #include "cncnet/cncnettext.h"
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#endif
+#include "cncnet/cncnetnative.h"
 
 #include <algorithm>
 #include <cctype>
@@ -41,18 +25,6 @@
 
 
 namespace {
-
-#if defined(_WIN32)
-using NativeSocket = SOCKET;
-NativeSocket const NO_SOCKET = INVALID_SOCKET;
-using AddressLength = int;
-void Close_Native(NativeSocket handle) { closesocket(handle); }
-#else
-using NativeSocket = int;
-NativeSocket const NO_SOCKET = -1;
-using AddressLength = socklen_t;
-void Close_Native(NativeSocket handle) { close(handle); }
-#endif
 
 // A V3 tunnel answers a 50-byte datagram whose first 8 bytes are zero with the first 12 bytes of it.
 std::size_t const PING_BYTES = 50;
@@ -82,6 +54,23 @@ std::string Dotted(uint32_t address)
 	value.s_addr = address;
 	char text[INET_ADDRSTRLEN] = {};
 	return(inet_ntop(AF_INET, &value, text, sizeof(text)) != nullptr ? std::string(text) : std::string());
+}
+
+
+// Looks the host up on the calling thread, which holds its own Winsock reference while it does.
+std::optional<uint32_t> Lookup_IPv4(std::string const & host)
+{
+	WinsockGuard const network;
+	std::optional<uint32_t> address;
+	addrinfo hints{};
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+	addrinfo * found = nullptr;
+	if (getaddrinfo(host.c_str(), nullptr, &hints, &found) == 0 && found != nullptr) {
+		address = static_cast<uint32_t>(reinterpret_cast<sockaddr_in const *>(found->ai_addr)->sin_addr.s_addr);
+		freeaddrinfo(found);
+	}
+	return(address);
 }
 
 }
@@ -154,12 +143,10 @@ void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int round
 		return;
 	}
 
-#if defined(_WIN32)
-	WSADATA data;
-	if (WSAStartup(MAKEWORD(2, 2), &data) != 0) {
+	WinsockGuard const winsock;
+	if (!winsock.Started()) {
 		return;
 	}
-#endif
 	NativeSocket const sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock != NO_SOCKET) {
 		struct Target
@@ -232,9 +219,6 @@ void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int round
 		}
 		Close_Native(sock);
 	}
-#if defined(_WIN32)
-	WSACleanup();
-#endif
 }
 
 
@@ -312,24 +296,7 @@ std::optional<uint32_t> CnCNet_Resolve_IPv4(std::string const & host, int timeou
 	};
 	std::shared_ptr<LookupType> const lookup = std::make_shared<LookupType>();
 	std::thread([lookup, host](void) {
-#if defined(_WIN32)
-		WSADATA started;
-		bool const network = WSAStartup(MAKEWORD(2, 2), &started) == 0;
-#endif
-		std::optional<uint32_t> address;
-		addrinfo hints{};
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_DGRAM;
-		addrinfo * found = nullptr;
-		if (getaddrinfo(host.c_str(), nullptr, &hints, &found) == 0 && found != nullptr) {
-			address = static_cast<uint32_t>(reinterpret_cast<sockaddr_in const *>(found->ai_addr)->sin_addr.s_addr);
-			freeaddrinfo(found);
-		}
-#if defined(_WIN32)
-		if (network) {
-			WSACleanup();
-		}
-#endif
+		std::optional<uint32_t> const address = Lookup_IPv4(host);
 		std::lock_guard<std::mutex> guard(lookup->Lock);
 		lookup->Address = address;
 		lookup->Done = true;
