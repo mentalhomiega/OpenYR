@@ -67,8 +67,7 @@ class UINetLobbyEngineServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int index) override;
 		virtual void Say(char const * text) override;
 		virtual void Set_Side(int index) override;
-		virtual void Set_Color(int index) override;
-		virtual void Set_Custom_Color(int index, unsigned int custom) override;
+		virtual void Set_Color(int index, unsigned int custom) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
 		virtual void Set_Slider(UINetSlider which, int value) override;
 		virtual void Kick(std::vector<std::string> const & names) override;
@@ -268,24 +267,9 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 }
 
 
-void UINetLobbyEngineServiceClass::Set_Color(int index)
+void UINetLobbyEngineServiceClass::Set_Color(int index, unsigned int custom)
 {
-	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
-		return;
-	}
-
-	if (Net2LobbyPhase == NET2_LOBBY_HOST) {
-		Net2Host_Take_Color(index, 0);
-	} else {
-		Session.PrefColor = index;
-		Net2Request_House_And_Color(Session.House, index, 0);
-	}
-}
-
-
-void UINetLobbyEngineServiceClass::Set_Custom_Color(int index, unsigned int custom)
-{
-	if (index < 0 || index >= MAX_MPLAYER_COLORS || !Player_Color_Is_Custom(custom)) {
+	if (index < 0 || index >= MAX_MPLAYER_COLORS || (custom != 0 && !Player_Color_Is_Custom(custom))) {
 		return;
 	}
 

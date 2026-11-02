@@ -4967,8 +4967,7 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int index) override { Games++; LastGame = index; }
 		virtual void Say(char const * text) override { Said.push_back(text); }
 		virtual void Set_Side(int) override {}
-		virtual void Set_Color(int) override {}
-		virtual void Set_Custom_Color(int, unsigned int) override {}
+		virtual void Set_Color(int, unsigned int) override {}
 		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }

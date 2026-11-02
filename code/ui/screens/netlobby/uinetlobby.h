@@ -189,10 +189,9 @@ class UINetLobbyServiceClass
 		virtual void Select_Game(int index) = 0;
 		virtual void Say(char const * text) = 0;
 		virtual void Set_Side(int index) = 0;
-		virtual void Set_Color(int index) = 0;
+		virtual void Set_Color(int index, unsigned int custom) = 0;
 		virtual void Set_Team(int) {}
 		virtual void Set_Start(int) {}
-		virtual void Set_Custom_Color(int index, unsigned int custom) = 0;
 		virtual void Set_Switch(UINetSwitch which, bool on) = 0;
 		virtual void Set_Slider(UINetSlider which, int value) = 0;
 		virtual void Kick(std::vector<std::string> const & names) = 0;

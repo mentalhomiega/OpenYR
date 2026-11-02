@@ -244,8 +244,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int) override {}
 		virtual void Say(char const * text) override;
 		virtual void Set_Side(int index) override;
-		virtual void Set_Color(int index) override;
-		virtual void Set_Custom_Color(int index, unsigned int) override { Set_Color(index); }
+		virtual void Set_Color(int index, unsigned int) override;
 		virtual void Set_Team(int index) override;
 		virtual void Set_Start(int index) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
@@ -890,7 +889,7 @@ int CnCNetRoomServiceClass::Playing_Count(void) const
 }
 
 
-void CnCNetRoomServiceClass::Set_Color(int index)
+void CnCNetRoomServiceClass::Set_Color(int index, unsigned int)
 {
 	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
 		return;
