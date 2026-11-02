@@ -4911,7 +4911,7 @@ bool BuildingClass::Toggle_Primary(void)
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
 
-			if (!building->IsInLimbo && building->House == House && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
+			if (!building->IsInLimbo && Is_Same_Factory_Kind(*building)) {
 				building->IsLeader = false;
 			}
 		}
@@ -4929,6 +4929,12 @@ bool BuildingClass::Toggle_Primary(void)
 }
 
 
+bool BuildingClass::Is_Same_Factory_Kind(BuildingClass const & other) const
+{
+	return other.House == House && other.Class->ToBuild == Class->ToBuild && other.Class->IsNaval == Class->IsNaval;
+}
+
+
 /// <summary>
 /// Makes this factory its house's primary of its kind unless another factory of that kind is already
 /// primary. The kind is the ToBuild type and the naval flag, and a structure in limbo does not count.
@@ -4938,7 +4944,7 @@ void BuildingClass::Claim_Vacant_Primary(void)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building != this && !building->IsInLimbo && building->House == House && building->IsLeader && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
+		if (building != this && !building->IsInLimbo && Is_Same_Factory_Kind(*building) && building->IsLeader) {
 			return;
 		}
 	}

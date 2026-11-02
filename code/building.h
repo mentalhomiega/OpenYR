@@ -643,6 +643,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Toggle_Primary(void);
 		virtual bool Set_Owning_House(HouseClass * newowner, bool announce) override;
 		void Claim_Vacant_Primary(void);
+		bool Is_Same_Factory_Kind(BuildingClass const & other) const;
 		virtual unsigned entry_380(void); /// Returns 0. A reserved vtable slot that nothing implements.
 		void Turn_On(void);
 		void Turn_Off(void);
