@@ -244,16 +244,16 @@ class RulesClass
 		VocType LetsDoTheTimeWarpInAgain;
 
 		/*
-		 * The paradrop superweapons: the infantry types each side's planes carry and how many
-		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
-		 * sound and how many frames apart it photographs.
-		 */
-		/*
 		 * The frames the computer waits, by its difficulty (Easy, Normal, Hard), before it digs in a
 		 * Deployer soldier that is on guard (InfantryClass::Do_Guard_Deploy, 0x521320).
 		 */
 		TypeList<int> AIAutoDeployFrameDelay;
 
+		/*
+		 * The paradrop superweapons: the infantry types each side's planes carry and how many
+		 * of each, how close to the target a plane starts dropping, and the spy plane's camera
+		 * sound and how many frames apart it photographs.
+		 */
 		TypeList<InfantryTypeClass const *> AllyParaDropInf;
 		TypeList<int> AllyParaDropNum;
 		TypeList<InfantryTypeClass const *> SovParaDropInf;
@@ -338,12 +338,7 @@ class RulesClass
 		int DominatorCaptureRange;
 		AnimTypeClass const * PermaControlledAnimationType;
 
-		/*
-		 * Mind control: the ring over a controlled unit, the sounds of a capture, a release
-		 * and an overloaded controller's death, how long the link line shows after a capture,
-		 * and the overload table: past each OverloadCount, an InfiniteMindControl firer takes
-		 * OverloadDamage every OverloadFrames frames.
-		 */
+		// Mind control: the ring over a controlled unit, and the sound of a capture.
 		AnimTypeClass const * ControlledAnimationType;
 		VocType YuriMindControlSound;
 
@@ -398,11 +393,13 @@ class RulesClass
 		std::vector<RGBClass> ColorAdd;
 		int LaserTargetColor;
 
-		// IronCurtainColor and BerserkColor pick the ColorAdd entries that tint a vehicle under the Iron Curtain and a berserk unit. 0 is the empty entry.
+		// IronCurtainColor picks the ColorAdd entry that tints a vehicle under the Iron Curtain. 0 is the empty entry.
 		int IronCurtainColor;
 
 		// The ColorAdd entry that tints a structure, and its animations, while a Force Shield holds it.
 		int ForceShieldColor;
+
+		// BerserkColor picks the ColorAdd entry that tints a berserk unit. 0 is the empty entry.
 		int BerserkColor;
 
 		/*
@@ -423,15 +420,19 @@ class RulesClass
 		int ElevationIncrement;
 		double ElevationIncrementBonus;
 		double ElevationBonusCap;
+		// Radiation settings that follow the elevation model; the Radiation note above describes the first ones.
 		int RadLevelDelay;
 		int RadLightDelay;
 		double RadLevelFactor;
 		double RadLightFactor;
 		double RadTintFactor;
 		WarheadTypeClass const * RadSiteWarhead;
+		// Mind control: the sounds of a release and of an overloaded controller's death.
 		VocType MindClearedSound;
 		VocType MasterMindOverloadDeathSound;
+		// Mind control: how long the link line shows after a capture.
 		int MindControlAttackLineFrames;
+		// Mind control overload: past each OverloadCount, an InfiniteMindControl firer takes OverloadDamage every OverloadFrames frames.
 		TypeList<int> OverloadCount;
 		TypeList<int> OverloadDamage;
 		TypeList<int> OverloadFrames;
@@ -439,12 +440,12 @@ class RulesClass
 		// A computer team waiting on a minor super weapon gives up unless it is at least this far charged.
 		double AIMinorSuperReadyPercent;
 
-		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
 		// How a computer house defends against a super weapon aimed near its base: the chance in percent, by difficulty slot, that it raises its force shield, how many frames the shield stays wanted, and how close to the base a strike must land.
 		TypeList<int> AISuperDefenseProbability;
 		int AISuperDefenseFrames;
 		LEPTON AISuperDefenseDistance;
 
+		// The weights a computer house rolls against to decide what a unit it takes over does, by its situation.
 		TypeList<int> AICaptureNormal;
 		TypeList<int> AICaptureWounded;
 		TypeList<int> AICaptureLowPower;

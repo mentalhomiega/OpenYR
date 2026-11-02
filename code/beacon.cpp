@@ -265,9 +265,8 @@ void BeaconManagerClass::Announce(int house, BeaconClass const & beacon)
 	}
 
 	if (house == PlayerPtr->HeapID) {
-		TextPrintType const print = TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW);
-		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_PLACED), House_Display_Scheme(PlayerPtr), print, TICKS_PER_SECOND * 4);
-		Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_BEACON_SELECT_HINT), House_Display_Scheme(PlayerPtr), print, TICKS_PER_SECOND * 4);
+		Post_Player_Message(Fetch_String(TXT_BEACON_PLACED), TICKS_PER_SECOND * 4);
+		Post_Player_Message(Fetch_String(TXT_BEACON_SELECT_HINT), TICKS_PER_SECOND * 4);
 		Speak_Eva("EVA_BeaconPlaced");
 		Sound_Effect(Rule->PlaceBeaconSound);
 		return;

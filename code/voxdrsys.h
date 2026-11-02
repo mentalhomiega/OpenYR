@@ -182,6 +182,22 @@ inline void Voxel_Set_Mask(unsigned int index, unsigned char strength)
 	}
 }
 
+// Writes the pixel at index and the one after it with the same palette index and emissive strength.
+inline void Voxel_Put_Pair(unsigned int index, unsigned char color, unsigned char strength)
+{
+	VoxelDrawBuffer[index] = color;
+	Voxel_Set_Mask(index, strength);
+	VoxelDrawBuffer[index + 1] = color;
+	Voxel_Set_Mask(index + 1, strength);
+}
+
+// Writes one voxel pixel with its palette index and emissive strength.
+inline void Voxel_Put_Single(unsigned int index, unsigned char color, unsigned char strength)
+{
+	VoxelDrawBuffer[index] = color;
+	Voxel_Set_Mask(index, strength);
+}
+
 extern RGBStruct VoxelRGBColors[VOXEL_PALETTE_SIZE];
 
 extern BSurface VoxelSurface;

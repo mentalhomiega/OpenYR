@@ -213,7 +213,7 @@ void Log_First_Use(DebugCheat cheat)
 
 void Show_Cheat_Message(char const * text)
 {
-	Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+	Post_Player_Message(text, TICKS_PER_SECOND * 4);
 }
 
 }

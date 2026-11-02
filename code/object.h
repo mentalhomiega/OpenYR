@@ -397,6 +397,12 @@ class ObjectClass : public AbstractClass
 			}
 		}
 
+		// Whether this object is active, down, out of limbo, and has a tag with trig attached.
+		bool Is_Tagged_By(TriggerClass * trig) const
+		{
+			return(IsActive && IsDown && !IsInLimbo && Tag != NULL && Tag->Is_Trigger_Attached(trig));
+		}
+
 		/*
 		**	Scenario and debug support.
 		*/
