@@ -1441,9 +1441,40 @@ static void Trigger_Step(StepType const & step)
 **	holds, or until their timeout passes. Their words are the line's frame and command, then the
 **	arguments: see the wait functions below for each one's word positions.
 */
+// The wait commands, each with the fewest words its line needs and the word that holds its timeout. waitcell and
+// waitgone are: frame, command, TypeID, x, y, then radius and timeout. waittrigger is: frame, command, trigger, timeout.
+// waitowns is: frame, command, house, TypeID, count, timeout. waitlocal is: frame, command, index, value, timeout.
+struct WaitLayout
+{
+	char const * Command;
+	std::size_t MinWords;
+	std::size_t TimeoutWord;
+};
+
+static WaitLayout const Wait_Layouts[] = {
+	{"waitcell", 5, 6},
+	{"waitgone", 5, 6},
+	{"waittrigger", 3, 3},
+	{"waitowns", 5, 5},
+	{"waitlocal", 4, 4},
+};
+
+
+// The layout of a wait command, or NULL for any other command.
+static WaitLayout const * Find_Wait_Layout(std::string const & command)
+{
+	for (WaitLayout const & layout : Wait_Layouts) {
+		if (command == layout.Command) {
+			return(&layout);
+		}
+	}
+	return(NULL);
+}
+
+
 bool Is_Wait_Command(std::string const & command)
 {
-	return(command == "waitcell" || command == "waittrigger" || command == "waitowns" || command == "waitlocal" || command == "waitgone");
+	return(Find_Wait_Layout(command) != NULL);
 }
 
 
@@ -1474,34 +1505,19 @@ int Number(std::vector<std::string> const & words, std::size_t index, int fallba
 }
 
 
-// The fewest words a wait line needs. waitcell and waitgone are: frame, command, TypeID, x, y, then radius and timeout.
-// waittrigger is: frame, command, trigger, timeout. waitowns is: frame, command, house, TypeID, count,
-// timeout. waitlocal is: frame, command, index, value, timeout.
+// The fewest words a wait line needs. A command that is not in the wait table gets waitlocal's value.
 std::size_t Wait_Min_Words(std::string const & command)
 {
-	if (command == "waitcell" || command == "waitgone" || command == "waitowns") {
-		return(5);
-	}
-	if (command == "waittrigger") {
-		return(3);
-	}
-	return(4);
+	WaitLayout const * layout = Find_Wait_Layout(command);
+	return(layout != NULL ? layout->MinWords : 4);
 }
 
 
-// The word that holds a wait's timeout, in the layout Wait_Min_Words describes.
+// The word that holds a wait's timeout. A command that is not in the wait table gets waitlocal's value.
 std::size_t Wait_Timeout_Word(std::string const & command)
 {
-	if (command == "waitcell" || command == "waitgone") {
-		return(6);
-	}
-	if (command == "waittrigger") {
-		return(3);
-	}
-	if (command == "waitowns") {
-		return(5);
-	}
-	return(4);
+	WaitLayout const * layout = Find_Wait_Layout(command);
+	return(layout != NULL ? layout->TimeoutWord : 4);
 }
 
 
