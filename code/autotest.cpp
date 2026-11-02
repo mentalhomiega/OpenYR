@@ -5767,29 +5767,31 @@ static void Turretcoord_Step(StepType const & step)
 }
 
 
+// Logs the turret and barrel recoil of each object of the named type in a list, on a line that starts with label.
+template<typename T>
+void Log_Recoil(char const * label, DynamicVectorClass<T *> & list, std::string const & name)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T const * object = list[index];
+		if (object->IsInLimbo || stricmp(object->Class->Name(), name.c_str()) != 0) continue;
+		DebugString("AUTOTEST   %s %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", label, object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y,
+			(int)object->TurretRecoil.CurrentPhase, object->TurretRecoil.FramesLeft, (double)object->TurretRecoil.TravelSoFar,
+			(int)object->BarrelRecoil.CurrentPhase, object->BarrelRecoil.FramesLeft, (double)object->BarrelRecoil.TravelSoFar);
+	}
+}
+
+
 // recoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each building of that type.
 static void Recoil_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   recoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
-			(int)building->TurretRecoil.CurrentPhase, building->TurretRecoil.FramesLeft, (double)building->TurretRecoil.TravelSoFar,
-			(int)building->BarrelRecoil.CurrentPhase, building->BarrelRecoil.FramesLeft, (double)building->BarrelRecoil.TravelSoFar);
-	}
+	Log_Recoil("recoil", Buildings, step.Argument);
 }
 
 
 // unitrecoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each vehicle of that type.
 static void Unitrecoil_Step(StepType const & step)
 {
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass const * unit = Units[index];
-		if (unit->IsInLimbo || stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   unitrecoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
-			(int)unit->TurretRecoil.CurrentPhase, unit->TurretRecoil.FramesLeft, (double)unit->TurretRecoil.TravelSoFar,
-			(int)unit->BarrelRecoil.CurrentPhase, unit->BarrelRecoil.FramesLeft, (double)unit->BarrelRecoil.TravelSoFar);
-	}
+	Log_Recoil("unitrecoil", Units, step.Argument);
 }
 
 
