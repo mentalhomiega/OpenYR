@@ -2515,25 +2515,42 @@ static void Enemy_Strike_Step(StepType const & step)
 
 
 /// <summary>
-/// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
+/// Logs the action the player's object of a type gets over the building on a cell, under the label. With click, the object then clicks
+/// that building with the action, through the object path a real click takes.
 /// </summary>
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
-static void Hut_Action_Step(StepType const & step)
+/// <param name="label">The step name written at the start of each log line.</param>
+/// <param name="click">Whether the object clicks the building after the log line.</param>
+static void Hut_Probe(StepType const & step, char const * label, bool click)
 {
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	if (building == NULL) {
-		DebugString("AUTOTEST   hutaction %d,%d no building\n", step.X, step.Y);
+		DebugString("AUTOTEST   %s %d,%d no building\n", label, step.X, step.Y);
 		return;
 	}
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			ActionType const action = techno->What_Action(building, false);
-			DebugString("AUTOTEST   hutaction %s on %s %d,%d: %s\n", techno->TClass->Name(), building->Class->Name(), step.X, step.Y, ActionName[action]);
+			DebugString("AUTOTEST   %s %s on %s %d,%d: %s\n", label, techno->TClass->Name(), building->Class->Name(), step.X, step.Y, ActionName[action]);
+			if (click) {
+				PlanningRecordScope const recording(Map.IsPlanningMode);
+				techno->Active_Click_With(action, building, false);
+			}
 			return;
 		}
 	}
-	DebugString("AUTOTEST   hutaction %s no object\n", step.Argument.c_str());
+	DebugString("AUTOTEST   %s %s no object\n", label, step.Argument.c_str());
+}
+
+
+/// <summary>
+/// Logs the action the player's object of a type gets over a building, through the object path a real mouse-over takes.
+/// </summary>
+/// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
+static void Hut_Action_Step(StepType const & step)
+{
+	Hut_Probe(step, "hutaction", false);
 }
 
 
@@ -2605,22 +2622,7 @@ static void Threat_Probe_Step(StepType const & step)
 /// <param name="step">The type in the argument, and the building's cell in X and Y.</param>
 static void Hut_Click_Step(StepType const & step)
 {
-	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
-	if (building == NULL) {
-		DebugString("AUTOTEST   hutclick %d,%d no building\n", step.X, step.Y);
-		return;
-	}
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			ActionType const action = techno->What_Action(building, false);
-			DebugString("AUTOTEST   hutclick %s on %s %d,%d: %s\n", techno->TClass->Name(), building->Class->Name(), step.X, step.Y, ActionName[action]);
-			PlanningRecordScope const recording(Map.IsPlanningMode);
-			techno->Active_Click_With(action, building, false);
-			return;
-		}
-	}
-	DebugString("AUTOTEST   hutclick %s no object\n", step.Argument.c_str());
+	Hut_Probe(step, "hutclick", true);
 }
 
 
