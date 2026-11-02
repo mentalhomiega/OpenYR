@@ -1210,6 +1210,34 @@ int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) co
 }
 
 
+/// <summary>
+/// Reads the entry's text with parse, and applies percent when the text has a '%'. A missing
+/// entry, or one that is not a number, gives defvalue; the second case is logged.
+/// </summary>
+template<class Parse, class Percent>
+double INIClass::Read_Scalar(char const * section, char const * entry, double defvalue, Parse parse, Percent percent) const
+{
+	INIEntry * entryptr = Find_Entry(section, entry);
+	if (entryptr == NULL) {
+		return(defvalue);
+	}
+
+	char const * text = entryptr->Value.c_str();
+	char * end = NULL;
+	double result = parse(text, &end);
+	if (end == text) {
+		char const * source = Source_Of(*entryptr);
+		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
+		return(defvalue);
+	}
+
+	if (strchr(text, '%') != NULL) {
+		result = percent(result);
+	}
+	return(result);
+}
+
+
 /***********************************************************************************************
  * INIClass::Get_Float -- Fetch a floating point number from the database.                     *
  *                                                                                             *
@@ -1231,25 +1259,8 @@ int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) co
  *=============================================================================================*/
 double INIClass::Get_Float(char const * section, char const * entry, double defvalue) const
 {
-	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr == NULL) {
-		return(defvalue);
-	}
-
-	char const * text = entryptr->Value.c_str();
-	char * end = NULL;
 	// gamemd reads the text with sscanf "%f", so the value is the nearest float widened to double.
-	double result = Parse_Nearest_Single(text, &end);
-	if (end == text) {
-		char const * source = Source_Of(*entryptr);
-		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
-		return(defvalue);
-	}
-
-	if (strchr(text, '%') != NULL) {
-		result *= 0.01;
-	}
-	return(result);
+	return(Read_Scalar(section, entry, defvalue, Parse_Nearest_Single, [](double value) {return(value * 0.01);}));
 }
 
 
@@ -1260,25 +1271,8 @@ double INIClass::Get_Float(char const * section, char const * entry, double defv
 /// <returns>Returns with the entry's value, or defvalue when it is missing or not a number.</returns>
 double INIClass::Get_Double(char const * section, char const * entry, double defvalue) const
 {
-	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr == NULL) {
-		return(defvalue);
-	}
-
-	char const * text = entryptr->Value.c_str();
-	char * end = NULL;
 	// Parse_Nearest_Double gives the nearest double whatever the mode; strtod rounds in the mode in force.
-	double result = Parse_Nearest_Double(text, &end);
-	if (end == text) {
-		char const * source = Source_Of(*entryptr);
-		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
-		return(defvalue);
-	}
-
-	if (strchr(text, '%') != NULL) {
-		result /= 100.0;
-	}
-	return(result);
+	return(Read_Scalar(section, entry, defvalue, Parse_Nearest_Double, [](double value) {return(value / 100.0);}));
 }
 
 
