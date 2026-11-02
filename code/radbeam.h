@@ -41,6 +41,8 @@ class RadBeamClass
 		void Draw_It(void) const;
 		void Draw_Eruption(void) const;
 		void Draw_Piece(Coord const & from, Coord const & to, unsigned color) const;
+		unsigned Wave_Color(int wave) const;
+		static void Add_Beam(KindType kind, Coord const & start, Coord const & end, RGBClass const & color, int duration, double amplitude);
 
 		KindType Kind;
 		Coord Start;
