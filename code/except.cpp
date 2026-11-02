@@ -1318,10 +1318,12 @@ static void Build_Exception_Report(EXCEPTION_POINTERS * e_info, DWORD crashed_th
 
 
 /// <summary>
-/// Writes a buffer to a new file, replacing any file already at that path.
+/// Writes a buffer, then an optional second one, to a new file, replacing any file already at that path.
 /// </summary>
-/// <returns>True when the whole buffer reached the file.</returns>
-static bool Write_Whole_File(char const * path, void const * data, DWORD length, DWORD flags)
+/// <param name="second">A buffer written after the first, or null for none. It is written even when the first write fails.</param>
+/// <returns>True when every buffer reached the file.</returns>
+static bool Write_Whole_File(char const * path, void const * data, DWORD length, DWORD flags,
+			void const * second = NULL, DWORD second_length = 0)
 {
 	HANDLE const file = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, flags, NULL);
 	if (file == INVALID_HANDLE_VALUE) {
@@ -1329,10 +1331,16 @@ static bool Write_Whole_File(char const * path, void const * data, DWORD length,
 	}
 
 	DWORD written = 0;
-	BOOL const ok = WriteFile(file, data, length, &written, NULL);
+	BOOL ok = WriteFile(file, data, length, &written, NULL);
+	bool complete = ok != FALSE && written == length;
+	if (second != NULL) {
+		written = 0;
+		ok = WriteFile(file, second, second_length, &written, NULL);
+		complete = complete && ok != FALSE && written == second_length;
+	}
 	CloseHandle(file);
 
-	return(ok != FALSE && written == length);
+	return(complete);
 }
 
 
@@ -1713,14 +1721,8 @@ bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folde
 	char report_path[MAX_PATH];
 	snprintf(report_path, sizeof(report_path), "%s\\stall.txt", folder);
 
-	HANDLE const report = CreateFileA(report_path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
-				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
-	if (report != INVALID_HANDLE_VALUE) {
-		DWORD written = 0;
-		WriteFile(report, text, (DWORD)strlen(text), &written, NULL);
-		WriteFile(report, status, (DWORD)strlen(status), &written, NULL);
-		CloseHandle(report);
-	}
+	Write_Whole_File(report_path, text, (DWORD)strlen(text), FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH,
+				status, (DWORD)strlen(status));
 
 	return(dumped);
 }
