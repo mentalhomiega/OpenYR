@@ -3407,6 +3407,18 @@ static void Cancel_Order_Modes(bool with_beacon)
 }
 
 
+// Refuses an order during planning mode, showing the message, and returns true so the caller issues nothing.
+// gamemd's TechnoClass::ClickedEvent (0x6FFE39) refuses stop, deploy and scatter the same way.
+static bool Refused_In_Planning(char const * label)
+{
+	if (!Map.IsPlanningMode) {
+		return(false);
+	}
+	Planning_Refusal(label);
+	return(true);
+}
+
+
 class CreateTeamCommandClass : public CommandClass
 {
 	public:
@@ -3650,9 +3662,7 @@ class StopCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the stop order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_STOP);
+				if (Refused_In_Planning(PLANNING_MSG_NO_STOP)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -3696,9 +3706,7 @@ class DeployCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the deploy order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_DEPLOY);
+				if (Refused_In_Planning(PLANNING_MSG_NO_DEPLOY)) {
 					return;
 				}
 				// Matches the mixed-selection test in gamemd's deploy command (FUN_00730AF0, 0x730AF0): with
@@ -3788,8 +3796,7 @@ class GuardCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			// Planning mode refuses guard before it reads the selection (gamemd's guard command, 0x730D60).
-			if (Map.IsPlanningMode) {
-				Planning_Refusal(PLANNING_MSG_NO_GUARD_AREA);
+			if (Refused_In_Planning(PLANNING_MSG_NO_GUARD_AREA)) {
 				return;
 			}
 			if (CurrentObject.Count() > 0) {
@@ -3841,9 +3848,7 @@ class ScatterCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the scatter order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_SCATTER);
+				if (Refused_In_Planning(PLANNING_MSG_NO_SCATTER)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
