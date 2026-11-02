@@ -6364,7 +6364,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 
 	BuildingClass const * building = dynamic_cast<BuildingClass const *>(this);
 	if (building != NULL && !Is_Immobilized() && (building->Occupants.Count() > 0
-		|| ((building->Class->IsInfantryAbsorb || building->Class->IsUnitAbsorb) && building->Cargo.How_Many() > 0))) {
+		|| building->Holds_Absorbed())) {
 		blocked = false;
 	}
 	if (building != NULL && building->Class->Can_Always_Undeploy()) {
@@ -10638,7 +10638,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	if (TClass->Max_Passengers() > 0) {
 		int const count = std::max(Class_Of()->Max_Pips(), 0);
 		std::vector<int> slots(count, PIP_EMPTY);
-		bool const absorber = RTTI == RTTI_BUILDING && (((BuildingClass const *)this)->Class->IsInfantryAbsorb || ((BuildingClass const *)this)->Class->IsUnitAbsorb);
+		bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
 
 		ObjectClass const * object = Cargo.Attached_Object();
 		int last = absorber ? 0 : Cargo.Total_Size() - 1;

@@ -27,7 +27,7 @@ The building also sorts an eighth of a cell (32 leptons) further forward than it
 
 When a turret model is loaded, [`TurretOffset`](/keys/turretoffset/) shifts the turret and barrel models along the turret's facing.
 
-The barrel pitches about a point taken from `PrimaryFireFLH`; [`TurretNotExportedOnGround`](/keys/turretnotexportedonground/) covers which point.
+The barrel pitches about the turret origin, after the [`TurretOffset`](/keys/turretoffset/) shift. [`TurretNotExportedOnGround`](/keys/turretnotexportedonground/) is read and has no effect.
 
 The four barrel pivot offsets, beginning with [`VoxelBarrelOffsetToBuildingPivotPoint`](/keys/voxelbarreloffsettobuildingpivotpoint/), and [`VoxelBarrelScale`](/keys/voxelbarrelscale/) have no effect here. Only a [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) building uses them.
 

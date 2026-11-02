@@ -7857,6 +7857,22 @@ WaypointPathClass * HouseClass::Ensure_Path(PathType path)
 
 
 /// <summary>
+/// Finds the first super weapon this house owns whose Type is the given one.
+/// </summary>
+/// <returns>The index into SuperWeapon, or -1 when the house owns none of that type.</returns>
+int HouseClass::First_Super_Index(SuperWeaponType type) const
+{
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass const * super = SuperWeapon[index];
+		if (super != NULL && super->Class != NULL && super->Class->Type == type) {
+			return(index);
+		}
+	}
+	return(-1);
+}
+
+
+/// <summary>
 /// Raises this house's firestorm wall.
 /// Every firestorm wall this house owns is switched on and the map zones are recalculated,
 /// since the raised wall now bars movement through the cells it stands in.
@@ -9595,6 +9611,10 @@ void HouseClass::Activate_Threat_Node(void)
 /// <param name="naval">Whether the unit type's factory is the ship factory rather than the vehicle factory.</param>
 void HouseClass::Update_Factories(RTTIType rtti, bool naval)
 {
+	if (rtti == RTTI_NONE) {
+		return;
+	}
+
 	// A building type has a structure factory and a defense factory; both are brought up to date.
 	int const slots = (rtti == RTTI_BUILDINGTYPE) ? 2 : 1;
 

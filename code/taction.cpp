@@ -951,14 +951,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
 	if (house->FirestormDefenseActivated) {
-		int index = -1;
-		for (int i = 0; i < house->SuperWeapon.Count(); i++) {
-			SuperClass * super = house->SuperWeapon[i];
-			if (super->Class->Type == SUPER_FIRESTORM) {
-				index = i;
-				break;
-			}
-		}
+		int index = house->First_Super_Index(SUPER_FIRESTORM);
 
 		if (index != -1) {
 			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));
@@ -976,14 +969,7 @@ bool TActionClass::TAction_DEACTIVATE_FIRESTORM(HouseClass * house, ObjectClass 
 bool TActionClass::TAction_ACTIVATE_FIRESTORM(HouseClass * house, ObjectClass *, TriggerClass *, Cell const & )
 {
 	if (!house->FirestormDefenseActivated) {
-		int index = -1;
-		for (int i = 0; i < house->SuperWeapon.Count(); i++) {
-			SuperClass * super = house->SuperWeapon[i];
-			if (super->Class->Type == SUPER_FIRESTORM) {
-				index = i;
-				break;
-			}
-		}
+		int index = house->First_Super_Index(SUPER_FIRESTORM);
 
 		if (index != -1) {
 			house->Place_Special_Blast((SuperWeaponType)index, Cell(0, 0));

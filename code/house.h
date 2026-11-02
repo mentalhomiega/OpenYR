@@ -902,6 +902,7 @@ class HouseClass : public AbstractClass
 		void Just_Built(TechnoClass * product);
 		void Special_Weapon_AI(SuperWeaponType id);
 		bool Place_Special_Blast(SuperWeaponType id, Cell const & cell);
+		int First_Super_Index(SuperWeaponType type) const;
 		Cell Pick_Ion_Cannon_Target(void);
 		Cell Pick_Target_By_Type(QuarryType quarry);
 		Cell Pick_Strike_Target(void);

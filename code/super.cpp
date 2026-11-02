@@ -984,13 +984,8 @@ SuperClass * SuperClass::Pre_Dependent(void) const
 	if (Class->PreDependent == SUPER_NONE || House == NULL) {
 		return(NULL);
 	}
-	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
-		SuperClass * super = House->SuperWeapon[index];
-		if (super != NULL && super->Class != NULL && super->Class->Type == Class->PreDependent) {
-			return(super);
-		}
-	}
-	return(NULL);
+	int const index = House->First_Super_Index(Class->PreDependent);
+	return(index >= 0 ? House->SuperWeapon[index] : NULL);
 }
 
 
@@ -1110,6 +1105,15 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 }
 
 
+void SuperClass::Finish_Placement(bool player)
+{
+	if (player) {
+		Map.IsTargettingMode = SUPER_NONE;
+	}
+	House->IsRecalcNeeded = true;
+}
+
+
 /// <summary>
 /// Unleashes the super weapon upon the cell specified.
 /// This routine is called once the target has been chosen, either by the player
@@ -1126,10 +1130,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 	switch (Class->Type) {
 		case SUPER_DROP_PODS:
 			Drop_Pods(cell);
-			if (player) {
-				Map.IsTargettingMode = SUPER_NONE;
-			}
-			House->IsRecalcNeeded = true;
+			Finish_Placement(player);
 			break;
 
 		case SUPER_PSYCHIC_REVEAL:
@@ -1146,10 +1147,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 					}
 				}
 				Sound_Effect(Rule->PsychicRevealActivateSound, Map[cell].Center_Coord());
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1159,10 +1157,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				PsychicDominatorClass::Start(cell, House);
 				Sound_Effect(Rule->PsychicDominatorActivateSound, Map[cell].Center_Coord());
 				Speak_Eva("EVA_PsychicDominatorActivated");
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1170,20 +1165,14 @@ void SuperClass::Place(Cell const & cell, bool player)
 			if (IsReady) {
 				Genetic_Mutator(cell);
 				Speak_Eva("EVA_GeneticMutatorActivated");
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
 		case SUPER_FORCE_SHIELD:
 			if (IsReady) {
 				Force_Shield(cell);
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1191,10 +1180,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 			if (IsReady) {
 				LightningStormClass::Start(Rule->LightningStormDuration, Rule->LightningStormDeferment, cell, House);
 				Speak_Eva("EVA_LightningStormCreated");
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1219,10 +1205,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 		case SUPER_SPY_PLANE:
 			if (IsReady) {
 				Paradrop(cell);
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1231,20 +1214,14 @@ void SuperClass::Place(Cell const & cell, bool player)
 			Submit_Radar_Event(RADAREVENT_SUPERWEAPON, cell);
 			Chrono_Warp(cell);
 			Speak_Eva("EVA_ChronosphereActivated");
-			if (player) {
-				Map.IsTargettingMode = SUPER_NONE;
-			}
-			House->IsRecalcNeeded = true;
+			Finish_Placement(player);
 			break;
 
 		case SUPER_IRON_CURTAIN:
 			if (IsReady) {
 				Iron_Curtain(cell);
 				Speak_Eva("EVA_IronCurtainActivated");
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1252,10 +1229,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 			if (IsReady) {
 				Coord coord = cell.As_Coord(LEVEL_LEPTON_H * Map[cell].Height);
 				if (coord != COORD_NONE) {
-					if (player) {
-						Map.IsTargettingMode = SUPER_NONE;
-					}
-					House->IsRecalcNeeded = true;
+					Finish_Placement(player);
 					new IonBlastClass(coord);
 				}
 			}
@@ -1289,10 +1263,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 					launchsite->Commence();
 					House->EMPDest = cell;
 				}
-				if (player) {
-					Map.IsTargettingMode = SUPER_NONE;
-				}
-				House->IsRecalcNeeded = true;
+				Finish_Placement(player);
 			}
 			break;
 
@@ -1346,16 +1317,11 @@ void SuperClass::Place(Cell const & cell, bool player)
 					if (bullet != NULL) {
 						if (Class->Type == SUPER_MULTI_MISSILE) {
 							Speak_Eva("EVA_NuclearMissileLaunched");
-						}
-						// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
-						if (Class->Type == SUPER_MULTI_MISSILE) {
+							// The nuke's launch sound is RulesClass::DigSound, played at the target (SuperClass::Launch, 0x6CDCAE).
 							Sound_Effect(Rule->DigSound, start);
 						}
 					}
-					if (player) {
-						Map.IsTargettingMode = SUPER_NONE;
-					}
-					House->IsRecalcNeeded = true;
+					Finish_Placement(player);
 				} else {
 					for (int index = 0; index < BuildingTypes.Count(); index++) {
 						BuildingTypeClass const * btype = BuildingTypes[index];
@@ -1386,10 +1352,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 							break;
 						}
 					}
-					if (player) {
-						Map.IsTargettingMode = SUPER_NONE;
-					}
-					House->IsRecalcNeeded = true;
+					Finish_Placement(player);
 				}
 			}
 			break;

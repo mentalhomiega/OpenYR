@@ -432,7 +432,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 
 		// A grinder takes in its owner's objects without holding contact with any one of them.
 		case RADIO_HELLO:
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Walk_In_Facility()) {
 				return(RADIO_NEGATIVE);
 			}
 			break;
@@ -453,7 +453,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				if (sender->TClass->IsBalloonHover) return(RADIO_NEGATIVE);
 			}
 			if (!IsOn) return(RADIO_NEGATIVE);
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Walk_In_Facility()) {
 				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && Takes_Walk_Ins((FootClass const *)from)) {
 					return(RADIO_ROGER);
 				}
@@ -658,7 +658,7 @@ RadioMessageType BuildingClass::Receive_Docking(RadioClass * from, intptr_t & pa
 		}
 	}
 
-	if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+	if (Class->Is_Walk_In_Facility()) {
 		return(RADIO_ROGER);
 	}
 
@@ -1847,10 +1847,8 @@ void BuildingClass::AI(void)
 			Destroy_Gap();
 			// A gap generator that loses power drops its charge (the power change handler, 0x4549B0).
 			if (IsGapSuperCharged) {
-				IsGapSuperCharged = false;
-				HasExtraPowerDrain = false;
+				Set_Gap_Charge(false);
 				House->RecalcPower = true;
-				GapRadius = Class->GapRadiusInCells;
 			}
 		}
 	}
@@ -2364,9 +2362,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			House->SecretLabs.Add(this);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		// Placing a construction yard recomputes the base edge; gamemd reaches it from BuildingClass::Unlimbo (0x440580) through 0x448070.
 		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
@@ -2628,12 +2624,12 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 
 		if (Class->IsFirestormWall && House->FirestormDefenseActivated) {
-			for (i = 0; i < House->SuperWeapon.Count(); i++) {
-				if (House->SuperWeapon[i]->Class->Type == SUPER_FIRESTORM) {
-					double delay = House->SuperWeapon[i]->Control - (double)damage * Rule->DamageToFirestormDamageCoefficient;
-					House->SuperWeapon[i]->Control = std::max<double>(0.0, delay);
-					return(RESULT_NONE);
-				}
+			int const index = House->First_Super_Index(SUPER_FIRESTORM);
+			if (index >= 0) {
+				SuperClass * firestorm = House->SuperWeapon[index];
+				double delay = firestorm->Control - (double)damage * Rule->DamageToFirestormDamageCoefficient;
+				firestorm->Control = std::max<double>(0.0, delay);
+				return(RESULT_NONE);
 			}
 		}
 
@@ -3025,7 +3021,7 @@ bool BuildingClass::Active_Click_With(ActionType action, ObjectClass * object, b
 		if (Class->IsGapGenerator) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 		}
-		if (Occupants.Count() > 0 || ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0)) {
+		if (Occupants.Count() > 0 || Holds_Absorbed()) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 			return(true);
 		}
@@ -3987,9 +3983,7 @@ bool BuildingClass::Limbo(void)
 			}
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (Class == Rule->GDIFirestormGenerator) {
 			House->Lost_Firestorm_Generator();
@@ -4505,7 +4499,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
-	bool absorbed = (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0;
+	bool absorbed = Holds_Absorbed();
 	if (action == ACTION_SELF && (Occupants.Count() > 0 || absorbed)) {
 		if (StunDuration > 0 || House != PlayerPtr) {
 			action = ACTION_NONE;
@@ -5214,10 +5208,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			newowner->SecretLabs.Add(this);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-			newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+		newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
 		// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
 		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
 			newowner->Update_Base_Edge(this);
@@ -5708,7 +5700,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			}
 
 			// Selling an absorber lets everyone inside out first.
-			if (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Absorber()) {
 				while (Release_Passenger()) {
 				}
 			}
@@ -6344,6 +6336,12 @@ int BuildingClass::Do_MISSION_HARVEST(void)
  *=============================================================================================*/
 int BuildingClass::Do_MISSION_REPAIR(void)
 {
+	enum {
+		INITIAL,
+		IDLE,
+		DURING
+	};
+
 	// A bunker steps its vehicle's entry every 15 frames (BuildingClass::Mission_Repair, 0x44B780).
 	if (Class->IsBunker) {
 		Update_Bunker();
@@ -6351,11 +6349,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsConstructionYard) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Begin_Mode(BSTATE_ACTIVE);
@@ -6377,11 +6370,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsHospital) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Status = DURING;
@@ -6424,11 +6412,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsArmory) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Status = DURING;
@@ -6460,21 +6443,13 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsCanUnitRepair) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		// Mission_Repair serves only the first contact (BuildingClass::Mission_Repair, 0x44B780).
 		int const repair_slots = std::min(Link_Count(), 1);
 		switch (Status) {
 			case INITIAL:
 				{
 					if (!In_Radio_Contact()) {
-						End_Anim(BANIM_PRODUCTION);
-						End_Anim(BANIM_SPECIAL_TWO);
-						Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-						Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+						Return_Bay_Anims_To_Idle();
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
@@ -6613,10 +6588,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 
 			case DURING:
 				if (!In_Radio_Contact()) {
-					End_Anim(BANIM_PRODUCTION);
-					End_Anim(BANIM_SPECIAL_TWO);
-					Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-					Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+					Return_Bay_Anims_To_Idle();
 					Status = IDLE;
 					return(1);
 				}
@@ -6660,10 +6632,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 							*/
 							case RADIO_CANT:
 								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
-								End_Anim(BANIM_PRODUCTION);
-								End_Anim(BANIM_SPECIAL_TWO);
-								Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-								Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+								Return_Bay_Anims_To_Idle();
 								Status = IDLE;
 								break;
 
@@ -6675,10 +6644,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								{
 									// Gamemd (Mission_Repair, 0x44BDB2) raises the repair event without a player-control test.
 									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
-									End_Anim(BANIM_PRODUCTION);
-									End_Anim(BANIM_SPECIAL_TWO);
-									Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-									Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+									Return_Bay_Anims_To_Idle();
 									Status = IDLE;
 
 									FootClass * foot = dynamic_cast<FootClass *>(docked);
@@ -6746,6 +6712,16 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 		return(3);
 	}
 	return(TICKS_PER_SECOND);
+}
+
+
+void BuildingClass::Return_Bay_Anims_To_Idle(void)
+{
+	// Keep this order: ending BANIM_PRODUCTION starts BANIM_IDLE, so both ends run before the Begin calls.
+	End_Anim(BANIM_PRODUCTION);
+	End_Anim(BANIM_SPECIAL_TWO);
+	Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+	Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 }
 
 
@@ -7210,7 +7186,7 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 		return(1);
 	}
 
-	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0) {
+	if (Holds_Absorbed()) {
 		if (Release_Passenger()) {
 			return(Current_Mission_Control().Normal_Delay());
 		}
@@ -7355,29 +7331,39 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 	// A gap generator with a SuperGapRadiusInCells switches between its normal and its charged shroud. The charge costs ExtraPower
 	// more drain, and a generator that is off stays uncharged (BuildingClass::Mission_Unload, 0x44D880).
 	if (Class->IsGapGenerator && Class->SuperGapRadiusInCells != 0) {
-		Destroy_Gap();
-		if (!IsGapSuperCharged) {
-			GapRadius = Class->SuperGapRadiusInCells;
-			if (!Is_Powered_On()) {
-				GapRadius = Class->GapRadiusInCells;
-				Create_Gap();
-				Assign_Mission(MISSION_GUARD);
-				return(1);
-			}
-			Create_Gap();
-			IsGapSuperCharged = true;
-			HasExtraPowerDrain = true;
-		} else {
-			IsGapSuperCharged = false;
-			HasExtraPowerDrain = false;
-			GapRadius = Class->GapRadiusInCells;
-			Create_Gap();
-		}
-		House->RecalcPower = true;
+		Toggle_Gap_Charge();
 	}
 
 	Assign_Mission(MISSION_GUARD);
 	return(1);
+}
+
+
+void BuildingClass::Toggle_Gap_Charge(void)
+{
+	Destroy_Gap();
+	if (!IsGapSuperCharged) {
+		GapRadius = Class->SuperGapRadiusInCells;
+		if (!Is_Powered_On()) {
+			GapRadius = Class->GapRadiusInCells;
+			Create_Gap();
+			return;
+		}
+		Create_Gap();
+		Set_Gap_Charge(true);
+	} else {
+		Set_Gap_Charge(false);
+		Create_Gap();
+	}
+	House->RecalcPower = true;
+}
+
+
+void BuildingClass::Set_Gap_Charge(bool charged)
+{
+	IsGapSuperCharged = charged;
+	HasExtraPowerDrain = charged;
+	GapRadius = charged ? Class->SuperGapRadiusInCells : Class->GapRadiusInCells;
 }
 
 
@@ -7517,7 +7503,7 @@ int BuildingClass::Power_Output(void) const
 	int power = Class->Power;
 
 	// An absorber makes ExtraPower more for each object inside, as BuildingClass::GetPowerOutput (0x44E7B0) does.
-	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Class->ExtraPowerBonus > 0) {
+	if (Class->Is_Absorber() && Class->ExtraPowerBonus > 0) {
 		power += Class->ExtraPowerBonus * Cargo.How_Many();
 	}
 	if (UpgradeLevel != 0) {
@@ -9630,9 +9616,7 @@ void BuildingClass::Turn_On(void)
 		House->IsRecalcNeeded = true;
 		Power_On();
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (House->Is_Player_Control()) {
 			Speak(VOX_BUILDING_ONLINE);
@@ -9661,9 +9645,7 @@ void BuildingClass::Turn_Off(void)
 			Speak(VOX_BUILDING_OFFLINE);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (Class == Rule->GDIFirestormGenerator) {
 			House->Lost_Firestorm_Generator();
@@ -11738,6 +11720,32 @@ bool BuildingClass::Is_Powered_On(void) const
 }
 
 
+// Visits each cell whose offset from origin has x * x + y * y < radius * radius, with x and y in [-radius, radius).
+template<typename Fn>
+static void For_Each_Cell_In_Radius(Cell const & origin, int radius, Fn && fn)
+{
+	for (int y = -radius; y < radius; y++) {
+		for (int x = -radius; x < radius; x++) {
+			if (x * x + y * y < radius * radius) {
+				fn(Cell(origin.X + x, origin.Y + y));
+			}
+		}
+	}
+}
+
+
+// Marks a structure of another house on this cell to be drawn again when it is not in its normal visual state.
+static void Redisplay_Hidden_Building(CellClass * cellptr)
+{
+	BuildingClass * building = cellptr->Cell_Building();
+	if (building != NULL && building->House != PlayerPtr) {
+		if (building->Visual_Character() != VISUAL_NORMAL) {
+			building->IsToDisplay = true;
+		}
+	}
+}
+
+
 /// <summary>
 /// Starts or stops this structure showing its owner the disguised objects within
 /// DetectDisguiseRange cells (BuildingClass::DisguiseDetectorActivate, 0x455A80, and
@@ -11751,22 +11759,16 @@ void BuildingClass::Disguise_Detector(bool on)
 	IsDetectingDisguise = on;
 
 	int const radius = Techno_Type_Class()->DetectDisguiseRange;
-	Cell const origin = Center_Coord().As_Cell();
-	for (int y = -radius; y < radius; y++) {
-		for (int x = -radius; x < radius; x++) {
-			if (x * x + y * y < radius * radius) {
-				Cell const cell(origin.X + x, origin.Y + y);
-				if (Map.In_Radar(cell)) {
-					std::uint16_t & count = Map[cell].DisguiseSensorCount[House];
-					if (on) {
-						count++;
-					} else if (count > 0) {
-						count--;
-					}
-				}
+	For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this, on](Cell const & cell) {
+		if (Map.In_Radar(cell)) {
+			std::uint16_t & count = Map[cell].DisguiseSensorCount[House];
+			if (on) {
+				count++;
+			} else if (count > 0) {
+				count--;
 			}
 		}
-	}
+	});
 }
 
 
@@ -11783,27 +11785,15 @@ void BuildingClass::Disable_Sensor_Array(void)
 
 	// gamemd lifts the array over CloakRadiusInCells, not SensorsSight (SensorArrayDeactivate, 0x4556D0), so
 	// a cell outside the SensorsSight ring loses a count that was never added.
-	int radius = Class->CloakRadiusInCells;
-	int dist = radius * radius;
-	Cell origin = Center_Coord().As_Cell();
-	for (int y = -radius; y < radius; y++) {
-		for (int x = -radius; x < radius; x++) {
-			Cell newcell = Cell(origin.X + x, origin.Y + y);
-			if (x * x + y * y < dist) {
-				CellClass * cellptr = &Map[newcell];
-				bool const cleared = cellptr->Remove_Sensor(House);
-				Cloak_Cell_Occupiers(cellptr);
-				if (cleared) {
-					BuildingClass * building = cellptr->Cell_Building();
-					if (building != NULL && building->House != PlayerPtr) {
-						if (building->Visual_Character() != VISUAL_NORMAL) {
-							building->IsToDisplay = true;
-						}
-					}
-				}
-			}
+	int const radius = Class->CloakRadiusInCells;
+	For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this](Cell const & newcell) {
+		CellClass * cellptr = &Map[newcell];
+		bool const cleared = cellptr->Remove_Sensor(House);
+		Cloak_Cell_Occupiers(cellptr);
+		if (cleared) {
+			Redisplay_Hidden_Building(cellptr);
 		}
-	}
+	});
 	IsSensing = false;
 }
 
@@ -11820,27 +11810,15 @@ void BuildingClass::Enable_Sensor_Array(void)
 	if (Is_Powered_On()) {
 		bool add = !IsSensing;
 		IsSensing = true;
-		int radius = Techno_Type_Class()->SensorsSight;
-		int dist = radius * radius;
-		Cell origin = Center_Coord().As_Cell();
-		for (int y = -radius; y < radius; y++) {
-			for (int x = -radius; x < radius; x++) {
-				Cell newcell = Cell(origin.X + x, origin.Y + y);
-				if (x * x + y * y < dist) {
-					CellClass * cellptr = &Map[newcell];
-					if (add) {
-						cellptr->Add_Sensor(House);
-					}
-					Cloak_Cell_Occupiers(cellptr);
-					BuildingClass * building = cellptr->Cell_Building();
-					if (building != NULL && building->House != PlayerPtr) {
-						if (building->Visual_Character() != VISUAL_NORMAL) {
-							building->IsToDisplay = true;
-						}
-					}
-				}
+		int const radius = Techno_Type_Class()->SensorsSight;
+		For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this, add](Cell const & newcell) {
+			CellClass * cellptr = &Map[newcell];
+			if (add) {
+				cellptr->Add_Sensor(House);
 			}
-		}
+			Cloak_Cell_Occupiers(cellptr);
+			Redisplay_Hidden_Building(cellptr);
+		});
 	}
 }
 

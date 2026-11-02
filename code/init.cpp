@@ -3728,7 +3728,7 @@ class DeployCommandClass : public CommandClass
 					ObjectClass * obj = CurrentObject[index];
 					BuildingClass const * garrison = (obj != NULL && obj->RTTI == RTTI_BUILDING) ? (BuildingClass const *)obj : NULL;
 					bool evacuate = garrison != NULL && garrison->House->Is_Player_Control() && (garrison->Occupants.Count() > 0
-						|| ((garrison->Class->IsInfantryAbsorb || garrison->Class->IsUnitAbsorb) && garrison->Cargo.How_Many() > 0));
+						|| garrison->Holds_Absorbed());
 					if (obj != NULL && (obj->Can_Player_Move() || obj->Can_Player_Fire() || evacuate)) {
 						InfantryClass const * soldier = Deployer_Soldier(obj);
 						if (mixed && soldier != NULL && soldier->Is_Deployed()) {

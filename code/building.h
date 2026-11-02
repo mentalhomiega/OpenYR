@@ -410,6 +410,8 @@ class BuildingClass : public TechnoClass
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);
+		void Toggle_Gap_Charge(void);
+		void Set_Gap_Charge(bool charged);
 
 		/*
 		 * These mark the cells of the cloaking grid around a cloak generator that its own field
@@ -661,6 +663,7 @@ class BuildingClass : public TechnoClass
 		void Absorb(FootClass * object);
 		bool Release_Passenger(void);
 		bool Takes_Walk_Ins(FootClass const * object) const;
+		bool Holds_Absorbed(void) const {return(Class->Is_Absorber() && Cargo.How_Many() > 0);}
 		bool Can_Bunker(FootClass const * object) const;
 		bool Blocks_Cell(CellClass const * cell) const;
 		void Update_Bunker(void);
@@ -729,6 +732,7 @@ class BuildingClass : public TechnoClass
 		void Create_Anim(char const * name, BAnimType anim, bool damaged, int delay);
 		void Detach_Anim(AnimClass * anim);
 		void End_Anim(BAnimType anim);
+		void Return_Bay_Anims_To_Idle(void);
 		void Set_Anim_Damage_State(bool damaged);
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);

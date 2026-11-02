@@ -1107,61 +1107,51 @@ void BuildingTypeClass::Fetch_Building_Normal_Image(TheaterType theater)
 		}
 	}
 
+	auto const load_theater_shape = [&](char const * name) {
+		_makepath(fullname, NULL, NULL, name, ".SHP");
+		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
+		return((ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname));
+	};
+
 	ArtINI.Get_String(Graphic_Name(), "DeployingAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		DeployingAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "RoofDeployingAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		RoofDeployingAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		RoofDeployingAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "DoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		DoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		DoorAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderDoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		UnderDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		UnderDoorAnim = load_theater_shape(buffer);
 	}
 
 	RubbleShape = NULL;
 	ArtINI.Get_String(Graphic_Name(), "Rubble", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		RubbleShape = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		RubbleShape = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "UnderRoofDoorAnim", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		UnderRoofDoorAnim = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		UnderRoofDoorAnim = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "SpecialZOverlay", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		SpecialZOverlay = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		SpecialZOverlay = load_theater_shape(buffer);
 	}
 
 	ArtINI.Get_String(Graphic_Name(), "BibShape", "", buffer, sizeof(buffer));
 	if (strlen(buffer) != 0) {
-		_makepath(fullname, NULL, NULL, buffer, ".SHP");
-		ObjectTypeClass::Theater_Naming_Convention(fullname, theater);
-		BibShape = (ShapeSet const *)ObjectTypeClass::Retrieve_Theater_Art(fullname);
+		BibShape = load_theater_shape(buffer);
 	}
 
 	char ext[16];

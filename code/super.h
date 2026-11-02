@@ -67,6 +67,7 @@ class SuperClass : public AbstractClass
 		bool Enable(bool onetime = false, bool player=false, bool quiet=false);
 		void Forced_Charge(bool player=false);
 		void Place(Cell const & cell, bool player);
+		void Finish_Placement(bool player);
 		void Drop_Pods(Cell const & cell) const;
 		void Iron_Curtain(Cell const & cell) const;
 		void Genetic_Mutator(Cell const & cell) const;
