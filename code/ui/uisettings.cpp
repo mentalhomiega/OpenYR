@@ -115,8 +115,7 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 
 std::string UI_Settings_Back_Label(void)
 {
-	std::string const text = StringTable.Find_UTF8("GUI:Back");
-	return(text.empty() ? std::string("Back") : text);
+	return(StringTable.Find_UTF8("GUI:Back", "Back"));
 }
 
 

@@ -31,13 +31,6 @@
 namespace
 {
 
-std::string Text(char const * label, char const * fallback)
-{
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
-}
-
-
 /// <summary>The seconds a number of frames take at the game speed the recording was made at.</summary>
 std::uint32_t Seconds_Of(std::uint32_t frames, int game_speed)
 {
@@ -88,10 +81,10 @@ bool UI_Replays_Dialog(std::string & file)
 	Mount_Map_Packs();
 
 	UIReplaysState state;
-	state.Title = Text("GUI:Replays", "Replays");
-	state.PlayCaption = Text("GUI:PlayReplay", "Play");
-	state.DeleteCaption = Text("GUI:DeleteReplay", "Delete");
-	state.BackCaption = Text("GUI:Back", "Back");
+	state.Title = StringTable.Find_UTF8("GUI:Replays", "Replays");
+	state.PlayCaption = StringTable.Find_UTF8("GUI:PlayReplay", "Play");
+	state.DeleteCaption = StringTable.Find_UTF8("GUI:DeleteReplay", "Delete");
+	state.BackCaption = StringTable.Find_UTF8("GUI:Back", "Back");
 	state.EmptyText = "No replays yet. Turn on Record replays in Options, play a skirmish, and it is listed here.";
 	Fill_Rows(state);
 
@@ -108,9 +101,9 @@ bool UI_Replays_Dialog(std::string & file)
 		UIReplayRow const & row = state.Rows[(std::size_t)state.Selected];
 
 		if (presenter.Choice == UI_REPLAYS_DELETE) {
-			std::string const question = Text("GUI:DeleteReplayQuery", "Delete this replay?") + "\n" + row.File;
-			std::string const yes = Text("GUI:Yes", "Yes");
-			std::string const no = Text("GUI:No", "No");
+			std::string const question = StringTable.Find_UTF8("GUI:DeleteReplayQuery", "Delete this replay?") + "\n" + row.File;
+			std::string const yes = StringTable.Find_UTF8("GUI:Yes", "Yes");
+			std::string const no = StringTable.Find_UTF8("GUI:No", "No");
 			if (WWMessageBox()._Process(question.c_str(), 1, yes.c_str(), no.c_str(), NULL) == 0) {
 				std::error_code error;
 				std::filesystem::remove(std::filesystem::path(Replay_Name(row.File.c_str())), error);

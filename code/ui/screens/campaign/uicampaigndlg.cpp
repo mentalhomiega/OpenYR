@@ -43,10 +43,7 @@ void UI_Campaign_State(UICampaignState & state)
 
 		// Yuri's Revenge names a campaign by a string table label; a value no label matches is shown as written.
 		UICampaignEntry entry;
-		entry.Description = StringTable.Find_UTF8(campaign->Description);
-		if (entry.Description.empty()) {
-			entry.Description = campaign->Description;
-		}
+		entry.Description = StringTable.Find_UTF8(campaign->Description, campaign->Description);
 		entry.Campaign = index;
 		state.Entries.push_back(entry);
 	}

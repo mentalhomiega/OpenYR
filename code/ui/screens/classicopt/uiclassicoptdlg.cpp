@@ -19,18 +19,6 @@
 #include "ui/uiview.h"
 
 
-namespace
-{
-
-std::string Text_Of(char const * label, char const * fallback)
-{
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
-}
-
-}
-
-
 /// <summary>
 /// Fills in the page's words: Yuri's Revenge's own labels where the string table has them, and
 /// English for the settings it does not offer and the ones this page renames.
@@ -38,25 +26,25 @@ std::string Text_Of(char const * label, char const * fallback)
 /// <param name="labels">Receives the words.</param>
 void UI_Classic_Options_Labels(UIClassicOptionsLabels & labels)
 {
-	labels.Options = Text_Of("GUI:OptionsMenu", "Options");
-	labels.Display = Text_Of("GUI:DisplayOptions", "Display Options");
-	labels.Game = Text_Of("GUI:GameOptions", "Game Options");
-	labels.Interface = Text_Of("GUI:UIOptions", "Interface Options");
-	labels.Audio = Text_Of("GUI:AudioOptions", "Audio Options");
+	labels.Options = StringTable.Find_UTF8("GUI:OptionsMenu", "Options");
+	labels.Display = StringTable.Find_UTF8("GUI:DisplayOptions", "Display Options");
+	labels.Game = StringTable.Find_UTF8("GUI:GameOptions", "Game Options");
+	labels.Interface = StringTable.Find_UTF8("GUI:UIOptions", "Interface Options");
+	labels.Audio = StringTable.Find_UTF8("GUI:AudioOptions", "Audio Options");
 	labels.Resolution = "Resolution";
 	labels.Detail = "Graphics quality";
-	labels.Difficulty = Text_Of("GUI:Difficulty", "Difficulty");
-	labels.Scroll = Text_Of("GUI:ScrollRate", "Scroll Rate");
-	labels.Music = Text_Of("GUI:MusicVolume", "Music Volume");
-	labels.Sound = Text_Of("GUI:SoundVolume", "Sound Volume");
+	labels.Difficulty = StringTable.Find_UTF8("GUI:Difficulty", "Difficulty");
+	labels.Scroll = StringTable.Find_UTF8("GUI:ScrollRate", "Scroll Rate");
+	labels.Music = StringTable.Find_UTF8("GUI:MusicVolume", "Music Volume");
+	labels.Sound = StringTable.Find_UTF8("GUI:SoundVolume", "Sound Volume");
 	labels.Voice = "EVA";
 	labels.Unit = "Unit voices";
 	labels.Movie = "Movies";
-	labels.Tooltips = Text_Of("GUI:Tooltips", "Tooltips");
+	labels.Tooltips = StringTable.Find_UTF8("GUI:Tooltips", "Tooltips");
 	labels.TargetLines = "Movement and target lines";
 	labels.ShowHidden = "Show units behind buildings";
 	labels.ShowDefenceRange = "Show defence range when selected";
-	labels.Keyboard = Text_Of("GUI:Keyboard", "Keyboard");
+	labels.Keyboard = StringTable.Find_UTF8("GUI:Keyboard", "Keyboard");
 	labels.Mods = "Mods";
 	labels.More = "More Options";
 	labels.CameoText = "Cameo names";
@@ -66,8 +54,8 @@ void UI_Classic_Options_Labels(UIClassicOptionsLabels & labels)
 	labels.SystemCursor = "Use the Windows pointer";
 	labels.Scale = "UI scale:";
 	labels.ClassicMenus = "Classic menu art";
-	labels.Ok = Text_Of("GUI:OK", "OK");
-	labels.Cancel = Text_Of("GUI:Cancel", "Cancel");
+	labels.Ok = StringTable.Find_UTF8("GUI:OK", "OK");
+	labels.Cancel = StringTable.Find_UTF8("GUI:Cancel", "Cancel");
 }
 
 
