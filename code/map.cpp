@@ -12275,6 +12275,23 @@ static bool Is_Wood_Bridge_Overlay_Cell(Cell const & cell)
 
 
 /*
+ * The cell a bridge run is walked from, given one cell on the run. step is the run's axis. The
+ * result is cell + step when the cell before cell is off the run, cell - step when the run
+ * continues two cells back, and cell otherwise.
+ */
+static Cell Run_Start_Cell(Cell const & cell, Cell const & step, bool (*part_of_run)(Cell const &))
+{
+	if (!part_of_run(cell - step)) {
+		return(cell + step);
+	}
+	if (part_of_run(cell - step - step)) {
+		return(cell - step);
+	}
+	return(cell);
+}
+
+
+/*
  * gamemd's CellClass::IsBridgeOverlayType (0x5746C0): a span end or middle piece whose sub-tile
  * matches its place in the set. The line search stops at the first such piece.
  */
@@ -12765,23 +12782,11 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			return(Damage_Concrete_Bridge_NS(cell + Cell(0, 1)));
-		}
-		if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			return(Damage_Concrete_Bridge_NS(cell + Cell(0, -1)));
-		}
-		return(Damage_Concrete_Bridge_NS(cell));
+		return(Damage_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell)));
 	}
 
 	if (Is_Concrete_EW_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-			return(Damage_Concrete_Bridge_EW(cell + Cell(1, 0)));
-		}
-		if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-			return(Damage_Concrete_Bridge_EW(cell + Cell(-1, 0)));
-		}
-		return(Damage_Concrete_Bridge_EW(cell));
+		return(Damage_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell)));
 	}
 
 	return(false);
@@ -12855,23 +12860,11 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			Detonate_Concrete_Bridge_Run(cell + Cell(0, 1), FACING_E);
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			Detonate_Concrete_Bridge_Run(cell + Cell(0, -1), FACING_E);
-		} else {
-			Detonate_Concrete_Bridge_Run(cell, FACING_E);
-		}
+		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell), FACING_E);
 		return;
 	}
 
-	if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-		Detonate_Concrete_Bridge_Run(cell + Cell(1, 0), FACING_S);
-	} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-		Detonate_Concrete_Bridge_Run(cell + Cell(-1, 0), FACING_S);
-	} else {
-		Detonate_Concrete_Bridge_Run(cell, FACING_S);
-	}
+	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell), FACING_S);
 }
 
 
@@ -12995,24 +12988,12 @@ void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			Repair_Concrete_Bridge_NS(cell + Cell(0, 1));
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			Repair_Concrete_Bridge_NS(cell + Cell(0, -1));
-		} else {
-			Repair_Concrete_Bridge_NS(cell);
-		}
+		Repair_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell));
 		return;
 	}
 
 	if (Is_Concrete_EW_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-			Repair_Concrete_Bridge_EW(cell + Cell(1, 0));
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-			Repair_Concrete_Bridge_EW(cell + Cell(-1, 0));
-		} else {
-			Repair_Concrete_Bridge_EW(cell);
-		}
+		Repair_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell));
 	}
 }
 
@@ -13228,15 +13209,7 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 		overlay == OVERLAY_LOWBRIDGE_27;
 
 	if (straight) {
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -1))) {
-			Detonate_Wood_Bridge_Run(cell + Cell(0, 1), FACING_E);
-			return;
-		}
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -2))) {
-			Detonate_Wood_Bridge_Run(cell, FACING_E);
-			return;
-		}
-		Detonate_Wood_Bridge_Run(cell + Cell(0, -1), FACING_E);
+		Detonate_Wood_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Wood_Bridge_Overlay_Cell), FACING_E);
 		return;
 	}
 
@@ -13245,15 +13218,7 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 		overlay == OVERLAY_LOWBRIDGE_28;
 
 	if (side) {
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-1, 0))) {
-			Detonate_Wood_Bridge_Run(cell + Cell(1, 0), FACING_S);
-			return;
-		}
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-2, 0))) {
-			Detonate_Wood_Bridge_Run(cell, FACING_S);
-			return;
-		}
-		Detonate_Wood_Bridge_Run(cell + Cell(-1, 0), FACING_S);
+		Detonate_Wood_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Wood_Bridge_Overlay_Cell), FACING_S);
 	}
 }
 
