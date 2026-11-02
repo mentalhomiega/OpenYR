@@ -4125,43 +4125,19 @@ static RGBClass Planned_Blend(RGBClass const & from, RGBClass const & toward, in
 }
 
 
-/// <summary>
-/// Draws the planned orders of the local player's units over the tactical view, while planning mode
-/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
-/// through the destination of each leg still to run.
-/// </summary>
-/// <remarks>
-/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
-/// is four solid lines in black, or in white for a selected unit, with an outline square at
-/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
-/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
-/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
-/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
-/// (timeGetTime), which only moves the picture and never the game state.
-/// </remarks>
-void Tactical::Draw_Planned_Orders(void)
+struct Leg
 {
-	if (Debug_Map || !Map.IsPlanningMode) {
-		return;
-	}
+	Point2D From;
+	Point2D To;
+	MissionType Mission;
+	bool IsSelected;
+	bool IsRunning;
+	RGBClass Owner;
+};
 
-	// Four on, four off, as the table at 0x836880 reads.
-	static bool pattern[16] = {
-		true, true, true, true, false, false, false, false,
-		true, true, true, true, false, false, false, false
-	};
 
-	struct Leg
-	{
-		Point2D From;
-		Point2D To;
-		MissionType Mission;
-		bool IsSelected;
-		bool IsRunning;
-		RGBClass Owner;
-	};
-	std::vector<Leg> legs;
-
+static void Collect_Planned_Legs(Tactical & tactical, std::vector<Leg> & legs)
+{
 	for (int footindex = 0; footindex < Feet.Count(); footindex++) {
 		FootClass * foot = Feet[footindex];
 		if (foot->House != PlayerPtr || !foot->IsActive || foot->IsInLimbo) {
@@ -4173,8 +4149,8 @@ void Tactical::Draw_Planned_Orders(void)
 
 		auto add_leg = [&](Coord const & from, Coord const & to, MissionType mission) {
 			Leg leg;
-			Coord_To_Pixel(from, leg.From);
-			Coord_To_Pixel(to, leg.To);
+			tactical.Coord_To_Pixel(from, leg.From);
+			tactical.Coord_To_Pixel(to, leg.To);
 			leg.From += Point2D(TacticalRect.X, TacticalRect.Y);
 			leg.To += Point2D(TacticalRect.X, TacticalRect.Y);
 			leg.Mission = mission;
@@ -4200,6 +4176,16 @@ void Tactical::Draw_Planned_Orders(void)
 			}
 		}
 	}
+}
+
+
+static void Draw_Planned_Legs(std::vector<Leg> const & legs)
+{
+	// Four on, four off, as the table at 0x836880 reads.
+	static bool pattern[16] = {
+		true, true, true, true, false, false, false, false,
+		true, true, true, true, false, false, false, false
+	};
 
 	if (legs.empty()) {
 		return;
@@ -4287,6 +4273,31 @@ void Tactical::Draw_Planned_Orders(void)
 	}
 }
 
+
+/// <summary>
+/// Draws the planned orders of the local player's units over the tactical view, while planning mode
+/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
+/// through the destination of each leg still to run.
+/// </summary>
+/// <remarks>
+/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
+/// is four solid lines in black, or in white for a selected unit, with an outline square at
+/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
+/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
+/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
+/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
+/// (timeGetTime), which only moves the picture and never the game state.
+/// </remarks>
+void Tactical::Draw_Planned_Orders(void)
+{
+	if (Debug_Map || !Map.IsPlanningMode) {
+		return;
+	}
+
+	std::vector<Leg> legs;
+	Collect_Planned_Legs(*this, legs);
+	Draw_Planned_Legs(legs);
+}
 
 
 /// <summary>
