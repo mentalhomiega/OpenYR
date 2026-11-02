@@ -499,7 +499,7 @@ Cell Cell_Or_None(AbstractClass const * object)
 // The rank a log line writes for an object's veterancy: 2 for elite, 1 for veteran, 0 otherwise.
 int Rank_Of(VeterancyClass const & veterancy)
 {
-	return(veterancy.Is_Elite() ? 2 : (veterancy.Is_Veteran() ? 1 : 0));
+	return(veterancy.Rank());
 }
 
 
@@ -1113,7 +1113,7 @@ static void Dump_Step(StepType const &)
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
 		Cell const tar = Cell_Or_None(object->TarCom);
-		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d tar %d,%d opentopped %d lastfire %d height %d speed %d nav %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, object->Veterancy.Is_Elite() ? 2 : (object->Veterancy.Is_Veteran() ? 1 : 0), tar.X, tar.Y, (int)object->IsInOpenToppedTransport, object->LastFireFrame, object->HeightAGL, (int)(object->Speed * 100), object->NavCom != NULL ? 1 : 0);
+		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d tar %d,%d opentopped %d lastfire %d height %d speed %d nav %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, Rank_Of(object->Veterancy), tar.X, tar.Y, (int)object->IsInOpenToppedTransport, object->LastFireFrame, object->HeightAGL, (int)(object->Speed * 100), object->NavCom != NULL ? 1 : 0);
 		if (object->DisguiseType != NULL) {
 			DebugString("AUTOTEST     disguised as %s of %s\n", object->DisguiseType->Name(), object->DisguiseHouse != NULL ? object->DisguiseHouse->Class->Name() : "-");
 		}

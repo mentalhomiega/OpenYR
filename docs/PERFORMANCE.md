@@ -73,18 +73,14 @@ between two redraws that happen, so a due redraw that is skipped again and again
 | `scans ring`, `scans air`, `scans full` | Target scans by path: area and range scans that walk the cell ring, scans that walk the aircraft and air-layer lists, and full-map scans. One scan can count in both `scans ring` and `scans air` |
 | `scan targeting`, `scan mission`, `scan team`, `scan house` | `Greatest_Threat` calls from `Target_Something_Nearby`, from foot area scans (attack move, patrol, guard area), from team AI, and from house AI (quarry). The remaining scans are in `threats` but in none of these four |
 | `ring cells` | Ring cells on the radar map that the cell walk visits, counted per area or range scan before any evaluation |
-| `ring empty` | Of those, cells with no `TechnoClass` in either occupier chain (the bridge chain and the ground chain) |
-| `ring wall` | Of those, cells with a wall overlay (`OverlayTypes[...]->IsWall`) |
 | `cell candidates` | `Evaluate_Cell` calls that found an occupant and passed it to `Evaluate_Object` |
 | `object evals` | `Evaluate_Object` calls, from the ring walk and from full-map scans |
 | `area modify` | `Area_Modify` calls, including the calls that return 1 at once for a weapon that is not suppressive |
 | `weapon selects` | `What_Weapon_Should_I_Use` calls |
-| `ring keys`, `ring key repeats` | Ring walks with a distinct key and with a key an earlier walk in the same game frame already had. The key is the origin cell, the scanner's house, its type, its zone, the threat method and `crange`. It leaves out the exact origin coordinate, so a repeat can still find a different result |
 | `draws skipped` | Redraws that were due in the wait between game frames but had too little time left. See [Skipped draws](#skipped-draws) |
 
-The ring counters are taken only when the cell walk runs; they add a read of each ring cell while recording. The
-`ring keys` counts use a set cleared at each game frame, so they cost more than the other counters; expect the
-scan time to grow while recording.
+The `ring cells` counter is taken only when the cell walk runs. Each radar-map ring cell the walk visits adds one
+counter increment while recording.
 
 ## Benchmark
 

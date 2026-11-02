@@ -232,9 +232,7 @@
 #include <algorithm>
 #include <cstring>
 #include <intrin.h>
-#include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
@@ -1407,9 +1405,7 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 		Cell cell = Center_Coord().As_Cell();
 
 		// A firer that moves on to another cell lets its warp go (TechnoClass::Per_Cell_Process, 0x6F5090).
-		if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-			TemporalImUsing->Let_Go();
-		}
+		Release_Warp();
 
 		Try_To_Cloak();
 
@@ -2013,9 +2009,7 @@ bool TechnoClass::Limbo(void)
 		});
 	}
 
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
@@ -2302,6 +2296,12 @@ bool TechnoClass::Is_Close_Enough(AbstractClass * target, int which) const
 }
 
 
+bool TechnoClass::Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const
+{
+	return(Is_Close_Enough(target, What_Weapon_Should_I_Use(target)));
+}
+
+
 // Tests the line from the source to the target's center for walls and cliffs (FUN_006F7220, 0x6F7220; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
 // A wall at a connecting-wall index does not block a warhead that destroys walls (Wall=yes). A weapon with Range=-2 has no line test.
 bool TechnoClass::Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const
@@ -2428,6 +2428,323 @@ double TechnoClass::Area_Modify(Cell const & cell) const
 }
 
 
+bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const
+{
+	/*
+	**	An object in limbo can never be a valid target.
+	*/
+	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
+		return(false);
+	}
+
+	// The weapon selection against object is made at most once for the tests below.
+	bool object_index_known = false;
+	int object_index = 0;
+	auto weapon_index_for_object = [&]() {
+		if (!object_index_known) {
+			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
+			object_index_known = true;
+		}
+		return(object_index);
+	};
+
+	/*
+	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
+	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
+		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
+		return(false);
+	}
+
+	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
+	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
+	if (TClass->LandTargeting == 2 && object->On_Ground() && object->Get_Cell_Ptr()->Land_Type() != LAND_WATER) {
+		return(false);
+	}
+
+	/*
+	**	If the object is cloaked, then it isn't a legal target.
+	*/
+	if (object->Cloak == CLOAKED) {
+		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
+			return(false);
+		}
+	}
+
+	if (!object->IsLocked) {
+		return(false);
+	}
+
+	/*
+	**	If the object is in a "harmless" state, then don't bother to consider it
+	**	a threat.
+	*/
+	if (object->Current_Mission_Control().IsNoThreat) {
+		return(false);
+	}
+
+	if (object->HeightAGL < -20) {
+		return(false);
+	}
+
+	/*
+	**	If the object is not within the desired zone, then ignore it, but only if
+	**	zone checking is desired.
+	*/
+	Coord objectcoord = object->Center_Coord();
+	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
+		return(false);
+	}
+
+	/*
+	**	Friendly units are never considered a good target. Bail if this
+	**	object is a friend.  Unless we're a medic, of course.  But then,
+	**	only consider it a target if it's injured.
+	*/
+	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
+		if (Combat_Damage() < 0 || engineer) {
+			if (object->HealthRatio == Rule->ConditionGreen) {
+				return(false);
+			}
+			if (Combat_Damage() < 0) {
+				if (object->RTTI == RTTI_AIRCRAFT) {
+					if (object->HeightAGL > 0) {
+						return(false);
+					}
+					if (Map[object->Center_Coord()].Cell_Building()) {
+						return(false);
+					}
+				} else if (!Can_Heal(object)) {
+					return(false);
+				}
+			}
+		} else {
+			return(false);
+		}
+	}
+
+	if (Scen->Special.IsHarvesterImmune) {
+		if (Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object->Class_Of())) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the object is further away than allowed, bail.
+	*/
+	int dist = Distance_To(object);
+	if (range > 0 && dist > range) {
+		return(false);
+	}
+
+	if (range == 0) {
+		if (!Is_Weapon_Equipped()) {
+			if (dist > TClass->ThreatRange) {
+				return(false);
+			}
+		} else {
+			int primary = weapon_index_for_object();
+			if (!In_Range((TechnoClass *)object, primary)) {
+				return(false);
+			}
+		}
+	}
+
+	if (Is_Weapon_Equipped()) {
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
+		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the object is not visible, then bail. Human controlled units
+	**	are always considered to be visible.
+	*/
+	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
+		return(false);
+	}
+
+	if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) {
+		return(false);
+	}
+
+	/*
+	**	Quickly eliminate all unit types that are not allowed according to the mask
+	**	value.
+	*/
+	RTTIType otype = object->RTTI;
+	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
+		return(false);		// Mask failure.
+	}
+
+	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
+		return(false);
+	}
+
+	/*
+	**	An insignificant unit is no automatic target for any house. An insignificant building of a passive
+	**	house is one only for a computer house's infantry in a multiplayer game that can capture or occupy it
+	**	(TechnoClass::Evaluate_Object, 0x6F7CA0).
+	*/
+	if (object->TClass->IsInsignificant && object->MindControlledBy == NULL
+		&& (object->RTTI != RTTI_BUILDING || object->House->Class->IsMultiplayPassive)) {
+		bool capturable = false;
+		if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL && RTTI == RTTI_INFANTRY && object->RTTI == RTTI_BUILDING) {
+			BuildingClass const * building = static_cast<BuildingClass const *>(object);
+			capturable = (((BuildingTypeClass const *)object->TClass)->IsNeedsEngineer && ((InfantryClass const *)this)->Class->IsEngineer && object->House != House)
+				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
+		}
+		if (!capturable) {
+			return(false);
+		}
+	}
+
+	/*
+	**	Determine if the target is theoretically allowed to be a target. If
+	**	not, then bail.
+	*/
+	TechnoTypeClass const * tclass = object->TClass;
+	if (!tclass->IsLegalTarget) {
+		return(false);		// Legality failure.
+	}
+
+	if (tclass->IsTrain && RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief) {
+		return(false);
+	}
+
+	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
+	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
+	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
+		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
+			return(false);
+		}
+	}
+
+	return(true);
+}
+
+
+bool TechnoClass::Passes_Mirage_Roll(TechnoClass const * object) const
+{
+	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
+	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
+	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
+		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
+		if (vehicle->Is_Disguised_As(House)) {
+			int const side = House->Class->Side;
+			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
+			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
+				return(false);
+			}
+		}
+	}
+
+	return(true);
+}
+
+
+bool TechnoClass::Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const
+{
+	RTTIType otype = object->RTTI;
+	TechnoTypeClass const * tclass = object->TClass;
+
+	/*
+	**	If only allowed to attack civilians, then eliminate all other types.
+	*/
+	if (method & THREAT_CIVILIANS) {
+		object->Owner_HouseClass(); /// The result is unused.
+		return(false);
+	}
+
+	/*
+	**	If the scan is limited to capturable buildings only, then bail if the examined
+	**	object isn't a capturable building.
+	*/
+	if ((method & THREAT_CAPTURE) && (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsCaptureable)) {
+		return(false);
+	}
+
+	/*
+	**	SPECIAL CASE: Friendly units won't automatically fire on buildings
+	**	if the building is not aggressive. That is, unless it is part of a team. A team
+	**	is allowed to pick any target it so chooses.
+	*/
+	// A weapon that reaches nowhere leaves the building as harmless as an unarmed one.
+	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
+			House->Is_Human_Player() && !object->Considered_Vehicle() &&
+			otype == RTTI_BUILDING &&
+			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
+
+		if (!engineer) {
+			return(false);
+		}
+	}
+
+	if (engineer) {
+		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
+			return(false);
+		}
+	}
+
+	/*
+	**	If the search is restricted to Tiberium processing objects, then
+	**	perform the special qualification check now.
+	*/
+	if (method & THREAT_TIBERIUM) {
+		if (tclass->Capacity == 0) {
+			return(false);
+		}
+	}
+
+	CellClass * cell_this = &Map[Get_Coord()];
+	CellClass * cell_that = &Map[object->Get_Coord()];
+	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
+		return(false);
+	}
+
+	bool webbysecondary = false;
+	WarheadTypeClass const * wh = NULL;
+	WeaponTypeClass const * secondary = SecondaryWeapon;
+	if (secondary != NULL) {
+		wh = secondary->WarheadPtr;
+		if (wh != NULL && wh->IsWebby) {
+			webbysecondary = true;
+		}
+	}
+
+	if (!webbysecondary) {
+		WeaponTypeClass const * primary = PrimaryWeapon;
+		if (primary != NULL) {
+			wh = primary->WarheadPtr;
+		} else {
+			wh = NULL;
+		}
+	}
+
+	if (wh && wh->IsWebby) {
+		if (object->RTTI == RTTI_INFANTRY) {
+			InfantryClass const * infantry = dynamic_cast<const InfantryClass *>(object);
+			if (infantry != NULL && infantry->ProneStruggleTimer > wh->WebDuration / 4) {
+				return(false);
+			}
+		}
+	}
+
+
+	/*
+	**	A VHPScan=Strong scan passes over a target whose estimated health is spent (TechnoClass::GreatestThreat's
+	**	threat filter, 0x6F7CA0).
+	*/
+	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
+		return(false);
+	}
+
+	return(true);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Evaluate_Object -- Determines score value of specified object.                 *
  *                                                                                             *
@@ -2474,340 +2791,26 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	assert(object != NULL);
 
 	Perf_Count(PERF_COUNT_OBJECT_EVALS);
-	BStart(BENCH_EVAL_OBJECT);
+	BENCH_SCOPE(BENCH_EVAL_OBJECT);
 
 	bool engineer = Is_Renovator();
 
-	/*
-	**	An object in limbo can never be a valid target.
-	*/
-	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
-		BEnd(BENCH_EVAL_OBJECT);
+	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer)) {
 		return(false);
 	}
 
-	// The weapon selection against object is made at most once for the tests below.
-	bool object_index_known = false;
-	int object_index = 0;
-	auto weapon_index_for_object = [&]() {
-		if (!object_index_known) {
-			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
-			object_index_known = true;
-		}
-		return(object_index);
-	};
-
-	/*
-	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
-	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
-	*/
-	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
-		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
-		BEnd(BENCH_EVAL_OBJECT);
+	// The Mirage roll draws a random number. It stays between the two checks, so a candidate
+	// that the first check rejects draws nothing.
+	if (!Passes_Mirage_Roll(object)) {
 		return(false);
 	}
 
-	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
-	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
-	if (TClass->LandTargeting == 2 && object->On_Ground() && object->Get_Cell_Ptr()->Land_Type() != LAND_WATER) {
-		BEnd(BENCH_EVAL_OBJECT);
+	if (!Passes_After_Disguise_Roll(method, object, engineer)) {
 		return(false);
 	}
 
-	/*
-	**	If the object is cloaked, then it isn't a legal target.
-	*/
-	if (object->Cloak == CLOAKED) {
-		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (!object->IsLocked) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	If the object is in a "harmless" state, then don't bother to consider it
-	**	a threat.
-	*/
-	if (object->Current_Mission_Control().IsNoThreat) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (object->HeightAGL < -20) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	If the object is not within the desired zone, then ignore it, but only if
-	**	zone checking is desired.
-	*/
-	Coord objectcoord = object->Center_Coord();
-	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	Friendly units are never considered a good target. Bail if this
-	**	object is a friend.  Unless we're a medic, of course.  But then,
-	**	only consider it a target if it's injured.
-	*/
-	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
-		if (Combat_Damage() < 0 || engineer) {
-			if (object->HealthRatio == Rule->ConditionGreen) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-			if (Combat_Damage() < 0) {
-				if (object->RTTI == RTTI_AIRCRAFT) {
-					if (object->HeightAGL > 0) {
-						BEnd(BENCH_EVAL_OBJECT);
-						return(false);
-					}
-					if (Map[object->Center_Coord()].Cell_Building()) {
-						BEnd(BENCH_EVAL_OBJECT);
-						return(false);
-					}
-				} else if (!Can_Heal(object)) {
-					BEnd(BENCH_EVAL_OBJECT);
-					return(false);
-				}
-			}
-		} else {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (Scen->Special.IsHarvesterImmune) {
-		if (Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object->Class_Of())) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the object is further away than allowed, bail.
-	*/
-	int dist = Distance_To(object);
-	if (range > 0 && dist > range) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (range == 0) {
-		if (!Is_Weapon_Equipped()) {
-			if (dist > TClass->ThreatRange) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		} else {
-			int primary = weapon_index_for_object();
-			if (!In_Range((TechnoClass *)object, primary)) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-	if (Is_Weapon_Equipped()) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
-		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the object is not visible, then bail. Human controlled units
-	**	are always considered to be visible.
-	*/
-	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	Quickly eliminate all unit types that are not allowed according to the mask
-	**	value.
-	*/
 	RTTIType otype = object->RTTI;
-	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);		// Mask failure.
-	}
-
-	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	An insignificant unit is no automatic target for any house. An insignificant building of a passive
-	**	house is one only for a computer house's infantry in a multiplayer game that can capture or occupy it
-	**	(TechnoClass::Evaluate_Object, 0x6F7CA0).
-	*/
-	if (object->TClass->IsInsignificant && object->MindControlledBy == NULL
-		&& (object->RTTI != RTTI_BUILDING || object->House->Class->IsMultiplayPassive)) {
-		bool capturable = false;
-		if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL && RTTI == RTTI_INFANTRY && object->RTTI == RTTI_BUILDING) {
-			BuildingClass const * building = static_cast<BuildingClass const *>(object);
-			capturable = (((BuildingTypeClass const *)object->TClass)->IsNeedsEngineer && ((InfantryClass const *)this)->Class->IsEngineer && object->House != House)
-				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
-		}
-		if (!capturable) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	Determine if the target is theoretically allowed to be a target. If
-	**	not, then bail.
-	*/
 	TechnoTypeClass const * tclass = object->TClass;
-	if (!tclass->IsLegalTarget) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);		// Legality failure.
-	}
-
-	if (tclass->IsTrain && RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	// A disguise defeats the scan unless this type, or the rules for a computer house, see through it.
-	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
-	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
-		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
-	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
-	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
-		UnitClass const * vehicle = static_cast<UnitClass const *>(object);
-		if (vehicle->Is_Disguised_As(House)) {
-			int const side = House->Class->Side;
-			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
-			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-	/*
-	**	If only allowed to attack civilians, then eliminate all other types.
-	*/
-	if (method & THREAT_CIVILIANS) {
-		object->Owner_HouseClass(); /// The result is unused.
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	If the scan is limited to capturable buildings only, then bail if the examined
-	**	object isn't a capturable building.
-	*/
-	if ((method & THREAT_CAPTURE) && (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsCaptureable)) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	/*
-	**	SPECIAL CASE: Friendly units won't automatically fire on buildings
-	**	if the building is not aggressive. That is, unless it is part of a team. A team
-	**	is allowed to pick any target it so chooses.
-	*/
-	// A weapon that reaches nowhere leaves the building as harmless as an unarmed one.
-	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
-			House->Is_Human_Player() && !object->Considered_Vehicle() &&
-			otype == RTTI_BUILDING &&
-			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
-
-		if (!engineer) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	if (engineer) {
-		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	/*
-	**	If the search is restricted to Tiberium processing objects, then
-	**	perform the special qualification check now.
-	*/
-	if (method & THREAT_TIBERIUM) {
-		if (tclass->Capacity == 0) {
-			BEnd(BENCH_EVAL_OBJECT);
-			return(false);
-		}
-	}
-
-	CellClass * cell_this = &Map[Get_Coord()];
-	CellClass * cell_that = &Map[object->Get_Coord()];
-	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
-
-	bool webbysecondary = false;
-	WarheadTypeClass const * wh = NULL;
-	WeaponTypeClass const * secondary = SecondaryWeapon;
-	if (secondary != NULL) {
-		wh = secondary->WarheadPtr;
-		if (wh != NULL && wh->IsWebby) {
-			webbysecondary = true;
-		}
-	}
-
-	if (!webbysecondary) {
-		WeaponTypeClass const * primary = PrimaryWeapon;
-		if (primary != NULL) {
-			wh = primary->WarheadPtr;
-		} else {
-			wh = NULL;
-		}
-	}
-
-	if (wh && wh->IsWebby) {
-		if (object->RTTI == RTTI_INFANTRY) {
-			InfantryClass const * infantry = dynamic_cast<const InfantryClass *>(object);
-			if (infantry != NULL && infantry->ProneStruggleTimer > wh->WebDuration / 4) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
-			}
-		}
-	}
-
-
-	/*
-	**	A VHPScan=Strong scan passes over a target whose estimated health is spent (TechnoClass::GreatestThreat's
-	**	threat filter, 0x6F7CA0).
-	*/
-	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
-		BEnd(BENCH_EVAL_OBJECT);
-		return(false);
-	}
 
 	/*
 	**	If this target value is better than the previously recorded best
@@ -2857,14 +2860,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (method & THREAT_OCCUPIABLE) {
 		if (otype != RTTI_BUILDING || ((BuildingTypeClass const *)tclass)->MaxNumberOccupants < 1) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += ((BuildingTypeClass const *)tclass)->MaxNumberOccupants * 1000;
 	}
 	if (method & THREAT_TECH) {
 		if (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsNeedsEngineer) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += 1000;
@@ -2911,11 +2912,9 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				ThreatCandidates.emplace_back(candidate, value);
 			}
 		}
-		BEnd(BENCH_EVAL_OBJECT);
 		return(true);
 	}
 	value = 0;
-	BEnd(BENCH_EVAL_OBJECT);
 	return(false);
 }
 
@@ -3118,47 +3117,6 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 	*/
 	BEnd(BENCH_EVAL_WALL);
 	return(Weapon_Range(0) - Distance(cell));
-}
-
-
-namespace {
-
-// Counts a ring walk whose inputs match an earlier walk in the same game frame. Recording only.
-void Count_Ring_Walk_Key(Cell const & cell, int house, void const * type, int zone, int method, int crange)
-{
-	static int key_frame = -1;
-	static std::set<std::tuple<int, int, int, void const *, int, int, int>> keys;
-
-	if (Frame != key_frame) {
-		keys.clear();
-		key_frame = Frame;
-	}
-	if (keys.insert(std::make_tuple(static_cast<int>(cell.X), static_cast<int>(cell.Y), house, type, zone, method, crange)).second) {
-		Perf_Count(PERF_COUNT_RING_KEYS);
-	} else {
-		Perf_Count(PERF_COUNT_RING_KEY_REPEATS);
-	}
-}
-
-
-// Counts a ring cell with no techno in either occupier chain, and one with a wall overlay.
-void Count_Ring_Cell_Contents(Cell const & cell)
-{
-	CellClass const & cellref = Map[cell];
-	bool techno = false;
-	for (int bridge = 0; bridge < 2 && !techno; bridge++) {
-		for (ObjectClass * object = cellref.Cell_Occupier(bridge != 0); object != NULL && !techno; object = object->Next) {
-			techno = Dynamic_Cast<TechnoClass *>(object) != NULL;
-		}
-	}
-	if (!techno) {
-		Perf_Count(PERF_COUNT_RING_CELLS_EMPTY);
-	}
-	if (cellref.Overlay != OVERLAY_NONE && OverlayTypes[cellref.Overlay]->IsWall) {
-		Perf_Count(PERF_COUNT_RING_CELLS_WALL);
-	}
-}
-
 }
 
 
@@ -3370,18 +3328,12 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
 		if (scan_cells) {
 			Perf_Count(PERF_COUNT_SCANS_RING);
-			if (Perf_Enabled) {
-				Count_Ring_Walk_Key(cell, House->HeapID, TClass, zone, method, crange);
-			}
 		}
 		PerfScope ring_scope(PERF_FRAME_THREAT_RING);
 		// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
 		auto Visit_Ring_Cell = [&](Cell const & newcell) {
 			if (Map.In_Radar(newcell)) {
 				Perf_Count(PERF_COUNT_RING_CELLS);
-				if (Perf_Enabled) {
-					Count_Ring_Cell_Contents(newcell);
-				}
 				if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
 					if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
 					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
@@ -3795,6 +3747,35 @@ void TechnoClass::Turret_Recoil_AI(void)
 }
 
 
+void TechnoClass::Powered_Unit_AI(void)
+{
+	// A PoweredUnit object shuts down while its owner has no working control structure for its
+	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
+		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
+		if (off != IsDeactivated) {
+			IsDeactivated = off;
+			FootClass * foot = (FootClass *)this;
+			if (off) {
+				DebugString("Powered unit: %s shuts down\n", TClass->Name());
+				Sound_Effect(TClass->DeactivateSound, Center_Coord());
+				Assign_Target(NULL);
+				foot->Assign_Destination(NULL);
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_Off();
+				}
+			} else {
+				DebugString("Powered unit: %s starts up\n", TClass->Name());
+				Sound_Effect(TClass->ActivateSound, Center_Coord());
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_On();
+				}
+			}
+		}
+	}
+}
+
+
 void TechnoClass::AI(void)
 {
 	Turret_Recoil_AI();
@@ -3867,30 +3848,7 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
-	// A PoweredUnit object shuts down while its owner has no working control structure for its
-	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
-	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
-		if (off != IsDeactivated) {
-			IsDeactivated = off;
-			FootClass * foot = (FootClass *)this;
-			if (off) {
-				DebugString("Powered unit: %s shuts down\n", TClass->Name());
-				Sound_Effect(TClass->DeactivateSound, Center_Coord());
-				Assign_Target(NULL);
-				foot->Assign_Destination(NULL);
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_Off();
-				}
-			} else {
-				DebugString("Powered unit: %s starts up\n", TClass->Name());
-				Sound_Effect(TClass->ActivateSound, Center_Coord());
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_On();
-				}
-			}
-		}
-	}
+	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
 	if (DrainingMe != NULL && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsRefinery && Rule->DrainMoneyFrameDelay > 0 && Frame % Rule->DrainMoneyFrameDelay == 0) {
@@ -3961,7 +3919,7 @@ void TechnoClass::AI(void)
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
 	 */
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
@@ -4433,7 +4391,7 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 	**	cloaking either. The range is the one the weapon chosen for the target has, as
 	**	TechnoClass::IsReadyToCloak (0x6FBDC0) tests it through IsCloseEnoughToAttack.
 	*/
-	if (TarCom != NULL && Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
+	if (TarCom != NULL && Is_Close_Enough_With_Selected_Weapon(TarCom)) {
 		return(false);
 	}
 
@@ -4570,22 +4528,22 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		&& !cellptr->Is_Sensed(House) && techno->House != House
 		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
 
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	/*
 	**	A falling object is too busy falling to fire.
 	*/
 	if (IsFalling) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	if (Is_Immobilized()) {
 		if (RTTI != RTTI_UNIT) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 	}
 
@@ -4594,7 +4552,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	*/
 	weapon = Get_Class_Weapon_Data(which)->Weapon;
 	if (weapon == NULL) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
@@ -4655,7 +4613,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	// A paralyzed object launches no spawned craft, and a paralyzed Organic one does not fire at all (TechnoClass::GetFireError, 0x6FC339).
 	if (Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
 		if (weapon->IsSpawner) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 		if (TClass->IsOrganic) {
 			return(FIRE_ILLEGAL);
@@ -4708,7 +4666,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	other_weapon = Get_Class_Weapon_Data(which == 0 ? 1 : 0)->Weapon;
@@ -4718,7 +4676,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 			|| (other_weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
 			|| (other_weapon->IsSonic && Wave)) {
 
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 	}
 
@@ -4799,9 +4757,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_RANGE);
 	}
 	return(FIRE_OK);
-
-CANT_FIRE:
-	return(FIRE_CANT);
 }
 
 
@@ -7045,9 +7000,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				DrainingMe->Stop_Drain();
 			}
 			Release_Locomotor(false);
-			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-				TemporalImUsing->Let_Go();
-			}
+			Release_Warp();
 
 			/*
 			 * Play the death voice response, heard only for an object the local player controls
@@ -7348,7 +7301,7 @@ void TechnoClass::Pay_Bounty(TechnoClass * source) const
 		return;
 	}
 
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	int const value = TClass->BountyValue[rank];
 	if (value > 0) {
 		source->House->Refund_Money(value);
@@ -8687,9 +8640,7 @@ void TechnoClass::Delete_Me(void)
 	if (SpawnManager) {
 		SpawnManager->Kill_Nodes();
 	}
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
 	// A dying victim lets its parasite out where it stood, unless the parasite is doomed (ParasiteClass::PointerExpired, 0x62A260).
 	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
@@ -12770,6 +12721,30 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 
 
 /// <summary>
+/// Records a kill of victim for the object that let this vehicle go, or for its house. With neither,
+/// the kill is credited to this vehicle when fallback_to_self is set and is not recorded otherwise.
+/// </summary>
+void TechnoClass::Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self)
+{
+	if (LetGoBy != NULL) {
+		victim->Record_The_Kill(LetGoBy);
+	} else if (LetGoByHouse != NULL) {
+		victim->Record_The_Kill_By_House(LetGoByHouse);
+	} else if (fallback_to_self) {
+		victim->Record_The_Kill(this);
+	}
+}
+
+
+void TechnoClass::Release_Warp(void)
+{
+	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+		TemporalImUsing->Let_Go();
+	}
+}
+
+
+/// <summary>
 /// Crushes what stands where this vehicle lands after a locomotor let it go in the air
 /// (JumpjetLocomotionClass, 0x54CA90). A vehicle that lands on a bridge deck checks the objects on
 /// the deck, and any other checks the ground. Only the first object on the cell, apart from this one,
@@ -12798,13 +12773,7 @@ bool TechnoClass::Crush_On_Landing(void)
 			ObjectClass * next = object->Next;
 			if (object != this) {
 				Sound_Effect(object->Class_Of()->CrushSound, PositionCoord);
-				if (LetGoBy != NULL) {
-					object->Record_The_Kill(LetGoBy);
-				} else if (LetGoByHouse != NULL) {
-					object->Record_The_Kill_By_House(LetGoByHouse);
-				} else {
-					object->Record_The_Kill(this);
-				}
+				Credit_Let_Go_Kill(object, true);
 				object->Mark(MARK_UP);
 				object->Limbo();
 				object->Delete_Me();
@@ -12837,11 +12806,7 @@ void TechnoClass::Explode_On_Landing(void)
 		Explosion_Damage(PositionCoord, damage, owner, Rule->C4Warhead, true, LetGoByHouse);
 	}
 	if (IsActive) {
-		if (LetGoBy != NULL) {
-			Record_The_Kill(LetGoBy);
-		} else if (LetGoByHouse != NULL) {
-			Record_The_Kill_By_House(LetGoByHouse);
-		}
+		Credit_Let_Go_Kill(this, false);
 		Delete_Me();
 	}
 }

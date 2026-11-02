@@ -881,6 +881,9 @@ class TechnoClass :	public RadioClass,
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;
+		void Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self);
+		void Release_Warp(void);
+		void Powered_Unit_AI(void);
 		void Spring_Kill_Events(bool credited);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
@@ -896,6 +899,7 @@ class TechnoClass :	public RadioClass,
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
 		bool Is_Close_Enough(AbstractClass * target, int which=0) const;
+		bool Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const;
 		bool Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		Coord Fire_Origin(AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		int Elevation_Range_Bonus(AbstractClass const * target, bool withheight = true) const;
@@ -932,6 +936,9 @@ class TechnoClass :	public RadioClass,
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		bool Evaluate_Cell(ThreatType method, int mask, Cell const & cell, int range, TechnoClass const ** object, int & value, int zone=0) const;
 		bool Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone=-1, Coord const & coord=COORD_NONE) const;
+		bool Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const;
+		bool Passes_Mirage_Roll(TechnoClass const * object) const;
+		bool Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const;
 		int Evaluate_Just_Cell(Cell const & cell) const;
 
 		void Assign_Archive_Target(AbstractClass * target);

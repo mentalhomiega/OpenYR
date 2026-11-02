@@ -1959,7 +1959,7 @@ void BuildingClass::AI(void)
 	}
 
 	// A target the structure's weapon cannot reach with a clear line is dropped (BuildingClass::Update, 0x43FB20, IsCloseEnoughToAttack).
-	if (TarCom != NULL && !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)) && (TarCom->RTTI != RTTI_AIRCRAFT || TarCom->On_Ground())) {
+	if (TarCom != NULL && !Is_Close_Enough_With_Selected_Weapon(TarCom) && (TarCom->RTTI != RTTI_AIRCRAFT || TarCom->On_Ground())) {
 		Assign_Target(NULL);
 	}
 }
@@ -2796,7 +2796,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				!House->Is_Ally(source) &&
 				PrimaryWeapon != NULL &&
 				!PrimaryWeapon->Bullet->IsAntiAircraft &&
-				(TarCom == NULL || !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)))) {
+				(TarCom == NULL || !Is_Close_Enough_With_Selected_Weapon(TarCom))) {
 
 				if (source->RTTI != RTTI_AIRCRAFT && (!House->Is_Human_Player() || Rule->IsSmartDefense)) {
 					Assign_Target(source);
@@ -3204,7 +3204,7 @@ void BuildingClass::Assign_Target(AbstractClass * target)
 		}
 	} else {
 		// A target the weapon cannot reach with a clear line is refused (BuildingClass::SetTarget, 0x443B90, IsCloseEnoughToAttack).
-		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !Is_Close_Enough(target, What_Weapon_Should_I_Use(target))) {
+		if (target != NULL && PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiAircraft && !Is_Close_Enough_With_Selected_Weapon(target)) {
 			target = NULL;
 			BASECLASS::Assign_Target(target);
 			if (Class->IsTickTank || Class->IsArtillary || Class->IsJuggernaut) {
@@ -4581,7 +4581,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 	// gets none even against an airborne object (BuildingClass::MouseOverObject, 0x447210, AG read at 0x447394).
 	// The weapon must also be able to take the shot (TechnoClass::MouseOverObject, 0x6FFEC0, IsCloseEnough).
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
-		if (!Is_Close_Enough((ObjectClass *)object, What_Weapon_Should_I_Use((ObjectClass *)object)) || !PrimaryWeapon->Bullet->IsAntiGround) {
+		if (!Is_Close_Enough_With_Selected_Weapon((ObjectClass *)object) || !PrimaryWeapon->Bullet->IsAntiGround) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;

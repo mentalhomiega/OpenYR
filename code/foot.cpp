@@ -713,15 +713,15 @@ int FootClass::Do_MISSION_ATTACK_MOVE(void)
 
 			// The unit holds the target while it is within reach. Out of reach, it keeps a threat it took while that stays within reach,
 			// and otherwise scans for another threat within reach and falls back to the ordered target.
-			if (Is_Close_Enough(ordered, What_Weapon_Should_I_Use(ordered))) {
+			if (Is_Close_Enough_With_Selected_Weapon(ordered)) {
 				if (TarCom == NULL) {
 					Assign_Target(ordered);
 				}
-			} else if (TarCom == NULL || TarCom == ordered || !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
+			} else if (TarCom == NULL || TarCom == ordered || !Is_Close_Enough_With_Selected_Weapon(TarCom)) {
 				Perf_Count(PERF_COUNT_SCAN_MISSION);
 				AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 				ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
-				AbstractClass * next = (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) ? target : ordered;
+				AbstractClass * next = (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) ? target : ordered;
 				if (TarCom != next) {
 					Assign_Target(next);
 				}
@@ -736,7 +736,7 @@ int FootClass::Do_MISSION_ATTACK_MOVE(void)
 			Perf_Count(PERF_COUNT_SCAN_MISSION);
 			AbstractClass * target = Greatest_Threat(THREAT_AREA, Get_Coord(), false);
 			ObjectClass * optr = (target != NULL) ? target->As_ObjectClass() : NULL;
-			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+			if (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) {
 				ArchiveTarget = NavCom;
 				Assign_Destination(NULL);
 				Assign_Target(target);
@@ -752,7 +752,7 @@ int FootClass::Do_MISSION_ATTACK_MOVE(void)
 
 		case ATTACK_MOVE_ENGAGE: {
 			ObjectClass * optr = (TarCom != NULL) ? TarCom->As_ObjectClass() : NULL;
-			if (optr != NULL && Is_Close_Enough(optr, What_Weapon_Should_I_Use(optr))) {
+			if (optr != NULL && Is_Close_Enough_With_Selected_Weapon(optr)) {
 				Approach_Target();
 				if (TarCom != NULL) {
 					break;
@@ -1351,18 +1351,7 @@ bool FootClass::Crash(TechnoClass * source)
 	}
 
 	if (Strength > 0) {
-		if (source != NULL && Tag != NULL) {
-			Tag->Spring(TEVENT_FIRST_DAMAGED, this);
-		}
-		if (Tag != NULL && IsActive) {
-			Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
-		}
-		if (Tag != NULL) {
-			if (IsActive && source != NULL) {
-				Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
-			}
-		}
-		if (!IsActive) {
+		if (!Spring_First_Damaged(source)) {
 			return(true);
 		}
 		Record_The_Kill(source);

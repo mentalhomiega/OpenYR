@@ -20,7 +20,9 @@ extern Benchmark * Benches;
 #ifdef _DEBUG
 #define	BStart(a)	if (Benches != NULL) Benches[a].Begin()
 #define	BEnd(a)		if (Benches != NULL) Benches[a].End()
+#define	BENCH_SCOPE(a)	BenchScopeClass bench_scope(a)
 #else
 #define	BStart(a)
 #define	BEnd(a)
+#define	BENCH_SCOPE(a)
 #endif
