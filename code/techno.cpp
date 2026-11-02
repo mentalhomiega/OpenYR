@@ -4039,8 +4039,8 @@ void TechnoClass::AI(void)
 	/*
 	 * TechnoClass::Update (0x6F9E50, 0x6FA65A to 0x6FA6F5) runs this after the mission's own update. Once the
 	 * targeting timer has run out, an object on a move, harvest or guard mission that can opportunity-fire takes a
-	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). An attack-move mega mission, which
-	 * gamemd tests first, is not ported.
+	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). Attack-move scans in
+	 * FootClass::Do_MISSION_ATTACK_MOVE. The attack-move mega mission check that gamemd runs first is not mirrored here.
 	 */
 	if (Targeting_Timer_Finished() && (Mission == MISSION_MOVE || Mission == MISSION_HARVEST || Mission == MISSION_GUARD) && Can_Opportunity_Fire()) {
 		Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE);
