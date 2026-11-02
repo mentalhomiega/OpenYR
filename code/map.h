@@ -240,6 +240,7 @@ class MapClass: public GScreenClass
 		void Weaken_Deck_West(Cell const & cell);
 		void Weaken_Deck_South(Cell const & cell);
 		void Weaken_Deck_North(Cell const & cell);
+		void Weaken_Deck_Step(Cell const & cell, FacingType dir, bool east_west, bool towards_far);
 		void Collapse_Deck_Section(Cell const & cell, bool east_west);
 		void Collapse_Deck_Step(Cell const & cell, FacingType dir, bool east_west, bool towards_far);
 		bool Blow_Up_Train_Bridge_At(Cell const & cell);
