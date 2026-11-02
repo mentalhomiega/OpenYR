@@ -28,6 +28,7 @@
 #include "hud.h"
 #include "houstype.h"
 #include "logic.h"
+#include "mainloop.h"
 #include "mapgen.h"
 #include "netshare.h"
 #include "nettiming.h"
@@ -282,12 +283,7 @@ NodeNameType * New_Node(char const * name, int house, int color)
 	std::snprintf(node->Name, sizeof(node->Name), "%s", name);
 	node->Player.House = house;
 	node->Player.Color = color;
-	node->Player.CustomColor = 0;
 	node->Player.ProcessTime = -1;
-	node->Player.SpawnChoice = -1;
-	node->Player.Handicap = -1;
-	node->Player.AlliesMask = 0;
-	node->Player.IsObserver = false;
 	return(node);
 }
 
@@ -397,14 +393,7 @@ void Logic_Frame(void)
 {
 	DisplayClass::Layer[LAYER_GROUND].Sort();
 
-	if (Options.Render_Frame_Rate() > 0) {
-		for (int index = 0; index < Feet.Count(); index++) {
-			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
-		}
-		for (int index = 0; index < Bullets.Count(); index++) {
-			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
-		}
-	}
+	Remember_Render_Coords();
 
 	Logic.AI();
 	Queue_AI();
@@ -585,12 +574,6 @@ bool Shellmap_Running(void)
 bool Shellmap_In_Scope(void)
 {
 	return(ScopeDepth > 0);
-}
-
-
-bool Shellmap_Silent(void)
-{
-	return(Running);
 }
 
 

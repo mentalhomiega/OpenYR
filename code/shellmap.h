@@ -26,7 +26,10 @@ bool Shellmap_Running(void);
 bool Shellmap_In_Scope(void);
 
 // True while the battle runs, when its sound effects and ambient sounds are not played.
-bool Shellmap_Silent(void);
+inline bool Shellmap_Silent(void)
+{
+	return(Shellmap_Running());
+}
 
 // Loads a battle on a random map when the menus should have one and none is running.
 void Shellmap_Start(void);
