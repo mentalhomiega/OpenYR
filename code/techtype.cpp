@@ -777,6 +777,50 @@ static void Keep_Recoil_Frames(int & frames)
 }
 
 
+// Maps an EMP.Threshold= word to its value, matched without case. Any other text is read as a number.
+static int Emp_Threshold_Named(char const * name)
+{
+	struct ThresholdName {
+		char const * Name;
+		int Threshold;
+	};
+	static ThresholdName const NAMES[] = {
+		{"inair", -1},
+		{"yes", 1},
+		{"true", 1},
+		{"no", 0},
+		{"false", 0},
+	};
+	for (ThresholdName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Threshold);
+		}
+	}
+	return(atoi(name));
+}
+
+
+// Maps a VHPScan= name to its scan type, matched without case. A name not listed returns the fallback.
+static int VHPScan_Named(char const * name, int fallback)
+{
+	struct ScanName {
+		char const * Name;
+		VHPScanType Scan;
+	};
+	static ScanName const NAMES[] = {
+		{"none", VHP_SCAN_NONE},
+		{"normal", VHP_SCAN_NORMAL},
+		{"strong", VHP_SCAN_STRONG},
+	};
+	for (ScanName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Scan);
+		}
+	}
+	return(fallback);
+}
+
+
 /***********************************************************************************************
  * TechnoTypeClass::Read_INI -- Reads the techno type data from the INI database.              *
  *                                                                                             *
@@ -977,24 +1021,10 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			ReversedAs = value;
 		}
 		if (ini.Get_String(Name(), "EMP.Threshold", "", value, sizeof(value)) > 0) {
-			if (stricmp(value, "inair") == 0) {
-				EMPThreshold = -1;
-			} else if (stricmp(value, "yes") == 0 || stricmp(value, "true") == 0) {
-				EMPThreshold = 1;
-			} else if (stricmp(value, "no") == 0 || stricmp(value, "false") == 0) {
-				EMPThreshold = 0;
-			} else {
-				EMPThreshold = atoi(value);
-			}
+			EMPThreshold = Emp_Threshold_Named(value);
 		}
 		if (ini.Get_String(Name(), "VHPScan", "", value, sizeof(value)) > 0) {
-			if (stricmp(value, "none") == 0) {
-				VHPScan = VHP_SCAN_NONE;
-			} else if (stricmp(value, "normal") == 0) {
-				VHPScan = VHP_SCAN_NORMAL;
-			} else if (stricmp(value, "strong") == 0) {
-				VHPScan = VHP_SCAN_STRONG;
-			}
+			VHPScan = VHPScan_Named(value, VHPScan);
 		}
 		ChronoInSound = ini.Get_VocType(Name(), "ChronoInSound", ChronoInSound);
 		ChronoOutSound = ini.Get_VocType(Name(), "ChronoOutSound", ChronoOutSound);

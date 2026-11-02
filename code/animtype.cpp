@@ -97,6 +97,29 @@ static void * Load_Demand_Shape(char * name)
 }
 
 
+// Maps a Layer= name to its layer, matched without case. A name not listed returns the fallback.
+static LayerType Layer_Named(char const * name, LayerType fallback)
+{
+	struct LayerName {
+		char const * Name;
+		LayerType Layer;
+	};
+	static LayerName const NAMES[] = {
+		{"underground", LAYER_UNDERGROUND},
+		{"surface", LAYER_SURFACE},
+		{"ground", LAYER_GROUND},
+		{"air", LAYER_AIR},
+		{"top", LAYER_TOP},
+	};
+	for (LayerName const & entry : NAMES) {
+		if (stricmp(name, entry.Name) == 0) {
+			return(entry.Layer);
+		}
+	}
+	return(fallback);
+}
+
+
 /***********************************************************************************************
  * AnimTypeClass::AnimTypeClass -- Constructor for animation types.                            *
  *                                                                                             *
@@ -463,17 +486,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		char layer_name[16];
 		if (ini.Get_String(Name(), "Layer", "", layer_name, sizeof(layer_name)) > 0) {
-			if (stricmp(layer_name, "underground") == 0) {
-				layer = LAYER_UNDERGROUND;
-			} else if (stricmp(layer_name, "surface") == 0) {
-				layer = LAYER_SURFACE;
-			} else if (stricmp(layer_name, "ground") == 0) {
-				layer = LAYER_GROUND;
-			} else if (stricmp(layer_name, "air") == 0) {
-				layer = LAYER_AIR;
-			} else if (stricmp(layer_name, "top") == 0) {
-				layer = LAYER_TOP;
-			}
+			layer = Layer_Named(layer_name, layer);
 		}
 		Layer = layer;
 		IsTranslucent = ini.Get_Bool(Name(), "Translucent", IsTranslucent);
