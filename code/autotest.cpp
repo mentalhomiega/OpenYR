@@ -2286,7 +2286,7 @@ static void Bridge_Census_Step(StepType const & step)
 				(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge, (int)cptr->IsBridgeEastWest,
 				(int)cptr->Is_Tile_Train_Bridge(), (int)cptr->Is_Tile_Bridge());
 		}
-		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
+		bool const is_high = cptr->Is_Overlay_Bridge();
 		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
 		if (!is_high && !is_railway) {
 			continue;
@@ -2440,7 +2440,7 @@ static void Bridge_Area_Step(StepType const & step)
 static void Repair_Bridge_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	DebugString("AUTOTEST   repairbridge %d,%d %d\n", x, step.X, (int)Map.Can_Repair_Bridge(Cell(x, step.X)));
+	DebugString("AUTOTEST   repairbridge %d,%d %d\n", x, step.X, (int)Map.Can_Repair_Bridge(step.Argument_Cell()));
 }
 
 
@@ -2451,7 +2451,7 @@ static void Repair_Bridge_Step(StepType const & step)
 static void Bridge_Hit_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	bool const destroyed = Map.Damage_Bridge(Cell(x, step.X));
+	bool const destroyed = Map.Damage_Bridge(step.Argument_Cell());
 	DebugString("AUTOTEST   bridgehit %d,%d %d\n", x, step.X, (int)destroyed);
 }
 
@@ -2463,7 +2463,7 @@ static void Bridge_Hit_Step(StepType const & step)
 static void Bridge_Hut_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	Map.Destroy_Bridge_At(Cell(x, step.X));
+	Map.Destroy_Bridge_At(step.Argument_Cell());
 	DebugString("AUTOTEST   bridgehut %d,%d\n", x, step.X);
 }
 
@@ -2478,7 +2478,7 @@ static void Bridge_Decks_Step(StepType const & step)
 	int left = 0;
 	for (int x = first; x <= step.X; x++) {
 		CellClass const & c = Map[Cell(x, step.Y)];
-		if ((c.Overlay == OVERLAY_BRIDGE1 || c.Overlay == OVERLAY_BRIDGE2) && c.IsBridgeDeck) {
+		if (c.Is_Overlay_Bridge() && c.IsBridgeDeck) {
 			left++;
 		}
 	}
@@ -2494,7 +2494,7 @@ static void Bridge_Decks_Step(StepType const & step)
 static void Concrete_Hit_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	bool const destroyed = Map.Damage_Concrete_Bridge(Cell(x, step.X));
+	bool const destroyed = Map.Damage_Concrete_Bridge(step.Argument_Cell());
 	DebugString("AUTOTEST   concretehit %d,%d %d\n", x, step.X, (int)destroyed);
 }
 
@@ -2506,7 +2506,7 @@ static void Concrete_Hit_Step(StepType const & step)
 static void Passable_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	CellClass const & c = Map[Cell(x, step.X)];
+	CellClass const & c = Map[step.Argument_Cell()];
 	DebugString("AUTOTEST   passable %d,%d foot %d track %d overlay %d\n", x, step.X,
 		(int)c.Is_Clear_To_Move(SPEED_FOOT, true, true), (int)c.Is_Clear_To_Move(SPEED_TRACK, true, true), (int)c.Overlay);
 }
