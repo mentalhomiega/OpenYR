@@ -1526,11 +1526,8 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			if (Session.DrawMPDebugStats && stalling) {
 				Multiplayer_Debug_Print();
 			}
-			int show_stall = 1;
-			if (stall_drawn && !(Session.ShowInternetDebug && stalling)) {
-				show_stall = 0;
-			}
-			if (show_stall) {
+			bool const count_now = !stall_drawn || (Session.ShowInternetDebug && stalling);
+			if (count_now) {
 				if (frame_stall != -1) {
 					Session.ConnectionStats[frame_stall].FrameSyncStalls++;
 				}
