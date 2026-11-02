@@ -4019,7 +4019,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	Dash_Table_Restore const dashtable;
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
 
 	// The number is printed in color scheme 2, or 0 on a snow theater, as gamemd does (0x6DAD60). Each [Colors]
 	// entry makes two schemes, so scheme 2 is the plain one of the second entry (Gold) and scheme 0 the first
@@ -4262,7 +4262,7 @@ void Tactical::Draw_Planned_Orders(void)
 		}
 	}
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
 	for (Leg const & leg : legs) {
 		unsigned const node = pixel(leg.IsSelected ? white : black);
 		unsigned const branch = pixel(leg.IsRunning ? Planned_Blend(leg.Owner, white, 0x64) : Planned_Blend(leg.Owner, black, 0x50));
