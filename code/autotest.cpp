@@ -5173,8 +5173,8 @@ static void Buildtime_Step(StepType const & step)
 static void Highcell_Step(StepType const &)
 {
 	CellClass const * highest = NULL;
-	for (int y = 0; y < 512; y++) {
-		for (int x = 0; x < 512; x++) {
+	for (int y = 0; y < MAP_CELL_H; y++) {
+		for (int x = 0; x < MAP_CELL_W; x++) {
 			if (!Map.In_Radar(Cell(x, y))) continue;
 			CellClass const * cell = &Map[Cell(x, y)];
 			if (highest == NULL || cell->Height > highest->Height) highest = cell;
@@ -5292,8 +5292,8 @@ static void Triggers_Step(StepType const & step)
 			DebugString("AUTOTEST   tagged %s of %s at %d,%d tag %s\n", techno->TClass->Name(), techno->House != NULL ? techno->House->Class->Name() : "?", techno->Get_Cell().X, techno->Get_Cell().Y, techno->Tag->Class != NULL ? (char const *)techno->Tag->Class->IniName : "?");
 		}
 	}
-	for (int y = 0; y < 512; y++) {
-		for (int x = 0; x < 512; x++) {
+	for (int y = 0; y < MAP_CELL_H; y++) {
+		for (int x = 0; x < MAP_CELL_W; x++) {
 			if (!Map.In_Radar(Cell(x, y))) continue;
 			TagClass const * tag = Map[Cell(x, y)].Tag;
 			if (tag != NULL) DebugString("AUTOTEST   tagged cell %d,%d tag %s\n", x, y, tag->Class != NULL ? (char const *)tag->Class->IniName : "none");
