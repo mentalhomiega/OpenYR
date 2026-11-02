@@ -2561,6 +2561,20 @@ int MapClass::Cell_Threat(Cell const & cell, HouseClass const & house)
 }
 
 
+/*
+ * The index of the first crate slot that holds no crate, or -1 when every slot is in use.
+ */
+static int Free_Crate_Slot(CrateClass const * crates, int count)
+{
+	for (int index = 0; index < count; index++) {
+		if (!crates[index].Is_Valid()) {
+			return(index);
+		}
+	}
+	return(-1);
+}
+
+
 /***********************************************************************************************
  * MapClass::Place_Random_Crate -- Places a crate at random location on map.                   *
  *                                                                                             *
@@ -2582,11 +2596,8 @@ bool MapClass::Place_Random_Crate(void)
 	**	Find a crate index that is free for assignment. If there are
 	**	no free slots, then return with failure to place crate.
 	*/
-	int crateindex = 0;
-	for (crateindex = 0; crateindex < ARRAY_SIZE(Crates); crateindex++) {
-		if (!Crates[crateindex].Is_Valid()) break;
-	}
-	if (crateindex == ARRAY_SIZE(Crates)) {
+	int const crateindex = Free_Crate_Slot(Crates, ARRAY_SIZE(Crates));
+	if (crateindex == -1) {
 		return(false);
 	}
 
@@ -2611,11 +2622,8 @@ bool MapClass::Place_Random_Crate(void)
 /// </summary>
 bool MapClass::Place_Crate(Cell const & cell, int powerup)
 {
-	int crateindex = 0;
-	for (crateindex = 0; crateindex < ARRAY_SIZE(Crates); crateindex++) {
-		if (!Crates[crateindex].Is_Valid()) break;
-	}
-	if (crateindex == ARRAY_SIZE(Crates)) {
+	int const crateindex = Free_Crate_Slot(Crates, ARRAY_SIZE(Crates));
+	if (crateindex == -1) {
 		return(false);
 	}
 
