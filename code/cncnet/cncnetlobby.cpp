@@ -48,6 +48,12 @@ bool CnCNetLobbyClass::Same_Nick(std::string const & a, std::string const & b)
 }
 
 
+bool CnCNetLobbyClass::Is_Broadcast_Channel(std::string const & name) const
+{
+	return(Same_Nick(name, Config.BroadcastChannel));
+}
+
+
 bool CnCNetLobbyClass::Valid_Room_Channel(std::string const & channel) const
 {
 	std::size_t const prefix = Config.RoomPrefix.size();

@@ -514,6 +514,23 @@ void Test_Lobby_Private_Cap(void)
 }
 
 
+void Test_Broadcast_Channel(void)
+{
+	// GameID=ra2 names the broadcast channel after the game, so the default name is an ordinary channel.
+	CnCNetLobbyConfigType config;
+	config.BroadcastChannel = "#cncnet-ra2-games";
+	CnCNetLobbyClass lobby(config);
+	Check(lobby.Is_Broadcast_Channel("#cncnet-ra2-games") && lobby.Is_Broadcast_Channel("#CNCNET-RA2-GAMES"),
+		"broadcast channel: the configured name is the broadcast channel, case folded");
+	Check(!lobby.Is_Broadcast_Channel("#cncnet-yr-games") && !lobby.Is_Broadcast_Channel("#cncnet-ra2"),
+		"broadcast channel: the default name is not the broadcast channel once the config names another");
+
+	CnCNetLobbyClass const default_lobby{CnCNetLobbyConfigType()};
+	Check(default_lobby.Is_Broadcast_Channel("#cncnet-yr-games") && !default_lobby.Is_Broadcast_Channel("#cncnet-yr-game1234567"),
+		"broadcast channel: the default config names #cncnet-yr-games, not a room channel");
+}
+
+
 void Test_Quit(void)
 {
 	IRCClientClass client = Registered_Client(0);
@@ -1725,6 +1742,7 @@ int main(void)
 	Test_Quit();
 	Test_Lobby();
 	Test_Lobby_Private_Cap();
+	Test_Broadcast_Channel();
 	Test_SHA1();
 	Test_Room_Encoding();
 	Test_Local_Map();
