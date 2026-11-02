@@ -5717,9 +5717,6 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 }
 
 
-void Cloak_Cell_Occupiers(CellClass * cellptr);
-
-
 /// <summary>
 /// Looks around once each time SightTimer expires, while this object is in the air, moving now (a hovering
 /// jump jet is not), and owned by an ally of the local player; gamemd's FootClass::Update (0x4DA530) does the same for

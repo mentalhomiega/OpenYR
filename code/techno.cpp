@@ -130,7 +130,6 @@
 
 #include "always.h"
 #include "perfstat.h"
-#include "perfstat.h"
 
 #include "playerdisplay.h"
 #include "techno.h"
