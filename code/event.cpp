@@ -191,6 +191,14 @@ namespace {
 	}
 
 
+	// Adds a message about a house to the message list, shown for the rules' message delay.
+	void Add_House_Notice(HouseClass const * house, char const * text)
+	{
+		Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(house),
+			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	}
+
+
 	// Abandon_Production takes this in place of a heap index to mean whatever its factory
 	// currently holds.
 	constexpr int PRODUCTION_ID_NONE = -1;
@@ -1474,7 +1482,7 @@ void EventClass::Execute(void)
 				str = Fetch_String(TXT_PLAYER_CHANGED_SPEED);
 				if (str != NULL && strlen(str) != 0) {
 					sprintf(msg, str, Session.Shown_Name(house).c_str());
-					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+					Add_House_Notice(house, msg);
 				}
 			}
 			break;
@@ -1564,7 +1572,7 @@ void EventClass::Execute(void)
 				str = Fetch_String(TXT_PLAYER_CHANGED_LATENCY);
 				if (str != NULL && strlen(str) != 0) {
 					sprintf(msg, str, Session.Shown_Name(house).c_str());
-					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+					Add_House_Notice(house, msg);
 				}
 			}
 			break;
@@ -1620,8 +1628,7 @@ void EventClass::Execute(void)
 				char const * quality_name = Fetch_String(Network_Quality_Text_ID(quality));
 				if (format != NULL && quality_name != NULL && format[0] != '\0' && quality_name[0] != '\0') {
 					snprintf(msg, sizeof(msg), format, quality_name);
-					Session.Messages.Add_Message(NULL, 0, msg, House_Display_Scheme(house),
-						TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+					Add_House_Notice(house, msg);
 				}
 			}
 
