@@ -628,8 +628,9 @@ void Select_Type(std::string const & name)
 }
 
 
-void Place(std::string const & name)
+static void Place_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	TechnoTypeClass const * type = Find_Type(name);
 	if (type != NULL && type->Fetch_RTTI() != RTTI_BUILDINGTYPE) {
 		// A finished vehicle, aircraft or infantry leaves its factory on the sidebar's no-cell placement.
@@ -664,8 +665,11 @@ void Place(std::string const & name)
 
 
 // Queues the placement event for a finished structure on the given cell, as Place does for the cell it finds.
-void PlaceAt(std::string const & name, int x, int y)
+static void Placeat_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
+	int const x = step.X;
+	int const y = step.Y;
 	TechnoTypeClass const * type = Find_Type(name);
 	if (type == NULL || type->Fetch_RTTI() != RTTI_BUILDINGTYPE || PlayerPtr->ConYards.Count() == 0) {
 		DebugString("AUTOTEST placeat %s: no structure type or no construction yard\n", name.c_str());
@@ -782,8 +786,9 @@ void Computer_Move(std::string const & name, int x, int y)
 /// <summary>
 /// Puts the computer players' foot objects of that type on the hunt mission, with no target or destination.
 /// </summary>
-void Computer_Hunt(std::string const & name)
+static void Hunt_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->Is_Foot() && techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
@@ -803,8 +808,9 @@ void Computer_Hunt(std::string const & name)
 /// Puts the player's foot objects of that type on the repair mission, as a harvester with nothing to do is put on it,
 /// so UnitClass::Do_MISSION_REPAIR runs its depot search.
 /// </summary>
-void Player_Repair(std::string const & name)
+static void Repairmission_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
@@ -818,8 +824,9 @@ void Player_Repair(std::string const & name)
 /// <summary>
 /// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
 /// </summary>
-void Stop_Objects(std::string const & name)
+static void Stop_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	int sent = 0;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
@@ -853,8 +860,9 @@ BuildingClass * Nearest_Enemy_Building(void)
 }
 
 
-void Attack(std::string const & name)
+static void Attack_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	BuildingClass * target = Nearest_Enemy_Building();
 	if (target == NULL) {
 		DebugString("AUTOTEST attack: no enemy structure\n");
@@ -1001,7 +1009,7 @@ void Scatter_Objects(std::string const & name, int x, int y, bool forced, bool n
 }
 
 
-void Enemies(void)
+static void Enemies_Step(StepType const &)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * object = Buildings[index];
@@ -1029,7 +1037,7 @@ void Enemies(void)
 
 
 // Writes each house's base IQ (Control.IQ, the map's IQ= value) and effective IQ, and whether each [IQ] gate is open.
-void Iq(void)
+static void Iq_Step(StepType const &)
 {
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass const * house = Houses[index];
@@ -1046,7 +1054,7 @@ void Iq(void)
 }
 
 
-void Dump(void)
+static void Dump_Step(StepType const &)
 {
 	DebugString("AUTOTEST dump frame %d credits %d power %d drain %d\n", Frame, PlayerPtr->Available_Money(), PlayerPtr->Power, PlayerPtr->Drain);
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -1113,7 +1121,7 @@ void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
 /// Logs each value the state hash covers, one object per line, so two runs whose hashes differ
 /// can be compared line by line.
 /// </summary>
-void Log_State_Parts(void)
+static void Hashparts_Step(StepType const &)
 {
 	DebugString("AUTOTEST hashparts frame %d\n", Frame);
 	Log_Technos_Parts("building", Buildings);
@@ -2154,13 +2162,13 @@ static void Rocket_Step(StepType const & step)
 
 // cursor <TypeID> x y: writes the action and the mouse shape (its MouseCursorType number) that hovering
 // over the object on that cell shows for the player's first object of that type.
-static void Cursor_Probe(std::string const & type_name, int x, int y)
+static void Cursor_Step(StepType const & step)
 {
-	Cell const cell(x, y);
+	Cell const cell(step.X, step.Y);
 	ObjectClass * target = Map[cell].Cell_Occupier();
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			// The probed object is the only selection, so the action is the one its cursor shows.
 			Unselect_All();
 			techno->Select();
@@ -2176,8 +2184,11 @@ static void Cursor_Probe(std::string const & type_name, int x, int y)
 
 // swaim <SuperSection> x y: aims that super weapon as its cameo click does, then writes the action the cell and the
 // object under it give, and the mouse shape that action shows (Mouse_Left_Up). A cell under shroud is probed as shroud.
-static void SW_Aim_Probe(std::string const & section, int x, int y)
+static void Swaim_Step(StepType const & step)
 {
+	std::string const & section = step.Argument;
+	int const x = step.X;
+	int const y = step.Y;
 	SuperWeaponType const id = SuperWeaponTypeClass::From_Name(section.c_str());
 	if (id == SUPER_NONE) {
 		DebugString("AUTOTEST   swaim %s: no such super weapon\n", section.c_str());
@@ -2909,13 +2920,6 @@ static void Draw_Check_Step(StepType const & step)
 }
 
 
-// cursor <TypeID> x y: see Cursor_Probe.
-static void Cursor_Step(StepType const & step)
-{
-	Cursor_Probe(step.Argument, step.X, step.Y);
-}
-
-
 // shape: writes the mouse shape the map shows now, as the last hover set it (MouseType numbers, MOUSE_CAN_ATTACK is 21),
 // with the first frame of its cursor entry and the frames the loaded cursor sheet holds; the sheet has no art at a frame past its count.
 // shown is the shape on screen, which an override such as the panel's normal pointer can differ from.
@@ -2923,20 +2927,6 @@ static void Shape_Step(StepType const &)
 {
 	MouseType const shape = Map.Get_Mouse_Shape();
 	DebugString("AUTOTEST   shape %d frame %d sheet frames %d shown %d\n", (int)shape, Map.Get_Mouse_Start_Frame(shape), MouseClass::MouseShapes != NULL ? MouseClass::MouseShapes->Get_Count() : -1, (int)Map.Get_Displayed_Mouse_Shape());
-}
-
-
-// swaim <SuperSection> x y: see SW_Aim_Probe.
-static void Swaim_Step(StepType const & step)
-{
-	SW_Aim_Probe(step.Argument, step.X, step.Y);
-}
-
-
-// stop <TypeID>: see Stop_Objects.
-static void Stop_Step(StepType const & step)
-{
-	Stop_Objects(step.Argument);
 }
 
 
@@ -3264,13 +3254,6 @@ static void Infiltrate_Step(StepType const & step)
 		PlayerPtr->IsWarFactoryInfiltrated = true;
 	}
 	DebugString("AUTOTEST   infiltrate %s\n", step.Argument.c_str());
-}
-
-
-// iq: writes each house's base and effective IQ and which [IQ] gates it opens.
-static void Iq_Step(StepType const &)
-{
-	Iq();
 }
 
 
@@ -3618,18 +3601,6 @@ static void Produceai_Step(StepType const & step)
 }
 
 
-static void Place_Step(StepType const & step)
-{
-	Place(step.Argument);
-}
-
-
-static void Placeat_Step(StepType const & step)
-{
-	PlaceAt(step.Argument, step.X, step.Y);
-}
-
-
 static void Move_Step(StepType const & step)
 {
 	if (step.Command == "move") {
@@ -3639,26 +3610,6 @@ static void Move_Step(StepType const & step)
 	} else {
 		Computer_Move(step.Argument, step.X, step.Y);
 	}
-}
-
-
-// hunt <TypeID>: puts the computer players' objects of that type on the hunt mission (Computer_Hunt).
-static void Hunt_Step(StepType const & step)
-{
-	Computer_Hunt(step.Argument);
-}
-
-
-// repairmission <TypeID>: puts the player's objects of that type on the repair mission (Player_Repair).
-static void Repairmission_Step(StepType const & step)
-{
-	Player_Repair(step.Argument);
-}
-
-
-static void Attack_Step(StepType const & step)
-{
-	Attack(step.Argument);
 }
 
 
@@ -3808,12 +3759,6 @@ static void Listhouse_Step(StepType const & step)
 		DebugString("AUTOTEST   listhouse %s summary: active land units %d naval units %d infantry %d; objects live %d limbo %d; owned counts units %d infantry %d\n",
 			owner->Class->Name(), land, naval, infantry, live, limbo, owner->CurUnits, owner->CurInfantry);
 	}
-}
-
-
-static void Enemies_Step(StepType const &)
-{
-	Enemies();
 }
 
 
@@ -6706,12 +6651,6 @@ static void Fps_Step(StepType const &)
 }
 
 
-static void Dump_Step(StepType const &)
-{
-	Dump();
-}
-
-
 // sounds <0|1>: stops or starts writing every sound effect played to the log.
 static void Sounds_Step(StepType const & step)
 {
@@ -6830,13 +6769,6 @@ static void Scriptzoom_Step(StepType const &)
 static void Statedump_Step(StepType const & step)
 {
 	DebugString("AUTOTEST statedump %s: %s\n", step.Argument.c_str(), Dump_Game_State(step.Argument.c_str()) ? "written" : "failed");
-}
-
-
-// hashparts: logs each value the state hash covers, one object per line.
-static void Hashparts_Step(StepType const &)
-{
-	Log_State_Parts();
 }
 
 
