@@ -2300,6 +2300,12 @@ bool TechnoClass::Is_Close_Enough(AbstractClass * target, int which) const
 }
 
 
+bool TechnoClass::Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const
+{
+	return(Is_Close_Enough(target, What_Weapon_Should_I_Use(target)));
+}
+
+
 // Tests the line from the source to the target's center for walls and cliffs (FUN_006F7220, 0x6F7220; TrajectoryHelper::FindFirstImpenetrableObstacle, 0x4CC310).
 // A wall at a connecting-wall index does not block a warhead that destroys walls (Wall=yes). A weapon with Range=-2 has no line test.
 bool TechnoClass::Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const
@@ -4383,7 +4389,7 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 	**	cloaking either. The range is the one the weapon chosen for the target has, as
 	**	TechnoClass::IsReadyToCloak (0x6FBDC0) tests it through IsCloseEnoughToAttack.
 	*/
-	if (TarCom != NULL && Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom))) {
+	if (TarCom != NULL && Is_Close_Enough_With_Selected_Weapon(TarCom)) {
 		return(false);
 	}
 

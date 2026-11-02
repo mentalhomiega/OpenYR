@@ -897,6 +897,7 @@ class TechnoClass :	public RadioClass,
 		virtual bool In_Range(Coord const & coord, int which=0) const override;
 		virtual bool In_Range(AbstractClass * target, int which=0) const;
 		bool Is_Close_Enough(AbstractClass * target, int which=0) const;
+		bool Is_Close_Enough_With_Selected_Weapon(AbstractClass * target) const;
 		bool Clear_Line_Of_Fire(Coord const & source, AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		Coord Fire_Origin(AbstractClass const * target, WeaponTypeClass const * weapon) const;
 		int Elevation_Range_Bonus(AbstractClass const * target, bool withheight = true) const;
