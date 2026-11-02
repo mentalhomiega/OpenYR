@@ -2181,17 +2181,10 @@ void RadarClass::Draw_Beacon_Blips(void)
 		return;
 	}
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Beacons.Get(house, slot);
-			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
-				continue;
-			}
-
-			Rect const pixel = Cell_To_Radar_Pixel(beacon->Where.As_Cell());
-			Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
-		}
-	}
+	Beacons.For_Each_Visible([&](int, BeaconClass & beacon) {
+		Rect const pixel = Cell_To_Radar_Pixel(beacon.Where.As_Cell());
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
+	});
 }
 
 

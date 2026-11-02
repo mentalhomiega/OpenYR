@@ -3830,28 +3830,21 @@ void Tactical::Draw_Beacons(void)
 	}
 	int const half = shapes->Get_Count() / 2;
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Beacons.Get(house, slot);
-			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
-				continue;
-			}
+	Beacons.For_Each_Visible([&](int house, BeaconClass & beacon) {
+		Point2D pixel;
+		Coord_To_Pixel(beacon.Where, pixel);
+		pixel.Y += TacticalRect.Y;
 
-			Point2D pixel;
-			Coord_To_Pixel(beacon->Where, pixel);
-			pixel.Y += TacticalRect.Y;
+		// A selected beacon draws from the second half of its frames.
+		int const frame = (beacon.IsSelected ? half : 0) + Frame % half;
 
-			// A selected beacon draws from the second half of its frames.
-			int const frame = (beacon->IsSelected ? half : 0) + Frame % half;
+		// Without alpha lighting, shroud does not darken the marker, as in gamemd's beacon draw (0x430250, flags 0x600).
+		Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
-			// Without alpha lighting, shroud does not darken the marker, as in gamemd's beacon draw (0x430250, flags 0x600).
-			Draw_Shape(*LogicalSurface, *AnimDrawer, shapes, frame, pixel, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
-
-			if (beacon->Text[0] != '\0') {
-				Draw_Beacon_Label(beacon->Text, pixel, ColorSchemes[House_Display_Scheme(Houses[house])], TacticalRect);
-			}
+		if (beacon.Text[0] != '\0') {
+			Draw_Beacon_Label(beacon.Text, pixel, ColorSchemes[House_Display_Scheme(Houses[house])], TacticalRect);
 		}
-	}
+	});
 }
 
 
