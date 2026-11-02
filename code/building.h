@@ -768,6 +768,7 @@ class BuildingClass : public TechnoClass
 		int Exit_Infantry(TechnoClass * base);
 		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
+		void Send_Computer_Unit_To_Guard(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
 		bool Is_Damaged_Art(void) const;
 		std::vector<InfantryClass *> Take_Occupants(void);

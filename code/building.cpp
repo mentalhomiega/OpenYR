@@ -3420,14 +3420,26 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 }
 
 
+void BuildingClass::Send_Computer_Unit_To_Guard(TechnoClass * base)
+{
+	base->Assign_Mission(MISSION_GUARD_AREA);
+
+	Cell cell = House->Where_To_Go((FootClass *)base);
+	if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+		base->Assign_Archive_Target(&Map[cell]);
+		((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+	} else {
+		base->Assign_Archive_Target(NULL);
+	}
+}
+
+
 /// <summary>
 /// Puts a vehicle built by a factory other than a weapons factory at its door and sends it to the exit cell.
 /// Returns as Exit_Foot does.
 /// </summary>
 int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 {
-	Cell cell;
-
 	Cell exitcell = Find_Exit_Cell(base);
 	if (exitcell == CELL_NONE) {
 		return(0);
@@ -3448,15 +3460,7 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 		 * area around the spot it should head to.
 		 */
 		if (!House->Is_Human_Player()) {
-			base->Assign_Mission(MISSION_GUARD_AREA);
-
-			cell = House->Where_To_Go((FootClass *)base);
-			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-				base->Assign_Archive_Target(&Map[cell]);
-				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-			} else {
-				base->Assign_Archive_Target(NULL);
-			}
+			Send_Computer_Unit_To_Guard(base);
 		}
 
 		ScenarioInit--;
@@ -3473,8 +3477,6 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 /// </summary>
 int BuildingClass::Exit_Infantry(TechnoClass * base)
 {
-	Cell cell;
-
 	base->ArchiveTarget = Rally_Point_For(base);
 
 	Cell exitcell = Find_Exit_Cell(base);
@@ -3531,15 +3533,7 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 		 * an area around the spot it should head to.
 		 */
 		if (!House->Is_Human_Player()) {
-			base->Assign_Mission(MISSION_GUARD_AREA);
-
-			cell = House->Where_To_Go((FootClass *)base);
-			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-				base->ArchiveTarget = &Map[cell];
-				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-			} else {
-				base->Assign_Archive_Target(NULL);
-			}
+			Send_Computer_Unit_To_Guard(base);
 		}
 
 		/*
