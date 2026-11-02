@@ -4746,12 +4746,13 @@ static void Rule_Step(StepType const & step)
 {
 	if (stricmp(step.Argument.c_str(), "CanDetonateTimeBomb") == 0) {
 		Rule->IsCanDetonateTimeBomb = step.X != 0;
-	}
-	if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
+	} else if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
 		Rule->BallisticScatter = step.X;
-	}
-	if (stricmp(step.Argument.c_str(), "AircraftWaypointReload") == 0) {
+	} else if (stricmp(step.Argument.c_str(), "AircraftWaypointReload") == 0) {
 		Rule->AircraftWaypointReload = step.X != 0;
+	} else {
+		DebugString("AUTOTEST   rule %s: unknown\n", step.Argument.c_str());
+		return;
 	}
 	DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
 }
