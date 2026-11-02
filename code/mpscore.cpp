@@ -161,17 +161,15 @@ class MultiScore : public MSEngine
 		MultiScore(void);
 		virtual ~MultiScore(void);
 
-		virtual void Do_Custom_Draw(Surface * surface);
 		virtual void Process_Idle(void);
 
 		bool Init(void);
 		void Deinit(void);
 
-		bool User_Input(void);
+		void User_Input(void);
 		void Tally_Score(void);
 		void Process_Scores(void);
 
-		void Callback(void);
 		bool Single_Presentation(HouseClass *house);
 		bool Multi_Presentation(void);
 
@@ -184,7 +182,6 @@ class MultiScore : public MSEngine
 		void Print_Figures(void);
 		void Print_Prompt(void);
 
-		bool Skirmish;
 		ScoreStageClass Stage;
 		MPlayerScoreType * Scores[MAX_PLAYERS];
 };
@@ -221,8 +218,7 @@ void Multi_Score_Presentation(void)
 /// The screen holds no resources until Init is called on it.
 /// </summary>
 MultiScore::MultiScore(void) :
-	MSEngine(),
-	Skirmish(false)
+	MSEngine()
 {
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		Scores[i] = NULL;
@@ -286,7 +282,7 @@ bool MultiScore::Multi_Presentation(void)
 
 	if (Init() == true) {
 		Keyboard->Clear();
-		Callback();
+		Call_Back();
 		MouseCursor->Release_Mouse();
 		MouseCursor->Hide_Mouse();
 
@@ -321,7 +317,7 @@ bool MultiScore::Multi_Presentation(void)
 
 
 /// <summary>
-/// Prepares the score screen for display by opening its stage and recording the skirmish caption.
+/// Prepares the score screen for display by opening its stage.
 /// </summary>
 /// <returns>bool; Was the screen prepared successfully?</returns>
 bool MultiScore::Init(void)
@@ -331,8 +327,6 @@ bool MultiScore::Init(void)
 	if (!Stage.Open()) {
 		return(false);
 	}
-
-	Skirmish = (Session.Type == GAME_SKIRMISH);
 
 	Add_Sound_Effect("Graph", "TEXT1.AUD");
 
@@ -352,29 +346,17 @@ void MultiScore::Deinit(void)
 
 
 /// <summary>
-/// Handles the custom drawing pass of the presentation.
-/// The engine offers every animation frame to the derived screen through this routine.
-/// The score screen paints itself through its own routines instead, so there is
-/// nothing to add here.
-/// </summary>
-void MultiScore::Do_Custom_Draw(Surface * surface)
-{
-
-}
-
-
-/// <summary>
 /// Waits for the player to dismiss the score screen.
 /// This routine sits until the player clicks or presses escape or space.
 /// </summary>
-bool MultiScore::User_Input(void)
+void MultiScore::User_Input(void)
 {
 	int key = VK_NONE;
 	bool running = true;
 
 	Keyboard->Clear();
 	if (AutoTest_Post_Win()) {
-		return(true);
+		return;
 	}
 
 	while (running == true) {
@@ -393,7 +375,6 @@ bool MultiScore::User_Input(void)
 	}
 
 	Keyboard->Clear();
-	return(true);
 }
 
 
@@ -450,7 +431,7 @@ void MultiScore::Draw_Static(void)
 		draw_band(3 + row, PLAYER_BAND_Y + BAND_HEIGHT * row);
 	}
 
-	std::string title = Fetch_String_UTF8(Skirmish ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
+	std::string title = Fetch_String_UTF8(Session.Type == GAME_SKIRMISH ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
 	Stage.Print_Centre(title.c_str(), ScoreStageClass::Dialog_X(424), ScoreStageClass::Dialog_X(108), ScoreStageClass::Dialog_Y(1));
 
 	char buffer[256];
@@ -595,8 +576,8 @@ void MultiScore::Print_Prompt(void)
 /// <summary>
 /// Tallies the round's scores and fills in each house's row.
 /// </summary>
-/// <remarks>The Built value is the percentage of credits each house spent, relative to the
-/// biggest spender. It is not yet confirmed to be what gamemd shows under the Built heading.</remarks>
+/// <remarks>The Built value is the credits a house spent as a percentage of the most any scored
+/// house spent, truncated to a whole number. It is 0 when no scored house has spent credits.</remarks>
 void MultiScore::Tally_Score(void)
 {
 	HousesType house;
@@ -709,11 +690,6 @@ void MultiScore::Tally_Score(void)
 
 		Session.Score[score_index].Lost[0] = losses;
 
-		float kill_ratio = 0;
-		if (losses > 0) {
-			kill_ratio = (float)kills / (float)losses;
-		}
-
 		// Measuring what was spent leaves a house that was beaten showing what it built.
 		float build_economy = most_spent > 0 ? (float)hptr->CreditsSpent / (float)most_spent : 0.0f;
 
@@ -732,7 +708,6 @@ void MultiScore::Tally_Score(void)
 			Session.Score[score_index].Kills[0],
 			Session.Score[score_index].Built[0],
 			Session.Score[score_index].Score[0]);
-		DebugString(" KillRatio = %f\n BuildEconomy = %f\n", kill_ratio, build_economy);
 	}
 }
 
@@ -793,16 +768,6 @@ void MultiScore::Process_Scores(void)
 /// The engine calls this routine whenever it is waiting on an animation or a delay.
 /// </summary>
 void MultiScore::Process_Idle(void)
-{
-	Callback();
-}
-
-
-/// <summary>
-/// Services the network link while the score screen is up.
-/// This routine is called from the presentation's idle handler.
-/// </summary>
-void MultiScore::Callback(void)
 {
 	Call_Back();
 }
