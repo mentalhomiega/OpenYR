@@ -5625,6 +5625,33 @@ void HouseClass::Production_Begun(TechnoClass const * product)
 }
 
 
+// Counts a soldier as owned infantry, unless it already is.
+static void Count_Owned_Infantry(TechnoClass * techno, int & cur_infantry)
+{
+	if (!techno->CountedAsOwnedInfantry) {
+		cur_infantry++;
+		techno->CountedAsOwnedInfantry = true;
+	}
+}
+
+
+// Removes a soldier from the owned infantry count, if it is counted.
+static void Uncount_Owned_Infantry(TechnoClass * techno, int & cur_infantry)
+{
+	if (techno->CountedAsOwnedInfantry) {
+		cur_infantry--;
+		techno->CountedAsOwnedInfantry = false;
+	}
+}
+
+
+// Insignificant and DontScore types are not counted as owned by the tracking routines.
+static bool Is_Scored(TechnoClass const * techno)
+{
+	return(!techno->TClass->IsInsignificant && !techno->TClass->IsDontScore);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Tracking_Remove -- Remove object from house tracking system.                    *
  *                                                                                             *
@@ -5644,7 +5671,7 @@ void HouseClass::Production_Begun(TechnoClass const * product)
 void HouseClass::Tracking_Remove(TechnoClass * techno)
 {
 	// Insignificant and DontScore types are not counted as owned (HouseClass::RemoveTracking, 0x4FF550).
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
+	if (!Is_Scored(techno)) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5662,10 +5689,7 @@ void HouseClass::Tracking_Remove(TechnoClass * techno)
 			break;
 
 		case RTTI_INFANTRY:
-			if (techno->CountedAsOwnedInfantry) {
-				CurInfantry--;
-				techno->CountedAsOwnedInfantry = false;
-			}
+			Uncount_Owned_Infantry(techno, CurInfantry);
 			IQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
 			break;
 
@@ -5704,7 +5728,7 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 	UnitType unit;
 
 	// Insignificant and DontScore types are not counted as owned (HouseClass::AddTracking, 0x4FF700).
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
+	if (!Is_Scored(techno)) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5731,10 +5755,7 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 
 		case RTTI_INFANTRY:
 			infantry = (InfantryType)techno->TClass->Fetch_Heap_ID();
-			if (!techno->CountedAsOwnedInfantry) {
-				CurInfantry++;
-				techno->CountedAsOwnedInfantry = true;
-			}
+			Count_Owned_Infantry(techno, CurInfantry);
 			IQuantity.Increment(infantry);
 			if (Session.Type == GAME_INTERNET) {
 				InfantryTotals->Increment_Unit_Total(infantry);
@@ -7423,9 +7444,8 @@ HouseClass * House_From_HousesType(HousesType house)
 /// <param name="techno">The object that entered the absorber.</param>
 void HouseClass::Tracking_Absorb(TechnoClass * techno)
 {
-	if (techno->RTTI == RTTI_INFANTRY && techno->CountedAsOwnedInfantry) {
-		CurInfantry--;
-		techno->CountedAsOwnedInfantry = false;
+	if (techno->RTTI == RTTI_INFANTRY) {
+		Uncount_Owned_Infantry(techno, CurInfantry);
 	}
 }
 
@@ -7437,10 +7457,9 @@ void HouseClass::Tracking_Absorb(TechnoClass * techno)
 /// <param name="techno">The object that was released.</param>
 void HouseClass::Tracking_Release(TechnoClass * techno)
 {
-	if (techno->RTTI != RTTI_INFANTRY || techno->CountedAsOwnedInfantry) return;
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
-	CurInfantry++;
-	techno->CountedAsOwnedInfantry = true;
+	if (techno->RTTI != RTTI_INFANTRY) return;
+	if (!Is_Scored(techno)) return;
+	Count_Owned_Infantry(techno, CurInfantry);
 }
 
 
