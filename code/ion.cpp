@@ -83,6 +83,47 @@ bool Storm_Sound_Present(VocClass const * sound)
 	return(false);
 }
 
+
+// Draws the next screen static frame once the timer has run out, then restarts the timer.
+void Show_Due_Screen_Static(CDTimerClass<SystemTimerClass> & static_timer)
+{
+	static int static_frame = 0;
+
+	if (static_timer == 0) {
+		IonStormClass::Do_Screen_Static(static_frame++);
+		if (static_frame >= 30) {
+			static_frame = 0;
+		}
+		static_timer = STATIC_DELAY;
+	}
+}
+
+
+// Tints every tile drawer, then the color schemes: every scheme when all_schemes is set, else
+// only those with more than one intensity level. With with_static, screen static is drawn after
+// each tint whose static timer has run out.
+void Apply_Palette_Tint(int red, int green, int blue, bool ion_light, bool all_schemes, bool with_static)
+{
+	CDTimerClass<SystemTimerClass> static_timer;
+
+	for (int i = 0; i < TileDrawers.Count(); i++) {
+		TileDrawers[i]->Apply_Tint(red, green, blue, ion_light);
+		if (with_static) {
+			Show_Due_Screen_Static(static_timer);
+		}
+	}
+
+	for (int i = 0; i < ColorSchemes.Count(); i++) {
+		ColorScheme * scheme = ColorSchemes[i];
+		if (all_schemes || scheme->IntensityLevels > 1) {
+			scheme->Converter->Apply_Tint(red, green, blue, ion_light);
+			if (with_static) {
+				Show_Due_Screen_Static(static_timer);
+			}
+		}
+	}
+}
+
 }
 
 AudioHandle IonStormClass::StormSound;
@@ -198,7 +239,6 @@ void IonStormClass::Set_Ion_Storm_Active(bool active)
 void IonStormClass::Ion_Storm_Begin(int duration, int warning)
 {
 	int i;
-	static int static_frame = 0;
 
 	if (!Is_Ion_Storm_Active()) {
 		if (warning != 0) {
@@ -233,36 +273,11 @@ void IonStormClass::Ion_Storm_Begin(int duration, int warning)
 			PlayerPtr->RecalcRadar = true;
 			Start_Audio(false);
 
-			CDTimerClass<SystemTimerClass> static_timer;
-
 			int red = NORMAL_LIGHT * Scen->IonRedTint / 100;
 			int green = NORMAL_LIGHT * Scen->IonGreenTint / 100;
 			int blue = NORMAL_LIGHT * Scen->IonBlueTint / 100;
 
-			for (i = 0; i < TileDrawers.Count(); i++) {
-				TileDrawers[i]->Apply_Tint(red, green, blue, true);
-				if (static_timer == 0) {
-					Do_Screen_Static(static_frame++);
-					if (static_frame >= 30) {
-						static_frame = 0;
-					}
-					static_timer = STATIC_DELAY;
-				}
-			}
-
-			for (i = 0; i < ColorSchemes.Count(); i++) {
-				ColorScheme * scheme = ColorSchemes[i];
-				if (scheme->IntensityLevels > 1) {
-					scheme->Converter->Apply_Tint(red, green, blue, true);
-					if (static_timer == 0) {
-						Do_Screen_Static(static_frame++);
-						if (static_frame >= 30) {
-							static_frame = 0;
-						}
-						static_timer = STATIC_DELAY;
-					}
-				}
-			}
+			Apply_Palette_Tint(red, green, blue, true, false, true);
 
 			Map.Update_Cell_Colors();
 			Session.Messages.Add_Message(NULL, 0, Fetch_String(TXT_ION_STORM), GREEN, TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_LED|TPF_8POINT), TICKS_PER_SECOND * 10);
@@ -282,7 +297,6 @@ void IonStormClass::Ion_Storm_Begin(int duration, int warning)
 void IonStormClass::Ion_Storm_End(void)
 {
 	int i;
-	static int static_frame = 0;
 
 	if (Is_Ion_Storm_Active()) {
 		for (i = 0; i < Feet.Count(); i++) {
@@ -297,29 +311,7 @@ void IonStormClass::Ion_Storm_End(void)
 		if (PlayerPtr) PlayerPtr->RecalcRadar = true;
 		End_Audio();
 
-		CDTimerClass<SystemTimerClass> static_timer;
-
-		for (i = 0; i < TileDrawers.Count(); i++) {
-			TileDrawers[i]->Apply_Tint(-1, -1, -1, false);
-			if (static_timer == 0) {
-				Do_Screen_Static(static_frame++);
-				if (static_frame >= 30) {
-					static_frame = 0;
-				}
-				static_timer = STATIC_DELAY;
-			}
-		}
-
-		for (i = 0; i < ColorSchemes.Count(); i++) {
-			ColorSchemes[i]->Converter->Apply_Tint(-1, -1, -1, false);
-			if (static_timer == 0) {
-				Do_Screen_Static(static_frame++);
-				if (static_frame >= 30) {
-					static_frame = 0;
-				}
-				static_timer = STATIC_DELAY;
-			}
-		}
+		Apply_Palette_Tint(-1, -1, -1, false, true, true);
 
 		Map.Update_Cell_Colors();
 		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
@@ -406,15 +398,7 @@ void IonStormClass::Update_Special_Lighting(void)
 		if (mode != SPECIAL_LIGHT_NONE) {
 			Special_Tint(red, green, blue);
 		}
-		for (int i = 0; i < TileDrawers.Count(); i++) {
-			TileDrawers[i]->Apply_Tint(red, green, blue, mode != SPECIAL_LIGHT_NONE);
-		}
-		for (int i = 0; i < ColorSchemes.Count(); i++) {
-			ColorScheme * scheme = ColorSchemes[i];
-			if (mode == SPECIAL_LIGHT_NONE || scheme->IntensityLevels > 1) {
-				scheme->Converter->Apply_Tint(red, green, blue, mode != SPECIAL_LIGHT_NONE);
-			}
-		}
+		Apply_Palette_Tint(red, green, blue, mode != SPECIAL_LIGHT_NONE, mode == SPECIAL_LIGHT_NONE, false);
 	}
 
 	Map.Update_Cell_Colors();
@@ -439,15 +423,7 @@ void IonStormClass::Retint(int red, int green, int blue)
 	int const r = NORMAL_LIGHT * red / 100;
 	int const g = NORMAL_LIGHT * green / 100;
 	int const b = NORMAL_LIGHT * blue / 100;
-	for (int i = 0; i < TileDrawers.Count(); i++) {
-		TileDrawers[i]->Apply_Tint(r, g, b, false);
-	}
-	for (int i = 0; i < ColorSchemes.Count(); i++) {
-		ColorScheme * scheme = ColorSchemes[i];
-		if (scheme->IntensityLevels > 1) {
-			scheme->Converter->Apply_Tint(r, g, b, false);
-		}
-	}
+	Apply_Palette_Tint(r, g, b, false, false, false);
 
 	Map.Update_Cell_Colors();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
@@ -704,7 +680,6 @@ void IonStormClass::AI(void)
 void IonStormClass::Apply_Secondary_Effect(bool do_static)
 {
 	int i;
-	static int static_frame = 0;
 
 	if (Is_Ion_Storm_Active()) {
 		for (i = 0; i < Feet.Count(); i++) {
@@ -718,40 +693,11 @@ void IonStormClass::Apply_Secondary_Effect(bool do_static)
 		Scen->DesiredAmbientLight = Scen->IonAmbientLight;
 		PlayerPtr->RecalcRadar = true;
 
-		CDTimerClass<SystemTimerClass> static_timer;
-
 		int red = NORMAL_LIGHT * Scen->IonRedTint / 100;
 		int green = NORMAL_LIGHT * Scen->IonGreenTint / 100;
 		int blue = NORMAL_LIGHT * Scen->IonBlueTint / 100;
 
-		for (i = 0; i < TileDrawers.Count(); i++) {
-			TileDrawers[i]->Apply_Tint(red, green, blue, true);
-			if (do_static) {
-				if (static_timer == 0) {
-					Do_Screen_Static(static_frame++);
-					if (static_frame >= 30) {
-						static_frame = 0;
-					}
-					static_timer = STATIC_DELAY;
-				}
-			}
-		}
-
-		for (i = 0; i < ColorSchemes.Count(); i++) {
-			ColorScheme * scheme = ColorSchemes[i];
-			if (scheme->IntensityLevels > 1) {
-				scheme->Converter->Apply_Tint(red, green, blue, true);
-				if (do_static) {
-					if (static_timer == 0) {
-						Do_Screen_Static(static_frame++);
-						if (static_frame >= 30) {
-							static_frame = 0;
-						}
-						static_timer = STATIC_DELAY;
-					}
-				}
-			}
-		}
+		Apply_Palette_Tint(red, green, blue, true, false, do_static);
 
 		Map.Update_Cell_Colors();
 	}
