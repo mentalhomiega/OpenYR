@@ -232,12 +232,7 @@ NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::
 	int const frame_send_rate = CnCNet_Option_Number(options, "FrameSendRate", 0, 0, 1000);
 	int const max_ahead = CnCNet_Option_Number(options, "MaxAhead", 0, 0, 1000);
 	int const protocol = CnCNet_Option_Number(options, "Protocol", 2, 0, 1000);
-	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
-		network.Timing.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
-	}
-	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
-		network.Timing.MaxAhead = static_cast<unsigned int>(max_ahead);
-	}
+	network.Timing = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
 	network.Protocol = NetTiming::Host_Protocol_Is_Valid(protocol) ? protocol : 2;
 	return(network);
 }

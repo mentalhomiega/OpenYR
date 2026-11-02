@@ -581,13 +581,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	Protocol = ini.Get_Int(SETTINGS, "Protocol", Protocol);
 	// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
 	bool const host_timing = Spawn_Bool(ini, SETTINGS, "HostTiming", false);
-	TimingChoice = NetTiming::HostTimingChoice();
-	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
-		TimingChoice.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
-	}
-	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
-		TimingChoice.MaxAhead = static_cast<unsigned int>(max_ahead);
-	}
+	TimingChoice = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
 	// The client writes these keys in every game, with defaults of its own. Those read as no choice unless
 	// the file says the host chose (HostTiming=yes), as the lobby built into the game says.
 	if (!host_timing && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
