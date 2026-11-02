@@ -2038,7 +2038,7 @@ void BuildingClass::Update_Gattling_Spin(void)
 					GattlingValue = 0;
 				}
 				int const stage = CurrentGattlingStage;
-				int const * stages = Veterancy.Is_Elite() ? Class->EliteStage : Class->WeaponStage;
+				int const * stages = Gattling_Stages();
 				if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT && GattlingValue < stages[stage - 1]) {
 					CurrentGattlingStage = stage - 1;
 				}

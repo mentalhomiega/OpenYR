@@ -795,6 +795,7 @@ class TechnoClass :	public RadioClass,
 		void Disarm_Bomb(void);
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
+		int const * Gattling_Stages(void) const;
 		virtual int Get_Collateral_Damage(void) const;
 		virtual int Get_Z_Adjust(void) const;
 		bool Is_Z_Fudge_Bridge(void) const;
@@ -1102,6 +1103,12 @@ inline WeaponDataStruct const * TechnoClass::Get_Class_Weapon_Data(int which) co
 	}
 
 	return(TClass->Get_Weapon(which));
+}
+
+
+inline int const * TechnoClass::Gattling_Stages(void) const
+{
+	return(Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage);
 }
 
 

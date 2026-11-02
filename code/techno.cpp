@@ -8890,7 +8890,7 @@ void TechnoClass::Remove_Gunner(FootClass * gunner)
 /// </summary>
 void TechnoClass::Gattling_Rate_Up(int frames)
 {
-	int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+	int const * stages = Gattling_Stages();
 	int const last = std::min<int>(TClass->WeaponStages, TechnoTypeClass::WEAPON_STAGE_COUNT) - 1;
 	int const value = GattlingValue;
 	if (last >= 0 && value < stages[last]) {
@@ -8931,7 +8931,7 @@ void TechnoClass::Gattling_Rate_Down(int frames)
 
 	int const stage = CurrentGattlingStage;
 	if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT) {
-		int const * stages = Veterancy.Is_Elite() ? TClass->EliteStage : TClass->WeaponStage;
+		int const * stages = Gattling_Stages();
 		if (GattlingValue < stages[stage - 1]) {
 			CurrentGattlingStage = stage - 1;
 		}
