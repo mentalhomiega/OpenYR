@@ -191,21 +191,20 @@ static void Update_Scale_Info(void)
 }
 
 
+// The backend names each filter with the value the setting has, so a configured value converts by a cast.
+static_assert(BACKEND_SCALE_NEAREST == VIDEO_SCALE_NEAREST && BACKEND_SCALE_LINEAR == VIDEO_SCALE_LINEAR && BACKEND_SCALE_PIXELART == VIDEO_SCALE_PIXELART);
+
 /// <summary>
-/// Converts the configured filter into the one the renderer names.
+/// Converts the configured filter into the one the renderer names. A value outside the filters
+/// falls back to pixel art.
 /// </summary>
 static BackendScaleMode Backend_Scale_Mode(void)
 {
-	switch (Options.ScaleMode) {
-		case VIDEO_SCALE_LINEAR:
-			return(BACKEND_SCALE_LINEAR);
-
-		case VIDEO_SCALE_NEAREST:
-			return(BACKEND_SCALE_NEAREST);
-
-		default:
-			return(BACKEND_SCALE_PIXELART);
+	int const mode = Options.ScaleMode;
+	if (mode < VIDEO_SCALE_NEAREST || mode > VIDEO_SCALE_PIXELART) {
+		return(BACKEND_SCALE_PIXELART);
 	}
+	return((BackendScaleMode)mode);
 }
 
 
