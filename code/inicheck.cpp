@@ -415,7 +415,6 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		if (!fields[3].empty()) {
 			scope.AppliesTo = Split(fields[3], ',');
 		}
-		scope.ValueType = fields[4];
 		scope.Kind = Kind_From_Name(fields[4]);
 		Add(fields[0], std::move(scope));
 	}

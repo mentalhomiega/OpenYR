@@ -48,7 +48,6 @@ namespace IniCheck
 		std::string File;
 		std::string Section;
 		std::vector<std::string> AppliesTo;
-		std::string ValueType;
 		ValueKind Kind = ValueKind::OTHER;
 	};
 
