@@ -38,13 +38,7 @@ static std::string Name_Of(std::vector<std::string> const & names, int level)
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
 	State(std::move(state)),
 	Service(service),
-	InitialAltToRally(State.AltToRally),
-	InitialSimulateUnfocused(State.SimulateUnfocused),
-	InitialAircraftBodyPick(State.AircraftBodyPick),
-	InitialSidebarSorting(State.SidebarSorting),
-	InitialAutosave(State.Autosave),
-	InitialDebugMode(State.DebugMode),
-	InitialRecordReplays(State.RecordReplays)
+	Start(State)
 {
 	Update_Names();
 }
@@ -87,7 +81,7 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "replays") {
 		State.RecordReplays = (intent.Value != 0);
 	} else if (intent.Name == "autosave") {
-		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : InitialAutosave;
+		State.Autosave = (intent.Value >= 0 && intent.Value < (int)State.Autosaves.size()) ? intent.Value : Start.Autosave;
 	} else if (intent.Name == "ok") {
 		Apply();
 		Result = UI_RESULT_ACCEPTED;
@@ -155,25 +149,25 @@ void UIGameControlsPresenterClass::Apply(void)
 	if (State.HasDifficulty) {
 		Service.Set_Difficulty(State.Difficulty);
 	}
-	if (State.AltToRally != InitialAltToRally) {
+	if (State.AltToRally != Start.AltToRally) {
 		Service.Set_Alt_To_Rally(State.AltToRally);
 	}
-	if (State.SimulateUnfocused != InitialSimulateUnfocused) {
+	if (State.SimulateUnfocused != Start.SimulateUnfocused) {
 		Service.Set_Simulate_Unfocused(State.SimulateUnfocused);
 	}
-	if (State.AircraftBodyPick != InitialAircraftBodyPick) {
+	if (State.AircraftBodyPick != Start.AircraftBodyPick) {
 		Service.Set_Aircraft_Body_Pick(State.AircraftBodyPick);
 	}
-	if (State.SidebarSorting != InitialSidebarSorting) {
+	if (State.SidebarSorting != Start.SidebarSorting) {
 		Service.Set_Sidebar_Sorting(State.SidebarSorting);
 	}
-	if (State.DebugMode != InitialDebugMode) {
+	if (State.DebugMode != Start.DebugMode) {
 		Service.Set_Debug_Mode(State.DebugMode);
 	}
-	if (State.RecordReplays != InitialRecordReplays) {
+	if (State.RecordReplays != Start.RecordReplays) {
 		Service.Set_Record_Replays(State.RecordReplays);
 	}
-	if (State.Autosave != InitialAutosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
+	if (State.Autosave != Start.Autosave && State.Autosave >= 0 && State.Autosave < (int)State.Autosaves.size()) {
 		Service.Set_Autosave_Interval(State.Autosaves[State.Autosave].Value);
 	}
 	Service.Save();
