@@ -503,6 +503,30 @@ static bool Fill_R16_Watched(Store & store, unsigned short const * values, int w
 }
 
 
+// Calls upload(first, end) for each run of flagged rows, after clearing the run's flags. A run bridges up
+// to GAP unchanged rows, so a scattered change takes few uploads.
+template<class Upload>
+static void For_Each_Changed_Run(std::vector<unsigned char> & changed, int rows, Upload upload)
+{
+	int const GAP = 8;
+	int row = 0;
+	while (row < rows) {
+		if (changed[row] == 0) {
+			row++;
+			continue;
+		}
+		int const first = row;
+		int unchanged = 0;
+		for (row++; row < rows && unchanged < GAP; row++) {
+			unchanged = changed[row] != 0 ? 0 : unchanged + 1;
+		}
+		int const end = row - unchanged;
+		std::fill(changed.begin() + first, changed.begin() + end, 0);
+		upload(first, end);
+	}
+}
+
+
 // Makes the store exactly width by rows values, uploading only the rows flagged in changed when
 // it already holds the rest, and clears the flags.
 static bool Fill_R16_Changed(Store & store, unsigned short const * values, int width, int rows, std::vector<unsigned char> & changed)
@@ -515,23 +539,9 @@ static bool Fill_R16_Changed(Store & store, unsigned short const * values, int w
 		changed.assign(rows, 0);
 		return(true);
 	}
-	// Changed rows up to 8 apart go up together, so a scattered change takes few updates.
-	int const GAP = 8;
-	int row = 0;
-	while (row < rows) {
-		if (changed[row] == 0) {
-			row++;
-			continue;
-		}
-		int const first = row;
-		int unchanged = 0;
-		for (row++; row < rows && unchanged < GAP; row++) {
-			unchanged = changed[row] != 0 ? 0 : unchanged + 1;
-		}
-		int const end = row - unchanged;
-		std::fill(changed.begin() + first, changed.begin() + end, 0);
+	For_Each_Changed_Run(changed, rows, [&](int first, int end) {
 		Update_Rows(store, values, width, first, end);
-	}
+	});
 	return(true);
 }
 
@@ -544,22 +554,9 @@ static void Upload_Plane(bgfx::TextureHandle texture, bool & tracked, std::vecto
 		changed.assign(rows, 1);
 		tracked = true;
 	}
-	int const GAP = 8;
-	int row = 0;
-	while (row < rows) {
-		if (changed[row] == 0) {
-			row++;
-			continue;
-		}
-		int const first = row;
-		int unchanged = 0;
-		for (row++; row < rows && unchanged < GAP; row++) {
-			unchanged = changed[row] != 0 ? 0 : unchanged + 1;
-		}
-		int const end = row - unchanged;
-		std::fill(changed.begin() + first, changed.begin() + end, 0);
+	For_Each_Changed_Run(changed, rows, [&](int first, int end) {
 		bgfx::updateTexture2D(texture, 0, 0, 0, (uint16_t)first, (uint16_t)width, (uint16_t)(end - first), bgfx::copy(&values[(std::size_t)first * width], (uint32_t)width * (end - first)));
-	}
+	});
 }
 
 
