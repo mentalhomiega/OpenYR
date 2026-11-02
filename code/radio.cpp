@@ -378,6 +378,22 @@ bool RadioClass::Has_Free_Link(RadioClass const * object) const
 
 
 /// <summary>
+/// Returns the objects in the occupied slots, in slot order. The result is a snapshot: links
+/// changed after the call do not alter it, so a caller must check Contains_Link before using an entry.
+/// </summary>
+std::vector<TechnoClass *> RadioClass::Linked_Objects(void) const
+{
+	std::vector<TechnoClass *> objects;
+	for (int slot = 0; slot < Link_Count(); slot++) {
+		if (Link(slot) != NULL) {
+			objects.push_back(Link(slot));
+		}
+	}
+	return(objects);
+}
+
+
+/// <summary>
 /// Adds this radio set to the game state checksum.
 /// This routine is used by the multiplayer synchronization checker. The identity of the
 /// object this radio is tuned to contributes to the checksum, so a desynchronized radio

@@ -368,10 +368,8 @@ BuildingClass::~BuildingClass(void)
 	End_Anim(BANIM_ALL);
 	Class->Free_Buildup_Data();
 
-	if (GameActive && Class != NULL && Class->IsCloakGenerator) {
-		Disable_Cloak_Generator();
-		CurrentCloakRadius = 1;
-		Cloaking_AI(true);
+	if (GameActive && Class != NULL) {
+		Collapse_Cloak_Field();
 	}
 
 	House->Update_Present_Super_Weapons();
@@ -569,7 +567,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				if (Class->IsConstructionYard) {
 					End_Anim(BANIM_PRE_PRODUCTION);
 					End_Anim(BANIM_IDLE);
-					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_PRODUCTION, Is_Damaged_Art());
 				}
 			}
 			BASECLASS::Receive_Message(from, message, param);
@@ -952,7 +950,7 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 			zgrad = ZGRAD_90DEG;
 		}
 
-		shapenum += (HealthRatio <= Rule->ConditionYellow ? (Class->GateStages + 1) : 0);
+		shapenum += (Is_Damaged_Art() ? (Class->GateStages + 1) : 0);
 		Techno_Draw_Object(shapefile, shapenum, xdrawpoint, xcliprect, DIR_N, 256, zadjust - TacticalMap->Z_Lepton_To_Pixel(Height), zgrad, true, Map[cell].Brightness);
 
 		return;
@@ -1025,7 +1023,7 @@ void BuildingClass::Draw_It(Point2D const & xdrawpoint, Rect const & xcliprect) 
 		// A roof exit draws only UnderRoofDoorAnim, so a structure without one draws no door for that exit.
 		ShapeSet const * underdoor = through_roof ? Class->UnderRoofDoorAnim : Class->UnderDoorAnim;
 		if (underdoor != NULL) {
-			Techno_Draw_Object(underdoor, HealthRatio <= Rule->ConditionYellow ? 1 : 0, xdrawpoint, xcliprect, DIR_N, 256, -TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
+			Techno_Draw_Object(underdoor, Is_Damaged_Art() ? 1 : 0, xdrawpoint, xcliprect, DIR_N, 256, -TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, true, Map[cell].Brightness + Class->ExtraLight);
 		}
 	}
 }
@@ -1086,7 +1084,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 				shapenum = 0;
 			}
 
-			if (HealthRatio <= Rule->ConditionYellow && Class->IsDamagedDoor) {
+			if (Is_Damaged_Art() && Class->IsDamagedDoor) {
 				shapenum += Class->DoorStages;
 			}
 
@@ -1485,7 +1483,7 @@ void BuildingClass::Set_Turret_Index(int index)
 			buffer[len] = index + 'B';
 			buffer[len + 1] = '\0';
 			if (!Class->IsTurretAnimExclusive || IsCharging || IsCharged) {
-				Create_Anim(buffer, BANIM_TURRET, HealthRatio <= Rule->ConditionYellow, 0);
+				Create_Anim(buffer, BANIM_TURRET, Is_Damaged_Art(), 0);
 			}
 			TurretIndex = index;
 		}
@@ -1540,7 +1538,7 @@ int BuildingClass::Shape_Number(void) const
 
 	} else if (Class->IsGate) {
 
-		if (HealthRatio <= Rule->ConditionYellow) {
+		if (Is_Damaged_Art()) {
 			return(Class->GateStages + 1);
 		} else {
 			return(0);
@@ -1554,7 +1552,7 @@ int BuildingClass::Shape_Number(void) const
 		**	starts at ConditionRed, or at ConditionYellow when TechLevel is above 0 (BuildingClass::
 		**	GetCurrentFrame, 0x43EF90).
 		*/
-		bool const damaged = HealthRatio <= Rule->ConditionRed || (Class->Level > 0 && HealthRatio <= Rule->ConditionYellow);
+		bool const damaged = HealthRatio <= Rule->ConditionRed || (Class->Level > 0 && Is_Damaged_Art());
 		shapenum = (Occupants.Count() > 0 ? 2 : 0) + (damaged ? 1 : 0);
 		if (Class->Level == -1 && shapenum == 3) {
 			shapenum = 1;
@@ -1566,7 +1564,7 @@ int BuildingClass::Shape_Number(void) const
 		**	If below half strenth, then show the damage frames of the
 		**	building.
 		*/
-		if (HealthRatio <= Rule->ConditionYellow) {
+		if (Is_Damaged_Art()) {
 			if (BState == BSTATE_IDLE) {
 				shapenum++;
 			} else {
@@ -1607,7 +1605,7 @@ int BuildingClass::Body_Frame(int frames) const
 		return(body);
 	}
 
-	int const idle = Class->Anims[BSTATE_IDLE].Start + (HealthRatio <= Rule->ConditionYellow ? 1 : 0);
+	int const idle = Class->Anims[BSTATE_IDLE].Start + (Is_Damaged_Art() ? 1 : 0);
 	return(idle < body ? idle : body);
 }
 
@@ -2463,11 +2461,7 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 		}
 	}
 
-	if (Class->IsCloakGenerator) {
-		Disable_Cloak_Generator();
-		CurrentCloakRadius = 1;
-		Cloaking_AI(true);
-	}
+	Collapse_Cloak_Field();
 
 	if (Class->IsLaserFencePost) {
 		Update_Laser_Fence_Connections(true);
@@ -2665,13 +2659,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					 * target from the links, so the list is copied first.
 					 */
 					{
-						std::vector<TechnoClass *> docked;
-						for (int slot = 0; slot < Link_Count(); slot++) {
-							if (Link(slot) != NULL) {
-								docked.push_back(Link(slot));
-							}
-						}
-						for (TechnoClass * contact : docked) {
+						for (TechnoClass * contact : Linked_Objects()) {
 							if (!Contains_Link(contact)) {
 								continue;
 							}
@@ -2851,7 +2839,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 
 		if (res != RESULT_NONE) {
-			Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
+			Set_Anim_Damage_State(Is_Damaged_Art());
 		}
 
 		if (shapenum != Shape_Number()) {
@@ -3432,14 +3420,26 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 }
 
 
+void BuildingClass::Send_Computer_Unit_To_Guard(TechnoClass * base)
+{
+	base->Assign_Mission(MISSION_GUARD_AREA);
+
+	Cell cell = House->Where_To_Go((FootClass *)base);
+	if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+		base->Assign_Archive_Target(&Map[cell]);
+		((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+	} else {
+		base->Assign_Archive_Target(NULL);
+	}
+}
+
+
 /// <summary>
 /// Puts a vehicle built by a factory other than a weapons factory at its door and sends it to the exit cell.
 /// Returns as Exit_Foot does.
 /// </summary>
 int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 {
-	Cell cell;
-
 	Cell exitcell = Find_Exit_Cell(base);
 	if (exitcell == CELL_NONE) {
 		return(0);
@@ -3460,15 +3460,7 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 		 * area around the spot it should head to.
 		 */
 		if (!House->Is_Human_Player()) {
-			base->Assign_Mission(MISSION_GUARD_AREA);
-
-			cell = House->Where_To_Go((FootClass *)base);
-			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-				base->Assign_Archive_Target(&Map[cell]);
-				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-			} else {
-				base->Assign_Archive_Target(NULL);
-			}
+			Send_Computer_Unit_To_Guard(base);
 		}
 
 		ScenarioInit--;
@@ -3485,8 +3477,6 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 /// </summary>
 int BuildingClass::Exit_Infantry(TechnoClass * base)
 {
-	Cell cell;
-
 	base->ArchiveTarget = Rally_Point_For(base);
 
 	Cell exitcell = Find_Exit_Cell(base);
@@ -3520,7 +3510,7 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 		// A hospital or armory also exits its infantry here without having produced them.
 		// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
 		if (Class->ToBuild == RTTI_INFANTRYTYPE) {
-			Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+			Begin_Anim(BANIM_PRODUCTION, Is_Damaged_Art());
 		}
 
 		if (((FootClass *)base)->NavCom != NULL) {
@@ -3543,15 +3533,7 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 		 * an area around the spot it should head to.
 		 */
 		if (!House->Is_Human_Player()) {
-			base->Assign_Mission(MISSION_GUARD_AREA);
-
-			cell = House->Where_To_Go((FootClass *)base);
-			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-				base->ArchiveTarget = &Map[cell];
-				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-			} else {
-				base->Assign_Archive_Target(NULL);
-			}
+			Send_Computer_Unit_To_Guard(base);
 		}
 
 		/*
@@ -4236,7 +4218,7 @@ void BuildingClass::Grand_Opening(bool captured)
 {
 	if (!HasOpened || captured) {
 		if (!HasOpened) {
-			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow, 0, true);
+			Begin_Opening_Anims(Is_Damaged_Art(), 0, true);
 
 			// A structure that needs power starts without its power animations; the first update that finds it in service gives them back.
 			if (Class->IsPowered && Class->Drain > 0) {
@@ -4251,7 +4233,7 @@ void BuildingClass::Grand_Opening(bool captured)
 						Set_Turret_Index(idx);
 					} else {
 						if (IsCharged || IsCharging || !Class->IsTurretAnimExclusive) {
-							Begin_Anim(BANIM_TURRET, HealthRatio <= Rule->ConditionYellow);
+							Begin_Anim(BANIM_TURRET, Is_Damaged_Art());
 						}
 						if (Class->IsTurretAnimExclusive && (IsCharged || IsCharging)) {
 							End_Anim(BANIM_ACTIVE_TWO);
@@ -4694,7 +4676,7 @@ void BuildingClass::Begin_Mode(BStateType bstate)
 		BuildingTypeClass::AnimControlType const * ctrl = Fetch_Anim_Control();
 
 		if (ScenarioInit) {
-			Begin_Opening_Anims(HealthRatio <= Rule->ConditionYellow);
+			Begin_Opening_Anims(Is_Damaged_Art());
 		}
 
 		int rate = ctrl->Rate;
@@ -4929,7 +4911,7 @@ bool BuildingClass::Toggle_Primary(void)
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
 
-			if (!building->IsInLimbo && building->House == House && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
+			if (!building->IsInLimbo && Is_Same_Factory_Kind(*building)) {
 				building->IsLeader = false;
 			}
 		}
@@ -4947,6 +4929,12 @@ bool BuildingClass::Toggle_Primary(void)
 }
 
 
+bool BuildingClass::Is_Same_Factory_Kind(BuildingClass const & other) const
+{
+	return other.House == House && other.Class->ToBuild == Class->ToBuild && other.Class->IsNaval == Class->IsNaval;
+}
+
+
 /// <summary>
 /// Makes this factory its house's primary of its kind unless another factory of that kind is already
 /// primary. The kind is the ToBuild type and the naval flag, and a structure in limbo does not count.
@@ -4956,7 +4944,7 @@ void BuildingClass::Claim_Vacant_Primary(void)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building != this && !building->IsInLimbo && building->House == House && building->IsLeader && building->Class->ToBuild == Class->ToBuild && building->Class->IsNaval == Class->IsNaval) {
+		if (building != this && !building->IsInLimbo && Is_Same_Factory_Kind(*building) && building->IsLeader) {
 			return;
 		}
 	}
@@ -5088,13 +5076,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			bool tethered;
 		};
 		std::vector<CapturedDocker> captured_dockers;
-		std::vector<TechnoClass *> dockers;
-		for (int slot = 0; slot < Link_Count(); slot++) {
-			if (Link(slot) != NULL) {
-				dockers.push_back(Link(slot));
-			}
-		}
-		for (TechnoClass * docker : dockers) {
+		for (TechnoClass * docker : Linked_Objects()) {
 			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
 			if (!Contains_Link(docker)) {
 				continue;
@@ -5144,11 +5126,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			oldowner->SecretLabs.Delete(this);
 		}
 
-		if (Class->IsCloakGenerator) {
-			Disable_Cloak_Generator();
-			CurrentCloakRadius = 1;
-			Cloaking_AI(true);
-		}
+		Collapse_Cloak_Field();
 		if (Class->IsSensorArray) {
 			Disable_Sensor_Array();
 		}
@@ -5423,11 +5401,6 @@ bool BuildingClass::Clear_Weapons_Factory_Bib(void)
 int BuildingClass::Do_MISSION_GUARD(void)
 {
 	bool isfacility;
-	bool hascontact;
-	bool istechno;
-	bool entermission;
-	bool inrange;
-	bool tomove;
 
 	if (Class->IsGattling) {
 		Gattling_Rate_Down(MissionAccumulateTime);
@@ -5448,9 +5421,6 @@ int BuildingClass::Do_MISSION_GUARD(void)
 
 		if (!Class->IsEMPulseCannon && (Fetch_Super_Weapon() == SUPER_NONE || SuperWeaponTypes[Fetch_Super_Weapon()]->Type != SUPER_CHEM_MISSILE)) {
 
-			/*
-			**	If there is no target available, then search for one.
-			*/
 			// No target is searched for here. BuildingClass::Mission_Guard (0x4496B0) takes only the target that the
 			// opportunity scan of TechnoClass::Update has set.
 
@@ -5493,29 +5463,9 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				isfacility = Class->IsCanUnitRepair || Class->IsCanUnitReload;
 				for (int slot = 0; slot < Link_Count(); slot++) {
 					TechnoClass * contact = Link(slot);
-					hascontact = contact != 0;
 
-					istechno = false;
-					if (hascontact) {
-						istechno = contact->Is_Techno();
-					}
-
-					entermission = false;
-					if (istechno) {
-						entermission = contact->Mission == MISSION_ENTER;
-					}
-
-					inrange = false;
-					if (entermission) {
-						inrange = Distance_To(contact) < CELL_LEPTON / 4;
-					}
-
-					tomove = false;
-					if (inrange) {
-						tomove = Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER;
-					}
-
-					if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
+					// isfacility stays last: RADIO_NEED_TO_MOVE goes to an entering link whatever the building kind.
+					if (contact != NULL && contact->Mission == MISSION_ENTER && Distance_To(contact) < CELL_LEPTON / 4 && Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER && isfacility) {
 
 						Assign_Mission(MISSION_REPAIR);
 						return(1);
@@ -5948,8 +5898,8 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						return(1);
 					}
 
-					Cell const undeploy_cell = Class->Is_Mobile_Deployer() ? PositionCoord.As_Cell() : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE)).As_Cell();
-					if (!Undeploy_Cell_Ready(undeploy_cell)) {
+					Coord const place = Class->Is_Mobile_Deployer() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
+					if (!Undeploy_Cell_Ready(place.As_Cell())) {
 						return(1);
 					}
 					UndeployWaitStart = 0;
@@ -5966,14 +5916,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						double ratio = HealthRatio;
 						int money = Refund_Amount();
 						AbstractClass * arch = ArchiveTarget;
-
-						Coord place;
-						if (Class->Is_Mobile_Deployer()) {
-							place = PositionCoord;
-						} else {
-							Coord adjacent = Adjacent_Cell(PositionCoord, DIR_SE);
-							place = Coord_Snap(adjacent);
-						}
 
 						if (LightSource != NULL) {
 							LightSource->Disable();
@@ -6095,11 +6037,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					Delete_Me();
 
 					Adjust_House_Power(House);
-					if (Class->IsCloakGenerator) {
-						Disable_Cloak_Generator();
-						CurrentCloakRadius = 1;
-						Cloaking_AI(true);
-					}
+					Collapse_Cloak_Field();
 				}
 			}
 			break;
@@ -6219,6 +6157,18 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 		}
 	}
 
+	auto spin_up = [this]() {
+		Gattling_Rate_Up(MissionAccumulateTime);
+		MissionAccumulateTime = 0;
+	};
+	auto animate_turret = [this, spin_up]() {
+		if (Class->IsGattling) {
+			spin_up();
+		} else {
+			TurretAnimFrame++;
+		}
+	};
+
 	/*
 	 * As BuildingClass::Mission_Attack (0x44ACF0): a gattling weapon spins up for the frames
 	 * since the last call while it fires, faces or rearms, and spins down when it loses its
@@ -6238,26 +6188,20 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			Commence();
 			break;
 
+		// FIRE_FACING comes only from a target-holding Can_Fire, so TarCom is not null here.
 		case FIRE_FACING:
-			if (TarCom != NULL) {
-				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
-			}
+			PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
+				spin_up();
 			}
 			return(2);
 
+		// Can_Fire returns FIRE_REARM for a charging prism before it checks the target, so TarCom may be null here.
 		case FIRE_REARM:
 			if (TarCom != NULL) {
 				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			}
-			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
-			} else {
-				TurretAnimFrame++;
-			}
+			animate_turret();
 			return(2);
 
 		case FIRE_BUSY:
@@ -6285,12 +6229,7 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			} else {
 				Fire_At(TarCom, primary);
 			}
-			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
-			} else {
-				TurretAnimFrame++;
-			}
+			animate_turret();
 			return(1);
 
 		default:
@@ -6299,9 +6238,7 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 	MissionAccumulateTime = 0;
 	if (TarCom != NULL) {
 		PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
-		return(1);
 	}
-
 	return(1);
 }
 
@@ -6422,7 +6359,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 		switch (Status) {
 			case INITIAL:
 				Begin_Mode(BSTATE_ACTIVE);
-				Begin_Anim(BANIM_PRE_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+				Begin_Anim(BANIM_PRE_PRODUCTION, Is_Damaged_Art());
 				Status = DURING;
 				break;
 
@@ -6536,8 +6473,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					if (!In_Radio_Contact()) {
 						End_Anim(BANIM_PRODUCTION);
 						End_Anim(BANIM_SPECIAL_TWO);
-						Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
-						Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+						Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+						Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
@@ -6660,8 +6597,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					}
 					if (!any_docked) {
 						if (Anims[BANIM_PRODUCTION] || Anims[BANIM_SPECIAL_TWO]) {
-							Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
-							Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+							Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+							Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 							End_Anim(BANIM_PRODUCTION);
 							End_Anim(BANIM_SPECIAL_TWO);
 						}
@@ -6678,8 +6615,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				if (!In_Radio_Contact()) {
 					End_Anim(BANIM_PRODUCTION);
 					End_Anim(BANIM_SPECIAL_TWO);
-					Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
-					Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+					Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 					Status = IDLE;
 					return(1);
 				}
@@ -6725,8 +6662,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
 								End_Anim(BANIM_PRODUCTION);
 								End_Anim(BANIM_SPECIAL_TWO);
-								Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
-								Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+								Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+								Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 								Status = IDLE;
 								break;
 
@@ -6740,8 +6677,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
 									End_Anim(BANIM_PRODUCTION);
 									End_Anim(BANIM_SPECIAL_TWO);
-									Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
-									Begin_Anim(BANIM_ACTIVE_ONE, HealthRatio <= Rule->ConditionYellow);
+									Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+									Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 									Status = IDLE;
 
 									FootClass * foot = dynamic_cast<FootClass *>(docked);
@@ -7310,14 +7247,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 					Status = NAVAL_IDLE;
 					IsToDisplay = true;
 					End_Anim(BANIM_IDLE);
-					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+					Begin_Anim(BANIM_PRODUCTION, Is_Damaged_Art());
 					break;
 				}
 				Door.Open_Door(Class->DeployTime);
 				Status = CLEAR_BIB;
 				IsToDisplay = true;
 				End_Anim(BANIM_IDLE);
-				Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+				Begin_Anim(BANIM_PRODUCTION, Is_Damaged_Art());
 				break;
 
 			/*
@@ -8685,7 +8622,7 @@ void BuildingClass::Repair_AI(void)
 			}
 
 			// A repair step changes only the form of the animations the structure is running; it starts none (BuildingClass::AI_Repair, 0x450630).
-			Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
+			Set_Anim_Damage_State(Is_Damaged_Art());
 
 			if (HealthRatio > Rule->ConditionYellow && ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
@@ -8831,7 +8768,7 @@ void BuildingClass::Animation_AI(void)
 	// A naval repair yard keeps its production animation, which plays the ship's exit to its end (gamemd UpdateAnimations 0x4509D0 tests Naval).
 	// The repair animation takes its damaged form below ConditionYellow, as in gamemd (0x4509D0 picks the form by health ratio).
 	if (Class->IsCanUnitRepair && !Class->IsNaval && Mission != MISSION_REPAIR && (Anims[BANIM_PRODUCTION] != NULL || Anims[BANIM_SPECIAL_TWO] != NULL)) {
-		Begin_Anim(BANIM_SPECIAL_THREE, HealthRatio <= Rule->ConditionYellow);
+		Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
 		End_Anim(BANIM_PRODUCTION);
 		End_Anim(BANIM_SPECIAL_TWO);
 	}
@@ -9034,7 +8971,7 @@ bool BuildingClass::Add_Upgrade(void)
 	}
 
 	UpgradeLevel++;
-	Begin_Anim((BAnimType)(UpgradeLevel - 1), HealthRatio <= Rule->ConditionYellow);
+	Begin_Anim((BAnimType)(UpgradeLevel - 1), Is_Damaged_Art());
 
 	return(true);
 }
@@ -9181,7 +9118,7 @@ void BuildingClass::Update_Storage_Anims(void)
 		}
 	}
 	if (Anims[BANIM_ACTIVE_ONE + level] == NULL) {
-		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + level), HealthRatio <= Rule->ConditionYellow);
+		Begin_Anim((BAnimType)(BANIM_ACTIVE_ONE + level), Is_Damaged_Art());
 	}
 }
 
@@ -9193,7 +9130,7 @@ void BuildingClass::Update_Storage_Anims(void)
 /// </summary>
 void BuildingClass::Update_Absorber_Anims(void)
 {
-	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	bool const damaged = Is_Damaged_Art();
 	if (Cargo.How_Many() < 1) {
 		End_Anim(BANIM_ACTIVE_TWO);
 		if (Anims[BANIM_ACTIVE_ONE] == NULL) {
@@ -9229,7 +9166,7 @@ void BuildingClass::Update_Super_Anims(void)
 		return;
 	}
 
-	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	bool const damaged = Is_Damaged_Art();
 	if (super->Is_Ready()) {
 		// A ready animation that a power shortfall removed stays away until the power comes back.
 		if (Anims[BANIM_SUPER_THREE] == NULL && !AnimStates[BANIM_SUPER_THREE]) {
@@ -9421,7 +9358,7 @@ void BuildingClass::Detach_Anim(AnimClass * anim)
 		for (int i = 0; i < BANIM_COUNT; i++) {
 			if (Anims[i] == anim) {
 				Anims[i] = NULL;
-				bool const damaged = HealthRatio <= Rule->ConditionYellow;
+				bool const damaged = Is_Damaged_Art();
 
 				// PointerExpired plays these two before AnimExpired looks at the animation, so neither asks whether it ended.
 				if (!IsInLimbo && i == BANIM_PRODUCTION) {
@@ -9750,11 +9687,7 @@ void BuildingClass::Power_On(void)
 		Toggle_Laser_Fence_Post(false);
 	}
 
-	for (int i = 0; i < BANIM_COUNT; i++) {
-		if (Class->AnimData[i].Powered && Anims[i] != NULL) {
-			Anims[i]->Enable();
-		}
-	}
+	Freeze_Powered_Anims(false);
 }
 
 
@@ -9779,11 +9712,7 @@ void BuildingClass::Power_Off(void)
 		Toggle_Laser_Fence_Post(false);
 	}
 
-	for (int i = 0; i < BANIM_COUNT; i++) {
-		if (Class->AnimData[i].Powered && Anims[i] != NULL) {
-			Anims[i]->Disable();
-		}
-	}
+	Freeze_Powered_Anims(true);
 }
 
 
@@ -9991,7 +9920,7 @@ void BuildingClass::Update_Bunker(void)
 
 		case BUNKER_ROTATE_IN_BUNKER:
 			if (!unit->PrimaryFacing.Is_Rotating()) {
-				bool const damaged = HealthRatio <= Rule->ConditionYellow;
+				bool const damaged = Is_Damaged_Art();
 				Begin_Anim(BANIM_SPECIAL_ONE, damaged);
 				Begin_Anim(BANIM_SPECIAL_TWO, damaged);
 				BunkerState = BUNKER_RAISE_WALLS;
@@ -10055,7 +9984,7 @@ void BuildingClass::Bunker_Walls_Down_Anims(void)
 	End_Anim(BANIM_SPECIAL_ONE);
 	End_Anim(BANIM_SPECIAL_TWO);
 	if (!IsInLimbo) {
-		bool const damaged = HealthRatio <= Rule->ConditionYellow;
+		bool const damaged = Is_Damaged_Art();
 		Begin_Anim(BANIM_SPECIAL_THREE, damaged);
 		Begin_Anim(BANIM_SPECIAL_FOUR, damaged);
 	}
@@ -10097,6 +10026,22 @@ void BuildingClass::Absorb(FootClass * object)
 }
 
 
+// Unlimbos who on a free spot beside the structure, with ScenarioInit raised. The caller deletes who
+// when this returns false, and must do so after this call.
+bool BuildingClass::Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced)
+{
+	Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), speed);
+	Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
+	ScenarioInit++;
+	bool placed = coord != COORD_NONE && who->Unlimbo(coord, DIR_S);
+	if (!placed && keep_unplaced) {
+		placed = who->Unlimbo(Center_Coord(), DIR_S);
+	}
+	ScenarioInit--;
+	return(placed);
+}
+
+
 /// <summary>
 /// Puts the first passenger back on the map next to the structure, as BuildingClass::Mission_Unload
 /// (0x44D880) does. A passenger with no room to stand is removed from the game.
@@ -10106,11 +10051,7 @@ bool BuildingClass::Release_Passenger(void)
 {
 	FootClass * passenger = Cargo.Detach_Object();
 	if (passenger != NULL) {
-		Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), passenger->TClass->Speed);
-		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
-		ScenarioInit++;
-		bool placed = coord != COORD_NONE && passenger->Unlimbo(coord, DIR_S);
-		ScenarioInit--;
+		bool placed = Place_Beside_Structure(passenger, passenger->TClass->Speed, false);
 		if (placed) {
 			passenger->House->Tracking_Release(passenger);
 			passenger->Enter_Idle_Mode();
@@ -10195,10 +10136,23 @@ void BuildingClass::Grind(FootClass * object)
 	Sound_Effect(Rule->EnterGrinderSound, object->Center_Coord());
 	if (Anims[BANIM_ACTIVE_ONE] != NULL) {
 		End_Anim(BANIM_ACTIVE_ONE);
-		Begin_Anim(BANIM_SPECIAL_ONE, HealthRatio <= Rule->ConditionYellow);
+		Begin_Anim(BANIM_SPECIAL_ONE, Is_Damaged_Art());
 	}
 
 	object->Delete_Me();
+}
+
+
+// Deleting an occupant detaches it from the list, so the caller works from the returned copy.
+std::vector<InfantryClass *> BuildingClass::Take_Occupants(void)
+{
+	std::vector<InfantryClass *> occupants;
+	for (int index = 0; index < Occupants.Count(); index++) {
+		occupants.push_back(Occupants[index]);
+	}
+	Occupants.Clear();
+	Update_Threat_In_Cell();
+	return(occupants);
 }
 
 
@@ -10214,24 +10168,10 @@ void BuildingClass::Eject_Occupants(bool const keep_unplaced)
 		return;
 	}
 
-	// Deleting an occupant detaches it from the list, so work from a copy.
-	std::vector<InfantryClass *> occupants;
-	for (int index = 0; index < Occupants.Count(); index++) {
-		occupants.push_back(Occupants[index]);
-	}
-	Occupants.Clear();
-	Update_Threat_In_Cell();
+	std::vector<InfantryClass *> occupants = Take_Occupants();
 
-	Cell start = Get_Cell() + Cell(0, Class->Height());
 	for (InfantryClass * occupant : occupants) {
-		Cell cell = Map.Nearby_Location(start, occupant->Class->Speed);
-		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
-		ScenarioInit++;
-		bool placed = coord != COORD_NONE && occupant->Unlimbo(coord, DIR_S);
-		if (!placed && keep_unplaced) {
-			placed = occupant->Unlimbo(Center_Coord(), DIR_S);
-		}
-		ScenarioInit--;
+		bool placed = Place_Beside_Structure(occupant, occupant->Class->Speed, keep_unplaced);
 		if (placed) {
 			occupant->Enter_Idle_Mode();
 		} else {
@@ -10252,13 +10192,7 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 	FiringOccupantIndex = 0;
 	WeaponTypeClass const * weapon = assaulter->Get_Primary_Weapon();
 
-	// Deleting an occupant detaches it from the list, so work from a copy.
-	std::vector<InfantryClass *> occupants;
-	for (int index = 0; index < Occupants.Count(); index++) {
-		occupants.push_back(Occupants[index]);
-	}
-	Occupants.Clear();
-	Update_Threat_In_Cell();
+	std::vector<InfantryClass *> occupants = Take_Occupants();
 
 	for (int index = (int)occupants.size() - 1; index >= 0; index--) {
 		InfantryClass * occupant = occupants[index];
@@ -10356,7 +10290,7 @@ void BuildingClass::Set_Garrison_House(HouseClass * newowner)
 /// </summary>
 void BuildingClass::Refresh_Garrison_Anims(void)
 {
-	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	bool const damaged = Is_Damaged_Art();
 	for (BAnimType anim : {BANIM_IDLE, BANIM_ACTIVE_ONE, BANIM_ACTIVE_TWO, BANIM_ACTIVE_THREE, BANIM_ACTIVE_FOUR}) {
 		if (Anims[anim] != NULL) {
 			Begin_Anim(anim, damaged);
@@ -10375,7 +10309,7 @@ void BuildingClass::Refresh_Garrison_Anims(void)
 /// <param name="online">Is the building now in service?</param>
 void BuildingClass::Update_Power_Anims(bool online)
 {
-	bool const damaged = HealthRatio <= Rule->ConditionYellow;
+	bool const damaged = Is_Damaged_Art();
 	if (online) {
 		if (Class->IsPowered && Class->Drain > 0) {
 			Power_Anims_On();
@@ -10411,7 +10345,7 @@ void BuildingClass::Update_Power_Anims(bool online)
 /// </summary>
 void BuildingClass::Power_Anims_On(void)
 {
-	bool damaged = HealthRatio <= Rule->ConditionYellow;
+	bool damaged = Is_Damaged_Art();
 
 	End_Anim(BANIM_SUPER_LOW_POWER);
 	for (int index = 0; index < BANIM_COUNT; index++) {
@@ -10440,7 +10374,7 @@ void BuildingClass::Power_Anims_On(void)
 /// </summary>
 void BuildingClass::Power_Anims_Off(void)
 {
-	bool damaged = HealthRatio <= Rule->ConditionYellow;
+	bool damaged = Is_Damaged_Art();
 
 	for (int index = 0; index < BANIM_COUNT; index++) {
 		BuildingTypeClass::AnimDataType const & data = Class->AnimData[index];
@@ -11091,7 +11025,7 @@ Coord BuildingClass::Turret_Coord(int slot, TPoint3D<int> /* base */) const
 		return(Render_Coord() + pt);
 	}
 	if (Class->IsBarrelAnimAVoxel) {
-		return(Voxel_Fire_Coord(slot, true));
+		return(Voxel_Fire_Coord(slot));
 	}
 
 	Coord coord = BASECLASS::Turret_Coord(slot);
@@ -11108,24 +11042,18 @@ Coord BuildingClass::Turret_Coord(int slot, TPoint3D<int> /* base */) const
 /// This routine runs the type's barrel offset through the building's current barrel
 /// matrix, so that a projectile appears at the end of the barrel wherever the weapon
 /// happens to be aimed. A weapon that alternates barrels between shots is offset to
-/// whichever barrel is its turn.
+/// the barrel that fired last.
 /// </summary>
 /// <param name="which">The weapon slot to fetch the barrel for.</param>
-/// <param name="just_fired">Should the barrel of the shot just fired be used rather than
-/// the next one?</param>
 /// <returns>Returns with the coordinate of the barrel end.</returns>
-Coord BuildingClass::Voxel_Fire_Coord(int which, bool just_fired) const
+Coord BuildingClass::Voxel_Fire_Coord(int which) const
 {
 	WeaponTypeClass *weapon = Get_Class_Weapon_Data(which)->Weapon;
 	int burst;
-	if (just_fired) {
-		if (BurstIndex == 0) {
-			burst = weapon->Burst - 1;
-		} else {
-			burst = BurstIndex - 1;
-		}
+	if (BurstIndex == 0) {
+		burst = weapon->Burst - 1;
 	} else {
-		burst = BurstIndex;
+		burst = BurstIndex - 1;
 	}
 
 	int yoffset;
@@ -11479,6 +11407,16 @@ void BuildingClass::Disable_Cloak_Generator(void)
 }
 
 
+void BuildingClass::Collapse_Cloak_Field(void)
+{
+	if (Class->IsCloakGenerator) {
+		Disable_Cloak_Generator();
+		CurrentCloakRadius = 1;
+		Cloaking_AI(true);
+	}
+}
+
+
 /// <summary>
 /// Asks everything standing in the cell to reconsider cloaking.
 /// Use this routine after the cloak coverage of a cell has changed. Only the mobile
@@ -11750,6 +11688,13 @@ void BuildingClass::Cloaking_AI(bool fast)
 			cloaking_surface->Unlock();
 		}
 	}
+}
+
+
+// Damaged art switches at the yellow threshold. A call site that needs another threshold tests it itself.
+bool BuildingClass::Is_Damaged_Art(void) const
+{
+	return HealthRatio <= Rule->ConditionYellow;
 }
 
 
@@ -12881,7 +12826,7 @@ Matrix3D BuildingClass::Get_Barrel_Matrix(void) const
 void BuildingClass::Charge_Turret(void)
 {
 	if (!IsCharged) {
-		Begin_Anim(BANIM_TURRET, HealthRatio <= Rule->ConditionYellow);
+		Begin_Anim(BANIM_TURRET, Is_Damaged_Art());
 		BuildingStage.Set_Stage(Anims[BANIM_TURRET]->Class->Start);
 		Set_Turret_Frame();
 		IsCharging = true;
@@ -12906,7 +12851,7 @@ void BuildingClass::Discharge_Turret(void)
 	BuildingStage.Set_Rate(0);
 	if (Class->IsTurretAnimExclusive) {
 		End_Anim(BANIM_TURRET);
-		Begin_Anim(BANIM_ACTIVE_TWO, HealthRatio <= Rule->ConditionYellow);
+		Begin_Anim(BANIM_ACTIVE_TWO, Is_Damaged_Art());
 	} else {
 		Set_Turret_Frame();
 	}
@@ -12989,7 +12934,7 @@ void BuildingClass::Start_Delayed_Fire(PrismStageType stage)
 	PrismStage = stage;
 	PrismDelay = Class->DelayedFireDelay;
 	End_Anim(BANIM_ACTIVE_ONE);
-	Begin_Anim(BANIM_SPECIAL_ONE, HealthRatio <= Rule->ConditionYellow);
+	Begin_Anim(BANIM_SPECIAL_ONE, Is_Damaged_Art());
 }
 
 

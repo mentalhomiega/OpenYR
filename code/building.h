@@ -549,7 +549,7 @@ class BuildingClass : public TechnoClass
 		virtual int Sort_Y(void) const override;
 		virtual Coord Exit_Coord(void) const override;
 
-		Coord Voxel_Fire_Coord(int which, bool just_fired) const;
+		Coord Voxel_Fire_Coord(int which) const;
 
 		/*
 		**	Object entry and exit from the game system.
@@ -643,6 +643,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Toggle_Primary(void);
 		virtual bool Set_Owning_House(HouseClass * newowner, bool announce) override;
 		void Claim_Vacant_Primary(void);
+		bool Is_Same_Factory_Kind(BuildingClass const & other) const;
 		virtual unsigned entry_380(void); /// Returns 0. A reserved vtable slot that nothing implements.
 		void Turn_On(void);
 		void Turn_Off(void);
@@ -675,6 +676,7 @@ class BuildingClass : public TechnoClass
 		int Flush_For_Placement(TechnoClass * techno, Cell const & cell);
 		void Enable_Cloak_Generator(void);
 		void Disable_Cloak_Generator(void);
+		void Collapse_Cloak_Field(void);
 		bool Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover);
 		void Disable_Sensor_Array(void);
 		void Enable_Sensor_Array(void);
@@ -767,7 +769,11 @@ class BuildingClass : public TechnoClass
 		int Exit_Infantry(TechnoClass * base);
 		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
+		void Send_Computer_Unit_To_Guard(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
+		bool Is_Damaged_Art(void) const;
+		std::vector<InfantryClass *> Take_Occupants(void);
+		bool Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
