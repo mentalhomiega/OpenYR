@@ -448,8 +448,6 @@ fixed_exclusions:
       - { file: code/list.h, function: Action, expression: KN_UP }
       - { file: code/list.h, function: Action, expression: KN_DOWN }
     reason: Reusable list-widget navigation, not a top-level command.
-  - site: { file: code/mapsel.cpp, function: MapSelect::Process_Input, expression: KN_LMOUSE }
-    reason: Hit-testing for the map-selection screen, not a named fixed control.
   - sites:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_NONE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_RLSE_BIT+KN_LMOUSE }
