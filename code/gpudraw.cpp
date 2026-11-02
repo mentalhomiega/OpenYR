@@ -222,32 +222,30 @@ static GpuBlit & Add_Blit(BlitDesc const & desc, int x, int y, int width, int he
 }
 
 
-static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha)
+// A blit with no picture behind it: a brighten, line or fill. With arena false it reserves no arena
+// pixels, so a fill does not grow the arena.
+static GpuBlit & Add_Special_Blit(int x, int y, int width, int height, bool arena)
 {
-	if (&dest != _Target) {
-		return(false);
+	BlitDesc desc = {};
+	GpuBlit & blit = Add_Blit(desc, x, y, arena ? width : 0, arena ? height : 0, 0, 0, 1, 0, 0, 0);
+	blit.Width = width;
+	blit.Height = height;
+	return(blit);
+}
+
+
+static void Add_Z_Shape(GpuBlit & blit, signed char const * zshape, int zshapepitch, int width, int height)
+{
+	blit.ZShape = (std::int32_t)_List.ZShapeArena.size();
+	for (int r = 0; r < height; r++) {
+		_List.ZShapeArena.insert(_List.ZShapeArena.end(), zshape + r * zshapepitch, zshape + r * zshapepitch + width);
 	}
-	BlitDesc desc;
-	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
-		_List.Unsupported++;
-		return(false);
-	}
-	// A cached image is read from the atlas at the clipped corner, so no colour indices are copied.
-	std::int64_t const image = Atlas_Image();
-	if (image >= 0) {
-		BlitRecordSource const & source = Blit_Record_Source;
-		GpuBlit & atlased = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha, image + (std::int64_t)source.Top * source.Width + leftmargin, source.Width);
-		if (zshape != NULL) {
-			atlased.ZShape = (std::int32_t)_List.ZShapeArena.size();
-			for (int r = 0; r < height; r++) {
-				_List.ZShapeArena.insert(_List.ZShapeArena.end(), zshape + r * zshapepitch, zshape + r * zshapepitch + width);
-			}
-		}
-		_LockedBlits++;
-		return(_Render);
-	}
-	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha);
-	_LockedBlits++;
+}
+
+
+// Writes the columns from leftmargin on, width texels a row, into the blit's arena pixels.
+static void Decode_RLE_Rows(GpuBlit const & blit, void const * rows, int leftmargin, int width, int height)
+{
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	unsigned char const * row = (unsigned char const *)rows;
 	int const end = leftmargin + width;
@@ -282,11 +280,35 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 		out += width;
 		row += *(unsigned short const *)row;
 	}
+}
+
+
+static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, int y, int width, int height, void const * rows, int leftmargin, int z, int zfraction, int znumerator, int zdenominator, int zwrap, signed char const * zshape, int zshapepitch, int alpha)
+{
+	if (&dest != _Target) {
+		return(false);
+	}
+	BlitDesc desc;
+	if (!blitter.Describe(desc) || width <= 0 || height <= 0) {
+		_List.Unsupported++;
+		return(false);
+	}
+	// A cached image is read from the atlas at the clipped corner, so no colour indices are copied.
+	std::int64_t const image = Atlas_Image();
+	std::int64_t atlas = -1;
+	int pitch = 0;
+	if (image >= 0) {
+		BlitRecordSource const & source = Blit_Record_Source;
+		atlas = image + (std::int64_t)source.Top * source.Width + leftmargin;
+		pitch = source.Width;
+	}
+	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha, atlas, pitch);
+	_LockedBlits++;
+	if (image < 0) {
+		Decode_RLE_Rows(blit, rows, leftmargin, width, height);
+	}
 	if (zshape != NULL) {
-		blit.ZShape = (std::int32_t)_List.ZShapeArena.size();
-		for (int r = 0; r < height; r++) {
-			_List.ZShapeArena.insert(_List.ZShapeArena.end(), zshape + r * zshapepitch, zshape + r * zshapepitch + width);
-		}
+		Add_Z_Shape(blit, zshape, zshapepitch, width, height);
 	}
 	return(_Render);
 }
@@ -670,8 +692,7 @@ bool GpuDraw_Brighten(Surface const & surface, Rect const & clip, Rect const & d
 	if (bytes == NULL) {
 		return(false);
 	}
-	BlitDesc desc = {};
-	GpuBlit & blit = Add_Blit(desc, area.X, area.Y, area.Width, area.Height, 0, 0, 1, 0, 0, 0);
+	GpuBlit & blit = Add_Special_Blit(area.X, area.Y, area.Width, area.Height, true);
 	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	for (int r = 0; r < area.Height; r++) {
 		std::memcpy(out + r * area.Width, bytes + r * shape.Stride(), area.Width);
@@ -748,8 +769,7 @@ void GpuDraw_Line_End(void)
 			top = std::min(top, _LinePixels[i].Y);
 			bottom = std::max(bottom, _LinePixels[i].Y);
 		}
-		BlitDesc desc = {};
-		GpuBlit & blit = Add_Blit(desc, left, top, right - left + 1, bottom - top + 1, 0, 0, 1, 0, 0, 0);
+		GpuBlit & blit = Add_Special_Blit(left, top, right - left + 1, bottom - top + 1, true);
 		blit.Line = _LineColour;
 		blit.LineKind = _LineKind;
 		blit.Fade = _LineFade;
@@ -1022,10 +1042,7 @@ bool GpuDraw_Fill(Surface const & surface, Rect const & rect, unsigned short col
 	if (!fill.Is_Valid()) {
 		return(_Render);
 	}
-	BlitDesc desc = {};
-	GpuBlit & blit = Add_Blit(desc, fill.X, fill.Y, 0, 0, 0, 0, 1, 0, 0, 0);
-	blit.Width = fill.Width;
-	blit.Height = fill.Height;
+	GpuBlit & blit = Add_Special_Blit(fill.X, fill.Y, fill.Width, fill.Height, false);
 	blit.Colour = colour;
 	return(_Render);
 }
