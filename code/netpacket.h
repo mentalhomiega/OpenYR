@@ -42,7 +42,7 @@ namespace NetPacket
 		TRUNCATED_EVENT,
 		ZERO_MEGAMISSION_COUNT,
 		TRUNCATED_MEGAMISSION,
-		TRUNCATED_ADDPLAYER,
+		TRUNCATED_VARIABLE_PAYLOAD,
 		TRAILING_BYTES,
 		INVALID_CONNECTION,
 		COUNT,
@@ -63,17 +63,17 @@ namespace NetPacket
 	struct DecodedEvent
 	{
 		DecodedEvent(void) noexcept;
-		DecodedEvent(EventClass const & event, std::vector<std::byte> add_player_data) noexcept;
+		DecodedEvent(EventClass const & event, std::vector<std::byte> variable_payload) noexcept;
 		DecodedEvent(DecodedEvent const & other);
 		DecodedEvent(DecodedEvent && other) noexcept;
 		DecodedEvent & operator=(DecodedEvent const & other);
 		DecodedEvent & operator=(DecodedEvent && other) noexcept;
 
 		EventClass Event;
-		std::vector<std::byte> AddPlayerData;
+		std::vector<std::byte> VariablePayload;
 
 		private:
-			void Bind_AddPlayer_Data(void) noexcept;
+			void Bind_Variable_Payload(void) noexcept;
 	};
 
 

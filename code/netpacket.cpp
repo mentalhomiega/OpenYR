@@ -53,7 +53,7 @@ namespace NetPacket
 			int Frame = 0;
 			int Sender = 0;
 			std::array<std::byte, EVENT_DATA_SIZE> Data{};
-			std::vector<std::byte> AddPlayerData;
+			std::vector<std::byte> VariablePayload;
 		};
 
 
@@ -171,12 +171,12 @@ namespace NetPacket
 		}
 
 
-		/// <summary>Reads and owns a variable-length ADDPLAYER payload.</summary>
-		bool Read_Add_Player(Reader & reader, PendingEvent & event, std::size_t event_offset, DecodeFailure & failure)
+		/// <summary>Reads and owns the variable-length payload of an event that carries one.</summary>
+		bool Read_Variable_Payload(Reader & reader, PendingEvent & event, std::size_t event_offset, DecodeFailure & failure)
 		{
 			auto size = reader.Read_Value<VariableSizeType>();
 			if (!size) {
-				failure.Code = DecodeError::TRUNCATED_ADDPLAYER;
+				failure.Code = DecodeError::TRUNCATED_VARIABLE_PAYLOAD;
 				failure.Offset = event_offset;
 				failure.EventType = event.Type;
 				return(false);
@@ -184,14 +184,14 @@ namespace NetPacket
 
 			auto data = reader.Take(*size);
 			if (!data) {
-				failure.Code = DecodeError::TRUNCATED_ADDPLAYER;
+				failure.Code = DecodeError::TRUNCATED_VARIABLE_PAYLOAD;
 				failure.Offset = event_offset;
 				failure.EventType = event.Type;
 				return(false);
 			}
 
 			std::memcpy(event.Data.data() + VARIABLE_SIZE_OFFSET, &*size, sizeof(*size));
-			event.AddPlayerData.assign(data->begin(), data->end());
+			event.VariablePayload.assign(data->begin(), data->end());
 			return(true);
 		}
 
@@ -263,7 +263,7 @@ namespace NetPacket
 				event.ID = source.Sender;
 				std::memcpy(&event.Data, source.Data.data(), source.Data.size());
 
-				result.Events.emplace_back(event, std::move(source.AddPlayerData));
+				result.Events.emplace_back(event, std::move(source.VariablePayload));
 			}
 			if (!result.Events.empty()) {
 				result.Envelope = result.Events.front().Event;
@@ -360,7 +360,7 @@ namespace NetPacket
 					if (EventClass::EventLength[type] != sizeof(VariableSizeType)) {
 						return(Failed(DecodeError::INVALID_EVENT_LENGTH, event_offset, type));
 					}
-					if (!Read_Add_Player(reader, event, event_offset, failure)) {
+					if (!Read_Variable_Payload(reader, event, event_offset, failure)) {
 						DecodeResult result;
 						result.Failure = failure;
 						return(result);
@@ -440,8 +440,8 @@ namespace NetPacket
 		}
 
 
-		/// <summary>Reads the variable payload size retained in an ADDPLAYER event.</summary>
-		VariableSizeType Add_Player_Size(PendingEvent const & event)
+		/// <summary>Reads the size of the variable payload retained in an event.</summary>
+		VariableSizeType Variable_Payload_Size(PendingEvent const & event)
 		{
 			VariableSizeType size = 0;
 			std::memcpy(&size, event.Data.data() + VARIABLE_SIZE_OFFSET, sizeof(size));
@@ -518,12 +518,12 @@ namespace NetPacket
 				}
 
 				if (EventClass::Has_Variable_Payload(event.Type)) {
-					VariableSizeType const size = Add_Player_Size(event);
+					VariableSizeType const size = Variable_Payload_Size(event);
 					auto data = reader.Take(size);
 					if (!data) {
-						return(Failed(DecodeError::TRUNCATED_ADDPLAYER, event_offset, event.Type));
+						return(Failed(DecodeError::TRUNCATED_VARIABLE_PAYLOAD, event_offset, event.Type));
 					}
-					event.AddPlayerData.assign(data->begin(), data->end());
+					event.VariablePayload.assign(data->begin(), data->end());
 				}
 
 				events.push_back(std::move(event));
@@ -543,27 +543,27 @@ namespace NetPacket
 
 
 	/// <summary>Owns one decoded event and its optional variable payload.</summary>
-	DecodedEvent::DecodedEvent(EventClass const & event, std::vector<std::byte> add_player_data) noexcept
-		: Event(event), AddPlayerData(std::move(add_player_data))
+	DecodedEvent::DecodedEvent(EventClass const & event, std::vector<std::byte> variable_payload) noexcept
+		: Event(event), VariablePayload(std::move(variable_payload))
 	{
-		Bind_AddPlayer_Data();
+		Bind_Variable_Payload();
 	}
 
 
 	/// <summary>Copies a decoded event and repairs its owned payload pointer.</summary>
 	DecodedEvent::DecodedEvent(DecodedEvent const & other)
-		: Event(other.Event), AddPlayerData(other.AddPlayerData)
+		: Event(other.Event), VariablePayload(other.VariablePayload)
 	{
-		Bind_AddPlayer_Data();
+		Bind_Variable_Payload();
 	}
 
 
 	/// <summary>Moves a decoded event and repairs both payload pointers.</summary>
 	DecodedEvent::DecodedEvent(DecodedEvent && other) noexcept
-		: Event(other.Event), AddPlayerData(std::move(other.AddPlayerData))
+		: Event(other.Event), VariablePayload(std::move(other.VariablePayload))
 	{
-		Bind_AddPlayer_Data();
-		other.Bind_AddPlayer_Data();
+		Bind_Variable_Payload();
+		other.Bind_Variable_Payload();
 	}
 
 
@@ -572,8 +572,8 @@ namespace NetPacket
 	{
 		if (this != &other) {
 			Event = other.Event;
-			AddPlayerData = other.AddPlayerData;
-			Bind_AddPlayer_Data();
+			VariablePayload = other.VariablePayload;
+			Bind_Variable_Payload();
 		}
 		return(*this);
 	}
@@ -584,23 +584,23 @@ namespace NetPacket
 	{
 		if (this != &other) {
 			Event = other.Event;
-			AddPlayerData = std::move(other.AddPlayerData);
-			Bind_AddPlayer_Data();
-			other.Bind_AddPlayer_Data();
+			VariablePayload = std::move(other.VariablePayload);
+			Bind_Variable_Payload();
+			other.Bind_Variable_Payload();
 		}
 		return(*this);
 	}
 
 
-	/// <summary>Binds an ADDPLAYER event to its owned variable payload.</summary>
-	void DecodedEvent::Bind_AddPlayer_Data(void) noexcept
+	/// <summary>Binds an event that carries a variable payload to its owned copy.</summary>
+	void DecodedEvent::Bind_Variable_Payload(void) noexcept
 	{
 		if (!EventClass::Has_Variable_Payload(Event.Type)) {
 			return;
 		}
 
-		Event.Data.Variable.Size = static_cast<unsigned int>(AddPlayerData.size());
-		Event.Data.Variable.Pointer = AddPlayerData.empty() ? nullptr : AddPlayerData.data();
+		Event.Data.Variable.Size = static_cast<unsigned int>(VariablePayload.size());
+		Event.Data.Variable.Pointer = VariablePayload.empty() ? nullptr : VariablePayload.data();
 	}
 
 
@@ -669,7 +669,7 @@ namespace NetPacket
 			case DecodeError::TRUNCATED_EVENT: return("truncated event");
 			case DecodeError::ZERO_MEGAMISSION_COUNT: return("zero megamission count");
 			case DecodeError::TRUNCATED_MEGAMISSION: return("truncated megamission");
-			case DecodeError::TRUNCATED_ADDPLAYER: return("truncated variable-length event payload");
+			case DecodeError::TRUNCATED_VARIABLE_PAYLOAD: return("truncated variable-length event payload");
 			case DecodeError::TRAILING_BYTES: return("trailing packet bytes");
 			case DecodeError::INVALID_CONNECTION: return("invalid connection");
 			case DecodeError::COUNT: break;

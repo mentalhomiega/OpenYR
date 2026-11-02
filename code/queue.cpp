@@ -2058,10 +2058,10 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 			EventClass queued = source.Event;
 			if (EventClass::Has_Variable_Payload(queued.Type)) {
 				queued.Data.Variable.Pointer = NULL;
-				if (!source.AddPlayerData.empty()) {
-					queued.Data.Variable.Pointer = new char[source.AddPlayerData.size()];
-					memcpy(queued.Data.Variable.Pointer, source.AddPlayerData.data(),
-						source.AddPlayerData.size());
+				if (!source.VariablePayload.empty()) {
+					queued.Data.Variable.Pointer = new char[source.VariablePayload.size()];
+					memcpy(queued.Data.Variable.Pointer, source.VariablePayload.data(),
+						source.VariablePayload.size());
 				}
 			}
 			DoList.push_back(queued);
@@ -3249,6 +3249,7 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 			//..................................................................
 			// Variable-sized packets: Copy the packet Size & the buffer
 			//..................................................................
+			// The same two events that Has_Variable_Payload names.
 			case (EventClass::ADDPLAYER):
 			case (EventClass::BEACON_TEXT):
 				*(unsigned char *)( ((char *)buf) + size) = eventtype;
