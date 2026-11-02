@@ -7,8 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// [Options] ReportUpload and ReportURL say. ReportUpload=never turns all of it off.
-// [Options] ReportUpload and ReportURL say. An empty ReportURL turns all of it off.
+// [Options] ReportUpload=never turns all of it off. A missing or empty ReportURL= uses the default receiver.
 
 #pragma once
 
