@@ -1409,12 +1409,8 @@ int Trigger_Springs(TriggerTypeClass const * type)
 **	triggerlog <0|1>: writes a line each time a trigger springs. triggercoverage: writes each trigger
 **	type with how many times it has sprung this run, then the types that have not sprung at all.
 */
-static void Trigger_Step(StepType const & step)
+static void Trigger_Coverage_Step(StepType const &)
 {
-	if (step.Command == "triggerlog") {
-		TriggerLog = step.Argument_Int() != 0;
-		return;
-	}
 	std::vector<std::string> never;
 	for (int index = 0; index < TriggerTypes.Count(); index++) {
 		TriggerTypeClass const * type = TriggerTypes[index];
@@ -2905,17 +2901,10 @@ static void Crush_Check_Step(StepType const & step)
 //   gpureplay records each object pass of the map view and logs how far a replay of the record is from it.
 //   gpucheck draws each object pass of the map view on the GPU too and logs how far it is from the map view.
 //   drawprobe counts the call stacks that lock the map view in its foreground pass; switching it off logs them.
-static void Draw_Check_Step(StepType const & step)
+static void Draw_Check_Step(StepType const & step, void (*setter)(bool))
 {
-	static std::unordered_map<std::string_view, void (*)(bool)> const switches = {
-		{"presentdigest", Video_Set_Present_Digest},
-		{"drawdigest", Video_Set_Draw_Digest},
-		{"gpureplay", GpuDraw_Set_Replay_Check},
-		{"gpucheck", GpuDraw_Set_Gpu_Check},
-		{"drawprobe", Video_Set_Draw_Probe},
-	};
 	bool const on = step.Argument_Int() != 0;
-	switches.at(std::string_view(step.Command))(on);
+	setter(on);
 	DebugString("AUTOTEST %s %d\n", step.Command.c_str(), (int)on);
 }
 
@@ -2975,15 +2964,15 @@ static void Key_Step(StepType const & step)
 
 
 // hold <Key> / release <Key>: the press or the release alone, so the key stays down between steps as a held key does.
-static void Hold_Step(StepType const & step)
+static void Hold_Key(StepType const & step, bool down)
 {
 	WindowEvent event;
 	event.VirtualKey = Key_Code(step.Argument);
 	event.Modifiers = Key_Modifiers(step.Argument);
-	event.Type = (step.Command == "hold") ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
+	event.Type = down ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
 	Keyboard->Handle_Window_Event(event);
 	if (event.VirtualKey > 0 && event.VirtualKey < 256) {
-		ScriptHeldKeys[event.VirtualKey] = (step.Command == "hold");
+		ScriptHeldKeys[event.VirtualKey] = down;
 	}
 }
 
@@ -3601,18 +3590,6 @@ static void Produceai_Step(StepType const & step)
 }
 
 
-static void Move_Step(StepType const & step)
-{
-	if (step.Command == "move") {
-		Move(step.Argument, step.X, step.Y);
-	} else if (step.Command == "order") {
-		Order(step.Argument, step.X, step.Y);
-	} else {
-		Computer_Move(step.Argument, step.X, step.Y);
-	}
-}
-
-
 // strike <TypeID> x y: the player's objects of that type attack what stands on that cell.
 static void Strike_Step(StepType const & step)
 {
@@ -3846,12 +3823,12 @@ static void Windowmove_Step(StepType const & step)
 // windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
 // so it is converted to the frame as a player's click is. windowdouble x y is the same click as the second
 // of a quick pair, whose press SDL reports with Clicks 2.
-static void Windowclick_Step(StepType const & step)
+static void Window_Click(StepType const & step, int clicks)
 {
 	WindowEvent event = Move_Pointer(step.Argument_Int(), step.X);
 	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
-	event.Clicks = (step.Command == "windowdouble") ? 2 : 1;
+	event.Clicks = clicks;
 	Game_Window_Handle_Event(event);
 	event.Type = WINDOW_EVENT_MOUSE_UP;
 	Game_Window_Handle_Event(event);
@@ -3892,10 +3869,10 @@ static void Commandbutton_Step(StepType const & step)
 
 // windowpress x y and windowrelease x y: move the pointer to that window pixel and press or release the left
 // button there, so a drag can start on the map and end over the command bar or the panel.
-static void Windowpress_Step(StepType const & step)
+static void Window_Press(StepType const & step, bool press)
 {
 	WindowEvent event = Move_Pointer(step.Argument_Int(), step.X);
-	event.Type = (step.Command == "windowpress") ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
+	event.Type = press ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
 	Game_Window_Handle_Event(event);
@@ -4131,9 +4108,8 @@ static HouseClass * First_Computer_House(bool exclude_allies)
 
 // spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
 // grantunit <TypeID> x y: the same, owned by the player.
-static void Spawn_Step(StepType const & step)
+static void Spawn_Object(StepType const & step, bool player_owned)
 {
-	bool const player_owned = step.Command == "grantunit";
 	HouseClass * enemy = player_owned ? PlayerPtr : First_Computer_House(false);
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (enemy != NULL && type != NULL) {
@@ -4820,7 +4796,7 @@ static void Disguiseas_Step(StepType const & step)
 }
 
 
-static void Action_Step(StepType const & step)
+static void Action_Probe(StepType const & step, bool click)
 {
 	ObjectClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	for (int index = 0; index < Technos.Count(); index++) {
@@ -4830,7 +4806,7 @@ static void Action_Step(StepType const & step)
 			TechnoClass const * victim = dynamic_cast<TechnoClass const *>(target);
 			DebugString("AUTOTEST   action %s on %s: %s (bomb planted at %d)\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action],
 				victim != NULL && victim->BombDetonateFrame != -1 ? victim->BombPlantFrame : -1);
-			if (step.Command == "clickon" && target != NULL) {
+			if (click && target != NULL) {
 				// Test hook: a click in planning mode is recorded as a planned order, as the real click path does.
 				PlanningRecordScope const recording(Map.IsPlanningMode);
 				techno->Active_Click_With(action, target, false);
@@ -5069,14 +5045,14 @@ static void Ironcurtain_Step(StepType const & step)
 
 
 // setlocal <index> <0|1>, setglobal <index> <0|1>: sets or, with 0, clears that scenario variable, as a trigger action would.
-static void Setlocal_Step(StepType const & step)
+static void Set_Scenario_Variable(StepType const & step, bool global)
 {
 	int const index = step.Argument_Int();
 	bool const value = step.X != 0;
-	if (step.Command == "setlocal") {
-		Scen->Set_Local_To(index, value);
-	} else {
+	if (global) {
 		Scen->Set_Global_To(index, value);
+	} else {
+		Scen->Set_Local_To(index, value);
 	}
 	DebugString("AUTOTEST   %s %d: %d\n", step.Command.c_str(), index, (int)value);
 }
@@ -6196,14 +6172,16 @@ static void Team_Step(StepType const & step)
 
 
 // teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
-// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
 static void Teamtrace_Step(StepType const & step)
 {
-	if (step.Command == "teamtrace") {
-		TeamClass::TraceScripts = step.Argument_Int() != 0;
-	} else {
-		HouseClass::TraceBuilding = step.Argument_Int() != 0;
-	}
+	TeamClass::TraceScripts = step.Argument_Int() != 0;
+}
+
+
+// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
+static void Buildtrace_Step(StepType const & step)
+{
+	HouseClass::TraceBuilding = step.Argument_Int() != 0;
 }
 
 
@@ -6862,11 +6840,11 @@ static void Quit_Step(StepType const &)
 void Run(StepType const & step)
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
-		{"presentdigest", Draw_Check_Step},
-		{"drawdigest", Draw_Check_Step},
-		{"gpureplay", Draw_Check_Step},
-		{"gpucheck", Draw_Check_Step},
-		{"drawprobe", Draw_Check_Step},
+		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
+		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
+		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
+		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
+		{"drawprobe", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Probe);}},
 		{"shield", Shield_Step},
 		{"bridge", Bridge_Cell_Step},
 		{"bridgecensus", Bridge_Census_Step},
@@ -6910,8 +6888,8 @@ void Run(StepType const & step)
 		{"chrono", Chrono_Step},
 		{"hotkey", Hotkey_Step},
 		{"key", Key_Step},
-		{"hold", Hold_Step},
-		{"release", Hold_Step},
+		{"hold", [](StepType const & step) {Hold_Key(step, true);}},
+		{"release", [](StepType const & step) {Hold_Key(step, false);}},
 		{"binding", Binding_Step},
 		{"scheme", Scheme_Step},
 		{"bind", Bind_Step},
@@ -6935,8 +6913,8 @@ void Run(StepType const & step)
 		{"treehit", Treehit_Step},
 		{"trees", Trees_Step},
 		{"terrainonore", Terrainonore_Step},
-		{"triggerlog", Trigger_Step},
-		{"triggercoverage", Trigger_Step},
+		{"triggerlog", [](StepType const & step) {TriggerLog = step.Argument_Int() != 0;}},
+		{"triggercoverage", Trigger_Coverage_Step},
 		{"trigaction", Trigger_Action_Step},
 		{"dumpfile", Dumpfile_Step},
 		{"mixof", Mixof_Step},
@@ -6967,9 +6945,9 @@ void Run(StepType const & step)
 		{"produceai", Produceai_Step},
 		{"place", Place_Step},
 		{"placeat", Placeat_Step},
-		{"move", Move_Step},
-		{"order", Move_Step},
-		{"cmove", Move_Step},
+		{"move", [](StepType const & step) {Move(step.Argument, step.X, step.Y);}},
+		{"order", [](StepType const & step) {Order(step.Argument, step.X, step.Y);}},
+		{"cmove", [](StepType const & step) {Computer_Move(step.Argument, step.X, step.Y);}},
 		{"hunt", Hunt_Step},
 		{"repairmission", Repairmission_Step},
 		{"attack", Attack_Step},
@@ -6987,12 +6965,12 @@ void Run(StepType const & step)
 		{"view", View_Step},
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
-		{"windowclick", Windowclick_Step},
+		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
-		{"windowdouble", Windowclick_Step},
-		{"windowpress", Windowpress_Step},
-		{"windowrelease", Windowpress_Step},
+		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
+		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
+		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},
 		{"xbutton", Xbutton_Step},
 		{"mapclick", Mapclick_Step},
 		{"cell", Cell_Step},
@@ -7007,8 +6985,8 @@ void Run(StepType const & step)
 		{"radar", Radar_Step},
 		{"radarall", Radarall_Step},
 		{"stripfill", Stripfill_Step},
-		{"spawn", Spawn_Step},
-		{"grantunit", Spawn_Step},
+		{"spawn", [](StepType const & step) {Spawn_Object(step, false);}},
+		{"grantunit", [](StepType const & step) {Spawn_Object(step, true);}},
 		{"houseunit", Houseunit_Step},
 		{"own", Own_Step},
 		{"neutral", Own_Step},
@@ -7052,8 +7030,8 @@ void Run(StepType const & step)
 		{"rule", Rule_Step},
 		{"disguise", Disguise_Step},
 		{"disguiseas", Disguiseas_Step},
-		{"action", Action_Step},
-		{"clickon", Action_Step},
+		{"action", [](StepType const & step) {Action_Probe(step, false);}},
+		{"clickon", [](StepType const & step) {Action_Probe(step, true);}},
 		{"hit", Hit_Step},
 		{"clickcell", Clickcell_Step},
 		{"typesounds", Typesounds_Step},
@@ -7070,8 +7048,8 @@ void Run(StepType const & step)
 		{"screen", Screen_Step},
 		{"kill", Kill_Step},
 		{"ironcurtain", Ironcurtain_Step},
-		{"setlocal", Setlocal_Step},
-		{"setglobal", Setlocal_Step},
+		{"setlocal", [](StepType const & step) {Set_Scenario_Variable(step, false);}},
+		{"setglobal", [](StepType const & step) {Set_Scenario_Variable(step, true);}},
 		{"killhouse", Killhouse_Step},
 		{"killtag", Killtag_Step},
 		{"price", Price_Step},
@@ -7129,7 +7107,7 @@ void Run(StepType const & step)
 		{"plan", Plan_Step},
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
-		{"buildtrace", Teamtrace_Step},
+		{"buildtrace", Buildtrace_Step},
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
 		{"banimstate", Banimstate_Step},
