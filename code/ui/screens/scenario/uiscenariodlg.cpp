@@ -44,12 +44,7 @@ class UIScenarioEngineServiceClass : public UIScenarioServiceClass
 				Set_Scenario_Info_From_Index(index);
 
 				if (stricmp(Session.Scenarios[index]->Get_Filename(), RANDOM_MAP_FILE_NAME) == 0) {
-					delete MultiplayerMapPreview;
-					MultiplayerMapPreview = new MapPreviewClass;
-					MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-					if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-						Update_Network_Dialog_Preview();
-					}
+					Show_Random_Map_Preview();
 				} else {
 					Update_Network_Dialog_Preview();
 				}

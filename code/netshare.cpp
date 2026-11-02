@@ -785,6 +785,17 @@ void PregameSetup(void)
 }
 
 
+void Show_Random_Map_Preview(void)
+{
+	delete MultiplayerMapPreview;
+	MultiplayerMapPreview = new MapPreviewClass;
+	MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
+	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
+		Update_Network_Dialog_Preview();
+	}
+}
+
+
 /// <summary>
 /// Updates the map preview shown in a network game dialog.
 /// This routine is called whenever the selected scenario changes. A guest that does not have

@@ -98,12 +98,7 @@ static void Refresh_Preview(void)
 		return;
 	}
 
-	delete MultiplayerMapPreview;
-	MultiplayerMapPreview = new MapPreviewClass;
-	MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-		Update_Network_Dialog_Preview();
-	}
+	Show_Random_Map_Preview();
 }
 
 
