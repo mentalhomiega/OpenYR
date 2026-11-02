@@ -91,6 +91,7 @@ void Video_Mark_Dirty(void);
 void Video_Mark_Overlay_Dirty(void);
 void Video_Present(void);
 
+class DSurface;
 class Surface;
 
 // The frame colour that shows the map layer through it. The presenter keys on the same value, BACKEND_LAYER_KEY.
@@ -142,6 +143,8 @@ std::uint64_t Video_Frame_Upload_Count(void);
 
 // The presentdigest autotest step: on logs a PRESENT_DIGEST line at each present that reaches the presenter.
 void Video_Set_Present_Digest(bool enabled);
+// Logs the PRESENT_DIGEST line for a present while the step is on; layer is NULL when no map layer is drawn.
+void Video_Log_Present_Digest(DSurface const * surface, BackendLayer const * layer);
 
 // The drawdigest autotest step: on logs a DRAW_DIGEST line for each map view passed to Video_Note_Draw_Digest.
 void Video_Set_Draw_Digest(bool enabled);
