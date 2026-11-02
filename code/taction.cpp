@@ -2206,7 +2206,9 @@ bool TActionClass::TAction_PLAY_ANIM(HouseClass * , ObjectClass * , TriggerClass
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
-	DebugString("AUTOTEST   play animation %s\n", AnimTypes[Data.Anim]->Name());
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST   play animation %s\n", AnimTypes[Data.Anim]->Name());
+	}
 	AnimClass * anim = new AnimClass(AnimTypes[Data.Anim], coord);
 	anim->IsInert = true;
 	return(true);
@@ -3470,7 +3472,9 @@ bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerCla
 {
 	for (int index = 0; index < TechnoTypes.Count(); index++) {
 		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
-			DebugString("AUTOTEST   flash cameo %s for %d frames\n", TechnoTypes[index]->Name(), Extra);
+			if (AutoTest_Active()) {
+				DebugString("AUTOTEST   flash cameo %s for %d frames\n", TechnoTypes[index]->Name(), Extra);
+			}
 			Map.Flash_Cameo(TechnoTypes[index], Extra);
 			return(true);
 		}
