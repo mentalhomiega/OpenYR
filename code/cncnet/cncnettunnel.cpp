@@ -8,50 +8,13 @@
  ******************************************************************************/
 
 #include "cncnet/cncnettunnel.h"
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#endif
+#include "cncnet/cncnetnative.h"
 
 #include <cstring>
 #include <thread>
 
 
 namespace {
-
-#if defined(_WIN32)
-using NativeSocket = SOCKET;
-NativeSocket const NO_SOCKET = INVALID_SOCKET;
-using AddressLength = int;
-
-void Close_Native(NativeSocket handle)
-{
-	closesocket(handle);
-}
-#else
-using NativeSocket = int;
-NativeSocket const NO_SOCKET = -1;
-using AddressLength = socklen_t;
-
-void Close_Native(NativeSocket handle)
-{
-	close(handle);
-}
-#endif
-
 
 NativeSocket Native(intptr_t handle)
 {
@@ -134,10 +97,7 @@ bool CnCNetTunnelBridgeClass::Start(std::string const & relay_host, uint16_t rel
 		std::shared_ptr<ResolutionType> const lookup = std::make_shared<ResolutionType>();
 		Resolution = lookup;
 		std::thread([lookup, relay_host, relay_port](void) {
-#if defined(_WIN32)
-			WSADATA started;
-			bool const network = WSAStartup(MAKEWORD(2, 2), &started) == 0;
-#endif
+			WinsockGuard const network;
 			addrinfo hints{};
 			hints.ai_family = AF_INET;
 			hints.ai_socktype = SOCK_DGRAM;
@@ -151,11 +111,6 @@ bool CnCNetTunnelBridgeClass::Start(std::string const & relay_host, uint16_t rel
 			} else {
 				lookup->State = 2;
 			}
-#if defined(_WIN32)
-			if (network) {
-				WSACleanup();
-			}
-#endif
 		}).detach();
 	}
 

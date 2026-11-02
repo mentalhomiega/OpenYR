@@ -9,23 +9,7 @@
 
 #include "cncnet/cncnettunnellist.h"
 #include "cncnet/cncnettext.h"
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#endif
+#include "cncnet/cncnetnative.h"
 
 #include <algorithm>
 #include <cctype>
@@ -41,18 +25,6 @@
 
 
 namespace {
-
-#if defined(_WIN32)
-using NativeSocket = SOCKET;
-NativeSocket const NO_SOCKET = INVALID_SOCKET;
-using AddressLength = int;
-void Close_Native(NativeSocket handle) { closesocket(handle); }
-#else
-using NativeSocket = int;
-NativeSocket const NO_SOCKET = -1;
-using AddressLength = socklen_t;
-void Close_Native(NativeSocket handle) { close(handle); }
-#endif
 
 // A V3 tunnel answers a 50-byte datagram whose first 8 bytes are zero with the first 12 bytes of it.
 std::size_t const PING_BYTES = 50;
@@ -82,6 +54,23 @@ std::string Dotted(uint32_t address)
 	value.s_addr = address;
 	char text[INET_ADDRSTRLEN] = {};
 	return(inet_ntop(AF_INET, &value, text, sizeof(text)) != nullptr ? std::string(text) : std::string());
+}
+
+
+// Looks the host up on the calling thread, which holds its own Winsock reference while it does.
+std::optional<uint32_t> Lookup_IPv4(std::string const & host)
+{
+	WinsockGuard const network;
+	std::optional<uint32_t> address;
+	addrinfo hints{};
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+	addrinfo * found = nullptr;
+	if (getaddrinfo(host.c_str(), nullptr, &hints, &found) == 0 && found != nullptr) {
+		address = static_cast<uint32_t>(reinterpret_cast<sockaddr_in const *>(found->ai_addr)->sin_addr.s_addr);
+		freeaddrinfo(found);
+	}
+	return(address);
 }
 
 }
@@ -137,7 +126,19 @@ std::vector<CnCNetTunnelEntryType> CnCNet_Parse_Tunnel_List(std::string_view tex
 }
 
 
-void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int rounds, int timeout_ms, std::size_t limit)
+namespace {
+
+// A tunnel that a ping round sends to. Valid is false when its host name did not resolve.
+struct PingTarget
+{
+	sockaddr_in Address{};
+	bool Valid = false;
+};
+
+
+// Picks the tunnels a ping pass asks: those with a status of 1 or more in list order, or, when
+// none has one, the first tunnels listed. At most `limit` are asked.
+std::vector<std::size_t> Pick_Asked(std::vector<CnCNetTunnelEntryType> const & tunnels, std::size_t limit)
 {
 	std::vector<std::size_t> asked;
 	for (int pass = 0; pass < 2 && asked.empty(); ++pass) {
@@ -147,6 +148,94 @@ void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int round
 			}
 		}
 	}
+	return(asked);
+}
+
+
+// Resolves the host of each asked tunnel, one target per slot in asked order.
+std::vector<PingTarget> Resolve_Targets(std::vector<CnCNetTunnelEntryType> const & tunnels, std::vector<std::size_t> const & asked)
+{
+	std::vector<PingTarget> targets(asked.size());
+	for (std::size_t slot = 0; slot < asked.size(); ++slot) {
+		addrinfo hints{};
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_DGRAM;
+		addrinfo * found = nullptr;
+		std::string const port = std::to_string(tunnels[asked[slot]].Port);
+		if (getaddrinfo(tunnels[asked[slot]].Host.c_str(), port.c_str(), &hints, &found) == 0 && found != nullptr) {
+			std::memcpy(&targets[slot].Address, found->ai_addr, sizeof(sockaddr_in));
+			targets[slot].Valid = true;
+		}
+		if (found != nullptr) {
+			freeaddrinfo(found);
+		}
+	}
+	return(targets);
+}
+
+
+// Sends one probe to each valid target. The probe's nonce holds the pass salt in its high half
+// and the target's slot plus one in its low half.
+void Send_Round(NativeSocket sock, std::vector<PingTarget> const & targets, uint32_t salt)
+{
+	for (std::size_t slot = 0; slot < targets.size(); ++slot) {
+		if (!targets[slot].Valid) {
+			continue;
+		}
+		uint8_t packet[PING_BYTES] = {};
+		uint32_t const nonce = salt | static_cast<uint32_t>(slot + 1);
+		std::memcpy(packet + 8, &nonce, sizeof(nonce));
+		sendto(sock, reinterpret_cast<char const *>(packet), static_cast<int>(sizeof(packet)), 0,
+			reinterpret_cast<sockaddr const *>(&targets[slot].Address), sizeof(sockaddr_in));
+	}
+}
+
+
+// Reads the replies that arrive before the round's timeout and keeps the fastest ping per tunnel.
+// A reply counts only when its nonce has this pass's salt and a valid slot, and it came from that
+// slot's address and port.
+void Collect_Replies(NativeSocket sock, std::vector<CnCNetTunnelEntryType> & tunnels, std::vector<std::size_t> const & asked,
+	std::vector<PingTarget> const & targets, uint32_t salt, std::chrono::steady_clock::time_point begin, int timeout_ms)
+{
+	for (;;) {
+		auto const elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+		if (elapsed >= timeout_ms) {
+			break;
+		}
+		fd_set readable;
+		FD_ZERO(&readable);
+		FD_SET(sock, &readable);
+		long const left = static_cast<long>(timeout_ms - elapsed);
+		timeval wait{left / 1000, (left % 1000) * 1000};
+		if (select(static_cast<int>(sock) + 1, &readable, nullptr, nullptr, &wait) <= 0) {
+			break;
+		}
+		uint8_t reply[128];
+		sockaddr_in from{};
+		AddressLength from_length = sizeof(from);
+		int const read = recvfrom(sock, reinterpret_cast<char *>(reply), sizeof(reply), 0, reinterpret_cast<sockaddr *>(&from), &from_length);
+		if (read < static_cast<int>(PING_ECHO)) {
+			continue;
+		}
+		uint32_t nonce = 0;
+		std::memcpy(&nonce, reply + 8, sizeof(nonce));
+		std::size_t const slot = (nonce & 0xFFFFu) - 1;
+		if ((nonce & 0xFFFF0000u) != salt || slot >= asked.size() || !targets[slot].Valid
+			|| from.sin_addr.s_addr != targets[slot].Address.sin_addr.s_addr || from.sin_port != targets[slot].Address.sin_port) {
+			continue;
+		}
+		int const ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count());
+		CnCNetTunnelEntryType & tunnel = tunnels[asked[slot]];
+		tunnel.PingMS = tunnel.PingMS < 0 ? ms : std::min(tunnel.PingMS, ms);
+	}
+}
+
+}
+
+
+void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int rounds, int timeout_ms, std::size_t limit)
+{
+	std::vector<std::size_t> const asked = Pick_Asked(tunnels, limit);
 	for (CnCNetTunnelEntryType & tunnel : tunnels) {
 		tunnel.PingMS = -1;
 	}
@@ -154,87 +243,23 @@ void CnCNet_Ping_Tunnels(std::vector<CnCNetTunnelEntryType> & tunnels, int round
 		return;
 	}
 
-#if defined(_WIN32)
-	WSADATA data;
-	if (WSAStartup(MAKEWORD(2, 2), &data) != 0) {
+	WinsockGuard const winsock;
+	if (!winsock.Started()) {
 		return;
 	}
-#endif
 	NativeSocket const sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sock != NO_SOCKET) {
-		struct Target
-		{
-			sockaddr_in Address{};
-			bool Valid = false;
-		};
-		std::vector<Target> targets(asked.size());
-		for (std::size_t slot = 0; slot < asked.size(); ++slot) {
-			addrinfo hints{};
-			hints.ai_family = AF_INET;
-			hints.ai_socktype = SOCK_DGRAM;
-			addrinfo * found = nullptr;
-			std::string const port = std::to_string(tunnels[asked[slot]].Port);
-			if (getaddrinfo(tunnels[asked[slot]].Host.c_str(), port.c_str(), &hints, &found) == 0 && found != nullptr) {
-				std::memcpy(&targets[slot].Address, found->ai_addr, sizeof(sockaddr_in));
-				targets[slot].Valid = true;
-			}
-			if (found != nullptr) {
-				freeaddrinfo(found);
-			}
-		}
+		std::vector<PingTarget> const targets = Resolve_Targets(tunnels, asked);
 
 		std::mt19937 random{std::random_device{}()};
 		uint32_t const salt = static_cast<uint32_t>(random()) & 0xFFFF0000u;
 		for (int round = 0; round < rounds; ++round) {
 			auto const begin = std::chrono::steady_clock::now();
-			for (std::size_t slot = 0; slot < asked.size(); ++slot) {
-				if (!targets[slot].Valid) {
-					continue;
-				}
-				uint8_t packet[PING_BYTES] = {};
-				uint32_t const nonce = salt | static_cast<uint32_t>(slot + 1);
-				std::memcpy(packet + 8, &nonce, sizeof(nonce));
-				sendto(sock, reinterpret_cast<char const *>(packet), static_cast<int>(sizeof(packet)), 0,
-					reinterpret_cast<sockaddr const *>(&targets[slot].Address), sizeof(sockaddr_in));
-			}
-
-			for (;;) {
-				auto const elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-				if (elapsed >= timeout_ms) {
-					break;
-				}
-				fd_set readable;
-				FD_ZERO(&readable);
-				FD_SET(sock, &readable);
-				long const left = static_cast<long>(timeout_ms - elapsed);
-				timeval wait{left / 1000, (left % 1000) * 1000};
-				if (select(static_cast<int>(sock) + 1, &readable, nullptr, nullptr, &wait) <= 0) {
-					break;
-				}
-				uint8_t reply[128];
-				sockaddr_in from{};
-				AddressLength from_length = sizeof(from);
-				int const read = recvfrom(sock, reinterpret_cast<char *>(reply), sizeof(reply), 0, reinterpret_cast<sockaddr *>(&from), &from_length);
-				if (read < static_cast<int>(PING_ECHO)) {
-					continue;
-				}
-				uint32_t nonce = 0;
-				std::memcpy(&nonce, reply + 8, sizeof(nonce));
-				std::size_t const slot = (nonce & 0xFFFFu) - 1;
-				if ((nonce & 0xFFFF0000u) != salt || slot >= asked.size() || !targets[slot].Valid
-					|| from.sin_addr.s_addr != targets[slot].Address.sin_addr.s_addr || from.sin_port != targets[slot].Address.sin_port) {
-					continue;
-				}
-				int const ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count());
-				CnCNetTunnelEntryType & tunnel = tunnels[asked[slot]];
-				tunnel.PingMS = tunnel.PingMS < 0 ? ms : std::min(tunnel.PingMS, ms);
-			}
+			Send_Round(sock, targets, salt);
+			Collect_Replies(sock, tunnels, asked, targets, salt, begin, timeout_ms);
 		}
 		Close_Native(sock);
 	}
-#if defined(_WIN32)
-	WSACleanup();
-#endif
 }
 
 
@@ -312,24 +337,7 @@ std::optional<uint32_t> CnCNet_Resolve_IPv4(std::string const & host, int timeou
 	};
 	std::shared_ptr<LookupType> const lookup = std::make_shared<LookupType>();
 	std::thread([lookup, host](void) {
-#if defined(_WIN32)
-		WSADATA started;
-		bool const network = WSAStartup(MAKEWORD(2, 2), &started) == 0;
-#endif
-		std::optional<uint32_t> address;
-		addrinfo hints{};
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_DGRAM;
-		addrinfo * found = nullptr;
-		if (getaddrinfo(host.c_str(), nullptr, &hints, &found) == 0 && found != nullptr) {
-			address = static_cast<uint32_t>(reinterpret_cast<sockaddr_in const *>(found->ai_addr)->sin_addr.s_addr);
-			freeaddrinfo(found);
-		}
-#if defined(_WIN32)
-		if (network) {
-			WSACleanup();
-		}
-#endif
+		std::optional<uint32_t> const address = Lookup_IPv4(host);
 		std::lock_guard<std::mutex> guard(lookup->Lock);
 		lookup->Address = address;
 		lookup->Done = true;

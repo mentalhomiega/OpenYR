@@ -61,6 +61,7 @@
 #include "_tooltip.h"
 #include "_xmouse.h"
 #include "bench.h"
+#include "bench.hh"
 #include "cctooltip.h"
 #include "dialog.h"
 #include "gadget.h"
@@ -83,8 +84,11 @@
 #include "shadowplane.h"
 #include "dsurface.h"
 #include "video.h"
+#include "shellmap.h"
+#include "viewzoom.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -237,14 +241,7 @@ static void Fill_Map_Layer_Key(Rect const & dest)
 		_SinceKeyFill.Restart(CompositeSurface->Get_Height(), CompositeSurface->Get_Width());
 	}
 }
-#include "shellmap.h"
-#include "video.h"
-#include "viewzoom.h"
 
-#include "bench.hh"
-
-#include <algorithm>
-#include <cmath>
 
 void Multiplayer_Debug_Print(void);
 

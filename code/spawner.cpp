@@ -574,7 +574,6 @@ std::string Spawner_Describe_Session(void)
 	config.GameSpeed = Session.Options.GameSpeed;
 	config.MultiEngineer = Session.Options.CrapEngineers;
 	config.UnitCount = Session.Options.UnitCount;
-	config.AIPlayers = Session.Computers.Count();
 	config.AIDifficulty = (int)Session.Options.AIDifficulty;
 	config.AlliesAllowed = Session.Options.AlliesAllowed;
 	config.HarvesterTruce = Session.Options.HarvTruce;

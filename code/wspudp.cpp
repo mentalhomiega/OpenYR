@@ -54,9 +54,6 @@
 
 extern int WestwoodOnline_PortNumber;
 
-// A tunnelled datagram leads with the sender's and the recipient's tunnel IDs, which is
-// all the tunnel server reads in order to forward it.
-
 /***********************************************************************************************
  * UDPInterfaceClass::UDPInterfaceClass -- Class constructor.                                  *
  *                                                                                             *
@@ -143,15 +140,8 @@ void UDPInterfaceClass::Configure_Tunnel(unsigned short local_id, unsigned long 
 
 
 /// <summary>
-/// Hands a datagram to the socket, routing it through the tunnel server when one is
-/// in use.
-/// </summary>
-/// <param name="to">Where the packet is bound. In tunnel mode the port carries the
-/// recipient's tunnel ID rather than a real port.</param>
-/// <returns>The socket's answer, counting only the payload.</returns>
-/// <summary>
-/// Reports whether the tunnel server can receive a datagram of this size, logging each refused
-/// size once.
+/// Reports whether a datagram of this size is within UDP_DATAGRAM_LIMIT, the most the tunnel
+/// server reads, logging each refused size once.
 /// </summary>
 /// <param name="datagram_length">Bytes the datagram occupies on the wire the game sends to.</param>
 static bool Datagram_Fits(int datagram_length)
@@ -166,6 +156,13 @@ static bool Datagram_Fits(int datagram_length)
 }
 
 
+/// <summary>
+/// Hands a datagram to the socket, routing it through the tunnel server when one is
+/// in use.
+/// </summary>
+/// <param name="to">Where the packet is bound. In tunnel mode the port carries the
+/// recipient's tunnel ID rather than a real port.</param>
+/// <returns>The socket's answer, counting only the payload.</returns>
 TransferResult UDPInterfaceClass::Send_To(void const * buffer, int length, IPXAddressClass const & to)
 {
 	if (Socket == nullptr) return(TransferResult{SocketError::OTHER, 0});

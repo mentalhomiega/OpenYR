@@ -41,7 +41,7 @@ namespace ModSync
 	{
 		std::vector<Entry> Mods;
 
-		// Set when the list was too long to send, so that Opaque_Hash stands in for the entries.
+		// Set when the list was too long to send, so that DigestCount and DigestHash stand in for the entries.
 		bool IsDigest = false;
 		std::uint32_t DigestCount = 0;
 		std::uint32_t DigestHash = 0;

@@ -144,7 +144,6 @@ class UICnCNetLobbyPresenterClass : public UIPresenterClass
 		std::string SelectedHost;
 		std::string SelectedChannel;
 		std::string SelectedUser;
-		std::vector<std::string> SentLines;
 		std::vector<std::string> ClosedTabs;
 		std::vector<std::string> OpenedTabs;
 		std::vector<std::string> SeenPrivate;

@@ -69,7 +69,7 @@ void IRCClientClass::Receive_Line(std::string const & line, uint64_t now)
 
 	std::optional<IRCMessageType> const message = IRC_Parse_Line(line);
 	if (message) {
-		Handle(*message, now);
+		Handle(*message);
 	}
 }
 
@@ -230,9 +230,9 @@ void IRCClientClass::Enqueue(std::string line, int priority, std::string const &
 }
 
 
-void IRCClientClass::Event(IRCEventKind kind, std::string nick, std::string channel, std::string text)
+void IRCClientClass::Event(IRCEventKind kind, std::string nick, std::string channel, std::string text, std::string command)
 {
-	IRCEventType event{kind, std::move(nick), std::move(channel), std::string(), std::move(text), {}};
+	IRCEventType event{kind, std::move(nick), std::move(channel), std::move(command), std::move(text), {}};
 	Events.push_back(std::move(event));
 }
 
@@ -257,7 +257,7 @@ std::string IRCClientClass::Next_Nick(void) const
 }
 
 
-void IRCClientClass::Handle(IRCMessageType const & message, uint64_t now)
+void IRCClientClass::Handle(IRCMessageType const & message)
 {
 	std::string const & command = message.Command;
 
@@ -324,7 +324,6 @@ void IRCClientClass::Handle(IRCMessageType const & message, uint64_t now)
 		IsConnected = false;
 		return;
 	}
-	(void)now;
 }
 
 
@@ -401,8 +400,7 @@ void IRCClientClass::Handle_Numeric(IRCMessageType const & message)
 		case 473:
 		case 474:
 		case 475: {
-			IRCEventType event{IRCEventKind::CHANNEL_REFUSED, std::string(), message.Param(1), message.Command, message.Param(2), {}};
-			Events.push_back(std::move(event));
+			Event(IRCEventKind::CHANNEL_REFUSED, std::string(), message.Param(1), message.Param(2), message.Command);
 			break;
 		}
 
@@ -422,8 +420,7 @@ void IRCClientClass::Handle_Text(IRCMessageType const & message, bool notice)
 	std::string const & text = message.Param(1);
 
 	if (std::optional<CTCPMessageType> const ctcp = CTCP_Unwrap(text)) {
-		IRCEventType event{IRCEventKind::CTCP, message.Nick(), target, ctcp->Command, ctcp->Arguments, {}};
-		Events.push_back(std::move(event));
+		Event(IRCEventKind::CTCP, message.Nick(), target, ctcp->Arguments, ctcp->Command);
 		return;
 	}
 

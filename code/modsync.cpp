@@ -121,15 +121,15 @@ namespace ModSync
 		}
 
 
-		// The count and hash that stand for the whole list when it is sent as a digest.
-		void Digest_Of(Signature const & signature, std::uint32_t & count, std::uint32_t & hash)
+		// The count and hash that stand for the whole list when it is sent as a digest. text is
+		// Entries_Text(signature) and is read only when the list is not already a digest.
+		void Digest_Of(Signature const & signature, std::string const & text, std::uint32_t & count, std::uint32_t & hash)
 		{
 			if (signature.IsDigest) {
 				count = signature.DigestCount;
 				hash = signature.DigestHash;
 				return;
 			}
-			std::string const text = Entries_Text(signature);
 			count = static_cast<std::uint32_t>(signature.Mods.size());
 			hash = Hash_Bytes(HASH_BASIS, text.data(), text.size());
 		}
@@ -198,15 +198,13 @@ namespace ModSync
 	{
 		std::uint32_t count;
 		std::uint32_t hash;
+		std::string const text = Entries_Text(signature);
 
-		if (!signature.IsDigest) {
-			std::string text = Entries_Text(signature);
-			if (text.size() < CAPACITY) {
-				return(text);
-			}
+		if (!signature.IsDigest && text.size() < CAPACITY) {
+			return(text);
 		}
 
-		Digest_Of(signature, count, hash);
+		Digest_Of(signature, text, count, hash);
 		char digest[48];
 		std::snprintf(digest, sizeof(digest), "#%u=%08x", count, hash);
 		return(digest);
@@ -268,8 +266,8 @@ namespace ModSync
 
 		if (here.IsDigest || there.IsDigest) {
 			std::uint32_t count_here, hash_here, count_there, hash_there;
-			Digest_Of(here, count_here, hash_here);
-			Digest_Of(there, count_there, hash_there);
+			Digest_Of(here, Entries_Text(here), count_here, hash_here);
+			Digest_Of(there, Entries_Text(there), count_there, hash_there);
 			difference.IsOpaque = count_here != count_there || hash_here != hash_there;
 			return(difference);
 		}
@@ -315,11 +313,12 @@ namespace ModSync
 			return("none");
 		}
 
-		std::string text;
+		std::vector<std::string> names;
 		for (Entry const & entry : signature.Mods) {
-			text += text.empty() ? "" : ", ";
-			text += entry.Name;
+			names.push_back(entry.Name);
 		}
+		std::string text;
+		Append_Names(text, names);
 		return(text);
 	}
 
