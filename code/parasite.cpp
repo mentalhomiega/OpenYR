@@ -73,6 +73,29 @@ Coord Squid_Offset(Coord const & where, double turn, double side, double ahead)
 
 
 /// <summary>
+/// Sets the paralysis timer of a foot to frames. A null techno or one that is not a foot is left alone.
+/// </summary>
+void Set_Paralysis(TechnoClass * techno, int frames)
+{
+	if (techno != nullptr && techno->Is_Foot()) {
+		((FootClass *)techno)->ParalysisTimer = frames;
+	}
+}
+
+
+/// <summary>
+/// Unlimbos the unit at the coordinate with ScenarioInit raised, and returns whether it was placed.
+/// </summary>
+bool Return_To_Map(TechnoClass * unit, Coord const & at, Dir256 facing)
+{
+	ScenarioInit++;
+	bool const placed = unit->Unlimbo(at, facing);
+	ScenarioInit--;
+	return(placed);
+}
+
+
+/// <summary>
 /// Returns the point a bite rolls its victim from, side leptons from the victim's center. The point lies a quarter turn from the facing, so the roll tilts the victim sideways.
 /// </summary>
 Coord Bite_Jolt_Point(Coord const & where, short facing, int side)
@@ -155,10 +178,7 @@ void ParasiteClass::Try_Infect(TechnoClass * target)
 	Reset_Grapple();
 	if (!Can_Infect(target)) {
 		Coord const from = Owner->PositionCoord;
-		ScenarioInit++;
-		bool const placed = Owner->Unlimbo(from, Owner->PrimaryFacing.Current().As_Dir256());
-		ScenarioInit--;
-		if (!placed) {
+		if (!Return_To_Map(Owner, from, Owner->PrimaryFacing.Current().As_Dir256())) {
 			Owner->Delete_Me();
 			return;
 		}
@@ -213,9 +233,7 @@ void ParasiteClass::Update(void)
 		}
 	}
 	// Each bite sets the victim's paralysis to the warhead's Paralyzes, zero included (ParasiteClass::Update, 0x629FD0).
-	if (victim->Is_Foot()) {
-		((FootClass *)victim)->ParalysisTimer = weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0;
-	}
+	Set_Paralysis(victim, weapon->WarheadPtr != nullptr ? weapon->WarheadPtr->Paralyzes : 0);
 
 	// The roll draws its side from the synchronized random number generator, after the sparks and anim (ParasiteClass::Update, 0x629FD0).
 	if (!infantry) {
@@ -245,9 +263,7 @@ void ParasiteClass::Update_Squid(void)
 
 	if (cell != nullptr && cell->Land_Type() != LAND_WATER) {
 		Exit_Unit();
-		if (Owner != nullptr && Owner->Is_Foot()) {
-			((FootClass *)Owner)->ParalysisTimer = 0;
-		}
+		Set_Paralysis(Owner, 0);
 		return;
 	}
 
@@ -262,18 +278,12 @@ void ParasiteClass::Update_Squid(void)
 					Set_Grapple_Anim(new AnimClass(AnimTypes[type], where));
 				}
 			}
-			GrappleState = GrappleStage::Grab;
-			GrappleAnimDelay = 0;
-			GrappleAnimFrame = 0;
-			Update_Grapple();
+			Enter_Grapple_Stage(GrappleStage::Grab);
 			break;
 
 		case GrappleStage::Grab:
 			if (Update_Grapple()) {
-				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
-				GrappleAnimDelay = 0;
-				GrappleAnimFrame = 0;
-				Update_Grapple();
+				Enter_Grapple_Stage(Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right);
 				Create_Wakes(where);
 			}
 			break;
@@ -283,10 +293,7 @@ void ParasiteClass::Update_Squid(void)
 			{
 				double const direction = GrappleState == GrappleStage::Push_Left ? -1.0 : 1.0;
 				if (Update_Grapple()) {
-					GrappleState = GrappleStage::Damage;
-					GrappleAnimDelay = 0;
-					GrappleAnimFrame = 0;
-					Update_Grapple();
+					Enter_Grapple_Stage(GrappleStage::Damage);
 				}
 				victim->AngleRotatedSideways = (float)(Gamemd_Sine(GrappleAnimFrame * direction * Squid_Shake_Step) * Squid_Shake_Limit);
 			}
@@ -318,9 +325,7 @@ void ParasiteClass::Update_Squid(void)
 						((FootClass *)victim)->Death_Announcement(Owner);
 						victim->Stun();
 						Reset_Grapple();
-						if (Owner != nullptr && Owner->Is_Foot()) {
-							((FootClass *)Owner)->ParalysisTimer = 0;
-						}
+						Set_Paralysis(Owner, 0);
 						return;
 					}
 				}
@@ -331,10 +336,7 @@ void ParasiteClass::Update_Squid(void)
 					Reset_Grapple();
 					break;
 				}
-				GrappleState = Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right;
-				GrappleAnimDelay = 0;
-				GrappleAnimFrame = 0;
-				Update_Grapple();
+				Enter_Grapple_Stage(Random_Pick(0, 1) != 0 ? GrappleStage::Push_Left : GrappleStage::Push_Right);
 				Create_Wakes(where);
 			}
 			break;
@@ -350,6 +352,18 @@ void ParasiteClass::Update_Squid(void)
 			GrappleAnim->AlternativeBrightness = Map[Victim->Center_Coord()].Brightness;
 		}
 	}
+}
+
+
+/// <summary>
+/// Moves the grapple to the stage and restarts its animation, then runs the first tick of that stage.
+/// </summary>
+void ParasiteClass::Enter_Grapple_Stage(GrappleStage stage)
+{
+	GrappleState = stage;
+	GrappleAnimDelay = 0;
+	GrappleAnimFrame = 0;
+	Update_Grapple();
 }
 
 
@@ -473,9 +487,7 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 	}
 	victim->ParasiteEatingMe = nullptr;
 	Victim = nullptr;
-	if (victim->Is_Foot()) {
-		((FootClass *)victim)->ParalysisTimer = 0;
-	}
+	Set_Paralysis(victim, 0);
 
 	if (doomed) {
 		Owner->Delete_Me();
@@ -487,21 +499,17 @@ void ParasiteClass::Release(bool doomed, bool from_exit)
 	if (Owner->Is_Foot() && ((FootClass *)Owner)->Can_Enter_Cell(&Map[cell]) != MOVE_OK) {
 		cell = victim->Nearby_Location(Owner);
 	}
-	ScenarioInit++;
-	bool const placed = cell.X != 0 || cell.Y != 0 ? Owner->Unlimbo(Map[cell].Center_Coord(), victim->PrimaryFacing.Current().As_Dir256()) : false;
-	ScenarioInit--;
+	bool const placed = (cell.X != 0 || cell.Y != 0) && Return_To_Map(Owner, Map[cell].Center_Coord(), victim->PrimaryFacing.Current().As_Dir256());
 	if (!placed) {
 		Owner->Delete_Me();
 		return;
 	}
-	if (from_exit) {
-		Reset_Grapple();
-	}
 	// Only an exit through ExitUnit (0x62A4A0) paralyzes the parasite for three rearm delays; PointerExpired (0x62A260) does not.
 	if (from_exit) {
+		Reset_Grapple();
 		WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(0)->Weapon;
-		if (weapon != nullptr && Owner->Is_Foot()) {
-			((FootClass *)Owner)->ParalysisTimer = weapon->ROF * 3;
+		if (weapon != nullptr) {
+			Set_Paralysis(Owner, weapon->ROF * 3);
 		}
 	}
 	if (IsReselect && Owner->House->Is_Player_Control()) {
