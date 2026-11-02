@@ -4570,22 +4570,6 @@ void Tactical::Serialize(SaveStreamClass & stream)
 
 
 /// <summary>
-/// Draws the radial range indicators for the selected objects.
-/// This routine is used by the tactical map render pass to show the effect radius of any
-/// currently selected object whose type asks for one.
-/// </summary>
-void Tactical::Draw_Radial_Indicators(void)
-{
-	for (int i = 0; i < CurrentObject.Count(); i++) {
-		ObjectClass * obj = CurrentObject[i];
-		if (obj->Class_Of() && obj->Class_Of()->IsHasRadialIndicator) {
-			obj->Draw_Radial_Indicator();
-		}
-	}
-}
-
-
-/// <summary>
 /// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
 /// of passive houses are left out, as is a suspended weapon that is still fully uncharged in a
