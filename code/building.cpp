@@ -10071,6 +10071,22 @@ void BuildingClass::Absorb(FootClass * object)
 }
 
 
+// Unlimbos who on a free spot beside the structure, with ScenarioInit raised. The caller deletes who
+// when this returns false, and must do so after this call.
+bool BuildingClass::Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced)
+{
+	Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), speed);
+	Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
+	ScenarioInit++;
+	bool placed = coord != COORD_NONE && who->Unlimbo(coord, DIR_S);
+	if (!placed && keep_unplaced) {
+		placed = who->Unlimbo(Center_Coord(), DIR_S);
+	}
+	ScenarioInit--;
+	return(placed);
+}
+
+
 /// <summary>
 /// Puts the first passenger back on the map next to the structure, as BuildingClass::Mission_Unload
 /// (0x44D880) does. A passenger with no room to stand is removed from the game.
@@ -10080,11 +10096,7 @@ bool BuildingClass::Release_Passenger(void)
 {
 	FootClass * passenger = Cargo.Detach_Object();
 	if (passenger != NULL) {
-		Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), passenger->TClass->Speed);
-		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
-		ScenarioInit++;
-		bool placed = coord != COORD_NONE && passenger->Unlimbo(coord, DIR_S);
-		ScenarioInit--;
+		bool placed = Place_Beside_Structure(passenger, passenger->TClass->Speed, false);
 		if (placed) {
 			passenger->House->Tracking_Release(passenger);
 			passenger->Enter_Idle_Mode();
@@ -10176,18 +10188,6 @@ void BuildingClass::Grind(FootClass * object)
 }
 
 
-/// <summary>
-/// Puts every occupant back on the map next to the structure, as gamemd's FUN_00457DE0 does
-/// when a garrison is emptied, sold or destroyed. An occupant with no room to stand is removed
-/// from the game, unless keep_unplaced is set; then it is placed on the structure's centre.
-/// </summary>
-void BuildingClass::Eject_Occupants(bool const keep_unplaced)
-{
-	FiringOccupantIndex = 0;
-	if (Occupants.Count() == 0) {
-		return;
-	}
-
 // Deleting an occupant detaches it from the list, so the caller works from the returned copy.
 std::vector<InfantryClass *> BuildingClass::Take_Occupants(void)
 {
@@ -10201,18 +10201,22 @@ std::vector<InfantryClass *> BuildingClass::Take_Occupants(void)
 }
 
 
+/// <summary>
+/// Puts every occupant back on the map next to the structure, as gamemd's FUN_00457DE0 does
+/// when a garrison is emptied, sold or destroyed. An occupant with no room to stand is removed
+/// from the game, unless keep_unplaced is set; then it is placed on the structure's centre.
+/// </summary>
+void BuildingClass::Eject_Occupants(bool const keep_unplaced)
+{
+	FiringOccupantIndex = 0;
+	if (Occupants.Count() == 0) {
+		return;
+	}
+
 	std::vector<InfantryClass *> occupants = Take_Occupants();
 
-	Cell start = Get_Cell() + Cell(0, Class->Height());
 	for (InfantryClass * occupant : occupants) {
-		Cell cell = Map.Nearby_Location(start, occupant->Class->Speed);
-		Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
-		ScenarioInit++;
-		bool placed = coord != COORD_NONE && occupant->Unlimbo(coord, DIR_S);
-		if (!placed && keep_unplaced) {
-			placed = occupant->Unlimbo(Center_Coord(), DIR_S);
-		}
-		ScenarioInit--;
+		bool placed = Place_Beside_Structure(occupant, occupant->Class->Speed, keep_unplaced);
 		if (placed) {
 			occupant->Enter_Idle_Mode();
 		} else {

@@ -771,6 +771,7 @@ class BuildingClass : public TechnoClass
 		Coord Door_Coord(Cell const & exitcell) const;
 		bool Is_Damaged_Art(void) const;
 		std::vector<InfantryClass *> Take_Occupants(void);
+		bool Place_Beside_Structure(FootClass * who, SpeedType speed, bool keep_unplaced);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
