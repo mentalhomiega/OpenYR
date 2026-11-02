@@ -11,6 +11,7 @@
 
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnetsha1.h"
+#include "cncnet/cncnettext.h"
 
 #include <algorithm>
 #include <cctype>
@@ -84,30 +85,9 @@ std::string Unescape(std::string_view text)
 }
 
 
-std::vector<std::string_view> Split(std::string_view text, char separator)
-{
-	std::vector<std::string_view> parts;
-	std::size_t begin = 0;
-	while (true) {
-		std::size_t const end = text.find(separator, begin);
-		parts.push_back(text.substr(begin, end == std::string_view::npos ? std::string_view::npos : end - begin));
-		if (end == std::string_view::npos) {
-			break;
-		}
-		begin = end + 1;
-	}
-	return(parts);
-}
-
-
 int To_Int(std::string_view text, int fallback)
 {
-	int value = fallback;
-	auto const result = std::from_chars(text.data(), text.data() + text.size(), value);
-	if (result.ec != std::errc() || result.ptr != text.data() + text.size()) {
-		return(fallback);
-	}
-	return(value);
+	return(CnCNet_Parse_Int(text).value_or(fallback));
 }
 
 }
@@ -282,7 +262,7 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 {
 	if (event.Command == HELLO) {
 		std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)); });
-		std::vector<std::string_view> const parts = Split(event.Text, ';');
+		std::vector<std::string_view> const parts = CnCNet_Split(event.Text, ';');
 		// A hello in another room protocol announces no build id, so it differs from ours.
 		bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
 		std::string const build = readable && parts.size() > 1 ? Unescape(parts[1]) : std::string();
@@ -314,7 +294,7 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 		return;
 	}
 	if (event.Command == REQUEST) {
-		std::vector<std::string_view> const parts = Split(event.Text, ',');
+		std::vector<std::string_view> const parts = CnCNet_Split(event.Text, ',');
 		if (parts.size() >= 4) {
 			int const side = To_Int(parts[0], -2);
 			int const color = To_Int(parts[1], -2);
@@ -713,7 +693,7 @@ std::map<std::string, std::string> CnCNetRoomClass::Decode_Map(std::string_view 
 	if (text.empty()) {
 		return(values);
 	}
-	for (std::string_view entry : Split(text, ';')) {
+	for (std::string_view entry : CnCNet_Split(text, ';')) {
 		std::size_t const equals = entry.find('=');
 		if (equals == std::string_view::npos || equals == 0) {
 			continue;
@@ -748,8 +728,8 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 	if (text.empty()) {
 		return(players);
 	}
-	for (std::string_view entry : Split(text, '|')) {
-		std::vector<std::string_view> const fields = Split(entry, ',');
+	for (std::string_view entry : CnCNet_Split(text, '|')) {
+		std::vector<std::string_view> const fields = CnCNet_Split(entry, ',');
 		if (fields.size() < 6 || fields[0].empty()) {
 			continue;
 		}

@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "cncnet/cncnettunnellist.h"
+#include "cncnet/cncnettext.h"
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -56,22 +57,6 @@ void Close_Native(NativeSocket handle) { close(handle); }
 // A V3 tunnel answers a 50-byte datagram whose first 8 bytes are zero with the first 12 bytes of it.
 std::size_t const PING_BYTES = 50;
 std::size_t const PING_ECHO = 12;
-
-
-std::vector<std::string_view> Fields(std::string_view line)
-{
-	std::vector<std::string_view> fields;
-	std::size_t start = 0;
-	while (start <= line.size()) {
-		std::size_t const end = line.find(';', start);
-		fields.push_back(line.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
-		if (end == std::string_view::npos) {
-			break;
-		}
-		start = end + 1;
-	}
-	return(fields);
-}
 
 
 int Number(std::string_view text)
@@ -127,7 +112,7 @@ std::vector<CnCNetTunnelEntryType> CnCNet_Parse_Tunnel_List(std::string_view tex
 			continue;       // The header.
 		}
 
-		std::vector<std::string_view> const fields = Fields(line);
+		std::vector<std::string_view> const fields = CnCNet_Split(line, ';');
 		if (fields.size() < 11) {
 			continue;
 		}

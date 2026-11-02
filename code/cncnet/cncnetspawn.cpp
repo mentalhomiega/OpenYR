@@ -10,6 +10,7 @@
 #include "cncnet/cncnetspawn.h"
 
 #include "cncnet/cncnetlobby.h"
+#include "cncnet/cncnettext.h"
 
 #include <algorithm>
 #include <cctype>
@@ -33,14 +34,8 @@ std::string Join(std::vector<std::string> const & values)
 std::vector<std::string> Split(std::string const & text)
 {
 	std::vector<std::string> values;
-	std::size_t start = 0;
-	while (start <= text.size()) {
-		std::size_t const comma = text.find(',', start);
-		values.push_back(text.substr(start, comma == std::string::npos ? std::string::npos : comma - start));
-		if (comma == std::string::npos) {
-			break;
-		}
-		start = comma + 1;
+	for (std::string_view const value : CnCNet_Split(text, ',')) {
+		values.emplace_back(value);
 	}
 	return(values);
 }
