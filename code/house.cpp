@@ -4594,37 +4594,25 @@ int HouseClass::Expert_AI(void)
 
 	/*
 	**	If there is no enemy assigned to this house, then assign one now. The
-	**	enemy that is closest is picked. However, don't pick an enemy if the
-	**	base has not been established yet.
+	**	first house that is not this one, not passive, not defeated and not an ally is picked.
+	**	However, don't pick an enemy if the base has not been established yet.
 	*/
 	if (PickEnemyTimer == 0) {
 		if (Enemy == HOUSE_NONE && Session.Type != GAME_NORMAL && !Class->IsMultiplayPassive) {
 			if (Starting_Cell_Or_Default() != CELL_NONE) {
-				int close = INT_MAX;
 				HouseClass * enemy = NULL;
 
+				// gamemd 0x4FD500 scores every candidate zero (0x4FD635-0x4FD651), so the first one is kept.
 				for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
 					HouseClass * h = Houses[house];
 					if (h != this && !h->Class->IsMultiplayPassive && !h->IsDefeated && !Is_Ally(h)) {
-
-						// gamemd 0x4FD500 reads this house's own starting cell for each candidate
-						// (0x4FD635-0x4FD651), so every value is zero and the first candidate is kept.
-						int const value = 0;
-
-						/*
-						**	Compare the calculated value for this candidate house and if it is
-						**	greater than the previously recorded maximum, record this house as
-						**	the prime candidate for enemy.
-						*/
-						if (value < close) {
-							enemy = h;
-							close = value;
-						}
+						enemy = h;
+						break;
 					}
 				}
 
 				/*
-				**	Record this closest enemy base as the first enemy to attack.
+				**	Record the picked house as the first enemy to attack.
 				*/
 				if (enemy) {
 					Add_Anger(1, enemy);
