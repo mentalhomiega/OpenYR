@@ -504,6 +504,9 @@ UnitTypeClass const * HouseClass::Country_Unit(DynamicVectorClass<UnitTypeClass 
 	return(NULL);
 }
 
+// Uses only the acted-country mask. Can_Make_Money, AI, Check_Raise_Money and AI_Raise_Money use this
+// lookup; Preferred_Harvester and AI_Unit use Get_First_Acted, which also applies RequiredHouses,
+// ForbiddenHouses and the planning side.
 UnitTypeClass const * HouseClass::Country_Harvester(void) const
 {
 	return(Country_Unit(Rule->HarvesterUnit));
