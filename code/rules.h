@@ -796,21 +796,20 @@ class RulesClass
 		int JumpjetWobbleDeviation;
 
 		/*
-		 * These are the suppression distances, expressed in cells and listed per radar
-		 * event type. An event raised within this distance of a live event of the same
-		 * kind is swallowed rather than added to the radar.
+		 * This list is read and saved, but the game ignores it. The distance within which
+		 * a radar event blocks a later one of its kind is built in.
 		 */
 		TypeList<int> RadarEventSuppressionDistances;
 
 		/*
-		 * These are the durations, expressed in game frames and listed per radar event
-		 * type, that an event stays drawn after its box has finished shrinking.
+		 * This list is read and saved, but the game ignores it. The frames a settled radar
+		 * event stays drawn are built in.
 		 */
 		TypeList<int> RadarEventVisibilityDurations;
 
 		/*
-		 * These are the lifetimes, expressed in game frames and listed per radar event
-		 * type, so that a combat ping can linger longer than a dropzone marker.
+		 * This list is read and saved, but the game ignores it. The frames each radar event
+		 * kind stays in play are built in.
 		 */
 		TypeList<int> RadarEventDurations;
 

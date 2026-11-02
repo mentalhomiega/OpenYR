@@ -368,7 +368,7 @@ void Test_Full_Compressed_Table(void)
 		packet.pop_back();
 		NetPacket::DecodeError expected = NetPacket::DecodeError::TRUNCATED_EVENT;
 		if (EventClass::Has_Variable_Payload(type)) {
-			expected = NetPacket::DecodeError::TRUNCATED_ADDPLAYER;
+			expected = NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD;
 		} else if (type == EventClass::MEGAMISSION) {
 			expected = NetPacket::DecodeError::TRUNCATED_MEGAMISSION;
 		}
@@ -461,10 +461,10 @@ void Check_Add_Player(NetPacket::DecodeResult const & result, char const * what)
 		NetPacket::DecodedEvent const & event = result.Events[1];
 		valid = event.Event.Type == EventClass::ADDPLAYER
 			&& event.Event.Data.Variable.Size == 3
-			&& event.AddPlayerData.size() == 3
-			&& event.Event.Data.Variable.Pointer == event.AddPlayerData.data()
-			&& std::to_integer<int>(event.AddPlayerData[0]) == 0x11
-			&& std::to_integer<int>(event.AddPlayerData[2]) == 0x33;
+			&& event.VariablePayload.size() == 3
+			&& event.Event.Data.Variable.Pointer == event.VariablePayload.data()
+			&& std::to_integer<int>(event.VariablePayload[0]) == 0x11
+			&& std::to_integer<int>(event.VariablePayload[2]) == 0x33;
 	}
 	Check(valid, what);
 }
@@ -492,7 +492,7 @@ void Test_Add_Player(void)
 	truncated.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"compressed ADDPLAYER rejects a payload shorter than its declared size");
 
 	Bytes transactional = Compressed_Packet();
@@ -505,7 +505,7 @@ void Test_Add_Player(void)
 	transactional.push_back(std::byte{0x11});
 	Check_Error(
 		NetPacket::Decode_Event_Packet(transactional, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"a late ADDPLAYER error discards every previously decoded event");
 
 	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
@@ -520,7 +520,7 @@ void Test_Add_Player(void)
 	uncompressed.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"uncompressed ADDPLAYER rejects a truncated owned payload");
 }
 
@@ -544,10 +544,10 @@ void Test_Beacon_Text(void)
 		NetPacket::DecodedEvent const & event = result.Events[1];
 		valid = event.Event.Type == EventClass::BEACON_TEXT
 			&& event.Event.Data.Variable.Size == size
-			&& event.AddPlayerData.size() == size
-			&& event.Event.Data.Variable.Pointer == event.AddPlayerData.data()
-			&& std::to_integer<int>(event.AddPlayerData[0]) == 0x02
-			&& std::to_integer<int>(event.AddPlayerData[2]) == 'i';
+			&& event.VariablePayload.size() == size
+			&& event.Event.Data.Variable.Pointer == event.VariablePayload.data()
+			&& std::to_integer<int>(event.VariablePayload[0]) == 0x02
+			&& std::to_integer<int>(event.VariablePayload[2]) == 'i';
 	}
 	Check(valid, "compressed BEACON_TEXT owns and binds its payload");
 
@@ -555,7 +555,7 @@ void Test_Beacon_Text(void)
 	truncated.pop_back();
 	Check_Error(
 		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
-		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::DecodeError::TRUNCATED_VARIABLE_PAYLOAD,
 		"compressed BEACON_TEXT rejects a payload shorter than its declared size");
 
 	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
@@ -566,7 +566,7 @@ void Test_Beacon_Text(void)
 	NetPacket::DecodeResult uncompressed_result = NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender);
 	Check(uncompressed_result.Succeeded() && uncompressed_result.Events.size() == 2
 		&& uncompressed_result.Events[1].Event.Type == EventClass::BEACON_TEXT
-		&& uncompressed_result.Events[1].AddPlayerData.size() == size,
+		&& uncompressed_result.Events[1].VariablePayload.size() == size,
 		"uncompressed BEACON_TEXT owns and binds its payload");
 }
 

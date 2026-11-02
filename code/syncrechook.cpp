@@ -18,6 +18,7 @@
 #include "coord.h"
 #include "event.h"
 #include "face.h"
+#include "fnv.h"
 #include "globals.h"
 #include "mission.h"
 #include "object.h"
@@ -35,8 +36,8 @@ static uintptr_t ModuleBase = 0;
 static uint32_t ModuleSize = 0;
 static uint32_t MapImageBase = 0;
 
-// Word-wise FNV-style hash of the scenario draws (value and call site) since the last SYNC_DRAWS line.
-static uint32_t Scenario_Draw_Digest = 2166136261u;
+// Word-wise hash of the scenario draws (value and call site) since the last SYNC_DRAWS line; see Draw_Digest_Mix.
+static uint32_t Scenario_Draw_Digest = FNV_BASIS;
 static unsigned Scenario_Draw_Count = 0;
 
 
@@ -177,6 +178,13 @@ static char const * Sync_Describe_Caller(uint32_t rva)
 }
 
 
+// Mixes one whole 32-bit word into the draw digest. The word is XORed in at once, not byte by byte as FNV-1a does.
+static uint32_t Draw_Digest_Mix(uint32_t digest, uint32_t word)
+{
+	return((digest ^ word) * FNV_PRIME);
+}
+
+
 void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, int maxval, bool ranged, unsigned caller)
 {
 	SyncRandomEntryType entry {};
@@ -190,8 +198,8 @@ void Sync_Record_Random_Impl(Random2Class const & gen, int value, int minval, in
 	entry.Kind = (Scen != nullptr && &gen == &Scen->RandomNumber) ? SYNC_RANDOM_CRITICAL : SYNC_RANDOM_NONCRITICAL;
 	entry.Shape = ranged ? SYNC_DRAW_RANGED : (SyncRecorder.In_Ranged_Draw() ? SYNC_DRAW_INNER : SYNC_DRAW_PLAIN);
 	if (entry.Kind == SYNC_RANDOM_CRITICAL) {
-		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ (uint32_t)value) * 16777619u;
-		Scenario_Draw_Digest = (Scenario_Draw_Digest ^ entry.Caller) * 16777619u;
+		Scenario_Draw_Digest = Draw_Digest_Mix(Scenario_Draw_Digest, (uint32_t)value);
+		Scenario_Draw_Digest = Draw_Digest_Mix(Scenario_Draw_Digest, entry.Caller);
 		Scenario_Draw_Count++;
 	}
 	SyncRecorder.Add_Random(entry);
@@ -205,7 +213,7 @@ uint32_t Sync_Take_Draw_Digest(unsigned & count)
 {
 	uint32_t const digest = Scenario_Draw_Digest;
 	count = Scenario_Draw_Count;
-	Scenario_Draw_Digest = 2166136261u;
+	Scenario_Draw_Digest = FNV_BASIS;
 	Scenario_Draw_Count = 0;
 	return(digest);
 }

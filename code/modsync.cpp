@@ -9,6 +9,7 @@
 
 #include "modsync.h"
 #include "cncnet/cncnettext.h"
+#include "fnv.h"
 
 #include <algorithm>
 #include <cctype>
@@ -21,7 +22,6 @@ namespace ModSync
 {
 	namespace {
 
-		constexpr std::uint32_t HASH_BASIS = 2166136261u;
 		constexpr std::size_t MAX_NAME_LENGTH = 40;
 
 
@@ -131,7 +131,7 @@ namespace ModSync
 				return;
 			}
 			count = static_cast<std::uint32_t>(signature.Mods.size());
-			hash = Hash_Bytes(HASH_BASIS, text.data(), text.size());
+			hash = Hash_Bytes(FNV_BASIS, text.data(), text.size());
 		}
 
 
@@ -154,11 +154,7 @@ namespace ModSync
 
 	std::uint32_t Hash_Bytes(std::uint32_t seed, void const * data, std::size_t length)
 	{
-		unsigned char const * bytes = static_cast<unsigned char const *>(data);
-		for (std::size_t index = 0; index < length; index++) {
-			seed = (seed ^ bytes[index]) * 16777619u;
-		}
-		return(seed);
+		return(Fnv_Add_Bytes(seed, data, length));
 	}
 
 
@@ -169,7 +165,7 @@ namespace ModSync
 	/// </summary>
 	std::uint32_t Hash_Mod(ModClass const & mod)
 	{
-		std::uint32_t hash = HASH_BASIS;
+		std::uint32_t hash = FNV_BASIS;
 		hash = Hash_File(hash, mod.Folder + "mod.ini", 'M');
 		hash = Hash_File(hash, mod.RulesFile, 'R');
 		hash = Hash_File(hash, mod.ArtFile, 'A');

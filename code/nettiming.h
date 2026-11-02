@@ -186,8 +186,6 @@ namespace NetTiming
 	// Look-ahead for a response time in ticks; the current look-ahead is the rise limit.
 	unsigned int Gamemd_Max_Ahead(unsigned int response_ticks, unsigned int frame_rate, unsigned int frame_send_rate,
 		unsigned int current_max_ahead, unsigned int latency_stage = GAMEMD_LATENCY_STAGE);
-	// The settings a master sends for the worst round trip at the desired frame rate.
-	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead);
 	// What a host asked for with the lobby's send period and look-ahead commands (or a launch file's
 	// FrameSendRate and MaxAhead keys). Zero leaves that value to the timing policy. The host's choice
 	// holds for the whole match: it sets the start values and every later evaluation keeps to it.
@@ -265,9 +263,10 @@ namespace NetTiming
 	// holds a value out of range.
 	std::uint32_t Pack_Host_Options(HostNetworkOptions const & options);
 	std::optional<HostNetworkOptions> Unpack_Host_Options(std::uint32_t packed);
-	// gamemd's settings for the worst round trip, with the host's choice kept.
+	// The settings a master sends for the worst round trip at the desired frame rate, with the host's choice kept.
+	// An unset choice gives gamemd's own settings.
 	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead,
-		HostTimingChoice choice);
+		HostTimingChoice choice = {});
 	// Whole milliseconds a frame is armed for. gamemd truncates 1000 / rate and does not spread the remainder.
 	Milliseconds Gamemd_Frame_Wait(unsigned int rate);
 	// Extra milliseconds a frame waits for a peer that lags by lag_frames, at look-ahead 31 and up.

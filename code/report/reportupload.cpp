@@ -12,7 +12,6 @@
 #include <miniz/miniz.h>
 
 #include <algorithm>
-#include <array>
 #include <cctype>
 #include <cstdio>
 #include <fstream>
@@ -376,24 +375,7 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 
 std::uint32_t Report_Crc32(void const * data, std::size_t length, std::uint32_t crc)
 {
-	static std::array<std::uint32_t, 256> const table = [] {
-		std::array<std::uint32_t, 256> entries{};
-		for (std::uint32_t index = 0; index < 256; index++) {
-			std::uint32_t value = index;
-			for (int bit = 0; bit < 8; bit++) {
-				value = (value & 1) ? (0xEDB88320u ^ (value >> 1)) : (value >> 1);
-			}
-			entries[index] = value;
-		}
-		return(entries);
-	}();
-
-	unsigned char const * bytes = static_cast<unsigned char const *>(data);
-	crc = ~crc;
-	for (std::size_t index = 0; index < length; index++) {
-		crc = table[(crc ^ bytes[index]) & 0xFF] ^ (crc >> 8);
-	}
-	return(~crc);
+	return(static_cast<std::uint32_t>(mz_crc32(crc, static_cast<unsigned char const *>(data), length)));
 }
 
 

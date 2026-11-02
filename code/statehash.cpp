@@ -14,6 +14,7 @@
 
 #include "aircraft.h"
 #include "building.h"
+#include "fnv.h"
 #include "globals.h"
 #include "house.h"
 #include "infantry.h"
@@ -23,15 +24,9 @@
 
 namespace {
 
-constexpr unsigned int FNV_BASIS = 2166136261u;
-constexpr unsigned int FNV_PRIME = 16777619u;
-
-
 void Hash_Value(unsigned int & hash, unsigned int value)
 {
-	for (int byte = 0; byte < 4; byte++) {
-		hash = (hash ^ ((value >> (byte * 8)) & 0xFF)) * FNV_PRIME;
-	}
+	hash = Fnv_Add_U32(hash, value);
 }
 
 

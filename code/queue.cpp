@@ -655,6 +655,14 @@ static void Log_Sync_Frame(void)
 }
 
 
+// Stores the current frame's checksum for the frame info packets and records its parts for the sync log.
+static void Store_Frame_Checksum(void)
+{
+	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
+	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+}
+
+
 /***************************************************************************
  * Queue_AI_Multiplayer -- Process all queued events.                      *
  *                                                                         *
@@ -826,8 +834,7 @@ static void Queue_AI_Multiplayer(void)
 	}
 
 	// Frame info packets carry this value to the other machines.
-	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
-	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+	Store_Frame_Checksum();
 
 	// Once a second the debug log keeps the checksum and its parts, so the logs of two machines that went out of
 	// sync show the frame and the part of the game where they first differed, with the sync log off too.
@@ -1608,6 +1615,23 @@ static void Queue_Timing_Event(NetTiming::TimingSettings settings, unsigned int 
 }
 
 
+// The frame rate the timing policy asks for, from the census and the session's desired rate.
+static unsigned int Desired_Frame_Rate_For(NetTiming::TimingCensus const & census)
+{
+	return(NetTiming::Select_Desired_Frame_Rate(census,
+		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed)));
+}
+
+
+static void Log_Sync_Timing(unsigned int frame, NetTiming::TimingCensus const & census, unsigned int desired_frame_rate,
+	NetTiming::TimingSettings settings, bool changed)
+{
+	DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
+		frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
+		(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, settings.FrameSendRate, settings.MaxAhead, (int)changed);
+}
+
+
 /// <summary>
 /// Queues gamemd's timing for the census. The master evaluates on frames that are multiples of 256.
 /// A seated player without a fresh process report stops the evaluation, as gamemd's Queue_AI does.
@@ -1618,8 +1642,7 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 		return;
 	}
 
-	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	unsigned int const desired_frame_rate = Desired_Frame_Rate_For(census);
 	NetTiming::TimingSettings const current = Session.Network_Timing_Target();
 	// A round trip that no connection has measured in 512 frames is treated as the slowest link, as the adaptive policy does.
 	NetTiming::TimingSettings const settings = census.RequiresConservativeTiming
@@ -1628,10 +1651,8 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice);
 
 	if (Debug_SyncLog) {
-		DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
-			frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
-			(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, settings.FrameSendRate, settings.MaxAhead,
-			(int)(settings != current || desired_frame_rate != static_cast<unsigned int>(Session.DesiredFrameRate)));
+		Log_Sync_Timing(frame, census, desired_frame_rate, settings,
+			settings != current || desired_frame_rate != static_cast<unsigned int>(Session.DesiredFrameRate));
 	}
 	if (settings == current && desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate)) {
 		return;
@@ -1659,8 +1680,7 @@ static void Generate_Real_Timing_Event(void)
 		Generate_Gamemd_Timing_Event(census, frame);
 		return;
 	}
-	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	unsigned int const desired_frame_rate = Desired_Frame_Rate_For(census);
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
 	if (evaluation.Evaluated) {
 		DebugString("Network timing evaluation at frame %u: %u of %u reports fresh, worst process %u ms, RTT %u ms%s, wait %u ms, %u fps -> %s %u/%u\n",
@@ -1669,10 +1689,7 @@ static void Generate_Real_Timing_Event(void)
 			(unsigned int)census.WorstStallMilliseconds, desired_frame_rate, evaluation.Changed ? "change to" : "keep",
 			evaluation.Settings.FrameSendRate, evaluation.Settings.MaxAhead);
 		if (Debug_SyncLog) {
-			DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
-				frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
-				(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, evaluation.Settings.FrameSendRate,
-				evaluation.Settings.MaxAhead, (int)evaluation.Changed);
+			Log_Sync_Timing(frame, census, desired_frame_rate, evaluation.Settings, evaluation.Changed);
 		}
 	}
 	// Comparing against the staged target avoids resending a change that has not activated yet.
@@ -2048,10 +2065,10 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 			EventClass queued = source.Event;
 			if (EventClass::Has_Variable_Payload(queued.Type)) {
 				queued.Data.Variable.Pointer = NULL;
-				if (!source.AddPlayerData.empty()) {
-					queued.Data.Variable.Pointer = new char[source.AddPlayerData.size()];
-					memcpy(queued.Data.Variable.Pointer, source.AddPlayerData.data(),
-						source.AddPlayerData.size());
+				if (!source.VariablePayload.empty()) {
+					queued.Data.Variable.Pointer = new char[source.VariablePayload.size()];
+					memcpy(queued.Data.Variable.Pointer, source.VariablePayload.data(),
+						source.VariablePayload.size());
 				}
 			}
 			DoList.push_back(queued);
@@ -3239,6 +3256,7 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 			//..................................................................
 			// Variable-sized packets: Copy the packet Size & the buffer
 			//..................................................................
+			// The same two events that Has_Variable_Payload names.
 			case (EventClass::ADDPLAYER):
 			case (EventClass::BEACON_TEXT):
 				*(unsigned char *)( ((char *)buf) + size) = eventtype;
@@ -3790,8 +3808,7 @@ static void Queue_Playback(void)
 	// Compute the Game's CRC
 	//------------------------------------------------------------------------
 	Compute_Game_CRC();
-	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
-	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+	Store_Frame_Checksum();
 
 	//------------------------------------------------------------------------
 	// If we've reached the CRC print frame, do so & exit

@@ -646,7 +646,6 @@ namespace
 			Expect("an evaluation with a chosen send period yields valid settings",
 				period_only.FrameSendRate == 6 && Timing_Settings_Are_Valid(period_only));
 		}
-		Expect("an unset choice gives gamemd's own settings", Gamemd_Timing_Settings(83, 45, 40, HostTimingChoice{}) == Gamemd_Timing_Settings(83, 45, 40));
 
 		HostNetworkOptions options;
 		HostCommandResult result = Apply_Host_Command("/FrameSendRate 6", options);
