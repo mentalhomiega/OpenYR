@@ -353,15 +353,11 @@ void WeaponTypeClass::Init_Max_Speed(void)
  *=============================================================================================*/
 ArmorType Armor_From_Name(char const * name)
 {
-	if (!name) return(ARMOR_NONE);
-
-	for (int index = ARMOR_FIRST; index < Armor_Type_Count(); index++) {
-		if (stricmp(Armor_Type_Name(ArmorType(index)), name) == 0) {
-			return(ArmorType(index));
-		}
+	ArmorType armor = ARMOR_NONE;
+	if (name != NULL) {
+		Find_Armor_Type(name, armor);
 	}
-
-	return(ARMOR_NONE);
+	return(armor);
 }
 
 

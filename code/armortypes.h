@@ -21,6 +21,8 @@ int Armor_Type_Count(void);
 
 // The armor's name, or "none" for a number that names no armor.
 char const * Armor_Type_Name(ArmorType armor);
+// Finds the armor type with the name, ignoring case. Sets armor and returns true when one has it; otherwise armor is unchanged.
+bool Find_Armor_Type(char const * name, ArmorType & armor);
 
 // Adds the armor types the [ArmorTypes] section declares that are not known yet.
 void Read_Armor_Types(CCINIClass const & ini);
