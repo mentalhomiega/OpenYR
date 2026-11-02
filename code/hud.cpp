@@ -137,7 +137,9 @@ int Hud_Max_Rows_For_Frame(int frame_height)
 }
 
 
-int Hud_Max_Rows(void)
+// The cameo rows the build panel can show at the current screen height: as many as fit above the
+// scroll arrows, at least HUD_MIN_ROWS and at most the grid's slots allow.
+static int Hud_Max_Rows(void)
 {
 	return(Hud_Max_Rows_For_Frame(VisibleRect.Height));
 }
@@ -172,7 +174,9 @@ HudLayout Hud_Layout_For_Frame(int rows, int frame_width, int frame_height)
 }
 
 
-HudLayout Hud_Layout_For_Rows(int rows)
+// The build panel laid out for the given number of cameo rows, held within Hud_Max_Rows. Everything
+// that follows the row count is computed here, so a change of rows needs no other constants.
+static HudLayout Hud_Layout_For_Rows(int rows)
 {
 	return(Hud_Layout_For_Frame(rows, VisibleRect.Width, VisibleRect.Height));
 }
@@ -206,10 +210,6 @@ HudColors const & Side_Colors(void)
 	return(_colors[side]);
 }
 
-}
-
-
-namespace {
 
 // The panel background and the wells on it. Blit_Hud_Panel finds these colours to make them translucent.
 RGBClass Hud_Fill_Color(void)
@@ -221,6 +221,22 @@ RGBClass Hud_Fill_Color(void)
 RGBClass Hud_Well_Color(void)
 {
 	return(RGBClass(8, 9, 11));
+}
+
+
+int Channel(int pixel, int right, int left)
+{
+	return(((pixel >> right) & (0xFF >> left)) << left);
+}
+
+
+// Is this hicolor pixel the near-black backing that Yuri's Revenge drew its sidebar buttons on?
+bool Is_Backing(int pixel)
+{
+	int const most = 24;
+	return(Channel(pixel, DSurface::RedRight, DSurface::RedLeft) <= most
+		&& Channel(pixel, DSurface::GreenRight, DSurface::GreenLeft) <= most
+		&& Channel(pixel, DSurface::BlueRight, DSurface::BlueLeft) <= most);
 }
 
 }
@@ -259,25 +275,6 @@ int Hud_Side_Pixel(void)
 int Hud_Flash_Pixel(void)
 {
 	return(DSurface::Build_Hicolor_Pixel(RGBClass(235, 235, 235)));
-}
-
-
-namespace {
-
-int Channel(int pixel, int right, int left)
-{
-	return(((pixel >> right) & (0xFF >> left)) << left);
-}
-
-// Is this hicolor pixel the near-black backing that Yuri's Revenge drew its sidebar buttons on?
-bool Is_Backing(int pixel)
-{
-	int const most = 24;
-	return(Channel(pixel, DSurface::RedRight, DSurface::RedLeft) <= most
-		&& Channel(pixel, DSurface::GreenRight, DSurface::GreenLeft) <= most
-		&& Channel(pixel, DSurface::BlueRight, DSurface::BlueLeft) <= most);
-}
-
 }
 
 
@@ -580,13 +577,13 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 
 	int const out_stride = surface.Stride() / 2;
 	int const in_stride = source.Stride() / 2;
-	int const fill_pixel = DSurface::Build_Hicolor_Pixel(Hud_Fill_Color());
-	int const well_pixel = DSurface::Build_Hicolor_Pixel(Hud_Well_Color());
+	RGBClass const fill = Hud_Fill_Color();
+	RGBClass const well = Hud_Well_Color();
+	int const fill_pixel = DSurface::Build_Hicolor_Pixel(fill);
+	int const well_pixel = DSurface::Build_Hicolor_Pixel(well);
 	HudLayout const layout = Hud_Layout();
 	Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
 	HudBlendTable const & blend = Hud_Blend_Table(opacity);
-	RGBClass const fill = Hud_Fill_Color();
-	RGBClass const well = Hud_Well_Color();
 	Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
 	Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
 
