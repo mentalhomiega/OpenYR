@@ -6165,6 +6165,18 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 		}
 	}
 
+	auto spin_up = [this]() {
+		Gattling_Rate_Up(MissionAccumulateTime);
+		MissionAccumulateTime = 0;
+	};
+	auto animate_turret = [this, spin_up]() {
+		if (Class->IsGattling) {
+			spin_up();
+		} else {
+			TurretAnimFrame++;
+		}
+	};
+
 	/*
 	 * As BuildingClass::Mission_Attack (0x44ACF0): a gattling weapon spins up for the frames
 	 * since the last call while it fires, faces or rearms, and spins down when it loses its
@@ -6184,26 +6196,20 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			Commence();
 			break;
 
+		// FIRE_FACING comes only from a target-holding Can_Fire, so TarCom is not null here.
 		case FIRE_FACING:
-			if (TarCom != NULL) {
-				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
-			}
+			PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
+				spin_up();
 			}
 			return(2);
 
+		// Can_Fire returns FIRE_REARM for a charging prism before it checks the target, so TarCom may be null here.
 		case FIRE_REARM:
 			if (TarCom != NULL) {
 				PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
 			}
-			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
-			} else {
-				TurretAnimFrame++;
-			}
+			animate_turret();
 			return(2);
 
 		case FIRE_BUSY:
@@ -6231,12 +6237,7 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 			} else {
 				Fire_At(TarCom, primary);
 			}
-			if (Class->IsGattling) {
-				Gattling_Rate_Up(MissionAccumulateTime);
-				MissionAccumulateTime = 0;
-			} else {
-				TurretAnimFrame++;
-			}
+			animate_turret();
 			return(1);
 
 		default:
@@ -6245,9 +6246,7 @@ int BuildingClass::Do_MISSION_ATTACK(void)
 	MissionAccumulateTime = 0;
 	if (TarCom != NULL) {
 		PrimaryFacing.Set_Desired(Aim_Direction(TarCom));
-		return(1);
 	}
-
 	return(1);
 }
 
