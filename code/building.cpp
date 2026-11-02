@@ -6457,10 +6457,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 			case INITIAL:
 				{
 					if (!In_Radio_Contact()) {
-						End_Anim(BANIM_PRODUCTION);
-						End_Anim(BANIM_SPECIAL_TWO);
-						Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-						Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+						Return_Bay_Anims_To_Idle();
 						Assign_Mission(MISSION_GUARD);
 						return(1);
 					}
@@ -6599,10 +6596,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 
 			case DURING:
 				if (!In_Radio_Contact()) {
-					End_Anim(BANIM_PRODUCTION);
-					End_Anim(BANIM_SPECIAL_TWO);
-					Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-					Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+					Return_Bay_Anims_To_Idle();
 					Status = IDLE;
 					return(1);
 				}
@@ -6646,10 +6640,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 							*/
 							case RADIO_CANT:
 								if (IsOwnedByPlayer) Speak(VOX_NO_CASH);
-								End_Anim(BANIM_PRODUCTION);
-								End_Anim(BANIM_SPECIAL_TWO);
-								Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-								Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+								Return_Bay_Anims_To_Idle();
 								Status = IDLE;
 								break;
 
@@ -6661,10 +6652,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 								{
 									// Gamemd (Mission_Repair, 0x44BDB2) raises the repair event without a player-control test.
 									if (Submit_Radar_Event(RADAREVENT_REPAIR, Center_Coord().As_Cell()) && IsOwnedByPlayer) Speak(VOX_UNIT_REPAIRED);
-									End_Anim(BANIM_PRODUCTION);
-									End_Anim(BANIM_SPECIAL_TWO);
-									Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
-									Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
+									Return_Bay_Anims_To_Idle();
 									Status = IDLE;
 
 									FootClass * foot = dynamic_cast<FootClass *>(docked);
@@ -6732,6 +6720,16 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 		return(3);
 	}
 	return(TICKS_PER_SECOND);
+}
+
+
+void BuildingClass::Return_Bay_Anims_To_Idle(void)
+{
+	// Keep this order: ending BANIM_PRODUCTION starts BANIM_IDLE, so both ends run before the Begin calls.
+	End_Anim(BANIM_PRODUCTION);
+	End_Anim(BANIM_SPECIAL_TWO);
+	Begin_Anim(BANIM_SPECIAL_THREE, Is_Damaged_Art());
+	Begin_Anim(BANIM_ACTIVE_ONE, Is_Damaged_Art());
 }
 
 

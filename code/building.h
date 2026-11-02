@@ -729,6 +729,7 @@ class BuildingClass : public TechnoClass
 		void Create_Anim(char const * name, BAnimType anim, bool damaged, int delay);
 		void Detach_Anim(AnimClass * anim);
 		void End_Anim(BAnimType anim);
+		void Return_Bay_Anims_To_Idle(void);
 		void Set_Anim_Damage_State(bool damaged);
 		void Set_Anim_Drawer(ConvertClass * drawer, int brightness);
 		void Update_Anim_Appearance(void);
