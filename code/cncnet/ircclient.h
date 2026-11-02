@@ -121,10 +121,10 @@ class IRCClientClass
 
 		void Send_Now(std::string line);
 		void Enqueue(std::string line, int priority, std::string const & key);
-		void Handle(IRCMessageType const & message, uint64_t now);
+		void Handle(IRCMessageType const & message);
 		void Handle_Numeric(IRCMessageType const & message);
 		void Handle_Text(IRCMessageType const & message, bool notice);
-		void Event(IRCEventKind kind, std::string nick, std::string channel, std::string text = std::string());
+		void Event(IRCEventKind kind, std::string nick, std::string channel, std::string text = std::string(), std::string command = std::string());
 		void Register(void);
 		void Refill(uint64_t now);
 		std::string Next_Nick(void) const;
