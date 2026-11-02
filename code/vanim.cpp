@@ -83,16 +83,7 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 		BounceClass::Init(center, Class->Elasticity, 1.4f, 0.0, velocity, rotation);
 
 	} else {
-		// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x7493B0).
-		int const y_draw = abs(Scen->RandomNumber);
-		int const x_draw = abs(Scen->RandomNumber);
-		Vector3 velocity((x_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel,
-						 (y_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel, Class->MinZVel);
-
-		if (velocity.X < -velocity.Y) {
-			velocity.X = -velocity.X;
-			velocity.Y = -velocity.Y;
-		}
+		Vector3 velocity = Random_Meteor_Velocity(Class->MaxXYVel, Class->MinZVel);
 
 		ECCounter -= abs(Scen->RandomNumber % 20);
 		int x = coord.X - ECCounter * velocity.X;
@@ -304,10 +295,7 @@ void VoxelAnimClass::AI(void)
 	 * VoxelAnimClass::Update does through AudioController::PlayEvent (0x749F30, 0x750D40).
 	 */
 	if (Class->StartSound != VOC_NONE) {
-		if (LogSoundEffects) {
-			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(Class->StartSound), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
-		}
-		Play_If_In_Range(Class->StartSound, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(Class->StartSound));
+		Follow_Sound(Class->StartSound, Center_Coord(), &StartSoundHandle);
 	}
 
 	/*

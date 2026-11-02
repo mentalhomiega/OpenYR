@@ -401,6 +401,15 @@ bool Voc_Never_Ends(VocType voc)
 }
 
 
+void Follow_Sound(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (LogSoundEffects) {
+		DebugString("Sound follows: %s at %d,%d\n", Voc_Name(voc), coord.As_Cell().X, coord.As_Cell().Y);
+	}
+	Play_If_In_Range(voc, coord, handle, !Voc_Never_Ends(voc));
+}
+
+
 AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle, bool start)
 {
 	if (handle == nullptr || voc == VOC_NONE || voc >= Vocs.Count()) {

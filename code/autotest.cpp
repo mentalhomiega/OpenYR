@@ -5522,7 +5522,7 @@ static void Pickable_Step(StepType const & step)
 		for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
 			if (!listed && entry.Object == static_cast<ObjectClass const *>(techno)) {
 				listed = true;
-				window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+				window = View_To_Screen_Point(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
 			}
 		}
 		DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
@@ -5543,7 +5543,7 @@ static void Cellpixel_Step(StepType const & step)
 {
 	Coord const centre = Map[step.Argument_Cell()].Center_Coord();
 	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
-	Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	Point2D const window = View_To_Screen_Point(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
 	DebugString("AUTOTEST   cellpixel %d,%d at window %d,%d\n", step.Argument_Int(), step.X, window.X, window.Y);
 }
 
@@ -5553,7 +5553,7 @@ static void Hoverat_Step(StepType const & step)
 {
 	Coord const centre = Map[step.Argument_Cell()].Center_Coord();
 	Point2D const absolute = TacticalMap->Coord_To_Pixel_Absolute(centre);
-	Point2D const window = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	Point2D const window = View_To_Screen_Point(absolute - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
 	Move_Pointer(window.X, window.Y);
 	DebugString("AUTOTEST   hoverat %d,%d pointer %d,%d\n", step.Argument_Int(), step.X, window.X, window.Y);
 }
@@ -5580,7 +5580,7 @@ static void Pips_Step(StepType const & step)
 // pickat x y: the object a click at that window pixel would pick, and the cell under it. Selection is left alone.
 static void Pickat_Step(StepType const & step)
 {
-	Point2D const view = Screen_To_View_Offset(Point2D(step.Argument_Int(), step.X) - ScreenTacticalRect.Top_Left());
+	Point2D const view = Screen_To_View_Point(Point2D(step.Argument_Int(), step.X));
 	ObjectClass * object = TacticalMap->Get_Selectable_Object(view);
 	Cell const cell = TacticalMap->Pixel_To_Cell(view + TacticalRect.Top_Left());
 	DebugString("AUTOTEST   pickat %d,%d picks %s cell %d,%d\n", step.Argument_Int(), step.X,

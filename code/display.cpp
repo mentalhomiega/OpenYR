@@ -701,13 +701,13 @@ Cell DisplayClass::Set_Cursor_Pos(Cell const & xpos)
 	if (pos == CELL_NONE) {
 		Point2D tl = TacticalRect.TopLeft;
 		if (ScreenTacticalRect.Is_Point_Within(MouseCursor->Get_Mouse_Point())) {
-			Point2D mouse = tl + Screen_To_View_Offset(MouseCursor->Get_Mouse_Point() - ScreenTacticalRect.TopLeft);
+			Point2D mouse = tl + Screen_To_View_Point(MouseCursor->Get_Mouse_Point());
 			Cell click = Map.Click_Cell_Calc(mouse);
 			if (click != CELL_NONE) {
 				pos = click;
 			}
 		} else {
-			Point2D mouse = Screen_To_View_Offset(MouseCursor->Get_Mouse_Point() - ScreenTacticalRect.TopLeft);
+			Point2D mouse = Screen_To_View_Point(MouseCursor->Get_Mouse_Point());
 			pos = TacticalMap->Pixel_To_Cell(mouse);
 		}
 
@@ -1664,7 +1664,7 @@ int DisplayClass::TacticalClass::Action(unsigned flags, KeyNumType & key)
 	TacticalMap->Pixel_To_Coord(pixel);
 	Cell cell;
 
-	pixel = Screen_To_View_Offset(pixel - ScreenTacticalRect.Top_Left());
+	pixel = Screen_To_View_Point(pixel);
 
 	Map.Resolve_Point(pixel, cell, coord, object, fog, shadow);
 
@@ -2084,8 +2084,8 @@ static Rect Modern_Panel_View_Rect(void)
 		return(Rect(0, 0, 0, 0));
 	}
 	Rect const panel = Hud_Layout().Panel;
-	Point2D const top_left = Screen_To_View_Offset(Point2D(panel.X - ScreenTacticalRect.X, panel.Y - ScreenTacticalRect.Y));
-	Point2D const bottom_right = Screen_To_View_Offset(Point2D(panel.X + panel.Width - ScreenTacticalRect.X, panel.Y + panel.Height - ScreenTacticalRect.Y));
+	Point2D const top_left = Screen_To_View_Point(Point2D(panel.X, panel.Y));
+	Point2D const bottom_right = Screen_To_View_Point(Point2D(panel.X + panel.Width, panel.Y + panel.Height));
 	return(Rect(top_left.X, top_left.Y, bottom_right.X - top_left.X, bottom_right.Y - top_left.Y));
 }
 
@@ -2805,6 +2805,19 @@ void DisplayClass::Place_Beacon_Mode_Control(int control)
 /// </summary>
 /// <param name="control">The mode to set the power state to. Zero turns power mode off, one
 /// turns it on, and -1 toggles it.</param>
+// Turns off the power, waypoint, repair and sell modes, and beacon placement when with_beacon is true.
+void DisplayClass::Cancel_Order_Modes(bool with_beacon)
+{
+	Power_Mode_Control(0);
+	Waypoint_Mode_Control(0);
+	Repair_Mode_Control(0);
+	Sell_Mode_Control(0);
+	if (with_beacon) {
+		Place_Beacon_Mode_Control(0);
+	}
+}
+
+
 void DisplayClass::Power_Mode_Control(int control)
 {
 	bool mode = IsPowerMode;
@@ -3794,7 +3807,7 @@ char const * DisplayClass::Help_Text(int id)
 	ObjectClass * object;
 	bool fog, shadow;
 
-	Map.Resolve_Point(Screen_To_View_Offset(Get_Mouse_Point() - ScreenTacticalRect.TopLeft), cell, coord, object, fog, shadow);
+	Map.Resolve_Point(Screen_To_View_Point(Get_Mouse_Point()), cell, coord, object, fog, shadow);
 
 	/*
 	**	Give a generic help message when over shadow terrain.

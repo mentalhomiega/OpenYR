@@ -1236,9 +1236,6 @@ Rect RadarClass::Compute_Background(Rect const & cell_rect, Rect & update_rect, 
 /// <param name="update_rect">The region of that array to fill in.</param>
 void RadarClass::Fill_In_Background(Rect const & cell_rect, Rect const & update_rect)
 {
-	RGBClass low(0, 0, 0);
-	RGBClass high(0, 0, 0);
-
 	Reset_Iterator();
 	CellClass * iter = Map.Iterate();
 
@@ -1256,14 +1253,14 @@ void RadarClass::Fill_In_Background(Rect const & cell_rect, Rect const & update_
 			mrect = Intersect(mrect, update_rect);
 			if (mrect.Is_Valid()) {
 				int idx = mrect.X + mrect.Y * cell_rect.Width;
-				iter->Cell_Color(low, high);
+				RGBClass const color = iter->Cell_Color();
 				if (origx == update_rect.X - 1) {
-					BackgroundColors[idx] = high;
+					BackgroundColors[idx] = color;
 				} else if (origx == update_rect.Width + update_rect.X - 1) {
-					BackgroundColors[idx] = low;
+					BackgroundColors[idx] = color;
 				} else {
-					BackgroundColors[idx] = low;
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx] = color;
+					BackgroundColors[idx+1] = color;
 				}
 			}
 		}
@@ -1365,20 +1362,17 @@ void RadarClass::Plot_Radar_Background(void)
 			update_rect = Intersect(update_rect, Rect(0, 0, RadarCellWidth, RadarCellHeight));
 
 			if (update_rect.Is_Valid()) {
-				RGBClass low(0, 0, 0);
-				RGBClass high(0, 0, 0);
-
 				CellClass * cptr = &Map[cell];
 				int idx = update_rect.X + update_rect.Y * RadarCellWidth;
-				cptr->Cell_Color(low, high);
+				RGBClass const color = cptr->Cell_Color();
 
 				if (x == 0 && update_rect.Width == 1) {
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx+1] = color;
 				} else if (update_rect.Width == 1) {
-					BackgroundColors[idx] = low;
+					BackgroundColors[idx] = color;
 				} else {
-					BackgroundColors[idx] = low;
-					BackgroundColors[idx+1] = high;
+					BackgroundColors[idx] = color;
+					BackgroundColors[idx+1] = color;
 				}
 
 				Rect radarcellrect(0, 0, RadarCellWidth, RadarCellHeight);
@@ -2187,17 +2181,10 @@ void RadarClass::Draw_Beacon_Blips(void)
 		return;
 	}
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Beacons.Get(house, slot);
-			if (beacon == NULL || !Beacons.Visible_To_Player(beacon)) {
-				continue;
-			}
-
-			Rect const pixel = Cell_To_Radar_Pixel(beacon->Where.As_Cell());
-			Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
-		}
-	}
+	Beacons.For_Each_Visible([&](int, BeaconClass & beacon) {
+		Rect const pixel = Cell_To_Radar_Pixel(beacon.Where.As_Cell());
+		Draw_Shape(*SidebarSurface, *SidebarDrawer, shapes, phase, Point2D(pixel.X, pixel.Y), SidebarSurface->Get_Rect(), (ShapeFlags_Type)SHAPE_CENTER);
+	});
 }
 
 

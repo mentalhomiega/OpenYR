@@ -218,16 +218,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	} else {
 		IsBouncing = true;
 		if (Class->IsMeteor) {
-			// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x421EA0).
-			int const y_draw = abs(Scen->RandomNumber);
-			int const x_draw = abs(Scen->RandomNumber);
-			Vector3 velocity((x_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel,
-							(y_draw % int(Class->MaxXYVel * 2)) - Class->MaxXYVel, Class->MinZVel);
-
-			if (velocity.X < -velocity.Y) {
-				velocity.X = -velocity.X;
-				velocity.Y = -velocity.Y;
-			}
+			Vector3 velocity = Random_Meteor_Velocity(Class->MaxXYVel, Class->MinZVel);
 
 			int time = 70 - abs(Scen->RandomNumber() % 20);
 			int x = coord.X - time * velocity.X;
@@ -533,6 +524,31 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 }
 
 
+// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
+// translucency is three quarters opaque, as the blitter's opacity is.
+static int Anim_Draw_Opacity(ShapeFlags_Type flags)
+{
+	int opacity = 255;
+	switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
+		case SHAPE_TRANSLUCENT25:
+			opacity = 192;
+			break;
+
+		case SHAPE_TRANSLUCENT50:
+			opacity = 128;
+			break;
+
+		case SHAPE_TRANSLUCENT75:
+			opacity = 64;
+			break;
+
+		default:
+			break;
+	}
+	return(opacity);
+}
+
+
 /***********************************************************************************************
  * AnimClass::Draw_It -- Draws the animation at the location specified.                        *
  *                                                                                             *
@@ -662,25 +678,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			}
 
 			// The bounce pass above draws ordinary light; only the picture itself is emissive.
-			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
-			// translucency is three quarters opaque, as the blitter's opacity is.
-			int opacity = 255;
-			switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
-				case SHAPE_TRANSLUCENT25:
-					opacity = 192;
-					break;
-
-				case SHAPE_TRANSLUCENT50:
-					opacity = 128;
-					break;
-
-				case SHAPE_TRANSLUCENT75:
-					opacity = 64;
-					break;
-
-				default:
-					break;
-			}
+			int const opacity = Anim_Draw_Opacity(flags);
 			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
 			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
@@ -869,10 +867,7 @@ void AnimClass::AI(void)
 	// Re-aims the start sound on every update, and starts it again once it has ended, as gamemd's
 	// AnimClass::Update (0x423AC0) does. An inert animation leaves its sound at the last place it was aimed.
 	if (!IsInert && StartSoundVoc != VOC_NONE) {
-		if (LogSoundEffects) {
-			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(StartSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
-		}
-		Play_If_In_Range(StartSoundVoc, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(StartSoundVoc));
+		Follow_Sound(StartSoundVoc, Center_Coord(), &StartSoundHandle);
 	}
 
 	if (Class->IsPsiWarning) {

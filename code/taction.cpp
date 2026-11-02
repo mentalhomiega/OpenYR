@@ -2288,11 +2288,7 @@ bool TActionClass::TAction_LOCK_INPUT(HouseClass * , ObjectClass * , TriggerClas
 	Map.PendingObject = NULL;
 	Map.PendingHouse = HOUSE_NONE;
 	Map.Set_Cursor_Shape(NULL);
-	Map.Repair_Mode_Control(0);
-	Map.Sell_Mode_Control(0);
-	Map.Power_Mode_Control(0);
-	Map.Waypoint_Mode_Control(0);
-	Map.Place_Beacon_Mode_Control(0);
+	Map.Cancel_Order_Modes(true);
 
 	Lock_Scenario_Input();
 	Scripted_View_Zoom(true);

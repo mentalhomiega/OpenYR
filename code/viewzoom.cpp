@@ -143,6 +143,18 @@ Point2D View_To_Screen_Offset(Point2D const & view_offset)
 }
 
 
+Point2D Screen_To_View_Point(Point2D const & screen_pixel)
+{
+	return(Screen_To_View_Offset(screen_pixel - ScreenTacticalRect.Top_Left()));
+}
+
+
+Point2D View_To_Screen_Point(Point2D const & view_offset)
+{
+	return(ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(view_offset));
+}
+
+
 Rect Shown_Map_Rect(void)
 {
 	Rect const shown = Shown_View_Area();

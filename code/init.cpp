@@ -3394,18 +3394,6 @@ static void Assign_Selection_To_Team(int team)
 }
 
 
-// Ends the order modes that a selection command replaces. Previous and Next Object keep beacon placement running.
-static void Cancel_Order_Modes(bool with_beacon)
-{
-	Map.Power_Mode_Control(0);
-	Map.Waypoint_Mode_Control(0);
-	Map.Repair_Mode_Control(0);
-	Map.Sell_Mode_Control(0);
-	if (with_beacon) {
-		Map.Place_Beacon_Mode_Control(0);
-	}
-}
-
 
 // Refuses an order during planning mode, showing the message, and returns true so the caller issues nothing.
 // gamemd's TechnoClass::ClickedEvent (0x6FFE39) refuses stop, deploy and scatter the same way.
@@ -3469,7 +3457,7 @@ class SelectTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(true);
+			Map.Cancel_Order_Modes(true);
 
 			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
@@ -3523,7 +3511,7 @@ class AddTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(true);
+			Map.Cancel_Order_Modes(true);
 
 			Select_Team_Members(Team);
 		}
@@ -3556,7 +3544,7 @@ class AddToTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(true);
+			Map.Cancel_Order_Modes(true);
 
 			// The team joins the selection first, or the assignment would drop its existing members.
 			Select_Team_Members(Team);
@@ -3591,7 +3579,7 @@ class CenterTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(true);
+			Map.Cancel_Order_Modes(true);
 
 			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
 				Unselect_All();
@@ -3630,7 +3618,7 @@ class PrevObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(false);
+			Map.Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Prev_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
@@ -5169,7 +5157,7 @@ class NextObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Cancel_Order_Modes(false);
+			Map.Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Next_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 

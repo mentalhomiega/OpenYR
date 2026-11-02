@@ -210,6 +210,7 @@ class Tactical : public AbstractClass
 		void Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Outside_Map(Surface & surface);
 		void Render(Surface & surface, bool fullredraw, int drawpass);
+		void Render_Foreground(Surface & composite);
 		bool Blit_Tiles(void);
 
 		/*

@@ -137,6 +137,7 @@
 #include "factory.h"
 #include "fog.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
@@ -11472,8 +11473,9 @@ static void For_Each_Gap_Cell(BuildingClass const * building, Fn && fn)
 {
 	int const radius = building->GapRadius;
 	Coord coord = building->Center_Coord();
-	coord.X = coord.X + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
-	coord.Y = coord.Y + (TacticalMap->Z_Lepton_To_Pixel(coord.Z) / -CELL_PIXEL_W) * CELL_LEPTON;
+	int const shift = Gamemd_Reveal_Shift_Cells(TacticalMap->Z_Lepton_To_Pixel(coord.Z));
+	coord.X = coord.X + shift * CELL_LEPTON;
+	coord.Y = coord.Y + shift * CELL_LEPTON;
 	Cell const center = coord.As_Cell();
 
 	for (int dx = -radius - 2; dx < radius + 2; dx++) {

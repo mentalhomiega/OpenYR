@@ -4276,10 +4276,7 @@ void FootClass::Update_Move_Sound(bool stepped)
 
 	// A loop that Limbo ended has no voc, so it is not re-aimed or restarted.
 	if (IsMoveSoundPlaying && MoveSoundVoc != VOC_NONE) {
-		if (LogSoundEffects) {
-			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(MoveSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
-		}
-		Play_If_In_Range(MoveSoundVoc, Center_Coord(), &MoveSoundHandle, !Voc_Never_Ends(MoveSoundVoc));
+		Follow_Sound(MoveSoundVoc, Center_Coord(), &MoveSoundHandle);
 	}
 }
 

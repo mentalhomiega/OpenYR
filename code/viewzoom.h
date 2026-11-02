@@ -69,6 +69,12 @@ Point2D Screen_To_View_Offset(Point2D const & screen_offset);
 // Converts an offset from TacticalRect's corner into an offset from ScreenTacticalRect's corner.
 Point2D View_To_Screen_Offset(Point2D const & view_offset);
 
+// Converts an absolute screen pixel into an offset from TacticalRect's corner.
+Point2D Screen_To_View_Point(Point2D const & screen_pixel);
+
+// Converts an offset from TacticalRect's corner into an absolute screen pixel.
+Point2D View_To_Screen_Point(Point2D const & view_offset);
+
 // The part of the map surfaces shown in ScreenTacticalRect.
 Rect Shown_Map_Rect(void);
 

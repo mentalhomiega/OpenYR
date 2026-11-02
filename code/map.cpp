@@ -12826,6 +12826,62 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 }
 
 
+/*
+ * Blows up a run of bridge overlays along one axis. The callers supply the predicate that
+ * tells a run piece from the end of the run, the overlay that draws no explosions, and the
+ * damage routine. The run is counted in each direction. Each count includes the first cell
+ * that is not part of the run. The walk starts at the middle of the run and goes toward the
+ * longer side.
+ */
+template<typename Is_Run_Cell, typename Damage_Cell>
+void MapClass::Detonate_Bridge_Run(Cell const & cell, FacingType axis, Is_Run_Cell is_run_cell, int skip_overlay, Damage_Cell damage_cell)
+{
+	bool const east_west = axis == FACING_E;
+	int const ax = east_west ? 1 : 0;
+	int const ay = 1 - ax;
+
+	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
+
+	int negative = 0;
+	do {
+		negative++;
+	} while (is_run_cell(at(-negative)));
+
+	int positive = 0;
+	do {
+		positive++;
+	} while (is_run_cell(at(positive)));
+
+	int const dir = positive < negative ? -1 : 1;
+	int t = -((negative - positive) / 2);
+
+	for (int n = 0; n < 4; n++) {
+		Cell const cur = at(t);
+		int const overlay = Concrete_Overlay_At(cur);
+
+		if (overlay != skip_overlay) {
+			for (int side = -1; side <= 1; side++) {
+				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
+				Spawn_Bridge_Explosion(spot);
+			}
+		}
+
+		for (int tries = 0; tries < 3; tries++) {
+			if (damage_cell(cur)) {
+				break;
+			}
+		}
+
+		t += dir;
+		if (!is_run_cell(at(t))) {
+			break;
+		}
+	}
+
+	Zone_Reset();
+}
+
+
 /// <summary>
 /// Blows up a run of concrete low bridge pieces along one axis, showing explosions over the middle of it
 /// and damaging up to four pieces (gamemd 0x575870 for east and west, skipping the fallen piece 231, and
@@ -12835,50 +12891,9 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 /// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
 void MapClass::Detonate_Concrete_Bridge_Run(Cell const & cell, FacingType axis)
 {
-	bool const east_west = axis == FACING_E;
-	int const ax = east_west ? 1 : 0;
-	int const ay = 1 - ax;
-	int const skip = east_west ? OVERLAY_CONCRETE_BRIDGE_END1 : OVERLAY_CONCRETE_BRIDGE_END2;
+	int const skip = axis == FACING_E ? OVERLAY_CONCRETE_BRIDGE_END1 : OVERLAY_CONCRETE_BRIDGE_END2;
 
-	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
-
-	int negative = 0;
-	do {
-		negative++;
-	} while (Is_Concrete_Bridge_Cell(at(-negative)));
-
-	int positive = 0;
-	do {
-		positive++;
-	} while (Is_Concrete_Bridge_Cell(at(positive)));
-
-	int const dir = positive < negative ? -1 : 1;
-	int t = -((negative - positive) / 2);
-
-	for (int n = 0; n < 4; n++) {
-		Cell const cur = at(t);
-		int const overlay = Concrete_Overlay_At(cur);
-
-		if (overlay != skip) {
-			for (int side = -1; side <= 1; side++) {
-				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
-				Spawn_Bridge_Explosion(spot);
-			}
-		}
-
-		for (int tries = 0; tries < 3; tries++) {
-			if (Damage_Concrete_Bridge(cur)) {
-				break;
-			}
-		}
-
-		t += dir;
-		if (!Is_Concrete_Bridge_Cell(at(t))) {
-			break;
-		}
-	}
-
-	Zone_Reset();
+	Detonate_Bridge_Run(cell, axis, Is_Concrete_Bridge_Cell, skip, [this](Cell const & c) { return(Damage_Concrete_Bridge(c)); });
 }
 
 
@@ -13255,60 +13270,13 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 /// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
 void MapClass::Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis)
 {
-	bool const east_west = axis == FACING_E;
-	int const ax = east_west ? 1 : 0;
-	int const ay = 1 - ax;
-
 	/*
 	 * Overlay 100 (LOWBRIDGE_27) draws no explosions along an east-west run, and overlay 101
 	 * (LOWBRIDGE_28) draws none along a north-south run.
 	 */
-	int const skip = east_west ? OVERLAY_LOWBRIDGE_27 : OVERLAY_LOWBRIDGE_28;
+	int const skip = axis == FACING_E ? OVERLAY_LOWBRIDGE_27 : OVERLAY_LOWBRIDGE_28;
 
-	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
-
-	/*
-	 * The run is counted in each direction. Each count includes the first cell that is not wood.
-	 * The walk starts at the middle of the run and goes toward the longer side.
-	 */
-	int negative = 0;
-	do {
-		negative++;
-	} while (Is_Wood_Bridge_Overlay_Cell(at(-negative)));
-
-	int positive = 0;
-	do {
-		positive++;
-	} while (Is_Wood_Bridge_Overlay_Cell(at(positive)));
-
-	int const dir = positive < negative ? -1 : 1;
-	int t = -((negative - positive) / 2);
-
-	for (int n = 0; n < 4; n++) {
-		Cell const cur = at(t);
-		CellClass const * cptr = Bridge_Cell_At(cur);
-		int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
-
-		if (overlay != skip) {
-			for (int side = -1; side <= 1; side++) {
-				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
-				Spawn_Bridge_Explosion(spot);
-			}
-		}
-
-		for (int tries = 0; tries < 3; tries++) {
-			if (Damage_Bridge(cur)) {
-				break;
-			}
-		}
-
-		t += dir;
-		if (!Is_Wood_Bridge_Overlay_Cell(at(t))) {
-			break;
-		}
-	}
-
-	Zone_Reset();
+	Detonate_Bridge_Run(cell, axis, Is_Wood_Bridge_Overlay_Cell, skip, [this](Cell const & c) { return(Damage_Bridge(c)); });
 }
 
 
@@ -13438,32 +13406,79 @@ void MapClass::Lower_Bridge_Deck(Cell const & cell, bool east_west)
 }
 
 
+/*
+ * The deck stages and span pieces that one weakening walk uses. The stage values are not symmetric
+ * between the walks: east and west change stages 4 and 5, and south and north change 13 and 14.
+ */
+struct Weaken_Deck_Rule
+{
+	bool stage_above_8;
+	int below_limit;
+	int below_to;
+	int equal_stage;
+	int equal_to;
+	int end_first;
+	int end_second;
+	int middle_base;
+};
+
+
+static Weaken_Deck_Rule const & Weaken_Deck_Rule_For(bool east_west, bool towards_far)
+{
+	static Weaken_Deck_Rule const east = { false, 4, 4, 5, 6, IsometricTileTypeClass::BridgeBottomRight1, IsometricTileTypeClass::BridgeBottomRight2, IsometricTileTypeClass::BridgeMiddle1 };
+	static Weaken_Deck_Rule const west = { false, 4, 5, 4, 6, IsometricTileTypeClass::BridgeTopLeft1, IsometricTileTypeClass::BridgeTopLeft2, IsometricTileTypeClass::BridgeMiddle1 };
+	static Weaken_Deck_Rule const south = { true, 13, 14, 13, 15, IsometricTileTypeClass::BridgeBottomLeft1, IsometricTileTypeClass::BridgeBottomLeft2, IsometricTileTypeClass::BridgeMiddle2 };
+	static Weaken_Deck_Rule const north = { true, 13, 13, 14, 15, IsometricTileTypeClass::BridgeTopRight1, IsometricTileTypeClass::BridgeTopRight2, IsometricTileTypeClass::BridgeMiddle2 };
+
+	if (east_west) {
+		return(towards_far ? east : west);
+	}
+	return(towards_far ? south : north);
+}
+
+
+/// <summary>
+/// Weakens the deck cell and the span piece beside it, one step from a deck cell toward the far or near
+/// end of the span. The step raises the deck's damage stage, ends the span at an end piece, or sets a
+/// middle piece to its damaged variant.
+/// </summary>
+/// <param name="cell">The deck cell the step starts from.</param>
+/// <param name="dir">The direction of the piece the step weakens.</param>
+/// <param name="east_west">Is the span east-west?</param>
+/// <param name="towards_far">Does the walk go to the far end?</param>
+void MapClass::Weaken_Deck_Step(Cell const & cell, FacingType dir, bool east_west, bool towards_far)
+{
+	Weaken_Deck_Rule const & rule = Weaken_Deck_Rule_For(east_west, towards_far);
+	Cell const next = cell + AdjacentCell[dir];
+	CellClass * cptr = Bridge_Cell_At(next);
+	if (cptr == NULL) {
+		return;
+	}
+	if (cptr->IsBridgeDeck && (!rule.stage_above_8 || cptr->OverlayData > 8)) {
+		if (cptr->OverlayData < rule.below_limit) {
+			cptr->OverlayData = rule.below_to;
+		} else if (cptr->OverlayData == rule.equal_stage) {
+			cptr->OverlayData = rule.equal_to;
+		}
+	}
+	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
+	if (pos == rule.end_first || pos == rule.end_second) {
+		Set_Bridge_End_State(next, true, false);
+	} else if (pos == rule.middle_base) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(rule.middle_base + (towards_far ? 1 : 2)), ISOTILE_INVALID, -1, false);
+	} else if (pos == rule.middle_base + (towards_far ? 2 : 1)) {
+		Set_Bridge_Middle_State(next, Bridge_Set_Tile(rule.middle_base + 3), ISOTILE_INVALID, -1, false);
+	}
+}
+
+
 /// <summary>
 /// Weakens the deck and the span piece just east of a deck cell (gamemd 0x572230, the first
 /// step of an east-west span's damage).
 /// </summary>
 void MapClass::Weaken_Deck_East(Cell const & cell)
 {
-	Cell const next = cell + AdjacentCell[FACING_E];
-	CellClass * cptr = Bridge_Cell_At(next);
-	if (cptr == NULL) {
-		return;
-	}
-	if (cptr->IsBridgeDeck) {
-		if (cptr->OverlayData < 4) {
-			cptr->OverlayData = 4;
-		} else if (cptr->OverlayData == 5) {
-			cptr->OverlayData = 6;
-		}
-	}
-	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
-	if (pos == IsometricTileTypeClass::BridgeBottomRight1 || pos == IsometricTileTypeClass::BridgeBottomRight2) {
-		Set_Bridge_End_State(next, true, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle1) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 1), ISOTILE_INVALID, -1, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle1 + 2) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 3), ISOTILE_INVALID, -1, false);
-	}
+	Weaken_Deck_Step(cell, FACING_E, true, true);
 }
 
 
@@ -13472,26 +13487,7 @@ void MapClass::Weaken_Deck_East(Cell const & cell)
 /// </summary>
 void MapClass::Weaken_Deck_West(Cell const & cell)
 {
-	Cell const next = cell + AdjacentCell[FACING_W];
-	CellClass * cptr = Bridge_Cell_At(next);
-	if (cptr == NULL) {
-		return;
-	}
-	if (cptr->IsBridgeDeck) {
-		if (cptr->OverlayData < 4) {
-			cptr->OverlayData = 5;
-		} else if (cptr->OverlayData == 4) {
-			cptr->OverlayData = 6;
-		}
-	}
-	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
-	if (pos == IsometricTileTypeClass::BridgeTopLeft1 || pos == IsometricTileTypeClass::BridgeTopLeft2) {
-		Set_Bridge_End_State(next, true, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle1) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 2), ISOTILE_INVALID, -1, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle1 + 1) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle1 + 3), ISOTILE_INVALID, -1, false);
-	}
+	Weaken_Deck_Step(cell, FACING_W, true, false);
 }
 
 
@@ -13501,26 +13497,7 @@ void MapClass::Weaken_Deck_West(Cell const & cell)
 /// </summary>
 void MapClass::Weaken_Deck_South(Cell const & cell)
 {
-	Cell const next = cell + AdjacentCell[FACING_S];
-	CellClass * cptr = Bridge_Cell_At(next);
-	if (cptr == NULL) {
-		return;
-	}
-	if (cptr->IsBridgeDeck && cptr->OverlayData > 8) {
-		if (cptr->OverlayData < 13) {
-			cptr->OverlayData = 14;
-		} else if (cptr->OverlayData == 13) {
-			cptr->OverlayData = 15;
-		}
-	}
-	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
-	if (pos == IsometricTileTypeClass::BridgeBottomLeft1 || pos == IsometricTileTypeClass::BridgeBottomLeft2) {
-		Set_Bridge_End_State(next, true, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle2) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 1), ISOTILE_INVALID, -1, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle2 + 2) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 3), ISOTILE_INVALID, -1, false);
-	}
+	Weaken_Deck_Step(cell, FACING_S, false, true);
 }
 
 
@@ -13530,26 +13507,7 @@ void MapClass::Weaken_Deck_South(Cell const & cell)
 /// </summary>
 void MapClass::Weaken_Deck_North(Cell const & cell)
 {
-	Cell const next = cell + AdjacentCell[FACING_N];
-	CellClass * cptr = Bridge_Cell_At(next);
-	if (cptr == NULL) {
-		return;
-	}
-	if (cptr->IsBridgeDeck && cptr->OverlayData > 8) {
-		if (cptr->OverlayData < 13) {
-			cptr->OverlayData = 13;
-		} else if (cptr->OverlayData == 14) {
-			cptr->OverlayData = 15;
-		}
-	}
-	int const pos = Bridge_Tile_Position(cptr, IsometricTileTypeClass::BridgeSet);
-	if (pos == IsometricTileTypeClass::BridgeTopRight1 || pos == IsometricTileTypeClass::BridgeTopRight2) {
-		Set_Bridge_End_State(next, true, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle2) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 2), ISOTILE_INVALID, -1, false);
-	} else if (pos == IsometricTileTypeClass::BridgeMiddle2 + 1) {
-		Set_Bridge_Middle_State(next, Bridge_Set_Tile(IsometricTileTypeClass::BridgeMiddle2 + 3), ISOTILE_INVALID, -1, false);
-	}
+	Weaken_Deck_Step(cell, FACING_N, false, false);
 }
 
 
