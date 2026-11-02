@@ -230,6 +230,8 @@ class MapClass: public GScreenClass
 		void Destroy_Bridge_Span_Near(Cell const & cell);
 		void Destroy_Wood_Bridge_Neighbors(Cell const & cell);
 		void Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis);
+		template<typename Is_Run_Cell, typename Damage_Cell>
+		void Detonate_Bridge_Run(Cell const & cell, FacingType axis, Is_Run_Cell is_run_cell, int skip_overlay, Damage_Cell damage_cell);
 		void Spawn_Bridge_Explosion(Cell const & cell);
 		bool Damage_Bridge_At_Cell(Cell const & cell);
 		bool Blow_Up_High_Bridge_Area(Cell const & cell);

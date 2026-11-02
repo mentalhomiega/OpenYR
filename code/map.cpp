@@ -12826,6 +12826,62 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 }
 
 
+/*
+ * Blows up a run of bridge overlays along one axis. The callers supply the predicate that
+ * tells a run piece from the end of the run, the overlay that draws no explosions, and the
+ * damage routine. The run is counted in each direction. Each count includes the first cell
+ * that is not part of the run. The walk starts at the middle of the run and goes toward the
+ * longer side.
+ */
+template<typename Is_Run_Cell, typename Damage_Cell>
+void MapClass::Detonate_Bridge_Run(Cell const & cell, FacingType axis, Is_Run_Cell is_run_cell, int skip_overlay, Damage_Cell damage_cell)
+{
+	bool const east_west = axis == FACING_E;
+	int const ax = east_west ? 1 : 0;
+	int const ay = 1 - ax;
+
+	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
+
+	int negative = 0;
+	do {
+		negative++;
+	} while (is_run_cell(at(-negative)));
+
+	int positive = 0;
+	do {
+		positive++;
+	} while (is_run_cell(at(positive)));
+
+	int const dir = positive < negative ? -1 : 1;
+	int t = -((negative - positive) / 2);
+
+	for (int n = 0; n < 4; n++) {
+		Cell const cur = at(t);
+		int const overlay = Concrete_Overlay_At(cur);
+
+		if (overlay != skip_overlay) {
+			for (int side = -1; side <= 1; side++) {
+				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
+				Spawn_Bridge_Explosion(spot);
+			}
+		}
+
+		for (int tries = 0; tries < 3; tries++) {
+			if (damage_cell(cur)) {
+				break;
+			}
+		}
+
+		t += dir;
+		if (!is_run_cell(at(t))) {
+			break;
+		}
+	}
+
+	Zone_Reset();
+}
+
+
 /// <summary>
 /// Blows up a run of concrete low bridge pieces along one axis, showing explosions over the middle of it
 /// and damaging up to four pieces (gamemd 0x575870 for east and west, skipping the fallen piece 231, and
@@ -12835,50 +12891,9 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 /// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
 void MapClass::Detonate_Concrete_Bridge_Run(Cell const & cell, FacingType axis)
 {
-	bool const east_west = axis == FACING_E;
-	int const ax = east_west ? 1 : 0;
-	int const ay = 1 - ax;
-	int const skip = east_west ? OVERLAY_CONCRETE_BRIDGE_END1 : OVERLAY_CONCRETE_BRIDGE_END2;
+	int const skip = axis == FACING_E ? OVERLAY_CONCRETE_BRIDGE_END1 : OVERLAY_CONCRETE_BRIDGE_END2;
 
-	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
-
-	int negative = 0;
-	do {
-		negative++;
-	} while (Is_Concrete_Bridge_Cell(at(-negative)));
-
-	int positive = 0;
-	do {
-		positive++;
-	} while (Is_Concrete_Bridge_Cell(at(positive)));
-
-	int const dir = positive < negative ? -1 : 1;
-	int t = -((negative - positive) / 2);
-
-	for (int n = 0; n < 4; n++) {
-		Cell const cur = at(t);
-		int const overlay = Concrete_Overlay_At(cur);
-
-		if (overlay != skip) {
-			for (int side = -1; side <= 1; side++) {
-				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
-				Spawn_Bridge_Explosion(spot);
-			}
-		}
-
-		for (int tries = 0; tries < 3; tries++) {
-			if (Damage_Concrete_Bridge(cur)) {
-				break;
-			}
-		}
-
-		t += dir;
-		if (!Is_Concrete_Bridge_Cell(at(t))) {
-			break;
-		}
-	}
-
-	Zone_Reset();
+	Detonate_Bridge_Run(cell, axis, Is_Concrete_Bridge_Cell, skip, [this](Cell const & c) { return(Damage_Concrete_Bridge(c)); });
 }
 
 
@@ -13255,60 +13270,13 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 /// <param name="axis">FACING_E to walk east and west, FACING_S to walk north and south.</param>
 void MapClass::Detonate_Wood_Bridge_Run(Cell const & cell, FacingType axis)
 {
-	bool const east_west = axis == FACING_E;
-	int const ax = east_west ? 1 : 0;
-	int const ay = 1 - ax;
-
 	/*
 	 * Overlay 100 (LOWBRIDGE_27) draws no explosions along an east-west run, and overlay 101
 	 * (LOWBRIDGE_28) draws none along a north-south run.
 	 */
-	int const skip = east_west ? OVERLAY_LOWBRIDGE_27 : OVERLAY_LOWBRIDGE_28;
+	int const skip = axis == FACING_E ? OVERLAY_LOWBRIDGE_27 : OVERLAY_LOWBRIDGE_28;
 
-	auto at = [&](int t) { return(Cell(cell.X + ax * t, cell.Y + ay * t)); };
-
-	/*
-	 * The run is counted in each direction. Each count includes the first cell that is not wood.
-	 * The walk starts at the middle of the run and goes toward the longer side.
-	 */
-	int negative = 0;
-	do {
-		negative++;
-	} while (Is_Wood_Bridge_Overlay_Cell(at(-negative)));
-
-	int positive = 0;
-	do {
-		positive++;
-	} while (Is_Wood_Bridge_Overlay_Cell(at(positive)));
-
-	int const dir = positive < negative ? -1 : 1;
-	int t = -((negative - positive) / 2);
-
-	for (int n = 0; n < 4; n++) {
-		Cell const cur = at(t);
-		CellClass const * cptr = Bridge_Cell_At(cur);
-		int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
-
-		if (overlay != skip) {
-			for (int side = -1; side <= 1; side++) {
-				Cell const spot = east_west ? Cell(cur.X, cur.Y + side) : Cell(cur.X + side, cur.Y);
-				Spawn_Bridge_Explosion(spot);
-			}
-		}
-
-		for (int tries = 0; tries < 3; tries++) {
-			if (Damage_Bridge(cur)) {
-				break;
-			}
-		}
-
-		t += dir;
-		if (!Is_Wood_Bridge_Overlay_Cell(at(t))) {
-			break;
-		}
-	}
-
-	Zone_Reset();
+	Detonate_Bridge_Run(cell, axis, Is_Wood_Bridge_Overlay_Cell, skip, [this](Cell const & c) { return(Damage_Bridge(c)); });
 }
 
 
