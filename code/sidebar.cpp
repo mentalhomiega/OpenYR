@@ -1411,37 +1411,30 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	// A classic tab with no items is disabled, as gamemd does when its last item goes (SidebarClass::RebuildScrollableStripList, 0x6AA600).
 	if (!Modern_Interface()) {
-		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const enabled = Column[index].BuildableCount > 0;
-			if (enabled == TabDisabled[index]) {
-				if (enabled) {
-					TabButton[index].Enable();
-				} else {
-					TabButton[index].Disable();
+		// Applies the wanted enabled state to the buttons when it differs from the state recorded in disabled.
+		auto sync = [this](bool & disabled, bool enabled, std::initializer_list<ShapeButtonClass *> buttons) {
+			if (enabled == disabled) {
+				for (ShapeButtonClass * button : buttons) {
+					if (enabled) {
+						button->Enable();
+					} else {
+						button->Disable();
+					}
+					button->Flag_To_Redraw();
 				}
-				TabDisabled[index] = !enabled;
-				TabButton[index].Flag_To_Redraw();
+				disabled = !enabled;
 				Flag_To_Redraw();
 			}
+		};
+
+		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
+			sync(TabDisabled[index], Column[index].BuildableCount > 0, { &TabButton[index] });
 		}
 
 		// The arrows of a classic strip are enabled only when it holds more cameos than fit, as gamemd's UpdateScrollButtons (0x6A6610) decides.
 		int const visible = Max_Visible();
 		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const scrollable = Column[index].BuildableCount > visible;
-			if (scrollable == ArrowsDisabled[index]) {
-				if (scrollable) {
-					StripClass::UpButton[index].Enable();
-					StripClass::DownButton[index].Enable();
-				} else {
-					StripClass::UpButton[index].Disable();
-					StripClass::DownButton[index].Disable();
-				}
-				ArrowsDisabled[index] = !scrollable;
-				StripClass::UpButton[index].Flag_To_Redraw();
-				StripClass::DownButton[index].Flag_To_Redraw();
-				Flag_To_Redraw();
-			}
+			sync(ArrowsDisabled[index], Column[index].BuildableCount > visible, { &StripClass::UpButton[index], &StripClass::DownButton[index] });
 		}
 	}
 
@@ -2108,29 +2101,24 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	*/
 	// Both arrows page the strip by a screenful, as the classic sidebar's do (SidebarClass::Update, 0x6A7780).
 	// The modern panel's screenful is its row count, so a click moves it by the rows it shows.
-	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
-		UpButton[ID].IsPressed = false;
+	auto click_arrow = [this](ShapeButtonClass & button, bool up) {
+		button.IsPressed = false;
 		if (Modern_Interface()) {
-			if (!Page(true)) {
+			if (!Page(up)) {
 				Sound_Effect(Rule->ScoldSound);
 			}
-		} else if (Page(true)) {
+		} else if (Page(up)) {
 			Sound_Effect(Rule->GUITabSound);
 		} else {
 			Sound_Effect(Rule->ScoldSound);
 		}
+	};
+
+	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
+		click_arrow(UpButton[ID], true);
 	}
 	else if (key == KeyNumType(DownButton[ID].ID|KN_BUTTON)) {
-		DownButton[ID].IsPressed = false;
-		if (Modern_Interface()) {
-			if (!Page(false)) {
-				Sound_Effect(Rule->ScoldSound);
-			}
-		} else if (Page(false)) {
-			Sound_Effect(Rule->GUITabSound);
-		} else {
-			Sound_Effect(Rule->ScoldSound);
-		}
+		click_arrow(DownButton[ID], false);
 	}
 
 	/*
