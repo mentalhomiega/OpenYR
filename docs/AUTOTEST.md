@@ -187,6 +187,9 @@ The menu script step `ui hudrows` logs `AUTOTEST hud rows <rows> saved <setting>
 rows the build panel uses at that moment, including a preview still open. The second is the `SidebarRows` setting.
 Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
 
+The menu script step `ui checked <id>` logs `AUTOTEST checked <id> 1` or `0`, for whether the element has its `checked`
+attribute. A check box has it while ticked.
+
 ### File paths
 
 The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.

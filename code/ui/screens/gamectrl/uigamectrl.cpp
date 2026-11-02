@@ -213,6 +213,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("coasting");
 			Model.DirtyVariable("edge");
 			Model.DirtyVariable("hidden");
+			Model.DirtyVariable("defencerange");
 			Model.DirtyVariable("speedname");
 			Model.DirtyVariable("scrollname");
 			Model.DirtyVariable("detailname");

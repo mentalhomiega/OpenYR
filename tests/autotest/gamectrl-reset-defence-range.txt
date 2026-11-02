@@ -1,0 +1,14 @@
+; Game Controls 'Reset to defaults' with the Show defence range box ticked and the classic interface chosen. Reset sets the
+; value to the interface's default, off for the classic interface, so the box must untick. The ui checked lines log whether the
+; box carries its checked attribute (AUTOTEST checked defencerange 1 or 0).
+; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/gamectrl-reset-defence-range.txt -Width 1024 -Height 768 -Seconds 90 -Filter "AUTOTEST|Exception" -Settings "[Options]`r`nInterfaceStyle=Classic`r`nShowDefenceRange=1"
+; Expected: "AUTOTEST checked defencerange 1" before the reset and "AUTOTEST checked defencerange 0" after it, with no Exception line.
+60 options
+ui wait 5000
+ui press Game Controls
+ui wait 1500
+ui checked defencerange
+ui click footer-reset
+ui wait 1500
+ui checked defencerange
+ui quit
