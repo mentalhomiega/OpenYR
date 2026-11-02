@@ -410,6 +410,7 @@ class BuildingClass : public TechnoClass
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);
+		void Set_Gap_Charge(bool charged);
 
 		/*
 		 * These mark the cells of the cloaking grid around a cloak generator that its own field

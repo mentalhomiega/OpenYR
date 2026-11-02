@@ -1847,10 +1847,8 @@ void BuildingClass::AI(void)
 			Destroy_Gap();
 			// A gap generator that loses power drops its charge (the power change handler, 0x4549B0).
 			if (IsGapSuperCharged) {
-				IsGapSuperCharged = false;
-				HasExtraPowerDrain = false;
+				Set_Gap_Charge(false);
 				House->RecalcPower = true;
-				GapRadius = Class->GapRadiusInCells;
 			}
 		}
 	}
@@ -7349,12 +7347,9 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 				return(1);
 			}
 			Create_Gap();
-			IsGapSuperCharged = true;
-			HasExtraPowerDrain = true;
+			Set_Gap_Charge(true);
 		} else {
-			IsGapSuperCharged = false;
-			HasExtraPowerDrain = false;
-			GapRadius = Class->GapRadiusInCells;
+			Set_Gap_Charge(false);
 			Create_Gap();
 		}
 		House->RecalcPower = true;
@@ -7362,6 +7357,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 
 	Assign_Mission(MISSION_GUARD);
 	return(1);
+}
+
+
+void BuildingClass::Set_Gap_Charge(bool charged)
+{
+	IsGapSuperCharged = charged;
+	HasExtraPowerDrain = charged;
+	GapRadius = charged ? Class->SuperGapRadiusInCells : Class->GapRadiusInCells;
 }
 
 
