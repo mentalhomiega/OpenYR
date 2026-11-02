@@ -10155,9 +10155,7 @@ Cell HouseClass::Pick_Drop_Target(void)
 	HouseClass * target = Enemy != HOUSE_NONE ? Houses[Enemy] : this;
 	Cell cell = Map.Nearby_Location(target->Starting_Cell_Or_Default(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(5, 5));
 	cell = cell + Cell(2, 2);
-	if (cell == CELL_NONE) {
-		return(CELL_NONE);
-	}
+	// gamemd adds the offset before it compares the cell with CELL_NONE, so a failed search aims at (2, 2).
 	return(cell);
 }
 
