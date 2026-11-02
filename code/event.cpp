@@ -245,8 +245,6 @@ namespace {
 
 			case EventClass::MEGAMISSION:
 			case EventClass::MEGAMISSION_F:
-				return(event.Data.MegaMission.Whom.As_Techno());
-
 			case EventClass::PLAN_ORDER:
 				return(event.Data.MegaMission.Whom.As_Techno());
 
