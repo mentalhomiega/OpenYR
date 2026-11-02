@@ -4063,19 +4063,6 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 }
 
 
-/// <summary>
-/// The straight-line distance between two points in leptons, rounded down. Harvesters compare
-/// it with the limits in HarvesterTooFarDistance and ChronoHarvTooFarDistance.
-/// </summary>
-static int Straight_Line_Leptons(Coord const & from, Coord const & to)
-{
-	double const dx = double(from.X - to.X);
-	double const dy = double(from.Y - to.Y);
-	double const dz = double(from.Z - to.Z);
-	return(int(Gamemd_Magnitude_3D(dx, dy, dz)));
-}
-
-
 /***********************************************************************************************
  * UnitClass::Mission_Harvest -- Handles the harvesting process used by harvesters.            *
  *                                                                                             *
@@ -4278,9 +4265,9 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				**	Since the refinery said it was ok to load, establish radio
 				**	contact with the refinery and then await docking orders.
 				*/
-				if (freebay != NULL && Straight_Line_Leptons(Get_Coord(), freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
+				if (freebay != NULL && Get_Coord().Gamemd_Distance_To(freebay->Get_Coord()) <= reach && Transmit_Message(RADIO_HELLO, freebay) == RADIO_ROGER) {
 					Status = HEADINGHOME;
-				} else if (anybay != NULL && (Class->IsTeleporter || Straight_Line_Leptons(Get_Coord(), anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
+				} else if (anybay != NULL && (Class->IsTeleporter || Get_Coord().Gamemd_Distance_To(anybay->Get_Coord()) > 3 * CELL_LEPTON)) {
 					Cell cell = Cell(anybay->Get_Coord()) + Cell(anybay->Class->QueueingCell.X, anybay->Class->QueueingCell.Y);
 					Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, -1, MZONE_NORMAL, false, Point2D(1, 1), false, false, false, true);
 					if (nearby != CELL_NONE) {
