@@ -589,6 +589,22 @@ static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const 
 }
 
 
+// Sends the marked tiles of a picture. A keyed picture is always widened to 32 bits with its key pixels
+// applied; a plain one is copied as 565 when the frame texture is 565 and widened to 32 bits otherwise.
+static void Send_Picture(bgfx::TextureHandle texture, TileGridClass const & grid, unsigned char const * source, int pitch, bool keyed)
+{
+	if (!keyed && _FrameIs565) {
+		Send_Tiles(texture, grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Copy_Tile(dest, destpitch, source, pitch, rect, 2);
+		});
+	} else {
+		Send_Tiles(texture, grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Widen_Tile(dest, destpitch, source, pitch, rect, keyed);
+		});
+	}
+}
+
+
 // Returns the mask as width by height texels. A mask whose readable part is smaller is copied into scratch,
 // zero outside the readable part, and outpitch is then width; otherwise mask itself is returned with pitch.
 static unsigned char const * Pad_Mask(std::vector<unsigned char> & scratch, unsigned char const * mask, int pitch, int readwidth, int readheight, int width, int height, int & outpitch)
@@ -730,15 +746,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 	_Grid.Resize(layer.Width, layer.Height);
 	_LayerDiff.Compare(source, sourcepitch, _Grid);
 	Verify_Diff(_LayerDiff, source, sourcepitch, layer.Width, layer.Height, 2);
-	if (_FrameIs565) {
-		Send_Tiles(_LayerTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-			Copy_Tile(dest, destpitch, source, sourcepitch, rect, 2);
-		});
-	} else {
-		Send_Tiles(_LayerTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-			Widen_Tile(dest, destpitch, source, sourcepitch, rect, false);
-		});
-	}
+	Send_Picture(_LayerTexture, _Grid, source, sourcepitch, false);
 	_LayerUploaded = true;
 	return(true);
 }
@@ -765,9 +773,7 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 	_KeyedDiff.Compare(source, pitch, _KeyedGrid, _KeyedRows.For(_FrameHeight));
 	_KeyedRows.Restart(_FrameHeight);
 	Verify_Diff(_KeyedDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
-	Send_Tiles(_KeyedFrameTexture, _KeyedGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-		Widen_Tile(dest, destpitch, source, pitch, rect, true);
-	});
+	Send_Picture(_KeyedFrameTexture, _KeyedGrid, source, pitch, true);
 	return(true);
 }
 
@@ -1485,15 +1491,7 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
 		_FrameRows.Restart(_FrameHeight);
 		Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
-		if (_FrameIs565) {
-			Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-				Copy_Tile(dest, destpitch, source, pitch, rect, 2);
-			});
-		} else {
-			Send_Tiles(_FrameTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-				Widen_Tile(dest, destpitch, source, pitch, rect, false);
-			});
-		}
+		Send_Picture(_FrameTexture, _Grid, source, pitch, false);
 		_FrameUploaded = true;
 	}
 
