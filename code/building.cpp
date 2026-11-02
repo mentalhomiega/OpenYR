@@ -368,10 +368,8 @@ BuildingClass::~BuildingClass(void)
 	End_Anim(BANIM_ALL);
 	Class->Free_Buildup_Data();
 
-	if (GameActive && Class != NULL && Class->IsCloakGenerator) {
-		Disable_Cloak_Generator();
-		CurrentCloakRadius = 1;
-		Cloaking_AI(true);
+	if (GameActive && Class != NULL) {
+		Collapse_Cloak_Field();
 	}
 
 	House->Update_Present_Super_Weapons();
@@ -2463,11 +2461,7 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 		}
 	}
 
-	if (Class->IsCloakGenerator) {
-		Disable_Cloak_Generator();
-		CurrentCloakRadius = 1;
-		Cloaking_AI(true);
-	}
+	Collapse_Cloak_Field();
 
 	if (Class->IsLaserFencePost) {
 		Update_Laser_Fence_Connections(true);
@@ -5144,11 +5138,7 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			oldowner->SecretLabs.Delete(this);
 		}
 
-		if (Class->IsCloakGenerator) {
-			Disable_Cloak_Generator();
-			CurrentCloakRadius = 1;
-			Cloaking_AI(true);
-		}
+		Collapse_Cloak_Field();
 		if (Class->IsSensorArray) {
 			Disable_Sensor_Array();
 		}
@@ -6095,11 +6085,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					Delete_Me();
 
 					Adjust_House_Power(House);
-					if (Class->IsCloakGenerator) {
-						Disable_Cloak_Generator();
-						CurrentCloakRadius = 1;
-						Cloaking_AI(true);
-					}
+					Collapse_Cloak_Field();
 				}
 			}
 			break;
@@ -11475,6 +11461,16 @@ void BuildingClass::Disable_Cloak_Generator(void)
 			CurrentCloakRadius = Class->CloakRadiusInCells;
 		}
 		IsToDisplay = true;
+	}
+}
+
+
+void BuildingClass::Collapse_Cloak_Field(void)
+{
+	if (Class->IsCloakGenerator) {
+		Disable_Cloak_Generator();
+		CurrentCloakRadius = 1;
+		Cloaking_AI(true);
 	}
 }
 

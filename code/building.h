@@ -675,6 +675,7 @@ class BuildingClass : public TechnoClass
 		int Flush_For_Placement(TechnoClass * techno, Cell const & cell);
 		void Enable_Cloak_Generator(void);
 		void Disable_Cloak_Generator(void);
+		void Collapse_Cloak_Field(void);
 		bool Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover);
 		void Disable_Sensor_Array(void);
 		void Enable_Sensor_Array(void);
