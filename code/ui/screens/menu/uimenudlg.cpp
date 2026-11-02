@@ -13,7 +13,6 @@
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
-#include "init.h"
 #include "surface.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/uienginehost.h"
@@ -36,8 +35,7 @@ int UI_Menu_Dialog(UIMenuState const & state, int nothing, std::function<bool(vo
 	std::unique_ptr<UIViewClass> view = UI_Menu_View(presenter);
 
 	UIResult result = UIShell.Run_Modal(*view, [&hook]() {
-		bool ended = UI_Service_Game();
-		Title_Screen_Restore();
+		bool ended = UI_Service_Title();
 		if (hook && hook()) {
 			ended = true;
 		}

@@ -88,14 +88,7 @@ class UISoundPresenterClass : public UIPresenterClass
 		void Refresh_Tracks(void);
 		UISoundServiceClass & Service;
 		// The levels and switches the screen opened with, which Cancel puts back.
-		int InitialScore = 0;
-		int InitialSound = 0;
-		int InitialVoice = 0;
-		int InitialUnit = 0;
-		int InitialMovie = 0;
-		bool InitialShuffle = false;
-		bool InitialRepeat = false;
-		int InitialCustomMusic = 0;
+		UISoundState const Start;
 };
 
 

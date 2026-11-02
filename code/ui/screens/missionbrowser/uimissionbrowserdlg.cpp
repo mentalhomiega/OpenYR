@@ -136,8 +136,7 @@ std::string Mission_Title(CampaignClass const & campaign, CCINIClass const & ra2
 		}
 	}
 
-	std::string title = StringTable.Find_UTF8(campaign.Description);
-	return(title.empty() ? std::string(campaign.Description) : title);
+	return(StringTable.Find_UTF8(campaign.Description, campaign.Description));
 }
 
 

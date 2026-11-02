@@ -12,7 +12,6 @@
 #include "ui/uisettings.h"
 
 #include "audio/audioengine.h"
-#include "csf.h"
 #include "globals.h"
 #include "goptions.h"
 #include "mainopt.h"
@@ -53,12 +52,11 @@ struct UISettingsSessionClass
 };
 
 
-void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_ptr<UIViewClass> view, UIPresenterClass * presenter, std::function<void(void)> enter = nullptr)
+void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_ptr<UIViewClass> view, std::function<void(void)> enter = nullptr)
 {
 	UISettingsPageClass page;
 	page.Tab = tab;
 	page.View = view.get();
-	page.Presenter = presenter;
 	page.Enter = std::move(enter);
 	session.Pages.push_back(page);
 	session.Views.push_back(std::move(view));
@@ -79,7 +77,7 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 	session.Display = UI_Display_New_Presenter();
 	UIDisplayPresenterClass * display = session.Display.get();
 	for (UISettingsTab tab : { UI_TAB_DISPLAY, UI_TAB_GRAPHICS, UI_TAB_ACCESSIBILITY }) {
-		Add_Page(session, tab, UI_Display_View(*display, tab), display, [display, tab]() {
+		Add_Page(session, tab, UI_Display_View(*display, tab), [display, tab]() {
 			display->State.Page = tab;
 		});
 	}
@@ -87,22 +85,22 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 
 	if ((offered & (1u << UI_TAB_GAME)) != 0) {
 		session.Game = UI_Game_Controls_New_Presenter(true);
-		Add_Page(session, UI_TAB_GAME, UI_Game_Controls_View(*session.Game), session.Game.get());
+		Add_Page(session, UI_TAB_GAME, UI_Game_Controls_View(*session.Game));
 		Add_Presenter(session, session.Game.get());
 	}
 	if ((offered & (1u << UI_TAB_AUDIO)) != 0) {
 		session.Sound = UI_Sound_New_Presenter();
-		Add_Page(session, UI_TAB_AUDIO, UI_Sound_View(*session.Sound), session.Sound.get());
+		Add_Page(session, UI_TAB_AUDIO, UI_Sound_View(*session.Sound));
 		Add_Presenter(session, session.Sound.get());
 	}
 	if ((offered & (1u << UI_TAB_KEYBOARD)) != 0) {
 		session.Keyboard = UI_Keyboard_New_Presenter();
-		Add_Page(session, UI_TAB_KEYBOARD, UI_Keyboard_View(*session.Keyboard), session.Keyboard.get());
+		Add_Page(session, UI_TAB_KEYBOARD, UI_Keyboard_View(*session.Keyboard));
 		Add_Presenter(session, session.Keyboard.get());
 	}
 	if ((offered & (1u << UI_TAB_MODS)) != 0) {
 		session.Mods = UI_Mods_New_Presenter();
-		Add_Page(session, UI_TAB_MODS, UI_Mods_View(*session.Mods), session.Mods.get());
+		Add_Page(session, UI_TAB_MODS, UI_Mods_View(*session.Mods));
 		Add_Presenter(session, session.Mods.get());
 	}
 
@@ -110,13 +108,6 @@ void Build_Session(UISettingsSessionClass & session, unsigned offered, UISetting
 	session.View = std::make_unique<UISettingsHostViewClass>(*session.Host);
 }
 
-}
-
-
-std::string UI_Settings_Back_Label(void)
-{
-	std::string const text = StringTable.Find_UTF8("GUI:Back");
-	return(text.empty() ? std::string("Back") : text);
 }
 
 

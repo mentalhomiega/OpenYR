@@ -119,13 +119,13 @@ static bool UI_Tab_Keyboard = false;
 /// </summary>
 UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
 {
-	return((ViewTab != UI_TAB_NONE) ? ViewTab : Owner.Settings_Tab());
+	return(ViewTab);
 }
 
 
 unsigned UIRmlViewClass::Offered_Of_View(void) const
 {
-	return((ViewTab != UI_TAB_NONE) ? ViewOffered : Owner.Settings_Tabs_Offered());
+	return(ViewOffered);
 }
 
 

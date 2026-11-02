@@ -57,6 +57,9 @@ class CSFClass
 		// The string for a label as UTF-8, or an empty string when the table has no such label.
 		std::string Find_UTF8(char const * label) const;
 
+		// The string for a label as UTF-8, or fallback when Find_UTF8 gives an empty string for the label.
+		std::string Find_UTF8(char const * label, char const * fallback) const;
+
 	private:
 		struct EntryType {
 			std::string Label;

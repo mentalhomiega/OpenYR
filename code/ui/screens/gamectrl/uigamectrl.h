@@ -124,13 +124,8 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 		void Update_Names(void);
 
 		UIGameControlsServiceClass & Service;
-		bool InitialAltToRally;
-		bool InitialSimulateUnfocused;
-		bool InitialAircraftBodyPick;
-		bool InitialSidebarSorting;
-		int InitialAutosave;
-		bool InitialDebugMode;
-		bool InitialRecordReplays;
+		// The settings as the page opened. OK compares against these, and a bad pick falls back to them.
+		UIGameControlsState const Start;
 };
 
 
