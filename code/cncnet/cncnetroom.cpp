@@ -38,7 +38,7 @@ std::string Escape(std::string_view text, bool commas = true)
 	std::string escaped;
 	for (char ch : text) {
 		unsigned char const byte = static_cast<unsigned char>(ch);
-		if (byte < 0x20 || byte == 0x7F || ch == ';' || (commas && ch == ',') || ch == '=' || ch == '|' || ch == '%') {
+		if (CnCNet_Is_Control_Byte(ch) || ch == ';' || (commas && ch == ',') || ch == '=' || ch == '|' || ch == '%') {
 			escaped.push_back('%');
 			escaped.push_back(digits[byte >> 4]);
 			escaped.push_back(digits[byte & 15]);
@@ -64,8 +64,7 @@ std::string Unescape(std::string_view text)
 {
 	std::string plain;
 	auto const push = [&plain](char ch) {
-		unsigned char const byte = static_cast<unsigned char>(ch);
-		if (byte >= 0x20 && byte != 0x7F) {
+		if (!CnCNet_Is_Control_Byte(ch)) {
 			plain.push_back(ch);
 		}
 	};
@@ -758,7 +757,7 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files)
 {
 	if (named.empty() || named.find_first_of("/\\:") != std::string_view::npos || named.find("..") != std::string_view::npos
-		|| std::any_of(named.begin(), named.end(), [](char ch) { return(static_cast<unsigned char>(ch) < 0x20 || ch == 0x7F); })) {
+		|| std::any_of(named.begin(), named.end(), CnCNet_Is_Control_Byte)) {
 		return(-1);
 	}
 	for (std::size_t index = 0; index < local_files.size(); ++index) {
@@ -795,10 +794,7 @@ std::string CnCNet_Room_Password_Problem(std::string_view password)
 	if (!password.empty() && password.front() == ':') {
 		return("The password cannot start with a colon.");
 	}
-	if (std::any_of(password.begin(), password.end(), [](char ch) {
-			unsigned char const byte = static_cast<unsigned char>(ch);
-			return(byte <= 0x20 || byte == 0x7F || ch == ',');
-		})) {
+	if (std::any_of(password.begin(), password.end(), CnCNet_Is_Join_Unsafe)) {
 		return("The password cannot contain spaces or commas.");
 	}
 	return(std::string());

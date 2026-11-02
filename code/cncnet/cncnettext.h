@@ -32,3 +32,9 @@ bool CnCNet_Less_No_Case(std::string_view left, std::string_view right);
 
 // Returns the text with each byte passed through tolower.
 std::string CnCNet_Lower(std::string_view text);
+
+// True for the bytes 0x00 to 0x1F and 0x7F.
+bool CnCNet_Is_Control_Byte(char ch);
+
+// True for a control byte, a space or a comma, which a room channel or password cannot contain.
+bool CnCNet_Is_Join_Unsafe(char ch);

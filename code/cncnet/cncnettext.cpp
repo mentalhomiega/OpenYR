@@ -61,3 +61,16 @@ std::string CnCNet_Lower(std::string_view text)
 	std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) { return(static_cast<char>(std::tolower(c))); });
 	return(lowered);
 }
+
+
+bool CnCNet_Is_Control_Byte(char ch)
+{
+	unsigned char const byte = static_cast<unsigned char>(ch);
+	return(byte < 0x20 || byte == 0x7F);
+}
+
+
+bool CnCNet_Is_Join_Unsafe(char ch)
+{
+	return(CnCNet_Is_Control_Byte(ch) || ch == ' ' || ch == ',');
+}

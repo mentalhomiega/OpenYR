@@ -70,8 +70,7 @@ std::string Without_Controls(std::string_view text)
 {
 	std::string clean;
 	for (char ch : text) {
-		unsigned char const byte = static_cast<unsigned char>(ch);
-		if (byte >= 0x20 && byte != 0x7F) {
+		if (!CnCNet_Is_Control_Byte(ch)) {
 			clean.push_back(ch);
 		}
 	}
