@@ -11002,36 +11002,35 @@ void HouseClass::Initialize_Radar_Color(void)
 /// <returns>Returns with the laser color (HouseClass::Laser_Color, gamemd 0x50BA00).</returns>
 RGBClass HouseClass::Laser_Color(void) const
 {
+	struct Channels
+	{
+		double red;
+		double green;
+		double blue;
+	};
+
 	// Summed in the order gamemd uses, so the scaled channels round the same way.
+	// The cutoff zeroes channels below 96 after scaling; a zero norm leaves every channel at 255.
+	auto const scale = [](double red, double green, double blue, bool cutoff) {
+		Channels scaled = {255.0, 255.0, 255.0};
+		double const norm = std::sqrt(((blue * blue) + (green * green)) + (red * red));
+		if (norm != 0.0) {
+			scaled.red = std::min(255.0, red * 240.0 / norm);
+			scaled.green = std::min(255.0, green * 240.0 / norm);
+			scaled.blue = std::min(255.0, blue * 240.0 / norm);
+			if (cutoff) {
+				if (scaled.red < 96.0) scaled.red = 0.0;
+				if (scaled.green < 96.0) scaled.green = 0.0;
+				if (scaled.blue < 96.0) scaled.blue = 0.0;
+			}
+		}
+		return(scaled);
+	};
+
 	RGBClass const remap = House_Display_RGB(this);
-	double const red = remap.Get_Red();
-	double const green = remap.Get_Green();
-	double const blue = remap.Get_Blue();
-
-	double first_red = 255.0;
-	double first_green = 255.0;
-	double first_blue = 255.0;
-	double const first_norm = std::sqrt(((blue * blue) + (green * green)) + (red * red));
-	if (first_norm != 0.0) {
-		first_red = std::min(255.0, red * 240.0 / first_norm);
-		first_green = std::min(255.0, green * 240.0 / first_norm);
-		first_blue = std::min(255.0, blue * 240.0 / first_norm);
-		if (first_red < 96.0) first_red = 0.0;
-		if (first_green < 96.0) first_green = 0.0;
-		if (first_blue < 96.0) first_blue = 0.0;
-	}
-
-	double second_red = 255.0;
-	double second_green = 255.0;
-	double second_blue = 255.0;
-	double const second_norm = std::sqrt(((first_blue * first_blue) + (first_green * first_green)) + (first_red * first_red));
-	if (second_norm != 0.0) {
-		second_red = std::min(255.0, first_red * 240.0 / second_norm);
-		second_green = std::min(255.0, first_green * 240.0 / second_norm);
-		second_blue = std::min(255.0, first_blue * 240.0 / second_norm);
-	}
-
-	return(RGBClass(int(second_red), int(second_green), int(second_blue)));
+	Channels const first = scale(remap.Get_Red(), remap.Get_Green(), remap.Get_Blue(), true);
+	Channels const second = scale(first.red, first.green, first.blue, false);
+	return(RGBClass(int(second.red), int(second.green), int(second.blue)));
 }
 
 
