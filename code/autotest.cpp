@@ -379,6 +379,7 @@
 #include "partsys.h"
 #include "psystype.h"
 #include "pcx.h"
+#include "planning.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
 

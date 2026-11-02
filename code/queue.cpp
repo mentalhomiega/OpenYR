@@ -136,6 +136,7 @@
 #include "overtype.h"
 #include "particle.h"
 #include "partsys.h"
+#include "planning.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "replay.h"
@@ -417,9 +418,6 @@ void Dump_Packet_Too_Late_Stuff(EventClass *event);
  *   09/21/1995 JLB : Created.                                               *
  *=========================================================================*/
 namespace {
-	bool Recording_Planned_Orders = false;
-
-
 	/// <summary>
 	/// Queues a planned order for one of the local player's units that can take one. An object
 	/// that cannot take a plan (an aircraft, a building or another kind) is refused with its message.
@@ -445,22 +443,9 @@ namespace {
 }
 
 
-PlanningRecordScope::PlanningRecordScope(bool recording)
-	: Previous(Recording_Planned_Orders)
-{
-	Recording_Planned_Orders = recording;
-}
-
-
-PlanningRecordScope::~PlanningRecordScope(void)
-{
-	Recording_Planned_Orders = Previous;
-}
-
-
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination)
 {
-	if (Recording_Planned_Orders) {
+	if (Planning_Recording_Orders()) {
 		return(Record_Planned_Order(whom, mission, target, destination));
 	}
 	OutList.push_back(EventClass(PlayerPtr->HeapID, whom, mission, target, destination));
