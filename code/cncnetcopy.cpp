@@ -958,14 +958,12 @@ std::vector<std::string> CNCNet_Find_Installs(std::string const & build)
 }
 
 
-CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build)
+CNCNetStatusType CNCNet_Status(std::string const & destination, std::string const & build)
 {
 	CNCNetStatusType status;
-	status.Install_Valid = CNCNet_Is_Install(install);
 
 	status.Copy_Folder = destination;
 	status.Copy_Present = CNCNet_Is_Marked_Copy(status.Copy_Folder);
-	status.Marker_Install = status.Copy_Present ? Marker_Install(status.Copy_Folder) : std::string();
 
 	if (Is_File(Build_Exe(build))) {
 		Hash_File(Build_Exe(build), status.Build_Game_Size, status.Build_Game_Hash);
@@ -1198,7 +1196,6 @@ std::string CNCNetJobClass::Message(void) const
 void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 {
 	RunType run { DoneBytes, Stop, Created, Changes };
-	Destination = plan.Destination;
 	Created.clear();
 	Changes.clear();
 

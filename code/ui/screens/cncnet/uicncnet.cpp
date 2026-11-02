@@ -139,7 +139,7 @@ void UICNCNetSessionClass::Remember_Choices(void)
 
 void UICNCNetSessionClass::Refresh(void)
 {
-	Status = CNCNet_Status(Install, Destination, Build);
+	Status = CNCNet_Status(Destination, Build);
 	Plan = Install.empty() ? CNCNetPlanType() : CNCNet_Plan(Install, Destination, Build);
 }
 

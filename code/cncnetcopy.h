@@ -23,9 +23,6 @@ inline constexpr char const * CNCNET_MARKER_FILE = "OPENYR-TESTER-COPY.txt";
 
 struct CNCNetStatusType
 {
-	// The install folder given to the status check is a CnCNet install.
-	bool Install_Valid = false;
-
 	// The copy folder holds the marker file.
 	bool Copy_Present = false;
 
@@ -36,7 +33,6 @@ struct CNCNetStatusType
 	bool Engine_Matches = false;
 
 	std::string Copy_Folder;
-	std::string Marker_Install;
 
 	bool Copy_Game_Present = false;
 	std::uint64_t Copy_Game_Size = 0;
@@ -95,7 +91,7 @@ bool CNCNet_Writable(std::string const & folder);
 // The byte count and the FNV-1a 64-bit hash of a file's contents. False when the file cannot be read.
 bool CNCNet_Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & hash);
 
-CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build);
+CNCNetStatusType CNCNet_Status(std::string const & destination, std::string const & build);
 CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & destination, std::string const & build);
 
 // Starts CnCNetYRLauncher.exe in the copy folder. False when it cannot be started.
@@ -151,7 +147,6 @@ class CNCNetJobClass
 		std::string Text;
 
 		// Only the worker thread touches these.
-		std::string Destination;
 		std::vector<std::string> Created;
 		std::vector<std::string> Changes;
 };
