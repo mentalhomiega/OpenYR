@@ -6344,6 +6344,12 @@ int BuildingClass::Do_MISSION_HARVEST(void)
  *=============================================================================================*/
 int BuildingClass::Do_MISSION_REPAIR(void)
 {
+	enum {
+		INITIAL,
+		IDLE,
+		DURING
+	};
+
 	// A bunker steps its vehicle's entry every 15 frames (BuildingClass::Mission_Repair, 0x44B780).
 	if (Class->IsBunker) {
 		Update_Bunker();
@@ -6351,11 +6357,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsConstructionYard) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Begin_Mode(BSTATE_ACTIVE);
@@ -6377,11 +6378,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsHospital) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Status = DURING;
@@ -6424,11 +6420,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsArmory) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		switch (Status) {
 			case INITIAL:
 				Status = DURING;
@@ -6460,11 +6451,6 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 	}
 
 	if (Class->IsCanUnitRepair) {
-		enum {
-			INITIAL,
-			IDLE,
-			DURING
-		};
 		// Mission_Repair serves only the first contact (BuildingClass::Mission_Repair, 0x44B780).
 		int const repair_slots = std::min(Link_Count(), 1);
 		switch (Status) {
