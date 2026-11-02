@@ -236,18 +236,11 @@ void Give_Verdict(void)
 }
 
 
-void Replay_At_Exit(void)
-{
-	Finish_Recording();
-	Give_Verdict();
-}
-
-
 void Register_At_Exit(void)
 {
 	if (!AtExitRegistered) {
 		AtExitRegistered = true;
-		std::atexit(Replay_At_Exit);
+		std::atexit(Replay_Finish);
 	}
 }
 
@@ -591,7 +584,8 @@ void Replay_Frame_End(void)
 
 void Replay_Finish(void)
 {
-	Replay_At_Exit();
+	Finish_Recording();
+	Give_Verdict();
 }
 
 
