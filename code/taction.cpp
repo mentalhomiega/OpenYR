@@ -2854,12 +2854,7 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 	Cell cell = Scen->Get_Waypoint_Cell(EffectLocation);
 
 	if (TriggerRect.Y > 0) {
-		ScenarioInit++;
-		BuildingClass * building = new BuildingClass(btype, hptr);
-		bool placed = building != nullptr && building->Unlimbo(Coord(cell));
-		if (!placed) delete building;
-		ScenarioInit--;
-		return(placed);
+		return(hptr->Place_Scenario_Building(btype, cell));
 	}
 
 	BuildingClass * building = new BuildingClass(btype, hptr);
@@ -3122,12 +3117,7 @@ bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , T
 		return(false);
 	}
 
-	ScenarioInit++;
-	BuildingClass * building = new BuildingClass(BuildingTypes[type], house);
-	bool placed = building != nullptr && building->Unlimbo(Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
-	if (!placed) delete building;
-	ScenarioInit--;
-	return(placed);
+	return(house->Place_Scenario_Building(BuildingTypes[type], Scen->Get_Waypoint_Cell(EffectLocation)));
 }
 
 

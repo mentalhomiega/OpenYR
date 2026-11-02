@@ -6645,25 +6645,9 @@ void HouseClass::Restore_Starting_Forces(void)
 		TechnoClass * object = NULL;
 
 		ScenarioInit++;
-		switch (start.Kind) {
-			case RTTI_BUILDINGTYPE:
-				if (start.Type >= 0 && start.Type < BuildingTypes.Count()) object = new BuildingClass(BuildingTypes[start.Type], this);
-				break;
-
-			case RTTI_UNITTYPE:
-				if (start.Type >= 0 && start.Type < UnitTypes.Count()) object = new UnitClass(UnitTypes[start.Type], this);
-				break;
-
-			case RTTI_INFANTRYTYPE:
-				if (start.Type >= 0 && start.Type < InfantryTypes.Count()) object = new InfantryClass(InfantryTypes[start.Type], this);
-				break;
-
-			case RTTI_AIRCRAFTTYPE:
-				if (start.Type >= 0 && start.Type < AircraftTypes.Count()) object = new AircraftClass(AircraftTypes[start.Type], this);
-				break;
-
-			default:
-				break;
+		TechnoTypeClass const * type = Fetch_Techno_Type((RTTIType)start.Kind, start.Type);
+		if (type != NULL) {
+			object = static_cast<TechnoClass *>(type->Create_One_Of(this));
 		}
 		if (object != NULL && !object->Unlimbo(Coord(start.Position))) {
 			delete object;
@@ -6693,13 +6677,25 @@ void HouseClass::Restore_Starting_Buildings(void)
 			continue;
 		}
 
-		ScenarioInit++;
-		BuildingClass * building = new BuildingClass(BuildingTypes[start.Type], this);
-		if (building != NULL && !building->Unlimbo(Coord(start.Position))) {
-			delete building;
-		}
-		ScenarioInit--;
+		Place_Scenario_Building(BuildingTypes[start.Type], start.Position);
 	}
+}
+
+
+/// <summary>
+/// Creates a building of this house and places it on the cell as a scenario object is placed.
+/// </summary>
+/// <returns>bool; Was the building placed? One that could not be placed is deleted.</returns>
+bool HouseClass::Place_Scenario_Building(BuildingTypeClass const * type, Cell const & cell)
+{
+	ScenarioInit++;
+	BuildingClass * building = new BuildingClass(type, this);
+	bool placed = building != NULL && building->Unlimbo(Coord(cell));
+	if (!placed) {
+		delete building;
+	}
+	ScenarioInit--;
+	return(placed);
 }
 
 

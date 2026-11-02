@@ -867,6 +867,7 @@ class HouseClass : public AbstractClass
 		void Record_Starting_Forces(void);
 		void Restore_Starting_Buildings(void);
 		void Restore_Starting_Forces(void);
+		bool Place_Scenario_Building(BuildingTypeClass const * type, Cell const & cell);
 		void Mind_Control_Base(HouseClass * target);
 		void AI_Super_Weapon_Defense(SuperClass const * super, Cell const & target);
 		void Restore_Mind_Controlled_Base(HouseClass * target);
