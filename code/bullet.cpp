@@ -1862,6 +1862,15 @@ void BulletClass::Web(Coord const & coord)
 
 
 /// <summary>
+/// The velocity of a bomblet sent straight down (pitch DIR_S) with a random heading, at the weapon's speed.
+/// </summary>
+static TVelocity3D<double> Random_Bomblet_Velocity(WeaponTypeClass const * weapon)
+{
+	return(TVelocity3D<double>(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed));
+}
+
+
+/// <summary>
 /// Fires the AirburstWeapon once at each of nine cells, the eight neighbours of the cell this projectile burst over
 /// from north clockwise and then that cell, each bomblet launched at a speed of 50 without a lighting flash
 /// (BulletClass::Detonate, 0x4690B0). Cells outside the map are skipped.
@@ -1882,7 +1891,7 @@ void BulletClass::Airburst(void)
 			BulletClass * bullet = Create_Bullet(weapon->Bullet, &Map[cell], Payback, weapon->Attack, weapon->WarheadPtr, 50, false);
 			if (bullet != NULL) {
 				bullet->Weapon = weapon;
-				TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+				TVelocity3D<double> velocity = Random_Bomblet_Velocity(weapon);
 				bullet->Unlimbo(PositionCoord, velocity);
 			}
 		}
@@ -1948,11 +1957,7 @@ void BulletClass::Split(void)
 			const BulletTypeClass * btype = weapon->Bullet;
 			BulletClass * bullet = Create_Bullet(btype, target, Payback, weapon->Attack * 10, weapon->WarheadPtr, Class->IsSplits ? 50 : Velocity.Speed(), false);
 			if (bullet != NULL) {
-				/*
-				 * Send the bomblet straight down (pitch DIR_S) with a dash of
-				 * random scatter in the heading.
-				 */
-				TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
+				TVelocity3D<double> velocity = Random_Bomblet_Velocity(weapon);
 				bullet->Unlimbo(PositionCoord, velocity);
 			}
 		}
