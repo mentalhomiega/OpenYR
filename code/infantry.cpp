@@ -892,7 +892,7 @@ static bool Is_Passive_Occupiable_Building(BuildingClass const * building)
  *=============================================================================================*/
 void InfantryClass::Per_Cell_Process(PCPType why)
 {
-	BStart(BENCH_PCP);
+	BENCH_SCOPE(BENCH_PCP);
 	CellClass * cellptr = &Map[Get_Coord()];
 
 	if (why == PCP_END) {
@@ -919,7 +919,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					Assign_Destination(NULL);
 					Scatter(COORD_NONE, true);
 				}
-				BEnd(BENCH_PCP);
 				return;
 			}
 		}
@@ -947,13 +946,11 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							Tag->Spring(TEVENT_DESTROYED_ANY, this);
 						}
 						Delete_Me();
-						BEnd(BENCH_PCP);
 						return;
 					} else {
 						Coord destination = Locomotion->Destination();
 						if (destination == COORD_NONE || PositionCell == Cell(destination)) {
 							Assign_Destination(NavCom);
-							BEnd(BENCH_PCP);
 							return;
 						}
 					}
@@ -1019,7 +1016,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						if (tech->Strength == tech->TClass->MaxStrength) {
 							Assign_Destination(NULL);
 							Scatter(tech->Center_Coord(), true, true);
-							BEnd(BENCH_PCP);
 							return;
 						}
 						tech->Renovate();
@@ -1039,7 +1035,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							if (tech->Mission == MISSION_DECONSTRUCTION || tech->IsBeingWarpedOut) {
 								Assign_Destination(NULL);
 								Scatter(tech->Center_Coord(), true, true);
-								BEnd(BENCH_PCP);
 								return;
 							}
 							if (tech->Tag) {
@@ -1058,7 +1053,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					// A soldier that infiltrates but is neither engineer nor agent takes nothing and walks out (0x519630).
 					Assign_Destination(NULL);
 					Scatter(tech->Center_Coord(), true, true);
-					BEnd(BENCH_PCP);
 					return;
 				} else {
 					// The announcer file names the infiltration lines as the building gives up its secrets instead.
@@ -1069,7 +1063,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					Tag->Spring(TEVENT_DESTROYED_ANY, this);
 				}
 				Delete_Me();
-				BEnd(BENCH_PCP);
 				return;
 
 			} else {
@@ -1121,7 +1114,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				// A grinder takes the soldier in for good.
 				if (((BuildingClass *)techno)->Class->IsGrinding && techno == Get_Cell_Ptr()->Cell_Building() && techno->House == House) {
 					((BuildingClass *)techno)->Grind(this);
-					BEnd(BENCH_PCP);
 					return;
 				}
 				if (((BuildingClass *)techno)->Class->IsInfantryAbsorb && techno == Get_Cell_Ptr()->Cell_Building()) {
@@ -1133,7 +1125,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						Assign_Destination(NULL);
 						Scatter(COORD_NONE, true);
 					}
-					BEnd(BENCH_PCP);
 					return;
 				}
 				if (techno == Get_Cell_Ptr()->Cell_Building() && Transmit_Message(RADIO_IM_IN) == RADIO_ROGER) {
@@ -1141,7 +1132,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					Transmit_Message(RADIO_HELLO, techno);
 					techno->Cargo.Attach(this);
 					NavCom = NULL;
-					BEnd(BENCH_PCP);
 					return;
 				}
 			} else {
@@ -1154,7 +1144,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						Assign_Mission(MISSION_GUARD);
 						Scatter(COORD_NONE, true, true);
 					}
-					BEnd(BENCH_PCP);
 					return;
 				}
 			}
@@ -1171,7 +1160,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					Assign_Target(NULL);
 					Assign_Destination(NULL);
 					Enter_Idle_Mode();
-					BEnd(BENCH_PCP);
 					return;
 				}
 				if (building->Tag) {
@@ -1183,7 +1171,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						Assign_Destination(NULL);
 						Arm = Rearm_Delay(true);
 						Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
-						BEnd(BENCH_PCP);
 						return;
 					}
 					building->IsGoingToBlow = true;
@@ -1197,7 +1184,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				Arm = Rearm_Delay(true);
 				// gamemd calls InfantryClass::Ignite (0x51D0D0) here; Scatter chooses the cell differently.
 				Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
-				BEnd(BENCH_PCP);
 				return;
 			} else {
 				if (&Map[Center_Coord()] == NavCom) {
@@ -1213,7 +1199,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
 					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
 					if (!IsActive) {
-						BEnd(BENCH_PCP);
 						return;
 					}
 
@@ -1278,7 +1263,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		if (!Locomotion->Is_Moving() && !Class->IsBomber && !Has_Ability(ABILITY_C4) && (land == LAND_ROCK || land == LAND_WATER) && Ground[land].Cost[Class->Speed] == 0 && (!IsOnBridge || !cellptr->IsUnderBridge)) {
 			int damage = Strength;
 			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-			BEnd(BENCH_PCP);
 			return;
 		}
 
@@ -1296,7 +1280,6 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 	if (IsActive) {
 		BASECLASS::Per_Cell_Process(why);
 	}
-	BEnd(BENCH_PCP);
 }
 
 

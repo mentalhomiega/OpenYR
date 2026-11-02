@@ -2474,7 +2474,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	assert(object != NULL);
 
 	Perf_Count(PERF_COUNT_OBJECT_EVALS);
-	BStart(BENCH_EVAL_OBJECT);
+	BENCH_SCOPE(BENCH_EVAL_OBJECT);
 
 	bool engineer = Is_Renovator();
 
@@ -2482,7 +2482,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	An object in limbo can never be a valid target.
 	*/
 	if (object == NULL || object == this || object->IsInLimbo || object->Strength == 0) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2503,14 +2502,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
 		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
 	// With LandTargeting=2, an object picks no target on its own that is on the ground in a cell other
 	// than water, a beach included. An order can still set one (TechnoClass::Evaluate_Object, 0x6F7CA0).
 	if (TClass->LandTargeting == 2 && object->On_Ground() && object->Get_Cell_Ptr()->Land_Type() != LAND_WATER) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2519,13 +2516,11 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (object->Cloak == CLOAKED) {
 		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
 
 	if (!object->IsLocked) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2534,12 +2529,10 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	a threat.
 	*/
 	if (object->Current_Mission_Control().IsNoThreat) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
 	if (object->HeightAGL < -20) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2549,7 +2542,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	Coord objectcoord = object->Center_Coord();
 	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2561,33 +2553,27 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	if (!IsBerzerk && !TClass->IsAttackFriendlies && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
 			if (object->HealthRatio == Rule->ConditionGreen) {
-				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 			if (Combat_Damage() < 0) {
 				if (object->RTTI == RTTI_AIRCRAFT) {
 					if (object->HeightAGL > 0) {
-						BEnd(BENCH_EVAL_OBJECT);
 						return(false);
 					}
 					if (Map[object->Center_Coord()].Cell_Building()) {
-						BEnd(BENCH_EVAL_OBJECT);
 						return(false);
 					}
 				} else if (!Can_Heal(object)) {
-					BEnd(BENCH_EVAL_OBJECT);
 					return(false);
 				}
 			}
 		} else {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
 
 	if (Scen->Special.IsHarvesterImmune) {
 		if (Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object->Class_Of())) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2597,20 +2583,17 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	int dist = Distance_To(object);
 	if (range > 0 && dist > range) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
 	if (range == 0) {
 		if (!Is_Weapon_Equipped()) {
 			if (dist > TClass->ThreatRange) {
-				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 		} else {
 			int primary = weapon_index_for_object();
 			if (!In_Range((TechnoClass *)object, primary)) {
-				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 		}
@@ -2619,7 +2602,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	if (Is_Weapon_Equipped()) {
 		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2629,12 +2611,10 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	are always considered to be visible.
 	*/
 	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
 	if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2644,12 +2624,10 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	RTTIType otype = object->RTTI;
 	if (!((1 << otype) & mask) && (!(mask & 2) || !object->Considered_Vehicle())) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);		// Mask failure.
 	}
 
 	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2667,7 +2645,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				|| building->Can_Be_Occupied_By((InfantryClass const *)this);
 		}
 		if (!capturable) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2678,12 +2655,10 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	TechnoTypeClass const * tclass = object->TClass;
 	if (!tclass->IsLegalTarget) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);		// Legality failure.
 	}
 
 	if (tclass->IsTrain && RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsVehicleThief) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2691,7 +2666,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	// A spy that looks like a friend to this house is passed over, as InfantryClass::IsDisguisedAs decides.
 	if (otype == RTTI_INFANTRY && (((InfantryTypeClass const *)tclass)->IsDisguised || object->Looks_Friendly_To(House))) {
 		if (!Techno_Type_Class()->IsDetectDisguise && (!Rule->AIDetectDisguise || House->Is_Human_Player())) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2704,7 +2678,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 			int const side = House->Class->Side;
 			int const percent = side >= 0 && side < Rule->DisabledDisguiseDetectionPercent.Count() ? Rule->DisabledDisguiseDetectionPercent[side] : 0;
 			if (House->Is_Human_Player() || !vehicle->Is_Blinking_Disguise() || Random_Pick(0, 99) > percent) {
-				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 		}
@@ -2715,7 +2688,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (method & THREAT_CIVILIANS) {
 		object->Owner_HouseClass(); /// The result is unused.
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2724,7 +2696,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	object isn't a capturable building.
 	*/
 	if ((method & THREAT_CAPTURE) && (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsCaptureable)) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2740,14 +2711,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
 
 		if (!engineer) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
 
 	if (engineer) {
 		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2758,7 +2727,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (method & THREAT_TIBERIUM) {
 		if (tclass->Capacity == 0) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 	}
@@ -2766,7 +2734,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	CellClass * cell_this = &Map[Get_Coord()];
 	CellClass * cell_that = &Map[object->Get_Coord()];
 	if (cell_this->IsUnderBridge && cell_that->IsUnderBridge && IsOnBridge != object->IsOnBridge) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2793,7 +2760,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		if (object->RTTI == RTTI_INFANTRY) {
 			InfantryClass const * infantry = dynamic_cast<const InfantryClass *>(object);
 			if (infantry != NULL && infantry->ProneStruggleTimer > wh->WebDuration / 4) {
-				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 		}
@@ -2805,7 +2771,6 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	threat filter, 0x6F7CA0).
 	*/
 	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
-		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
 
@@ -2857,14 +2822,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if (method & THREAT_OCCUPIABLE) {
 		if (otype != RTTI_BUILDING || ((BuildingTypeClass const *)tclass)->MaxNumberOccupants < 1) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += ((BuildingTypeClass const *)tclass)->MaxNumberOccupants * 1000;
 	}
 	if (method & THREAT_TECH) {
 		if (otype != RTTI_BUILDING || !((BuildingTypeClass const *)tclass)->IsNeedsEngineer) {
-			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
 		value += 1000;
@@ -2911,11 +2874,9 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				ThreatCandidates.emplace_back(candidate, value);
 			}
 		}
-		BEnd(BENCH_EVAL_OBJECT);
 		return(true);
 	}
 	value = 0;
-	BEnd(BENCH_EVAL_OBJECT);
 	return(false);
 }
 

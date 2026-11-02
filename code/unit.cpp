@@ -2442,7 +2442,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		}
 	}
 
-	BStart(BENCH_PCP);
+	BENCH_SCOPE(BENCH_PCP);
 	if (why == PCP_END) {
 
 		if (Class->IsSmallVisceroid) {
@@ -2455,7 +2455,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 						unit->ThreatPosed = unit->Risk();
 						Map[unit->LastAdjacencyCell].Adjust_Threat(unit->Owner(), unit->ThreatPosed);
 						Delete_Me();
-						BEnd(BENCH_PCP);
 						return;
 					}
 				}
@@ -2471,7 +2470,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			BuildingClass * grinder = (BuildingClass *)NavCom;
 			if (grinder->Class->IsGrinding && grinder->House == House && Get_Cell_Ptr()->Cell_Building() == grinder) {
 				grinder->Grind(this);
-				BEnd(BENCH_PCP);
 				return;
 			}
 			// A vehicle that stops on a free bunker takes it in as its radio contact; the bunker then drives it in step by step.
@@ -2480,7 +2478,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 					if (Transmit_Message(RADIO_IM_IN, grinder) == RADIO_ROGER) {
 						NavCom = NULL;
 						ArchiveTarget = NULL;
-						BEnd(BENCH_PCP);
 						return;
 					}
 					Transmit_Message(RADIO_OVER_OUT, grinder);
@@ -2490,7 +2487,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				NavCom = NULL;
 				ArchiveTarget = NULL;
 				grinder->Absorb(this);
-				BEnd(BENCH_PCP);
 				return;
 			}
 		}
@@ -2510,7 +2506,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 					BASECLASS::Per_Cell_Process(PCP_END);
 					Transmit_Message(RADIO_IM_IN);
 					Locomotion->Power_Off();
-					BEnd(BENCH_PCP);
 					return;
 				}
 			}
@@ -2558,7 +2553,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
 				Board_Transport(techno);
 			}
-			BEnd(BENCH_PCP);
 			return;
 		}
 
@@ -2570,7 +2564,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	it is probably carrying an incoming reinforcement and it should not be eliminated.
 		*/
 		if (Edge_Of_World_AI()) {
-			BEnd(BENCH_PCP);
 			return;
 		}
 
@@ -2650,7 +2643,6 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				int damage = Strength;
 				Combat_Lighting(Center_Coord(), damage, Rule->C4Warhead, false);
 				Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-				BEnd(BENCH_PCP);
 				return;
 			}
 		}
@@ -2678,11 +2670,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	Overrun_Square(PositionCell, false);
 
 	if (!IsActive) {
-		BEnd(BENCH_PCP);
 		return;
 	}
 	BASECLASS::Per_Cell_Process(why);
-	BEnd(BENCH_PCP);
 }
 
 
