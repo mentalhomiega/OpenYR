@@ -68,11 +68,9 @@ bool TemporalClass::Can_Warp_Target(TechnoClass const * target) const
 	if (target == nullptr || !target->Is_Warpable() || target->Is_Iron_Curtained()) {
 		return(false);
 	}
-	if (target->RTTI == RTTI_UNIT) {
-		BuildingClass const * factory = dynamic_cast<BuildingClass const *>(target->Contact_With_Whom());
-		if (factory != nullptr && factory->Class->IsWeaponsFactory && Map[target->Center_Coord()].Cell_Building() == factory) {
-			return(false);
-		}
+	BuildingClass const * factory = Linked_Building_Underfoot(target);
+	if (factory != nullptr && factory->Class->IsWeaponsFactory) {
+		return(false);
 	}
 	return(true);
 }

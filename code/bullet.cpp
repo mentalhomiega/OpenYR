@@ -1499,18 +1499,8 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 // 0x469579; the link is the unit's first radio link, at +0xE4).
 static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
 {
-	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
-		return(false);
-	}
-	TechnoClass const * factory = unit->Link(0);
-	if (factory == NULL || factory->RTTI != RTTI_BUILDING) {
-		return(false);
-	}
-	BuildingClass const * building = static_cast<BuildingClass const *>(factory);
-	if (!building->Class->IsWeaponsFactory) {
-		return(false);
-	}
-	return(Map[unit->Get_Coord()].Cell_Building() == building);
+	BuildingClass const * factory = Linked_Building_Underfoot(unit);
+	return(factory != NULL && factory->Class->IsWeaponsFactory);
 }
 
 
@@ -1518,15 +1508,8 @@ static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
 // cell building 0x47C520).
 static bool Is_In_Own_Bunker(TechnoClass const * unit)
 {
-	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
-		return(false);
-	}
-	TechnoClass const * bunker = unit->Link(0);
-	if (bunker == NULL || bunker->RTTI != RTTI_BUILDING) {
-		return(false);
-	}
-	BuildingClass const * building = static_cast<BuildingClass const *>(bunker);
-	return(building->Class->IsBunker && Map[unit->Get_Coord()].Cell_Building() == building);
+	BuildingClass const * bunker = Linked_Building_Underfoot(unit);
+	return(bunker != NULL && bunker->Class->IsBunker);
 }
 
 
