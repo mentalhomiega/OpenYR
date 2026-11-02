@@ -45,25 +45,25 @@ struct GpuMapPass
 {
 	Rect Area;
 	int Frame;
-	std::vector<unsigned short> const * Base;
-	std::vector<unsigned short> const * Depth;
-	std::vector<unsigned short> const * Alpha;
-	GpuDrawList const * List;
+	std::vector<unsigned short> const * Base = NULL;
+	std::vector<unsigned short> const * Depth = NULL;
+	std::vector<unsigned short> const * Alpha = NULL;
+	GpuDrawList const * List = NULL;
 
 	// The rings below stay unchanged until the next frame is submitted, so they are uploaded
 	// without a copy. AlphaRing.Values may then be NULL when no blit in List reads it.
-	bool Persistent;
+	bool Persistent = false;
 
 	// With Persistent, a flag for each row of Base that changed since the GPU last took it, or NULL
 	// to upload every row. The rows the GPU takes have their flags cleared.
-	std::vector<unsigned char> * BaseChanged;
+	std::vector<unsigned char> * BaseChanged = NULL;
 
 	// With Persistent, the depth and alpha buffers as stored; Depth and Alpha are then unused.
-	GpuRing DepthRing;
-	GpuRing AlphaRing;
+	GpuRing DepthRing = {};
+	GpuRing AlphaRing = {};
 
 	// At most 16 rings drawn over the finished picture, or NULL for none.
-	std::vector<GpuRipple> const * Ripples;
+	std::vector<GpuRipple> const * Ripples = NULL;
 
 	// With soft shadows, the shadow plane of the tile layer under Area (nonzero where a shadow
 	// falls) and a flag for each of its rows that changed since the GPU last took it; NULL when

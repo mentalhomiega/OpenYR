@@ -961,8 +961,6 @@ static bool Finish_Render(Surface & target)
 		pass.Area = _Area;
 		pass.Frame = Frame;
 		pass.Base = &base;
-		pass.Depth = NULL;
-		pass.Alpha = NULL;
 		pass.DepthRing = Ring_Of(DepthBuffer, upload[1]);
 		pass.AlphaRing = alpharead ? Ring_Of(AlphaBuffer, upload[2]) : GpuRing{};
 		pass.List = &_List;
@@ -1149,10 +1147,6 @@ bool GpuDraw_End(void)
 		pass.Alpha = &alpha;
 		pass.List = &_List;
 		pass.Persistent = false;
-		pass.BaseChanged = NULL;
-		pass.DepthRing = GpuRing{};
-		pass.AlphaRing = GpuRing{};
-		pass.Ripples = NULL;
 		// Compared with the software replay, so draws the record does not hold do not count.
 		std::vector<unsigned short> replayed = _Before;
 		Replay(replayed);
