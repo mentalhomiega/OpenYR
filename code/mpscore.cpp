@@ -439,14 +439,15 @@ void MultiScore::Draw_Static(void)
 	Draw_Picture();
 
 	char const side = ScoreStageClass::Side_Letter();
-	char name[32];
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 1);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(TOP_BAND_Y));
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 2);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(HEADING_BAND_Y));
+	auto draw_band = [this, side](int index, int y) {
+		char name[32];
+		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, index);
+		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(y));
+	};
+	draw_band(1, TOP_BAND_Y);
+	draw_band(2, HEADING_BAND_Y);
 	for (int row = 0; row < MAX_ROWS; row++) {
-		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 3 + row);
-		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(PLAYER_BAND_Y + BAND_HEIGHT * row));
+		draw_band(3 + row, PLAYER_BAND_Y + BAND_HEIGHT * row);
 	}
 
 	std::string title = Fetch_String_UTF8(Skirmish ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
@@ -465,15 +466,21 @@ void MultiScore::Draw_Static(void)
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(248 + 105), ScoreStageClass::Dialog_Y(LINE_Y));
 
 	std::string heading_name = Fetch_String_UTF8("GUI:Player");
-	std::string heading_kills = Fetch_String_UTF8("GUI:Kills");
-	std::string heading_losses = Fetch_String_UTF8("GUI:Losses");
-	std::string heading_built = Fetch_String_UTF8("GUI:Built");
-	std::string heading_score = Fetch_String_UTF8("GUI:Score");
 	Stage.Print_Left(heading_name.c_str(), Left_Edge(NAME_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_kills.c_str(), Right_Edge(KILLS_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_losses.c_str(), Right_Edge(LOSSES_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_built.c_str(), Right_Edge(BUILT_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_score.c_str(), Right_Edge(SCORE_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	struct Heading {
+		char const * key;
+		Column const * column;
+	};
+	constexpr Heading headings[] = {
+		{ "GUI:Kills", &KILLS_COLUMN },
+		{ "GUI:Losses", &LOSSES_COLUMN },
+		{ "GUI:Built", &BUILT_COLUMN },
+		{ "GUI:Score", &SCORE_COLUMN },
+	};
+	for (Heading const & heading : headings) {
+		std::string text = Fetch_String_UTF8(heading.key);
+		Stage.Print_Right(text.c_str(), Right_Edge(*heading.column), ScoreStageClass::Dialog_Y(HEADING_Y));
+	}
 
 	RGBClass const edge(150, 150, 150);
 	Stage.Canvas()->Draw_Rect(BUTTON_RECT, DSurface::Build_Hicolor_Pixel(edge));
@@ -526,18 +533,16 @@ void MultiScore::Print_Player_Names(void)
 /// </summary>
 void MultiScore::Print_Row(int row, int kills, int losses, int built, int score)
 {
-	char buffer[32];
+	int const values[] = { kills, losses, built, score };
+	Column const * const columns[] = { &KILLS_COLUMN, &LOSSES_COLUMN, &BUILT_COLUMN, &SCORE_COLUMN };
 	int const y = Row_Text_Y(row);
 
 	Set_Row_Color(row);
-	sprintf(buffer, "%d", kills);
-	Stage.Print_Right(buffer, Right_Edge(KILLS_COLUMN), y);
-	sprintf(buffer, "%d", losses);
-	Stage.Print_Right(buffer, Right_Edge(LOSSES_COLUMN), y);
-	sprintf(buffer, "%d", built);
-	Stage.Print_Right(buffer, Right_Edge(BUILT_COLUMN), y);
-	sprintf(buffer, "%d", score);
-	Stage.Print_Right(buffer, Right_Edge(SCORE_COLUMN), y);
+	for (int i = 0; i < 4; i++) {
+		char buffer[32];
+		sprintf(buffer, "%d", values[i]);
+		Stage.Print_Right(buffer, Right_Edge(*columns[i]), y);
+	}
 }
 
 
@@ -550,31 +555,28 @@ void MultiScore::Print_Figures(void)
 {
 	int const steps = 100;
 
-	for (int step = 1; step <= steps; step++) {
+	// Draws every row. Figures scale by figure_step / steps and the score by score_step / steps.
+	auto draw_table = [this](int figure_step, int score_step) {
 		Stage.Restore(TABLE_RECT);
 		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-			Print_Row(i, Scores[i]->Kills[0] * step / steps, Scores[i]->Lost[0] * step / steps, Scores[i]->Built[0] * step / steps, 0);
+			Print_Row(i, Scores[i]->Kills[0] * figure_step / steps, Scores[i]->Lost[0] * figure_step / steps, Scores[i]->Built[0] * figure_step / steps, Scores[i]->Score[0] * score_step / steps);
 		}
 		Stage.Present(TABLE_RECT);
+	};
+
+	for (int step = 1; step <= steps; step++) {
+		draw_table(step, 0);
 		Play_Sound_Effect("Graph", 100);
 		Wait_Delay(1);
 	}
 
 	for (int step = 1; step <= steps; step++) {
-		Stage.Restore(TABLE_RECT);
-		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-			Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0] * step / steps);
-		}
-		Stage.Present(TABLE_RECT);
+		draw_table(steps, step);
 		Play_Sound_Effect("Graph", 100);
 		Wait_Delay(1);
 	}
 
-	Stage.Restore(TABLE_RECT);
-	for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-		Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0]);
-	}
-	Stage.Present(TABLE_RECT);
+	draw_table(steps, steps);
 }
 
 
