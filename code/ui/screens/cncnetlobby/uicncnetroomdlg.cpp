@@ -71,12 +71,6 @@ int const COLOR_NAMES[] = {
 int const COLOR_COUNT = static_cast<int>(sizeof(COLOR_NAMES) / sizeof(COLOR_NAMES[0]));
 
 
-std::string Number(int value)
-{
-	return(std::to_string(value));
-}
-
-
 int Option_Int(std::map<std::string, std::string> const & options, char const * key, int fallback)
 {
 	auto const found = options.find(key);
@@ -137,7 +131,7 @@ std::string Map_SHA1(char const * name)
 // The local file for the map in the host's options, or empty when this machine lacks it or holds a different copy.
 std::string Playable_Map(std::map<std::string, std::string> const & options)
 {
-	auto const map = options.find("Map");
+	auto const map = options.find(CNCNET_OPTION_MAP);
 	int const index = map == options.end() ? -1 : Find_Scenario(map->second);
 	if (index < 0) {
 		return(std::string());
@@ -146,7 +140,7 @@ std::string Playable_Map(std::map<std::string, std::string> const & options)
 	if (!CCFileClass(file.c_str()).Is_Available()) {
 		return(std::string());
 	}
-	auto const hash = options.find("MapSHA1");
+	auto const hash = options.find(CNCNET_OPTION_MAP_SHA1);
 	if (hash != options.end() && !hash->second.empty() && hash->second != Map_SHA1(file.c_str())) {
 		return(std::string());
 	}
@@ -409,24 +403,24 @@ std::map<std::string, std::string> Session_Options(void)
 {
 	GameOptionsType const & options = Session.Options;
 	return(std::map<std::string, std::string>{
-		{"Map", Session.ScenarioFileName},
-		{"MapName", options.ScenarioDescription},
-		{"MapSHA1", Map_SHA1(Session.ScenarioFileName)},
-		{"Bases", Number(options.Bases)},
-		{"Crates", Number(options.Goodies)},
-		{"ShortGame", Number(options.ShortGame)},
-		{"Allies", Number(options.AlliesAllowed)},
-		{"HarvTruce", Number(options.HarvTruce)},
-		{"FogOfWar", Number(options.FogOfWar)},
-		{"Bridges", Number(options.BridgeDestruction)},
-		{"MultiEngineer", Number(options.CrapEngineers)},
-		{"MCVRedeploy", Number(options.MCVRedeploy)},
-		{"GameSpeed", Number(options.GameSpeed)},
-		{"AIPlayers", Number(options.AIPlayers)},
-		{"AIDifficulty", Number(options.AIDifficulty)},
-		{"UnitCount", Number(options.UnitCount)},
-		{"TechLevel", Number(BuildLevel)},
-		{"Credits", Number(options.Credits)},
+		{CNCNET_OPTION_MAP, Session.ScenarioFileName},
+		{CNCNET_OPTION_MAP_NAME, options.ScenarioDescription},
+		{CNCNET_OPTION_MAP_SHA1, Map_SHA1(Session.ScenarioFileName)},
+		{CNCNET_OPTION_BASES, std::to_string(options.Bases)},
+		{CNCNET_OPTION_CRATES, std::to_string(options.Goodies)},
+		{CNCNET_OPTION_SHORT_GAME, std::to_string(options.ShortGame)},
+		{CNCNET_OPTION_ALLIES, std::to_string(options.AlliesAllowed)},
+		{CNCNET_OPTION_HARV_TRUCE, std::to_string(options.HarvTruce)},
+		{CNCNET_OPTION_FOG_OF_WAR, std::to_string(options.FogOfWar)},
+		{CNCNET_OPTION_BRIDGES, std::to_string(options.BridgeDestruction)},
+		{CNCNET_OPTION_MULTI_ENGINEER, std::to_string(options.CrapEngineers)},
+		{CNCNET_OPTION_MCV_REDEPLOY, std::to_string(options.MCVRedeploy)},
+		{CNCNET_OPTION_GAME_SPEED, std::to_string(options.GameSpeed)},
+		{CNCNET_OPTION_AI_PLAYERS, std::to_string(options.AIPlayers)},
+		{CNCNET_OPTION_AI_DIFFICULTY, std::to_string(options.AIDifficulty)},
+		{CNCNET_OPTION_UNIT_COUNT, std::to_string(options.UnitCount)},
+		{CNCNET_OPTION_TECH_LEVEL, std::to_string(BuildLevel)},
+		{CNCNET_OPTION_CREDITS, std::to_string(options.Credits)},
 	});
 }
 
@@ -434,7 +428,7 @@ std::map<std::string, std::string> Session_Options(void)
 void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> const & values)
 {
 	GameOptionsType & options = Session.Options;
-	auto const map = values.find("Map");
+	auto const map = values.find(CNCNET_OPTION_MAP);
 	if (map != values.end()) {
 		int const index = Find_Scenario(map->second);
 		if (index < 0) {
@@ -450,25 +444,25 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 			}
 		}
 	}
-	auto const name = values.find("MapName");
+	auto const name = values.find(CNCNET_OPTION_MAP_NAME);
 	if (name != values.end()) {
 		std::snprintf(options.ScenarioDescription, sizeof(options.ScenarioDescription), "%s", name->second.c_str());
 	}
-	options.Bases = Option_Bool(values, "Bases", options.Bases);
-	options.Goodies = Option_Bool(values, "Crates", options.Goodies);
-	options.ShortGame = Option_Bool(values, "ShortGame", options.ShortGame);
-	options.AlliesAllowed = Option_Bool(values, "Allies", options.AlliesAllowed);
-	options.HarvTruce = Option_Bool(values, "HarvTruce", options.HarvTruce);
-	options.FogOfWar = Option_Bool(values, "FogOfWar", options.FogOfWar);
-	options.BridgeDestruction = Option_Bool(values, "Bridges", options.BridgeDestruction);
-	options.CrapEngineers = Option_Bool(values, "MultiEngineer", options.CrapEngineers);
-	options.MCVRedeploy = Option_Bool(values, "MCVRedeploy", options.MCVRedeploy);
-	options.GameSpeed = CnCNet_Option_Number(values, "GameSpeed", options.GameSpeed, 0, CNCNET_MAX_GAME_SPEED);
-	options.AIPlayers = CnCNet_Option_Number(values, "AIPlayers", options.AIPlayers, 0, CNCNET_MAX_AI_PLAYERS);
-	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, "AIDifficulty", options.AIDifficulty, 0, CNCNET_MAX_AI_DIFFICULTY));
-	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT);
-	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, CNCNET_MIN_TECH_LEVEL, MPLAYER_BUILD_LEVEL_MAX);
-	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, CNCNET_MIN_CREDITS, std::max(CNCNET_MIN_CREDITS, Rule->MPMaxMoney));
+	options.Bases = Option_Bool(values, CNCNET_OPTION_BASES, options.Bases);
+	options.Goodies = Option_Bool(values, CNCNET_OPTION_CRATES, options.Goodies);
+	options.ShortGame = Option_Bool(values, CNCNET_OPTION_SHORT_GAME, options.ShortGame);
+	options.AlliesAllowed = Option_Bool(values, CNCNET_OPTION_ALLIES, options.AlliesAllowed);
+	options.HarvTruce = Option_Bool(values, CNCNET_OPTION_HARV_TRUCE, options.HarvTruce);
+	options.FogOfWar = Option_Bool(values, CNCNET_OPTION_FOG_OF_WAR, options.FogOfWar);
+	options.BridgeDestruction = Option_Bool(values, CNCNET_OPTION_BRIDGES, options.BridgeDestruction);
+	options.CrapEngineers = Option_Bool(values, CNCNET_OPTION_MULTI_ENGINEER, options.CrapEngineers);
+	options.MCVRedeploy = Option_Bool(values, CNCNET_OPTION_MCV_REDEPLOY, options.MCVRedeploy);
+	options.GameSpeed = CnCNet_Option_Number(values, CNCNET_OPTION_GAME_SPEED, options.GameSpeed, 0, CNCNET_MAX_GAME_SPEED);
+	options.AIPlayers = CnCNet_Option_Number(values, CNCNET_OPTION_AI_PLAYERS, options.AIPlayers, 0, CNCNET_MAX_AI_PLAYERS);
+	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, CNCNET_OPTION_AI_DIFFICULTY, options.AIDifficulty, 0, CNCNET_MAX_AI_DIFFICULTY));
+	options.UnitCount = CnCNet_Option_Number(values, CNCNET_OPTION_UNIT_COUNT, options.UnitCount, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT);
+	BuildLevel = CnCNet_Option_Number(values, CNCNET_OPTION_TECH_LEVEL, BuildLevel, CNCNET_MIN_TECH_LEVEL, MPLAYER_BUILD_LEVEL_MAX);
+	options.Credits = CnCNet_Option_Number(values, CNCNET_OPTION_CREDITS, options.Credits, CNCNET_MIN_CREDITS, std::max(CNCNET_MIN_CREDITS, Rule->MPMaxMoney));
 
 	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(values);
 	if (!(network == NetworkOptions)) {
@@ -708,7 +702,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.MapName += " (you do not have this map)";
 		map_ready = false;
 	} else if (!TheRoom.Is_Host()) {
-		auto const hash = TheRoom.Options().find("MapSHA1");
+		auto const hash = TheRoom.Options().find(CNCNET_OPTION_MAP_SHA1);
 		if (hash != TheRoom.Options().end() && !hash->second.empty() && hash->second != Map_SHA1(Session.ScenarioFileName)) {
 			state.MapName += " (your copy differs from the host's)";
 			map_ready = false;
@@ -1160,7 +1154,7 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 		if (file.empty()) {
 			return("You do not have the host's map, or your copy differs from the host's.");
 		}
-		options["Map"] = file;
+		options[CNCNET_OPTION_MAP] = file;
 	}
 
 	CnCNetTunnelBridgeClass bridge;
