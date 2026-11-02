@@ -1261,6 +1261,7 @@ void Backend_Shutdown(void)
 		return;
 	}
 
+	Finish_Capture();
 	GpuMap_Shutdown();
 	Destroy_Prescale_Target();
 	Destroy_Layer();
@@ -1317,6 +1318,9 @@ void Backend_Shutdown(void)
 	_Routed = false;
 	_ShotRequested = false;
 	_ReadbackPending = false;
+	// bgfx::shutdown frees the readback texture, so a later Backend_Init must not reuse its handle.
+	_ReadbackTexture = BGFX_INVALID_HANDLE;
+	_ReadbackPixels.clear();
 	_Initialized = false;
 }
 
