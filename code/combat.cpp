@@ -631,6 +631,47 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 }
 
 
+/// <summary>
+/// Damages one cell that a lightning bolt struck. The blast and its flash go off first; then debris is thrown
+/// up if the cell's building, techno or height changed, or if the cell was empty ground of a debris land type.
+/// </summary>
+/// <param name="owner">The house credited with what the blast destroys, or NULL for none.</param>
+/// <param name="debris_over_infantry">Whether debris is thrown when the cell held infantry.</param>
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry)
+{
+	BuildingClass * building = cellptr.Cell_Building();
+	TechnoClass * techno = cellptr.Cell_Techno();
+	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
+	int const level = cellptr.Height;
+	bool debris = false;
+	if (building == NULL && techno == NULL) {
+		switch (cellptr.Land_Type()) {
+			case LAND_ROAD:
+			case LAND_ROCK:
+			case LAND_WALL:
+			case LAND_WEEDS:
+				debris = true;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	Combat_Lighting(coord, damage, warhead);
+	Explosion_Damage(coord, damage, NULL, warhead, true, owner);
+
+	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
+		debris = true;
+	}
+	if ((debris_over_infantry || !infantry) && debris && Rule->MetallicDebris.Count() > 0) {
+		for (int count = Random_Pick(2, 4); count > 0; count--) {
+			new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count() - 1)], coord);
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * Wide_Area_Damage -- Apply wide area damage to the map.                                      *
  *                                                                                             *

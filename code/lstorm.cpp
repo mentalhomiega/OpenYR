@@ -392,35 +392,7 @@ void LightningStormClass::Bolt(Coord const & from)
 		new AnimClass(explosion, coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER));
 	}
 
-	BuildingClass * building = cellptr.Cell_Building();
-	TechnoClass * techno = cellptr.Cell_Techno();
-	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
-	bool debris = false;
-	if (building == NULL && techno == NULL) {
-		switch (cellptr.Land_Type()) {
-			case LAND_ROAD:
-			case LAND_ROCK:
-			case LAND_WALL:
-			case LAND_WEEDS:
-				debris = true;
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	Combat_Lighting(coord, Rule->LightningStormDamage, Rule->LightningWarhead);
-	Explosion_Damage(coord, Rule->LightningStormDamage, NULL, Rule->LightningWarhead, true, Owner);
-
-	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
-		debris = true;
-	}
-	if (!infantry && debris && Rule->MetallicDebris.Count() > 0) {
-		for (int count = Random_Pick(2, 4); count > 0; count--) {
-			new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count() - 1)], coord);
-		}
-	}
+	Strike_Cell_Damage(cellptr, coord, Rule->LightningStormDamage, Rule->LightningWarhead, Owner, false);
 }
 
 

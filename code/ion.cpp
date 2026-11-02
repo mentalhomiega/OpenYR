@@ -524,8 +524,6 @@ int IonStormClass::Ground_Light(void)
 /// </summary>
 void IonStormClass::Lightning_Bolt(Cell cell)
 {
-	int i;
-
 	CellClass * cellptr = &Map[cell];
 	int cell_height = cellptr->Height;
 	int bheight = (cellptr->IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
@@ -536,31 +534,7 @@ void IonStormClass::Lightning_Bolt(Cell cell)
 		int damage = Rule->LightningDamage;
 		new AnimClass(Combat_Anim(damage, Rule->IonStormWarhead, cellptr->Land_Type(), coord), coord, 0, 1, ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_ZGRAD), Get_Explosion_Z(coord));
 
-		bool debris = false;
-		BuildingClass * building = cellptr->Cell_Building();
-		TechnoClass * techno = cellptr->Cell_Techno();
-
-		if (building == NULL && techno == NULL) {
-			switch (cellptr->Land_Type()) {
-				case LAND_ROAD:
-				case LAND_ROCK:
-				case LAND_WALL:
-				case LAND_WEEDS:
-					debris = true;
-					break;
-			}
-		}
-
-		Combat_Lighting(coord, damage, Rule->IonStormWarhead);
-		Explosion_Damage(coord, damage, NULL, Rule->IonStormWarhead);
-
-		if (building != cellptr->Cell_Building() || techno != cellptr->Cell_Techno() || cellptr->Height != cell_height || debris == true) {
-			int count = Random_Pick(2, 4);
-			for (i = 0; i < count; i++) {
-				//new AnimClass(Rule->MetallicDebris.Random_Pick(Scen->RandomNumber), coord);
-				new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count()-1)], coord);
-			}
-		}
+		Strike_Cell_Damage(*cellptr, coord, damage, Rule->IonStormWarhead, NULL, true);
 
 		Coord crd = coord;
 		while (crd.Z < 200 * LEVEL_LEPTON_H) {
