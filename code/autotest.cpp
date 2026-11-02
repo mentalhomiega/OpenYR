@@ -609,13 +609,20 @@ void Queue_Player_Missions(DynamicVectorClass<T *> & list, std::string const & n
 }
 
 
-void Select_Type(std::string const & name)
+// Selects the player's objects of the type, in every list, and leaves the current selection in place.
+static void Select_Add_Type(std::string const & name)
 {
-	Unselect_All();
 	For_Player_Objects<UnitClass>(Units, name, [](UnitClass * object) {object->Select();});
 	For_Player_Objects<InfantryClass>(Infantry, name, [](InfantryClass * object) {object->Select();});
 	For_Player_Objects<BuildingClass>(Buildings, name, [](BuildingClass * object) {object->Select();});
 	For_Player_Objects<AircraftClass>(Aircraft, name, [](AircraftClass * object) {object->Select();});
+}
+
+
+void Select_Type(std::string const & name)
+{
+	Unselect_All();
+	Select_Add_Type(name);
 }
 
 
@@ -3536,10 +3543,7 @@ static void Select_Step(StepType const & step)
 // selectadd <TypeID>: adds the player's objects of that type to the selection, as a shift-click would.
 static void Selectadd_Step(StepType const & step)
 {
-	For_Player_Objects<UnitClass>(Units, step.Argument, [](UnitClass * object) {object->Select();});
-	For_Player_Objects<InfantryClass>(Infantry, step.Argument, [](InfantryClass * object) {object->Select();});
-	For_Player_Objects<BuildingClass>(Buildings, step.Argument, [](BuildingClass * object) {object->Select();});
-	For_Player_Objects<AircraftClass>(Aircraft, step.Argument, [](AircraftClass * object) {object->Select();});
+	Select_Add_Type(step.Argument);
 }
 
 
