@@ -1405,9 +1405,7 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 		Cell cell = Center_Coord().As_Cell();
 
 		// A firer that moves on to another cell lets its warp go (TechnoClass::Per_Cell_Process, 0x6F5090).
-		if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-			TemporalImUsing->Let_Go();
-		}
+		Release_Warp();
 
 		Try_To_Cloak();
 
@@ -2011,9 +2009,7 @@ bool TechnoClass::Limbo(void)
 		});
 	}
 
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
 	GattlingSound.Stop();
 	IsGattlingSoundPlaying = false;
@@ -7010,9 +7006,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				DrainingMe->Stop_Drain();
 			}
 			Release_Locomotor(false);
-			if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-				TemporalImUsing->Let_Go();
-			}
+			Release_Warp();
 
 			/*
 			 * Play the death voice response, heard only for an object the local player controls
@@ -8652,9 +8646,7 @@ void TechnoClass::Delete_Me(void)
 	if (SpawnManager) {
 		SpawnManager->Kill_Nodes();
 	}
-	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
-		TemporalImUsing->Let_Go();
-	}
+	Release_Warp();
 
 	// A dying victim lets its parasite out where it stood, unless the parasite is doomed (ParasiteClass::PointerExpired, 0x62A260).
 	if (ParasiteEatingMe != NULL && ParasiteEatingMe->ParasiteImUsing) {
@@ -12746,6 +12738,14 @@ void TechnoClass::Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self
 		victim->Record_The_Kill_By_House(LetGoByHouse);
 	} else if (fallback_to_self) {
 		victim->Record_The_Kill(this);
+	}
+}
+
+
+void TechnoClass::Release_Warp(void)
+{
+	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
+		TemporalImUsing->Let_Go();
 	}
 }
 
