@@ -424,6 +424,21 @@ void Select_Type(std::string const & name)
 }
 
 
+// Whether the player can place the building type on the cell now: the cell is on the local radar and passes both placement checks.
+static bool Placement_Legal(BuildingTypeClass const * building, Cell const & cell)
+{
+	return(Map.In_Local_Radar(cell) && building->Legal_Placement(cell, PlayerPtr)
+		&& Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell));
+}
+
+
+// Queues the player's PLACE event for the building type on the cell.
+static void Queue_Place(BuildingTypeClass const * building, Cell const & cell)
+{
+	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+}
+
+
 static void Place_Step(StepType const & step)
 {
 	std::string const & name = step.Argument;
@@ -447,11 +462,9 @@ static void Place_Step(StepType const & step)
 			for (int dx = -radius; dx <= radius; dx++) {
 				if (std::abs(dx) != radius && std::abs(dy) != radius) continue;
 				Cell const cell = center + Cell(dx, dy);
-				if (!Map.In_Local_Radar(cell)) continue;
-				if (!building->Legal_Placement(cell, PlayerPtr)) continue;
-				if (!Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell)) continue;
+				if (!Placement_Legal(building, cell)) continue;
 				DebugString("AUTOTEST place %s at %d,%d\n", name.c_str(), cell.X, cell.Y);
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+				Queue_Place(building, cell);
 				return;
 			}
 		}
@@ -473,11 +486,10 @@ static void Placeat_Step(StepType const & step)
 	}
 	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
 	Cell const cell(x, y);
-	bool const legal = Map.In_Local_Radar(cell) && building->Legal_Placement(cell, PlayerPtr)
-		&& Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell);
+	bool const legal = Placement_Legal(building, cell);
 	DebugString("AUTOTEST placeat %s at %d,%d: %s\n", name.c_str(), x, y, legal ? "queued" : "not legal");
 	if (legal) {
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+		Queue_Place(building, cell);
 	}
 }
 
