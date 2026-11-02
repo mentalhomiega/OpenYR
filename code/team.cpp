@@ -2887,15 +2887,6 @@ void TeamClass::TMission_SCATTER(TeamMissionClass * mission, bool)
 
 
 /// <summary>
-/// Hands a team member to another house, announced, as the change house mission does.
-/// </summary>
-static void Give_To_House(FootClass * unit, HouseClass * newowner)
-{
-	unit->Set_Owning_House(newowner, true);
-}
-
-
-/// <summary>
 /// Handles the change house team mission.
 /// This routine hands every member of the team over to the scripted house as a mind control
 /// capture does, with no "entered" trigger.
@@ -2907,7 +2898,7 @@ void TeamClass::TMission_CHANGE_HOUSE(TeamMissionClass * mission, bool)
 		FootClass *unit = Member;
 		while (unit != NULL) {
 			FootClass *next = unit->Member;
-			Give_To_House(unit, newowner);
+			unit->Set_Owning_House(newowner, true);
 			unit = next;
 		}
 	}

@@ -1070,7 +1070,6 @@ class HouseClass : public AbstractClass
 		bool AI_Raise_Money(UrgencyType urgency);
 
 		void AI_Super_Weapons(void);
-		void AI_Ion_Cannon(SuperClass * super);
 		void AI_Hunter_Seeker(SuperClass * super);
 		void AI_Chem_Missile(SuperClass * super);
 		void AI_Drop_Pods(SuperClass * super);
