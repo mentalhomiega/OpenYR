@@ -1521,7 +1521,7 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	if (NavCom == NULL && Class->IsCapture) {
 		if (target != NULL && target->RTTI == RTTI_BUILDING) {
 			BuildingClass const * building = (BuildingClass const *)target;
-			if (Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable) {
+			if (Can_Infiltrate(building)) {
 				Assign_Destination(target);
 			}
 		}
@@ -2627,6 +2627,12 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
  * HISTORY:                                                                                    *
  *   09/24/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+bool InfantryClass::Can_Infiltrate(BuildingClass const * building) const
+{
+	return(Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable);
+}
+
+
 /// <summary>
 /// Tells whether this Deployer=yes soldier is digging in or dug in, as
 /// InfantryClass::IsDeployed (0x5228D0) does. A soldier packing up again counts as not deployed.
@@ -3447,7 +3453,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	if (House->Is_Player_Control() && Class->IsCapture) {
 		if (action == ACTION_ATTACK) {
 			if (!House->Is_Ally(object) && (
-				(object->RTTI == RTTI_BUILDING && (Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable)) )
+				(object->RTTI == RTTI_BUILDING && Can_Infiltrate((BuildingClass const *)object)) )
 				) {
 
 					// A single-cell deployed vehicle is not a C4 target (IsStrange in gamemd, 0x51E3B0).
