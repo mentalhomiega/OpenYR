@@ -3661,108 +3661,72 @@ bool CellClass::Goodie_Check(FootClass * object)
 				powerup = Rule->WaterCrate;
 			}
 
-		} else if (Session.Type == GAME_NORMAL) {
-			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 		} else {
 			powerup = fixed ? CrateType(OverlayData) : random_powerup();
 
-			/*
-			**	Possibly force it to be an MCV if there is
-			**	sufficient money and no buildings left.
-			*/
-			if (object->House->CurBuildings == 0 &&
-					object->House->Available_Money() > 1500 &&
-					object->House->Count_Owned(object->House->UQuantity, Rule->BaseUnit) == 0 &&
-					Session.Options.Bases) {
-				powerup = CRATE_UNIT;
-				force_mcv = true;
-			}
+			if (Session.Type != GAME_NORMAL) {
+				/*
+				**	Possibly force it to be an MCV if there is
+				**	sufficient money and no buildings left.
+				*/
+				if (object->House->CurBuildings == 0 &&
+						object->House->Available_Money() > 1500 &&
+						object->House->Count_Owned(object->House->UQuantity, Rule->BaseUnit) == 0 &&
+						Session.Options.Bases) {
+					powerup = CRATE_UNIT;
+					force_mcv = true;
+				}
 
-			/*
-			**	Depending on what was picked, there might be an alternate goodie if the selected
-			**	goodie would have no effect.
-			*/
-			switch (powerup) {
-				case CRATE_UNIT:
-					if (object->House->CurUnits > 50) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_SQUAD:
-					if (object->House->CurInfantry > 100) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_DARKNESS:
-					//if (object->House->IsGPSActive) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_ARMOR:
-					if (!Rule->IsArmorCrateStacking && object->ArmorBias != 1) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_SPEED:
-					if (object->SpeedBias != 1 || object->RTTI == RTTI_AIRCRAFT) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_FIREPOWER:
-					if ((!Rule->IsFirepowerCrateStacking && object->FirepowerBias != 1) || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_REVEAL:
-//					if (object->House->IsVisionary) {
-//						if (object->House->IsGPSActive) {
-//							powerup = CRATE_MONEY;
-//						} else {
-//							powerup = CRATE_DARKNESS;
-//						}
-//					}
-					break;
-
-				case CRATE_CLOAK:
-					if (object->IsCloakable) powerup = CRATE_MONEY;
-					break;
-
-				case CRATE_HEAL_BASE:
-//					if (object->House->BScan == 0) powerup = CRATE_UNIT;
-					break;
-
-				case CRATE_VETERAN:
-					{
-						// A collector that cannot train, or is already elite, takes the money instead.
-						TechnoClass * collector = Dynamic_Cast<TechnoClass *>(object);
-						if (collector != NULL && (!collector->TClass->IsTrainable || collector->Veterancy.Is_Elite())) powerup = CRATE_MONEY;
-					}
-					break;
-
-				case CRATE_MONEY:
-					break;
-			}
-			/*
-			**	If the powerup is money but there is insufficient money to build a refinery but there is a construction
-			**	yard available, then force the money to be enough to rebuild the refinery.
-			*/
-#if 0
-			if (powerup == CRATE_MONEY && (object->House->BScan & (STRUCTF_CONST|STRUCTF_REFINERY)) == STRUCTF_CONST &&
-						object->House->Available_Money() < BuildingTypeClass::As_Reference(STRUCT_REFINERY).Cost * object->House->CostBias) {
-
-				force_money = BuildingTypeClass::As_Reference(STRUCT_REFINERY).Cost * object->House->CostBias;
-			}
-
-			/*
-			**	Special override for water crates so that illegal goodies items
-			**	won't appear.
-			*/
-			if (OverlayTypes[Overlay] == Rule->WaterCrateImg) {
+				/*
+				**	Depending on what was picked, there might be an alternate goodie if the selected
+				**	goodie would have no effect.
+				*/
 				switch (powerup) {
 					case CRATE_UNIT:
-					case CRATE_SQUAD:
-						powerup = CRATE_MONEY;
+						if (object->House->CurUnits > 50) powerup = CRATE_MONEY;
 						break;
 
-					default:
+					case CRATE_SQUAD:
+						if (object->House->CurInfantry > 100) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_DARKNESS:
+						break;
+
+					case CRATE_ARMOR:
+						if (!Rule->IsArmorCrateStacking && object->ArmorBias != 1) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_SPEED:
+						if (object->SpeedBias != 1 || object->RTTI == RTTI_AIRCRAFT) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_FIREPOWER:
+						if ((!Rule->IsFirepowerCrateStacking && object->FirepowerBias != 1) || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_REVEAL:
+						break;
+
+					case CRATE_CLOAK:
+						if (object->IsCloakable) powerup = CRATE_MONEY;
+						break;
+
+					case CRATE_HEAL_BASE:
+						break;
+
+					case CRATE_VETERAN:
+						{
+							// A collector that cannot train, or is already elite, takes the money instead.
+							TechnoClass * collector = Dynamic_Cast<TechnoClass *>(object);
+							if (collector != NULL && (!collector->TClass->IsTrainable || collector->Veterancy.Is_Elite())) powerup = CRATE_MONEY;
+						}
+						break;
+
+					case CRATE_MONEY:
 						break;
 				}
 			}
-#endif
 		}
 
 		/*

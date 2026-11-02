@@ -453,6 +453,19 @@ AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedel
 }
 
 
+/// <summary>
+/// Starts the wake animation the rules name, at a coordinate, with the default timing and flags.
+/// </summary>
+/// <param name="where">Where the wake plays.</param>
+/// <remarks>Nothing is started when the rules name no wake animation.</remarks>
+void Spawn_Wake(Coord const & where)
+{
+	if (Rule->Wake != NULL) {
+		new AnimClass(Rule->Wake, where);
+	}
+}
+
+
 /***********************************************************************************************
  * AnimClass::Sort_Y -- Returns with the sorting coordinate for the animation.                 *
  *                                                                                             *
@@ -521,31 +534,6 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 {
 	if (Delay) return(false);
 	return(BASECLASS::Render(rect, forced, extras_only));
-}
-
-
-// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
-// translucency is three quarters opaque, as the blitter's opacity is.
-static int Anim_Draw_Opacity(ShapeFlags_Type flags)
-{
-	int opacity = 255;
-	switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
-		case SHAPE_TRANSLUCENT25:
-			opacity = 192;
-			break;
-
-		case SHAPE_TRANSLUCENT50:
-			opacity = 128;
-			break;
-
-		case SHAPE_TRANSLUCENT75:
-			opacity = 64;
-			break;
-
-		default:
-			break;
-	}
-	return(opacity);
 }
 
 
@@ -678,7 +666,9 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			}
 
 			// The bounce pass above draws ordinary light; only the picture itself is emissive.
-			int const opacity = Anim_Draw_Opacity(flags);
+			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
+			// translucency is three quarters opaque, as the blitter's opacity is.
+			int const opacity = Shape_Opacity(flags);
 			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
 			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
@@ -902,9 +892,7 @@ void AnimClass::AI(void)
 						new AnimClass(Rule->SplashList[splashes - 1], PositionCoord + Coord(0, 0, 3));
 					}
 				} else {
-					if (Rule->Wake != NULL) {
-						new AnimClass(Rule->Wake, PositionCoord);
-					}
+					Spawn_Wake(PositionCoord);
 					if (splashes > 0 && Rule->SplashList[0] != NULL) {
 						new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
 					}

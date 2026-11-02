@@ -410,9 +410,7 @@ void ParasiteClass::Create_Wakes(Coord const & where)
 	for (int i = 0; i < 3; i++) {
 		int const side = Random_Pick(-180, 180);
 		int const ahead = Random_Pick(-64, 64);
-		if (Rule->Wake != nullptr) {
-			new AnimClass(Rule->Wake, Squid_Offset(where, turn, side, ahead));
-		}
+		Spawn_Wake(Squid_Offset(where, turn, side, ahead));
 	}
 }
 

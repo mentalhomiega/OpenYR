@@ -487,7 +487,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 
 		if (HeightAGL <= 10 && Map[(Coord const &)PositionCoord].Land_Type() == LAND_WATER && IsToExplode) {
-			if (Rule->Wake != NULL) new AnimClass(Rule->Wake, PositionCoord);
+			Spawn_Wake(PositionCoord);
 			new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0,0,3));
 			delthis = true;
 		} else if (Class->IsCyborg && IsProne) {

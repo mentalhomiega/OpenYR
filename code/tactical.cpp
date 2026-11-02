@@ -157,6 +157,7 @@ Tactical::Tactical(void) :
 {
 	ScreenText[0] = L'\0';
 	CaptionStyle = CAPTION_NONE;
+	CaptionArtTried = false;
 
 	CoordToPixelMatrix.Make_Identity();
 	CoordToPixelMatrix.Rotate_X(RAD_60);
@@ -1458,19 +1459,16 @@ void Tactical::Clear_Caption_Text(void)
 /// gamemd reads it at start up (0x52ba60, GRFXTXT_SHP) when the file exists.
 /// </summary>
 /// <returns>The shape, or NULL when the game has no such file.</returns>
-static ShapeSet const * Caption_Art(void)
+ShapeSet const * Tactical::Caption_Art(void)
 {
-	static std::unique_ptr<char[]> data;
-	static bool tried = false;
-
-	if (!tried) {
-		tried = true;
+	if (!CaptionArtTried) {
+		CaptionArtTried = true;
 		CCFileClass file("GRFXTXT.SHP");
 		if (file.Is_Available()) {
-			data.reset((char *)Load_Alloc_Data(file));
+			CaptionArtData.reset((char *)Load_Alloc_Data(file));
 		}
 	}
-	return((ShapeSet const *)data.get());
+	return((ShapeSet const *)CaptionArtData.get());
 }
 
 
@@ -4010,7 +4008,6 @@ class Dash_Table_Restore
 void Tactical::Draw_Waypoints(bool inshroud)
 {
 	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = WAYPOINT_MARKER_FRAME;
 
 	if (Debug_Map) {
 		return;
@@ -4018,7 +4015,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 	Dash_Table_Restore const dashtable;
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
 
 	// The number is printed in color scheme 2, or 0 on a snow theater, as gamemd does (0x6DAD60). Each [Colors]
 	// entry makes two schemes, so scheme 2 is the plain one of the second entry (Gold) and scheme 0 the first
@@ -4058,7 +4055,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 			if (onscreen) {
 				Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
-				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
+				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, WAYPOINT_MARKER_FRAME, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
 				// Holds any int, since MaxWaypointPathLength lets a path exceed 999 waypoints.
 				static char buffer[12];
@@ -4126,43 +4123,19 @@ static RGBClass Planned_Blend(RGBClass const & from, RGBClass const & toward, in
 }
 
 
-/// <summary>
-/// Draws the planned orders of the local player's units over the tactical view, while planning mode
-/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
-/// through the destination of each leg still to run.
-/// </summary>
-/// <remarks>
-/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
-/// is four solid lines in black, or in white for a selected unit, with an outline square at
-/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
-/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
-/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
-/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
-/// (timeGetTime), which only moves the picture and never the game state.
-/// </remarks>
-void Tactical::Draw_Planned_Orders(void)
+struct Leg
 {
-	if (Debug_Map || !Map.IsPlanningMode) {
-		return;
-	}
+	Point2D From;
+	Point2D To;
+	MissionType Mission;
+	bool IsSelected;
+	bool IsRunning;
+	RGBClass Owner;
+};
 
-	// Four on, four off, as the table at 0x836880 reads.
-	static bool pattern[16] = {
-		true, true, true, true, false, false, false, false,
-		true, true, true, true, false, false, false, false
-	};
 
-	struct Leg
-	{
-		Point2D From;
-		Point2D To;
-		MissionType Mission;
-		bool IsSelected;
-		bool IsRunning;
-		RGBClass Owner;
-	};
-	std::vector<Leg> legs;
-
+static void Collect_Planned_Legs(Tactical & tactical, std::vector<Leg> & legs)
+{
 	for (int footindex = 0; footindex < Feet.Count(); footindex++) {
 		FootClass * foot = Feet[footindex];
 		if (foot->House != PlayerPtr || !foot->IsActive || foot->IsInLimbo) {
@@ -4174,8 +4147,8 @@ void Tactical::Draw_Planned_Orders(void)
 
 		auto add_leg = [&](Coord const & from, Coord const & to, MissionType mission) {
 			Leg leg;
-			Coord_To_Pixel(from, leg.From);
-			Coord_To_Pixel(to, leg.To);
+			tactical.Coord_To_Pixel(from, leg.From);
+			tactical.Coord_To_Pixel(to, leg.To);
 			leg.From += Point2D(TacticalRect.X, TacticalRect.Y);
 			leg.To += Point2D(TacticalRect.X, TacticalRect.Y);
 			leg.Mission = mission;
@@ -4201,6 +4174,16 @@ void Tactical::Draw_Planned_Orders(void)
 			}
 		}
 	}
+}
+
+
+static void Draw_Planned_Legs(std::vector<Leg> const & legs)
+{
+	// Four on, four off, as the table at 0x836880 reads.
+	static bool pattern[16] = {
+		true, true, true, true, false, false, false, false,
+		true, true, true, true, false, false, false, false
+	};
 
 	if (legs.empty()) {
 		return;
@@ -4261,7 +4244,7 @@ void Tactical::Draw_Planned_Orders(void)
 		}
 	}
 
-	ShapeSet const * mouseshapes = (ShapeSet const *)MixFileClass::Retrieve("MOUSE.SHA");
+	ShapeSet const * mouseshapes = MouseClass::MouseShapes;
 	for (Leg const & leg : legs) {
 		unsigned const node = pixel(leg.IsSelected ? white : black);
 		unsigned const branch = pixel(leg.IsRunning ? Planned_Blend(leg.Owner, white, 0x64) : Planned_Blend(leg.Owner, black, 0x50));
@@ -4288,6 +4271,31 @@ void Tactical::Draw_Planned_Orders(void)
 	}
 }
 
+
+/// <summary>
+/// Draws the planned orders of the local player's units over the tactical view, while planning mode
+/// is on, as gamemd's planning overlay (0x63B0A0, 0x63B150) does. Each plan runs from its unit
+/// through the destination of each leg still to run.
+/// </summary>
+/// <remarks>
+/// The overlay is drawn once, over the finished view, in three passes over every leg. The first
+/// is four solid lines in black, or in white for a selected unit, with an outline square at
+/// the middle of an area guard or attack move leg (0x63C690). The second is an animated line two
+/// pixels thick in the owner's color, dim before the plan runs and bright once it does, with a
+/// box holding that order's cursor on such a leg (0x63CAE0). The third is a square at each
+/// destination. A leg shorter than 37 pixels gets no box. The dashes march with the wall clock
+/// (timeGetTime), which only moves the picture and never the game state.
+/// </remarks>
+void Tactical::Draw_Planned_Orders(void)
+{
+	if (Debug_Map || !Map.IsPlanningMode) {
+		return;
+	}
+
+	std::vector<Leg> legs;
+	Collect_Planned_Legs(*this, legs);
+	Draw_Planned_Legs(legs);
+}
 
 
 /// <summary>
@@ -4568,6 +4576,16 @@ void Tactical::Serialize(SaveStreamClass & stream)
 }
 
 
+static void Format_Timer_Line(char * buffer, std::size_t size, char const * label, int seconds)
+{
+	if (seconds >= 3600) {
+		std::snprintf(buffer, size, "%s  %d:%02d:%02d", label, seconds / 3600, (seconds / 60) % 60, seconds % 60);
+	} else {
+		std::snprintf(buffer, size, "%s  %02d:%02d", label, seconds / 60, seconds % 60);
+	}
+}
+
+
 /// <summary>
 /// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
@@ -4599,11 +4617,7 @@ void Tactical::Draw_Super_Timers(void)
 		int const seconds = (int)Scen->MissionTimer / TICKS_PER_SECOND;
 		std::string const label = Scen->MissionTimerText[0] != '\0' ? StringTable.Find_UTF8(Scen->MissionTimerText) : std::string();
 		char buffer[160];
-		if (seconds >= 3600) {
-			std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", label.c_str(), seconds / 3600, (seconds / 60) % 60, seconds % 60);
-		} else {
-			std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", label.c_str(), seconds / 60, seconds % 60);
-		}
+		Format_Timer_Line(buffer, sizeof(buffer), label.c_str(), seconds);
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
@@ -4623,11 +4637,7 @@ void Tactical::Draw_Super_Timers(void)
 			int const seconds = left / 15;
 			char buffer[96];
 			char const * name = super->Class->Full_Name() != NULL && super->Class->Full_Name()[0] != '\0' ? super->Class->Full_Name() : super->Class->Name();
-			if (seconds >= 3600) {
-				std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", name, seconds / 3600, (seconds / 60) % 60, seconds % 60);
-			} else {
-				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
-			}
+			Format_Timer_Line(buffer, sizeof(buffer), name, seconds);
 			// A ready weapon's timer blinks once a second between the house colour and a grey (the original blinks
 			// between the house colour and a palette entry of its scheme).
 			ColorScheme * scheme = ColorSchemes[House_Display_Scheme(house)];

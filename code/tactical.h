@@ -19,6 +19,7 @@
 #include "stimer.h"
 #include "timer.h"
 
+#include <memory>
 #include <vector>
 
 template<class T> class DynamicVectorClass;
@@ -27,6 +28,7 @@ class Cell;
 class HouseClass;
 class RGBClass;
 class ShadowControlClass;
+class ShapeSet;
 class Surface;
 
 /*
@@ -260,6 +262,7 @@ class Tactical : public AbstractClass
 		void Set_Caption_Text(wchar_t const * text, int style);
 		void Clear_Caption_Text(void);
 		void Draw_Screen_Text(wchar_t const * text);
+		ShapeSet const * Caption_Art(void);
 
 		// The frame of GRFXTXT.SHP shown for each caption style.
 		enum CaptionStyleType {
@@ -303,6 +306,13 @@ class Tactical : public AbstractClass
 		 * place of the text, or -1 when there is none.
 		 */
 		int CaptionStyle;
+
+		/*
+		 * This is the caption art, GRFXTXT.SHP, once Caption_Art has read it. CaptionArtTried is
+		 * set after the first attempt, so a missing file is not probed again.
+		 */
+		std::unique_ptr<char[]> CaptionArtData;
+		bool CaptionArtTried;
 
 		/*
 		 * This is the game frame the per-frame housekeeping was last done on. The AI routine

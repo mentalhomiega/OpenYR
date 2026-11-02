@@ -23,6 +23,7 @@
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "draw.h"
 #include "mixfile.h"
 #include "_mixfile.h"
 #include "shapeset.h"
@@ -770,11 +771,8 @@ bool TrueColour_Draw(Surface & surface, ConvertClass & convert, ShapeSet const *
 	blitter.Scale = scale;
 	blitter.MiddleBand = std::min((levels - 1) >> 1, bands - 1);
 	blitter.Lighting = (flags & SHAPE_ALPHA) != 0 && levels > 1 && levels == bands ? Lighting_For(levels) : NULL;
-	switch (flags & SHAPE_TRANSLUCENT75) {
-		case SHAPE_TRANSLUCENT25: blitter.Opacity = 192; break;
-		case SHAPE_TRANSLUCENT50: blitter.Opacity = 128; break;
-		case SHAPE_TRANSLUCENT75: blitter.Opacity = 64; break;
-		default: break;
+	if (flags & SHAPE_TRANSLUCENT75) {
+		blitter.Opacity = Shape_Opacity(flags);
 	}
 	blitter.ZWrite = (flags & SHAPE_ZWRITE) != 0;
 	blitter.ZTest = blitter.ZWrite || (flags & (SHAPE_ZREAD | SHAPE_ZGRAD)) != 0;
