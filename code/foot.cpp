@@ -1689,11 +1689,15 @@ void FootClass::Approach_Target(void)
 
 					// A CloseRange object also takes a spot within 1.2 cells of the target, whatever its weapon's reach.
 					WeaponTypeClass * approach_weapon = Get_Class_Weapon_Data(primary)->Weapon;
-					bool reaches = TClass->In_Range(trycoord, TarCom, approach_weapon) && Clear_Line_Of_Fire(trycoord, TarCom, approach_weapon);
-					if (!reaches && TClass->IsCloseRange) {
-						Coord const at = TarCom->Center_Coord();
-						reaches = Gamemd_Length_2D(trycoord.X - at.X, trycoord.Y - at.Y) < 307.2;
-					}
+					auto reaches_from = [&](Coord const & spot) {
+						bool reach = TClass->In_Range(spot, TarCom, approach_weapon) && Clear_Line_Of_Fire(spot, TarCom, approach_weapon);
+						if (!reach && TClass->IsCloseRange) {
+							Coord const at = TarCom->Center_Coord();
+							reach = Gamemd_Length_2D(spot.X - at.X, spot.Y - at.Y) < 307.2;
+						}
+						return(reach);
+					};
+					bool reaches = reaches_from(trycoord);
 					if (reaches) {
 						trycell = trycoord.As_Cell();
 						bool const usable = Map.In_Local_Radar(trycell);
@@ -1713,11 +1717,7 @@ void FootClass::Approach_Target(void)
 								walk = walk + AdjacentCell[step];
 								if (!Map.Is_Valid(walk)) continue;
 								Coord const centre = Coord(walk.X * CELL_LEPTON_W + CELL_LEPTON_W / 2, walk.Y * CELL_LEPTON_H + CELL_LEPTON_H / 2, 0);
-								bool near_reach = TClass->In_Range(centre, TarCom, approach_weapon) && Clear_Line_Of_Fire(centre, TarCom, approach_weapon);
-								if (!near_reach && TClass->IsCloseRange) {
-									Coord const at = TarCom->Center_Coord();
-									near_reach = Gamemd_Length_2D(centre.X - at.X, centre.Y - at.Y) < 307.2;
-								}
+								bool near_reach = reaches_from(centre);
 								if (near_reach && clear_to_move(walk)) {
 									trycell = walk;
 									clear = true;
