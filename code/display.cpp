@@ -2805,6 +2805,19 @@ void DisplayClass::Place_Beacon_Mode_Control(int control)
 /// </summary>
 /// <param name="control">The mode to set the power state to. Zero turns power mode off, one
 /// turns it on, and -1 toggles it.</param>
+// Turns off the power, waypoint, repair and sell modes, and beacon placement when with_beacon is true.
+void DisplayClass::Cancel_Order_Modes(bool with_beacon)
+{
+	Power_Mode_Control(0);
+	Waypoint_Mode_Control(0);
+	Repair_Mode_Control(0);
+	Sell_Mode_Control(0);
+	if (with_beacon) {
+		Place_Beacon_Mode_Control(0);
+	}
+}
+
+
 void DisplayClass::Power_Mode_Control(int control)
 {
 	bool mode = IsPowerMode;
