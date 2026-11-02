@@ -477,16 +477,7 @@ bool Main_Loop(void)
 	*/
 	DisplayClass::Layer[LAYER_GROUND].Sort();
 
-	// Remember where moving objects stand before this frame's logic, so drawing between frames can blend toward their new places.
-	if (Options.Render_Frame_Rate() > 0) {
-		for (int index = 0; index < Feet.Count(); index++) {
-			// An object off the map has no position to blend from when it is placed again.
-			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
-		}
-		for (int index = 0; index < Bullets.Count(); index++) {
-			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
-		}
-	}
+	Remember_Render_Coords();
 
 	Log_Rounding_Mode();
 
@@ -596,6 +587,24 @@ bool Main_Loop(void)
 	InMainLoop = false;
 
 	return(!GameActive);
+}
+
+
+/// <summary>
+/// Records where each moving object stands before a logic frame, so that drawing between frames can
+/// blend from there toward its new place. Nothing is recorded unless the render frame rate is above zero.
+/// </summary>
+void Remember_Render_Coords(void)
+{
+	if (Options.Render_Frame_Rate() > 0) {
+		for (int index = 0; index < Feet.Count(); index++) {
+			// An object off the map has no position to blend from when it is placed again.
+			Feet[index]->RenderPrevCoord = Feet[index]->IsInLimbo ? COORD_NONE : Feet[index]->Render_Coord();
+		}
+		for (int index = 0; index < Bullets.Count(); index++) {
+			Bullets[index]->RenderPrevCoord = Bullets[index]->IsInLimbo ? COORD_NONE : Bullets[index]->Render_Coord();
+		}
+	}
 }
 
 

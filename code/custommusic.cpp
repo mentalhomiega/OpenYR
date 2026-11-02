@@ -7,6 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "always.h"
+
 #include "custommusic.h"
 #include "strutil.h"
 
@@ -137,7 +139,7 @@ bool Custom_Music_Mode_From_Name(char const * name, CustomMusicModeType & mode)
 		{ "Both", CUSTOM_MUSIC_BOTH }, { "Stock", CUSTOM_MUSIC_STOCK }, { "Custom", CUSTOM_MUSIC_CUSTOM }
 	};
 	for (EntryType const & entry : entries) {
-		if (Lower(name) == Lower(entry.Name)) {
+		if (stricmp(name, entry.Name) == 0) {
 			mode = entry.Mode;
 			return(true);
 		}

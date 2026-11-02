@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <string>
 #include <string_view>
+#include <vector>
 
 
 // Returns a copy of text with each letter lower-cased.
@@ -49,4 +50,21 @@ inline std::string_view Trim_Chars(std::string_view text, std::string_view blank
 	}
 	std::size_t const last = text.find_last_not_of(blanks);
 	return(text.substr(first, last - first + 1));
+}
+
+
+// Returns the parts of text between each separator, in order. An empty part is kept, so "a,,b" has three parts.
+inline std::vector<std::string> Split_Parts(std::string_view text, char separator)
+{
+	std::vector<std::string> parts;
+	std::size_t start = 0;
+	for (;;) {
+		std::size_t const end = text.find(separator, start);
+		if (end == std::string_view::npos) {
+			parts.emplace_back(text.substr(start));
+			return(parts);
+		}
+		parts.emplace_back(text.substr(start, end - start));
+		start = end + 1;
+	}
 }

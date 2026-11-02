@@ -416,8 +416,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		tooltip.ID = 500;
 		tooltip.Text = TXT_NONE;
 		tooltip.Region = ScreenTacticalRect;
-		ToolTips->Remove(500);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 	}
 
 	/*

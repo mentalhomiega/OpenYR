@@ -63,9 +63,9 @@ BeaconClass::BeaconClass(int house, int slot, Coord const & where) :
 
 BeaconManagerClass::BeaconManagerClass(void)
 {
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			Slots[house][slot] = NULL;
+	for (auto & house : Slots) {
+		for (BeaconClass *& slot : house) {
+			slot = NULL;
 		}
 	}
 }
@@ -169,10 +169,10 @@ BeaconClass * BeaconManagerClass::Get(int house, int slot) const
 
 BeaconClass * BeaconManagerClass::Selected(void) const
 {
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			if (Slots[house][slot] != NULL && Slots[house][slot]->IsSelected) {
-				return(Slots[house][slot]);
+	for (auto const & house : Slots) {
+		for (BeaconClass * beacon : house) {
+			if (beacon != NULL && beacon->IsSelected) {
+				return(beacon);
 			}
 		}
 	}
@@ -182,10 +182,10 @@ BeaconClass * BeaconManagerClass::Selected(void) const
 
 void BeaconManagerClass::Select(BeaconClass * beacon)
 {
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			if (Slots[house][slot] != NULL) {
-				Slots[house][slot]->IsSelected = (Slots[house][slot] == beacon);
+	for (auto const & house : Slots) {
+		for (BeaconClass * slot : house) {
+			if (slot != NULL) {
+				slot->IsSelected = (slot == beacon);
 			}
 		}
 	}
@@ -196,9 +196,8 @@ BeaconClass * BeaconManagerClass::Find_Near(Cell const & cell) const
 {
 	Coord const point = Ground_Coord(cell.As_Coord());
 
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			BeaconClass * beacon = Slots[house][slot];
+	for (auto const & house : Slots) {
+		for (BeaconClass * beacon : house) {
 			if (beacon == NULL) {
 				continue;
 			}
@@ -231,9 +230,9 @@ bool BeaconManagerClass::Visible_To_Player(BeaconClass const * beacon) const
 
 bool BeaconManagerClass::Has_Visible(void) const
 {
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			if (Visible_To_Player(Slots[house][slot])) {
+	for (auto const & house : Slots) {
+		for (BeaconClass const * beacon : house) {
+			if (Visible_To_Player(beacon)) {
 				return(true);
 			}
 		}
@@ -244,10 +243,10 @@ bool BeaconManagerClass::Has_Visible(void) const
 
 void BeaconManagerClass::Clear(void)
 {
-	for (int house = 0; house < MAX_PLAYERS; house++) {
-		for (int slot = 0; slot < BEACONS_PER_HOUSE; slot++) {
-			delete Slots[house][slot];
-			Slots[house][slot] = NULL;
+	for (auto & house : Slots) {
+		for (BeaconClass *& slot : house) {
+			delete slot;
+			slot = NULL;
 		}
 	}
 }

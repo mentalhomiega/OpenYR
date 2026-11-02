@@ -17,8 +17,8 @@
 #include "dsurface.h"
 #include "palette.h"
 #include "pcx.h"
+#include "strutil.h"
 
-#include <cctype>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -98,10 +98,7 @@ Surface const * PCX_Cameo(std::string const & filename)
 	if (filename.empty()) {
 		return(NULL);
 	}
-	std::string key = filename;
-	for (char & letter : key) {
-		letter = (char)toupper((unsigned char)letter);
-	}
+	std::string const key = Upper(filename);
 	auto found = Cache.find(key);
 	if (found == Cache.end()) {
 		found = Cache.emplace(key, Load(key)).first;

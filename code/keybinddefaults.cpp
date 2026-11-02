@@ -401,6 +401,20 @@ bool Names_Command(std::vector<HotkeyEntry> const & entries, std::string const &
 	return(false);
 }
 
+
+/// <summary>
+/// Appends the entry unless the entries already bind its key with the same trigger.
+/// </summary>
+void Add_If_Free(std::vector<HotkeyEntry> & entries, HotkeyEntry const & entry)
+{
+	for (HotkeyEntry const & other : entries) {
+		if (other.Key == entry.Key && other.Trigger == entry.Trigger) {
+			return;
+		}
+	}
+	entries.push_back(entry);
+}
+
 }
 
 
@@ -494,13 +508,7 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 			if (version >= Added_Command_Version(entry.Command) || Names_Command(entries, entry.Command)) {
 				continue;
 			}
-			bool taken = false;
-			for (HotkeyEntry const & other : entries) {
-				taken = taken || (other.Key == entry.Key && other.Trigger == entry.Trigger);
-			}
-			if (!taken) {
-				entries.push_back(entry);
-			}
+			Add_If_Free(entries, entry);
 		}
 
 		for (HotkeyEntry const & entry : current) {
@@ -510,13 +518,7 @@ void Upgrade_Hotkey_Entries(std::vector<HotkeyEntry> & entries, int version, std
 			if (version >= Held_Binding_Version(entry.Command)) {
 				continue;
 			}
-			bool taken = false;
-			for (HotkeyEntry const & other : entries) {
-				taken = taken || (other.Key == entry.Key && other.Trigger == entry.Trigger);
-			}
-			if (!taken) {
-				entries.push_back(entry);
-			}
+			Add_If_Free(entries, entry);
 		}
 		return;
 	}

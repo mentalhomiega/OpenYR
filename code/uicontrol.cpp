@@ -14,6 +14,7 @@
 #include "ccfile.h"
 #include "ccini.h"
 #include "playerdisplay.h"
+#include "strutil.h"
 
 
 namespace {
@@ -27,16 +28,10 @@ char const * const COLORBLIND_SAFE = "ColorBlindSafe";
 std::vector<std::string> Split_Button_List(std::string const & value)
 {
 	std::vector<std::string> list;
-	std::size_t start = 0;
-	while (start <= value.size()) {
-		std::size_t end = value.find(',', start);
-		if (end == std::string::npos) {
-			end = value.size();
+	for (std::string const & part : Split_Parts(value, ',')) {
+		if (!part.empty()) {
+			list.push_back(part);
 		}
-		if (end > start) {
-			list.push_back(value.substr(start, end - start));
-		}
-		start = end + 1;
 	}
 	return(list);
 }

@@ -82,24 +82,11 @@ std::vector<std::string> Parse_Mod_List(char const * list)
 		return(names);
 	}
 
-	std::string const text = list;
-	std::string::size_type start = 0;
-
-	for (;;) {
-		std::string::size_type end = text.find(',', start);
-		if (end == std::string::npos) {
-			end = text.length();
-		}
-
-		std::string const name = Trim(text.substr(start, end - start));
+	for (std::string const & part : Split_Parts(list, ',')) {
+		std::string const name = Trim(part);
 		if (!name.empty()) {
 			names.push_back(name);
 		}
-
-		if (end == text.length()) {
-			break;
-		}
-		start = end + 1;
 	}
 
 	return(names);

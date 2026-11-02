@@ -37,55 +37,95 @@ bool Starts_With(std::string const & name, char const * prefix)
 }
 
 
+// A category for the commands whose names start with Text. An Exact rule matches only the command named Text.
+struct CategoryRule
+{
+	char const * Text;
+	HotkeyCategory Category;
+	bool Exact = false;
+};
+
+
+// The first rule that matches a command gives its category, so where two rules match one command, the
+// one listed first wins. Control groups come first, since their names share words with the camera and selection commands.
+CategoryRule const Category_Rules[] = {
+	{ "TeamCreate_", HOTKEY_CATEGORY_CONTROL_GROUPS },
+	{ "TeamSelect_", HOTKEY_CATEGORY_CONTROL_GROUPS },
+	{ "TeamAddSelect_", HOTKEY_CATEGORY_CONTROL_GROUPS },
+	{ "TeamCenter_", HOTKEY_CATEGORY_CONTROL_GROUPS },
+	{ "TeamAddTo_", HOTKEY_CATEGORY_CONTROL_GROUPS },
+
+	// The cheat commands, which need debug mode, and the multiplayer debug display, which gamemd lists with them.
+	{ "Debug", HOTKEY_CATEGORY_DEBUG },
+	{ "MultiplayerDebug", HOTKEY_CATEGORY_DEBUG, true },
+
+	{ "Chat", HOTKEY_CATEGORY_CHAT },
+	{ "Taunt_", HOTKEY_CATEGORY_CHAT },
+
+	{ "Scroll", HOTKEY_CATEGORY_CAMERA },
+	{ "JumpCamera", HOTKEY_CATEGORY_CAMERA },
+	{ "View", HOTKEY_CATEGORY_CAMERA },
+	{ "SetView", HOTKEY_CATEGORY_CAMERA },
+	{ "CenterView", HOTKEY_CATEGORY_CAMERA },
+	{ "CenterBase", HOTKEY_CATEGORY_CAMERA },
+	{ "CenterOnRadarEvent", HOTKEY_CATEGORY_CAMERA },
+
+	{ "Sidebar", HOTKEY_CATEGORY_PRODUCTION },
+	{ "LeftSidebar", HOTKEY_CATEGORY_PRODUCTION },
+	{ "RightSidebar", HOTKEY_CATEGORY_PRODUCTION },
+	{ "RepeatLast", HOTKEY_CATEGORY_PRODUCTION },
+	{ "StructureTab", HOTKEY_CATEGORY_PRODUCTION },
+	{ "DefenseTab", HOTKEY_CATEGORY_PRODUCTION },
+	{ "InfantryTab", HOTKEY_CATEGORY_PRODUCTION },
+	{ "UnitTab", HOTKEY_CATEGORY_PRODUCTION },
+	{ "NextSidebarTab", HOTKEY_CATEGORY_PRODUCTION },
+	{ "TogglePower", HOTKEY_CATEGORY_PRODUCTION },
+	{ "ToggleRadar", HOTKEY_CATEGORY_PRODUCTION },
+	{ "GridBuild", HOTKEY_CATEGORY_PRODUCTION },
+
+	{ "AllToCheer", HOTKEY_CATEGORY_COMMANDS },
+	{ "DeployObject", HOTKEY_CATEGORY_COMMANDS },
+	{ "GuardObject", HOTKEY_CATEGORY_COMMANDS },
+	{ "StopObject", HOTKEY_CATEGORY_COMMANDS },
+	{ "ScatterObject", HOTKEY_CATEGORY_COMMANDS },
+	{ "AttackMove", HOTKEY_CATEGORY_COMMANDS },
+	{ "WaypointMode", HOTKEY_CATEGORY_COMMANDS },
+	{ "PlanningMode", HOTKEY_CATEGORY_COMMANDS },
+	{ "Follow", HOTKEY_CATEGORY_COMMANDS },
+	{ "ToggleAlliance", HOTKEY_CATEGORY_COMMANDS },
+	{ "ToggleRepair", HOTKEY_CATEGORY_COMMANDS },
+	{ "ToggleSell", HOTKEY_CATEGORY_COMMANDS },
+	{ "ManualPlace", HOTKEY_CATEGORY_COMMANDS },
+	{ "PlaceBeacon", HOTKEY_CATEGORY_COMMANDS },
+	{ "Delete", HOTKEY_CATEGORY_COMMANDS },
+	{ "ForceFire", HOTKEY_CATEGORY_COMMANDS },
+	{ "ForceMove", HOTKEY_CATEGORY_COMMANDS },
+	{ "SelectModifier", HOTKEY_CATEGORY_COMMANDS },
+	{ "QueueMove", HOTKEY_CATEGORY_COMMANDS },
+
+	{ "Select", HOTKEY_CATEGORY_SELECTION },
+	{ "TypeSelect", HOTKEY_CATEGORY_SELECTION },
+	{ "CombatantSelect", HOTKEY_CATEGORY_SELECTION },
+	{ "HealthNav", HOTKEY_CATEGORY_SELECTION },
+	{ "VeterancyNav", HOTKEY_CATEGORY_SELECTION },
+	{ "NextObject", HOTKEY_CATEGORY_SELECTION },
+	{ "PreviousObject", HOTKEY_CATEGORY_SELECTION },
+	{ "HealthFilter", HOTKEY_CATEGORY_SELECTION },
+	{ "VeterancyFilter", HOTKEY_CATEGORY_SELECTION },
+};
+
+
 }
 
 
 HotkeyCategory Hotkey_Category_Of(std::string const & command)
 {
-	// Control groups first, since their names share words with the camera and selection commands.
-	if (Starts_With(command, "TeamCreate_") || Starts_With(command, "TeamSelect_") || Starts_With(command, "TeamAddSelect_")
-		|| Starts_With(command, "TeamCenter_") || Starts_With(command, "TeamAddTo_")) {
-		return(HOTKEY_CATEGORY_CONTROL_GROUPS);
+	for (CategoryRule const & rule : Category_Rules) {
+		bool const matches = rule.Exact ? command == rule.Text : Starts_With(command, rule.Text);
+		if (matches) {
+			return(rule.Category);
+		}
 	}
-
-	// The cheat commands, which need debug mode, and the multiplayer debug display, which gamemd lists with them.
-	if (Starts_With(command, "Debug") || command == "MultiplayerDebug") {
-		return(HOTKEY_CATEGORY_DEBUG);
-	}
-
-	if (Starts_With(command, "Chat") || Starts_With(command, "Taunt_")) {
-		return(HOTKEY_CATEGORY_CHAT);
-	}
-
-	if (Starts_With(command, "Scroll") || Starts_With(command, "JumpCamera") || Starts_With(command, "View")
-		|| Starts_With(command, "SetView") || Starts_With(command, "CenterView") || Starts_With(command, "CenterBase")
-		|| Starts_With(command, "CenterOnRadarEvent")) {
-		return(HOTKEY_CATEGORY_CAMERA);
-	}
-
-	if (Starts_With(command, "Sidebar") || Starts_With(command, "LeftSidebar") || Starts_With(command, "RightSidebar")
-		|| Starts_With(command, "RepeatLast") || Starts_With(command, "StructureTab") || Starts_With(command, "DefenseTab")
-		|| Starts_With(command, "InfantryTab") || Starts_With(command, "UnitTab") || Starts_With(command, "NextSidebarTab")
-		|| Starts_With(command, "TogglePower") || Starts_With(command, "ToggleRadar") || Starts_With(command, "GridBuild")) {
-		return(HOTKEY_CATEGORY_PRODUCTION);
-	}
-
-	if (Starts_With(command, "AllToCheer") || Starts_With(command, "DeployObject") || Starts_With(command, "GuardObject")
-		|| Starts_With(command, "StopObject") || Starts_With(command, "ScatterObject") || Starts_With(command, "AttackMove")
-		|| Starts_With(command, "WaypointMode") || Starts_With(command, "PlanningMode") || Starts_With(command, "Follow")
-		|| Starts_With(command, "ToggleAlliance") || Starts_With(command, "ToggleRepair") || Starts_With(command, "ToggleSell")
-		|| Starts_With(command, "ManualPlace") || Starts_With(command, "PlaceBeacon") || Starts_With(command, "Delete")
-		|| Starts_With(command, "ForceFire") || Starts_With(command, "ForceMove") || Starts_With(command, "SelectModifier")
-		|| Starts_With(command, "QueueMove")) {
-		return(HOTKEY_CATEGORY_COMMANDS);
-	}
-
-	if (Starts_With(command, "Select") || Starts_With(command, "TypeSelect") || Starts_With(command, "CombatantSelect")
-		|| Starts_With(command, "HealthNav") || Starts_With(command, "VeterancyNav") || Starts_With(command, "NextObject")
-		|| Starts_With(command, "PreviousObject") || Starts_With(command, "HealthFilter") || Starts_With(command, "VeterancyFilter")) {
-		return(HOTKEY_CATEGORY_SELECTION);
-	}
-
 	return(HOTKEY_CATEGORY_INTERFACE);
 }
 
