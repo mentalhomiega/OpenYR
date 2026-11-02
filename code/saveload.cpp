@@ -185,6 +185,23 @@ void Dump_Mark(SaveStreamClass const & stream, char const * name)
 
 
 /// <summary>
+/// Logs and marks the section named, then writes it with save. A failed write logs the failure.
+/// </summary>
+/// <returns>bool; Was the section written?</returns>
+template<class Save>
+static bool Save_Section(SaveStreamClass & stream, char const * name, Save save)
+{
+	DebugString("Saving %s\n", name);
+	Dump_Mark(stream, name);
+	if (!save()) {
+		DebugString("\t***** FAILED!\n");
+		return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
 /// Writes one object to the save stream as a record of its own. A reader that does not
 /// consume exactly the record's length has read a record of another shape than was
 /// written, and a missing object fails the stream rather than leaving a gap where the
@@ -466,368 +483,81 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	Dump_Mark(stream, "Rules");
 	Rule->Save(stream);
 
-	DebugString("Saving AnimTypes\n");
-	Dump_Mark(stream, "AnimTypes");
-	if (!Save_Vector(stream, AnimTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "AnimTypes", [&]() {return(Save_Vector(stream, AnimTypes));})) return(false);
 
 	/*
 	**	Save the map.  The map must be saved first, since it saves the Theater.
 	*/
-	DebugString("Saving Map\n");
-	Dump_Mark(stream, "Map");
-	if (!Map.Save(stream)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-
-	DebugString("Saving Tunnels\n");
-	Dump_Mark(stream, "Tunnels");
-	if (!Save_Vector(stream, Tubes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "Map", [&]() {return(Map.Save(stream));})) return(false);
+	if (!Save_Section(stream, "Tunnels", [&]() {return(Save_Vector(stream, Tubes));})) return(false);
 
 	/*
 	**	Save miscellaneous variables.
 	*/
-	DebugString("Saving Misc. Values\n");
-	Dump_Mark(stream, "Misc. Values");
-	if (!Save_Misc_Values(stream)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "Misc. Values", [&]() {return(Save_Misc_Values(stream));})) return(false);
 
 	/*
 	**	Save the Logic & Map layers
 	*/
-	DebugString("Saving Logic\n");
-	Dump_Mark(stream, "Logic");
-	if (!Logic.Save(stream)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-
-	DebugString("Saving TacticalMap\n");
-	Dump_Mark(stream, "TacticalMap");
-	if (!Save_Object(stream, TacticalMap)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "Logic", [&]() {return(Logic.Save(stream));})) return(false);
+	if (!Save_Section(stream, "TacticalMap", [&]() {return(Save_Object(stream, TacticalMap));})) return(false);
 
 	/*
 	**	Save all game objects.  This code saves every object that's stored in a
 	**	TFixedIHeap class.
 	*/
-	DebugString("Saving HouseTypes\n");
-	Dump_Mark(stream, "HouseTypes");
-	if (!Save_Vector(stream, HouseTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Houses\n");
-	Dump_Mark(stream, "Houses");
-	if (!Save_Vector(stream, Houses)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Units\n");
-	Dump_Mark(stream, "Units");
-	if (!Save_Vector(stream, Units)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving UnitTypes\n");
-	Dump_Mark(stream, "UnitTypes");
-	if (!Save_Vector(stream, UnitTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving InfantryTypes\n");
-	Dump_Mark(stream, "InfantryTypes");
-	if (!Save_Vector(stream, InfantryTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Infantry\n");
-	Dump_Mark(stream, "Infantry");
-	if (!Save_Vector(stream, Infantry)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving BuildingTypes\n");
-	Dump_Mark(stream, "BuildingTypes");
-	if (!Save_Vector(stream, BuildingTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Buildings\n");
-	Dump_Mark(stream, "Buildings");
-	if (!Save_Vector(stream, Buildings)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving AircraftTypes\n");
-	Dump_Mark(stream, "AircraftTypes");
-	if (!Save_Vector(stream, AircraftTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Aircraft\n");
-	Dump_Mark(stream, "Aircraft");
-	if (!Save_Vector(stream, Aircraft)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Anims\n");
-	Dump_Mark(stream, "Anims");
-	if (!Save_Vector(stream, Anims)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving TaskForces\n");
-	Dump_Mark(stream, "TaskForces");
-	if (!Save_Vector(stream, TaskForces)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving TeamTypes\n");
-	Dump_Mark(stream, "TeamTypes");
-	if (!Save_Vector(stream, TeamTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Teams\n");
-	Dump_Mark(stream, "Teams");
-	if (!Save_Vector(stream, Teams)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving ScriptTypes\n");
-	Dump_Mark(stream, "ScriptTypes");
-	if (!Save_Vector(stream, ScriptTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Scripts\n");
-	Dump_Mark(stream, "Scripts");
-	if (!Save_Vector(stream, Scripts)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving TagTypes\n");
-	Dump_Mark(stream, "TagTypes");
-	if (!Save_Vector(stream, TagTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Tags\n");
-	Dump_Mark(stream, "Tags");
-	if (!Save_Vector(stream, Tags)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving TriggerTypes\n");
-	Dump_Mark(stream, "TriggerTypes");
-	if (!Save_Vector(stream, TriggerTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Triggers\n");
-	Dump_Mark(stream, "Triggers");
-	if (!Save_Vector(stream, Triggers)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving AITriggerTypes\n");
-	Dump_Mark(stream, "AITriggerTypes");
-	if (!Save_Vector(stream, AITriggerTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "HouseTypes", [&]() {return(Save_Vector(stream, HouseTypes));})) return(false);
+	if (!Save_Section(stream, "Houses", [&]() {return(Save_Vector(stream, Houses));})) return(false);
+	if (!Save_Section(stream, "Units", [&]() {return(Save_Vector(stream, Units));})) return(false);
+	if (!Save_Section(stream, "UnitTypes", [&]() {return(Save_Vector(stream, UnitTypes));})) return(false);
+	if (!Save_Section(stream, "InfantryTypes", [&]() {return(Save_Vector(stream, InfantryTypes));})) return(false);
+	if (!Save_Section(stream, "Infantry", [&]() {return(Save_Vector(stream, Infantry));})) return(false);
+	if (!Save_Section(stream, "BuildingTypes", [&]() {return(Save_Vector(stream, BuildingTypes));})) return(false);
+	if (!Save_Section(stream, "Buildings", [&]() {return(Save_Vector(stream, Buildings));})) return(false);
+	if (!Save_Section(stream, "AircraftTypes", [&]() {return(Save_Vector(stream, AircraftTypes));})) return(false);
+	if (!Save_Section(stream, "Aircraft", [&]() {return(Save_Vector(stream, Aircraft));})) return(false);
+	if (!Save_Section(stream, "Anims", [&]() {return(Save_Vector(stream, Anims));})) return(false);
+	if (!Save_Section(stream, "TaskForces", [&]() {return(Save_Vector(stream, TaskForces));})) return(false);
+	if (!Save_Section(stream, "TeamTypes", [&]() {return(Save_Vector(stream, TeamTypes));})) return(false);
+	if (!Save_Section(stream, "Teams", [&]() {return(Save_Vector(stream, Teams));})) return(false);
+	if (!Save_Section(stream, "ScriptTypes", [&]() {return(Save_Vector(stream, ScriptTypes));})) return(false);
+	if (!Save_Section(stream, "Scripts", [&]() {return(Save_Vector(stream, Scripts));})) return(false);
+	if (!Save_Section(stream, "TagTypes", [&]() {return(Save_Vector(stream, TagTypes));})) return(false);
+	if (!Save_Section(stream, "Tags", [&]() {return(Save_Vector(stream, Tags));})) return(false);
+	if (!Save_Section(stream, "TriggerTypes", [&]() {return(Save_Vector(stream, TriggerTypes));})) return(false);
+	if (!Save_Section(stream, "Triggers", [&]() {return(Save_Vector(stream, Triggers));})) return(false);
+	if (!Save_Section(stream, "AITriggerTypes", [&]() {return(Save_Vector(stream, AITriggerTypes));})) return(false);
 
-	DebugString("Saving Actions\n");
-	Dump_Mark(stream, "Actions");
-	if (!Save_Vector(stream, Actions)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Events\n");
-	Dump_Mark(stream, "Events");
-	if (!Save_Vector(stream, Events)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Factories\n");
-	Dump_Mark(stream, "Factories");
-	if (!Save_Vector(stream, Factories)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving VoxelAnimTypes\n");
-	Dump_Mark(stream, "VoxelAnimTypes");
-	if (!Save_Vector(stream, VoxelAnimTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving VoxelAnims\n");
-	Dump_Mark(stream, "VoxelAnims");
-	if (!Save_Vector(stream, VoxelAnims)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Warheads\n");
-	Dump_Mark(stream, "Warheads");
-	if (!Save_Vector(stream, Warheads)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Weapons\n");
-	Dump_Mark(stream, "Weapons");
-	if (!Save_Vector(stream, Weapons)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving ParticleTypes\n");
-	Dump_Mark(stream, "ParticleTypes");
-	if (!Save_Vector(stream, ParticleTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Particles\n");
-	Dump_Mark(stream, "Particles");
-	if (!Save_Vector(stream, Particles)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving ParticleSystemTypes\n");
-	Dump_Mark(stream, "ParticleSystemTypes");
-	if (!Save_Vector(stream, ParticleSystemTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving ParticleSystems\n");
-	Dump_Mark(stream, "ParticleSystems");
-	if (!Save_Vector(stream, ParticleSystems)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving BulletTypes\n");
-	Dump_Mark(stream, "BulletTypes");
-	if (!Save_Vector(stream, BulletTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Bullets\n");
-	Dump_Mark(stream, "Bullets");
-	if (!Save_Vector(stream, Bullets)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving WaypointPaths\n");
-	Dump_Mark(stream, "WaypointPaths");
-	if (!Save_Vector(stream, WaypointPaths)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving SmudgeTypes\n");
-	Dump_Mark(stream, "SmudgeTypes");
-	if (!Save_Vector(stream, SmudgeTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving OverlayTypes\n");
-	Dump_Mark(stream, "OverlayTypes");
-	if (!Save_Vector(stream, OverlayTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving LightSources\n");
-	Dump_Mark(stream, "LightSources");
-	if (!Save_Vector(stream, LightSources)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving BuildingLights\n");
-	Dump_Mark(stream, "BuildingLights");
-	if (!Save_Vector(stream, BuildingLights)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Sides\n");
-	Dump_Mark(stream, "Sides");
-	if (!Save_Vector(stream, Sides)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Tiberiums\n");
-	Dump_Mark(stream, "Tiberiums");
-	if (!Save_Vector(stream, Tiberiums)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Empulses\n");
-	Dump_Mark(stream, "Empulses");
-	if (!Save_Vector(stream, EMPulseClass::EMPulses)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving SuperWeaponTypes\n");
-	Dump_Mark(stream, "SuperWeaponTypes");
-	if (!Save_Vector(stream, SuperWeaponTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving SuperWeapons\n");
-	Dump_Mark(stream, "SuperWeapons");
-	if (!Save_Vector(stream, SuperWeapons)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving TerrianTypes\n");
-	Dump_Mark(stream, "TerrianTypes");
-	if (!Save_Vector(stream, TerrainTypes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Terrains\n");
-	Dump_Mark(stream, "Terrains");
-	if (!Save_Vector(stream, Terrains)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving FoggedObjects\n");
-	Dump_Mark(stream, "FoggedObjects");
-	if (!Save_Vector(stream, FoggedObjectClass::FoggyObjects)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving AlphaShapes\n");
-	Dump_Mark(stream, "AlphaShapes");
-	if (!Save_Vector(stream, AlphaShapes)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving Waves\n");
-	Dump_Mark(stream, "Waves");
-	if (!Save_Vector(stream, Waves)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving VeinholeMonster\n");
-	Dump_Mark(stream, "VeinholeMonster");
-	if (!VeinholeMonsterClass::Save_All(stream)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	DebugString("Saving RadarEvents\n");
-	Dump_Mark(stream, "RadarEvents");
-	if (!RadarEventClass::Save(stream)) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	if (!Save_Section(stream, "Actions", [&]() {return(Save_Vector(stream, Actions));})) return(false);
+	if (!Save_Section(stream, "Events", [&]() {return(Save_Vector(stream, Events));})) return(false);
+	if (!Save_Section(stream, "Factories", [&]() {return(Save_Vector(stream, Factories));})) return(false);
+	if (!Save_Section(stream, "VoxelAnimTypes", [&]() {return(Save_Vector(stream, VoxelAnimTypes));})) return(false);
+	if (!Save_Section(stream, "VoxelAnims", [&]() {return(Save_Vector(stream, VoxelAnims));})) return(false);
+	if (!Save_Section(stream, "Warheads", [&]() {return(Save_Vector(stream, Warheads));})) return(false);
+	if (!Save_Section(stream, "Weapons", [&]() {return(Save_Vector(stream, Weapons));})) return(false);
+	if (!Save_Section(stream, "ParticleTypes", [&]() {return(Save_Vector(stream, ParticleTypes));})) return(false);
+	if (!Save_Section(stream, "Particles", [&]() {return(Save_Vector(stream, Particles));})) return(false);
+	if (!Save_Section(stream, "ParticleSystemTypes", [&]() {return(Save_Vector(stream, ParticleSystemTypes));})) return(false);
+	if (!Save_Section(stream, "ParticleSystems", [&]() {return(Save_Vector(stream, ParticleSystems));})) return(false);
+	if (!Save_Section(stream, "BulletTypes", [&]() {return(Save_Vector(stream, BulletTypes));})) return(false);
+	if (!Save_Section(stream, "Bullets", [&]() {return(Save_Vector(stream, Bullets));})) return(false);
+	if (!Save_Section(stream, "WaypointPaths", [&]() {return(Save_Vector(stream, WaypointPaths));})) return(false);
+	if (!Save_Section(stream, "SmudgeTypes", [&]() {return(Save_Vector(stream, SmudgeTypes));})) return(false);
+	if (!Save_Section(stream, "OverlayTypes", [&]() {return(Save_Vector(stream, OverlayTypes));})) return(false);
+	if (!Save_Section(stream, "LightSources", [&]() {return(Save_Vector(stream, LightSources));})) return(false);
+	if (!Save_Section(stream, "BuildingLights", [&]() {return(Save_Vector(stream, BuildingLights));})) return(false);
+	if (!Save_Section(stream, "Sides", [&]() {return(Save_Vector(stream, Sides));})) return(false);
+	if (!Save_Section(stream, "Tiberiums", [&]() {return(Save_Vector(stream, Tiberiums));})) return(false);
+	if (!Save_Section(stream, "Empulses", [&]() {return(Save_Vector(stream, EMPulseClass::EMPulses));})) return(false);
+	if (!Save_Section(stream, "SuperWeaponTypes", [&]() {return(Save_Vector(stream, SuperWeaponTypes));})) return(false);
+	if (!Save_Section(stream, "SuperWeapons", [&]() {return(Save_Vector(stream, SuperWeapons));})) return(false);
+	if (!Save_Section(stream, "TerrianTypes", [&]() {return(Save_Vector(stream, TerrainTypes));})) return(false);
+	if (!Save_Section(stream, "Terrains", [&]() {return(Save_Vector(stream, Terrains));})) return(false);
+	if (!Save_Section(stream, "FoggedObjects", [&]() {return(Save_Vector(stream, FoggedObjectClass::FoggyObjects));})) return(false);
+	if (!Save_Section(stream, "AlphaShapes", [&]() {return(Save_Vector(stream, AlphaShapes));})) return(false);
+	if (!Save_Section(stream, "Waves", [&]() {return(Save_Vector(stream, Waves));})) return(false);
+	if (!Save_Section(stream, "VeinholeMonster", [&]() {return(VeinholeMonsterClass::Save_All(stream));})) return(false);
+	if (!Save_Section(stream, "RadarEvents", [&]() {return(RadarEventClass::Save(stream));})) return(false);
 
 	/*
 	 * A campaign takes its options from the mission. Every other kind is given them at setup, so
