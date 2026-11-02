@@ -340,11 +340,6 @@ void Display_Options_Dialog(int page)
 		if (Try_Display_Mode(*picked, scale)) {
 			break;
 		}
-
-		// The player was leaving for another tab, so the screen does not open again.
-		if (UI_Settings_Moving()) {
-			break;
-		}
 	}
 }
 

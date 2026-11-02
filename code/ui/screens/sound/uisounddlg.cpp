@@ -18,7 +18,6 @@
 #include "ui/screens/sound/uisound.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 #include <cstdio>
@@ -160,9 +159,7 @@ std::unique_ptr<UISoundPresenterClass> UI_Sound_New_Presenter(void)
 void UI_Sound_Dialog(void)
 {
 	std::unique_ptr<UISoundPresenterClass> presenter = UI_Sound_New_Presenter();
-	UI_Settings_Join(*presenter, UI_TAB_AUDIO);
 	std::unique_ptr<UIViewClass> view = UI_Sound_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(*presenter);
 }

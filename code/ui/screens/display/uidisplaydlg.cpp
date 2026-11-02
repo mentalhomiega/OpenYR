@@ -22,7 +22,6 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uisettingpreview.h"
 #include "ui/uiview.h"
 #include "sdl/sdlwindow.h"
@@ -653,13 +652,11 @@ std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 	Register_Setting_Previews();
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	UI_Settings_Join(presenter, page);
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(std::nullopt);
 	}
-	UI_Settings_Leave(presenter);
 	return(UI_Display_Settled(presenter));
 }
 

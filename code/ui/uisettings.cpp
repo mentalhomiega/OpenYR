@@ -115,26 +115,6 @@ bool UI_Settings_Tabbed(void)
 }
 
 
-// The tabbed Settings opens its pages as one screen, so a page never runs its own modal run.
-void UI_Settings_Join(UIPresenterClass & presenter, UISettingsTab tab)
-{
-	(void)presenter;
-	(void)tab;
-}
-
-
-void UI_Settings_Leave(UIPresenterClass const & presenter)
-{
-	(void)presenter;
-}
-
-
-bool UI_Settings_Moving(void)
-{
-	return(false);
-}
-
-
 void UI_Settings_Run(UISettingsTab first)
 {
 	bool const ingame = GameActive;

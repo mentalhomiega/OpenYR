@@ -28,7 +28,6 @@
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 #include <string>
@@ -242,11 +241,9 @@ std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(boo
 void UI_Game_Controls_Dialog(void)
 {
 	std::unique_ptr<UIGameControlsPresenterClass> presenter = UI_Game_Controls_New_Presenter(false);
-	UI_Settings_Join(*presenter, UI_TAB_GAME);
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(*presenter);
 
 	if (presenter->Next == UIGameControlsPresenterClass::NEXT_SOUND) {
 		SpecialDialog = SDLG_SOUND;
