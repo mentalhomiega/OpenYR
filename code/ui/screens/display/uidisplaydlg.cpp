@@ -623,12 +623,8 @@ std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void)
 }
 
 
-std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+std::optional<UIDisplayMode> UI_Display_Mode_To_Try(UIDisplayPresenterClass const & presenter)
 {
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-		UI_Setting_Preview_Revert();
-	}
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;
 		current.Width = Options.ScreenWidth;
@@ -636,6 +632,16 @@ std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presen
 		return(current);
 	}
 	return(presenter.Picked);
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
+		UI_Setting_Preview_Revert();
+	}
+	return(UI_Display_Mode_To_Try(presenter));
 }
 
 
@@ -654,19 +660,7 @@ std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 		return(std::nullopt);
 	}
 	UI_Settings_Leave(presenter);
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-		UI_Setting_Preview_Revert();
-	}
-
-	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
-		UIDisplayMode current;
-		current.Width = Options.ScreenWidth;
-		current.Height = Options.ScreenHeight;
-		return(current);
-	}
-
-	return(presenter.Picked);
+	return(UI_Display_Settled(presenter));
 }
 
 

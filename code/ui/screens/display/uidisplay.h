@@ -243,6 +243,8 @@ std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter
 std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void);
 // What the display tabs settle to when they close: the mode to try, if any, as UI_Display_Dialog returns it.
 std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter);
+// The mode the presenter asks to try: its pick, or the current mode when only the scale changed.
+std::optional<UIDisplayMode> UI_Display_Mode_To_Try(UIDisplayPresenterClass const & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
 UIDisplayServiceClass & UI_Display_Service(void);
