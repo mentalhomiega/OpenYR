@@ -11,6 +11,7 @@
 
 #include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
+#include "strutil.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -27,15 +28,6 @@
 
 namespace
 {
-
-std::string Lower(std::string text)
-{
-	for (char & c : text) {
-		c = (char)std::tolower((unsigned char)c);
-	}
-	return(text);
-}
-
 
 /// Compares two names ignoring case, with each run of digits compared by its value, so "Map 2" comes before "Map 10".
 int Natural_Compare(std::string const & left, std::string const & right)

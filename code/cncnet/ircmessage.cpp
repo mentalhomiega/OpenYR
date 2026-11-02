@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "cncnet/ircmessage.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -18,15 +19,6 @@ namespace {
 std::string const EmptyParam;
 
 char const CTCP_DELIMITER = '\x01';
-
-
-std::string Upper(std::string_view text)
-{
-	std::string result(text);
-	std::transform(result.begin(), result.end(), result.begin(),
-		[](unsigned char c) { return(static_cast<char>(std::toupper(c))); });
-	return(result);
-}
 
 
 // A parameter must not carry a line break or NUL, or it would end the line

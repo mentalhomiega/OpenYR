@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "report/reportupload.h"
+#include "strutil.h"
 
 #include <miniz/miniz.h>
 
@@ -24,15 +25,6 @@ namespace fs = std::filesystem;
 
 
 namespace {
-
-std::string Lower(std::string text)
-{
-	for (char & c : text) {
-		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-	}
-	return(text);
-}
-
 
 std::string Trim(std::string const & text)
 {

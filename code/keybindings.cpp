@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "keybindings.h"
+#include "strutil.h"
 
 #include <cctype>
 #include <cstring>
@@ -35,16 +36,6 @@ bool Starts_With(std::string const & name, char const * prefix)
 	return(true);
 }
 
-
-// The lower-case form of the text, for case-insensitive search.
-std::string Lower(std::string const & text)
-{
-	std::string lower = text;
-	for (char & letter : lower) {
-		letter = (char)std::tolower((unsigned char)letter);
-	}
-	return(lower);
-}
 
 }
 

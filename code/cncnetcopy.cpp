@@ -9,6 +9,7 @@
 
 #include "cncnetcopy.h"
 #include "cncnet/cncnettext.h"
+#include "strutil.h"
 
 #include "win.h"
 
@@ -70,12 +71,7 @@ bool Same_Folder(std::string const & left, std::string const & right)
 
 std::string Trim(std::string const & text)
 {
-	std::size_t const first = text.find_first_not_of(" \t\r\n");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-	std::size_t const last = text.find_last_not_of(" \t\r\n");
-	return(text.substr(first, last - first + 1));
+	return(std::string(Trim_Chars(text, " \t\r\n")));
 }
 
 

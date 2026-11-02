@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "inicheck.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -98,16 +99,6 @@ std::string_view Trim(std::string_view text)
 		text.remove_suffix(1);
 	}
 	return(text);
-}
-
-
-std::string Lower(std::string_view text)
-{
-	std::string result(text);
-	for (char & letter : result) {
-		letter = (char)std::tolower((unsigned char)letter);
-	}
-	return(result);
 }
 
 

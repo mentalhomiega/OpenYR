@@ -8,20 +8,11 @@
  ******************************************************************************/
 
 #include "modchoice.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
 #include <climits>
-
-
-static std::string Lower(std::string const & text)
-{
-	std::string lower = text;
-	for (char & ch : lower) {
-		ch = (char)std::tolower((unsigned char)ch);
-	}
-	return(lower);
-}
 
 
 static std::string Folder_Key(std::string const & folder)

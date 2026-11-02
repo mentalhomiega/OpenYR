@@ -14,6 +14,7 @@
 #include "cncnet/cncnetsession.h"
 #include "cncnet/cncnettext.h"
 #include "ui/rml/rmlview.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -51,12 +52,7 @@ std::string Clock_Text(uint64_t stamp, uint64_t now)
 
 std::string Trim(std::string text)
 {
-	std::size_t const start = text.find_first_not_of(" \t");
-	if (start == std::string::npos) {
-		return(std::string());
-	}
-	std::size_t const end = text.find_last_not_of(" \t");
-	return(text.substr(start, end - start + 1));
+	return(std::string(Trim_Chars(text, " \t")));
 }
 
 

@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "custommusic.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -21,14 +22,6 @@ namespace
 char const * const EXTENSIONS[] = {
 	".wav", ".ogg", ".flac", ".mp3"
 };
-
-std::string Lower(std::string text)
-{
-	for (char & c : text) {
-		c = (char)std::tolower((unsigned char)c);
-	}
-	return(text);
-}
 
 // The position of the extension's dot, or npos for a name with none.
 size_t Extension_Start(std::string const & filename)
