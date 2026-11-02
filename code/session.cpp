@@ -972,6 +972,24 @@ void Mount_Map_Packs(void)
 }
 
 
+// Adds a scenario for each MultiMaps entry of a packet, in entry order. Each one gets its
+// player count when with_player_counts is set.
+static void Add_Packet_Scenarios(DynamicVectorClass<MultiMission *> & scenarios, INIClass const & ini, bool with_player_counts)
+{
+	char name_buffer[64];
+	int const count = ini.Entry_Count("MultiMaps");
+	for (int index = 0; index < count; index++) {
+		if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
+			MultiMission * mission = new MultiMission(ini, name_buffer);
+			if (with_player_counts) {
+				mission->Add_Player_Count();
+			}
+			scenarios.Add(mission);
+		}
+	}
+}
+
+
 /***************************************************************************
  * SessionClass::Read_Scenario_Descriptions -- reads scen. descriptions    *
  *                                                                         *
@@ -1006,13 +1024,8 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	CCFileClass file(MAIN_SCENARIO_PACKET);
 	if (file.Is_Available()) {
 		ini.Load(file);
-		int count = ini.Entry_Count("MultiMaps");
+		Add_Packet_Scenarios(Scenarios, ini, false);
 //DebugString( "Found %i missions in Missions.pkt\n", count );
-		for (int index = 0; index < count; index++) {
-			if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-				Scenarios.Add(new MultiMission(ini, name_buffer));
-			}
-		}
 /*		//	ajw Copy file for viewing.
 		CCFileClass fileCopy( "msns_pkt.txt" );
 		file.Seek( 0, SEEK_SET );
@@ -1035,12 +1048,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 				ini.Clear();
 				ini.Load(file);
 
-				int count = ini.Entry_Count("MultiMaps");
-				for (int index = 0; index < count; index++) {
-					if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-						Scenarios.Add(new MultiMission(ini, name_buffer));
-					}
-				}
+				Add_Packet_Scenarios(Scenarios, ini, false);
 			}
 		}
 	}
@@ -1052,12 +1060,7 @@ void SessionClass::Read_Scenario_Descriptions(void)
 			ini.Clear();
 			ini.Load(file);
 
-			int count = ini.Entry_Count("MultiMaps");
-			for (int index = 0; index < count; index++) {
-				if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-					Scenarios.Add(new MultiMission(ini, name_buffer));
-				}
-			}
+			Add_Packet_Scenarios(Scenarios, ini, false);
 		}
 	}
 
@@ -1080,15 +1083,8 @@ void SessionClass::Read_Scenario_Descriptions(void)
 		ini.Clear();
 		ini.Load(file);
 
-		int count = ini.Entry_Count("MultiMaps");
-		DebugString("Map pack %s lists %d maps\n", pack.c_str(), count);
-		for (int index = 0; index < count; index++) {
-			if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-				MultiMission * mission = new MultiMission(ini, name_buffer);
-				mission->Add_Player_Count();
-				Scenarios.Add(mission);
-			}
-		}
+		DebugString("Map pack %s lists %d maps\n", pack.c_str(), ini.Entry_Count("MultiMaps"));
+		Add_Packet_Scenarios(Scenarios, ini, true);
 	}
 
 	ini.Clear();

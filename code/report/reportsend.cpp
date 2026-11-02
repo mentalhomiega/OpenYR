@@ -62,6 +62,7 @@ struct SettingsType
 {
 	ReportPolicy Policy = ReportPolicy::Ask;
 	std::string URL;
+	ReportDecision Decision = ReportDecision::Skip;		// Report_Decide(Policy, URL), set by Read_Settings.
 };
 
 
@@ -73,6 +74,7 @@ SettingsType Read_Settings(void)
 	settings.Policy = Report_Policy_From_Text(text);
 	ConfigINI.Get_String("Options", "ReportURL", REPORT_DEFAULT_URL, text, sizeof(text));
 	settings.URL = text;
+	settings.Decision = Report_Decide(settings.Policy, settings.URL);
 	return(settings);
 }
 
@@ -141,7 +143,7 @@ char const * Kind_Text(ReportKind kind)
 /// </summary>
 bool Offer_Report(SettingsType const & settings, ReportKind kind, std::vector<ReportFileType> const & files, std::string const & session_key)
 {
-	ReportDecision const decision = Report_Decide(settings.Policy, settings.URL);
+	ReportDecision const decision = settings.Decision;
 	if (decision == ReportDecision::Skip || files.empty()) {
 		return(false);
 	}
@@ -186,7 +188,7 @@ void Offer_Folders(SettingsType const & settings)
 		bool const queued = Offer_Report(settings, Report_Kind_From_Folder(folder), Report_Folder_Files(folder), std::string());
 		// With no receiver set the folder is left unanswered, so that setting one later still
 		// offers it.
-		if (Report_Decide(settings.Policy, settings.URL) != ReportDecision::Skip) {
+		if (settings.Decision != ReportDecision::Skip) {
 			Report_Mark_Decided(folder, queued);
 		}
 	}
@@ -199,7 +201,7 @@ void Offer_Folders(SettingsType const & settings)
 /// </summary>
 void Start_Sender(SettingsType const & settings)
 {
-	if (Report_Decide(settings.Policy, settings.URL) == ReportDecision::Skip || Sending.exchange(true)) {
+	if (settings.Decision == ReportDecision::Skip || Sending.exchange(true)) {
 		return;
 	}
 	// The thread works on its own copies, so that nothing it reads goes away under it at exit.
@@ -267,19 +269,13 @@ void Report_After_Match(void)
 
 	if (!PendingDesyncPath.empty()) {
 		std::vector<ReportFileType> files;
-		std::string session_key;
-		std::error_code error;
 		for (fs::path const path : { fs::path(PendingDesyncPath), fs::path(Debug_Log_File_Name()) }) {
-			if (path.empty() || !fs::is_regular_file(path, error) || !Report_Wanted_File(path.filename().string())) {
-				continue;
-			}
 			ReportFileType file;
-			file.Name = path.filename().string();
-			file.Path = path;
-			file.Size = fs::file_size(path, error);
-			files.push_back(file);
+			if (Report_File_Entry(path, file)) {
+				files.push_back(file);
+			}
 		}
-		session_key = Report_Desync_Session_Key(Report_Read_Session_Head(PendingDesyncPath));
+		std::string const session_key = Report_Desync_Session_Key(Report_Read_Session_Head(PendingDesyncPath));
 		Offer_Report(settings, ReportKind::Desync, files, session_key);
 		PendingDesyncPath.clear();
 	}

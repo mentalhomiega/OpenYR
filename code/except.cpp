@@ -1472,6 +1472,20 @@ static bool Copy_Log_Tail(void)
 }
 
 
+static void Exceptions_Root(char * root, size_t root_size)
+{
+	snprintf(root, root_size, "%s\\Exceptions", ExecutableDirectory);
+}
+
+
+static void Exception_Folder_Path(char * folder, size_t folder_size, char const * root, char const * prefix, SYSTEMTIME const & when)
+{
+	snprintf(folder, folder_size, "%s\\%s%04u%02u%02u-%02u%02u%02u-%u", root, prefix,
+				when.wYear, when.wMonth, when.wDay, when.wHour, when.wMinute, when.wSecond,
+				GetCurrentProcessId());
+}
+
+
 /// <summary>
 /// Creates the folder that holds every artifact for this crash.
 /// </summary>
@@ -1479,12 +1493,10 @@ static bool Copy_Log_Tail(void)
 static bool Create_Artifact_Folder(void)
 {
 	char root[MAX_PATH];
-	snprintf(root, sizeof(root), "%s\\Exceptions", ExecutableDirectory);
+	Exceptions_Root(root, sizeof(root));
 	CreateDirectoryA(root, NULL);
 
-	snprintf(ArtifactFolder, sizeof(ArtifactFolder), "%s\\exception-%04u%02u%02u-%02u%02u%02u-%u",
-				root, CrashTime.wYear, CrashTime.wMonth, CrashTime.wDay,
-				CrashTime.wHour, CrashTime.wMinute, CrashTime.wSecond, GetCurrentProcessId());
+	Exception_Folder_Path(ArtifactFolder, sizeof(ArtifactFolder), root, "exception-", CrashTime);
 
 	if (!CreateDirectoryA(ArtifactFolder, NULL) && GetLastError() != ERROR_ALREADY_EXISTS) {
 		// Somewhere to write beats nowhere. Beside the executable is where the player will
@@ -1638,12 +1650,10 @@ static bool Create_Stall_Folder(char * folder, unsigned folder_size)
 	GetLocalTime(&now);
 
 	char root[MAX_PATH];
-	snprintf(root, sizeof(root), "%s\\Exceptions", ExecutableDirectory);
+	Exceptions_Root(root, sizeof(root));
 	CreateDirectoryA(root, NULL);
 
-	snprintf(folder, folder_size, "%s\\exception-hang-%04u%02u%02u-%02u%02u%02u-%u",
-				root, now.wYear, now.wMonth, now.wDay, now.wHour, now.wMinute, now.wSecond,
-				GetCurrentProcessId());
+	Exception_Folder_Path(folder, folder_size, root, "exception-hang-", now);
 
 	if (!CreateDirectoryA(folder, NULL)) {
 		folder[0] = '\0';
@@ -2113,7 +2123,7 @@ static void Prune_Old_Artifact_Folders(void)
 	unsigned __int64 const cutoff = stamp - span;
 
 	char root[MAX_PATH];
-	snprintf(root, sizeof(root), "%s\\Exceptions", ExecutableDirectory);
+	Exceptions_Root(root, sizeof(root));
 
 	char pattern[MAX_PATH];
 	snprintf(pattern, sizeof(pattern), "%s\\exception-*", root);

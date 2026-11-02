@@ -110,6 +110,10 @@ bool Report_Mark_Decided(std::filesystem::path const & folder, bool queued);
 // .txt and .log files do: a full memory dump and every other file stay out.
 bool Report_Wanted_File(std::string const & name);
 
+// Fills the name, path and size of a report file from its path. Returns false, and leaves
+// out unchanged, when the path is empty, is not a regular file, or is not a file a report takes.
+bool Report_File_Entry(std::filesystem::path const & path, ReportFileType & out);
+
 // The files of a crash or hang folder that go in a report, in name order.
 std::vector<ReportFileType> Report_Folder_Files(std::filesystem::path const & folder);
 
