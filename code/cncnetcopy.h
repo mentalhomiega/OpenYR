@@ -92,6 +92,9 @@ std::string CNCNet_Default_Destination(std::string const & install, std::string 
 // True when a file can be created in the folder, or in the nearest folder above it that exists.
 bool CNCNet_Writable(std::string const & folder);
 
+// The byte count and the FNV-1a 64-bit hash of a file's contents. False when the file cannot be read.
+bool CNCNet_Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & hash);
+
 CNCNetStatusType CNCNet_Status(std::string const & install, std::string const & destination, std::string const & build);
 CNCNetPlanType CNCNet_Plan(std::string const & install, std::string const & destination, std::string const & build);
 

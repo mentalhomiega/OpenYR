@@ -404,6 +404,19 @@ int main(void)
 	Check(!Exists(big_copy), "a cancelled copy removes the folder it created");
 	Check(Exists(Join(big_install, "Maps\\big.bin")), "a cancelled copy leaves the install alone");
 
+	// The hash is FNV-1a 64-bit, so the copy marker's hash matches a standard tool's over the same bytes.
+	std::string const empty_file = Join(root, "hash-empty.bin");
+	std::string const letter_file = Join(root, "hash-a.bin");
+	Write_Text(empty_file, "");
+	Write_Text(letter_file, "a");
+	std::uint64_t hashed_size = 1;
+	std::uint64_t hashed = 0;
+	Check(CNCNet_Hash_File(empty_file, hashed_size, hashed) && hashed_size == 0 && hashed == 0xcbf29ce484222325ull,
+		"hash: an empty file has the FNV-1a 64-bit offset basis");
+	Check(CNCNet_Hash_File(letter_file, hashed_size, hashed) && hashed_size == 1 && hashed == 0xaf63dc4c8601ec8cull,
+		"hash: a one-byte file has the standard FNV-1a 64-bit hash");
+	Check(!CNCNet_Hash_File(Join(root, "hash-missing.bin"), hashed_size, hashed), "hash: a missing file is not hashed");
+
 	std::error_code ec;
 	fs::remove_all(root, ec);
 
