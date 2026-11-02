@@ -281,17 +281,17 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 
 // Adds the choices to the list and returns the index of the one with the current value, adding
 // the current value under its own label when the list does not have it.
-int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDisplayChoice> choices, int current, char const * format)
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format)
 {
 	int picked = -1;
-	for (UIDisplayChoice const & choice : choices) {
+	for (UIChoice const & choice : choices) {
 		if (choice.Value == current) {
 			picked = (int)list.size();
 		}
 		list.push_back(choice);
 	}
 	if (picked < 0) {
-		UIDisplayChoice choice;
+		UIChoice choice;
 		choice.Value = current;
 		char buffer[32];
 		std::snprintf(buffer, sizeof(buffer), format, current);
@@ -575,7 +575,7 @@ void UI_Display_State(UIDisplayState & state)
 	// The fewest rows when the saved count is below every choice.
 	state.RowCount = 0;
 	for (int value : _Service.Sidebar_Row_Counts(frame_height)) {
-		UIDisplayChoice choice;
+		UIChoice choice;
 		choice.Value = value;
 		choice.Label = std::to_string(value);
 		if (value <= Options.SidebarRows) {

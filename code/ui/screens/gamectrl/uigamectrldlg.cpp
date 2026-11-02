@@ -224,13 +224,13 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 		if (frames == current) {
 			state.Autosave = (int)state.Autosaves.size();
 		}
-		UIGameControlsChoice choice;
+		UIChoice choice;
 		choice.Value = frames;
 		choice.Label = (frames > 0) ? std::to_string(frames) + " frames" : std::string("Off");
 		state.Autosaves.push_back(choice);
 	}
 	if (state.Autosave < 0) {
-		UIGameControlsChoice choice;
+		UIChoice choice;
 		choice.Value = current;
 		choice.Label = std::to_string(current) + " frames";
 		state.Autosave = (int)state.Autosaves.size();

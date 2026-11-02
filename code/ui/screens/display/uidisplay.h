@@ -35,14 +35,6 @@ struct UIDisplayScale
 };
 
 
-// One entry of a list of settings values, such as a frame rate or a filter.
-struct UIDisplayChoice
-{
-	int Value = 0;
-	std::string Label;
-};
-
-
 class UIDisplayServiceClass
 {
 	public:
@@ -106,14 +98,14 @@ struct UIDisplayState
 	bool InGame = false;
 	bool BitmapSystemFont = false;
 	bool ShowFPS = false;
-	std::vector<UIDisplayChoice> FrameLimits;
+	std::vector<UIChoice> FrameLimits;
 	int FrameLimit = 0;
 	// The window sizes offered; the first is Match resolution, which leaves both dimensions at -1.
 	std::vector<UIDisplayMode> WindowSizes;
 	int WindowSize = 0;
 	// The player color view, as Options.PlayerColorView numbers it, and the choices the drop-down lists.
 	int PlayerColors = 0;
-	std::vector<UIDisplayChoice> PlayerColorChoices;
+	std::vector<UIChoice> PlayerColorChoices;
 	std::vector<UIDisplayScale> Scales;
 	int Scale = 0;
 	bool Fullscreen = false;
@@ -126,19 +118,19 @@ struct UIDisplayState
 	bool WaterRipples = false;
 	bool CloudShadows = false;
 	bool Weather = false;
-	std::vector<UIDisplayChoice> Filters;
+	std::vector<UIChoice> Filters;
 	int Filter = 0;
-	std::vector<UIDisplayChoice> FrameRates;
+	std::vector<UIChoice> FrameRates;
 	int FrameRate = 0;
-	std::vector<UIDisplayChoice> CursorScales;
+	std::vector<UIChoice> CursorScales;
 	int CursorScale = 0;
-	std::vector<UIDisplayChoice> MenuThemes;
+	std::vector<UIChoice> MenuThemes;
 	int MenuTheme = 0;
 	// The battle drawn behind the modern menus, from the MenuBattle setting.
 	bool MenuBattle = true;
-	std::vector<UIDisplayChoice> Renderers;
+	std::vector<UIChoice> Renderers;
 	int Renderer = 0;
-	std::vector<UIDisplayChoice> HDROutputs;
+	std::vector<UIChoice> HDROutputs;
 	int HDROutput = 0;
 	// The paper white and peak brightness on the sliders, in nits.
 	int PaperWhite = 0;
@@ -151,14 +143,14 @@ struct UIDisplayState
 	// Whether the emissive highlights are on, as 0 or 1.
 	int Highlights = 0;
 	// The colour-blind mode, as an index into ColorBlindModes, and how strongly it applies, in percent.
-	std::vector<UIDisplayChoice> ColorBlindModes;
+	std::vector<UIChoice> ColorBlindModes;
 	int ColorBlindMode = 0;
 	int ColorBlindStrength = 100;
 	// The brightness in percent, and the gamma in hundredths, with the gamma text the page shows.
 	int Brightness = 100;
 	int Gamma = 100;
 	std::string GammaLabel;
-	std::vector<UIDisplayChoice> RowCounts;
+	std::vector<UIChoice> RowCounts;
 	int RowCount = 0;
 	// How solid the modern build panel's background is, in percent, from the SidebarOpacity setting.
 	int SidebarOpacity = 0;

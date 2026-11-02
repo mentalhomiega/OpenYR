@@ -66,19 +66,12 @@ struct UIScenarioRow
 };
 
 
-/// One choice of the player count filter. Value 0 stands for any number of players.
-struct UIScenarioCount
-{
-	std::string Label;
-	int Value = 0;
-};
-
-
 struct UIScenarioState
 {
 	std::vector<UIScenarioEntry> Entries;
 	std::vector<UIScenarioRow> Rows;
-	std::vector<UIScenarioCount> Counts;
+	// The player count filter. Value 0 stands for any number of players.
+	std::vector<UIChoice> Counts;
 
 	// The map highlighted, as a place in Entries.
 	int Selected = 0;

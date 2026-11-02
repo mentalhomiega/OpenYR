@@ -50,7 +50,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
 			Rml::StructHandle<UIBrowserRow> row = model.RegisterStruct<UIBrowserRow>();
-			Rml::StructHandle<UIBrowserOption> option = model.RegisterStruct<UIBrowserOption>();
+			Rml::StructHandle<UIChoice> option = model.RegisterStruct<UIChoice>();
 			if (!row || !option) {
 				return(false);
 			}
@@ -59,12 +59,12 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			row.RegisterMember("disabled", &UIBrowserRow::Disabled);
 			row.RegisterMember("index", &UIBrowserRow::Index);
 			row.RegisterMember("text", &UIBrowserRow::Text);
-			option.RegisterMember("label", &UIBrowserOption::Label);
-			option.RegisterMember("value", &UIBrowserOption::Value);
+			option.RegisterMember("label", &UIChoice::Label);
+			option.RegisterMember("value", &UIChoice::Value);
 
 			UIMissionBrowserState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIBrowserRow>>()
-				&& model.RegisterArray<std::vector<UIBrowserOption>>()
+				&& model.RegisterArray<std::vector<UIChoice>>()
 				&& model.Bind("rows", &state.Rows)
 				&& model.Bind("difficulties", &state.Difficulties)
 				&& model.Bind("difficulty", &state.Difficulty)

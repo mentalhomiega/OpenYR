@@ -224,14 +224,14 @@ class UIGameControlsViewClass : public UIRmlViewClass
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
-			Rml::StructHandle<UIGameControlsChoice> choice = model.RegisterStruct<UIGameControlsChoice>();
+			Rml::StructHandle<UIChoice> choice = model.RegisterStruct<UIChoice>();
 			if (!choice) {
 				return(false);
 			}
-			choice.RegisterMember("label", &UIGameControlsChoice::Label);
+			choice.RegisterMember("label", &UIChoice::Label);
 
 			UIGameControlsState & state = Data.State;
-			return(model.RegisterArray<std::vector<UIGameControlsChoice>>()
+			return(model.RegisterArray<std::vector<UIChoice>>()
 				&& model.Bind("speed", &state.Speed)
 				&& model.Bind("scroll", &state.Scroll)
 				&& model.Bind("detail", &state.Detail)

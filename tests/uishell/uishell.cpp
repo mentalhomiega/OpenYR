@@ -2942,7 +2942,7 @@ void Register_Test_Sidebar_Rows_Mock(void)
 void Test_Sidebar_Rows_Presenter(void)
 {
 	Register_Test_Sidebar_Rows_Mock();
-	std::vector<UIDisplayChoice> const few = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
+	std::vector<UIChoice> const few = { { 1, "1" }, { 2, "2" }, { 4, "4" } };
 
 	{
 		RecordingDisplayServiceClass service;

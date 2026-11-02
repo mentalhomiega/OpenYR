@@ -31,6 +31,14 @@ struct UIIntent
 };
 
 
+// One entry of a list of settings values, such as a frame rate, a filter or a mission difficulty.
+struct UIChoice
+{
+	int Value = 0;
+	std::string Label;
+};
+
+
 /// <summary>
 /// The pages of the tabbed Settings screen the modern menu style uses in place of separate
 /// option screens.
