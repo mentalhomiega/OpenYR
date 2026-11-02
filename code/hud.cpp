@@ -635,6 +635,5 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 
 std::string Panel_Text(char const * label, char const * fallback)
 {
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
+	return(StringTable.Find_UTF8(label, fallback));
 }
