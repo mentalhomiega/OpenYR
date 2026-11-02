@@ -171,6 +171,16 @@ bool VeterancyClass::Is_Elite(void) const
 
 
 /// <summary>
+/// The rank index that displays and rank-up checks use.
+/// </summary>
+/// <returns>int; 2 for elite, 1 for veteran, 0 otherwise (rookie or dumbass).</returns>
+int VeterancyClass::Rank(void) const
+{
+	return(Is_Elite() ? 2 : (Is_Veteran() ? 1 : 0));
+}
+
+
+/// <summary>
 /// Fetches the multiplier this veterancy applies to a unit statistic.
 /// Callers hand over the per-rank bonus from the rules and scale whatever statistic is
 /// being adjusted -- firepower, armor and the like -- by the result. A unit with

@@ -3911,7 +3911,7 @@ void TechnoClass::AI(void)
 	 * A rank gained is announced to the player, and an object that has become elite flashes
 	 * (TechnoClass::Update, 0x6F9E50).
 	 */
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	if (rank != CurrentRank) {
 		if (CurrentRank != -1 && rank > 0) {
 			if (House->Is_Player_Control()) {
@@ -7310,7 +7310,7 @@ void TechnoClass::Pay_Bounty(TechnoClass * source) const
 		return;
 	}
 
-	int const rank = Veterancy.Is_Elite() ? 2 : (Veterancy.Is_Veteran() ? 1 : 0);
+	int const rank = Veterancy.Rank();
 	int const value = TClass->BountyValue[rank];
 	if (value > 0) {
 		source->House->Refund_Money(value);
