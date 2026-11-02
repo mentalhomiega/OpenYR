@@ -9611,6 +9611,10 @@ void HouseClass::Activate_Threat_Node(void)
 /// <param name="naval">Whether the unit type's factory is the ship factory rather than the vehicle factory.</param>
 void HouseClass::Update_Factories(RTTIType rtti, bool naval)
 {
+	if (rtti == RTTI_NONE) {
+		return;
+	}
+
 	// A building type has a structure factory and a defense factory; both are brought up to date.
 	int const slots = (rtti == RTTI_BUILDINGTYPE) ? 2 : 1;
 

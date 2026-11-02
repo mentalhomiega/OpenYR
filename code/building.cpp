@@ -2362,9 +2362,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			House->SecretLabs.Add(this);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		// Placing a construction yard recomputes the base edge; gamemd reaches it from BuildingClass::Unlimbo (0x440580) through 0x448070.
 		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
@@ -3985,9 +3983,7 @@ bool BuildingClass::Limbo(void)
 			}
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (Class == Rule->GDIFirestormGenerator) {
 			House->Lost_Firestorm_Generator();
@@ -5212,10 +5208,8 @@ bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capt
 			newowner->SecretLabs.Add(this);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-			newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+		newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
 		// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
 		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
 			newowner->Update_Base_Edge(this);
@@ -9617,9 +9611,7 @@ void BuildingClass::Turn_On(void)
 		House->IsRecalcNeeded = true;
 		Power_On();
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (House->Is_Player_Control()) {
 			Speak(VOX_BUILDING_ONLINE);
@@ -9648,9 +9640,7 @@ void BuildingClass::Turn_Off(void)
 			Speak(VOX_BUILDING_OFFLINE);
 		}
 
-		if (Class->ToBuild != RTTI_NONE) {
-			House->Update_Factories(Class->ToBuild, Class->IsNaval);
-		}
+		House->Update_Factories(Class->ToBuild, Class->IsNaval);
 
 		if (Class == Rule->GDIFirestormGenerator) {
 			House->Lost_Firestorm_Generator();
