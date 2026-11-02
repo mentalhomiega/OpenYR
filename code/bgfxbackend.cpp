@@ -455,10 +455,7 @@ static void Set_View_Transform(bgfx::ViewId view, int width, int height)
 /// </summary>
 static void Destroy_Prescale_Target(void)
 {
-	if (bgfx::isValid(_PrescaleTarget)) {
-		bgfx::destroy(_PrescaleTarget);
-		_PrescaleTarget = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_PrescaleTarget);
 	_PrescaleWidth = 0;
 	_PrescaleHeight = 0;
 }
@@ -494,10 +491,7 @@ static bool Ensure_Prescale_Target(int width, int height)
 
 static void Destroy_Mask(BackendMask & mask)
 {
-	if (bgfx::isValid(mask.Handle)) {
-		bgfx::destroy(mask.Handle);
-	}
-	mask.Handle = BGFX_INVALID_HANDLE;
+	Release_Handle(mask.Handle);
 	mask.Width = 0;
 	mask.Height = 0;
 	mask.Uploaded = false;
@@ -670,18 +664,9 @@ static bool Submit_Mask(bgfx::TextureHandle texture, float x, float y, float wid
 static void Destroy_Layer(void)
 {
 	Destroy_Mask(_LayerMask);
-	if (bgfx::isValid(_LayerTexture)) {
-		bgfx::destroy(_LayerTexture);
-		_LayerTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_KeyedFrameTexture)) {
-		bgfx::destroy(_KeyedFrameTexture);
-		_KeyedFrameTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_KeyedMaskTexture)) {
-		bgfx::destroy(_KeyedMaskTexture);
-		_KeyedMaskTexture = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_LayerTexture);
+	Release_Handle(_KeyedFrameTexture);
+	Release_Handle(_KeyedMaskTexture);
 	_LayerWidth = 0;
 	_LayerHeight = 0;
 	_LayerUploaded = false;
@@ -705,9 +690,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 	}
 
 	if (!bgfx::isValid(_LayerTexture) || _LayerWidth != layer.Width || _LayerHeight != layer.Height) {
-		if (bgfx::isValid(_LayerTexture)) {
-			bgfx::destroy(_LayerTexture);
-		}
+		Release_Handle(_LayerTexture);
 		Destroy_Mask(_LayerMask);
 
 		const bgfx::Caps * caps = bgfx::getCaps();
@@ -913,21 +896,11 @@ static unsigned int Reset_Flags(bool vsync, bool hdr)
 /// </summary>
 static void Destroy_Targets(void)
 {
-	if (bgfx::isValid(_SceneTarget)) {
-		bgfx::destroy(_SceneTarget);
-		_SceneTarget = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ShotTarget)) {
-		bgfx::destroy(_ShotTarget);
-		_ShotTarget = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskTarget)) {
-		bgfx::destroy(_MaskTarget);
-		_MaskTarget = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_SceneTarget);
+	Release_Handle(_ShotTarget);
+	Release_Handle(_MaskTarget);
 	if (!_ReadbackPending && bgfx::isValid(_ReadbackTexture)) {
-		bgfx::destroy(_ReadbackTexture);
-		_ReadbackTexture = BGFX_INVALID_HANDLE;
+		Release_Handle(_ReadbackTexture);
 		_ReadbackPixels.clear();
 	}
 }
@@ -1256,42 +1229,15 @@ void Backend_Shutdown(void)
 	Destroy_Targets();
 	Destroy_Mask(_FrameMask);
 
-	if (bgfx::isValid(_FrameTexture)) {
-		bgfx::destroy(_FrameTexture);
-		_FrameTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_TextureSampler)) {
-		bgfx::destroy(_TextureSampler);
-		_TextureSampler = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_Program)) {
-		bgfx::destroy(_Program);
-		_Program = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_CompositeProgram)) {
-		bgfx::destroy(_CompositeProgram);
-		_CompositeProgram = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_CompositeLevels)) {
-		bgfx::destroy(_CompositeLevels);
-		_CompositeLevels = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ColourMatrix)) {
-		bgfx::destroy(_ColourMatrix);
-		_ColourMatrix = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ColourTone)) {
-		bgfx::destroy(_ColourTone);
-		_ColourTone = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskSampler)) {
-		bgfx::destroy(_MaskSampler);
-		_MaskSampler = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskLevels)) {
-		bgfx::destroy(_MaskLevels);
-		_MaskLevels = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_FrameTexture);
+	Release_Handle(_TextureSampler);
+	Release_Handle(_Program);
+	Release_Handle(_CompositeProgram);
+	Release_Handle(_CompositeLevels);
+	Release_Handle(_ColourMatrix);
+	Release_Handle(_ColourTone);
+	Release_Handle(_MaskSampler);
+	Release_Handle(_MaskLevels);
 
 	bgfx::shutdown();
 
@@ -1324,10 +1270,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 		return(true);
 	}
 
-	if (bgfx::isValid(_FrameTexture)) {
-		bgfx::destroy(_FrameTexture);
-		_FrameTexture = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_FrameTexture);
 	Destroy_Layer();
 	Destroy_Mask(_FrameMask);
 

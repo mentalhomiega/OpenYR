@@ -259,48 +259,32 @@ static bool Start(void)
 static void Destroy_Target(void)
 {
 	if (bgfx::isValid(_PostTarget)) {
-		bgfx::destroy(_PostTarget);
-		_PostTarget = BGFX_INVALID_HANDLE;
+		Release_Handle(_PostTarget);
 		_PostTexture = BGFX_INVALID_HANDLE;
 	}
 	_PostShown = false;
 	_TargetDrawn = false;
 	for (int i = 0; i < 2; i++) {
 		if (bgfx::isValid(_GlowTarget[i])) {
-			bgfx::destroy(_GlowTarget[i]);
-			_GlowTarget[i] = BGFX_INVALID_HANDLE;
+			Release_Handle(_GlowTarget[i]);
 			_GlowTexture[i] = BGFX_INVALID_HANDLE;
 		}
 	}
-	if (bgfx::isValid(_GlowMask)) {
-		bgfx::destroy(_GlowMask);
-		_GlowMask = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_GlowMask);
 	_GlowMaskTracked = false;
 	for (int i = 0; i < 2; i++) {
 		if (bgfx::isValid(_ShadowTarget[i])) {
-			bgfx::destroy(_ShadowTarget[i]);
-			_ShadowTarget[i] = BGFX_INVALID_HANDLE;
+			Release_Handle(_ShadowTarget[i]);
 			_ShadowTexture[i] = BGFX_INVALID_HANDLE;
 		}
 	}
 	if (bgfx::isValid(_Target)) {
-		bgfx::destroy(_Target);
-		_Target = BGFX_INVALID_HANDLE;
+		Release_Handle(_Target);
 		_TargetTexture = BGFX_INVALID_HANDLE;
 	}
-	if (bgfx::isValid(_Readback)) {
-		bgfx::destroy(_Readback);
-		_Readback = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_Snapshot)) {
-		bgfx::destroy(_Snapshot);
-		_Snapshot = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_TileShadow)) {
-		bgfx::destroy(_TileShadow);
-		_TileShadow = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_Readback);
+	Release_Handle(_Snapshot);
+	Release_Handle(_TileShadow);
 	_TileShadowTracked = false;
 	_TargetWidth = 0;
 	_TargetHeight = 0;
@@ -374,9 +358,7 @@ static Store _Stores[SLOT_COUNT];
 static void Destroy_Stores(void)
 {
 	for (Store & store : _Stores) {
-		if (bgfx::isValid(store.Handle)) {
-			bgfx::destroy(store.Handle);
-		}
+		Release_Handle(store.Handle);
 		store = Store();
 	}
 }
@@ -391,9 +373,7 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 	}
 	store.Tracked = false;
 	if (!bgfx::isValid(store.Handle) || store.Width != width || store.Height < rows || (exact && store.Height != rows)) {
-		if (bgfx::isValid(store.Handle)) {
-			bgfx::destroy(store.Handle);
-		}
+		Release_Handle(store.Handle);
 		int const height = exact ? rows : std::min(TEXTURE_LIMIT, std::max(rows, store.Height) * 2);
 		store.Handle = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, format, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 		store.Width = width;
@@ -421,9 +401,7 @@ static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes
 	}
 	store.Tracked = false;
 	if (!bgfx::isValid(store.Handle) || store.Width != ARENA_WIDTH || store.Height < ATLAS_ROWS + rows) {
-		if (bgfx::isValid(store.Handle)) {
-			bgfx::destroy(store.Handle);
-		}
+		Release_Handle(store.Handle);
 		int const height = std::min(TEXTURE_LIMIT, std::max(ATLAS_ROWS + rows, store.Height) * 2);
 		store.Handle = bgfx::createTexture2D((uint16_t)ARENA_WIDTH, (uint16_t)height, false, 1, bgfx::TextureFormat::R8, BGFX_SAMPLER_POINT | BGFX_SAMPLER_UVW_CLAMP);
 		store.Width = ARENA_WIDTH;
@@ -1224,16 +1202,6 @@ void GpuMap_Release_References(void)
 	if (_Referenced) {
 		bgfx::frame();
 		_Referenced = false;
-	}
-}
-
-
-template<class Handle>
-static void Release_Handle(Handle & handle)
-{
-	if (bgfx::isValid(handle)) {
-		bgfx::destroy(handle);
-		handle = BGFX_INVALID_HANDLE;
 	}
 }
 
