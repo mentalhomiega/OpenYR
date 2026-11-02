@@ -1199,12 +1199,6 @@ bool FootClass::Is_Chrono_Warping(void) const
 
 
 /// <summary>
-/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
-/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
-/// way through. The place is not checked: the caller sees to what stands there.
-/// </summary>
-/// <param name="dest">Where the object goes.</param>
-/// <summary>
 /// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
 /// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
@@ -1238,6 +1232,12 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 }
 
 
+/// <summary>
+/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
+/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
+/// way through. The place is not checked: the caller sees to what stands there.
+/// </summary>
+/// <param name="dest">Where the object goes.</param>
 void FootClass::Teleport_To(Coord dest)
 {
 	CellClass * cellptr = &Map[dest.As_Cell()];

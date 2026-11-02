@@ -3375,27 +3375,6 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 }
 
 
-/***********************************************************************************************
- * UnitClass::Draw_It -- Draws a unit object.                                                  *
- *                                                                                             *
- *    This routine is the one that actually draws a unit object. It displays the unit          *
- *    according to its current state flags and centered at the location specified.             *
- *                                                                                             *
- * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
- *                                                                                             *
- *          window   -- The clipping window to use.                                            *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/20/1994 JLB : Created.                                                                 *
- *   06/27/1994 JLB : Takes a window parameter.                                                *
- *   08/15/1994 JLB : Removed infantry support.                                                *
- *   01/07/1995 JLB : Harvester animation support.                                             *
- *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
- *=============================================================================================*/
 /// <summary>
 /// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
 /// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
@@ -3541,6 +3520,27 @@ int UnitClass::Mirage_Shimmer_Flags(void) const
 }
 
 
+/***********************************************************************************************
+ * UnitClass::Draw_It -- Draws a unit object.                                                  *
+ *                                                                                             *
+ *    This routine is the one that actually draws a unit object. It displays the unit          *
+ *    according to its current state flags and centered at the location specified.             *
+ *                                                                                             *
+ * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
+ *                                                                                             *
+ *          window   -- The clipping window to use.                                            *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/20/1994 JLB : Created.                                                                 *
+ *   06/27/1994 JLB : Takes a window parameter.                                                *
+ *   08/15/1994 JLB : Removed infantry support.                                                *
+ *   01/07/1995 JLB : Harvester animation support.                                             *
+ *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
+ *=============================================================================================*/
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage is drawn as its terrain while Is_Shown_As_Terrain_To says the viewer sees it so.
