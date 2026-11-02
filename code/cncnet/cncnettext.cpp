@@ -9,6 +9,8 @@
 
 #include "cncnet/cncnettext.h"
 
+#include <algorithm>
+#include <cctype>
 #include <charconv>
 
 
@@ -34,4 +36,28 @@ std::optional<int> CnCNet_Parse_Int(std::string_view text)
 		return(std::nullopt);
 	}
 	return(value);
+}
+
+
+bool CnCNet_Equals_No_Case(std::string_view left, std::string_view right)
+{
+	return(std::equal(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
+		return(std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)));
+	}));
+}
+
+
+bool CnCNet_Less_No_Case(std::string_view left, std::string_view right)
+{
+	return(std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
+		return(std::tolower(static_cast<unsigned char>(a)) < std::tolower(static_cast<unsigned char>(b)));
+	}));
+}
+
+
+std::string CnCNet_Lower(std::string_view text)
+{
+	std::string lowered(text);
+	std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) { return(static_cast<char>(std::tolower(c))); });
+	return(lowered);
 }

@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "cncnetcopy.h"
+#include "cncnet/cncnettext.h"
 
 #include "win.h"
 
@@ -56,12 +57,6 @@ bool Is_Folder(std::string const & path)
 {
 	std::error_code ec;
 	return(fs::is_directory(Path(path), ec));
-}
-
-
-bool Same_Text(std::string const & left, std::string const & right)
-{
-	return(_stricmp(left.c_str(), right.c_str()) == 0);
 }
 
 
@@ -207,7 +202,7 @@ bool Ini_Value(std::vector<std::string> const & lines, char const * section, std
 	for (std::string const & line : lines) {
 		std::string name;
 		if (Section_Name(line, name)) {
-			inside = Same_Text(name, section);
+			inside = CnCNet_Equals_No_Case(name, section);
 			continue;
 		}
 		std::string current;
@@ -236,7 +231,7 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 	std::size_t header = std::string::npos;
 	for (std::size_t index = 0; index < lines.size(); index++) {
 		std::string name;
-		if (Section_Name(lines[index], name) && Same_Text(name, section)) {
+		if (Section_Name(lines[index], name) && CnCNet_Equals_No_Case(name, section)) {
 			header = index;
 			break;
 		}
@@ -284,7 +279,7 @@ bool List_Has(std::string const & list, std::string const & item)
 		if (comma == std::string::npos) {
 			comma = list.size();
 		}
-		if (Same_Text(Trim(list.substr(start, comma - start)), item)) {
+		if (CnCNet_Equals_No_Case(Trim(list.substr(start, comma - start)), item)) {
 			return(true);
 		}
 		start = comma + 1;
@@ -556,7 +551,7 @@ bool Install_Engine(RunType & run, std::string const & build, std::string const 
 	fs::path stock;
 	for (fs::directory_iterator it(Path(destination), ec), end; !ec && it != end; it.increment(ec)) {
 		std::error_code entry_ec;
-		if (it->is_regular_file(entry_ec) && Same_Text(it->path().filename().string(), "game.exe")) {
+		if (it->is_regular_file(entry_ec) && CnCNet_Equals_No_Case(it->path().filename().string(), "game.exe")) {
 			stock = it->path();
 			break;
 		}
@@ -694,7 +689,7 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 	std::error_code ec;
 	for (fs::directory_iterator it(Path(destination) / UPDATER_DIR, ec), end; !ec && it != end; it.increment(ec)) {
 		std::string const name = it->path().filename().string();
-		if (_strnicmp(name.c_str(), "UpdaterConfig_", 14) == 0 && name.size() > 4 && Same_Text(name.substr(name.size() - 4), ".ini")) {
+		if (_strnicmp(name.c_str(), "UpdaterConfig_", 14) == 0 && name.size() > 4 && CnCNet_Equals_No_Case(name.substr(name.size() - 4), ".ini")) {
 			files.push_back(it->path().string());
 		}
 	}
@@ -812,7 +807,7 @@ bool Is_Inside(std::string const & path, std::string const & folder)
 	fs::path const outer = Path(folder).lexically_normal();
 	auto part = inside.begin();
 	for (auto outer_part = outer.begin(); outer_part != outer.end(); ++outer_part, ++part) {
-		if (part == inside.end() || !Same_Text(part->string(), outer_part->string())) {
+		if (part == inside.end() || !CnCNet_Equals_No_Case(part->string(), outer_part->string())) {
 			return(false);
 		}
 	}
@@ -866,7 +861,7 @@ std::string CNCNet_Registry_Install_Folder(void)
 
 		value[sizeof(value) - 1] = '\0';
 		std::string path = value;
-		if (path.size() >= 4 && Same_Text(path.substr(path.size() - 4), ".exe")) {
+		if (path.size() >= 4 && CnCNet_Equals_No_Case(path.substr(path.size() - 4), ".exe")) {
 			path = Path(path).parent_path().string();
 		}
 		if (!path.empty()) {
@@ -946,7 +941,7 @@ std::vector<std::string> CNCNet_Find_Installs(std::string const & build)
 			return;
 		}
 		for (std::string const & seen : found) {
-			if (Same_Text(seen, folder)) {
+			if (CnCNet_Equals_No_Case(seen, folder)) {
 				return;
 			}
 		}

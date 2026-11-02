@@ -12,6 +12,7 @@
 #include "cncnet/cncnetroom.h"
 #include "ui/screens/cncnetlobby/uicncnetroom.h"
 #include "cncnet/cncnetsession.h"
+#include "cncnet/cncnettext.h"
 #include "ui/rml/rmlview.h"
 
 #include <algorithm>
@@ -26,16 +27,9 @@ namespace
 std::size_t const MAX_SAY = 400;
 
 
-std::string Lower(std::string text)
-{
-	std::transform(text.begin(), text.end(), text.begin(), [](unsigned char c) { return(static_cast<char>(std::tolower(c))); });
-	return(text);
-}
-
-
 bool Contains(std::string const & haystack, std::string const & needle)
 {
-	return(needle.empty() || Lower(haystack).find(Lower(needle)) != std::string::npos);
+	return(needle.empty() || CnCNet_Lower(haystack).find(CnCNet_Lower(needle)) != std::string::npos);
 }
 
 
@@ -258,7 +252,7 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 		if (a->Listing.Players.size() != b->Listing.Players.size()) {
 			return(a->Listing.Players.size() > b->Listing.Players.size());
 		}
-		return(Lower(a->Listing.RoomName) < Lower(b->Listing.RoomName));
+		return(CnCNet_Lower(a->Listing.RoomName) < CnCNet_Lower(b->Listing.RoomName));
 	});
 
 	State.Games.clear();

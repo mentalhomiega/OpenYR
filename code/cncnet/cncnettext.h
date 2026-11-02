@@ -12,6 +12,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -22,3 +23,12 @@ std::vector<std::string_view> CnCNet_Split(std::string_view text, char separator
 
 // Reads the whole text as a decimal int. Returns nothing unless the text is an optional minus sign and digits that fit an int.
 std::optional<int> CnCNet_Parse_Int(std::string_view text);
+
+// Compares texts byte by byte after tolower, so only the C locale's letters fold case.
+bool CnCNet_Equals_No_Case(std::string_view left, std::string_view right);
+
+// Orders texts with the same folding as CnCNet_Equals_No_Case.
+bool CnCNet_Less_No_Case(std::string_view left, std::string_view right);
+
+// Returns the text with each byte passed through tolower.
+std::string CnCNet_Lower(std::string_view text);

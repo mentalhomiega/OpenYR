@@ -87,13 +87,6 @@ std::string Yes_No(std::map<std::string, std::string> const & options, char cons
 }
 
 
-bool Name_Less(std::string const & left, std::string const & right)
-{
-	return(std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
-		return(std::tolower(static_cast<unsigned char>(a)) < std::tolower(static_cast<unsigned char>(b)));
-	}));
-}
-
 }
 
 
@@ -356,7 +349,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		if (left->Color != right->Color) {
 			return(left->Color < right->Color);
 		}
-		return(Name_Less(left->Name, right->Name));
+		return(CnCNet_Less_No_Case(left->Name, right->Name));
 	});
 
 	ini += "\n[SpawnLocations]\n";

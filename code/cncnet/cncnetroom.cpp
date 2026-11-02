@@ -763,8 +763,7 @@ int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const
 	}
 	for (std::size_t index = 0; index < local_files.size(); ++index) {
 		std::string const & file = local_files[index];
-		if (file.size() == named.size() && std::equal(file.begin(), file.end(), named.begin(),
-				[](char a, char b) { return(std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b))); })) {
+		if (CnCNet_Equals_No_Case(file, named)) {
 			return(static_cast<int>(index));
 		}
 	}

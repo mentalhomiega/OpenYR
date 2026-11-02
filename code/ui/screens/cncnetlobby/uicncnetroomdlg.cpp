@@ -20,6 +20,7 @@
 #include "cncnet/cncnetsession.h"
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnetspawn.h"
+#include "cncnet/cncnettext.h"
 #include "cncnet/cncnettunnel.h"
 #include "cncnet/cncnettunnelchoice.h"
 #include "conquer.h"
@@ -86,17 +87,6 @@ int Option_Int(std::map<std::string, std::string> const & options, char const * 
 bool Option_Bool(std::map<std::string, std::string> const & options, char const * key, bool fallback)
 {
 	return(Option_Int(options, key, fallback ? 1 : 0) != 0);
-}
-
-
-bool Same_File(char const * a, char const * b)
-{
-	for (; *a != '\0' && *b != '\0'; ++a, ++b) {
-		if (std::tolower(static_cast<unsigned char>(*a)) != std::tolower(static_cast<unsigned char>(*b))) {
-			return(false);
-		}
-	}
-	return(*a == *b);
 }
 
 
@@ -472,7 +462,7 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 			MapMissing = true;
 		} else {
 			MapMissing = false;
-			if (!Same_File(Session.Scenarios[index]->Get_Filename(), Session.ScenarioFileName)) {
+			if (!CnCNet_Equals_No_Case(Session.Scenarios[index]->Get_Filename(), Session.ScenarioFileName)) {
 				Session.Options.ScenarioIndex = index;
 				Select_Scenario_Session(index);
 			}

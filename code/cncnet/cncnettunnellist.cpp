@@ -65,13 +65,6 @@ int Number(std::string_view text)
 }
 
 
-bool Same_Name(std::string_view a, std::string_view b)
-{
-	return(std::equal(a.begin(), a.end(), b.begin(), b.end(),
-		[](char x, char y) { return(std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y))); }));
-}
-
-
 // An address written as four numbers; nothing for any other text.
 std::optional<uint32_t> Literal_IPv4(std::string const & text)
 {
@@ -277,7 +270,7 @@ CnCNetTunnelCheckType CnCNet_Check_Tunnel(std::vector<CnCNetTunnelEntryType> con
 	}
 
 	for (CnCNetTunnelEntryType const & tunnel : listed) {
-		if (tunnel.Port == port && Same_Name(tunnel.Host, host)) {
+		if (tunnel.Port == port && CnCNet_Equals_No_Case(tunnel.Host, host)) {
 			check.Result = CnCNetTunnelListing::LISTED;
 			return(check);
 		}
@@ -358,9 +351,9 @@ bool CnCNet_Is_Local_Relay(std::string_view configured, std::string_view host, u
 		return(false);
 	}
 	std::string_view const configured_host = configured.substr(0, colon);
-	if (!Same_Name(configured_host, "127.0.0.1") && !Same_Name(configured_host, "localhost")) {
+	if (!CnCNet_Equals_No_Case(configured_host, "127.0.0.1") && !CnCNet_Equals_No_Case(configured_host, "localhost")) {
 		return(false);
 	}
 	int const configured_port = Number(configured.substr(colon + 1));
-	return(configured_port > 0 && configured_port == port && Same_Name(configured_host, host));
+	return(configured_port > 0 && configured_port == port && CnCNet_Equals_No_Case(configured_host, host));
 }
