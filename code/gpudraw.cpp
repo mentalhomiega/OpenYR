@@ -467,7 +467,8 @@ static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & pict
 static void Replay(std::vector<unsigned short> & picture)
 {
 	for (GpuBlit const & blit : _List.Blits) {
-		if (blit.Colour >= 0) {
+		GpuBlitClass const blitclass = blit.Class();
+		if (blitclass == GPU_BLIT_FILL) {
 			Rect const fill = Intersect(_Area, Rect(blit.X, blit.Y, blit.Width, blit.Height));
 			for (int y = fill.Y; y < fill.Y + fill.Height; y++) {
 				for (int x = fill.X; x < fill.X + fill.Width; x++) {
@@ -476,11 +477,11 @@ static void Replay(std::vector<unsigned short> & picture)
 			}
 			continue;
 		}
-		if (blit.Brighten >= 0) {
+		if (blitclass == GPU_BLIT_LIGHT) {
 			Replay_Brighten(blit, picture);
 			continue;
 		}
-		if (blit.Line >= 0) {
+		if (blitclass == GPU_BLIT_LINE) {
 			Replay_Line(blit, picture);
 			continue;
 		}
@@ -952,10 +953,11 @@ static bool Finish_Render(Surface & target)
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
-			if (blit.Line >= 0) {
+			GpuBlitClass const blitclass = blit.Class();
+			if (blitclass == GPU_BLIT_LINE) {
 				return(blit.LineKind == GPU_LINE_ANTIALIASED);
 			}
-			return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind != BlitDesc::DARKEN && blit.Desc.AlphaRemap != NULL);
+			return(blitclass == GPU_BLIT_IMAGE && blit.Desc.AlphaRemap != NULL);
 		});
 		GpuMapPass pass;
 		pass.Area = _Area;

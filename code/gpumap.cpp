@@ -667,7 +667,7 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		quad++;
 	}
 	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Desc.Kind != BlitDesc::DARKEN) {
+		if (blit.Class() != GPU_BLIT_SHADOW) {
 			continue;
 		}
 		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, 0.0f, -1.0f };
@@ -743,7 +743,7 @@ static void Submit_Glow(GpuMapPass const & pass, Rect const & area)
 static int Count_Shadow_Blits(GpuDrawList const & list)
 {
 	return((int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
-		return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN);
+		return(blit.Class() == GPU_BLIT_SHADOW);
 	}));
 }
 
@@ -811,7 +811,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	std::vector<unsigned short> alut;
 	for (GpuBlit const & blit : list.Blits) {
 		BlitDesc const & desc = blit.Desc;
-		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Line >= 0 || desc.Kind == BlitDesc::DARKEN) {
+		if (blit.Class() != GPU_BLIT_IMAGE) {
 			continue;
 		}
 		int const rows = Translator_Rows(desc.AlphaRemap, bandrows);
@@ -914,42 +914,50 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		float const t3[4] = { 0.0f, -1.0f, (float)(shadowed ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
 		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
 	}
+	// The shader kind of each blit's quad, which the draw loop below reads back.
+	std::vector<int> kinds(list.Blits.size(), KIND_BASE);
 	for (std::size_t i = 0; i < list.Blits.size(); i++) {
 		GpuBlit const & blit = list.Blits[i];
 		BlitDesc const & desc = blit.Desc;
-		if (blit.Brighten >= 0) {
+		GpuBlitClass const blitclass = blit.Class();
+		if (blitclass == GPU_BLIT_LIGHT) {
 			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_BRIGHTEN;
 			continue;
 		}
-		if (blit.Line >= 0) {
+		if (blitclass == GPU_BLIT_LINE) {
 			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_LINE + blit.LineKind;
 			continue;
 		}
-		if (blit.Colour >= 0) {
+		if (blitclass == GPU_BLIT_FILL) {
 			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
 			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
 			float const t3[4] = { 0.0f, -1.0f, (float)KIND_PIXEL, 0.0f };
 			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_PIXEL;
 			continue;
 		}
 		float lutfirst = 0.0f;
 		float alutrow = -1.0f;
-		if (desc.Kind != BlitDesc::DARKEN) {
+		if (blitclass == GPU_BLIT_IMAGE) {
 			lutfirst = (float)lutrow[desc.Translator].first;
 			if (desc.AlphaRemap != NULL) {
 				int const level = std::max(blit.AlphaLevel, 0);
 				alutrow = (float)(alutbase[desc.AlphaRemap] + std::min((261 * level) >> 11, 254));
 			}
 		}
+		int const kind = Shader_Kind(desc);
+		kinds[i] = kind;
 		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, lutfirst, alutrow };
 		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
-		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)Shader_Kind(desc), desc.ZRead ? 0.0f : 1.0f };
+		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)kind, desc.ZRead ? 0.0f : 1.0f };
 		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
 	}
 
@@ -965,8 +973,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	for (int i = 0; i < quads; i++) {
 		int kind = KIND_BASE;
 		if (i > 0) {
-			GpuBlit const & blit = list.Blits[i - 1];
-			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Line >= 0 ? KIND_LINE + blit.LineKind : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc)));
+			kind = kinds[i - 1];
 		}
 		if (kind == KIND_DARKEN && shadowed) {
 			continue;

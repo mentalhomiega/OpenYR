@@ -42,6 +42,18 @@ enum
 };
 
 
+// What a GpuBlit draws. Fills, spot lights and lines are recorded with a default BlitDesc, so the
+// special classes never carry the DARKEN kind and GpuBlit::Class() tests them in this order.
+enum GpuBlitClass
+{
+	GPU_BLIT_FILL,
+	GPU_BLIT_LIGHT,
+	GPU_BLIT_LINE,
+	GPU_BLIT_SHADOW,
+	GPU_BLIT_IMAGE
+};
+
+
 struct GpuBlit
 {
 	BlitDesc Desc;
@@ -92,6 +104,20 @@ struct GpuBlit
 
 	// Set when Pixels is an offset into GpuDraw_Atlas rather than into the pass's arena.
 	bool InAtlas;
+
+	GpuBlitClass Class() const
+	{
+		if (Colour >= 0) {
+			return(GPU_BLIT_FILL);
+		}
+		if (Brighten >= 0) {
+			return(GPU_BLIT_LIGHT);
+		}
+		if (Line >= 0) {
+			return(GPU_BLIT_LINE);
+		}
+		return(Desc.Kind == BlitDesc::DARKEN ? GPU_BLIT_SHADOW : GPU_BLIT_IMAGE);
+	}
 };
 
 
