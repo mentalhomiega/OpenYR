@@ -397,10 +397,7 @@ bool Main_Window_Create(bool windowed, int width, int height)
 	_Input.Reset();
 
 	// An unattended test run stays hidden, so it never takes the foreground from another program.
-	if (!AutoTest_Active()) {
-		SDL_ShowWindow(_Window);
-		SDL_RaiseWindow(_Window);
-	}
+	Main_Window_Set_Shown(true);
 
 	// Typed text is always on, as characters from Windows were.
 	SDL_StartTextInput(_Window);
