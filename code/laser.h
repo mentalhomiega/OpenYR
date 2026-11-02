@@ -30,6 +30,7 @@ class LaserDrawClass : public StageClass
 
 	private:
 		void Draw_House_Color(void);
+		float Current_Intensity(void);
 
 	public:
 
