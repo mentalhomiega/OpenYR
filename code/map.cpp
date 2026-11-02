@@ -2561,6 +2561,20 @@ int MapClass::Cell_Threat(Cell const & cell, HouseClass const & house)
 }
 
 
+/*
+ * The index of the first crate slot that holds no crate, or -1 when every slot is in use.
+ */
+static int Free_Crate_Slot(CrateClass const * crates, int count)
+{
+	for (int index = 0; index < count; index++) {
+		if (!crates[index].Is_Valid()) {
+			return(index);
+		}
+	}
+	return(-1);
+}
+
+
 /***********************************************************************************************
  * MapClass::Place_Random_Crate -- Places a crate at random location on map.                   *
  *                                                                                             *
@@ -2582,11 +2596,8 @@ bool MapClass::Place_Random_Crate(void)
 	**	Find a crate index that is free for assignment. If there are
 	**	no free slots, then return with failure to place crate.
 	*/
-	int crateindex = 0;
-	for (crateindex = 0; crateindex < ARRAY_SIZE(Crates); crateindex++) {
-		if (!Crates[crateindex].Is_Valid()) break;
-	}
-	if (crateindex == ARRAY_SIZE(Crates)) {
+	int const crateindex = Free_Crate_Slot(Crates, ARRAY_SIZE(Crates));
+	if (crateindex == -1) {
 		return(false);
 	}
 
@@ -2611,11 +2622,8 @@ bool MapClass::Place_Random_Crate(void)
 /// </summary>
 bool MapClass::Place_Crate(Cell const & cell, int powerup)
 {
-	int crateindex = 0;
-	for (crateindex = 0; crateindex < ARRAY_SIZE(Crates); crateindex++) {
-		if (!Crates[crateindex].Is_Valid()) break;
-	}
-	if (crateindex == ARRAY_SIZE(Crates)) {
+	int const crateindex = Free_Crate_Slot(Crates, ARRAY_SIZE(Crates));
+	if (crateindex == -1) {
 		return(false);
 	}
 
@@ -9067,6 +9075,18 @@ int MapClass::Get_Low_Bridge_NS_Neighbor_Mask(Cell const & cell)
 }
 
 
+/*
+ * Whether a low bridge overlay runs east and west: OVERLAY_LOWBRIDGE_01..09, 19..22 and 27. The
+ * other low bridge overlays run north and south.
+ */
+static bool Low_Bridge_Runs_East_West(int overlay)
+{
+	return((overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09) ||
+		(overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22) ||
+		overlay == OVERLAY_LOWBRIDGE_27);
+}
+
+
 /// <summary>
 /// Damages the low bridge that this cell belongs to.
 /// This is the entry point the combat code calls when a weapon lands on a low bridge. The
@@ -9078,7 +9098,7 @@ int MapClass::Get_Low_Bridge_NS_Neighbor_Mask(Cell const & cell)
 bool MapClass::Damage_Low_Bridge(Cell const & cell)
 {
 	OverlayType otype = Map[cell].Overlay;
-	if (otype >= OVERLAY_LOWBRIDGE_01 && otype <= OVERLAY_LOWBRIDGE_09 || otype >= OVERLAY_LOWBRIDGE_19 && otype <= OVERLAY_LOWBRIDGE_22 || otype == OVERLAY_LOWBRIDGE_27) {
+	if (Low_Bridge_Runs_East_West(otype)) {
 		if (!Is_Low_Bridge(cell + Cell(0, -1))) {
 			return(Damage_Low_Bridge_EW(cell + Cell(0, 1)));
 		} else {
@@ -9476,7 +9496,7 @@ void MapClass::Repair_Low_Bridge_Span(Cell const & cell)
 {
 	OverlayType overlay = Map[cell].Overlay;
 
-	if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09 || overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22 || overlay == OVERLAY_LOWBRIDGE_27) {
+	if (Low_Bridge_Runs_East_West(overlay)) {
 		if (!Is_Low_Bridge(cell - Cell(0, 1))) {
 			Repair_Low_Bridge_EW(cell + Cell(0, 1));
 		} else {
@@ -9678,8 +9698,7 @@ void MapClass::Repair_Low_Bridge_NS(Cell const & cell)
 /// <returns>True if the cell holds a low bridge overlay; false otherwise.</returns>
 bool MapClass::Is_Low_Bridge(Cell const & cell)
 {
-	OverlayType overlay = Map[cell].Overlay;
-	return(overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_28);
+	return(Map[cell].Is_Overlay_Low_Bridge());
 }
 
 
@@ -12269,8 +12288,43 @@ static bool Has_Bridge_Mark(CellClass const * cptr, bool tiles)
 static bool Is_Wood_Bridge_Overlay_Cell(Cell const & cell)
 {
 	CellClass const * cptr = Bridge_Cell_At(cell);
-	int overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
-	return(overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_28);
+	return(cptr != NULL && cptr->Is_Overlay_Low_Bridge());
+}
+
+
+/*
+ * The cell a bridge run is walked from, given one cell on the run. step is the run's axis. The
+ * result is cell + step when the cell before cell is off the run, cell - step when the run
+ * continues two cells back, and cell otherwise.
+ */
+static Cell Run_Start_Cell(Cell const & cell, Cell const & step, bool (*part_of_run)(Cell const &))
+{
+	if (!part_of_run(cell - step)) {
+		return(cell + step);
+	}
+	if (part_of_run(cell - step - step)) {
+		return(cell - step);
+	}
+	return(cell);
+}
+
+
+/*
+ * Finds the first cell of the five-by-five square around a hut that satisfies pred, scanning the
+ * columns from the west. Returns false, and leaves found unchanged, when no cell in the square does.
+ */
+static bool Find_Hut_Neighbor(Cell const & cell, bool (*pred)(Cell const &), Cell & found)
+{
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			Cell const probe = cell + Cell(x, y);
+			if (pred(probe)) {
+				found = probe;
+				return(true);
+			}
+		}
+	}
+	return(false);
 }
 
 
@@ -12351,14 +12405,10 @@ static bool Is_Bridge_Span_Piece_For_Walk(int pos, int dir, CellClass const & ce
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Destroy_Wood_Bridge_At(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Wood_Bridge_Overlay_Cell(probe)) {
-				Destroy_Wood_Bridge_Neighbors(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Wood_Bridge_Overlay_Cell, probe)) {
+		Destroy_Wood_Bridge_Neighbors(probe);
+		return;
 	}
 	Destroy_Bridge_Span_Near(cell);
 }
@@ -12765,23 +12815,11 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			return(Damage_Concrete_Bridge_NS(cell + Cell(0, 1)));
-		}
-		if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			return(Damage_Concrete_Bridge_NS(cell + Cell(0, -1)));
-		}
-		return(Damage_Concrete_Bridge_NS(cell));
+		return(Damage_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell)));
 	}
 
 	if (Is_Concrete_EW_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-			return(Damage_Concrete_Bridge_EW(cell + Cell(1, 0)));
-		}
-		if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-			return(Damage_Concrete_Bridge_EW(cell + Cell(-1, 0)));
-		}
-		return(Damage_Concrete_Bridge_EW(cell));
+		return(Damage_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell)));
 	}
 
 	return(false);
@@ -12855,23 +12893,11 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			Detonate_Concrete_Bridge_Run(cell + Cell(0, 1), FACING_E);
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			Detonate_Concrete_Bridge_Run(cell + Cell(0, -1), FACING_E);
-		} else {
-			Detonate_Concrete_Bridge_Run(cell, FACING_E);
-		}
+		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell), FACING_E);
 		return;
 	}
 
-	if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-		Detonate_Concrete_Bridge_Run(cell + Cell(1, 0), FACING_S);
-	} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-		Detonate_Concrete_Bridge_Run(cell + Cell(-1, 0), FACING_S);
-	} else {
-		Detonate_Concrete_Bridge_Run(cell, FACING_S);
-	}
+	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell), FACING_S);
 }
 
 
@@ -12884,14 +12910,10 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Concrete_Bridge_Cell(probe)) {
-				Destroy_Concrete_Bridge_Neighbors(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Concrete_Bridge_Cell, probe)) {
+		Destroy_Concrete_Bridge_Neighbors(probe);
+		return;
 	}
 	Destroy_Bridge_Span_Near(cell);
 }
@@ -12995,24 +13017,12 @@ void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_NS_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(0, -1))) {
-			Repair_Concrete_Bridge_NS(cell + Cell(0, 1));
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(0, -2))) {
-			Repair_Concrete_Bridge_NS(cell + Cell(0, -1));
-		} else {
-			Repair_Concrete_Bridge_NS(cell);
-		}
+		Repair_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell));
 		return;
 	}
 
 	if (Is_Concrete_EW_Overlay(overlay)) {
-		if (!Is_Concrete_Bridge_Cell(cell + Cell(-1, 0))) {
-			Repair_Concrete_Bridge_EW(cell + Cell(1, 0));
-		} else if (Is_Concrete_Bridge_Cell(cell + Cell(-2, 0))) {
-			Repair_Concrete_Bridge_EW(cell + Cell(-1, 0));
-		} else {
-			Repair_Concrete_Bridge_EW(cell);
-		}
+		Repair_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell));
 	}
 }
 
@@ -13026,14 +13036,10 @@ void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Repair_Concrete_Bridge(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Concrete_Bridge_Cell(probe)) {
-				Repair_Concrete_Bridge_Span(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Concrete_Bridge_Cell, probe)) {
+		Repair_Concrete_Bridge_Span(probe);
+		return;
 	}
 	Repair_Bridge(cell);
 }
@@ -13223,20 +13229,10 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 	CellClass const * cptr = Bridge_Cell_At(cell);
 	int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
 
-	bool const straight = (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09) ||
-		(overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22) ||
-		overlay == OVERLAY_LOWBRIDGE_27;
+	bool const straight = Low_Bridge_Runs_East_West(overlay);
 
 	if (straight) {
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -1))) {
-			Detonate_Wood_Bridge_Run(cell + Cell(0, 1), FACING_E);
-			return;
-		}
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(0, -2))) {
-			Detonate_Wood_Bridge_Run(cell, FACING_E);
-			return;
-		}
-		Detonate_Wood_Bridge_Run(cell + Cell(0, -1), FACING_E);
+		Detonate_Wood_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Wood_Bridge_Overlay_Cell), FACING_E);
 		return;
 	}
 
@@ -13245,15 +13241,7 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 		overlay == OVERLAY_LOWBRIDGE_28;
 
 	if (side) {
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-1, 0))) {
-			Detonate_Wood_Bridge_Run(cell + Cell(1, 0), FACING_S);
-			return;
-		}
-		if (!Is_Wood_Bridge_Overlay_Cell(cell + Cell(-2, 0))) {
-			Detonate_Wood_Bridge_Run(cell, FACING_S);
-			return;
-		}
-		Detonate_Wood_Bridge_Run(cell + Cell(-1, 0), FACING_S);
+		Detonate_Wood_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Wood_Bridge_Overlay_Cell), FACING_S);
 	}
 }
 
@@ -13779,7 +13767,7 @@ void MapClass::Destroy_Bridge_At(Cell const & cell)
 			if (cptr == NULL) {
 				continue;
 			}
-			if (cptr->Is_Tile_Train_Bridge() || (cptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cptr->Overlay <= OVERLAY_LOWBRIDGE_28)) {
+			if (cptr->Is_Tile_Train_Bridge() || cptr->Is_Overlay_Low_Bridge()) {
 				wood = true;
 			}
 		}
@@ -13880,9 +13868,7 @@ bool MapClass::Can_Repair_Bridge(Cell const & cell)
 		}
 	} else if (cellptr != NULL) {
 
-		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_09 ||
-			cellptr->Overlay >= OVERLAY_LOWBRIDGE_19 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_22 ||
-			cellptr->Overlay == OVERLAY_LOWBRIDGE_27) {
+		if (Low_Bridge_Runs_East_West(cellptr->Overlay)) {
 
 			for (Cell walk = cellptr->CellID; ; walk.X--) {
 				if (!Is_Low_Bridge(walk)) {

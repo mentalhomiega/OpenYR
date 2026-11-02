@@ -272,7 +272,6 @@ class Tactical : public AbstractClass
 		void Draw_Rally_Points(bool inshroud);
 		void Draw_Waypoints(bool inshroud);
 		void Draw_Planned_Orders(void);
-		static void Draw_Radial_Indicators(void);
 
 		/*
 		 * Debug overlays.
@@ -465,7 +464,7 @@ class Tactical : public AbstractClass
 
 
 // The area of absolute pixels the scroll limits keep a tactical view inside, from the map's local area.
-// A view no wider or taller than the area stays on the local map, apart from the modern panel's allowance.
+// A view no wider or taller than the area fits on the local map, in every layout.
 Rect Tactical_Visible_Map_Area(void);
 
 // Starts the chronoshift screen effect, with each fade lasting the frames given.

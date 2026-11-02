@@ -41,9 +41,6 @@ class TileGridClass
 		void Mark_All(void);
 		void Mark(int tilex, int tiley);
 		void Add(TileGridClass const & other);
-		bool Any(void) const;
-		int Pixels_Wide(void) const { return(Width); }
-		int Pixels_High(void) const { return(Height); }
 		int Tiles_X(void) const { return(TilesX); }
 		int Tiles_Y(void) const { return(TilesY); }
 		std::uint8_t * Row(int tiley) { return(&Flags[(size_t)tiley * TilesX]); }
