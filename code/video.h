@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "bgfxbackend.h"
 #include "nativewindow.hh"
 #include "rect.h"
 
@@ -92,11 +93,11 @@ void Video_Present(void);
 
 class Surface;
 
-// The frame colour that shows the map layer through it.
-unsigned short const VIDEO_LAYER_KEY = 0xF81F;
+// The frame colour that shows the map layer through it. The presenter keys on the same value, BACKEND_LAYER_KEY.
+unsigned short const VIDEO_LAYER_KEY = BACKEND_LAYER_KEY;
 
-// Frame colours drawn over the map layer as the tints Video_Set_Layer_Tint sets.
-unsigned short const VIDEO_LAYER_TINT_KEYS[2] = {0xF83F, 0xF85F};
+// Frame colours drawn over the map layer as the tints Video_Set_Layer_Tint sets; the same values as BACKEND_LAYER_TINT_KEYS.
+unsigned short const VIDEO_LAYER_TINT_KEYS[2] = {BACKEND_LAYER_TINT_KEYS[0], BACKEND_LAYER_TINT_KEYS[1]};
 
 // Sets the colour and opacity, 0 to 100 percent, that frame pixels of VIDEO_LAYER_TINT_KEYS[index] show over the map layer.
 void Video_Set_Layer_Tint(int index, int red, int green, int blue, int opacity);

@@ -628,6 +628,18 @@ void Video_Note_Visible_Rows(unsigned char const * rows, int count, unsigned bef
 }
 
 
+// Sets the size and window rectangle of a map layer from its source and its scaled destination.
+static void Layer_Destination(BackendLayer & layer)
+{
+	layer.Width = _LayerSource.Width;
+	layer.Height = _LayerSource.Height;
+	layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
+	layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
+	layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
+	layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+}
+
+
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
@@ -658,12 +670,7 @@ static void Present(void)
 	if (_LayerGpu) {
 		layer.Pixels = NULL;
 		layer.Pitch = 0;
-		layer.Width = _LayerSource.Width;
-		layer.Height = _LayerSource.Height;
-		layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
-		layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
-		layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
-		layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+		Layer_Destination(layer);
 		layer.Gpu = true;
 		layerptr = &layer;
 	} else if (_LayerSurface != NULL) {
@@ -672,12 +679,7 @@ static void Present(void)
 		if (base != NULL) {
 			layer.Pixels = _LayerFresh ? base + _LayerSource.Y * source->Stride() + _LayerSource.X * 2 : NULL;
 			layer.Pitch = source->Stride();
-			layer.Width = _LayerSource.Width;
-			layer.Height = _LayerSource.Height;
-			layer.DestX = _ScaleInfo.DestX + (int)(_LayerDest.X * _ScaleInfo.ScaleX);
-			layer.DestY = _ScaleInfo.DestY + (int)(_LayerDest.Y * _ScaleInfo.ScaleY);
-			layer.DestWidth = _ScaleInfo.DestX + (int)((_LayerDest.X + _LayerDest.Width) * _ScaleInfo.ScaleX) - layer.DestX;
-			layer.DestHeight = _ScaleInfo.DestY + (int)((_LayerDest.Y + _LayerDest.Height) * _ScaleInfo.ScaleY) - layer.DestY;
+			Layer_Destination(layer);
 			layerptr = &layer;
 		}
 	}

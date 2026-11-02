@@ -84,7 +84,8 @@ static unsigned int _ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER;
 // True while the frame texture holds the game's own 565 layout. When the hardware cannot
 // sample that format the frame is widened to 32 bits on the way in instead.
 static bool _FrameIs565 = false;
-static unsigned int * _ConvertBuffer = NULL;
+// Set once the widening tables are built. They are never cleared, so the flag holds for the life of the process.
+static bool _ConvertTablesBuilt = false;
 static unsigned int _ConvertTable[65536];
 // The keyed frame's widening: the layer key is see-through and the tint keys are their tints.
 static unsigned int _KeyedTable[65536];
@@ -96,9 +97,7 @@ static int _LayerWidth = 0;
 static int _LayerHeight = 0;
 static bool _LayerUploaded = false;
 static bool _KeyedFrameUploaded = false;
-static unsigned int * _LayerConvertBuffer = NULL;
 static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
-static unsigned int * _KeyedFrameBuffer = NULL;
 
 // What each texture holds, kept so a present sends only the tiles that changed. The picture copies hold
 // the 565 source; the keyed mask copy holds the frame's emissive mask.
@@ -206,7 +205,6 @@ static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskLevels = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _KeyedMaskTexture = BGFX_INVALID_HANDLE;
-static unsigned int * _KeyedMaskBuffer = NULL;
 static bool _KeyedMaskUploaded = false;
 // Set by any mask draw this frame. Without one the composite reads no mask.
 static bool _MaskDrawn = false;
@@ -220,6 +218,22 @@ struct BackendVertex
 	float V;
 	unsigned int Color;
 };
+
+
+// Writes the 18-byte header of an uncompressed 32-bit TGA. yflip sets a bottom-left origin in the
+// header; otherwise the header marks a top-left origin.
+static void Write_Tga_Header(FILE * file, uint32_t width, uint32_t height, bool yflip)
+{
+	unsigned char header[18] = {};
+	header[2] = 2;
+	header[12] = (unsigned char)(width & 0xFF);
+	header[13] = (unsigned char)(width >> 8);
+	header[14] = (unsigned char)(height & 0xFF);
+	header[15] = (unsigned char)(height >> 8);
+	header[16] = 32;
+	header[17] = yflip ? 0x08 : 0x28;
+	std::fwrite(header, 1, sizeof(header), file);
+}
 
 
 // bgfx reports lost devices and shader failures through this rather than a return code,
@@ -265,15 +279,7 @@ class BackendCallback : public bgfx::CallbackI
 			if (file == NULL) {
 				return;
 			}
-			unsigned char header[18] = {};
-			header[2] = 2;
-			header[12] = (unsigned char)(width & 0xFF);
-			header[13] = (unsigned char)(width >> 8);
-			header[14] = (unsigned char)(height & 0xFF);
-			header[15] = (unsigned char)(height >> 8);
-			header[16] = 32;
-			header[17] = yflip ? 0x08 : 0x28;
-			std::fwrite(header, 1, sizeof(header), file);
+			Write_Tga_Header(file, width, height, yflip);
 			for (uint32_t y = 0; y < height; y++) {
 				std::fwrite((unsigned char const *)data + y * pitch, 4, width, file);
 			}
@@ -327,6 +333,15 @@ static void Build_Convert_Table(void)
 	_KeyedTable[BACKEND_LAYER_KEY] = 0;
 	for (size_t index = 0; index < std::size(_LayerTints); index++) {
 		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = _LayerTints[index];
+	}
+}
+
+
+static void Ensure_Convert_Tables(void)
+{
+	if (!_ConvertTablesBuilt) {
+		Build_Convert_Table();
+		_ConvertTablesBuilt = true;
 	}
 }
 
@@ -454,15 +469,23 @@ static void Set_View_Transform(bgfx::ViewId view, int width, int height)
 }
 
 
+// Destroys a valid handle and resets it to invalid. An invalid handle is left as it is.
+template<class Handle>
+static void Release_Handle(Handle & handle)
+{
+	if (bgfx::isValid(handle)) {
+		bgfx::destroy(handle);
+		handle = BGFX_INVALID_HANDLE;
+	}
+}
+
+
 /// <summary>
 /// Discards the intermediate target the pixel art filter magnifies through.
 /// </summary>
 static void Destroy_Prescale_Target(void)
 {
-	if (bgfx::isValid(_PrescaleTarget)) {
-		bgfx::destroy(_PrescaleTarget);
-		_PrescaleTarget = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_PrescaleTarget);
 	_PrescaleWidth = 0;
 	_PrescaleHeight = 0;
 }
@@ -498,10 +521,7 @@ static bool Ensure_Prescale_Target(int width, int height)
 
 static void Destroy_Mask(BackendMask & mask)
 {
-	if (bgfx::isValid(mask.Handle)) {
-		bgfx::destroy(mask.Handle);
-	}
-	mask.Handle = BGFX_INVALID_HANDLE;
+	Release_Handle(mask.Handle);
 	mask.Width = 0;
 	mask.Height = 0;
 	mask.Uploaded = false;
@@ -591,6 +611,41 @@ static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const 
 }
 
 
+// Sends the marked tiles of a picture. A keyed picture is always widened to 32 bits with its key pixels
+// applied; a plain one is copied as 565 when the frame texture is 565 and widened to 32 bits otherwise.
+static void Send_Picture(bgfx::TextureHandle texture, TileGridClass const & grid, unsigned char const * source, int pitch, bool keyed)
+{
+	if (!keyed && _FrameIs565) {
+		Send_Tiles(texture, grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Copy_Tile(dest, destpitch, source, pitch, rect, 2);
+		});
+	} else {
+		Send_Tiles(texture, grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+			Widen_Tile(dest, destpitch, source, pitch, rect, keyed);
+		});
+	}
+}
+
+
+// Returns the mask as width by height texels. A mask whose readable part is smaller is copied into scratch,
+// zero outside the readable part, and outpitch is then width; otherwise mask itself is returned with pitch.
+static unsigned char const * Pad_Mask(std::vector<unsigned char> & scratch, unsigned char const * mask, int pitch, int readwidth, int readheight, int width, int height, int & outpitch)
+{
+	outpitch = pitch;
+	if (readwidth >= width && readheight >= height) {
+		return(mask);
+	}
+	scratch.assign((size_t)width * height, 0);
+	int const copywidth = std::min(width, readwidth);
+	int const copyheight = std::min(height, readheight);
+	for (int y = 0; y < copyheight; y++) {
+		std::memcpy(&scratch[(size_t)y * width], mask + (ptrdiff_t)y * pitch, (size_t)copywidth);
+	}
+	outpitch = width;
+	return(scratch.data());
+}
+
+
 /// <summary>
 /// Uploads one mask, making its R8 texture first when the size changed. Only the readable part of the
 /// source is used; texels beyond it are zero. Only the tiles that changed since the last upload are sent.
@@ -621,18 +676,8 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 	}
 
 	// A source smaller than the texture is padded with zero, since the pitch of a mask may be wider than the picture.
-	unsigned char const * source = pixels;
 	int sourcepitch = pitch;
-	if (readwidth < width || readheight < height) {
-		mask.Effective.assign((size_t)width * height, 0);
-		int const copywidth = std::min(width, readwidth);
-		int const copyheight = std::min(height, readheight);
-		for (int y = 0; y < copyheight; y++) {
-			std::memcpy(&mask.Effective[(size_t)y * width], pixels + (ptrdiff_t)y * pitch, (size_t)copywidth);
-		}
-		source = mask.Effective.data();
-		sourcepitch = width;
-	}
+	unsigned char const * source = Pad_Mask(mask.Effective, pixels, pitch, readwidth, readheight, width, height, sourcepitch);
 
 	_MaskGrid.Resize(width, height);
 	mask.Diff.Compare(source, sourcepitch, _MaskGrid);
@@ -674,24 +719,9 @@ static bool Submit_Mask(bgfx::TextureHandle texture, float x, float y, float wid
 static void Destroy_Layer(void)
 {
 	Destroy_Mask(_LayerMask);
-	if (bgfx::isValid(_LayerTexture)) {
-		bgfx::destroy(_LayerTexture);
-		_LayerTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_KeyedFrameTexture)) {
-		bgfx::destroy(_KeyedFrameTexture);
-		_KeyedFrameTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_KeyedMaskTexture)) {
-		bgfx::destroy(_KeyedMaskTexture);
-		_KeyedMaskTexture = BGFX_INVALID_HANDLE;
-	}
-	delete [] _LayerConvertBuffer;
-	_LayerConvertBuffer = NULL;
-	delete [] _KeyedFrameBuffer;
-	_KeyedFrameBuffer = NULL;
-	delete [] _KeyedMaskBuffer;
-	_KeyedMaskBuffer = NULL;
+	Release_Handle(_LayerTexture);
+	Release_Handle(_KeyedFrameTexture);
+	Release_Handle(_KeyedMaskTexture);
 	_LayerWidth = 0;
 	_LayerHeight = 0;
 	_LayerUploaded = false;
@@ -715,11 +745,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 	}
 
 	if (!bgfx::isValid(_LayerTexture) || _LayerWidth != layer.Width || _LayerHeight != layer.Height) {
-		if (bgfx::isValid(_LayerTexture)) {
-			bgfx::destroy(_LayerTexture);
-		}
-		delete [] _LayerConvertBuffer;
-		_LayerConvertBuffer = NULL;
+		Release_Handle(_LayerTexture);
 		Destroy_Mask(_LayerMask);
 
 		const bgfx::Caps * caps = bgfx::getCaps();
@@ -742,15 +768,7 @@ static bool Upload_Layer(BackendLayer const & layer)
 	_Grid.Resize(layer.Width, layer.Height);
 	_LayerDiff.Compare(source, sourcepitch, _Grid);
 	Verify_Diff(_LayerDiff, source, sourcepitch, layer.Width, layer.Height, 2);
-	if (_FrameIs565) {
-		Send_Tiles(_LayerTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-			Copy_Tile(dest, destpitch, source, sourcepitch, rect, 2);
-		});
-	} else {
-		Send_Tiles(_LayerTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-			Widen_Tile(dest, destpitch, source, sourcepitch, rect, false);
-		});
-	}
+	Send_Picture(_LayerTexture, _Grid, source, sourcepitch, false);
 	_LayerUploaded = true;
 	return(true);
 }
@@ -768,18 +786,14 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 		}
 		_KeyedDiff.Reset(_FrameWidth, _FrameHeight, 2);
 	}
-	if (_ConvertTable[0xFFFF] == 0) {
-		Build_Convert_Table();
-	}
+	Ensure_Convert_Tables();
 
 	unsigned char const * source = (unsigned char const *)pixels;
 	_KeyedGrid.Resize(_FrameWidth, _FrameHeight);
 	_KeyedDiff.Compare(source, pitch, _KeyedGrid, _KeyedRows.For(_FrameHeight));
 	_KeyedRows.Restart(_FrameHeight);
 	Verify_Diff(_KeyedDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
-	Send_Tiles(_KeyedFrameTexture, _KeyedGrid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-		Widen_Tile(dest, destpitch, source, pitch, rect, true);
-	});
+	Send_Picture(_KeyedFrameTexture, _KeyedGrid, source, pitch, true);
 	return(true);
 }
 
@@ -810,18 +824,7 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	unsigned char const * value = NULL;
 	int valuepitch = 0;
 	if (masked) {
-		value = mask;
-		valuepitch = maskpitch;
-		if (maskwidth < _FrameWidth || maskheight < _FrameHeight) {
-			_KeyedMaskEffective.assign((size_t)_FrameWidth * _FrameHeight, 0);
-			int const copywidth = std::min(_FrameWidth, maskwidth);
-			int const copyheight = std::min(_FrameHeight, maskheight);
-			for (int y = 0; y < copyheight; y++) {
-				std::memcpy(&_KeyedMaskEffective[(size_t)y * _FrameWidth], mask + (ptrdiff_t)y * maskpitch, (size_t)copywidth);
-			}
-			value = _KeyedMaskEffective.data();
-			valuepitch = _FrameWidth;
-		}
+		value = Pad_Mask(_KeyedMaskEffective, mask, maskpitch, maskwidth, maskheight, _FrameWidth, _FrameHeight, valuepitch);
 		if (full) {
 			_KeyedMaskDiff.Invalidate();
 		}
@@ -925,23 +928,25 @@ static unsigned int Reset_Flags(bool vsync, bool hdr)
 /// </summary>
 static void Destroy_Targets(void)
 {
-	if (bgfx::isValid(_SceneTarget)) {
-		bgfx::destroy(_SceneTarget);
-		_SceneTarget = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ShotTarget)) {
-		bgfx::destroy(_ShotTarget);
-		_ShotTarget = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskTarget)) {
-		bgfx::destroy(_MaskTarget);
-		_MaskTarget = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_SceneTarget);
+	Release_Handle(_ShotTarget);
+	Release_Handle(_MaskTarget);
 	if (!_ReadbackPending && bgfx::isValid(_ReadbackTexture)) {
-		bgfx::destroy(_ReadbackTexture);
-		_ReadbackTexture = BGFX_INVALID_HANDLE;
+		Release_Handle(_ReadbackTexture);
 		_ReadbackPixels.clear();
 	}
+}
+
+
+// Creates a BGRA8 target the size of the drawable area. A failure is logged under the name what.
+static bool Make_Drawable_Target(bgfx::FrameBufferHandle & target, char const * what)
+{
+	target = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+	if (!bgfx::isValid(target)) {
+		DebugString("Video: could not create the %s at %dx%d\n", what, _DrawableWidth, _DrawableHeight);
+		return(false);
+	}
+	return(true);
 }
 
 
@@ -951,26 +956,14 @@ static void Destroy_Targets(void)
 /// <returns>bool; Does every target the routing needs exist?</returns>
 static bool Ensure_Targets(void)
 {
-	if (_Routed && !bgfx::isValid(_SceneTarget)) {
-		_SceneTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_SceneTarget)) {
-			DebugString("Video: could not create the scene target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_Routed && !bgfx::isValid(_SceneTarget) && !Make_Drawable_Target(_SceneTarget, "scene target")) {
+		return(false);
 	}
-	if (_HdrActive && !bgfx::isValid(_MaskTarget)) {
-		_MaskTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_MaskTarget)) {
-			DebugString("Video: could not create the emissive mask target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_HdrActive && !bgfx::isValid(_MaskTarget) && !Make_Drawable_Target(_MaskTarget, "emissive mask target")) {
+		return(false);
 	}
-	if (_HdrActive && !bgfx::isValid(_ShotTarget)) {
-		_ShotTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_ShotTarget)) {
-			DebugString("Video: could not create the screenshot target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_HdrActive && !bgfx::isValid(_ShotTarget) && !Make_Drawable_Target(_ShotTarget, "screenshot target")) {
+		return(false);
 	}
 	if (_HdrActive && !bgfx::isValid(_ReadbackTexture)) {
 		uint64_t const flags = BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
@@ -1063,15 +1056,7 @@ static void Write_Capture(void)
 	if (file == NULL) {
 		return;
 	}
-	unsigned char header[18] = {};
-	header[2] = 2;
-	header[12] = (unsigned char)(_DrawableWidth & 0xFF);
-	header[13] = (unsigned char)((_DrawableWidth >> 8) & 0xFF);
-	header[14] = (unsigned char)(_DrawableHeight & 0xFF);
-	header[15] = (unsigned char)((_DrawableHeight >> 8) & 0xFF);
-	header[16] = 32;
-	header[17] = 0x28;
-	std::fwrite(header, 1, sizeof(header), file);
+	Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
 	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
 	std::fclose(file);
 }
@@ -1268,45 +1253,15 @@ void Backend_Shutdown(void)
 	Destroy_Targets();
 	Destroy_Mask(_FrameMask);
 
-	if (bgfx::isValid(_FrameTexture)) {
-		bgfx::destroy(_FrameTexture);
-		_FrameTexture = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_TextureSampler)) {
-		bgfx::destroy(_TextureSampler);
-		_TextureSampler = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_Program)) {
-		bgfx::destroy(_Program);
-		_Program = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_CompositeProgram)) {
-		bgfx::destroy(_CompositeProgram);
-		_CompositeProgram = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_CompositeLevels)) {
-		bgfx::destroy(_CompositeLevels);
-		_CompositeLevels = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ColourMatrix)) {
-		bgfx::destroy(_ColourMatrix);
-		_ColourMatrix = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_ColourTone)) {
-		bgfx::destroy(_ColourTone);
-		_ColourTone = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskSampler)) {
-		bgfx::destroy(_MaskSampler);
-		_MaskSampler = BGFX_INVALID_HANDLE;
-	}
-	if (bgfx::isValid(_MaskLevels)) {
-		bgfx::destroy(_MaskLevels);
-		_MaskLevels = BGFX_INVALID_HANDLE;
-	}
-
-	delete [] _ConvertBuffer;
-	_ConvertBuffer = NULL;
+	Release_Handle(_FrameTexture);
+	Release_Handle(_TextureSampler);
+	Release_Handle(_Program);
+	Release_Handle(_CompositeProgram);
+	Release_Handle(_CompositeLevels);
+	Release_Handle(_ColourMatrix);
+	Release_Handle(_ColourTone);
+	Release_Handle(_MaskSampler);
+	Release_Handle(_MaskLevels);
 
 	bgfx::shutdown();
 
@@ -1339,10 +1294,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 		return(true);
 	}
 
-	if (bgfx::isValid(_FrameTexture)) {
-		bgfx::destroy(_FrameTexture);
-		_FrameTexture = BGFX_INVALID_HANDLE;
-	}
+	Release_Handle(_FrameTexture);
 	Destroy_Layer();
 	Destroy_Mask(_FrameMask);
 
@@ -1359,14 +1311,8 @@ bool Backend_Set_Frame_Size(int width, int height)
 	}
 	_FrameDiff.Reset(width, height, 2);
 
-	delete [] _ConvertBuffer;
-	_ConvertBuffer = NULL;
-
 	if (!_FrameIs565) {
-		if (_ConvertTable[0xFFFF] == 0) {
-			Build_Convert_Table();
-		}
-		_ConvertBuffer = new unsigned int[width * height];
+		Ensure_Convert_Tables();
 	}
 
 	_FrameWidth = width;
@@ -1561,22 +1507,12 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 
 		unsigned char const * source = (unsigned char const *)pixels;
-		if (_FrameIs565 || _ConvertBuffer != NULL) {
-			_Grid.Resize(_FrameWidth, _FrameHeight);
-			_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
-			_FrameRows.Restart(_FrameHeight);
-			Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
-			if (_FrameIs565) {
-				Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-					Copy_Tile(dest, destpitch, source, pitch, rect, 2);
-				});
-			} else {
-				Send_Tiles(_FrameTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-					Widen_Tile(dest, destpitch, source, pitch, rect, false);
-				});
-			}
-			_FrameUploaded = true;
-		}
+		_Grid.Resize(_FrameWidth, _FrameHeight);
+		_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
+		_FrameRows.Restart(_FrameHeight);
+		Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
+		Send_Picture(_FrameTexture, _Grid, source, pitch, false);
+		_FrameUploaded = true;
 	}
 
 	// The debug view draws the frame mask where the picture would be.
@@ -1659,7 +1595,7 @@ void Backend_Set_Layer_Tint(int index, unsigned char red, unsigned char green, u
 		return;
 	}
 	_LayerTints[index] = tint;
-	if (_ConvertTable[0xFFFF] != 0) {
+	if (_ConvertTablesBuilt) {
 		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = tint;
 	}
 	// The keyed frame texture holds the old tint wherever the frame did not change.
