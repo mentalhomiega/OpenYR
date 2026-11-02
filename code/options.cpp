@@ -480,6 +480,81 @@ void OptionsClass::Set_Movie_Volume(float volume, bool feedback)
 }
 
 
+// One settings-file name and the enum value it stands for.
+struct NameEntry
+{
+	char const * Name;
+	int Value;
+};
+
+
+// Returns the value of the first entry whose name matches text, ignoring case, or fallback when none does.
+template<size_t N>
+static int Enum_From_Name(NameEntry const (&table)[N], char const * text, int fallback)
+{
+	for (NameEntry const & entry : table) {
+		if (stricmp(text, entry.Name) == 0) {
+			return(entry.Value);
+		}
+	}
+	return(fallback);
+}
+
+
+// Returns the name of the first entry with the value, or fallback when the table has none.
+template<size_t N>
+static char const * Enum_Name(NameEntry const (&table)[N], int value, char const * fallback)
+{
+	for (NameEntry const & entry : table) {
+		if (entry.Value == value) {
+			return(entry.Name);
+		}
+	}
+	return(fallback);
+}
+
+
+static NameEntry const Scale_Mode_Names[] = {
+	{ "Nearest", VIDEO_SCALE_NEAREST },
+	{ "Linear", VIDEO_SCALE_LINEAR },
+	{ "PixelArt", VIDEO_SCALE_PIXELART },
+};
+
+static NameEntry const HDR_Output_Names[] = {
+	{ "Off", VIDEO_HDR_OFF },
+	{ "On", VIDEO_HDR_ON },
+};
+
+static NameEntry const ColorBlind_Mode_Names[] = {
+	{ "Protanopia", COLORBLIND_PROTANOPIA },
+	{ "Deuteranopia", COLORBLIND_DEUTERANOPIA },
+	{ "Tritanopia", COLORBLIND_TRITANOPIA },
+};
+
+static NameEntry const Weather_Names[] = {
+	{ "None", WEATHER_NONE },
+	{ "Map", WEATHER_MAP },
+	{ "Rain", WEATHER_RAIN },
+	{ "Snow", WEATHER_SNOW },
+};
+
+static NameEntry const Menu_Theme_Names[] = {
+	{ "Allied", MENU_THEME_ALLIED },
+	{ "Soviet", MENU_THEME_SOVIET },
+	{ "Yuri", MENU_THEME_YURI },
+};
+
+static NameEntry const Player_Color_View_Names[] = {
+	{ "ColorBlindSafe", PLAYER_VIEW_COLORBLIND_SAFE },
+	{ "Relationship", PLAYER_VIEW_RELATIONSHIP },
+};
+
+static NameEntry const HDR_Highlights_Names[] = {
+	{ "Classic", HDR_HIGHLIGHTS_CLASSIC },
+	{ "Enhanced", HDR_HIGHLIGHTS_ENHANCED },
+};
+
+
 /// <summary>
 /// Turns the name of a frame filter into the filter itself.
 /// </summary>
@@ -488,46 +563,25 @@ void OptionsClass::Set_Movie_Volume(float volume, bool feedback)
 /// <returns>int; One of the VideoScaleMode values.</returns>
 static int Scale_Mode_From_Name(char const * name, int fallback)
 {
-	if (stricmp(name, "Nearest") == 0) return(VIDEO_SCALE_NEAREST);
-	if (stricmp(name, "Linear") == 0) return(VIDEO_SCALE_LINEAR);
-	if (stricmp(name, "PixelArt") == 0) return(VIDEO_SCALE_PIXELART);
-
-	return(fallback);
+	return(Enum_From_Name(Scale_Mode_Names, name, fallback));
 }
 
 
 static int HDR_Output_From_Name(char const * name)
 {
-	if (stricmp(name, "Off") == 0) return(VIDEO_HDR_OFF);
-	if (stricmp(name, "On") == 0) return(VIDEO_HDR_ON);
-	return(VIDEO_HDR_AUTOMATIC);
+	return(Enum_From_Name(HDR_Output_Names, name, VIDEO_HDR_AUTOMATIC));
 }
 
 
 static int ColorBlind_Mode_From_Name(char const * name)
 {
-	if (stricmp(name, "Protanopia") == 0) return(COLORBLIND_PROTANOPIA);
-	if (stricmp(name, "Deuteranopia") == 0) return(COLORBLIND_DEUTERANOPIA);
-	if (stricmp(name, "Tritanopia") == 0) return(COLORBLIND_TRITANOPIA);
-	return(COLORBLIND_OFF);
+	return(Enum_From_Name(ColorBlind_Mode_Names, name, COLORBLIND_OFF));
 }
 
 
 static char const * ColorBlind_Mode_Name(int mode)
 {
-	switch (mode) {
-		case COLORBLIND_PROTANOPIA:
-			return("Protanopia");
-
-		case COLORBLIND_DEUTERANOPIA:
-			return("Deuteranopia");
-
-		case COLORBLIND_TRITANOPIA:
-			return("Tritanopia");
-
-		default:
-			return("Off");
-	}
+	return(Enum_Name(ColorBlind_Mode_Names, mode, "Off"));
 }
 
 
@@ -547,16 +601,7 @@ static float Gamma_From_Text(char const * text)
 
 static char const * HDR_Output_Name(int mode)
 {
-	switch (mode) {
-		case VIDEO_HDR_OFF:
-			return("Off");
-
-		case VIDEO_HDR_ON:
-			return("On");
-
-		default:
-			return("Automatic");
-	}
+	return(Enum_Name(HDR_Output_Names, mode, "Automatic"));
 }
 
 
@@ -590,16 +635,7 @@ static void Save_HDR_Nits(char const * key, int nits)
 /// <returns>The name the settings file uses for that filter.</returns>
 static char const * Scale_Mode_Name(int mode)
 {
-	switch (mode) {
-		case VIDEO_SCALE_NEAREST:
-			return("Nearest");
-
-		case VIDEO_SCALE_LINEAR:
-			return("Linear");
-
-		default:
-			return("PixelArt");
-	}
+	return(Enum_Name(Scale_Mode_Names, mode, "PixelArt"));
 }
 
 
@@ -695,8 +731,7 @@ void OptionsClass::Load_Settings(void)
 
 	char playercolors[32];
 	ConfigINI.Get_String("Options", "PlayerColors", "Default", playercolors, sizeof(playercolors));
-	PlayerColorView = (stricmp(playercolors, "ColorBlindSafe") == 0) ? PLAYER_VIEW_COLORBLIND_SAFE
-		: (stricmp(playercolors, "Relationship") == 0) ? PLAYER_VIEW_RELATIONSHIP : PLAYER_VIEW_DEFAULT;
+	PlayerColorView = Enum_From_Name(Player_Color_View_Names, playercolors, PLAYER_VIEW_DEFAULT);
 
 	// Turns on the per-frame check value log, as -SYNCLOG does; a false or absent value leaves the switch as it was.
 	if (ConfigINI.Get_Bool("Options", "SyncLog", false)) {
@@ -756,12 +791,12 @@ void OptionsClass::Load_Settings(void)
 	CloudShadowStrength = std::clamp(ConfigINI.Get_Int("Video", "CloudShadowStrength", CloudShadowStrength), 1, 400);
 	char weathername[16];
 	ConfigINI.Get_String("Video", "Weather", "None", weathername, sizeof(weathername));
-	Weather = stricmp(weathername, "Map") == 0 ? WEATHER_MAP : stricmp(weathername, "Rain") == 0 ? WEATHER_RAIN : stricmp(weathername, "Snow") == 0 ? WEATHER_SNOW : WEATHER_NONE;
+	Weather = Enum_From_Name(Weather_Names, weathername, WEATHER_NONE);
 	WeatherStrength = std::clamp(ConfigINI.Get_Int("Video", "WeatherStrength", WeatherStrength), 1, 400);
 
 	char highlightsname[16];
 	ConfigINI.Get_String("Video", "HDRHighlights", "Enhanced", highlightsname, sizeof(highlightsname));
-	HDRHighlights = stricmp(highlightsname, "Classic") == 0 ? HDR_HIGHLIGHTS_CLASSIC : HDR_HIGHLIGHTS_ENHANCED;
+	HDRHighlights = Enum_From_Name(HDR_Highlights_Names, highlightsname, HDR_HIGHLIGHTS_ENHANCED);
 	Emissive_Set_Debug_View(ConfigINI.Get_Bool("Video", "EmissiveDebugView", false));
 	Apply_HDR_Highlights();
 
@@ -829,10 +864,7 @@ void OptionsClass::Load_Menu_Style(void)
 
 	char theme[16];
 	ConfigINI.Get_String("Options", "MenuTheme", "Random", theme, sizeof(theme));
-	MenuTheme = (stricmp(theme, "Allied") == 0) ? MENU_THEME_ALLIED
-		: (stricmp(theme, "Soviet") == 0) ? MENU_THEME_SOVIET
-		: (stricmp(theme, "Yuri") == 0) ? MENU_THEME_YURI
-		: MENU_THEME_RANDOM;
+	MenuTheme = (MenuThemeType)Enum_From_Name(Menu_Theme_Names, theme, MENU_THEME_RANDOM);
 	MenuBattle = ConfigINI.Get_Bool("Options", "MenuBattle", MenuBattle);
 }
 
@@ -933,15 +965,13 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "ShowDefenceRange", ShowDefenceRange);
 	ConfigINI.Put_Bool("Options", "ScreenShake", ScreenShake);
 	ConfigINI.Put_String("Options", "MenuStyle", IsClassicMenus ? "Classic" : "Modern");
-	ConfigINI.Put_String("Options", "MenuTheme", MenuTheme == MENU_THEME_ALLIED ? "Allied"
-		: MenuTheme == MENU_THEME_SOVIET ? "Soviet" : MenuTheme == MENU_THEME_YURI ? "Yuri" : "Random");
+	ConfigINI.Put_String("Options", "MenuTheme", Enum_Name(Menu_Theme_Names, MenuTheme, "Random"));
 	ConfigINI.Put_Bool("Options", "MenuBattle", MenuBattle);
 	ConfigINI.Put_String("Options", "InterfaceStyle", IsModernInterfaceChosen ? "Modern" : "Classic");
 	ConfigINI.Put_Int("Options", "SidebarRows", SidebarRows);
 	ConfigINI.Put_Int("Options", "SidebarOpacity", SidebarOpacity);
 	ConfigINI.Put_Bool("Options", "DebugMode", DebugMode);
-	ConfigINI.Put_String("Options", "PlayerColors", PlayerColorView == PLAYER_VIEW_COLORBLIND_SAFE ? "ColorBlindSafe"
-		: PlayerColorView == PLAYER_VIEW_RELATIONSHIP ? "Relationship" : "Default");
+	ConfigINI.Put_String("Options", "PlayerColors", Enum_Name(Player_Color_View_Names, PlayerColorView, "Default"));
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
 	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
@@ -972,10 +1002,9 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Video", "WaterRippleStrength", WaterRippleStrength);
 	ConfigINI.Put_Bool("Video", "CloudShadows", CloudShadows);
 	ConfigINI.Put_Int("Video", "CloudShadowStrength", CloudShadowStrength);
-	static char const * const _weathernames[] = { "None", "Map", "Rain", "Snow" };
-	ConfigINI.Put_String("Video", "Weather", _weathernames[std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW)]);
+	ConfigINI.Put_String("Video", "Weather", Enum_Name(Weather_Names, std::clamp(Weather, (int)WEATHER_NONE, (int)WEATHER_SNOW), "None"));
 	ConfigINI.Put_Int("Video", "WeatherStrength", WeatherStrength);
-	ConfigINI.Put_String("Video", "HDRHighlights", HDRHighlights == HDR_HIGHLIGHTS_CLASSIC ? "Classic" : "Enhanced");
+	ConfigINI.Put_String("Video", "HDRHighlights", Enum_Name(HDR_Highlights_Names, HDRHighlights, "Enhanced"));
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_String("Video", "HDROutput", (char *)HDR_Output_Name(HDROutput));
 	Save_HDR_Nits("HDRPaperWhite", HDRPaperWhite);
