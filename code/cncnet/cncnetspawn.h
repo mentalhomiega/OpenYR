@@ -55,10 +55,10 @@ std::map<std::string, std::string> CnCNet_Match_Info(CnCNetMatchType const & mat
 bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMatchType & match);
 
 // The SPAWN.INI text for one player of the match, with the room's options.
-// bridge_port is the loopback port of that player's tunnel bridge. adaptive_timing picks the
-// adaptive network timing; false plays gamemd's.
+// bridge_port is the loopback port of that player's tunnel bridge. Numeric options are held to the lobby's ranges,
+// with credits and tech level capped by limits. adaptive_timing picks the adaptive network timing; false plays gamemd's.
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
-	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing = true);
+	std::string const & own_name, uint16_t bridge_port, CnCNetRuleLimitsType const & limits, bool adaptive_timing = true);
 
 // The network choices in a room's options (FrameSendRate, MaxAhead and Protocol). A key that is absent or out of
 // range is no choice, so a room that never set one gives the defaults.

@@ -1181,6 +1181,8 @@ bool Has(std::string const & text, std::string const & part)
 
 void Test_Spawn(void)
 {
+	// The rules' ceilings for a match with the default rules.
+	CnCNetRuleLimitsType const rules{10000, 10};
 	CnCNetRoomPlayerType host;
 	host.Name = "Host";
 	host.Side = 2;
@@ -1220,7 +1222,7 @@ void Test_Spawn(void)
 	teams.Seats[0].Team = 1;
 	teams.Seats[1].Team = 1;
 	std::map<std::string, std::string> const options = {{"Map", "lake.map"}, {"Credits", "5000"}, {"Crates", "1"}, {"Bases", "0"}};
-	std::string const ini = CnCNet_Spawn_Ini(teams, options, "GUEST", 40000);
+	std::string const ini = CnCNet_Spawn_Ini(teams, options, "GUEST", 40000, rules);
 	std::string const host_port = "Port=" + std::to_string(match.Seats[0].TunnelId) + "\n";
 	Check(Has(ini, "[Settings]\nName=guest\n") && Has(ini, "Host=no\n") && Has(ini, "Scenario=lake.map\n"), "spawn: settings name the player and map");
 	Check(Has(ini, "Port=" + std::to_string(match.Seats[1].TunnelId) + "\n"), "spawn: own tunnel number is the settings port");
@@ -1229,38 +1231,38 @@ void Test_Spawn(void)
 	Check(Has(ini, "[Tunnel]\nIp=127.0.0.1\nPort=40000\n"), "spawn: tunnel section names the local bridge");
 	Check(Has(ini, "[SpawnLocations]\nMulti1=" + std::to_string(match.Seats[0].Start) + "\nMulti2=3\n"), "spawn: starts in colour order");
 	Check(Has(ini, "[Multi1_Alliances]\nHouseAllyOne=1\n") && Has(ini, "[Multi2_Alliances]\nHouseAllyOne=0\n"), "spawn: team mates allied by sorted seat");
-	Check(!Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000), "_Alliances"), "spawn: no alliances without teams");
+	Check(!Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, rules), "_Alliances"), "spawn: no alliances without teams");
 	Check(Has(ini, "TimingPolicy=Adaptive\n"), "spawn: adaptive timing by default");
-	Check(Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, false), "TimingPolicy=Gamemd\n"), "spawn: gamemd timing when asked");
-	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000), "Host=yes\n"), "spawn: the first seat hosts");
+	Check(Has(CnCNet_Spawn_Ini(match, options, "Guest", 40000, rules, false), "TimingPolicy=Gamemd\n"), "spawn: gamemd timing when asked");
+	Check(Has(CnCNet_Spawn_Ini(match, options, "Host", 40000, rules), "Host=yes\n"), "spawn: the first seat hosts");
 	Check(Has(ini, "FrameSendRate=7\nProtocol=2\n") && !Has(ini, "HostTiming") && !Has(ini, "MaxAhead"), "spawn: no network choice writes the client's defaults");
 
 	std::map<std::string, std::string> chosen = options;
 	chosen["FrameSendRate"] = "6";
 	chosen["MaxAhead"] = "40";
 	chosen["Protocol"] = "0";
-	std::string const chosen_ini = CnCNet_Spawn_Ini(match, chosen, "Guest", 40000);
+	std::string const chosen_ini = CnCNet_Spawn_Ini(match, chosen, "Guest", 40000, rules);
 	Check(Has(chosen_ini, "HostTiming=yes\nFrameSendRate=6\nMaxAhead=40\nProtocol=0\n"), "spawn: the host's network choices are written literally");
 	Check(Has(chosen_ini, "TimingPolicy=Gamemd\n"), "spawn: a network choice plays gamemd's timing even when adaptive was asked");
 	chosen.erase("FrameSendRate");
 	chosen.erase("Protocol");
-	Check(Has(CnCNet_Spawn_Ini(match, chosen, "Guest", 40000), "HostTiming=yes\nMaxAhead=40\nProtocol=2\n"), "spawn: a look-ahead alone leaves the send period out");
+	Check(Has(CnCNet_Spawn_Ini(match, chosen, "Guest", 40000, rules), "HostTiming=yes\nMaxAhead=40\nProtocol=2\n"), "spawn: a look-ahead alone leaves the send period out");
 	std::map<std::string, std::string> bad = options;
 	bad["FrameSendRate"] = "99";
 	bad["MaxAhead"] = "2";
 	bad["Protocol"] = "1";
-	Check(Has(CnCNet_Spawn_Ini(match, bad, "Guest", 40000), "FrameSendRate=7\nProtocol=2\n"), "spawn: network choices out of range are no choice");
+	Check(Has(CnCNet_Spawn_Ini(match, bad, "Guest", 40000, rules), "FrameSendRate=7\nProtocol=2\n"), "spawn: network choices out of range are no choice");
 	NetTiming::HostNetworkOptions round_trip;
 	round_trip.Timing.FrameSendRate = 3;
 	round_trip.Timing.MaxAhead = 24;
 	round_trip.Protocol = 0;
 	Check(CnCNet_Network_Options(CnCNet_Network_Option_Values(round_trip)) == round_trip, "spawn: network choices survive the room options");
 	Check(CnCNet_Network_Option_Values(NetTiming::HostNetworkOptions()).empty(), "spawn: the defaults add no room options");
-	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000).empty(), "spawn: no file for a player not in the match");
+	Check(CnCNet_Spawn_Ini(match, options, "Stranger", 40000, rules).empty(), "spawn: no file for a player not in the match");
 
 	std::map<std::string, std::string> const hostile = {{"Map", "x.map\nLoadSaveGame=yes\r\n[GlobalFlags]"}, {"MapName", "a\r\nSyncLog=yes"},
 		{"Credits", "5000\nBindAddress=1.2.3.4"}, {"GameSpeed", std::string("2\0\nCampaignID=1", 15)}, {"Extra", "1"}};
-	std::string const clean_ini = CnCNet_Spawn_Ini(match, hostile, "guest", 40000);
+	std::string const clean_ini = CnCNet_Spawn_Ini(match, hostile, "guest", 40000, rules);
 	std::set<std::string> keys;
 	std::size_t line_start = 0;
 	bool lines_ok = true;
@@ -1275,7 +1277,19 @@ void Test_Spawn(void)
 	}
 	Check(lines_ok && keys.count("LoadSaveGame") == 0 && keys.count("SyncLog") == 0 && keys.count("BindAddress") == 0 && keys.count("CampaignID") == 0
 		&& keys.count("Extra") == 0 && !Has(clean_ini, "\n[GlobalFlags]"), "spawn: values from a peer cannot add a line, a key or a section");
-	Check(Has(clean_ini, "Credits=5000\n") && Has(clean_ini, "GameSpeed=2\n"), "spawn: numeric options are written as numbers");
+	Check(Has(clean_ini, "Credits=10000\n") && Has(clean_ini, "GameSpeed=0\n"),
+		"spawn: a numeric option with text after the number is no choice, as on the lobby screen");
+	std::map<std::string, std::string> const out_of_range = {{"Credits", "-50000"}, {"UnitCount", "9999"}, {"TechLevel", "0"},
+		{"GameSpeed", "99"}, {"AIPlayers", "-3"}, {"AIDifficulty", "7"}};
+	Check(Has(CnCNet_Spawn_Ini(match, out_of_range, "guest", 40000, rules), "Credits=2500\nUnitCount=10\nTechLevel=1\nGameSpeed=6\nAIPlayers=0\nAIDifficulty=2\n"),
+		"spawn: numeric options are held to the lobby's ranges");
+	std::map<std::string, std::string> const past_rules = {{"Credits", "99999"}, {"TechLevel", "11"}};
+	Check(Has(CnCNet_Spawn_Ini(match, past_rules, "guest", 40000, CnCNetRuleLimitsType{5000, 8}), "Credits=5000\n")
+		&& Has(CnCNet_Spawn_Ini(match, past_rules, "guest", 40000, CnCNetRuleLimitsType{5000, 8}), "TechLevel=8\n")
+		&& Has(CnCNet_Spawn_Ini(match, past_rules, "guest", 40000, rules), "Credits=10000\nUnitCount=10\nTechLevel=10\n"),
+		"spawn: credits and tech level stop at the rules' ceilings");
+	Check(Has(CnCNet_Spawn_Ini(match, {{"Credits", "-1"}}, "guest", 40000, CnCNetRuleLimitsType{1000, 8}), "Credits=2500\n"),
+		"spawn: credits below the lobby minimum are held to it even when the rules allow less");
 
 	std::map<std::string, std::string> bad_info = CnCNet_Match_Info(match);
 	bad_info["Names"] = "Host,gu\nest";
@@ -1288,9 +1302,9 @@ void Test_Spawn(void)
 	CnCNetMatchType const watched = CnCNet_Settle_Match({host, guest, watcher}, {0, 1, 2}, 8, {0, 1, 2, 3}, "127.0.0.1", 50000, random);
 	Check(watched.Seats.size() == 3 && watched.Seats[2].Side == CNCNET_SPECTATOR_SIDE && watched.Seats[2].Start == -1 && watched.Seats[2].Team == -1,
 		"spawn: a spectator keeps no start and no team");
-	std::string const watcher_ini = CnCNet_Spawn_Ini(watched, options, "Watcher", 40000);
+	std::string const watcher_ini = CnCNet_Spawn_Ini(watched, options, "Watcher", 40000, rules);
 	Check(Has(watcher_ini, "Side=0\nColor=" + std::to_string(watched.Seats[2].Color) + "\nIsSpectator=yes\n"), "spawn: a spectator's own seat watches");
-	Check(Has(CnCNet_Spawn_Ini(watched, options, "Host", 40000), "Name=Watcher\nSide=0\n"), "spawn: other machines see the spectator's seat");
+	Check(Has(CnCNet_Spawn_Ini(watched, options, "Host", 40000, rules), "Name=Watcher\nSide=0\n"), "spawn: other machines see the spectator's seat");
 }
 
 

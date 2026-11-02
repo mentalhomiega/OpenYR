@@ -64,10 +64,10 @@ std::string Option(std::map<std::string, std::string> const & options, char cons
 }
 
 
-std::string Number_Option(std::map<std::string, std::string> const & options, char const * key, int fallback)
+// The fallback is held to the same range, so an absent option never writes a value the lobby would refuse.
+std::string Number_Option(std::map<std::string, std::string> const & options, char const * key, int fallback, int low, int high)
 {
-	auto const found = options.find(key);
-	return(std::to_string(found == options.end() ? fallback : std::atoi(found->second.c_str())));
+	return(std::to_string(CnCNet_Option_Number(options, key, std::clamp(fallback, low, high), low, high)));
 }
 
 
@@ -272,7 +272,7 @@ std::map<std::string, std::string> CnCNet_Network_Option_Values(NetTiming::HostN
 
 
 std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string, std::string> const & options,
-	std::string const & own_name, uint16_t bridge_port, bool adaptive_timing)
+	std::string const & own_name, uint16_t bridge_port, CnCNetRuleLimitsType const & limits, bool adaptive_timing)
 {
 	CnCNetMatchSeatType const * own = nullptr;
 	for (CnCNetMatchSeatType const & seat : match.Seats) {
@@ -317,12 +317,13 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	// The host's send period and look-ahead are defined against gamemd's timing, so any choice plays that policy.
 	line("TimingPolicy", adaptive_timing && network.Is_Default() ? "Adaptive" : "Gamemd");
 	line("GameID", "1");
-	line("Credits", Number_Option(options, "Credits", 10000));
-	line("UnitCount", Number_Option(options, "UnitCount", 10));
-	line("TechLevel", Number_Option(options, "TechLevel", 10));
-	line("GameSpeed", Number_Option(options, "GameSpeed", 0));
-	line("AIPlayers", Number_Option(options, "AIPlayers", 0));
-	line("AIDifficulty", Number_Option(options, "AIDifficulty", 1));
+	int const max_credits = std::max(CNCNET_MIN_CREDITS, limits.MaxCredits);
+	line("Credits", Number_Option(options, "Credits", 10000, CNCNET_MIN_CREDITS, max_credits));
+	line("UnitCount", Number_Option(options, "UnitCount", 10, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT));
+	line("TechLevel", Number_Option(options, "TechLevel", 10, CNCNET_MIN_TECH_LEVEL, std::max(CNCNET_MIN_TECH_LEVEL, limits.MaxTechLevel)));
+	line("GameSpeed", Number_Option(options, "GameSpeed", 0, 0, CNCNET_MAX_GAME_SPEED));
+	line("AIPlayers", Number_Option(options, "AIPlayers", 0, 0, CNCNET_MAX_AI_PLAYERS));
+	line("AIDifficulty", Number_Option(options, "AIDifficulty", 1, 0, CNCNET_MAX_AI_DIFFICULTY));
 	line("Bases", Yes_No(options, "Bases", true));
 	line("ShortGame", Yes_No(options, "ShortGame", false));
 	line("Crates", Yes_No(options, "Crates", false));

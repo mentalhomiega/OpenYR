@@ -233,6 +233,25 @@ std::size_t CnCNet_Room_Line_Length(std::string const & channel, std::string_vie
 int CnCNet_Find_Local_Map(std::string_view named, std::vector<std::string> const & local_files);
 
 
+// The ranges a room's numeric game options are held to. The lobby screen and the spawn file clamp with the same
+// ranges, so a guest's screen and its game show the same value.
+inline constexpr int CNCNET_MIN_CREDITS = 2500;
+inline constexpr int CNCNET_MIN_UNIT_COUNT = 1;
+inline constexpr int CNCNET_MAX_UNIT_COUNT = 10;
+inline constexpr int CNCNET_MIN_TECH_LEVEL = 1;
+inline constexpr int CNCNET_MAX_GAME_SPEED = 6;
+inline constexpr int CNCNET_MAX_AI_PLAYERS = 6;
+inline constexpr int CNCNET_MAX_AI_DIFFICULTY = 2;
+
+
+// The rules' ceilings for credits and tech level, which the room options are held to.
+struct CnCNetRuleLimitsType
+{
+	int MaxCredits;
+	int MaxTechLevel;
+};
+
+
 // The whole number a host sent for an option, held between low and high. fallback when the option is absent or
 // is not a whole number; a number too large for an int counts as its sign's limit.
 int CnCNet_Option_Number(std::map<std::string, std::string> const & options, std::string const & key, int fallback, int low, int high);
