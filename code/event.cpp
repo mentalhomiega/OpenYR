@@ -520,20 +520,8 @@ EventClass::EventClass(int index, AnimType anim, HousesType owner, Coord const &
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
 EventClass::EventClass(int index, TargetClass src, MissionType mission, TargetClass target, TargetClass destination)
+	: EventClass(index, MEGAMISSION, src, mission, target, destination)
 {
-	if (index >= 0) {
-		ID = index;
-		Type = MEGAMISSION;
-		Data.MegaMission.Whom = src;
-		Data.MegaMission.Mission = mission;
-		Data.MegaMission.Target = target;
-		Data.MegaMission.Destination = destination;
-		Frame = ::Frame;
-	} else {
-		ID = -1;
-		Type = EMPTY;
-		Frame = ::Frame;
-	}
 }
 
 
@@ -685,21 +673,8 @@ EventClass::EventClass(int index, unsigned char type, RTTIType object, int id, i
  *   05/18/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
 EventClass::EventClass(int index, unsigned char type, RTTIType object, Cell const & cell)
+	: EventClass(index, type, object, -1, cell)
 {
-	DebugString("Adding event %s\n", EventNames[type]);
-
-	if (index >= 0) {
-		ID = index;
-		Type = type;
-		Data.Place.Type = object;
-		Data.Place.Where = cell;
-		Data.Place.ID = -1;
-		Frame = ::Frame;
-	} else {
-		ID = -1;
-		Type = EMPTY;
-		Frame = ::Frame;
-	}
 }
 
 
