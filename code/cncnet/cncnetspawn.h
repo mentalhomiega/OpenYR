@@ -23,6 +23,27 @@
 #include <vector>
 
 
+// The names of the room options. The room sends them as keys of its options map, so the spelling is part of the room protocol.
+inline constexpr char const * CNCNET_OPTION_MAP = "Map";
+inline constexpr char const * CNCNET_OPTION_MAP_NAME = "MapName";
+inline constexpr char const * CNCNET_OPTION_MAP_SHA1 = "MapSHA1";
+inline constexpr char const * CNCNET_OPTION_BASES = "Bases";
+inline constexpr char const * CNCNET_OPTION_CRATES = "Crates";
+inline constexpr char const * CNCNET_OPTION_SHORT_GAME = "ShortGame";
+inline constexpr char const * CNCNET_OPTION_ALLIES = "Allies";
+inline constexpr char const * CNCNET_OPTION_HARV_TRUCE = "HarvTruce";
+inline constexpr char const * CNCNET_OPTION_FOG_OF_WAR = "FogOfWar";
+inline constexpr char const * CNCNET_OPTION_BRIDGES = "Bridges";
+inline constexpr char const * CNCNET_OPTION_MULTI_ENGINEER = "MultiEngineer";
+inline constexpr char const * CNCNET_OPTION_MCV_REDEPLOY = "MCVRedeploy";
+inline constexpr char const * CNCNET_OPTION_GAME_SPEED = "GameSpeed";
+inline constexpr char const * CNCNET_OPTION_AI_PLAYERS = "AIPlayers";
+inline constexpr char const * CNCNET_OPTION_AI_DIFFICULTY = "AIDifficulty";
+inline constexpr char const * CNCNET_OPTION_UNIT_COUNT = "UnitCount";
+inline constexpr char const * CNCNET_OPTION_TECH_LEVEL = "TechLevel";
+inline constexpr char const * CNCNET_OPTION_CREDITS = "Credits";
+
+
 struct CnCNetMatchSeatType
 {
 	std::string Name;

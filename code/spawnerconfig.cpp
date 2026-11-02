@@ -10,6 +10,7 @@
 
 #include "spawnerconfig.h"
 
+#include "cncnet/spawnkeys.h"
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
@@ -25,6 +26,8 @@
 #include <filesystem>
 #include <sstream>
 #include <vector>
+
+static_assert(SpawnerConfigClass::SLOT_COUNT == std::size(SPAWN_ALLY_KEYS), "one SPAWN.INI alliance key per seat");
 
 
 namespace {
@@ -227,11 +230,6 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 	}
 
 	// The alliance sections name seats in sorted order, so they are read after the sort.
-	static char const * const _ordinals[SLOT_COUNT] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
-
 	for (int index = 0; index < SLOT_COUNT; index++) {
 		SlotType & slot = Slots[index];
 
@@ -250,7 +248,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		}
 
 		for (int ally = 0; ally < SLOT_COUNT; ally++) {
-			slot.Alliances[ally] = ini.Get_Int(section.c_str(), _ordinals[ally], -1);
+			slot.Alliances[ally] = ini.Get_Int(section.c_str(), SPAWN_ALLY_KEYS[ally], -1);
 		}
 	}
 }
@@ -583,13 +581,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	Protocol = ini.Get_Int(SETTINGS, "Protocol", Protocol);
 	// HostTiming=yes takes the three keys literally. Without it the client's default values are no choice.
 	bool const host_timing = Spawn_Bool(ini, SETTINGS, "HostTiming", false);
-	TimingChoice = NetTiming::HostTimingChoice();
-	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
-		TimingChoice.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
-	}
-	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
-		TimingChoice.MaxAhead = static_cast<unsigned int>(max_ahead);
-	}
+	TimingChoice = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
 	// The client writes these keys in every game, with defaults of its own. Those read as no choice unless
 	// the file says the host chose (HostTiming=yes), as the lobby built into the game says.
 	if (!host_timing && NetTiming::Is_CnCNet_Default_Frame_Send_Rate(TimingChoice.FrameSendRate) && TimingChoice.MaxAhead == 0) {
@@ -656,11 +648,6 @@ void Write_Free_Color(std::ostringstream & out, unsigned int custom)
 /// </summary>
 std::string SpawnerConfigClass::Write_INI(void) const
 {
-	static char const * const _ordinals[SLOT_COUNT] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
-
 	std::ostringstream out;
 	out << "[Settings]\n";
 	out << "Scenario=" << ScenarioName << "\n";
@@ -748,7 +735,7 @@ std::string SpawnerConfigClass::Write_INI(void) const
 		std::ostringstream allies;
 		for (int ally : slot.Alliances) {
 			if (ally >= 0 && ally < SLOT_COUNT && written < SLOT_COUNT) {
-				allies << _ordinals[written++] << "=" << ally << "\n";
+				allies << SPAWN_ALLY_KEYS[written++] << "=" << ally << "\n";
 			}
 		}
 		if (written > 0) {

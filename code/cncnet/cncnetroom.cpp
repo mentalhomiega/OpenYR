@@ -161,26 +161,19 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 				if (IsHost) {
 					CurrentStatus = CnCNetRoomStatus::IN_ROOM;
 					Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
-						"+klnNs " + Config.Key + " " + std::to_string(Config.Limits.MaxPlayers), std::string()});
+						std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
 				} else {
 					CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
 					Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
 				}
 				Changed();
 			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
-				if (CurrentStatus == CnCNetRoomStatus::STARTING) {
-					Refuse(event.Nick, "The game has already started.");
-				} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
-					Refuse(event.Nick, "The room is full.");
-				} else {
-					// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
-					Pending.push_back({event.Nick, now});
-					CnCNetRoomPlayerType player;
-					player.Name = event.Nick;
-					Seat_Joiner(player);
-					if (!Config.Notice.empty()) {
-						Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
-					}
+				// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
+				Pending.push_back({event.Nick, now});
+				CnCNetRoomPlayerType player;
+				player.Name = event.Nick;
+				if (Admit(player) && !Config.Notice.empty()) {
+					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
 				}
 			}
 			break;
@@ -260,7 +253,7 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 {
 	if (event.Command == HELLO) {
-		std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)); });
+		Forget_Pending(event.Nick);
 		std::vector<std::string_view> const parts = CnCNet_Split(event.Text, ';');
 		// A hello in another room protocol announces no build id, so it differs from ours.
 		bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
@@ -274,17 +267,11 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 			Send_Players();
 			return;
 		}
-		if (CurrentStatus == CnCNetRoomStatus::STARTING) {
-			Refuse(event.Nick, "The game has already started.");
-		} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
-			Refuse(event.Nick, "The room is full.");
-		} else {
-			CnCNetRoomPlayerType player;
-			player.Name = event.Nick;
-			player.OpenYR = true;
-			player.Build = build;
-			Seat_Joiner(player);
-		}
+		CnCNetRoomPlayerType player;
+		player.Name = event.Nick;
+		player.OpenYR = true;
+		player.Build = build;
+		Admit(player);
 		return;
 	}
 
@@ -300,10 +287,7 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 			int const start = To_Int(parts[2], -2);
 			int const team = To_Int(parts[3], -2);
 			if (Setup_Allowed(*player, side, color, start, team)) {
-				player->Side = side;
-				player->Color = color;
-				player->Start = start;
-				player->Team = team;
+				Apply_Setup(*player, side, color, start, team);
 				player->Ready = false;
 				Changed();
 			}
@@ -358,7 +342,7 @@ void CnCNetRoomClass::Guest_Message(IRCEventType const & event)
 
 void CnCNetRoomClass::Player_Left(std::string const & nick)
 {
-	std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, nick)); });
+	Forget_Pending(nick);
 	if (!IsHost && CnCNetLobbyClass::Same_Nick(nick, Config.HostNick)) {
 		Close("The host left the room.");
 		return;
@@ -378,7 +362,7 @@ void CnCNetRoomClass::Player_Left(std::string const & nick)
 void CnCNetRoomClass::Tick(uint64_t now)
 {
 	if (CurrentStatus == CnCNetRoomStatus::WAITING_HOST && now - JoinedAt >= Config.HelloTimeoutMS) {
-		Outgoing.push_back({CnCNetRoomSendKind::PART, Config.Channel, std::string(), std::string(), std::string()});
+		Send_Part();
 		Close("The host did not answer. The room may not be an OpenYR game.");
 		return;
 	}
@@ -409,6 +393,21 @@ void CnCNetRoomClass::Seat_Joiner(CnCNetRoomPlayerType player)
 	Changed();
 	Send_Options();
 	Send_Players();
+}
+
+
+bool CnCNetRoomClass::Admit(CnCNetRoomPlayerType const & player)
+{
+	if (CurrentStatus == CnCNetRoomStatus::STARTING) {
+		Refuse(player.Name, "The game has already started.");
+		return(false);
+	}
+	if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
+		Refuse(player.Name, "The room is full.");
+		return(false);
+	}
+	Seat_Joiner(player);
+	return(true);
 }
 
 
@@ -450,9 +449,15 @@ bool CnCNetRoomClass::Build_Differs_From_Host(void) const
 }
 
 
-void CnCNetRoomClass::Refuse(std::string const & nick, std::string const & reason)
+void CnCNetRoomClass::Forget_Pending(std::string const & nick)
 {
 	std::erase_if(Pending, [&](PendingType const & pending) { return(CnCNetLobbyClass::Same_Nick(pending.Nick, nick)); });
+}
+
+
+void CnCNetRoomClass::Refuse(std::string const & nick, std::string const & reason)
+{
+	Forget_Pending(nick);
 	Send_CTCP(REFUSE, Escape(nick) + ";" + Escape(reason));
 	Outgoing.push_back({CnCNetRoomSendKind::KICK, Config.Channel, nick, reason, std::string()});
 }
@@ -481,6 +486,15 @@ bool CnCNetRoomClass::Setup_Allowed(CnCNetRoomPlayerType const & player, int sid
 }
 
 
+void CnCNetRoomClass::Apply_Setup(CnCNetRoomPlayerType & player, int side, int color, int start, int team)
+{
+	player.Side = side;
+	player.Color = color;
+	player.Start = start;
+	player.Team = team;
+}
+
+
 void CnCNetRoomClass::Request_Setup(int side, int color, int start, int team)
 {
 	if (CurrentStatus != CnCNetRoomStatus::IN_ROOM) {
@@ -493,10 +507,7 @@ void CnCNetRoomClass::Request_Setup(int side, int color, int start, int team)
 	}
 	CnCNetRoomPlayerType * self = Player(Config.OwnNick);
 	if (self != nullptr && Setup_Allowed(*self, side, color, start, team)) {
-		self->Side = side;
-		self->Color = color;
-		self->Start = start;
-		self->Team = team;
+		Apply_Setup(*self, side, color, start, team);
 		Changed();
 		Send_Players();
 	}
@@ -512,17 +523,23 @@ void CnCNetRoomClass::Set_Ready(bool ready)
 }
 
 
+void CnCNetRoomClass::Clear_Ready(void)
+{
+	for (CnCNetRoomPlayerType & player : PlayerList) {
+		if (!player.Host) {
+			player.Ready = false;
+		}
+	}
+}
+
+
 void CnCNetRoomClass::Set_Options(std::map<std::string, std::string> options)
 {
 	if (!IsHost || CurrentStatus == CnCNetRoomStatus::STARTING || CurrentStatus == CnCNetRoomStatus::CLOSED) {
 		return;
 	}
 	OptionList = std::move(options);
-	for (CnCNetRoomPlayerType & player : PlayerList) {
-		if (!player.Host) {
-			player.Ready = false;
-		}
-	}
+	Clear_Ready();
 	Changed();
 	Send_Options();
 	Send_Players();
@@ -603,11 +620,7 @@ void CnCNetRoomClass::Return_To_Room(void)
 	CurrentStatus = CnCNetRoomStatus::IN_ROOM;
 	StartList.clear();
 	StartOptions.clear();
-	for (CnCNetRoomPlayerType & player : PlayerList) {
-		if (!player.Host) {
-			player.Ready = false;
-		}
-	}
+	Clear_Ready();
 	Changed();
 	if (IsHost) {
 		Send_Options();
@@ -621,7 +634,7 @@ void CnCNetRoomClass::Leave(void)
 	if (CurrentStatus == CnCNetRoomStatus::CLOSED) {
 		return;
 	}
-	Outgoing.push_back({CnCNetRoomSendKind::PART, Config.Channel, std::string(), std::string(), std::string()});
+	Send_Part();
 	Close("You left the room.");
 }
 
@@ -631,6 +644,12 @@ std::vector<CnCNetRoomSendType> CnCNetRoomClass::Take_Outgoing(void)
 	std::vector<CnCNetRoomSendType> taken;
 	taken.swap(Outgoing);
 	return(taken);
+}
+
+
+void CnCNetRoomClass::Send_Part(void)
+{
+	Outgoing.push_back({CnCNetRoomSendKind::PART, Config.Channel, std::string(), std::string(), std::string()});
 }
 
 

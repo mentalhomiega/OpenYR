@@ -11,6 +11,7 @@
 
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnettext.h"
+#include "cncnet/spawnkeys.h"
 
 #include <algorithm>
 #include <cctype>
@@ -231,12 +232,7 @@ NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::
 	int const frame_send_rate = CnCNet_Option_Number(options, "FrameSendRate", 0, 0, 1000);
 	int const max_ahead = CnCNet_Option_Number(options, "MaxAhead", 0, 0, 1000);
 	int const protocol = CnCNet_Option_Number(options, "Protocol", 2, 0, 1000);
-	if (frame_send_rate > 0 && NetTiming::Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
-		network.Timing.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
-	}
-	if (max_ahead > 0 && NetTiming::Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
-		network.Timing.MaxAhead = static_cast<unsigned int>(max_ahead);
-	}
+	network.Timing = NetTiming::Host_Timing_Choice_From(frame_send_rate, max_ahead);
 	network.Protocol = NetTiming::Host_Protocol_Is_Valid(protocol) ? protocol : 2;
 	return(network);
 }
@@ -274,8 +270,8 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	std::string ini = "[Settings]\n";
 	auto const line = [&ini](std::string const & key, std::string const & value) { ini += Without_Controls(key) + "=" + Without_Controls(value) + "\n"; };
 	line("Name", own->Name);
-	line("Scenario", Option(options, "Map", ""));
-	line("UIMapName", Option(options, "MapName", ""));
+	line("Scenario", Option(options, CNCNET_OPTION_MAP, ""));
+	line("UIMapName", Option(options, CNCNET_OPTION_MAP_NAME, ""));
 	line("UIGameMode", "Standard");
 	line("PlayerCount", std::to_string(match.Seats.size()));
 	line("Side", std::to_string(Spawn_Side(*own)));
@@ -305,21 +301,21 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	line("TimingPolicy", adaptive_timing && network.Is_Default() ? "Adaptive" : "Gamemd");
 	line("GameID", "1");
 	int const max_credits = std::max(CNCNET_MIN_CREDITS, limits.MaxCredits);
-	line("Credits", Number_Option(options, "Credits", 10000, CNCNET_MIN_CREDITS, max_credits));
-	line("UnitCount", Number_Option(options, "UnitCount", 10, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT));
-	line("TechLevel", Number_Option(options, "TechLevel", 10, CNCNET_MIN_TECH_LEVEL, std::max(CNCNET_MIN_TECH_LEVEL, limits.MaxTechLevel)));
-	line("GameSpeed", Number_Option(options, "GameSpeed", 0, 0, CNCNET_MAX_GAME_SPEED));
-	line("AIPlayers", Number_Option(options, "AIPlayers", 0, 0, CNCNET_MAX_AI_PLAYERS));
-	line("AIDifficulty", Number_Option(options, "AIDifficulty", 1, 0, CNCNET_MAX_AI_DIFFICULTY));
-	line("Bases", Yes_No(options, "Bases", true));
-	line("ShortGame", Yes_No(options, "ShortGame", false));
-	line("Crates", Yes_No(options, "Crates", false));
-	line("BridgeDestroy", Yes_No(options, "Bridges", true));
-	line("AlliesAllowed", Yes_No(options, "Allies", true));
-	line("HarvesterTruce", Yes_No(options, "HarvTruce", false));
-	line("FogOfWar", Yes_No(options, "FogOfWar", false));
-	line("MCVRedeploy", Yes_No(options, "MCVRedeploy", true));
-	line("MultiEngineer", Yes_No(options, "MultiEngineer", false));
+	line("Credits", Number_Option(options, CNCNET_OPTION_CREDITS, 10000, CNCNET_MIN_CREDITS, max_credits));
+	line("UnitCount", Number_Option(options, CNCNET_OPTION_UNIT_COUNT, 10, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT));
+	line("TechLevel", Number_Option(options, CNCNET_OPTION_TECH_LEVEL, 10, CNCNET_MIN_TECH_LEVEL, std::max(CNCNET_MIN_TECH_LEVEL, limits.MaxTechLevel)));
+	line("GameSpeed", Number_Option(options, CNCNET_OPTION_GAME_SPEED, 0, 0, CNCNET_MAX_GAME_SPEED));
+	line("AIPlayers", Number_Option(options, CNCNET_OPTION_AI_PLAYERS, 0, 0, CNCNET_MAX_AI_PLAYERS));
+	line("AIDifficulty", Number_Option(options, CNCNET_OPTION_AI_DIFFICULTY, 1, 0, CNCNET_MAX_AI_DIFFICULTY));
+	line("Bases", Yes_No(options, CNCNET_OPTION_BASES, true));
+	line("ShortGame", Yes_No(options, CNCNET_OPTION_SHORT_GAME, false));
+	line("Crates", Yes_No(options, CNCNET_OPTION_CRATES, false));
+	line("BridgeDestroy", Yes_No(options, CNCNET_OPTION_BRIDGES, true));
+	line("AlliesAllowed", Yes_No(options, CNCNET_OPTION_ALLIES, true));
+	line("HarvesterTruce", Yes_No(options, CNCNET_OPTION_HARV_TRUCE, false));
+	line("FogOfWar", Yes_No(options, CNCNET_OPTION_FOG_OF_WAR, false));
+	line("MCVRedeploy", Yes_No(options, CNCNET_OPTION_MCV_REDEPLOY, true));
+	line("MultiEngineer", Yes_No(options, CNCNET_OPTION_MULTI_ENGINEER, false));
 
 	int other = 0;
 	for (CnCNetMatchSeatType const & seat : match.Seats) {
@@ -356,10 +352,6 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		line("Multi" + std::to_string(index + 1), std::to_string(sorted[index]->Start));
 	}
 
-	static char const * const ALLIES[] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
 	for (std::size_t index = 0; index < sorted.size(); ++index) {
 		if (sorted[index]->Team < 0) {
 			continue;
@@ -368,7 +360,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		std::string section;
 		for (std::size_t friend_index = 0; friend_index < sorted.size() && ally < 8; ++friend_index) {
 			if (friend_index != index && sorted[friend_index]->Team == sorted[index]->Team) {
-				section += std::string(ALLIES[ally++]) + "=" + std::to_string(friend_index) + "\n";
+				section += std::string(SPAWN_ALLY_KEYS[ally++]) + "=" + std::to_string(friend_index) + "\n";
 			}
 		}
 		if (!section.empty()) {

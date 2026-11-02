@@ -221,6 +221,19 @@ namespace NetTiming
 	unsigned int Host_Max_Ahead_For(unsigned int max_ahead, unsigned int frame_send_rate);
 	// Puts the host's choice over settings a policy produced. Returns settings when nothing is chosen.
 	TimingSettings Apply_Host_Choice(TimingSettings settings, HostTimingChoice choice);
+	// The choice a launch file or lobby gives for the two timing keys. A value that is zero, negative or invalid
+	// leaves its field at zero.
+	constexpr HostTimingChoice Host_Timing_Choice_From(int frame_send_rate, int max_ahead)
+	{
+		HostTimingChoice choice;
+		if (frame_send_rate > 0 && Host_Frame_Send_Rate_Is_Valid(static_cast<unsigned int>(frame_send_rate))) {
+			choice.FrameSendRate = static_cast<unsigned int>(frame_send_rate);
+		}
+		if (max_ahead > 0 && Host_Max_Ahead_Is_Valid(static_cast<unsigned int>(max_ahead))) {
+			choice.MaxAhead = static_cast<unsigned int>(max_ahead);
+		}
+		return(choice);
+	}
 	// Everything a host chooses about the network of a match: the timing above and the protocol. Protocol 2 sends
 	// orders in batches every send period and lets the master adjust the timing; protocol 0 sends every frame and
 	// keeps the look-ahead it starts with. 2 is the default.

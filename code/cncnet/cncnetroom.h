@@ -109,8 +109,9 @@ struct CnCNetRoomSendType
 	CnCNetRoomSendKind Kind;
 	std::string Target;
 	std::string Command;        // CTCP command, or the kicked nick.
-	std::string Text;           // CTCP arguments, the kick reason, or a mode list.
+	std::string Text;           // CTCP arguments or the kick reason.
 	std::string QueueKey;       // A queued send with the same key is replaced.
+	std::vector<std::string> Modes;     // MODE only: the mode change and its parameters, one entry each.
 };
 
 
@@ -196,10 +197,15 @@ class CnCNetRoomClass
 		void Host_Message(IRCEventType const & event);
 		void Guest_Message(IRCEventType const & event);
 		void Player_Left(std::string const & nick);
+		void Forget_Pending(std::string const & nick);
 		void Refuse(std::string const & nick, std::string const & reason);
 		void Seat_Joiner(CnCNetRoomPlayerType player);
+		bool Admit(CnCNetRoomPlayerType const & player);
 		bool Host_Build(std::string & build) const;
 		bool Setup_Allowed(CnCNetRoomPlayerType const & player, int side, int color, int start, int team) const;
+		void Apply_Setup(CnCNetRoomPlayerType & player, int side, int color, int start, int team);
+		void Clear_Ready(void);
+		void Send_Part(void);
 		void Send_CTCP(std::string const & command, std::string const & arguments, std::string const & key = std::string());
 		void Send_Options(void);
 		void Send_Players(void);

@@ -71,12 +71,6 @@ int const COLOR_NAMES[] = {
 int const COLOR_COUNT = static_cast<int>(sizeof(COLOR_NAMES) / sizeof(COLOR_NAMES[0]));
 
 
-std::string Number(int value)
-{
-	return(std::to_string(value));
-}
-
-
 int Option_Int(std::map<std::string, std::string> const & options, char const * key, int fallback)
 {
 	auto const found = options.find(key);
@@ -137,7 +131,7 @@ std::string Map_SHA1(char const * name)
 // The local file for the map in the host's options, or empty when this machine lacks it or holds a different copy.
 std::string Playable_Map(std::map<std::string, std::string> const & options)
 {
-	auto const map = options.find("Map");
+	auto const map = options.find(CNCNET_OPTION_MAP);
 	int const index = map == options.end() ? -1 : Find_Scenario(map->second);
 	if (index < 0) {
 		return(std::string());
@@ -146,7 +140,7 @@ std::string Playable_Map(std::map<std::string, std::string> const & options)
 	if (!CCFileClass(file.c_str()).Is_Available()) {
 		return(std::string());
 	}
-	auto const hash = options.find("MapSHA1");
+	auto const hash = options.find(CNCNET_OPTION_MAP_SHA1);
 	if (hash != options.end() && !hash->second.empty() && hash->second != Map_SHA1(file.c_str())) {
 		return(std::string());
 	}
@@ -244,8 +238,7 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int) override {}
 		virtual void Say(char const * text) override;
 		virtual void Set_Side(int index) override;
-		virtual void Set_Color(int index) override;
-		virtual void Set_Custom_Color(int index, unsigned int) override { Set_Color(index); }
+		virtual void Set_Color(int index, unsigned int) override;
 		virtual void Set_Team(int index) override;
 		virtual void Set_Start(int index) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
@@ -263,6 +256,12 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Publish(void);
 		void Broadcast(bool closed);
 		void Flush(void);
+		void Fill_Sides(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Colors_Teams_Starts(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Players(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Chat(UINetLobbyState & state);
+		bool Fill_Map_Status(UINetLobbyState & state);
+		void Fill_Options(UINetLobbyState & state);
 		void Own_Setup(int side, int color, int start, int team);
 		int Playing_Count(void) const;
 		std::string Start_Note(CnCNetRoomPlayerType const * self, bool map_ready) const;
@@ -362,20 +361,9 @@ void CnCNetRoomServiceClass::Flush(void)
 				Network.Send_CTCP(send.Target, send.Command, send.Text, 60, send.QueueKey);
 				break;
 
-			case CnCNetRoomSendKind::MODE: {
-				std::vector<std::string> modes;
-				std::size_t start = 0;
-				while (start < send.Text.size()) {
-					std::size_t const space = send.Text.find(' ', start);
-					modes.push_back(send.Text.substr(start, space == std::string::npos ? std::string::npos : space - start));
-					if (space == std::string::npos) {
-						break;
-					}
-					start = space + 1;
-				}
-				Network.Set_Mode(send.Target, modes);
+			case CnCNetRoomSendKind::MODE:
+				Network.Set_Mode(send.Target, send.Modes);
 				break;
-			}
 
 			case CnCNetRoomSendKind::KICK:
 				Network.Kick(send.Target, send.Command, send.Text);
@@ -421,24 +409,24 @@ std::map<std::string, std::string> Session_Options(void)
 {
 	GameOptionsType const & options = Session.Options;
 	return(std::map<std::string, std::string>{
-		{"Map", Session.ScenarioFileName},
-		{"MapName", options.ScenarioDescription},
-		{"MapSHA1", Map_SHA1(Session.ScenarioFileName)},
-		{"Bases", Number(options.Bases)},
-		{"Crates", Number(options.Goodies)},
-		{"ShortGame", Number(options.ShortGame)},
-		{"Allies", Number(options.AlliesAllowed)},
-		{"HarvTruce", Number(options.HarvTruce)},
-		{"FogOfWar", Number(options.FogOfWar)},
-		{"Bridges", Number(options.BridgeDestruction)},
-		{"MultiEngineer", Number(options.CrapEngineers)},
-		{"MCVRedeploy", Number(options.MCVRedeploy)},
-		{"GameSpeed", Number(options.GameSpeed)},
-		{"AIPlayers", Number(options.AIPlayers)},
-		{"AIDifficulty", Number(options.AIDifficulty)},
-		{"UnitCount", Number(options.UnitCount)},
-		{"TechLevel", Number(BuildLevel)},
-		{"Credits", Number(options.Credits)},
+		{CNCNET_OPTION_MAP, Session.ScenarioFileName},
+		{CNCNET_OPTION_MAP_NAME, options.ScenarioDescription},
+		{CNCNET_OPTION_MAP_SHA1, Map_SHA1(Session.ScenarioFileName)},
+		{CNCNET_OPTION_BASES, std::to_string(options.Bases)},
+		{CNCNET_OPTION_CRATES, std::to_string(options.Goodies)},
+		{CNCNET_OPTION_SHORT_GAME, std::to_string(options.ShortGame)},
+		{CNCNET_OPTION_ALLIES, std::to_string(options.AlliesAllowed)},
+		{CNCNET_OPTION_HARV_TRUCE, std::to_string(options.HarvTruce)},
+		{CNCNET_OPTION_FOG_OF_WAR, std::to_string(options.FogOfWar)},
+		{CNCNET_OPTION_BRIDGES, std::to_string(options.BridgeDestruction)},
+		{CNCNET_OPTION_MULTI_ENGINEER, std::to_string(options.CrapEngineers)},
+		{CNCNET_OPTION_MCV_REDEPLOY, std::to_string(options.MCVRedeploy)},
+		{CNCNET_OPTION_GAME_SPEED, std::to_string(options.GameSpeed)},
+		{CNCNET_OPTION_AI_PLAYERS, std::to_string(options.AIPlayers)},
+		{CNCNET_OPTION_AI_DIFFICULTY, std::to_string(options.AIDifficulty)},
+		{CNCNET_OPTION_UNIT_COUNT, std::to_string(options.UnitCount)},
+		{CNCNET_OPTION_TECH_LEVEL, std::to_string(BuildLevel)},
+		{CNCNET_OPTION_CREDITS, std::to_string(options.Credits)},
 	});
 }
 
@@ -446,7 +434,7 @@ std::map<std::string, std::string> Session_Options(void)
 void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> const & values)
 {
 	GameOptionsType & options = Session.Options;
-	auto const map = values.find("Map");
+	auto const map = values.find(CNCNET_OPTION_MAP);
 	if (map != values.end()) {
 		int const index = Find_Scenario(map->second);
 		if (index < 0) {
@@ -462,25 +450,25 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 			}
 		}
 	}
-	auto const name = values.find("MapName");
+	auto const name = values.find(CNCNET_OPTION_MAP_NAME);
 	if (name != values.end()) {
 		std::snprintf(options.ScenarioDescription, sizeof(options.ScenarioDescription), "%s", name->second.c_str());
 	}
-	options.Bases = Option_Bool(values, "Bases", options.Bases);
-	options.Goodies = Option_Bool(values, "Crates", options.Goodies);
-	options.ShortGame = Option_Bool(values, "ShortGame", options.ShortGame);
-	options.AlliesAllowed = Option_Bool(values, "Allies", options.AlliesAllowed);
-	options.HarvTruce = Option_Bool(values, "HarvTruce", options.HarvTruce);
-	options.FogOfWar = Option_Bool(values, "FogOfWar", options.FogOfWar);
-	options.BridgeDestruction = Option_Bool(values, "Bridges", options.BridgeDestruction);
-	options.CrapEngineers = Option_Bool(values, "MultiEngineer", options.CrapEngineers);
-	options.MCVRedeploy = Option_Bool(values, "MCVRedeploy", options.MCVRedeploy);
-	options.GameSpeed = CnCNet_Option_Number(values, "GameSpeed", options.GameSpeed, 0, CNCNET_MAX_GAME_SPEED);
-	options.AIPlayers = CnCNet_Option_Number(values, "AIPlayers", options.AIPlayers, 0, CNCNET_MAX_AI_PLAYERS);
-	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, "AIDifficulty", options.AIDifficulty, 0, CNCNET_MAX_AI_DIFFICULTY));
-	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT);
-	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, CNCNET_MIN_TECH_LEVEL, MPLAYER_BUILD_LEVEL_MAX);
-	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, CNCNET_MIN_CREDITS, std::max(CNCNET_MIN_CREDITS, Rule->MPMaxMoney));
+	options.Bases = Option_Bool(values, CNCNET_OPTION_BASES, options.Bases);
+	options.Goodies = Option_Bool(values, CNCNET_OPTION_CRATES, options.Goodies);
+	options.ShortGame = Option_Bool(values, CNCNET_OPTION_SHORT_GAME, options.ShortGame);
+	options.AlliesAllowed = Option_Bool(values, CNCNET_OPTION_ALLIES, options.AlliesAllowed);
+	options.HarvTruce = Option_Bool(values, CNCNET_OPTION_HARV_TRUCE, options.HarvTruce);
+	options.FogOfWar = Option_Bool(values, CNCNET_OPTION_FOG_OF_WAR, options.FogOfWar);
+	options.BridgeDestruction = Option_Bool(values, CNCNET_OPTION_BRIDGES, options.BridgeDestruction);
+	options.CrapEngineers = Option_Bool(values, CNCNET_OPTION_MULTI_ENGINEER, options.CrapEngineers);
+	options.MCVRedeploy = Option_Bool(values, CNCNET_OPTION_MCV_REDEPLOY, options.MCVRedeploy);
+	options.GameSpeed = CnCNet_Option_Number(values, CNCNET_OPTION_GAME_SPEED, options.GameSpeed, 0, CNCNET_MAX_GAME_SPEED);
+	options.AIPlayers = CnCNet_Option_Number(values, CNCNET_OPTION_AI_PLAYERS, options.AIPlayers, 0, CNCNET_MAX_AI_PLAYERS);
+	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, CNCNET_OPTION_AI_DIFFICULTY, options.AIDifficulty, 0, CNCNET_MAX_AI_DIFFICULTY));
+	options.UnitCount = CnCNet_Option_Number(values, CNCNET_OPTION_UNIT_COUNT, options.UnitCount, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT);
+	BuildLevel = CnCNet_Option_Number(values, CNCNET_OPTION_TECH_LEVEL, BuildLevel, CNCNET_MIN_TECH_LEVEL, MPLAYER_BUILD_LEVEL_MAX);
+	options.Credits = CnCNet_Option_Number(values, CNCNET_OPTION_CREDITS, options.Credits, CNCNET_MIN_CREDITS, std::max(CNCNET_MIN_CREDITS, Rule->MPMaxMoney));
 
 	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(values);
 	if (!(network == NetworkOptions)) {
@@ -540,6 +528,16 @@ void CnCNetRoomServiceClass::Publish(void)
 }
 
 
+// Adds a line in the plain colour, for notices the room writes itself.
+static void Add_Notice(UINetLobbyState & state, std::string const & text)
+{
+	UINetChatLine line;
+	line.Text = text;
+	line.Color = PLAIN;
+	state.Chat.push_back(line);
+}
+
+
 void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 {
 	bool const open = TheRoom.Status() != CnCNetRoomStatus::CLOSED && TheRoom.Status() != CnCNetRoomStatus::STARTING;
@@ -550,9 +548,32 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Games.clear();
 	state.Game = 0;
 
+	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
+	Fill_Sides(state, self);
+	Fill_Colors_Teams_Starts(state, self);
+	Fill_Players(state, self);
+	Fill_Chat(state);
+	bool const map_ready = Fill_Map_Status(state);
+	Fill_Options(state);
+
+	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
+		&& !TheRoom.Build_Differs_From_Host();
+	state.CanGo = Can_Start();
+
+	state.RoomTitle = Setup.RoomName.empty() ? (TheRoom.Is_Host() ? Setup.Nick : Setup.HostNick) + "'s game" : Setup.RoomName;
+	state.RoomChannel = TheRoom.Channel();
+	state.RoomTip = UI_CnCNet_Plain_Markup("Room channel " + TheRoom.Channel());
+	state.StartNote = Start_Note(self, map_ready);
+	state.LeaveLabel = TheRoom.Is_Host() ? "Close room" : "Leave room";
+	state.LeaveTip = TheRoom.Is_Host() ? "Close this room and go back to the CnCNet lobby. Everyone in it is sent back too."
+		: "Leave this room and go back to the CnCNet lobby.";
+}
+
+
+void CnCNetRoomServiceClass::Fill_Sides(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Sides.clear();
 	state.Side = 0;
-	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
 	for (int index = 0; index < HouseTypes.Count(); index++) {
 		HouseTypeClass * house = HouseTypes[index];
 		if (!house->IsMultiplay) {
@@ -573,7 +594,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.Side = static_cast<int>(state.Sides.size());
 	}
 	state.Sides.push_back(watch);
+}
 
+
+void CnCNetRoomServiceClass::Fill_Colors_Teams_Starts(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Colors.clear();
 	for (int index = 0; index < MAX_MPLAYER_COLORS && index < COLOR_COUNT; index++) {
 		UINetOption option;
@@ -610,7 +635,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 		state.Starts.push_back(option);
 	}
+}
 
+
+void CnCNetRoomServiceClass::Fill_Players(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Players.clear();
 	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
 		UINetPlayerRow row;
@@ -653,26 +682,21 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			state.Rivals.push_back(rival);
 		}
 	}
+}
 
+
+void CnCNetRoomServiceClass::Fill_Chat(UINetLobbyState & state)
+{
 	state.Chat.clear();
 	if (TheRoom.Status() == CnCNetRoomStatus::WAITING_HOST || TheRoom.Status() == CnCNetRoomStatus::JOINING) {
-		UINetChatLine line;
-		line.Text = "Waiting for the host to answer...";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Waiting for the host to answer...");
 	}
 	if (TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
 		// The CnCNet admins' terms: the host tells players who join that this is an OpenYR game.
-		UINetChatLine line;
-		line.Text = "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.");
 		if (std::any_of(TheRoom.Players().begin(), TheRoom.Players().end(),
 				[&](CnCNetRoomPlayerType const & player) { return(!TheRoom.Build_Problem(player).empty()); })) {
-			UINetChatLine blocked;
-			blocked.Text = "The game cannot start until every player is on your OpenYR build. Remove the players with a note under their name.";
-			blocked.Color = PLAIN;
-			state.Chat.push_back(blocked);
+			Add_Notice(state, "The game cannot start until every player is on your OpenYR build. Remove the players with a note under their name.");
 		}
 	}
 	// The match's network options are one line above the chat, not a chat line, so they stay in view and in one row.
@@ -684,17 +708,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.NetworkTip = "Network options for this match: " + described + "."
 			+ (TheRoom.Is_Host() ? " Change them with the chat commands /FrameSendRate, /MaxAhead and /ProtocolVersion." : " The host sets them.");
 		if (TheRoom.Is_Host()) {
-			UINetChatLine commands;
-			commands.Text = "Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion.";
-			commands.Color = PLAIN;
-			state.Chat.push_back(commands);
+			Add_Notice(state, "Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion.");
 		}
 	}
 	if (!TheRoom.Is_Host() && TheRoom.Build_Differs_From_Host()) {
-		UINetChatLine line;
-		line.Text = "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.");
 	}
 	if (CnCNetChannelType const * channel = Lobby.Find_Channel(TheRoom.Channel())) {
 		for (CnCNetChatLineType const & entry : channel->Lines) {
@@ -712,7 +730,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			state.Chat.push_back(line);
 		}
 	}
+}
 
+
+bool CnCNetRoomServiceClass::Fill_Map_Status(UINetLobbyState & state)
+{
 	// A guest whose map is missing or differs from the host's cannot get ready: the match would not start or would go out of sync.
 	state.MapName = Session.Options.ScenarioDescription;
 	bool map_ready = true;
@@ -720,7 +742,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.MapName += " (you do not have this map)";
 		map_ready = false;
 	} else if (!TheRoom.Is_Host()) {
-		auto const hash = TheRoom.Options().find("MapSHA1");
+		auto const hash = TheRoom.Options().find(CNCNET_OPTION_MAP_SHA1);
 		if (hash != TheRoom.Options().end() && !hash->second.empty() && hash->second != Map_SHA1(Session.ScenarioFileName)) {
 			state.MapName += " (your copy differs from the host's)";
 			map_ready = false;
@@ -741,7 +763,12 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 	}
 	state.Preview = Preview;
+	return(map_ready);
+}
 
+
+void CnCNetRoomServiceClass::Fill_Options(UINetLobbyState & state)
+{
 	GameOptionsType const & options = Session.Options;
 	state.Bases = options.Bases;
 	state.Crates = options.Goodies;
@@ -765,18 +792,6 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CreditsMax = Rule->MPMaxMoney;
 	state.CreditsStep = 100;
 	state.Credits = options.Credits;
-
-	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
-		&& !TheRoom.Build_Differs_From_Host();
-	state.CanGo = Can_Start();
-
-	state.RoomTitle = Setup.RoomName.empty() ? (TheRoom.Is_Host() ? Setup.Nick : Setup.HostNick) + "'s game" : Setup.RoomName;
-	state.RoomChannel = TheRoom.Channel();
-	state.RoomTip = UI_CnCNet_Plain_Markup("Room channel " + TheRoom.Channel());
-	state.StartNote = Start_Note(self, map_ready);
-	state.LeaveLabel = TheRoom.Is_Host() ? "Close room" : "Leave room";
-	state.LeaveTip = TheRoom.Is_Host() ? "Close this room and go back to the CnCNet lobby. Everyone in it is sent back too."
-		: "Leave this room and go back to the CnCNet lobby.";
 }
 
 
@@ -901,7 +916,7 @@ int CnCNetRoomServiceClass::Playing_Count(void) const
 }
 
 
-void CnCNetRoomServiceClass::Set_Color(int index)
+void CnCNetRoomServiceClass::Set_Color(int index, unsigned int)
 {
 	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
 		return;
@@ -1172,7 +1187,7 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 		if (file.empty()) {
 			return("You do not have the host's map, or your copy differs from the host's.");
 		}
-		options["Map"] = file;
+		options[CNCNET_OPTION_MAP] = file;
 	}
 
 	CnCNetTunnelBridgeClass bridge;

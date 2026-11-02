@@ -63,15 +63,9 @@ static void Apply_Net_Picker(UINetLobbyState & state, UINetLobbyServiceClass & s
 		return;
 	}
 
-	if (picker.Custom != 0) {
-		state.Color = picker.Seat;
-		state.CustomColor = picker.Custom;
-		service.Set_Custom_Color(state.Color, state.CustomColor);
-	} else {
-		state.Color = picker.Seat;
-		state.CustomColor = 0;
-		service.Set_Color(state.Color);
-	}
+	state.Color = picker.Seat;
+	state.CustomColor = picker.Custom;
+	service.Set_Color(state.Color, state.CustomColor);
 	picker.Open = false;
 	picker.Notice.clear();
 	Settle_Colour(state);

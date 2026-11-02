@@ -693,7 +693,7 @@ void Test_Room(void)
 	host.Apply(Room_Event(IRCEventKind::JOINED, "Host", ROOM), 0);
 	std::vector<CnCNetRoomSendType> sent = host.Take_Outgoing();
 	Check(host.Status() == CnCNetRoomStatus::IN_ROOM && sent.size() == 1 && sent[0].Kind == CnCNetRoomSendKind::MODE
-		&& sent[0].Text == "+klnNs " + CnCNet_Room_Key(ROOM) + " 8", "room: the host locks the channel with the room key");
+		&& sent[0].Modes == std::vector<std::string>{"+klnNs", CnCNet_Room_Key(ROOM), "8"}, "room: the host locks the channel with the room key");
 
 	CnCNetRoomClass guest = CnCNetRoomClass::Guest(Room_Config("Guest", "b1"), 100);
 	guest.Apply(Room_Event(IRCEventKind::JOINED, "Guest", ROOM), 100);
