@@ -1602,11 +1602,7 @@ void UnitClass::Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select)
 	if (EnteredByInfType == INFANTRY_NONE) {
 		if (!no_crew && Class->IsCrew && Class->Max_Passengers() == 0) {
 			if (Rule->CrewEscape > Random_Double(0.0, 1.0)) {
-				if (EnteredByInfType != INFANTRY_NONE) {
-					make_infiltrator = true;
-				} else {
-					make_crew = true;
-				}
+				make_crew = true;
 			}
 		}
 	} else {
