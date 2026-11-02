@@ -1568,7 +1568,99 @@ void BulletClass::Detonate(Coord const & coord)
 		RadSiteClass::Irradiate(coord, (int)warhead->CellSpread, Weapon->RadLevel);
 	}
 
-	// gamemd tests these flags in this order, and the first one set takes the shot (BulletClass::Detonate, 0x469211 to 0x469A2C).
+	// The warhead effect that applies takes the shot; the blast damage below runs only when none does.
+	// Nullified is set only by that blast damage.
+	if (!Apply_Warhead_Effect(coord, warhead, direct_rocks)) {
+		/*
+		**	Non-aircraft targets apply damage to the ground.
+		*/
+		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : NULL);
+		if (!IsActive) return;
+	}
+
+	Coord blast_coord = coord;
+
+	/*
+	**	For projectiles that are invisible while travelling toward the target,
+	**	allow scatter effect for the impact animation.
+	*/
+	if (Class->IsInvisible) {
+		blast_coord = Coord_Scatter(blast_coord, CELL_LEPTON / 8);
+	}
+
+	/*
+	**	Fetch the land type that the explosion will be upon. Special case for
+	**	flying aircraft targets, their land type will be LAND_NONE.
+	*/
+	LandType land = LAND_NONE;
+	if (blast_coord.Z - Map.Get_Height_GL(blast_coord) < 2 * LEVEL_LEPTON_H) {
+		land = Map[(Coord const &)PositionCoord].Land_Type();
+	}
+
+	// gamemd selects the blast animation before it checks for a nullified shot, so an EMEffect warhead draws its random animation either way (BulletClass::Detonate, 0x469BCF).
+	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST explode frame %d %s warhead %s land %d damage %d anim %s at %d,%d,%d\n", (int)Frame, Class->Name(), Warhead != NULL ? Warhead->Name() : "none", (int)land, Strength, anim != NULL ? anim->Name() : "none", PositionCoord.X, PositionCoord.Y, PositionCoord.Z);
+	}
+
+	// A shot the Iron Curtain turned away shows WeaponNullifyAnim alone, with no light, blast or debris (BulletClass::Detonate, 0x469BDE and 0x46A2A1).
+	if (nullified) {
+		anim = Rule->WeaponNullifyAnim;
+	}
+
+	else if (IsBright) {
+		int disabled = 0;
+		if (Warhead != NULL) {
+			if (Warhead->IsCLDisableRed) disabled |= SpotLightClass::DISABLE_RED;
+			if (Warhead->IsCLDisableGreen) disabled |= SpotLightClass::DISABLE_GREEN;
+			if (Warhead->IsCLDisableBlue) disabled |= SpotLightClass::DISABLE_BLUE;
+		}
+		Combat_Lighting(blast_coord, Strength, Warhead, true, disabled);
+	}
+
+	if (anim != NULL && !nullified && Options.Shockwaves) {
+		GpuDraw_Add_Shockwave(blast_coord, Strength);
+	}
+
+	if (anim != NULL) {
+		AnimClass * aptr = new AnimClass(anim, blast_coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(blast_coord));
+		/*
+		**	Special case trap: if they're making the nuclear explosion,
+		**	and no anim is available, force the nuclear damage anyway
+		**	because nuke damage is done in the middle of the animation
+		**	and if there's no animation, there won't be any damage.
+		*/
+		if (!aptr && !nullified && Warhead == Rule->NukeWarhead) {
+			HousesType house = HOUSE_NONE;
+			if (Payback) {
+				house = Payback->House->Class->House;
+			}
+			AnimClass::Do_Atom_Damage(house, blast_coord);
+		}
+	}
+
+	// Debris follows the blast. A nullified shot throws none, but the splitting below still runs, since gamemd repeats the clusters from BulletClass::Explode (BulletClass::Detonate, 0x469D06).
+	if (!nullified && warhead->MaxDebris > 0) {
+		Throw_Warhead_Debris(warhead, PositionCoord);
+	}
+
+	if (Class->Bursts_Over_Cells()) {
+		Airburst();
+	}
+
+	if (Class->IsSplits) {
+		Split();
+	}
+}
+
+
+/// <summary>
+/// Applies the warhead effect that takes the shot. The warhead's flags are tested in gamemd's order and the
+/// first one set takes the shot (BulletClass::Detonate, 0x469211 to 0x469A2C). Returns true when an effect took
+/// the shot, so the blast damage is skipped, and false when the warhead is an ordinary blast.
+/// </summary>
+bool BulletClass::Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * warhead, bool direct_rocks)
+{
 	// EMEffect and Webby are not in gamemd's chain, so they come last.
 	/*
 	 * A mind control warhead takes its target over for the firer instead of hurting it, with
@@ -1687,94 +1779,18 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	else if (warhead->IsEMEffect) {
-		new EMPulseClass(coord.As_Cell(), Warhead->SpreadFactor, Strength, Payback);
+		new EMPulseClass(coord.As_Cell(), warhead->SpreadFactor, Strength, Payback);
 	}
 
 	else if (warhead->IsWebby) {
 		Web(coord);
 	}
 
-	/*
-	**	Non-aircraft targets apply damage to the ground.
-	*/
 	else {
-		nullified = Explosion_Damage(coord, Strength, Payback, warhead, true, Payback != NULL ? Payback->House : NULL);
-		if (!IsActive) return;
+		return false;
 	}
 
-	Coord blast_coord = coord;
-
-	/*
-	**	For projectiles that are invisible while travelling toward the target,
-	**	allow scatter effect for the impact animation.
-	*/
-	if (Class->IsInvisible) {
-		blast_coord = Coord_Scatter(blast_coord, CELL_LEPTON / 8);
-	}
-
-	/*
-	**	Fetch the land type that the explosion will be upon. Special case for
-	**	flying aircraft targets, their land type will be LAND_NONE.
-	*/
-	LandType land = LAND_NONE;
-	if (blast_coord.Z - Map.Get_Height_GL(blast_coord) < 2 * LEVEL_LEPTON_H) {
-		land = Map[(Coord const &)PositionCoord].Land_Type();
-	}
-
-	// gamemd selects the blast animation before it checks for a nullified shot, so an EMEffect warhead draws its random animation either way (BulletClass::Detonate, 0x469BCF).
-	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST explode frame %d %s warhead %s land %d damage %d anim %s at %d,%d,%d\n", (int)Frame, Class->Name(), Warhead != NULL ? Warhead->Name() : "none", (int)land, Strength, anim != NULL ? anim->Name() : "none", PositionCoord.X, PositionCoord.Y, PositionCoord.Z);
-	}
-
-	// A shot the Iron Curtain turned away shows WeaponNullifyAnim alone, with no light, blast or debris (BulletClass::Detonate, 0x469BDE and 0x46A2A1).
-	if (nullified) {
-		anim = Rule->WeaponNullifyAnim;
-	}
-
-	else if (IsBright) {
-		int disabled = 0;
-		if (Warhead != NULL) {
-			if (Warhead->IsCLDisableRed) disabled |= SpotLightClass::DISABLE_RED;
-			if (Warhead->IsCLDisableGreen) disabled |= SpotLightClass::DISABLE_GREEN;
-			if (Warhead->IsCLDisableBlue) disabled |= SpotLightClass::DISABLE_BLUE;
-		}
-		Combat_Lighting(blast_coord, Strength, Warhead, true, disabled);
-	}
-
-	if (anim != NULL && !nullified && Options.Shockwaves) {
-		GpuDraw_Add_Shockwave(blast_coord, Strength);
-	}
-
-	if (anim != NULL) {
-		AnimClass * aptr = new AnimClass(anim, blast_coord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(blast_coord));
-		/*
-		**	Special case trap: if they're making the nuclear explosion,
-		**	and no anim is available, force the nuclear damage anyway
-		**	because nuke damage is done in the middle of the animation
-		**	and if there's no animation, there won't be any damage.
-		*/
-		if (!aptr && !nullified && Warhead == Rule->NukeWarhead) {
-			HousesType house = HOUSE_NONE;
-			if (Payback) {
-				house = Payback->House->Class->House;
-			}
-			AnimClass::Do_Atom_Damage(house, blast_coord);
-		}
-	}
-
-	// Debris follows the blast. A nullified shot throws none, but the splitting below still runs, since gamemd repeats the clusters from BulletClass::Explode (BulletClass::Detonate, 0x469D06).
-	if (!nullified && warhead->MaxDebris > 0) {
-		Throw_Warhead_Debris(warhead, PositionCoord);
-	}
-
-	if (Class->Bursts_Over_Cells()) {
-		Airburst();
-	}
-
-	if (Class->IsSplits) {
-		Split();
-	}
+	return true;
 }
 
 
