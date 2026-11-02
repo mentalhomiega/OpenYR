@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "cncnet/cncnettunnellist.h"
+#include "cncnet/cncnettext.h"
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -58,32 +59,9 @@ std::size_t const PING_BYTES = 50;
 std::size_t const PING_ECHO = 12;
 
 
-std::vector<std::string_view> Fields(std::string_view line)
-{
-	std::vector<std::string_view> fields;
-	std::size_t start = 0;
-	while (start <= line.size()) {
-		std::size_t const end = line.find(';', start);
-		fields.push_back(line.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
-		if (end == std::string_view::npos) {
-			break;
-		}
-		start = end + 1;
-	}
-	return(fields);
-}
-
-
 int Number(std::string_view text)
 {
 	return(std::atoi(std::string(text).c_str()));
-}
-
-
-bool Same_Name(std::string_view a, std::string_view b)
-{
-	return(std::equal(a.begin(), a.end(), b.begin(), b.end(),
-		[](char x, char y) { return(std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y))); }));
 }
 
 
@@ -127,7 +105,7 @@ std::vector<CnCNetTunnelEntryType> CnCNet_Parse_Tunnel_List(std::string_view tex
 			continue;       // The header.
 		}
 
-		std::vector<std::string_view> const fields = Fields(line);
+		std::vector<std::string_view> const fields = CnCNet_Split(line, ';');
 		if (fields.size() < 11) {
 			continue;
 		}
@@ -292,7 +270,7 @@ CnCNetTunnelCheckType CnCNet_Check_Tunnel(std::vector<CnCNetTunnelEntryType> con
 	}
 
 	for (CnCNetTunnelEntryType const & tunnel : listed) {
-		if (tunnel.Port == port && Same_Name(tunnel.Host, host)) {
+		if (tunnel.Port == port && CnCNet_Equals_No_Case(tunnel.Host, host)) {
 			check.Result = CnCNetTunnelListing::LISTED;
 			return(check);
 		}
@@ -373,9 +351,9 @@ bool CnCNet_Is_Local_Relay(std::string_view configured, std::string_view host, u
 		return(false);
 	}
 	std::string_view const configured_host = configured.substr(0, colon);
-	if (!Same_Name(configured_host, "127.0.0.1") && !Same_Name(configured_host, "localhost")) {
+	if (!CnCNet_Equals_No_Case(configured_host, "127.0.0.1") && !CnCNet_Equals_No_Case(configured_host, "localhost")) {
 		return(false);
 	}
 	int const configured_port = Number(configured.substr(colon + 1));
-	return(configured_port > 0 && configured_port == port && Same_Name(configured_host, host));
+	return(configured_port > 0 && configured_port == port && CnCNet_Equals_No_Case(configured_host, host));
 }

@@ -219,6 +219,15 @@ static void Spawner_Seat_Computers(void)
 }
 
 
+static void Spawner_Bind_Machine_Settings(void)
+{
+	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
+	Session.ConnTimeout = SpawnConfig.ConnTimeout;
+	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
+}
+
+
 /// <summary>
 /// Copies the launch file's match options into the session and the game options.
 /// </summary>
@@ -250,11 +259,8 @@ static void Spawner_Bind_Options(void)
 	// Only a network match applies the truce; a skirmish records it and ignores it.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Spawner_Bind_Machine_Settings();
 	BuildLevel = SpawnConfig.TechLevel;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
-	Session.ConnTimeout = SpawnConfig.ConnTimeout;
-	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
 	CustomSeed = SpawnConfig.Seed;
@@ -457,10 +463,7 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	// The save's options apply, except game speed, movies and this machine's waits.
-	Options.GameSpeed = SpawnConfig.GameSpeed;
-	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
-	Session.ConnTimeout = SpawnConfig.ConnTimeout;
-	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
+	Spawner_Bind_Machine_Settings();
 
 	gameloaded = true;
 

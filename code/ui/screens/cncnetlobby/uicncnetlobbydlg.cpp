@@ -17,6 +17,7 @@
 #include "ccini.h"
 #include "cncnet/cncnetroom.h"
 #include "cncnet/cncnetsession.h"
+#include "cncnet/cncnettext.h"
 #include "cncnet/cncnettunnelchoice.h"
 #include "deploymentconfig.h"
 #include "gamedirs.h"
@@ -68,36 +69,22 @@ bool Is_Loopback(std::string const & host)
 std::vector<CnCNetServerType> Parse_Servers(std::string const & text, bool live)
 {
 	std::vector<CnCNetServerType> servers;
-	std::size_t start = 0;
-	while (start <= text.size()) {
-		std::size_t const end = text.find(';', start);
-		std::string const entry = text.substr(start, end == std::string::npos ? std::string::npos : end - start);
+	for (std::string_view const entry : CnCNet_Split(text, ';')) {
 		std::size_t const colon = entry.rfind(':');
-		if (colon != std::string::npos && colon > 0) {
+		if (colon != std::string_view::npos && colon > 0) {
 			CnCNetServerType server;
-			server.Host = entry.substr(0, colon);
+			server.Host = std::string(entry.substr(0, colon));
 			server.Name = server.Host;
-			std::string const ports = entry.substr(colon + 1);
-			std::size_t at = 0;
-			while (at < ports.size()) {
-				std::size_t const comma = ports.find(',', at);
-				int const port = std::atoi(ports.substr(at, comma == std::string::npos ? std::string::npos : comma - at).c_str());
+			for (std::string_view const port_text : CnCNet_Split(entry.substr(colon + 1), ',')) {
+				int const port = std::atoi(std::string(port_text).c_str());
 				if (port > 0 && port < 65536) {
 					server.Ports.push_back(static_cast<uint16_t>(port));
 				}
-				if (comma == std::string::npos) {
-					break;
-				}
-				at = comma + 1;
 			}
 			if (!server.Ports.empty() && (live || Is_Loopback(server.Host))) {
 				servers.push_back(std::move(server));
 			}
 		}
-		if (end == std::string::npos) {
-			break;
-		}
-		start = end + 1;
 	}
 	return(servers);
 }

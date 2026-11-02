@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "modsync.h"
+#include "cncnet/cncnettext.h"
 
 #include <algorithm>
 #include <cctype>
@@ -22,14 +23,6 @@ namespace ModSync
 
 		constexpr std::uint32_t HASH_BASIS = 2166136261u;
 		constexpr std::size_t MAX_NAME_LENGTH = 40;
-
-
-		std::string Lower(std::string_view text)
-		{
-			std::string lowered(text);
-			std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char c) {return(static_cast<char>(std::tolower(c)));});
-			return(lowered);
-		}
 
 
 		// The folder's own name, as the mod list shows it.
@@ -282,8 +275,8 @@ namespace ModSync
 		}
 
 		for (Entry const & mine : here.Mods) {
-			std::string const name = Lower(mine.Name);
-			auto theirs = std::find_if(there.Mods.begin(), there.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
+			std::string const name = CnCNet_Lower(mine.Name);
+			auto theirs = std::find_if(there.Mods.begin(), there.Mods.end(), [&](Entry const & entry) {return(CnCNet_Lower(entry.Name) == name);});
 			if (theirs == there.Mods.end()) {
 				difference.OnlyHere.push_back(mine.Name);
 			} else if (theirs->Hash != mine.Hash) {
@@ -292,8 +285,8 @@ namespace ModSync
 		}
 
 		for (Entry const & theirs : there.Mods) {
-			std::string const name = Lower(theirs.Name);
-			auto mine = std::find_if(here.Mods.begin(), here.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
+			std::string const name = CnCNet_Lower(theirs.Name);
+			auto mine = std::find_if(here.Mods.begin(), here.Mods.end(), [&](Entry const & entry) {return(CnCNet_Lower(entry.Name) == name);});
 			if (mine == here.Mods.end()) {
 				difference.OnlyThere.push_back(theirs.Name);
 			}
@@ -302,7 +295,7 @@ namespace ModSync
 		if (difference.OnlyHere.empty() && difference.OnlyThere.empty() && difference.Changed.empty()
 			&& here.Mods.size() == there.Mods.size()) {
 			for (std::size_t index = 0; index < here.Mods.size(); index++) {
-				if (Lower(here.Mods[index].Name) != Lower(there.Mods[index].Name)) {
+				if (CnCNet_Lower(here.Mods[index].Name) != CnCNet_Lower(there.Mods[index].Name)) {
 					difference.OrderDiffers = true;
 					break;
 				}

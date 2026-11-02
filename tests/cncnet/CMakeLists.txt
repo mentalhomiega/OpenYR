@@ -9,6 +9,7 @@ opents_add_test(CnCNetTest
         cncnet/cncnetroom.cpp
         cncnet/cncnetsha1.cpp
         cncnet/cncnetspawn.cpp
+        cncnet/cncnettext.cpp
         cncnet/cncnettunnel.cpp
         cncnet/cncnettunnellist.cpp
         cncnet/tcpstream.cpp
@@ -26,6 +27,7 @@ add_executable(CnCNetProbe
     ${CMAKE_SOURCE_DIR}/code/cncnet/cncnetgame.cpp
     ${CMAKE_SOURCE_DIR}/code/cncnet/cncnetlobby.cpp
     ${CMAKE_SOURCE_DIR}/code/cncnet/cncnetsession.cpp
+    ${CMAKE_SOURCE_DIR}/code/cncnet/cncnettext.cpp
     ${CMAKE_SOURCE_DIR}/code/cncnet/tcpstream.cpp
 )
 target_compile_features(CnCNetProbe PRIVATE cxx_std_20)
@@ -40,6 +42,7 @@ endif()
 add_executable(CnCNetTunnelProbe
     cncnettunnelprobe.cpp
     ${CMAKE_SOURCE_DIR}/code/cncnet/cncnethttp.cpp
+    ${CMAKE_SOURCE_DIR}/code/cncnet/cncnettext.cpp
     ${CMAKE_SOURCE_DIR}/code/cncnet/cncnettunnellist.cpp
 )
 target_compile_features(CnCNetTunnelProbe PRIVATE cxx_std_20)

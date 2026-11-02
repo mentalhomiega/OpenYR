@@ -20,6 +20,7 @@
 #include "cncnet/cncnetsession.h"
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnetspawn.h"
+#include "cncnet/cncnettext.h"
 #include "cncnet/cncnettunnel.h"
 #include "cncnet/cncnettunnelchoice.h"
 #include "conquer.h"
@@ -89,17 +90,6 @@ bool Option_Bool(std::map<std::string, std::string> const & options, char const 
 }
 
 
-bool Same_File(char const * a, char const * b)
-{
-	for (; *a != '\0' && *b != '\0'; ++a, ++b) {
-		if (std::tolower(static_cast<unsigned char>(*a)) != std::tolower(static_cast<unsigned char>(*b))) {
-			return(false);
-		}
-	}
-	return(*a == *b);
-}
-
-
 int Find_Scenario(std::string const & file)
 {
 	std::vector<std::string> names;
@@ -127,13 +117,7 @@ std::string File_SHA1(char const * name)
 	}
 	file.Close();
 
-	static char const digits[] = "0123456789abcdef";
-	std::string hex;
-	for (uint8_t byte : sha.Finish()) {
-		hex.push_back(digits[byte >> 4]);
-		hex.push_back(digits[byte & 15]);
-	}
-	return(hex);
+	return(CnCNet_Hex_Digest(sha.Finish()));
 }
 
 
@@ -472,7 +456,7 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 			MapMissing = true;
 		} else {
 			MapMissing = false;
-			if (!Same_File(Session.Scenarios[index]->Get_Filename(), Session.ScenarioFileName)) {
+			if (!CnCNet_Equals_No_Case(Session.Scenarios[index]->Get_Filename(), Session.ScenarioFileName)) {
 				Session.Options.ScenarioIndex = index;
 				Select_Scenario_Session(index);
 			}
