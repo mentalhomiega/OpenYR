@@ -1832,28 +1832,27 @@ void BulletClass::Web(Coord const & coord)
 
 	for (int y = -radius; y <= radius; y++) {
 		for (int x = -radius; x <= radius; x++) {
-			if (y * y + x * x <= radius_squared) {
-				CellClass * cellptr = &Map[center + Cell(x, y)];
-				if (cellptr != NULL) {
-					Coord particle_coord = cellptr->Cell_Coord();
-					ObjectClass * occupier = NULL;
-					if (abs(particle_coord.Z - coord.Z) < max_height) {
-						occupier = cellptr->Cell_Occupier();
-					} else {
-						particle_coord = cellptr->As_Coord();
-						occupier = cellptr->Cell_Occupier(true);
-					}
-					ParticleSystemClass * psys = new ParticleSystemClass(Warhead->Particle, particle_coord);
-					psys->Spawn_Held_Particle(particle_coord, particle_coord);
-					while (occupier != NULL) {
-						ObjectClass * next = occupier->Next;
-						if (occupier->IsActive && occupier->IsDown && occupier->Strength > 0) {
-							int damage = 0;
-							occupier->Take_Damage(damage, 0, Warhead);
-						}
-						occupier = next;
-					}
+			if (y * y + x * x > radius_squared) {
+				continue;
+			}
+			CellClass * cellptr = &Map[center + Cell(x, y)];
+			Coord particle_coord = cellptr->Cell_Coord();
+			ObjectClass * occupier = NULL;
+			if (abs(particle_coord.Z - coord.Z) < max_height) {
+				occupier = cellptr->Cell_Occupier();
+			} else {
+				particle_coord = cellptr->As_Coord();
+				occupier = cellptr->Cell_Occupier(true);
+			}
+			ParticleSystemClass * psys = new ParticleSystemClass(Warhead->Particle, particle_coord);
+			psys->Spawn_Held_Particle(particle_coord, particle_coord);
+			while (occupier != NULL) {
+				ObjectClass * next = occupier->Next;
+				if (occupier->IsActive && occupier->IsDown && occupier->Strength > 0) {
+					int damage = 0;
+					occupier->Take_Damage(damage, 0, Warhead);
 				}
+				occupier = next;
 			}
 		}
 	}

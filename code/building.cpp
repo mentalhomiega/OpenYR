@@ -533,120 +533,8 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 		**	Docking maneuver maintenance message. See if new order should be given to the
 		**	unit trying to dock.
 		*/
-		case RADIO_DOCKING: {
-			BASECLASS::Receive_Message(from, message, param);
-
-			if (!IsOn) {
-				return(RADIO_NEGATIVE);
-			}
-
-			// A bunker holds its vehicle where it is.
-			if (Class->IsBunker) {
-				return(RADIO_ROGER);
-			}
-
-			if (Class->IsCanUnitRepair && Contains_Link(from)) {
-				if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
-					return(RADIO_NEGATIVE);
-				}
-			}
-
-			/*
-			**	If this building is already in radio contact, then it might
-			**	be able to satisfy the request to load by bumping off any
-			**	preoccupying task.
-			*/
-			if (Class->IsCanUnitReload) {
-				FootClass * radio = (FootClass *)Contact_With_Whom();
-				// A sender that holds a dock, or has one free, bumps no one.
-				if (radio != NULL && radio != from && !Has_Free_Link(from)) {
-					if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
-						if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
-							radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
-							radio->Assign_Mission(MISSION_MOVE);
-							return(RADIO_ROGER);
-						}
-					}
-					return(RADIO_NEGATIVE);
-				}
-			}
-
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
-				return(RADIO_ROGER);
-			}
-
-			if (Class->IsHospital || Class->IsArmory) {
-				if (Contains_Link(from)) {
-					param = (intptr_t)&Map[Get_Coord()];
-					Transmit_Message(RADIO_MOVE_HERE, param, from);
-				} else if (!Has_Free_Link(from)) {
-					// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
-					if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
-						return(RADIO_ROGER);
-					}
-					Transmit_Message(RADIO_RUN_AWAY);
-				}
-				return(RADIO_ROGER);
-			}
-
-			/*
-			**	Establish contact with the sender when it holds no slot here and one is free
-			**	(BuildingClass::ReceiveCommand, DOCKING case).
-			*/
-			if (!Contains_Link(from) && Has_Free_Link(from)) {
-				Transmit_Message(RADIO_HELLO, from);
-			}
-
-			bool needs_to_move = false;
-
-			if (Contains_Link(from)) {
-				if (Class->IsDockUnload || Class->IsWeeder) {
-					CellClass * docking_cell = &Map[Docking_Coord_For(from)];
-					AbstractClass * navcom = ((FootClass *)from)->NavCom;
-					if (navcom != NULL && docking_cell != navcom) {
-						needs_to_move = true;
-					}
-				}
-			}
-
-			// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
-			TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
-			if (measured != NULL) {
-				if (Class->IsCanUnitRepair) {
-					if (Distance_To(measured) > CELL_LEPTON / 2) {
-						needs_to_move = true;
-					}
-				}
-			}
-
-			if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
-				param = (intptr_t)this;
-				if (Class->IsDockUnload || Class->IsWeeder) {
-					param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
-
-					/*
-					**	Tell the harvester to move to the docking pad of the building.
-					*/
-					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
-
-						/*
-						**	Since the harvester is already there, tell it to begin the backup
-						**	procedure now. If it can't, then tell it to get outta here.
-						*/
-						Transmit_Message(RADIO_TETHER, from);
-						if (Transmit_Message(RADIO_BACKUP_NOW, from) != RADIO_ROGER) {
-							from->Scatter(COORD_NONE, true, true);
-						}
-					}
-				} else if (Class->IsHelipad) {
-					param = (intptr_t)this;
-					if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
-						Transmit_Message(RADIO_TETHER, from);
-					}
-				}
-			}
-			return(RADIO_ROGER);
-		}
+		case RADIO_DOCKING:
+			return(Receive_Docking(from, param));
 
 		/*
 		**	If a transport or harvester is requesting permission to head toward, dock
@@ -726,6 +614,127 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 	**	Pass along the message to the default message handler in the radio itself.
 	*/
 	return(BASECLASS::Receive_Message(from, message, param));
+}
+
+
+/// <summary>
+/// Answers RADIO_DOCKING, which an object heading for one of this structure's docks sends as it approaches,
+/// and gives the object its next order. Changes param as Receive_Message does.
+/// </summary>
+RadioMessageType BuildingClass::Receive_Docking(RadioClass * from, intptr_t & param)
+{
+	BASECLASS::Receive_Message(from, RADIO_DOCKING, param);
+
+	if (!IsOn) {
+		return(RADIO_NEGATIVE);
+	}
+
+	// A bunker holds its vehicle where it is.
+	if (Class->IsBunker) {
+		return(RADIO_ROGER);
+	}
+
+	if (Class->IsCanUnitRepair && Contains_Link(from)) {
+		if (Transmit_Message(RADIO_NEED_REPAIR, from) == RADIO_NEGATIVE) {
+			return(RADIO_NEGATIVE);
+		}
+	}
+
+	/*
+	**	If this building is already in radio contact, then it might
+	**	be able to satisfy the request to load by bumping off any
+	**	preoccupying task.
+	*/
+	if (Class->IsCanUnitReload) {
+		FootClass * radio = (FootClass *)Contact_With_Whom();
+		// A sender that holds a dock, or has one free, bumps no one.
+		if (radio != NULL && radio != from && !Has_Free_Link(from)) {
+			if (Transmit_Message(RADIO_ON_DEPOT) == RADIO_ROGER) {
+				if (Transmit_Message(RADIO_ALL_DONE) == RADIO_ROGER) {
+					radio->Assign_Destination(&Map[radio->Nearby_Location(this)]);
+					radio->Assign_Mission(MISSION_MOVE);
+					return(RADIO_ROGER);
+				}
+			}
+			return(RADIO_NEGATIVE);
+		}
+	}
+
+	if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+		return(RADIO_ROGER);
+	}
+
+	if (Class->IsHospital || Class->IsArmory) {
+		if (Contains_Link(from)) {
+			param = (intptr_t)&Map[Get_Coord()];
+			Transmit_Message(RADIO_MOVE_HERE, param, from);
+		} else if (!Has_Free_Link(from)) {
+			// With every dock taken, the object on the first dock makes room, as RADIO_HELLO does.
+			if (Transmit_Message(RADIO_NEED_REPAIR) != RADIO_NEGATIVE) {
+				return(RADIO_ROGER);
+			}
+			Transmit_Message(RADIO_RUN_AWAY);
+		}
+		return(RADIO_ROGER);
+	}
+
+	/*
+	**	Establish contact with the sender when it holds no slot here and one is free
+	**	(BuildingClass::ReceiveCommand, DOCKING case).
+	*/
+	if (!Contains_Link(from) && Has_Free_Link(from)) {
+		Transmit_Message(RADIO_HELLO, from);
+	}
+
+	bool needs_to_move = false;
+
+	if (Contains_Link(from)) {
+		if (Class->IsDockUnload || Class->IsWeeder) {
+			CellClass * docking_cell = &Map[Docking_Coord_For(from)];
+			AbstractClass * navcom = ((FootClass *)from)->NavCom;
+			if (navcom != NULL && docking_cell != navcom) {
+				needs_to_move = true;
+			}
+		}
+	}
+
+	// The sender's own dock is measured when it holds one, so a second dock's object is not judged by the first's.
+	TechnoClass * measured = Contains_Link(from) ? (TechnoClass *)from : Contact_With_Whom();
+	if (measured != NULL) {
+		if (Class->IsCanUnitRepair) {
+			if (Distance_To(measured) > CELL_LEPTON / 2) {
+				needs_to_move = true;
+			}
+		}
+	}
+
+	if (Transmit_Message(RADIO_NEED_TO_MOVE, from) == RADIO_ROGER || needs_to_move) {
+		param = (intptr_t)this;
+		if (Class->IsDockUnload || Class->IsWeeder) {
+			param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
+
+			/*
+			**	Tell the harvester to move to the docking pad of the building.
+			*/
+			if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
+
+				/*
+				**	Since the harvester is already there, tell it to begin the backup
+				**	procedure now. If it can't, then tell it to get outta here.
+				*/
+				Transmit_Message(RADIO_TETHER, from);
+				if (Transmit_Message(RADIO_BACKUP_NOW, from) != RADIO_ROGER) {
+					from->Scatter(COORD_NONE, true, true);
+				}
+			}
+		} else if (Class->IsHelipad) {
+			param = (intptr_t)this;
+			if (Transmit_Message(RADIO_MOVE_HERE, param, from) == RADIO_YEA_NOW_WHAT) {
+				Transmit_Message(RADIO_TETHER, from);
+			}
+		}
+	}
+	return(RADIO_ROGER);
 }
 
 
@@ -3345,8 +3354,6 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 /// <returns>2 when the object left, 1 when it must try again later, 0 when it could not leave.</returns>
 int BuildingClass::Exit_Foot(TechnoClass * base)
 {
-	Cell cell;
-
 	if (!Class->IsHospital) {
 
 		/*
@@ -3369,252 +3376,259 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 		}
 	}
 
-	if (!Class->IsRefinery && !Class->IsWeeder) {
+	if (Class->IsRefinery || Class->IsWeeder) {
+		return(Exit_Refinery(base));
+	}
+	if (Class->IsWeaponsFactory) {
+		return(Exit_Weapons_Factory(base));
+	}
+	if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory && !Class->IsCloning) {
+		return(Exit_Vehicle_Door(base));
+	}
+	return(Exit_Infantry(base));
+}
 
-		if (Class->IsWeaponsFactory) {
 
-			base->ArchiveTarget = Rally_Point_For(base);
+/// <summary>
+/// Drives a vehicle out of this weapons factory, or out of a free factory of the same type while this one is
+/// still unloading the previous vehicle. Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
+{
+	base->ArchiveTarget = Rally_Point_For(base);
 
-			if (Class->IsNaval) {
-				return(Exit_Naval_Object(base));
-			}
+	if (Class->IsNaval) {
+		return(Exit_Naval_Object(base));
+	}
 
-			if (Mission == MISSION_UNLOAD) {
-				for (int index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * bldg = Buildings[index];
-					if (bldg->House == House && bldg->Class == Class && bldg != this && bldg->Mission == MISSION_GUARD && !bldg->Factory) {
-						FactoryClass * temp = Factory;
-						bldg->Factory = Factory;
-						Factory = NULL;
-						int retval = (bldg->Exit_Object(base));
-						bldg->Factory = NULL;
-						Factory = temp;
-						return(retval);
-					}
-				}
-				return(1);	// fail while we're still unloading previous
-			}
-			ScenarioInit++;
-			if (base->Unlimbo(Exit_Coord(), DIR_E)) {
-				base->Mark(MARK_UP);
-				base->Set_Coord(Exit_Coord());
-				base->Mark(MARK_DOWN);
-				Transmit_Message(RADIO_HELLO, base);
-				Transmit_Message(RADIO_TETHER, base);
-				Assign_Mission(MISSION_UNLOAD);
-				ScenarioInit--;
-				return(2);
-			}
-
-		} else if (Class->ToBuild != RTTI_INFANTRYTYPE && !Class->IsHospital && !Class->IsArmory && !Class->IsCloning) {
-
-			Cell exitcell = Find_Exit_Cell(base);
-			if (exitcell == CELL_NONE) {
-				return(0);
-			}
-
-			Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
-
-			Cell to = exitcell;
-			cell = Get_Cell();
-			int x = cell.X;
-			if (to.X >= x + Class->Width()) {
-				to.X -= 1;
-			} else if (to.X < cell.X) {
-				to.X += 1;
-			}
-			int y = cell.Y;
-			if (to.Y >= y + Class->Height()) {
-				to.Y -= 1;
-			} else if (to.Y < cell.Y) {
-				to.Y += 1;
-			}
-
-			/*
-			 * The barracks types have a special exit door location that the
-			 * exiting object should be placed at.
-			 */
-			Coord exitcoord = Coord(to, 0);
-			if (Class->IsGDIBarracks) {
-				if (exitcell.X == x + 1 && exitcell.Y == y + 2) {
-					exitcoord = exitcoord + Class->ExitCoordinate;
-				}
-			}
-			if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-			if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-
-			ScenarioInit++;
-			if (base->Unlimbo(exitcoord, dir)) {
-
-				Begin_Anim(BANIM_PRODUCTION, false);
-
-				base->Assign_Mission(MISSION_MOVE);
-				base->Assign_Destination(&Map[exitcell]);
-
-				/*
-				 * When the computer produces a unit, it has the unit guard an
-				 * area around the spot it should head to.
-				 */
-				if (!House->Is_Human_Player()) {
-					base->Assign_Mission(MISSION_GUARD_AREA);
-
-					cell = House->Where_To_Go((FootClass *)base);
-					if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-						base->Assign_Archive_Target(&Map[cell]);
-						((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-					} else {
-						base->Assign_Archive_Target(NULL);
-					}
-				}
-
-				ScenarioInit--;
-				return(2);
-			}
-
-		} else {
-
-			base->ArchiveTarget = Rally_Point_For(base);
-			Coord exitcoord;
-
-			Cell exitcell = Find_Exit_Cell(base);
-			if (exitcell == CELL_NONE) {
-				return(0);
-			}
-
-			/*
-			 * Every cloning vat of the owner releases a copy of a soldier this barracks
-			 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
-			 * get out is discarded.
-			 */
-			if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
-				for (int index = 0; index < Buildings.Count(); index++) {
-					BuildingClass * vat = Buildings[index];
-					if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
-						TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
-						if (clone != NULL && vat->Exit_Object(clone) != 2) {
-							delete clone;
-						}
-					}
-				}
-			}
-
-			Coord exitcellcoord(exitcell);
-			Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
-
-			Cell to = exitcell;
-			cell = Get_Cell();
-			int x = cell.X;
-			if (to.X >= x + Class->Width()) {
-				to.X -= 1;
-			} else if (to.X < cell.X) {
-				to.X += 1;
-			}
-			int y = cell.Y;
-			if (to.Y >= y + Class->Height()) {
-				to.Y -= 1;
-			} else if (to.Y < cell.Y) {
-				to.Y += 1;
-			}
-
-			/*
-			 * The barracks types have a special exit door location that the
-			 * exiting object should be placed at.
-			 */
-			exitcoord = Coord(to, 0);
-			if (Class->IsGDIBarracks) {
-				if (exitcell.X == x + 1 && exitcell.Y == y + 2) {
-					exitcoord = exitcoord + Class->ExitCoordinate;
-				}
-			}
-			if (Class->IsNODBarracks && exitcell.X == x + 2 && exitcell.Y == y + 2) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-			if (Class->IsYuriBarracks && exitcell.X == x + 2 && exitcell.Y == y + 1) {
-				exitcoord = exitcoord + Class->ExitCoordinate;
-			}
-
-			ScenarioInit++;
-			if (base->Unlimbo(exitcoord, dir)) {
-
-				// A hospital or armory also exits its infantry here without having produced them.
-				// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
-				if (Class->ToBuild == RTTI_INFANTRYTYPE) {
-					Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
-				}
-
-				if (((FootClass *)base)->NavCom != NULL) {
-					base->ArchiveTarget = ((FootClass *)base)->NavCom;
-				}
-
-				// A jump-jet infantry gets no walk to the exit cell, so its jump-jet locomotor takes over at once (BuildingClass::KickOutUnit, 0x443C60).
-				InfantryClass * flying_jumpjet = NULL;
-				if (base->Fetch_RTTI() == RTTI_INFANTRY && ((InfantryClass *)base)->Class->IsJumpJet) {
-					flying_jumpjet = (InfantryClass *)base;
-				}
-
-				base->Assign_Mission(MISSION_MOVE);
-				if (flying_jumpjet == NULL) {
-				base->Assign_Destination(&Map[exitcell]);
-				}
-
-				/*
-				 * When the computer produces infantry, it has the infantry guard
-				 * an area around the spot it should head to.
-				 */
-				if (!House->Is_Human_Player()) {
-					base->Assign_Mission(MISSION_GUARD_AREA);
-
-					cell = House->Where_To_Go((FootClass *)base);
-					if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
-						base->ArchiveTarget = &Map[cell];
-						((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
-					} else {
-						base->Assign_Archive_Target(NULL);
-					}
-				}
-
-				/*
-				**	Establish radio contact so unload coordination can occur. This
-				**	radio contact should always succeed.
-				*/
-				if (Transmit_Message(RADIO_HELLO, base) == RADIO_ROGER) {
-					Transmit_Message(RADIO_UNLOAD);
-					if (flying_jumpjet != NULL) {
-						flying_jumpjet->Transmit_Message(RADIO_OVER_OUT);
-					}
-				}
-				ScenarioInit--;
-				return(2);
+	if (Mission == MISSION_UNLOAD) {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * bldg = Buildings[index];
+			if (bldg->House == House && bldg->Class == Class && bldg != this && bldg->Mission == MISSION_GUARD && !bldg->Factory) {
+				FactoryClass * temp = Factory;
+				bldg->Factory = Factory;
+				Factory = NULL;
+				int retval = (bldg->Exit_Object(base));
+				bldg->Factory = NULL;
+				Factory = temp;
+				return(retval);
 			}
 		}
-
-	} else {
-
-		/*
-		 * A unit exits a refinery to the south west corner and heads off to
-		 * harvest. Infantry just scatters out.
-		 */
-		if (base->Fetch_RTTI() == RTTI_UNIT) {
-
-			cell = Adjacent_Cell(Center_Coord().As_Cell(), FACING_SW);
-
-			ScenarioInit++;
-			if (base->Unlimbo(Coord(Adjacent_Cell(cell, FACING_S), 0), DIR_SW)) {
-				base->PrimaryFacing.Set(DirType(DIR_S));
-				base->Assign_Mission(MISSION_HARVEST);
-			}
-
-		} else {
-			base->Scatter(COORD_NONE, true, false);
-			return(0);
-		}
+		return(1);	// fail while we're still unloading previous
+	}
+	ScenarioInit++;
+	if (base->Unlimbo(Exit_Coord(), DIR_E)) {
+		base->Mark(MARK_UP);
+		base->Set_Coord(Exit_Coord());
+		base->Mark(MARK_DOWN);
+		Transmit_Message(RADIO_HELLO, base);
+		Transmit_Message(RADIO_TETHER, base);
+		Assign_Mission(MISSION_UNLOAD);
+		ScenarioInit--;
+		return(2);
 	}
 	ScenarioInit--;
 	return(0);
+}
+
+
+/// <summary>
+/// Puts a vehicle built by a factory other than a weapons factory at its door and sends it to the exit cell.
+/// Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
+{
+	Cell cell;
+
+	Cell exitcell = Find_Exit_Cell(base);
+	if (exitcell == CELL_NONE) {
+		return(0);
+	}
+
+	Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
+
+	ScenarioInit++;
+	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
+
+		Begin_Anim(BANIM_PRODUCTION, false);
+
+		base->Assign_Mission(MISSION_MOVE);
+		base->Assign_Destination(&Map[exitcell]);
+
+		/*
+		 * When the computer produces a unit, it has the unit guard an
+		 * area around the spot it should head to.
+		 */
+		if (!House->Is_Human_Player()) {
+			base->Assign_Mission(MISSION_GUARD_AREA);
+
+			cell = House->Where_To_Go((FootClass *)base);
+			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+				base->Assign_Archive_Target(&Map[cell]);
+				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+			} else {
+				base->Assign_Archive_Target(NULL);
+			}
+		}
+
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
+}
+
+
+/// <summary>
+/// Puts a soldier at this structure's door and sends it to the exit cell; a soldier from a barracks is also
+/// copied out of each of the owner's cloning vats. Returns as Exit_Foot does.
+/// </summary>
+int BuildingClass::Exit_Infantry(TechnoClass * base)
+{
+	Cell cell;
+
+	base->ArchiveTarget = Rally_Point_For(base);
+
+	Cell exitcell = Find_Exit_Cell(base);
+	if (exitcell == CELL_NONE) {
+		return(0);
+	}
+
+	/*
+	 * Every cloning vat of the owner releases a copy of a soldier this barracks
+	 * releases, as BuildingClass::KickOutUnit (0x443C60) does. A copy that cannot
+	 * get out is discarded.
+	 */
+	if (Class->ToBuild == RTTI_INFANTRYTYPE && !Class->IsCloning && base->Fetch_RTTI() == RTTI_INFANTRY) {
+		for (int index = 0; index < Buildings.Count(); index++) {
+			BuildingClass * vat = Buildings[index];
+			if (vat != this && vat->House == House && vat->Class->IsCloning && !vat->IsInLimbo && vat->Strength > 0) {
+				TechnoClass * clone = static_cast<TechnoClass *>(base->TClass->Create_One_Of(vat->House));
+				if (clone != NULL && vat->Exit_Object(clone) != 2) {
+					delete clone;
+				}
+			}
+		}
+	}
+
+	Coord exitcellcoord(exitcell);
+	Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
+
+	ScenarioInit++;
+	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
+
+		// A hospital or armory also exits its infantry here without having produced them.
+		// The door must pass the building's damage state: false on a damaged building flips every running anim to its healthy art.
+		if (Class->ToBuild == RTTI_INFANTRYTYPE) {
+			Begin_Anim(BANIM_PRODUCTION, HealthRatio <= Rule->ConditionYellow);
+		}
+
+		if (((FootClass *)base)->NavCom != NULL) {
+			base->ArchiveTarget = ((FootClass *)base)->NavCom;
+		}
+
+		// A jump-jet infantry gets no walk to the exit cell, so its jump-jet locomotor takes over at once (BuildingClass::KickOutUnit, 0x443C60).
+		InfantryClass * flying_jumpjet = NULL;
+		if (base->Fetch_RTTI() == RTTI_INFANTRY && ((InfantryClass *)base)->Class->IsJumpJet) {
+			flying_jumpjet = (InfantryClass *)base;
+		}
+
+		base->Assign_Mission(MISSION_MOVE);
+		if (flying_jumpjet == NULL) {
+		base->Assign_Destination(&Map[exitcell]);
+		}
+
+		/*
+		 * When the computer produces infantry, it has the infantry guard
+		 * an area around the spot it should head to.
+		 */
+		if (!House->Is_Human_Player()) {
+			base->Assign_Mission(MISSION_GUARD_AREA);
+
+			cell = House->Where_To_Go((FootClass *)base);
+			if (cell != CELL_NONE && Class->ToBuild != RTTI_NONE) {
+				base->ArchiveTarget = &Map[cell];
+				((FootClass *)base)->Queue_Navigation_List(&Map[cell]);
+			} else {
+				base->Assign_Archive_Target(NULL);
+			}
+		}
+
+		/*
+		**	Establish radio contact so unload coordination can occur. This
+		**	radio contact should always succeed.
+		*/
+		if (Transmit_Message(RADIO_HELLO, base) == RADIO_ROGER) {
+			Transmit_Message(RADIO_UNLOAD);
+			if (flying_jumpjet != NULL) {
+				flying_jumpjet->Transmit_Message(RADIO_OVER_OUT);
+			}
+		}
+		ScenarioInit--;
+		return(2);
+	}
+	ScenarioInit--;
+	return(0);
+}
+
+
+/// <summary>
+/// Puts a harvester leaving this refinery south of it and has it harvest, or scatters a soldier. Returns 0
+/// whether or not the object left.
+/// </summary>
+int BuildingClass::Exit_Refinery(TechnoClass * base)
+{
+	Cell cell;
+
+	/*
+	 * A unit exits a refinery to the south west corner and heads off to
+	 * harvest. Infantry just scatters out.
+	 */
+	if (base->Fetch_RTTI() == RTTI_UNIT) {
+
+		cell = Adjacent_Cell(Center_Coord().As_Cell(), FACING_SW);
+
+		ScenarioInit++;
+		if (base->Unlimbo(Coord(Adjacent_Cell(cell, FACING_S), 0), DIR_SW)) {
+			base->PrimaryFacing.Set(DirType(DIR_S));
+			base->Assign_Mission(MISSION_HARVEST);
+		}
+
+	} else {
+		base->Scatter(COORD_NONE, true, false);
+		return(0);
+	}
+	ScenarioInit--;
+	return(0);
+}
+
+
+/// <summary>
+/// Fetches where an object leaving this structure for the exit cell is put: the structure's edge cell next to the
+/// exit cell, or the door of a GDI, Nod or Yuri barracks when the exit cell is the one in front of that door.
+/// </summary>
+Coord BuildingClass::Door_Coord(Cell const & exitcell) const
+{
+	Cell const cell = Get_Cell();
+	Cell to = exitcell;
+	if (to.X >= cell.X + Class->Width()) {
+		to.X -= 1;
+	} else if (to.X < cell.X) {
+		to.X += 1;
+	}
+	if (to.Y >= cell.Y + Class->Height()) {
+		to.Y -= 1;
+	} else if (to.Y < cell.Y) {
+		to.Y += 1;
+	}
+
+	Coord exitcoord = Coord(to, 0);
+	if ((Class->IsGDIBarracks && exitcell.X == cell.X + 1 && exitcell.Y == cell.Y + 2) ||
+			(Class->IsNODBarracks && exitcell.X == cell.X + 2 && exitcell.Y == cell.Y + 2) ||
+			(Class->IsYuriBarracks && exitcell.X == cell.X + 2 && exitcell.Y == cell.Y + 1)) {
+		exitcoord = exitcoord + Class->ExitCoordinate;
+	}
+	return(exitcoord);
 }
 
 
@@ -3625,147 +3639,142 @@ int BuildingClass::Exit_Foot(TechnoClass * base)
 /// <returns>2 when the structure was placed, 1 when the place is blocked for now, 0 when it could not be placed.</returns>
 int BuildingClass::Exit_Structure(TechnoClass * base)
 {
-	Cell cell;
+	if (House->Is_Human_Player()) {
+		return(0);
+	}
 
-	if (!House->Is_Human_Player()) {
+	House->Update_Production_Mode(RTTI_BUILDING);
+	House->BuildStructure = STRUCT_NONE;
 
-		House->Update_Production_Mode(RTTI_BUILDING);
-		House->BuildStructure = STRUCT_NONE;
+	/*
+	**	Find the next available spot to place this newly created building. If the
+	**	building could be placed at the desired location, fine. If not, then this
+	**	routine will return failure. The calling routine will probably abandon this
+	**	building in preference to building another.
+	*/
+	BuildingClass * building = (BuildingClass *)base;
+	BaseNodeClass * node = House->Base.Next_Buildable(building->Class->HeapID);
+	Coord placementcoord(0, 0, 0);
+	BuildingTypeClass * buildingtype = building->Class;
 
-		/*
-		**	Find the next available spot to place this newly created building. If the
-		**	building could be placed at the desired location, fine. If not, then this
-		**	routine will return failure. The calling routine will probably abandon this
-		**	building in preference to building another.
-		*/
-		BuildingClass * building = (BuildingClass *)base;
-		BaseNodeClass * node = House->Base.Next_Buildable(building->Class->HeapID);
-		Coord placementcoord(0, 0, 0);
-		BuildingTypeClass * buildingtype = building->Class;
+	// The search reports cell 0,0 when it finds no place.
+	auto search_for_place = [&]() {
+		Cell found = House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1);
+		return(found == Cell(0, 0) ? COORD_NONE : Coord(found));
+	};
 
-		// The search reports cell 0,0 when it finds no place.
-		auto search_for_place = [&]() {
-			Cell found = House->Where_To_Place_Building(buildingtype, HouseClass::Base_Cell_Weight_By_Distance, -1);
-			return(found == Cell(0, 0) ? COORD_NONE : Coord(found));
-		};
+	if (node != NULL && node->CellID != Cell(0, 0)) {
 
-		if (node != NULL && node->CellID != Cell(0, 0)) {
+		if (!buildingtype->PowersUpBuilding.empty() || House->Can_Build_Here(buildingtype, node->CellID)) {
+			placementcoord = Coord(node->CellID);
+		} else {
 
-			if (!buildingtype->PowersUpBuilding.empty() || House->Can_Build_Here(buildingtype, node->CellID)) {
-				placementcoord = Coord(node->CellID);
-			} else {
+			/*
+			**	Find a suitable new spot to place.
+			*/
+			placementcoord = search_for_place();
+			if (placementcoord == COORD_NONE) {
+				return(0);
+			}
+			node->CellID = placementcoord.As_Cell();
+		}
+
+	} else {
+
+		if (buildingtype->PowersUpBuilding.empty()) {
+			placementcoord = search_for_place();
+		} else {
+			Cell const cell = House->Where_To_Place_Upgrade(buildingtype);
+			if (cell != CELL_NONE) {
+				placementcoord = Coord(cell);
+			}
+		}
+
+		if (node != NULL && placementcoord != COORD_NONE) {
+			node->CellID = placementcoord.As_Cell();
+		}
+	}
+
+	if (HouseClass::TraceBuilding) {
+		DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
+			placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
+	}
+
+	if (placementcoord == COORD_NONE) {
+		if (!buildingtype->PowersUpBuilding.empty() && House->Base.Next_Buildable(STRUCT_NONE) == node) {
+			House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
+		}
+		return(0);
+	}
+
+	Cell cellnum = placementcoord.As_Cell();
+	switch (((BuildingTypeClass *)base->Class_Of())->Flush_For_Placement(cellnum, House)) {
+
+		default:
+			return(0);
+
+		case 1:
+			/*
+			**	A temporary blockage counts against the node. Outside campaign games, a node that
+			**	fails too often is dropped, as BuildingClass::KickOutUnit (0x443C60) does.
+			*/
+			if (node != NULL) {
+				node->Attempts++;
+				if (Session.Type != GAME_NORMAL && node->Attempts > Rule->MaximumBuildingPlacementFailures) {
+					House->Base.Nodes.Delete_Index(House->Base.Nodes.ID(node));
+				}
+			}
+			return(1);
+
+		case 0:
+			if (base->Unlimbo(placementcoord)) {
+				if (node != NULL) {
+					node->Placed = true;
+					if (building->Class->HeapID == House->BuildStructure) {
+						House->BuildStructure = STRUCT_NONE;
+					}
+				}
+
+				if (base->CurrentMission == MISSION_NONE && base->MissionQueue == MISSION_CONSTRUCTION) {
+					base->Commence();
+				}
 
 				/*
-				**	Find a suitable new spot to place.
-				*/
-				placementcoord = search_for_place();
-				if (placementcoord == COORD_NONE) {
-					return(0);
-				}
-				node->CellID = placementcoord.As_Cell();
-			}
-
-		} else {
-
-			if (buildingtype->PowersUpBuilding.empty()) {
-				placementcoord = search_for_place();
-			} else {
-				cell = House->Where_To_Place_Upgrade(buildingtype);
-				if (cell != CELL_NONE) {
-					placementcoord = Coord(cell);
-				}
-			}
-
-			if (node != NULL && placementcoord != COORD_NONE) {
-				node->CellID = placementcoord.As_Cell();
-			}
-		}
-
-		if (HouseClass::TraceBuilding) {
-			DebugString("BUILDTRACE frame %d house %s places %s at %d,%d (node %s)\n", Frame, House->Class->Name(), buildingtype->Name(),
-				placementcoord.As_Cell().X, placementcoord.As_Cell().Y, node != NULL ? "yes" : "no");
-		}
-
-		if (placementcoord != COORD_NONE) {
-
-			Cell cellnum = placementcoord.As_Cell();
-			switch (((BuildingTypeClass *)base->Class_Of())->Flush_For_Placement(cellnum, House)) {
-
-				default:
-					return(0);
-
-				case 1:
-					/*
-					**	A temporary blockage counts against the node. Outside campaign games, a node that
-					**	fails too often is dropped, as BuildingClass::KickOutUnit (0x443C60) does.
-					*/
-					if (node != NULL) {
-						node->Attempts++;
-						if (Session.Type != GAME_NORMAL && node->Attempts > Rule->MaximumBuildingPlacementFailures) {
-							House->Base.Nodes.Delete_Index(House->Base.Nodes.ID(node));
+				 * When a wall tower is placed, the next base defense node is
+				 * moved to the spot the tower actually appeared at.
+				 */
+				if (building->Class == Rule->WallTower) {
+					int index = House->Base.Nodes.ID(node) + 1;
+					int count = House->Base.Nodes.Count();
+					for (; index < count; index++) {
+						if (House->Base.Nodes[index].Type >= STRUCT_FIRST && BuildingTypes[House->Base.Nodes[index].Type]->IsBaseDefense) {
+							House->Base.Nodes[index].CellID = base->Get_Coord().As_Cell();
+							break;
 						}
 					}
-					return(1);
-
-				case 0:
-					if (base->Unlimbo(placementcoord)) {
-						if (node != NULL) {
-							node->Placed = true;
-							if (building->Class->HeapID == House->BuildStructure) {
-								House->BuildStructure = STRUCT_NONE;
-							}
-						}
-
-						if (base->CurrentMission == MISSION_NONE && base->MissionQueue == MISSION_CONSTRUCTION) {
-							base->Commence();
-						}
-
-						/*
-						 * When a wall tower is placed, the next base defense node is
-						 * moved to the spot the tower actually appeared at.
-						 */
-						if (building->Class == Rule->WallTower) {
-							int index = House->Base.Nodes.ID(node) + 1;
-							int count = House->Base.Nodes.Count();
-							for (; index < count; index++) {
-								if (House->Base.Nodes[index].Type >= STRUCT_FIRST && BuildingTypes[House->Base.Nodes[index].Type]->IsBaseDefense) {
-									House->Base.Nodes[index].CellID = base->Get_Coord().As_Cell();
-									break;
-								}
-							}
-						}
-						return(2);
-					}
-					// fall through
-
-				case 2:
-					if (node == NULL) {
-						return(0);
-					} else {
-						int index = House->Base.Nodes.ID(node);
-
-						BuildingTypeClass * nodetype = BuildingTypes[node->Type];
-						if (!nodetype->IsWall && !nodetype->IsGate) {
-							Cell placecell = placementcoord.As_Cell();
-							for (int i = 0; i < House->Base.Nodes.Count(); i++) {
-								if (House->Base.Nodes[i].CellID == placecell) {
-									House->Base.Nodes[i].CellID = Cell(0, 0);
-								}
-							}
-							return(0);
-						}
-						House->Base.Nodes.Delete_Index(index);
-					}
-					break;
-			}
-
-		} else {
-
-			if (!buildingtype->PowersUpBuilding.empty()) {
-				if (House->Base.Next_Buildable(STRUCT_NONE) == node) {
-					House->Base.Nodes.Delete_Index(House->Base.Next_Buildable_Index(STRUCT_NONE));
 				}
+				return(2);
 			}
+			// fall through
+
+		case 2: {
+			if (node == NULL) {
+				return(0);
+			}
+			int index = House->Base.Nodes.ID(node);
+
+			BuildingTypeClass * nodetype = BuildingTypes[node->Type];
+			if (!nodetype->IsWall && !nodetype->IsGate) {
+				Cell placecell = placementcoord.As_Cell();
+				for (int i = 0; i < House->Base.Nodes.Count(); i++) {
+					if (House->Base.Nodes[i].CellID == placecell) {
+						House->Base.Nodes[i].CellID = Cell(0, 0);
+					}
+				}
+				return(0);
+			}
+			House->Base.Nodes.Delete_Index(index);
+			break;
 		}
 	}
 	return(0);

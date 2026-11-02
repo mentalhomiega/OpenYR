@@ -760,8 +760,14 @@ class BuildingClass : public TechnoClass
 		void Produce_Cash_Startup(void);
 		int Exit_Naval_Object(TechnoClass * base);
 		int Exit_Aircraft(TechnoClass * base);
+		RadioMessageType Receive_Docking(RadioClass * from, intptr_t & param);
 		int Exit_Foot(TechnoClass * base);
+		int Exit_Weapons_Factory(TechnoClass * base);
+		int Exit_Vehicle_Door(TechnoClass * base);
+		int Exit_Infantry(TechnoClass * base);
+		int Exit_Refinery(TechnoClass * base);
 		int Exit_Structure(TechnoClass * base);
+		Coord Door_Coord(Cell const & exitcell) const;
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.
