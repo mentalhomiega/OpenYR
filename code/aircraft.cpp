@@ -2156,6 +2156,14 @@ Dir256 AircraftClass::Pose_Dir(void) const
 }
 
 
+void AircraftClass::Announce_Incoming(void) const
+{
+	if (TarCom != NULL) {
+		Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+	}
+}
+
+
 /***********************************************************************************************
  * AircraftClass::Mission_Attack -- Handles the attack mission for aircraft.                   *
  *                                                                                             *
@@ -2381,9 +2389,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 							Fire_At(TarCom, 0);
 						}
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 					if (Is_Strafe()) {
 						Status = STRAFE_SHOT2;
 						IsLockedStraight = true;
@@ -2451,9 +2457,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 
 					if (Ammo) {
 						Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
@@ -2501,9 +2505,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
+			Announce_Incoming();
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT3;
 			return(PrimaryWeapon->ROF);
@@ -2533,9 +2535,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
+			Announce_Incoming();
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT4;
 			return(PrimaryWeapon->ROF);
@@ -2565,9 +2565,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			if (TarCom != NULL) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-			}
+			Announce_Incoming();
 			Assign_Destination(TarCom);
 			Status = STRAFE_LAST_SHOT;
 			return(PrimaryWeapon->ROF);
@@ -2585,9 +2583,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					if (TarCom != NULL) {
-						Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
-					}
+					Announce_Incoming();
 					Status = FLY_TO_POSITION;
 					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
 
