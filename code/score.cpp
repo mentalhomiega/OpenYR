@@ -269,21 +269,6 @@ void Print_Paragraph(ScoreStageClass & stage, std::string const & text, Rect con
 	}
 }
 
-void Fill_Area(Surface * surface, Rect const & area, int color)
-{
-	for (int y = area.Y; y < area.Y + area.Height; y++) {
-		surface->Draw_Rect(Rect(area.X, y, area.Width, 1), color);
-	}
-}
-
-void Outline_Area(Surface * surface, Rect const & area, int color)
-{
-	Fill_Area(surface, Rect(area.X, area.Y, area.Width, 1), color);
-	Fill_Area(surface, Rect(area.X, area.Y + area.Height - 1, area.Width, 1), color);
-	Fill_Area(surface, Rect(area.X, area.Y, 1, area.Height), color);
-	Fill_Area(surface, Rect(area.X + area.Width - 1, area.Y, 1, area.Height), color);
-}
-
 int Button_Color(void)
 {
 	return(DSurface::Build_Hicolor_Pixel(RGBClass(170, 22, 22)));
@@ -413,8 +398,8 @@ void Draw_Classic_Text(ScoreStageClass & stage, Figures const & figures, Rect co
 
 void Draw_Button(ScoreStageClass & stage, Rect const & button, std::string const & caption)
 {
-	Fill_Area(stage.Canvas(), button, Button_Color());
-	Outline_Area(stage.Canvas(), button, Button_Edge_Color());
+	stage.Canvas()->Fill_Rect(button, Button_Color());
+	stage.Canvas()->Draw_Rect(button, Button_Edge_Color());
 	stage.Print_Centre(caption.c_str(), button.X, button.Width, button.Y + (button.Height - stage.Text_Height()) / 2);
 }
 
@@ -440,8 +425,8 @@ void Draw_Modern(ScoreStageClass & stage, Figures const & figures, Rect & emblem
 
 	Rect const panels[3] = { left, centre, right };
 	for (Rect const & panel : panels) {
-		Fill_Area(stage.Canvas(), panel, Panel_Color());
-		Outline_Area(stage.Canvas(), panel, Panel_Edge_Color());
+		stage.Canvas()->Fill_Rect(panel, Panel_Color());
+		stage.Canvas()->Draw_Rect(panel, Panel_Edge_Color());
 	}
 
 	int const text_width = left.Width - 2 * pad;
