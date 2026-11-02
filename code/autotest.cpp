@@ -2951,15 +2951,48 @@ static void Hotkey_Step(StepType const & step)
 }
 
 
-static void Key_Step(StepType const & step)
+// The object a window event is given to: the keyboard, the game window or the map view.
+enum class ScriptReceiver
+{
+	KEYBOARD,
+	GAME_WINDOW,
+	MAP
+};
+
+
+static void Send_Window_Event(WindowEvent const & event, ScriptReceiver to)
+{
+	if (to == ScriptReceiver::KEYBOARD) {
+		Keyboard->Handle_Window_Event(event);
+	} else if (to == ScriptReceiver::GAME_WINDOW) {
+		Game_Window_Handle_Event(event);
+	} else {
+		Map.Handle_Window_Event(event);
+	}
+}
+
+
+// A mouse press and then a release of the event's button, sent to the receiver. The caller sets the button, position and clicks.
+static void Send_Click(WindowEvent & event, ScriptReceiver to)
+{
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	Send_Window_Event(event, to);
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	Send_Window_Event(event, to);
+}
+
+
+// key <VK> sends the key's press and release to the keyboard directly. winkey <VK> sends them to the game window, so the
+// interface sees the key first as it does a player's key.
+static void Send_Key(StepType const & step, ScriptReceiver to)
 {
 	WindowEvent event;
 	event.VirtualKey = Key_Code(step.Argument);
 	event.Modifiers = Key_Modifiers(step.Argument);
 	event.Type = WINDOW_EVENT_KEY_DOWN;
-	Keyboard->Handle_Window_Event(event);
+	Send_Window_Event(event, to);
 	event.Type = WINDOW_EVENT_KEY_UP;
-	Keyboard->Handle_Window_Event(event);
+	Send_Window_Event(event, to);
 }
 
 
@@ -2970,7 +3003,7 @@ static void Hold_Key(StepType const & step, bool down)
 	event.VirtualKey = Key_Code(step.Argument);
 	event.Modifiers = Key_Modifiers(step.Argument);
 	event.Type = down ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
-	Keyboard->Handle_Window_Event(event);
+	Send_Window_Event(event, ScriptReceiver::KEYBOARD);
 	if (event.VirtualKey > 0 && event.VirtualKey < 256) {
 		ScriptHeldKeys[event.VirtualKey] = down;
 	}
@@ -3017,20 +3050,6 @@ static void Camera_Step(StepType const &)
 {
 	Point2D const position = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   camera %d,%d\n", position.X, position.Y);
-}
-
-
-// winkey <VK>: a key press and release sent to the game window, so the interface sees it
-// first as it does a player's key. The key step skips that routing.
-static void Winkey_Step(StepType const & step)
-{
-	WindowEvent event;
-	event.VirtualKey = Key_Code(step.Argument);
-	event.Modifiers = Key_Modifiers(step.Argument);
-	event.Type = WINDOW_EVENT_KEY_DOWN;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_KEY_UP;
-	Game_Window_Handle_Event(event);
 }
 
 
@@ -3804,12 +3823,9 @@ static void Click_Step(StepType const & step)
 {
 	int x = step.Argument_Int();
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.X = x;
 	event.Y = step.X;
-	Keyboard->Handle_Window_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Keyboard->Handle_Window_Event(event);
+	Send_Click(event, ScriptReceiver::KEYBOARD);
 }
 
 
@@ -3826,12 +3842,9 @@ static void Windowmove_Step(StepType const & step)
 static void Window_Click(StepType const & step, int clicks)
 {
 	WindowEvent event = Move_Pointer(step.Argument_Int(), step.X);
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = clicks;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3858,12 +3871,9 @@ static void Commandbutton_Step(StepType const & step)
 	}
 	DebugString("AUTOTEST   commandbutton %s at %d,%d\n", step.Argument.c_str(), center.X, center.Y);
 	WindowEvent event = Move_Pointer(center.X, center.Y);
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3875,7 +3885,7 @@ static void Window_Press(StepType const & step, bool press)
 	event.Type = press ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
-	Game_Window_Handle_Event(event);
+	Send_Window_Event(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3883,14 +3893,11 @@ static void Window_Press(StepType const & step, bool press)
 static void Xbutton_Step(StepType const & step)
 {
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = (step.Argument.find('2') != std::string::npos) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1;
 	event.Clicks = 1;
 	event.X = _CursorX;
 	event.Y = _CursorY;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3898,14 +3905,11 @@ static void Xbutton_Step(StepType const & step)
 static void Mapclick_Step(StepType const & step)
 {
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
 	event.X = step.Argument_Int();
 	event.Y = step.X;
-	Map.Handle_Window_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Map.Handle_Window_Event(event);
+	Send_Click(event, ScriptReceiver::MAP);
 }
 
 
@@ -6887,14 +6891,14 @@ void Run(StepType const & step)
 		{"canbuild", Can_Build_Step},
 		{"chrono", Chrono_Step},
 		{"hotkey", Hotkey_Step},
-		{"key", Key_Step},
+		{"key", [](StepType const & step) {Send_Key(step, ScriptReceiver::KEYBOARD);}},
 		{"hold", [](StepType const & step) {Hold_Key(step, true);}},
 		{"release", [](StepType const & step) {Hold_Key(step, false);}},
 		{"binding", Binding_Step},
 		{"scheme", Scheme_Step},
 		{"bind", Bind_Step},
 		{"camera", Camera_Step},
-		{"winkey", Winkey_Step},
+		{"winkey", [](StepType const & step) {Send_Key(step, ScriptReceiver::GAME_WINDOW);}},
 		{"wintype", Wintype_Step},
 		{"alliance", Alliance_Step},
 		{"tab", Tab_Step},
