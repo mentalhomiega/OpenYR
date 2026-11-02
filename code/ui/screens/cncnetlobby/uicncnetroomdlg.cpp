@@ -256,6 +256,12 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Publish(void);
 		void Broadcast(bool closed);
 		void Flush(void);
+		void Fill_Sides(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Colors_Teams_Starts(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Players(UINetLobbyState & state, CnCNetRoomPlayerType const * self);
+		void Fill_Chat(UINetLobbyState & state);
+		bool Fill_Map_Status(UINetLobbyState & state);
+		void Fill_Options(UINetLobbyState & state);
 		void Own_Setup(int side, int color, int start, int team);
 		int Playing_Count(void) const;
 		std::string Start_Note(CnCNetRoomPlayerType const * self, bool map_ready) const;
@@ -522,6 +528,16 @@ void CnCNetRoomServiceClass::Publish(void)
 }
 
 
+// Adds a line in the plain colour, for notices the room writes itself.
+static void Add_Notice(UINetLobbyState & state, std::string const & text)
+{
+	UINetChatLine line;
+	line.Text = text;
+	line.Color = PLAIN;
+	state.Chat.push_back(line);
+}
+
+
 void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 {
 	bool const open = TheRoom.Status() != CnCNetRoomStatus::CLOSED && TheRoom.Status() != CnCNetRoomStatus::STARTING;
@@ -532,9 +548,32 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.Games.clear();
 	state.Game = 0;
 
+	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
+	Fill_Sides(state, self);
+	Fill_Colors_Teams_Starts(state, self);
+	Fill_Players(state, self);
+	Fill_Chat(state);
+	bool const map_ready = Fill_Map_Status(state);
+	Fill_Options(state);
+
+	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
+		&& !TheRoom.Build_Differs_From_Host();
+	state.CanGo = Can_Start();
+
+	state.RoomTitle = Setup.RoomName.empty() ? (TheRoom.Is_Host() ? Setup.Nick : Setup.HostNick) + "'s game" : Setup.RoomName;
+	state.RoomChannel = TheRoom.Channel();
+	state.RoomTip = UI_CnCNet_Plain_Markup("Room channel " + TheRoom.Channel());
+	state.StartNote = Start_Note(self, map_ready);
+	state.LeaveLabel = TheRoom.Is_Host() ? "Close room" : "Leave room";
+	state.LeaveTip = TheRoom.Is_Host() ? "Close this room and go back to the CnCNet lobby. Everyone in it is sent back too."
+		: "Leave this room and go back to the CnCNet lobby.";
+}
+
+
+void CnCNetRoomServiceClass::Fill_Sides(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Sides.clear();
 	state.Side = 0;
-	CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick);
 	for (int index = 0; index < HouseTypes.Count(); index++) {
 		HouseTypeClass * house = HouseTypes[index];
 		if (!house->IsMultiplay) {
@@ -555,7 +594,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.Side = static_cast<int>(state.Sides.size());
 	}
 	state.Sides.push_back(watch);
+}
 
+
+void CnCNetRoomServiceClass::Fill_Colors_Teams_Starts(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Colors.clear();
 	for (int index = 0; index < MAX_MPLAYER_COLORS && index < COLOR_COUNT; index++) {
 		UINetOption option;
@@ -592,7 +635,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 		state.Starts.push_back(option);
 	}
+}
 
+
+void CnCNetRoomServiceClass::Fill_Players(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
+{
 	state.Players.clear();
 	for (CnCNetRoomPlayerType const & player : TheRoom.Players()) {
 		UINetPlayerRow row;
@@ -635,26 +682,21 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			state.Rivals.push_back(rival);
 		}
 	}
+}
 
+
+void CnCNetRoomServiceClass::Fill_Chat(UINetLobbyState & state)
+{
 	state.Chat.clear();
 	if (TheRoom.Status() == CnCNetRoomStatus::WAITING_HOST || TheRoom.Status() == CnCNetRoomStatus::JOINING) {
-		UINetChatLine line;
-		line.Text = "Waiting for the host to answer...";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Waiting for the host to answer...");
 	}
 	if (TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM) {
 		// The CnCNet admins' terms: the host tells players who join that this is an OpenYR game.
-		UINetChatLine line;
-		line.Text = "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Reminder: this is an OpenYR game. Tell anyone who joins; a stock Yuri's Revenge client cannot play in it.");
 		if (std::any_of(TheRoom.Players().begin(), TheRoom.Players().end(),
 				[&](CnCNetRoomPlayerType const & player) { return(!TheRoom.Build_Problem(player).empty()); })) {
-			UINetChatLine blocked;
-			blocked.Text = "The game cannot start until every player is on your OpenYR build. Remove the players with a note under their name.";
-			blocked.Color = PLAIN;
-			state.Chat.push_back(blocked);
+			Add_Notice(state, "The game cannot start until every player is on your OpenYR build. Remove the players with a note under their name.");
 		}
 	}
 	// The match's network options are one line above the chat, not a chat line, so they stay in view and in one row.
@@ -666,17 +708,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		state.NetworkTip = "Network options for this match: " + described + "."
 			+ (TheRoom.Is_Host() ? " Change them with the chat commands /FrameSendRate, /MaxAhead and /ProtocolVersion." : " The host sets them.");
 		if (TheRoom.Is_Host()) {
-			UINetChatLine commands;
-			commands.Text = "Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion.";
-			commands.Color = PLAIN;
-			state.Chat.push_back(commands);
+			Add_Notice(state, "Host commands: /FrameSendRate, /MaxAhead, /ProtocolVersion.");
 		}
 	}
 	if (!TheRoom.Is_Host() && TheRoom.Build_Differs_From_Host()) {
-		UINetChatLine line;
-		line.Text = "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.";
-		line.Color = PLAIN;
-		state.Chat.push_back(line);
+		Add_Notice(state, "Your OpenYR build differs from the host's. Update OpenYR to the host's build to play this game.");
 	}
 	if (CnCNetChannelType const * channel = Lobby.Find_Channel(TheRoom.Channel())) {
 		for (CnCNetChatLineType const & entry : channel->Lines) {
@@ -694,7 +730,11 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 			state.Chat.push_back(line);
 		}
 	}
+}
 
+
+bool CnCNetRoomServiceClass::Fill_Map_Status(UINetLobbyState & state)
+{
 	// A guest whose map is missing or differs from the host's cannot get ready: the match would not start or would go out of sync.
 	state.MapName = Session.Options.ScenarioDescription;
 	bool map_ready = true;
@@ -723,7 +763,12 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 		}
 	}
 	state.Preview = Preview;
+	return(map_ready);
+}
 
+
+void CnCNetRoomServiceClass::Fill_Options(UINetLobbyState & state)
+{
 	GameOptionsType const & options = Session.Options;
 	state.Bases = options.Bases;
 	state.Crates = options.Goodies;
@@ -747,18 +792,6 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.CreditsMax = Rule->MPMaxMoney;
 	state.CreditsStep = 100;
 	state.Credits = options.Credits;
-
-	state.CanAccept = !TheRoom.Is_Host() && TheRoom.Status() == CnCNetRoomStatus::IN_ROOM && self != nullptr && !self->Ready && map_ready
-		&& !TheRoom.Build_Differs_From_Host();
-	state.CanGo = Can_Start();
-
-	state.RoomTitle = Setup.RoomName.empty() ? (TheRoom.Is_Host() ? Setup.Nick : Setup.HostNick) + "'s game" : Setup.RoomName;
-	state.RoomChannel = TheRoom.Channel();
-	state.RoomTip = UI_CnCNet_Plain_Markup("Room channel " + TheRoom.Channel());
-	state.StartNote = Start_Note(self, map_ready);
-	state.LeaveLabel = TheRoom.Is_Host() ? "Close room" : "Leave room";
-	state.LeaveTip = TheRoom.Is_Host() ? "Close this room and go back to the CnCNet lobby. Everyone in it is sent back too."
-		: "Leave this room and go back to the CnCNet lobby.";
 }
 
 
