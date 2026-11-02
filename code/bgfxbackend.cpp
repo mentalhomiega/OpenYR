@@ -589,6 +589,25 @@ static void Widen_Tile(unsigned char * dest, int destpitch, unsigned char const 
 }
 
 
+// Returns the mask as width by height texels. A mask whose readable part is smaller is copied into scratch,
+// zero outside the readable part, and outpitch is then width; otherwise mask itself is returned with pitch.
+static unsigned char const * Pad_Mask(std::vector<unsigned char> & scratch, unsigned char const * mask, int pitch, int readwidth, int readheight, int width, int height, int & outpitch)
+{
+	outpitch = pitch;
+	if (readwidth >= width && readheight >= height) {
+		return(mask);
+	}
+	scratch.assign((size_t)width * height, 0);
+	int const copywidth = std::min(width, readwidth);
+	int const copyheight = std::min(height, readheight);
+	for (int y = 0; y < copyheight; y++) {
+		std::memcpy(&scratch[(size_t)y * width], mask + (ptrdiff_t)y * pitch, (size_t)copywidth);
+	}
+	outpitch = width;
+	return(scratch.data());
+}
+
+
 /// <summary>
 /// Uploads one mask, making its R8 texture first when the size changed. Only the readable part of the
 /// source is used; texels beyond it are zero. Only the tiles that changed since the last upload are sent.
@@ -619,18 +638,8 @@ static bool Upload_Mask(BackendMask & mask, unsigned char const * pixels, int pi
 	}
 
 	// A source smaller than the texture is padded with zero, since the pitch of a mask may be wider than the picture.
-	unsigned char const * source = pixels;
 	int sourcepitch = pitch;
-	if (readwidth < width || readheight < height) {
-		mask.Effective.assign((size_t)width * height, 0);
-		int const copywidth = std::min(width, readwidth);
-		int const copyheight = std::min(height, readheight);
-		for (int y = 0; y < copyheight; y++) {
-			std::memcpy(&mask.Effective[(size_t)y * width], pixels + (ptrdiff_t)y * pitch, (size_t)copywidth);
-		}
-		source = mask.Effective.data();
-		sourcepitch = width;
-	}
+	unsigned char const * source = Pad_Mask(mask.Effective, pixels, pitch, readwidth, readheight, width, height, sourcepitch);
 
 	_MaskGrid.Resize(width, height);
 	mask.Diff.Compare(source, sourcepitch, _MaskGrid);
@@ -789,18 +798,7 @@ static bool Upload_Keyed_Mask(void const * pixels, int pitch, unsigned char cons
 	unsigned char const * value = NULL;
 	int valuepitch = 0;
 	if (masked) {
-		value = mask;
-		valuepitch = maskpitch;
-		if (maskwidth < _FrameWidth || maskheight < _FrameHeight) {
-			_KeyedMaskEffective.assign((size_t)_FrameWidth * _FrameHeight, 0);
-			int const copywidth = std::min(_FrameWidth, maskwidth);
-			int const copyheight = std::min(_FrameHeight, maskheight);
-			for (int y = 0; y < copyheight; y++) {
-				std::memcpy(&_KeyedMaskEffective[(size_t)y * _FrameWidth], mask + (ptrdiff_t)y * maskpitch, (size_t)copywidth);
-			}
-			value = _KeyedMaskEffective.data();
-			valuepitch = _FrameWidth;
-		}
+		value = Pad_Mask(_KeyedMaskEffective, mask, maskpitch, maskwidth, maskheight, _FrameWidth, _FrameHeight, valuepitch);
 		if (full) {
 			_KeyedMaskDiff.Invalidate();
 		}
