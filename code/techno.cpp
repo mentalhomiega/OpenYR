@@ -8428,6 +8428,16 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 }
 
 
+// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
+static int Shadow_Cache_Key(int key, VoxelIndexClass const * cache, bool disable_cache)
+{
+	if (key != -1 && (cache == NULL || disable_cache)) {
+		return(-1);
+	}
+	return(key);
+}
+
+
 /// <summary>
 /// Draws the voxel shadow for this object, honoring the cache key when present.
 /// Skips drawing entirely if cloaked, mid-flash, or the voxel library failed to load.
@@ -8443,18 +8453,11 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 /// <param name="force_cache">Force rendering even when a cache key is supplied.</param>
 void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const
 {
-	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
-		return;
-	}
-
-	// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
-	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
-		key = -1;
-	}
-
 	if (Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, point)) {
 		return;
 	}
+
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
 
 	if (key == -1 || force_cache) {
 		SurfaceRegion region = Techno_Render_Voxel_Shadow(voxeldata, matrix, point, cliprect, layer_index, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), key != -1);
@@ -8489,9 +8492,7 @@ bool TechnoClass::Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeld
 		return(true);
 	}
 
-	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
-		key = -1;
-	}
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
 
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
