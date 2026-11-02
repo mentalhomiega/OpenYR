@@ -360,6 +360,18 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 }
 
 
+template<class T, class Action>
+static void For_Selected(DynamicVectorClass<T *> & list, Action action)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object->IsSelected) {
+			action(object);
+		}
+	}
+}
+
+
 // Whether other people's copies of the game take part. Their orders then go through the event queue, as a
 // player's orders do, so every copy applies them. Direct state changes would leave the other copies behind.
 bool Network_Game(void)
@@ -512,18 +524,13 @@ void Move(std::string const & name, int x, int y)
 		Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
 		return;
 	}
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * unit = Units[index];
-		if (unit->IsSelected) unit->Assign_Destination(&Map[cell]), unit->Assign_Mission(MISSION_MOVE);
-	}
-	for (int index = 0; index < Infantry.Count(); index++) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsSelected) infantry->Assign_Destination(&Map[cell]), infantry->Assign_Mission(MISSION_MOVE);
-	}
-	for (int index = 0; index < Aircraft.Count(); index++) {
-		AircraftClass * aircraft = Aircraft[index];
-		if (aircraft->IsSelected) aircraft->Assign_Destination(&Map[cell]), aircraft->Assign_Mission(MISSION_MOVE);
-	}
+	auto const move = [&cell](auto * object) {
+		object->Assign_Destination(&Map[cell]);
+		object->Assign_Mission(MISSION_MOVE);
+	};
+	For_Selected(Units, move);
+	For_Selected(Infantry, move);
+	For_Selected(Aircraft, move);
 }
 
 
@@ -648,18 +655,13 @@ static void Attack_Step(StepType const & step)
 		Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
 		return;
 	}
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * unit = Units[index];
-		if (unit->IsSelected) unit->Assign_Target(target), unit->Assign_Mission(MISSION_ATTACK);
-	}
-	for (int index = 0; index < Infantry.Count(); index++) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsSelected) infantry->Assign_Target(target), infantry->Assign_Mission(MISSION_ATTACK);
-	}
-	for (int index = 0; index < Aircraft.Count(); index++) {
-		AircraftClass * aircraft = Aircraft[index];
-		if (aircraft->IsSelected) aircraft->Assign_Target(target), aircraft->Assign_Mission(MISSION_ATTACK);
-	}
+	auto const attack = [target](auto * object) {
+		object->Assign_Target(target);
+		object->Assign_Mission(MISSION_ATTACK);
+	};
+	For_Selected(Units, attack);
+	For_Selected(Infantry, attack);
+	For_Selected(Aircraft, attack);
 }
 
 
@@ -709,6 +711,18 @@ TechnoClass * Strike_Target(std::string const & name, int x, int y, int radius)
 }
 
 
+// The attack order a click gives. A network game queues it as an event, so every copy applies it.
+static void Give_Attack_Order(TechnoClass * techno, AbstractClass * target, bool network)
+{
+	if (network) {
+		techno->Player_Assign_Mission(MISSION_ATTACK, target);
+	} else {
+		techno->Assign_Target(target);
+		techno->Assign_Mission(MISSION_ATTACK);
+	}
+}
+
+
 /*
 **	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
 **	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
@@ -733,24 +747,14 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 		if (Strike_Attacker_Allows(unit, attacker) && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
-			if (network) {
-				unit->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				unit->Assign_Target(target);
-				unit->Assign_Mission(MISSION_ATTACK);
-			}
+			Give_Attack_Order(unit, target, network);
 			orders++;
 		}
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
 		if (Strike_Attacker_Allows(infantry, attacker) && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
-			if (network) {
-				infantry->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				infantry->Assign_Target(target);
-				infantry->Assign_Mission(MISSION_ATTACK);
-			}
+			Give_Attack_Order(infantry, target, network);
 			orders++;
 		}
 	}
@@ -3388,12 +3392,7 @@ static void Strike_Step(StepType const & step)
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if ((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			if (Network_Game()) {
-				techno->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				techno->Assign_Target(target);
-				techno->Assign_Mission(MISSION_ATTACK);
-			}
+			Give_Attack_Order(techno, target, Network_Game());
 		}
 	}
 }
