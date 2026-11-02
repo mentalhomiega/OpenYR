@@ -51,6 +51,28 @@ static bool Is_Being_Built_Or_Sold(TechnoClass const * techno)
 
 
 /// <summary>
+/// Attaches an animation of the given type to the object as its mind control ring. The ring sits at the
+/// object's center, raised by the height of a building or by the unit's ring offset. A building's ring
+/// also gets a ZAdjust of -1024.
+/// </summary>
+/// <param name="techno">The object the ring is attached to.</param>
+/// <param name="type">The animation type of the ring.</param>
+void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type)
+{
+	Coord coord = techno->Center_Coord();
+	bool const building = techno->RTTI == RTTI_BUILDING;
+	coord.Z += building ? ((BuildingClass *)techno)->Class->ZHeight * LEVEL_LEPTON_H : techno->TClass->MindControlRingOffset;
+	AnimClass * anim = new AnimClass(type, coord);
+	if (anim != NULL) {
+		anim->Attach_To(techno);
+		if (building) {
+			anim->ZAdjust = -1024;
+		}
+	}
+}
+
+
+/// <summary>
 /// Can this manager take the target over (CaptureManagerClass::CanCapture, 0x471C90)? Not an
 /// object of the firer's own house, an ImmuneToPsionics type, a vehicle linked to a bunker, an
 /// object already under mind control or taken for good by the psychic dominator, one under the
@@ -117,16 +139,7 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	Decide_Unit_Fate(target);
 
 	if (Rule->ControlledAnimationType != NULL) {
-		Coord coord = target->Center_Coord();
-		bool const building = target->RTTI == RTTI_BUILDING;
-		coord.Z += building ? ((BuildingClass *)target)->Class->ZHeight * LEVEL_LEPTON_H : target->TClass->MindControlRingOffset;
-		AnimClass * anim = new AnimClass(Rule->ControlledAnimationType, coord);
-		if (anim != NULL) {
-			anim->Attach_To(target);
-			if (building) {
-				anim->ZAdjust = -1024;
-			}
-		}
+		Attach_Control_Ring(target, Rule->ControlledAnimationType);
 	}
 	return(true);
 }

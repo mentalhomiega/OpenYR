@@ -16,6 +16,7 @@
 #include "_rules.h"
 #include "anim.h"
 #include "animtype.h"
+#include "capture.h"
 #include "cell.h"
 #include "combat.h"
 #include "csf.h"
@@ -188,12 +189,7 @@ void PsychicDominatorClass::Fire(void)
 		techno->Set_Owning_House(Owner, true);
 		techno->IsPermaControlled = true;
 		if (Rule->PermaControlledAnimationType != NULL) {
-			Coord ring = techno->Center_Coord();
-			ring.Z += techno->TClass->MindControlRingOffset;
-			AnimClass * anim = new AnimClass(Rule->PermaControlledAnimationType, ring);
-			if (anim != NULL) {
-				anim->Attach_To(techno);
-			}
+			Attach_Control_Ring(techno, Rule->PermaControlledAnimationType);
 		}
 		if (!Owner->Is_Human_Player()) {
 			techno->Assign_Mission(MISSION_HUNT);
