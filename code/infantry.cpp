@@ -2324,7 +2324,7 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	bool result = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
 	// A planned leg that the base routine has just issued is the unit's next mission, so the idle mission below must not replace it.
-	if (result && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission)) {
+	if (Planned_Leg_Replaces_Idle(result)) {
 		return(result);
 	}
 

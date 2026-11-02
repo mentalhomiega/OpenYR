@@ -2507,16 +2507,6 @@ namespace {
 
 
 /// <summary>
-/// Tells whether the unit can take one more planned order.
-/// </summary>
-/// <returns>bool; True when Planned_Order_Block reports no block.</returns>
-bool FootClass::Can_Take_Planned_Order(void) const
-{
-	return(Planned_Order_Block() == PLANNED_ORDER_OPEN);
-}
-
-
-/// <summary>
 /// Tells why the unit cannot take another planned order, checking the last queued order first.
 /// </summary>
 /// <returns>PlannedOrderBlock; PLANNED_ORDER_OPEN when the unit can take one.</returns>
@@ -2545,13 +2535,19 @@ PlannedOrderBlock FootClass::Planned_Order_Block(void) const
 }
 
 
+bool FootClass::Planned_Leg_Replaces_Idle(bool result) const
+{
+	return(result && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission));
+}
+
+
 /// <summary>
 /// Appends a planned order to the unit's queue.
 /// </summary>
 /// <returns>bool; Was the order queued? False when the unit cannot take one (see Planned_Order_Block).</returns>
 bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 {
-	if (!Can_Take_Planned_Order()) {
+	if (Planned_Order_Block() != PLANNED_ORDER_OPEN) {
 		return(false);
 	}
 	PlannedOrders.Add(order);
