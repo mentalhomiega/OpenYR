@@ -669,6 +669,35 @@ bool DecodePubGameopt(char * options, char * name)
 }
 
 
+// Sets numbers to the waypoint numbers the scenario places, in ascending order, and declared_players
+// to its RandomMap NumPlayers. Returns false when the scenario cannot be read; the outputs are then empty or zero.
+static bool Read_Scenario_Waypoints(int index, std::vector<int> & numbers, int & declared_players)
+{
+	numbers.clear();
+	declared_players = 0;
+	if (index < 0 || index >= Session.Scenarios.Count()) {
+		return(false);
+	}
+
+	CCFileClass file(Session.Scenarios[index]->Get_Filename());
+
+	INIClass ini;
+	if (!ini.Load(file)) {
+		return(false);
+	}
+
+	for (int i = 0; i < MAX_PLAYERS; i++) {
+		char wp[32];
+		sprintf(wp, "%d", i);
+		if (ini.Get_Int("Waypoints", wp, -1) != -1) {
+			numbers.push_back(i);
+		}
+	}
+	declared_players = ini.Get_Int("RandomMap", "NumPlayers", 0);
+	return(true);
+}
+
+
 /// <summary>
 /// Fetches the number of starting positions a scenario offers.
 /// This routine is used to check that there is somewhere to put every player before a map is
@@ -679,31 +708,12 @@ bool DecodePubGameopt(char * options, char * name)
 /// scenario could not be read.</returns>
 int RandomMapWaypointCount(int index)
 {
-	char wp[32];
-	if (index >= 0 && index < Session.Scenarios.Count()) {
-		CCFileClass file(Session.Scenarios[index]->Get_Filename());
-
-		INIClass ini;
-		if (!ini.Load(file)) {
-			return(0);
-		}
-
-		int count = 0;
-
-		for (int i = 0; i < MAX_PLAYERS; i++) {
-			sprintf(wp, "%d", i);
-			if (ini.Get_Int("Waypoints", wp, -1) != -1) {
-				count++;
-			}
-		}
-
-		if (count == 0) {
-			count = ini.Get_Int("RandomMap", "NumPlayers", 0);
-		}
-
-		return(count);
+	std::vector<int> numbers;
+	int declared_players = 0;
+	if (!Read_Scenario_Waypoints(index, numbers, declared_players)) {
+		return(0);
 	}
-	return(0);
+	return(numbers.empty() ? declared_players : static_cast<int>(numbers.size()));
 }
 
 
@@ -716,27 +726,13 @@ int RandomMapWaypointCount(int index)
 std::vector<int> RandomMapStartPositions(int index)
 {
 	std::vector<int> positions;
-	if (index < 0 || index >= Session.Scenarios.Count()) {
+	int declared_players = 0;
+	if (!Read_Scenario_Waypoints(index, positions, declared_players)) {
 		return(positions);
-	}
-
-	CCFileClass file(Session.Scenarios[index]->Get_Filename());
-
-	INIClass ini;
-	if (!ini.Load(file)) {
-		return(positions);
-	}
-
-	for (int i = 0; i < MAX_PLAYERS; i++) {
-		char wp[32];
-		sprintf(wp, "%d", i);
-		if (ini.Get_Int("Waypoints", wp, -1) != -1) {
-			positions.push_back(i);
-		}
 	}
 
 	if (positions.empty()) {
-		int const count = std::min(RandomMapWaypointCount(index), (int)MAX_PLAYERS);
+		int const count = std::min(declared_players, (int)MAX_PLAYERS);
 		for (int i = 0; i < count; i++) {
 			positions.push_back(i);
 		}
