@@ -78,7 +78,7 @@ namespace NetSemantic
 			return(true);
 		}
 		return(frame_send_rate >= 1 && frame_send_rate <= 10 && delay >= 2 * frame_send_rate
-			&& delay <= 250 && delay % frame_send_rate == 0);
+			&& delay <= LEGACY_MAX_AHEAD_LIMIT && delay % frame_send_rate == 0);
 	}
 
 
@@ -90,6 +90,6 @@ namespace NetSemantic
 		}
 
 		unsigned int const minimum_max_ahead = frame_send_rate == 1 ? 4 : 3 * frame_send_rate;
-		return(max_ahead >= minimum_max_ahead && max_ahead <= 250 && max_ahead % frame_send_rate == 0);
+		return(max_ahead >= minimum_max_ahead && max_ahead <= LEGACY_MAX_AHEAD_LIMIT && max_ahead % frame_send_rate == 0);
 	}
 }

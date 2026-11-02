@@ -14,6 +14,9 @@
 
 namespace NetSemantic
 {
+	// The largest frame count the compressed response-time check and the max-ahead check accept.
+	constexpr unsigned int LEGACY_MAX_AHEAD_LIMIT = 250;
+
 	bool Index_Is_Valid(int index, std::size_t count) noexcept;
 	bool Subject_Owner_Is_Valid(int sender, int owner) noexcept;
 	bool Game_Speed_Is_Valid(int game_speed) noexcept;
