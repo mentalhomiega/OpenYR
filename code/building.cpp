@@ -1244,7 +1244,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 /// but never draws it, so a structure that is switched off shows nothing.
 /// </summary>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
-void BuildingClass::Draw_Wrench(Rect const & cliprect) const
+void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 {
 	if (!IsRepairing || Map.Is_Shrouded(PositionCoord)) {
 		return;
@@ -1255,16 +1255,6 @@ void BuildingClass::Draw_Wrench(Rect const & cliprect) const
 	int frame = Options.Normalize_Delay(14) / 4;
 	if (frame < 2) frame = 2;
 	Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::WrenchShapes, 6 * (Frame % frame) / (frame - 1), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
-}
-
-
-/// <summary>
-/// Draws the repair wrench where TechnoClass::Draw_Post_Render asks for it, after the bomb icon
-/// and before the rank insignia.
-/// </summary>
-void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
-{
-	Draw_Wrench(cliprect);
 }
 
 
