@@ -301,3 +301,18 @@ BounceResultType BounceClass::AI(void)
 	}
 	return(bounce_result);
 }
+
+
+Vector3 Random_Meteor_Velocity(double max_xy, double min_z)
+{
+	// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x421EA0 and 0x7493B0).
+	int const y_draw = abs(Scen->RandomNumber);
+	int const x_draw = abs(Scen->RandomNumber);
+	Vector3 velocity((x_draw % int(max_xy * 2)) - max_xy, (y_draw % int(max_xy * 2)) - max_xy, min_z);
+
+	if (velocity.X < -velocity.Y) {
+		velocity.X = -velocity.X;
+		velocity.Y = -velocity.Y;
+	}
+	return(velocity);
+}

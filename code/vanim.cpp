@@ -83,16 +83,7 @@ VoxelAnimClass::VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & co
 		BounceClass::Init(center, Class->Elasticity, 1.4f, 0.0, velocity, rotation);
 
 	} else {
-		// Keep these draws in order: the first sets Y and the second sets X, as in gamemd (0x7493B0).
-		int const y_draw = abs(Scen->RandomNumber);
-		int const x_draw = abs(Scen->RandomNumber);
-		Vector3 velocity((x_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel,
-						 (y_draw % int(Class->MaxXYVel + Class->MaxXYVel)) - Class->MaxXYVel, Class->MinZVel);
-
-		if (velocity.X < -velocity.Y) {
-			velocity.X = -velocity.X;
-			velocity.Y = -velocity.Y;
-		}
+		Vector3 velocity = Random_Meteor_Velocity(Class->MaxXYVel, Class->MinZVel);
 
 		ECCounter -= abs(Scen->RandomNumber % 20);
 		int x = coord.X - ECCounter * velocity.X;
