@@ -1878,11 +1878,9 @@ TypeList<TechnoTypeClass *> CCINIClass::Get_TechnoType_List(const char * section
 		TypeList<TechnoTypeClass *> list;
 		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
-			for (int index = 0; index < TechnoTypes.Count(); index++) {
-				if (!strcmpi(token, TechnoTypes[index]->Name())) {
-					list.Add(TechnoTypes[index]);
-					break;
-				}
+			TechnoTypeClass * type = TechnoTypeClass::From_Name(token);
+			if (type != NULL) {
+				list.Add(type);
 			}
 			token = strtok(NULL, ",");
 		}

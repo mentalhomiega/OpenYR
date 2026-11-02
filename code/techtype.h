@@ -1389,4 +1389,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	This is a pointer to the wake shape (as needed by the gunboat).
 		*/
 		static void const * WakeShapes;
+
+		static TechnoTypeClass * From_Name(char const * name);
 };
