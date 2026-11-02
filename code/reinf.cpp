@@ -399,22 +399,6 @@ static TechnoClass * _Who_Can_Pop_Out_Of(Cell origin)
 }
 
 
-// Gives the team type a script with at least one mission, as gamemd does before a reinforcement
-// (0x65D8E0). A missing script becomes a zero-length Guard (TeamTypeClass::Ensure_Script), and a
-// script with no missions gets the same Guard. The script stays on the team type.
-static void _Ensure_Team_Script(TeamTypeClass const * teamtype)
-{
-	TeamTypeClass * type = const_cast<TeamTypeClass *>(teamtype);
-	type->Ensure_Script();
-
-	ScriptTypeClass * script = type->Script;
-	if (script->MissionCount == 0) {
-		script->MissionList[0] = TeamMissionClass(TMISSION_GUARD, 0);
-		script->MissionCount = 1;
-	}
-}
-
-
 /***********************************************************************************************
  * Do_Reinforcements -- Create and place a reinforcement team.                                 *
  *                                                                                             *
@@ -435,7 +419,7 @@ static void _Ensure_Team_Script(TeamTypeClass const * teamtype)
  *   06/19/1995 JLB : Announces reinforcements.                                                *
  *   02/15/1996 JLB : Recognizes team reinforcement location.                                  *
  *=============================================================================================*/
-bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
+bool Do_Reinforcements(TeamTypeClass * teamtype, WAYPOINT wp)
 {
 	assert(teamtype != 0);
 
@@ -446,8 +430,9 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	*/
 	if (!teamtype || !teamtype->TaskForce->ClassCount || teamtype->House == NULL) return(false);
 
-	// The dropship copy below must already carry the script.
-	_Ensure_Team_Script(teamtype);
+	// gamemd gives the team type its script before a reinforcement (0x65D8E0); the dropship copy
+	// below must already carry it.
+	teamtype->Ensure_Script();
 
 	AircraftTypeClass const * dshp = AircraftTypes[AircraftTypeClass::From_Name("DSHP")];
 	if (teamtype->TaskForce->ClassCount == 1 && teamtype->TaskForce->Members[0].Class == dshp && teamtype->House->CurrentDropship < 3) {
@@ -501,9 +486,9 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 	// (Do_Reinforcements, 0x65D8E0). The plane enters from the house's map edge, or starts at the
 	// team's TransportWaypoint when UseTransportOrigin is set.
 	if (teamtype->IsDroppod) {
-		AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
+		AircraftTypeClass const * plane = Paradrop_Plane_Type();
 		Cell const start = (teamtype->UseTransportOrigin && teamtype->TransportWaypoint != -1) ? Scen->Get_Waypoint_Cell(teamtype->TransportWaypoint) : CELL_NONE;
-		if (plane != AIRCRAFT_NONE && teamtype->House->Send_Plane(AircraftTypes[plane], MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
+		if (plane != NULL && teamtype->House->Send_Plane(plane, MISSION_PARADROP_APPROACH, origin, NULL, 0, NULL, object, start) != NULL && teamtype->House->Is_Ally(PlayerPtr)) {
 			Push_Radar_Event_Cell(origin);
 			Speak(VOX_REINFORCEMENTS);
 		}

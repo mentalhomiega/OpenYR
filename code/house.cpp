@@ -10210,6 +10210,17 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 
 
 /// <summary>
+/// Fetches the PDPLANE aircraft type that carries paratroopers.
+/// </summary>
+/// <returns>Returns with the PDPLANE type, or NULL when the rules define no PDPLANE aircraft.</returns>
+AircraftTypeClass const * Paradrop_Plane_Type(void)
+{
+	AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
+	return(plane != AIRCRAFT_NONE ? AircraftTypes[plane] : NULL);
+}
+
+
+/// <summary>
 /// Picks where a computer house drops paratroopers or reveals the map (HouseClass::Fire_ParaDrop).
 /// When the house's preferred target is Anything, the drop lands near the starting cell of its
 /// enemy's base, or of its own base when it has no enemy, on clear ground for a five by five group,
