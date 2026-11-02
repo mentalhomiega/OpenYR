@@ -1107,6 +1107,29 @@ bool CNCNet_Launch(std::string const & copy, std::string & error)
 }
 
 
+void CNCNetJobClass::Begin(std::uint64_t total)
+{
+	Stop = false;
+	DoneBytes = 0;
+	TotalBytes = total;
+	{
+		std::lock_guard<std::mutex> guard(Lock);
+		Text.clear();
+	}
+	Phase = CNCNetJobStateType::Running;
+}
+
+
+void CNCNetJobClass::Finish(CNCNetJobStateType state, std::string const & text)
+{
+	{
+		std::lock_guard<std::mutex> guard(Lock);
+		Text = text;
+	}
+	Phase = state;
+}
+
+
 bool CNCNetJobClass::Start_Copy(CNCNetPlanType const & plan, std::string const & build)
 {
 	if (State() == CNCNetJobStateType::Running || !plan.Problem.empty()) {
@@ -1114,14 +1137,7 @@ bool CNCNetJobClass::Start_Copy(CNCNetPlanType const & plan, std::string const &
 	}
 	Wait();
 
-	Stop = false;
-	DoneBytes = 0;
-	TotalBytes = plan.Update ? Engine_Bytes(build) : plan.Install_Bytes + Engine_Bytes(build);
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		Text.clear();
-	}
-	Phase = CNCNetJobStateType::Running;
+	Begin(plan.Update ? Engine_Bytes(build) : plan.Install_Bytes + Engine_Bytes(build));
 	Worker = std::thread([this, plan, build]() { Run_Copy(plan, build); });
 	return(true);
 }
@@ -1134,14 +1150,7 @@ bool CNCNetJobClass::Start_Remove(std::string const & destination, std::string c
 	}
 	Wait();
 
-	Stop = false;
-	DoneBytes = 0;
-	TotalBytes = 0;
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		Text.clear();
-	}
-	Phase = CNCNetJobStateType::Running;
+	Begin(0);
 	Worker = std::thread([this, destination]() { Run_Remove(destination); });
 	return(true);
 }
@@ -1206,24 +1215,12 @@ void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 		error = "The copy was cancelled.";
 		ok = false;
 	}
-	if (ok) {
-		ok = Install_Engine(run, build, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Edit_Definitions(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Add_Opents(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Edit_Updater(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Protect_Definitions(run, plan.Destination, error);
-	}
-	if (ok) {
-		ok = Write_Marker(run, plan.Install, build, plan.Destination, error);
-	}
+	ok = ok && Install_Engine(run, build, plan.Destination, error);
+	ok = ok && Edit_Definitions(run, plan.Destination, error);
+	ok = ok && Add_Opents(run, plan.Destination, error);
+	ok = ok && Edit_Updater(run, plan.Destination, error);
+	ok = ok && Protect_Definitions(run, plan.Destination, error);
+	ok = ok && Write_Marker(run, plan.Install, build, plan.Destination, error);
 
 	if (!ok && !plan.Update) {
 		Roll_Back(run);
@@ -1233,15 +1230,11 @@ void CNCNetJobClass::Run_Copy(CNCNetPlanType plan, std::string build)
 	if (!ok) {
 		result = Stop.load() ? CNCNetJobStateType::Cancelled : CNCNetJobStateType::Failed;
 	}
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		if (ok) {
-			Text = plan.Update ? "The copy was updated in place." : "The copy is ready.";
-		} else {
-			Text = error;
-		}
+	std::string text = error;
+	if (ok) {
+		text = plan.Update ? "The copy was updated in place." : "The copy is ready.";
 	}
-	Phase = result;
+	Finish(result, text);
 }
 
 
@@ -1258,13 +1251,9 @@ void CNCNetJobClass::Run_Remove(std::string destination)
 	fs::remove_all(Path(destination), ec);
 	bool const gone = !fs::exists(Path(destination), ec);
 
-	{
-		std::lock_guard<std::mutex> guard(Lock);
-		if (gone) {
-			Text = "Removed the OpenYR copy at " + destination + ". The install was not changed.";
-		} else {
-			Text = "Could not remove every file in " + destination + ". A file may be in use; close the game and try again.";
-		}
+	std::string text = "Could not remove every file in " + destination + ". A file may be in use; close the game and try again.";
+	if (gone) {
+		text = "Removed the OpenYR copy at " + destination + ". The install was not changed.";
 	}
-	Phase = gone ? CNCNetJobStateType::Done : CNCNetJobStateType::Failed;
+	Finish(gone ? CNCNetJobStateType::Done : CNCNetJobStateType::Failed, text);
 }

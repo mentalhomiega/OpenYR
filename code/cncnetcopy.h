@@ -131,6 +131,12 @@ class CNCNetJobClass
 		std::string Message(void) const;
 
 	private:
+		// Resets the counters and text for a new run and marks the job Running.
+		void Begin(std::uint64_t total);
+
+		// Publishes the text and then the final state of a run.
+		void Finish(CNCNetJobStateType state, std::string const & text);
+
 		void Run_Copy(CNCNetPlanType plan, std::string build);
 		void Run_Remove(std::string destination);
 
