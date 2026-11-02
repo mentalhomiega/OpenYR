@@ -2656,6 +2656,28 @@ namespace {
 }
 
 
+/*
+ * The state that a mode control call selects: 0 turns the mode off, 1 turns it on and -1 toggles it.
+ * Any other control keeps the current state.
+ */
+static bool Resolve_Mode(int control, bool current)
+{
+	switch (control) {
+		case 0:
+			return(false);
+
+		case -1:
+			return(current == false);
+
+		case 1:
+			return(true);
+
+		default:
+			return(current);
+	}
+}
+
+
 /// <summary>
 /// Turns planning mode on or off.
 /// Turning it on cancels the repair, sell, power and waypoint modes and keeps the selection.
@@ -2669,21 +2691,7 @@ namespace {
 /// (see HouseClass::Is_Watching).</remarks>
 void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 {
-	bool mode = IsPlanningMode;
-	switch (control) {
-		case 0:
-			mode = false;
-			break;
-
-		case -1:
-			mode = (mode == false);
-			break;
-
-		case 1:
-			mode = true;
-			break;
-	}
-
+	bool const mode = Resolve_Mode(control, IsPlanningMode);
 	if (mode == IsPlanningMode) {
 		return;
 	}
@@ -2762,21 +2770,7 @@ void DisplayClass::Reset_Planning_Mode(void)
 /// <param name="control">The mode to set. Zero turns the mode off, one turns it on, and -1 toggles it.</param>
 void DisplayClass::Place_Beacon_Mode_Control(int control)
 {
-	bool mode = IsPlaceBeaconMode;
-	switch (control) {
-		case 0:
-			mode = false;
-			break;
-
-		case -1:
-			mode = (mode == false);
-			break;
-
-		case 1:
-			mode = true;
-			break;
-	}
-
+	bool const mode = Resolve_Mode(control, IsPlaceBeaconMode);
 	if (mode == IsPlaceBeaconMode) {
 		return;
 	}
