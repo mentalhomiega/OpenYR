@@ -1319,6 +1319,30 @@ static void Trees_Step(StepType const &)
 }
 
 
+/// <summary>
+/// Finds the house a script names: a spawn name, country name or IniName (an underscore stands for a space), or #n for the house at position n.
+/// "player" is not handled here; Wait_House takes it.
+/// </summary>
+/// <param name="name">The name as the script writes it.</param>
+/// <returns>Returns the house, or NULL when no house has that name.</returns>
+static HouseClass * Named_House(std::string name)
+{
+	std::replace(name.begin(), name.end(), '_', ' ');
+	if (!name.empty() && name[0] == '#') {
+		int const position = std::atoi(name.c_str() + 1);
+		return(position >= 0 && position < Houses.Count() ? Houses[position] : NULL);
+	}
+	HouseClass * owner = House_From_Name(name.c_str());
+	// A skirmish's computer players are found by their names in the lobby, such as "Medium AI".
+	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
+		if (stricmp(Houses[index]->IniName, name.c_str()) == 0) {
+			owner = Houses[index];
+		}
+	}
+	return(owner);
+}
+
+
 /*
 **	trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
 **	trigger would. The value fills the action's number, house or time field.
@@ -1334,9 +1358,7 @@ static void Trigger_Action_Step(StepType const & step)
 	HouseClass * house = PlayerPtr;
 	std::size_t const at = step.Argument.find('@');
 	if (at != std::string::npos) {
-		std::string name = step.Argument.substr(at + 1);
-		std::replace(name.begin(), name.end(), '_', ' ');
-		house = House_From_Name(name.c_str());
+		house = Named_House(step.Argument.substr(at + 1));
 	}
 	bool const done = house != NULL && (*action)(house, NULL, NULL, Cell(0, 0));
 	Point2D const view = TacticalMap->Get_Tactical_Position();
@@ -1480,8 +1502,7 @@ HouseClass * Wait_House(std::string name)
 	if (stricmp(name.c_str(), "player") == 0) {
 		return(PlayerPtr);
 	}
-	std::replace(name.begin(), name.end(), '_', ' ');
-	return(House_From_Name(name.c_str()));
+	return(Named_House(name));
 }
 
 
@@ -2481,28 +2502,6 @@ static void Hut_Action_Step(StepType const & step)
 /// <param name="step">The type in the argument, and the target's cell in X and Y. A word after those, "computer", picks the objects of
 /// that type that neither the player nor an ally owns; otherwise the player's objects are picked. A word "attack" also gives each object
 /// the attack mission.</param>
-/// <summary>
-/// Finds the house a script names: a spawn name or IniName (an underscore stands for a space), or #n for the house at position n.
-/// </summary>
-/// <param name="name">The name as the script writes it.</param>
-/// <returns>Returns the house, or NULL when no house has that name.</returns>
-static HouseClass * House_Named_By_Step(std::string name)
-{
-	std::replace(name.begin(), name.end(), '_', ' ');
-	if (!name.empty() && name[0] == '#') {
-		int const position = std::atoi(name.c_str() + 1);
-		return(position >= 0 && position < Houses.Count() ? Houses[position] : NULL);
-	}
-	HouseClass * owner = House_From_Name(name.c_str());
-	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-		if (stricmp(Houses[index]->IniName, name.c_str()) == 0) {
-			owner = Houses[index];
-		}
-	}
-	return(owner);
-}
-
-
 static void Set_Target_Step(StepType const & step)
 {
 	std::vector<std::string> const words = Line_Words(step.Line);
@@ -3170,7 +3169,7 @@ static void Mixof_Step(StepType const & step)
 // makes (BuildingClass::Spied_By). The spy's walk in is not part of this step.
 static void Spyon_Step(StepType const & step)
 {
-	HouseClass * spy = House_Named_By_Step(step.Argument);
+	HouseClass * spy = Named_House(step.Argument);
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	if (spy == NULL) {
 		DebugString("AUTOTEST spyon %s: no such house\n", step.Argument.c_str());
@@ -3689,12 +3688,7 @@ static void Forceattack_Step(StepType const & step)
 // (an underscore stands for a space in the name).
 static void Counts_Step(StepType const & step)
 {
-	std::string house_name = step.Argument;
-	std::replace(house_name.begin(), house_name.end(), '_', ' ');
-	HouseClass * owner = House_From_Name(house_name.c_str());
-	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-		if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) owner = Houses[index];
-	}
+	HouseClass * owner = Named_House(step.Argument);
 	if (owner != NULL) {
 		DebugString("AUTOTEST   counts %s units %d buildings %d infantry %d aircraft %d active units %d infantry %d\n", step.Argument.c_str(), owner->CurUnits, owner->CurBuildings, owner->CurInfantry, owner->CurAircraft, owner->AUQuantity.Total(), owner->AIQuantity.Total());
 	} else {
@@ -3707,12 +3701,7 @@ static void Counts_Step(StepType const & step)
 // then the land, naval and infantry counts the land-units event reads and the ones the objects add up to.
 static void Listhouse_Step(StepType const & step)
 {
-	std::string house_name = step.Argument;
-	std::replace(house_name.begin(), house_name.end(), '_', ' ');
-	HouseClass * owner = House_From_Name(house_name.c_str());
-	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-		if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) owner = Houses[index];
-	}
+	HouseClass * owner = Named_House(step.Argument);
 	if (owner == NULL) {
 		DebugString("AUTOTEST   listhouse %s: no such house\n", step.Argument.c_str());
 	} else {
@@ -4150,20 +4139,7 @@ static void Houseunit_Step(StepType const & step)
 		house_name = type_name.substr(at + 1);
 		type_name.erase(at);
 	}
-	std::replace(house_name.begin(), house_name.end(), '_', ' ');
-	HouseClass * owner = NULL;
-	if (!house_name.empty() && house_name[0] == '#') {
-		// #<n> names the house at position n in the house list, for houses with no spawn name.
-		int const position = std::atoi(house_name.c_str() + 1);
-		owner = position >= 0 && position < Houses.Count() ? Houses[position] : NULL;
-	} else {
-		owner = House_From_Name(house_name.c_str());
-		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-			if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
-				owner = Houses[index];
-			}
-		}
-	}
+	HouseClass * owner = Named_House(house_name);
 	TechnoTypeClass const * type = Find_Type(type_name);
 	if (owner != NULL && type != NULL) {
 		Cell cell(step.X, step.Y);
@@ -5074,15 +5050,7 @@ static void Setlocal_Step(StepType const & step)
 // killhouse <House> [1|2|3]: (an underscore stands for a space in the name) destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) that house owns, as a player's attack would. Kind 3 leaves out the objects on cells the player cannot see.
 static void Killhouse_Step(StepType const & step)
 {
-	std::string house_name = step.Argument;
-	std::replace(house_name.begin(), house_name.end(), '_', ' ');
-	HouseClass * victim = House_From_Name(house_name.c_str());
-	// A skirmish's computer players are found by their names in the lobby, such as "Medium AI".
-	for (int index = 0; victim == NULL && index < Houses.Count(); index++) {
-		if (stricmp(Houses[index]->IniName, house_name.c_str()) == 0) {
-			victim = Houses[index];
-		}
-	}
+	HouseClass * victim = Named_House(step.Argument);
 	int const kinds = step.X;
 	TechnoClass * attacker = NULL;
 	for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
