@@ -432,7 +432,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 
 		// A grinder takes in its owner's objects without holding contact with any one of them.
 		case RADIO_HELLO:
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Walk_In_Facility()) {
 				return(RADIO_NEGATIVE);
 			}
 			break;
@@ -453,7 +453,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 				if (sender->TClass->IsBalloonHover) return(RADIO_NEGATIVE);
 			}
 			if (!IsOn) return(RADIO_NEGATIVE);
-			if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Walk_In_Facility()) {
 				if ((from->RTTI == RTTI_INFANTRY || from->RTTI == RTTI_UNIT) && Takes_Walk_Ins((FootClass const *)from)) {
 					return(RADIO_ROGER);
 				}
@@ -658,7 +658,7 @@ RadioMessageType BuildingClass::Receive_Docking(RadioClass * from, intptr_t & pa
 		}
 	}
 
-	if (Class->IsGrinding || Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+	if (Class->Is_Walk_In_Facility()) {
 		return(RADIO_ROGER);
 	}
 
@@ -3025,7 +3025,7 @@ bool BuildingClass::Active_Click_With(ActionType action, ObjectClass * object, b
 		if (Class->IsGapGenerator) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 		}
-		if (Occupants.Count() > 0 || ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0)) {
+		if (Occupants.Count() > 0 || Holds_Absorbed()) {
 			OutList.push_back(EventClass(Owner(), EventClass::DEPLOY, TargetClass(this)));
 			return(true);
 		}
@@ -4505,7 +4505,7 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 
 	ActionType action = BASECLASS::What_Action(object, disallow_force);
 
-	bool absorbed = (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0;
+	bool absorbed = Holds_Absorbed();
 	if (action == ACTION_SELF && (Occupants.Count() > 0 || absorbed)) {
 		if (StunDuration > 0 || House != PlayerPtr) {
 			action = ACTION_NONE;
@@ -5708,7 +5708,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 			}
 
 			// Selling an absorber lets everyone inside out first.
-			if (Class->IsInfantryAbsorb || Class->IsUnitAbsorb) {
+			if (Class->Is_Absorber()) {
 				while (Release_Passenger()) {
 				}
 			}
@@ -7194,7 +7194,7 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 		return(1);
 	}
 
-	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Cargo.How_Many() > 0) {
+	if (Holds_Absorbed()) {
 		if (Release_Passenger()) {
 			return(Current_Mission_Control().Normal_Delay());
 		}
@@ -7501,7 +7501,7 @@ int BuildingClass::Power_Output(void) const
 	int power = Class->Power;
 
 	// An absorber makes ExtraPower more for each object inside, as BuildingClass::GetPowerOutput (0x44E7B0) does.
-	if ((Class->IsInfantryAbsorb || Class->IsUnitAbsorb) && Class->ExtraPowerBonus > 0) {
+	if (Class->Is_Absorber() && Class->ExtraPowerBonus > 0) {
 		power += Class->ExtraPowerBonus * Cargo.How_Many();
 	}
 	if (UpgradeLevel != 0) {

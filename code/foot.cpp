@@ -3112,7 +3112,7 @@ int FootClass::Do_MISSION_ENTER(void)
 		} else if (ArchiveTarget != NULL && ArchiveTarget->RTTI == RTTI_BUILDING) {
 			grinder = (BuildingClass *)ArchiveTarget;
 		}
-		if (grinder != NULL && (grinder->Class->IsGrinding || grinder->Class->IsInfantryAbsorb || grinder->Class->IsUnitAbsorb || grinder->Class->IsBunker)) {
+		if (grinder != NULL && (grinder->Class->Is_Walk_In_Facility() || grinder->Class->IsBunker)) {
 			if (grinder->Takes_Walk_Ins(this)) {
 				ArchiveTarget = grinder;
 				if (NavCom == NULL) {

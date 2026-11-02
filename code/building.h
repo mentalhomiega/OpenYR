@@ -661,6 +661,7 @@ class BuildingClass : public TechnoClass
 		void Absorb(FootClass * object);
 		bool Release_Passenger(void);
 		bool Takes_Walk_Ins(FootClass const * object) const;
+		bool Holds_Absorbed(void) const {return(Class->Is_Absorber() && Cargo.How_Many() > 0);}
 		bool Can_Bunker(FootClass const * object) const;
 		bool Blocks_Cell(CellClass const * cell) const;
 		void Update_Bunker(void);

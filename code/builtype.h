@@ -1144,6 +1144,8 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool Can_Plant_C4(void) const {return(IsCanC4 && !IsInvisibleInGame);}
 		// gamemd's IsStrange for a structure: it undeploys into a vehicle and covers one cell (BuildingTypeClass::IsVehicle, 0x465D40).
 		bool Is_Single_Cell_Vehicle(void) const {return(UndeploysInto != NULL && Width() == 1 && Height(false) == 1);}
+		bool Is_Absorber(void) const {return(IsInfantryAbsorb || IsUnitAbsorb);}
+		bool Is_Walk_In_Facility(void) const {return(IsGrinding || Is_Absorber());}
 		virtual int Raw_Cost(void) const override;
 
 		Cell const * Exit_List(void) const;
