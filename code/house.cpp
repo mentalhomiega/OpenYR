@@ -5625,6 +5625,33 @@ void HouseClass::Production_Begun(TechnoClass const * product)
 }
 
 
+// Counts a soldier as owned infantry, unless it already is.
+static void Count_Owned_Infantry(TechnoClass * techno, int & cur_infantry)
+{
+	if (!techno->CountedAsOwnedInfantry) {
+		cur_infantry++;
+		techno->CountedAsOwnedInfantry = true;
+	}
+}
+
+
+// Removes a soldier from the owned infantry count, if it is counted.
+static void Uncount_Owned_Infantry(TechnoClass * techno, int & cur_infantry)
+{
+	if (techno->CountedAsOwnedInfantry) {
+		cur_infantry--;
+		techno->CountedAsOwnedInfantry = false;
+	}
+}
+
+
+// Insignificant and DontScore types are not counted as owned by the tracking routines.
+static bool Is_Scored(TechnoClass const * techno)
+{
+	return(!techno->TClass->IsInsignificant && !techno->TClass->IsDontScore);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Tracking_Remove -- Remove object from house tracking system.                    *
  *                                                                                             *
@@ -5644,7 +5671,7 @@ void HouseClass::Production_Begun(TechnoClass const * product)
 void HouseClass::Tracking_Remove(TechnoClass * techno)
 {
 	// Insignificant and DontScore types are not counted as owned (HouseClass::RemoveTracking, 0x4FF550).
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
+	if (!Is_Scored(techno)) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5662,10 +5689,7 @@ void HouseClass::Tracking_Remove(TechnoClass * techno)
 			break;
 
 		case RTTI_INFANTRY:
-			if (techno->CountedAsOwnedInfantry) {
-				CurInfantry--;
-				techno->CountedAsOwnedInfantry = false;
-			}
+			Uncount_Owned_Infantry(techno, CurInfantry);
 			IQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
 			break;
 
@@ -5704,7 +5728,7 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 	UnitType unit;
 
 	// Insignificant and DontScore types are not counted as owned (HouseClass::AddTracking, 0x4FF700).
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
+	if (!Is_Scored(techno)) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5731,10 +5755,7 @@ void HouseClass::Tracking_Add(TechnoClass * techno)
 
 		case RTTI_INFANTRY:
 			infantry = (InfantryType)techno->TClass->Fetch_Heap_ID();
-			if (!techno->CountedAsOwnedInfantry) {
-				CurInfantry++;
-				techno->CountedAsOwnedInfantry = true;
-			}
+			Count_Owned_Infantry(techno, CurInfantry);
 			IQuantity.Increment(infantry);
 			if (Session.Type == GAME_INTERNET) {
 				InfantryTotals->Increment_Unit_Total(infantry);
@@ -7271,46 +7292,46 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 		CountResourceDestinations--;
 	}
 
+	bool const scored = !ttype->IsDontScore;
+
 	switch (techno->Fetch_RTTI()) {
-		case RTTI_BUILDING:
-			if (!ttype->IsDontScore) {
+		case RTTI_BUILDING: {
+			BuildingClass * const bptr = static_cast<BuildingClass *>(techno);
+			if (scored) {
 				ABQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 
-			{
-				BuildingClass * bptr = (BuildingClass *)techno;
-
-				RecalcPower = true;
-				Capacity -= bptr->Class->Capacity;
-				if (bycapture) {
-					StorageClass *storage = &bptr->Storage;
-					int i = storage->First_Used_Slot();
-					while (i != -1) {
-						int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
-						Harvested(amount, TiberiumType(i));
-						i = storage->First_Used_Slot();
-					}
-				} else {
-					Tiberium -= bptr->Storage;
+			RecalcPower = true;
+			Capacity -= bptr->Class->Capacity;
+			if (bycapture) {
+				StorageClass *storage = &bptr->Storage;
+				int i = storage->First_Used_Slot();
+				while (i != -1) {
+					int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
+					Harvested(amount, TiberiumType(i));
+					i = storage->First_Used_Slot();
 				}
+			} else {
+				Tiberium -= bptr->Storage;
 			}
 			break;
+		}
 
 		case RTTI_AIRCRAFT:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AAQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_INFANTRY:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AIQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_UNIT:
 			// Unlike the other types, a unit with DontScore is not subtracted here, though it was added on entry (see Tracking_Active_Add).
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AUQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
@@ -7336,33 +7357,32 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 	if (ttype->IsResourceDestination) {
 		CountResourceDestinations++;
 	}
-	BuildingClass * bptr;
+	bool const scored = !ttype->IsDontScore;
 
 	switch (techno->Fetch_RTTI()) {
-		case RTTI_BUILDING:
-			if (!ttype->IsDontScore) {
+		case RTTI_BUILDING: {
+			if (scored) {
 				ABQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
-			bptr = dynamic_cast<BuildingClass *>(techno);
-			if (bptr != NULL) {
-				// BuildingClass::Place (0x445F80) rechecks power and radar for the house a structure is given to.
-				RecalcPower = true;
-				RecalcRadar = true;
-				Adjust_Drain(bptr->Power_Drain());
-				Capacity += bptr->Class->Capacity;
-				Tiberium += techno->Storage;
-			}
+			BuildingClass * const bptr = static_cast<BuildingClass *>(techno);
+			// BuildingClass::Place (0x445F80) rechecks power and radar for the house a structure is given to.
+			RecalcPower = true;
+			RecalcRadar = true;
+			Adjust_Drain(bptr->Power_Drain());
+			Capacity += bptr->Class->Capacity;
+			Tiberium += techno->Storage;
 			break;
+		}
 
 		case RTTI_AIRCRAFT:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AAQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_INFANTRY:
 			// A technician is not counted as active (RegisterGain checks InfantryClass::Technician).
-			if (!((InfantryClass *)techno)->IsTechnician && !ttype->IsDontScore) {
+			if (!((InfantryClass *)techno)->IsTechnician && scored) {
 				AIQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
@@ -7423,9 +7443,8 @@ HouseClass * House_From_HousesType(HousesType house)
 /// <param name="techno">The object that entered the absorber.</param>
 void HouseClass::Tracking_Absorb(TechnoClass * techno)
 {
-	if (techno->RTTI == RTTI_INFANTRY && techno->CountedAsOwnedInfantry) {
-		CurInfantry--;
-		techno->CountedAsOwnedInfantry = false;
+	if (techno->RTTI == RTTI_INFANTRY) {
+		Uncount_Owned_Infantry(techno, CurInfantry);
 	}
 }
 
@@ -7437,10 +7456,9 @@ void HouseClass::Tracking_Absorb(TechnoClass * techno)
 /// <param name="techno">The object that was released.</param>
 void HouseClass::Tracking_Release(TechnoClass * techno)
 {
-	if (techno->RTTI != RTTI_INFANTRY || techno->CountedAsOwnedInfantry) return;
-	if (techno->TClass->IsInsignificant || techno->TClass->IsDontScore) return;
-	CurInfantry++;
-	techno->CountedAsOwnedInfantry = true;
+	if (techno->RTTI != RTTI_INFANTRY) return;
+	if (!Is_Scored(techno)) return;
+	Count_Owned_Infantry(techno, CurInfantry);
 }
 
 
@@ -10984,36 +11002,35 @@ void HouseClass::Initialize_Radar_Color(void)
 /// <returns>Returns with the laser color (HouseClass::Laser_Color, gamemd 0x50BA00).</returns>
 RGBClass HouseClass::Laser_Color(void) const
 {
+	struct Channels
+	{
+		double red;
+		double green;
+		double blue;
+	};
+
 	// Summed in the order gamemd uses, so the scaled channels round the same way.
+	// The cutoff zeroes channels below 96 after scaling; a zero norm leaves every channel at 255.
+	auto const scale = [](double red, double green, double blue, bool cutoff) {
+		Channels scaled = {255.0, 255.0, 255.0};
+		double const norm = std::sqrt(((blue * blue) + (green * green)) + (red * red));
+		if (norm != 0.0) {
+			scaled.red = std::min(255.0, red * 240.0 / norm);
+			scaled.green = std::min(255.0, green * 240.0 / norm);
+			scaled.blue = std::min(255.0, blue * 240.0 / norm);
+			if (cutoff) {
+				if (scaled.red < 96.0) scaled.red = 0.0;
+				if (scaled.green < 96.0) scaled.green = 0.0;
+				if (scaled.blue < 96.0) scaled.blue = 0.0;
+			}
+		}
+		return(scaled);
+	};
+
 	RGBClass const remap = House_Display_RGB(this);
-	double const red = remap.Get_Red();
-	double const green = remap.Get_Green();
-	double const blue = remap.Get_Blue();
-
-	double first_red = 255.0;
-	double first_green = 255.0;
-	double first_blue = 255.0;
-	double const first_norm = std::sqrt(((blue * blue) + (green * green)) + (red * red));
-	if (first_norm != 0.0) {
-		first_red = std::min(255.0, red * 240.0 / first_norm);
-		first_green = std::min(255.0, green * 240.0 / first_norm);
-		first_blue = std::min(255.0, blue * 240.0 / first_norm);
-		if (first_red < 96.0) first_red = 0.0;
-		if (first_green < 96.0) first_green = 0.0;
-		if (first_blue < 96.0) first_blue = 0.0;
-	}
-
-	double second_red = 255.0;
-	double second_green = 255.0;
-	double second_blue = 255.0;
-	double const second_norm = std::sqrt(((first_blue * first_blue) + (first_green * first_green)) + (first_red * first_red));
-	if (second_norm != 0.0) {
-		second_red = std::min(255.0, first_red * 240.0 / second_norm);
-		second_green = std::min(255.0, first_green * 240.0 / second_norm);
-		second_blue = std::min(255.0, first_blue * 240.0 / second_norm);
-	}
-
-	return(RGBClass(int(second_red), int(second_green), int(second_blue)));
+	Channels const first = scale(remap.Get_Red(), remap.Get_Green(), remap.Get_Blue(), true);
+	Channels const second = scale(first.red, first.green, first.blue, false);
+	return(RGBClass(int(second.red), int(second.green), int(second.blue)));
 }
 
 

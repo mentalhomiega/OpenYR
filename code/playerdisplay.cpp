@@ -141,6 +141,16 @@ int Scheme_Display_Index(int scheme)
 }
 
 
+ColorScheme const * Player_Scheme(NodeNameType const * node)
+{
+	int const index = Scheme_Display_Index(Session.Scheme_For_Color(node->Player.Color, node->Player.CustomColor));
+	if (index < 0 || index >= ColorSchemes.Count()) {
+		return(NULL);
+	}
+	return(ColorSchemes[index]);
+}
+
+
 /// <summary>
 /// Gives the radar color of a scheme, from its bright entry at the display's pixel format.
 /// </summary>
@@ -163,4 +173,10 @@ RGBClass Scheme_Remap_RGB(int scheme)
 void Player_View_Changed(void)
 {
 	Schemes.Built = false;
+}
+
+
+void Post_Player_Message(char const * text, int ticks)
+{
+	Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), ticks);
 }

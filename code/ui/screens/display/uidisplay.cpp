@@ -69,12 +69,12 @@ void UIDisplayPresenterClass::Refresh_Rows(void)
 	Chosen_Frame(width, height);
 
 	// The rows the new frame allows. The row count stays the largest one that does not exceed the rows before.
-	std::vector<UIDisplayChoice> const before = State.RowCounts;
+	std::vector<UIChoice> const before = State.RowCounts;
 	State.RowCounts.clear();
 	State.RowCount = -1;
 	if (height > 0) {
 		for (int value : Service.Sidebar_Row_Counts(height)) {
-			UIDisplayChoice choice;
+			UIChoice choice;
 			choice.Value = value;
 			choice.Label = std::to_string(value);
 			if (value <= previous) {
@@ -88,7 +88,7 @@ void UIDisplayPresenterClass::Refresh_Rows(void)
 	}
 	ShownRowIndex = State.RowCount;
 	bool const same = before.size() == State.RowCounts.size() && std::equal(before.begin(), before.end(), State.RowCounts.begin(),
-		[](UIDisplayChoice const & a, UIDisplayChoice const & b) { return(a.Value == b.Value); });
+		[](UIChoice const & a, UIChoice const & b) { return(a.Value == b.Value); });
 	RowCountsChanged = RowCountsChanged || !same;
 	Refresh_Preview();
 }
@@ -124,20 +124,20 @@ void UIDisplayPresenterClass::Refresh_Preview(void)
 }
 
 
-static int Pick_Choice(std::vector<UIDisplayChoice> const & choices, int index, int fallback)
+static int Pick_Choice(std::vector<UIChoice> const & choices, int index, int fallback)
 {
 	return((index >= 0 && index < (int)choices.size()) ? index : fallback);
 }
 
 
-static bool Choice_Changed(std::vector<UIDisplayChoice> const & choices, int index, int initial)
+static bool Choice_Changed(std::vector<UIChoice> const & choices, int index, int initial)
 {
 	return(index != initial && index >= 0 && index < (int)choices.size());
 }
 
 
 // The index of the choice with the value given, or the fallback when no choice has it.
-static int Index_Of(std::vector<UIDisplayChoice> const & choices, int value, int fallback)
+static int Index_Of(std::vector<UIChoice> const & choices, int value, int fallback)
 {
 	for (int index = 0; index < (int)choices.size(); index++) {
 		if (choices[index].Value == value) {
@@ -699,16 +699,16 @@ class UIDisplayViewClass : public UIRmlViewClass
 			}
 			scale.RegisterMember("label", &UIDisplayScale::Label);
 
-			Rml::StructHandle<UIDisplayChoice> choice = model.RegisterStruct<UIDisplayChoice>();
+			Rml::StructHandle<UIChoice> choice = model.RegisterStruct<UIChoice>();
 			if (!choice) {
 				return(false);
 			}
-			choice.RegisterMember("label", &UIDisplayChoice::Label);
+			choice.RegisterMember("label", &UIChoice::Label);
 
 			UIDisplayState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
 				&& model.RegisterArray<std::vector<UIDisplayScale>>()
-				&& model.RegisterArray<std::vector<UIDisplayChoice>>()
+				&& model.RegisterArray<std::vector<UIChoice>>()
 				&& model.Bind("scales", &state.Scales)
 				&& model.Bind("scale", &state.Scale)
 				&& model.Bind("modes", &state.Modes)

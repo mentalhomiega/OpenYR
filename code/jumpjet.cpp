@@ -210,9 +210,8 @@ void JumpjetLocomotionClass::Move_To(Coord to)
 		return;
 	}
 
-	if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
-		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-		IsLanding = false;
+	if (CurrentState != GROUNDED) {
+		Drop_Landing_Claim();
 	}
 
 	HeadToCoord = to;
@@ -267,10 +266,7 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 
 	// A unit a locomotor warhead holds stops where it is.
 	if (IsMoving && LinkedTo->IsAttackedByLocomotor && CurrentState != GROUNDED) {
-		if (HeadToCoord != COORD_NONE && IsLanding) {
-			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-			IsLanding = false;
-		}
+		Drop_Landing_Claim();
 		CurrentSpeed = 0;
 		TargetSpeed = 0;
 		HeadToCoord = COORD_NONE;
@@ -279,9 +275,8 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 		return;
 	}
 	if (IsMoving) {
-		if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
-			LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-			IsLanding = false;
+		if (CurrentState != GROUNDED) {
+			Drop_Landing_Claim();
 		}
 		Cell cell = LinkedTo->PositionCoord.As_Cell();
 		Cell nearby = Map.Nearby_Location(cell, LinkedTo->TClass->Speed, -1, LinkedTo->TClass->MZone);
@@ -302,6 +297,15 @@ void JumpjetLocomotionClass::Stop_Moving(void)
 }
 
 
+void JumpjetLocomotionClass::Drop_Landing_Claim(void)
+{
+	if (HeadToCoord != COORD_NONE && IsLanding) {
+		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
+		IsLanding = false;
+	}
+}
+
+
 /// <summary>
 /// Drops a vehicle that a locomotor warhead let go in the air straight down to the ground under
 /// it. The fall never cruises or climbs, and it does not wait for a free landing spot: whatever
@@ -313,10 +317,7 @@ void JumpjetLocomotionClass::Begin_Fall(void)
 		return;
 	}
 
-	if (HeadToCoord != COORD_NONE && IsLanding) {
-		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-		IsLanding = false;
-	}
+	Drop_Landing_Claim();
 
 	CurrentSpeed = 0;
 	TargetSpeed = 0;
@@ -344,10 +345,7 @@ void JumpjetLocomotionClass::Begin_Fall(void)
 /// </summary>
 void JumpjetLocomotionClass::Begin_Crash(void)
 {
-	if (HeadToCoord != COORD_NONE && IsLanding) {
-		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
-		IsLanding = false;
-	}
+	Drop_Landing_Claim();
 	CrashSpeed = LinkedTo->TClass->JumpjetCrash;
 	FlightLevel = -5;
 	CurrentState = CRASHING;

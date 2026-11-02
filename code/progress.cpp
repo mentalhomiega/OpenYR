@@ -282,7 +282,10 @@ void ProgressScreenClass::Display_Progress(Point2D xpt)
 						return;
 					} else {
 						pt = Point2D(Pos.X, Pos.Y + (10 * i));
-						drawer = ColorSchemes[Scheme_Display_Index(Session.Scheme_For_Color(Session.Players[i]->Player.Color, Session.Players[i]->Player.CustomColor))]->Converter;
+						ColorScheme const * scheme = Player_Scheme(Session.Players[i]);
+						if (scheme != NULL) {
+							drawer = scheme->Converter;
+						}
 					}
 				}
 

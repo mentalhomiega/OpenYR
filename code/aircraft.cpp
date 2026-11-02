@@ -555,6 +555,21 @@ int AircraftClass::Do_MISSION_HUNT(void)
 
 
 /// <summary>
+/// Tells whether the aircraft has reached the waypoint it flies to. With no navigation target it has;
+/// otherwise the target's center must lie less than CELL_LEPTON from the aircraft on the ground plane.
+/// </summary>
+bool AircraftClass::Waypoint_Reached(void) const
+{
+	if (NavCom == NULL) {
+		return(true);
+	}
+	Coord const tar_coord = NavCom->Center_Coord();
+	Coord const here_coord = PositionCoord;
+	return(Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON);
+}
+
+
+/// <summary>
 /// Tells whether the aircraft rearms at a dock: it has limited ammunition and carries a weapon.
 /// </summary>
 bool AircraftClass::Reloads_At_Dock(void) const
@@ -1279,20 +1294,8 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 		**	Fly toward target.
 		*/
 		case FLY_TO_LZ:
-			if (CurrentPath != PATH_NONE) {
-				bool proceed_to_wp = false;
-				if (NavCom != NULL) {
-					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
-				} else {
-					proceed_to_wp = true;
-				}
-				if (proceed_to_wp) {
-					WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-					WaypointClass * nwp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-					Execute_Waypoint_Path(nwp);
-				}
+			if (CurrentPath != PATH_NONE && Waypoint_Reached()) {
+				Advance_Waypoint_Path();
 			}
 
 			if (Locomotion->Is_Moving()) {
@@ -1606,20 +1609,8 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				}
 			}
 
-			if (CurrentPath != PATH_NONE) {
-				bool proceed_to_wp = false;
-				if (NavCom != NULL) {
-					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
-					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Gamemd_Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
-				} else {
-					proceed_to_wp = true;
-				}
-				if (proceed_to_wp) {
-					WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-					WaypointClass * nwp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-					Execute_Waypoint_Path(nwp);
-				}
+			if (CurrentPath != PATH_NONE && Waypoint_Reached()) {
+				Advance_Waypoint_Path();
 			}
 
 			if (!Locomotion->Is_Moving()) {

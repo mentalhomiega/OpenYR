@@ -861,13 +861,6 @@ void TrueColour_Report(char const * name)
 
 
 /// <summary>
-/// Writes every frame of a shape, fetched by name, to a PNG sheet in the layout this file
-/// reads, coloured with the unit palette of the current theater. Index 0 is written fully
-/// transparent. When the shape uses house-colour indices 16-31, a mask of the same size is
-/// written beside the sheet with "_hc" before the extension. Returns false when the shape is
-/// not found or a file cannot be written.
-/// </summary>
-/// <summary>
 /// Writes a shape's frames as a PNG sheet, with the colour of each index taken from the palette given.
 /// When displayed is set, each palette colour is shown as the nearest entry of the screen palette,
 /// which is how the game's converters show it on screen.
@@ -901,7 +894,8 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 		}
 		int const left = (frame % columns) * width + rect.X;
 		int const top = (frame / columns) * height + rect.Y;
-		bool const rle = shape->Is_RLE_Compressed(frame);		for (int line = 0; line < rect.Height; line++) {
+		bool const rle = shape->Is_RLE_Compressed(frame);
+		for (int line = 0; line < rect.Height; line++) {
 			std::uint8_t * out = &indices[(size_t)(top + line) * sheetwidth + left];
 			if (!rle) {
 				std::memcpy(out, data, (size_t)rect.Width);
@@ -996,6 +990,14 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 }
 
 
+/// <summary>
+/// Writes every frame of a shape, fetched by name, to a PNG sheet in the layout this file
+/// reads. Colours come from SchemePalette, the unit palette of the loaded theater, or from the
+/// configured scheme palette when the theater has none. Index 0 is written fully transparent.
+/// When the shape uses house-colour indices 16-31, a mask of the same size is written beside
+/// the sheet with "_hc" before the extension. Returns false when the shape is not found or a
+/// file cannot be written.
+/// </summary>
 bool TrueColour_Export(char const * name, char const * path)
 {
 	return(Export_Shape_Sheet(name, SchemePalette, false, path));

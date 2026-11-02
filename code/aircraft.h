@@ -116,6 +116,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		virtual FacingType Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) const override;
 		AbstractClass * Good_Fire_Location(AbstractClass * target) const;
 		bool Cell_Seems_Ok(Cell const & cell, bool landing=false) const;
+		bool Waypoint_Reached(void) const;
 		Dir256 Pose_Dir(void) const;
 		AbstractClass * Good_LZ(void) const;
 		BuildingClass * Find_Dock_Building(void);

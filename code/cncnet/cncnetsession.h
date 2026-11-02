@@ -61,7 +61,6 @@ class CnCNetSessionClass
 
 		void Start(void);
 		void Stop(void);
-		bool Is_Running(void) const { return(Worker.joinable()); }
 
 		// Copies the lobby when it changed since the revision given. Returns
 		// the current revision either way.

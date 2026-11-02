@@ -65,9 +65,7 @@ void Add_Page(UISettingsSessionClass & session, UISettingsTab tab, std::unique_p
 
 void Add_Presenter(UISettingsSessionClass & session, UIPresenterClass * presenter)
 {
-	if (presenter != nullptr) {
-		session.Presenters.push_back(presenter);
-	}
+	session.Presenters.push_back(presenter);
 }
 
 

@@ -30,30 +30,26 @@ BitFontClass::BitFontClass(std::shared_ptr<BitFontData const> data) :
 /// </summary>
 int BitFontClass::Char_Pixel_Width(char32_t code) const
 {
-	unsigned char const * glyph = Data->Glyph(code);
-	if (glyph == NULL) {
-		glyph = Data->Glyph('?');
-	}
+	unsigned char const * glyph = Glyph_Or_Question(code);
 	return(glyph != NULL ? glyph[0] + XSpacing : 0);
 }
 
 
 int BitFontClass::String_Pixel_Width(char const * string) const
 {
-	if (string == NULL) return(0);
+	Rect bounds(0, 0, 0, 0);
+	String_Pixel_Bounds(string, bounds);
+	return(bounds.Width);
+}
 
-	int largest = 0;
-	int width = 0;
-	while (*string != '\0') {
-		char32_t code = UTF8::Decode(string);
-		if (code == '\r' || code == '\n') {
-			largest = std::max(largest, width);
-			width = 0;
-		} else {
-			width += Char_Pixel_Width(code);
-		}
+
+unsigned char const * BitFontClass::Glyph_Or_Question(char32_t code) const
+{
+	unsigned char const * glyph = Data->Glyph(code);
+	if (glyph == NULL) {
+		glyph = Data->Glyph('?');
 	}
-	return(std::max(largest, width));
+	return(glyph);
 }
 
 
@@ -172,10 +168,7 @@ Point2D BitFontClass::Print(char const * string, Surface & surface, Rect const &
 			continue;
 		}
 
-		unsigned char const * glyph = Data->Glyph(code);
-		if (glyph == NULL) {
-			glyph = Data->Glyph('?');
-		}
+		unsigned char const * glyph = Glyph_Or_Question(code);
 		if (glyph == NULL) {
 			continue;
 		}

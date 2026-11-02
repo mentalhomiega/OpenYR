@@ -217,25 +217,13 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.DebugMode = Options.DebugMode;
 	state.RecordReplays = Replay_Is_Recording_Enabled();
 
-	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;
-	state.Autosave = -1;
-	for (int frames : intervals) {
-		if (frames == current) {
-			state.Autosave = (int)state.Autosaves.size();
-		}
-		UIGameControlsChoice choice;
-		choice.Value = frames;
-		choice.Label = (frames > 0) ? std::to_string(frames) + " frames" : std::string("Off");
-		state.Autosaves.push_back(choice);
-	}
-	if (state.Autosave < 0) {
-		UIGameControlsChoice choice;
-		choice.Value = current;
-		choice.Label = std::to_string(current) + " frames";
-		state.Autosave = (int)state.Autosaves.size();
-		state.Autosaves.push_back(choice);
-	}
+	state.Autosave = Fill_Choices(state.Autosaves, {
+		{0, "Off"},
+		{5400, "5400 frames"},
+		{10800, "10800 frames"},
+		{21600, "21600 frames"},
+	}, current, "%d frames");
 }
 
 
@@ -253,19 +241,16 @@ std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(boo
 
 void UI_Game_Controls_Dialog(void)
 {
-	UIGameControlsState state;
-	UI_Game_Controls_State(state);
-
-	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_GAME);
-	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+	std::unique_ptr<UIGameControlsPresenterClass> presenter = UI_Game_Controls_New_Presenter(false);
+	UI_Settings_Join(*presenter, UI_TAB_GAME);
+	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
+	UI_Settings_Leave(*presenter);
 
-	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
+	if (presenter->Next == UIGameControlsPresenterClass::NEXT_SOUND) {
 		SpecialDialog = SDLG_SOUND;
-	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
+	} else if (presenter->Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
 		SpecialDialog = SDLG_KEYBOARD;
 	}
 }

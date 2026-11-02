@@ -264,7 +264,7 @@ bool FactoryClass::Set(TechnoTypeClass const & object, HouseClass & house, bool 
 	}
 
 	if (object.RTTI != RTTI_BUILDINGTYPE && (Is_Building() || QueuedObjects.Count() > 0 || Is_Suspended()) && !resume) {
-		if (QueuedObjects.Count() < Rule->MaximumQueuedObjects && !House->Is_Build_Limited(&object)) {
+		if (QueuedObjects.Count() < Rule->MaximumQueuedObjects) {
 			QueuedObjects.Add(&object);
 			return(true);
 		}

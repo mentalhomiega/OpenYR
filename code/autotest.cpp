@@ -372,17 +372,15 @@
 #include "motlib.h"
 #include "mixfile.h"
 #include "mouse.h"
-#include "shapeset.h"
 #include "_pk.h"
 #include "particle.h"
 #include "ptype.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "pcx.h"
+#include "planning.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
-
-extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
@@ -414,17 +412,21 @@ extern int VoxelNormalTableEntryCount[];
 #include <span>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <vector>
 
+extern int VoxelNormalTableEntryCount[];
+
 // Where the pointer rests, in window pixels.
-static int _CursorX = 200;
-static int _CursorY = 200;
+static int Pointer_X = 200;
+static int Pointer_Y = 200;
 
 // What each house has finished producing: units, infantry, aircraft and structures.
 struct ProducedTallyStruct {
 	int Count[4];
 };
-static std::map<HouseClass const *, ProducedTallyStruct> _ProducedBy;
+static std::map<HouseClass const *, ProducedTallyStruct> Produced_Tally;
 
 // The folder of the script being read, absolute and ending in a separator. Empty before a script is read.
 static std::string AutoTest_Script_Folder;
@@ -461,7 +463,7 @@ void AutoTest_Note_Built(HouseClass const * house, int rtti)
 	else if (rtti == RTTI_AIRCRAFT) slot = 2;
 	else if (rtti == RTTI_BUILDING) slot = 3;
 	if (slot >= 0) {
-		_ProducedBy[house].Count[slot]++;
+		Produced_Tally[house].Count[slot]++;
 	}
 }
 
@@ -477,12 +479,29 @@ struct StepType
 	int Y;
 	// The line as written, without trailing white space, for the wait messages.
 	std::string Line;
+	// The words of Line from Line_Words, split once at load so a step does not split its line again.
+	std::vector<std::string> Words;
 
 	// The argument as a decimal number, 0 when it does not start with one, as std::atoi reads it.
 	int Argument_Int(void) const {return(std::atoi(Argument.c_str()));}
 	// The cell with the argument as x and X as y, for steps whose line is "<x> <y>" after the command.
 	Cell Argument_Cell(void) const {return(Cell(Argument_Int(), X));}
 };
+
+
+// The cell of an object's centre, or Cell(-1, -1) when there is no object.
+Cell Cell_Or_None(AbstractClass const * object)
+{
+	return(object != NULL ? object->Center_Coord().As_Cell() : Cell(-1, -1));
+}
+
+
+// The rank a log line writes for an object's veterancy: 2 for elite, 1 for veteran, 0 otherwise.
+int Rank_Of(VeterancyClass const & veterancy)
+{
+	return(veterancy.Is_Elite() ? 2 : (veterancy.Is_Veteran() ? 1 : 0));
+}
+
 
 bool Active = false;
 
@@ -626,8 +645,9 @@ void Select_Type(std::string const & name)
 }
 
 
-void Place(std::string const & name)
+static void Place_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	TechnoTypeClass const * type = Find_Type(name);
 	if (type != NULL && type->Fetch_RTTI() != RTTI_BUILDINGTYPE) {
 		// A finished vehicle, aircraft or infantry leaves its factory on the sidebar's no-cell placement.
@@ -662,8 +682,11 @@ void Place(std::string const & name)
 
 
 // Queues the placement event for a finished structure on the given cell, as Place does for the cell it finds.
-void PlaceAt(std::string const & name, int x, int y)
+static void Placeat_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
+	int const x = step.X;
+	int const y = step.Y;
 	TechnoTypeClass const * type = Find_Type(name);
 	if (type == NULL || type->Fetch_RTTI() != RTTI_BUILDINGTYPE || PlayerPtr->ConYards.Count() == 0) {
 		DebugString("AUTOTEST placeat %s: no structure type or no construction yard\n", name.c_str());
@@ -718,8 +741,8 @@ static WindowEvent Move_Pointer(int x, int y)
 	event.Type = WINDOW_EVENT_MOUSE_MOVE;
 	event.X = x;
 	event.Y = y;
-	_CursorX = event.X;
-	_CursorY = event.Y;
+	Pointer_X = event.X;
+	Pointer_Y = event.Y;
 	Game_Window_Handle_Event(event);
 	return(event);
 }
@@ -780,8 +803,9 @@ void Computer_Move(std::string const & name, int x, int y)
 /// <summary>
 /// Puts the computer players' foot objects of that type on the hunt mission, with no target or destination.
 /// </summary>
-void Computer_Hunt(std::string const & name)
+static void Hunt_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->Is_Foot() && techno->House != PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
@@ -801,8 +825,9 @@ void Computer_Hunt(std::string const & name)
 /// Puts the player's foot objects of that type on the repair mission, as a harvester with nothing to do is put on it,
 /// so UnitClass::Do_MISSION_REPAIR runs its depot search.
 /// </summary>
-void Player_Repair(std::string const & name)
+static void Repairmission_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
@@ -816,8 +841,9 @@ void Player_Repair(std::string const & name)
 /// <summary>
 /// Queues the Stop command's idle event for the player's objects of that type that can move or fire.
 /// </summary>
-void Stop_Objects(std::string const & name)
+static void Stop_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	int sent = 0;
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
@@ -851,8 +877,9 @@ BuildingClass * Nearest_Enemy_Building(void)
 }
 
 
-void Attack(std::string const & name)
+static void Attack_Step(StepType const & step)
 {
+	std::string const & name = step.Argument;
 	BuildingClass * target = Nearest_Enemy_Building();
 	if (target == NULL) {
 		DebugString("AUTOTEST attack: no enemy structure\n");
@@ -992,14 +1019,14 @@ void Scatter_Objects(std::string const & name, int x, int y, bool forced, bool n
 		int const before = Scen->RandomNumber.Index_1();
 		soldier->Scatter(threat, forced, nokidding);
 		int const draws = (Scen->RandomNumber.Index_1() - before + Random2Class::TABLE_SIZE) % Random2Class::TABLE_SIZE;
-		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(soldier->NavCom);
 		DebugString("AUTOTEST   scatter %s of %s at %d,%d (%d,%d) do %d threat %d,%d forced %d nokidding %d: mission %s nav %d,%d draws %d\n", soldier->Class->Name(), soldier->House->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
 			from.X & 255, from.Y & 255, (int)soldier->Doing, x, y, (int)forced, (int)nokidding, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, draws);
 	}
 }
 
 
-void Enemies(void)
+static void Enemies_Step(StepType const &)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * object = Buildings[index];
@@ -1012,14 +1039,14 @@ void Enemies(void)
 		UnitClass const * unit = Units[index];
 		if (unit->House == PlayerPtr) continue;
 		units++;
-		Cell const tar = unit->TarCom != NULL ? unit->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(unit->TarCom);
 		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d berzerk %d tar %d,%d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength, (int)unit->IsBerzerk, tar.X, tar.Y);
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass const * soldier = Infantry[index];
 		if (soldier->House == PlayerPtr) continue;
 		infantry++;
-		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(soldier->NavCom);
 		DebugString("AUTOTEST   enemy infantry %s cell %d,%d strength %d mission %s nav %d,%d limbo %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Strength, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, (int)soldier->IsInLimbo);
 	}
 	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
@@ -1027,7 +1054,7 @@ void Enemies(void)
 
 
 // Writes each house's base IQ (Control.IQ, the map's IQ= value) and effective IQ, and whether each [IQ] gate is open.
-void Iq(void)
+static void Iq_Step(StepType const &)
 {
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass const * house = Houses[index];
@@ -1044,7 +1071,7 @@ void Iq(void)
 }
 
 
-void Dump(void)
+static void Dump_Step(StepType const &)
 {
 	DebugString("AUTOTEST dump frame %d credits %d power %d drain %d\n", Frame, PlayerPtr->Available_Money(), PlayerPtr->Power, PlayerPtr->Drain);
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -1058,8 +1085,8 @@ void Dump(void)
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * object = Units[index];
 		if (object->House != PlayerPtr) continue;
-		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(object->NavCom);
+		Cell const tar = Cell_Or_None(object->TarCom);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
 		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value(), (int)object->IronCurtainTimer);
 		if (object->Is_Iron_Curtained()) {
@@ -1085,7 +1112,7 @@ void Dump(void)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
-		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(object->TarCom);
 		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d tar %d,%d opentopped %d lastfire %d height %d speed %d nav %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, object->Veterancy.Is_Elite() ? 2 : (object->Veterancy.Is_Veteran() ? 1 : 0), tar.X, tar.Y, (int)object->IsInOpenToppedTransport, object->LastFireFrame, object->HeightAGL, (int)(object->Speed * 100), object->NavCom != NULL ? 1 : 0);
 		if (object->DisguiseType != NULL) {
 			DebugString("AUTOTEST     disguised as %s of %s\n", object->DisguiseType->Name(), object->DisguiseHouse != NULL ? object->DisguiseHouse->Class->Name() : "-");
@@ -1111,7 +1138,7 @@ void Log_Technos_Parts(char const * kind, DynamicVectorClass<T *> & list)
 /// Logs each value the state hash covers, one object per line, so two runs whose hashes differ
 /// can be compared line by line.
 /// </summary>
-void Log_State_Parts(void)
+static void Hashparts_Step(StepType const &)
 {
 	DebugString("AUTOTEST hashparts frame %d\n", Frame);
 	Log_Technos_Parts("building", Buildings);
@@ -1172,7 +1199,7 @@ void Log_Speed_Probe(void)
 			continue;
 		}
 		FootClass const * foot = static_cast<FootClass const *>(techno);
-		Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(foot->NavCom);
 		FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
 		JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
 		DebugString("AUTOTEST facing %s frame %d primary %d desired %d loco %d\n", techno->TClass->Name(), Frame, (int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), jump != NULL ? (int)jump->Facing_Current().As_Int() : -1);
@@ -1399,12 +1426,8 @@ int Trigger_Springs(TriggerTypeClass const * type)
 **	triggerlog <0|1>: writes a line each time a trigger springs. triggercoverage: writes each trigger
 **	type with how many times it has sprung this run, then the types that have not sprung at all.
 */
-static void Trigger_Step(StepType const & step)
+static void Trigger_Coverage_Step(StepType const &)
 {
-	if (step.Command == "triggerlog") {
-		TriggerLog = step.Argument_Int() != 0;
-		return;
-	}
 	std::vector<std::string> never;
 	for (int index = 0; index < TriggerTypes.Count(); index++) {
 		TriggerTypeClass const * type = TriggerTypes[index];
@@ -1509,6 +1532,37 @@ std::string Word(std::vector<std::string> const & words, std::size_t index)
 int Number(std::vector<std::string> const & words, std::size_t index, int fallback)
 {
 	return(index < words.size() ? std::atoi(words[index].c_str()) : fallback);
+}
+
+
+// Whether word <first> or word <second> of a script line is name.
+bool Either_Word_Is(std::vector<std::string> const & words, std::size_t first, std::size_t second, char const * name)
+{
+	return(Word(words, first) == name || Word(words, second) == name);
+}
+
+
+// Splits the first count words of an argument at its spaces or tabs and returns them. rest gets the text after
+// them, from its first non-blank character on, so inner spaces are kept. rest is empty when no such text follows,
+// and then the list may hold fewer than count words.
+std::vector<std::string> Split_Argument(std::string const & argument, std::size_t count, std::string & rest)
+{
+	std::vector<std::string> words;
+	rest.clear();
+	std::size_t start = 0;
+	while (words.size() < count) {
+		std::size_t const gap = argument.find_first_of(" \t", start);
+		words.push_back(argument.substr(start, gap - start));
+		if (gap == std::string::npos) {
+			return(words);
+		}
+		start = argument.find_first_not_of(" \t", gap);
+		if (start == std::string::npos) {
+			return(words);
+		}
+	}
+	rest = argument.substr(start);
+	return(words);
 }
 
 
@@ -1634,10 +1688,9 @@ bool Wait_Met(std::vector<std::string> const & words)
 */
 bool Wait_Over(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
-	int const timeout = Number(words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
+	int const timeout = Number(step.Words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
 	int const start = step.Frame + WaitShift;
-	bool const met = Wait_Met(words);
+	bool const met = Wait_Met(step.Words);
 	if (!met && Frame < start + timeout) {
 		return(false);
 	}
@@ -1910,8 +1963,8 @@ static int Key_Code(std::string const & name)
 static int Key_Modifiers(std::string const & argument)
 {
 	int modifiers = 0;
-	std::size_t const first = argument.find_first_of(" \t");
-	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	std::string rest;
+	Split_Argument(argument, 1, rest);
 	if (rest.find("ctrl") != std::string::npos) modifiers |= WINDOW_MOD_CTRL;
 	if (rest.find("shift") != std::string::npos) modifiers |= WINDOW_MOD_SHIFT;
 	if (rest.find("alt") != std::string::npos) modifiers |= WINDOW_MOD_ALT;
@@ -1923,8 +1976,8 @@ static int Key_Modifiers(std::string const & argument)
 static HotkeyTrigger Binding_Trigger(std::string const & argument)
 {
 	HotkeyTrigger trigger = HOTKEY_PRESS;
-	std::size_t const first = argument.find_first_of(" \t");
-	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	std::string rest;
+	Split_Argument(argument, 1, rest);
 	char const * const names[] = { "Double", "Hold", "Held" };
 	HotkeyTrigger const found[] = { HOTKEY_DOUBLE, HOTKEY_HOLD, HOTKEY_HELD };
 	for (int index = 0; index < 3; index++) {
@@ -2023,7 +2076,7 @@ static void Spawn_Probe_Step(StepType const & step)
 		bool const foot = techno->Is_Foot();
 		FootClass const * vehicle = foot ? static_cast<FootClass const *>(techno) : NULL;
 		Coord const dest = vehicle != NULL ? vehicle->Locomotion->Destination() : Coord(-1, -1, -1);
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		DebugString("AUTOTEST   spawns %s of %s frame %d cell %d,%d body %d desired %d rotating %d moving %d moving_now %d dest %d,%d tarcom %d,%d mission %s\n",
 			techno->TClass->Name(), techno->House->Class->Name(), Frame, cell.X, cell.Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
 			(int)techno->PrimaryFacing.Is_Rotating(), vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving() : -1, vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving_Now() : -1,
@@ -2032,8 +2085,8 @@ static void Spawn_Probe_Step(StepType const & step)
 		SpawnManagerClass const & spawns = *techno->SpawnManager;
 		AbstractClass const * target = spawns.Current_Target();
 		AbstractClass const * queued = spawns.Queued_Target();
-		Cell const aim = target != NULL ? target->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const next = queued != NULL ? queued->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const aim = Cell_Or_None(target);
+		Cell const next = Cell_Or_None(queued);
 		DebugString("AUTOTEST   spawncycle %s frame %d target %d,%d queued %d,%d status %d next_spawn %d nodes", techno->TClass->Name(), Frame, aim.X, aim.Y, next.X, next.Y, spawns.Cycle_Status(), spawns.Next_Spawn_Frame());
 		for (int node = 0; node < spawns.Node_Count(); node++) DebugString(" %d", spawns.Node_Status(node));
 		DebugStringNoPrefix("\n");
@@ -2122,13 +2175,13 @@ static void Rocket_Step(StepType const & step)
 
 // cursor <TypeID> x y: writes the action and the mouse shape (its MouseCursorType number) that hovering
 // over the object on that cell shows for the player's first object of that type.
-static void Cursor_Probe(std::string const & type_name, int x, int y)
+static void Cursor_Step(StepType const & step)
 {
-	Cell const cell(x, y);
+	Cell const cell(step.X, step.Y);
 	ObjectClass * target = Map[cell].Cell_Occupier();
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), type_name.c_str()) == 0) {
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			// The probed object is the only selection, so the action is the one its cursor shows.
 			Unselect_All();
 			techno->Select();
@@ -2144,8 +2197,11 @@ static void Cursor_Probe(std::string const & type_name, int x, int y)
 
 // swaim <SuperSection> x y: aims that super weapon as its cameo click does, then writes the action the cell and the
 // object under it give, and the mouse shape that action shows (Mouse_Left_Up). A cell under shroud is probed as shroud.
-static void SW_Aim_Probe(std::string const & section, int x, int y)
+static void Swaim_Step(StepType const & step)
 {
+	std::string const & section = step.Argument;
+	int const x = step.X;
+	int const y = step.Y;
 	SuperWeaponType const id = SuperWeaponTypeClass::From_Name(section.c_str());
 	if (id == SUPER_NONE) {
 		DebugString("AUTOTEST   swaim %s: no such super weapon\n", section.c_str());
@@ -2232,7 +2288,7 @@ static void Bridge_Census_Step(StepType const & step)
 				(int)cptr->IsBridgeDeck, (int)cptr->IsUnderBridge, (int)cptr->WasUnderBridge, (int)cptr->IsBridgeEastWest,
 				(int)cptr->Is_Tile_Train_Bridge(), (int)cptr->Is_Tile_Bridge());
 		}
-		bool const is_high = cptr->Overlay == OVERLAY_BRIDGE1 || cptr->Overlay == OVERLAY_BRIDGE2;
+		bool const is_high = cptr->Is_Overlay_Bridge();
 		bool const is_railway = cptr->Overlay == OVERLAY_RAILWAY_BRIDGE1 || cptr->Overlay == OVERLAY_RAILWAY_BRIDGE2;
 		if (!is_high && !is_railway) {
 			continue;
@@ -2386,7 +2442,7 @@ static void Bridge_Area_Step(StepType const & step)
 static void Repair_Bridge_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	DebugString("AUTOTEST   repairbridge %d,%d %d\n", x, step.X, (int)Map.Can_Repair_Bridge(Cell(x, step.X)));
+	DebugString("AUTOTEST   repairbridge %d,%d %d\n", x, step.X, (int)Map.Can_Repair_Bridge(step.Argument_Cell()));
 }
 
 
@@ -2397,7 +2453,7 @@ static void Repair_Bridge_Step(StepType const & step)
 static void Bridge_Hit_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	bool const destroyed = Map.Damage_Bridge(Cell(x, step.X));
+	bool const destroyed = Map.Damage_Bridge(step.Argument_Cell());
 	DebugString("AUTOTEST   bridgehit %d,%d %d\n", x, step.X, (int)destroyed);
 }
 
@@ -2409,7 +2465,7 @@ static void Bridge_Hit_Step(StepType const & step)
 static void Bridge_Hut_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	Map.Destroy_Bridge_At(Cell(x, step.X));
+	Map.Destroy_Bridge_At(step.Argument_Cell());
 	DebugString("AUTOTEST   bridgehut %d,%d\n", x, step.X);
 }
 
@@ -2424,7 +2480,7 @@ static void Bridge_Decks_Step(StepType const & step)
 	int left = 0;
 	for (int x = first; x <= step.X; x++) {
 		CellClass const & c = Map[Cell(x, step.Y)];
-		if ((c.Overlay == OVERLAY_BRIDGE1 || c.Overlay == OVERLAY_BRIDGE2) && c.IsBridgeDeck) {
+		if (c.Is_Overlay_Bridge() && c.IsBridgeDeck) {
 			left++;
 		}
 	}
@@ -2440,7 +2496,7 @@ static void Bridge_Decks_Step(StepType const & step)
 static void Concrete_Hit_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	bool const destroyed = Map.Damage_Concrete_Bridge(Cell(x, step.X));
+	bool const destroyed = Map.Damage_Concrete_Bridge(step.Argument_Cell());
 	DebugString("AUTOTEST   concretehit %d,%d %d\n", x, step.X, (int)destroyed);
 }
 
@@ -2452,7 +2508,7 @@ static void Concrete_Hit_Step(StepType const & step)
 static void Passable_Step(StepType const & step)
 {
 	int const x = step.Argument_Int();
-	CellClass const & c = Map[Cell(x, step.X)];
+	CellClass const & c = Map[step.Argument_Cell()];
 	DebugString("AUTOTEST   passable %d,%d foot %d track %d overlay %d\n", x, step.X,
 		(int)c.Is_Clear_To_Move(SPEED_FOOT, true, true), (int)c.Is_Clear_To_Move(SPEED_TRACK, true, true), (int)c.Overlay);
 }
@@ -2465,7 +2521,7 @@ static void Passable_Step(StepType const & step)
 /// <param name="step">The attacker's and target's types, the words after the command in the line.</param>
 static void Target_Action_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	if (words.size() < 4) {
 		DebugString("AUTOTEST   targetaction needs an attacker type and a target type\n");
 		return;
@@ -2561,12 +2617,11 @@ static void Hut_Action_Step(StepType const & step)
 /// the attack mission.</param>
 static void Set_Target_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
-	bool const computer = Word(words, 5) == "computer" || Word(words, 6) == "computer";
-	bool const attack = Word(words, 5) == "attack" || Word(words, 6) == "attack";
-	bool const hunt = Word(words, 5) == "hunt" || Word(words, 6) == "hunt";
+	bool const computer = Either_Word_Is(step.Words, 5, 6, "computer");
+	bool const attack = Either_Word_Is(step.Words, 5, 6, "attack");
+	bool const hunt = Either_Word_Is(step.Words, 5, 6, "hunt");
 	// capturedest sets the structure as the destination of the Capture mission with no target, as a team's garrison mission does.
-	bool const capturedest = Word(words, 5) == "capturedest" || Word(words, 6) == "capturedest";
+	bool const capturedest = Either_Word_Is(step.Words, 5, 6, "capturedest");
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
@@ -2597,7 +2652,7 @@ static void Set_Target_Step(StepType const & step)
 /// ally owns; otherwise the player's objects are picked.</param>
 static void Threat_Probe_Step(StepType const & step)
 {
-	bool const computer = Word(Line_Words(step.Line), 3) == "computer";
+	bool const computer = Word(step.Words, 3) == "computer";
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
@@ -2863,25 +2918,11 @@ static void Crush_Check_Step(StepType const & step)
 //   gpureplay records each object pass of the map view and logs how far a replay of the record is from it.
 //   gpucheck draws each object pass of the map view on the GPU too and logs how far it is from the map view.
 //   drawprobe counts the call stacks that lock the map view in its foreground pass; switching it off logs them.
-static void Draw_Check_Step(StepType const & step)
+static void Draw_Check_Step(StepType const & step, void (*setter)(bool))
 {
-	static std::unordered_map<std::string_view, void (*)(bool)> const switches = {
-		{"presentdigest", Video_Set_Present_Digest},
-		{"drawdigest", Video_Set_Draw_Digest},
-		{"gpureplay", GpuDraw_Set_Replay_Check},
-		{"gpucheck", GpuDraw_Set_Gpu_Check},
-		{"drawprobe", Video_Set_Draw_Probe},
-	};
 	bool const on = step.Argument_Int() != 0;
-	switches.at(std::string_view(step.Command))(on);
+	setter(on);
 	DebugString("AUTOTEST %s %d\n", step.Command.c_str(), (int)on);
-}
-
-
-// cursor <TypeID> x y: see Cursor_Probe.
-static void Cursor_Step(StepType const & step)
-{
-	Cursor_Probe(step.Argument, step.X, step.Y);
 }
 
 
@@ -2895,24 +2936,10 @@ static void Shape_Step(StepType const &)
 }
 
 
-// swaim <SuperSection> x y: see SW_Aim_Probe.
-static void Swaim_Step(StepType const & step)
-{
-	SW_Aim_Probe(step.Argument, step.X, step.Y);
-}
-
-
-// stop <TypeID>: see Stop_Objects.
-static void Stop_Step(StepType const & step)
-{
-	Stop_Objects(step.Argument);
-}
-
-
 // strikeobj <TypeID> x y [radius]: see Strike_Object.
 static void Strikeobj_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6), Word(words, 7));
 }
 
@@ -2920,7 +2947,7 @@ static void Strikeobj_Step(StepType const & step)
 // scatter <TypeID> x y [forced] [nokidding]: see Scatter_Objects.
 static void Scatter_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	Scatter_Objects(step.Argument, step.X, step.Y, Number(words, 5, 0) != 0, Number(words, 6, 0) != 0);
 }
 
@@ -2941,28 +2968,61 @@ static void Hotkey_Step(StepType const & step)
 }
 
 
-static void Key_Step(StepType const & step)
+// The object a window event is given to: the keyboard, the game window or the map view.
+enum class ScriptReceiver
+{
+	KEYBOARD,
+	GAME_WINDOW,
+	MAP
+};
+
+
+static void Send_Window_Event(WindowEvent const & event, ScriptReceiver to)
+{
+	if (to == ScriptReceiver::KEYBOARD) {
+		Keyboard->Handle_Window_Event(event);
+	} else if (to == ScriptReceiver::GAME_WINDOW) {
+		Game_Window_Handle_Event(event);
+	} else {
+		Map.Handle_Window_Event(event);
+	}
+}
+
+
+// A mouse press and then a release of the event's button, sent to the receiver. The caller sets the button, position and clicks.
+static void Send_Click(WindowEvent & event, ScriptReceiver to)
+{
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	Send_Window_Event(event, to);
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	Send_Window_Event(event, to);
+}
+
+
+// key <VK> sends the key's press and release to the keyboard directly. winkey <VK> sends them to the game window, so the
+// interface sees the key first as it does a player's key.
+static void Send_Key(StepType const & step, ScriptReceiver to)
 {
 	WindowEvent event;
 	event.VirtualKey = Key_Code(step.Argument);
 	event.Modifiers = Key_Modifiers(step.Argument);
 	event.Type = WINDOW_EVENT_KEY_DOWN;
-	Keyboard->Handle_Window_Event(event);
+	Send_Window_Event(event, to);
 	event.Type = WINDOW_EVENT_KEY_UP;
-	Keyboard->Handle_Window_Event(event);
+	Send_Window_Event(event, to);
 }
 
 
 // hold <Key> / release <Key>: the press or the release alone, so the key stays down between steps as a held key does.
-static void Hold_Step(StepType const & step)
+static void Hold_Key(StepType const & step, bool down)
 {
 	WindowEvent event;
 	event.VirtualKey = Key_Code(step.Argument);
 	event.Modifiers = Key_Modifiers(step.Argument);
-	event.Type = (step.Command == "hold") ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
-	Keyboard->Handle_Window_Event(event);
+	event.Type = down ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
+	Send_Window_Event(event, ScriptReceiver::KEYBOARD);
 	if (event.VirtualKey > 0 && event.VirtualKey < 256) {
-		ScriptHeldKeys[event.VirtualKey] = (step.Command == "hold");
+		ScriptHeldKeys[event.VirtualKey] = down;
 	}
 }
 
@@ -3007,20 +3067,6 @@ static void Camera_Step(StepType const &)
 {
 	Point2D const position = TacticalMap->Get_Tactical_Position();
 	DebugString("AUTOTEST   camera %d,%d\n", position.X, position.Y);
-}
-
-
-// winkey <VK>: a key press and release sent to the game window, so the interface sees it
-// first as it does a player's key. The key step skips that routing.
-static void Winkey_Step(StepType const & step)
-{
-	WindowEvent event;
-	event.VirtualKey = Key_Code(step.Argument);
-	event.Modifiers = Key_Modifiers(step.Argument);
-	event.Type = WINDOW_EVENT_KEY_DOWN;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_KEY_UP;
-	Game_Window_Handle_Event(event);
 }
 
 
@@ -3236,13 +3282,6 @@ static void Infiltrate_Step(StepType const & step)
 }
 
 
-// iq: writes each house's base and effective IQ and which [IQ] gates it opens.
-static void Iq_Step(StepType const &)
-{
-	Iq();
-}
-
-
 // crate <Powerup> x y: puts a crate that holds that powerup on the nearest free cell to the cell.
 static void Crate_Step(StepType const & step)
 {
@@ -3315,7 +3354,7 @@ static void Veterancy_Step(StepType const & step)
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			int const rank = techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0);
+			int const rank = Rank_Of(techno->Veterancy);
 			DebugString("AUTOTEST   veterancy %s house %s at %d,%d rank %d experience %.6f cost %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, rank, techno->Veterancy.Experience, techno->TClass->Cost_Of(techno->House));
 		}
 	}
@@ -3587,50 +3626,6 @@ static void Produceai_Step(StepType const & step)
 }
 
 
-static void Place_Step(StepType const & step)
-{
-	Place(step.Argument);
-}
-
-
-static void Placeat_Step(StepType const & step)
-{
-	PlaceAt(step.Argument, step.X, step.Y);
-}
-
-
-static void Move_Step(StepType const & step)
-{
-	if (step.Command == "move") {
-		Move(step.Argument, step.X, step.Y);
-	} else if (step.Command == "order") {
-		Order(step.Argument, step.X, step.Y);
-	} else {
-		Computer_Move(step.Argument, step.X, step.Y);
-	}
-}
-
-
-// hunt <TypeID>: puts the computer players' objects of that type on the hunt mission (Computer_Hunt).
-static void Hunt_Step(StepType const & step)
-{
-	Computer_Hunt(step.Argument);
-}
-
-
-// repairmission <TypeID>: puts the player's objects of that type on the repair mission (Player_Repair).
-static void Repairmission_Step(StepType const & step)
-{
-	Player_Repair(step.Argument);
-}
-
-
-static void Attack_Step(StepType const & step)
-{
-	Attack(step.Argument);
-}
-
-
 // strike <TypeID> x y: the player's objects of that type attack what stands on that cell.
 static void Strike_Step(StepType const & step)
 {
@@ -3780,12 +3775,6 @@ static void Listhouse_Step(StepType const & step)
 }
 
 
-static void Enemies_Step(StepType const &)
-{
-	Enemies();
-}
-
-
 // threatscan <TypeID> <ThreatType flags>: the target the first object of the type owned by a house that is no ally of the player picks anywhere on the map for those flags.
 static void Threatscan_Step(StepType const & step)
 {
@@ -3851,12 +3840,9 @@ static void Click_Step(StepType const & step)
 {
 	int x = step.Argument_Int();
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.X = x;
 	event.Y = step.X;
-	Keyboard->Handle_Window_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Keyboard->Handle_Window_Event(event);
+	Send_Click(event, ScriptReceiver::KEYBOARD);
 }
 
 
@@ -3870,15 +3856,12 @@ static void Windowmove_Step(StepType const & step)
 // windowclick x y: a left click at that window pixel, taken from the window the way the mouse gives it,
 // so it is converted to the frame as a player's click is. windowdouble x y is the same click as the second
 // of a quick pair, whose press SDL reports with Clicks 2.
-static void Windowclick_Step(StepType const & step)
+static void Window_Click(StepType const & step, int clicks)
 {
 	WindowEvent event = Move_Pointer(step.Argument_Int(), step.X);
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
-	event.Clicks = (step.Command == "windowdouble") ? 2 : 1;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	event.Clicks = clicks;
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3905,24 +3888,21 @@ static void Commandbutton_Step(StepType const & step)
 	}
 	DebugString("AUTOTEST   commandbutton %s at %d,%d\n", step.Argument.c_str(), center.X, center.Y);
 	WindowEvent event = Move_Pointer(center.X, center.Y);
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
 // windowpress x y and windowrelease x y: move the pointer to that window pixel and press or release the left
 // button there, so a drag can start on the map and end over the command bar or the panel.
-static void Windowpress_Step(StepType const & step)
+static void Window_Press(StepType const & step, bool press)
 {
 	WindowEvent event = Move_Pointer(step.Argument_Int(), step.X);
-	event.Type = (step.Command == "windowpress") ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
+	event.Type = press ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
-	Game_Window_Handle_Event(event);
+	Send_Window_Event(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3930,14 +3910,11 @@ static void Windowpress_Step(StepType const & step)
 static void Xbutton_Step(StepType const & step)
 {
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = (step.Argument.find('2') != std::string::npos) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1;
 	event.Clicks = 1;
-	event.X = _CursorX;
-	event.Y = _CursorY;
-	Game_Window_Handle_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Game_Window_Handle_Event(event);
+	event.X = Pointer_X;
+	event.Y = Pointer_Y;
+	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
 
@@ -3945,14 +3922,11 @@ static void Xbutton_Step(StepType const & step)
 static void Mapclick_Step(StepType const & step)
 {
 	WindowEvent event;
-	event.Type = WINDOW_EVENT_MOUSE_DOWN;
 	event.Button = WINDOW_BUTTON_LEFT;
 	event.Clicks = 1;
 	event.X = step.Argument_Int();
 	event.Y = step.X;
-	Map.Handle_Window_Event(event);
-	event.Type = WINDOW_EVENT_MOUSE_UP;
-	Map.Handle_Window_Event(event);
+	Send_Click(event, ScriptReceiver::MAP);
 }
 
 
@@ -4009,7 +3983,7 @@ static void Follow_Step(StepType const & step)
 // With enemy, the objects of the type that the player does not own and is not allied with enter it instead.
 static void Enter_Step(StepType const & step)
 {
-	bool const enemy_enters = Word(Line_Words(step.Line), 5) == "enemy";
+	bool const enemy_enters = Word(step.Words, 5) == "enemy";
 	TechnoClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	if (building == NULL) {
 		building = Map[Cell(step.X, step.Y)].Cell_Unit();
@@ -4155,9 +4129,8 @@ static HouseClass * First_Computer_House(bool exclude_allies)
 
 // spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
 // grantunit <TypeID> x y: the same, owned by the player.
-static void Spawn_Step(StepType const & step)
+static void Spawn_Object(StepType const & step, bool player_owned)
 {
-	bool const player_owned = step.Command == "grantunit";
 	HouseClass * enemy = player_owned ? PlayerPtr : First_Computer_House(false);
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (enemy != NULL && type != NULL) {
@@ -4387,16 +4360,22 @@ static void Reveal_Step(StepType const &)
 
 
 // ini <section>: every entry of that section of the rules file, as the game read it.
+// Logs each entry of a section as "<label> [section] entry=value", in the file's order.
+static void Log_Ini_Section(char const * label, CCINIClass const & ini, char const * section)
+{
+	int count = ini.Entry_Count(section);
+	for (int index = 0; index < count; index++) {
+		char const * entry = ini.Get_Entry(section, index);
+		char value[256] = "";
+		ini.Get_String(section, entry, "", value, sizeof(value));
+		DebugString("AUTOTEST   %s [%s] %s=%s\n", label, section, entry, value);
+	}
+}
+
+
 static void Ini_Step(StepType const & step)
 {
-	CCINIClass const & ini = *RuleINI;
-	int count = ini.Entry_Count(step.Argument.c_str());
-	for (int index = 0; index < count; index++) {
-		char const * entry = ini.Get_Entry(step.Argument.c_str(), index);
-		char value[256] = "";
-		ini.Get_String(step.Argument.c_str(), entry, "", value, sizeof(value));
-		DebugString("AUTOTEST   ini [%s] %s=%s\n", step.Argument.c_str(), entry, value);
-	}
+	Log_Ini_Section("ini", *RuleINI, step.Argument.c_str());
 }
 
 
@@ -4548,14 +4527,7 @@ static void Inifile_Step(StepType const & step)
 		DebugString("AUTOTEST   inifile %s: not found\n", step.Argument.c_str());
 	}
 	for (int section = 0; section < ini.Section_Count(); section++) {
-		char const * name = ini.Section_Name(section);
-		int count = ini.Entry_Count(name);
-		for (int index = 0; index < count; index++) {
-			char const * entry = ini.Get_Entry(name, index);
-			char value[256] = "";
-			ini.Get_String(name, entry, "", value, sizeof(value));
-			DebugString("AUTOTEST   inifile [%s] %s=%s\n", name, entry, value);
-		}
+		Log_Ini_Section("inifile", ini, ini.Section_Name(section));
 	}
 }
 
@@ -4631,15 +4603,25 @@ static void Fire_Step(StepType const & step)
 
 
 // rules <path>: reads that INI file over the rules, as a map's rule overrides are read.
+// Loads the INI file a script names, from the path the script's files resolve to. When the file is not on hand or does not
+// load, logs "<label> <path>: not found" and returns false.
+static bool Load_Input_Ini(char const * label, std::string const & argument, CCINIClass & ini)
+{
+	std::string const resolved = AutoTest_Input_Path(argument);
+	RawFileClass file(resolved.c_str());
+	if (file.Is_Available() && ini.Load(file, false)) {
+		return(true);
+	}
+	DebugString("AUTOTEST   %s %s: not found\n", label, resolved.c_str());
+	return(false);
+}
+
+
 static void Rules_Step(StepType const & step)
 {
 	CCINIClass ini;
-	std::string const resolved = AutoTest_Input_Path(step.Argument);
-	RawFileClass file(resolved.c_str());
-	if (file.Is_Available() && ini.Load(file, false)) {
+	if (Load_Input_Ini("rules", step.Argument, ini)) {
 		Rule->Addition(ini);
-	} else {
-		DebugString("AUTOTEST   rules %s: not found\n", resolved.c_str());
 	}
 }
 
@@ -4698,20 +4680,20 @@ static void Truecolourdir_Step(StepType const & step)
 static void Extract_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const gap = argument.find_first_of(" \t");
-	size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
-	CCFileClass in(argument.substr(0, gap).c_str());
-	if (start == std::string::npos || !in.Is_Available()) {
+	std::string out_path;
+	std::string const in_name = Split_Argument(argument, 1, out_path).front();
+	CCFileClass in(in_name.c_str());
+	if (out_path.empty() || !in.Is_Available()) {
 		DebugString("AUTOTEST   extract %s: not found\n", argument.c_str());
 	} else {
 		std::vector<unsigned char> bytes((std::size_t)in.Size());
 		in.Read(bytes.data(), (int)bytes.size());
-		FILE * out = std::fopen(argument.substr(start).c_str(), "wb");
+		FILE * out = std::fopen(out_path.c_str(), "wb");
 		if (out != NULL) {
 			std::fwrite(bytes.data(), 1, bytes.size(), out);
 			std::fclose(out);
 		}
-		DebugString("AUTOTEST   extract %s: %d bytes\n", argument.substr(0, gap).c_str(), (int)bytes.size());
+		DebugString("AUTOTEST   extract %s: %d bytes\n", in_name.c_str(), (int)bytes.size());
 	}
 }
 
@@ -4720,10 +4702,10 @@ static void Extract_Step(StepType const & step)
 static void Exportshape_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const gap = argument.find_first_of(" \t");
-	size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
-	if (start != std::string::npos) {
-		TrueColour_Export(argument.substr(0, gap).c_str(), argument.substr(start).c_str());
+	std::string out_path;
+	std::string const shape_name = Split_Argument(argument, 1, out_path).front();
+	if (!out_path.empty()) {
+		TrueColour_Export(shape_name.c_str(), out_path.c_str());
 	} else {
 		DebugString("AUTOTEST   exportshape %s: needs a shape name and an output path\n", argument.c_str());
 	}
@@ -4735,16 +4717,14 @@ static void Exportshape_Step(StepType const & step)
 static void Exportpal_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const first = argument.find_first_of(" \t");
-	size_t const second = first != std::string::npos ? argument.find_first_not_of(" \t", first) : std::string::npos;
-	size_t const third = second != std::string::npos ? argument.find_first_of(" \t", second) : std::string::npos;
-	size_t const last = third != std::string::npos ? argument.find_first_not_of(" \t", third) : std::string::npos;
-	if (last != std::string::npos) {
-		std::string palette = argument.substr(second, third - second);
+	std::string out_path;
+	std::vector<std::string> const words = Split_Argument(argument, 2, out_path);
+	if (!out_path.empty()) {
+		std::string palette = words[1];
 		if (palette == "house") {
 			palette = "house:" + std::to_string(PlayerPtr->Scheme);
 		}
-		TrueColour_Export_Palette(argument.substr(0, first).c_str(), palette.c_str(), argument.substr(last).c_str());
+		TrueColour_Export_Palette(words[0].c_str(), palette.c_str(), out_path.c_str());
 	} else {
 		DebugString("AUTOTEST   exportpal %s: needs a shape name, a palette and an output path\n", argument.c_str());
 	}
@@ -4846,7 +4826,7 @@ static void Disguiseas_Step(StepType const & step)
 }
 
 
-static void Action_Step(StepType const & step)
+static void Action_Probe(StepType const & step, bool click)
 {
 	ObjectClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	for (int index = 0; index < Technos.Count(); index++) {
@@ -4856,7 +4836,7 @@ static void Action_Step(StepType const & step)
 			TechnoClass const * victim = dynamic_cast<TechnoClass const *>(target);
 			DebugString("AUTOTEST   action %s on %s: %s (bomb planted at %d)\n", techno->TClass->Name(), target != NULL ? target->Class_Of()->Name() : "-", ActionName[action],
 				victim != NULL && victim->BombDetonateFrame != -1 ? victim->BombPlantFrame : -1);
-			if (step.Command == "clickon" && target != NULL) {
+			if (click && target != NULL) {
 				// Test hook: a click in planning mode is recorded as a planned order, as the real click path does.
 				PlanningRecordScope const recording(Map.IsPlanningMode);
 				techno->Active_Click_With(action, target, false);
@@ -4950,28 +4930,29 @@ static void Elite_Step(StepType const & step)
 }
 
 
-static void Load_Step(StepType const & step)
+// Puts the capacity divided by divisor, of one Tiberium kind, into each player's object of the named type, and logs the held total under label.
+static void Fill_Storage(StepType const & step, char const * label, int divisor, int kind)
 {
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Storage.Increase_Amount(techno->TClass->Capacity, 0);
-			DebugString("AUTOTEST   load %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+			techno->Storage.Increase_Amount(techno->TClass->Capacity / divisor, kind);
+			DebugString("AUTOTEST   %s %s: %d held\n", label, techno->TClass->Name(), techno->Storage.Get_Total_Amount());
 		}
 	}
+}
+
+
+static void Load_Step(StepType const & step)
+{
+	Fill_Storage(step, "load", 1, 0);
 }
 
 
 // loadgems <TypeID>: puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type.
 static void Loadgems_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Storage.Increase_Amount(techno->TClass->Capacity / 4, 1);
-			DebugString("AUTOTEST   loadgems %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
-		}
-	}
+	Fill_Storage(step, "loadgems", 4, 1);
 }
 
 
@@ -5095,14 +5076,14 @@ static void Ironcurtain_Step(StepType const & step)
 
 
 // setlocal <index> <0|1>, setglobal <index> <0|1>: sets or, with 0, clears that scenario variable, as a trigger action would.
-static void Setlocal_Step(StepType const & step)
+static void Set_Scenario_Variable(StepType const & step, bool global)
 {
 	int const index = step.Argument_Int();
 	bool const value = step.X != 0;
-	if (step.Command == "setlocal") {
-		Scen->Set_Local_To(index, value);
-	} else {
+	if (global) {
 		Scen->Set_Global_To(index, value);
+	} else {
+		Scen->Set_Local_To(index, value);
 	}
 	DebugString("AUTOTEST   %s %d: %d\n", step.Command.c_str(), index, (int)value);
 }
@@ -5188,14 +5169,10 @@ static void Highcell_Step(StepType const &)
 static void Teamini_Step(StepType const & step)
 {
 	CCINIClass ini;
-	std::string const resolved = AutoTest_Input_Path(step.Argument);
-	RawFileClass file(resolved.c_str());
-	if (file.Is_Available() && ini.Load(file, false)) {
+	if (Load_Input_Ini("teamini", step.Argument, ini)) {
 		TaskForceClass::Read_All(ini, SCOPE_LOCAL);
 		ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
 		TeamTypeClass::Read_All(ini, SCOPE_LOCAL);
-	} else {
-		DebugString("AUTOTEST   teamini %s: not found\n", resolved.c_str());
 	}
 }
 
@@ -5402,7 +5379,7 @@ static void Aiscan_Step(StepType const &)
 		AbstractClass * scan = techno->Greatest_Threat(THREAT_RANGE, techno->Center_Coord(), false);
 		foot->IsScanLimited = scan_limited;
 		ObjectClass const * scanobject = dynamic_cast<ObjectClass const *>(scan);
-		Cell const scancell = scan != NULL ? scan->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const scancell = Cell_Or_None(scan);
 		TechnoClass * nearest = NULL;
 		int nearest_dist = 0;
 		for (int other = 0; other < Technos.Count(); other++) {
@@ -5430,8 +5407,8 @@ static void Aiscan_Step(StepType const &)
 		AbstractClass * area = techno->Greatest_Threat(THREAT_AREA, home_coord, false);
 		foot->IsScanLimited = scan_limited;
 		ObjectClass const * areaobject = dynamic_cast<ObjectClass const *>(area);
-		Cell const areacell = area != NULL ? area->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const homecell = home != NULL ? home->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const areacell = Cell_Or_None(area);
+		Cell const homecell = Cell_Or_None(home);
 		DebugString("AUTOTEST   aiscan %s of %s cell %d,%d mission %s queued %d team %s tarcom %s tarcell %d,%d scan %s scancell %d,%d passive %d slave %d near %s dist %d inrange %d fire %d nearnothreat %d nearlocked %d home %d,%d navcom %d firing %d area %s areacell %d,%d\n",
 			techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)foot->MissionQueue,
 			foot->Team != NULL ? foot->Team->Class->Name() : "-", tarobject != NULL ? tarobject->Class_Of()->Name() : (tarcell ? "cell" : "-"),
@@ -5468,7 +5445,7 @@ static void Gattling_Step(StepType const & step)
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		int const aim = techno->TarCom != NULL && techno->RTTI == RTTI_BUILDING ? (int)static_cast<BuildingClass const *>(techno)->Aim_Direction(techno->TarCom).As_Int() : -1;
 		int const center = techno->TarCom != NULL ? (int)::Direction(techno->Center_Coord(), techno->TarCom->Center_Coord()).As_Int() : -1;
 		int const fire = techno->RTTI == RTTI_BUILDING && techno->TarCom != NULL ? (int)static_cast<BuildingClass const *>(techno)->Can_Fire(techno->TarCom, 0) : -1;
@@ -5617,7 +5594,7 @@ static void Rallyof_Step(StepType const & step)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->House != PlayerPtr || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const rally = building->ArchiveTarget != NULL ? building->ArchiveTarget->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const rally = Cell_Or_None(building->ArchiveTarget);
 		DebugString("AUTOTEST   rallyof %s cell %d,%d rally %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y, rally.X, rally.Y);
 	}
 }
@@ -5707,12 +5684,12 @@ static void Where_Step(StepType const & step)
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
 		Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 		DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
 		DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
 		DebugString("AUTOTEST   usable %s cell %d,%d inlocal %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)Map.In_Local_Radar(techno->Get_Cell()));
-		DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
+		DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), Rank_Of(techno->Veterancy));
 		if (techno->RTTI == RTTI_UNIT) {
 			UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
 			DebugString("AUTOTEST   mirage look %s blink %d owner %d ally %d cycle %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->House->Is_Player_Control(), (int)vehicle->House->Is_Ally(PlayerPtr), vehicle->Mirage_Cycle(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
@@ -5793,29 +5770,31 @@ static void Turretcoord_Step(StepType const & step)
 }
 
 
+// Logs the turret and barrel recoil of each object of the named type in a list, on a line that starts with label.
+template<typename T>
+void Log_Recoil(char const * label, DynamicVectorClass<T *> & list, std::string const & name)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T const * object = list[index];
+		if (object->IsInLimbo || stricmp(object->Class->Name(), name.c_str()) != 0) continue;
+		DebugString("AUTOTEST   %s %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", label, object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y,
+			(int)object->TurretRecoil.CurrentPhase, object->TurretRecoil.FramesLeft, (double)object->TurretRecoil.TravelSoFar,
+			(int)object->BarrelRecoil.CurrentPhase, object->BarrelRecoil.FramesLeft, (double)object->BarrelRecoil.TravelSoFar);
+	}
+}
+
+
 // recoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each building of that type.
 static void Recoil_Step(StepType const & step)
 {
-	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass const * building = Buildings[index];
-		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   recoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
-			(int)building->TurretRecoil.CurrentPhase, building->TurretRecoil.FramesLeft, (double)building->TurretRecoil.TravelSoFar,
-			(int)building->BarrelRecoil.CurrentPhase, building->BarrelRecoil.FramesLeft, (double)building->BarrelRecoil.TravelSoFar);
-	}
+	Log_Recoil("recoil", Buildings, step.Argument);
 }
 
 
 // unitrecoil <TypeID>: the recoil phase, frames left and travel of the turret body and barrel of each vehicle of that type.
 static void Unitrecoil_Step(StepType const & step)
 {
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass const * unit = Units[index];
-		if (unit->IsInLimbo || stricmp(unit->Class->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   unitrecoil %s at %d,%d turret phase %d left %d travel %.3f barrel phase %d left %d travel %.3f\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
-			(int)unit->TurretRecoil.CurrentPhase, unit->TurretRecoil.FramesLeft, (double)unit->TurretRecoil.TravelSoFar,
-			(int)unit->BarrelRecoil.CurrentPhase, unit->BarrelRecoil.FramesLeft, (double)unit->BarrelRecoil.TravelSoFar);
-	}
+	Log_Recoil("unitrecoil", Units, step.Argument);
 }
 
 
@@ -5981,7 +5960,7 @@ static void Census_Step(StepType const & step)
 			else units++;
 			if (step.Argument == "units" && (techno->What_Am_I() != RTTI_INFANTRY || stricmp(techno->TClass->Name(), "SLAV") == 0)) {
 				FootClass const * foot = static_cast<FootClass const *>(techno);
-				Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+				Cell const nav = Cell_Or_None(foot->NavCom);
 				DebugString("AUTOTEST     %s %s cell %d,%d mission %s nav %d,%d strength %d\n", Houses[house]->Class->Name(), techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)techno->Strength);
 			}
 			if (techno->Is_Foot()) {
@@ -6003,7 +5982,7 @@ static void Census_Step(StepType const & step)
 					owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-", owner->BuildUnit != UNIT_NONE ? UnitTypes[owner->BuildUnit]->Name() : "-",
 					owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
 					(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort, owner->Control.TechLevel);
-				ProducedTallyStruct const produced = _ProducedBy[owner];
+				ProducedTallyStruct const produced = Produced_Tally[owner];
 				DebugString("AUTOTEST     economy difficulty %d gatherers %d on map %d slave miners %d destinations %d produced units %d infantry %d aircraft %d structures %d factories units %d infantry %d aircraft %d\n",
 					(int)owner->Difficulty, owner->Count_Resource_Gatherers(), gatherers_on_map, slave_miners, destinations, produced.Count[0], produced.Count[1], produced.Count[2], produced.Count[3],
 					owner->Factory_Count(RTTI_UNIT), owner->Factory_Count(RTTI_INFANTRY), owner->Factory_Count(RTTI_AIRCRAFT));
@@ -6222,14 +6201,16 @@ static void Team_Step(StepType const & step)
 
 
 // teamtrace <0|1>: logs each team script line a team starts, as TEAMTRACE lines.
-// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
 static void Teamtrace_Step(StepType const & step)
 {
-	if (step.Command == "teamtrace") {
-		TeamClass::TraceScripts = step.Argument_Int() != 0;
-	} else {
-		HouseClass::TraceBuilding = step.Argument_Int() != 0;
-	}
+	TeamClass::TraceScripts = step.Argument_Int() != 0;
+}
+
+
+// buildtrace <0|1>: logs each structure a computer house starts and places, as BUILDTRACE lines.
+static void Buildtrace_Step(StepType const & step)
+{
+	HouseClass::TraceBuilding = step.Argument_Int() != 0;
 }
 
 
@@ -6359,7 +6340,7 @@ static void Unitstate_Step(StepType const & step)
 		}
 		DebugString("AUTOTEST   unitstate %s house %s at %d,%d mission %d queued %d team %s navcom %d strength %d deployfits %d\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
 			(int)unit->Mission, (int)unit->MissionQueue, unit->Team != NULL ? unit->Team->Class->Name() : "-", unit->NavCom != NULL ? 1 : 0, (int)unit->Strength, fits);
-			DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), unit->Veterancy.Is_Elite() ? 2 : (unit->Veterancy.Is_Veteran() ? 1 : 0));
+			DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), Rank_Of(unit->Veterancy));
 	}
 }
 
@@ -6439,9 +6420,9 @@ static void Clickcameo_Step(StepType const & step)
 // state the script holds decides what the press does, as it does for a player.
 static void Cameopress_Step(StepType const & step)
 {
-	std::size_t const space = step.Argument.find_first_of(" \t");
-	std::string const name = step.Argument.substr(0, space);
-	bool const right = space != std::string::npos && step.Argument.find("right", space) != std::string::npos;
+	std::string after_name;
+	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
+	bool const right = after_name.find("right") != std::string::npos;
 	TechnoTypeClass const * type = Find_Type(name);
 	bool pressed = false;
 	for (int column = 0; type != NULL && !pressed && column < SidebarClass::COLUMNS; column++) {
@@ -6677,12 +6658,6 @@ static void Fps_Step(StepType const &)
 }
 
 
-static void Dump_Step(StepType const &)
-{
-	Dump();
-}
-
-
 // sounds <0|1>: stops or starts writing every sound effect played to the log.
 static void Sounds_Step(StepType const & step)
 {
@@ -6804,13 +6779,6 @@ static void Statedump_Step(StepType const & step)
 }
 
 
-// hashparts: logs each value the state hash covers, one object per line.
-static void Hashparts_Step(StepType const &)
-{
-	Log_State_Parts();
-}
-
-
 // perflog <0|1>: turns the once-a-second Perf lines on or off, as [Options] PerfLog does.
 static void Perflog_Step(StepType const & step)
 {
@@ -6901,11 +6869,11 @@ static void Quit_Step(StepType const &)
 void Run(StepType const & step)
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
-		{"presentdigest", Draw_Check_Step},
-		{"drawdigest", Draw_Check_Step},
-		{"gpureplay", Draw_Check_Step},
-		{"gpucheck", Draw_Check_Step},
-		{"drawprobe", Draw_Check_Step},
+		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
+		{"drawdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Digest);}},
+		{"gpureplay", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Replay_Check);}},
+		{"gpucheck", [](StepType const & step) {Draw_Check_Step(step, GpuDraw_Set_Gpu_Check);}},
+		{"drawprobe", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Draw_Probe);}},
 		{"shield", Shield_Step},
 		{"bridge", Bridge_Cell_Step},
 		{"bridgecensus", Bridge_Census_Step},
@@ -6948,14 +6916,14 @@ void Run(StepType const & step)
 		{"canbuild", Can_Build_Step},
 		{"chrono", Chrono_Step},
 		{"hotkey", Hotkey_Step},
-		{"key", Key_Step},
-		{"hold", Hold_Step},
-		{"release", Hold_Step},
+		{"key", [](StepType const & step) {Send_Key(step, ScriptReceiver::KEYBOARD);}},
+		{"hold", [](StepType const & step) {Hold_Key(step, true);}},
+		{"release", [](StepType const & step) {Hold_Key(step, false);}},
 		{"binding", Binding_Step},
 		{"scheme", Scheme_Step},
 		{"bind", Bind_Step},
 		{"camera", Camera_Step},
-		{"winkey", Winkey_Step},
+		{"winkey", [](StepType const & step) {Send_Key(step, ScriptReceiver::GAME_WINDOW);}},
 		{"wintype", Wintype_Step},
 		{"alliance", Alliance_Step},
 		{"tab", Tab_Step},
@@ -6974,8 +6942,8 @@ void Run(StepType const & step)
 		{"treehit", Treehit_Step},
 		{"trees", Trees_Step},
 		{"terrainonore", Terrainonore_Step},
-		{"triggerlog", Trigger_Step},
-		{"triggercoverage", Trigger_Step},
+		{"triggerlog", [](StepType const & step) {TriggerLog = step.Argument_Int() != 0;}},
+		{"triggercoverage", Trigger_Coverage_Step},
 		{"trigaction", Trigger_Action_Step},
 		{"dumpfile", Dumpfile_Step},
 		{"mixof", Mixof_Step},
@@ -7006,9 +6974,9 @@ void Run(StepType const & step)
 		{"produceai", Produceai_Step},
 		{"place", Place_Step},
 		{"placeat", Placeat_Step},
-		{"move", Move_Step},
-		{"order", Move_Step},
-		{"cmove", Move_Step},
+		{"move", [](StepType const & step) {Move(step.Argument, step.X, step.Y);}},
+		{"order", [](StepType const & step) {Order(step.Argument, step.X, step.Y);}},
+		{"cmove", [](StepType const & step) {Computer_Move(step.Argument, step.X, step.Y);}},
 		{"hunt", Hunt_Step},
 		{"repairmission", Repairmission_Step},
 		{"attack", Attack_Step},
@@ -7026,12 +6994,12 @@ void Run(StepType const & step)
 		{"view", View_Step},
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
-		{"windowclick", Windowclick_Step},
+		{"windowclick", [](StepType const & step) {Window_Click(step, 1);}},
 		{"commandbutton", Commandbutton_Step},
 		{"beams", Beams_Step},
-		{"windowdouble", Windowclick_Step},
-		{"windowpress", Windowpress_Step},
-		{"windowrelease", Windowpress_Step},
+		{"windowdouble", [](StepType const & step) {Window_Click(step, 2);}},
+		{"windowpress", [](StepType const & step) {Window_Press(step, true);}},
+		{"windowrelease", [](StepType const & step) {Window_Press(step, false);}},
 		{"xbutton", Xbutton_Step},
 		{"mapclick", Mapclick_Step},
 		{"cell", Cell_Step},
@@ -7046,8 +7014,8 @@ void Run(StepType const & step)
 		{"radar", Radar_Step},
 		{"radarall", Radarall_Step},
 		{"stripfill", Stripfill_Step},
-		{"spawn", Spawn_Step},
-		{"grantunit", Spawn_Step},
+		{"spawn", [](StepType const & step) {Spawn_Object(step, false);}},
+		{"grantunit", [](StepType const & step) {Spawn_Object(step, true);}},
 		{"houseunit", Houseunit_Step},
 		{"own", Own_Step},
 		{"neutral", Own_Step},
@@ -7091,8 +7059,8 @@ void Run(StepType const & step)
 		{"rule", Rule_Step},
 		{"disguise", Disguise_Step},
 		{"disguiseas", Disguiseas_Step},
-		{"action", Action_Step},
-		{"clickon", Action_Step},
+		{"action", [](StepType const & step) {Action_Probe(step, false);}},
+		{"clickon", [](StepType const & step) {Action_Probe(step, true);}},
 		{"hit", Hit_Step},
 		{"clickcell", Clickcell_Step},
 		{"typesounds", Typesounds_Step},
@@ -7109,8 +7077,8 @@ void Run(StepType const & step)
 		{"screen", Screen_Step},
 		{"kill", Kill_Step},
 		{"ironcurtain", Ironcurtain_Step},
-		{"setlocal", Setlocal_Step},
-		{"setglobal", Setlocal_Step},
+		{"setlocal", [](StepType const & step) {Set_Scenario_Variable(step, false);}},
+		{"setglobal", [](StepType const & step) {Set_Scenario_Variable(step, true);}},
 		{"killhouse", Killhouse_Step},
 		{"killtag", Killtag_Step},
 		{"price", Price_Step},
@@ -7168,7 +7136,7 @@ void Run(StepType const & step)
 		{"plan", Plan_Step},
 		{"team", Team_Step},
 		{"teamtrace", Teamtrace_Step},
-		{"buildtrace", Teamtrace_Step},
+		{"buildtrace", Buildtrace_Step},
 		{"teams", Teams_Step},
 		{"banims", Banims_Step},
 		{"banimstate", Banimstate_Step},
@@ -7241,8 +7209,8 @@ void Run(StepType const & step)
 
 void AutoTest_Cursor_Position(int & x, int & y)
 {
-	x = _CursorX;
-	y = _CursorY;
+	x = Pointer_X;
+	y = Pointer_Y;
 }
 
 
@@ -7361,12 +7329,26 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string source = line;
 		source.erase(source.find_last_not_of(" \t\r\n") + 1);
-		Steps.push_back(StepType{frame, command, text, x, y, source});
+		Steps.push_back(StepType{frame, command, text, x, y, source, Line_Words(source)});
 	}
 	std::fclose(file);
 
 	Active = true;
 	return(true);
+}
+
+
+// The first player's object of the followed type in a list, or NULL when the list has none.
+template<typename T>
+T * First_Followed(DynamicVectorClass<T *> & list)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
+			return(object);
+		}
+	}
+	return(NULL);
 }
 
 
@@ -7383,7 +7365,7 @@ void AutoTest_Frame(void)
 		if (Is_Wait_Command(step.Command)) {
 			if (WaitChecked != Next) {
 				WaitChecked = Next;
-				std::string const problem = Wait_Problem(Line_Words(step.Line));
+				std::string const problem = Wait_Problem(step.Words);
 				if (!problem.empty()) {
 					DebugString("AUTOTEST wait problem: %s: %s\n", problem.c_str(), step.Line.c_str());
 				}
@@ -7400,30 +7382,22 @@ void AutoTest_Frame(void)
 	C4_Watch_Frame();
 
 	if (!FollowType.empty() && (Frame % 15) == 0) {
-		for (int index = 0; index < Infantry.Count(); index++) {
-			InfantryClass * object = Infantry[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				break;
+		// Each list with a match moves the view, so the last of these lists to match decides where it ends up.
+		InfantryClass * infantry = First_Followed(Infantry);
+		UnitClass * unit = First_Followed(Units);
+		AircraftClass * aircraft = First_Followed(Aircraft);
+		if (infantry != NULL) {
+			TacticalMap->Set_Tactical_Position(infantry->Center_Coord());
+		}
+		if (unit != NULL) {
+			TacticalMap->Set_Tactical_Position(unit->Center_Coord());
+			if ((Frame % 300) == 0) {
+				Point2D actual = TacticalMap->Get_Tactical_Position();
+				DebugString("AUTOTEST   follow %s cell %d,%d view %d,%d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, actual.X, actual.Y);
 			}
 		}
-		for (int index = 0; index < Units.Count(); index++) {
-			UnitClass * object = Units[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				if ((Frame % 300) == 0) {
-					Point2D actual = TacticalMap->Get_Tactical_Position();
-					DebugString("AUTOTEST   follow %s cell %d,%d view %d,%d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, actual.X, actual.Y);
-				}
-				break;
-			}
-		}
-		for (int index = 0; index < Aircraft.Count(); index++) {
-			AircraftClass * object = Aircraft[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				break;
-			}
+		if (aircraft != NULL) {
+			TacticalMap->Set_Tactical_Position(aircraft->Center_Coord());
 		}
 	}
 

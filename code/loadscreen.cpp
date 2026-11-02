@@ -475,15 +475,6 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 }
 
 
-ColorScheme const * Player_Scheme(NodeNameType const * node)
-{
-	int const index = Scheme_Display_Index(Session.Scheme_For_Color(node->Player.Color, node->Player.CustomColor));
-	if (index < 0 || index >= ColorSchemes.Count()) {
-		return(NULL);
-	}
-	return(ColorSchemes[index]);
-}
-
 }
 
 

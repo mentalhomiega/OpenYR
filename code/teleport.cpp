@@ -395,6 +395,18 @@ void Chrono_Kill(TechnoClass * techno, HouseClass * house)
 }
 
 
+static VocType Chrono_Out_Sound(TechnoTypeClass const * type)
+{
+	return type->ChronoOutSound != VOC_NONE ? type->ChronoOutSound : Rule->ChronoOutSound;
+}
+
+
+static VocType Chrono_In_Sound(TechnoTypeClass const * type)
+{
+	return type->ChronoInSound != VOC_NONE ? type->ChronoInSound : Rule->ChronoInSound;
+}
+
+
 /// <summary>
 /// Starts a chronosphere warp: the object stays on its cell for countdown frames and then goes
 /// through the landing stages that set it down at to (Process). The caller has already dropped
@@ -522,7 +534,7 @@ void TeleportLocomotionClass::Chrono_Clear_Stage(bool first)
 		if (Rule->WarpOut != NULL) {
 			new AnimClass(Rule->WarpOut, foot->PositionCoord);
 		}
-		VocType const out_sound = foot->TClass->ChronoOutSound != VOC_NONE ? foot->TClass->ChronoOutSound : Rule->ChronoOutSound;
+		VocType const out_sound = Chrono_Out_Sound(foot->TClass);
 		if (out_sound != VOC_NONE) {
 			Sound_Effect(out_sound, foot->Center_Coord());
 		}
@@ -639,7 +651,7 @@ void TeleportLocomotionClass::Chrono_Arrive_Stage(void)
 {
 	FootClass * const foot = LinkedTo;
 	Coord const landing = foot->PositionCoord;
-	VocType const in_sound = foot->TClass->ChronoInSound != VOC_NONE ? foot->TClass->ChronoInSound : Rule->ChronoInSound;
+	VocType const in_sound = Chrono_In_Sound(foot->TClass);
 	if (in_sound != VOC_NONE) {
 		Sound_Effect(in_sound, foot->Center_Coord());
 	}
@@ -684,8 +696,8 @@ void TeleportLocomotionClass::Start_Warp(void)
 	DestinationCoord = COORD_NONE;
 
 	// The sounds play from the type's override when it has one (gamemd: 0x7195EE and 0x7196D2).
-	VocType const out = LinkedTo->TClass->ChronoOutSound != VOC_NONE ? LinkedTo->TClass->ChronoOutSound : Rule->ChronoOutSound;
-	VocType const in = LinkedTo->TClass->ChronoInSound != VOC_NONE ? LinkedTo->TClass->ChronoInSound : Rule->ChronoInSound;
+	VocType const out = Chrono_Out_Sound(LinkedTo->TClass);
+	VocType const in = Chrono_In_Sound(LinkedTo->TClass);
 	if (Rule->WarpOut != NULL) {
 		new AnimClass(Rule->WarpOut, from);
 	}

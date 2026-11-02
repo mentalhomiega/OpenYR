@@ -443,8 +443,4 @@ class OptionsClass {
 		 */
 		int LastSovietMovie;
 		int LastAlliedMovie;
-
-	private:
-
-		static char const * const HotkeyName;
 };

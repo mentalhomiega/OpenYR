@@ -498,16 +498,13 @@ static BOOL Guarded_Stack_Walk(HANDLE thread, STACKFRAME64 * frame, CONTEXT * co
 }
 
 
-// The code of the fault that ended the last dump write, or zero. A writer that faults leaves no
-// Win32 error behind, so the code is kept here for the caller to report.
-static DWORD LastDumpFault = 0;
-
-static BOOL Guarded_Mini_Dump_Write(HANDLE file, MINIDUMP_TYPE flags, MINIDUMP_EXCEPTION_INFORMATION * info)
+// A writer that faults leaves no Win32 error behind, so its exception code goes to fault instead.
+static BOOL Guarded_Mini_Dump_Write(HANDLE file, MINIDUMP_TYPE flags, MINIDUMP_EXCEPTION_INFORMATION * info, DWORD * fault)
 {
 	__try {
 		return(MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), file, flags, info, NULL, NULL));
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
-		LastDumpFault = GetExceptionCode();
+		*fault = GetExceptionCode();
 		return(FALSE);
 	}
 }
@@ -1318,10 +1315,12 @@ static void Build_Exception_Report(EXCEPTION_POINTERS * e_info, DWORD crashed_th
 
 
 /// <summary>
-/// Writes a buffer to a new file, replacing any file already at that path.
+/// Writes a buffer, then an optional second one, to a new file, replacing any file already at that path.
 /// </summary>
-/// <returns>True when the whole buffer reached the file.</returns>
-static bool Write_Whole_File(char const * path, void const * data, DWORD length, DWORD flags)
+/// <param name="second">A buffer written after the first, or null for none. It is written even when the first write fails.</param>
+/// <returns>True when every buffer reached the file.</returns>
+static bool Write_Whole_File(char const * path, void const * data, DWORD length, DWORD flags,
+			void const * second = NULL, DWORD second_length = 0)
 {
 	HANDLE const file = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, flags, NULL);
 	if (file == INVALID_HANDLE_VALUE) {
@@ -1329,16 +1328,18 @@ static bool Write_Whole_File(char const * path, void const * data, DWORD length,
 	}
 
 	DWORD written = 0;
-	BOOL const ok = WriteFile(file, data, length, &written, NULL);
+	BOOL ok = WriteFile(file, data, length, &written, NULL);
+	bool complete = ok != FALSE && written == length;
+	if (second != NULL) {
+		written = 0;
+		ok = WriteFile(file, second, second_length, &written, NULL);
+		complete = complete && ok != FALSE && written == second_length;
+	}
 	CloseHandle(file);
 
-	return(ok != FALSE && written == length);
+	return(complete);
 }
 
-
-// The reason the last dump was not written: the Win32 error or the fault code, or zero when the
-// dump was not allowed yet.
-static DWORD LastMiniDumpError = 0;
 
 /// <summary>
 /// Writes a minidump of this process.
@@ -1348,10 +1349,14 @@ static DWORD LastMiniDumpError = 0;
 /// <param name="thread_id">The thread the dump names as the one that stopped. Used only with pointers.</param>
 /// <param name="pointers">The exception record and machine state for that thread, or null for a dump
 /// with no exception record.</param>
+/// <param name="error">Receives the reason a dump was not written: the Win32 error, or the fault code when the
+/// writer faulted. Zero when the dump was not allowed yet. Null to ignore the reason.</param>
 /// <returns>True when the dump was written.</returns>
-static bool Write_Mini_Dump(char const * path, bool full_memory, DWORD thread_id, EXCEPTION_POINTERS * pointers)
+static bool Write_Mini_Dump(char const * path, bool full_memory, DWORD thread_id, EXCEPTION_POINTERS * pointers, DWORD * error)
 {
-	LastMiniDumpError = 0;
+	if (error != NULL) {
+		*error = 0;
+	}
 	if (!Dump_Allowed()) {
 		return(false);
 	}
@@ -1362,7 +1367,9 @@ static bool Write_Mini_Dump(char const * path, bool full_memory, DWORD thread_id
 	HANDLE const file = CreateFileA(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
 				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, NULL);
 	if (file == INVALID_HANDLE_VALUE) {
-		LastMiniDumpError = GetLastError();
+		if (error != NULL) {
+			*error = GetLastError();
+		}
 		return(false);
 	}
 
@@ -1383,18 +1390,18 @@ static bool Write_Mini_Dump(char const * path, bool full_memory, DWORD thread_id
 		flags = (MINIDUMP_TYPE)(MiniDumpNormal | MiniDumpWithDataSegs | MiniDumpWithFullMemory);
 	}
 
-	LastDumpFault = 0;
 	SetLastError(ERROR_SUCCESS);
 
+	DWORD fault = 0;
 	EnterCriticalSection(&DbgHelpLock);
-	BOOL const written = Guarded_Mini_Dump_Write(file, flags, (pointers != NULL) ? &info : NULL);
+	BOOL const written = Guarded_Mini_Dump_Write(file, flags, (pointers != NULL) ? &info : NULL, &fault);
 	DWORD const writer_error = GetLastError();
 	LeaveCriticalSection(&DbgHelpLock);
 
 	CloseHandle(file);
 
-	if (written == FALSE) {
-		LastMiniDumpError = (LastDumpFault != 0) ? LastDumpFault : writer_error;
+	if (written == FALSE && error != NULL) {
+		*error = (fault != 0) ? fault : writer_error;
 	}
 
 	return(written != FALSE);
@@ -1524,7 +1531,7 @@ static void Write_Crash_Artifacts(EXCEPTION_POINTERS * e_info, DWORD crashed_thr
 	// the artifact that keeps its value when the rest of the report does not survive.
 	char dump_path[MAX_PATH];
 	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", ArtifactFolder);
-	bool const dumped = Write_Mini_Dump(dump_path, false, crashed_thread, e_info);
+	bool const dumped = Write_Mini_Dump(dump_path, false, crashed_thread, e_info, NULL);
 
 	Build_Exception_Report(e_info, crashed_thread);
 
@@ -1695,8 +1702,8 @@ bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folde
 	// as they stand, and the stalled one is already suspended.
 	char dump_path[MAX_PATH];
 	snprintf(dump_path, sizeof(dump_path), "%s\\minidump.dmp", folder);
-	bool const dumped = Write_Mini_Dump(dump_path, false, 0, NULL);
-	DWORD const dump_error = dumped ? 0 : LastMiniDumpError;
+	DWORD dump_error = 0;
+	bool const dumped = Write_Mini_Dump(dump_path, false, 0, NULL, &dump_error);
 	if (error != NULL) {
 		*error = dump_error;
 	}
@@ -1713,14 +1720,8 @@ bool Exception_Write_Stall_Dump(char const * text, char * folder, unsigned folde
 	char report_path[MAX_PATH];
 	snprintf(report_path, sizeof(report_path), "%s\\stall.txt", folder);
 
-	HANDLE const report = CreateFileA(report_path, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS,
-				FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH, NULL);
-	if (report != INVALID_HANDLE_VALUE) {
-		DWORD written = 0;
-		WriteFile(report, text, (DWORD)strlen(text), &written, NULL);
-		WriteFile(report, status, (DWORD)strlen(status), &written, NULL);
-		CloseHandle(report);
-	}
+	Write_Whole_File(report_path, text, (DWORD)strlen(text), FILE_ATTRIBUTE_NORMAL | FILE_FLAG_WRITE_THROUGH,
+				status, (DWORD)strlen(status));
 
 	return(dumped);
 }
@@ -1776,7 +1777,7 @@ static INT_PTR CALLBACK Exception_Dialog_Proc(HWND window, UINT message, WPARAM 
 					HCURSOR const previous = SetCursor(LoadCursor(NULL, IDC_WAIT));
 
 					snprintf(FullDumpPath, sizeof(FullDumpPath), "%s\\fulldump.dmp", ArtifactFolder);
-					bool const written = Write_Mini_Dump(FullDumpPath, true, CrashedThreadId, &SavedPointers);
+					bool const written = Write_Mini_Dump(FullDumpPath, true, CrashedThreadId, &SavedPointers, NULL);
 
 					SetCursor(previous);
 					SetDlgItemText(window, IDC_EXCEPTION_FULLDUMP, written ? "Dump saved" : "Dump failed");

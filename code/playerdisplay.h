@@ -11,7 +11,9 @@
 
 #include "rgb.h"
 
+class ColorScheme;
 class HouseClass;
+struct NodeNameType;
 
 /*
  * The player color view is how this machine draws houses. Default draws each house in its own
@@ -36,8 +38,14 @@ RGBClass House_Display_RGB(HouseClass const * house);
 // The scheme a stock lobby color is drawn with in the current view, for a player who has no house yet.
 int Scheme_Display_Index(int scheme);
 
+// The scheme a lobby player is drawn with, or NULL when the scheme index is out of range.
+ColorScheme const * Player_Scheme(NodeNameType const * node);
+
 // The radar color of a scheme, taken from its bright entry.
 RGBClass Scheme_Remap_RGB(int scheme);
 
 // Clears the cached schemes. Call after the view or the colors in UI.INI change.
 void Player_View_Changed(void);
+
+// Shows text to the local player for ticks, in the scheme House_Display_Scheme gives that player.
+void Post_Player_Message(char const * text, int ticks);

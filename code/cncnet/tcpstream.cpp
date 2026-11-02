@@ -8,25 +8,12 @@
  ******************************************************************************/
 
 #include "cncnet/tcpstream.h"
+#include "cncnet/cncnetnative.h"
 
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#else
+#if !defined(_WIN32)
 #include <errno.h>
 #include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <unistd.h>
 #endif
 
 #include <algorithm>
@@ -40,17 +27,10 @@
 namespace {
 
 #if defined(_WIN32)
-using NativeSocket = SOCKET;
-
 bool Would_Block(void)
 {
 	int const error = WSAGetLastError();
 	return(error == WSAEWOULDBLOCK || error == WSAEINPROGRESS);
-}
-
-void Close_Native(NativeSocket handle)
-{
-	closesocket(handle);
 }
 
 bool Set_Non_Blocking(NativeSocket handle)
@@ -59,16 +39,9 @@ bool Set_Non_Blocking(NativeSocket handle)
 	return(ioctlsocket(handle, FIONBIO, &on) == 0);
 }
 #else
-using NativeSocket = int;
-
 bool Would_Block(void)
 {
 	return(errno == EWOULDBLOCK || errno == EAGAIN || errno == EINPROGRESS || errno == EINTR);
-}
-
-void Close_Native(NativeSocket handle)
-{
-	close(handle);
 }
 
 bool Set_Non_Blocking(NativeSocket handle)
@@ -196,15 +169,8 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 		// Winsock must stay up until it is out, so the thread gets a reference of its own, taken here before it
 		// starts.
 		auto const lookup = std::make_shared<LookupType>();
-#if defined(_WIN32)
-		WSADATA thread_data;
-		bool const thread_network = WSAStartup(MAKEWORD(2, 2), &thread_data) == 0;
-#endif
-		std::thread([lookup, host, service, hints
-#if defined(_WIN32)
-			, thread_network
-#endif
-			]() {
+		WinsockGuard thread_network;
+		std::thread([lookup, host, service, hints, network = std::move(thread_network)]() {
 			addrinfo * answer = nullptr;
 			int const result = getaddrinfo(host.c_str(), service.c_str(), &hints, &answer);
 			{
@@ -220,11 +186,6 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 					lookup->Ready.notify_all();
 				}
 			}
-#if defined(_WIN32)
-			if (thread_network) {
-				WSACleanup();
-			}
-#endif
 		}).detach();
 		int const waited = TCP_Wait_Sliced(LOOKUP_LIMIT_MS, STOP_SLICE_MS, stop, [&lookup](int slice_ms) {
 			std::unique_lock<std::mutex> guard(lookup->Lock);

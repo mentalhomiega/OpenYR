@@ -106,9 +106,6 @@
 #include "replay.h"
 
 
-char const * const OptionsClass::HotkeyName = "WinHotkeys";
-
-
 /// <summary>
 /// Reads the movies the player has seen from the NetID entry of the settings file's Network
 /// section, where Yuri's Revenge keeps them. The entry holds the text "soviet allied", such as
@@ -607,6 +604,18 @@ static char const * Scale_Mode_Name(int mode)
 }
 
 
+/// <summary>
+/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
+/// the debug view.
+/// The masks follow the renderer, so this is called again once the renderer has started.
+/// </summary>
+void Apply_HDR_Highlights(void)
+{
+	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
+	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
+}
+
+
 /***********************************************************************************************
  * OptionsClass::Load_Settings -- reads options settings from the INI file                     *
  *                                                                                             *
@@ -624,18 +633,6 @@ static char const * Scale_Mode_Name(int mode)
  *   07/03/1996 JLB : Reworked to use new INI handler.                                         *
  *   07/30/1996 JLB : Handles hotkeys.                                                         *
  *=============================================================================================*/
-/// <summary>
-/// Turns the emissive masks on for Enhanced highlights while HDR output is on, for GPU bloom, and for
-/// the debug view.
-/// The masks follow the renderer, so this is called again once the renderer has started.
-/// </summary>
-void Apply_HDR_Highlights(void)
-{
-	bool const enhanced = Video_HDR_Active() && Options.HDRHighlights == HDR_HIGHLIGHTS_ENHANCED;
-	Emissive_Set_Enabled(enhanced || Emissive_Debug_View() || (Options.GpuRender && Options.Bloom));
-}
-
-
 void OptionsClass::Load_Settings(void)
 {
 	DebugString("--------- Loading %s settings ---------------\n", DeploymentConfig.SettingsFile.c_str());

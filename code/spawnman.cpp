@@ -281,10 +281,7 @@ void SpawnManagerClass::Launch(NodeType & node, int index)
 
 	// A CMisl spawn plays V3TAKOFF at its launch point, two frames after it appears (0x6B7552).
 	if (SpawnType == Rule->CMisl.Type) {
-		AnimType const anim = AnimTypeClass::From_Name("V3TAKOFF");
-		if (anim != ANIM_NONE) {
-			new AnimClass(AnimTypes[anim], coord, 2, 1, ShapeFlags_Type(SHAPE_WIN_REL | SHAPE_CENTER), -10);
-		}
+		Spawn_Named_Anim("V3TAKOFF", coord, 2, -10);
 	}
 
 	if (node.IsMissile) {

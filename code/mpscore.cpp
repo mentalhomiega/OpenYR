@@ -161,17 +161,15 @@ class MultiScore : public MSEngine
 		MultiScore(void);
 		virtual ~MultiScore(void);
 
-		virtual void Do_Custom_Draw(Surface * surface);
 		virtual void Process_Idle(void);
 
 		bool Init(void);
 		void Deinit(void);
 
-		bool User_Input(void);
+		void User_Input(void);
 		void Tally_Score(void);
 		void Process_Scores(void);
 
-		void Callback(void);
 		bool Single_Presentation(HouseClass *house);
 		bool Multi_Presentation(void);
 
@@ -184,7 +182,6 @@ class MultiScore : public MSEngine
 		void Print_Figures(void);
 		void Print_Prompt(void);
 
-		bool Skirmish;
 		ScoreStageClass Stage;
 		MPlayerScoreType * Scores[MAX_PLAYERS];
 };
@@ -221,8 +218,7 @@ void Multi_Score_Presentation(void)
 /// The screen holds no resources until Init is called on it.
 /// </summary>
 MultiScore::MultiScore(void) :
-	MSEngine(),
-	Skirmish(false)
+	MSEngine()
 {
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		Scores[i] = NULL;
@@ -286,7 +282,7 @@ bool MultiScore::Multi_Presentation(void)
 
 	if (Init() == true) {
 		Keyboard->Clear();
-		Callback();
+		Call_Back();
 		MouseCursor->Release_Mouse();
 		MouseCursor->Hide_Mouse();
 
@@ -321,7 +317,7 @@ bool MultiScore::Multi_Presentation(void)
 
 
 /// <summary>
-/// Prepares the score screen for display by opening its stage and recording the skirmish caption.
+/// Prepares the score screen for display by opening its stage.
 /// </summary>
 /// <returns>bool; Was the screen prepared successfully?</returns>
 bool MultiScore::Init(void)
@@ -331,8 +327,6 @@ bool MultiScore::Init(void)
 	if (!Stage.Open()) {
 		return(false);
 	}
-
-	Skirmish = (Session.Type == GAME_SKIRMISH);
 
 	Add_Sound_Effect("Graph", "TEXT1.AUD");
 
@@ -352,29 +346,17 @@ void MultiScore::Deinit(void)
 
 
 /// <summary>
-/// Handles the custom drawing pass of the presentation.
-/// The engine offers every animation frame to the derived screen through this routine.
-/// The score screen paints itself through its own routines instead, so there is
-/// nothing to add here.
-/// </summary>
-void MultiScore::Do_Custom_Draw(Surface * surface)
-{
-
-}
-
-
-/// <summary>
 /// Waits for the player to dismiss the score screen.
 /// This routine sits until the player clicks or presses escape or space.
 /// </summary>
-bool MultiScore::User_Input(void)
+void MultiScore::User_Input(void)
 {
 	int key = VK_NONE;
 	bool running = true;
 
 	Keyboard->Clear();
 	if (AutoTest_Post_Win()) {
-		return(true);
+		return;
 	}
 
 	while (running == true) {
@@ -393,7 +375,6 @@ bool MultiScore::User_Input(void)
 	}
 
 	Keyboard->Clear();
-	return(true);
 }
 
 
@@ -439,17 +420,18 @@ void MultiScore::Draw_Static(void)
 	Draw_Picture();
 
 	char const side = ScoreStageClass::Side_Letter();
-	char name[32];
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 1);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(TOP_BAND_Y));
-	sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 2);
-	Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(HEADING_BAND_Y));
+	auto draw_band = [this, side](int index, int y) {
+		char name[32];
+		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, index);
+		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(y));
+	};
+	draw_band(1, TOP_BAND_Y);
+	draw_band(2, HEADING_BAND_Y);
 	for (int row = 0; row < MAX_ROWS; row++) {
-		sprintf(name, "MP%cSCRNLBAR%02d.PCX", side, 3 + row);
-		Stage.Draw_Band(name, ScoreStageClass::Dialog_X(BAND_X), ScoreStageClass::Dialog_Y(PLAYER_BAND_Y + BAND_HEIGHT * row));
+		draw_band(3 + row, PLAYER_BAND_Y + BAND_HEIGHT * row);
 	}
 
-	std::string title = Fetch_String_UTF8(Skirmish ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
+	std::string title = Fetch_String_UTF8(Session.Type == GAME_SKIRMISH ? "GUI:SkirmishScore" : "GUI:MultiplayerScore");
 	Stage.Print_Centre(title.c_str(), ScoreStageClass::Dialog_X(424), ScoreStageClass::Dialog_X(108), ScoreStageClass::Dialog_Y(1));
 
 	char buffer[256];
@@ -465,15 +447,21 @@ void MultiScore::Draw_Static(void)
 	Stage.Print_Right(buffer, ScoreStageClass::Dialog_X(248 + 105), ScoreStageClass::Dialog_Y(LINE_Y));
 
 	std::string heading_name = Fetch_String_UTF8("GUI:Player");
-	std::string heading_kills = Fetch_String_UTF8("GUI:Kills");
-	std::string heading_losses = Fetch_String_UTF8("GUI:Losses");
-	std::string heading_built = Fetch_String_UTF8("GUI:Built");
-	std::string heading_score = Fetch_String_UTF8("GUI:Score");
 	Stage.Print_Left(heading_name.c_str(), Left_Edge(NAME_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_kills.c_str(), Right_Edge(KILLS_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_losses.c_str(), Right_Edge(LOSSES_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_built.c_str(), Right_Edge(BUILT_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
-	Stage.Print_Right(heading_score.c_str(), Right_Edge(SCORE_COLUMN), ScoreStageClass::Dialog_Y(HEADING_Y));
+	struct Heading {
+		char const * key;
+		Column const * column;
+	};
+	constexpr Heading headings[] = {
+		{ "GUI:Kills", &KILLS_COLUMN },
+		{ "GUI:Losses", &LOSSES_COLUMN },
+		{ "GUI:Built", &BUILT_COLUMN },
+		{ "GUI:Score", &SCORE_COLUMN },
+	};
+	for (Heading const & heading : headings) {
+		std::string text = Fetch_String_UTF8(heading.key);
+		Stage.Print_Right(text.c_str(), Right_Edge(*heading.column), ScoreStageClass::Dialog_Y(HEADING_Y));
+	}
 
 	RGBClass const edge(150, 150, 150);
 	Stage.Canvas()->Draw_Rect(BUTTON_RECT, DSurface::Build_Hicolor_Pixel(edge));
@@ -526,18 +514,16 @@ void MultiScore::Print_Player_Names(void)
 /// </summary>
 void MultiScore::Print_Row(int row, int kills, int losses, int built, int score)
 {
-	char buffer[32];
+	int const values[] = { kills, losses, built, score };
+	Column const * const columns[] = { &KILLS_COLUMN, &LOSSES_COLUMN, &BUILT_COLUMN, &SCORE_COLUMN };
 	int const y = Row_Text_Y(row);
 
 	Set_Row_Color(row);
-	sprintf(buffer, "%d", kills);
-	Stage.Print_Right(buffer, Right_Edge(KILLS_COLUMN), y);
-	sprintf(buffer, "%d", losses);
-	Stage.Print_Right(buffer, Right_Edge(LOSSES_COLUMN), y);
-	sprintf(buffer, "%d", built);
-	Stage.Print_Right(buffer, Right_Edge(BUILT_COLUMN), y);
-	sprintf(buffer, "%d", score);
-	Stage.Print_Right(buffer, Right_Edge(SCORE_COLUMN), y);
+	for (int i = 0; i < 4; i++) {
+		char buffer[32];
+		sprintf(buffer, "%d", values[i]);
+		Stage.Print_Right(buffer, Right_Edge(*columns[i]), y);
+	}
 }
 
 
@@ -550,31 +536,28 @@ void MultiScore::Print_Figures(void)
 {
 	int const steps = 100;
 
-	for (int step = 1; step <= steps; step++) {
+	// Draws every row. Figures scale by figure_step / steps and the score by score_step / steps.
+	auto draw_table = [this](int figure_step, int score_step) {
 		Stage.Restore(TABLE_RECT);
 		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-			Print_Row(i, Scores[i]->Kills[0] * step / steps, Scores[i]->Lost[0] * step / steps, Scores[i]->Built[0] * step / steps, 0);
+			Print_Row(i, Scores[i]->Kills[0] * figure_step / steps, Scores[i]->Lost[0] * figure_step / steps, Scores[i]->Built[0] * figure_step / steps, Scores[i]->Score[0] * score_step / steps);
 		}
 		Stage.Present(TABLE_RECT);
+	};
+
+	for (int step = 1; step <= steps; step++) {
+		draw_table(step, 0);
 		Play_Sound_Effect("Graph", 100);
 		Wait_Delay(1);
 	}
 
 	for (int step = 1; step <= steps; step++) {
-		Stage.Restore(TABLE_RECT);
-		for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-			Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0] * step / steps);
-		}
-		Stage.Present(TABLE_RECT);
+		draw_table(steps, step);
 		Play_Sound_Effect("Graph", 100);
 		Wait_Delay(1);
 	}
 
-	Stage.Restore(TABLE_RECT);
-	for (int i = 0; i < Session.NumScores && i < MAX_ROWS; i++) {
-		Print_Row(i, Scores[i]->Kills[0], Scores[i]->Lost[0], Scores[i]->Built[0], Scores[i]->Score[0]);
-	}
-	Stage.Present(TABLE_RECT);
+	draw_table(steps, steps);
 }
 
 
@@ -593,8 +576,8 @@ void MultiScore::Print_Prompt(void)
 /// <summary>
 /// Tallies the round's scores and fills in each house's row.
 /// </summary>
-/// <remarks>The Built value is the percentage of credits each house spent, relative to the
-/// biggest spender. It is not yet confirmed to be what gamemd shows under the Built heading.</remarks>
+/// <remarks>The Built value is the credits a house spent as a percentage of the most any scored
+/// house spent, truncated to a whole number. It is 0 when no scored house has spent credits.</remarks>
 void MultiScore::Tally_Score(void)
 {
 	HousesType house;
@@ -707,11 +690,6 @@ void MultiScore::Tally_Score(void)
 
 		Session.Score[score_index].Lost[0] = losses;
 
-		float kill_ratio = 0;
-		if (losses > 0) {
-			kill_ratio = (float)kills / (float)losses;
-		}
-
 		// Measuring what was spent leaves a house that was beaten showing what it built.
 		float build_economy = most_spent > 0 ? (float)hptr->CreditsSpent / (float)most_spent : 0.0f;
 
@@ -730,7 +708,6 @@ void MultiScore::Tally_Score(void)
 			Session.Score[score_index].Kills[0],
 			Session.Score[score_index].Built[0],
 			Session.Score[score_index].Score[0]);
-		DebugString(" KillRatio = %f\n BuildEconomy = %f\n", kill_ratio, build_economy);
 	}
 }
 
@@ -791,16 +768,6 @@ void MultiScore::Process_Scores(void)
 /// The engine calls this routine whenever it is waiting on an animation or a delay.
 /// </summary>
 void MultiScore::Process_Idle(void)
-{
-	Callback();
-}
-
-
-/// <summary>
-/// Services the network link while the score screen is up.
-/// This routine is called from the presentation's idle handler.
-/// </summary>
-void MultiScore::Callback(void)
 {
 	Call_Back();
 }
