@@ -54,6 +54,20 @@ bool Starts_With(std::string const & text, char const * prefix)
 }
 
 
+// The prefixes of the folders the crash handler writes: exception-YYYYMMDD-HHMMSS-pid, and
+// exception-hang-... for a hang.
+constexpr char const EXCEPTION_FOLDER_PREFIX[] = "exception-";
+constexpr char const HANG_FOLDER_PREFIX[] = "exception-hang-";
+
+
+// The YYYYMMDD-HHMMSS part of a folder name. The prefix match is case-sensitive.
+std::string Folder_Stamp(std::string const & name)
+{
+	std::size_t const prefix_length = Starts_With(name, HANG_FOLDER_PREFIX) ? sizeof(HANG_FOLDER_PREFIX) - 1 : sizeof(EXCEPTION_FOLDER_PREFIX) - 1;
+	return(name.substr(prefix_length));
+}
+
+
 std::string Size_Text(std::uintmax_t bytes)
 {
 	char text[32];
@@ -170,7 +184,7 @@ char const * Report_Kind_Name(ReportKind kind)
 
 ReportKind Report_Kind_From_Folder(fs::path const & folder)
 {
-	return(Starts_With(Lower(folder.filename().string()), "exception-hang-") ? ReportKind::Hang : ReportKind::Crash);
+	return(Starts_With(Lower(folder.filename().string()), HANG_FOLDER_PREFIX) ? ReportKind::Hang : ReportKind::Crash);
 }
 
 
@@ -179,7 +193,7 @@ std::vector<fs::path> Report_Undecided_Folders(fs::path const & exceptions)
 	std::vector<fs::path> folders;
 	std::error_code error;
 	for (fs::directory_iterator it(exceptions, error), end; !error && it != end; it.increment(error)) {
-		if (!it->is_directory(error) || !Starts_With(Lower(it->path().filename().string()), "exception-")) {
+		if (!it->is_directory(error) || !Starts_With(Lower(it->path().filename().string()), EXCEPTION_FOLDER_PREFIX)) {
 			continue;
 		}
 		if (fs::exists(it->path() / REPORT_DECIDED_MARKER, error)) {
@@ -190,11 +204,7 @@ std::vector<fs::path> Report_Undecided_Folders(fs::path const & exceptions)
 	// The folder names carry the time as YYYYMMDD-HHMMSS, so their order is the order the
 	// reports were written, apart from crash and hang folders of the same second.
 	std::sort(folders.begin(), folders.end(), [](fs::path const & a, fs::path const & b) {
-		std::string const an = a.filename().string();
-		std::string const bn = b.filename().string();
-		std::string const at = Starts_With(an, "exception-hang-") ? an.substr(15) : an.substr(10);
-		std::string const bt = Starts_With(bn, "exception-hang-") ? bn.substr(15) : bn.substr(10);
-		return(at < bt);
+		return(Folder_Stamp(a.filename().string()) < Folder_Stamp(b.filename().string()));
 	});
 	return(folders);
 }
