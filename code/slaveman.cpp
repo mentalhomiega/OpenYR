@@ -37,6 +37,20 @@
 
 namespace {
 
+// Calls visit(x, y) for each offset on the square ring at the given distance, row by row.
+template<typename Visit>
+void For_Each_Ring_Offset(int ring, Visit visit)
+{
+	for (int y = -ring; y <= ring; y++) {
+		for (int x = -ring; x <= ring; x++) {
+			if (std::abs(x) != ring && std::abs(y) != ring) {
+				continue;
+			}
+			visit(x, y);
+		}
+	}
+}
+
 // The house that takes freed slaves when nothing killed their miner: the first house whose side is
 // Civilian, as gamemd's SlaveManagerClass::Killed picks it (0x6B0AE0).
 HouseClass * Neutral_House(void)
@@ -134,6 +148,13 @@ Cell SlaveManagerClass::Dock_Cell(void) const
 		return(building->PositionCell + Cell(building->Class->Width() - 1, building->Class->Height() / 2));
 	}
 	return(Owner->Get_Cell());
+}
+
+
+void SlaveManagerClass::Go_Idle(void)
+{
+	MinerStatus = MINER_IDLE;
+	MinerTimer = Frame;
 }
 
 
@@ -336,29 +357,24 @@ void SlaveManagerClass::AI(void)
 /// </summary>
 Cell SlaveManagerClass::Find_Ore(int radius) const
 {
-	Cell const center = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	Cell const center = Dock_Cell();
 	if (Map[center].Land_Type() == LAND_TIBERIUM) {
 		return(center);
 	}
 	Cell best = CELL_NONE;
 	int bestvalue = -1;
 	for (int ring = 1; ring < radius && best == CELL_NONE; ring++) {
-		for (int y = -ring; y <= ring; y++) {
-			for (int x = -ring; x <= ring; x++) {
-				if (std::abs(x) != ring && std::abs(y) != ring) {
-					continue;
-				}
-				Cell const cell = center + Cell(x, y);
-				if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
-					continue;
-				}
-				int const value = Map[cell].Tiberium_Value();
-				if (value > bestvalue) {
-					bestvalue = value;
-					best = cell;
-				}
+		For_Each_Ring_Offset(ring, [&](int x, int y) {
+			Cell const cell = center + Cell(x, y);
+			if (!Map.In_Radar(cell) || Map[cell].Land_Type() != LAND_TIBERIUM) {
+				return;
 			}
-		}
+			int const value = Map[cell].Tiberium_Value();
+			if (value > bestvalue) {
+				bestvalue = value;
+				best = cell;
+			}
+		});
 	}
 	return(best);
 }
@@ -398,7 +414,7 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 	if (type == NULL) {
 		return(CELL_NONE);
 	}
-	Cell const from = Owner->RTTI == RTTI_BUILDING ? Dock_Cell() : Owner->Get_Cell();
+	Cell const from = Dock_Cell();
 	int const zone = Map.Get_Cell_Zone(from, MZONE_NORMAL);
 	Cell corner = Map.Nearby_Location(ore, SPEED_TRACK, zone, MZONE_NORMAL, false, Point2D(type->Width(), type->Height()), true);
 	if (corner == CELL_NONE || type->Is_Mobile_Deployer()) {
@@ -410,23 +426,18 @@ Cell SlaveManagerClass::Deploy_Cell(Cell ore) const
 		Cell best = CELL_NONE;
 		int bestdistance = INT_MAX;
 		for (int ring = 0; ring < 16 && best == CELL_NONE; ring++) {
-			for (int y = -ring; y <= ring; y++) {
-				for (int x = -ring; x <= ring; x++) {
-					if (std::abs(x) != ring && std::abs(y) != ring) {
-						continue;
-					}
-					Cell const candidate = ore + Cell(x, y);
-					if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + Cell(1, 1)) || x * x + y * y >= bestdistance) {
-						continue;
-					}
-					if (Foundation_Is_Flat(type, candidate)
-						&& Map.Is_Clear_To_Move(candidate, type->Width(), type->Height(), SPEED_TRACK, zone, MZONE_NORMAL, -1, false, true)
-						&& Map.Is_Clear_To_Move(candidate + Cell(1, 1), 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
-						best = candidate;
-						bestdistance = x * x + y * y;
-					}
+			For_Each_Ring_Offset(ring, [&](int x, int y) {
+				Cell const candidate = ore + Cell(x, y);
+				if (!Map.In_Radar(candidate) || !Map.In_Radar(candidate + Cell(1, 1)) || x * x + y * y >= bestdistance) {
+					return;
 				}
-			}
+				if (Foundation_Is_Flat(type, candidate)
+					&& Map.Is_Clear_To_Move(candidate, type->Width(), type->Height(), SPEED_TRACK, zone, MZONE_NORMAL, -1, false, true)
+					&& Map.Is_Clear_To_Move(candidate + Cell(1, 1), 1, 1, SPEED_TRACK, zone, MZONE_NORMAL, -1, false, false)) {
+					best = candidate;
+					bestdistance = x * x + y * y;
+				}
+			});
 		}
 		if (best != CELL_NONE) {
 			corner = best;
@@ -486,8 +497,7 @@ void SlaveManagerClass::Miner_AI(void)
 
 		case MINER_SEEKING: {
 			if (!mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
+				Go_Idle();
 				break;
 			}
 			UnitClass * unit = (UnitClass *)Owner;
@@ -498,8 +508,7 @@ void SlaveManagerClass::Miner_AI(void)
 			Cell const ore = Find_Ore(Rule->SlaveMinerLongScan / CELL_LEPTON_W);
 			Cell const spot = ore != CELL_NONE ? Deploy_Cell(ore) : CELL_NONE;
 			if (spot == CELL_NONE) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
+				Go_Idle();
 				DebugString("Slave: %s (%s) finds no ore to deploy at\n", unit->Class->Name(), unit->House->Class->Name());
 				break;
 			}
@@ -515,8 +524,7 @@ void SlaveManagerClass::Miner_AI(void)
 		case MINER_MOVING:
 		case MINER_WAITING: {
 			if (!mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
+				Go_Idle();
 				break;
 			}
 			UnitClass * unit = (UnitClass *)Owner;
@@ -567,8 +575,7 @@ void SlaveManagerClass::Miner_AI(void)
 
 		case MINER_WORKING: {
 			if (mobile) {
-				MinerStatus = MINER_IDLE;
-				MinerTimer = Frame;
+				Go_Idle();
 				break;
 			}
 			if (Find_Ore(Rule->SlaveMinerShortScan / CELL_LEPTON_W) != CELL_NONE) {

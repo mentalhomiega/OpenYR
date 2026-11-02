@@ -12034,6 +12034,29 @@ bool BuildingClass::Is_Move_Override(void) const
 
 
 /// <summary>
+/// Finds the building that a unit stands on while it is still radio-linked to that building.
+/// </summary>
+/// <param name="unit">The object to test. Anything other than an RTTI_UNIT object gives NULL.</param>
+/// <returns>Returns with the building that is the unit's first radio link and that holds the
+/// unit's cell. Otherwise, NULL is returned.</returns>
+BuildingClass const * Linked_Building_Underfoot(TechnoClass const * unit)
+{
+	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
+		return(NULL);
+	}
+	TechnoClass const * linked = unit->Link(0);
+	if (linked == NULL || linked->RTTI != RTTI_BUILDING) {
+		return(NULL);
+	}
+	BuildingClass const * building = static_cast<BuildingClass const *>(linked);
+	if (Map[unit->Get_Coord()].Cell_Building() != building) {
+		return(NULL);
+	}
+	return(building);
+}
+
+
+/// <summary>
 /// Finds the nearest repair facility that will take the object.
 /// Only facilities belonging to the specified house and willing to accept the object over
 /// the radio are considered, and only those close enough to be worth the trip.

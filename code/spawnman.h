@@ -76,7 +76,7 @@ class SpawnManagerClass
 
 		AircraftClass * Create_Spawn(NodeType & node) const;
 		void Launch(NodeType & node, int index);
-		void Unlink_Pointer(AbstractClass const * target);
+		void Release_To_Kamikaze(AircraftClass * unit);
 		void Send_Home(AircraftClass * unit) const;
 
 		TechnoClass * Owner = nullptr;
