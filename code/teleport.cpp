@@ -634,9 +634,7 @@ bool TeleportLocomotionClass::Check_Landing(void)
 			foot->SlaveManager->Free_All(NULL);
 			foot->SlaveManager.reset();
 		}
-		if (Rule->Wake != NULL) {
-			new AnimClass(Rule->Wake, foot->PositionCoord);
-		}
+		Spawn_Wake(foot->PositionCoord);
 	}
 	return(true);
 }

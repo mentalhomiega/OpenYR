@@ -607,9 +607,7 @@ bool DriveLocomotionClass::Process(void)
 
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
 		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER) {
-			if (Rule->Wake != NULL) {
-				new AnimClass(Rule->Wake, LinkedTo->PositionCoord);
-			}
+			Spawn_Wake(LinkedTo->PositionCoord);
 		}
 	}
 

@@ -831,8 +831,8 @@ bool LevitateLocomotionClass::Process(void)
 
 	Move_AI();
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
-		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER && Rule->Wake != NULL) {
-			new AnimClass(Rule->Wake, LinkedTo->PositionCoord);
+		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER) {
+			Spawn_Wake(LinkedTo->PositionCoord);
 		}
 
 	}

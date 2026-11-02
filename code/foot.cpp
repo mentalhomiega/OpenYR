@@ -4302,9 +4302,7 @@ bool FootClass::Advance_Sinking(void)
 
 		// The wake sits on the ground under the object, not at its sinking height.
 		Coord const wake(PositionCoord.X + dx, PositionCoord.Y + dy, PositionCoord.Z - HeightAGL);
-		if (Rule->Wake != NULL) {
-			new AnimClass(Rule->Wake, wake);
-		}
+		Spawn_Wake(wake);
 	}
 	return(false);
 }

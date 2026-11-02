@@ -462,6 +462,19 @@ AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedel
 }
 
 
+/// <summary>
+/// Starts the wake animation the rules name, at a coordinate, with the default timing and flags.
+/// </summary>
+/// <param name="where">Where the wake plays.</param>
+/// <remarks>Nothing is started when the rules name no wake animation.</remarks>
+void Spawn_Wake(Coord const & where)
+{
+	if (Rule->Wake != NULL) {
+		new AnimClass(Rule->Wake, where);
+	}
+}
+
+
 /***********************************************************************************************
  * AnimClass::Sort_Y -- Returns with the sorting coordinate for the animation.                 *
  *                                                                                             *
@@ -907,9 +920,7 @@ void AnimClass::AI(void)
 						new AnimClass(Rule->SplashList[splashes - 1], PositionCoord + Coord(0, 0, 3));
 					}
 				} else {
-					if (Rule->Wake != NULL) {
-						new AnimClass(Rule->Wake, PositionCoord);
-					}
+					Spawn_Wake(PositionCoord);
 					if (splashes > 0 && Rule->SplashList[0] != NULL) {
 						new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
 					}

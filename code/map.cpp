@@ -7610,7 +7610,7 @@ bool MapClass::Break_Ice(CellClass * cellptr, FootClass * object)
 							if (mzone != MZONE_AMPHIBIOUS_DESTROYER && mzone != MZONE_AMPHIBIOUS_CRUSHER && mzone != MZONE_AMPHIBIOUS && mzone != MZONE_WATER && mzone != MZONE_WATER_BEACH) {
 								foot->IsSinking = true;
 								foot->Stun();
-								if (Rule->Wake != NULL) new AnimClass(Rule->Wake, foot->PositionCoord);
+								Spawn_Wake(foot->PositionCoord);
 							}
 						} else {
 							if (foot->IsActive && foot->Tag != NULL) {
@@ -7620,7 +7620,7 @@ bool MapClass::Break_Ice(CellClass * cellptr, FootClass * object)
 								foot->Tag->Spring(TEVENT_DESTROYED_ANY_X, foot);
 							}
 							foot->Delete_Me();
-							if (Rule->Wake != NULL) new AnimClass(Rule->Wake, foot->PositionCoord);
+							Spawn_Wake(foot->PositionCoord);
 						}
 					}
 				}
