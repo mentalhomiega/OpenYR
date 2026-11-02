@@ -147,7 +147,7 @@ static std::string Cpu_Description(void)
 /// <summary>The mods this machine runs, as a join request would carry them, or "none".</summary>
 static std::string Mods_Description(void)
 {
-	ModSync::Signature const signature = ModSync::Describe(Active_Mods());
+	ModSync::Signature const signature = ModSync::Describe_Active();
 	std::string const names = ModSync::List_Names(signature);
 	if (names.empty()) {
 		return("none");

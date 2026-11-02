@@ -135,7 +135,7 @@ ReplayFile::HeaderType Current_Identity(void)
 	header.RulesCrc = static_cast<std::uint32_t>(RulesClass::Get_Rule_Unique_ID());
 	header.ArtCrc = static_cast<std::uint32_t>(RulesClass::Get_Art_Unique_ID());
 	header.AiCrc = static_cast<std::uint32_t>(RulesClass::Get_AI_Unique_ID());
-	header.Mods = ModSync::Encode(ModSync::Describe(Active_Mods()));
+	header.Mods = ModSync::Encode(ModSync::Describe_Active());
 	header.Seed = static_cast<std::uint32_t>(Seed);
 	header.GameSpeed = Options.GameSpeed;
 	header.LocalHouse = PlayerPtr != NULL ? PlayerPtr->HeapID : -1;
@@ -236,18 +236,11 @@ void Give_Verdict(void)
 }
 
 
-void Replay_At_Exit(void)
-{
-	Finish_Recording();
-	Give_Verdict();
-}
-
-
 void Register_At_Exit(void)
 {
 	if (!AtExitRegistered) {
 		AtExitRegistered = true;
-		std::atexit(Replay_At_Exit);
+		std::atexit(Replay_Finish);
 	}
 }
 
@@ -409,7 +402,7 @@ std::string Replay_Playability(ReplayFile::HeaderType const & recorded)
 	ReplayFile::HeaderType current = recorded;
 	current.Version = OPENTS_VERSION_PACKED;
 	current.Commit = OPENTS_COMMIT;
-	current.Mods = ModSync::Encode(ModSync::Describe(Active_Mods()));
+	current.Mods = ModSync::Encode(ModSync::Describe_Active());
 	current.MapCrc = Map_Checksum(recorded.Map.c_str());
 	if (current.MapCrc == 0) {
 		return("The map " + recorded.Map + " is not on this machine.");
@@ -591,7 +584,8 @@ void Replay_Frame_End(void)
 
 void Replay_Finish(void)
 {
-	Replay_At_Exit();
+	Finish_Recording();
+	Give_Verdict();
 }
 
 

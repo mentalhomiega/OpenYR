@@ -68,6 +68,13 @@ namespace ModSync
 	std::uint32_t Hash_Mod(ModClass const & mod);
 
 	Signature Describe(std::vector<ModClass> const & mods);
+
+	// The signature of the mods in force now.
+	inline Signature Describe_Active(void)
+	{
+		return(Describe(Active_Mods()));
+	}
+
 	std::string Encode(Signature const & signature);
 
 	// Reads the text form. Text that is not a signature gives false, and counts as a signature

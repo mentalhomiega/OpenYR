@@ -73,7 +73,7 @@ static void Get_Join_Responses(void);
 // The mods this machine runs, as the join packet carries them.
 static ModSync::Signature Local_Mod_Signature(void)
 {
-	return(ModSync::Describe(Active_Mods()));
+	return(ModSync::Describe_Active());
 }
 
 // Reads the mods a packet field names. A field that is not a signature counts as no mods.

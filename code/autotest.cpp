@@ -1936,7 +1936,7 @@ static void Preview_Time_Step(StepType const &)
 // signature, also says whether a host with these mods would take that machine in.
 static void Mod_Signature_Step(StepType const & step)
 {
-	ModSync::Signature const mine = ModSync::Describe(Active_Mods());
+	ModSync::Signature const mine = ModSync::Describe_Active();
 	DebugString("AUTOTEST   modsig [%s] names %s\n", ModSync::Encode(mine).c_str(), ModSync::List_Names(mine).c_str());
 	if (!step.Argument.empty()) {
 		ModSync::Signature theirs;
