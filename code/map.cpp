@@ -9067,6 +9067,18 @@ int MapClass::Get_Low_Bridge_NS_Neighbor_Mask(Cell const & cell)
 }
 
 
+/*
+ * Whether a low bridge overlay runs east and west: OVERLAY_LOWBRIDGE_01..09, 19..22 and 27. The
+ * other low bridge overlays run north and south.
+ */
+static bool Low_Bridge_Runs_East_West(int overlay)
+{
+	return((overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09) ||
+		(overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22) ||
+		overlay == OVERLAY_LOWBRIDGE_27);
+}
+
+
 /// <summary>
 /// Damages the low bridge that this cell belongs to.
 /// This is the entry point the combat code calls when a weapon lands on a low bridge. The
@@ -9078,7 +9090,7 @@ int MapClass::Get_Low_Bridge_NS_Neighbor_Mask(Cell const & cell)
 bool MapClass::Damage_Low_Bridge(Cell const & cell)
 {
 	OverlayType otype = Map[cell].Overlay;
-	if (otype >= OVERLAY_LOWBRIDGE_01 && otype <= OVERLAY_LOWBRIDGE_09 || otype >= OVERLAY_LOWBRIDGE_19 && otype <= OVERLAY_LOWBRIDGE_22 || otype == OVERLAY_LOWBRIDGE_27) {
+	if (Low_Bridge_Runs_East_West(otype)) {
 		if (!Is_Low_Bridge(cell + Cell(0, -1))) {
 			return(Damage_Low_Bridge_EW(cell + Cell(0, 1)));
 		} else {
@@ -9476,7 +9488,7 @@ void MapClass::Repair_Low_Bridge_Span(Cell const & cell)
 {
 	OverlayType overlay = Map[cell].Overlay;
 
-	if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09 || overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22 || overlay == OVERLAY_LOWBRIDGE_27) {
+	if (Low_Bridge_Runs_East_West(overlay)) {
 		if (!Is_Low_Bridge(cell - Cell(0, 1))) {
 			Repair_Low_Bridge_EW(cell + Cell(0, 1));
 		} else {
@@ -9678,8 +9690,7 @@ void MapClass::Repair_Low_Bridge_NS(Cell const & cell)
 /// <returns>True if the cell holds a low bridge overlay; false otherwise.</returns>
 bool MapClass::Is_Low_Bridge(Cell const & cell)
 {
-	OverlayType overlay = Map[cell].Overlay;
-	return(overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_28);
+	return(Map[cell].Is_Overlay_Low_Bridge());
 }
 
 
@@ -12269,8 +12280,7 @@ static bool Has_Bridge_Mark(CellClass const * cptr, bool tiles)
 static bool Is_Wood_Bridge_Overlay_Cell(Cell const & cell)
 {
 	CellClass const * cptr = Bridge_Cell_At(cell);
-	int overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
-	return(overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_28);
+	return(cptr != NULL && cptr->Is_Overlay_Low_Bridge());
 }
 
 
@@ -13211,9 +13221,7 @@ void MapClass::Destroy_Wood_Bridge_Neighbors(Cell const & cell)
 	CellClass const * cptr = Bridge_Cell_At(cell);
 	int const overlay = cptr != NULL ? cptr->Overlay : OVERLAY_NONE;
 
-	bool const straight = (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_09) ||
-		(overlay >= OVERLAY_LOWBRIDGE_19 && overlay <= OVERLAY_LOWBRIDGE_22) ||
-		overlay == OVERLAY_LOWBRIDGE_27;
+	bool const straight = Low_Bridge_Runs_East_West(overlay);
 
 	if (straight) {
 		Detonate_Wood_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Wood_Bridge_Overlay_Cell), FACING_E);
@@ -13751,7 +13759,7 @@ void MapClass::Destroy_Bridge_At(Cell const & cell)
 			if (cptr == NULL) {
 				continue;
 			}
-			if (cptr->Is_Tile_Train_Bridge() || (cptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cptr->Overlay <= OVERLAY_LOWBRIDGE_28)) {
+			if (cptr->Is_Tile_Train_Bridge() || cptr->Is_Overlay_Low_Bridge()) {
 				wood = true;
 			}
 		}
@@ -13852,9 +13860,7 @@ bool MapClass::Can_Repair_Bridge(Cell const & cell)
 		}
 	} else if (cellptr != NULL) {
 
-		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_09 ||
-			cellptr->Overlay >= OVERLAY_LOWBRIDGE_19 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_22 ||
-			cellptr->Overlay == OVERLAY_LOWBRIDGE_27) {
+		if (Low_Bridge_Runs_East_West(cellptr->Overlay)) {
 
 			for (Cell walk = cellptr->CellID; ; walk.X--) {
 				if (!Is_Low_Bridge(walk)) {
