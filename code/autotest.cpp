@@ -883,12 +883,6 @@ void Attack(std::string const & name)
 }
 
 
-/*
-**	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
-**	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
-**	is ordered to attack it. A target that moves stays the target, and an object that dies is
-**	replaced by the next strikeobj line.
-*/
 bool Strike_Side_Allows(bool naval, std::string const & side)
 {
 	if (side == "land") return !naval;
@@ -935,6 +929,12 @@ TechnoClass * Strike_Target(std::string const & name, int x, int y, int radius)
 }
 
 
+/*
+**	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
+**	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
+**	is ordered to attack it. A target that moves stays the target, and an object that dies is
+**	replaced by the next strikeobj line.
+*/
 void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side, std::string const & attacker)
 {
 	if (side != "" && side != "all" && side != "land" && side != "naval") {
@@ -1895,8 +1895,7 @@ static void Mod_Signature_Step(StepType const & step)
 }
 
 
-// key <Key>: the virtual-key code of a single letter or digit, or the decimal code given.
-// The first word of a key step's argument: a letter, or a virtual-key code in decimal.
+// The virtual-key code of a key step's first word: a single character gives its upper-case code, and a longer word is read as a decimal number.
 static int Key_Code(std::string const & name)
 {
 	std::string const word = name.substr(0, name.find_first_of(" \t"));
@@ -4274,7 +4273,7 @@ static void Pitch_Step(StepType const & step)
 }
 
 
-// barrelpitch <dir256> x y: sets the barrel pitch of the player's objects on that cell, 64 level and 0 straight up. The pitch verb takes a raw facing instead.
+// barrelpitch <dir256> x y: sets the barrel pitch of the player's objects on that cell, 64 level and 0 straight up.
 static void Barrelpitch_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
@@ -4652,7 +4651,7 @@ static void Reload_Step(StepType const &)
 }
 
 
-// art <path>: reads that INI file over the art, then has the types it names read themselves again.
+// art <path>: loads that INI file into the art INI and adds its entries to the rules.
 static void Art_Step(StepType const & step)
 {
 	CCINIClass ini;
