@@ -7292,46 +7292,46 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 		CountResourceDestinations--;
 	}
 
+	bool const scored = !ttype->IsDontScore;
+
 	switch (techno->Fetch_RTTI()) {
-		case RTTI_BUILDING:
-			if (!ttype->IsDontScore) {
+		case RTTI_BUILDING: {
+			BuildingClass * const bptr = static_cast<BuildingClass *>(techno);
+			if (scored) {
 				ABQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 
-			{
-				BuildingClass * bptr = (BuildingClass *)techno;
-
-				RecalcPower = true;
-				Capacity -= bptr->Class->Capacity;
-				if (bycapture) {
-					StorageClass *storage = &bptr->Storage;
-					int i = storage->First_Used_Slot();
-					while (i != -1) {
-						int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
-						Harvested(amount, TiberiumType(i));
-						i = storage->First_Used_Slot();
-					}
-				} else {
-					Tiberium -= bptr->Storage;
+			RecalcPower = true;
+			Capacity -= bptr->Class->Capacity;
+			if (bycapture) {
+				StorageClass *storage = &bptr->Storage;
+				int i = storage->First_Used_Slot();
+				while (i != -1) {
+					int amount = storage->Decrease_Amount(0x7FFFFFFF, i);
+					Harvested(amount, TiberiumType(i));
+					i = storage->First_Used_Slot();
 				}
+			} else {
+				Tiberium -= bptr->Storage;
 			}
 			break;
+		}
 
 		case RTTI_AIRCRAFT:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AAQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_INFANTRY:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AIQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_UNIT:
 			// Unlike the other types, a unit with DontScore is not subtracted here, though it was added on entry (see Tracking_Active_Add).
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AUQuantity.Decrement(ttype->Fetch_Heap_ID());
 			}
 			break;
@@ -7357,33 +7357,32 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 	if (ttype->IsResourceDestination) {
 		CountResourceDestinations++;
 	}
-	BuildingClass * bptr;
+	bool const scored = !ttype->IsDontScore;
 
 	switch (techno->Fetch_RTTI()) {
-		case RTTI_BUILDING:
-			if (!ttype->IsDontScore) {
+		case RTTI_BUILDING: {
+			if (scored) {
 				ABQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
-			bptr = dynamic_cast<BuildingClass *>(techno);
-			if (bptr != NULL) {
-				// BuildingClass::Place (0x445F80) rechecks power and radar for the house a structure is given to.
-				RecalcPower = true;
-				RecalcRadar = true;
-				Adjust_Drain(bptr->Power_Drain());
-				Capacity += bptr->Class->Capacity;
-				Tiberium += techno->Storage;
-			}
+			BuildingClass * const bptr = static_cast<BuildingClass *>(techno);
+			// BuildingClass::Place (0x445F80) rechecks power and radar for the house a structure is given to.
+			RecalcPower = true;
+			RecalcRadar = true;
+			Adjust_Drain(bptr->Power_Drain());
+			Capacity += bptr->Class->Capacity;
+			Tiberium += techno->Storage;
 			break;
+		}
 
 		case RTTI_AIRCRAFT:
-			if (!ttype->IsDontScore) {
+			if (scored) {
 				AAQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_INFANTRY:
 			// A technician is not counted as active (RegisterGain checks InfantryClass::Technician).
-			if (!((InfantryClass *)techno)->IsTechnician && !ttype->IsDontScore) {
+			if (!((InfantryClass *)techno)->IsTechnician && scored) {
 				AIQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
