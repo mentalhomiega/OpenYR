@@ -81,14 +81,10 @@ enum PerfCounter : unsigned char {
 	PERF_COUNT_SCAN_TEAM,       // Greatest_Threat calls from team AI
 	PERF_COUNT_SCAN_HOUSE,      // Greatest_Threat calls from house AI (quarry)
 	PERF_COUNT_RING_CELLS,      // ring cells on the radar map that the walk visits
-	PERF_COUNT_RING_CELLS_EMPTY,    // ring cells with no techno in either occupier chain
-	PERF_COUNT_RING_CELLS_WALL,     // ring cells with a wall overlay
 	PERF_COUNT_CELL_CANDIDATES, // Evaluate_Cell calls that found an occupant to evaluate
 	PERF_COUNT_OBJECT_EVALS,    // Evaluate_Object calls
 	PERF_COUNT_AREA_MODIFY,     // Area_Modify calls
 	PERF_COUNT_WEAPON_SELECTS,  // What_Weapon_Should_I_Use calls
-	PERF_COUNT_RING_KEYS,       // distinct ring-walk keys in a game frame
-	PERF_COUNT_RING_KEY_REPEATS,    // ring walks whose key an earlier walk in the same game frame had
 	PERF_COUNT_DRAWS_SKIPPED,   // draw slots in the frame wait that came due with too little time left; once per slot
 	PERF_COUNTER_COUNT
 };

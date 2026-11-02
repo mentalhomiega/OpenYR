@@ -232,9 +232,7 @@
 #include <algorithm>
 #include <cstring>
 #include <intrin.h>
-#include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
@@ -3120,47 +3118,6 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 }
 
 
-namespace {
-
-// Counts a ring walk whose inputs match an earlier walk in the same game frame. Recording only.
-void Count_Ring_Walk_Key(Cell const & cell, int house, void const * type, int zone, int method, int crange)
-{
-	static int key_frame = -1;
-	static std::set<std::tuple<int, int, int, void const *, int, int, int>> keys;
-
-	if (Frame != key_frame) {
-		keys.clear();
-		key_frame = Frame;
-	}
-	if (keys.insert(std::make_tuple(static_cast<int>(cell.X), static_cast<int>(cell.Y), house, type, zone, method, crange)).second) {
-		Perf_Count(PERF_COUNT_RING_KEYS);
-	} else {
-		Perf_Count(PERF_COUNT_RING_KEY_REPEATS);
-	}
-}
-
-
-// Counts a ring cell with no techno in either occupier chain, and one with a wall overlay.
-void Count_Ring_Cell_Contents(Cell const & cell)
-{
-	CellClass const & cellref = Map[cell];
-	bool techno = false;
-	for (int bridge = 0; bridge < 2 && !techno; bridge++) {
-		for (ObjectClass * object = cellref.Cell_Occupier(bridge != 0); object != NULL && !techno; object = object->Next) {
-			techno = Dynamic_Cast<TechnoClass *>(object) != NULL;
-		}
-	}
-	if (!techno) {
-		Perf_Count(PERF_COUNT_RING_CELLS_EMPTY);
-	}
-	if (cellref.Overlay != OVERLAY_NONE && OverlayTypes[cellref.Overlay]->IsWall) {
-		Perf_Count(PERF_COUNT_RING_CELLS_WALL);
-	}
-}
-
-}
-
-
 /***********************************************************************************************
  * TechnoClass::Greatest_Threat -- Determines best target given search criteria.               *
  *                                                                                             *
@@ -3369,18 +3326,12 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
 		if (scan_cells) {
 			Perf_Count(PERF_COUNT_SCANS_RING);
-			if (Perf_Enabled) {
-				Count_Ring_Walk_Key(cell, House->HeapID, TClass, zone, method, crange);
-			}
 		}
 		PerfScope ring_scope(PERF_FRAME_THREAT_RING);
 		// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
 		auto Visit_Ring_Cell = [&](Cell const & newcell) {
 			if (Map.In_Radar(newcell)) {
 				Perf_Count(PERF_COUNT_RING_CELLS);
-				if (Perf_Enabled) {
-					Count_Ring_Cell_Contents(newcell);
-				}
 				if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
 					if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
 					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
