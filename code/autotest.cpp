@@ -6683,7 +6683,8 @@ static void Quit_Step(StepType const &)
 }
 
 
-void Run(StepType const & step)
+// The handler for each script command name. The table is built on the first call.
+static std::unordered_map<std::string_view, void (*)(StepType const &)> const & Step_Handlers(void)
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
 		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
@@ -7011,8 +7012,15 @@ void Run(StepType const & step)
 		{"quit", Quit_Step},
 	};
 
+	return(handlers);
+}
+
+
+void Run(StepType const & step)
+{
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	auto const & handlers = Step_Handlers();
 	auto const handler = handlers.find(std::string_view(step.Command));
 	if (handler != handlers.end()) {
 		handler->second(step);
