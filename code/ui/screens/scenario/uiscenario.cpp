@@ -128,9 +128,9 @@ void UIScenarioPresenterClass::Rebuild(void)
 		}
 	}
 	State.Counts.clear();
-	State.Counts.push_back(UIScenarioCount{"Any number", 0});
+	State.Counts.push_back(UIChoice{0, "Any number"});
 	for (int players : found) {
-		State.Counts.push_back(UIScenarioCount{Count_Text(players), players});
+		State.Counts.push_back(UIChoice{players, Count_Text(players)});
 	}
 	if (State.Players != 0 && found.count(State.Players) == 0) {
 		State.Players = 0;
@@ -348,19 +348,19 @@ class UIScenarioViewClass : public UIRmlViewClass
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
 			Rml::StructHandle<UIScenarioRow> row = model.RegisterStruct<UIScenarioRow>();
-			Rml::StructHandle<UIScenarioCount> count = model.RegisterStruct<UIScenarioCount>();
+			Rml::StructHandle<UIChoice> count = model.RegisterStruct<UIChoice>();
 			if (!row || !count) {
 				return(false);
 			}
 			row.RegisterMember("label", &UIScenarioRow::Label);
 			row.RegisterMember("count", &UIScenarioRow::Count);
 			row.RegisterMember("index", &UIScenarioRow::Index);
-			count.RegisterMember("label", &UIScenarioCount::Label);
-			count.RegisterMember("value", &UIScenarioCount::Value);
+			count.RegisterMember("label", &UIChoice::Label);
+			count.RegisterMember("value", &UIChoice::Value);
 
 			UIScenarioState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIScenarioRow>>()
-				&& model.RegisterArray<std::vector<UIScenarioCount>>()
+				&& model.RegisterArray<std::vector<UIChoice>>()
 				&& model.Bind("rows", &state.Rows)
 				&& model.Bind("counts", &state.Counts)
 				&& model.Bind("selected", &state.Selected)

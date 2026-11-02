@@ -18,13 +18,6 @@
 class UIViewClass;
 
 
-struct UIGameControlsChoice
-{
-	int Value = 0;
-	std::string Label;
-};
-
-
 class UIGameControlsServiceClass
 {
 	public:
@@ -79,7 +72,7 @@ struct UIGameControlsState
 	bool SidebarSorting = false;
 	bool DebugMode = false;
 	bool RecordReplays = false;
-	std::vector<UIGameControlsChoice> Autosaves;
+	std::vector<UIChoice> Autosaves;
 	int Autosave = 0;
 
 	std::vector<std::string> SpeedNames;

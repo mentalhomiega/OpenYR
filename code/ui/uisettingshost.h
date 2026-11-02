@@ -57,10 +57,13 @@ class UISettingsHostPresenterClass : public UIPresenterClass
 	private:
 		// Ends the screen: every other presenter applies the accepted values, or drops the changes it holds.
 		void Finish(UIPresenterClass * source);
+		// Returns the last page for the tab, or -1 when no page has it.
+		int Index_Of(UISettingsTab tab) const;
+		// Sets the tab on every page, with the tabs this screen offers.
+		void Retab_Pages(UISettingsTab tab);
 
 		std::vector<UISettingsPageClass> Pages;
 		std::vector<UIPresenterClass *> Presenters;
-		unsigned Offered;
 		int Current = 0;
 };
 

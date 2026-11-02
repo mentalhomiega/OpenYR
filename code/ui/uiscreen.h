@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -29,6 +30,17 @@ struct UIIntent
 	int Value = 0;
 	std::string Text;
 };
+
+
+// One entry of a list of settings values, such as a frame rate, a filter or a mission difficulty.
+struct UIChoice
+{
+	int Value = 0;
+	std::string Label;
+};
+
+
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format);
 
 
 /// <summary>

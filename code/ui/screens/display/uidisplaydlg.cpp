@@ -279,29 +279,6 @@ class UIDisplayEngineServiceClass : public UIDisplayServiceClass
 };
 
 
-// Adds the choices to the list and returns the index of the one with the current value, adding
-// the current value under its own label when the list does not have it.
-int Fill_Choices(std::vector<UIDisplayChoice> & list, std::initializer_list<UIDisplayChoice> choices, int current, char const * format)
-{
-	int picked = -1;
-	for (UIDisplayChoice const & choice : choices) {
-		if (choice.Value == current) {
-			picked = (int)list.size();
-		}
-		list.push_back(choice);
-	}
-	if (picked < 0) {
-		UIDisplayChoice choice;
-		choice.Value = current;
-		char buffer[32];
-		std::snprintf(buffer, sizeof(buffer), format, current);
-		choice.Label = buffer;
-		picked = (int)list.size();
-		list.push_back(choice);
-	}
-	return(picked);
-}
-
 UIDisplayEngineServiceClass _Service;
 
 // The mock screen beside the resolution list is this wide in dp. The panel in it is never narrower
@@ -575,7 +552,7 @@ void UI_Display_State(UIDisplayState & state)
 	// The fewest rows when the saved count is below every choice.
 	state.RowCount = 0;
 	for (int value : _Service.Sidebar_Row_Counts(frame_height)) {
-		UIDisplayChoice choice;
+		UIChoice choice;
 		choice.Value = value;
 		choice.Label = std::to_string(value);
 		if (value <= Options.SidebarRows) {
@@ -646,12 +623,8 @@ std::unique_ptr<UIDisplayPresenterClass> UI_Display_New_Presenter(void)
 }
 
 
-std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+std::optional<UIDisplayMode> UI_Display_Mode_To_Try(UIDisplayPresenterClass const & presenter)
 {
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-		UI_Setting_Preview_Revert();
-	}
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;
 		current.Width = Options.ScreenWidth;
@@ -659,6 +632,16 @@ std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presen
 		return(current);
 	}
 	return(presenter.Picked);
+}
+
+
+std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presenter)
+{
+	if (presenter.Result != UI_RESULT_ACCEPTED) {
+		presenter.Restore_Preview();
+		UI_Setting_Preview_Revert();
+	}
+	return(UI_Display_Mode_To_Try(presenter));
 }
 
 
@@ -677,19 +660,7 @@ std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page)
 		return(std::nullopt);
 	}
 	UI_Settings_Leave(presenter);
-	if (presenter.Result != UI_RESULT_ACCEPTED) {
-		presenter.Restore_Preview();
-		UI_Setting_Preview_Revert();
-	}
-
-	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
-		UIDisplayMode current;
-		current.Width = Options.ScreenWidth;
-		current.Height = Options.ScreenHeight;
-		return(current);
-	}
-
-	return(presenter.Picked);
+	return(UI_Display_Settled(presenter));
 }
 
 

@@ -25,7 +25,8 @@ bool UI_Settings_Tabbed(void);
 /// <summary>
 /// Opens the tabbed Settings and keeps the player in them until they leave. It runs whichever
 /// screen the player picks and does not return until they leave the last one. Over a game in
-/// progress only the game, audio and keyboard tabs are offered.
+/// progress the mods tab is not offered, and neither is the audio tab when the audio engine is
+/// unavailable.
 /// </summary>
 /// <param name="first">The tab to open first.</param>
 void UI_Settings_Run(UISettingsTab first);

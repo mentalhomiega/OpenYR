@@ -155,7 +155,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 	}
 
 	for (int level = 0; level < OptionsClass::MAX_DIFFICULTY_SETTING; level++) {
-		UIBrowserOption option;
+		UIChoice option;
 		option.Label = Fetch_String(GameDifficultyNames[level]);
 		option.Value = level;
 		state.Difficulties.push_back(option);

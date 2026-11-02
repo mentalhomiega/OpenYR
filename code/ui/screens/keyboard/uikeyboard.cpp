@@ -18,7 +18,6 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Event.h>
 #include <algorithm>
-#include <cstring>
 #include <utility>
 
 
@@ -445,6 +444,8 @@ class UIKeyboardViewClass : public UIRmlViewClass
 
 		virtual void ProcessEvent(Rml::Event & event) override
 		{
+			bool const on_capture = event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture();
+
 			// The base view cancels the screen on Escape before a capture box sees the key, so an active capture takes it here.
 			if (event.GetId() == Rml::EventId::Keydown && Data.State.Captured != 0
 				&& (Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0) == Rml::Input::KI_ESCAPE) {
@@ -454,42 +455,18 @@ class UIKeyboardViewClass : public UIRmlViewClass
 			}
 
 			// The side buttons and the wheel are bound like keys. The left and right buttons keep their usual use.
-			if (event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()
-				&& (event.GetId() == Rml::EventId::Mousedown || event.GetId() == Rml::EventId::Mousescroll)) {
-				int code = 0;
-				if (event.GetId() == Rml::EventId::Mousedown) {
-					switch (event.GetParameter<int>("button", -1)) {
-						case 0:
-						case 1:		Queue("refuse", UI_KEYBOARD_REFUSE_MOUSE); break;
-						case 2:		code = VK_MBUTTON; break;
-						case 3:		code = VK_XBUTTON1; break;
-						case 4:		code = VK_XBUTTON2; break;
-						default:	break;
-					}
-				} else {
-					// RmlUi reports a step up as a negative wheel delta.
-					float const delta = event.GetParameter<float>("wheel_delta_y", 0.0f);
-					code = (delta < 0.0f) ? VK_WHEEL_UP : ((delta > 0.0f) ? VK_WHEEL_DOWN : 0);
-				}
-				if (code != 0) {
-					int modifiers = 0;
-					modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
-					modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
-					modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
-					Queue("capture", code | modifiers);
-					event.StopPropagation();
-					return;
-				}
+			if (on_capture && Capture_Pointer(event)) {
+				return;
 			}
 
 			// A modifier released after the box lost the focus sends no keyup here, so the held modifiers are forgotten at the blur.
-			if (event.GetId() == Rml::EventId::Blur && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
+			if (event.GetId() == Rml::EventId::Blur && on_capture) {
 				DownModifiers = 0;
 				ChordModifiers = 0;
 				ChordKeyed = false;
 			}
 
-			if (event.GetId() == Rml::EventId::Keyup && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
+			if (event.GetId() == Rml::EventId::Keyup && on_capture) {
 				int const modifier = Modifier_Bit((Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0));
 				if (modifier != 0) {
 					Release_Modifier(modifier);
@@ -498,7 +475,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 				return;
 			}
 
-			if (event.GetId() == Rml::EventId::Keydown && event.GetCurrentElement() != nullptr && event.GetCurrentElement() == Capture()) {
+			if (event.GetId() == Rml::EventId::Keydown && on_capture) {
 				Rml::Input::KeyIdentifier key = (Rml::Input::KeyIdentifier)event.GetParameter<int>("key_identifier", 0);
 
 				// A modifier is bound only when it is released with no key pressed with it, so the release decides.
@@ -537,6 +514,47 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		}
 
 	private:
+		// Binds a side button or the wheel to a capture code. Returns true when it queued one and stopped the event.
+		bool Capture_Pointer(Rml::Event & event)
+		{
+			if (event.GetId() != Rml::EventId::Mousedown && event.GetId() != Rml::EventId::Mousescroll) {
+				return(false);
+			}
+
+			int code = 0;
+			if (event.GetId() == Rml::EventId::Mousedown) {
+				switch (event.GetParameter<int>("button", -1)) {
+					case 0:
+					case 1:		Queue("refuse", UI_KEYBOARD_REFUSE_MOUSE); break;
+					case 2:		code = VK_MBUTTON; break;
+					case 3:		code = VK_XBUTTON1; break;
+					case 4:		code = VK_XBUTTON2; break;
+					default:	break;
+				}
+			} else {
+				// RmlUi reports a step up as a negative wheel delta.
+				float const delta = event.GetParameter<float>("wheel_delta_y", 0.0f);
+				code = (delta < 0.0f) ? VK_WHEEL_UP : ((delta > 0.0f) ? VK_WHEEL_DOWN : 0);
+			}
+			if (code == 0) {
+				return(false);
+			}
+
+			Queue("capture", code | Event_Modifiers(event));
+			event.StopPropagation();
+			return(true);
+		}
+
+		// The Shift, Ctrl and Alt bits the event carries.
+		static int Event_Modifiers(Rml::Event & event)
+		{
+			int modifiers = 0;
+			modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
+			modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
+			modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
+			return(modifiers);
+		}
+
 		// The modifier bit a Shift, Ctrl or Alt key sets, or 0 for any other key.
 		static int Modifier_Bit(Rml::Input::KeyIdentifier key)
 		{
@@ -554,10 +572,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		// Records a modifier going down. The chord is the modifiers seen since none was held.
 		void Hold_Modifier(int modifier, Rml::Event & event)
 		{
-			int modifiers = modifier;
-			modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
-			modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
-			modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
+			int const modifiers = modifier | Event_Modifiers(event);
 
 			DownModifiers |= modifier;
 			ChordModifiers |= modifiers;

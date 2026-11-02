@@ -85,13 +85,6 @@ UIClassicOptionsOutcome UI_Classic_Options_Dialog(void)
 	}
 
 	outcome.Next = presenter.Next;
-	if (presenter.Display.Picked.has_value()) {
-		outcome.Picked = presenter.Display.Picked;
-	} else if (presenter.Display.ScaleChanged) {
-		UIDisplayMode current;
-		current.Width = Options.ScreenWidth;
-		current.Height = Options.ScreenHeight;
-		outcome.Picked = current;
-	}
+	outcome.Picked = UI_Display_Mode_To_Try(presenter.Display);
 	return(outcome);
 }

@@ -67,11 +67,6 @@ UIModsServiceClass & UI_Mods_Service(void)
 }
 
 
-/// <summary>
-/// Shows the Mods screen over the player's list, as last saved in their settings file or else
-/// the deployment's, and the mods the command line names. When OK saves a changed list, a
-/// message says it takes effect after a restart.
-/// </summary>
 std::unique_ptr<UIModsPresenterClass> UI_Mods_New_Presenter(void)
 {
 	return(std::make_unique<UIModsPresenterClass>(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory())));
@@ -88,15 +83,21 @@ void UI_Mods_Settled(UIModsPresenterClass & presenter)
 }
 
 
+/// <summary>
+/// Shows the Mods screen over the player's list, as last saved in their settings file or else
+/// the deployment's, and the mods the command line names. When OK saves a changed list, a
+/// message says it takes effect after a restart.
+/// </summary>
 void UI_Mods_Dialog(void)
 {
-	UIModsPresenterClass presenter(UI_Mods_Service(), Mod_Choices(Configured_Mod_List(ConfigINI, DeploymentConfig.Mods.c_str()).c_str(), Data_Directory()));
-	UI_Settings_Join(presenter, UI_TAB_MODS);
-	std::unique_ptr<UIViewClass> view = UI_Mods_View(presenter);
+	std::unique_ptr<UIModsPresenterClass> presenter = UI_Mods_New_Presenter();
+	UI_Settings_Join(*presenter, UI_TAB_MODS);
+	std::unique_ptr<UIViewClass> view = UI_Mods_View(*presenter);
 
+	// Checks the modal result, which can differ from the presenter's when the session ends during the run.
 	UIResult const result = UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
-	if (result != UI_RESULT_ACCEPTED || !presenter.Saved) {
+	UI_Settings_Leave(*presenter);
+	if (result != UI_RESULT_ACCEPTED || !presenter->Saved) {
 		return;
 	}
 
