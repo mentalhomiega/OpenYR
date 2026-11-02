@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "ftimer.h"
 #include "loco.h"
 
 
@@ -60,8 +61,7 @@ class RocketLocomotionClass : public LocomotionClass
 
 		// The flight phase, and when the current timed phase started and how long it lasts.
 		int MissionState;
-		int TimerStart;
-		int TimerLength;
+		FrameCountdown Timer;
 
 		// The frame the next trail puff is due.
 		int NextTrailFrame;

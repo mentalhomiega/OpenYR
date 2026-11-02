@@ -162,6 +162,60 @@ Cell Cell_Spread_Offset(int index)
 }
 
 
+/*
+ * Concrete low bridge overlays from OVERLAY_CONCRETE_BRIDGE_FIRST through this id take the strength
+ * roll (gamemd 0x48A214). The span end pieces after it do not, so this is not OVERLAY_CONCRETE_BRIDGE_LAST.
+ */
+constexpr int CONCRETE_LOW_BRIDGE_ROLL_LAST = 230;
+
+
+static bool Bridge_Takes_Hit(WarheadTypeClass const * warhead, int strength)
+{
+	return(warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength);
+}
+
+
+/*
+ * Each bridge set holds its four middle pieces as consecutive tile ids from its BridgeMiddle value,
+ * and the two sets are read from the INI separately.
+ */
+static bool Is_Bridge_Middle(IsometricTileType ittype)
+{
+	return((ittype >= IsometricTileTypeClass::BridgeMiddle1 && ittype <= IsometricTileTypeClass::BridgeMiddle1 + 3) ||
+		(ittype >= IsometricTileTypeClass::BridgeMiddle2 && ittype <= IsometricTileTypeClass::BridgeMiddle2 + 3));
+}
+
+
+/*
+ * Damages the bridge span at the cell when the blast reaches its deck height. The redraw area is
+ * dirty_size pixels square, centered on the blast.
+ */
+static void Damage_Bridge_Span(Cell const & cell, CellClass * cellptr, Coord const & coord, WarheadTypeClass const * warhead, int strength, int dirty_size)
+{
+	if (!cellptr->IsUnderBridge || (coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2))) {
+		if (warhead->IsWallDestroyer && Bridge_Takes_Hit(warhead, strength)) {
+			bool bridge_damaged = false;
+			int tries = 4;
+			bool const ion_cannon = warhead == Rule->IonCannonWarhead;
+			do {
+				bridge_damaged = Map.Damage_Bridge(cell);
+				tries--;
+				if (bridge_damaged) {
+					break;
+				}
+			} while (ion_cannon && tries > 0);
+
+			if (bridge_damaged) {
+				TechnoClass::Remove_Target(cellptr);
+			}
+			Point2D point;
+			TacticalMap->Coord_To_Pixel(coord, point);
+			TacticalMap->Register_Dirty_Area(Rect(point.X - dirty_size / 2, point.Y - dirty_size / 2, dirty_size, dirty_size), false);
+		}
+	}
+}
+
+
 /***********************************************************************************************
  * Explosion_Damage -- Inflict an explosion damage affect.                                     *
  *                                                                                             *
@@ -383,70 +437,23 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 	**	If there is a bridge at this location, then it may be destroyed by the
 	**	combat damage.
 	*/
-	bool ion_cannon = warhead == Rule->IonCannonWarhead;
 	if (Scen->Special.IsDestroyBridges && warhead->IsWallDestroyer) {
 
 		IsometricTileType ittype1 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
 		CellClass * bridge_deck = cellptr->Get_Bridge_Deck_CellClass();
 
-		if (bridge_deck && bridge_deck->Is_Overlay_Bridge() ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 0 || ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 1 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 2 || ittype1 == IsometricTileTypeClass::BridgeMiddle1 + 3 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 0 || ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 1 ||
-			ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype1 == IsometricTileTypeClass::BridgeMiddle2 + 3) {
-			if (!cellptr->IsUnderBridge || coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2)) {
-				if (warhead->IsWallDestroyer && (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength)) {
-					bool bridge_damaged = false;
-					int tries=4;
-					do {
-						bridge_damaged = Map.Damage_Bridge(cell);
-						tries--;
-						if (bridge_damaged) {
-							break;
-						}
-					} while (ion_cannon && tries > 0);
-
-					if (bridge_damaged) {
-						TechnoClass::Remove_Target(cellptr);
-					}
-					Point2D point;
-					TacticalMap->Coord_To_Pixel(coord, point);
-					TacticalMap->Register_Dirty_Area(Rect(point.X - 128, point.Y - 128, 256, 256), false);
-				}
-			}
+		if (bridge_deck && bridge_deck->Is_Overlay_Bridge() || Is_Bridge_Middle(ittype1)) {
+			Damage_Bridge_Span(cell, cellptr, coord, warhead, strength, 256);
 		}
 
 		IsometricTileType ittype2 = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
 
-		if (bridge_deck && bridge_deck->Is_Overlay_Rail_Bridge() ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 0 || ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 1 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 2 || ittype2 == IsometricTileTypeClass::BridgeMiddle1 + 3 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 0 || ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 1 ||
-			ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype2 == IsometricTileTypeClass::BridgeMiddle2 + 3) {
-			if (!cellptr->IsUnderBridge || coord.Z <= BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height + 1) && coord.Z > BRIDGE_LEPTON_HEIGHT + LEVEL_LEPTON_H * (cellptr->Height - 2)) {
-				if (warhead->IsWallDestroyer && (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength)) {
-					bool bridge_damaged = false;
-					int tries=4;
-					do {
-						bridge_damaged = Map.Damage_Bridge(cell);
-						tries--;
-						if (bridge_damaged) {
-							break;
-						}
-					} while (ion_cannon && tries > 0);
-
-					if (bridge_damaged) {
-						TechnoClass::Remove_Target(cellptr);
-					}
-					Point2D point;
-					TacticalMap->Coord_To_Pixel(coord, point);
-					TacticalMap->Register_Dirty_Area(Rect(point.X - 96, point.Y - 96, 192, 192), false);
-				}
-			}
+		if (bridge_deck && bridge_deck->Is_Overlay_Rail_Bridge() || Is_Bridge_Middle(ittype2)) {
+			Damage_Bridge_Span(cell, cellptr, coord, warhead, strength, 192);
 		}
 
 		if (cellptr->Overlay >= OVERLAY_LOWBRIDGE_01 && cellptr->Overlay <= OVERLAY_LOWBRIDGE_26) {
-			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
+			if (Bridge_Takes_Hit(warhead, strength)) {
 				// gamemd's wood gate (0x48A214) calls MapClass::Damage_Bridge once per impact (0x48A25A).
 				bool destroyed = Map.Damage_Bridge(cell);
 				if (destroyed) {
@@ -459,8 +466,8 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		 * A concrete low bridge piece (overlays 205 to 230) takes the same strength roll, once, and
 		 * then its state routine runs (gamemd 0x48A214, FUN_0057CCF0).
 		 */
-		if (cellptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cellptr->Overlay <= 230) {
-			if (warhead == Rule->IonCannonWarhead || Random_Pick(1, Rule->BridgeStrength) < strength) {
+		if (cellptr->Overlay >= OVERLAY_CONCRETE_BRIDGE_FIRST && cellptr->Overlay <= CONCRETE_LOW_BRIDGE_ROLL_LAST) {
+			if (Bridge_Takes_Hit(warhead, strength)) {
 				bool const destroyed = Map.Damage_Concrete_Bridge(cell);
 				if (destroyed) {
 					TechnoClass::Remove_Target(cellptr);
@@ -620,6 +627,47 @@ void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, 
 
 		SpotLightClass * light = new SpotLightClass(coord, size);
 		light->Set_Disabled_Channels(disabled_channels);
+	}
+}
+
+
+/// <summary>
+/// Damages one cell that a lightning bolt struck. The blast and its flash go off first; then debris is thrown
+/// up if the cell's building, techno or height changed, or if the cell was empty ground of a debris land type.
+/// </summary>
+/// <param name="owner">The house credited with what the blast destroys, or NULL for none.</param>
+/// <param name="debris_over_infantry">Whether debris is thrown when the cell held infantry.</param>
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry)
+{
+	BuildingClass * building = cellptr.Cell_Building();
+	TechnoClass * techno = cellptr.Cell_Techno();
+	bool const infantry = techno != NULL && techno->RTTI == RTTI_INFANTRY;
+	int const level = cellptr.Height;
+	bool debris = false;
+	if (building == NULL && techno == NULL) {
+		switch (cellptr.Land_Type()) {
+			case LAND_ROAD:
+			case LAND_ROCK:
+			case LAND_WALL:
+			case LAND_WEEDS:
+				debris = true;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	Combat_Lighting(coord, damage, warhead);
+	Explosion_Damage(coord, damage, NULL, warhead, true, owner);
+
+	if (building != cellptr.Cell_Building() || techno != cellptr.Cell_Techno() || cellptr.Height != level) {
+		debris = true;
+	}
+	if ((debris_over_infantry || !infantry) && debris && Rule->MetallicDebris.Count() > 0) {
+		for (int count = Random_Pick(2, 4); count > 0; count--) {
+			new AnimClass(Rule->MetallicDebris[Random_Pick(0, Rule->MetallicDebris.Count() - 1)], coord);
+		}
 	}
 }
 

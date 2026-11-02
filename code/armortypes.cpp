@@ -56,6 +56,18 @@ char const * Armor_Type_Name(ArmorType armor)
 }
 
 
+bool Find_Armor_Type(char const * name, ArmorType & armor)
+{
+	for (int index = ARMOR_FIRST; index < Armor_Type_Count(); index++) {
+		if (stricmp(Armor_Type_Name(ArmorType(index)), name) == 0) {
+			armor = ArmorType(index);
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 /// <summary>
 /// Adds each armor type in [ArmorTypes] that is not known yet. An entry's value is either an
 /// armor type declared before it, whose values the new one starts from, or a percentage or
@@ -71,14 +83,8 @@ void Read_Armor_Types(CCINIClass const & ini)
 			continue;
 		}
 
-		bool known = false;
-		for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
-			if (stricmp(Armor_Type_Name(ArmorType(armor)), name) == 0) {
-				known = true;
-				break;
-			}
-		}
-		if (known) {
+		ArmorType known_armor = ARMOR_NONE;
+		if (Find_Armor_Type(name, known_armor)) {
 			continue;
 		}
 
@@ -90,18 +96,8 @@ void Read_Armor_Types(CCINIClass const & ini)
 			declared.Fraction = atoi(value) / 100.0;
 		} else if (value[0] != '\0' && (isdigit((unsigned char)value[0]) || value[0] == '.')) {
 			declared.Fraction = Parse_Nearest_Double(value, nullptr);
-		} else {
-			bool found = false;
-			for (int armor = ARMOR_FIRST; armor < Armor_Type_Count(); armor++) {
-				if (stricmp(Armor_Type_Name(ArmorType(armor)), value) == 0) {
-					declared.Base = ArmorType(armor);
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				DebugString("[ArmorTypes] %s=%s names no armor type declared before it; it starts at 100%%.\n", name, value);
-			}
+		} else if (!Find_Armor_Type(value, declared.Base)) {
+			DebugString("[ArmorTypes] %s=%s names no armor type declared before it; it starts at 100%%.\n", name, value);
 		}
 		Declared.push_back(declared);
 	}

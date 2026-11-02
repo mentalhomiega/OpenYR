@@ -69,14 +69,13 @@ HouseClass * Neutral_House(void)
 
 bool SlaveManagerClass::NodeType::Is_Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 void SlaveManagerClass::NodeType::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -84,8 +83,8 @@ void SlaveManagerClass::NodeType::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Slave);
 	stream.Serialize(Status);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 	stream.Serialize(OreCell);
 }
 
@@ -304,7 +303,7 @@ void SlaveManagerClass::AI(void)
 				Cell const here = slave->Get_Cell();
 				int const distance = std::max(std::abs(here.X - dock.X), std::abs(here.Y - dock.Y));
 				// A slave that stops within two cells of a dock crowded by its mates has come as close as it can.
-				if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.TimerStart >= 30)) {
+				if (distance <= 1 || (slave->NavCom == NULL && distance <= 2 && Frame - node.Timer.Start >= 30)) {
 					Unload(node);
 					// Limbo detaches the slave from this manager as if it had died, so keep it.
 					slave->Limbo();

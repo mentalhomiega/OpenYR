@@ -35,27 +35,15 @@
 #include <cmath>
 
 
-namespace {
-
-Coord Coord_Of(AbstractClass * target)
-{
-	ObjectClass * object = target->As_ObjectClass();
-	return(object != NULL ? object->Target_Coord() : target->As_Coord());
-}
-
-}
-
-
 bool SpawnManagerClass::NodeType::Is_Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 void SpawnManagerClass::NodeType::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -63,8 +51,8 @@ void SpawnManagerClass::NodeType::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Unit);
 	stream.Serialize(Status);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 	stream.Serialize(IsMissile);
 }
 
@@ -290,8 +278,8 @@ void SpawnManagerClass::Launch(NodeType & node, int index)
 			NewTarget = NULL;
 		}
 		unit->Assign_Mission(MISSION_SLEEP);
-		unit->Locomotion->Move_To(Coord_Of(Target));
-		Coord const target_coord = Coord_Of(Target);
+		unit->Locomotion->Move_To(Aim_Coord(*Target));
+		Coord const target_coord = Aim_Coord(*Target);
 		DebugString("Spawn: %s launches %s at %d,%d\n", Owner->TClass->Name(), unit->Class->Name(), target_coord.As_Cell().X, target_coord.As_Cell().Y);
 	} else {
 		unit->Assign_Destination(&Map[Adjacent_Cell(Owner->Get_Cell(), FACING_N)]);

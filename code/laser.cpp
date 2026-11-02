@@ -23,12 +23,14 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
+#include "house.h"
 #include "inline.h"
 #include "logic.h"
 #include "mouse.h"
 #include "rgb.h"
 #include "scenario.h"
 #include "tactical.h"
+#include "weapon.h"
 
 #include <algorithm>
 
@@ -36,6 +38,17 @@
 #include "emissive_surface.h"
 
 DynamicVectorClass<LaserDrawClass *> LaserDrawClass::LaserDraws;
+
+
+void Weapon_Beam_Colors(WeaponTypeClass const * weapon, HouseClass const * house, RGBClass & inner, RGBClass & outer)
+{
+	inner = weapon->LaserInnerColor;
+	outer = weapon->LaserOuterColor;
+	if (weapon->IsHouseColor) {
+		inner = house->Laser_Color();
+		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
+	}
+}
 
 
 /// <summary>
@@ -154,6 +167,46 @@ void LaserDrawClass::Draw_All(void)
 }
 
 
+namespace {
+
+// A beam's two ends in pixels, and the depth of each end for sorting against the scene.
+struct BeamPixels
+{
+	Point2D Start;
+	Point2D End;
+	int StartZ;
+	int EndZ;
+};
+
+
+BeamPixels Project_Beam(Coord const & start, Coord const & end, int zadjust, unsigned char emissive_strength)
+{
+	BeamPixels pixels;
+	TacticalMap->Coord_To_Pixel(start, pixels.Start);
+	TacticalMap->Coord_To_Pixel(end, pixels.End);
+	if (Emissive_Is_Enabled() && emissive_strength != 0) {
+		Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, pixels.Start, pixels.End, emissive_strength);
+	}
+	pixels.StartZ = zadjust - TacticalMap->Z_Lepton_To_Pixel(start.Z) - 2;
+	pixels.EndZ = -TacticalMap->Z_Lepton_To_Pixel(end.Z) - 2;
+	return(pixels);
+}
+
+}
+
+
+/// <summary>
+/// The intensity the beam is drawn at now: 1 when it does not fade, otherwise its fade between the start and end intensities.
+/// </summary>
+float LaserDrawClass::Current_Intensity(void)
+{
+	if (!Fades) {
+		return(1.0f);
+	}
+	return((StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity);
+}
+
+
 /// <summary>
 /// Draws the laser beam onto the logical surface.
 /// This routine draws an ordinary beam as a thin inner core and, when an outer color was specified, a pair
@@ -216,16 +269,11 @@ void LaserDrawClass::Draw_It(void)
 			DirType dir = Direction(Start, End);
 			FacingType facing = dir.As_Facing();
 
-			Point2D start_pixel;
-			TacticalMap->Coord_To_Pixel(Start, start_pixel);
-			Point2D end_pixel;
-			TacticalMap->Coord_To_Pixel(End, end_pixel);
-			if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
-				Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, start_pixel, end_pixel, EmissiveStrength);
-			}
-
-			int start_z = ZAdjust - TacticalMap->Z_Lepton_To_Pixel(Start.Z) - 2;
-			int end_z = -TacticalMap->Z_Lepton_To_Pixel(End.Z) - 2;
+			BeamPixels const pixels = Project_Beam(Start, End, ZAdjust, EmissiveStrength);
+			Point2D const & start_pixel = pixels.Start;
+			Point2D const & end_pixel = pixels.End;
+			int const start_z = pixels.StartZ;
+			int const end_z = pixels.EndZ;
 
 			RGBClass outer_color;
 			int outer_hicolor = 0;
@@ -256,15 +304,11 @@ void LaserDrawClass::Draw_It(void)
 				outer_color.Set_Blue(blue);
 			}
 
-			float current_intensity = 1.0;
-
 			bool has_r = InnerColor.Get_Red() > 0;
 			bool has_g = InnerColor.Get_Green() > 0;
 			bool has_b = InnerColor.Get_Blue() > 0;
 
-			if (Fades) {
-				current_intensity = (StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity;
-			}
+			float const current_intensity = Current_Intensity();
 
 			if (Options.DetailLevel != 0) {
 				if (Blinks) {
@@ -371,23 +415,15 @@ void LaserDrawClass::Draw_House_Color(void)
 	DirType dir = Direction(Start, End);
 	int const facing = dir.As_Facing();
 
-	Point2D start_pixel;
-	TacticalMap->Coord_To_Pixel(Start, start_pixel);
-	Point2D end_pixel;
-	TacticalMap->Coord_To_Pixel(End, end_pixel);
-	if (Emissive_Is_Enabled() && EmissiveStrength != 0) {
-		Emissive_Stamp_Line_On(*LogicalSurface, TacticalRect, start_pixel, end_pixel, EmissiveStrength);
-	}
-
-	int const start_z = ZAdjust - TacticalMap->Z_Lepton_To_Pixel(Start.Z) - 2;
-	int const end_z = -TacticalMap->Z_Lepton_To_Pixel(End.Z) - 2;
+	BeamPixels const pixels = Project_Beam(Start, End, ZAdjust, EmissiveStrength);
+	Point2D const & start_pixel = pixels.Start;
+	Point2D const & end_pixel = pixels.End;
+	int const start_z = pixels.StartZ;
+	int const end_z = pixels.EndZ;
 
 	bool const detailed = Detail_Min_Frame_Rate() <= LastFramesPerSecond && Options.DetailLevel != 0;
 
-	float intensity = 1.0f;
-	if (Fades) {
-		intensity = (StartIntensity - EndIntensity) * (Duration - Fetch_Stage()) / Duration + EndIntensity;
-	}
+	float const intensity = Current_Intensity();
 	int const intensity_level = (int)((double)intensity * 255.0);
 
 	RGBClass color;

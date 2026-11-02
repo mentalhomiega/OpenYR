@@ -433,5 +433,26 @@ inline ObjectClass * As_Object(AbstractClass * target)
 	return(dynamic_cast<ObjectClass *>(target));
 }
 
+
+/*
+ * The point a projectile or missile homes on: an object's Target_Coord, or a cell's As_Coord.
+ * Beam_Coord uses a cell's Center_Coord instead, which leaves out a bridge's height.
+ */
+inline Coord Aim_Coord(AbstractClass const & target)
+{
+	ObjectClass const * object = target.As_ObjectClass();
+	return(object != NULL ? object->Target_Coord() : target.As_Coord());
+}
+
+
+/*
+ * The point a beam is drawn to: an object's Target_Coord, or a cell's Center_Coord.
+ */
+inline Coord Beam_Coord(AbstractClass const & target)
+{
+	ObjectClass const * object = target.As_ObjectClass();
+	return(object != NULL ? object->Target_Coord() : target.Center_Coord());
+}
+
 Coord Vector_Center(DynamicVectorClass<ObjectClass *> const & list);
 ObjectClass * Vector_Closest_Object(DynamicVectorClass<ObjectClass *> const & list, Coord const & coord);

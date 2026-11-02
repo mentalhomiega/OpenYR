@@ -5004,8 +5004,7 @@ int TechnoClass::Rearm_Delay(int which) const
 /// </summary>
 static Coord Beam_Target_Coord(AbstractClass * target)
 {
-	ObjectClass * object = target->As_ObjectClass();
-	Coord const coord = object != NULL ? object->Target_Coord() : target->Center_Coord();
+	Coord const coord = Beam_Coord(*target);
 	if (AutoTest_Active()) {
 		Coord const center = target->Center_Coord();
 		DebugString("AUTOTEST beam end %d,%d,%d center %d,%d,%d\n", coord.X, coord.Y, coord.Z, center.X, center.Y, center.Z);
@@ -5036,10 +5035,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 		zadjust = std::min(muzzle.Y - base.Y, 0);
 	}
 
-	EBoltClass * bolt = new EBoltClass;
-	bolt->IsAlternateColor = weapon->IsAlternateColor;
-	bolt->EmissiveStrength = weapon->EmissiveStrength;
-	bolt->Fire(source, Beam_Target_Coord(target), zadjust);
+	EBoltClass * bolt = EBoltClass::Fire_For_Weapon(weapon, source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
 
@@ -5089,25 +5085,17 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		}
 	}
 
-	ObjectClass *optr = target->As_ObjectClass();
-	if (optr != NULL) {
-		dest = optr->Target_Coord();
-	} else {
-		dest = target->Center_Coord();
-	}
+	dest = Beam_Coord(*target);
 
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->IsCharging = false;
 	}
 
 	// An IsHouseColor laser uses the house's laser color inside and half of it outside. Its spread is the weapon's, as in TechnoClass::CreateLaser (0x6FD210).
-	RGBClass inner = weapon->LaserInnerColor;
-	RGBClass outer = weapon->LaserOuterColor;
+	RGBClass inner;
+	RGBClass outer;
+	Weapon_Beam_Colors(weapon, House, inner, outer);
 	RGBClass const spread = weapon->LaserOuterSpread;
-	if (weapon->IsHouseColor) {
-		inner = House->Laser_Color();
-		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
-	}
 	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, true, 1.0, 0.0);
 	beam->IsHouseColor = weapon->IsHouseColor;
 	beam->EmissiveStrength = weapon->EmissiveStrength;

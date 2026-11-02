@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "ftimer.h"
+
 #include <vector>
 
 class AbstractClass;
@@ -65,8 +67,7 @@ class SpawnManagerClass
 		struct NodeType {
 			AircraftClass * Unit = nullptr;
 			int Status = NODE_DEAD;
-			int TimerStart = 0;
-			int TimerLength = 0;
+			FrameCountdown Timer;
 			bool IsMissile = false;
 
 			bool Is_Timer_Expired(void) const;

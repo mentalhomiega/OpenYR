@@ -49,8 +49,6 @@ RocketLocomotionClass::RocketLocomotionClass(void) :
 	BASECLASS(),
 	DestinationCoord(COORD_NONE),
 	MissionState(STATE_NONE),
-	TimerStart(0),
-	TimerLength(0),
 	NextTrailFrame(0),
 	CurrentSpeed(0.0),
 	CurrentPitch(0.0f),
@@ -77,8 +75,8 @@ void RocketLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(DestinationCoord);
 	stream.Serialize(MissionState);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 	stream.Serialize(NextTrailFrame);
 	stream.Serialize(CurrentSpeed);
 	stream.Serialize(CurrentPitch);
@@ -150,23 +148,22 @@ Matrix3D RocketLocomotionClass::Build_Draw_Matrix(int * key, bool matrix)
 
 bool RocketLocomotionClass::Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 double RocketLocomotionClass::Timer_Progress(void) const
 {
-	if (TimerLength <= 0) {
+	if (Timer.Length <= 0) {
 		return(1.0);
 	}
-	return(std::min(1.0, double(Frame - TimerStart) / double(TimerLength)));
+	return(std::min(1.0, double(Frame - Timer.Start) / double(Timer.Length)));
 }
 
 
 void RocketLocomotionClass::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -326,14 +323,7 @@ void RocketLocomotionClass::Explode(void)
 	RulesClass::RocketTypeStruct const & rocket = Rocket_Settings(LinkedTo);
 	AircraftTypeClass const * type = (AircraftTypeClass const *)LinkedTo->TClass;
 
-	WarheadTypeClass const * warhead = NULL;
-	if (type == Rule->V3Rocket.Type) {
-		warhead = IsSpawnerElite ? Rule->V3EliteWarhead : Rule->V3Warhead;
-	} else if (type == Rule->CMisl.Type) {
-		warhead = IsSpawnerElite ? Rule->CMislEliteWarhead : Rule->CMislWarhead;
-	} else {
-		warhead = IsSpawnerElite ? Rule->DMislEliteWarhead : Rule->DMislWarhead;
-	}
+	WarheadTypeClass const * warhead = Rule->Rocket_Warhead(type, IsSpawnerElite);
 	int const damage = IsSpawnerElite ? rocket.EliteDamage : rocket.Damage;
 
 	Coord const coord = LinkedTo->Get_Coord();

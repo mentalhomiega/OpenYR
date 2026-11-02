@@ -110,6 +110,7 @@ class BulletClass : public ObjectClass
 		void Shrapnel(void);
 		void Nuke_Maker(void);
 		void Direct_Rock(void);
+		bool Apply_Warhead_Effect(Coord const & coord, WarheadTypeClass * warhead, bool direct_rocks);
 		void Web(Coord const & coord);
 		void Airburst(void);
 		void Split(void);

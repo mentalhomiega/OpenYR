@@ -76,6 +76,7 @@ class ParasiteClass
 		void Release(bool doomed, bool from_exit);
 		void Update_Squid(void);
 		bool Update_Grapple(void);
+		void Enter_Grapple_Stage(GrappleStage stage);
 		void Create_Wakes(Coord const & where);
 		void Set_Grapple_Anim(AnimClass * anim);
 };

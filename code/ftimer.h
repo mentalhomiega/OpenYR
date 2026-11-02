@@ -24,3 +24,17 @@ class FrameTimerClass
 		int operator () (void) const {return(Frame);};
 		operator int (void) const {return(Frame);};
 };
+
+
+/*
+ * A countdown in game frames. Begin starts it at the current frame, and it expires once the frames
+ * given to Begin have passed. Start and Length are saved in that order.
+ */
+struct FrameCountdown
+{
+	int Start = 0;
+	int Length = 0;
+
+	bool Is_Expired(void) const {return(Frame - Start >= Length);}
+	void Begin(int frames) {Start = Frame; Length = frames;}
+};

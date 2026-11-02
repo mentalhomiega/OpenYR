@@ -26,6 +26,7 @@ class HouseClass;
 class TechnoClass;
 class Coord;
 class DirType;
+class CellClass;
 
 int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor, int distance);
 // Returns whether the blast struck an Iron Curtained object at its center, which nullifies it.
@@ -37,6 +38,8 @@ Cell Cell_Spread_Offset(int index);
 
 AnimTypeClass const * Combat_Anim(int damage, WarheadTypeClass const * warhead, LandType land, Coord const & coord);
 void Combat_Lighting(Coord coord, int damage, WarheadTypeClass const * warhead, bool forced=false, int disabled_channels=0);
+// Damages one cell that a lightning bolt struck, and throws debris up if the cell changed.
+void Strike_Cell_Damage(CellClass & cellptr, Coord const & coord, int damage, WarheadTypeClass const * warhead, HouseClass * owner, bool debris_over_infantry);
 void Wide_Area_Damage(Coord const & coord, LEPTON radius, int rawdamage, TechnoClass * source, WarheadTypeClass const * warhead);
 
 bool Calculate_Projectile_Pitch(bool high_arc, int speed, int distance, int height, double gravity, DirType & pitch);
