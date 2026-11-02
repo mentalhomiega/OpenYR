@@ -162,22 +162,22 @@ void Emit_Second(Clock::time_point now)
 
 	DebugString("Perf: window %.0f ms, %u game frames, %u draws, %u presents\n", window, frames, draws, presents);
 
-	std::string line;
-	Append_Phases(line, DOMAIN_FRAME);
-	DebugString("Perf frame ms avg/p95/max: %s\n", line.c_str());
-
-	line.clear();
-	Append_Phases(line, DOMAIN_DRAW);
-	DebugString("Perf draw ms avg/p95/max: %s\n", line.c_str());
-
-	line.clear();
-	Append_Phases(line, DOMAIN_PRESENT);
-	DebugString("Perf present ms avg/p95/max: %s\n", line.c_str());
+	struct DomainLine
+	{
+		PerfDomain Domain;
+		char const * Name;
+	};
+	static constexpr DomainLine const Lines[] = {{DOMAIN_FRAME, "frame"}, {DOMAIN_DRAW, "draw"}, {DOMAIN_PRESENT, "present"}};
+	for (DomainLine const & domain_line : Lines) {
+		std::string line;
+		Append_Phases(line, domain_line.Domain);
+		DebugString("Perf %s ms avg/p95/max: %s\n", domain_line.Name, line.c_str());
+	}
 
 	Summary const gap = Summarise(PresentGaps);
 	DebugString("Perf gap ms avg/p95/max: present %.2f/%.2f/%.2f\n", gap.Average, gap.P95, gap.Worst);
 
-	line.clear();
+	std::string line;
 	for (int counter = 0; counter < PERF_COUNTER_COUNT; counter++) {
 		char entry[96];
 		snprintf(entry, sizeof(entry), "%s%s %llu", line.empty() ? "" : ", ", Counter_Names[counter], (unsigned long long)Counts[counter]);
