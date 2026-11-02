@@ -218,6 +218,22 @@ struct BackendVertex
 };
 
 
+// Writes the 18-byte header of an uncompressed 32-bit TGA. yflip sets a bottom-left origin in the
+// header; otherwise the header marks a top-left origin.
+static void Write_Tga_Header(FILE * file, uint32_t width, uint32_t height, bool yflip)
+{
+	unsigned char header[18] = {};
+	header[2] = 2;
+	header[12] = (unsigned char)(width & 0xFF);
+	header[13] = (unsigned char)(width >> 8);
+	header[14] = (unsigned char)(height & 0xFF);
+	header[15] = (unsigned char)(height >> 8);
+	header[16] = 32;
+	header[17] = yflip ? 0x08 : 0x28;
+	std::fwrite(header, 1, sizeof(header), file);
+}
+
+
 // bgfx reports lost devices and shader failures through this rather than a return code,
 // so the engine would otherwise present to a black window with no explanation.
 class BackendCallback : public bgfx::CallbackI
@@ -261,15 +277,7 @@ class BackendCallback : public bgfx::CallbackI
 			if (file == NULL) {
 				return;
 			}
-			unsigned char header[18] = {};
-			header[2] = 2;
-			header[12] = (unsigned char)(width & 0xFF);
-			header[13] = (unsigned char)(width >> 8);
-			header[14] = (unsigned char)(height & 0xFF);
-			header[15] = (unsigned char)(height >> 8);
-			header[16] = 32;
-			header[17] = yflip ? 0x08 : 0x28;
-			std::fwrite(header, 1, sizeof(header), file);
+			Write_Tga_Header(file, width, height, yflip);
 			for (uint32_t y = 0; y < height; y++) {
 				std::fwrite((unsigned char const *)data + y * pitch, 4, width, file);
 			}
@@ -1024,15 +1032,7 @@ static void Write_Capture(void)
 	if (file == NULL) {
 		return;
 	}
-	unsigned char header[18] = {};
-	header[2] = 2;
-	header[12] = (unsigned char)(_DrawableWidth & 0xFF);
-	header[13] = (unsigned char)((_DrawableWidth >> 8) & 0xFF);
-	header[14] = (unsigned char)(_DrawableHeight & 0xFF);
-	header[15] = (unsigned char)((_DrawableHeight >> 8) & 0xFF);
-	header[16] = 32;
-	header[17] = 0x28;
-	std::fwrite(header, 1, sizeof(header), file);
+	Write_Tga_Header(file, (uint32_t)_DrawableWidth, (uint32_t)_DrawableHeight, false);
 	std::fwrite(_ReadbackPixels.data(), 1, _ReadbackPixels.size(), file);
 	std::fclose(file);
 }
