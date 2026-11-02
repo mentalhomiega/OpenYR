@@ -3034,6 +3034,17 @@ static void Veinholes_Step(StepType const &)
 }
 
 
+// Writes the bytes to a new binary file at the path. Nothing is written when the file cannot be created.
+static void Write_Binary_File(std::string const & path, void const * data, std::size_t size)
+{
+	FILE * f = std::fopen(path.c_str(), "wb");
+	if (f != NULL) {
+		std::fwrite(data, 1, size, f);
+		std::fclose(f);
+	}
+}
+
+
 // dumpfile <name>: copies a file the game can read, from a MIX or the game folder, to "dump-<name>" in the working directory.
 static void Dumpfile_Step(StepType const & step)
 {
@@ -3044,11 +3055,7 @@ static void Dumpfile_Step(StepType const & step)
 		std::vector<char> data(size);
 		file.Read(data.data(), size);
 		file.Close();
-		FILE * f = std::fopen(path.c_str(), "wb");
-		if (f != NULL) {
-			std::fwrite(data.data(), 1, size, f);
-			std::fclose(f);
-		}
+		Write_Binary_File(path, data.data(), static_cast<std::size_t>(size));
 		DebugString("AUTOTEST   dumpfile %s: %d bytes to %s\n", step.Argument.c_str(), size, path.c_str());
 	} else {
 		DebugString("AUTOTEST   dumpfile %s: not found\n", step.Argument.c_str());
@@ -4504,11 +4511,7 @@ static void Extract_Step(StepType const & step)
 	} else {
 		std::vector<unsigned char> bytes((std::size_t)in.Size());
 		in.Read(bytes.data(), (int)bytes.size());
-		FILE * out = std::fopen(out_path.c_str(), "wb");
-		if (out != NULL) {
-			std::fwrite(bytes.data(), 1, bytes.size(), out);
-			std::fclose(out);
-		}
+		Write_Binary_File(out_path, bytes.data(), bytes.size());
 		DebugString("AUTOTEST   extract %s: %d bytes\n", in_name.c_str(), (int)bytes.size());
 	}
 }
