@@ -485,9 +485,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 }
 
 
-static int Difficulty_Entry(TypeList<int> const & list, int difficulty);
-
-
 /// <summary>
 /// Returns the first harvester type the house's acted country may own. Unlike
 /// Preferred_Harvester, no slave miner stands in when the country lists none.
@@ -5043,7 +5040,7 @@ bool HouseClass::Can_Replace_Node(int index) const
 
 	BuildingTypeClass const * btype = BuildingTypes[node.Type];
 	if (btype->IsResourceGatherer && btype->IsResourceDestination) {
-		return(Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
+		return(Count_Resource_Gatherers() < EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
 	}
 	if (btype->Get_Weapon(0)->Weapon != NULL) {
 		return(true);
@@ -5139,7 +5136,7 @@ int HouseClass::AI_Building(void)
 		**	A defense turn may become a wall ring instead, when the roll picks walls.
 		*/
 		int const roll = Random_Pick(0, 99);
-		if (roll < Difficulty_Entry(Rule->AIPickWallDefensePercent, Difficulty)) {
+		if (roll < EconomyRules::Difficulty_Entry(Rule->AIPickWallDefensePercent, Difficulty)) {
 			int const count = Base.Nodes.Count();
 			if (AI_Build_Protective_Walls(nodeid)) {
 				Base.Nodes.Delete_Index(nodeid + Base.Nodes.Count() - count);
@@ -5285,8 +5282,8 @@ int HouseClass::AI_Unit(void)
 
 	// A computer house keeps HarvestersPerRefinery gatherers for each refinery it owns, or
 	// AISlaveMinerNumber when no refinery type is buildable (HouseClass::AI_VehicleConstructionUpdate, 0x4FEA60).
-	int const target = EconomyRules::Harvester_Target(Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty), ref,
-		Get_First_Acted(Rule->BuildRefinery) != NULL, Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
+	int const target = EconomyRules::Harvester_Target(EconomyRules::Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty), ref,
+		Get_First_Acted(Rule->BuildRefinery) != NULL, EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
 	int const gatherers = Count_Resource_Gatherers();
 
 	/*
@@ -5308,7 +5305,7 @@ int HouseClass::AI_Unit(void)
 		**	refinery packs up into, and keeps AISlaveMinerNumber of them at work.
 		*/
 		BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
-		if (refinery != NULL && refinery->UndeploysInto != NULL && Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty)) {
+		if (refinery != NULL && refinery->UndeploysInto != NULL && Count_Resource_Gatherers() < EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty)) {
 			BuildUnit = refinery->UndeploysInto->HeapID;
 			return(TICKS_PER_SECOND);
 		}
@@ -8226,12 +8223,6 @@ static TypeList<int> const * Side_Base_Defense_Counts(int side)
 }
 
 
-static int Difficulty_Entry(TypeList<int> const & list, int difficulty)
-{
-	return(EconomyRules::Difficulty_Entry(list, difficulty));
-}
-
-
 /// <summary>
 /// Builds the computer's base construction plan.
 /// This routine fills the base node list with everything this house is allowed and able to
@@ -8389,9 +8380,9 @@ void HouseClass::Make_Base_Nodes(void)
 			}
 		}
 		if (harvests) {
-			refcount = Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
+			refcount = EconomyRules::Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
 		} else {
-			refcount = Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty) - 1;
+			refcount = EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty) - 1;
 		}
 	}
 
@@ -8419,7 +8410,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	if (counted_plan) {
 		DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
-		for (int count = Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
+		for (int count = EconomyRules::Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
 			int after = Random_Pick(3, std::max(3, plan.Count() - 1));
 			if (after >= plan.Count()) {
 				plan.Add((BuildingTypeClass const *)-1);
