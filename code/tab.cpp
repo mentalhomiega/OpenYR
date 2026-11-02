@@ -360,11 +360,7 @@ void TabClass::Init_For_House(void)
 	LeftCapShape = (ShapeSet const *)MixFileClass::Retrieve("LENDCAP.SHP");
 	ButtonBackShape = (ShapeSet const *)MixFileClass::Retrieve("BTTNBKGD.SHP");
 	RightCapShape = (ShapeSet const *)MixFileClass::Retrieve("RENDCAP.SHP");
-	for (int index = 0; index < COMMAND_COUNT; index++) {
-		char name[16];
-		std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
-		CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
-	}
+	Load_Command_Shapes();
 
 	bool multiplayer = Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH;
 	std::vector<std::string> const & names = multiplayer ? UIControls.MultiplayerCommandBarButtons : UIControls.CommandBarButtons;
@@ -391,6 +387,22 @@ void TabClass::Init_For_House(void)
 /// Gives the modern command bar the side's icon sheets in place of Yuri's Revenge's buttons, when
 /// every command in the row has one. Otherwise the bar keeps the Yuri's Revenge art.
 /// </summary>
+void TabClass::Load_Command_Shapes(void)
+{
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		char name[16];
+		std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
+		CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
+	}
+}
+
+
+bool TabClass::Command_Bar_Art_Ready(void)
+{
+	return(LeftCapShape != NULL && ButtonBackShape != NULL && RightCapShape != NULL);
+}
+
+
 void TabClass::Use_Command_Icons(void)
 {
 	IsCommandIcons = false;
@@ -474,7 +486,7 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 {
 	CommandBarLayout layout {};
 	layout.Y = VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT;
-	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+	if (!Command_Bar_Art_Ready()) {
 		return(layout);
 	}
 
@@ -522,7 +534,7 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 /// </summary>
 Rect TabClass::Command_Bar_Frame(void)
 {
-	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+	if (!Command_Bar_Art_Ready()) {
 		return(Rect(0, 0, 0, 0));
 	}
 	CommandBarLayout const layout = Command_Bar_Layout();
@@ -555,7 +567,7 @@ bool TabClass::Command_Button_Center(char const * name, Point2D & center)
 void TabClass::Place_Command_Buttons(void)
 {
 	CommandBarLayout layout = Command_Bar_Layout();
-	bool ready = LeftCapShape != NULL && ButtonBackShape != NULL && RightCapShape != NULL;
+	bool ready = Command_Bar_Art_Ready();
 
 	ToggleButton.ID = BUTTON_COMMAND_TOGGLE;
 	ToggleButton.IsSticky = true;
@@ -658,11 +670,7 @@ void TabClass::Draw_Command_Bar(void)
 	if (Modern_Interface()) {
 		// Init_For_House can run before the player's side is known.
 		if (Hud_Icon(CommandIconCodes[0]) != CommandIconSet) {
-			for (int index = 0; index < COMMAND_COUNT; index++) {
-				char name[16];
-				std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
-				CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
-			}
+			Load_Command_Shapes();
 			Use_Command_Icons();
 			Map.Place_Command_Buttons();
 			layout = Command_Bar_Layout();
@@ -673,22 +681,15 @@ void TabClass::Draw_Command_Bar(void)
 				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
 			}
 		}
-		ToggleButton.Flag_To_Redraw();
-		for (int index = 0; index < COMMAND_COUNT; index++) {
-			if (IsCommandButtonListed[index]) {
-				CommandButtons[index].Flag_To_Redraw();
+	} else {
+		Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
+		if (IsCommandBarOpen) {
+			for (int slot = 0; slot < layout.Slots; slot++) {
+				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
 			}
 		}
-		return;
+		Draw_Shape(*CompositeSurface, *SidebarDrawer, RightCapShape, 0, Point2D(layout.RightCapX, layout.Y), clip);
 	}
-
-	Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
-	if (IsCommandBarOpen) {
-		for (int slot = 0; slot < layout.Slots; slot++) {
-			Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
-		}
-	}
-	Draw_Shape(*CompositeSurface, *SidebarDrawer, RightCapShape, 0, Point2D(layout.RightCapX, layout.Y), clip);
 
 	ToggleButton.Flag_To_Redraw();
 	for (int index = 0; index < COMMAND_COUNT; index++) {
@@ -731,6 +732,26 @@ void TabClass::Command_Bar_AI(KeyNumType & input)
 /// </summary>
 void TabClass::Do_Command(CommandButtonType command)
 {
+	struct CommandKeyword {
+		CommandButtonType Command;
+		char const * Name;
+	};
+	static CommandKeyword const keywords[] = {
+		{COMMAND_TYPE_SELECT, "SelectType"},
+		{COMMAND_DEPLOY, "DeployObject"},
+		{COMMAND_GUARD, "GuardObject"},
+		{COMMAND_STOP, "StopObject"},
+		{COMMAND_ATTACK_MOVE, "AttackMove"},
+		{COMMAND_BEACON, "PlaceBeacon"},
+		{COMMAND_CHEER, "AllToCheer"},
+	};
+	for (CommandKeyword const & keyword : keywords) {
+		if (keyword.Command == command) {
+			Execute_Command(keyword.Name);
+			return;
+		}
+	}
+
 	switch (command) {
 		case COMMAND_TEAM01:
 		case COMMAND_TEAM02:
@@ -751,37 +772,9 @@ void TabClass::Do_Command(CommandButtonType command)
 			break;
 		}
 
-		case COMMAND_TYPE_SELECT:
-			Execute_Command("SelectType");
-			break;
-
-		case COMMAND_DEPLOY:
-			Execute_Command("DeployObject");
-			break;
-
-		case COMMAND_GUARD:
-			Execute_Command("GuardObject");
-			break;
-
-		case COMMAND_STOP:
-			Execute_Command("StopObject");
-			break;
-
 		// A click toggles planning mode: the first click starts it and the next one commits the plan.
 		case COMMAND_PLANNING_MODE:
 			Map.Planning_Mode_Control(-1, -1);
-			break;
-
-		case COMMAND_ATTACK_MOVE:
-			Execute_Command("AttackMove");
-			break;
-
-		case COMMAND_BEACON:
-			Execute_Command("PlaceBeacon");
-			break;
-
-		case COMMAND_CHEER:
-			Execute_Command("AllToCheer");
 			break;
 
 		default:

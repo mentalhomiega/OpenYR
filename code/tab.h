@@ -113,6 +113,8 @@ class TabClass: public SidebarClass
 		void Command_Bar_AI(KeyNumType & input);
 		static void Do_Command(CommandButtonType command);
 		static void Use_Command_Icons(void);
+		static void Load_Command_Shapes(void);
+		static bool Command_Bar_Art_Ready(void);
 
 		static ShapeSet const * SpacerShape;
 		static ShapeSet const * LeftCapShape;
