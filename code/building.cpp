@@ -4997,247 +4997,240 @@ bool BuildingClass::Captured(HouseClass * newowner)
 /// <returns>bool; Was the structure given over? False when the house already owns it.</returns>
 bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capture)
 {
-	if (newowner != House) {
+	if (newowner == House) {
+		return(false);
+	}
 
-		if (Class->IsCloakGenerator) {
-			newowner->HasCloakGenerator = true;
+	if (Class->IsCloakGenerator) {
+		newowner->HasCloakGenerator = true;
+	}
+
+	/*
+	**	Clear the capturer's country from the spied bits, since it now owns this
+	**	building. If it was a radar facility, update the target house's RadarSpied field.
+	*/
+	if (SpiedBy[newowner]) {
+		SpiedBy.Clear(newowner);
+		if (Class->IsRadar) {
+			Update_Radar_Spied();
 		}
+	}
 
-		/*
-		**	Clear the capturer's country from the spied bits, since it now owns this
-		**	building. If it was a radar facility, update the target house's RadarSpied field.
-		*/
-		if (SpiedBy[newowner]) {
-			SpiedBy.Clear(newowner);
-			if (Class->IsRadar) {
-				Update_Radar_Spied();
-			}
-		}
+	// SetOwningHouse (0x448260) clears the primary before the owner changes.
+	IsLeader = false;
 
-		// SetOwningHouse (0x448260) clears the primary before the owner changes.
-		IsLeader = false;
+	if (Class->IsLaserFencePost) {
+		Update_Laser_Fence_Connections(0);
+	}
 
-		if (Class->IsLaserFencePost) {
-			Update_Laser_Fence_Connections(0);
-		}
-
-		if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
-			// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
-			// A NeedsEngineer structure has its own lines in place of the radar event, and a MultiplayPassive taker hears nothing.
-			if (announce && !newowner->Class->IsMultiplayPassive) {
-				if (!Class->IsNeedsEngineer) {
-					if (Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
-						Speak(VOX_BUILDING_CAPTURED);
-					}
-				} else if (House != newowner) {
-					if (House->Is_Player_Control()) {
-						Speak_Eva("EVA_TechBuildingLost");
-					}
-					if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
-						Speak_Eva_Index(Class->CaptureEvaEvent);
-					}
+	if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
+		// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
+		// A NeedsEngineer structure has its own lines in place of the radar event, and a MultiplayPassive taker hears nothing.
+		if (announce && !newowner->Class->IsMultiplayPassive) {
+			if (!Class->IsNeedsEngineer) {
+				if (Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
+					Speak(VOX_BUILDING_CAPTURED);
+				}
+			} else if (House != newowner) {
+				if (House->Is_Player_Control()) {
+					Speak_Eva("EVA_TechBuildingLost");
+				}
+				if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
+					Speak_Eva_Index(Class->CaptureEvaEvent);
 				}
 			}
-			Map.PowerClass::IsToRedraw = true;
-			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 		}
-
-		IsToDisplay = true;
-
-		/*
-		**	Add this building to the list of buildings captured this game. For internet stats purposes.
-		*/
-		if (Session.Type == GAME_INTERNET) {
-			newowner->CapturedBuildings->Increment_Unit_Total (Class->HeapID);
-		}
-
-		/*
-		**	If there is something loaded, then it gets captured as well.
-		*/
-		// A radio-linked object changes hands the same way for a capture and a transfer (SetOwningHouse, 0x448260).
-		TechnoClass * tech = Cargo.Attached_Object();
-		if (tech) {
-			tech->Set_Owning_House(newowner, true);
-		}
-
-		/*
-		**	If something isn't technically attached, but is sitting on this
-		**	building for another reason (e.g., helicopter on helipad), then it
-		**	gets captured as well.
-		*/
-		struct CapturedDocker {
-			TechnoClass * object;
-			bool tethered;
-		};
-		std::vector<CapturedDocker> captured_dockers;
-		for (TechnoClass * docker : Linked_Objects()) {
-			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
-			if (!Contains_Link(docker)) {
-				continue;
-			}
-			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
-				bool const tethered = docker->IsTethered;
-				docker->Set_Owning_House(newowner, true);
-				captured_dockers.push_back({docker, tethered});
-			} else {
-				Transmit_Message(RADIO_RUN_AWAY, docker);
-				Transmit_Message(RADIO_OVER_OUT, docker);
-			}
-		}
-
-		/*
-		**	Abort any computer production in progress.
-		*/
-		if (Factory) {
-			Factory->Abandon();
-			delete (FactoryClass *)Factory;
-			Factory = NULL;
-		}
-
-		/*
-		**	Decrement the factory counter for the original owner.
-		*/
-		House->Active_Remove(this);
-
-		/*
-		**	Flag that both owners now need to update their buildable lists.
-		*/
-		House->IsRecalcNeeded = true;
-		newowner->IsRecalcNeeded = true;
-		HouseClass * oldowner = House;
-		TargetClass tocap = this;
-
-		IsCaptured = true;
-		HasEngineer = true;
-		// An owner change resumes a NeedsEngineer structure's frozen animations (SetOwningHouse, 0x448260).
-		if (Class->IsNeedsEngineer) {
-			Freeze_Powered_Anims(false);
-		}
-		if (Rule->BuildConst.Is_In_List(Class)) {
-			oldowner->ConYards.Delete(this);
-		}
-		if (Class->IsSecretLab) {
-			oldowner->SecretLabs.Delete(this);
-		}
-
-		Collapse_Cloak_Field();
-		if (Class->IsSensorArray) {
-			Disable_Sensor_Array();
-		}
-		if (IsGeneratingGap) {
-			Destroy_Gap();
-		}
-		bool const detecting = IsDetectingDisguise;
-		Disguise_Detector(false);
-
-		// The base class's step is TechnoClass::Captured for a capture and TechnoClass::Set_Owning_House otherwise (0x7014A0).
-		if (capture) {
-			BASECLASS::Captured(newowner);
-		} else {
-			BASECLASS::Set_Owning_House(newowner, announce);
-		}
-
-		if (detecting) {
-			Disguise_Detector(true);
-		}
-
-		if (Class->IsCloakGenerator && Is_Powered_On()) {
-			Enable_Cloak_Generator();
-		}
-		if (Class->IsSensorArray) {
-			Enable_Sensor_Array();
-		}
-
-		oldowner->ToCapture = this;
-		oldowner->Recalc_Center();
-		House->Recalc_Center();
-
-		if (House->ToCapture == this) {
-			House->ToCapture = NULL;
-		}
-
-		if (oldowner->Is_Player_Control() && Class->IsConstructionYard && !oldowner->Owns_Any(oldowner->BQuantity, Rule->BuildConst)) {
-			Map.PendingObjectPtr = NULL;
-			Map.PendingObject = NULL;
-			Map.PendingHouse = HOUSE_NONE;
-			Map.Set_Cursor_Shape(NULL);
-		}
-
-		/*
-		**	Increment the factory count for the new owner.
-		*/
-		House->Active_Add(this);
-
-		// The new owner's primary of this kind is claimed only when it has none (SetOwningHouse, 0x448260).
-		if (Class->ToBuild != RTTI_NONE) {
-			Claim_Vacant_Primary();
-		}
-
-		IsRepairing = false;
-		// Only a capture resets the production budget; a transfer leaves the opened structure as it is.
-		Grand_Opening(capture);
-
-		// The bonus is decided by the house the building came from, not by its new owner.
-		if (oldowner->Class->IsMultiplayPassive) {
-			Produce_Cash_Startup();
-		}
-
-		if (Class->IsLaserFencePost) {
-			Init_Laser_Fence();
-			Init_Laser_Fence_Frame();
-		}
-
-		/*
-		**	Perform a look operation when captured.
-		*/
-		Look(false);
-
-		/*
-		**	If the capturer's country had spied on it, clear that country's spiedby bit.
-		*/
-		if (SpiedBy[newowner]) {
-			SpiedBy.Clear(newowner);
-		}
-
-		Update_Anim_Appearance();
-
-		if (Rule->BuildConst.Is_In_List(Class)) {
-			newowner->ConYards.Add(this);
-		}
-		if (Class->IsSecretLab) {
-			newowner->SecretLabs.Add(this);
-		}
-
-		oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
-		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
-			newowner->Update_Base_Edge(this);
-		}
-
-		for (CapturedDocker const & docker : captured_dockers) {
-			if (!docker.object->IsActive) {
-				continue;
-			}
-			Transmit_Message(RADIO_HELLO, docker.object);
-			if (docker.tethered) {
-				IsTethered = true;
-				docker.object->IsTethered = true;
-			}
-		}
-
-		if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()) {
-			if (newowner->ABQuantity.Value(Class->HeapID) > 1 || Class->ToBuild != RTTI_BUILDINGTYPE) {
-				Sell_All_Upgrades();
-			}
-		}
-
-		oldowner->IsRecalcNeeded = true;
-		newowner->IsRecalcNeeded = true;
-
-		return(true);
+		Map.PowerClass::IsToRedraw = true;
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 	}
-	return(false);
+
+	IsToDisplay = true;
+
+	/*
+	**	Add this building to the list of buildings captured this game. For internet stats purposes.
+	*/
+	if (Session.Type == GAME_INTERNET) {
+		newowner->CapturedBuildings->Increment_Unit_Total (Class->HeapID);
+	}
+
+	/*
+	**	If there is something loaded, then it gets captured as well.
+	*/
+	// A radio-linked object changes hands the same way for a capture and a transfer (SetOwningHouse, 0x448260).
+	TechnoClass * tech = Cargo.Attached_Object();
+	if (tech) {
+		tech->Set_Owning_House(newowner, true);
+	}
+
+	/*
+	**	If something isn't technically attached, but is sitting on this
+	**	building for another reason (e.g., helicopter on helipad), then it
+	**	gets captured as well.
+	*/
+	struct CapturedDocker {
+		TechnoClass * object;
+		bool tethered;
+	};
+	std::vector<CapturedDocker> captured_dockers;
+	for (TechnoClass * docker : Linked_Objects()) {
+		// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
+		if (!Contains_Link(docker)) {
+			continue;
+		}
+		if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
+			bool const tethered = docker->IsTethered;
+			docker->Set_Owning_House(newowner, true);
+			captured_dockers.push_back({docker, tethered});
+		} else {
+			Transmit_Message(RADIO_RUN_AWAY, docker);
+			Transmit_Message(RADIO_OVER_OUT, docker);
+		}
+	}
+
+	/*
+	**	Abort any computer production in progress.
+	*/
+	if (Factory) {
+		Factory->Abandon();
+		delete (FactoryClass *)Factory;
+		Factory = NULL;
+	}
+
+	/*
+	**	Decrement the factory counter for the original owner.
+	*/
+	House->Active_Remove(this);
+
+	/*
+	**	Flag that both owners now need to update their buildable lists.
+	*/
+	House->IsRecalcNeeded = true;
+	newowner->IsRecalcNeeded = true;
+	HouseClass * oldowner = House;
+	TargetClass tocap = this;
+
+	IsCaptured = true;
+	HasEngineer = true;
+	// An owner change resumes a NeedsEngineer structure's frozen animations (SetOwningHouse, 0x448260).
+	if (Class->IsNeedsEngineer) {
+		Freeze_Powered_Anims(false);
+	}
+	if (Rule->BuildConst.Is_In_List(Class)) {
+		oldowner->ConYards.Delete(this);
+	}
+	if (Class->IsSecretLab) {
+		oldowner->SecretLabs.Delete(this);
+	}
+
+	Collapse_Cloak_Field();
+	if (Class->IsSensorArray) {
+		Disable_Sensor_Array();
+	}
+	if (IsGeneratingGap) {
+		Destroy_Gap();
+	}
+	bool const detecting = IsDetectingDisguise;
+	Disguise_Detector(false);
+
+	// The base class's step is TechnoClass::Captured for a capture and TechnoClass::Set_Owning_House otherwise (0x7014A0).
+	if (capture) {
+		BASECLASS::Captured(newowner);
+	} else {
+		BASECLASS::Set_Owning_House(newowner, announce);
+	}
+
+	if (detecting) {
+		Disguise_Detector(true);
+	}
+
+	if (Class->IsCloakGenerator && Is_Powered_On()) {
+		Enable_Cloak_Generator();
+	}
+	if (Class->IsSensorArray) {
+		Enable_Sensor_Array();
+	}
+
+	oldowner->ToCapture = this;
+	oldowner->Recalc_Center();
+	House->Recalc_Center();
+
+	if (House->ToCapture == this) {
+		House->ToCapture = NULL;
+	}
+
+	if (oldowner->Is_Player_Control() && Class->IsConstructionYard && !oldowner->Owns_Any(oldowner->BQuantity, Rule->BuildConst)) {
+		Map.PendingObjectPtr = NULL;
+		Map.PendingObject = NULL;
+		Map.PendingHouse = HOUSE_NONE;
+		Map.Set_Cursor_Shape(NULL);
+	}
+
+	/*
+	**	Increment the factory count for the new owner.
+	*/
+	House->Active_Add(this);
+
+	// The new owner's primary of this kind is claimed only when it has none (SetOwningHouse, 0x448260).
+	if (Class->ToBuild != RTTI_NONE) {
+		Claim_Vacant_Primary();
+	}
+
+	IsRepairing = false;
+	// Only a capture resets the production budget; a transfer leaves the opened structure as it is.
+	Grand_Opening(capture);
+
+	// The bonus is decided by the house the building came from, not by its new owner.
+	if (oldowner->Class->IsMultiplayPassive) {
+		Produce_Cash_Startup();
+	}
+
+	if (Class->IsLaserFencePost) {
+		Init_Laser_Fence();
+		Init_Laser_Fence_Frame();
+	}
+
+	/*
+	**	Perform a look operation when captured.
+	*/
+	Look(false);
+
+	Update_Anim_Appearance();
+
+	if (Rule->BuildConst.Is_In_List(Class)) {
+		newowner->ConYards.Add(this);
+	}
+	if (Class->IsSecretLab) {
+		newowner->SecretLabs.Add(this);
+	}
+
+	oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+	newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+	// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
+	if (Class->ToBuild == RTTI_BUILDINGTYPE) {
+		newowner->Update_Base_Edge(this);
+	}
+
+	for (CapturedDocker const & docker : captured_dockers) {
+		if (!docker.object->IsActive) {
+			continue;
+		}
+		Transmit_Message(RADIO_HELLO, docker.object);
+		if (docker.tethered) {
+			IsTethered = true;
+			docker.object->IsTethered = true;
+		}
+	}
+
+	if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()) {
+		if (newowner->ABQuantity.Value(Class->HeapID) > 1 || Class->ToBuild != RTTI_BUILDINGTYPE) {
+			Sell_All_Upgrades();
+		}
+	}
+
+	oldowner->IsRecalcNeeded = true;
+	newowner->IsRecalcNeeded = true;
+
+	return(true);
 }
 
 
