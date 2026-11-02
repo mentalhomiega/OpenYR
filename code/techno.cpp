@@ -2428,56 +2428,8 @@ double TechnoClass::Area_Modify(Cell const & cell) const
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Evaluate_Object -- Determines score value of specified object.                 *
- *                                                                                             *
- *    This routine is used to determine the score value (value as a potential target) of the   *
- *    object specified. This routine will check the specified object for all the various       *
- *    legality checks that threat scanning requires. This is the main workhorse routine for    *
- *    target searching.                                                                        *
- *                                                                                             *
- * INPUT:   method   -- The threat method requested. This is a combined bitflag value that     *
- *                      not only specifies the kind of targets to consider, but how far away   *
- *                      they are allowed to be.                                                *
- *                                                                                             *
- *          mask     -- This is an RTTI mask to use for quickly eliminating object types.      *
- *                      The mask is created outside of this routine because this routine is    *
- *                      usually called from within a loop and this value is constant in that   *
- *                      context.                                                               *
- *                                                                                             *
- *          range    -- The range at which potential target objects are rejected.              *
- *                      0  = must be within weapon range.                                      *
- *                      >0 = must be within this lepton distance.                              *
- *                      <0 = range doesn't matter.                                             *
- *                                                                                             *
- *          object   -- Pointer to the object itself.                                          *
- *                                                                                             *
- *          value    -- Reference to the value variable that this routine will fill in. The    *
- *                      higher the value the more likely this object will be selected as best. *
- *                                                                                             *
- *          zone     -- The zone restriction if any. A -1 means no zone check required.        *
- *                                                                                             *
- * OUTPUT:  Did the target pass all legality checks? If this value is returned true, then the  *
- *          value parameter will be filled in correctly.                                       *
- *                                                                                             *
- * WARNINGS:   This routine is time consuming. Don't call unless necessary.                    *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/30/1995 JLB : Created.                                                                 *
- *   07/14/1995 JLB : Forces SAM site to not fire on landed aircraft.                          *
- *   09/22/1995 JLB : Zone checking enabled.                                                   *
- *   10/05/1995 JLB : Gives greater weight to designated enemy house targets.                  *
- *   02/16/1996 JLB : Added additional threat checks.                                          *
- *=============================================================================================*/
-bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone, Coord const & coord) const
+bool TechnoClass::Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const
 {
-	assert(object != NULL);
-
-	Perf_Count(PERF_COUNT_OBJECT_EVALS);
-	BENCH_SCOPE(BENCH_EVAL_OBJECT);
-
-	bool engineer = Is_Renovator();
-
 	/*
 	**	An object in limbo can never be a valid target.
 	*/
@@ -2670,6 +2622,12 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		}
 	}
 
+	return(true);
+}
+
+
+bool TechnoClass::Passes_Mirage_Roll(TechnoClass const * object) const
+{
 	// A disguised Mirage vehicle is picked only by a computer house, only while it blinks after a shot, and only on a
 	// roll against the side's DisabledDisguiseDetectionPercent. A DetectDisguise type sees through the disguise.
 	if (object->RTTI == RTTI_UNIT && !TClass->IsDetectDisguise) {
@@ -2682,6 +2640,15 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 			}
 		}
 	}
+
+	return(true);
+}
+
+
+bool TechnoClass::Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const
+{
+	RTTIType otype = object->RTTI;
+	TechnoTypeClass const * tclass = object->TClass;
 
 	/*
 	**	If only allowed to attack civilians, then eliminate all other types.
@@ -2773,6 +2740,77 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	if (TClass->VHPScan == VHP_SCAN_STRONG && object->EstimatedHealth < 1) {
 		return(false);
 	}
+
+	return(true);
+}
+
+
+/***********************************************************************************************
+ * TechnoClass::Evaluate_Object -- Determines score value of specified object.                 *
+ *                                                                                             *
+ *    This routine is used to determine the score value (value as a potential target) of the   *
+ *    object specified. This routine will check the specified object for all the various       *
+ *    legality checks that threat scanning requires. This is the main workhorse routine for    *
+ *    target searching.                                                                        *
+ *                                                                                             *
+ * INPUT:   method   -- The threat method requested. This is a combined bitflag value that     *
+ *                      not only specifies the kind of targets to consider, but how far away   *
+ *                      they are allowed to be.                                                *
+ *                                                                                             *
+ *          mask     -- This is an RTTI mask to use for quickly eliminating object types.      *
+ *                      The mask is created outside of this routine because this routine is    *
+ *                      usually called from within a loop and this value is constant in that   *
+ *                      context.                                                               *
+ *                                                                                             *
+ *          range    -- The range at which potential target objects are rejected.              *
+ *                      0  = must be within weapon range.                                      *
+ *                      >0 = must be within this lepton distance.                              *
+ *                      <0 = range doesn't matter.                                             *
+ *                                                                                             *
+ *          object   -- Pointer to the object itself.                                          *
+ *                                                                                             *
+ *          value    -- Reference to the value variable that this routine will fill in. The    *
+ *                      higher the value the more likely this object will be selected as best. *
+ *                                                                                             *
+ *          zone     -- The zone restriction if any. A -1 means no zone check required.        *
+ *                                                                                             *
+ * OUTPUT:  Did the target pass all legality checks? If this value is returned true, then the  *
+ *          value parameter will be filled in correctly.                                       *
+ *                                                                                             *
+ * WARNINGS:   This routine is time consuming. Don't call unless necessary.                    *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/30/1995 JLB : Created.                                                                 *
+ *   07/14/1995 JLB : Forces SAM site to not fire on landed aircraft.                          *
+ *   09/22/1995 JLB : Zone checking enabled.                                                   *
+ *   10/05/1995 JLB : Gives greater weight to designated enemy house targets.                  *
+ *   02/16/1996 JLB : Added additional threat checks.                                          *
+ *=============================================================================================*/
+bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone, Coord const & coord) const
+{
+	assert(object != NULL);
+
+	Perf_Count(PERF_COUNT_OBJECT_EVALS);
+	BENCH_SCOPE(BENCH_EVAL_OBJECT);
+
+	bool engineer = Is_Renovator();
+
+	if (!Passes_Before_Disguise_Roll(method, mask, range, object, zone, engineer)) {
+		return(false);
+	}
+
+	// The Mirage roll draws a random number. It stays between the two checks, so a candidate
+	// that the first check rejects draws nothing.
+	if (!Passes_Mirage_Roll(object)) {
+		return(false);
+	}
+
+	if (!Passes_After_Disguise_Roll(method, object, engineer)) {
+		return(false);
+	}
+
+	RTTIType otype = object->RTTI;
+	TechnoTypeClass const * tclass = object->TClass;
 
 	/*
 	**	If this target value is better than the previously recorded best

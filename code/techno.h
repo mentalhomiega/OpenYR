@@ -932,6 +932,9 @@ class TechnoClass :	public RadioClass,
 		virtual ResultType Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source=0, bool forced=false, bool=false, HouseClass * sourcehouse=NULL) override;
 		bool Evaluate_Cell(ThreatType method, int mask, Cell const & cell, int range, TechnoClass const ** object, int & value, int zone=0) const;
 		bool Evaluate_Object(ThreatType method, int mask, int range, TechnoClass const * object, int & value, int zone=-1, Coord const & coord=COORD_NONE) const;
+		bool Passes_Before_Disguise_Roll(ThreatType method, int mask, int range, TechnoClass const * object, int zone, bool engineer) const;
+		bool Passes_Mirage_Roll(TechnoClass const * object) const;
+		bool Passes_After_Disguise_Roll(ThreatType method, TechnoClass const * object, bool engineer) const;
 		int Evaluate_Just_Cell(Cell const & cell) const;
 
 		void Assign_Archive_Target(AbstractClass * target);
