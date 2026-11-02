@@ -213,18 +213,9 @@ AudioHandle VocClass::Play_Voice(float vol)
 bool LogSoundEffects = false;
 
 
-AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle, AudioGroupType group)
+// Plays the sound without a log line. The caller has checked voc and the shellmap scope.
+static AudioHandle Play_Effect(VocType voc, float volume, int pan, AudioHandle * handle, AudioGroupType group)
 {
-	if (voc == VOC_NONE || voc >= Vocs.Count()) {
-		return(AudioHandle());
-	}
-	// The menu battle plays silently; menu clicks are played outside its scope.
-	if (Shellmap_In_Scope()) {
-		return(AudioHandle());
-	}
-	if (LogSoundEffects) {
-		DebugString("Sound: %s\n", Voc_Name(voc));
-	}
 	VocClass & sound = *Vocs[voc];
 
 	if (handle != nullptr && handle->Is_Valid()) {
@@ -240,6 +231,22 @@ AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handl
 		*handle = played;
 	}
 	return(played);
+}
+
+
+AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle, AudioGroupType group)
+{
+	if (voc == VOC_NONE || voc >= Vocs.Count()) {
+		return(AudioHandle());
+	}
+	// The menu battle plays silently; menu clicks are played outside its scope.
+	if (Shellmap_In_Scope()) {
+		return(AudioHandle());
+	}
+	if (LogSoundEffects) {
+		DebugString("Sound: %s\n", Voc_Name(voc));
+	}
+	return(Play_Effect(voc, volume, pan, handle, group));
 }
 
 
@@ -324,6 +331,20 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 }
 
 
+// Returns true when volume is zero, after stopping and clearing a valid handle.
+static bool Stop_If_Silent(float volume, AudioHandle * handle)
+{
+	if (volume <= 0.0f) {
+		if (handle != nullptr && handle->Is_Valid()) {
+			handle->Stop();
+			handle->Clear();
+		}
+		return(true);
+	}
+	return(false);
+}
+
+
 AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle, AudioGroupType group)
 {
 	if (voc == VOC_NONE || voc >= Vocs.Count()) {
@@ -336,18 +357,15 @@ AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle,
 
 	int pan;
 	float volume = Calculate_Volume_And_Pan(coord, sound.Type_Data(), pan);
-	if (volume <= 0.0f) {
-		if (handle != nullptr && handle->Is_Valid()) {
-			handle->Stop();
-			handle->Clear();
-		}
+	if (Stop_If_Silent(volume, handle)) {
 		return(AudioHandle());
 	}
 
-	bool const logging = LogSoundEffects;
-	LogSoundEffects = false;
-	AudioHandle played = Sound_Effect(voc, volume, pan, handle, group);
-	LogSoundEffects = logging;
+	// Same shellmap silence as the logging overload, without its second log line.
+	AudioHandle played;
+	if (!Shellmap_In_Scope()) {
+		played = Play_Effect(voc, volume, pan, handle, group);
+	}
 	Track_Positional(played, coord, volume, pan);
 	return(played);
 }
@@ -370,11 +388,7 @@ AudioHandle Sound_Effect_Fixed(VocType voc, Coord const & coord, AudioHandle * h
 	}
 	int pan;
 	float volume = Calculate_Volume_And_Pan(coord, Vocs[voc]->Type_Data(), pan);
-	if (volume <= 0.0f) {
-		if (handle != nullptr && handle->Is_Valid()) {
-			handle->Stop();
-			handle->Clear();
-		}
+	if (Stop_If_Silent(volume, handle)) {
 		return(AudioHandle());
 	}
 	return(Sound_Effect(voc, volume, pan, handle));
