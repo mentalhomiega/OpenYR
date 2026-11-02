@@ -1010,37 +1010,6 @@ static bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type)
 }
 
 
-/***********************************************************************************************
- * HouseClass::Can_Build -- General purpose build legality checker.                            *
- *                                                                                             *
- *    This routine is called when it needs to be determined if the specified object type can   *
- *    be built by this house. Production and sidebar maintenance use this routine heavily.     *
- *                                                                                             *
- * INPUT:   type  -- Pointer to the type of object that legality is to be checked for.         *
- *                                                                                             *
- *          house -- This is the house to check for legality against. Note that this might     *
- *                   not be 'this' house since the check could be from a captured factory.     *
- *                   Captured factories build what the original owner of them could build.     *
- *                                                                                             *
- * OUTPUT:  Can the specified object be built?                                                 *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/04/1995 JLB : Created.                                                                 *
- *   08/12/1995 JLB : Updated for GDI building sandbag walls in #9.                            *
- *   10/23/1996 JLB : Hack to allow Tanya to both sides in multiplay.                          *
- *   11/04/1996 JLB : Computer uses prerequisite record.                                       *
- *=============================================================================================*/
-/*
- * 1 = can build
- * 0 = can't build
- * -1 = build limit reached
- */
-/// <summary>
-/// Whether this house reverse engineered the type, so that it builds it without the type's
-/// prerequisites, tech level, stolen tech and house limits (Ares).
-/// </summary>
 /// <summary>
 /// Whether the house owns an object that keeps it in a short game: one whose type sets
 /// KeepAlive=yes, or by default a building that is not Insignificant (Ares).
@@ -1092,6 +1061,10 @@ bool HouseClass::Owns_Prerequisite_Override(TechnoTypeClass const * type) const
 }
 
 
+/// <summary>
+/// Whether this house reverse engineered the type, so that it builds it without the type's
+/// prerequisites, tech level, stolen tech and house limits (Ares).
+/// </summary>
 bool HouseClass::Is_Reversed(ObjectTypeClass const * type) const
 {
 	for (std::string const & name : ReversedTypes) {
@@ -1117,6 +1090,33 @@ bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
 }
 
 
+/***********************************************************************************************
+ * HouseClass::Can_Build -- General purpose build legality checker.                            *
+ *                                                                                             *
+ *    This routine is called when it needs to be determined if the specified object type can   *
+ *    be built by this house. Production and sidebar maintenance use this routine heavily.     *
+ *                                                                                             *
+ * INPUT:   type  -- Pointer to the type of object that legality is to be checked for.         *
+ *                                                                                             *
+ *          house -- This is the house to check for legality against. Note that this might     *
+ *                   not be 'this' house since the check could be from a captured factory.     *
+ *                   Captured factories build what the original owner of them could build.     *
+ *                                                                                             *
+ * OUTPUT:  Can the specified object be built?                                                 *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/04/1995 JLB : Created.                                                                 *
+ *   08/12/1995 JLB : Updated for GDI building sandbag walls in #9.                            *
+ *   10/23/1996 JLB : Hack to allow Tanya to both sides in multiplay.                          *
+ *   11/04/1996 JLB : Computer uses prerequisite record.                                       *
+ *=============================================================================================*/
+/*
+ * 1 = can build
+ * 0 = can't build
+ * -1 = build limit reached
+ */
 int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool include_in_progress) const
 {
 	assert(type != NULL);
@@ -8287,13 +8287,6 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 
 
 /// <summary>
-/// Builds the computer's base construction plan.
-/// This routine fills the base node list with everything this house is allowed and able to
-/// build, ordered so that a prerequisite is always queued ahead of whatever needs it. Extra
-/// refineries and placeholders for base defenses are woven in along the way, according to
-/// the difficulty level and the side's appetite for fortification.
-/// </summary>
-/// <summary>
 /// Fetches the per-difficulty base defense counts for a side, as HouseClass::Make_Base_Nodes
 /// (0x5054B0) picks them: Allied for side 0, Soviet for side 1 and Third for side 2.
 /// </summary>
@@ -8318,6 +8311,13 @@ static int Difficulty_Entry(TypeList<int> const & list, int difficulty)
 }
 
 
+/// <summary>
+/// Builds the computer's base construction plan.
+/// This routine fills the base node list with everything this house is allowed and able to
+/// build, ordered so that a prerequisite is always queued ahead of whatever needs it. Extra
+/// refineries and placeholders for base defenses are woven in along the way, according to
+/// the difficulty level and the side's appetite for fortification.
+/// </summary>
 void HouseClass::Make_Base_Nodes(void)
 {
 	int index;

@@ -647,32 +647,6 @@ void TActionClass::Read_INI(void)
 }
 
 
-/***********************************************************************************************
- * TActionClass::operator -- Performs the action that this object does.                        *
- *                                                                                             *
- *    This routine is called when the action associated with this action object must be        *
- *    performed. Typically, this occurs when a trigger has "sprung" and now it must take       *
- *    effect. The action object is what carries out this effect.                               *
- *                                                                                             *
- * INPUT:   house -- The owner of this action. This information is necessary since some        *
- *                   actions depend on who the trigger was owned by.                           *
- *                                                                                             *
- *          object-- Pointer to the object that the springing trigger was attached to. If      *
- *                   this parameter is null, then the trigger wasn't attached to any object.   *
- *                                                                                             *
- *          id    -- Trigger ID (only if forced) otherwise -1.                                 *
- *                                                                                             *
- *          cell  -- The cell this trigger is attached to (if any).                            *
- *                                                                                             *
- * OUTPUT:  bool; Was this action able to perform what it needed to do? Failure could be       *
- *                because a reinforcement couldn't be generated, for example.                  *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   02/22/1996 JLB : Created.                                                                 *
- *   04/10/1996 JLB : Added the ID parameter.                                                  *
- *=============================================================================================*/
 /// <summary>
 /// Does this action act on the house that owns the trigger?
 /// A campaign map has triggers whose owner nobody plays, which run with no house, so these are the
@@ -722,6 +696,32 @@ static bool Action_Needs_Trigger_House(TActionType action)
 }
 
 
+/***********************************************************************************************
+ * TActionClass::operator -- Performs the action that this object does.                        *
+ *                                                                                             *
+ *    This routine is called when the action associated with this action object must be        *
+ *    performed. Typically, this occurs when a trigger has "sprung" and now it must take       *
+ *    effect. The action object is what carries out this effect.                               *
+ *                                                                                             *
+ * INPUT:   house -- The owner of this action. This information is necessary since some        *
+ *                   actions depend on who the trigger was owned by.                           *
+ *                                                                                             *
+ *          object-- Pointer to the object that the springing trigger was attached to. If      *
+ *                   this parameter is null, then the trigger wasn't attached to any object.   *
+ *                                                                                             *
+ *          id    -- Trigger ID (only if forced) otherwise -1.                                 *
+ *                                                                                             *
+ *          cell  -- The cell this trigger is attached to (if any).                            *
+ *                                                                                             *
+ * OUTPUT:  bool; Was this action able to perform what it needed to do? Failure could be       *
+ *                because a reinforcement couldn't be generated, for example.                  *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   02/22/1996 JLB : Created.                                                                 *
+ *   04/10/1996 JLB : Added the ID parameter.                                                  *
+ *=============================================================================================*/
 bool TActionClass::operator() (HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell)
 {
 	Cell waypoint;

@@ -4143,13 +4143,6 @@ int ScenarioClass::First_Unused_Local(void) const
 }
 
 
-/// <summary>
-/// Reads the scenario's parameters from an INI database.
-/// This routine picks up everything that describes the scenario itself -- the movies, the
-/// theme, the carry over money rules, the growth switches and the ambient lighting. The
-/// player's house is established here as well, since the objects created afterward attach
-/// themselves to it.
-/// </summary>
 /*
  * Reads one par time of the [Ranking] section, written hh:mm:ss, as timer ticks. A missing key keeps the
  * current value. A value that does not parse gives the fields it has and zero for the rest, as gamemd does.
@@ -4169,6 +4162,13 @@ static int Read_Par_Time(CCINIClass const & ini, char const * key, int current)
 }
 
 
+/// <summary>
+/// Reads the scenario's parameters from an INI database.
+/// This routine picks up everything that describes the scenario itself -- the movies, the
+/// theme, the carry over money rules, the growth switches and the ambient lighting. The
+/// player's house is established here as well, since the objects created afterward attach
+/// themselves to it.
+/// </summary>
 bool ScenarioClass::Read_INI(CCINIClass const & ini)
 {
 	char const * const BASIC = "Basic";
