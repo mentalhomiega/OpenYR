@@ -203,7 +203,6 @@ OptionsClass::OptionsClass(void) :
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
 	CustomMusic(CUSTOM_MUSIC_BOTH),
-	IsSidebarOnRight(true),
 	ModernInterface(true),
 	IsModernInterfaceChosen(true),
 	SidebarRows(HUD_DEFAULT_ROWS),
@@ -672,9 +671,6 @@ void OptionsClass::Load_Settings(void)
 	DetailLevel = std::min(DetailLevel, 2);
 	DetailLevel = std::max(DetailLevel, 0);
 	DebugString("DetailLevel = %d\n", DetailLevel);
-
-	IsSidebarOnRight = true;
-	DebugString("SideBar on %s\n", IsSidebarOnRight == true ? "RIGHT" : "LEFT");
 
 	SidebarCameoText = ConfigINI.Get_Bool("Options", "SidebarCameoText", SidebarCameoText);
 	DebugString("Sidebar Text is %s\n", SidebarCameoText == true ? "ON" : "OFF");

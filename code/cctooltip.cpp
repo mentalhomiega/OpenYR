@@ -66,19 +66,12 @@ bool CCToolTip::Update(ToolTipText * text)
 				return(true);
 			}
 			trect = &ScreenTacticalRect;
-		} else if (Options.IsSidebarOnRight == true) {
+		} else {
 			if (text->Pos.X <= Sidebar_Screen_X()) {
 				trect = &ScreenTacticalRect;
 			} else {
 				trect = &SidebarRect;
 				Map.SidebarClass::IsToRedraw = true;
-			}
-		} else {
-			if (text->Pos.X <= SidebarRect.X + SidebarRect.Width) {
-				trect = &SidebarRect;
-				Map.SidebarClass::IsToRedraw = true;
-			} else {
-				trect = &ScreenTacticalRect;
 			}
 		}
 
@@ -124,12 +117,8 @@ void CCToolTip::Reset(const ToolTipText * text)
 	bool redraw = false;
 	if (Modern_Interface()) {
 		// A modern tooltip lies on the map, which the map redraw below restores.
-	} else if (Options.IsSidebarOnRight == true) {
-		if (text->Pos.X >= Sidebar_Screen_X()) {
-			redraw = true;
-		}
 	} else {
-		if (text->Pos.X <= SidebarRect.X + SidebarRect.Width) {
+		if (text->Pos.X >= Sidebar_Screen_X()) {
 			redraw = true;
 		}
 	}
@@ -175,22 +164,13 @@ void CCToolTip::Draw(const ToolTipText * text)
 		if (!UseSidebarSurface) {
 			surface = CompositeSurface;
 		}
-	} else if (Options.IsSidebarOnRight == true) {
+	} else {
 		int offset = Sidebar_Screen_X();
 		if (point.X + text->TextWidth <= offset) {
 			surface = CompositeSurface;
 		} else if (UseSidebarSurface == true && point.X >= offset) {
 			surface = SidebarSurface;
 			point.X -= offset;
-			Map.IsToBlitSidebar = true;
-		}
-	} else {
-		int offset = SidebarRect.X + SidebarRect.Width;
-		if (point.X >= offset) {
-			surface = CompositeSurface;
-			point.X -= offset;
-		} else if (UseSidebarSurface == true && point.X + text->TextWidth <= offset) {
-			surface = SidebarSurface;
 			Map.IsToBlitSidebar = true;
 		}
 	}

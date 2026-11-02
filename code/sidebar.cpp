@@ -1325,7 +1325,7 @@ void SidebarClass::Blit_Sidebar(bool complete)
 			if (Map.LastDrawRect == RECT_NONE) {
 				if (IsToRedrawCredits) {
 					VisibleSurface->Blit_From(
-						Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT),
+						Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT),
 						*SidebarSurface,
 						Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT),
 						false,
@@ -1341,13 +1341,13 @@ void SidebarClass::Blit_Sidebar(bool complete)
 		}
 
 		if (Map.LastDrawRect == RECT_NONE && !complete) {
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
 		} else if (!IsToBlitSidebar) {
-			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + (Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
+			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + ScreenTacticalRect.Width,Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
 		} else {
 			Rect sb_rect = SidebarSurface->Get_Rect();
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
 		}
 	}
 	IsToBlitSidebar = false;
@@ -3372,13 +3372,8 @@ void SidebarClass::Reposition_Sidebar(void)
 
 	Add_Tool_Tips();
 
-	int x = 0;
 	int y = RadarButton.Y + RadarButton.Height;
-	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(Sidebar_Screen_X(), y);
-	} else {
-		Background.Set_Position(x, y);
-	}
+	Background.Set_Position(Sidebar_Screen_X(), y);
 	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
 }
 

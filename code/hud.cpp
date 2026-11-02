@@ -56,7 +56,7 @@ Rect Tactical_View_Rect(void)
 	if (Modern_Interface()) {
 		return(rect);
 	}
-	rect.X = (Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH;
+	rect.X = 0;
 	rect.Y = SidebarClass::VIEW_TOP;
 	rect.Width -= SidebarClass::SIDE_WIDTH;
 	rect.Height -= SidebarClass::VIEW_TOP + SidebarClass::COMMAND_BAR_HEIGHT;
@@ -69,7 +69,7 @@ int Sidebar_Screen_X(void)
 	if (Modern_Interface()) {
 		return(VisibleRect.Width - HUD_PANEL_WIDTH);
 	}
-	return(Options.IsSidebarOnRight ? ScreenTacticalRect.X + ScreenTacticalRect.Width : 0);
+	return(ScreenTacticalRect.X + ScreenTacticalRect.Width);
 }
 
 
