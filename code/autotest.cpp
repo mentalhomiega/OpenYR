@@ -4928,28 +4928,29 @@ static void Elite_Step(StepType const & step)
 }
 
 
-static void Load_Step(StepType const & step)
+// Puts the capacity divided by divisor, of one Tiberium kind, into each player's object of the named type, and logs the held total under label.
+static void Fill_Storage(StepType const & step, char const * label, int divisor, int kind)
 {
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Storage.Increase_Amount(techno->TClass->Capacity, 0);
-			DebugString("AUTOTEST   load %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
+			techno->Storage.Increase_Amount(techno->TClass->Capacity / divisor, kind);
+			DebugString("AUTOTEST   %s %s: %d held\n", label, techno->TClass->Name(), techno->Storage.Get_Total_Amount());
 		}
 	}
+}
+
+
+static void Load_Step(StepType const & step)
+{
+	Fill_Storage(step, "load", 1, 0);
 }
 
 
 // loadgems <TypeID>: puts a quarter of its capacity in gems, the second kind of Tiberium, into each of the player's objects of that type.
 static void Loadgems_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Storage.Increase_Amount(techno->TClass->Capacity / 4, 1);
-			DebugString("AUTOTEST   loadgems %s: %d held\n", techno->TClass->Name(), techno->Storage.Get_Total_Amount());
-		}
-	}
+	Fill_Storage(step, "loadgems", 4, 1);
 }
 
 
