@@ -35,6 +35,7 @@
 
 #include "dbgprint.h"
 #include "dsurface.h"
+#include "pcxrle.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -118,30 +119,7 @@ class PCXByteReader
 /// <returns>bool; Did the file hold the whole line?</returns>
 bool Decode_PCX_Line(PCXByteReader & reader, unsigned char * out, int length, int store)
 {
-	int produced = 0;
-	while (produced < length) {
-		unsigned char value;
-		if (!reader.Get(value)) {
-			return(false);
-		}
-
-		int count = 1;
-		if ((value & 0xC0) == 0xC0) {
-			count = value & 0x3F;
-			if (!reader.Get(value)) {
-				return(false);
-			}
-		}
-
-		if (count > length - produced) {
-			count = length - produced;
-		}
-		for (int step = 0; step < count && produced + step < store; step++) {
-			out[produced + step] = value;
-		}
-		produced += count;
-	}
-	return(true);
+	return(Decode_PCX_RLE_Line([&reader](unsigned char & value) {return(reader.Get(value));}, out, length, store, true));
 }
 
 }

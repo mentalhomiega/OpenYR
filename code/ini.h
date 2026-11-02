@@ -240,6 +240,10 @@ class INIClass {
 
 		INIReadResult Read_Numbers(char const * section, char const * entry, int * values, int count) const;
 		INIReadResult Read_Numbers(char const * section, char const * entry, float * values, int count) const;
+
+		// Reads the entry with parse and applies percent when its text has a '%'. Returns defvalue when the entry is missing or not a number.
+		template<class Parse, class Percent>
+		double Read_Scalar(char const * section, char const * entry, double defvalue, Parse parse, Percent percent) const;
 		char const * Source_Of(INIEntry const & entry) const;
 
 	private:

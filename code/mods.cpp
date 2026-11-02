@@ -16,6 +16,7 @@
 #include "gamedirs.h"
 #include "ini.h"
 #include "rawfile.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <filesystem>
@@ -46,13 +47,7 @@ std::string const & ModClass::Overlay(ModOverlayType type) const
 
 static std::string Trim(std::string const & text)
 {
-	std::string::size_type first = text.find_first_not_of(" \t");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-
-	std::string::size_type last = text.find_last_not_of(" \t");
-	return(text.substr(first, last - first + 1));
+	return(std::string(Trim_Chars(text, " \t")));
 }
 
 

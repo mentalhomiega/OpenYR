@@ -9,6 +9,7 @@
 
 
 #include "nettiming.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -556,15 +557,6 @@ namespace NetTiming
 
 	namespace
 	{
-		std::string Lower(std::string_view text)
-		{
-			std::string lower(text);
-			for (char & ch : lower) {
-				ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
-			}
-			return(lower);
-		}
-
 		std::string_view Trim(std::string_view text)
 		{
 			while (!text.empty() && (text.front() == ' ' || text.front() == '\t')) {

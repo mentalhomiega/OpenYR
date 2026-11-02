@@ -11,6 +11,7 @@
 #include "mpmode.h"
 
 #include "ini.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -48,9 +49,7 @@ std::vector<std::string> Split_Fields(std::string const & text)
 		std::string::size_type comma = text.find(',', start);
 		std::string field = text.substr(start, comma == std::string::npos ? std::string::npos : comma - start);
 
-		std::string::size_type first = field.find_first_not_of(" \t");
-		std::string::size_type last = field.find_last_not_of(" \t");
-		fields.push_back(first == std::string::npos ? std::string() : field.substr(first, last - first + 1));
+		fields.push_back(std::string(Trim_Chars(field, " \t")));
 
 		if (comma == std::string::npos) {
 			break;

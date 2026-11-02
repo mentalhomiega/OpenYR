@@ -6880,6 +6880,15 @@ static void Claim_Free_Key(KeyNumType key, CommandClass const * command)
 
 
 /// <summary>
+/// Claims the Ctrl+Shift chord of the letter for a debug cheat, under the rule of Claim_Free_Key.
+/// </summary>
+static void Claim_Debug_Key(KeyNumType letter, CommandClass const * command)
+{
+	Claim_Free_Key((KeyNumType)(letter | KN_CTRL_BIT | KN_SHIFT_BIT), command);
+}
+
+
+/// <summary>
 /// Builds the list of every command the player may invoke.
 /// This routine is called once during startup to populate the command list, and then binds
 /// the hotkeys to it. The delete and escape keys are claimed afterwards, so that no
@@ -7122,19 +7131,19 @@ static void Init_Commands(void)
 	Claim_Free_Key((KeyNumType)(KN_C | KN_CTRL_BIT), cheercmd);
 
 	// The debug cheats do nothing unless the Debug mode setting is on, so their keys are harmless otherwise.
-	Claim_Free_Key((KeyNumType)(KN_I | KN_CTRL_BIT | KN_SHIFT_BIT), debugmoneycmd);
-	Claim_Free_Key((KeyNumType)(KN_U | KN_CTRL_BIT | KN_SHIFT_BIT), debugunlockcmd);
-	Claim_Free_Key((KeyNumType)(KN_B | KN_CTRL_BIT | KN_SHIFT_BIT), debuginstantcmd);
-	Claim_Free_Key((KeyNumType)(KN_V | KN_CTRL_BIT | KN_SHIFT_BIT), debugrevealcmd);
-	Claim_Free_Key((KeyNumType)(KN_P | KN_CTRL_BIT | KN_SHIFT_BIT), debugfullpowercmd);
-	Claim_Free_Key((KeyNumType)(KN_G | KN_CTRL_BIT | KN_SHIFT_BIT), debuginvulnerablecmd);
-	Claim_Free_Key((KeyNumType)(KN_W | KN_CTRL_BIT | KN_SHIFT_BIT), debugwincmd);
-	Claim_Free_Key((KeyNumType)(KN_L | KN_CTRL_BIT | KN_SHIFT_BIT), debuglosecmd);
-	Claim_Free_Key((KeyNumType)(KN_K | KN_CTRL_BIT | KN_SHIFT_BIT), debugchargecmd);
-	Claim_Free_Key((KeyNumType)(KN_H | KN_CTRL_BIT | KN_SHIFT_BIT), debughealcmd);
-	Claim_Free_Key((KeyNumType)(KN_E | KN_CTRL_BIT | KN_SHIFT_BIT), debugpromotecmd);
-	Claim_Free_Key((KeyNumType)(KN_D | KN_CTRL_BIT | KN_SHIFT_BIT), debugdestroycmd);
-	Claim_Free_Key((KeyNumType)(KN_F | KN_CTRL_BIT | KN_SHIFT_BIT), debugfastforwardcmd);
+	Claim_Debug_Key(KN_I, debugmoneycmd);
+	Claim_Debug_Key(KN_U, debugunlockcmd);
+	Claim_Debug_Key(KN_B, debuginstantcmd);
+	Claim_Debug_Key(KN_V, debugrevealcmd);
+	Claim_Debug_Key(KN_P, debugfullpowercmd);
+	Claim_Debug_Key(KN_G, debuginvulnerablecmd);
+	Claim_Debug_Key(KN_W, debugwincmd);
+	Claim_Debug_Key(KN_L, debuglosecmd);
+	Claim_Debug_Key(KN_K, debugchargecmd);
+	Claim_Debug_Key(KN_H, debughealcmd);
+	Claim_Debug_Key(KN_E, debugpromotecmd);
+	Claim_Debug_Key(KN_D, debugdestroycmd);
+	Claim_Debug_Key(KN_F, debugfastforwardcmd);
 
 	Apply_Hotkeys();
 }

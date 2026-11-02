@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "truecolour.h"
+#include "strutil.h"
 
 #include "_alpha.h"
 #include "abuffer.h"
@@ -120,15 +121,6 @@ constexpr short FRAME_TRANSPARENT_RLE = 0x01 | 0x02;
 std::unordered_map<void const *, EntryType> Entries;
 std::unordered_map<std::string, SheetRecord> Sheets;
 std::unordered_map<std::string, MadeShapeType> MadeShapes;
-
-
-std::string Upper(std::string text)
-{
-	for (char & ch : text) {
-		ch = (char)toupper((unsigned char)ch);
-	}
-	return(text);
-}
 
 
 struct ShapeHeader

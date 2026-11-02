@@ -240,12 +240,7 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	}
 	if (Blit_Probe_Hook != NULL) Blit_Probe_Hook(&dest, typeid(blitter).name(), drect.Width * drect.Height);
 
-	if (Emissive_Is_Enabled()) {
-		Emissive_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
-	}
-	if (ShadowPlane_Is_Enabled()) {
-		ShadowPlane_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
-	}
+	Planes_After_Bit_Blit(dest, dcliprect.X + drect.X, dcliprect.Y + drect.Y, source, scliprect.X + srect.X, scliprect.Y + srect.Y, std::min(drect.Width, srect.Width), std::min(drect.Height, srect.Height));
 
 	/*
 	 * Compute the alpha buffer offset if an alpha buffer is active.
