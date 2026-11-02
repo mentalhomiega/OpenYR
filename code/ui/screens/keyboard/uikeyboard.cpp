@@ -43,6 +43,7 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "pick") {
 		// The value packs the command's index in State.Commands with its slot.
 		Select(intent.Value / HOTKEY_SLOT_COUNT, intent.Value % HOTKEY_SLOT_COUNT);
+		State.FocusCount++;
 
 	} else if (intent.Name == "capture") {
 		State.Captured = (intent.Value > 0) ? intent.Value : 0;
@@ -67,37 +68,39 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "trigger") {
 		State.Trigger = (intent.Value >= HOTKEY_PRESS && intent.Value <= HOTKEY_HELD) ? intent.Value : HOTKEY_PRESS;
 		Check_Capture();
+		State.FocusCount++;
 
 	} else if (intent.Name == "assign") {
 		Assign(false);
+		State.FocusCount++;
 
 	} else if (intent.Name == "swap") {
 		Assign(true);
+		State.FocusCount++;
 
 	} else if (intent.Name == "dismiss") {
-		State.Captured = 0;
-		State.CapturedName.clear();
-		State.ConflictCommand = -1;
-		State.Conflict.clear();
+		Clear_Capture();
+		State.FocusCount++;
 
 	} else if (intent.Name == "clear") {
 		if (State.Selected >= 0) {
 			Hotkey_Clear(State.Bindings, State.Commands[State.Selected].Name, State.SelectedSlot);
-			State.Captured = 0;
-			State.CapturedName.clear();
-			State.ConflictCommand = -1;
-			State.Conflict.clear();
+			Clear_Capture();
 			Reload_Rows();
 		}
+		State.FocusCount++;
 
 	} else if (intent.Name == "resetcategory") {
 		Reset_Category();
+		State.FocusCount++;
 
 	} else if (intent.Name == "resetall" || intent.Name == "reset") {
 		Reset_All();
+		State.FocusCount++;
 
 	} else if (intent.Name == "scheme") {
 		Change_Scheme(intent.Value);
+		State.FocusCount++;
 
 	} else if (intent.Name == "ok") {
 		Service.Save(State.Bindings, State.Scheme);
@@ -106,18 +109,20 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "cancel") {
 		Result = UI_RESULT_CANCELLED;
 	}
-
-	// A click on a row, a trigger, a scheme, Assign, Clear, Swap, Cancel or a reset takes the keyboard focus from the
-	// capture box. The view focuses the box again when this count changes, so the next keys reach it.
-	if (intent.Name == "pick" || intent.Name == "trigger" || intent.Name == "assign" || intent.Name == "swap" || intent.Name == "dismiss"
-		|| intent.Name == "clear" || intent.Name == "resetcategory" || intent.Name == "resetall" || intent.Name == "reset" || intent.Name == "scheme") {
-		State.FocusCount++;
-	}
 }
 
 
 void UIKeyboardPresenterClass::Refresh(void)
 {
+}
+
+
+void UIKeyboardPresenterClass::Clear_Capture(void)
+{
+	State.Captured = 0;
+	State.CapturedName.clear();
+	State.Conflict.clear();
+	State.ConflictCommand = -1;
 }
 
 
@@ -149,10 +154,7 @@ void UIKeyboardPresenterClass::Reload_Rows(void)
 		State.Selected = -1;
 		State.SelectedName.clear();
 		State.Description.clear();
-		State.Captured = 0;
-		State.CapturedName.clear();
-		State.Conflict.clear();
-		State.ConflictCommand = -1;
+		Clear_Capture();
 	}
 }
 
@@ -170,10 +172,7 @@ void UIKeyboardPresenterClass::Select(int command, int slot)
 	State.SelectedSlot = slot;
 	State.SelectedName = State.Commands[command].Display;
 	State.Description = State.Commands[command].Description;
-	State.Captured = 0;
-	State.CapturedName.clear();
-	State.Conflict.clear();
-	State.ConflictCommand = -1;
+	Clear_Capture();
 	State.Trigger = HOTKEY_PRESS;
 
 	int const index = Hotkey_Find(State.Bindings, State.Commands[command].Name, slot);
@@ -205,7 +204,6 @@ void UIKeyboardPresenterClass::Check_Capture(void)
 	for (int command = 0; command < (int)State.Commands.size(); command++) {
 		if (State.Commands[command].Name == other.Command) {
 			State.ConflictCommand = command;
-			State.ConflictSlot = other.Slot;
 			break;
 		}
 	}
@@ -213,7 +211,7 @@ void UIKeyboardPresenterClass::Check_Capture(void)
 	if (State.ConflictCommand < 0) {
 		return;
 	}
-	State.Conflict = std::string(Hotkey_Trigger_Prefix((HotkeyTrigger)State.Trigger)) + State.CapturedName + " is already used by " + (State.ConflictCommand >= 0 ? State.Commands[State.ConflictCommand].Display : other.Command) + ".";
+	State.Conflict = std::string(Hotkey_Trigger_Prefix((HotkeyTrigger)State.Trigger)) + State.CapturedName + " is already used by " + State.Commands[State.ConflictCommand].Display + ".";
 }
 
 
@@ -241,10 +239,7 @@ void UIKeyboardPresenterClass::Assign(bool swap)
 	}
 
 	State.Notice = (result.Displaced.empty() || hidden) ? std::string() : ("Moved the key from " + result.Displaced + ".");
-	State.Captured = 0;
-	State.CapturedName.clear();
-	State.ConflictCommand = -1;
-	State.Conflict.clear();
+	Clear_Capture();
 	Reload_Rows();
 }
 
