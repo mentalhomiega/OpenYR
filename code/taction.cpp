@@ -687,6 +687,11 @@ static bool Action_Needs_Trigger_House(TActionType action)
 		case TACTION_CENTER_BASE_CELL_SET:
 		case TACTION_CENTER_BASE_CELL_CLEAR:
 		case TACTION_TELEPORT_ALL_TO:
+		case TACTION_SET_DEFENSIVE_TARGET_CELL:
+		case TACTION_CLEAR_DEFENSIVE_TARGET_CELL:
+		case TACTION_MIND_CONTROL_BASE:
+		case TACTION_RESTORE_MIND_CONTROLLED_BASE:
+		case TACTION_RESTORE_STARTING_UNITS:
 			return(true);
 
 		default:
@@ -3146,7 +3151,7 @@ bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * 
 /// <returns>bool; Was the building placed?</returns>
 bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 
@@ -3303,7 +3308,7 @@ HouseClass * TActionClass::Named_House(HouseClass * trigger_house) const
 bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	if (target != house) {
@@ -3321,7 +3326,7 @@ bool TActionClass::TAction_MIND_CONTROL_BASE(HouseClass * house, ObjectClass * ,
 bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	house->Restore_Mind_Controlled_Base(target);
@@ -3337,7 +3342,7 @@ bool TActionClass::TAction_RESTORE_MIND_CONTROLLED_BASE(HouseClass * house, Obje
 bool TActionClass::TAction_RESTORE_STARTING_UNITS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
 	HouseClass * target = Named_House(house);
-	if (house == NULL || target == NULL) {
+	if (target == NULL) {
 		return(false);
 	}
 	target->Restore_Starting_Forces();
@@ -3501,9 +3506,6 @@ bool TActionClass::TAction_CLEAR_SMUDGES(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == house && stricmp(building->Class->Name(), Text) == 0) {
@@ -3520,9 +3522,6 @@ bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , T
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->RadarBlackout = Data.Value;
 	house->IsRadarBlackout = true;
 	house->RecalcRadar = true;
@@ -3614,7 +3613,7 @@ bool TActionClass::TAction_SUPER_RESET(HouseClass * house, ObjectClass * , Trigg
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->PreferredTargetCell = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3629,7 +3628,7 @@ bool TActionClass::TAction_SET_PREFERRED_TARGET_CELL(HouseClass * house, ObjectC
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->PreferredDefensiveCell = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3644,9 +3643,6 @@ bool TActionClass::TAction_SET_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectC
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->PreferredDefensiveCell = CELL_NONE;
 	house->PreferredDefensiveCell2 = CELL_NONE;
 	house->PreferredDefensiveCellStartTime = -100;
@@ -3660,9 +3656,6 @@ bool TActionClass::TAction_CLEAR_DEFENSIVE_TARGET_CELL(HouseClass * house, Objec
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->PreferredTargetCell = CELL_NONE;
 	return(true);
 }
@@ -3675,7 +3668,7 @@ bool TActionClass::TAction_CLEAR_PREFERRED_TARGET_CELL(HouseClass * house, Objec
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 	house->CenterOverride = Scen->Get_Waypoint_Cell(EffectLocation);
@@ -3690,9 +3683,6 @@ bool TActionClass::TAction_CENTER_BASE_CELL_SET(HouseClass * house, ObjectClass 
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_CENTER_BASE_CELL_CLEAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL) {
-		return(false);
-	}
 	house->CenterOverride = CELL_NONE;
 	house->Recalc_Center();
 	return(true);
@@ -3783,7 +3773,7 @@ bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass
 /// <returns>bool; Does the trigger have a house, and does the waypoint exist?</returns>
 bool TActionClass::TAction_TELEPORT_ALL_TO(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (house == NULL || !Scen->Is_Valid_Waypoint(EffectLocation)) {
+	if (!Scen->Is_Valid_Waypoint(EffectLocation)) {
 		return(false);
 	}
 
