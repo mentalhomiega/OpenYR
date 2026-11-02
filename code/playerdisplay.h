@@ -41,3 +41,6 @@ RGBClass Scheme_Remap_RGB(int scheme);
 
 // Clears the cached schemes. Call after the view or the colors in UI.INI change.
 void Player_View_Changed(void);
+
+// Shows text to the local player for ticks, in the scheme House_Display_Scheme gives that player.
+void Post_Player_Message(char const * text, int ticks);

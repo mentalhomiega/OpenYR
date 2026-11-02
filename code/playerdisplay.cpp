@@ -164,3 +164,9 @@ void Player_View_Changed(void)
 {
 	Schemes.Built = false;
 }
+
+
+void Post_Player_Message(char const * text, int ticks)
+{
+	Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), ticks);
+}

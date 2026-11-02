@@ -4576,9 +4576,9 @@ class AttackMoveCommandClass : public CommandClass
 		virtual void Execute(void) const {
 			// gamemd arms the order only when every selected object can attack-move, and says so when none is selected or one cannot (0x731AF0).
 			if (CurrentObject.Count() == 0) {
-				Session.Messages.Add_Message(NULL, 0, "No units are selected.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+				Post_Player_Message("No units are selected.", TICKS_PER_SECOND * 4);
 			} else if (!All_Selected_Can_Attack_Move()) {
-				Session.Messages.Add_Message(NULL, 0, "A selected unit cannot attack-move.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+				Post_Player_Message("A selected unit cannot attack-move.", TICKS_PER_SECOND * 4);
 				return;
 			}
 			AttackMoveArmed = true;
@@ -5120,7 +5120,7 @@ class ReloadRulesCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			char const * text = Reload_Rules() ? "Rules reloaded." : "Rules can only be reloaded in single-player and skirmish games.";
-			Session.Messages.Add_Message(NULL, 0, text, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+			Post_Player_Message(text, 300);
 			Map.Flag_To_Redraw();
 		}
 };
@@ -5315,7 +5315,7 @@ static void Step_Theme(int step)
 		Theme.Queue_Song(theme);
 		char buffer[128];
 		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_NOW_PLAYING), Theme.Full_Name(theme));
-		Session.Messages.Add_Message(NULL, 0, buffer, House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		Post_Player_Message(buffer, TICKS_PER_SECOND * 4);
 		return;
 	}
 }
@@ -6785,7 +6785,7 @@ class TypeSelectCommandClass : public CommandClass
 
 			char const * label = CurrentObject.Count() == 0 ? "MSG:NothingSelected" : (Widen ? "MSG:SelAcrossMap" : "MSG:SelAcrossScreen");
 			// gamemd shows the message for 240 ticks (TypeSelect apply, 0x732BD5).
-			Session.Messages.Add_Message(NULL, 0, Fetch_String_UTF8(label).c_str(), House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), TICKS_PER_SECOND * 16);
+			Post_Player_Message(Fetch_String_UTF8(label).c_str(), TICKS_PER_SECOND * 16);
 			TypeSelectCycle = true;
 		}
 
@@ -6818,7 +6818,7 @@ class TauntCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (Session.Type != GAME_NORMAL) {
-				Session.Messages.Add_Message(NULL, 0, "Taunts are not available in this build.", House_Display_Scheme(PlayerPtr), TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 300);
+				Post_Player_Message("Taunts are not available in this build.", 300);
 			}
 		}
 
