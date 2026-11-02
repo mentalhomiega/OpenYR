@@ -262,6 +262,13 @@ ScenarioClass::ScenarioClass(void)
 }
 
 
+// The GUI keys shown for a mission whose [Ranking] section leaves the text out.
+static char const * const UNDER_PAR_TITLE_DEFAULT = "GUI:NoUnderParTitle";
+static char const * const UNDER_PAR_MESSAGE_DEFAULT = "GUI:NoUnderParMessage";
+static char const * const OVER_PAR_TITLE_DEFAULT = "GUI:NoOverParTitle";
+static char const * const OVER_PAR_MESSAGE_DEFAULT = "GUI:NoOverParMessage";
+
+
 /// <summary>
 /// Resets the scenario data back to its defaults.
 /// This routine runs before a scenario is read, so that any setting the mission neglects
@@ -279,10 +286,10 @@ void ScenarioClass::Reset(void)
 	for (int rank = 0; rank < 3; rank++) {
 		ParTime[rank] = TIMER_MINUTE;
 	}
-	strcpy(UnderParTitle, "GUI:NoUnderParTitle");
-	strcpy(UnderParMessage, "GUI:NoUnderParMessage");
-	strcpy(OverParTitle, "GUI:NoOverParTitle");
-	strcpy(OverParMessage, "GUI:NoOverParMessage");
+	strcpy(UnderParTitle, UNDER_PAR_TITLE_DEFAULT);
+	strcpy(UnderParMessage, UNDER_PAR_MESSAGE_DEFAULT);
+	strcpy(OverParTitle, OVER_PAR_TITLE_DEFAULT);
+	strcpy(OverParMessage, OVER_PAR_MESSAGE_DEFAULT);
 	MissionTimer = 0;
 	MissionTimer.Stop();
 	MissionTimerText[0] = '\0';
@@ -4178,10 +4185,10 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	ParTime[DIFF_EASY] = Read_Par_Time(ini, "ParTimeEasy", ParTime[DIFF_EASY]);
 	ParTime[DIFF_NORMAL] = Read_Par_Time(ini, "ParTimeMedium", ParTime[DIFF_NORMAL]);
 	ParTime[DIFF_HARD] = Read_Par_Time(ini, "ParTimeHard", ParTime[DIFF_HARD]);
-	ini.Get_String("Ranking", "UnderParTitle", "GUI:NoUnderParTitle", UnderParTitle, sizeof(UnderParTitle));
-	ini.Get_String("Ranking", "UnderParMessage", "GUI:NoUnderParMessage", UnderParMessage, sizeof(UnderParMessage));
-	ini.Get_String("Ranking", "OverParTitle", "GUI:NoOverParTitle", OverParTitle, sizeof(OverParTitle));
-	ini.Get_String("Ranking", "OverParMessage", "GUI:NoOverParMessage", OverParMessage, sizeof(OverParMessage));
+	ini.Get_String("Ranking", "UnderParTitle", UNDER_PAR_TITLE_DEFAULT, UnderParTitle, sizeof(UnderParTitle));
+	ini.Get_String("Ranking", "UnderParMessage", UNDER_PAR_MESSAGE_DEFAULT, UnderParMessage, sizeof(UnderParMessage));
+	ini.Get_String("Ranking", "OverParTitle", OVER_PAR_TITLE_DEFAULT, OverParTitle, sizeof(OverParTitle));
+	ini.Get_String("Ranking", "OverParMessage", OVER_PAR_MESSAGE_DEFAULT, OverParMessage, sizeof(OverParMessage));
 
 	// Only a campaign mission takes the fast-growth switch from its map. A skirmish keeps the value the session has.
 	bool const fast_growth = Special.IsTGrowth;
