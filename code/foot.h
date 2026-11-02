@@ -530,9 +530,9 @@ class FootClass : public TechnoClass
 		virtual bool Plan_Waits_For_Rearm(void) const;
 		virtual void Started_Planned_Leg(void);
 		void Requeue_Interrupted_Planned_Leg(void);
+		bool Planned_Leg_Replaces_Idle(bool result) const;
 
 		// Planning mode: queue an order, start the queue on commit, and issue the next order when idle.
-		bool Can_Take_Planned_Order(void) const;
 		PlannedOrderBlock Planned_Order_Block(void) const;
 		bool Add_Planned_Order(PlannedOrderClass const & order);
 		bool Is_Free_For_Plan(void) const;

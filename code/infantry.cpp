@@ -1521,7 +1521,7 @@ void InfantryClass::Assign_Target(AbstractClass * target)
 	if (NavCom == NULL && Class->IsCapture) {
 		if (target != NULL && target->RTTI == RTTI_BUILDING) {
 			BuildingClass const * building = (BuildingClass const *)target;
-			if (Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable) {
+			if (Can_Infiltrate(building)) {
 				Assign_Destination(target);
 			}
 		}
@@ -2324,7 +2324,7 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	bool result = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
 	// A planned leg that the base routine has just issued is the unit's next mission, so the idle mission below must not replace it.
-	if (result && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission)) {
+	if (Planned_Leg_Replaces_Idle(result)) {
 		return(result);
 	}
 
@@ -2506,7 +2506,7 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 	**	A soldier that is digging in or dug in climbs out of it when the scatter is forced and
 	**	insistent. A human player's soldier otherwise stays put (InfantryClass 0x51D0D0).
 	*/
-	bool const digging = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+	bool const digging = Is_Digging_In();
 	if (digging && forced && nokidding) {
 		Do_Action(DO_UNDEPLOY);
 	} else if (digging && House->Is_Human_Player()) {
@@ -2627,6 +2627,12 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
  * HISTORY:                                                                                    *
  *   09/24/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
+bool InfantryClass::Can_Infiltrate(BuildingClass const * building) const
+{
+	return(Class->IsAgent ? building->Class->IsSpyable : building->Class->IsCaptureable);
+}
+
+
 /// <summary>
 /// Tells whether this Deployer=yes soldier is digging in or dug in, as
 /// InfantryClass::IsDeployed (0x5228D0) does. A soldier packing up again counts as not deployed.
@@ -2636,6 +2642,12 @@ bool InfantryClass::Is_Deployed(void) const
 	if (!Class->IsDeployer) {
 		return(false);
 	}
+	return(Is_Digging_In());
+}
+
+
+bool InfantryClass::Is_Digging_In(void) const
+{
 	return(Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE);
 }
 
@@ -3398,7 +3410,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	// A weapon with SabotageCursor=yes shows the demolition cursor over any target, except a vehicle inside a bunker, which gives the select cursor (InfantryClass::MouseOverObject, 0x51E3B0).
 	if (action == ACTION_ATTACK) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		WeaponTypeClass const * weapon = Weapon_Against((AbstractClass *)object);
 		if (weapon != NULL && weapon->IsSabotageCursor) {
 			if (object->RTTI == RTTI_UNIT && ((TechnoClass const *)object)->BunkerLinkedItem != NULL) {
 				return(ACTION_SELECT);
@@ -3409,7 +3421,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	// Over a C4-capable structure, the selected weapon's MigAttackCursor gives the airstrike action (InfantryClass::MouseOverObject, 0x51E3B0).
 	if (action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		WeaponTypeClass const * weapon = Weapon_Against((AbstractClass *)object);
 		if (weapon != NULL && weapon->IsMigAttackCursor && ((BuildingClass const *)object)->Class->Can_Plant_C4()) {
 			action = ACTION_AIR_STRIKE;
 		}
@@ -3447,7 +3459,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	if (House->Is_Player_Control() && Class->IsCapture) {
 		if (action == ACTION_ATTACK) {
 			if (!House->Is_Ally(object) && (
-				(object->RTTI == RTTI_BUILDING && (Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable)) )
+				(object->RTTI == RTTI_BUILDING && Can_Infiltrate((BuildingClass const *)object)) )
 				) {
 
 					// A single-cell deployed vehicle is not a C4 target (IsStrange in gamemd, 0x51E3B0).
@@ -3637,17 +3649,8 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 	// Only a computer's soldier turns an attack on a structure into a capture: an Infiltrate=yes soldier, or an Occupier=yes or
 	// Assaulter=yes one that can garrison the structure. A player's soldier fires its weapon instead, and an unarmed one such as an
 	// engineer does nothing (InfantryClass::Mission_Attack, 0x51F3E0).
-	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
-		if (Class->IsCapture) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
-		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
+	if (Try_Capture_Building_Target()) {
+		return(1);
 	}
 
 	// A human player's dug-in soldier never walks to its target. It keeps the target while its deploy weapon reaches it, takes the greatest
@@ -3669,17 +3672,8 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 /// <returns>The delay in game frames before the hunt mission runs again.</returns>
 int InfantryClass::Do_MISSION_HUNT(void)
 {
-	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
-		if (Class->IsCapture) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
-		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
+	if (Try_Capture_Building_Target()) {
+		return(1);
 	}
 
 	if (!House->Is_Human_Player() && Is_Deployed() && TarCom == NULL) {
@@ -3688,6 +3682,24 @@ int InfantryClass::Do_MISSION_HUNT(void)
 	}
 
 	return(BASECLASS::Do_MISSION_HUNT());
+}
+
+
+bool InfantryClass::Try_Capture_Building_Target(void)
+{
+	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+		if (Class->IsCapture) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(true);
+		}
+		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -4036,7 +4048,7 @@ void InfantryClass::Write_INI(CCINIClass & ini)
  *=============================================================================================*/
 void InfantryClass::Fear_AI(void)
 {
-	bool const deployed = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+	bool const deployed = Is_Digging_In();
 
 	/*
 	**	After a time, the infantry will gain courage.

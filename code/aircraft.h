@@ -246,6 +246,7 @@ class AircraftClass : public FootClass, public IFlyControl
 
 		int Do_MISSION_MOVE_Carryall(void);
 		int Do_MISSION_MOVE_Normal(void);
+		void Announce_Incoming(void) const;
 
 		/*
 		 * This is the name of the scenario INI section that lists the aircraft to be

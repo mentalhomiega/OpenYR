@@ -191,6 +191,12 @@ FootClass * CargoClass::Attached_Object(void) const
 }
 
 
+FootClass * CargoClass::Next_Attached(FootClass const * object)
+{
+	return(static_cast<FootClass *>(object->Next));
+}
+
+
 /// <summary>
 /// Takes one object aboard, ignoring whatever its Next points at. Next doubles as the cell
 /// occupier chain, so following it would drag whatever shares the passenger's cell into the
