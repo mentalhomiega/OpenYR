@@ -5046,6 +5046,27 @@ static void Screen_Step(StepType const &)
 }
 
 
+// The first object the player owns that is on the map, not in limbo and not destroyed, or NULL. A kill step credits its kills to it.
+static TechnoClass * First_Player_Object_Alive(void)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0) {
+			return(techno);
+		}
+	}
+	return(NULL);
+}
+
+
+// Destroys the object with the C4 warhead, for the full strength it has, credited to the attacker (NULL for none).
+static void Destroy_Techno(TechnoClass * techno, TechnoClass * attacker)
+{
+	int damage = techno->Strength;
+	techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
+}
+
+
 // kill <TypeID> [1]: destroys the computer's objects of the type with no attacker, or the player's with a 1.
 static void Kill_Step(StepType const & step)
 {
@@ -5053,9 +5074,8 @@ static void Kill_Step(StepType const & step)
 		TechnoClass * techno = Technos[index];
 		bool const player = techno->House == PlayerPtr;
 		if (player == (step.X == 1) && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			int damage = techno->Strength;
 			DebugString("AUTOTEST   kill %s at %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y);
-			techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+			Destroy_Techno(techno, NULL);
 		}
 	}
 }
@@ -5093,10 +5113,7 @@ static void Killhouse_Step(StepType const & step)
 {
 	HouseClass * victim = Named_House(step.Argument);
 	int const kinds = step.X;
-	TechnoClass * attacker = NULL;
-	for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
-		if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && Technos[index]->Strength > 0) attacker = Technos[index];
-	}
+	TechnoClass * attacker = First_Player_Object_Alive();
 	int killed = 0;
 	for (int index = Technos.Count() - 1; victim != NULL && index >= 0; index--) {
 		TechnoClass * techno = Technos[index];
@@ -5106,8 +5123,7 @@ static void Killhouse_Step(StepType const & step)
 		if (kinds == 2 && building) continue;
 		// Kind 3 is a player's sweep: the units, infantry and aircraft on cells the player can see now.
 		if (kinds == 3 && (building || !Map[techno->Get_Cell()].IsVisible[PlayerPtr])) continue;
-		int damage = techno->Strength;
-		techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
+		Destroy_Techno(techno, attacker);
 		killed++;
 	}
 	DebugString("AUTOTEST   killhouse %s %d: %d objects\n", step.Argument.c_str(), kinds, killed);
@@ -5117,17 +5133,13 @@ static void Killhouse_Step(StepType const & step)
 // killtag <Tag>: destroys every object that carries a tag of that type, with a player's object as the attacker.
 static void Killtag_Step(StepType const & step)
 {
-	TechnoClass * attacker = NULL;
-	for (int index = 0; index < Technos.Count() && attacker == NULL; index++) {
-		if (Technos[index]->House == PlayerPtr && !Technos[index]->IsInLimbo && Technos[index]->Strength > 0) attacker = Technos[index];
-	}
+	TechnoClass * attacker = First_Player_Object_Alive();
 	int killed = 0;
 	for (int index = Technos.Count() - 1; index >= 0; index--) {
 		TechnoClass * techno = Technos[index];
 		if (techno->Tag == NULL || techno->Tag->Class == NULL || techno->IsInLimbo || techno->Strength <= 0) continue;
 		if (stricmp(techno->Tag->Class->IniName, step.Argument.c_str()) != 0 && stricmp(techno->Tag->Class->GivenName, step.Argument.c_str()) != 0) continue;
-		int damage = techno->Strength;
-		techno->Take_Damage(damage, 0, Rule->C4Warhead, attacker, true);
+		Destroy_Techno(techno, attacker);
 		killed++;
 	}
 	DebugString("AUTOTEST   killtag %s: %d objects\n", step.Argument.c_str(), killed);
