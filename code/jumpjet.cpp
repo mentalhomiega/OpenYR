@@ -451,15 +451,7 @@ void JumpjetLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLanding);
 	stream.Serialize(CrashSpeed);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 }
 
 
@@ -501,11 +493,7 @@ static double Slowed_Speed(int speed, int divisor)
 
 bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -515,13 +503,13 @@ bool JumpjetLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carr
 /// </summary>
 std::unique_ptr<ILocomotion> JumpjetLocomotionClass::End_Piggyback(void)
 {
-	if (Piggybacker != nullptr) {
+	if (Piggybacker.Has_Locomotor()) {
 		LinkedTo->IsAttackedByLocomotor = false;
 		LinkedTo->IsLetGoByLocomotor = false;
 		LinkedTo->LetGoBy = NULL;
 		LinkedTo->LetGoByHouse = NULL;
 	}
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -532,7 +520,7 @@ std::unique_ptr<ILocomotion> JumpjetLocomotionClass::End_Piggyback(void)
 /// </summary>
 bool JumpjetLocomotionClass::Is_Ok_To_End(void)
 {
-	return(Piggybacker != nullptr && (!LinkedTo->IsAttackedByLocomotor || LinkedTo->IsLetGoByLocomotor));
+	return(Piggybacker.Has_Locomotor() && (!LinkedTo->IsAttackedByLocomotor || LinkedTo->IsLetGoByLocomotor));
 }
 
 

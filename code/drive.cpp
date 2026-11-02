@@ -158,16 +158,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRocking);
 	stream.Serialize(IsLocomotorUnlocked);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 	// TrackControl -- constant tables shared by every driver.
 	// RawTracks
 	// Track1 - Track13
@@ -183,11 +174,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 /// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
 bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -199,7 +186,7 @@ bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carrie
 /// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
 std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 {
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -212,7 +199,7 @@ std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 /// <returns>bool; Is it safe to end the piggyback?</returns>
 bool DriveLocomotionClass::Is_Ok_To_End(void)
 {
-	if (!Is_Moving() && (Piggybacker != NULL && IsLocomotorUnlocked)) {
+	if (!Is_Moving() && (Piggybacker.Has_Locomotor() && IsLocomotorUnlocked)) {
 		return(true);
 	}
 	return(false);

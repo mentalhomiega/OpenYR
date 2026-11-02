@@ -241,16 +241,7 @@ void DropPodLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Direction);
 	stream.Serialize(DestinationCoord);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 }
 
 
@@ -273,11 +264,7 @@ void DropPodLocomotionClass::Stop_Moving(void)
 /// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
 bool DropPodLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -289,7 +276,7 @@ bool DropPodLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carr
 /// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
 std::unique_ptr<ILocomotion> DropPodLocomotionClass::End_Piggyback(void)
 {
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -300,7 +287,7 @@ std::unique_ptr<ILocomotion> DropPodLocomotionClass::End_Piggyback(void)
 /// <returns>bool; May the carried locomotor take over again?</returns>
 bool DropPodLocomotionClass::Is_Ok_To_End(void)
 {
-	if (!Is_Moving() && Piggybacker != NULL) {
+	if (!Is_Moving() && Piggybacker.Has_Locomotor()) {
 		return(true);
 	}
 	return(false);

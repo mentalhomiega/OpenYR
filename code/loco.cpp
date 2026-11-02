@@ -204,6 +204,20 @@ std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream)
 }
 
 
+void PiggybackSlot::Serialize(SaveStreamClass & stream)
+{
+	bool haspiggy = Has_Locomotor();
+	stream.Serialize(haspiggy);
+	if (haspiggy) {
+		if (stream.Is_Saving()) {
+			Save_Object(stream, Carried.get());
+		} else {
+			Carried = Load_Locomotor(stream);
+		}
+	}
+}
+
+
 ClassID Locomotion_Class_ID(ILocomotion * locomotion)
 {
 	IPersistent const * const persist = dynamic_cast<IPersistent const *>(locomotion);

@@ -769,15 +769,7 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(WarpPhase);
 	stream.Serialize(WarpEnd);
 
-	bool haspiggy = (Piggybackee != NULL);
-	stream.Serialize(haspiggy);
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybackee.get());
-		} else {
-			Piggybackee = Load_Locomotor(stream);
-		}
-	}
+	Piggybackee.Serialize(stream);
 }
 
 
@@ -789,11 +781,7 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 /// <returns>bool; Was the locomotor taken? A teleport already carrying one refuses.</returns>
 bool TeleportLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybackee != nullptr) {
-		return(false);
-	}
-	Piggybackee = std::move(carried);
-	return(true);
+	return(Piggybackee.Begin(carried));
 }
 
 
@@ -803,7 +791,7 @@ bool TeleportLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & car
 /// <returns>The carried locomotor, or nothing when none was carried.</returns>
 std::unique_ptr<ILocomotion> TeleportLocomotionClass::End_Piggyback(void)
 {
-	return(std::move(Piggybackee));
+	return(Piggybackee.End());
 }
 
 
@@ -813,7 +801,7 @@ std::unique_ptr<ILocomotion> TeleportLocomotionClass::End_Piggyback(void)
 /// <returns>bool; Is there a carried locomotor and no warp left to run?</returns>
 bool TeleportLocomotionClass::Is_Ok_To_End(void)
 {
-	return(Piggybackee != nullptr && WarpPhase == TELEPORT_IDLE);
+	return(Piggybackee.Has_Locomotor() && WarpPhase == TELEPORT_IDLE);
 }
 
 
