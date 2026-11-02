@@ -2408,6 +2408,42 @@ bool MapClass::Read_Binary_3(Straw & straw)
 }
 
 
+// Reads the cells of a version 4 or 5 saved map. The ice growth flag and the sub-tile reset for a
+// cell with no tile are version 5 only, so HasIceGrowth selects them.
+template<std::size_t BodySize, bool HasIceGrowth>
+static bool Read_Binary_Cells(MapClass & target, Straw & straw)
+{
+	static_assert(sizeof(BlubCell.ITType) + sizeof(BlubCell.SubTile) + sizeof(BlubCell.Height) + (HasIceGrowth ? sizeof(BlubCell.IsIceGrowthAllowed) : 0) == BodySize,
+		"a cell record holds a tile type, a sub-tile, a height and, from version 5, the ice growth flag");
+
+	LZOStraw decomp(LZOStraw::DECOMPRESS);
+	decomp.Get_From(&straw);
+
+	bool const whole = Read_Cell_Records<BodySize>(decomp, CELL_NONE.X, CELL_NONE.Y,
+		[&target](std::int16_t x, std::int16_t y, unsigned char const * body) {
+			CellClass * cellptr = &target[Cell(x, y)];
+			if (cellptr != NULL && cellptr != &BlubCell) {
+				cellptr->ITType = ISOTILE_NONE;
+				body = Take_Cell_Field(body, cellptr->ITType);
+				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
+				body = Take_Cell_Field(body, cellptr->SubTile);
+				if constexpr (HasIceGrowth) {
+					// A cell with no tile has no sub-tile to look up.
+					if (cellptr->ITType == ISOTILE_NONE) {
+						cellptr->SubTile = 0;
+					}
+				}
+				body = Take_Cell_Field(body, cellptr->Height);
+				if constexpr (HasIceGrowth) {
+					Take_Cell_Field(body, cellptr->IsIceGrowthAllowed);
+				}
+			}
+		});
+	new (&BlubCell) CellClass;
+	return(whole && !decomp.Is_Damaged());
+}
+
+
 /// <summary>
 /// Reads the map cells from a version 4 saved map.
 /// This is the LZO compressed format that came before the ice growth flag was recorded.
@@ -2418,25 +2454,7 @@ bool MapClass::Read_Binary_3(Straw & straw)
 /// which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_4(Straw & straw)
 {
-	static_assert(sizeof(BlubCell.ITType) + sizeof(BlubCell.SubTile) + sizeof(BlubCell.Height) == 6,
-		"a version 4 cell record holds a tile type, a sub-tile and a height");
-
-	LZOStraw decomp(LZOStraw::DECOMPRESS);
-	decomp.Get_From(&straw);
-
-	bool const whole = Read_Cell_Records<6>(decomp, CELL_NONE.X, CELL_NONE.Y,
-		[this](std::int16_t x, std::int16_t y, unsigned char const * body) {
-			CellClass * cellptr = &(*this)[Cell(x, y)];
-			if (cellptr != NULL && cellptr != &BlubCell) {
-				cellptr->ITType = ISOTILE_NONE;
-				body = Take_Cell_Field(body, cellptr->ITType);
-				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
-				body = Take_Cell_Field(body, cellptr->SubTile);
-				Take_Cell_Field(body, cellptr->Height);
-			}
-		});
-	new (&BlubCell) CellClass;
-	return(whole && !decomp.Is_Damaged());
+	return(Read_Binary_Cells<6, false>(*this, straw));
 }
 
 
@@ -2451,30 +2469,7 @@ bool MapClass::Read_Binary_4(Straw & straw)
 /// which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_5(Straw & straw)
 {
-	static_assert(sizeof(BlubCell.ITType) + sizeof(BlubCell.SubTile) + sizeof(BlubCell.Height) + sizeof(BlubCell.IsIceGrowthAllowed) == 7,
-		"a version 5 cell record holds a tile type, a sub-tile, a height and the ice growth flag");
-
-	LZOStraw decomp(LZOStraw::DECOMPRESS);
-	decomp.Get_From(&straw);
-
-	bool const whole = Read_Cell_Records<7>(decomp, CELL_NONE.X, CELL_NONE.Y,
-		[this](std::int16_t x, std::int16_t y, unsigned char const * body) {
-			CellClass * cellptr = &(*this)[Cell(x, y)];
-			if (cellptr != NULL && cellptr != &BlubCell) {
-				cellptr->ITType = ISOTILE_NONE;
-				body = Take_Cell_Field(body, cellptr->ITType);
-				cellptr->ITType = IsometricTileTypeClass::Fixup_Tile_Type(cellptr->ITType);
-				body = Take_Cell_Field(body, cellptr->SubTile);
-				// A cell with no tile has no sub-tile to look up.
-				if (cellptr->ITType == ISOTILE_NONE) {
-					cellptr->SubTile = 0;
-				}
-				body = Take_Cell_Field(body, cellptr->Height);
-				Take_Cell_Field(body, cellptr->IsIceGrowthAllowed);
-			}
-		});
-	new (&BlubCell) CellClass;
-	return(whole && !decomp.Is_Damaged());
+	return(Read_Binary_Cells<7, true>(*this, straw));
 }
 
 
