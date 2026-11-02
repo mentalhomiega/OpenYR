@@ -77,6 +77,23 @@ PaletteClass::PaletteClass(unsigned char * binary_palette)
 }
 
 
+/// <summary>
+/// Builds a palette from palette-file bytes, widening each six-bit gun to eight bits.
+/// Palette files store six-bit colours, so the game multiplies every gun by four.
+/// </summary>
+/// <param name="six_bit_palette">Pointer to a full palette's worth of three-byte entries, each gun 0 to 63.</param>
+/// <returns>The palette with each gun shifted left by two bits.</returns>
+PaletteClass Widen_Six_Bit_Palette(void const * six_bit_palette)
+{
+	PaletteClass palette;
+	memcpy(&palette[0], six_bit_palette, sizeof(palette));
+	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
+		palette[index] = RGBClass((unsigned char)(palette[index].Get_Red() << 2), (unsigned char)(palette[index].Get_Green() << 2), (unsigned char)(palette[index].Get_Blue() << 2));
+	}
+	return(palette);
+}
+
+
 /***********************************************************************************************
  * PaletteClass::operator == -- Equality operator for palette objects.                         *
  *                                                                                             *

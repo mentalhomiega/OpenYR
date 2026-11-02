@@ -627,13 +627,7 @@ void SidebarClass::Init_For_House(void)
 	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
 	StripClass::RechargeClockShapes = StripClass::ClockShapes;
 
-	PaletteClass pal;
-
-	memmove(&pal, MFCD::Retrieve("SIDEBAR.PAL"), sizeof(pal));
-
-	for (i = 0; i < PaletteClass::COLOR_COUNT; i++) {
-		pal[i] = RGBClass(pal[i].Get_Red() * 4, pal[i].Get_Green() * 4, pal[i].Get_Blue() * 4);
-	}
+	PaletteClass const pal = Widen_Six_Bit_Palette(MFCD::Retrieve("SIDEBAR.PAL"));
 
 	if (SidebarDrawer != NULL) {
 		delete SidebarDrawer;
