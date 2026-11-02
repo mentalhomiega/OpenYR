@@ -1200,6 +1200,7 @@ class HouseClass : public AbstractClass
 		int AI_Unit(void);
 		int AI_Infantry(void);
 		int AI_Aircraft(void);
+		void Update_Spy_Satellite(void);
 
 		/*
 		**	This is a bit field record of all the other houses that are allies with
@@ -1391,3 +1392,4 @@ HouseClass * House_At(int spawn_waypoint);
 HouseClass * House_From_Name(char const * name);
 HouseClass * Placed_Object_House(char const * name);
 bool House_Matches(HouseClass const * house, HousesType selector);
+AircraftTypeClass const * Paradrop_Plane_Type(void);

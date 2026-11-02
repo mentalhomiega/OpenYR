@@ -37,7 +37,7 @@ class ScriptClass : public AbstractClass
 
 		virtual void Compute_CRC(CRCEngine &) const override;
 
-		TeamMissionClass Get_Current_Mission(void);
+		TeamMissionClass Get_Current_Mission(void) const;
 		TeamMissionClass Get_Next_Mission(void);
 
 		bool Stop_Script(void);

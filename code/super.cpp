@@ -962,13 +962,13 @@ void SuperClass::Paradrop(Cell const & cell) const
 		}
 	}
 
-	AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
-	if (plane == AIRCRAFT_NONE || infantry->Count() != counts->Count()) {
+	AircraftTypeClass const * plane = Paradrop_Plane_Type();
+	if (plane == NULL || infantry->Count() != counts->Count()) {
 		return;
 	}
 	for (int index = 0; index < infantry->Count(); index++) {
 		if ((*infantry)[index] != NULL) {
-			House->Send_Plane(AircraftTypes[plane], MISSION_PARADROP_APPROACH, target, (*infantry)[index], (*counts)[index]);
+			House->Send_Plane(plane, MISSION_PARADROP_APPROACH, target, (*infantry)[index], (*counts)[index]);
 		}
 	}
 }

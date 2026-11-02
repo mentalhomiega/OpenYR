@@ -9550,6 +9550,7 @@ void HouseClass::Recalc_Power_Drain(void)
 /// This routine is called after anything that might switch the radar on or off -- a change
 /// in power, an ion storm, or the loss of the radar structure itself. The tactical map is
 /// told to raise or lower the radar to suit. Only the player's house has a radar to manage.
+/// It then refreshes the spy satellite reveal of this house.
 /// </summary>
 void HouseClass::Recalc_Radar_Availability(void)
 {
@@ -9583,6 +9584,12 @@ void HouseClass::Recalc_Radar_Availability(void)
 		}
 	}
 
+	Update_Spy_Satellite();
+}
+
+
+void HouseClass::Update_Spy_Satellite(void)
+{
 	/*
 	 * A working spy satellite structure shows its owner the whole map, and losing the last one
 	 * shrouds the map again, as gamemd's FUN_00508F60 does.
@@ -10206,6 +10213,17 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 	}
 	plane->Commence();
 	return(plane);
+}
+
+
+/// <summary>
+/// Fetches the PDPLANE aircraft type that carries paratroopers.
+/// </summary>
+/// <returns>Returns with the PDPLANE type, or NULL when the rules define no PDPLANE aircraft.</returns>
+AircraftTypeClass const * Paradrop_Plane_Type(void)
+{
+	AircraftType const plane = AircraftTypeClass::From_Name("PDPLANE");
+	return(plane != AIRCRAFT_NONE ? AircraftTypes[plane] : NULL);
 }
 
 
