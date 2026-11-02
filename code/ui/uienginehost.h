@@ -23,6 +23,8 @@ std::string UI_Color_Text(COLORREF color);
 
 bool UI_Service_Game(void);
 
+bool UI_Service_Title(void);
+
 UIResult UI_Run_Modal(UIViewClass & view, bool hideparent = false);
 
 void UI_Serve_Screen(void);

@@ -21,6 +21,7 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
+#include "init.h"
 #include "keyboard.h"
 #include "mainloop.h"
 #include "mixfile.h"
@@ -296,6 +297,18 @@ bool UI_Service_Game(void)
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Services the game as UI_Service_Game does, then restores the title screen behind a modal dialog.
+/// </summary>
+/// <returns>True once the match has ended, which closes the screen.</returns>
+bool UI_Service_Title(void)
+{
+	bool ended = UI_Service_Game();
+	Title_Screen_Restore();
+	return(ended);
 }
 
 

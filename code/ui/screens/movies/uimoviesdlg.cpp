@@ -55,11 +55,7 @@ void UI_Movies_Dialog(void)
 		UIMoviesPresenterClass presenter(state);
 		std::unique_ptr<UIViewClass> view = UI_Movies_View(presenter);
 
-		UIResult const result = UIShell.Run_Modal(*view, []() {
-			bool ended = UI_Service_Game();
-			Title_Screen_Restore();
-			return(ended);
-		});
+		UIResult const result = UIShell.Run_Modal(*view, UI_Service_Title);
 		if (result != UI_RESULT_ACCEPTED || presenter.State.Selected < 0 || presenter.State.Selected >= (int)state.Rows.size()) {
 			return;
 		}

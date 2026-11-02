@@ -13,7 +13,6 @@
 #include "csf.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
-#include "init.h"
 #include "language/language.h"
 #include "msgbox.h"
 #include "nettiming.h"
@@ -100,11 +99,7 @@ bool UI_Replays_Dialog(std::string & file)
 		UIReplaysPresenterClass presenter(state);
 		std::unique_ptr<UIViewClass> view = UI_Replays_View(presenter);
 
-		UIResult const result = UIShell.Run_Modal(*view, []() {
-			bool ended = UI_Service_Game();
-			Title_Screen_Restore();
-			return(ended);
-		});
+		UIResult const result = UIShell.Run_Modal(*view, UI_Service_Title);
 		if (result != UI_RESULT_ACCEPTED || presenter.State.Selected < 0 || presenter.State.Selected >= (int)state.Rows.size()) {
 			return(false);
 		}
