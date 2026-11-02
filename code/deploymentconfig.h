@@ -75,9 +75,6 @@ class DeploymentConfigClass
 		std::string SchemePaletteFile = "UNITSNO.PAL";
 		std::string GamePaletteFile = "TEMPERAT.PAL";
 
-		// The file the settings were read from; empty when none was found.
-		std::string FileName = "";
-
 		void Read_INI(INIClass const & ini);
 
 		/*
