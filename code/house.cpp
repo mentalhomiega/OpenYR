@@ -1417,14 +1417,7 @@ void HouseClass::AI(void)
 
 	Debug_Top_Up_Credits(this);
 
-	if (IsPowerBlackout && PowerBlackout == 0) {
-		IsPowerBlackout = false;
-		RecalcPower = true;
-	}
-	if (IsRadarBlackout && RadarBlackout == 0) {
-		IsRadarBlackout = false;
-		RecalcRadar = true;
-	}
+	Expire_Blackouts();
 	if (RecalcPower) {
 		Recalc_Power_Drain();
 		RecalcRadar = true;
@@ -1452,36 +1445,7 @@ void HouseClass::AI(void)
 		IsAlerted = true;
 	}
 
-	/*
-	**	Check to see if the house wins. Only the player's own result ends the game, so a
-	**	computer house's win or loss is dropped here.
-	*/
-	if (IsToWin && BorrowedTime == 0 && (Session.Type != GAME_NORMAL || Blockage <= 0)) {
-		CDTimerClass<SystemTimerClass> _timer = TIMER_SECOND * 2;
-		while (Is_Speaking() && _timer) {
-			Call_Back();
-		}
-		IsToWin = false;
-
-		// A Cooperative match is won by any person's win, since all the people play one side.
-		if (Is_Player_Control() || (MPMode_Is_Cooperative_Match() && Is_Human_Player())) {
-			PlayerWins = true;
-		}
-	}
-
-	/*
-	**	Check to see if the house loses.
-	*/
-	if (/*Session.Type == GAME_NORMAL &&*/ IsToLose && BorrowedTime == 0) {
-		CDTimerClass<SystemTimerClass> _timer = TIMER_SECOND * 2;
-		while (Is_Speaking() && _timer) {
-			Call_Back();
-		}
-		IsToLose = false;
-		if (Is_Player_Control()) {
-			PlayerLoses = true;
-		}
-	}
+	Resolve_End_Flags();
 
 	/*
 	**	Check to see if all objects of this house should be destroyed.
@@ -1683,31 +1647,7 @@ void HouseClass::AI(void)
 	*/
 	Super_Weapon_Handler();
 
-	/*
-	**	Special win/lose check for multiplayer games; by-passes the
-	**	trigger system.  We must wait for non-zero frame, because init
-	**	may not properly set IScan etc for each house; you have to go
-	**	through each object's AI before it will be properly set.
-	*/
-	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
-		bool defeated = false;
-		if (Session.Options.ShortGame) {
-			if (Rule->IsKeepAliveSet) {
-				defeated = !Has_Keep_Alive() && Count_Owned(UQuantity, Rule->BaseUnit) == 0;
-			} else if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
-				defeated = true;
-			}
-		} else {
-			if (!CurBuildings && !CurAircraft && !CurInfantry && CurUnits == 0) {
-				defeated = true;
-			}
-		}
-
-		if (defeated) {
-			Destroy_All();
-			MPlayer_Defeated();
-		}
-	}
+	Check_Multiplayer_Defeat();
 
 	// Every eighth frame, offer every tag attached to this house one chance to spring, last
 	// first, as gamemd's HouseClass::AI (0x4F8440) does.
@@ -1789,6 +1729,108 @@ void HouseClass::AI(void)
 //		Do_All_To_Hunt();
 //	}
 
+	Run_Computer_Production();
+
+	Refresh_Production_Options();
+
+	/*
+	**	See if it's time to re-set the can-repair flag
+	*/
+	if (DidRepair && RepairTimer == 0) {
+		DidRepair = false;
+	}
+
+	if (IsToLook) {
+		IsToLook = false;
+		Map.All_To_Look(false, false, this);
+	}
+}
+
+
+void HouseClass::Expire_Blackouts(void)
+{
+	if (IsPowerBlackout && PowerBlackout == 0) {
+		IsPowerBlackout = false;
+		RecalcPower = true;
+	}
+	if (IsRadarBlackout && RadarBlackout == 0) {
+		IsRadarBlackout = false;
+		RecalcRadar = true;
+	}
+}
+
+
+// Runs the callbacks until the speech in progress ends or two seconds pass.
+static void Wait_For_Speech(void)
+{
+	CDTimerClass<SystemTimerClass> timer = TIMER_SECOND * 2;
+	while (Is_Speaking() && timer) {
+		Call_Back();
+	}
+}
+
+
+void HouseClass::Resolve_End_Flags(void)
+{
+	/*
+	**	Check to see if the house wins. Only the player's own result ends the game, so a
+	**	computer house's win or loss is dropped here.
+	*/
+	if (IsToWin && BorrowedTime == 0 && (Session.Type != GAME_NORMAL || Blockage <= 0)) {
+		Wait_For_Speech();
+		IsToWin = false;
+
+		// A Cooperative match is won by any person's win, since all the people play one side.
+		if (Is_Player_Control() || (MPMode_Is_Cooperative_Match() && Is_Human_Player())) {
+			PlayerWins = true;
+		}
+	}
+
+	/*
+	**	Check to see if the house loses.
+	*/
+	if (/*Session.Type == GAME_NORMAL &&*/ IsToLose && BorrowedTime == 0) {
+		Wait_For_Speech();
+		IsToLose = false;
+		if (Is_Player_Control()) {
+			PlayerLoses = true;
+		}
+	}
+}
+
+
+void HouseClass::Check_Multiplayer_Defeat(void)
+{
+	/*
+	**	Special win/lose check for multiplayer games; by-passes the
+	**	trigger system.  We must wait for non-zero frame, because init
+	**	may not properly set IScan etc for each house; you have to go
+	**	through each object's AI before it will be properly set.
+	*/
+	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
+		bool defeated = false;
+		if (Session.Options.ShortGame) {
+			if (Rule->IsKeepAliveSet) {
+				defeated = !Has_Keep_Alive() && Count_Owned(UQuantity, Rule->BaseUnit) == 0;
+			} else if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
+				defeated = true;
+			}
+		} else {
+			if (!CurBuildings && !CurAircraft && !CurInfantry && CurUnits == 0) {
+				defeated = true;
+			}
+		}
+
+		if (defeated) {
+			Destroy_All();
+			MPlayer_Defeated();
+		}
+	}
+}
+
+
+void HouseClass::Run_Computer_Production(void)
+{
 	if (!Is_Human_Player() && !Class->IsMultiplayPassive) {
 		if (ProductionMode == EVERYTHING || Session.Type == GAME_NORMAL) {
 			AI_Building();
@@ -1831,7 +1873,11 @@ void HouseClass::AI(void)
 			}
 		}
 	}
+}
 
+
+void HouseClass::Refresh_Production_Options(void)
+{
 	/*
 	**	If the production possibilities need to be recalculated, then do so now. This must
 	**	occur after the scan bits have been properly updated.
@@ -1870,18 +1916,6 @@ void HouseClass::AI(void)
 	if (recalc_supers) {
 		Update_Present_Super_Weapons();
 		Enable_Available_Super_Weapons();
-	}
-
-	/*
-	**	See if it's time to re-set the can-repair flag
-	*/
-	if (DidRepair && RepairTimer == 0) {
-		DidRepair = false;
-	}
-
-	if (IsToLook) {
-		IsToLook = false;
-		Map.All_To_Look(false, false, this);
 	}
 }
 

@@ -949,6 +949,11 @@ class HouseClass : public AbstractClass
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;
 #endif
 		virtual void AI(void) override;
+		void Expire_Blackouts(void);
+		void Resolve_End_Flags(void);
+		void Check_Multiplayer_Defeat(void);
+		void Run_Computer_Production(void);
+		void Refresh_Production_Options(void);
 
 		void Add_Anger(int level, HouseClass const * house);
 		void Mark_Scouted(HouseClass const * house);
