@@ -85,7 +85,7 @@ bool Storm_Sound_Present(VocClass const * sound)
 
 
 // Draws the next screen static frame once the timer has run out, then restarts the timer.
-void Show_Due_Screen_Static(CDTimerClass<SystemTimerClass> & static_timer)
+static void Show_Due_Screen_Static(CDTimerClass<SystemTimerClass> & static_timer)
 {
 	static int static_frame = 0;
 
@@ -102,7 +102,7 @@ void Show_Due_Screen_Static(CDTimerClass<SystemTimerClass> & static_timer)
 // Tints every tile drawer, then the color schemes: every scheme when all_schemes is set, else
 // only those with more than one intensity level. With with_static, screen static is drawn after
 // each tint whose static timer has run out.
-void Apply_Palette_Tint(int red, int green, int blue, bool ion_light, bool all_schemes, bool with_static)
+static void Apply_Palette_Tint(int red, int green, int blue, bool ion_light, bool all_schemes, bool with_static)
 {
 	CDTimerClass<SystemTimerClass> static_timer;
 
