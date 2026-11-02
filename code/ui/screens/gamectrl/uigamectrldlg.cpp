@@ -217,25 +217,13 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	state.DebugMode = Options.DebugMode;
 	state.RecordReplays = Replay_Is_Recording_Enabled();
 
-	static int const intervals[] = {0, 5400, 10800, 21600};
 	int const current = (Options.AutoSaveInterval > 0) ? Options.AutoSaveInterval : 0;
-	state.Autosave = -1;
-	for (int frames : intervals) {
-		if (frames == current) {
-			state.Autosave = (int)state.Autosaves.size();
-		}
-		UIChoice choice;
-		choice.Value = frames;
-		choice.Label = (frames > 0) ? std::to_string(frames) + " frames" : std::string("Off");
-		state.Autosaves.push_back(choice);
-	}
-	if (state.Autosave < 0) {
-		UIChoice choice;
-		choice.Value = current;
-		choice.Label = std::to_string(current) + " frames";
-		state.Autosave = (int)state.Autosaves.size();
-		state.Autosaves.push_back(choice);
-	}
+	state.Autosave = Fill_Choices(state.Autosaves, {
+		{0, "Off"},
+		{5400, "5400 frames"},
+		{10800, "10800 frames"},
+		{21600, "21600 frames"},
+	}, current, "%d frames");
 }
 
 

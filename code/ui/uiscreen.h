@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <vector>
@@ -37,6 +38,9 @@ struct UIChoice
 	int Value = 0;
 	std::string Label;
 };
+
+
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format);
 
 
 /// <summary>

@@ -9,6 +9,32 @@
 
 #include "ui/uiscreen.h"
 
+#include <cstdio>
+
+
+// Adds the choices to the list and returns the index of the one with the current value, adding
+// the current value under its own label when the list does not have it.
+int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format)
+{
+	int picked = -1;
+	for (UIChoice const & choice : choices) {
+		if (choice.Value == current) {
+			picked = (int)list.size();
+		}
+		list.push_back(choice);
+	}
+	if (picked < 0) {
+		UIChoice choice;
+		choice.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), format, current);
+		choice.Label = buffer;
+		picked = (int)list.size();
+		list.push_back(choice);
+	}
+	return(picked);
+}
+
 
 void UIPresenterClass::Queue(UIIntent const & intent)
 {
