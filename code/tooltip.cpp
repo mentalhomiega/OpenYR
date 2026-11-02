@@ -246,6 +246,18 @@ void ToolTipManager::Remove(unsigned id)
 
 
 /// <summary>
+/// Registers the tooltip in place of any tooltip already held under its identifier.
+/// Use this to change a registered tooltip's text or region; Add alone keeps the old one.
+/// </summary>
+/// <param name="tooltip">The tooltip to copy into the manager.</param>
+void ToolTipManager::Replace(ToolTip const * tooltip)
+{
+	Remove(tooltip->ID);
+	Add(tooltip);
+}
+
+
+/// <summary>
 /// Finds the tooltip with the identifier specified.
 /// </summary>
 /// <param name="id">Identifier of the tooltip to look for.</param>

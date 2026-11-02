@@ -554,13 +554,14 @@ void TabClass::Place_Command_Buttons(void)
 		}
 
 		if (ToolTips != NULL) {
-			ToolTips->Remove(button.ID);
 			if (shown) {
 				ToolTip tooltip;
 				tooltip.ID = button.ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button.X, button.Y, button.Width, button.Height);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
+			} else {
+				ToolTips->Remove(button.ID);
 			}
 		}
 	}

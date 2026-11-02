@@ -3460,30 +3460,26 @@ void SidebarClass::Add_Tool_Tips(void)
 		tooltip.ID = BUTTON_REPAIR;
 		tooltip.Text = TXT_REPAIR_MODE;
 		tooltip.Region.Set(Repair.X, Repair.Y, Repair.Width, Repair.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 
 		tooltip.ID = BUTTON_SELL;
 		tooltip.Text = TXT_SELL_MODE;
 		tooltip.Region.Set(Upgrade.X, Upgrade.Y, Upgrade.Width, Upgrade.Height);
-		ToolTips->Remove(tooltip.ID);
-		ToolTips->Add(&tooltip);
+		ToolTips->Replace(&tooltip);
 
 		if (Modern_Interface()) {
 			for (ShapeButtonClass const * button : {&Power, &BeaconButton, &OptionsButton}) {
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 		} else {
 			for (ShapeButtonClass const * button : {&OptionsButton, &DiplomacyButton}) {
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 
 			// Only the shown strip's arrows are on screen, so only they need a region.
@@ -3491,8 +3487,7 @@ void SidebarClass::Add_Tool_Tips(void)
 				tooltip.ID = button->ID;
 				tooltip.Text = TXT_NONE;
 				tooltip.Region.Set(button->X, button->Y, button->Width, button->Height);
-				ToolTips->Remove(tooltip.ID);
-				ToolTips->Add(&tooltip);
+				ToolTips->Replace(&tooltip);
 			}
 		}
 	}

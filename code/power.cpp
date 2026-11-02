@@ -594,8 +594,7 @@ void PowerClass::Reposition_Sidebar(void)
 		tt.Region = Bar_Rect();
 		tt.Region.X += SidebarRect.X;
 
-		ToolTips->Remove(tt.ID);
-		ToolTips->Add(&tt);
+		ToolTips->Replace(&tt);
 	}
 }
 
