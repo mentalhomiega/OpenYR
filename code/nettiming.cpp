@@ -517,16 +517,6 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Settings for the worst round trip at the desired frame rate, under gamemd's rules.</summary>
-	TimingSettings Gamemd_Timing_Settings(Milliseconds worst_round_trip, unsigned int frame_rate, unsigned int current_max_ahead)
-	{
-		unsigned int const frame_send_rate = Gamemd_Frame_Send_Rate(frame_rate);
-		unsigned int const max_ahead = Gamemd_Max_Ahead(Round_Trip_Ticks(worst_round_trip), frame_rate, frame_send_rate,
-			current_max_ahead, GAMEMD_LATENCY_STAGE);
-		return(TimingSettings{frame_send_rate, max_ahead});
-	}
-
-
 	/// <summary>Rounds a look-ahead up to whole send periods, within the smallest and largest the game accepts.</summary>
 	unsigned int Host_Max_Ahead_For(unsigned int max_ahead, unsigned int frame_send_rate)
 	{
