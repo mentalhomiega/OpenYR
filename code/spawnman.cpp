@@ -48,14 +48,13 @@ Coord Coord_Of(AbstractClass * target)
 
 bool SpawnManagerClass::NodeType::Is_Timer_Expired(void) const
 {
-	return(Frame - TimerStart >= TimerLength);
+	return(Timer.Is_Expired());
 }
 
 
 void SpawnManagerClass::NodeType::Start_Timer(int frames)
 {
-	TimerStart = Frame;
-	TimerLength = frames;
+	Timer.Begin(frames);
 }
 
 
@@ -63,8 +62,8 @@ void SpawnManagerClass::NodeType::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Unit);
 	stream.Serialize(Status);
-	stream.Serialize(TimerStart);
-	stream.Serialize(TimerLength);
+	stream.Serialize(Timer.Start);
+	stream.Serialize(Timer.Length);
 	stream.Serialize(IsMissile);
 }
 

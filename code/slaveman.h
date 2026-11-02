@@ -10,6 +10,7 @@
 #pragma once
 
 #include "coord.h"
+#include "ftimer.h"
 #include "globals.h"
 
 #include <vector>
@@ -56,8 +57,7 @@ class SlaveManagerClass
 		struct NodeType {
 			InfantryClass * Slave = nullptr;
 			int Status = NODE_DEAD;
-			int TimerStart = 0;
-			int TimerLength = 0;
+			FrameCountdown Timer;
 			Cell OreCell = CELL_NONE;
 
 			bool Is_Timer_Expired(void) const;
