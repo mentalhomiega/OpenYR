@@ -2100,11 +2100,11 @@ bool BulletClass::Start_Nuke_Blast(void)
 
 	NukeFlashClass::Start();
 
-	AnimType const type = AnimTypeClass::From_Name("NUKEBALL");
-	if (type == ANIM_NONE) {
+	AnimClass * const nukeball = Spawn_Named_Anim("NUKEBALL", PositionCoord, 0, Get_Explosion_Z(PositionCoord), ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER));
+	if (nukeball == NULL) {
 		return(false);
 	}
-	NextAnim = new AnimClass(AnimTypes[type], PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER), Get_Explosion_Z(PositionCoord));
+	NextAnim = nukeball;
 	SpawnNextAnim = true;
 	if (AutoTest_Active()) {
 		DebugString("AUTOTEST nuke blast builds up at frame %d\n", Frame);

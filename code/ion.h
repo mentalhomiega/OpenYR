@@ -72,6 +72,15 @@ class IonStormClass
 		static void Start_Audio(bool instant);
 		static void End_Audio(void);
 
+		struct LightPair {
+			int level;
+			int ground;
+		};
+
+		// The level and ground light of the special lighting in force. Level_Light and Ground_Light
+		// both read it, in the order storm, dominator blast, nuclear flash, then the scenario.
+		static LightPair Current_Light_Pair(void);
+
 		/*
 		 * If an ion storm is raging over the battlefield, then this flag will be true.
 		 * While it is set, ion sensitive locomotors have no power and the world wears

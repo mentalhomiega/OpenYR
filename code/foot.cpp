@@ -2410,10 +2410,8 @@ bool FootClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		}
 
 		if (CurrentMission != MISSION_PATROL || Status == 0) {
-			if (CurrentPath != PATH_NONE && resume_waypoint) {
-				WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-				WaypointClass * next_wp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-				Execute_Waypoint_Path(next_wp);
+			if (resume_waypoint) {
+				Advance_Waypoint_Path();
 			}
 		}
 
@@ -5517,6 +5515,23 @@ ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionT
 
 
 /// <summary>
+/// Takes this object off the map and into the cargo of a transport that has accepted it. A gunner transport
+/// takes it as its gunner when it is the only passenger, and the transport then plays its entering sound.
+/// </summary>
+/// <param name="transport">The transport that takes this object aboard.</param>
+void FootClass::Board_Transport(TechnoClass * transport)
+{
+	Limbo();
+	transport->Cargo.Attach(this);
+	if (transport->TClass->IsGunner && transport->Cargo.How_Many() == 1) {
+		transport->Receive_Gunner(this);
+	}
+	transport->Play_Transport_Sound(true);
+	Hidden();
+}
+
+
+/// <summary>
 /// Handles the rescue mission state machine.
 /// This routine will have the object engage any threat close to the spot the mission began
 /// at, then head for whatever destination its house nominates. Once it arrives, it settles
@@ -5698,9 +5713,6 @@ void FootClass::Iron_Curtain(int duration, HouseClass * source, bool force_shiel
 	ParalysisTimer = 0;
 	TechnoClass::Iron_Curtain(duration, source, force_shield);
 }
-
-
-void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 
 /// <summary>

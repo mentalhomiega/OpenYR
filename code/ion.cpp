@@ -479,21 +479,30 @@ void IonStormClass::Special_Tint(int & red, int & green, int & blue)
 
 
 /// <summary>
-/// Gives the amount each level of height lightens a cell: the storm's while one rages, then the
-/// dominator's while its blast lasts, then the flash's, then the scenario's (0x484440).
+/// Picks the level and ground light of the special lighting in force: the storm's while one rages,
+/// then the dominator's while its blast lasts, then the flash's, then the scenario's (0x484440).
+/// </summary>
+IonStormClass::LightPair IonStormClass::Current_Light_Pair(void)
+{
+	if (IsActive || LightningStormClass::Is_Active()) {
+		return(LightPair{Scen->IonLevelLight, Scen->IonGroundLight});
+	}
+	if (PsychicDominatorClass::Is_Active()) {
+		return(LightPair{Scen->DominatorLevelLight, Scen->DominatorGroundLight});
+	}
+	if (NukeFlashClass::Is_Fading_In()) {
+		return(LightPair{NUKE_LEVEL_LIGHT, NUKE_GROUND_LIGHT});
+	}
+	return(LightPair{Scen->LevelLight, Scen->GroundLight});
+}
+
+
+/// <summary>
+/// Gives the amount each level of height lightens a cell, from the special lighting in force.
 /// </summary>
 int IonStormClass::Level_Light(void)
 {
-	if (IsActive || LightningStormClass::Is_Active()) {
-		return(Scen->IonLevelLight);
-	}
-	if (PsychicDominatorClass::Is_Active()) {
-		return(Scen->DominatorLevelLight);
-	}
-	if (NukeFlashClass::Is_Fading_In()) {
-		return(NUKE_LEVEL_LIGHT);
-	}
-	return(Scen->LevelLight);
+	return(Current_Light_Pair().level);
 }
 
 
@@ -502,16 +511,7 @@ int IonStormClass::Level_Light(void)
 /// </summary>
 int IonStormClass::Ground_Light(void)
 {
-	if (IsActive || LightningStormClass::Is_Active()) {
-		return(Scen->IonGroundLight);
-	}
-	if (PsychicDominatorClass::Is_Active()) {
-		return(Scen->DominatorGroundLight);
-	}
-	if (NukeFlashClass::Is_Fading_In()) {
-		return(NUKE_GROUND_LIGHT);
-	}
-	return(Scen->GroundLight);
+	return(Current_Light_Pair().ground);
 }
 
 

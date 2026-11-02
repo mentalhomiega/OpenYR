@@ -33,6 +33,7 @@
 #pragma once
 
 #include "abstract.h"
+#include "dialog.hh"
 #include "ftimer.h"
 #include "super.hh"
 #include "timer.h"
@@ -164,3 +165,6 @@ class SuperClass : public AbstractClass
 			ANIMATION_STAGES=54
 		};
 };
+
+// Shows a string table message to the local player for ten seconds.
+void Show_Super_Message(char const * label, TextPrintType style);

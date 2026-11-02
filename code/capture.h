@@ -15,6 +15,7 @@
 #include <vector>
 
 class AbstractClass;
+class AnimTypeClass;
 class HouseClass;
 class SaveStreamClass;
 class TechnoClass;
@@ -67,3 +68,5 @@ class CaptureManagerClass
 		int OverloadDamageDelay = 30;
 		int OverloadPipState = 0;
 };
+
+void Attach_Control_Ring(TechnoClass * techno, AnimTypeClass const * type);

@@ -42,14 +42,6 @@ RulesClass::RocketTypeStruct const & Rocket_Settings(FootClass const * object)
 	return(rocket != NULL ? *rocket : Rule->DMisl);
 }
 
-void Play_Anim(char const * name, Coord const & coord, int timedelay = 0, int zadjust = 0)
-{
-	AnimType const anim = AnimTypeClass::From_Name(name);
-	if (anim != ANIM_NONE) {
-		new AnimClass(AnimTypes[anim], coord, timedelay, 1, ShapeFlags_Type(SHAPE_WIN_REL | SHAPE_CENTER), zadjust);
-	}
-}
-
 }
 
 
@@ -215,7 +207,7 @@ bool RocketLocomotionClass::Process(void)
 			CurrentPitch = float(rocket.PitchFinal * HALF_PI);
 			MissionState = STATE_CLIMB;
 			// The takeoff starts two frames into its life, with a ZAdjust of -10 (gamemd 0x66238A).
-			Play_Anim("V3TAKOFF", position, 2, -10);
+			Spawn_Named_Anim("V3TAKOFF", position, 2, -10);
 			Sound_Effect(LinkedTo->TClass->AuxSound1, position);
 			break;
 
@@ -273,7 +265,7 @@ bool RocketLocomotionClass::Process(void)
 	}
 
 	if (MissionState >= STATE_CLIMB && Frame >= NextTrailFrame) {
-		Play_Anim("V3TRAIL", position);
+		Spawn_Named_Anim("V3TRAIL", position);
 		NextTrailFrame = Frame + 3;
 	}
 

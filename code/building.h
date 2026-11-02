@@ -784,6 +784,7 @@ class BuildingClass : public TechnoClass
 void Adjust_House_Power(HouseClass * house);
 BuildingClass * Find_Unit_Repair_Facility(HouseClass * house, TechnoClass * obj);
 BuildingClass const * Linked_Building_Underfoot(TechnoClass const * unit);
+void Cloak_Cell_Occupiers(CellClass * cellptr);
 
 
 inline BuildingClass * AbstractClass::As_BuildingClass(void)

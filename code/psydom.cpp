@@ -16,6 +16,7 @@
 #include "_rules.h"
 #include "anim.h"
 #include "animtype.h"
+#include "capture.h"
 #include "cell.h"
 #include "combat.h"
 #include "csf.h"
@@ -30,6 +31,7 @@
 #include "session.h"
 #include "shapeset.h"
 #include "stimer.h"
+#include "super.h"
 #include "techno.h"
 #include "techtype.h"
 #include "vector.h"
@@ -146,9 +148,7 @@ bool PsychicDominatorClass::Can_Be_Dominated(TechnoClass const * techno)
 /// </summary>
 void PsychicDominatorClass::Print_Refusal(void)
 {
-	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
-	std::string const text = Fetch_String_UTF8("Msg:DominatorActive");
-	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD), TICKS_PER_SECOND * 10);
+	Show_Super_Message("Msg:DominatorActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 }
 
 
@@ -189,12 +189,7 @@ void PsychicDominatorClass::Fire(void)
 		techno->Set_Owning_House(Owner, true);
 		techno->IsPermaControlled = true;
 		if (Rule->PermaControlledAnimationType != NULL) {
-			Coord ring = techno->Center_Coord();
-			ring.Z += techno->TClass->MindControlRingOffset;
-			AnimClass * anim = new AnimClass(Rule->PermaControlledAnimationType, ring);
-			if (anim != NULL) {
-				anim->Attach_To(techno);
-			}
+			Attach_Control_Ring(techno, Rule->PermaControlledAnimationType);
 		}
 		if (!Owner->Is_Human_Player()) {
 			techno->Assign_Mission(MISSION_HUNT);
