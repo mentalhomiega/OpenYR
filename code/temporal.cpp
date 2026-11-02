@@ -76,6 +76,14 @@ bool TemporalClass::Can_Warp_Target(TechnoClass const * target) const
 }
 
 
+static void Flag_Building_Recalc(TechnoClass * target)
+{
+	if (target->RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
+		target->House->IsRecalcNeeded = true;
+	}
+}
+
+
 /// <summary>
 /// Starts warping the target (TemporalClass::Fire, 0x71AF20). The owner first lets go of
 /// anything it held, and the target lets go of what it holds by mind control or a warp of
@@ -115,9 +123,7 @@ void TemporalClass::Fire(TechnoClass * target)
 	}
 
 	target->IsBeingWarpedOut = true;
-	if (target->RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
-		target->House->IsRecalcNeeded = true;
-	}
+	Flag_Building_Recalc(target);
 	if (target->TClass->IsGattling) {
 		target->Gattling_Rate_Down(1);
 	}
@@ -129,6 +135,14 @@ void TemporalClass::Fire(TechnoClass * target)
 }
 
 
+int TemporalClass::Own_Warp_Rate(void)
+{
+	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(Owner->What_Weapon_Should_I_Use(nullptr))->Weapon;
+	WarpPerStep = weapon != nullptr ? weapon->Attack : 0;
+	return(WarpPerStep);
+}
+
+
 // What this member and the members before it take off the warp each frame.
 int TemporalClass::Warp_Per_Step(int helpers)
 {
@@ -136,9 +150,7 @@ int TemporalClass::Warp_Per_Step(int helpers)
 	if (Of(Prev) != nullptr && helpers < 51) {
 		sum = Of(Prev)->Warp_Per_Step(helpers + 1);
 	}
-	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(Owner->What_Weapon_Should_I_Use(nullptr))->Weapon;
-	WarpPerStep = weapon != nullptr ? weapon->Attack : 0;
-	return(WarpPerStep + sum);
+	return(Own_Warp_Rate() + sum);
 }
 
 
@@ -162,9 +174,7 @@ void TemporalClass::Update(void)
 	}
 
 	int const helpers = Of(Prev) != nullptr ? Of(Prev)->Warp_Per_Step(1) : 0;
-	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(Owner->What_Weapon_Should_I_Use(nullptr))->Weapon;
-	WarpPerStep = weapon != nullptr ? weapon->Attack : 0;
-	WarpRemaining -= WarpPerStep + helpers;
+	WarpRemaining -= Own_Warp_Rate() + helpers;
 	if (WarpRemaining >= 1) {
 		return;
 	}
@@ -217,9 +227,7 @@ void TemporalClass::Let_Go(void)
 		} else if (Target != nullptr) {
 			Target->WarpedBy = nullptr;
 			Target->IsBeingWarpedOut = false;
-			if (Target->RTTI == RTTI_BUILDING && !Rule->ChronoErasedSuperWeapons) {
-				Target->House->IsRecalcNeeded = true;
-			}
+			Flag_Building_Recalc(Target);
 			Target->Mark(MARK_CHANGE);
 		}
 	} else if (prev == nullptr) {
