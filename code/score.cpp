@@ -44,10 +44,6 @@
 #include <vector>
 
 
-void const * Beepy6;
-int ControlQ;	// cheat key to skip past score/mapsel screens
-bool StillUpdating;
-
 namespace {
 
 /*
@@ -135,9 +131,7 @@ struct ShellArt {
 	{
 		ShapeSet const * const shapes[5] = { Top, Slot, Bottom, Status, Button };
 		for (ShapeSet const * shape : shapes) {
-			if (shape != NULL) {
-				ScoreStageClass::Free_Shape(shape);
-			}
+			ScoreStageClass::Free_Shape(shape);
 		}
 		ScoreStageClass::Free_Drawer(Shell);
 		ScoreStageClass::Free_Drawer(ShellSlot);
@@ -360,31 +354,43 @@ void Draw_Classic_Art(ScoreStageClass & stage, ShapeSet const * background, Shap
  * commendation are left aligned, the two times are centred under their labels, and the number of enemies
  * destroyed is left aligned, as the dialog's static styles say.
  */
+static void Print_Row_Centre(ScoreStageClass & stage, std::string const & text, Rect const & row)
+{
+	stage.Print_Centre(text.c_str(), row.X, row.Width, Centred_Text_Top(stage, row.Y + row.Height / 2));
+}
+
+
+static void Print_Row_Left(ScoreStageClass & stage, std::string const & text, Rect const & row)
+{
+	stage.Print_Left(text.c_str(), row.X, Centred_Text_Top(stage, row.Y + row.Height / 2));
+}
+
+
 void Draw_Classic_Text(ScoreStageClass & stage, Figures const & figures, Rect const & column, Rect const & button)
 {
 	Rect const title(column.X, TITLE_TOP, column.Width, TITLE_HEIGHT);
-	stage.Print_Centre(figures.Title.c_str(), title.X, title.Width, Centred_Text_Top(stage, title.Y + title.Height / 2));
+	Print_Row_Centre(stage, figures.Title, title);
 
 	Rect const rank(128, 57 - PANEL_TEXT_RISE, 386, 16);
-	stage.Print_Left(figures.Rank.c_str(), rank.X, Centred_Text_Top(stage, rank.Y + rank.Height / 2));
+	Print_Row_Left(stage, figures.Rank, rank);
 	Print_Paragraph(stage, figures.Message, Rect(128, 81 - PANEL_TEXT_RISE, 386, 65), PARAGRAPH_LINE_HEIGHT);
 
 	Rect const enemies_label(128, 163 - PANEL_TEXT_RISE, 165, 16);
 	Rect const enemies_value(300, 163 - PANEL_TEXT_RISE, 213, 16);
-	stage.Print_Left(figures.EnemiesLabel.c_str(), enemies_label.X, Centred_Text_Top(stage, enemies_label.Y + enemies_label.Height / 2));
-	stage.Print_Left(figures.EnemiesValue.c_str(), enemies_value.X, Centred_Text_Top(stage, enemies_value.Y + enemies_value.Height / 2));
+	Print_Row_Left(stage, figures.EnemiesLabel, enemies_label);
+	Print_Row_Left(stage, figures.EnemiesValue, enemies_value);
 
 	Rect const par_label(188, 432 - TEXT_RISE, 83, 16);
 	Rect const par_value(188, 450 - TEXT_RISE, 83, 16);
-	stage.Print_Centre(figures.ParLabel.c_str(), par_label.X, par_label.Width, Centred_Text_Top(stage, par_label.Y + par_label.Height / 2));
-	stage.Print_Centre(figures.ParValue.c_str(), par_value.X, par_value.Width, Centred_Text_Top(stage, par_value.Y + par_value.Height / 2));
+	Print_Row_Centre(stage, figures.ParLabel, par_label);
+	Print_Row_Centre(stage, figures.ParValue, par_value);
 
 	Rect const your_label(363, 432 - TEXT_RISE, 83, 16);
 	Rect const your_value(363, 450 - TEXT_RISE, 83, 16);
-	stage.Print_Centre(figures.YourLabel.c_str(), your_label.X, your_label.Width, Centred_Text_Top(stage, your_label.Y + your_label.Height / 2));
-	stage.Print_Centre(figures.YourValue.c_str(), your_value.X, your_value.Width, Centred_Text_Top(stage, your_value.Y + your_value.Height / 2));
+	Print_Row_Centre(stage, figures.YourLabel, your_label);
+	Print_Row_Centre(stage, figures.YourValue, your_value);
 
-	stage.Print_Centre(figures.Caption.c_str(), button.X, button.Width, Centred_Text_Top(stage, button.Y + button.Height / 2));
+	Print_Row_Centre(stage, figures.Caption, button);
 	stage.Print_Left(figures.Status.c_str(), STATUS_X, Centred_Text_Top(stage, STATUS_CENTRE_Y));
 }
 
@@ -524,15 +530,9 @@ void ScoreClass::Presentation(void)
 	Theme.Stop(true);
 	Theme.Queue_Song(THEME_NONE);
 
-	if (emblem != NULL) {
-		ScoreStageClass::Free_Shape(emblem);
-	}
-	if (plate != NULL) {
-		ScoreStageClass::Free_Shape(plate);
-	}
-	if (background != NULL) {
-		ScoreStageClass::Free_Shape(background);
-	}
+	ScoreStageClass::Free_Shape(emblem);
+	ScoreStageClass::Free_Shape(plate);
+	ScoreStageClass::Free_Shape(background);
 	Stage.Close();
 
 	Stage.Clear_Screen();
