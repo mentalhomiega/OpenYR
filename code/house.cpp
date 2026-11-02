@@ -9893,9 +9893,13 @@ void HouseClass::AI_Super_Weapons(void)
 						break;
 					}
 
-					case SUPER_ION_CANNON:
-						AI_Ion_Cannon(super);
+					case SUPER_ION_CANNON: {
+						Cell const cell = Pick_Ion_Cannon_Target();
+						if (cell != CELL_NONE) {
+							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+						}
 						break;
+					}
 
 					case SUPER_HUNTER_SEEKER:
 						AI_Hunter_Seeker(super);
@@ -9968,23 +9972,6 @@ void HouseClass::AI_Super_Weapons(void)
 				}
 			}
 		}
-	}
-}
-
-
-/// <summary>
-/// Handles the computer's use of the ion cannon super weapon.
-/// This routine rates the enemy's objects by how much their loss would hurt -- engineers,
-/// vehicle thieves, construction yards, war factories and power plants are all prized
-/// well above ordinary troops -- and strikes one of the best rated. Only objects that
-/// would actually die to the blast earn their premium rating, and cloaked objects are
-/// rated at random so the computer does not appear to see through them.
-/// </summary>
-void HouseClass::AI_Ion_Cannon(SuperClass * super)
-{
-	Cell const cell = Pick_Ion_Cannon_Target();
-	if (cell != CELL_NONE) {
-		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 	}
 }
 
@@ -10311,6 +10298,9 @@ Cell HouseClass::Pick_Strike_Target(void)
 /// <summary>
 /// Picks the cell of one of the enemy objects whose loss would hurt most, for the ion cannon and
 /// the Yuri's Revenge superweapons that aim the same way (HouseClass::PickIonCannonTarget).
+/// Engineers, vehicle thieves, construction yards, war factories and power plants are rated above
+/// ordinary troops. A cloaked object is rated at random, so the computer does not appear to see
+/// through it.
 /// </summary>
 /// <returns>Returns with the cell to strike, or CELL_NONE when the house has no enemy or the
 /// enemy has nothing to strike.</returns>
