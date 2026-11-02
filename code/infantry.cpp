@@ -3649,17 +3649,8 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 	// Only a computer's soldier turns an attack on a structure into a capture: an Infiltrate=yes soldier, or an Occupier=yes or
 	// Assaulter=yes one that can garrison the structure. A player's soldier fires its weapon instead, and an unarmed one such as an
 	// engineer does nothing (InfantryClass::Mission_Attack, 0x51F3E0).
-	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
-		if (Class->IsCapture) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
-		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
+	if (Try_Capture_Building_Target()) {
+		return(1);
 	}
 
 	// A human player's dug-in soldier never walks to its target. It keeps the target while its deploy weapon reaches it, takes the greatest
@@ -3681,17 +3672,8 @@ int InfantryClass::Do_MISSION_ATTACK(void)
 /// <returns>The delay in game frames before the hunt mission runs again.</returns>
 int InfantryClass::Do_MISSION_HUNT(void)
 {
-	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
-		if (Class->IsCapture) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
-		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
-			Assign_Destination(TarCom);
-			Assign_Mission(MISSION_CAPTURE);
-			return(1);
-		}
+	if (Try_Capture_Building_Target()) {
+		return(1);
 	}
 
 	if (!House->Is_Human_Player() && Is_Deployed() && TarCom == NULL) {
@@ -3700,6 +3682,24 @@ int InfantryClass::Do_MISSION_HUNT(void)
 	}
 
 	return(BASECLASS::Do_MISSION_HUNT());
+}
+
+
+bool InfantryClass::Try_Capture_Building_Target(void)
+{
+	if (!House->Is_Human_Player() && TarCom != NULL && TarCom->RTTI == RTTI_BUILDING) {
+		if (Class->IsCapture) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(true);
+		}
+		if ((Class->IsOccupier || Class->IsAssaulter) && ((BuildingClass const *)TarCom)->Can_Be_Occupied_By(this)) {
+			Assign_Destination(TarCom);
+			Assign_Mission(MISSION_CAPTURE);
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

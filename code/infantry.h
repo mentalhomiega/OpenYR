@@ -153,6 +153,8 @@ class InfantryClass : public FootClass
 		bool Is_Deployed(void) const;
 		bool Is_Digging_In(void) const;
 		bool Can_Infiltrate(BuildingClass const * building) const;
+		// Sends this soldier to capture TarCom when it is a building the soldier can take; returns true when it did.
+		bool Try_Capture_Building_Target(void);
 		// Does a disguised soldier, such as a spy, look like a soldier of that house to this house (InfantryClass::IsDisguisedAs, 0x5227F0)?
 		bool Is_Disguised_As(HouseClass const * house) const;
 		bool Can_Cheer(void) const;
