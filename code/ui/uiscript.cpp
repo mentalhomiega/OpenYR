@@ -199,7 +199,7 @@ void Log_Ids(Rml::Element * element, int depth)
 
 
 // The modifiers that keydown steps have pressed and keyup steps have not released.
-static int ScriptHeldModifiers = 0;
+int ScriptHeldModifiers = 0;
 
 
 bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
@@ -255,8 +255,9 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// wclick (an element id: a left click at its centre, through the window events),
 /// press (a button's label, ignoring case), choose (the text of a list row or drop-down entry, or "id|text" to look only
 /// inside the element with that id), key (escape, return, tab, space, page up or down, an arrow, a letter, a digit, shift
-/// or ctrl, with ctrl+ or shift+ in front to hold that key),
-/// shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
+/// or ctrl, with ctrl+, shift+ or alt+ in front to hold that key),
+/// frames (logs the game frame count and the clock), keydown and keyup (a key name, pressed or released, with the
+/// shift, ctrl and alt keys that keydown holds), shot (a name for a .tga in the screenshots folder), ids (logs the ids and buttons of every
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread
 /// without pumping messages, for testing the hang watchdog), command (runs the registered command of that
@@ -479,26 +480,26 @@ void UIScript_Tick(Rml::Context * context)
 				return;
 			}
 		} else if (step.Command == "theme") {
-				// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
-				std::string name = step.Argument;
-				for (char & c : name) {
-					c = (char)std::tolower((unsigned char)c);
-				}
-				if (name == "allied") {
-					Options.MenuTheme = MENU_THEME_ALLIED;
-				} else if (name == "soviet") {
-					Options.MenuTheme = MENU_THEME_SOVIET;
-				} else if (name == "yuri") {
-					Options.MenuTheme = MENU_THEME_YURI;
-				} else {
-					Options.MenuTheme = MENU_THEME_RANDOM;
-				}
-				WaitUntil = now + 300;
-				return;
-			} else if (step.Command == "stall") {
-				// Holds the main thread without pumping messages, so the hang watchdog reports it.
-				Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
-			} else if (step.Command == "command") {
+			// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
+			std::string name = step.Argument;
+			for (char & c : name) {
+				c = (char)std::tolower((unsigned char)c);
+			}
+			if (name == "allied") {
+				Options.MenuTheme = MENU_THEME_ALLIED;
+			} else if (name == "soviet") {
+				Options.MenuTheme = MENU_THEME_SOVIET;
+			} else if (name == "yuri") {
+				Options.MenuTheme = MENU_THEME_YURI;
+			} else {
+				Options.MenuTheme = MENU_THEME_RANDOM;
+			}
+			WaitUntil = now + 300;
+			return;
+		} else if (step.Command == "stall") {
+			// Holds the main thread without pumping messages, so the hang watchdog reports it.
+			Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
+		} else if (step.Command == "command") {
 			Execute_Command(step.Argument.c_str());
 			WaitUntil = now + 300;
 			return;
