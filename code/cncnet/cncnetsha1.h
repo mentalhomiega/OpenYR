@@ -41,6 +41,9 @@ class CnCNetSHA1Class
 // The digest of the text as 40 lowercase hexadecimal digits.
 std::string CnCNet_SHA1_Hex(std::string_view text);
 
+// The 20-byte digest as 40 lowercase hexadecimal digits.
+std::string CnCNet_Hex_Digest(std::array<uint8_t, 20> const & digest);
+
 // The key of a room without a password of its own: the first 10 hexadecimal
 // digits of the SHA-1 of the room's channel name.
 std::string CnCNet_Room_Key(std::string_view channel);

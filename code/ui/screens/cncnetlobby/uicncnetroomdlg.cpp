@@ -117,13 +117,7 @@ std::string File_SHA1(char const * name)
 	}
 	file.Close();
 
-	static char const digits[] = "0123456789abcdef";
-	std::string hex;
-	for (uint8_t byte : sha.Finish()) {
-		hex.push_back(digits[byte >> 4]);
-		hex.push_back(digits[byte & 15]);
-	}
-	return(hex);
+	return(CnCNet_Hex_Digest(sha.Finish()));
 }
 
 
