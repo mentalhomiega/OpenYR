@@ -564,78 +564,41 @@ void SidebarClass::Init_IO(void)
 		int xoff = -480;
 		int yoff = 3;
 
-		Repair.IsSticky = true;
-		Repair.ID = BUTTON_REPAIR;
-		Repair.X = SidebarRect.X;
-		Repair.Y = SidebarRect.Y;
-		Repair.DrawOffsetX = xoff;
-		Repair.DrawOffsetY = yoff;
-		Repair.DrawOnSidebar = true;
-		Repair.ShapeDrawer = SidebarDrawer;
-		Repair.IsPressed = false;
-		Repair.IsToggleType = true;
-		Repair.ReflectButtonState = true;
+		auto setup_button = [&](ShapeButtonClass & button) {
+			button.IsSticky = true;
+			button.DrawOffsetX = xoff;
+			button.DrawOffsetY = yoff;
+			button.DrawOnSidebar = true;
+			button.ShapeDrawer = SidebarDrawer;
+			button.IsPressed = false;
+		};
+		auto setup_toggle = [&](ShapeButtonClass & button, int id, int x) {
+			setup_button(button);
+			button.ID = id;
+			button.X = x;
+			button.Y = SidebarRect.Y;
+			button.IsToggleType = true;
+			button.ReflectButtonState = true;
+		};
 
-		Upgrade.IsSticky = true;
-		Upgrade.ID = BUTTON_UPGRADE;
-		Upgrade.X = Repair.X + BUTTON_SPACING;
-		Upgrade.Y = Repair.Y;
-		Upgrade.DrawOffsetX = xoff;
-		Upgrade.DrawOffsetY = yoff;
-		Upgrade.DrawOnSidebar = true;
-		Upgrade.ShapeDrawer = SidebarDrawer;
-		Upgrade.IsPressed = false;
-		Upgrade.IsToggleType = true;
-		Upgrade.ReflectButtonState = true;
-
-		Power.IsSticky = true;
-		Power.ID = BUTTON_POWER;
-		Power.X = Upgrade.X + BUTTON_SPACING;
-		Power.Y = Upgrade.Y;
-		Power.DrawOffsetX = xoff;
-		Power.DrawOffsetY = yoff;
-		Power.DrawOnSidebar = true;
-		Power.ShapeDrawer = SidebarDrawer;
-		Power.IsPressed = false;
-		Power.IsToggleType = true;
-		Power.ReflectButtonState = true;
-
-		Waypoint.IsSticky = true;
-		Waypoint.ID = BUTTON_WAYPOINT;
-		Waypoint.X = Power.X + BUTTON_SPACING;
-		Waypoint.Y = Power.Y;
-		Waypoint.DrawOffsetX = xoff;
-		Waypoint.DrawOffsetY = yoff;
-		Waypoint.DrawOnSidebar = true;
-		Waypoint.ShapeDrawer = SidebarDrawer;
-		Waypoint.IsPressed = false;
-		Waypoint.IsToggleType = true;
-		Waypoint.ReflectButtonState = true;
+		setup_toggle(Repair, BUTTON_REPAIR, SidebarRect.X);
+		setup_toggle(Upgrade, BUTTON_UPGRADE, Repair.X + BUTTON_SPACING);
+		setup_toggle(Power, BUTTON_POWER, Upgrade.X + BUTTON_SPACING);
+		setup_toggle(Waypoint, BUTTON_WAYPOINT, Power.X + BUTTON_SPACING);
 
 		Waypoint.Enable();
 
 		for (int index = 0; index < COLUMNS; index++) {
 			Column[index].Init_IO(index);
 
+			setup_button(TabButton[index]);
 			TabButton[index].ID = BUTTON_TAB + index;
-			TabButton[index].IsSticky = true;
-			TabButton[index].DrawOffsetX = xoff;
-			TabButton[index].DrawOffsetY = yoff;
-			TabButton[index].DrawOnSidebar = true;
-			TabButton[index].ShapeDrawer = SidebarDrawer;
-			TabButton[index].IsPressed = false;
 		}
 
 		OptionsButton.ID = BUTTON_OPTIONS;
 		DiplomacyButton.ID = BUTTON_DIPLOMACY;
-		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
-			button->IsSticky = true;
-			button->DrawOffsetX = xoff;
-			button->DrawOffsetY = yoff;
-			button->DrawOnSidebar = true;
-			button->ShapeDrawer = SidebarDrawer;
-			button->IsPressed = false;
-		}
+		setup_button(OptionsButton);
+		setup_button(DiplomacyButton);
 
 		Reposition_Sidebar();
 
