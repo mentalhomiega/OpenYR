@@ -6652,7 +6652,7 @@ static void Syncrec_Step(StepType const & step)
 
 // log writes nothing more than the step line every step writes. searchdir <path> and loadshot <name>
 // take effect when the script is read (AutoTest_Load).
-static void Read_Time_Step(StepType const &)
+static void No_Action_Step(StepType const &)
 {
 }
 
@@ -7000,9 +7000,9 @@ void Run(StepType const & step)
 		{"hash", Hash_Step},
 		{"statecrc", Statecrc_Step},
 		{"syncrec", Syncrec_Step},
-		{"log", Read_Time_Step},
-		{"searchdir", Read_Time_Step},
-		{"loadshot", Read_Time_Step},
+		{"log", No_Action_Step},
+		{"searchdir", No_Action_Step},
+		{"loadshot", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
@@ -7060,6 +7060,70 @@ void AutoTest_Loading_Screen_Shown(void)
 }
 
 
+// Adds a "ui " line, which has no frame, to the menu script.
+static void Add_UI_Script_Line(char const * line)
+{
+	std::string rest = line + 3;
+	rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
+	std::string::size_type const space = rest.find(' ');
+	UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
+}
+
+
+// Whether the command takes the rest of its script line as its argument, so the argument may hold spaces.
+static bool Takes_Rest_Of_Line(char const * command)
+{
+	static std::set<std::string_view> const names = {"rules", "art", "pcxcameo", "truecolourdir", "exportshape", "exportpal", "teamini",
+		"searchdir", "statedump", "extract", "log", "beacontext", "wintype", "key", "winkey", "hold", "release", "cameopress",
+		"binding", "scheme"};
+	return(names.contains(command));
+}
+
+
+// Applies a command that takes effect when the script is read. Returns true when the command needs no step.
+static bool Apply_Load_Time_Command(char const * command, std::string const & text)
+{
+	// A search directory has to be in place before startup reads the files it holds, such
+	// as the extra string tables, so it is added now rather than at its frame.
+	if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
+		std::string path = AutoTest_Input_Path(text);
+		if (path.back() != '\\' && path.back() != '/') {
+			path += '\\';
+		}
+		CDFileClass::Add_Search_Drive(path.c_str());
+	}
+	// The first loading screen comes before any game frame.
+	if (std::strcmp(command, "loadshot") == 0) {
+		LoadShotName = text;
+	}
+	// recordreplay and playreplay take effect when the script is read, before the game starts.
+	if (std::strcmp(command, "recordreplay") == 0) {
+		Replay_Set_Recording(true, text.c_str());
+		return(true);
+	}
+	if (std::strcmp(command, "playreplay") == 0) {
+		Replay_Request_Playback(text.c_str());
+		Spawner_Request();
+		return(true);
+	}
+	// requirera2 is kept when the script is read, so it needs no step.
+	if (std::strcmp(command, "requirera2") == 0) {
+		RequireRA2 = true;
+		return(true);
+	}
+	// continuewin and continuelose are kept when the script is read, so they need no step.
+	if (std::strcmp(command, "continuewin") == 0) {
+		ContinueAfterWin = true;
+		return(true);
+	}
+	if (std::strcmp(command, "continuelose") == 0) {
+		ContinueAfterLose = true;
+		return(true);
+	}
+	return(false);
+}
+
+
 /// <summary>
 /// Reads a test script and turns unattended mode on. Steps are played in file order.
 /// </summary>
@@ -7082,10 +7146,7 @@ bool AutoTest_Load(char const * filename)
 		int y = 0;
 		// A menu step has no frame, since the menus run before any game does.
 		if (std::strncmp(line, "ui ", 3) == 0) {
-			std::string rest = line + 3;
-			rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
-			std::string::size_type const space = rest.find(' ');
-			UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
+			Add_UI_Script_Line(line);
 			continue;
 		}
 		if (line[0] == ';' || std::sscanf(line, "%d %63s %255s %d %d", &frame, command, argument, &x, &y) < 2) {
@@ -7093,52 +7154,12 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path and a log line's text are the rest of the line, so they may hold spaces.
-		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
-			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "exportpal") == 0 || std::strcmp(command, "teamini") == 0
-			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
-			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
-			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
-			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0 || std::strcmp(command, "cameopress") == 0
-			|| std::strcmp(command, "binding") == 0 || std::strcmp(command, "scheme") == 0) {
+		if (Takes_Rest_Of_Line(command)) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
 		}
-		// A search directory has to be in place before startup reads the files it holds, such
-		// as the extra string tables, so it is added now rather than at its frame.
-		if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
-			std::string path = AutoTest_Input_Path(text);
-			if (path.back() != '\\' && path.back() != '/') {
-				path += '\\';
-			}
-			CDFileClass::Add_Search_Drive(path.c_str());
-		}
-		// The first loading screen comes before any game frame.
-		if (std::strcmp(command, "loadshot") == 0) {
-			LoadShotName = text;
-		}
-		// recordreplay and playreplay take effect when the script is read, before the game starts.
-		if (std::strcmp(command, "recordreplay") == 0) {
-			Replay_Set_Recording(true, text.c_str());
-			continue;
-		}
-		if (std::strcmp(command, "playreplay") == 0) {
-			Replay_Request_Playback(text.c_str());
-			Spawner_Request();
-			continue;
-		}
-		// requirera2 is kept when the script is read, so it needs no step.
-		if (std::strcmp(command, "requirera2") == 0) {
-			RequireRA2 = true;
-			continue;
-		}
-		// continuewin and continuelose are kept when the script is read, so they need no step.
-		if (std::strcmp(command, "continuewin") == 0) {
-			ContinueAfterWin = true;
-			continue;
-		}
-		if (std::strcmp(command, "continuelose") == 0) {
-			ContinueAfterLose = true;
+		if (Apply_Load_Time_Command(command, text)) {
 			continue;
 		}
 		std::string source = line;
