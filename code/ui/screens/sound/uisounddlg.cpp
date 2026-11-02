@@ -159,13 +159,10 @@ std::unique_ptr<UISoundPresenterClass> UI_Sound_New_Presenter(void)
 
 void UI_Sound_Dialog(void)
 {
-	UISoundState state;
-	UI_Sound_State(state);
-
-	UISoundPresenterClass presenter(UI_Sound_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_AUDIO);
-	std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+	std::unique_ptr<UISoundPresenterClass> presenter = UI_Sound_New_Presenter();
+	UI_Settings_Join(*presenter, UI_TAB_AUDIO);
+	std::unique_ptr<UIViewClass> view = UI_Sound_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
+	UI_Settings_Leave(*presenter);
 }

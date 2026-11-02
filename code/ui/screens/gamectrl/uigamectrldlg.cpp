@@ -241,19 +241,16 @@ std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(boo
 
 void UI_Game_Controls_Dialog(void)
 {
-	UIGameControlsState state;
-	UI_Game_Controls_State(state);
-
-	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
-	UI_Settings_Join(presenter, UI_TAB_GAME);
-	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+	std::unique_ptr<UIGameControlsPresenterClass> presenter = UI_Game_Controls_New_Presenter(false);
+	UI_Settings_Join(*presenter, UI_TAB_GAME);
+	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(*presenter);
 
 	UI_Run_Modal(*view);
-	UI_Settings_Leave(presenter);
+	UI_Settings_Leave(*presenter);
 
-	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
+	if (presenter->Next == UIGameControlsPresenterClass::NEXT_SOUND) {
 		SpecialDialog = SDLG_SOUND;
-	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
+	} else if (presenter->Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
 		SpecialDialog = SDLG_KEYBOARD;
 	}
 }
