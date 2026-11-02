@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <optional>
 #include <system_error>
 #include <utility>
 
@@ -460,6 +461,18 @@ bool Copy_One(RunType & run, fs::path const & from, fs::path const & to, std::ui
 }
 
 
+// Copies one build file into the copy and returns its size. A failed copy returns nothing and leaves error set.
+std::optional<std::uint64_t> Copy_File(RunType & run, std::string const & from, std::string const & to, std::string & error)
+{
+	std::error_code ec;
+	std::uint64_t const size = static_cast<std::uint64_t>(fs::file_size(Path(from), ec));
+	if (!Copy_One(run, from, to, size, error)) {
+		return(std::nullopt);
+	}
+	return(size);
+}
+
+
 bool Copy_Tree(RunType & run, fs::path const & from, fs::path const & to, std::string & error)
 {
 	std::error_code ec;
@@ -564,18 +577,13 @@ bool Install_Engine(RunType & run, std::string const & build, std::string const 
 		}
 	}
 
-	std::uint64_t size = 0;
-	std::error_code size_ec;
-	size = static_cast<std::uint64_t>(fs::file_size(Path(build_exe), size_ec));
-	if (!Copy_One(run, build_exe, copy_exe, size, error)) {
+	std::optional<std::uint64_t> const exe_size = Copy_File(run, build_exe, copy_exe, error);
+	if (!exe_size) {
 		return(false);
 	}
-	run.Changes.push_back("replaced  Game.exe (" + std::to_string(size) + " bytes, from " + build + ")");
+	run.Changes.push_back("replaced  Game.exe (" + std::to_string(*exe_size) + " bytes, from " + build + ")");
 
-	std::string const build_dll = Under(build, "Language.dll");
-	std::error_code dll_ec;
-	std::uintmax_t const dll_size = fs::file_size(Path(build_dll), dll_ec);
-	if (!Copy_One(run, build_dll, Under(destination, "Language.dll"), static_cast<std::uint64_t>(dll_size), error)) {
+	if (!Copy_File(run, Under(build, "Language.dll"), Under(destination, "Language.dll"), error)) {
 		return(false);
 	}
 	run.Changes.push_back("added     Language.dll");
