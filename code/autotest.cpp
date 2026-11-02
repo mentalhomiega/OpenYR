@@ -7336,6 +7336,20 @@ bool AutoTest_Load(char const * filename)
 }
 
 
+// The first player's object of the followed type in a list, or NULL when the list has none.
+template<typename T>
+T * First_Followed(DynamicVectorClass<T *> & list)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
+			return(object);
+		}
+	}
+	return(NULL);
+}
+
+
 /// <summary>
 /// Plays every step whose frame has been reached. Call once per game logic frame.
 /// </summary>
@@ -7366,30 +7380,22 @@ void AutoTest_Frame(void)
 	C4_Watch_Frame();
 
 	if (!FollowType.empty() && (Frame % 15) == 0) {
-		for (int index = 0; index < Infantry.Count(); index++) {
-			InfantryClass * object = Infantry[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				break;
+		// Each list with a match moves the view, so the last of these lists to match decides where it ends up.
+		InfantryClass * infantry = First_Followed(Infantry);
+		UnitClass * unit = First_Followed(Units);
+		AircraftClass * aircraft = First_Followed(Aircraft);
+		if (infantry != NULL) {
+			TacticalMap->Set_Tactical_Position(infantry->Center_Coord());
+		}
+		if (unit != NULL) {
+			TacticalMap->Set_Tactical_Position(unit->Center_Coord());
+			if ((Frame % 300) == 0) {
+				Point2D actual = TacticalMap->Get_Tactical_Position();
+				DebugString("AUTOTEST   follow %s cell %d,%d view %d,%d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, actual.X, actual.Y);
 			}
 		}
-		for (int index = 0; index < Units.Count(); index++) {
-			UnitClass * object = Units[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				if ((Frame % 300) == 0) {
-					Point2D actual = TacticalMap->Get_Tactical_Position();
-					DebugString("AUTOTEST   follow %s cell %d,%d view %d,%d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, actual.X, actual.Y);
-				}
-				break;
-			}
-		}
-		for (int index = 0; index < Aircraft.Count(); index++) {
-			AircraftClass * object = Aircraft[index];
-			if (object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->Class->Name(), FollowType.c_str()) == 0) {
-				TacticalMap->Set_Tactical_Position(object->Center_Coord());
-				break;
-			}
+		if (aircraft != NULL) {
+			TacticalMap->Set_Tactical_Position(aircraft->Center_Coord());
 		}
 	}
 
