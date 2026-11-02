@@ -1200,6 +1200,7 @@ class HouseClass : public AbstractClass
 		int AI_Unit(void);
 		int AI_Infantry(void);
 		int AI_Aircraft(void);
+		void Update_Spy_Satellite(void);
 
 		/*
 		**	This is a bit field record of all the other houses that are allies with
