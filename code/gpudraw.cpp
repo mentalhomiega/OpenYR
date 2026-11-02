@@ -362,6 +362,16 @@ static unsigned short Blend(GpuBlit const & blit, unsigned short dest, unsigned 
 }
 
 
+// The picture pixel at (x, y), or NULL when the point lies outside the area the picture covers.
+static unsigned short * Picture_At(std::vector<unsigned short> & picture, int x, int y)
+{
+	if (!_Area.Is_Point_Within(Point2D(x, y))) {
+		return(NULL);
+	}
+	return(&picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)]);
+}
+
+
 // Brightens the picture under a spot light the way Brighten_Color does, each enabled channel by
 // its own value times the shape's over 256.
 static void Replay_Brighten(GpuBlit const & blit, std::vector<unsigned short> & picture)
@@ -372,10 +382,11 @@ static void Replay_Brighten(GpuBlit const & blit, std::vector<unsigned short> & 
 			int const x = blit.X + i;
 			int const y = blit.Y + r;
 			int const multiplier = shape[r * blit.Width + i];
-			if (multiplier == 0 || !_Area.Is_Point_Within(Point2D(x, y))) {
+			unsigned short * const target = Picture_At(picture, x, y);
+			if (multiplier == 0 || target == NULL) {
 				continue;
 			}
-			unsigned short & pixel = picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)];
+			unsigned short & pixel = *target;
 			RGBClass const rgb = DSurface::Deconstruct_Hicolor_Pixel(pixel);
 			int red = rgb.Get_Red();
 			int green = rgb.Get_Green();
@@ -420,10 +431,11 @@ static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & pict
 			int const x = blit.X + i;
 			int const y = blit.Y + r;
 			int const value = values[r * blit.Width + i];
-			if (value == 0 || !_Area.Is_Point_Within(Point2D(x, y))) {
+			unsigned short * const target = Picture_At(picture, x, y);
+			if (value == 0 || target == NULL) {
 				continue;
 			}
-			unsigned short & pixel = picture[(y - _Area.Y) * _Area.Width + (x - _Area.X)];
+			unsigned short & pixel = *target;
 			int const red = (blit.Line >> 16) & 0xFF;
 			int const green = (blit.Line >> 8) & 0xFF;
 			int const blue = blit.Line & 0xFF;
