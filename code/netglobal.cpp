@@ -57,13 +57,6 @@ namespace NetGlobal
 		}
 
 
-		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
-		bool Has_Terminator(char const * text, std::size_t capacity)
-		{
-			return(std::memchr(text, '\0', capacity) != NULL);
-		}
-
-
 		/// <summary>Checks a player index against the current session roster.</summary>
 		bool Is_Active_Player(ValidationContext const & context, int player)
 		{
@@ -86,6 +79,13 @@ namespace NetGlobal
 			}
 			std::size_t const room = std::min(capacity, packet_length - offset);
 			return(std::memchr(static_cast<char const *>(packet) + offset, '\0', room) != NULL);
+		}
+
+
+		/// <summary>Checks that a fixed wire string contains a terminator.</summary>
+		bool Has_Terminator(char const * text, std::size_t capacity)
+		{
+			return(Text_Terminated(text, capacity, 0, capacity));
 		}
 
 
@@ -437,10 +437,7 @@ namespace NetGlobal
 				if (!Text_Terminated(packet, packet_length, sizeof(NetCommandType) + sizeof(GlobalPacketType::Name), sizeof(GlobalPacketType::Serial))) {
 					return(DecodeError::UNTERMINATED_SERIAL);
 				}
-				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {
-					return(DecodeError::INVALID_COLOR);
-				}
-				break;
+				[[fallthrough]];
 
 			case NET_CONFIRM_JOIN:
 				if (!Color_Is_Valid(message->PlayerInfo.Color) || !Custom_Is_Valid(message->PlayerInfo.CustomColor)) {
