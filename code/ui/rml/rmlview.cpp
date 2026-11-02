@@ -289,6 +289,7 @@ void UIRmlViewClass::Release(void)
 		Doc->RemoveEventListener(Rml::EventId::Textinput, this, true);
 		Doc->RemoveEventListener(Rml::EventId::Mousedown, this);
 		Doc->RemoveEventListener(Rml::EventId::Mousemove, this, true);
+		Doc->RemoveEventListener(Rml::EventId::Focus, this, true);
 	}
 
 
