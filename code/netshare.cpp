@@ -364,6 +364,9 @@ void SendPrivateGameopts(char const * player, char const * options)
 }
 
 
+static_assert(DIFF_COUNT == NetGlobal::GAMEOPT_DIFFICULTY_COUNT, "the options text checks the difficulty range the game defines");
+
+
 /// <summary>
 /// Decodes a public game options string sent by the host.
 /// This routine applies the host's settings to the local session and refreshes the game
@@ -374,8 +377,6 @@ void SendPrivateGameopts(char const * player, char const * options)
 /// <param name="options">The encoded option string as received.</param>
 /// <param name="name">Name of the player the options came from.</param>
 /// <returns>bool; Did the scenario change?</returns>
-static_assert(DIFF_COUNT == NetGlobal::GAMEOPT_DIFFICULTY_COUNT, "the options text checks the difficulty range the game defines");
-
 bool DecodePubGameopt(char * options, char * name)
 {
 	static int _last_unit_count = -1;
