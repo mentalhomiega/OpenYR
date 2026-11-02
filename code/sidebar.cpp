@@ -2548,6 +2548,13 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 }
 
 
+static int Pending_Count(RTTIType type, int id, TechnoTypeClass const * tech)
+{
+	FactoryClass * fptr = PlayerPtr->Fetch_Factory(type, id);
+	return((fptr != NULL) ? fptr->Total(tech) : 0);
+}
+
+
 /***********************************************************************************************
  * SidebarClass::StripClass::Recalc -- Revalidates the current sidebar list of objects.        *
  *                                                                                             *
@@ -2608,8 +2615,7 @@ bool SidebarClass::StripClass::Recalc(void)
 		if (!ok) {
 			// This sweep runs for the local player alone, so the abandon travels as an event.
 			if (Rule->IsRecheckPrerequisites && tech != NULL) {
-				FactoryClass * fptr = PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, Buildables[index].BuildableID);
-				int pending = (fptr != NULL) ? fptr->Total(tech) : 0;
+				int const pending = Pending_Count(Buildables[index].BuildableType, Buildables[index].BuildableID, tech);
 				if (pending > 0) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT,
 							Buildables[index].BuildableType, Buildables[index].BuildableID, pending));
@@ -2834,8 +2840,7 @@ static int Cameo_Produce_Count(FactoryClass const * factory)
 static void Cameo_Abandon(RTTIType otype, int oid, TechnoTypeClass const * choice)
 {
 	if (Keyboard->Down(KN_LSHIFT)) {
-		FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, oid);
-		int const pending = (fptr != NULL) ? fptr->Total(choice) : 0;
+		int const pending = Pending_Count(otype, oid, choice);
 		if (pending > 1) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT, otype, oid, pending));
 			return;
