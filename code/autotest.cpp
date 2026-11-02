@@ -6457,7 +6457,7 @@ static void Queuestate_Step(StepType const & step)
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL) {
 		RTTIType const rtti = type->Fetch_RTTI();
-		FactoryClass * factory = PlayerPtr->Fetch_Factory(rtti, HouseClass::Build_Category(rtti, type->Fetch_Heap_ID()), HouseClass::Is_Naval_Type(rtti, type->Fetch_Heap_ID()));
+		FactoryClass * factory = PlayerPtr->Fetch_Factory(rtti, type->Fetch_Heap_ID());
 		DebugString("AUTOTEST   queuestate %s: pending %d queued %d credits %d\n", type->Name(),
 			factory != NULL ? factory->Total(type) : 0, factory != NULL ? factory->Queued_Count() : 0, PlayerPtr->Available_Money());
 	}

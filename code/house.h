@@ -1010,6 +1010,7 @@ class HouseClass : public AbstractClass
 		static BuildCatType Build_Category(RTTIType rtti, int id);
 		static bool Is_Naval_Type(RTTIType rtti, int id);
 		FactoryClass * Fetch_Factory(RTTIType rtti, BuildCatType buildcat, bool naval) const;
+		FactoryClass * Fetch_Factory(RTTIType rtti, int id) const;
 		void Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}

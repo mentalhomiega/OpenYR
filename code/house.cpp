@@ -2893,7 +2893,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
  *=============================================================================================*/
 ProdFailType HouseClass::Suspend_Production(RTTIType type, int id)
 {
-	FactoryClass * fptr = Fetch_Factory(type, Build_Category(type, id), Is_Naval_Type(type, id));
+	FactoryClass * fptr = Fetch_Factory(type, id);
 
 	/*
 	**	If the house is already busy producing the requested object, then
@@ -6168,6 +6168,21 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat, b
 			break;
 	}
 	return(factory);
+}
+
+
+/***********************************************************************************************
+ * HouseClass::Fetch_Factory -- Finds the factory for an object type given its type ID.        *
+ *                                                                                             *
+ * INPUT:   rtti -- The RTTI of the object type.                                               *
+ *          id   -- The type ID, or -1 when there is none.                                     *
+ *                                                                                             *
+ * OUTPUT:  Returns the same factory as the three-argument overload with the BuildCat and      *
+ *          naval flag that Build_Category and Is_Naval_Type give for this type.               *
+ *============================================================================================*/
+FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, int id) const
+{
+	return(Fetch_Factory(rtti, Build_Category(rtti, id), Is_Naval_Type(rtti, id)));
 }
 
 

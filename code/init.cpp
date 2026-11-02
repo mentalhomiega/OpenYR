@@ -5796,7 +5796,7 @@ static void Repeat_Last_Production(RTTIType type, int id)
 	}
 
 	if (type == RTTI_BUILDINGTYPE) {
-		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, HouseClass::Build_Category(type, id), HouseClass::Is_Naval_Type(type, id));
+		FactoryClass * factory = PlayerPtr->Fetch_Factory(type, id);
 		if (factory != NULL && factory->Get_Object() != NULL) {
 			if (factory->Is_Building() || factory->Has_Production_Target()) {
 				Speak(VOX_NO_FACTORY);
