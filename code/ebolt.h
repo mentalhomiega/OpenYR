@@ -32,6 +32,7 @@ class EBoltClass
 		static void Draw_All(void);
 		static void All_Clear(void);
 		static void Detach(TechnoClass const * owner);
+		unsigned char Emissive_Strength(void) const { return(EmissiveStrength); }
 
 	private:
 		void Draw_It(void) const;

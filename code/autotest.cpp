@@ -263,6 +263,8 @@
 #include "autotest.h"
 #include "mainloop.h"
 #include "combat.h"
+#include "ebolt.h"
+#include "laser.h"
 #include "perfstat.h"
 #include "session.h"
 #include "replay.h"
@@ -3851,6 +3853,38 @@ static void Windowclick_Step(StepType const & step)
 }
 
 
+// beams: logs the strength of the emissive mask of each live electric bolt and laser beam, or nothing while there are none.
+static void Beams_Step(StepType const &)
+{
+	for (int index = 0; index < EBoltClass::Bolts.Count(); index++) {
+		DebugString("AUTOTEST   beam bolt emissive %d\n", (int)EBoltClass::Bolts[index]->Emissive_Strength());
+	}
+	for (int index = 0; index < LaserDrawClass::LaserDraws.Count(); index++) {
+		DebugString("AUTOTEST   beam laser emissive %d\n", (int)LaserDrawClass::LaserDraws[index]->EmissiveStrength);
+	}
+}
+
+
+// commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
+// or a line saying the bar does not show it.
+static void Commandbutton_Step(StepType const & step)
+{
+	Point2D center;
+	if (!TabClass::Command_Button_Center(step.Argument.c_str(), center)) {
+		DebugString("AUTOTEST   commandbutton %s: not shown\n", step.Argument.c_str());
+		return;
+	}
+	DebugString("AUTOTEST   commandbutton %s at %d,%d\n", step.Argument.c_str(), center.X, center.Y);
+	WindowEvent event = Move_Pointer(center.X, center.Y);
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	event.Button = WINDOW_BUTTON_LEFT;
+	event.Clicks = 1;
+	Game_Window_Handle_Event(event);
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	Game_Window_Handle_Event(event);
+}
+
+
 // windowpress x y and windowrelease x y: move the pointer to that window pixel and press or release the left
 // button there, so a drag can start on the map and end over the command bar or the panel.
 static void Windowpress_Step(StepType const & step)
@@ -4758,6 +4792,28 @@ static void Disguise_Step(StepType const & step)
 			soldier->DisguiseType = Rule->AlliedDisguise;
 			soldier->DisguiseHouse = PlayerPtr;
 			DebugString("AUTOTEST   disguise %s at %d,%d as %s fools player %d cursor rule %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, Rule->AlliedDisguise != NULL ? Rule->AlliedDisguise->Name() : "-", (int)soldier->Is_Disguised_As(PlayerPtr), (int)Rule->IsAttackCursorOnDisguise);
+		}
+	}
+}
+
+
+// disguiseas <TypeID> <house>: every computer-owned soldier of that type disguises as the player's AlliedDisguise soldier,
+// copying the given house, and the log gets whether the player's house is fooled by each of the two disguise tests.
+static void Disguiseas_Step(StepType const & step)
+{
+	int const copied = step.X;
+	if (copied < 0 || copied >= Houses.Count() || Houses[copied] == NULL) {
+		DebugString("AUTOTEST disguiseas %s: no house %d\n", step.Argument.c_str(), copied);
+		return;
+	}
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * soldier = Infantry[index];
+		if (soldier->House != PlayerPtr && stricmp(soldier->Class->Name(), step.Argument.c_str()) == 0) {
+			soldier->DisguiseType = Rule->AlliedDisguise;
+			soldier->DisguiseHouse = Houses[copied];
+			DebugString("AUTOTEST   disguiseas %s of %s copies %s: player allied to copied %d, owner allied to copied %d, fools player cursor test %d, fools player friendly test %d\n",
+				soldier->Class->Name(), soldier->House->Class->Name(), Houses[copied]->Class->Name(), (int)PlayerPtr->Is_Ally(Houses[copied]),
+				(int)soldier->House->Is_Ally(Houses[copied]), (int)soldier->Is_Disguised_As(PlayerPtr), (int)soldier->Looks_Friendly_To(PlayerPtr));
 		}
 	}
 }
@@ -6950,6 +7006,8 @@ void Run(StepType const & step)
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
 		{"windowclick", Windowclick_Step},
+		{"commandbutton", Commandbutton_Step},
+		{"beams", Beams_Step},
 		{"windowdouble", Windowclick_Step},
 		{"windowpress", Windowpress_Step},
 		{"windowrelease", Windowpress_Step},
@@ -7011,6 +7069,7 @@ void Run(StepType const & step)
 		{"hollow", Hollow_Step},
 		{"rule", Rule_Step},
 		{"disguise", Disguise_Step},
+		{"disguiseas", Disguiseas_Step},
 		{"action", Action_Step},
 		{"clickon", Action_Step},
 		{"hit", Hit_Step},

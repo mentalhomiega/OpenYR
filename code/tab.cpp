@@ -532,6 +532,22 @@ Rect TabClass::Command_Bar_Frame(void)
 
 
 /// <summary>
+/// Finds the centre of the command bar button with the given ButtonList name, in screen pixels.
+/// Returns false when the bar does not show that button.
+/// </summary>
+bool TabClass::Command_Button_Center(char const * name, Point2D & center)
+{
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		if (std::strcmp(name, CommandNames[index]) == 0 && IsCommandButtonListed[index]) {
+			center = Point2D(CommandButtons[index].X + CommandButtons[index].Width / 2, CommandButtons[index].Y + CommandButtons[index].Height / 2);
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Positions the command bar's buttons and keeps the input list holding exactly the ones the
 /// bar shows: the end cap that opens or closes the bar, and while it is open, each listed
 /// command whose place in the row fits on the screen.
@@ -711,7 +727,7 @@ void TabClass::Command_Bar_AI(KeyNumType & input)
 /// <summary>
 /// Runs a command bar button's command through the matching keyboard command. A team button
 /// makes the selection into its team while the team is empty and selects the team otherwise.
-/// Beacon has no command in this engine yet and does nothing.
+/// The Beacon button starts beacon placement as the PlaceBeacon command does.
 /// </summary>
 void TabClass::Do_Command(CommandButtonType command)
 {
@@ -758,6 +774,10 @@ void TabClass::Do_Command(CommandButtonType command)
 
 		case COMMAND_ATTACK_MOVE:
 			Execute_Command("AttackMove");
+			break;
+
+		case COMMAND_BEACON:
+			Execute_Command("PlaceBeacon");
 			break;
 
 		case COMMAND_CHEER:

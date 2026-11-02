@@ -5016,6 +5016,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 
 	EBoltClass * bolt = new EBoltClass;
 	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->EmissiveStrength = weapon->EmissiveStrength;
 	bolt->Fire(source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
@@ -5087,6 +5088,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 	}
 	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, true, 1.0, 0.0);
 	beam->IsHouseColor = weapon->IsHouseColor;
+	beam->EmissiveStrength = weapon->EmissiveStrength;
 
 	// A house colored beam is drawn thick. A Prism Tower's is 3 lines out, or 5 while other towers support it; any other
 	// structure's stays 1, and a unit's takes 2 (TechnoClass::Fire, 0x6FDD50). No wave is made for a laser; gamemd makes

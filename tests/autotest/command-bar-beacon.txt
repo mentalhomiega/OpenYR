@@ -1,0 +1,16 @@
+; The command bar's Beacon button starts beacon placement, as the PlaceBeacon hotkey does. The bar shows it only when
+; [MultiplayerAdvancedCommandBar] ButtonList names Beacon, and beacon placement needs a multiplayer game
+; (BeaconManagerClass::Is_Available), so run it as both sides of the netsync harness with this same script:
+;   scripts/run_netsync.ps1 -Build agent11 -Map XMP29U2.MAP -ScriptA tests/autotest/command-bar-beacon.txt -ScriptB tests/autotest/command-bar-beacon.txt -Seconds 60 -KeepDir <folder>
+; The commandbutton step clicks the Beacon button's centre. Expected: the "commandbutton Beacon at" line gives the pixel,
+; the modes line before it has beacon 0 and the modes line after it has beacon 1. Before the fix the click ran nothing and
+; the second line read beacon 0. The PlaceBeacon at 70 then toggles the mode: beacon 0 at 80 with the fix, 1 without it.
+; In a skirmish game the button is not shown and the mode never starts, so a run there only logs "not shown".
+20 own GACNST 50 30
+21 own GAPOWR 56 40
+40 modes
+50 commandbutton Beacon
+60 modes
+70 command PlaceBeacon
+80 modes
+100 quit
