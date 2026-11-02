@@ -584,7 +584,6 @@ class BuildingClass : public TechnoClass
 		// Draws the weapon range ring of a selected defence when the Show defence range option is on.
 		void Draw_Defence_Range(void) const;
 		virtual void Draw_Wrench_Icon(Rect const & cliprect) const override;
-		void Draw_Wrench(Rect const & cliprect) const;
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);
 		virtual void Draw_Extras(Point2D &point, Rect &rect);
@@ -630,6 +629,11 @@ class BuildingClass : public TechnoClass
 		void Factory_AI(void);
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
+		void Update_Service_State(void);
+		void Update_Damage_Fires(void);
+		void Update_Gap_State(void);
+		void Update_Gattling_Spin(void);
+		bool Trigger_C4_Timeout(void);
 		TechnoTypeClass const * Secret_Item(void) const;
 		void Animation_AI(void);
 		virtual bool Revealed(HouseClass * house) override;
@@ -759,6 +763,9 @@ class BuildingClass : public TechnoClass
 		void Write_INI(CCINIClass & ini);
 
 	private:
+		void Destroy_Docked_Objects(void);
+		void Start_Destroy_Anim(void);
+		void Start_Destroy_Smoke(void);
 		void Drop_Debris(AbstractClass * source = NULL);
 		AircraftClass * Place_Free_Aircraft(AircraftTypeClass const * type);
 		void Dock_Free_Aircraft(AircraftClass * air);

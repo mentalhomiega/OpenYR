@@ -1244,7 +1244,7 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 /// but never draws it, so a structure that is switched off shows nothing.
 /// </summary>
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
-void BuildingClass::Draw_Wrench(Rect const & cliprect) const
+void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
 {
 	if (!IsRepairing || Map.Is_Shrouded(PositionCoord)) {
 		return;
@@ -1255,16 +1255,6 @@ void BuildingClass::Draw_Wrench(Rect const & cliprect) const
 	int frame = Options.Normalize_Delay(14) / 4;
 	if (frame < 2) frame = 2;
 	Draw_Shape(*LogicalSurface, *MouseDrawer, (ShapeSet const *)BuildingTypeClass::WrenchShapes, 6 * (Frame % frame) / (frame - 1), point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA));
-}
-
-
-/// <summary>
-/// Draws the repair wrench where TechnoClass::Draw_Post_Render asks for it, after the bomb icon
-/// and before the rank insignia.
-/// </summary>
-void BuildingClass::Draw_Wrench_Icon(Rect const & cliprect) const
-{
-	Draw_Wrench(cliprect);
 }
 
 
@@ -1788,38 +1778,9 @@ void BuildingClass::AI(void)
 		Prism_AI();
 	}
 
-	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
-	{
-		bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
-		if (Class->PowersUnit != NULL) {
-			Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
-		}
-		if (online != WasOnline) {
-			VocType const sound = online ? Class->WorkingSound : Class->NotWorkingSound;
-			if (sound != VOC_NONE) {
-				Sound_Effect(sound, Center_Coord());
-			}
-			// A structure that drops out of service for lack of power lets go of the units it holds (BuildingClass::UpdatePowerState, 0x4549B0, FreeAll).
-			if (!online && CaptureManager) {
-				CaptureManager->Free_All();
-			}
-			Update_Power_Anims(online);
-			WasOnline = online;
-		}
-	}
+	Update_Service_State();
 
-	// A structure below yellow health burns, or below red if it can be garrisoned (BuildingClass::Update).
-	{
-		bool const burning = HealthRatio <= (Class->IsCanBeOccupied ? Rule->ConditionRed : Rule->ConditionYellow);
-		if (burning != IsRequiresDamageFires) {
-			if (burning) {
-				Create_Damage_Fires();
-			} else {
-				Remove_Damage_Fires();
-			}
-			IsRequiresDamageFires = burning;
-		}
-	}
+	Update_Damage_Fires();
 
 	// Three charging soldiers overpower the structure; one is enough while its house has full power (BuildingClass::Update, 0x43FB20).
 	if (Class->IsOverpowerable) {
@@ -1839,19 +1800,7 @@ void BuildingClass::AI(void)
 	*/
 	Animation_AI();
 
-	if (Class->IsGapGenerator) {
-		bool const gap = !IsInLimbo && Is_Powered_On() && BState != BSTATE_CONSTRUCTION;
-		if (gap && !IsGeneratingGap) {
-			Create_Gap();
-		} else if (!gap && IsGeneratingGap) {
-			Destroy_Gap();
-			// A gap generator that loses power drops its charge (the power change handler, 0x4549B0).
-			if (IsGapSuperCharged) {
-				Set_Gap_Charge(false);
-				House->RecalcPower = true;
-			}
-		}
-	}
+	Update_Gap_State();
 
 	/*
 	**	If now is a good time to act on a new mission, then do so. This process occurs
@@ -1896,32 +1845,7 @@ void BuildingClass::AI(void)
 		Ammo = Class->MaxAmmo;
 	}
 
-	/*
-	 * As BuildingClass::Update (0x43FB20): a gattling turret animates while it spins, twice as
-	 * fast out of the attack mission, where the spin also drops by RateDown each frame once
-	 * GuardAreaTargetingDelay plus five frames have passed since the last shot.
-	 */
-	if (Class->IsGattling) {
-		if (GattlingValue > 0) {
-			TurretAnimFrame++;
-		}
-		if (Mission != MISSION_ATTACK) {
-			if (Frame - LastFireFrame > Rule->GuardAreaTargetingDelay + 5) {
-				GattlingValue -= Class->RateDown;
-				if (GattlingValue < 0 || Class->RateDown == 0) {
-					GattlingValue = 0;
-				}
-				int const stage = CurrentGattlingStage;
-				int const * stages = Veterancy.Is_Elite() ? Class->EliteStage : Class->WeaponStage;
-				if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT && GattlingValue < stages[stage - 1]) {
-					CurrentGattlingStage = stage - 1;
-				}
-			}
-			if (GattlingValue > 0) {
-				TurretAnimFrame++;
-			}
-		}
-	}
+	Update_Gattling_Spin();
 
 	/*
 	**	If now is a good time to act on a new mission, then do so. This occurs here because
@@ -2013,27 +1937,8 @@ void BuildingClass::AI(void)
 	/*
 	**	Check for demolition timeout. When timeout has expired, the building explodes.
 	*/
-	if (IsGoingToBlow && CountDown == 0) {
-		TechnoClass *saboteur = (TechnoClass *)(WhomToRepay);
-
-		/*
-		 * A bridge repair hut does not explode. Its charge runs the bridge search beside it and is
-		 * then cleared, whether or not a span came down (BuildingClass::Update, 0x43FB20).
-		 */
-		if (Class->IsBridgeRepairHut) {
-			Map.Destroy_Bridge_At(Get_Cell());
-			IsGoingToBlow = false;
-			IsC4Applied = false;
-			WhomToRepay = NULL;
-			Mark(MARK_CHANGE);
-		} else {
-			int damage = Strength;
-			Take_Damage(damage, 0, Rule->C4Warhead, saboteur, true);
-			if (!IsActive) {
-				return;
-			}
-			Mark(MARK_CHANGE);
-		}
+	if (!Trigger_C4_Timeout()) {
+		return;
 	}
 
 	/*
@@ -2057,6 +1962,123 @@ void BuildingClass::AI(void)
 	if (TarCom != NULL && !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)) && (TarCom->RTTI != RTTI_AIRCRAFT || TarCom->On_Ground())) {
 		Assign_Target(NULL);
 	}
+}
+
+
+void BuildingClass::Update_Service_State(void)
+{
+	// A structure that comes into or drops out of service plays its WorkingSound or NotWorkingSound (BuildingClass::Update, 0x43FB20).
+	bool const online = Is_Powered_On() && Mission != MISSION_CONSTRUCTION && Mission != MISSION_DECONSTRUCTION;
+	if (Class->PowersUnit != NULL) {
+		Update_Powered_Unit_Source(online && Strength > 0 && !IsInLimbo);
+	}
+	if (online != WasOnline) {
+		VocType const sound = online ? Class->WorkingSound : Class->NotWorkingSound;
+		if (sound != VOC_NONE) {
+			Sound_Effect(sound, Center_Coord());
+		}
+		// A structure that drops out of service for lack of power lets go of the units it holds (BuildingClass::UpdatePowerState, 0x4549B0, FreeAll).
+		if (!online && CaptureManager) {
+			CaptureManager->Free_All();
+		}
+		Update_Power_Anims(online);
+		WasOnline = online;
+	}
+}
+
+
+void BuildingClass::Update_Damage_Fires(void)
+{
+	// A structure below yellow health burns, or below red if it can be garrisoned (BuildingClass::Update).
+	bool const burning = HealthRatio <= (Class->IsCanBeOccupied ? Rule->ConditionRed : Rule->ConditionYellow);
+	if (burning != IsRequiresDamageFires) {
+		if (burning) {
+			Create_Damage_Fires();
+		} else {
+			Remove_Damage_Fires();
+		}
+		IsRequiresDamageFires = burning;
+	}
+}
+
+
+void BuildingClass::Update_Gap_State(void)
+{
+	if (Class->IsGapGenerator) {
+		bool const gap = !IsInLimbo && Is_Powered_On() && BState != BSTATE_CONSTRUCTION;
+		if (gap && !IsGeneratingGap) {
+			Create_Gap();
+		} else if (!gap && IsGeneratingGap) {
+			Destroy_Gap();
+			// A gap generator that loses power drops its charge (the power change handler, 0x4549B0).
+			if (IsGapSuperCharged) {
+				Set_Gap_Charge(false);
+				House->RecalcPower = true;
+			}
+		}
+	}
+}
+
+
+void BuildingClass::Update_Gattling_Spin(void)
+{
+	/*
+	 * As BuildingClass::Update (0x43FB20): a gattling turret animates while it spins, twice as
+	 * fast out of the attack mission, where the spin also drops by RateDown each frame once
+	 * GuardAreaTargetingDelay plus five frames have passed since the last shot.
+	 */
+	if (Class->IsGattling) {
+		if (GattlingValue > 0) {
+			TurretAnimFrame++;
+		}
+		if (Mission != MISSION_ATTACK) {
+			if (Frame - LastFireFrame > Rule->GuardAreaTargetingDelay + 5) {
+				GattlingValue -= Class->RateDown;
+				if (GattlingValue < 0 || Class->RateDown == 0) {
+					GattlingValue = 0;
+				}
+				int const stage = CurrentGattlingStage;
+				int const * stages = Veterancy.Is_Elite() ? Class->EliteStage : Class->WeaponStage;
+				if (stage > 0 && stage <= TechnoTypeClass::WEAPON_STAGE_COUNT && GattlingValue < stages[stage - 1]) {
+					CurrentGattlingStage = stage - 1;
+				}
+			}
+			if (GattlingValue > 0) {
+				TurretAnimFrame++;
+			}
+		}
+	}
+}
+
+
+// Returns false when the blast destroyed the structure, so AI() must end for this frame.
+bool BuildingClass::Trigger_C4_Timeout(void)
+{
+	if (!IsGoingToBlow || CountDown != 0) {
+		return(true);
+	}
+
+	TechnoClass *saboteur = (TechnoClass *)(WhomToRepay);
+
+	/*
+	 * A bridge repair hut does not explode. Its charge runs the bridge search beside it and is
+	 * then cleared, whether or not a span came down (BuildingClass::Update, 0x43FB20).
+	 */
+	if (Class->IsBridgeRepairHut) {
+		Map.Destroy_Bridge_At(Get_Cell());
+		IsGoingToBlow = false;
+		IsC4Applied = false;
+		WhomToRepay = NULL;
+		Mark(MARK_CHANGE);
+	} else {
+		int damage = Strength;
+		Take_Damage(damage, 0, Rule->C4Warhead, saboteur, true);
+		if (!IsActive) {
+			return(false);
+		}
+		Mark(MARK_CHANGE);
+	}
+	return(true);
 }
 
 
@@ -2648,26 +2670,7 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 				case RESULT_DESTROYED:
 
-					/*
-					 * Every object in radio contact (BuildingClass::Destroy, 0x442230) is handled. One
-					 * within a cell of this building, or any one when it is a helipad, takes a C4 blast of
-					 * ten times its maximum strength. Any other is told to leave. The blast removes its
-					 * target from the links, so the list is copied first.
-					 */
-					{
-						for (TechnoClass * contact : Linked_Objects()) {
-							if (!Contains_Link(contact)) {
-								continue;
-							}
-							if (Class->IsHelipad || Gamemd_Distance(Center_Coord(), contact->Center_Coord()) < CELL_LEPTON) {
-								int damage = contact->TClass->MaxStrength * 10;
-								contact->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
-							} else {
-								Transmit_Message(RADIO_RUN_AWAY, contact);
-								contact->NearbyObject = NULL;
-							}
-						}
-					}
+					Destroy_Docked_Objects();
 
 					if (LightSource != NULL) {
 						LightSource->Disable(false);
@@ -2677,30 +2680,8 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 
 					Do_Destruction(tech, source, forced, offset);
 
-					// A random DestroyAnim plays where the structure stood, in its house's colors or its Palette= (BuildingClass::Destroy, 0x4415F0).
-					if (Class->DestroyAnim.Count() > 0) {
-						AnimTypeClass const * type = Class->DestroyAnim.Pick(Scen->RandomNumber());
-						if (type != NULL) {
-							AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-							if (anim != NULL) {
-								anim->AlternativeDrawer = Remap_Converter();
-								anim->AlternativeBrightness = Apparent_Brightness();
-							}
-						}
-					}
-
-					// A destroyed structure starts one of its smoke systems from DestroyParticleSystems at DestroySmokeOffset (BuildingClass::Destroy, 0x4415F0).
-					{
-						DynamicVectorClass<ParticleSystemTypeClass const *> smokes;
-						for (int index = Class->DestroyParticleSystems.Count() - 1; index >= 0; index--) {
-							if (Class->DestroyParticleSystems[index]->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
-								smokes.Add(Class->DestroyParticleSystems[index]);
-							}
-						}
-						if (smokes.Count() > 0 && HeightAGL > -10) {
-							new ParticleSystemClass(smokes[Scen->RandomNumber(0, smokes.Count() - 1)], Get_Coord() + Class->DestroySmokeOffset, NULL, this, COORD_NONE);
-						}
-					}
+					Start_Destroy_Anim();
+					Start_Destroy_Smoke();
 
 					if (CountDown > 0) {
 						Cell const crate_cell = Center_Coord().As_Cell();
@@ -2811,11 +2792,9 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 			**	return fire if they are able and allowed.
 			*/
 			// The attacker replaces a current target the weapon cannot reach with a clear line (BuildingClass::ReceiveDamage, 0x442230, IsCloseEnoughToAttack).
-			// Kept as a safety net: since the rules now give a weapon with no projectile a default one when they load (WeaponTypeClass::Read_INI), this rarely applies.
 			if (CurrentMission != MISSION_DECONSTRUCTION &&
 				!House->Is_Ally(source) &&
 				PrimaryWeapon != NULL &&
-				PrimaryWeapon->Bullet != NULL &&
 				!PrimaryWeapon->Bullet->IsAntiAircraft &&
 				(TarCom == NULL || !Is_Close_Enough(TarCom, What_Weapon_Should_I_Use(TarCom)))) {
 
@@ -2844,6 +2823,60 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	}
 
 	return(res);
+}
+
+
+void BuildingClass::Destroy_Docked_Objects(void)
+{
+	/*
+	 * Every object in radio contact (BuildingClass::Destroy, 0x442230) is handled. One
+	 * within a cell of this building, or any one when it is a helipad, takes a C4 blast of
+	 * ten times its maximum strength. Any other is told to leave. The blast removes its
+	 * target from the links, so the list is copied first.
+	 */
+	for (TechnoClass * contact : Linked_Objects()) {
+		if (!Contains_Link(contact)) {
+			continue;
+		}
+		if (Class->IsHelipad || Gamemd_Distance(Center_Coord(), contact->Center_Coord()) < CELL_LEPTON) {
+			int damage = contact->TClass->MaxStrength * 10;
+			contact->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, true);
+		} else {
+			Transmit_Message(RADIO_RUN_AWAY, contact);
+			contact->NearbyObject = NULL;
+		}
+	}
+}
+
+
+void BuildingClass::Start_Destroy_Anim(void)
+{
+	// A random DestroyAnim plays where the structure stood, in its house's colors or its Palette= (BuildingClass::Destroy, 0x4415F0).
+	if (Class->DestroyAnim.Count() > 0) {
+		AnimTypeClass const * type = Class->DestroyAnim.Pick(Scen->RandomNumber());
+		if (type != NULL) {
+			AnimClass * anim = new AnimClass(type, Center_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			if (anim != NULL) {
+				anim->AlternativeDrawer = Remap_Converter();
+				anim->AlternativeBrightness = Apparent_Brightness();
+			}
+		}
+	}
+}
+
+
+void BuildingClass::Start_Destroy_Smoke(void)
+{
+	// A destroyed structure starts one of its smoke systems from DestroyParticleSystems at DestroySmokeOffset (BuildingClass::Destroy, 0x4415F0).
+	DynamicVectorClass<ParticleSystemTypeClass const *> smokes;
+	for (int index = Class->DestroyParticleSystems.Count() - 1; index >= 0; index--) {
+		if (Class->DestroyParticleSystems[index]->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
+			smokes.Add(Class->DestroyParticleSystems[index]);
+		}
+	}
+	if (smokes.Count() > 0 && HeightAGL > -10) {
+		new ParticleSystemClass(smokes[Scen->RandomNumber(0, smokes.Count() - 1)], Get_Coord() + Class->DestroySmokeOffset, NULL, this, COORD_NONE);
+	}
 }
 
 
@@ -4997,247 +5030,240 @@ bool BuildingClass::Captured(HouseClass * newowner)
 /// <returns>bool; Was the structure given over? False when the house already owns it.</returns>
 bool BuildingClass::Change_Owner(HouseClass * newowner, bool announce, bool capture)
 {
-	if (newowner != House) {
+	if (newowner == House) {
+		return(false);
+	}
 
-		if (Class->IsCloakGenerator) {
-			newowner->HasCloakGenerator = true;
+	if (Class->IsCloakGenerator) {
+		newowner->HasCloakGenerator = true;
+	}
+
+	/*
+	**	Clear the capturer's country from the spied bits, since it now owns this
+	**	building. If it was a radar facility, update the target house's RadarSpied field.
+	*/
+	if (SpiedBy[newowner]) {
+		SpiedBy.Clear(newowner);
+		if (Class->IsRadar) {
+			Update_Radar_Spied();
 		}
+	}
 
-		/*
-		**	Clear the capturer's country from the spied bits, since it now owns this
-		**	building. If it was a radar facility, update the target house's RadarSpied field.
-		*/
-		if (SpiedBy[newowner]) {
-			SpiedBy.Clear(newowner);
-			if (Class->IsRadar) {
-				Update_Radar_Spied();
-			}
-		}
+	// SetOwningHouse (0x448260) clears the primary before the owner changes.
+	IsLeader = false;
 
-		// SetOwningHouse (0x448260) clears the primary before the owner changes.
-		IsLeader = false;
+	if (Class->IsLaserFencePost) {
+		Update_Laser_Fence_Connections(0);
+	}
 
-		if (Class->IsLaserFencePost) {
-			Update_Laser_Fence_Connections(0);
-		}
-
-		if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
-			// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
-			// A NeedsEngineer structure has its own lines in place of the radar event, and a MultiplayPassive taker hears nothing.
-			if (announce && !newowner->Class->IsMultiplayPassive) {
-				if (!Class->IsNeedsEngineer) {
-					if (Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
-						Speak(VOX_BUILDING_CAPTURED);
-					}
-				} else if (House != newowner) {
-					if (House->Is_Player_Control()) {
-						Speak_Eva("EVA_TechBuildingLost");
-					}
-					if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
-						Speak_Eva_Index(Class->CaptureEvaEvent);
-					}
+	if (House->Is_Player_Control() || newowner->Is_Player_Control()) {
+		// Gamemd (SetOwningHouse, 0x448260) raises the owner-changed event only when it announces, and speaks only when it is created.
+		// A NeedsEngineer structure has its own lines in place of the radar event, and a MultiplayPassive taker hears nothing.
+		if (announce && !newowner->Class->IsMultiplayPassive) {
+			if (!Class->IsNeedsEngineer) {
+				if (Submit_Radar_Event(RADAREVENT_OWNER_CHANGED, Center_Coord().As_Cell())) {
+					Speak(VOX_BUILDING_CAPTURED);
+				}
+			} else if (House != newowner) {
+				if (House->Is_Player_Control()) {
+					Speak_Eva("EVA_TechBuildingLost");
+				}
+				if (newowner->Is_Player_Control() && Class->CaptureEvaEvent != -1) {
+					Speak_Eva_Index(Class->CaptureEvaEvent);
 				}
 			}
-			Map.PowerClass::IsToRedraw = true;
-			Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 		}
-
-		IsToDisplay = true;
-
-		/*
-		**	Add this building to the list of buildings captured this game. For internet stats purposes.
-		*/
-		if (Session.Type == GAME_INTERNET) {
-			newowner->CapturedBuildings->Increment_Unit_Total (Class->HeapID);
-		}
-
-		/*
-		**	If there is something loaded, then it gets captured as well.
-		*/
-		// A radio-linked object changes hands the same way for a capture and a transfer (SetOwningHouse, 0x448260).
-		TechnoClass * tech = Cargo.Attached_Object();
-		if (tech) {
-			tech->Set_Owning_House(newowner, true);
-		}
-
-		/*
-		**	If something isn't technically attached, but is sitting on this
-		**	building for another reason (e.g., helicopter on helipad), then it
-		**	gets captured as well.
-		*/
-		struct CapturedDocker {
-			TechnoClass * object;
-			bool tethered;
-		};
-		std::vector<CapturedDocker> captured_dockers;
-		for (TechnoClass * docker : Linked_Objects()) {
-			// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
-			if (!Contains_Link(docker)) {
-				continue;
-			}
-			if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
-				bool const tethered = docker->IsTethered;
-				docker->Set_Owning_House(newowner, true);
-				captured_dockers.push_back({docker, tethered});
-			} else {
-				Transmit_Message(RADIO_RUN_AWAY, docker);
-				Transmit_Message(RADIO_OVER_OUT, docker);
-			}
-		}
-
-		/*
-		**	Abort any computer production in progress.
-		*/
-		if (Factory) {
-			Factory->Abandon();
-			delete (FactoryClass *)Factory;
-			Factory = NULL;
-		}
-
-		/*
-		**	Decrement the factory counter for the original owner.
-		*/
-		House->Active_Remove(this);
-
-		/*
-		**	Flag that both owners now need to update their buildable lists.
-		*/
-		House->IsRecalcNeeded = true;
-		newowner->IsRecalcNeeded = true;
-		HouseClass * oldowner = House;
-		TargetClass tocap = this;
-
-		IsCaptured = true;
-		HasEngineer = true;
-		// An owner change resumes a NeedsEngineer structure's frozen animations (SetOwningHouse, 0x448260).
-		if (Class->IsNeedsEngineer) {
-			Freeze_Powered_Anims(false);
-		}
-		if (Rule->BuildConst.Is_In_List(Class)) {
-			oldowner->ConYards.Delete(this);
-		}
-		if (Class->IsSecretLab) {
-			oldowner->SecretLabs.Delete(this);
-		}
-
-		Collapse_Cloak_Field();
-		if (Class->IsSensorArray) {
-			Disable_Sensor_Array();
-		}
-		if (IsGeneratingGap) {
-			Destroy_Gap();
-		}
-		bool const detecting = IsDetectingDisguise;
-		Disguise_Detector(false);
-
-		// The base class's step is TechnoClass::Captured for a capture and TechnoClass::Set_Owning_House otherwise (0x7014A0).
-		if (capture) {
-			BASECLASS::Captured(newowner);
-		} else {
-			BASECLASS::Set_Owning_House(newowner, announce);
-		}
-
-		if (detecting) {
-			Disguise_Detector(true);
-		}
-
-		if (Class->IsCloakGenerator && Is_Powered_On()) {
-			Enable_Cloak_Generator();
-		}
-		if (Class->IsSensorArray) {
-			Enable_Sensor_Array();
-		}
-
-		oldowner->ToCapture = this;
-		oldowner->Recalc_Center();
-		House->Recalc_Center();
-
-		if (House->ToCapture == this) {
-			House->ToCapture = NULL;
-		}
-
-		if (oldowner->Is_Player_Control() && Class->IsConstructionYard && !oldowner->Owns_Any(oldowner->BQuantity, Rule->BuildConst)) {
-			Map.PendingObjectPtr = NULL;
-			Map.PendingObject = NULL;
-			Map.PendingHouse = HOUSE_NONE;
-			Map.Set_Cursor_Shape(NULL);
-		}
-
-		/*
-		**	Increment the factory count for the new owner.
-		*/
-		House->Active_Add(this);
-
-		// The new owner's primary of this kind is claimed only when it has none (SetOwningHouse, 0x448260).
-		if (Class->ToBuild != RTTI_NONE) {
-			Claim_Vacant_Primary();
-		}
-
-		IsRepairing = false;
-		// Only a capture resets the production budget; a transfer leaves the opened structure as it is.
-		Grand_Opening(capture);
-
-		// The bonus is decided by the house the building came from, not by its new owner.
-		if (oldowner->Class->IsMultiplayPassive) {
-			Produce_Cash_Startup();
-		}
-
-		if (Class->IsLaserFencePost) {
-			Init_Laser_Fence();
-			Init_Laser_Fence_Frame();
-		}
-
-		/*
-		**	Perform a look operation when captured.
-		*/
-		Look(false);
-
-		/*
-		**	If the capturer's country had spied on it, clear that country's spiedby bit.
-		*/
-		if (SpiedBy[newowner]) {
-			SpiedBy.Clear(newowner);
-		}
-
-		Update_Anim_Appearance();
-
-		if (Rule->BuildConst.Is_In_List(Class)) {
-			newowner->ConYards.Add(this);
-		}
-		if (Class->IsSecretLab) {
-			newowner->SecretLabs.Add(this);
-		}
-
-		oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
-		// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
-		if (Class->ToBuild == RTTI_BUILDINGTYPE) {
-			newowner->Update_Base_Edge(this);
-		}
-
-		for (CapturedDocker const & docker : captured_dockers) {
-			if (!docker.object->IsActive) {
-				continue;
-			}
-			Transmit_Message(RADIO_HELLO, docker.object);
-			if (docker.tethered) {
-				IsTethered = true;
-				docker.object->IsTethered = true;
-			}
-		}
-
-		if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()) {
-			if (newowner->ABQuantity.Value(Class->HeapID) > 1 || Class->ToBuild != RTTI_BUILDINGTYPE) {
-				Sell_All_Upgrades();
-			}
-		}
-
-		oldowner->IsRecalcNeeded = true;
-		newowner->IsRecalcNeeded = true;
-
-		return(true);
+		Map.PowerClass::IsToRedraw = true;
+		Map.Flag_To_Redraw(GS_REDRAW_DIRTY);
 	}
-	return(false);
+
+	IsToDisplay = true;
+
+	/*
+	**	Add this building to the list of buildings captured this game. For internet stats purposes.
+	*/
+	if (Session.Type == GAME_INTERNET) {
+		newowner->CapturedBuildings->Increment_Unit_Total (Class->HeapID);
+	}
+
+	/*
+	**	If there is something loaded, then it gets captured as well.
+	*/
+	// A radio-linked object changes hands the same way for a capture and a transfer (SetOwningHouse, 0x448260).
+	TechnoClass * tech = Cargo.Attached_Object();
+	if (tech) {
+		tech->Set_Owning_House(newowner, true);
+	}
+
+	/*
+	**	If something isn't technically attached, but is sitting on this
+	**	building for another reason (e.g., helicopter on helipad), then it
+	**	gets captured as well.
+	*/
+	struct CapturedDocker {
+		TechnoClass * object;
+		bool tethered;
+	};
+	std::vector<CapturedDocker> captured_dockers;
+	for (TechnoClass * docker : Linked_Objects()) {
+		// A trigger sprung by an earlier capture can remove a docker, which empties its slot.
+		if (!Contains_Link(docker)) {
+			continue;
+		}
+		if (Transmit_Message(RADIO_NEED_TO_MOVE, docker) == RADIO_ROGER && (Class->IsWeaponsFactory || Gamemd_Distance(docker->Center_Coord(), Docking_Coord_For(docker)) < CELL_LEPTON / 4) ) {
+			bool const tethered = docker->IsTethered;
+			docker->Set_Owning_House(newowner, true);
+			captured_dockers.push_back({docker, tethered});
+		} else {
+			Transmit_Message(RADIO_RUN_AWAY, docker);
+			Transmit_Message(RADIO_OVER_OUT, docker);
+		}
+	}
+
+	/*
+	**	Abort any computer production in progress.
+	*/
+	if (Factory) {
+		Factory->Abandon();
+		delete (FactoryClass *)Factory;
+		Factory = NULL;
+	}
+
+	/*
+	**	Decrement the factory counter for the original owner.
+	*/
+	House->Active_Remove(this);
+
+	/*
+	**	Flag that both owners now need to update their buildable lists.
+	*/
+	House->IsRecalcNeeded = true;
+	newowner->IsRecalcNeeded = true;
+	HouseClass * oldowner = House;
+	TargetClass tocap = this;
+
+	IsCaptured = true;
+	HasEngineer = true;
+	// An owner change resumes a NeedsEngineer structure's frozen animations (SetOwningHouse, 0x448260).
+	if (Class->IsNeedsEngineer) {
+		Freeze_Powered_Anims(false);
+	}
+	if (Rule->BuildConst.Is_In_List(Class)) {
+		oldowner->ConYards.Delete(this);
+	}
+	if (Class->IsSecretLab) {
+		oldowner->SecretLabs.Delete(this);
+	}
+
+	Collapse_Cloak_Field();
+	if (Class->IsSensorArray) {
+		Disable_Sensor_Array();
+	}
+	if (IsGeneratingGap) {
+		Destroy_Gap();
+	}
+	bool const detecting = IsDetectingDisguise;
+	Disguise_Detector(false);
+
+	// The base class's step is TechnoClass::Captured for a capture and TechnoClass::Set_Owning_House otherwise (0x7014A0).
+	if (capture) {
+		BASECLASS::Captured(newowner);
+	} else {
+		BASECLASS::Set_Owning_House(newowner, announce);
+	}
+
+	if (detecting) {
+		Disguise_Detector(true);
+	}
+
+	if (Class->IsCloakGenerator && Is_Powered_On()) {
+		Enable_Cloak_Generator();
+	}
+	if (Class->IsSensorArray) {
+		Enable_Sensor_Array();
+	}
+
+	oldowner->ToCapture = this;
+	oldowner->Recalc_Center();
+	House->Recalc_Center();
+
+	if (House->ToCapture == this) {
+		House->ToCapture = NULL;
+	}
+
+	if (oldowner->Is_Player_Control() && Class->IsConstructionYard && !oldowner->Owns_Any(oldowner->BQuantity, Rule->BuildConst)) {
+		Map.PendingObjectPtr = NULL;
+		Map.PendingObject = NULL;
+		Map.PendingHouse = HOUSE_NONE;
+		Map.Set_Cursor_Shape(NULL);
+	}
+
+	/*
+	**	Increment the factory count for the new owner.
+	*/
+	House->Active_Add(this);
+
+	// The new owner's primary of this kind is claimed only when it has none (SetOwningHouse, 0x448260).
+	if (Class->ToBuild != RTTI_NONE) {
+		Claim_Vacant_Primary();
+	}
+
+	IsRepairing = false;
+	// Only a capture resets the production budget; a transfer leaves the opened structure as it is.
+	Grand_Opening(capture);
+
+	// The bonus is decided by the house the building came from, not by its new owner.
+	if (oldowner->Class->IsMultiplayPassive) {
+		Produce_Cash_Startup();
+	}
+
+	if (Class->IsLaserFencePost) {
+		Init_Laser_Fence();
+		Init_Laser_Fence_Frame();
+	}
+
+	/*
+	**	Perform a look operation when captured.
+	*/
+	Look(false);
+
+	Update_Anim_Appearance();
+
+	if (Rule->BuildConst.Is_In_List(Class)) {
+		newowner->ConYards.Add(this);
+	}
+	if (Class->IsSecretLab) {
+		newowner->SecretLabs.Add(this);
+	}
+
+	oldowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+	newowner->Update_Factories(Class->ToBuild, Class->IsNaval);
+	// A construction yard that changes hands sets the new owner's base edge (BuildingClass::SetOwningHouse, 0x448260).
+	if (Class->ToBuild == RTTI_BUILDINGTYPE) {
+		newowner->Update_Base_Edge(this);
+	}
+
+	for (CapturedDocker const & docker : captured_dockers) {
+		if (!docker.object->IsActive) {
+			continue;
+		}
+		Transmit_Message(RADIO_HELLO, docker.object);
+		if (docker.tethered) {
+			IsTethered = true;
+			docker.object->IsTethered = true;
+		}
+	}
+
+	if (Session.Type != GAME_NORMAL && !newowner->Is_Human_Player()) {
+		if (newowner->ABQuantity.Value(Class->HeapID) > 1 || Class->ToBuild != RTTI_BUILDINGTYPE) {
+			Sell_All_Upgrades();
+		}
+	}
+
+	oldowner->IsRecalcNeeded = true;
+	newowner->IsRecalcNeeded = true;
+
+	return(true);
 }
 
 
