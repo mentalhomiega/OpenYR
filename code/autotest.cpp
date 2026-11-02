@@ -2419,7 +2419,7 @@ static void Target_Action_Step(StepType const & step)
 		}
 	}
 	if (attacker == NULL || target == NULL) {
-		DebugString("AUTOTEST   targetaction %s %s: no attacker or no target\n", words[2].c_str(), words[2].c_str());
+		DebugString("AUTOTEST   targetaction %s %s: no attacker or no target\n", words[2].c_str(), words[3].c_str());
 		return;
 	}
 	int const which = attacker->What_Weapon_Should_I_Use(target);

@@ -1,0 +1,10 @@
+; A targetaction step that finds no target logs the attacker and target types it was given, and says which of the two it could not find.
+; Expected: before Tanya is on the map (frame 10) the line reads 'targetaction TANY DMISL: no attacker or no target', and it reads the same
+; at frame 30, when Tanya stands on the map and no live missile exists. Before the fix both lines read 'targetaction TANY TANY: ...',
+; which hides the missing target behind the attacker's name.
+; Run: scripts/run_autotest.ps1 -Build agent15 -Script src-agent15/tests/autotest/targetaction-missing-target.txt -Map XMP08T2.MAP -Seconds 40 -Filter "AUTOTEST   targetaction|Exception"
+; The steps place Tanya with own, as a player does, and the targetaction steps only read state, so the case is reached without forcing a trigger.
+10 targetaction TANY DMISL
+20 own TANY 70 70
+30 targetaction TANY DMISL
+35 quit
