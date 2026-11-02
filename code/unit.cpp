@@ -2556,13 +2556,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			// RADIO_IM_IN is answered with RADIO_ATTACH even by a full transport, so the
 			// room has to be checked here as well.
 			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
-				Limbo();
-				techno->Cargo.Attach(this);
-				if (techno->TClass->IsGunner && techno->Cargo.How_Many() == 1) {
-					techno->Receive_Gunner(this);
-				}
-				techno->Play_Transport_Sound(true);
-				Hidden();
+				Board_Transport(techno);
 			}
 			BEnd(BENCH_PCP);
 			return;

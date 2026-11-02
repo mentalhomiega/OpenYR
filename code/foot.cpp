@@ -5517,6 +5517,23 @@ ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionT
 
 
 /// <summary>
+/// Takes this object off the map and into the cargo of a transport that has accepted it. A gunner transport
+/// takes it as its gunner when it is the only passenger, and the transport then plays its entering sound.
+/// </summary>
+/// <param name="transport">The transport that takes this object aboard.</param>
+void FootClass::Board_Transport(TechnoClass * transport)
+{
+	Limbo();
+	transport->Cargo.Attach(this);
+	if (transport->TClass->IsGunner && transport->Cargo.How_Many() == 1) {
+		transport->Receive_Gunner(this);
+	}
+	transport->Play_Transport_Sound(true);
+	Hidden();
+}
+
+
+/// <summary>
 /// Handles the rescue mission state machine.
 /// This routine will have the object engage any threat close to the spot the mission began
 /// at, then head for whatever destination its house nominates. Once it arrives, it settles
