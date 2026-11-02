@@ -1254,11 +1254,7 @@ bool TActionClass::TAction_SELL_ATTACHED(HouseClass * , ObjectClass * , TriggerC
 
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig)) {
+		if (building->Is_Tagged_By(trig)) {
 
 			building->Sell_Back(1);
 			if (AutoTest_Active()) {
@@ -1283,11 +1279,7 @@ bool TActionClass::TAction_GO_BERZERK(HouseClass * , ObjectClass * , TriggerClas
 
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsActive &&
-				infantry->IsDown &&
-				!infantry->IsInLimbo &&
-				infantry->Tag != NULL &&
-				infantry->Tag->Is_Trigger_Attached(trig)) {
+		if (infantry->Is_Tagged_By(trig)) {
 
 			infantry->Berzerk();
 			success = true;
@@ -1308,11 +1300,7 @@ bool TActionClass::TAction_TURN_OFF_ATTACHED(HouseClass * , ObjectClass * , Trig
 	bool success = false;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig) &&
+		if (building->Is_Tagged_By(trig) &&
 				building->IsOn) {
 
 			building->Turn_Off();
@@ -1334,7 +1322,7 @@ bool TActionClass::TAction_TURN_ON_ATTACHED(HouseClass * , ObjectClass * , Trigg
 	bool success = false;
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive && building->IsDown && !building->IsInLimbo && building->Tag != NULL && building->Tag->Is_Trigger_Attached(trig) && !building->IsOn) {
+		if (building->Is_Tagged_By(trig) && !building->IsOn) {
 			building->Turn_On();
 			success = true;
 		}
@@ -1360,11 +1348,7 @@ bool TActionClass::TAction_CHANGE_HOUSE(HouseClass * , ObjectClass * , TriggerCl
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			// The action helper at 0x6E0AA0 (action 0x0E) calls SetOwningHouse without an announcement.
 			techno->Set_Owning_House(newowner, false);
@@ -2115,7 +2099,7 @@ bool TActionClass::TAction_DESTROY_OBJECT(HouseClass * , ObjectClass * , Trigger
 		process = false;
 		for (int index = 0; index < Technos.Count(); index++) {
 			TechnoClass * techno = Technos[index];
-			if (techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && techno->Tag != NULL && techno->Tag->Is_Trigger_Attached(trig)) {
+			if (techno->Strength > 0 && techno->Is_Tagged_By(trig)) {
 				int damage = techno->Strength;
 				techno->Take_Damage(damage, 0, Rule->C4Warhead, 0, true);
 				any = true;
@@ -2936,11 +2920,7 @@ bool TActionClass::TAction_MAKE_ELITE(HouseClass * , ObjectClass * , TriggerClas
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			techno->Veterancy.Set_Elite(true);
 			success = true;
@@ -2990,11 +2970,7 @@ bool TActionClass::TAction_DELETE_OBJECT(HouseClass * , ObjectClass * , TriggerC
 
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->IsActive &&
-				techno->IsDown &&
-				!techno->IsInLimbo &&
-				techno->Tag != NULL &&
-				techno->Tag->Is_Trigger_Attached(trig)) {
+		if (techno->Is_Tagged_By(trig)) {
 
 			techno->Delete_Me();
 			success = true;
@@ -3434,11 +3410,7 @@ bool TActionClass::TAction_EVICT_OCCUPIERS(HouseClass * , ObjectClass * , Trigge
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
-		if (building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Tag != NULL &&
-				building->Tag->Is_Trigger_Attached(trig)) {
+		if (building->Is_Tagged_By(trig)) {
 
 			building->Eject_Occupants();
 			return(true);
