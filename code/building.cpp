@@ -5401,11 +5401,6 @@ bool BuildingClass::Clear_Weapons_Factory_Bib(void)
 int BuildingClass::Do_MISSION_GUARD(void)
 {
 	bool isfacility;
-	bool hascontact;
-	bool istechno;
-	bool entermission;
-	bool inrange;
-	bool tomove;
 
 	if (Class->IsGattling) {
 		Gattling_Rate_Down(MissionAccumulateTime);
@@ -5426,9 +5421,6 @@ int BuildingClass::Do_MISSION_GUARD(void)
 
 		if (!Class->IsEMPulseCannon && (Fetch_Super_Weapon() == SUPER_NONE || SuperWeaponTypes[Fetch_Super_Weapon()]->Type != SUPER_CHEM_MISSILE)) {
 
-			/*
-			**	If there is no target available, then search for one.
-			*/
 			// No target is searched for here. BuildingClass::Mission_Guard (0x4496B0) takes only the target that the
 			// opportunity scan of TechnoClass::Update has set.
 
@@ -5471,29 +5463,9 @@ int BuildingClass::Do_MISSION_GUARD(void)
 				isfacility = Class->IsCanUnitRepair || Class->IsCanUnitReload;
 				for (int slot = 0; slot < Link_Count(); slot++) {
 					TechnoClass * contact = Link(slot);
-					hascontact = contact != 0;
 
-					istechno = false;
-					if (hascontact) {
-						istechno = contact->Is_Techno();
-					}
-
-					entermission = false;
-					if (istechno) {
-						entermission = contact->Mission == MISSION_ENTER;
-					}
-
-					inrange = false;
-					if (entermission) {
-						inrange = Distance_To(contact) < CELL_LEPTON / 4;
-					}
-
-					tomove = false;
-					if (inrange) {
-						tomove = Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER;
-					}
-
-					if (isfacility && hascontact && istechno && entermission && inrange && tomove) {
+					// isfacility stays last: RADIO_NEED_TO_MOVE goes to an entering link whatever the building kind.
+					if (contact != NULL && contact->Mission == MISSION_ENTER && Distance_To(contact) < CELL_LEPTON / 4 && Transmit_Message(RADIO_NEED_TO_MOVE, contact) == RADIO_ROGER && isfacility) {
 
 						Assign_Mission(MISSION_REPAIR);
 						return(1);
