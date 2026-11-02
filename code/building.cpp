@@ -11720,6 +11720,32 @@ bool BuildingClass::Is_Powered_On(void) const
 }
 
 
+// Visits each cell whose offset from origin has x * x + y * y < radius * radius, with x and y in [-radius, radius).
+template<typename Fn>
+static void For_Each_Cell_In_Radius(Cell const & origin, int radius, Fn && fn)
+{
+	for (int y = -radius; y < radius; y++) {
+		for (int x = -radius; x < radius; x++) {
+			if (x * x + y * y < radius * radius) {
+				fn(Cell(origin.X + x, origin.Y + y));
+			}
+		}
+	}
+}
+
+
+// Marks a structure of another house on this cell to be drawn again when it is not in its normal visual state.
+static void Redisplay_Hidden_Building(CellClass * cellptr)
+{
+	BuildingClass * building = cellptr->Cell_Building();
+	if (building != NULL && building->House != PlayerPtr) {
+		if (building->Visual_Character() != VISUAL_NORMAL) {
+			building->IsToDisplay = true;
+		}
+	}
+}
+
+
 /// <summary>
 /// Starts or stops this structure showing its owner the disguised objects within
 /// DetectDisguiseRange cells (BuildingClass::DisguiseDetectorActivate, 0x455A80, and
@@ -11733,22 +11759,16 @@ void BuildingClass::Disguise_Detector(bool on)
 	IsDetectingDisguise = on;
 
 	int const radius = Techno_Type_Class()->DetectDisguiseRange;
-	Cell const origin = Center_Coord().As_Cell();
-	for (int y = -radius; y < radius; y++) {
-		for (int x = -radius; x < radius; x++) {
-			if (x * x + y * y < radius * radius) {
-				Cell const cell(origin.X + x, origin.Y + y);
-				if (Map.In_Radar(cell)) {
-					std::uint16_t & count = Map[cell].DisguiseSensorCount[House];
-					if (on) {
-						count++;
-					} else if (count > 0) {
-						count--;
-					}
-				}
+	For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this, on](Cell const & cell) {
+		if (Map.In_Radar(cell)) {
+			std::uint16_t & count = Map[cell].DisguiseSensorCount[House];
+			if (on) {
+				count++;
+			} else if (count > 0) {
+				count--;
 			}
 		}
-	}
+	});
 }
 
 
@@ -11765,27 +11785,15 @@ void BuildingClass::Disable_Sensor_Array(void)
 
 	// gamemd lifts the array over CloakRadiusInCells, not SensorsSight (SensorArrayDeactivate, 0x4556D0), so
 	// a cell outside the SensorsSight ring loses a count that was never added.
-	int radius = Class->CloakRadiusInCells;
-	int dist = radius * radius;
-	Cell origin = Center_Coord().As_Cell();
-	for (int y = -radius; y < radius; y++) {
-		for (int x = -radius; x < radius; x++) {
-			Cell newcell = Cell(origin.X + x, origin.Y + y);
-			if (x * x + y * y < dist) {
-				CellClass * cellptr = &Map[newcell];
-				bool const cleared = cellptr->Remove_Sensor(House);
-				Cloak_Cell_Occupiers(cellptr);
-				if (cleared) {
-					BuildingClass * building = cellptr->Cell_Building();
-					if (building != NULL && building->House != PlayerPtr) {
-						if (building->Visual_Character() != VISUAL_NORMAL) {
-							building->IsToDisplay = true;
-						}
-					}
-				}
-			}
+	int const radius = Class->CloakRadiusInCells;
+	For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this](Cell const & newcell) {
+		CellClass * cellptr = &Map[newcell];
+		bool const cleared = cellptr->Remove_Sensor(House);
+		Cloak_Cell_Occupiers(cellptr);
+		if (cleared) {
+			Redisplay_Hidden_Building(cellptr);
 		}
-	}
+	});
 	IsSensing = false;
 }
 
@@ -11802,27 +11810,15 @@ void BuildingClass::Enable_Sensor_Array(void)
 	if (Is_Powered_On()) {
 		bool add = !IsSensing;
 		IsSensing = true;
-		int radius = Techno_Type_Class()->SensorsSight;
-		int dist = radius * radius;
-		Cell origin = Center_Coord().As_Cell();
-		for (int y = -radius; y < radius; y++) {
-			for (int x = -radius; x < radius; x++) {
-				Cell newcell = Cell(origin.X + x, origin.Y + y);
-				if (x * x + y * y < dist) {
-					CellClass * cellptr = &Map[newcell];
-					if (add) {
-						cellptr->Add_Sensor(House);
-					}
-					Cloak_Cell_Occupiers(cellptr);
-					BuildingClass * building = cellptr->Cell_Building();
-					if (building != NULL && building->House != PlayerPtr) {
-						if (building->Visual_Character() != VISUAL_NORMAL) {
-							building->IsToDisplay = true;
-						}
-					}
-				}
+		int const radius = Techno_Type_Class()->SensorsSight;
+		For_Each_Cell_In_Radius(Center_Coord().As_Cell(), radius, [this, add](Cell const & newcell) {
+			CellClass * cellptr = &Map[newcell];
+			if (add) {
+				cellptr->Add_Sensor(House);
 			}
-		}
+			Cloak_Cell_Occupiers(cellptr);
+			Redisplay_Hidden_Building(cellptr);
+		});
 	}
 }
 
