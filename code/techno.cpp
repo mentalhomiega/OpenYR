@@ -5004,8 +5004,7 @@ int TechnoClass::Rearm_Delay(int which) const
 /// </summary>
 static Coord Beam_Target_Coord(AbstractClass * target)
 {
-	ObjectClass * object = target->As_ObjectClass();
-	Coord const coord = object != NULL ? object->Target_Coord() : target->Center_Coord();
+	Coord const coord = Beam_Coord(*target);
 	if (AutoTest_Active()) {
 		Coord const center = target->Center_Coord();
 		DebugString("AUTOTEST beam end %d,%d,%d center %d,%d,%d\n", coord.X, coord.Y, coord.Z, center.X, center.Y, center.Z);
@@ -5086,12 +5085,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 		}
 	}
 
-	ObjectClass *optr = target->As_ObjectClass();
-	if (optr != NULL) {
-		dest = optr->Target_Coord();
-	} else {
-		dest = target->Center_Coord();
-	}
+	dest = Beam_Coord(*target);
 
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->IsCharging = false;

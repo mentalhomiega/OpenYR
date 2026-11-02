@@ -534,11 +534,7 @@ void BulletClass::AI(void)
 		 * coordinate so that the projectile strikes the body of the victim
 		 * rather than the ground it happens to be standing on.
 		 */
-		Coord target_coord = TarCom != NULL ? TarCom->As_Coord() : COORD_NONE;
-		ObjectClass * target = dynamic_cast<ObjectClass *>(TarCom);
-		if (target != NULL) {
-			target_coord = target->Target_Coord();
-		}
+		Coord target_coord = TarCom != NULL ? Aim_Coord(*TarCom) : COORD_NONE;
 
 		/*
 		 * Swing the rate of turn above and below its nominal value over a
