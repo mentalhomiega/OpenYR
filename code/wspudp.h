@@ -38,6 +38,9 @@
 // 8-byte envelope to what the game sends. A datagram the game sends, counting the 4-byte
 // tunnel header and the 4-byte CRC, therefore stays within 1016 bytes.
 constexpr int UDP_DATAGRAM_LIMIT = 1016;
+
+// A tunnelled datagram leads with the sender's and the recipient's tunnel IDs, which is
+// all the tunnel server reads in order to forward it.
 constexpr int UDP_TUNNEL_HEADER_SIZE = 4;
 constexpr int UDP_CRC_SIZE = sizeof(unsigned int);
 
