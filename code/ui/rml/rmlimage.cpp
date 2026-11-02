@@ -27,12 +27,6 @@ static const int UI_PCX_MAX_DIMENSION = 4096;
 static const int UI_SHP_MAX_DIMENSION = 4096;
 
 
-static int Read_16(std::span<std::uint8_t const> bytes, std::size_t offset)
-{
-	return((int)bytes[offset] | ((int)bytes[offset + 1] << 8));
-}
-
-
 static std::uint16_t Read_U16(std::span<std::uint8_t const> data, std::size_t at)
 {
 	return((std::uint16_t)(data[at] | (data[at + 1] << 8)));
@@ -60,9 +54,9 @@ bool UI_Decode_SHP(std::span<std::uint8_t const> encoded, int frame, UIImageInde
 	int const count = Read_U16(encoded, 6);
 	if (width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION) {
 		DebugString("UI shape of %dx%d pixels is refused; a shape may be %d pixels a side at most\n", width, height, UI_SHP_MAX_DIMENSION);
+		return(false);
 	}
-	if (width <= 0 || height <= 0 || width > UI_SHP_MAX_DIMENSION || height > UI_SHP_MAX_DIMENSION
-		|| frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
+	if (width <= 0 || height <= 0 || frame < 0 || frame >= count || encoded.size() < HEADER + (std::size_t)count * FRAME_HEADER) {
 		return(false);
 	}
 
@@ -152,9 +146,9 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 		return(false);
 	}
 
-	int width = Read_16(encoded, 8) - Read_16(encoded, 4) + 1;
-	int height = Read_16(encoded, 10) - Read_16(encoded, 6) + 1;
-	int bytesperline = Read_16(encoded, 66);
+	int width = Read_U16(encoded, 8) - Read_U16(encoded, 4) + 1;
+	int height = Read_U16(encoded, 10) - Read_U16(encoded, 6) + 1;
+	int bytesperline = Read_U16(encoded, 66);
 
 	if (width <= 0 || height <= 0 || width > UI_PCX_MAX_DIMENSION || height > UI_PCX_MAX_DIMENSION || bytesperline < width) {
 		return(false);
