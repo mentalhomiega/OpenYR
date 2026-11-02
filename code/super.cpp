@@ -984,13 +984,8 @@ SuperClass * SuperClass::Pre_Dependent(void) const
 	if (Class->PreDependent == SUPER_NONE || House == NULL) {
 		return(NULL);
 	}
-	for (int index = 0; index < House->SuperWeapon.Count(); index++) {
-		SuperClass * super = House->SuperWeapon[index];
-		if (super != NULL && super->Class != NULL && super->Class->Type == Class->PreDependent) {
-			return(super);
-		}
-	}
-	return(NULL);
+	int const index = House->First_Super_Index(Class->PreDependent);
+	return(index >= 0 ? House->SuperWeapon[index] : NULL);
 }
 
 

@@ -2628,12 +2628,12 @@ ResultType BuildingClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		}
 
 		if (Class->IsFirestormWall && House->FirestormDefenseActivated) {
-			for (i = 0; i < House->SuperWeapon.Count(); i++) {
-				if (House->SuperWeapon[i]->Class->Type == SUPER_FIRESTORM) {
-					double delay = House->SuperWeapon[i]->Control - (double)damage * Rule->DamageToFirestormDamageCoefficient;
-					House->SuperWeapon[i]->Control = std::max<double>(0.0, delay);
-					return(RESULT_NONE);
-				}
+			int const index = House->First_Super_Index(SUPER_FIRESTORM);
+			if (index >= 0) {
+				SuperClass * firestorm = House->SuperWeapon[index];
+				double delay = firestorm->Control - (double)damage * Rule->DamageToFirestormDamageCoefficient;
+				firestorm->Control = std::max<double>(0.0, delay);
+				return(RESULT_NONE);
 			}
 		}
 
