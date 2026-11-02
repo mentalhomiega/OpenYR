@@ -86,14 +86,6 @@ constexpr int TITLE_TOP = 4;
 constexpr int TITLE_HEIGHT = 30;
 
 /*
- * The text color of gamemd's dialogs. OwnerDraw's primary text color is the color reference 0x00FFFF, yellow,
- * for every side (0xac18a4, set at 0x600588 and 0x60fa3f).
- */
-constexpr int TEXT_RED = 255;
-constexpr int TEXT_GREEN = 255;
-constexpr int TEXT_BLUE = 0;
-
-/*
  * The side art, indexed by side: Allied, Soviet and Yuri. These are the names in gamemd's table
  * (0x844c58) for the 800 wide screen. The small 640 wide entries are not used: the stage is always
  * 800 by 600 and is fitted to the screen.
@@ -480,7 +472,6 @@ void ScoreClass::Presentation(void)
 	Theme.Play_Song(Theme.From_Name("SCORE"));
 
 	int const side = Side_Index();
-	Stage.Set_Text_Color(TEXT_RED, TEXT_GREEN, TEXT_BLUE);
 	ShellArt shell;
 	if (!modern) {
 		Load_Shell(Stage, shell);
