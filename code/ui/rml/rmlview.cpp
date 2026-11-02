@@ -109,16 +109,6 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 }
 
 
-static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
-
-// A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
-static bool UI_Tab_Keyboard = false;
-
-
-/// <summary>
-/// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
-/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
-/// </summary>
 UISettingsTab UIRmlViewClass::Tab_Of_View(void) const
 {
 	return(ViewTab);
@@ -143,6 +133,16 @@ void UIRmlViewClass::Set_Tab(int tab, unsigned offered)
 }
 
 
+static char const * const UI_TAB_NAMES[UI_TAB_COUNT] = {"game", "display", "graphics", "audio", "keyboard", "accessibility", "mods"};
+
+// A tab chosen from the keyboard keeps the keyboard on the tab bar for the next page.
+static bool UI_Tab_Keyboard = false;
+
+
+/// <summary>
+/// Marks the document as a page of the tabbed Settings: it styles the tab bar the menu style's
+/// frame holds, lights the tab this page stands for and hides the tabs the host does not offer.
+/// </summary>
 void UIRmlViewClass::Apply_Tabs(void)
 {
 	UISettingsTab const tab = Tab_Of_View();
@@ -420,6 +420,14 @@ void UIRmlViewClass::Follow_Lists(void)
 }
 
 
+// The context's density-independent pixel ratio, or 1 when there is no context or the ratio is zero or below.
+static float Pixel_Ratio(Rml::Context * context)
+{
+	float const ratio = (context != nullptr) ? context->GetDensityIndependentPixelRatio() : 1.0f;
+	return(ratio <= 0.0f ? 1.0f : ratio);
+}
+
+
 void UIRmlViewClass::Size_Grips(void)
 {
 	Rml::Context * context = Doc != nullptr ? Doc->GetContext() : nullptr;
@@ -427,10 +435,7 @@ void UIRmlViewClass::Size_Grips(void)
 		return;
 	}
 
-	float ratio = context->GetDensityIndependentPixelRatio();
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	Rml::ElementList lists;
 	Doc->GetElementsByClassName(lists, "list");
@@ -477,10 +482,7 @@ void UIRmlViewClass::Place_Wallpaper(void)
 		return;
 	}
 
-	float ratio = context->GetDensityIndependentPixelRatio();
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	float middle = (dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize().y * 0.5f) / ratio;
 	float top = std::floor(((float)context->GetDimensions().y / ratio - 400.0f) * 0.5f);
@@ -807,6 +809,15 @@ bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 }
 
 
+void UIRmlViewClass::Click_From_Key(void)
+{
+	if (Shell != nullptr) {
+		Shell->Play_Click();
+	}
+	Mark_Keyboard();
+}
+
+
 void UIRmlViewClass::Mark_Keyboard(void)
 {
 	if (Doc != nullptr) {
@@ -876,10 +887,7 @@ void UIRmlViewClass::Serve_Tip(void)
 
 	// Placed while it is still hidden, so the layout has settled before it is shown.
 	Rml::Context * context = Doc->GetContext();
-	float ratio = (context != nullptr) ? context->GetDensityIndependentPixelRatio() : 1.0f;
-	if (ratio <= 0.0f) {
-		ratio = 1.0f;
-	}
+	float const ratio = Pixel_Ratio(context);
 
 	Rml::Vector2f size = tip->GetBox().GetSize(Rml::BoxArea::Border);
 	Rml::Vector2f bounds = (context != nullptr) ? Rml::Vector2f(context->GetDimensions()) : size;
@@ -998,10 +1006,7 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 			return;
 		}
 		if (target != nullptr && target->GetTagName() == "button" && !Is_Disabled(target)) {
-			if (Shell != nullptr) {
-				Shell->Play_Click();
-			}
-			Mark_Keyboard();
+			Click_From_Key();
 			return;
 		}
 		Queue("ok");
@@ -1021,10 +1026,7 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 				event.StopPropagation();
 				return;
 			}
-			if (Shell != nullptr) {
-				Shell->Play_Click();
-			}
-			Mark_Keyboard();
+			Click_From_Key();
 			return;
 		}
 		if (List_Of(target) != nullptr) {

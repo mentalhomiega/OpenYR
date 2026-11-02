@@ -86,6 +86,8 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool Navigate_Grid(Rml::Element * element, int key);
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
+		// Plays the click and marks the keyboard, as Enter or Space on a button or pressable control does.
+		void Click_From_Key(void);
 		void Apply_Tabs(void);
 		// The tab this view stands for, as Set_Tab gave it; UI_TAB_NONE when the view is not a page.
 		UISettingsTab Tab_Of_View(void) const;
