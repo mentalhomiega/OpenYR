@@ -1022,11 +1022,7 @@ void JumpjetLocomotionClass::Process_Crashing(void)
 		unit->IsSinking = true;
 		// The kill is recorded here, so the completed sinking must not record it again (IsSinkingWreck).
 		unit->IsSinkingWreck = true;
-		if (LinkedTo->LetGoBy != NULL) {
-			unit->Record_The_Kill(LinkedTo->LetGoBy);
-		} else if (LinkedTo->LetGoByHouse != NULL) {
-			unit->Record_The_Kill_By_House(LinkedTo->LetGoByHouse);
-		}
+		LinkedTo->Credit_Let_Go_Kill(unit, false);
 		unit->Stun();
 	}
 

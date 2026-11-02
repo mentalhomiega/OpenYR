@@ -12732,6 +12732,22 @@ void TechnoClass::Release_Held_Vehicle(TechnoClass * holder)
 
 
 /// <summary>
+/// Records a kill of victim for the object that let this vehicle go, or for its house. With neither,
+/// the kill is credited to this vehicle when fallback_to_self is set and is not recorded otherwise.
+/// </summary>
+void TechnoClass::Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self)
+{
+	if (LetGoBy != NULL) {
+		victim->Record_The_Kill(LetGoBy);
+	} else if (LetGoByHouse != NULL) {
+		victim->Record_The_Kill_By_House(LetGoByHouse);
+	} else if (fallback_to_self) {
+		victim->Record_The_Kill(this);
+	}
+}
+
+
+/// <summary>
 /// Crushes what stands where this vehicle lands after a locomotor let it go in the air
 /// (JumpjetLocomotionClass, 0x54CA90). A vehicle that lands on a bridge deck checks the objects on
 /// the deck, and any other checks the ground. Only the first object on the cell, apart from this one,
@@ -12760,13 +12776,7 @@ bool TechnoClass::Crush_On_Landing(void)
 			ObjectClass * next = object->Next;
 			if (object != this) {
 				Sound_Effect(object->Class_Of()->CrushSound, PositionCoord);
-				if (LetGoBy != NULL) {
-					object->Record_The_Kill(LetGoBy);
-				} else if (LetGoByHouse != NULL) {
-					object->Record_The_Kill_By_House(LetGoByHouse);
-				} else {
-					object->Record_The_Kill(this);
-				}
+				Credit_Let_Go_Kill(object, true);
 				object->Mark(MARK_UP);
 				object->Limbo();
 				object->Delete_Me();
@@ -12799,11 +12809,7 @@ void TechnoClass::Explode_On_Landing(void)
 		Explosion_Damage(PositionCoord, damage, owner, Rule->C4Warhead, true, LetGoByHouse);
 	}
 	if (IsActive) {
-		if (LetGoBy != NULL) {
-			Record_The_Kill(LetGoBy);
-		} else if (LetGoByHouse != NULL) {
-			Record_The_Kill_By_House(LetGoByHouse);
-		}
+		Credit_Let_Go_Kill(this, false);
 		Delete_Me();
 	}
 }

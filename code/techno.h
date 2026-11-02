@@ -881,6 +881,7 @@ class TechnoClass :	public RadioClass,
 		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Record_The_Kill_By_House(HouseClass * house) override;
+		void Credit_Let_Go_Kill(ObjectClass * victim, bool fallback_to_self);
 		void Spring_Kill_Events(bool credited);
 		void Count_The_Kill(HouseClass * killer_house);
 		void Pay_Bounty(TechnoClass * source) const;
