@@ -27001,7 +27001,7 @@ NumPlayers:
     _provenance:
       default_candidate: '0'
       declared_in: RandomMap
-      member: count
+      member: declared_players
       source: code/netshare.cpp
       guard: null
     level: RandomMap
@@ -27718,7 +27718,7 @@ OverParMessage:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: GUI:NoOverParMessage
+      default_candidate: null
       declared_in: ScenarioClass
       member: null
       source: code/scenario.cpp
@@ -27736,7 +27736,7 @@ OverParTitle:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: GUI:NoOverParTitle
+      default_candidate: null
       declared_in: ScenarioClass
       member: null
       source: code/scenario.cpp
@@ -42280,7 +42280,7 @@ UnderParMessage:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: GUI:NoUnderParMessage
+      default_candidate: null
       declared_in: ScenarioClass
       member: null
       source: code/scenario.cpp
@@ -42298,7 +42298,7 @@ UnderParTitle:
     value_type: string
     status: generated
     _provenance:
-      default_candidate: GUI:NoUnderParTitle
+      default_candidate: null
       declared_in: ScenarioClass
       member: null
       source: code/scenario.cpp
