@@ -457,13 +457,12 @@ SidebarClass::SidebarClass(void) :
 	CompletedBuilding[0] = NULL;
 	CompletedBuilding[1] = NULL;
 
-	// Every strip covers the same grid; only the active tab's strip is shown.
 	for (int index = 0; index < COLUMNS; index++) {
 		new (&Column[index]) StripClass(InitClass());
-		Column[index].X = GRID_X;
-		Column[index].Y = GRID_Y;
-		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+
+	// Every strip covers the same grid; only the active tab's strip is shown.
+	Layout_Strips();
 }
 
 
@@ -769,7 +768,7 @@ void SidebarClass::Clear_For_House(void)
 
 
 /***********************************************************************************************
- * SidebarClass::Reload_Sidebar -- Loads appropriate sidebar shapes depending on house         *
+ * SidebarClass::Reload_Sidebar -- Resets each strip to the sidebar grid                       *
  *                                                                                             *
  * INPUT:  none                                                                                *
  *                                                                                             *
@@ -780,13 +779,19 @@ void SidebarClass::Clear_For_House(void)
  * HISTORY:                                                                                    *
  *   9/18/1996 BWG : Created.                                                                  *
  *=============================================================================================*/
-void SidebarClass::Reload_Sidebar(void)
+void SidebarClass::Layout_Strips(void)
 {
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].X = GRID_X;
 		Column[index].Y = GRID_Y;
 		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+}
+
+
+void SidebarClass::Reload_Sidebar(void)
+{
+	Layout_Strips();
 }
 
 
