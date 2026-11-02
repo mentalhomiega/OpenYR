@@ -14,6 +14,8 @@
 #include "stage.h"
 
 template<class T> class DynamicVectorClass;
+class HouseClass;
+class WeaponTypeClass;
 
 class LaserDrawClass : public StageClass
 {
@@ -132,3 +134,10 @@ class LaserDrawClass : public StageClass
 		 */
 		static DynamicVectorClass<LaserDrawClass *> LaserDraws;
 };
+
+
+/*
+ * Sets the inner and outer colors of a beam fired by the weapon. A house colored weapon uses the
+ * house's laser color inside and half of that outside; any other weapon uses its own colors.
+ */
+void Weapon_Beam_Colors(WeaponTypeClass const * weapon, HouseClass const * house, RGBClass & inner, RGBClass & outer);

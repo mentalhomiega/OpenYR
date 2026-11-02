@@ -23,12 +23,14 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
+#include "house.h"
 #include "inline.h"
 #include "logic.h"
 #include "mouse.h"
 #include "rgb.h"
 #include "scenario.h"
 #include "tactical.h"
+#include "weapon.h"
 
 #include <algorithm>
 
@@ -36,6 +38,17 @@
 #include "emissive_surface.h"
 
 DynamicVectorClass<LaserDrawClass *> LaserDrawClass::LaserDraws;
+
+
+void Weapon_Beam_Colors(WeaponTypeClass const * weapon, HouseClass const * house, RGBClass & inner, RGBClass & outer)
+{
+	inner = weapon->LaserInnerColor;
+	outer = weapon->LaserOuterColor;
+	if (weapon->IsHouseColor) {
+		inner = house->Laser_Color();
+		outer = RGBClass(inner.Get_Red() / 2, inner.Get_Green() / 2, inner.Get_Blue() / 2);
+	}
+}
 
 
 /// <summary>
