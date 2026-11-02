@@ -975,18 +975,6 @@ void __cdecl Prog_End(void)
 		delete MoviesMixLocal[0];
 		MoviesMixLocal.Delete_Index(0);
 	}
-	if (ScoresMix != NULL) {
-		delete ScoresMix;
-		ScoresMix = NULL;
-	}
-	if (Scores01Mix != NULL) {
-		delete Scores01Mix;
-		Scores01Mix = NULL;
-	}
-	if (MainMix != NULL) {
-		delete MainMix;
-		MainMix = NULL;
-	}
 	if (ConquerMix != NULL) {
 		delete ConquerMix;
 		ConquerMix = NULL;
@@ -1028,14 +1016,6 @@ void __cdecl Prog_End(void)
 	if (SpeechMix != NULL) {
 		delete SpeechMix;
 		SpeechMix = NULL;
-	}
-	if (SoundsMix != NULL) {
-		delete SoundsMix;
-		SoundsMix = NULL;
-	}
-	if (Sounds01Mix != NULL) {
-		delete Sounds01Mix;
-		Sounds01Mix = NULL;
 	}
 	if (MapsMix != NULL) {
 		delete MapsMix;
