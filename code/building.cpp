@@ -7331,26 +7331,31 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 	// A gap generator with a SuperGapRadiusInCells switches between its normal and its charged shroud. The charge costs ExtraPower
 	// more drain, and a generator that is off stays uncharged (BuildingClass::Mission_Unload, 0x44D880).
 	if (Class->IsGapGenerator && Class->SuperGapRadiusInCells != 0) {
-		Destroy_Gap();
-		if (!IsGapSuperCharged) {
-			GapRadius = Class->SuperGapRadiusInCells;
-			if (!Is_Powered_On()) {
-				GapRadius = Class->GapRadiusInCells;
-				Create_Gap();
-				Assign_Mission(MISSION_GUARD);
-				return(1);
-			}
-			Create_Gap();
-			Set_Gap_Charge(true);
-		} else {
-			Set_Gap_Charge(false);
-			Create_Gap();
-		}
-		House->RecalcPower = true;
+		Toggle_Gap_Charge();
 	}
 
 	Assign_Mission(MISSION_GUARD);
 	return(1);
+}
+
+
+void BuildingClass::Toggle_Gap_Charge(void)
+{
+	Destroy_Gap();
+	if (!IsGapSuperCharged) {
+		GapRadius = Class->SuperGapRadiusInCells;
+		if (!Is_Powered_On()) {
+			GapRadius = Class->GapRadiusInCells;
+			Create_Gap();
+			return;
+		}
+		Create_Gap();
+		Set_Gap_Charge(true);
+	} else {
+		Set_Gap_Charge(false);
+		Create_Gap();
+	}
+	House->RecalcPower = true;
 }
 
 

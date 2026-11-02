@@ -410,6 +410,7 @@ class BuildingClass : public TechnoClass
 
 		void Create_Gap(void);
 		void Destroy_Gap(void);
+		void Toggle_Gap_Charge(void);
 		void Set_Gap_Charge(bool charged);
 
 		/*
