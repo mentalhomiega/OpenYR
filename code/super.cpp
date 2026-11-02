@@ -56,6 +56,7 @@
 #include "cell.h"
 #include "combat.h"
 #include "crc.h"
+#include "csf.h"
 #include "data.h"
 #include "globals.h"
 #include "house.h"
@@ -68,11 +69,14 @@
 #include "language/language.h"
 #include "lstorm.h"
 #include "mouse.h"
+#include "playerdisplay.h"
 #include "psydom.h"
 #include "revent.h"
 #include "rules.h"
 #include "savestream.h"
+#include "session.h"
 #include "side.h"
+#include "stimer.h"
 #include "sun.h"
 #include "suprtype.h"
 #include "swizzle.h"
@@ -84,6 +88,20 @@
 #include "weapon.h"
 
 #include <algorithm>
+
+
+/// <summary>
+/// Shows a string table message to the local player for ten seconds. The message takes the local
+/// player's house scheme, or scheme 3 when there is no local player.
+/// </summary>
+/// <param name="label">The string table label of the message.</param>
+/// <param name="style">How the message text is printed.</param>
+void Show_Super_Message(char const * label, TextPrintType style)
+{
+	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
+	std::string const text = Fetch_String_UTF8(label);
+	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, style, TICKS_PER_SECOND * 10);
+}
 
 
 /// <summary>

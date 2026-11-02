@@ -34,6 +34,7 @@
 #include "session.h"
 #include "shapeset.h"
 #include "stimer.h"
+#include "super.h"
 #include "tactical.h"
 #include "techno.h"
 #include "voc.h"
@@ -109,14 +110,6 @@ void NukeFlashClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Status);
 	stream.Serialize(StartTime);
 	stream.Serialize(Duration);
-}
-
-
-static void Storm_Message(char const * label, TextPrintType style)
-{
-	int const scheme = PlayerPtr != NULL ? House_Display_Scheme(PlayerPtr) : 3;
-	std::string const text = Fetch_String_UTF8(label);
-	Session.Messages.Add_Message(NULL, 0, text.c_str(), scheme, style, TICKS_PER_SECOND * 10);
 }
 
 
@@ -222,7 +215,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 
 	if (Rule->LightningPrintText) {
 		Sound_Effect(Rule->StormSound);
-		Storm_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
+		Show_Super_Message("TXT_LIGHTNING_STORM", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 	}
 }
 
@@ -233,7 +226,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 /// </summary>
 void LightningStormClass::Print_Refusal(void)
 {
-	Storm_Message("Msg:LightningStormActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
+	Show_Super_Message("Msg:LightningStormActive", TextPrintType(TPF_USE_GRAD_PAL|TPF_FULLSHADOW|TPF_6PT_GRAD));
 }
 
 
@@ -292,7 +285,7 @@ void LightningStormClass::AI(void)
 				Start(Duration, 0, Center, Owner);
 			} else if (Deferment % WARNING_INTERVAL == 0 && Rule->LightningPrintText) {
 				Speak_Eva("EVA_LightningStormCreated");
-				Storm_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
+				Show_Super_Message("TXT_LIGHTNING_STORM_APPROACHING", TextPrintType(TPF_6PT_GRAD|TPF_FULLSHADOW));
 			}
 		}
 		return;
