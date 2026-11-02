@@ -706,24 +706,22 @@ bool AITriggerTypeClass::Check_Enemy_Money(HouseClass *house, HouseClass *enemy)
 /// <returns>bool; Is the house's super weapon of that type charged enough?</returns>
 bool AITriggerTypeClass::Check_Super_Charged(HouseClass *house, SuperWeaponType type)
 {
-	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
-		SuperClass *weapon = house->SuperWeapon[index];
-		if (weapon != NULL && weapon->Class->Type == type) {
-			if (!weapon->Is_Present()) {
-				return(false);
-			}
-			if (weapon->Is_Ready()) {
-				return(true);
-			}
-			int total = weapon->Get_Recharge_Time();
-			int left = int(weapon->Control);
-			if (total <= 0) {
-				return(left == 0);
-			}
-			return((double)left / (double)total <= 1.0 - Rule->AIMinorSuperReadyPercent);
-		}
+	SuperClass *weapon = house->Find_Super(type);
+	if (weapon == NULL) {
+		return(false);
 	}
-	return(false);
+	if (!weapon->Is_Present()) {
+		return(false);
+	}
+	if (weapon->Is_Ready()) {
+		return(true);
+	}
+	int total = weapon->Get_Recharge_Time();
+	int left = int(weapon->Control);
+	if (total <= 0) {
+		return(left == 0);
+	}
+	return((double)left / (double)total <= 1.0 - Rule->AIMinorSuperReadyPercent);
 }
 
 

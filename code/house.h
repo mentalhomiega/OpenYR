@@ -867,6 +867,7 @@ class HouseClass : public AbstractClass
 		void Record_Starting_Forces(void);
 		void Restore_Starting_Buildings(void);
 		void Restore_Starting_Forces(void);
+		bool Place_Scenario_Building(BuildingTypeClass const * type, Cell const & cell);
 		void Mind_Control_Base(HouseClass * target);
 		void AI_Super_Weapon_Defense(SuperClass const * super, Cell const & target);
 		void Restore_Mind_Controlled_Base(HouseClass * target);
@@ -949,6 +950,11 @@ class HouseClass : public AbstractClass
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;
 #endif
 		virtual void AI(void) override;
+		void Expire_Blackouts(void);
+		void Resolve_End_Flags(void);
+		void Check_Multiplayer_Defeat(void);
+		void Run_Computer_Production(void);
+		void Refresh_Production_Options(void);
 
 		void Add_Anger(int level, HouseClass const * house);
 		void Mark_Scouted(HouseClass const * house);
@@ -960,6 +966,7 @@ class HouseClass : public AbstractClass
 		SideClass const * Acted_Side(void) const;
 		bool Is_Acted_Tower(BuildingTypeClass const * type) const;
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
+		template<typename T> bool Is_Acted_Candidate(T const * type) const;
 		int Planning_Side(void) const;
 		UnitTypeClass const * Preferred_Harvester(void) const;
 		UnitTypeClass const * Country_Unit(DynamicVectorClass<UnitTypeClass const *> const & list) const;
@@ -982,7 +989,10 @@ class HouseClass : public AbstractClass
 
 		void Recalc_Power_Drain(void);
 		void Recalc_Radar_Availability(void);
+		void Start_Power_Blackout(int frames);
+		void Start_Radar_Blackout(int frames);
 
+		SuperClass * Find_Super(SuperWeaponType type) const;
 		void Update_Present_Super_Weapons(void);
 		void Enable_Available_Super_Weapons(void);
 
@@ -1011,6 +1021,7 @@ class HouseClass : public AbstractClass
 		static BuildCatType Build_Category(RTTIType rtti, int id);
 		static bool Is_Naval_Type(RTTIType rtti, int id);
 		FactoryClass * Fetch_Factory(RTTIType rtti, BuildCatType buildcat, bool naval) const;
+		FactoryClass * Fetch_Factory(RTTIType rtti, int id) const;
 		void Set_Factory(RTTIType rtti, BuildCatType buildcat, bool naval, FactoryClass * factory);
 		void Update_Production_Mode(RTTIType type);
 		void Production_Status_Changed(void) {IsRecalcNeeded = true;}
@@ -1071,6 +1082,7 @@ class HouseClass : public AbstractClass
 		bool AI_Raise_Money(UrgencyType urgency);
 
 		void AI_Super_Weapons(void);
+		void Fire_Super_At(SuperClass * super, Cell const & cell);
 		void AI_Hunter_Seeker(SuperClass * super);
 		void AI_Chem_Missile(SuperClass * super);
 		void AI_Drop_Pods(SuperClass * super);
@@ -1332,20 +1344,31 @@ inline int HouseClass::Count_Owned(CounterClass const & tally, TypeList<T const 
 }
 
 
+// Whether the country this house builds for may own the entry and plan for it: the Ownable,
+// RequiredHouses, ForbiddenHouses and AIBasePlanningSide tests that Get_First_Acted applies.
+template<typename T>
+inline bool HouseClass::Is_Acted_Candidate(T const * type) const
+{
+	int mask = Acted_Mask();
+	int own = Own_Mask();
+	if ((mask & type->Ownable) == 0) return(false);
+	if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) return(false);
+	if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) return(false);
+	if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) return(false);
+	return(true);
+}
+
+
 // The first entry the country this house builds for may own and plan for, or NULL when there is
 // none (HouseClass::FirstBuildableFromArray, 0x5051E0 in gamemd).
 template<typename T>
 inline T const * HouseClass::Get_First_Acted(DynamicVectorClass<T const *> const & list) const
 {
-	int mask = Acted_Mask();
-	int own = Own_Mask();
 	for (int index = 0; index < list.Count(); index++) {
 		T const * type = list[index];
-		if ((mask & type->Ownable) == 0) continue;
-		if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) continue;
-		if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) continue;
-		if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) continue;
-		return(type);
+		if (Is_Acted_Candidate(type)) {
+			return(type);
+		}
 	}
 	return(NULL);
 }

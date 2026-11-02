@@ -203,9 +203,7 @@ void LightningStormClass::Start(int duration, int deferment, Cell const & cell, 
 	for (int index = 0; index < Houses.Count(); index++) {
 		HouseClass * house = Houses[index];
 		if ((Owner == NULL || !Owner->Is_Ally(house)) && !house->IsDefeated) {
-			house->RadarBlackout = duration;
-			house->IsRadarBlackout = true;
-			house->RecalcRadar = true;
+			house->Start_Radar_Blackout(duration);
 		}
 	}
 	if (PlayerPtr != NULL) {

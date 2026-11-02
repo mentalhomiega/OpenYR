@@ -1417,14 +1417,7 @@ void HouseClass::AI(void)
 
 	Debug_Top_Up_Credits(this);
 
-	if (IsPowerBlackout && PowerBlackout == 0) {
-		IsPowerBlackout = false;
-		RecalcPower = true;
-	}
-	if (IsRadarBlackout && RadarBlackout == 0) {
-		IsRadarBlackout = false;
-		RecalcRadar = true;
-	}
+	Expire_Blackouts();
 	if (RecalcPower) {
 		Recalc_Power_Drain();
 		RecalcRadar = true;
@@ -1452,36 +1445,7 @@ void HouseClass::AI(void)
 		IsAlerted = true;
 	}
 
-	/*
-	**	Check to see if the house wins. Only the player's own result ends the game, so a
-	**	computer house's win or loss is dropped here.
-	*/
-	if (IsToWin && BorrowedTime == 0 && (Session.Type != GAME_NORMAL || Blockage <= 0)) {
-		CDTimerClass<SystemTimerClass> _timer = TIMER_SECOND * 2;
-		while (Is_Speaking() && _timer) {
-			Call_Back();
-		}
-		IsToWin = false;
-
-		// A Cooperative match is won by any person's win, since all the people play one side.
-		if (Is_Player_Control() || (MPMode_Is_Cooperative_Match() && Is_Human_Player())) {
-			PlayerWins = true;
-		}
-	}
-
-	/*
-	**	Check to see if the house loses.
-	*/
-	if (/*Session.Type == GAME_NORMAL &&*/ IsToLose && BorrowedTime == 0) {
-		CDTimerClass<SystemTimerClass> _timer = TIMER_SECOND * 2;
-		while (Is_Speaking() && _timer) {
-			Call_Back();
-		}
-		IsToLose = false;
-		if (Is_Player_Control()) {
-			PlayerLoses = true;
-		}
-	}
+	Resolve_End_Flags();
 
 	/*
 	**	Check to see if all objects of this house should be destroyed.
@@ -1683,31 +1647,7 @@ void HouseClass::AI(void)
 	*/
 	Super_Weapon_Handler();
 
-	/*
-	**	Special win/lose check for multiplayer games; by-passes the
-	**	trigger system.  We must wait for non-zero frame, because init
-	**	may not properly set IScan etc for each house; you have to go
-	**	through each object's AI before it will be properly set.
-	*/
-	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
-		bool defeated = false;
-		if (Session.Options.ShortGame) {
-			if (Rule->IsKeepAliveSet) {
-				defeated = !Has_Keep_Alive() && Count_Owned(UQuantity, Rule->BaseUnit) == 0;
-			} else if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
-				defeated = true;
-			}
-		} else {
-			if (!CurBuildings && !CurAircraft && !CurInfantry && CurUnits == 0) {
-				defeated = true;
-			}
-		}
-
-		if (defeated) {
-			Destroy_All();
-			MPlayer_Defeated();
-		}
-	}
+	Check_Multiplayer_Defeat();
 
 	// Every eighth frame, offer every tag attached to this house one chance to spring, last
 	// first, as gamemd's HouseClass::AI (0x4F8440) does.
@@ -1789,6 +1729,108 @@ void HouseClass::AI(void)
 //		Do_All_To_Hunt();
 //	}
 
+	Run_Computer_Production();
+
+	Refresh_Production_Options();
+
+	/*
+	**	See if it's time to re-set the can-repair flag
+	*/
+	if (DidRepair && RepairTimer == 0) {
+		DidRepair = false;
+	}
+
+	if (IsToLook) {
+		IsToLook = false;
+		Map.All_To_Look(false, false, this);
+	}
+}
+
+
+void HouseClass::Expire_Blackouts(void)
+{
+	if (IsPowerBlackout && PowerBlackout == 0) {
+		IsPowerBlackout = false;
+		RecalcPower = true;
+	}
+	if (IsRadarBlackout && RadarBlackout == 0) {
+		IsRadarBlackout = false;
+		RecalcRadar = true;
+	}
+}
+
+
+// Runs the callbacks until the speech in progress ends or two seconds pass.
+static void Wait_For_Speech(void)
+{
+	CDTimerClass<SystemTimerClass> timer = TIMER_SECOND * 2;
+	while (Is_Speaking() && timer) {
+		Call_Back();
+	}
+}
+
+
+void HouseClass::Resolve_End_Flags(void)
+{
+	/*
+	**	Check to see if the house wins. Only the player's own result ends the game, so a
+	**	computer house's win or loss is dropped here.
+	*/
+	if (IsToWin && BorrowedTime == 0 && (Session.Type != GAME_NORMAL || Blockage <= 0)) {
+		Wait_For_Speech();
+		IsToWin = false;
+
+		// A Cooperative match is won by any person's win, since all the people play one side.
+		if (Is_Player_Control() || (MPMode_Is_Cooperative_Match() && Is_Human_Player())) {
+			PlayerWins = true;
+		}
+	}
+
+	/*
+	**	Check to see if the house loses.
+	*/
+	if (/*Session.Type == GAME_NORMAL &&*/ IsToLose && BorrowedTime == 0) {
+		Wait_For_Speech();
+		IsToLose = false;
+		if (Is_Player_Control()) {
+			PlayerLoses = true;
+		}
+	}
+}
+
+
+void HouseClass::Check_Multiplayer_Defeat(void)
+{
+	/*
+	**	Special win/lose check for multiplayer games; by-passes the
+	**	trigger system.  We must wait for non-zero frame, because init
+	**	may not properly set IScan etc for each house; you have to go
+	**	through each object's AI before it will be properly set.
+	*/
+	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
+		bool defeated = false;
+		if (Session.Options.ShortGame) {
+			if (Rule->IsKeepAliveSet) {
+				defeated = !Has_Keep_Alive() && Count_Owned(UQuantity, Rule->BaseUnit) == 0;
+			} else if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
+				defeated = true;
+			}
+		} else {
+			if (!CurBuildings && !CurAircraft && !CurInfantry && CurUnits == 0) {
+				defeated = true;
+			}
+		}
+
+		if (defeated) {
+			Destroy_All();
+			MPlayer_Defeated();
+		}
+	}
+}
+
+
+void HouseClass::Run_Computer_Production(void)
+{
 	if (!Is_Human_Player() && !Class->IsMultiplayPassive) {
 		if (ProductionMode == EVERYTHING || Session.Type == GAME_NORMAL) {
 			AI_Building();
@@ -1831,7 +1873,11 @@ void HouseClass::AI(void)
 			}
 		}
 	}
+}
 
+
+void HouseClass::Refresh_Production_Options(void)
+{
 	/*
 	**	If the production possibilities need to be recalculated, then do so now. This must
 	**	occur after the scan bits have been properly updated.
@@ -1870,18 +1916,6 @@ void HouseClass::AI(void)
 	if (recalc_supers) {
 		Update_Present_Super_Weapons();
 		Enable_Available_Super_Weapons();
-	}
-
-	/*
-	**	See if it's time to re-set the can-repair flag
-	*/
-	if (DidRepair && RepairTimer == 0) {
-		DidRepair = false;
-	}
-
-	if (IsToLook) {
-		IsToLook = false;
-		Map.All_To_Look(false, false, this);
 	}
 }
 
@@ -2893,7 +2927,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
  *=============================================================================================*/
 ProdFailType HouseClass::Suspend_Production(RTTIType type, int id)
 {
-	FactoryClass * fptr = Fetch_Factory(type, Build_Category(type, id), Is_Naval_Type(type, id));
+	FactoryClass * fptr = Fetch_Factory(type, id);
 
 	/*
 	**	If the house is already busy producing the requested object, then
@@ -6172,6 +6206,21 @@ FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, BuildCatType buildcat, b
 
 
 /***********************************************************************************************
+ * HouseClass::Fetch_Factory -- Finds the factory for an object type given its type ID.        *
+ *                                                                                             *
+ * INPUT:   rtti -- The RTTI of the object type.                                               *
+ *          id   -- The type ID, or -1 when there is none.                                     *
+ *                                                                                             *
+ * OUTPUT:  Returns the same factory as the three-argument overload with the BuildCat and      *
+ *          naval flag that Build_Category and Is_Naval_Type give for this type.               *
+ *============================================================================================*/
+FactoryClass * HouseClass::Fetch_Factory(RTTIType rtti, int id) const
+{
+	return(Fetch_Factory(rtti, Build_Category(rtti, id), Is_Naval_Type(rtti, id)));
+}
+
+
+/***********************************************************************************************
  * HouseClass::Set_Factory -- Assign specified factory to house tracking.                      *
  *                                                                                             *
  *    Call this routine when a factory has been created and it now must be passed on to the    *
@@ -6630,25 +6679,9 @@ void HouseClass::Restore_Starting_Forces(void)
 		TechnoClass * object = NULL;
 
 		ScenarioInit++;
-		switch (start.Kind) {
-			case RTTI_BUILDINGTYPE:
-				if (start.Type >= 0 && start.Type < BuildingTypes.Count()) object = new BuildingClass(BuildingTypes[start.Type], this);
-				break;
-
-			case RTTI_UNITTYPE:
-				if (start.Type >= 0 && start.Type < UnitTypes.Count()) object = new UnitClass(UnitTypes[start.Type], this);
-				break;
-
-			case RTTI_INFANTRYTYPE:
-				if (start.Type >= 0 && start.Type < InfantryTypes.Count()) object = new InfantryClass(InfantryTypes[start.Type], this);
-				break;
-
-			case RTTI_AIRCRAFTTYPE:
-				if (start.Type >= 0 && start.Type < AircraftTypes.Count()) object = new AircraftClass(AircraftTypes[start.Type], this);
-				break;
-
-			default:
-				break;
+		TechnoTypeClass const * type = Fetch_Techno_Type((RTTIType)start.Kind, start.Type);
+		if (type != NULL) {
+			object = static_cast<TechnoClass *>(type->Create_One_Of(this));
 		}
 		if (object != NULL && !object->Unlimbo(Coord(start.Position))) {
 			delete object;
@@ -6678,13 +6711,25 @@ void HouseClass::Restore_Starting_Buildings(void)
 			continue;
 		}
 
-		ScenarioInit++;
-		BuildingClass * building = new BuildingClass(BuildingTypes[start.Type], this);
-		if (building != NULL && !building->Unlimbo(Coord(start.Position))) {
-			delete building;
-		}
-		ScenarioInit--;
+		Place_Scenario_Building(BuildingTypes[start.Type], start.Position);
 	}
+}
+
+
+/// <summary>
+/// Creates a building of this house and places it on the cell as a scenario object is placed.
+/// </summary>
+/// <returns>bool; Was the building placed? One that could not be placed is deleted.</returns>
+bool HouseClass::Place_Scenario_Building(BuildingTypeClass const * type, Cell const & cell)
+{
+	ScenarioInit++;
+	BuildingClass * building = new BuildingClass(type, this);
+	bool placed = building != NULL && building->Unlimbo(Coord(cell));
+	if (!placed) {
+		delete building;
+	}
+	ScenarioInit--;
+	return(placed);
 }
 
 
@@ -8257,6 +8302,35 @@ static TypeList<int> const * Side_Base_Defense_Counts(int side)
 }
 
 
+// Negative entries from -3 to -1 are placeholder structure types, not building types.
+static void Add_Plan_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, DynamicVectorClass<BuildingTypeClass const *> const & plan)
+{
+	for (int index = 0; index < plan.Count(); index++) {
+		BuildingTypeClass const * b = plan[index];
+		if ((intptr_t)b < 0 && (intptr_t)b >= -3) {
+			nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
+		} else {
+			nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
+		}
+	}
+}
+
+
+static void Make_Counted_Base_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, DynamicVectorClass<BuildingTypeClass const *> const & startingqueue, TypeList<int> const & defense_counts, int difficulty)
+{
+	DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
+	for (int count = EconomyRules::Difficulty_Entry(defense_counts, difficulty); count > 0; count--) {
+		int after = Random_Pick(3, std::max(3, plan.Count() - 1));
+		if (after >= plan.Count()) {
+			plan.Add((BuildingTypeClass const *)-1);
+		} else {
+			plan.Insert_After(after, (BuildingTypeClass const *)-1);
+		}
+	}
+	Add_Plan_Nodes(nodes, plan);
+}
+
+
 /// <summary>
 /// Builds the computer's base construction plan.
 /// This routine fills the base node list with everything this house is allowed and able to
@@ -8297,18 +8371,12 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	int ownable = Acted_Mask();
-	int own = Own_Mask();
-
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
 
 	for (index = 0; index < BuildingTypes.Count(); index++) {
 		BuildingTypeClass const * builtype = BuildingTypes[index];
-		if (ownable & builtype->Ownable &&
-			(builtype->AIBasePlanningSide == -1 || builtype->AIBasePlanningSide == Planning_Side()) &&
-			(builtype->RequiredHouses == -1 || (builtype->RequiredHouses & own) != 0) &&
-			(builtype->ForbiddenHouses == -1 || (builtype->ForbiddenHouses & own) == 0) &&
+		if (Is_Acted_Candidate(builtype) &&
 			builtype->CanAIBuildThis &&
 			builtype->Level <= Control.TechLevel &&
 			(!builtype->IsWeeder || VeinholeMonsterClass::VeinholeMonsters.Count() > 0) &&
@@ -8404,15 +8472,7 @@ void HouseClass::Make_Base_Nodes(void)
 	int refcount = 2 - Difficulty;
 	if (counted_plan) {
 		// A house that can build no harvester mines with slaves, and its rules count the refinery it already plans.
-		bool harvests = false;
-		unsigned ownable_mask = Acted_Mask();
-		for (index = 0; index < Rule->HarvesterUnit.Count(); index++) {
-			UnitTypeClass const * harvester = Rule->HarvesterUnit[index];
-			if (harvester != NULL && (harvester->Ownable & ownable_mask) != 0) {
-				harvests = true;
-				break;
-			}
-		}
+		bool harvests = Country_Harvester() != NULL;
 		if (harvests) {
 			refcount = EconomyRules::Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
 		} else {
@@ -8436,30 +8496,12 @@ void HouseClass::Make_Base_Nodes(void)
 
 	// A queue too short to weave defenses into is the whole plan.
 	if (startingqueue.Count() < 3) {
-		for (index = 0; index < startingqueue.Count(); index++) {
-			Base.Nodes.Add(BaseNodeClass(startingqueue[index]->HeapID, Cell(0, 0)));
-		}
+		Add_Plan_Nodes(Base.Nodes, startingqueue);
 		return;
 	}
 
 	if (counted_plan) {
-		DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
-		for (int count = EconomyRules::Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
-			int after = Random_Pick(3, std::max(3, plan.Count() - 1));
-			if (after >= plan.Count()) {
-				plan.Add((BuildingTypeClass const *)-1);
-			} else {
-				plan.Insert_After(after, (BuildingTypeClass const *)-1);
-			}
-		}
-		for (index = 0; index < plan.Count(); index++) {
-			BuildingTypeClass const * b = plan[index];
-			if ((intptr_t)b < 0) {
-				Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
-			} else {
-				Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
-			}
-		}
+		Make_Counted_Base_Nodes(Base.Nodes, startingqueue, *defense_counts, Difficulty);
 		return;
 	}
 
@@ -8500,14 +8542,7 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	for (index = 0; index < finalqueue.Count(); index++) {
-		BuildingTypeClass const * b = finalqueue[index];
-		if ((intptr_t)b < 0 && (intptr_t)b >= -3) {
-			Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
-		} else {
-			Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
-		}
-	}
+	Add_Plan_Nodes(Base.Nodes, finalqueue);
 
 	if (builds_walls) {
 		Base.Nodes.Add(BaseNodeClass((StructType)-3, Cell(0, 0)));
@@ -9447,6 +9482,30 @@ bool HouseClass::Is_Being_Drained(void) const
 
 
 /// <summary>
+/// Starts a power blackout that lasts the given number of frames and requests a power recalculation.
+/// Frames of 0 clears a running blackout when the house next runs its AI.
+/// </summary>
+void HouseClass::Start_Power_Blackout(int frames)
+{
+	PowerBlackout = frames;
+	IsPowerBlackout = true;
+	RecalcPower = true;
+}
+
+
+/// <summary>
+/// Starts a radar blackout that lasts the given number of frames and requests a radar recalculation.
+/// Frames of 0 clears a running blackout when the house next runs its AI.
+/// </summary>
+void HouseClass::Start_Radar_Blackout(int frames)
+{
+	RadarBlackout = frames;
+	IsRadarBlackout = true;
+	RecalcRadar = true;
+}
+
+
+/// <summary>
 /// Recalculates the power output and drain of this house.
 /// This routine tallies every structure the house has running and then refreshes whatever
 /// depends on the result -- factory speed and super weapon availability among them. An
@@ -9837,6 +9896,18 @@ void HouseClass::Update_Production_Mode(RTTIType type)
 
 
 /// <summary>
+/// Fires the super weapon at a cell that a target picker found. CELL_NONE means no target was
+/// found, and nothing fires.
+/// </summary>
+void HouseClass::Fire_Super_At(SuperClass * super, Cell const & cell)
+{
+	if (cell != CELL_NONE) {
+		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+	}
+}
+
+
+/// <summary>
 /// Handles the computer's use of its charged super weapons.
 /// This routine is called from the house AI. Every super weapon that has finished
 /// charging is handed to the handler for its type, which picks a target and fires it.
@@ -9890,18 +9961,12 @@ void HouseClass::AI_Super_Weapons(void)
 
 					case SUPER_MULTI_MISSILE: {
 						// The nuke aims as the lightning storm does (the Nuke case of HouseClass::AI_TryFireSW).
-						Cell const cell = Pick_Strike_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Strike_Target());
 						break;
 					}
 
 					case SUPER_ION_CANNON: {
-						Cell const cell = Pick_Ion_Cannon_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Ion_Cannon_Target());
 						break;
 					}
 
@@ -9921,30 +9986,21 @@ void HouseClass::AI_Super_Weapons(void)
 					case SUPER_AMER_PARA_DROP:
 					case SUPER_SPY_PLANE:
 					case SUPER_PSYCHIC_REVEAL: {
-						Cell const cell = Pick_Drop_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Drop_Target());
 						break;
 					}
 
 					case SUPER_PSYCHIC_DOMINATOR: {
 						// One blast at a time, only against an enemy, and not while a trigger aims the house (HouseClass::Fire_PsyDom).
 						if (!PsychicDominatorClass::Is_Active() && Enemy != HOUSE_NONE && PreferredTargetCell == CELL_NONE) {
-							Cell const cell = Pick_Dominator_Target();
-							if (cell != CELL_NONE) {
-								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-							}
+							Fire_Super_At(super, Pick_Dominator_Target());
 						}
 						break;
 					}
 
 					case SUPER_GENETIC_CONVERTER: {
 						// Not while a trigger aims the house (HouseClass::Fire_GenMutator).
-						Cell const cell = PreferredTargetCell == CELL_NONE ? Pick_Mutator_Target() : CELL_NONE;
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, PreferredTargetCell == CELL_NONE ? Pick_Mutator_Target() : CELL_NONE);
 						break;
 					}
 
@@ -9964,10 +10020,7 @@ void HouseClass::AI_Super_Weapons(void)
 					case SUPER_LIGHTNING_STORM:
 						// One storm at a time (HouseClass::Fire_LightningStorm).
 						if (!LightningStormClass::Is_Active_Or_Pending()) {
-							Cell const cell = Pick_Strike_Target();
-							if (cell != CELL_NONE) {
-								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-							}
+							Fire_Super_At(super, Pick_Strike_Target());
 						}
 						break;
 
@@ -9980,6 +10033,12 @@ void HouseClass::AI_Super_Weapons(void)
 }
 
 
+static bool Is_Compass_Edge(SourceType edge)
+{
+	return(edge >= SOURCE_NORTH && edge <= SOURCE_WEST);
+}
+
+
 /// <summary>
 /// Fetches the map edge this house's support planes fly in from and its retreating planes head
 /// for (HouseClass::SendParadropPlanes 0x65E660, SendAirstrikePlanes 0x65E850, SendSpyPlanes
@@ -9988,10 +10047,10 @@ void HouseClass::AI_Super_Weapons(void)
 /// </summary>
 SourceType HouseClass::Entry_Edge(void) const
 {
-	if (Control.Edge >= SOURCE_NORTH && Control.Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Control.Edge)) {
 		return(Control.Edge);
 	}
-	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Base_Edge)) {
 		return(Base_Edge);
 	}
 	return(SOURCE_NORTH);
@@ -10006,7 +10065,7 @@ SourceType HouseClass::Entry_Edge(void) const
 SourceType HouseClass::Opposite_Base_Edge(void) const
 {
 	static SourceType const _opposite[4] = {SOURCE_SOUTH, SOURCE_WEST, SOURCE_NORTH, SOURCE_EAST};
-	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Base_Edge)) {
 		return(_opposite[Base_Edge]);
 	}
 	return(SOURCE_NORTH);
@@ -10173,6 +10232,32 @@ Cell HouseClass::Pick_Drop_Target(void)
 }
 
 
+// Returns the cell of the object with the highest count_at score, or CELL_NONE when that score is 0 or
+// the cell is off the local radar. Objects are visited from the last index to the first, so a tie goes
+// to the object visited first.
+template<typename T, typename CountFn>
+static Cell Best_Cell_By_Count(DynamicVectorClass<T *> const & objects, CountFn count_at)
+{
+	Cell best_cell = CELL_NONE;
+	int best = 0;
+	for (int index = objects.Count() - 1; index >= 0; index--) {
+		T * object = objects[index];
+		if (object->IsInLimbo) continue;
+
+		Cell const center = object->Get_Cell();
+		int count = count_at(object, center);
+		if (count > best) {
+			best = count;
+			best_cell = center;
+		}
+	}
+	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
+		return(CELL_NONE);
+	}
+	return(best_cell);
+}
+
+
 /// <summary>
 /// Picks where a computer house fires its genetic mutator (HouseClass::Fire_GenMutator): the
 /// cell of the infantryman with the most infantry of other, unallied houses on or around its
@@ -10187,13 +10272,7 @@ Cell HouseClass::Pick_Mutator_Target(void)
 		Cell(-1, -1), Cell(1, -1), Cell(-1, 1), Cell(1, 1), Cell(0, -2)
 	};
 
-	Cell best_cell = CELL_NONE;
-	int best = 0;
-	for (int index = Infantry.Count() - 1; index >= 0; index--) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsInLimbo) continue;
-
-		Cell const center = infantry->Get_Cell();
+	return(Best_Cell_By_Count(Infantry, [this](InfantryClass * infantry, Cell const & center) {
 		int count = 0;
 		for (Cell const & offset : _offsets) {
 			Cell const where = center + offset;
@@ -10206,15 +10285,8 @@ Cell HouseClass::Pick_Mutator_Target(void)
 				}
 			}
 		}
-		if (count > best) {
-			best = count;
-			best_cell = center;
-		}
-	}
-	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
-		return(CELL_NONE);
-	}
-	return(best_cell);
+		return(count);
+	}));
 }
 
 
@@ -10226,13 +10298,7 @@ Cell HouseClass::Pick_Mutator_Target(void)
 /// <returns>Returns with the cell to aim at, or CELL_NONE when no such unit is near anything.</returns>
 Cell HouseClass::Pick_Dominator_Target(void)
 {
-	Cell best_cell = CELL_NONE;
-	int best = 0;
-	for (int index = Technos.Count() - 1; index >= 0; index--) {
-		TechnoClass * techno = Technos[index];
-		if (techno->IsInLimbo) continue;
-
-		Cell const center = techno->Get_Cell();
+	return(Best_Cell_By_Count(Technos, [this](TechnoClass *, Cell const & center) {
 		int count = 0;
 		for (int spread = 0; spread < 38; spread++) {
 			Cell const where = center + Cell_Spread_Offset(spread);
@@ -10244,15 +10310,8 @@ Cell HouseClass::Pick_Dominator_Target(void)
 				}
 			}
 		}
-		if (count > best) {
-			best = count;
-			best_cell = center;
-		}
-	}
-	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
-		return(CELL_NONE);
-	}
-	return(best_cell);
+		return(count);
+	}));
 }
 
 
@@ -10702,6 +10761,22 @@ void HouseClass::AI_Takeover(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Finds this house's super weapon of the given type.
+/// </summary>
+/// <returns>SuperClass *; The first super weapon of that type, or NULL when the house has none.</returns>
+SuperClass * HouseClass::Find_Super(SuperWeaponType type) const
+{
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass * super = SuperWeapon[index];
+		if (super != NULL && super->Class->Type == type) {
+			return(super);
+		}
+	}
+	return(NULL);
 }
 
 

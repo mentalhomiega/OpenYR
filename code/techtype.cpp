@@ -2194,3 +2194,18 @@ int TechnoTypeClass::Flight_Level(void) const
 	}
 	return(FlightLevel);
 }
+
+
+/// <summary>
+/// Finds the object type whose INI name matches, ignoring case.
+/// </summary>
+/// <returns>TechnoTypeClass *; The first techno type with that name, or NULL when none has it.</returns>
+TechnoTypeClass * TechnoTypeClass::From_Name(char const * name)
+{
+	for (int index = 0; index < TechnoTypes.Count(); index++) {
+		if (stricmp(TechnoTypes[index]->Name(), name) == 0) {
+			return(TechnoTypes[index]);
+		}
+	}
+	return(NULL);
+}

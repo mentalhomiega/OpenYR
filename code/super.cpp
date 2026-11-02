@@ -903,9 +903,7 @@ void SuperClass::Force_Shield(Cell const & cell)
 	SpecialSoundCoord = coord;
 	Sound_Effect(Class->StartSound, coord);
 
-	House->PowerBlackout = Rule->ForceShieldBlackoutDuration;
-	House->IsPowerBlackout = true;
-	House->RecalcPower = true;
+	House->Start_Power_Blackout(Rule->ForceShieldBlackoutDuration);
 
 	for (int index = Buildings.Count() - 1; index >= 0; index--) {
 		BuildingClass * building = Buildings[index];

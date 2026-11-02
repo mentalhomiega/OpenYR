@@ -2021,6 +2021,79 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 }
 
 
+// Adds the mission INI files of the scenario being started to the rules, and reads its name and
+// briefing from them.
+static void Read_Mission_Files(void)
+{
+	char buffer[32];
+	CCINIClass mini;
+	CCFileClass cfile;
+
+	if (Session.Type == GAME_NORMAL) {
+		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
+		strcat(buffer, ".INI");
+		cfile.Set_Name(buffer);
+
+		// When this is the scenario file itself, a restart must apply what the launch applied.
+		if (Scen->SourceFile.Matches(buffer)) {
+			Load_Held_Scenario_File(mini, buffer, false);
+			Rule->Addition(mini);
+		} else if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+			Rule->Addition(mini);
+		}
+
+		cfile.Close();
+		if (Scen->RequiredAddOn > ADDON_FIRST) {
+			char fname[32];
+			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
+			cfile.Set_Name(fname);
+		} else {
+			cfile.Set_Name("MISSION.INI");
+		}
+
+		if (cfile.Is_Available() == true) {
+			mini.Load(cfile, false);
+
+			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
+				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
+			}
+
+			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
+				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
+
+				if (strlen(buffer) > 0) {
+					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
+				}
+			}
+		}
+
+		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
+		CCFileClass database("MISSIONMD.INI");
+		if (database.Is_Available()) {
+			CCINIClass missions;
+			missions.Load(database, false);
+			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
+			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
+			}
+		}
+	}
+
+	if (Session.Type == GAME_SKIRMISH) {
+		if (Just4Fun) {
+			cfile.Close();
+			cfile.Set_Name("TMCJ4F.INI");
+
+			if (cfile.Is_Available() == true) {
+				mini.Load(cfile, false);
+				Rule->Addition(mini);
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Reads a scenario from the database supplied.
 /// This is the workhorse of scenario startup. Whatever scenario was in place is cleared,
@@ -2377,74 +2450,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SmudgeClass::Read_INI(ini);
 	Call_Back();
 
-	/*
-	**
-	*/
-	CCINIClass mini;
-	CCFileClass cfile;
-
-	if (Session.Type == GAME_NORMAL) {
-		_splitpath(Scen->ScenarioName, NULL, NULL, buffer, NULL);
-		strcat(buffer, ".INI");
-		cfile.Set_Name(buffer);
-
-		// When this is the scenario file itself, a restart must apply what the launch applied.
-		if (Scen->SourceFile.Matches(buffer)) {
-			Load_Held_Scenario_File(mini, buffer, false);
-			Rule->Addition(mini);
-		} else if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-			Rule->Addition(mini);
-		}
-
-		cfile.Close();
-		if (Scen->RequiredAddOn > ADDON_FIRST) {
-			char fname[32];
-			sprintf(fname, "MISSION%1d.INI", Scen->RequiredAddOn);
-			cfile.Set_Name(fname);
-		} else {
-			cfile.Set_Name("MISSION.INI");
-		}
-
-		if (cfile.Is_Available() == true) {
-			mini.Load(cfile, false);
-
-			if (mini.Is_Present(Scen->ScenarioName, "Name")) {
-				mini.Get_String(Scen->ScenarioName, "Name", "", Scen->Description, sizeof(Scen->Description));
-			}
-
-			if (mini.Is_Present(Scen->ScenarioName, "Briefing")) {
-				mini.Get_String(Scen->ScenarioName, "Briefing", "", buffer, sizeof(buffer));
-
-				if (strlen(buffer) > 0) {
-					mini.Get_TextBlock(buffer, Scen->BriefingText, sizeof(Scen->BriefingText));
-				}
-			}
-		}
-
-		// Yuri's Revenge names a mission in MISSIONMD.INI, and campaign saves take that name.
-		CCFileClass database("MISSIONMD.INI");
-		if (database.Is_Available()) {
-			CCINIClass missions;
-			missions.Load(database, false);
-			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
-			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
-			}
-		}
-	}
-
-	if (Session.Type == GAME_SKIRMISH) {
-		if (Just4Fun) {
-			cfile.Close();
-			cfile.Set_Name("TMCJ4F.INI");
-
-			if (cfile.Is_Available() == true) {
-				mini.Load(cfile, false);
-				Rule->Addition(mini);
-			}
-		}
-	}
+	Read_Mission_Files();
 
 	Session.Update_Progress(82);
 	Call_Back();
@@ -4169,6 +4175,14 @@ static int Read_Par_Time(CCINIClass const & ini, char const * key, int current)
 }
 
 
+// Reads one lighting value as (int)(scale * number + round_offset). The caller gives fallback in the
+// same units as the INI number, derived from the value's current setting.
+static int Read_Light(CCINIClass const & ini, char const * section, char const * key, double scale, double fallback, double round_offset)
+{
+	return((int)(scale * ini.Get_Float(section, key, fallback) + round_offset));
+}
+
+
 /// <summary>
 /// Reads the scenario's parameters from an INI database.
 /// This routine picks up everything that describes the scenario itself -- the movies, the
@@ -4253,27 +4267,27 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	char const * const LIGHTING = "Lighting";
 
 	// gamemd adds 0.01 before truncating (0x68A846 to 0x68A974), so a float32 just below a whole step, such as Red=0.88, keeps that step.
-	AmbientLight        = (int)(100.0 * ini.Get_Float(LIGHTING, "Ambient", AmbientLight / 100.0) + 0.01);
+	AmbientLight        = Read_Light(ini, LIGHTING, "Ambient", 100.0, AmbientLight / 100.0, 0.01);
 	CurrentAmbientLight = AmbientLight;
 	DesiredAmbientLight = AmbientLight;
-	RedTint         = (int)(100.0 * ini.Get_Float(LIGHTING, "Red", RedTint / 100.0) + 0.01);
-	GreenTint       = (int)(100.0 * ini.Get_Float(LIGHTING, "Green", GreenTint / 100.0) + 0.01);
-	BlueTint        = (int)(100.0 * ini.Get_Float(LIGHTING, "Blue", BlueTint / 100.0) + 0.01);
-	GroundLight     = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Ground", GroundLight / NORMAL_LIGHT) + 0.01);
-	LevelLight      = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Level", LevelLight / NORMAL_LIGHT) + 0.01);
-	IonAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "IonAmbient", AmbientLight / 100.0));
-	IonRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "IonRed", RedTint / 100.0));
-	IonGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "IonGreen", GreenTint / 100.0));
-	IonBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "IonBlue", BlueTint / 100.0));
-	IonGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", GroundLight / NORMAL_LIGHT));
-	IonLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", LevelLight / NORMAL_LIGHT));
+	RedTint         = Read_Light(ini, LIGHTING, "Red", 100.0, RedTint / 100.0, 0.01);
+	GreenTint       = Read_Light(ini, LIGHTING, "Green", 100.0, GreenTint / 100.0, 0.01);
+	BlueTint        = Read_Light(ini, LIGHTING, "Blue", 100.0, BlueTint / 100.0, 0.01);
+	GroundLight     = Read_Light(ini, LIGHTING, "Ground", NORMAL_LIGHT, GroundLight / NORMAL_LIGHT, 0.01);
+	LevelLight      = Read_Light(ini, LIGHTING, "Level", NORMAL_LIGHT, LevelLight / NORMAL_LIGHT, 0.01);
+	IonAmbientLight = Read_Light(ini, LIGHTING, "IonAmbient", 100.0, AmbientLight / 100.0, 0.0);
+	IonRedTint      = Read_Light(ini, LIGHTING, "IonRed", 100.0, RedTint / 100.0, 0.0);
+	IonGreenTint    = Read_Light(ini, LIGHTING, "IonGreen", 100.0, GreenTint / 100.0, 0.0);
+	IonBlueTint     = Read_Light(ini, LIGHTING, "IonBlue", 100.0, BlueTint / 100.0, 0.0);
+	IonGroundLight  = Read_Light(ini, LIGHTING, "IonGround", NORMAL_LIGHT, GroundLight / NORMAL_LIGHT, 0.0);
+	IonLevelLight   = Read_Light(ini, LIGHTING, "IonLevel", NORMAL_LIGHT, LevelLight / NORMAL_LIGHT, 0.0);
 	NukeAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "NukeAmbientChangeRate", (float)NukeAmbientChangeRate);
-	DominatorAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorAmbient", DominatorAmbientLight / 100.0) + 0.5);
-	DominatorRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorRed", DominatorRedTint / 100.0) + 0.5);
-	DominatorGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorGreen", DominatorGreenTint / 100.0) + 0.5);
-	DominatorBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorBlue", DominatorBlueTint / 100.0) + 0.5);
-	DominatorGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorGround", DominatorGroundLight / (float)NORMAL_LIGHT) + 0.5);
-	DominatorLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorLevel", DominatorLevelLight / (float)NORMAL_LIGHT) + 0.5);
+	DominatorAmbientLight = Read_Light(ini, LIGHTING, "DominatorAmbient", 100.0, DominatorAmbientLight / 100.0, 0.5);
+	DominatorRedTint      = Read_Light(ini, LIGHTING, "DominatorRed", 100.0, DominatorRedTint / 100.0, 0.5);
+	DominatorGreenTint    = Read_Light(ini, LIGHTING, "DominatorGreen", 100.0, DominatorGreenTint / 100.0, 0.5);
+	DominatorBlueTint     = Read_Light(ini, LIGHTING, "DominatorBlue", 100.0, DominatorBlueTint / 100.0, 0.5);
+	DominatorGroundLight  = Read_Light(ini, LIGHTING, "DominatorGround", NORMAL_LIGHT, DominatorGroundLight / (float)NORMAL_LIGHT, 0.5);
+	DominatorLevelLight   = Read_Light(ini, LIGHTING, "DominatorLevel", NORMAL_LIGHT, DominatorLevelLight / (float)NORMAL_LIGHT, 0.5);
 	DominatorAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", (float)DominatorAmbientChangeRate);
 
 	Session.Update_Progress(55);
