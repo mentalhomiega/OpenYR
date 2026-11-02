@@ -159,16 +159,21 @@ std::unique_ptr<DSurface> Frame_With_Map_Layer(DSurface const & frame)
 	auto composed = std::make_unique<DSurface>(all.Width, all.Height);
 	composed->Blit_From(all, frame, all);
 
-	// The presenter shows the map layer only where the frame is keyed out, so the capture does the same.
-	DSurface map(all.Width, all.Height);
-	map.Blit_From(ScreenTacticalRect, *MapCompositeSurface, Shown_Map_Rect());
+	// The software blitter cannot stretch, so the shown map is copied at its own size and sampled onto
+	// ScreenTacticalRect as the presenter stretches it. Only keyed pixels take the map.
+	Rect const shown = Shown_Map_Rect();
+	DSurface map(shown.Width, shown.Height);
+	map.Blit_From(Rect(0, 0, shown.Width, shown.Height), *MapCompositeSurface, shown);
+	double const scale_x = double(shown.Width) / ScreenTacticalRect.Width;
+	double const scale_y = double(shown.Height) / ScreenTacticalRect.Height;
 	Rect const area = Intersect(ScreenTacticalRect, all);
 	for (int y = area.Y; y < area.Y + area.Height; y++) {
-		unsigned short * out = (unsigned short *)((char *)composed->Get_Buffer() + y * composed->Stride()) + area.X;
-		unsigned short const * in = (unsigned short const *)((char const *)map.Get_Buffer() + y * map.Stride()) + area.X;
-		for (int x = 0; x < area.Width; x++) {
+		int const map_y = int(std::floor((y - ScreenTacticalRect.Y) * scale_y));
+		unsigned short * out = (unsigned short *)((char *)composed->Get_Buffer() + y * composed->Stride());
+		unsigned short const * in = (unsigned short const *)((char const *)map.Get_Buffer() + map_y * map.Stride());
+		for (int x = area.X; x < area.X + area.Width; x++) {
 			if (out[x] == VIDEO_LAYER_KEY) {
-				out[x] = in[x];
+				out[x] = in[int(std::floor((x - ScreenTacticalRect.X) * scale_x))];
 			}
 		}
 	}

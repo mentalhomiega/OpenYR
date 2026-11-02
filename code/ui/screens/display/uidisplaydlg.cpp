@@ -650,6 +650,7 @@ std::optional<UIDisplayMode> UI_Display_Settled(UIDisplayPresenterClass & presen
 {
 	if (presenter.Result != UI_RESULT_ACCEPTED) {
 		presenter.Restore_Preview();
+		UI_Setting_Preview_Revert();
 	}
 	if (!presenter.Picked.has_value() && presenter.ScaleChanged) {
 		UIDisplayMode current;

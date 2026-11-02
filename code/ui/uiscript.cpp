@@ -25,6 +25,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "hangwatch.h"
+#include "hud.h"
 #include "init.h"
 
 #include <algorithm>
@@ -505,6 +506,15 @@ void UIScript_Tick(Rml::Context * context)
 			Play_Movie(step.Argument.c_str());
 			WaitUntil = Now_Milliseconds() + 300;
 			return;
+		} else if (step.Command == "checked") {
+			Rml::Element * element = Find_Element(context, step.Argument);
+			if (element == nullptr) {
+				DebugString("UISCRIPT   checked %s: no such visible element\n", step.Argument.c_str());
+			} else {
+				DebugString("AUTOTEST checked %s %d\n", step.Argument.c_str(), element->HasAttribute("checked") ? 1 : 0);
+			}
+		} else if (step.Command == "hudrows") {
+			DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
 		} else if (step.Command == "quit") {
 			DebugString("UISCRIPT quit\n");
 			std::exit(0);

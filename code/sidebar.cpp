@@ -2033,7 +2033,9 @@ int SidebarClass::StripClass::Column_Step(void)
 	if (Modern_Interface()) {
 		return(OBJECT_WIDTH);
 	}
-	return(PlayerPtr != NULL && PlayerPtr->Class->Side == SIDE_FIRST ? 63 : 64);
+	// With no player the strip is laid out as the first side's, as in Reposition_Sidebar and Max_Visible.
+	bool const first = PlayerPtr == NULL || PlayerPtr->Class->Side == SIDE_FIRST;
+	return(first ? 63 : 64);
 }
 
 
