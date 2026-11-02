@@ -109,8 +109,9 @@ struct CnCNetRoomSendType
 	CnCNetRoomSendKind Kind;
 	std::string Target;
 	std::string Command;        // CTCP command, or the kicked nick.
-	std::string Text;           // CTCP arguments, the kick reason, or a mode list.
+	std::string Text;           // CTCP arguments or the kick reason.
 	std::string QueueKey;       // A queued send with the same key is replaced.
+	std::vector<std::string> Modes;     // MODE only: the mode change and its parameters, one entry each.
 };
 
 

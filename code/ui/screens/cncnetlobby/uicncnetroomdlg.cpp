@@ -362,20 +362,9 @@ void CnCNetRoomServiceClass::Flush(void)
 				Network.Send_CTCP(send.Target, send.Command, send.Text, 60, send.QueueKey);
 				break;
 
-			case CnCNetRoomSendKind::MODE: {
-				std::vector<std::string> modes;
-				std::size_t start = 0;
-				while (start < send.Text.size()) {
-					std::size_t const space = send.Text.find(' ', start);
-					modes.push_back(send.Text.substr(start, space == std::string::npos ? std::string::npos : space - start));
-					if (space == std::string::npos) {
-						break;
-					}
-					start = space + 1;
-				}
-				Network.Set_Mode(send.Target, modes);
+			case CnCNetRoomSendKind::MODE:
+				Network.Set_Mode(send.Target, send.Modes);
 				break;
-			}
 
 			case CnCNetRoomSendKind::KICK:
 				Network.Kick(send.Target, send.Command, send.Text);

@@ -161,7 +161,7 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 				if (IsHost) {
 					CurrentStatus = CnCNetRoomStatus::IN_ROOM;
 					Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
-						"+klnNs " + Config.Key + " " + std::to_string(Config.Limits.MaxPlayers), std::string()});
+						std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
 				} else {
 					CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
 					Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
