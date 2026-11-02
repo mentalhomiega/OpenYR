@@ -1486,21 +1486,32 @@ static void Add_Stock_Names(std::set<std::string> & names, char const * text)
 }
 
 
-/*
-**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
-**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
-**	each name, so the names are the words of the INI files' sections and values, which is how the art and
-**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
-**	the MIX archives the game attached with their entry counts.
-*/
-static void Stock_Check_Step(StepType const &)
+// The counts the stockcheck step writes to its summary line.
+struct StockCheckCounts {
+	int found_voxels = 0;
+	int found_anims = 0;
+	int found_shapes = 0;
+	int found_pictures = 0;
+	int pairs = 0;
+	int refused_voxels = 0;
+	int refused_anims = 0;
+	int refused_shapes = 0;
+	int refused_pictures = 0;
+	int frames = 0;
+	int empty_shapes = 0;
+	int mixes = 0;
+	int entries = 0;
+};
+
+
+// Adds the words of the INI files and of the engine's own code to the names, and counts the INI files and sections read.
+static void Stock_Check_Names(std::set<std::string> & names, int & sections, int & sources_read)
 {
 	static char const * const sources[] = {
 		"ART.INI", "ARTMD.INI", "RULES.INI", "RULESMD.INI", "UI.INI", "UIMD.INI", "MISSION.INI", "MISSIONMD.INI",
 		"THEME.INI", "THEMEMD.INI", "BATTLE.INI", "BATTLEMD.INI", "AI.INI", "AIMD.INI", "SOUND.INI", "SOUNDMD.INI",
 		"MULTI.INI", "MULTIMD.INI", "EVA.INI", "EVAMD.INI", "SCORE.INI", "SCOREMD.INI", "CAMEO.INI", "CAMEOMD.INI"};
 
-	std::set<std::string> names;
 	// Picture names the engine's own code opens by name, such as the loading screens and the side pictures.
 	static char const * const coded[] = {"ARBI", "DJBI", "FRAI", "GBRI", "GERI", "JAPI", "LATI", "OBSI", "RUSI", "USAI", "YRII",
 		"LOADING", "TITLE", "LOAD400A", "LOAD400B", "LOAD400C", "LOAD400D", "LOAD480A", "LOAD480B", "LOAD480C", "LOAD480D",
@@ -1508,8 +1519,6 @@ static void Stock_Check_Step(StepType const &)
 	for (char const * text : coded) {
 		Add_Stock_Names(names, text);
 	}
-	int sections = 0;
-	int sources_read = 0;
 	for (char const * source : sources) {
 		CCFileClass file(source);
 		CCINIClass ini;
@@ -1533,127 +1542,156 @@ static void Stock_Check_Step(StepType const &)
 			}
 		}
 	}
+}
 
-	int found_voxels = 0;
-	int found_anims = 0;
-	int found_shapes = 0;
-	int found_pictures = 0;
-	int pairs = 0;
-	int refused_voxels = 0;
-	int refused_anims = 0;
-	int refused_shapes = 0;
-	int refused_pictures = 0;
-	int frames = 0;
-	int empty_shapes = 0;
 
-	for (std::string const & name : names) {
-		std::string const vxl = name + ".VXL";
-		std::string const hva = name + ".HVA";
-		std::string const shp = name + ".SHP";
-		std::string const pcx = name + ".PCX";
-
-		bool const has_vxl = CCFileClass(vxl.c_str()).Is_Available();
-		bool const has_hva = CCFileClass(hva.c_str()).Is_Available();
-		if (has_vxl) {
-			CCFileClass file(vxl.c_str());
-			VoxelLibrary library;
-			found_voxels++;
-			if (!library.Read_File(file, false)) {
-				refused_voxels++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", vxl.c_str());
-			}
-		}
-		if (has_hva) {
-			CCFileClass file(hva.c_str());
-			MotionLibrary motion;
-			found_anims++;
-			if (!motion.Read_File(file)) {
-				refused_anims++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
-			} else if (motion.Get_Frame_Count() > 1) {
-				DebugString("AUTOTEST   stockcheck multiframe %s frames %d\n", hva.c_str(), motion.Get_Frame_Count());
-			}
-		}
-		if (has_vxl && has_hva) {
-			pairs++;
-		}
-
-		if (CCFileClass(shp.c_str()).Is_Available()) {
-			std::vector<std::uint8_t> bytes;
-			CCFileClass file(shp.c_str());
-			if (file.Open(FileClass::READ)) {
-				int const size = file.Size();
-				if (size > 0) {
-					bytes.resize(static_cast<std::size_t>(size));
-					if (file.Read(bytes.data(), size) != size) {
-						bytes.clear();
-					}
-				}
-				file.Close();
-			}
-
-			found_shapes++;
-			int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;
-			bool loaded = bytes.size() >= 8;
-			if (loaded && count == 0) {
-				empty_shapes++;
-			}
-			int failed = -1;
-			for (int frame = 0; loaded && frame < count; frame++) {
-				UIImageIndexed image;
-				loaded = UI_Decode_SHP(std::span<std::uint8_t const>(bytes.data(), bytes.size()), frame, image);
-				frames += loaded ? 1 : 0;
-				if (!loaded) {
-					failed = frame;
-				}
-			}
-			if (!loaded) {
-				refused_shapes++;
-				if (bytes.size() >= 8 && failed >= 0) {
-					std::size_t const at = 8 + 24 * static_cast<std::size_t>(failed);
-					if (at + 24 <= bytes.size()) {
-						auto const word = [&bytes](std::size_t where) {return(bytes[where] | (bytes[where + 1] << 8));};
-						DebugString("AUTOTEST   stockcheck refused %s: frame %d of %d, canvas %dx%d, frame box %d,%d %dx%d, kind %d\n",
-							shp.c_str(), failed, count, word(2), word(4), word(at), word(at + 2), word(at + 4), word(at + 6), bytes[at + 8]);
-					} else {
-						DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for its %d frames\n", shp.c_str(), (int)bytes.size(), count);
-					}
-				} else {
-					DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for a header\n", shp.c_str(), (int)bytes.size());
-				}
-			}
-		}
-
-		if (CCFileClass(pcx.c_str()).Is_Available()) {
-			CCFileClass file(pcx.c_str());
-			std::unique_ptr<Surface> picture(Read_PCX_File(file));
-			found_pictures++;
-			if (picture == NULL) {
-				refused_pictures++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", pcx.c_str());
-			}
+// Loads the name's VXL and HVA files, when they exist, and counts each one that loads and each pair.
+static void Stock_Check_Voxel_And_Anim(std::string const & name, StockCheckCounts & counts)
+{
+	std::string const vxl = name + ".VXL";
+	std::string const hva = name + ".HVA";
+	bool const has_vxl = CCFileClass(vxl.c_str()).Is_Available();
+	bool const has_hva = CCFileClass(hva.c_str()).Is_Available();
+	if (has_vxl) {
+		CCFileClass file(vxl.c_str());
+		VoxelLibrary library;
+		counts.found_voxels++;
+		if (!library.Read_File(file, false)) {
+			counts.refused_voxels++;
+			DebugString("AUTOTEST   stockcheck refused %s\n", vxl.c_str());
 		}
 	}
+	if (has_hva) {
+		CCFileClass file(hva.c_str());
+		MotionLibrary motion;
+		counts.found_anims++;
+		if (!motion.Read_File(file)) {
+			counts.refused_anims++;
+			DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
+		} else if (motion.Get_Frame_Count() > 1) {
+			DebugString("AUTOTEST   stockcheck multiframe %s frames %d\n", hva.c_str(), motion.Get_Frame_Count());
+		}
+	}
+	if (has_vxl && has_hva) {
+		counts.pairs++;
+	}
+}
 
-	int mixes = 0;
-	int entries = 0;
+
+// Reads the SHP file, decodes each frame, and logs the header fields of a frame that does not decode.
+static void Stock_Check_Shape(std::string const & shp, StockCheckCounts & counts)
+{
+	std::vector<std::uint8_t> bytes;
+	CCFileClass file(shp.c_str());
+	if (file.Open(FileClass::READ)) {
+		int const size = file.Size();
+		if (size > 0) {
+			bytes.resize(static_cast<std::size_t>(size));
+			if (file.Read(bytes.data(), size) != size) {
+				bytes.clear();
+			}
+		}
+		file.Close();
+	}
+
+	counts.found_shapes++;
+	int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;
+	bool loaded = bytes.size() >= 8;
+	if (loaded && count == 0) {
+		counts.empty_shapes++;
+	}
+	int failed = -1;
+	for (int frame = 0; loaded && frame < count; frame++) {
+		UIImageIndexed image;
+		loaded = UI_Decode_SHP(std::span<std::uint8_t const>(bytes.data(), bytes.size()), frame, image);
+		counts.frames += loaded ? 1 : 0;
+		if (!loaded) {
+			failed = frame;
+		}
+	}
+	if (!loaded) {
+		counts.refused_shapes++;
+		if (bytes.size() >= 8 && failed >= 0) {
+			std::size_t const at = 8 + 24 * static_cast<std::size_t>(failed);
+			if (at + 24 <= bytes.size()) {
+				auto const word = [&bytes](std::size_t where) {return(bytes[where] | (bytes[where + 1] << 8));};
+				DebugString("AUTOTEST   stockcheck refused %s: frame %d of %d, canvas %dx%d, frame box %d,%d %dx%d, kind %d\n",
+					shp.c_str(), failed, count, word(2), word(4), word(at), word(at + 2), word(at + 4), word(at + 6), bytes[at + 8]);
+			} else {
+				DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for its %d frames\n", shp.c_str(), (int)bytes.size(), count);
+			}
+		} else {
+			DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for a header\n", shp.c_str(), (int)bytes.size());
+		}
+	}
+}
+
+
+// Reads the PCX file and counts it, and logs it when no picture comes out of it.
+static void Stock_Check_Picture(std::string const & pcx, StockCheckCounts & counts)
+{
+	CCFileClass file(pcx.c_str());
+	std::unique_ptr<Surface> picture(Read_PCX_File(file));
+	counts.found_pictures++;
+	if (picture == NULL) {
+		counts.refused_pictures++;
+		DebugString("AUTOTEST   stockcheck refused %s\n", pcx.c_str());
+	}
+}
+
+
+// Logs each attached MIX file and the WDT.MIX that the world domination setup mounts, and totals their entries.
+static void Stock_Check_Mixes(StockCheckCounts & counts)
+{
 	for (MixFileClass * mix = MixFileClass::First_Attached(); mix != NULL; mix = mix->Next_Attached()) {
-		mixes++;
-		entries += mix->Member_Count();
+		counts.mixes++;
+		counts.entries += mix->Member_Count();
 		DebugString("AUTOTEST   stockcheck mix %s: %d entries\n", mix->Filename, mix->Member_Count());
 	}
 
 	// WDT.MIX is mounted only by the world domination setup, when it is on hand. The check mounts it the same way.
 	if (CCFileClass("WDT.MIX").Is_Available()) {
 		MixFileClass * wdt = new MixFileClass("WDT.MIX", &FastKey);
-		mixes++;
-		entries += wdt->Member_Count();
+		counts.mixes++;
+		counts.entries += wdt->Member_Count();
 		DebugString("AUTOTEST   stockcheck mix WDT.MIX (mounted by the world domination setup): %d entries\n", wdt->Member_Count());
 		delete wdt;
 	}
+}
+
+
+/*
+**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
+**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
+**	each name, so the names are the words of the INI files' sections and values, which is how the art and
+**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
+**	the MIX archives the game attached with their entry counts.
+*/
+static void Stock_Check_Step(StepType const &)
+{
+	std::set<std::string> names;
+	int sections = 0;
+	int sources_read = 0;
+	Stock_Check_Names(names, sections, sources_read);
+
+	StockCheckCounts counts;
+	for (std::string const & name : names) {
+		Stock_Check_Voxel_And_Anim(name, counts);
+
+		std::string const shp = name + ".SHP";
+		if (CCFileClass(shp.c_str()).Is_Available()) {
+			Stock_Check_Shape(shp, counts);
+		}
+
+		std::string const pcx = name + ".PCX";
+		if (CCFileClass(pcx.c_str()).Is_Available()) {
+			Stock_Check_Picture(pcx, counts);
+		}
+	}
+	Stock_Check_Mixes(counts);
 
 	DebugString("AUTOTEST stockcheck: %d INI files, %d sections, %d names; found VXL %d, HVA %d, SHP %d, PCX %d; %d VXL and HVA pairs; refused VXL %d, HVA %d, SHP %d, PCX %d; %d SHP frames decoded, %d SHP empty; %d mixes attached with %d entries\n",
-		sources_read, sections, (int)names.size(), found_voxels, found_anims, found_shapes, found_pictures, pairs, refused_voxels, refused_anims, refused_shapes, refused_pictures, frames, empty_shapes, mixes, entries);
+		sources_read, sections, (int)names.size(), counts.found_voxels, counts.found_anims, counts.found_shapes, counts.found_pictures, counts.pairs, counts.refused_voxels, counts.refused_anims, counts.refused_shapes, counts.refused_pictures, counts.frames, counts.empty_shapes, counts.mixes, counts.entries);
 }
 
 
