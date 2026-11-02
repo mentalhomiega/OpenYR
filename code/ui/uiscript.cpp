@@ -25,6 +25,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "hangwatch.h"
+#include "hud.h"
 #include "init.h"
 
 #include <algorithm>
@@ -505,6 +506,8 @@ void UIScript_Tick(Rml::Context * context)
 			Play_Movie(step.Argument.c_str());
 			WaitUntil = Now_Milliseconds() + 300;
 			return;
+		} else if (step.Command == "hudrows") {
+			DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
 		} else if (step.Command == "quit") {
 			DebugString("UISCRIPT quit\n");
 			std::exit(0);

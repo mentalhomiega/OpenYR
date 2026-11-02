@@ -1,18 +1,24 @@
-; In-game preview of the Sidebar rows setting: the Display page picks 2 rows, and the modern build panel shows them at once
+; In-game preview of the Sidebar rows setting: the Graphics page picks 2 rows, and the modern build panel shows them at once
 ; while the page is open. Cancel then puts the saved 4 rows back. Run with -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarRows=4".
 ; The ui shot lines write the window with the page open (as .tga in the Screenshots folder).
+; The ui hudrows lines log the rows in effect and the saved rows as AUTOTEST hud rows <in effect> saved <setting>.
+; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/sidebar-rows-preview.txt -Width 1024 -Height 768 -Seconds 120 -Filter "AUTOTEST|Exception" -Settings "[Options]`r`nInterfaceStyle=Modern`r`nSidebarRows=4"
+; Expected: "AUTOTEST hud rows 2 saved 4" after the choose line, "AUTOTEST hud rows 4 saved 4" after Cancel, and no Exception line.
 60 options
 ui wait 5000
 ui press Game Controls
 ui wait 1500
-ui click tab-display
+ui click tab-graphics
 ui wait 1500
 ui click sidebar-rows
 ui wait 800
 ui choose sidebar-rows|2
 ui wait 1500
+ui hudrows
 ui shot preview-rows-2
 ui wait 500
-ui press Cancel
+ui click footer-cancel
 ui wait 1500
+ui hudrows
 ui shot cancel-rows-4
+ui quit

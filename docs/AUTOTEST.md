@@ -183,6 +183,10 @@ To add a command, write a `static void <Name>_Step(StepType const & step)` in `c
 add the command's name and that function to the handler table in `Run`, and add its row to the
 table above. A command missing from the handler table writes `unknown command` to the log.
 
+The menu script step `ui hudrows` logs `AUTOTEST hud rows <rows> saved <setting>`. The first value is the sidebar
+rows the build panel uses at that moment, including a preview still open. The second is the `SidebarRows` setting.
+Use it to check a settings screen after a `ui choose`, `ui click` or cancel.
+
 ### File paths
 
 The steps that take a path fall into three kinds. The table gives how each kind resolves a relative path.
