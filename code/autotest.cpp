@@ -4100,18 +4100,26 @@ static void Stripfill_Step(StepType const & step)
 }
 
 
+// The first house other than the player's that has a construction yard, or NULL. With exclude_allies, an ally of the
+// player is skipped too.
+static HouseClass * First_Computer_House(bool exclude_allies)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (house != PlayerPtr && house->ConYards.Count() > 0 && !(exclude_allies && PlayerPtr->Is_Ally(house))) {
+			return(house);
+		}
+	}
+	return(NULL);
+}
+
+
 // spawn <TypeID> x y: puts an object of the type, owned by the first computer house, on that cell.
 // grantunit <TypeID> x y: the same, owned by the player.
 static void Spawn_Step(StepType const & step)
 {
 	bool const player_owned = step.Command == "grantunit";
-	HouseClass * enemy = player_owned ? PlayerPtr : NULL;
-	for (int index = 0; !player_owned && index < Houses.Count(); index++) {
-		if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
-			enemy = Houses[index];
-			break;
-		}
-	}
+	HouseClass * enemy = player_owned ? PlayerPtr : First_Computer_House(false);
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (enemy != NULL && type != NULL) {
 		Cell cell(step.X, step.Y);
@@ -4171,12 +4179,7 @@ static void Own_Step(StepType const & step)
 			}
 		}
 	} else if (step.Command == "enemy") {
-		owner = NULL;
-		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-			if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0 && !PlayerPtr->Is_Ally(Houses[index])) {
-				owner = Houses[index];
-			}
-		}
+		owner = First_Computer_House(true);
 	}
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
@@ -4549,16 +4552,13 @@ static void Enable_Step(StepType const & step)
 static void Grantai_Step(StepType const & step)
 {
 	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
-	for (int index = 0; index < Houses.Count() && id != SUPER_NONE; index++) {
-		HouseClass * house = Houses[index];
-		if (house != PlayerPtr && house->ConYards.Count() > 0 && id < house->SuperWeapon.Count()) {
-			SuperClass * super = house->SuperWeapon[id];
-			// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
-			super->Enable(false, false, house->Power_Fraction() < 1.0);
-			super->Forced_Charge(true);
-			DebugString("AUTOTEST   grantai %s to %s ready %d\n", step.Argument.c_str(), house->Class->Name(), (int)super->Is_Ready());
-			break;
-		}
+	HouseClass * house = First_Computer_House(false);
+	if (house != NULL && id != SUPER_NONE && id < house->SuperWeapon.Count()) {
+		SuperClass * super = house->SuperWeapon[id];
+		// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
+		super->Enable(false, false, house->Power_Fraction() < 1.0);
+		super->Forced_Charge(true);
+		DebugString("AUTOTEST   grantai %s to %s ready %d\n", step.Argument.c_str(), house->Class->Name(), (int)super->Is_Ready());
 	}
 }
 
@@ -4567,14 +4567,11 @@ static void Grantai_Step(StepType const & step)
 static void Chargeai_Step(StepType const & step)
 {
 	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
-	for (int index = 0; index < Houses.Count() && id != SUPER_NONE; index++) {
-		HouseClass * house = Houses[index];
-		if (house != PlayerPtr && house->ConYards.Count() > 0 && id < house->SuperWeapon.Count()) {
-			SuperClass * super = house->SuperWeapon[id];
-			super->Set_Charge(step.X);
-			DebugString("AUTOTEST   chargeai %s to %s percent %d ready %d suspended %d\n", step.Argument.c_str(), house->Class->Name(), step.X, (int)super->Is_Ready(), (int)super->Is_Suspended());
-			break;
-		}
+	HouseClass * house = First_Computer_House(false);
+	if (house != NULL && id != SUPER_NONE && id < house->SuperWeapon.Count()) {
+		SuperClass * super = house->SuperWeapon[id];
+		super->Set_Charge(step.X);
+		DebugString("AUTOTEST   chargeai %s to %s percent %d ready %d suspended %d\n", step.Argument.c_str(), house->Class->Name(), step.X, (int)super->Is_Ready(), (int)super->Is_Suspended());
 	}
 }
 
@@ -6134,13 +6131,7 @@ static void Plan_Step(StepType const &)
 // team <TeamTypeID>: makes a team of that type for the first computer house and puts in every unit of that house no team holds.
 static void Team_Step(StepType const & step)
 {
-	HouseClass * enemy = NULL;
-	for (int index = 0; index < Houses.Count(); index++) {
-		if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0) {
-			enemy = Houses[index];
-			break;
-		}
-	}
+	HouseClass * enemy = First_Computer_House(false);
 	TeamTypeClass * type = TeamTypeClass::From_Name(step.Argument.c_str());
 	TeamClass * team = enemy != NULL && type != NULL ? type->Create_One_Of(enemy) : NULL;
 	int added = 0;
@@ -6597,12 +6588,7 @@ static void Wall_Step(StepType const & step)
 static void Ewall_Step(StepType const & step)
 {
 	OverlayType const type = OverlayTypeClass::From_Name(step.Argument.c_str());
-	HouseClass * owner = NULL;
-	for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-		if (Houses[index] != PlayerPtr && Houses[index]->ConYards.Count() > 0 && !PlayerPtr->Is_Ally(Houses[index])) {
-			owner = Houses[index];
-		}
-	}
+	HouseClass * owner = First_Computer_House(true);
 	if (type != OVERLAY_NONE && owner != NULL) {
 		Map.PendingHouse = HousesType(owner->HeapID);
 		new OverlayClass(OverlayTypes[type], Cell(step.X, step.Y), HousesType(owner->HeapID));
