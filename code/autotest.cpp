@@ -4175,7 +4175,15 @@ static void Own_Step(StepType const & step)
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		}
 	} else {
-		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no civilian house");
+		char const * reason = "no player house";
+		if (type == NULL) {
+			reason = "no such type";
+		} else if (step.Command == "neutral") {
+			reason = "no civilian house";
+		} else if (step.Command == "enemy") {
+			reason = "no enemy house";
+		}
+		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), reason);
 	}
 }
 
