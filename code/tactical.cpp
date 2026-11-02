@@ -1735,7 +1735,7 @@ void Tactical::Draw_Super_Range(void)
 	}
 
 	// Pixel_To_Cell takes a map pixel, so the screen pointer goes through the zoom first, as a click does (ScrollClass::Resolve_Point).
-	Point2D const view = TacticalRect.Top_Left() + Screen_To_View_Offset(mouse - ScreenTacticalRect.Top_Left());
+	Point2D const view = TacticalRect.Top_Left() + Screen_To_View_Point(mouse);
 	Cell cell = Pixel_To_Cell(view);
 	if (!Map.In_Radar(cell)) {
 		return;

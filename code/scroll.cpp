@@ -415,7 +415,7 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 		bool noscroll = false;
 
 		if (!noscroll) {
-			Point2D p = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(point);
+			Point2D p = View_To_Screen_Point(point);
 			int x = p.X;
 			int y = p.Y;
 			int w = VisibleRect.Width - 1;
@@ -552,9 +552,8 @@ void ScrollClass::Scroll_AI(void)
 	_LastScrollPollTime = now;
 
 	if (!IgnoreInput) {
-		Point2D tacti = ScreenTacticalRect.Top_Left();
 		Point2D mouse = MouseCursor->Get_Mouse_Point();
-		Point2D point = Screen_To_View_Offset(mouse - tacti);
+		Point2D point = Screen_To_View_Point(mouse);
 
 		if (IsMouseDown == true) {
 			if (Keyboard->Down(KN_LMOUSE)) {
@@ -660,7 +659,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	} else if (press && event.Button == WINDOW_BUTTON_LEFT) {
 		if (IsMouseDown == false) {
 
-			point = Screen_To_View_Offset(Point2D(event.X - ScreenTacticalRect.X, event.Y - ScreenTacticalRect.Y));
+			point = Screen_To_View_Point(Point2D(event.X, event.Y));
 
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
@@ -673,7 +672,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	} else if (release && event.Button == WINDOW_BUTTON_LEFT) {
 		if (IsMouseDown == true) {
 
-			point = Screen_To_View_Offset(Point2D(event.X - ScreenTacticalRect.X, event.Y - ScreenTacticalRect.Y));
+			point = Screen_To_View_Point(Point2D(event.X, event.Y));
 
 			// In the modern interface a release over the command bar or panel orders nothing and places nothing, except
 			// that a rubber band in progress still finishes, and it skips the objects under the panel.
@@ -691,7 +690,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	} else if (press && event.Button == WINDOW_BUTTON_RIGHT) {
 		if (IsMouseDown == false) {
 
-			point = Screen_To_View_Offset(Point2D(event.X - ScreenTacticalRect.X, event.Y - ScreenTacticalRect.Y));
+			point = Screen_To_View_Point(Point2D(event.X, event.Y));
 
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Right_Press(point);
@@ -796,7 +795,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						Point2D pt = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(RightPressPoint);
+						Point2D pt = View_To_Screen_Point(RightPressPoint);
 						Game_Point_To_Window(pt);
 						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
@@ -808,7 +807,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						Point2D pt = ScreenTacticalRect.Top_Left() + View_To_Screen_Offset(RightPressPoint);
+						Point2D pt = View_To_Screen_Point(RightPressPoint);
 						Game_Point_To_Window(pt);
 						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
