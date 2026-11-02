@@ -190,8 +190,9 @@ static bool _Referenced = false;
 static bool _Pending = false;
 static std::uint32_t _ReadyFrame = 0;
 
-// True from a pass that handed the GPU its buffers without a copy until bgfx::frame reads them.
+// The GPU picture the check reads back with bgfx::readTexture, as RGBA bytes.
 static std::vector<unsigned char> _Pixels;
+// The software result the check compares with _Pixels, one value per area pixel.
 static std::vector<unsigned short> _Expected;
 static int _PendingFrame = 0;
 static int _PendingBlits = 0;
@@ -398,6 +399,13 @@ static bool Fill_Store(Store & store, bgfx::TextureFormat::Enum format, int widt
 }
 
 
+// The rows of ARENA_WIDTH texels that hold size bytes; zero bytes need no rows.
+static std::size_t Arena_Rows(std::size_t size)
+{
+	return((size + ARENA_WIDTH - 1) / ARENA_WIDTH);
+}
+
+
 // Fills the index store: the atlas in its top ATLAS_ROWS rows, uploading only what the store does not
 // hold yet, then the pass's arena, ARENA_WIDTH texels a row.
 static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes, std::size_t size)
@@ -405,7 +413,7 @@ static bool Fill_Index(Store & store, GpuAtlas const & atlas, void const * bytes
 	static unsigned uploaded_epoch = 0;
 	static std::size_t uploaded = 0;
 
-	int const rows = std::max(1, (int)((size + ARENA_WIDTH - 1) / ARENA_WIDTH));
+	int const rows = std::max(1, (int)Arena_Rows(size));
 	if (ATLAS_ROWS + rows > TEXTURE_LIMIT) {
 		return(false);
 	}
@@ -456,7 +464,7 @@ static float Index_Offset(GpuBlit const & blit)
 // Fills the store with the bytes, ARENA_WIDTH texels a row; an empty arena gets one row of zeros.
 static bool Fill_Arena(Store & store, void const * bytes, std::size_t size)
 {
-	int const rows = std::max(1, (int)((size + ARENA_WIDTH - 1) / ARENA_WIDTH));
+	int const rows = std::max(1, (int)Arena_Rows(size));
 	if (rows > TEXTURE_LIMIT) {
 		return(false);
 	}
@@ -732,6 +740,22 @@ static void Submit_Glow(GpuMapPass const & pass, Rect const & area)
 }
 
 
+static int Count_Shadow_Blits(GpuDrawList const & list)
+{
+	return((int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
+		return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN);
+	}));
+}
+
+
+static int Count_Sonic_Waves(GpuDrawList const & list)
+{
+	return((int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
+		return(blit.Line >= 0 && blit.LineKind == GPU_LINE_SONIC);
+	}));
+}
+
+
 // Checks the limits Submit_Pass rejects a pass for that are known when it is kept, so a pass the GPU
 // cannot draw is drawn in software rather than leaving the map's key colour on screen.
 static bool Pass_Fits(GpuMapPass const & pass)
@@ -741,8 +765,8 @@ static bool Pass_Fits(GpuMapPass const & pass)
 	if (area.Width <= 0 || area.Height <= 0 || area.Width > TEXTURE_LIMIT || area.Height > TEXTURE_LIMIT) {
 		return(false);
 	}
-	std::size_t const arenarows = (list.PixelArena.size() + ARENA_WIDTH - 1) / ARENA_WIDTH;
-	std::size_t const zshaperows = (list.ZShapeArena.size() + ARENA_WIDTH - 1) / ARENA_WIDTH;
+	std::size_t const arenarows = Arena_Rows(list.PixelArena.size());
+	std::size_t const zshaperows = Arena_Rows(list.ZShapeArena.size());
 	if (ATLAS_ROWS + arenarows > (std::size_t)TEXTURE_LIMIT || zshaperows > (std::size_t)TEXTURE_LIMIT) {
 		return(false);
 	}
@@ -756,19 +780,10 @@ static bool Pass_Fits(GpuMapPass const & pass)
 			return(false);
 		}
 	}
-	int waves = 0;
-	int shadows = 0;
-	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Line >= 0 && blit.LineKind == GPU_LINE_SONIC) {
-			waves++;
-		}
-		if (blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN) {
-			shadows++;
-		}
-	}
-	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
+	if (Count_Sonic_Waves(list) > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		return(false);
 	}
+	int const shadows = Count_Shadow_Blits(list);
 	// At most the vertices Submit_Pass takes, which allocates them later in the same frame.
 	uint32_t const vertices = (uint32_t)((list.Blits.size() + 1 + (_SoftShadowRadius > 0 ? shadows + 2 : 0)) * 6);
 	return(bgfx::getAvailTransientVertexBuffer(vertices, _Layout) >= vertices);
@@ -859,17 +874,8 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true) && valid;
 	}
 
-	int shadows = 0;
-	if (_SoftShadowRadius > 0) {
-		for (GpuBlit const & blit : list.Blits) {
-			if (blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN) {
-				shadows++;
-			}
-		}
-	}
-	int const waves = (int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
-		return(blit.Line >= 0 && blit.LineKind == GPU_LINE_SONIC);
-	});
+	int const shadows = _SoftShadowRadius > 0 ? Count_Shadow_Blits(list) : 0;
+	int const waves = Count_Sonic_Waves(list);
 	if (waves > VIEW_MAPWAVE_LAST - VIEW_MAPWAVE + 1) {
 		DebugString("GPU_DIFF frame %d: %d sonic waves are more than the pass draws\n", pass.Frame, waves);
 		return(false);
