@@ -157,6 +157,7 @@ Tactical::Tactical(void) :
 {
 	ScreenText[0] = L'\0';
 	CaptionStyle = CAPTION_NONE;
+	CaptionArtTried = false;
 
 	CoordToPixelMatrix.Make_Identity();
 	CoordToPixelMatrix.Rotate_X(RAD_60);
@@ -1452,19 +1453,16 @@ void Tactical::Clear_Caption_Text(void)
 /// gamemd reads it at start up (0x52ba60, GRFXTXT_SHP) when the file exists.
 /// </summary>
 /// <returns>The shape, or NULL when the game has no such file.</returns>
-static ShapeSet const * Caption_Art(void)
+ShapeSet const * Tactical::Caption_Art(void)
 {
-	static std::unique_ptr<char[]> data;
-	static bool tried = false;
-
-	if (!tried) {
-		tried = true;
+	if (!CaptionArtTried) {
+		CaptionArtTried = true;
 		CCFileClass file("GRFXTXT.SHP");
 		if (file.Is_Available()) {
-			data.reset((char *)Load_Alloc_Data(file));
+			CaptionArtData.reset((char *)Load_Alloc_Data(file));
 		}
 	}
-	return((ShapeSet const *)data.get());
+	return((ShapeSet const *)CaptionArtData.get());
 }
 
 
