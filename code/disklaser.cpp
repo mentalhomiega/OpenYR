@@ -134,7 +134,7 @@ void DiskLaserClass::AI(void)
 	if (Step != 0 && ((clockwise - anticlockwise) % RING_POINTS) == 0) {
 		// The strike lands on the target's beam point, as DiskLaserClass::Update (0x4A7340) does.
 		Coord const at = Beam_Coord(*Target);
-		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, true, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
+		new LaserDrawClass(Ring_Point(center, clockwise), at, 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
 		DebugString("Disk laser: %s strikes %s for %d\n", Owner->TClass->Name(), Target_Name(Target), Damage);
 		Explosion_Damage(at, Damage, Owner, Weapon->WarheadPtr, true);
 		if (Weapon->Sound.Count() > 0) {
@@ -147,8 +147,8 @@ void DiskLaserClass::AI(void)
 	if (Step == 0) {
 		Sound_Effect(Rule->DiskLaserChargeUp, center);
 	}
-	new LaserDrawClass(Ring_Point(center, clockwise), Ring_Point(center, clockwise + 1), 0, true, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
-	new LaserDrawClass(Ring_Point(center, anticlockwise), Ring_Point(center, anticlockwise - 1), 0, true, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
+	new LaserDrawClass(Ring_Point(center, clockwise), Ring_Point(center, clockwise + 1), 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
+	new LaserDrawClass(Ring_Point(center, anticlockwise), Ring_Point(center, anticlockwise - 1), 0, inner, outer, spread, Weapon->LaserDuration, false, true, 1.0, 0.0);
 	Delay = 1;
 	Step++;
 }

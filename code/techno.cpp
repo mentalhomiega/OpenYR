@@ -5096,7 +5096,7 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 	RGBClass outer;
 	Weapon_Beam_Colors(weapon, House, inner, outer);
 	RGBClass const spread = weapon->LaserOuterSpread;
-	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, true, inner, outer, spread, duration, false, true, 1.0, 0.0);
+	LaserDrawClass * beam = new LaserDrawClass(source, dest, zadjust, inner, outer, spread, duration, false, true, 1.0, 0.0);
 	beam->IsHouseColor = weapon->IsHouseColor;
 	beam->EmissiveStrength = weapon->EmissiveStrength;
 

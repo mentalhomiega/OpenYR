@@ -2218,7 +2218,7 @@ void BulletClass::Shrapnel(void)
 			EBoltClass::Fire_For_Weapon(weapon, from, to, 0);
 		}
 		if (Payback != NULL && weapon->IsLaser) {
-			LaserDrawClass * beam = new LaserDrawClass(from, to, 0, true, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, weapon->LaserDuration, false, false, 1.0, 0.0);
+			LaserDrawClass * beam = new LaserDrawClass(from, to, 0, weapon->LaserInnerColor, weapon->LaserOuterColor, weapon->LaserOuterSpread, weapon->LaserDuration, false, false, 1.0, 0.0);
 			beam->EmissiveStrength = weapon->EmissiveStrength;
 		}
 	};

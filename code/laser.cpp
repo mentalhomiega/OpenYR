@@ -58,12 +58,11 @@ void Weapon_Beam_Colors(WeaponTypeClass const * weapon, HouseClass const * house
 /// about it entirely -- it will be updated, drawn and finally retired on its own.
 /// </summary>
 /// <param name="zadjust">The depth bias applied to the beam's starting end.</param>
-/// <param name="unknown">Vestigial flag; recorded on the beam but never consulted.</param>
 /// <param name="outer_spread">The maximum random color deviation of the outer glow.</param>
 /// <param name="duration">The lifetime of the beam, in game frames.</param>
 /// <param name="blinks">Should the beam flicker on and off as it ages?</param>
 /// <param name="fades">Should the beam's intensity slide from start to end over its life?</param>
-LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown, RGBClass inner_color, RGBClass outer_color, RGBClass outer_spread, int duration, bool blinks, bool fades, float start_intensity, float end_intensity) :
+LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, RGBClass inner_color, RGBClass outer_color, RGBClass outer_spread, int duration, bool blinks, bool fades, float start_intensity, float end_intensity) :
 	StageClass(),
 	Thickness(1),
 	IsHouseColor(false),
@@ -71,7 +70,6 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, bool unknown
 	Start(start),
 	End(end),
 	ZAdjust(zadjust),
-	UnusedBool1(unknown),
 	EmissiveStrength(EmissiveDefaults[EMISSIVE_LASER].Strength),
 	InnerColor(),
 	OuterColor(),
