@@ -9,9 +9,9 @@
 
 #include "ui/screens/netlobby/uinetlobby.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/colorpick/uicolorpick.h"
+#include "ui/screens/colorpick/uicolorpickview.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -74,6 +74,9 @@ static void Apply_Net_Picker(UINetLobbyState & state, UINetLobbyServiceClass & s
 
 void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 {
+	if (UI_Color_Pick_Intent(State.Picker, intent.Name, intent.Value, intent.Text)) {
+		return;
+	}
 	if (intent.Name == "handle") {
 		State.Handle = intent.Text;
 		Service.Set_Handle(State.Handle.c_str());
@@ -108,23 +111,8 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 		}
 	} else if (intent.Name == "pickopen") {
 		UI_Color_Pick_Open(State.Picker, 0, State.CustomColor, State.Color, State.Rivals);
-	} else if (intent.Name == "pickfield") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Field(State.Picker, intent.Value, std::atoi(intent.Text.c_str()));
-		}
-	} else if (intent.Name == "pickvalue") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Value(State.Picker, intent.Value);
-		}
-	} else if (intent.Name == "pickpreset") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Preset(State.Picker, intent.Value);
-		}
 	} else if (intent.Name == "pickok") {
 		Apply_Net_Picker(State, Service);
-	} else if (intent.Name == "pickcancel") {
-		State.Picker.Open = false;
-		State.Picker.Notice.clear();
 	} else if (intent.Name == "pick") {
 		if (intent.Value >= 0 && intent.Value < (int)State.Players.size()) {
 			std::string const & name = State.Players[intent.Value].Name;
@@ -381,15 +369,13 @@ static void Dirty_Color_Picker(Rml::DataModelHandle model)
 }
 
 
-class UINetLobbyViewClass : public UIRmlViewClass
+class UINetLobbyViewClass : public UIColorPickViewClass
 {
 	public:
 		UINetLobbyViewClass(UINetLobbyPresenterClass & presenter, char const * document) :
-			UIRmlViewClass(presenter, document, "netlobby"),
+			UIColorPickViewClass(presenter, document, "netlobby"),
 			Data(presenter),
-			Shown(-1),
-			PickerShown(-1),
-			Dragging(false)
+			Shown(-1)
 		{
 		}
 
@@ -467,88 +453,10 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			}
 		}
 
-		virtual void Loaded(void) override
-		{
-			UIRmlViewClass::Loaded();
-			if (Document() != nullptr) {
-				Document()->AddEventListener(Rml::EventId::Mouseup, this);
-			}
-		}
-
-		/// Routes the free color square's pointer input into the picker while a button is held on it.
-		virtual void ProcessEvent(Rml::Event & event) override
-		{
-			Rml::ElementDocument * document = Document();
-			Rml::Element * field = document != nullptr ? document->GetElementById("colorfield") : nullptr;
-			if (field != nullptr) {
-				if (event.GetId() == Rml::EventId::Mouseup) {
-					Dragging = false;
-				} else if (event.GetId() == Rml::EventId::Mousedown && event.GetTargetElement() == field && event.GetParameter<int>("button", 0) == 0) {
-					Dragging = true;
-				}
-				if (Dragging && (event.GetId() == Rml::EventId::Mousedown || event.GetId() == Rml::EventId::Mousemove)) {
-					Queue_Field(field, event);
-				}
-			}
-			UIRmlViewClass::ProcessEvent(event);
-		}
-
-		void Queue_Field(Rml::Element * field, Rml::Event & event)
-		{
-			Rml::Vector2f const origin = field->GetAbsoluteOffset(Rml::BoxArea::Border);
-			Rml::Vector2f const size = field->GetBox().GetSize(Rml::BoxArea::Border);
-			if (size.x <= 0.0f || size.y <= 0.0f) {
-				return;
-			}
-			float const mouse_x = event.GetParameter<float>("mouse_x", 0.0f);
-			float const mouse_y = event.GetParameter<float>("mouse_y", 0.0f);
-			int const x = (int)((mouse_x - origin.x) * UI_COLOR_FIELD_SIZE / size.x);
-			int const y = (int)((mouse_y - origin.y) * UI_COLOR_FIELD_SIZE / size.y);
-			Queue("pickfield", x, std::to_string(y).c_str());
-		}
-
-		void Show_Picker(void)
-		{
-			UIColorPickState const & picker = Data.State.Picker;
-			Rml::Element * chip = Document() != nullptr ? Document()->GetElementById("picker-chip") : nullptr;
-			if (chip != nullptr && picker.Swatch != ShownSwatch) {
-				chip->SetProperty("background-color", picker.Swatch);
-				ShownSwatch = picker.Swatch;
-			}
-			if (picker.Generation == PickerShown || Document() == nullptr) {
-				return;
-			}
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("colorfield"));
-			if (surface == nullptr) {
-				return;
-			}
-			PickerShown = picker.Generation;
-			surface->Set_Image(UI_COLOR_FIELD_SIZE, UI_COLOR_FIELD_SIZE, UI_Color_Pick_Pixels(picker));
-		}
-
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UINetLobbyPresenterClass & Data;
 
-	private:
+	protected:
 		int Shown;
-		int PickerShown;
-		std::string ShownSwatch;
-		bool Dragging;
 };
 
 
@@ -630,8 +538,8 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Model.DirtyVariable("cango");
 			Dirty_Color_Picker(Model);
 
-			Show_Preview();
-			Show_Picker();
+			Show_Surface("preview", Shown, Data.State.Preview);
+			Show_Picker(Data.State.Picker);
 		}
 
 	protected:

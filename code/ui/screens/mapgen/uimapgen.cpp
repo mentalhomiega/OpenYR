@@ -9,7 +9,6 @@
 
 #include "ui/screens/mapgen/uimapgen.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Context.h>
@@ -118,7 +117,7 @@ class UIMapGenViewClass : public UIRmlViewClass
 				Model.DirtyVariable(name);
 			}
 
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 		}
 
 	protected:
@@ -183,22 +182,6 @@ class UIMapGenViewClass : public UIRmlViewClass
 				&& model.Bind(base + "min", &slider.Minimum)
 				&& model.Bind(base + "max", &slider.Maximum)
 				&& model.Bind(base + "on", &slider.Enabled));
-		}
-
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
 		}
 
 		UIMapGenPresenterClass & Data;

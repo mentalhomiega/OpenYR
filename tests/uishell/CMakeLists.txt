@@ -21,6 +21,7 @@ opents_add_test(UIShell
         modchoice.cpp
         playercolor.cpp
         ui/screens/colorpick/uicolorpick.cpp
+        ui/screens/colorpick/uicolorpickview.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
         ui/rml/rmlfontfon.cpp

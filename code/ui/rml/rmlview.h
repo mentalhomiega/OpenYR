@@ -32,6 +32,9 @@ namespace Rml
 }
 
 
+struct UIMapPreviewImage;
+
+
 class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 {
 	public:
@@ -61,6 +64,9 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual void Loaded(void) {}
 		virtual void ProcessEvent(Rml::Event & event) override;
 		void Queue(char const * name, int value = 0, char const * text = nullptr);
+		// Sets the image on the surface element with the id and stores the image's generation in shown. Nothing
+		// happens when shown already holds that generation, or when the document or the surface is missing.
+		void Show_Surface(char const * id, int & shown, UIMapPreviewImage const & image);
 
 		Rml::DataModelHandle Model;
 
@@ -80,6 +86,8 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool Navigate_Grid(Rml::Element * element, int key);
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
+		// Plays the click and marks the keyboard, as Enter or Space on a button or pressable control does.
+		void Click_From_Key(void);
 		void Apply_Tabs(void);
 		// The tab this view stands for, as Set_Tab gave it; UI_TAB_NONE when the view is not a page.
 		UISettingsTab Tab_Of_View(void) const;

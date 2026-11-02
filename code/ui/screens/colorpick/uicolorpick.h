@@ -84,5 +84,8 @@ void UI_Color_Pick_Mark_Taken(UIColorPickState & state, std::vector<UIColorPickR
 void UI_Color_Pick_Field(UIColorPickState & state, int x, int y);
 void UI_Color_Pick_Value(UIColorPickState & state, int value);
 void UI_Color_Pick_Preset(UIColorPickState & state, int index);
+// Applies a picker intent that the skirmish and net lobby screens share. Returns false, changing nothing, for any
+// other name. A field, value or preset pick is ignored while the picker is closed; a cancel closes it.
+bool UI_Color_Pick_Intent(UIColorPickState & state, std::string const & name, int value, std::string const & text);
 bool UI_Color_Pick_Clashes(UIColorPickState const & state, std::vector<UIColorPickRival> const & rivals);
 std::vector<std::uint8_t> UI_Color_Pick_Pixels(UIColorPickState const & state);

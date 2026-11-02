@@ -77,18 +77,25 @@ void Window_Click(Rml::Element * element, WindowMouseButton button)
 }
 
 
-Rml::Element * Find_Element(Rml::Context * context, std::string const & id)
+// Calls find for each visible document, the topmost first, and returns the first element it finds.
+template <typename Find>
+Rml::Element * First_Visible(Rml::Context * context, Find find)
 {
 	for (int index = context->GetNumDocuments() - 1; index >= 0; index--) {
 		Rml::ElementDocument * document = context->GetDocument(index);
-		if (document == nullptr || !document->IsVisible()) {
-			continue;
-		}
-		if (Rml::Element * element = document->GetElementById(id)) {
-			return(element);
+		if (document != nullptr && document->IsVisible()) {
+			if (Rml::Element * found = find(document)) {
+				return(found);
+			}
 		}
 	}
 	return(nullptr);
+}
+
+
+Rml::Element * Find_Element(Rml::Context * context, std::string const & id)
+{
+	return(First_Visible(context, [&id](Rml::ElementDocument * document) { return document->GetElementById(id); }));
 }
 
 
@@ -127,15 +134,7 @@ Rml::Element * Find_Button(Rml::Element * element, std::string const & label)
 
 Rml::Element * Find_Button(Rml::Context * context, std::string const & label)
 {
-	for (int index = context->GetNumDocuments() - 1; index >= 0; index--) {
-		Rml::ElementDocument * document = context->GetDocument(index);
-		if (document != nullptr && document->IsVisible()) {
-			if (Rml::Element * found = Find_Button(document, label)) {
-				return(found);
-			}
-		}
-	}
-	return(nullptr);
+	return(First_Visible(context, [&label](Rml::ElementDocument * document) { return Find_Button(document, label); }));
 }
 
 
@@ -160,15 +159,7 @@ Rml::Element * Find_Text(Rml::Element * element, std::string const & label)
 
 Rml::Element * Find_Text(Rml::Context * context, std::string const & label)
 {
-	for (int index = context->GetNumDocuments() - 1; index >= 0; index--) {
-		Rml::ElementDocument * document = context->GetDocument(index);
-		if (document != nullptr && document->IsVisible()) {
-			if (Rml::Element * found = Find_Text(document, label)) {
-				return(found);
-			}
-		}
-	}
-	return(nullptr);
+	return(First_Visible(context, [&label](Rml::ElementDocument * document) { return Find_Text(document, label); }));
 }
 
 

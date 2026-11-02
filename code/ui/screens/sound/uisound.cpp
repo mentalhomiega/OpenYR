@@ -34,44 +34,39 @@ static int Clamp_Level(int level)
 }
 
 
+// A volume the screen sets: the intent that sets it, the state field that holds its level, and the service
+// call that applies it. OK and Cancel apply them in this order.
+struct UISoundVolumeClass
+{
+	char const * Name;
+	int UISoundState::* Level;
+	void (UISoundServiceClass::* Apply)(float volume, bool feedback);
+};
+
+
+static UISoundVolumeClass const SOUND_VOLUMES[] = {
+	{ "score", &UISoundState::Score, &UISoundServiceClass::Set_Score_Volume },
+	{ "sound", &UISoundState::Sound, &UISoundServiceClass::Set_Sound_Volume },
+	{ "voice", &UISoundState::Voice, &UISoundServiceClass::Set_Voice_Volume },
+	{ "unit", &UISoundState::Unit, &UISoundServiceClass::Set_Unit_Voice_Volume },
+	{ "movie", &UISoundState::Movie, &UISoundServiceClass::Set_Movie_Volume },
+};
+
+
 void UISoundPresenterClass::Execute(UIIntent const & intent)
 {
-	if (intent.Name == "score") {
-		int level = Clamp_Level(intent.Value);
-		if (level != State.Score) {
-			State.Score = level;
-			Service.Set_Score_Volume(Volume_Of(State.Score), true);
+	for (UISoundVolumeClass const & volume : SOUND_VOLUMES) {
+		if (intent.Name == volume.Name) {
+			int level = Clamp_Level(intent.Value);
+			if (level != State.*volume.Level) {
+				State.*volume.Level = level;
+				(Service.*volume.Apply)(Volume_Of(State.*volume.Level), true);
+			}
+			return;
 		}
+	}
 
-	} else if (intent.Name == "sound") {
-		int level = Clamp_Level(intent.Value);
-		if (level != State.Sound) {
-			State.Sound = level;
-			Service.Set_Sound_Volume(Volume_Of(State.Sound), true);
-		}
-
-	} else if (intent.Name == "voice") {
-		int level = Clamp_Level(intent.Value);
-		if (level != State.Voice) {
-			State.Voice = level;
-			Service.Set_Voice_Volume(Volume_Of(State.Voice), true);
-		}
-
-	} else if (intent.Name == "unit") {
-		int level = Clamp_Level(intent.Value);
-		if (level != State.Unit) {
-			State.Unit = level;
-			Service.Set_Unit_Voice_Volume(Volume_Of(State.Unit), true);
-		}
-
-	} else if (intent.Name == "movie") {
-		int level = Clamp_Level(intent.Value);
-		if (level != State.Movie) {
-			State.Movie = level;
-			Service.Set_Movie_Volume(Volume_Of(State.Movie), true);
-		}
-
-	} else if (intent.Name == "shuffle") {
+	if (intent.Name == "shuffle") {
 		State.Shuffle = (intent.Value != 0);
 		Service.Set_Shuffle(State.Shuffle);
 		if (State.Shuffle) {
@@ -106,11 +101,9 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		Service.Stop();
 
 	} else if (intent.Name == "ok") {
-		Service.Set_Score_Volume(Volume_Of(State.Score), false);
-		Service.Set_Sound_Volume(Volume_Of(State.Sound), false);
-		Service.Set_Voice_Volume(Volume_Of(State.Voice), false);
-		Service.Set_Unit_Voice_Volume(Volume_Of(State.Unit), false);
-		Service.Set_Movie_Volume(Volume_Of(State.Movie), false);
+		for (UISoundVolumeClass const & volume : SOUND_VOLUMES) {
+			(Service.*volume.Apply)(Volume_Of(State.*volume.Level), false);
+		}
 		Result = UI_RESULT_ACCEPTED;
 
 	} else if (intent.Name == "reset") {
@@ -131,11 +124,9 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "cancel") {
 		// Cancel puts back the levels and switches the screen opened with.
-		Service.Set_Score_Volume(Volume_Of(Start.Score), false);
-		Service.Set_Sound_Volume(Volume_Of(Start.Sound), false);
-		Service.Set_Voice_Volume(Volume_Of(Start.Voice), false);
-		Service.Set_Unit_Voice_Volume(Volume_Of(Start.Unit), false);
-		Service.Set_Movie_Volume(Volume_Of(Start.Movie), false);
+		for (UISoundVolumeClass const & volume : SOUND_VOLUMES) {
+			(Service.*volume.Apply)(Volume_Of(Start.*volume.Level), false);
+		}
 		if (State.Shuffle != Start.Shuffle) {
 			Service.Set_Shuffle(Start.Shuffle);
 		}

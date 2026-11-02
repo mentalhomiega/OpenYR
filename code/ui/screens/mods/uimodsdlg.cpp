@@ -20,7 +20,6 @@
 #include "msgbox.h"
 #include "ui/screens/mods/uimods.h"
 #include "ui/uienginehost.h"
-#include "ui/uisettings.h"
 #include "ui/uiview.h"
 
 
@@ -91,12 +90,10 @@ void UI_Mods_Settled(UIModsPresenterClass & presenter)
 void UI_Mods_Dialog(void)
 {
 	std::unique_ptr<UIModsPresenterClass> presenter = UI_Mods_New_Presenter();
-	UI_Settings_Join(*presenter, UI_TAB_MODS);
 	std::unique_ptr<UIViewClass> view = UI_Mods_View(*presenter);
 
 	// Checks the modal result, which can differ from the presenter's when the session ends during the run.
 	UIResult const result = UI_Run_Modal(*view);
-	UI_Settings_Leave(*presenter);
 	if (result != UI_RESULT_ACCEPTED || !presenter->Saved) {
 		return;
 	}

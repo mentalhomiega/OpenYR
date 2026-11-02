@@ -189,6 +189,12 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		void Reset_Page(void);
 		// Shows the colour values now on the frame, on the graphics and accessibility pages.
 		void Show_Colour_Preview(void);
+		// Sets a GPU option from its intent. Only the modern interface changes it, and an option with needs_gpu
+		// also needs GPU rendering on.
+		void Set_Gpu_Switch(bool & field, int value, bool needs_gpu);
+		// Sends each changed setting to the service, then accepts the page. The call order matters: several
+		// calls change the video mode.
+		void Apply_Settings(void);
 		// The row choices follow the frame that the picked resolution and interface scale give.
 		void Refresh_Rows(void);
 		void Refresh_Preview(void);
