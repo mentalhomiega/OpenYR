@@ -2272,6 +2272,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 char const * SidebarClass::StripClass::Help_Text(int id)
 {
 	static char _buffer[84];
+	static std::string _text;
 
 	int i = id + TopIndex;
 
@@ -2287,7 +2288,6 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 			}
 
 			if (Modern_Interface()) {
-				static std::string _text;
 				_text = choice->Full_Name();
 				_text += "\n$" + std::to_string(choice->Cost_Of(PlayerPtr));
 				if (choice->RTTI == RTTI_BUILDINGTYPE) {
@@ -3821,8 +3821,10 @@ void SidebarClass::Grid_Build(int index)
 /// <returns>Returns with a pointer to the help text, or NULL if the gadget has none.</returns>
 const char * SidebarClass::Help_Text(int id)
 {
+	// The branches below share _text, so the next call overwrites a pointer returned here.
+	static std::string _text;
+
 	if (Modern_Interface()) {
-		static std::string _text;
 		switch (id) {
 			case BUTTON_POWER:
 				_text = Panel_Text("GUI:PowerDown", "Power down");
@@ -3836,25 +3838,23 @@ const char * SidebarClass::Help_Text(int id)
 		}
 	} else {
 		// gamemd's tips for tabs and scroll arrows (0x6AC210) use these CSF labels.
-		static std::string _tip;
 		static char const * const tab_labels[COLUMNS] = {"Tip:Tab1", "Tip:Tab2", "Tip:Tab3", "Tip:Tab4"};
 		static char const * const tab_fallbacks[COLUMNS] = {"Structures Tab", "Armory Tab", "Infantry Tab", "Vehicles Tab"};
 		if (id >= BUTTON_TAB && id < BUTTON_TAB + COLUMNS) {
 			int const index = id - BUTTON_TAB;
-			_tip = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
-			return(_tip.c_str());
+			_text = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_UP && id < StripClass::BUTTON_UP + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_DOWN && id < StripClass::BUTTON_DOWN + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
+			return(_text.c_str());
 		}
 
 		// gamemd's tips for 0xF2 and 0xF3 (0x654320): the briefing in a campaign, else diplomacy.
-		static std::string _text;
 		switch (id) {
 			case BUTTON_OPTIONS:
 				_text = Panel_Text("Tip_OptionsButton", "Options");
