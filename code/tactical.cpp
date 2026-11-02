@@ -4357,10 +4357,7 @@ void Tactical::Draw_Mind_Control_Link(Coord const & from, Coord const & to, RGBC
 		unsigned const band = (8u * step - phase) & 0x1f8u;
 		if (band != 0 && band <= 0xf8) {
 			// Blends the channel toward 255 by band / 256, as gamemd's color blend (0x6612C0) does.
-			auto toward_white = [band](int channel) {
-				return(channel + (((255 - channel) * int(band)) >> 8));
-			};
-			segment = RGBClass(toward_white(rgb.Get_Red()), toward_white(rgb.Get_Green()), toward_white(rgb.Get_Blue()));
+			segment = Planned_Blend(rgb, RGBClass(255, 255, 255), int(band));
 		}
 		LogicalSurface->Draw_Line(TacticalRect, previous_pixel, pixel, DSurface::Build_Hicolor_Pixel(segment));
 
