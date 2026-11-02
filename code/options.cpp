@@ -106,6 +106,12 @@
 #include "replay.h"
 
 
+static char const * On_Off(bool value)
+{
+	return(value ? "ON" : "OFF");
+}
+
+
 /// <summary>
 /// Reads the movies the player has seen from the NetID entry of the settings file's Network
 /// section, where Yuri's Revenge keeps them. The entry holds the text "soviet allied", such as
@@ -321,7 +327,7 @@ void OptionsClass::Set_Shuffle(bool on)
 {
 	IsScoreShuffle = on;
 	Theme.Set_Shuffle(on);
-	DebugString("ScoreShuffle is %s\n", IsScoreShuffle == true ? "ON" : "OFF");
+	DebugString("ScoreShuffle is %s\n", On_Off(IsScoreShuffle));
 }
 
 
@@ -344,7 +350,7 @@ void OptionsClass::Set_Repeat(bool on)
 {
 	IsScoreRepeat = on;
 	Theme.Set_Repeat(on);
-	DebugString("ScoreRepeat is %s\n", IsScoreRepeat == true ? "ON" : "OFF");
+	DebugString("ScoreRepeat is %s\n", On_Off(IsScoreRepeat));
 }
 
 
@@ -694,14 +700,14 @@ void OptionsClass::Load_Settings(void)
 	DebugString("ScrollRate = %d\n", ScrollRate);
 
 	AutoScroll = ConfigINI.Get_Bool("Options", "AutoScroll", AutoScroll);
-	DebugString("AutoScroll is %s\n", AutoScroll == true ? "ON" : "OFF");
+	DebugString("AutoScroll is %s\n", On_Off(AutoScroll));
 
 	ScriptedCameraZoom = ConfigINI.Get_Bool("Options", "ScriptedCameraZoom", ScriptedCameraZoom);
-	DebugString("ScriptedCameraZoom is %s\n", ScriptedCameraZoom == true ? "ON" : "OFF");
+	DebugString("ScriptedCameraZoom is %s\n", On_Off(ScriptedCameraZoom));
 
 
 	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
-	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
+	DebugString("BitmapSystemFont is %s\n", On_Off(BitmapSystemFont));
 
 	DetailLevel = ConfigINI.Get_Int("Options", "DetailLevel", DetailLevel);
 	DetailLevel = std::min(DetailLevel, 2);
@@ -709,25 +715,25 @@ void OptionsClass::Load_Settings(void)
 	DebugString("DetailLevel = %d\n", DetailLevel);
 
 	SidebarCameoText = ConfigINI.Get_Bool("Options", "SidebarCameoText", SidebarCameoText);
-	DebugString("Sidebar Text is %s\n", SidebarCameoText == true ? "ON" : "OFF");
+	DebugString("Sidebar Text is %s\n", On_Off(SidebarCameoText));
 
 	SidebarSorting = ConfigINI.Get_Bool("Options", "SidebarSorting", SidebarSorting);
-	DebugString("Sidebar Sorting is %s\n", SidebarSorting == true ? "ON" : "OFF");
+	DebugString("Sidebar Sorting is %s\n", On_Off(SidebarSorting));
 
 	ActionLines = ConfigINI.Get_Bool("Options", "UnitActionLines", ActionLines);
-	DebugString("ActionLines are %s\n", ActionLines == true ? "ON" : "OFF");
+	DebugString("ActionLines are %s\n", On_Off(ActionLines));
 
 	ShowHidden = ConfigINI.Get_Bool("Options", "ShowHidden", ShowHidden);
 	ScreenShake = ConfigINI.Get_Bool("Options", "ScreenShake", ScreenShake);
-	DebugString("ShowHidden is %s\n", ShowHidden == true ? "ON" : "OFF");
+	DebugString("ShowHidden is %s\n", On_Off(ShowHidden));
 
 	Load_Menu_Style();
 
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
-	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
+	DebugString("ToolTips are %s\n", On_Off(ToolTips));
 
 	DebugMode = ConfigINI.Get_Bool("Options", "DebugMode", DebugMode);
-	DebugString("DebugMode is %s\n", DebugMode == true ? "ON" : "OFF");
+	DebugString("DebugMode is %s\n", On_Off(DebugMode));
 
 	char playercolors[32];
 	ConfigINI.Get_String("Options", "PlayerColors", "Default", playercolors, sizeof(playercolors));
@@ -737,28 +743,28 @@ void OptionsClass::Load_Settings(void)
 	if (ConfigINI.Get_Bool("Options", "SyncLog", false)) {
 		Debug_SyncLog = true;
 	}
-	DebugString("SyncLog is %s\n", Debug_SyncLog == true ? "ON" : "OFF");
+	DebugString("SyncLog is %s\n", On_Off(Debug_SyncLog));
 
 	// Turns on the once-a-second Perf lines, as the perflog autotest step does.
 	if (ConfigINI.Get_Bool("Options", "PerfLog", false)) {
 		Perf_Set_Enabled(true);
 	}
-	DebugString("PerfLog is %s\n", Perf_Enabled == true ? "ON" : "OFF");
+	DebugString("PerfLog is %s\n", On_Off(Perf_Enabled));
 
 	// Records each skirmish started from a launch file to the Replays folder.
 	if (ConfigINI.Get_Bool("Options", "RecordReplays", false)) {
 		Replay_Set_Recording(true);
 	}
-	DebugString("RecordReplays is %s\n", Replay_Is_Recording_Enabled() ? "ON" : "OFF");
+	DebugString("RecordReplays is %s\n", On_Off(Replay_Is_Recording_Enabled()));
 
 	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
-	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
+	DebugString("AltToRally is %s\n", On_Off(AltToRally));
 
 	AircraftBodyPick = ConfigINI.Get_Bool("Options", "AircraftBodyPick", AircraftBodyPick);
-	DebugString("AircraftBodyPick is %s\n", AircraftBodyPick == true ? "ON" : "OFF");
+	DebugString("AircraftBodyPick is %s\n", On_Off(AircraftBodyPick));
 
 	SimulateWhileUnfocused = ConfigINI.Get_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
-	DebugString("SimulateWhileUnfocused is %s\n", SimulateWhileUnfocused == true ? "ON" : "OFF");
+	DebugString("SimulateWhileUnfocused is %s\n", On_Off(SimulateWhileUnfocused));
 
 	TextBackgroundColor = ConfigINI.Get_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
@@ -772,7 +778,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("Resolution = %d X %d\n", ScreenWidth, ScreenHeight);
 
 	StretchMovies = ConfigINI.Get_Bool("Video", "StretchMovies", StretchMovies);
-	DebugString("StretchMovies is %s\n", StretchMovies == true ? "ON" : "OFF");
+	DebugString("StretchMovies is %s\n", On_Off(StretchMovies));
 
 	IntegerScaling = ConfigINI.Get_Bool("Video", "IntegerScaling", IntegerScaling);
 	ShowFPS = ConfigINI.Get_Bool("Video", "ShowFPS", ShowFPS);
@@ -817,7 +823,7 @@ void OptionsClass::Load_Settings(void)
 	char scalename[32];
 	ConfigINI.Get_String("Video", "ScaleMode", (char *)Scale_Mode_Name(ScaleMode), scalename, sizeof(scalename));
 	ScaleMode = Scale_Mode_From_Name(scalename, ScaleMode);
-	DebugString("ScaleMode is %d, IntegerScaling is %s\n", ScaleMode, IntegerScaling == true ? "ON" : "OFF");
+	DebugString("ScaleMode is %d, IntegerScaling is %s\n", ScaleMode, On_Off(IntegerScaling));
 
 	CursorScale = ConfigINI.Get_Int("Video", "CursorScale", CursorScale);
 	SystemCursor = ConfigINI.Get_Bool("Video", "SystemCursor", SystemCursor);
