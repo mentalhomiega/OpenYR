@@ -89,6 +89,8 @@ class CnCNetSessionClass
 		bool Session(TCPStreamClass & stream, IRCClientClass & client);
 		bool Pause(int milliseconds);
 		void Post(Command command);
+		// Sets the lobby status and reports the change. Takes Lock, so the caller must not hold it.
+		void Set_Lobby_Status(CnCNetStatus status, std::string const & text);
 		void Changed(void);
 
 		CnCNetSessionConfigType Config;
