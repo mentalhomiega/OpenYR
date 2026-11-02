@@ -5898,8 +5898,8 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						return(1);
 					}
 
-					Cell const undeploy_cell = Class->Is_Mobile_Deployer() ? PositionCoord.As_Cell() : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE)).As_Cell();
-					if (!Undeploy_Cell_Ready(undeploy_cell)) {
+					Coord const place = Class->Is_Mobile_Deployer() ? PositionCoord : Coord_Snap(Adjacent_Cell(PositionCoord, DIR_SE));
+					if (!Undeploy_Cell_Ready(place.As_Cell())) {
 						return(1);
 					}
 					UndeployWaitStart = 0;
@@ -5916,14 +5916,6 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 						double ratio = HealthRatio;
 						int money = Refund_Amount();
 						AbstractClass * arch = ArchiveTarget;
-
-						Coord place;
-						if (Class->Is_Mobile_Deployer()) {
-							place = PositionCoord;
-						} else {
-							Coord adjacent = Adjacent_Cell(PositionCoord, DIR_SE);
-							place = Coord_Snap(adjacent);
-						}
 
 						if (LightSource != NULL) {
 							LightSource->Disable();
