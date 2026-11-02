@@ -3398,7 +3398,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	// A weapon with SabotageCursor=yes shows the demolition cursor over any target, except a vehicle inside a bunker, which gives the select cursor (InfantryClass::MouseOverObject, 0x51E3B0).
 	if (action == ACTION_ATTACK) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		WeaponTypeClass const * weapon = Weapon_Against((AbstractClass *)object);
 		if (weapon != NULL && weapon->IsSabotageCursor) {
 			if (object->RTTI == RTTI_UNIT && ((TechnoClass const *)object)->BunkerLinkedItem != NULL) {
 				return(ACTION_SELECT);
@@ -3409,7 +3409,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	// Over a C4-capable structure, the selected weapon's MigAttackCursor gives the airstrike action (InfantryClass::MouseOverObject, 0x51E3B0).
 	if (action == ACTION_ATTACK && object->RTTI == RTTI_BUILDING) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		WeaponTypeClass const * weapon = Weapon_Against((AbstractClass *)object);
 		if (weapon != NULL && weapon->IsMigAttackCursor && ((BuildingClass const *)object)->Class->Can_Plant_C4()) {
 			action = ACTION_AIR_STRIKE;
 		}
