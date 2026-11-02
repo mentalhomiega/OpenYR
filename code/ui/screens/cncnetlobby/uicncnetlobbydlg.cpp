@@ -44,9 +44,8 @@ char const * const SECTION = "CnCNet";
 char const * const DEFAULT_NOTICE =
 	"This is an OpenYR test game (an open-source Yuri's Revenge remake). A stock Yuri's Revenge client cannot play in it.";
 
-// The chat network the CnCNet client lists. Only a build with
-// AllowLiveServers=yes reaches it; every other build is held to the loopback
-// address, where scripts/cncnet_irc_standin.py answers.
+// The chat network the CnCNet client lists. It is the default; AllowLiveServers=no
+// holds the build to the loopback address, where scripts/cncnet_irc_standin.py answers.
 char const * const LIVE_SERVERS =
 	"irc.gamesurge.net:6667;LAN-Team.DE.EU.GameSurge.net:6660,6666,6667,6668,6669;"
 	"Stockholm.SE.EU.GameSurge.net:6666,6669,7000,8080;NuclearFallout.WA.US.GameSurge.net:6667,5960;"
@@ -92,7 +91,7 @@ std::vector<CnCNetServerType> Parse_Servers(std::string const & text, bool live)
 
 // IRC allows letters, digits and "-_[]\`^{}|" in a nickname, and no digit or
 // hyphen first.
-std::string Clean_Nick(std::string const & name)
+std::string Clean_Nick(std::string const & name, int max_length)
 {
 	std::string const marks = "_[]\\`^{}|";
 	std::string nick;
@@ -104,7 +103,7 @@ std::string Clean_Nick(std::string const & name)
 		if (letter || mark || (!nick.empty() && (digit || next == '-'))) {
 			nick.push_back(next);
 		}
-		if (nick.size() == 15) {
+		if (static_cast<int>(nick.size()) == max_length) {
 			break;
 		}
 	}
@@ -164,7 +163,7 @@ bool UI_CnCNet_Lobby_Dialog(void)
 	if (name.empty()) {
 		name = Session.Handle[0] != '\0' ? std::string(Session.Handle) : ConfigINI.Get_String("MultiPlayer", "Handle", "");
 	}
-	config.IRC.Nick = Clean_Nick(name);
+	config.IRC.Nick = Clean_Nick(name, config.IRC.MaxNickLength);
 	config.IRC.Ident = game + "." + Client_ID();
 	config.IRC.RealName = version + " " + Setting("GameName", "YR") + " CnCNet";
 	config.Lobby.BroadcastChannel = Setting("BroadcastChannel", ("#cncnet-" + game + "-games").c_str());

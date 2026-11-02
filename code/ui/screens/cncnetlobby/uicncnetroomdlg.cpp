@@ -265,6 +265,9 @@ class CnCNetRoomServiceClass : public UINetLobbyServiceClass
 		void Own_Setup(int side, int color, int start, int team);
 		int Playing_Count(void) const;
 		std::string Start_Note(CnCNetRoomPlayerType const * self, bool map_ready) const;
+#if defined(_WIN32)
+		std::string Run_Child(CnCNetTunnelBridgeClass & bridge, CnCNetMatchType const & match);
+#endif
 
 		CnCNetSessionClass & Network;
 		CnCNetRoomClass TheRoom;
@@ -1154,6 +1157,39 @@ std::string Without_Separator(std::string path)
 }
 
 
+// Writes SPAWN.INI for the game to read at launch. False when the file cannot be written.
+bool Write_Spawn_Ini(std::string const & path, std::string const & ini)
+{
+	std::ofstream file(path, std::ios::binary | std::ios::trunc);
+	file << ini;
+	return(static_cast<bool>(file));
+}
+
+
+#if defined(_WIN32)
+std::string Match_Command_Line(std::string const & exe, std::string const & match_arguments)
+{
+	std::string command = "\"" + exe + "\" -SPAWN -MULTIINSTANCE";
+	if (!Data_Directory().empty()) {
+		command += " \"-DATADIR=" + Without_Separator(Data_Directory()) + "\"";
+	}
+	if (!User_Directory().empty()) {
+		command += " \"-USERDIR=" + Without_Separator(User_Directory()) + "\"";
+	}
+	for (std::string const & mod : Command_Line_Mods()) {
+		command += " \"-MOD=" + mod + "\"";
+	}
+	if (WindowedMode) {
+		command += " -WIN";
+	}
+	if (!match_arguments.empty()) {
+		command += " " + match_arguments;
+	}
+	return(command);
+}
+#endif
+
+
 /// <summary>
 /// Plays the started match in a second copy of the game and waits for it to
 /// end, keeping the room and the window serviced. Returns the line for the
@@ -1181,6 +1217,7 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	if (own == nullptr) {
 		return("The host started the match without you.");
 	}
+	uint32_t const own_id = (match_key << 16) | own->TunnelId;
 	std::map<std::string, std::string> options = TheRoom.Start_Options();
 	if (!TheRoom.Is_Host()) {
 		std::string const file = Playable_Map(options);
@@ -1194,12 +1231,12 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	std::string error;
 	// A guest plays through the address its check found, not through a second lookup of the host's name.
 	std::string const relay_host = !TheRoom.Is_Host() && !VerifiedRelay.empty() ? VerifiedRelay : match.TunnelHost;
-	if (!bridge.Start(relay_host, match.TunnelPort, (match_key << 16) | own->TunnelId, peers, error)) {
+	if (!bridge.Start(relay_host, match.TunnelPort, own_id, peers, error)) {
 		return(error);
 	}
 
 	DebugString("[CnCNet] Match via tunnel %s:%u, own tunnel id %08x, %zu peers, bridge port %u.\n", relay_host.c_str(),
-		static_cast<unsigned>(match.TunnelPort), (match_key << 16) | own->TunnelId, peers.size(), static_cast<unsigned>(bridge.Game_Port()));
+		static_cast<unsigned>(match.TunnelPort), own_id, peers.size(), static_cast<unsigned>(bridge.Game_Port()));
 	// [CnCNet] TimingPolicy=Gamemd plays gamemd's online timing, which schedules every order 30 frames ahead or more.
 	char policy[32];
 	ConfigINI.Get_String("CnCNet", "TimingPolicy", "Adaptive", policy, sizeof(policy));
@@ -1207,36 +1244,28 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	CnCNetRuleLimitsType const limits{Rule->MPMaxMoney, MPLAYER_BUILD_LEVEL_MAX};
 	std::string const ini = CnCNet_Spawn_Ini(match, options, Setup.Nick, bridge.Game_Port(), limits, adaptive);
 	std::string const spawn_path = User_Directory() + "SPAWN.INI";
-	{
-		std::ofstream file(spawn_path, std::ios::binary | std::ios::trunc);
-		file << ini;
-		if (!file) {
-			return("SPAWN.INI could not be written to " + spawn_path + ".");
-		}
+	if (!Write_Spawn_Ini(spawn_path, ini)) {
+		return("SPAWN.INI could not be written to " + spawn_path + ".");
 	}
 
 #if defined(_WIN32)
+	return(Run_Child(bridge, match));
+#else
+	bridge.Stop();
+	return("Starting a match from the built-in lobby needs Windows for now.");
+#endif
+}
+
+
+#if defined(_WIN32)
+std::string CnCNetRoomServiceClass::Run_Child(CnCNetTunnelBridgeClass & bridge, CnCNetMatchType const & match)
+{
 	char exe[MAX_PATH];
 	DWORD const length = GetModuleFileNameA(nullptr, exe, MAX_PATH);
 	if (length == 0 || length >= MAX_PATH) {
 		return("The game's own path could not be read.");
 	}
-	std::string command = "\"" + std::string(exe) + "\" -SPAWN -MULTIINSTANCE";
-	if (!Data_Directory().empty()) {
-		command += " \"-DATADIR=" + Without_Separator(Data_Directory()) + "\"";
-	}
-	if (!User_Directory().empty()) {
-		command += " \"-USERDIR=" + Without_Separator(User_Directory()) + "\"";
-	}
-	for (std::string const & mod : Command_Line_Mods()) {
-		command += " \"-MOD=" + mod + "\"";
-	}
-	if (WindowedMode) {
-		command += " -WIN";
-	}
-	if (!Setup.MatchArguments.empty()) {
-		command += " " + Setup.MatchArguments;
-	}
+	std::string const command = Match_Command_Line(exe, Setup.MatchArguments);
 	std::vector<char> line(command.begin(), command.end());
 	line.push_back('\0');
 
@@ -1283,11 +1312,8 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 		return("The tunnel " + match.TunnelHost + " could not be found.");
 	}
 	return(code == 0 ? "The match has ended." : "The match ended with exit code " + std::to_string(code) + ".");
-#else
-	bridge.Stop();
-	return("Starting a match from the built-in lobby needs Windows for now.");
-#endif
 }
+#endif
 
 }
 

@@ -38,6 +38,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netglobal.h"
+#include "netsemantic.h"
 #include "netshare.h"
 #include "playercolor.h"
 #include "nettiming.h"
@@ -2264,12 +2265,12 @@ static void Get_Join_Responses(void)
 					Session.MaxAhead = received.MaxAhead;
 				} else {
 					// The largest lead NetSemantic::Timing_Values_Are_Valid accepts.
-					constexpr int LEGACY_MAX_AHEAD_LIMIT = 250;
-					if (Session.GPacket.ResponseTime.OneWay < 0 || Session.GPacket.ResponseTime.OneWay > LEGACY_MAX_AHEAD_LIMIT) {
-						DebugString("Dropped a start packet with a lead of %d frames.\n", Session.GPacket.ResponseTime.OneWay);
+					int const lead = Session.GPacket.ResponseTime.OneWay;
+					if (lead < 0 || static_cast<unsigned int>(lead) > NetSemantic::LEGACY_MAX_AHEAD_LIMIT) {
+						DebugString("Dropped a start packet with a lead of %d frames.\n", lead);
 						continue;
 					}
-					Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+					Session.MaxAhead = lead;
 				}
 				Session.HostAddress = Session.GAddress;
 				Session.NumPlayers = Session.Players.Count();

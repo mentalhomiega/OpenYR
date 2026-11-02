@@ -87,6 +87,13 @@ std::string Yes_No(std::map<std::string, std::string> const & options, char cons
 }
 
 
+// A spectator still needs a country for the house the game makes; the first one serves.
+int Spawn_Side(CnCNetMatchSeatType const & seat)
+{
+	return(seat.Side == CNCNET_SPECTATOR_SIDE ? 0 : seat.Side);
+}
+
+
 }
 
 
@@ -107,11 +114,12 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 	}
 
 	for (CnCNetRoomPlayerType const & player : players) {
+		bool const spectator = player.Side == CNCNET_SPECTATOR_SIDE;
 		CnCNetMatchSeatType seat;
 		seat.Name = player.Name;
 		seat.Team = player.Team;
 		seat.Side = player.Side;
-		if (seat.Side == CNCNET_SPECTATOR_SIDE) {
+		if (spectator) {
 			seat.Team = -1;
 		} else if (seat.Side < 0 && !sides.empty()) {
 			seat.Side = sides[random() % sides.size()];
@@ -122,8 +130,8 @@ CnCNetMatchType CnCNet_Settle_Match(std::vector<CnCNetRoomPlayerType> const & pl
 				seat.Color = color;
 			}
 		}
-		seat.Start = player.Side == CNCNET_SPECTATOR_SIDE ? -1 : player.Start;
-		if (seat.Start < 0 && player.Side != CNCNET_SPECTATOR_SIDE) {
+		seat.Start = spectator ? -1 : player.Start;
+		if (seat.Start < 0 && !spectator) {
 			std::vector<int> free;
 			for (int start : starts) {
 				if (taken_starts.count(start) == 0) {
@@ -218,13 +226,6 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 }
 
 
-// A spectator still needs a country for the house the game makes; the first one serves.
-static int Spawn_Side(CnCNetMatchSeatType const & seat)
-{
-	return(seat.Side == CNCNET_SPECTATOR_SIDE ? 0 : seat.Side);
-}
-
-
 NetTiming::HostNetworkOptions CnCNet_Network_Options(std::map<std::string, std::string> const & options)
 {
 	NetTiming::HostNetworkOptions network;
@@ -273,10 +274,13 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 	line("Scenario", Option(options, CNCNET_OPTION_MAP, ""));
 	line("UIMapName", Option(options, CNCNET_OPTION_MAP_NAME, ""));
 	line("UIGameMode", "Standard");
+	auto const seat_lines = [&line](CnCNetMatchSeatType const & seat) {
+		line("Side", std::to_string(Spawn_Side(seat)));
+		line("Color", std::to_string(seat.Color));
+		line("IsSpectator", seat.Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
+	};
 	line("PlayerCount", std::to_string(match.Seats.size()));
-	line("Side", std::to_string(Spawn_Side(*own)));
-	line("Color", std::to_string(own->Color));
-	line("IsSpectator", own->Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
+	seat_lines(*own);
 	line("Host", CnCNetLobbyClass::Same_Nick(match.Seats.front().Name, own_name) ? "yes" : "no");
 	line("Port", std::to_string(own->TunnelId));
 	line("Seed", std::to_string(match.Seed));
@@ -324,9 +328,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		}
 		ini += "\n[Other" + std::to_string(++other) + "]\n";
 		line("Name", seat.Name);
-		line("Side", std::to_string(Spawn_Side(seat)));
-		line("Color", std::to_string(seat.Color));
-		line("IsSpectator", seat.Side == CNCNET_SPECTATOR_SIDE ? "yes" : "no");
+		seat_lines(seat);
 		line("Ip", "0.0.0.0");
 		line("Port", std::to_string(seat.TunnelId));
 	}

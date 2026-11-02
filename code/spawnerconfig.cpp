@@ -116,7 +116,7 @@ bool Is_Address(std::string const & text)
 
 
 /// <summary>Accepts a tunnel number as the client writes it: nonzero, within sixteen bits either side of zero.</summary>
-static bool Is_Tunnel_Number(int value)
+bool Is_Tunnel_Number(int value)
 {
 	return(value != 0 && value >= -65535 && value <= 65535);
 }
@@ -131,7 +131,7 @@ static bool Is_Tunnel_Number(int value)
 /// <param name="section">The section to read from.</param>
 /// <param name="key">The key the spawner knows the value by.</param>
 /// <param name="defvalue">The value when no entry of that name holds a boolean.</param>
-static bool Spawn_Bool(INIClass const & ini, char const * section, char const * key, bool defvalue)
+bool Spawn_Bool(INIClass const & ini, char const * section, char const * key, bool defvalue)
 {
 	int const count = ini.Entry_Count(section);
 	for (int index = 0; index < count; index++) {
@@ -704,24 +704,17 @@ std::string SpawnerConfigClass::Write_INI(void) const
 		}
 	}
 
-	out << "\n[HouseCountries]\n";
-	for (int index = 0; index < SLOT_COUNT; index++) {
-		if (Slots[index].Occupancy == OccupancyType::Computer) {
-			out << "Multi" << index + 1 << "=" << Slots[index].Country << "\n";
+	auto const computer_section = [&out, this](char const * name, auto field) {
+		out << "\n[" << name << "]\n";
+		for (int index = 0; index < SLOT_COUNT; index++) {
+			if (Slots[index].Occupancy == OccupancyType::Computer) {
+				out << "Multi" << index + 1 << "=" << Slots[index].*field << "\n";
+			}
 		}
-	}
-	out << "\n[HouseColors]\n";
-	for (int index = 0; index < SLOT_COUNT; index++) {
-		if (Slots[index].Occupancy == OccupancyType::Computer) {
-			out << "Multi" << index + 1 << "=" << Slots[index].Color << "\n";
-		}
-	}
-	out << "\n[HouseHandicaps]\n";
-	for (int index = 0; index < SLOT_COUNT; index++) {
-		if (Slots[index].Occupancy == OccupancyType::Computer) {
-			out << "Multi" << index + 1 << "=" << Slots[index].Handicap << "\n";
-		}
-	}
+	};
+	computer_section("HouseCountries", &SlotType::Country);
+	computer_section("HouseColors", &SlotType::Color);
+	computer_section("HouseHandicaps", &SlotType::Handicap);
 	out << "\n[SpawnLocations]\n";
 	for (int index = 0; index < SLOT_COUNT; index++) {
 		if (Slots[index].Occupancy != OccupancyType::Empty) {
