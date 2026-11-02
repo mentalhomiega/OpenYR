@@ -74,11 +74,13 @@ unsigned char Emissive_Anim_Name_Default(char const * name);
 unsigned char Emissive_Voxel_Highlight(int shade_row);
 
 // Gain on paper white for one pixel: 1 + mask/255 * (peak/paper - 1). Peak and paper white are
-// in the same unit and peak is at least paper white.
+// in the same unit and peak is at least paper white. The composite pass in code/shaders/composite.sc
+// applies this gain on the GPU; keep the two in step.
 float Emissive_Gain(unsigned char mask, float peak_over_paper);
 
 // Output luminance for one linear channel value, clamped to the display peak:
-// min(peak, paper * linear * gain(mask)).
+// min(peak, paper * linear * gain(mask)). The composite pass in code/shaders/composite.sc does the
+// same on the GPU; keep the two in step.
 float Emissive_Output_Nits(float linear, unsigned char mask, float paper_white, float peak);
 
 // The mask for a draw that is drawn at the given opacity, from 0 for none to 255 for the whole picture.
@@ -128,7 +130,7 @@ void Emissive_Retain(void const * const * keep, int count);
 // a new surface the same address and it must not inherit the old plane.
 void Emissive_Forget(void const * surface);
 
-// Frees every plane. Called when masks are switched off or the surfaces are replaced.
+// Frees every plane, as Emissive_Retain does with no surfaces kept.
 void Emissive_Release_All(void);
 
 // Writes value over a rectangle of the plane, clipped to the plane.

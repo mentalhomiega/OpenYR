@@ -33,6 +33,7 @@ int HDR_Clamp_Peak(int nits, int paperwhite);
 float HDR_SRGB_To_Linear(float encoded);
 
 // Converts linear Rec.709 RGB to linear Rec.2020 RGB. The arrays hold three channels each.
+// code/shaders/composite.sc does the same on the GPU; keep the two in step.
 void HDR_Rec709_To_Rec2020(float const * linear, float * out);
 
 // The colour adjustment the composite pass applies to linear light. It runs in this order: the
@@ -52,7 +53,8 @@ void HDR_Colour_Adjust_Reset(HDRColourAdjust & adjust);
 bool HDR_Colour_Adjust_Is_Identity(HDRColourAdjust const & adjust);
 
 // Applies the adjustment to one linear RGB pixel. Values above 1 stay above 1 after brightness,
-// and a negative value is raised to zero before the gamma exponent.
+// and a negative value is raised to zero before the gamma exponent. code/shaders/composite.sc
+// applies the same steps on the GPU; keep the two in step.
 void HDR_Apply_Colour_Adjust(HDRColourAdjust const & adjust, float const * linear, float * out);
 
 // The paper white in nits for a paper white setting. Zero takes Windows' SDR content brightness
@@ -64,7 +66,7 @@ int HDR_Resolve_Paper_White(int setting, bool sdrknown, float sdrnits);
 int HDR_Resolve_Peak(int setting, float reported, int paperwhite);
 
 // Encodes an absolute luminance in nits as ST.2084 (PQ) in [0, 1]. Luminance above the PQ peak
-// encodes as 1.
+// encodes as 1. code/shaders/composite.sc applies the same encoding on the GPU; keep the two in step.
 float HDR_PQ_Encode(float nits);
 
 // Converts one sRGB pixel to PQ code values in Rec.2020. SDR white maps to paperwhite nits, and each
