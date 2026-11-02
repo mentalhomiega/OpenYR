@@ -1217,22 +1217,16 @@ void SidebarClass::Draw_It(bool complete)
 		Column[ActiveTab].Draw_It(complete);
 	}
 	Draw_Power_Bar(complete || body_drawn);
-	if (Repair.IsDrawn) {
-		IsToBlitSidebar = true;
-		Repair.IsDrawn = false;
-	}
-	if (Upgrade.IsDrawn) {
-		IsToBlitSidebar = true;
-		Upgrade.IsDrawn = false;
-	}
-	if (Power.IsDrawn) {
-		IsToBlitSidebar = true;
-		Power.IsDrawn = false;
-	}
-	if (Waypoint.IsDrawn) {
-		IsToBlitSidebar = true;
-		Waypoint.IsDrawn = false;
-	}
+	auto const blit_if_drawn = [](auto & button) {
+		if (button.IsDrawn) {
+			IsToBlitSidebar = true;
+			button.IsDrawn = false;
+		}
+	};
+	blit_if_drawn(Repair);
+	blit_if_drawn(Upgrade);
+	blit_if_drawn(Power);
+	blit_if_drawn(Waypoint);
 	if (ToolTips != NULL) {
 		ToolTips->Draw_Current(true);
 	}
@@ -2534,16 +2528,14 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 		LastSlid = Slid;
 
 	} else {
-
-		if (UpButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			UpButton[ID].IsDrawn = false;
-		}
-
-		if (DownButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			DownButton[ID].IsDrawn = false;
-		}
+		auto const blit_if_drawn = [](auto & button) {
+			if (button.IsDrawn) {
+				IsToBlitSidebar = true;
+				button.IsDrawn = false;
+			}
+		};
+		blit_if_drawn(UpButton[ID]);
+		blit_if_drawn(DownButton[ID]);
 	}
 }
 
