@@ -549,7 +549,7 @@ class BuildingClass : public TechnoClass
 		virtual int Sort_Y(void) const override;
 		virtual Coord Exit_Coord(void) const override;
 
-		Coord Voxel_Fire_Coord(int which, bool just_fired) const;
+		Coord Voxel_Fire_Coord(int which) const;
 
 		/*
 		**	Object entry and exit from the game system.

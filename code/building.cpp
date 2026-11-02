@@ -11033,7 +11033,7 @@ Coord BuildingClass::Turret_Coord(int slot, TPoint3D<int> /* base */) const
 		return(Render_Coord() + pt);
 	}
 	if (Class->IsBarrelAnimAVoxel) {
-		return(Voxel_Fire_Coord(slot, true));
+		return(Voxel_Fire_Coord(slot));
 	}
 
 	Coord coord = BASECLASS::Turret_Coord(slot);
@@ -11050,24 +11050,18 @@ Coord BuildingClass::Turret_Coord(int slot, TPoint3D<int> /* base */) const
 /// This routine runs the type's barrel offset through the building's current barrel
 /// matrix, so that a projectile appears at the end of the barrel wherever the weapon
 /// happens to be aimed. A weapon that alternates barrels between shots is offset to
-/// whichever barrel is its turn.
+/// the barrel that fired last.
 /// </summary>
 /// <param name="which">The weapon slot to fetch the barrel for.</param>
-/// <param name="just_fired">Should the barrel of the shot just fired be used rather than
-/// the next one?</param>
 /// <returns>Returns with the coordinate of the barrel end.</returns>
-Coord BuildingClass::Voxel_Fire_Coord(int which, bool just_fired) const
+Coord BuildingClass::Voxel_Fire_Coord(int which) const
 {
 	WeaponTypeClass *weapon = Get_Class_Weapon_Data(which)->Weapon;
 	int burst;
-	if (just_fired) {
-		if (BurstIndex == 0) {
-			burst = weapon->Burst - 1;
-		} else {
-			burst = BurstIndex - 1;
-		}
+	if (BurstIndex == 0) {
+		burst = weapon->Burst - 1;
 	} else {
-		burst = BurstIndex;
+		burst = BurstIndex - 1;
 	}
 
 	int yoffset;
