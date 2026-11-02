@@ -526,6 +526,21 @@ void Roll_Back(RunType & run)
 }
 
 
+// Copies a file to its backup, records it for rollback and in the change list, and leaves error set when the copy fails.
+bool Keep_Original(RunType & run, fs::path const & from, std::string const & backup, std::string const & failure, std::string const & change, std::string & error)
+{
+	std::error_code ec;
+	fs::copy_file(from, Path(backup), fs::copy_options::none, ec);
+	if (ec) {
+		error = failure;
+		return(false);
+	}
+	run.Created.push_back(backup);
+	run.Changes.push_back(change);
+	return(true);
+}
+
+
 // Copies Game.exe, Language.dll and the ui folder from the build. A stock game.exe is kept once as game.exe.cncnet-orig.
 bool Install_Engine(RunType & run, std::string const & build, std::string const & destination, std::string & error)
 {
@@ -549,13 +564,9 @@ bool Install_Engine(RunType & run, std::string const & build, std::string const 
 
 	std::string const backup = Under(destination, std::string("game.exe") + BACKUP_SUFFIX);
 	if (!stock.empty() && !Is_File(backup) && !Same_Content(stock.string(), build_exe)) {
-		fs::copy_file(stock, Path(backup), fs::copy_options::none, ec);
-		if (ec) {
-			error = "Could not keep the stock game.exe.";
+		if (!Keep_Original(run, stock, backup, "Could not keep the stock game.exe.", "backup    game.exe -> game.exe.cncnet-orig (the stock file, kept)", error)) {
 			return(false);
 		}
-		run.Created.push_back(backup);
-		run.Changes.push_back("backup    game.exe -> game.exe.cncnet-orig (the stock file, kept)");
 	}
 
 	std::uint64_t size = 0;
@@ -607,14 +618,11 @@ bool Edit_Definitions(RunType & run, std::string const & destination, std::strin
 
 	std::string const backup = path + BACKUP_SUFFIX;
 	if (!Is_File(backup)) {
-		std::error_code ec;
-		fs::copy_file(Path(path), Path(backup), fs::copy_options::none, ec);
-		if (ec) {
-			error = "Could not keep the original " + std::string(DEFINITIONS) + ".";
+		std::string const failure = "Could not keep the original " + std::string(DEFINITIONS) + ".";
+		std::string const change = std::string("backup    ") + DEFINITIONS + " -> " + DEFINITIONS + ".cncnet-orig";
+		if (!Keep_Original(run, Path(path), backup, failure, change, error)) {
 			return(false);
 		}
-		run.Created.push_back(backup);
-		run.Changes.push_back(std::string("backup    ") + DEFINITIONS + " -> " + DEFINITIONS + ".cncnet-orig");
 	}
 
 	TextType text;
@@ -699,14 +707,11 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 
 		std::string const backup = file + BACKUP_SUFFIX;
 		if (!Is_File(backup)) {
-			std::error_code copy_ec;
-			fs::copy_file(Path(file), Path(backup), fs::copy_options::none, copy_ec);
-			if (copy_ec) {
-				error = "Could not keep the original " + name + ".";
+			std::string const failure = "Could not keep the original " + name + ".";
+			std::string const change = "backup    " + name + " -> " + name + ".cncnet-orig";
+			if (!Keep_Original(run, Path(file), backup, failure, change, error)) {
 				return(false);
 			}
-			run.Created.push_back(backup);
-			run.Changes.push_back("backup    " + name + " -> " + name + ".cncnet-orig");
 		}
 
 		TextType text;
