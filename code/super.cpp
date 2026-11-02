@@ -764,6 +764,36 @@ bool SuperClass::Can_Place(void) const
 }
 
 
+static Coord Effect_Coord(Cell const & cell)
+{
+	Coord coord = Map[cell].Center_Coord();
+	if (Map[cell].IsUnderBridge) {
+		coord.Z += BRIDGE_LEPTON_HEIGHT;
+	}
+	return(coord);
+}
+
+
+// Calls visit(cellptr, object) for every object on the 3x3 block of cells centred on center that the radar
+// map covers, in the order the cells and their occupier lists give.
+template <typename Visit>
+static void For_Each_Occupier_Around(Cell const & center, Visit && visit)
+{
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			Cell const where = center + Cell(dx, dy);
+			if (!Map.In_Radar(where)) {
+				continue;
+			}
+			CellClass & cellptr = Map[where];
+			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
+				visit(cellptr, object);
+			}
+		}
+	}
+}
+
+
 /// <summary>
 /// Puts the objects on the cell and the eight around it under the Iron Curtain, after the
 /// invoke animation starts over the cell, as the IronCurtain case of SuperClass::Launch
@@ -771,10 +801,7 @@ bool SuperClass::Can_Place(void) const
 /// </summary>
 void SuperClass::Iron_Curtain(Cell const & cell) const
 {
-	Coord coord = Map[cell].Center_Coord();
-	if (Map[cell].IsUnderBridge) {
-		coord.Z += BRIDGE_LEPTON_HEIGHT;
-	}
+	Coord coord = Effect_Coord(cell);
 	coord.Z += 5;
 	if (Rule->IronCurtainInvokeAnim != NULL) {
 		new AnimClass(Rule->IronCurtainInvokeAnim, coord);
@@ -786,20 +813,11 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 	 * through the cell's object list.
 	 */
 	DynamicVectorClass<TechnoClass *> covered;
-	for (int dy = -1; dy <= 1; dy++) {
-		for (int dx = -1; dx <= 1; dx++) {
-			Cell const where = cell + Cell(dx, dy);
-			if (!Map.In_Radar(where)) {
-				continue;
-			}
-			CellClass & cellptr = Map[where];
-			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				if (object->Is_Techno()) {
-					covered.Add((TechnoClass *)object);
-				}
-			}
+	For_Each_Occupier_Around(cell, [&covered](CellClass &, ObjectClass * object) {
+		if (object->Is_Techno()) {
+			covered.Add((TechnoClass *)object);
 		}
-	}
+	});
 	for (int index = 0; index < covered.Count(); index++) {
 		TechnoClass * techno = covered[index];
 		if (techno->IsActive && !techno->IsInLimbo) {
@@ -818,10 +836,7 @@ void SuperClass::Iron_Curtain(Cell const & cell) const
 /// </summary>
 void SuperClass::Genetic_Mutator(Cell const & cell) const
 {
-	Coord coord = Map[cell].Center_Coord();
-	if (Map[cell].IsUnderBridge) {
-		coord.Z += BRIDGE_LEPTON_HEIGHT;
-	}
+	Coord coord = Effect_Coord(cell);
 	if (Rule->IonBlast != NULL) {
 		new AnimClass(Rule->IonBlast, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
@@ -837,18 +852,11 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 	}
 
 	DynamicVectorClass<InfantryClass *> victims;
-	for (int dy = -1; dy <= 1; dy++) {
-		for (int dx = -1; dx <= 1; dx++) {
-			Cell const where = cell + Cell(dx, dy);
-			if (!Map.In_Radar(where)) continue;
-			CellClass & cellptr = Map[where];
-			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				if (object->RTTI == RTTI_INFANTRY && (spare == NULL || !spare->Is_Ally(((InfantryClass *)object)->House))) {
-					victims.Add((InfantryClass *)object);
-				}
-			}
+	For_Each_Occupier_Around(cell, [&victims, spare](CellClass &, ObjectClass * object) {
+		if (object->RTTI == RTTI_INFANTRY && (spare == NULL || !spare->Is_Ally(((InfantryClass *)object)->House))) {
+			victims.Add((InfantryClass *)object);
 		}
-	}
+	});
 	for (int index = 0; index < victims.Count(); index++) {
 		InfantryClass * infantry = victims[index];
 		if (infantry->IsActive && !infantry->IsInLimbo) {
@@ -867,10 +875,7 @@ void SuperClass::Genetic_Mutator(Cell const & cell) const
 /// </summary>
 void SuperClass::Force_Shield(Cell const & cell)
 {
-	Coord coord = Map[cell].Center_Coord();
-	if (Map[cell].IsUnderBridge) {
-		coord.Z += BRIDGE_LEPTON_HEIGHT;
-	}
+	Coord coord = Effect_Coord(cell);
 	if (Rule->ForceShieldInvokeAnim != NULL) {
 		new AnimClass(Rule->ForceShieldInvokeAnim, Coord(coord.X, coord.Y, coord.Z + 5));
 	}
@@ -1045,40 +1050,31 @@ void SuperClass::Chrono_Warp(Cell const & cell) const
 
 	DynamicVectorClass<FootClass *> killed;
 	DynamicVectorClass<FootClass *> moving;
-	for (int dy = -1; dy <= 1; dy++) {
-		for (int dx = -1; dx <= 1; dx++) {
-			Cell const where = ChronoSource + Cell(dx, dy);
-			if (!Map.In_Radar(where)) {
-				continue;
-			}
-			CellClass & cellptr = Map[where];
-			for (ObjectClass * object = cellptr.Cell_Occupier(cellptr.IsUnderBridge); object != NULL; object = object->Next) {
-				if (!object->Is_Foot() || object->In_Air()) {
-					continue;
-				}
-				FootClass * foot = (FootClass *)object;
-
-				// A parasite inside a unit the warp touches is doomed for 500 frames and driven out, so it dies (SuperClass::Launch, 0x6CC7B7).
-				if (foot->ParasiteEatingMe != NULL && foot->ParasiteEatingMe->ParasiteImUsing) {
-					foot->ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 500;
-					foot->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
-				}
-
-				BuildingClass const * building = cellptr.Cell_Building();
-				if (foot->RTTI == RTTI_UNIT && building != NULL && building->Class->IsWeaponsFactory) {
-					continue;
-				}
-				if (!foot->TClass->IsChronoshiftAllowed) {
-					continue;
-				}
-				if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {
-					killed.Add(foot);
-				} else if (!foot->Is_Iron_Curtained() && !foot->Is_Chrono_Warping() && !foot->IsBeingWarpedOut) {
-					moving.Add(foot);
-				}
-			}
+	For_Each_Occupier_Around(ChronoSource, [&killed, &moving](CellClass & cellptr, ObjectClass * object) {
+		if (!object->Is_Foot() || object->In_Air()) {
+			return;
 		}
-	}
+		FootClass * foot = (FootClass *)object;
+
+		// A parasite inside a unit the warp touches is doomed for 500 frames and driven out, so it dies (SuperClass::Launch, 0x6CC7B7).
+		if (foot->ParasiteEatingMe != NULL && foot->ParasiteEatingMe->ParasiteImUsing) {
+			foot->ParasiteEatingMe->ParasiteImUsing->SuppressedUntil = Frame + 500;
+			foot->ParasiteEatingMe->ParasiteImUsing->Exit_Unit();
+		}
+
+		BuildingClass const * building = cellptr.Cell_Building();
+		if (foot->RTTI == RTTI_UNIT && building != NULL && building->Class->IsWeaponsFactory) {
+			return;
+		}
+		if (!foot->TClass->IsChronoshiftAllowed) {
+			return;
+		}
+		if (foot->TClass->IsOrganic && !foot->TClass->IsTeleporter) {
+			killed.Add(foot);
+		} else if (!foot->Is_Iron_Curtained() && !foot->Is_Chrono_Warping() && !foot->IsBeingWarpedOut) {
+			moving.Add(foot);
+		}
+	});
 
 	// The chronosphere's house gets the credit for the organic units it kills (SuperClass::Launch, 0x6CC8C6).
 	for (int index = 0; index < killed.Count(); index++) {
