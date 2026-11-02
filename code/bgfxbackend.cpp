@@ -918,32 +918,32 @@ static void Destroy_Targets(void)
 }
 
 
+// Creates a BGRA8 target the size of the drawable area. A failure is logged under the name what.
+static bool Make_Drawable_Target(bgfx::FrameBufferHandle & target, char const * what)
+{
+	target = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+	if (!bgfx::isValid(target)) {
+		DebugString("Video: could not create the %s at %dx%d\n", what, _DrawableWidth, _DrawableHeight);
+		return(false);
+	}
+	return(true);
+}
+
+
 /// <summary>
 /// Makes the targets the current routing needs, at the drawable size.
 /// </summary>
 /// <returns>bool; Does every target the routing needs exist?</returns>
 static bool Ensure_Targets(void)
 {
-	if (_Routed && !bgfx::isValid(_SceneTarget)) {
-		_SceneTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_SceneTarget)) {
-			DebugString("Video: could not create the scene target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_Routed && !bgfx::isValid(_SceneTarget) && !Make_Drawable_Target(_SceneTarget, "scene target")) {
+		return(false);
 	}
-	if (_HdrActive && !bgfx::isValid(_MaskTarget)) {
-		_MaskTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_MaskTarget)) {
-			DebugString("Video: could not create the emissive mask target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_HdrActive && !bgfx::isValid(_MaskTarget) && !Make_Drawable_Target(_MaskTarget, "emissive mask target")) {
+		return(false);
 	}
-	if (_HdrActive && !bgfx::isValid(_ShotTarget)) {
-		_ShotTarget = bgfx::createFrameBuffer((uint16_t)_DrawableWidth, (uint16_t)_DrawableHeight, bgfx::TextureFormat::BGRA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-		if (!bgfx::isValid(_ShotTarget)) {
-			DebugString("Video: could not create the screenshot target at %dx%d\n", _DrawableWidth, _DrawableHeight);
-			return(false);
-		}
+	if (_HdrActive && !bgfx::isValid(_ShotTarget) && !Make_Drawable_Target(_ShotTarget, "screenshot target")) {
+		return(false);
 	}
 	if (_HdrActive && !bgfx::isValid(_ReadbackTexture)) {
 		uint64_t const flags = BGFX_TEXTURE_BLIT_DST | BGFX_TEXTURE_READ_BACK | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_MIP_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
