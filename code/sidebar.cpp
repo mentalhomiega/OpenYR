@@ -140,12 +140,6 @@ ShapeSet const * SidebarClass::SidebarMiddleShape = NULL;
 ShapeSet const * SidebarClass::SidebarBottomShape = NULL;
 ShapeSet const * SidebarClass::SidebarAddonShape = NULL;
 
-/***************************************************************************
-**	This points to the main sidebar shapes. These include the upgrade and
-**	repair buttons.
-*/
-//TheaterType SidebarClass::StripClass::LastTheater = THEATER_NONE;
-
 enum ButtonNumberType {
 	BUTTON_REPAIR = 101,
 	BUTTON_POWER,
@@ -612,8 +606,6 @@ void SidebarClass::Init_IO(void)
 		if (IsSidebarActive) {
 			IsSidebarActive = false;
 			Activate(1);
-//			Background.Zap();
-//			Add_A_Button(Background);
 		}
 	}
 }
@@ -918,7 +910,6 @@ bool SidebarClass::Activate_Repair(int control)
 		IsToRedraw = true;
 
 		if (!IsRepairActive) {
-//			Help_Text(TXT_NONE);
 			Set_Default_Mouse(MOUSE_NORMAL, false);
 		}
 	}
@@ -1111,7 +1102,6 @@ bool SidebarClass::Scroll(bool up, int column)
 	// With one strip shown at a time, a command naming a strip moves the shown tab's.
 	if (Column[ActiveTab].Scroll(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -1149,7 +1139,6 @@ bool SidebarClass::Page(bool up, int column)
 
 	if (Column[ActiveTab].Page(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -2419,7 +2408,6 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 							darken		= false;
 						} else {
 							production  = false;
-						//							darken      = IsBuilding;
 
 							/*
 							**	Darken the imagery if a factory of a matching type is
@@ -2446,20 +2434,8 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					darken = false;
 				}
 
-				if (obj != NULL || spc != SUPER_NONE) {
-					/*
-					**	If this item is flashing then take care of it.
-					**
-					*/
-					// if (Flasher == index && (Fetch_Stage() & 0x01)) {
-					// 	remapper = Map.FadingLight;
-					// }
-
-				} else {
+				if (obj == NULL && spc == SUPER_NONE) {
 					shapefile	= LogoShapes;
-					// if (!darken) {
-					// 	shapenum		= SB_BLANK;
-					// }
 				}
 			} else {
 				shapefile	= LogoShapes;
@@ -3978,11 +3954,6 @@ void Print_Cameo_Text(char const * string, Point2D const & point, Rect const & c
 				w = font->String_Pixel_Width(buffer);
 
 			} while (len > 0 && w > maxlinelen);
-
-			/*
-			 * Print the rest of the string.
-			 */
-			finish:;
 		}
 
 		Fancy_Text_Print(string, *SidebarSurface, cliprect, drawpoint, Fetch_Scheme_By_Name("LightGrey"), TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT));
