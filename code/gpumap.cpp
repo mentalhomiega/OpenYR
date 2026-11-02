@@ -513,8 +513,8 @@ static bool Fill_R16_Watched(Store & store, unsigned short const * values, int w
 }
 
 
-// Calls upload(first, end) for each run of flagged rows, after clearing the run's flags. A run bridges up
-// to GAP unchanged rows, so a scattered change takes few uploads.
+// Calls upload(first, end) for each run of flagged rows, after clearing the run's flags. Flagged rows with
+// fewer than GAP unchanged rows between them share a run, so a scattered change takes few uploads.
 template<class Upload>
 static void For_Each_Changed_Run(std::vector<unsigned char> & changed, int rows, Upload upload)
 {
