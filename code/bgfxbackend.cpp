@@ -84,7 +84,6 @@ static unsigned int _ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER;
 // True while the frame texture holds the game's own 565 layout. When the hardware cannot
 // sample that format the frame is widened to 32 bits on the way in instead.
 static bool _FrameIs565 = false;
-static unsigned int * _ConvertBuffer = NULL;
 static unsigned int _ConvertTable[65536];
 // The keyed frame's widening: the layer key is see-through and the tint keys are their tints.
 static unsigned int _KeyedTable[65536];
@@ -96,9 +95,7 @@ static int _LayerWidth = 0;
 static int _LayerHeight = 0;
 static bool _LayerUploaded = false;
 static bool _KeyedFrameUploaded = false;
-static unsigned int * _LayerConvertBuffer = NULL;
 static bgfx::TextureHandle _KeyedFrameTexture = BGFX_INVALID_HANDLE;
-static unsigned int * _KeyedFrameBuffer = NULL;
 
 // What each texture holds, kept so a present sends only the tiles that changed. The picture copies hold
 // the 565 source; the keyed mask copy holds the frame's emissive mask.
@@ -206,7 +203,6 @@ static bgfx::FrameBufferHandle _MaskTarget = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskSampler = BGFX_INVALID_HANDLE;
 static bgfx::UniformHandle _MaskLevels = BGFX_INVALID_HANDLE;
 static bgfx::TextureHandle _KeyedMaskTexture = BGFX_INVALID_HANDLE;
-static unsigned int * _KeyedMaskBuffer = NULL;
 static bool _KeyedMaskUploaded = false;
 // Set by any mask draw this frame. Without one the composite reads no mask.
 static bool _MaskDrawn = false;
@@ -686,12 +682,6 @@ static void Destroy_Layer(void)
 		bgfx::destroy(_KeyedMaskTexture);
 		_KeyedMaskTexture = BGFX_INVALID_HANDLE;
 	}
-	delete [] _LayerConvertBuffer;
-	_LayerConvertBuffer = NULL;
-	delete [] _KeyedFrameBuffer;
-	_KeyedFrameBuffer = NULL;
-	delete [] _KeyedMaskBuffer;
-	_KeyedMaskBuffer = NULL;
 	_LayerWidth = 0;
 	_LayerHeight = 0;
 	_LayerUploaded = false;
@@ -718,8 +708,6 @@ static bool Upload_Layer(BackendLayer const & layer)
 		if (bgfx::isValid(_LayerTexture)) {
 			bgfx::destroy(_LayerTexture);
 		}
-		delete [] _LayerConvertBuffer;
-		_LayerConvertBuffer = NULL;
 		Destroy_Mask(_LayerMask);
 
 		const bgfx::Caps * caps = bgfx::getCaps();
@@ -1305,9 +1293,6 @@ void Backend_Shutdown(void)
 		_MaskLevels = BGFX_INVALID_HANDLE;
 	}
 
-	delete [] _ConvertBuffer;
-	_ConvertBuffer = NULL;
-
 	bgfx::shutdown();
 
 	_FrameWidth = 0;
@@ -1359,14 +1344,8 @@ bool Backend_Set_Frame_Size(int width, int height)
 	}
 	_FrameDiff.Reset(width, height, 2);
 
-	delete [] _ConvertBuffer;
-	_ConvertBuffer = NULL;
-
-	if (!_FrameIs565) {
-		if (_ConvertTable[0xFFFF] == 0) {
-			Build_Convert_Table();
-		}
-		_ConvertBuffer = new unsigned int[width * height];
+	if (!_FrameIs565 && _ConvertTable[0xFFFF] == 0) {
+		Build_Convert_Table();
 	}
 
 	_FrameWidth = width;
@@ -1561,22 +1540,20 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		}
 
 		unsigned char const * source = (unsigned char const *)pixels;
-		if (_FrameIs565 || _ConvertBuffer != NULL) {
-			_Grid.Resize(_FrameWidth, _FrameHeight);
-			_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
-			_FrameRows.Restart(_FrameHeight);
-			Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
-			if (_FrameIs565) {
-				Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-					Copy_Tile(dest, destpitch, source, pitch, rect, 2);
-				});
-			} else {
-				Send_Tiles(_FrameTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
-					Widen_Tile(dest, destpitch, source, pitch, rect, false);
-				});
-			}
-			_FrameUploaded = true;
+		_Grid.Resize(_FrameWidth, _FrameHeight);
+		_FrameDiff.Compare(source, pitch, _Grid, _FrameRows.For(_FrameHeight));
+		_FrameRows.Restart(_FrameHeight);
+		Verify_Diff(_FrameDiff, source, pitch, _FrameWidth, _FrameHeight, 2);
+		if (_FrameIs565) {
+			Send_Tiles(_FrameTexture, _Grid, 2, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+				Copy_Tile(dest, destpitch, source, pitch, rect, 2);
+			});
+		} else {
+			Send_Tiles(_FrameTexture, _Grid, 4, [&](unsigned char * dest, int destpitch, TileRect const & rect) {
+				Widen_Tile(dest, destpitch, source, pitch, rect, false);
+			});
 		}
+		_FrameUploaded = true;
 	}
 
 	// The debug view draws the frame mask where the picture would be.
