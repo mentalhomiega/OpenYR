@@ -120,6 +120,61 @@ static int Slot_Side(UISkirmishState const & state, UISkirmishSlot const & slot)
 }
 
 
+// One remembered option: the settings key it is saved under, the memory field that holds it, how the lobby
+// state yields its value, and how a saved value that is not -1 is applied to the state.
+struct SkirmishOption
+{
+	char const * Key;
+	int SkirmishMemory::* Saved;
+	int (*Read)(UISkirmishState const & state);
+	void (*Restore)(UISkirmishState & state, int saved);
+};
+
+
+// The options in the order the settings file writes them. An On/Off option is saved as 0 or 1.
+static SkirmishOption const SKIRMISH_OPTIONS[] = {
+	{ "Units", &SkirmishMemory::Units,
+		[](UISkirmishState const & state) { return state.UnitCount; },
+		[](UISkirmishState & state, int saved) { state.UnitCount = std::clamp(saved, state.UnitCountMin, state.UnitCountMax); } },
+	{ "Credits", &SkirmishMemory::Credits,
+		[](UISkirmishState const & state) { return state.Credits; },
+		[](UISkirmishState & state, int saved) { state.Credits = std::clamp(saved, state.CreditsMin, state.CreditsMax); } },
+	{ "Tech", &SkirmishMemory::TechLevel,
+		[](UISkirmishState const & state) { return state.TechLevel; },
+		[](UISkirmishState & state, int saved) { state.TechLevel = std::clamp(saved, 1, state.TechLevelMax); } },
+	{ "Speed", &SkirmishMemory::GameSpeed,
+		[](UISkirmishState const & state) { return state.GameSpeed; },
+		[](UISkirmishState & state, int saved) { state.GameSpeed = std::clamp(saved, 0, 6); } },
+	{ "Bases", &SkirmishMemory::Bases,
+		[](UISkirmishState const & state) { return state.Bases ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Bases = saved != 0; } },
+	{ "Crates", &SkirmishMemory::Crates,
+		[](UISkirmishState const & state) { return state.Crates ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Crates = saved != 0; } },
+	{ "Fog", &SkirmishMemory::Fog,
+		[](UISkirmishState const & state) { return state.Fog ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Fog = saved != 0; } },
+	{ "Bridges", &SkirmishMemory::Bridges,
+		[](UISkirmishState const & state) { return state.Bridges ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Bridges = saved != 0; } },
+	{ "Redeploy", &SkirmishMemory::Redeploy,
+		[](UISkirmishState const & state) { return state.Redeploy ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.Redeploy = saved != 0; } },
+	{ "ShortGame", &SkirmishMemory::ShortGame,
+		[](UISkirmishState const & state) { return state.ShortGame ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.ShortGame = saved != 0; } },
+	{ "Engineer", &SkirmishMemory::MultiEngineer,
+		[](UISkirmishState const & state) { return state.MultiEngineer ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.MultiEngineer = saved != 0; } },
+	{ "SuperWeapons", &SkirmishMemory::SuperWeapons,
+		[](UISkirmishState const & state) { return state.SuperWeapons ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.SuperWeapons = saved != 0; } },
+	{ "BuildOffAlly", &SkirmishMemory::BuildOffAlly,
+		[](UISkirmishState const & state) { return state.BuildOffAlly ? 1 : 0; },
+		[](UISkirmishState & state, int saved) { state.BuildOffAlly = saved != 0; } },
+};
+
+
 /// <summary>
 /// Reads the remembered setup from the settings file the first time it is needed in a run. A key
 /// that is absent leaves that part of the setup to the rules' defaults.
@@ -138,19 +193,9 @@ static void Load_Memory(void)
 		Memory.Slots[row] = ConfigINI.Get_String(SKIRMISH_SECTION, key, "");
 	}
 
-	Memory.Units = ConfigINI.Get_Int(SKIRMISH_SECTION, "Units", -1);
-	Memory.Credits = ConfigINI.Get_Int(SKIRMISH_SECTION, "Credits", -1);
-	Memory.TechLevel = ConfigINI.Get_Int(SKIRMISH_SECTION, "Tech", -1);
-	Memory.GameSpeed = ConfigINI.Get_Int(SKIRMISH_SECTION, "Speed", -1);
-	Memory.Bases = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bases", -1);
-	Memory.Crates = ConfigINI.Get_Int(SKIRMISH_SECTION, "Crates", -1);
-	Memory.Fog = ConfigINI.Get_Int(SKIRMISH_SECTION, "Fog", -1);
-	Memory.Bridges = ConfigINI.Get_Int(SKIRMISH_SECTION, "Bridges", -1);
-	Memory.Redeploy = ConfigINI.Get_Int(SKIRMISH_SECTION, "Redeploy", -1);
-	Memory.ShortGame = ConfigINI.Get_Int(SKIRMISH_SECTION, "ShortGame", -1);
-	Memory.MultiEngineer = ConfigINI.Get_Int(SKIRMISH_SECTION, "Engineer", -1);
-	Memory.SuperWeapons = ConfigINI.Get_Int(SKIRMISH_SECTION, "SuperWeapons", -1);
-	Memory.BuildOffAlly = ConfigINI.Get_Int(SKIRMISH_SECTION, "BuildOffAlly", -1);
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		Memory.*option.Saved = ConfigINI.Get_Int(SKIRMISH_SECTION, option.Key, -1);
+	}
 }
 
 
@@ -176,19 +221,9 @@ static void Remember_Preferences(UISkirmishState const & state)
 
 	Memory.Loaded = true;
 	Memory.Map = Session.ScenarioFileName;
-	Memory.Units = state.UnitCount;
-	Memory.Credits = state.Credits;
-	Memory.TechLevel = state.TechLevel;
-	Memory.GameSpeed = state.GameSpeed;
-	Memory.Bases = state.Bases ? 1 : 0;
-	Memory.Crates = state.Crates ? 1 : 0;
-	Memory.Fog = state.Fog ? 1 : 0;
-	Memory.Bridges = state.Bridges ? 1 : 0;
-	Memory.Redeploy = state.Redeploy ? 1 : 0;
-	Memory.ShortGame = state.ShortGame ? 1 : 0;
-	Memory.MultiEngineer = state.MultiEngineer ? 1 : 0;
-	Memory.SuperWeapons = state.SuperWeapons ? 1 : 0;
-	Memory.BuildOffAlly = state.BuildOffAlly ? 1 : 0;
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		Memory.*option.Saved = option.Read(state);
+	}
 
 	// Written to the settings file by the Session.Write_MultiPlayer_Settings call that follows.
 	ConfigINI.Put_String(SKIRMISH_SECTION, "Map", Memory.Map.c_str());
@@ -198,19 +233,9 @@ static void Remember_Preferences(UISkirmishState const & state)
 		Memory.Slots[row] = UI_Skirmish_Slot_Text(state, row);
 		ConfigINI.Put_String(SKIRMISH_SECTION, key, Memory.Slots[row].c_str());
 	}
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Units", Memory.Units);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Credits", Memory.Credits);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Tech", Memory.TechLevel);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Speed", Memory.GameSpeed);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bases", Memory.Bases);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Crates", Memory.Crates);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Fog", Memory.Fog);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Bridges", Memory.Bridges);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Redeploy", Memory.Redeploy);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "ShortGame", Memory.ShortGame);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "Engineer", Memory.MultiEngineer);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "SuperWeapons", Memory.SuperWeapons);
-	ConfigINI.Put_Int(SKIRMISH_SECTION, "BuildOffAlly", Memory.BuildOffAlly);
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		ConfigINI.Put_Int(SKIRMISH_SECTION, option.Key, Memory.*option.Saved);
+	}
 }
 
 
@@ -482,44 +507,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 	// The remembered setup comes back as it was left. Its options replace the rules' values, and its
 	// map is used only while the map's file is on hand; the first map that is on hand takes its place.
 	Load_Memory();
-	if (Memory.Units >= 0) {
-		state.UnitCount = std::clamp(Memory.Units, state.UnitCountMin, state.UnitCountMax);
-	}
-	if (Memory.Credits >= 0) {
-		state.Credits = std::clamp(Memory.Credits, state.CreditsMin, state.CreditsMax);
-	}
-	if (Memory.TechLevel >= 0) {
-		state.TechLevel = std::clamp(Memory.TechLevel, 1, state.TechLevelMax);
-	}
-	if (Memory.GameSpeed >= 0) {
-		state.GameSpeed = std::clamp(Memory.GameSpeed, 0, 6);
-	}
-	if (Memory.Bases >= 0) {
-		state.Bases = Memory.Bases != 0;
-	}
-	if (Memory.Crates >= 0) {
-		state.Crates = Memory.Crates != 0;
-	}
-	if (Memory.Fog >= 0) {
-		state.Fog = Memory.Fog != 0;
-	}
-	if (Memory.Bridges >= 0) {
-		state.Bridges = Memory.Bridges != 0;
-	}
-	if (Memory.Redeploy >= 0) {
-		state.Redeploy = Memory.Redeploy != 0;
-	}
-	if (Memory.ShortGame >= 0) {
-		state.ShortGame = Memory.ShortGame != 0;
-	}
-	if (Memory.MultiEngineer >= 0) {
-		state.MultiEngineer = Memory.MultiEngineer != 0;
-	}
-	if (Memory.SuperWeapons >= 0) {
-		state.SuperWeapons = Memory.SuperWeapons != 0;
-	}
-	if (Memory.BuildOffAlly >= 0) {
-		state.BuildOffAlly = Memory.BuildOffAlly != 0;
+	for (SkirmishOption const & option : SKIRMISH_OPTIONS) {
+		int const saved = Memory.*option.Saved;
+		if (saved >= 0) {
+			option.Restore(state, saved);
+		}
 	}
 
 	// Only the session takes the map here. The loaded scenario is named when the game starts.
