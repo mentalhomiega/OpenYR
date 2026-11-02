@@ -266,34 +266,8 @@ static PerfPhase Perf_Object_AI_Phase(RTTIType rtti)
 }
 
 
-/***********************************************************************************************
- * LogicClass::AI -- Handles AI logic processing for game objects.                             *
- *                                                                                             *
- *    This routine is used to perform the AI processing for all game objects. This includes    *
- *    all houses, factories, objects, and teams.                                               *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   05/29/1994 JLB : Created.                                                                 *
- *   12/17/1994 JLB : Must perform one complete pass rather than bailing early.                *
- *   12/23/1994 JLB : Ensures that no object gets skipped if it was deleted.                   *
- *=============================================================================================*/
-void LogicClass::AI(void)
+static void Process_Logic_Triggers(void)
 {
-	int index;
-
-	FramesThisSecond++;
-	TotalFrames++;
-
-	/*
-	**	Handle any general timer trigger events.
-	*/
-	{
 	PerfScope triggers_scope(PERF_FRAME_TRIGGERS);
 	for (LogicTriggerID = 0; LogicTriggerID < LogicTags.Count(); LogicTriggerID++) {
 		TagClass * trig = LogicTags[LogicTriggerID];
@@ -331,7 +305,50 @@ void LogicClass::AI(void)
 			if (trig->Spring(TEVENT_MISSION_TIMER_EXPIRED)) continue;
 		}
 	}
+}
+
+
+// A nuclear flash or a chronoshift screen effect moves the light at the nuclear rate, a dominator blast at its own (LogicClass::Update, 0x55B330).
+static int Pick_Ambient_Change_Timer(void)
+{
+	if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out() || Chrono_Screen_Effect_Is_Running()) {
+		return(Scen->NukeAmbientChangeRate);
 	}
+	if (PsychicDominatorClass::Is_Active()) {
+		return(Scen->DominatorAmbientChangeRate);
+	}
+	return(TICKS_PER_MINUTE * Rule->AmbientLightChangeRate);
+}
+
+
+/***********************************************************************************************
+ * LogicClass::AI -- Handles AI logic processing for game objects.                             *
+ *                                                                                             *
+ *    This routine is used to perform the AI processing for all game objects. This includes    *
+ *    all houses, factories, objects, and teams.                                               *
+ *                                                                                             *
+ * INPUT:   none                                                                               *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   05/29/1994 JLB : Created.                                                                 *
+ *   12/17/1994 JLB : Must perform one complete pass rather than bailing early.                *
+ *   12/23/1994 JLB : Ensures that no object gets skipped if it was deleted.                   *
+ *=============================================================================================*/
+void LogicClass::AI(void)
+{
+	int index;
+
+	FramesThisSecond++;
+	TotalFrames++;
+
+	/*
+	**	Handle any general timer trigger events.
+	*/
+	Process_Logic_Triggers();
 
 	/*
 	**	Clean up any status values that were maintained only for logic trigger
@@ -361,14 +378,7 @@ void LogicClass::AI(void)
 	}
 
 	if (Scen->DesiredAmbientLight != Scen->CurrentAmbientLight && Rule->AmbientLightChangeRate != 0 && Scen->AmbientChangeTimer == 0) {
-		// A nuclear flash or a chronoshift screen effect moves the light at the nuclear rate, a dominator blast at its own (LogicClass::Update, 0x55B330).
-		if (NukeFlashClass::Is_Fading_In() || NukeFlashClass::Is_Fading_Out() || Chrono_Screen_Effect_Is_Running()) {
-			Scen->AmbientChangeTimer = Scen->NukeAmbientChangeRate;
-		} else if (PsychicDominatorClass::Is_Active()) {
-			Scen->AmbientChangeTimer = Scen->DominatorAmbientChangeRate;
-		} else {
-			Scen->AmbientChangeTimer = TICKS_PER_MINUTE * Rule->AmbientLightChangeRate;
-		}
+		Scen->AmbientChangeTimer = Pick_Ambient_Change_Timer();
 
 		Scen->DesiredAmbientLight = std::max(Scen->DesiredAmbientLight, 0);
 
