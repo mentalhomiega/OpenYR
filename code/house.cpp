@@ -10013,6 +10013,12 @@ void HouseClass::AI_Super_Weapons(void)
 }
 
 
+static bool Is_Compass_Edge(SourceType edge)
+{
+	return(edge >= SOURCE_NORTH && edge <= SOURCE_WEST);
+}
+
+
 /// <summary>
 /// Fetches the map edge this house's support planes fly in from and its retreating planes head
 /// for (HouseClass::SendParadropPlanes 0x65E660, SendAirstrikePlanes 0x65E850, SendSpyPlanes
@@ -10021,10 +10027,10 @@ void HouseClass::AI_Super_Weapons(void)
 /// </summary>
 SourceType HouseClass::Entry_Edge(void) const
 {
-	if (Control.Edge >= SOURCE_NORTH && Control.Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Control.Edge)) {
 		return(Control.Edge);
 	}
-	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Base_Edge)) {
 		return(Base_Edge);
 	}
 	return(SOURCE_NORTH);
@@ -10039,7 +10045,7 @@ SourceType HouseClass::Entry_Edge(void) const
 SourceType HouseClass::Opposite_Base_Edge(void) const
 {
 	static SourceType const _opposite[4] = {SOURCE_SOUTH, SOURCE_WEST, SOURCE_NORTH, SOURCE_EAST};
-	if (Base_Edge >= SOURCE_NORTH && Base_Edge <= SOURCE_WEST) {
+	if (Is_Compass_Edge(Base_Edge)) {
 		return(_opposite[Base_Edge]);
 	}
 	return(SOURCE_NORTH);
