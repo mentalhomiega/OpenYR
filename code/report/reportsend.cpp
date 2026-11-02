@@ -267,19 +267,13 @@ void Report_After_Match(void)
 
 	if (!PendingDesyncPath.empty()) {
 		std::vector<ReportFileType> files;
-		std::string session_key;
-		std::error_code error;
 		for (fs::path const path : { fs::path(PendingDesyncPath), fs::path(Debug_Log_File_Name()) }) {
-			if (path.empty() || !fs::is_regular_file(path, error) || !Report_Wanted_File(path.filename().string())) {
-				continue;
-			}
 			ReportFileType file;
-			file.Name = path.filename().string();
-			file.Path = path;
-			file.Size = fs::file_size(path, error);
-			files.push_back(file);
+			if (Report_File_Entry(path, file)) {
+				files.push_back(file);
+			}
 		}
-		session_key = Report_Desync_Session_Key(Report_Read_Session_Head(PendingDesyncPath));
+		std::string const session_key = Report_Desync_Session_Key(Report_Read_Session_Head(PendingDesyncPath));
 		Offer_Report(settings, ReportKind::Desync, files, session_key);
 		PendingDesyncPath.clear();
 	}

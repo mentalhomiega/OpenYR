@@ -217,19 +217,28 @@ bool Report_Wanted_File(std::string const & name)
 }
 
 
+bool Report_File_Entry(fs::path const & path, ReportFileType & out)
+{
+	std::error_code error;
+	if (path.empty() || !fs::is_regular_file(path, error) || !Report_Wanted_File(path.filename().string())) {
+		return(false);
+	}
+	out.Name = path.filename().string();
+	out.Path = path;
+	out.Size = fs::file_size(path, error);
+	return(true);
+}
+
+
 std::vector<ReportFileType> Report_Folder_Files(fs::path const & folder)
 {
 	std::vector<ReportFileType> files;
 	std::error_code error;
 	for (fs::directory_iterator it(folder, error), end; !error && it != end; it.increment(error)) {
-		if (!it->is_regular_file(error) || !Report_Wanted_File(it->path().filename().string())) {
-			continue;
-		}
 		ReportFileType file;
-		file.Name = it->path().filename().string();
-		file.Path = it->path();
-		file.Size = it->file_size(error);
-		files.push_back(file);
+		if (Report_File_Entry(it->path(), file)) {
+			files.push_back(file);
+		}
 	}
 	std::sort(files.begin(), files.end(), [](ReportFileType const & a, ReportFileType const & b) { return(a.Name < b.Name); });
 	return(files);
