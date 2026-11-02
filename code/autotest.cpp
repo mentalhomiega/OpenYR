@@ -4763,6 +4763,28 @@ static void Disguise_Step(StepType const & step)
 }
 
 
+// disguiseas <TypeID> <house>: every computer-owned soldier of that type disguises as the player's AlliedDisguise soldier,
+// copying the given house, and the log gets whether the player's house is fooled by each of the two disguise tests.
+static void Disguiseas_Step(StepType const & step)
+{
+	int const copied = step.X;
+	if (copied < 0 || copied >= Houses.Count() || Houses[copied] == NULL) {
+		DebugString("AUTOTEST disguiseas %s: no house %d\n", step.Argument.c_str(), copied);
+		return;
+	}
+	for (int index = 0; index < Infantry.Count(); index++) {
+		InfantryClass * soldier = Infantry[index];
+		if (soldier->House != PlayerPtr && stricmp(soldier->Class->Name(), step.Argument.c_str()) == 0) {
+			soldier->DisguiseType = Rule->AlliedDisguise;
+			soldier->DisguiseHouse = Houses[copied];
+			DebugString("AUTOTEST   disguiseas %s of %s copies %s: player allied to copied %d, owner allied to copied %d, fools player cursor test %d, fools player friendly test %d\n",
+				soldier->Class->Name(), soldier->House->Class->Name(), Houses[copied]->Class->Name(), (int)PlayerPtr->Is_Ally(Houses[copied]),
+				(int)soldier->House->Is_Ally(Houses[copied]), (int)soldier->Is_Disguised_As(PlayerPtr), (int)soldier->Looks_Friendly_To(PlayerPtr));
+		}
+	}
+}
+
+
 static void Action_Step(StepType const & step)
 {
 	ObjectClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
@@ -7011,6 +7033,7 @@ void Run(StepType const & step)
 		{"hollow", Hollow_Step},
 		{"rule", Rule_Step},
 		{"disguise", Disguise_Step},
+		{"disguiseas", Disguiseas_Step},
 		{"action", Action_Step},
 		{"clickon", Action_Step},
 		{"hit", Hit_Step},
