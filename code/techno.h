@@ -796,6 +796,8 @@ class TechnoClass :	public RadioClass,
 		void Gattling_Rate_Up(int frames);
 		void Gattling_Rate_Down(int frames);
 		int const * Gattling_Stages(void) const;
+		void Stop_Gattling_Sound(void);
+		void Stop_Turret_Sound(void);
 		virtual int Get_Collateral_Damage(void) const;
 		virtual int Get_Z_Adjust(void) const;
 		bool Is_Z_Fudge_Bridge(void) const;

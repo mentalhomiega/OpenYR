@@ -2011,10 +2011,8 @@ bool TechnoClass::Limbo(void)
 
 	Release_Warp();
 
-	GattlingSound.Stop();
-	IsGattlingSoundPlaying = false;
-	TurretSound.Stop();
-	IsTurretSoundPlaying = false;
+	Stop_Gattling_Sound();
+	Stop_Turret_Sound();
 
 	AttachedEffects.Limbo(this);
 
@@ -3872,14 +3870,13 @@ void TechnoClass::AI(void)
 	if (TClass->IsTurretEquipped && TClass->TurretRotateSound != VOC_NONE) {
 		bool const turning = RTTI == RTTI_BUILDING ? PrimaryFacing.Is_Rotating() : SecondaryFacing.Is_Rotating();
 		if (turning && !IsTurretSoundPlaying) {
-			TurretSound.Stop();
+			Stop_Turret_Sound();
 			Sound_Effect(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
 			IsTurretSoundPlaying = true;
 		} else if (turning) {
 			Play_If_In_Range(TClass->TurretRotateSound, Center_Coord(), &TurretSound);
 		} else if (IsTurretSoundPlaying) {
-			TurretSound.Stop();
-			IsTurretSoundPlaying = false;
+			Stop_Turret_Sound();
 		}
 	}
 
@@ -8654,8 +8651,7 @@ void TechnoClass::Delete_Me(void)
 		ParasiteImUsing->Victim = NULL;
 	}
 	Disarm_Bomb();
-	GattlingSound.Stop();
-	IsGattlingSoundPlaying = false;
+	Stop_Gattling_Sound();
 	BASECLASS::Delete_Me();
 }
 
@@ -8882,6 +8878,20 @@ void TechnoClass::Remove_Gunner(FootClass * gunner)
 }
 
 
+void TechnoClass::Stop_Gattling_Sound(void)
+{
+	GattlingSound.Stop();
+	IsGattlingSoundPlaying = false;
+}
+
+
+void TechnoClass::Stop_Turret_Sound(void)
+{
+	TurretSound.Stop();
+	IsTurretSoundPlaying = false;
+}
+
+
 /// <summary>
 /// Spins a gattling weapon up for the frames given (TechnoClass::GattlingRateUp, 0x70DE70).
 /// The spin grows by RateUp a frame until it reaches the last stage's threshold, and the
@@ -8898,13 +8908,12 @@ void TechnoClass::Gattling_Rate_Up(int frames)
 	}
 	if (CurrentGattlingStage >= 0 && CurrentGattlingStage < last && stages[CurrentGattlingStage] <= value) {
 		CurrentGattlingStage++;
-		GattlingSound.Stop();
-		IsGattlingSoundPlaying = false;
+		Stop_Gattling_Sound();
 	}
 
 	WeaponTypeClass const * weapon = Get_Class_Weapon_Data(CurrentGattlingStage * 2)->Weapon;
 	if (!IsGattlingSoundPlaying && weapon != NULL && weapon->Sound.Count() > 0) {
-		GattlingSound.Stop();
+		Stop_Gattling_Sound();
 		GattlingVoc = (VocType)weapon->Sound.Pick(SoundRandomSeed);
 		Play_If_In_Range(GattlingVoc, Center_Coord(), &GattlingSound, true);
 		IsGattlingSoundPlaying = true;
