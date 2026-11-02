@@ -2787,7 +2787,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 	default: {
 		// The composite is opaque in the 8-bit surface, so a warp's half see-through is applied here.
 		ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA | SHAPE_ZGRAD | Mirage_Shimmer_Flags());
-		if (IsBeingWarpedOut || Is_Chrono_Warping()) {
+		if (Is_Warp_Fading()) {
 			flags = ShapeFlags_Type(flags | SHAPE_TRANSLUCENT50);
 		}
 		blitter = converter->Blitter_From_Flags(flags);
@@ -2840,7 +2840,7 @@ void UnitClass::Unit_Blit_Voxel(Surface & surface, Point2D drawpoint, Rect clipr
 /// on or an emissive draw strength set. Those go through the scratch surface.</returns>
 bool UnitClass::Unit_Blit_Composite(Surface & surface, Point2D drawpoint, Rect cliprect, int brightness, StaticBufferClass::Entry const & entry) const
 {
-	if (IsSinking || SinkingYOffset > 0 || IsBeingWarpedOut || Is_Chrono_Warping() || Is_Composite_Fudged() || Visual_Character() != VISUAL_NORMAL || Mirage_Shimmer_Flags() != 0) {
+	if (IsSinking || SinkingYOffset > 0 || Is_Warp_Fading() || Is_Composite_Fudged() || Visual_Character() != VISUAL_NORMAL || Mirage_Shimmer_Flags() != 0) {
 		return(false);
 	}
 	if ((Emissive_Is_Enabled() && Emissive_Draw_Strength != 0) || ShadowPlane_Is_Enabled() || entry.Width == 0 || entry.Height == 0) {
@@ -3598,7 +3598,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		brightness += Rule->ExtraUnitLight;
 
 		// The gather sparkles are not drawn while a temporal warp holds the unit or a warp moves it, as in gamemd.
-		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now() && WarpedBy == NULL && !IsBeingWarpedOut && !Is_Chrono_Warping()) {
+		if (Class->IsToHarvest && IsHarvesting && !Locomotion->Is_Moving_Now() && WarpedBy == NULL && !Is_Warp_Fading()) {
 			Point2D pixel;
 			FacingType face = (FacingType)PrimaryFacing.Current().As_Dir8();
 			TacticalMap->Coord_To_Pixel(Move_Coord(Render_Coord(), face, 150), pixel);

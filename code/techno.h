@@ -783,6 +783,8 @@ class TechnoClass :	public RadioClass,
 		 * Is a chrono teleport holding this object? Its AI waits while the teleport runs.
 		 */
 		virtual bool Is_Chrono_Warping(void) const {return(false);}
+		// Warping out, or held by a chrono teleport.
+		bool Is_Warp_Fading(void) const {return(IsBeingWarpedOut || Is_Chrono_Warping());}
 		void Plant_Bomb(TechnoClass * planter);
 		bool Is_Disguised_To_Player(void) const;
 		bool Looks_Friendly_To(HouseClass const * viewer) const;
