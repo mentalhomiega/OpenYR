@@ -1626,6 +1626,27 @@ RadioMessageType ObjectClass::Receive_Message(RadioClass *, RadioMessageType mes
 }
 
 
+/// <summary>
+/// Springs the first-damage triggers after a hit that leaves this object damaged, and reports whether
+/// the object is still active. A trigger can deactivate the object, so a false result means the caller
+/// must return without using it.
+/// </summary>
+/// <returns>bool; Is the object still active?</returns>
+bool ObjectClass::Spring_First_Damaged(TechnoClass * source)
+{
+	if (source != NULL && Tag != NULL) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED, this);
+	}
+	if (Tag != NULL && IsActive) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
+	}
+	if (Tag != NULL && IsActive && source != NULL) {
+		Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
+	}
+	return(IsActive);
+}
+
+
 /***********************************************************************************************
  * ObjectClass::Take_Damage -- Applies damage to the object.                                   *
  *                                                                                             *
@@ -1790,15 +1811,8 @@ ResultType ObjectClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 		if (IsActive) {
 			if (Strength != oldstrength && Class_Of() != NULL && oldstrength == Class_Of()->MaxStrength) {
-				if (source && Tag != NULL) Tag->Spring(TEVENT_FIRST_DAMAGED, this);
-				if (Tag != NULL && IsActive) Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
-
-				if (Tag != NULL) {
-					if (IsActive) {
-						if (source) Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
-					} else {
-						return(RESULT_ALREADY_DESTROYED);
-					}
+				if (!Spring_First_Damaged(source)) {
+					return(RESULT_ALREADY_DESTROYED);
 				}
 			}
 		} else {

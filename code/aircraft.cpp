@@ -4502,18 +4502,7 @@ bool AircraftClass::Crash(TechnoClass * source)
 
 	if (HeightAGL > 0) {
 		if (Strength > 0) {
-			if (source != NULL && Tag != NULL) {
-				Tag->Spring(TEVENT_FIRST_DAMAGED, this);
-			}
-			if (Tag != NULL && IsActive) {
-				Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this);
-			}
-			if (Tag != NULL) {
-				if (IsActive && source != NULL) {
-					Tag->Spring(TEVENT_FIRST_DAMAGED_ANY, this, CELL_NONE, false, source);
-				}
-			}
-			if (!IsActive) {
+			if (!Spring_First_Damaged(source)) {
 				return(true);
 			}
 			Record_The_Kill(source);
