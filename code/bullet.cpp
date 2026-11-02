@@ -565,7 +565,7 @@ void BulletClass::AI(void)
 		 * than hugging the terrain on the way, since there is no ground between
 		 * the two of them that needs clearing.
 		 */
-		if (TarCom != NULL && (TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air()))) {
+		if (Target_Is_Airborne()) {
 			is_aircraft = true;
 		}
 
@@ -1300,6 +1300,13 @@ LayerType BulletClass::In_Which_Layer(void) const
 }
 
 
+// Is the bullet's target an aircraft or another techno in the air?
+bool BulletClass::Target_Is_Airborne(void) const
+{
+	return(TarCom != NULL && (TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air())));
+}
+
+
 /***********************************************************************************************
  * BulletClass::Is_Forced_To_Explode -- Checks if bullet should explode NOW.                   *
  *                                                                                             *
@@ -1352,8 +1359,7 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 	/*
 	**	Bullets are generally more effective when they are fired at aircraft.
 	*/
-	if (Class->IsAntiAircraft && TarCom != NULL &&
-		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air())) &&
+	if (Class->IsAntiAircraft && Target_Is_Airborne() &&
 		Distance(TarCom) < CELL_LEPTON / 2) {
 
 		return(true);
