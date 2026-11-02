@@ -533,6 +533,31 @@ bool AnimClass::Render(Rect & rect, bool forced, bool extras_only) const
 }
 
 
+// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
+// translucency is three quarters opaque, as the blitter's opacity is.
+static int Anim_Draw_Opacity(ShapeFlags_Type flags)
+{
+	int opacity = 255;
+	switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
+		case SHAPE_TRANSLUCENT25:
+			opacity = 192;
+			break;
+
+		case SHAPE_TRANSLUCENT50:
+			opacity = 128;
+			break;
+
+		case SHAPE_TRANSLUCENT75:
+			opacity = 64;
+			break;
+
+		default:
+			break;
+	}
+	return(opacity);
+}
+
+
 /***********************************************************************************************
  * AnimClass::Draw_It -- Draws the animation at the location specified.                        *
  *                                                                                             *
@@ -662,25 +687,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			}
 
 			// The bounce pass above draws ordinary light; only the picture itself is emissive.
-			// A translucent picture keeps the share of its mask that its opacity lets through: 25 percent
-			// translucency is three quarters opaque, as the blitter's opacity is.
-			int opacity = 255;
-			switch (flags & (SHAPE_TRANSLUCENT25 | SHAPE_TRANSLUCENT50 | SHAPE_TRANSLUCENT75)) {
-				case SHAPE_TRANSLUCENT25:
-					opacity = 192;
-					break;
-
-				case SHAPE_TRANSLUCENT50:
-					opacity = 128;
-					break;
-
-				case SHAPE_TRANSLUCENT75:
-					opacity = 64;
-					break;
-
-				default:
-					break;
-			}
+			int const opacity = Anim_Draw_Opacity(flags);
 			unsigned char const emissive_strength = Emissive_Is_Enabled() && (flags & SHAPE_DARKEN) == 0 ? Class->EmissiveStrength : (unsigned char)0;
 			EmissiveDrawScope emissive_scope(Emissive_Scale_By_Opacity(emissive_strength, opacity));
 
