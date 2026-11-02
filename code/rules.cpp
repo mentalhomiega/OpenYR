@@ -1492,13 +1492,6 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 
 
 /// <summary>
-/// Fetches the combat and damage control values.
-/// This section holds the constants the combat system works from -- the damage figures for
-/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
-/// suppression distances, and the scorches, craters and smoke systems left behind.
-/// </summary>
-/// <returns>bool; Was a combat damage section found in the control file?</returns>
-/// <summary>
 /// Fetches the radiation values.
 /// </summary>
 /// <returns>bool; Was the [Radiation] section found and processed?</returns>
@@ -1539,6 +1532,13 @@ bool RulesClass::Elevation_Model(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// Fetches the combat and damage control values.
+/// This section holds the constants the combat system works from -- the damage figures for
+/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
+/// suppression distances, and the scorches, craters and smoke systems left behind.
+/// </summary>
+/// <returns>bool; Was a combat damage section found in the control file?</returns>
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
@@ -3710,6 +3710,15 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 }
 
 
+template <typename T>
+static void Detach_Pointer(AbstractClass const * target, T *& slot)
+{
+	if (target == slot) {
+		slot = NULL;
+	}
+}
+
+
 /// <summary>
 /// Removes all references to the specified object from the rules.
 /// The rules hold direct pointers to a great many object types and warheads, and keep
@@ -3718,334 +3727,121 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 void RulesClass::Detach(AbstractClass const * target, bool all)
 {
-	if (target == LargeVisceroid) {
-		LargeVisceroid = NULL;
-	}
-	if (target == SmallVisceroid) {
-		SmallVisceroid = NULL;
-	}
-	if (target == UnloadingHarvester) {
-		UnloadingHarvester = NULL;
-	}
-	if (target == VeinAttack) {
-		VeinAttack = NULL;
-	}
-	if (target == Wake) {
-		Wake = NULL;
-	}
-	if (target == OreTwinkle) {
-		OreTwinkle = NULL;
-	}
-	if (target == WeaponNullifyAnim) {
-		WeaponNullifyAnim = NULL;
-	}
-	if (target == FlamingInfantry) {
-		FlamingInfantry = NULL;
-	}
-	if (target == DropPodWeapon) {
-		DropPodWeapon = NULL;
-	}
-	if (target == FlameDamage) {
-		FlameDamage = NULL;
-	}
-	if (target == FlameDamage2) {
-		FlameDamage2 = NULL;
-	}
-	if (target == NukeWarhead) {
-		NukeWarhead = NULL;
-	}
-	if (target == EMPulseWarhead) {
-		EMPulseWarhead = NULL;
-	}
-	if (target == C4Warhead) {
-		C4Warhead = NULL;
-	}
-	if (target == CrushWarhead) {
-		CrushWarhead = NULL;
-	}
-	if (target == DrainAnimationType) {
-		DrainAnimationType = NULL;
-	}
-	for (WarheadTypeClass const ** warhead : {&V3Warhead, &V3EliteWarhead, &DMislWarhead, &DMislEliteWarhead, &CMislWarhead, &CMislEliteWarhead}) {
-		if (target == *warhead) {
-			*warhead = NULL;
-		}
-	}
-	for (RocketTypeStruct * rocket : {&V3Rocket, &DMisl, &CMisl}) {
-		if (target == rocket->Type) {
-			rocket->Type = NULL;
-		}
-	}
-	if (target == IonCannonWarhead) {
-		IonCannonWarhead = NULL;
-	}
-	if (target == FirestormWarhead) {
-		FirestormWarhead = NULL;
-	}
-	if (target == EMPulseSparkles) {
-		EMPulseSparkles = NULL;
-	}
-	if (target == VeinholeWarhead) {
-		VeinholeWarhead = NULL;
-	}
-	if (target == DefaultFirestormExplosionSystem) {
-		DefaultFirestormExplosionSystem = NULL;
-	}
-	if (target == DefaultLargeGreySmokeSystem) {
-		DefaultLargeGreySmokeSystem = NULL;
-	}
-	if (target == DefaultSmallGreySmokeSystem) {
-		DefaultSmallGreySmokeSystem = NULL;
-	}
-	if (target == DefaultSparkSystem) {
-		DefaultSparkSystem = NULL;
-	}
-	if (target == DefaultLargeRedSmokeSystem) {
-		DefaultLargeRedSmokeSystem = NULL;
-	}
-	if (target == DefaultSmallRedSmokeSystem) {
-		DefaultSmallRedSmokeSystem = NULL;
-	}
-	if (target == DefaultDebrisSmokeSystem) {
-		DefaultDebrisSmokeSystem = NULL;
-	}
-	if (target == DefaultFireStreamSystem) {
-		DefaultFireStreamSystem = NULL;
-	}
-	if (target == DefaultTestParticleSystem) {
-		DefaultTestParticleSystem = NULL;
-	}
-	if (target == DefaultRepairParticleSystem) {
-		DefaultRepairParticleSystem = NULL;
-	}
-	if (target == VeinholeTypeClass) {
-		VeinholeTypeClass = NULL;
-	}
-	if (target == Smoke1) {
-		Smoke1 = NULL;
-	}
-	if (target == Smoke2) {
-		Smoke2 = NULL;
-	}
-	if (target == MoveFlash) {
-		MoveFlash = NULL;
-	}
-	if (target == Behind) {
-		Behind = NULL;
-	}
-	if (target == BombParachute) {
-		BombParachute = NULL;
-	}
-	if (target == Parachute) {
-		Parachute = NULL;
-	}
-	if (target == SmallFire) {
-		SmallFire = NULL;
-	}
-	if (target == LargeFire) {
-		LargeFire = NULL;
-	}
-	if (target == FlareAnim) {
-		FlareAnim = NULL;
-	}
-	if (target == UnitCrateType) {
-		UnitCrateType = NULL;
-	}
-	if (target == Paratrooper) {
-		Paratrooper = NULL;
-	}
-	if (target == Disguise) {
-		Disguise = NULL;
-	}
-	if (target == Technician) {
-		Technician = NULL;
-	}
-	if (target == Engineer) {
-		Engineer = NULL;
-	}
-	if (target == Pilot) {
-		Pilot = NULL;
-	}
-	if (target == AlliedCrew) {
-		AlliedCrew = NULL;
-	}
-	if (target == SovietCrew) {
-		SovietCrew = NULL;
-	}
-	if (target == ThirdCrew) {
-		ThirdCrew = NULL;
-	}
-	if (target == RepairBay) {
-		RepairBay = NULL;
-	}
-	if (target == GDIGateOne) {
-		GDIGateOne = NULL;
-	}
-	if (target == GDIGateTwo) {
-		GDIGateTwo = NULL;
-	}
-	if (target == NodGateOne) {
-		NodGateOne = NULL;
-	}
-	if (target == NodGateTwo) {
-		NodGateTwo = NULL;
-	}
-	if (target == WallTower) {
-		WallTower = NULL;
-	}
-	if (target == GDIPowerPlant) {
-		GDIPowerPlant = NULL;
-	}
-	if (target == GDIPowerTurbine) {
-		GDIPowerTurbine = NULL;
-	}
-	if (target == NodRegularPower) {
-		NodRegularPower = NULL;
-	}
-	if (target == NodAdvancedPower) {
-		NodAdvancedPower = NULL;
-	}
-	if (target == ThirdPowerPlant) {
-		ThirdPowerPlant = NULL;
-	}
-	if (target == GDIFirestormGenerator) {
-		GDIFirestormGenerator = NULL;
-	}
-	if (target == GDIHunterSeeker) {
-		GDIHunterSeeker = NULL;
-	}
-	if (target == NodHunterSeeker) {
-		NodHunterSeeker = NULL;
-	}
-	if (target == NukeProjectile) {
-		NukeProjectile = NULL;
-	}
-	if (target == NukeDown) {
-		NukeDown = NULL;
-	}
-	if (target == EMPulseProjectile) {
-		EMPulseProjectile = NULL;
-	}
-	if (target == TireVoxelDebris) {
-		TireVoxelDebris = NULL;
-	}
-	if (target == ScrapVoxelDebris) {
-		ScrapVoxelDebris = NULL;
-	}
-	if (target == AtmosphereEntry) {
-		AtmosphereEntry = NULL;
-	}
-	if (target == InfantryExplode) {
-		InfantryExplode = NULL;
-	}
-	if (target == InfantryHeadPop) {
-		InfantryHeadPop = NULL;
-	}
-	if (target == InfantryNuked) {
-		InfantryNuked = NULL;
-	}
-	if (target == InfantryVirus) {
-		InfantryVirus = NULL;
-	}
-	if (target == InfantryMutate) {
-		InfantryMutate = NULL;
-	}
-	if (target == InfantryBrute) {
-		InfantryBrute = NULL;
-	}
-	if (target == IonBlast) {
-		IonBlast = NULL;
-	}
-	if (target == IronCurtainInvokeAnim) {
-		IronCurtainInvokeAnim = NULL;
-	}
-	if (target == NukeTakeOff) {
-		NukeTakeOff = NULL;
-	}
-	if (target == ChronoPlacement) {
-		ChronoPlacement = NULL;
-	}
-	if (target == ChronoBlast) {
-		ChronoBlast = NULL;
-	}
-	if (target == ChronoBlastDest) {
-		ChronoBlastDest = NULL;
-	}
-	if (target == WarpIn) {
-		WarpIn = NULL;
-	}
-	if (target == WarpOut) {
-		WarpOut = NULL;
-	}
-	if (target == WarpAway) {
-		WarpAway = NULL;
-	}
-	if (target == ChronoSparkle1) {
-		ChronoSparkle1 = NULL;
-	}
-	if (target == LightningWarhead) {
-		LightningWarhead = NULL;
-	}
-	if (target == WeatherConBoltExplosion) {
-		WeatherConBoltExplosion = NULL;
-	}
-	if (target == MutateWarhead) {
-		MutateWarhead = NULL;
-	}
-	if (target == MutateExplosionWarhead) {
-		MutateExplosionWarhead = NULL;
-	}
-	if (target == ForceShieldInvokeAnim) {
-		ForceShieldInvokeAnim = NULL;
-	}
-	if (target == DominatorFirstAnim) {
-		DominatorFirstAnim = NULL;
-	}
-	if (target == DominatorSecondAnim) {
-		DominatorSecondAnim = NULL;
-	}
-	if (target == DominatorWarhead) {
-		DominatorWarhead = NULL;
-	}
-	if (target == PermaControlledAnimationType) {
-		PermaControlledAnimationType = NULL;
-	}
-	if (target == ControlledAnimationType) {
-		ControlledAnimationType = NULL;
-	}
-	if (target == IonBeam) {
-		IonBeam = NULL;
-	}
-	if (target == Dig) {
-		Dig = NULL;
-	}
-	if (target == FirestormIdleAnim) {
-		FirestormIdleAnim = NULL;
-	}
-	if (target == FirestormAirAnim) {
-		FirestormAirAnim = NULL;
-	}
-	if (target == FirestormActiveAnim) {
-		FirestormActiveAnim = NULL;
-	}
-	if (target == FirestormGroundAnim) {
-		FirestormGroundAnim = NULL;
-	}
-	if (target == BarrelExplode) {
-		BarrelExplode = NULL;
-	}
-	if (target == BarrelParticle) {
-		BarrelParticle = NULL;
-	}
-	if (target == DropPodPuff) {
-		DropPodPuff = NULL;
-	}
-	if (target == IonStormWarhead) {
-		IonStormWarhead = NULL;
-	}
-	if (target == WebbedInfantry) {
-		WebbedInfantry = NULL;
-	}
+	Detach_Pointer(target, LargeVisceroid);
+	Detach_Pointer(target, SmallVisceroid);
+	Detach_Pointer(target, UnloadingHarvester);
+	Detach_Pointer(target, VeinAttack);
+	Detach_Pointer(target, Wake);
+	Detach_Pointer(target, OreTwinkle);
+	Detach_Pointer(target, WeaponNullifyAnim);
+	Detach_Pointer(target, FlamingInfantry);
+	Detach_Pointer(target, DropPodWeapon);
+	Detach_Pointer(target, FlameDamage);
+	Detach_Pointer(target, FlameDamage2);
+	Detach_Pointer(target, NukeWarhead);
+	Detach_Pointer(target, EMPulseWarhead);
+	Detach_Pointer(target, C4Warhead);
+	Detach_Pointer(target, CrushWarhead);
+	Detach_Pointer(target, DrainAnimationType);
+	Detach_Pointer(target, V3Warhead);
+	Detach_Pointer(target, V3EliteWarhead);
+	Detach_Pointer(target, DMislWarhead);
+	Detach_Pointer(target, DMislEliteWarhead);
+	Detach_Pointer(target, CMislWarhead);
+	Detach_Pointer(target, CMislEliteWarhead);
+	Detach_Pointer(target, V3Rocket.Type);
+	Detach_Pointer(target, DMisl.Type);
+	Detach_Pointer(target, CMisl.Type);
+	Detach_Pointer(target, IonCannonWarhead);
+	Detach_Pointer(target, FirestormWarhead);
+	Detach_Pointer(target, EMPulseSparkles);
+	Detach_Pointer(target, VeinholeWarhead);
+	Detach_Pointer(target, DefaultFirestormExplosionSystem);
+	Detach_Pointer(target, DefaultLargeGreySmokeSystem);
+	Detach_Pointer(target, DefaultSmallGreySmokeSystem);
+	Detach_Pointer(target, DefaultSparkSystem);
+	Detach_Pointer(target, DefaultLargeRedSmokeSystem);
+	Detach_Pointer(target, DefaultSmallRedSmokeSystem);
+	Detach_Pointer(target, DefaultDebrisSmokeSystem);
+	Detach_Pointer(target, DefaultFireStreamSystem);
+	Detach_Pointer(target, DefaultTestParticleSystem);
+	Detach_Pointer(target, DefaultRepairParticleSystem);
+	Detach_Pointer(target, VeinholeTypeClass);
+	Detach_Pointer(target, Smoke1);
+	Detach_Pointer(target, Smoke2);
+	Detach_Pointer(target, MoveFlash);
+	Detach_Pointer(target, Behind);
+	Detach_Pointer(target, BombParachute);
+	Detach_Pointer(target, Parachute);
+	Detach_Pointer(target, SmallFire);
+	Detach_Pointer(target, LargeFire);
+	Detach_Pointer(target, FlareAnim);
+	Detach_Pointer(target, UnitCrateType);
+	Detach_Pointer(target, Paratrooper);
+	Detach_Pointer(target, Disguise);
+	Detach_Pointer(target, Technician);
+	Detach_Pointer(target, Engineer);
+	Detach_Pointer(target, Pilot);
+	Detach_Pointer(target, AlliedCrew);
+	Detach_Pointer(target, SovietCrew);
+	Detach_Pointer(target, ThirdCrew);
+	Detach_Pointer(target, RepairBay);
+	Detach_Pointer(target, GDIGateOne);
+	Detach_Pointer(target, GDIGateTwo);
+	Detach_Pointer(target, NodGateOne);
+	Detach_Pointer(target, NodGateTwo);
+	Detach_Pointer(target, WallTower);
+	Detach_Pointer(target, GDIPowerPlant);
+	Detach_Pointer(target, GDIPowerTurbine);
+	Detach_Pointer(target, NodRegularPower);
+	Detach_Pointer(target, NodAdvancedPower);
+	Detach_Pointer(target, ThirdPowerPlant);
+	Detach_Pointer(target, GDIFirestormGenerator);
+	Detach_Pointer(target, GDIHunterSeeker);
+	Detach_Pointer(target, NodHunterSeeker);
+	Detach_Pointer(target, NukeProjectile);
+	Detach_Pointer(target, NukeDown);
+	Detach_Pointer(target, EMPulseProjectile);
+	Detach_Pointer(target, TireVoxelDebris);
+	Detach_Pointer(target, ScrapVoxelDebris);
+	Detach_Pointer(target, AtmosphereEntry);
+	Detach_Pointer(target, InfantryExplode);
+	Detach_Pointer(target, InfantryHeadPop);
+	Detach_Pointer(target, InfantryNuked);
+	Detach_Pointer(target, InfantryVirus);
+	Detach_Pointer(target, InfantryMutate);
+	Detach_Pointer(target, InfantryBrute);
+	Detach_Pointer(target, IonBlast);
+	Detach_Pointer(target, IronCurtainInvokeAnim);
+	Detach_Pointer(target, NukeTakeOff);
+	Detach_Pointer(target, ChronoPlacement);
+	Detach_Pointer(target, ChronoBlast);
+	Detach_Pointer(target, ChronoBlastDest);
+	Detach_Pointer(target, WarpIn);
+	Detach_Pointer(target, WarpOut);
+	Detach_Pointer(target, WarpAway);
+	Detach_Pointer(target, ChronoSparkle1);
+	Detach_Pointer(target, LightningWarhead);
+	Detach_Pointer(target, WeatherConBoltExplosion);
+	Detach_Pointer(target, MutateWarhead);
+	Detach_Pointer(target, MutateExplosionWarhead);
+	Detach_Pointer(target, ForceShieldInvokeAnim);
+	Detach_Pointer(target, DominatorFirstAnim);
+	Detach_Pointer(target, DominatorSecondAnim);
+	Detach_Pointer(target, DominatorWarhead);
+	Detach_Pointer(target, PermaControlledAnimationType);
+	Detach_Pointer(target, ControlledAnimationType);
+	Detach_Pointer(target, IonBeam);
+	Detach_Pointer(target, Dig);
+	Detach_Pointer(target, FirestormIdleAnim);
+	Detach_Pointer(target, FirestormAirAnim);
+	Detach_Pointer(target, FirestormActiveAnim);
+	Detach_Pointer(target, FirestormGroundAnim);
+	Detach_Pointer(target, BarrelExplode);
+	Detach_Pointer(target, BarrelParticle);
+	Detach_Pointer(target, DropPodPuff);
+	Detach_Pointer(target, IonStormWarhead);
+	Detach_Pointer(target, WebbedInfantry);
 
 	BarrelDebris.Delete((VoxelAnimTypeClass const *)target);
 

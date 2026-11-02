@@ -30,7 +30,6 @@ typedef MixFileClass	MFCD;
 extern DynamicVectorClass<MFCD *> ExpandMix;
 extern DynamicVectorClass<MFCD *> ExpandSpeechMix;
 extern MFCD * MultiMix;
-extern MFCD * MarbleMix;
 extern DynamicVectorClass<MFCD *> ExpandSideMix;
 extern MFCD * GameMix;
 extern MFCD * TheaterData;
@@ -44,8 +43,6 @@ extern MFCD * IsometricExpansionData;
 
 extern MFCD * MoviesMix;
 
-extern MFCD * ScoresMix;
-extern MFCD * MainMix;
 extern MFCD * ConquerMix;
 extern MFCD * CacheMix;
 extern MFCD * LocalMix;
@@ -74,9 +71,6 @@ extern MFCD * AudioMix;
 extern MFCD * MapsMix;
 
 extern MFCD * SpeechMix;
-extern MFCD * SoundsMix;
-extern MFCD * Sounds01Mix;
-extern MFCD * Scores01Mix;
 extern MFCD * SideCMix;
 extern MFCD * SideCMDMix;		// SIDEC<nn>MD.MIX, searched ahead of SideCMix
 extern MFCD * SideNCMix;

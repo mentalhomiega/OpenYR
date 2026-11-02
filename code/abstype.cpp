@@ -101,14 +101,7 @@ const char * AbstractTypeClass::Full_Name(void) const
 		}
 
 		if (UINameText.empty()) {
-			wchar_t const * text = StringTable.Find(UINameLabel.c_str());
-			if (text != NULL && *text != L'\0') {
-				int const size = WideCharToMultiByte(CP_UTF8, 0, text, -1, NULL, 0, NULL, NULL);
-				if (size > 1) {
-					UINameText.resize(size - 1);
-					WideCharToMultiByte(CP_UTF8, 0, text, -1, UINameText.data(), size, NULL, NULL);
-				}
-			}
+			UINameText = StringTable.Find_UTF8(UINameLabel.c_str());
 		}
 		if (!UINameText.empty()) {
 			return(UINameText.c_str());

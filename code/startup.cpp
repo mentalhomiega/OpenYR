@@ -758,6 +758,15 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	return(error_code);
 }
 
+// Deletes the object and leaves the pointer NULL. Deleting a NULL pointer does nothing.
+template <typename T>
+static void Delete_And_Clear(T *& pointer)
+{
+	delete pointer;
+	pointer = NULL;
+}
+
+
 /***********************************************************************************************
  * Prog_End -- Cleans up library systems in prep for game exit.                                *
  *                                                                                             *
@@ -804,10 +813,7 @@ void __cdecl Prog_End(void)
 
 	Theme.Free_Themes();
 
-	if (RuleINI != NULL) {
-		delete RuleINI;
-		RuleINI = NULL;
-	}
+	Delete_And_Clear(RuleINI);
 	AIINI.Clear();
 	ArtINI.Clear();
 	FSRuleINI.Clear();
@@ -821,95 +827,35 @@ void __cdecl Prog_End(void)
 	SpotLightClass::Clear_All();
 	IonBlastClass::Clear_All();
 
-	if (MouseCursor) {
-		delete MouseCursor;
-		MouseCursor = NULL;
-	}
+	Delete_And_Clear(MouseCursor);
 
 	Map.Free_Cells();
 	Map.Clear_Radar();
 
 	Reset_Surfaces();
 
-	if (DepthBuffer != NULL) {
-		delete DepthBuffer;
-		DepthBuffer = NULL;
-	}
-	if (AlphaBuffer != NULL) {
-		delete AlphaBuffer;
-		AlphaBuffer = NULL;
-	}
+	Delete_And_Clear(DepthBuffer);
+	Delete_And_Clear(AlphaBuffer);
 
-	if (Metal12FontPtr != NULL) {
-		delete Metal12FontPtr;
-		Metal12FontPtr = NULL;
-	}
-	if (MapFontPtr != NULL) {
-		delete MapFontPtr;
-		MapFontPtr = NULL;
-	}
-	if (Font6Ptr != NULL) {
-		delete Font6Ptr;
-		Font6Ptr = NULL;
-	}
-	if (EditorFont != NULL) {
-		delete EditorFont;
-		EditorFont = NULL;
-	}
-	if (Font8Ptr != NULL) {
-		delete Font8Ptr;
-		Font8Ptr = NULL;
-	}
-	if (GradFont6Ptr != NULL) {
-		delete GradFont6Ptr;
-		GradFont6Ptr = NULL;
-	}
+	Delete_And_Clear(Metal12FontPtr);
+	Delete_And_Clear(MapFontPtr);
+	Delete_And_Clear(Font6Ptr);
+	Delete_And_Clear(EditorFont);
+	Delete_And_Clear(Font8Ptr);
+	Delete_And_Clear(GradFont6Ptr);
 
-	if (TerrainDrawer != NULL) {
-		delete TerrainDrawer;
-		TerrainDrawer = NULL;
-	}
-	if (AnimDrawer != NULL) {
-		delete AnimDrawer;
-		AnimDrawer = NULL;
-	}
-	if (NormalDrawer != NULL) {
-		delete NormalDrawer;
-		NormalDrawer = NULL;
-	}
-	if (VoxelDrawer != NULL) {
-		delete VoxelDrawer;
-		VoxelDrawer = NULL;
-	}
-	if (MouseDrawer != NULL) {
-		delete MouseDrawer;
-		MouseDrawer = NULL;
-	}
-	if (GrfxTxtDrawer != NULL) {
-		delete GrfxTxtDrawer;
-		GrfxTxtDrawer = NULL;
-	}
-	if (SidebarDrawer != NULL) {
-		delete SidebarDrawer;
-		SidebarDrawer = NULL;
-	}
-	if (CameoDrawer != NULL) {
-		delete CameoDrawer;
-		CameoDrawer = NULL;
-	}
-	if (EightBitDrawer != NULL) {
-		delete EightBitDrawer;
-		EightBitDrawer = NULL;
-	}
-	if (EightBitSurface != NULL) {
-		delete EightBitSurface;
-		EightBitSurface = NULL;
-	}
+	Delete_And_Clear(TerrainDrawer);
+	Delete_And_Clear(AnimDrawer);
+	Delete_And_Clear(NormalDrawer);
+	Delete_And_Clear(VoxelDrawer);
+	Delete_And_Clear(MouseDrawer);
+	Delete_And_Clear(GrfxTxtDrawer);
+	Delete_And_Clear(SidebarDrawer);
+	Delete_And_Clear(CameoDrawer);
+	Delete_And_Clear(EightBitDrawer);
+	Delete_And_Clear(EightBitSurface);
 
-	if (CloakingSurface != NULL) {
-		delete CloakingSurface;
-		CloakingSurface = NULL;
-	}
+	Delete_And_Clear(CloakingSurface);
 
 	if (BuildingTypeClass::BuildingZShape != NULL) {
 		delete (void *)BuildingTypeClass::BuildingZShape;
@@ -923,27 +869,13 @@ void __cdecl Prog_End(void)
 	}
 	TileDrawers.Clear();
 
-	if (TheaterData) {
-		delete TheaterData;
-		TheaterData = NULL;
-	}
-	if (TheaterDat) {
-		delete TheaterDat;
-		TheaterDat = NULL;
-	}
-	if (IsometricTheaterData) {
-		delete IsometricTheaterData;
-		IsometricTheaterData = NULL;
-	}
-	delete TheaterExpansionData;
-	TheaterExpansionData = NULL;
-	delete IsometricExpansionData;
-	IsometricExpansionData = NULL;
+	Delete_And_Clear(TheaterData);
+	Delete_And_Clear(TheaterDat);
+	Delete_And_Clear(IsometricTheaterData);
+	Delete_And_Clear(TheaterExpansionData);
+	Delete_And_Clear(IsometricExpansionData);
 
-	if (IsometricTileTypeClass::CellShadowShapes != NULL) {
-		delete IsometricTileTypeClass::CellShadowShapes;
-		IsometricTileTypeClass::CellShadowShapes = NULL;
-	}
+	Delete_And_Clear(IsometricTileTypeClass::CellShadowShapes);
 
 	if (SlopeZShapes[0] != NULL) {
 		delete (ShapeSet *)SlopeZShapes[0];
@@ -962,35 +894,14 @@ void __cdecl Prog_End(void)
 		SlopeZShapes[3] = NULL;
 	}
 
-	if (PreviewSurface != NULL) {
-		delete PreviewSurface;
-		PreviewSurface = NULL;
-	}
+	Delete_And_Clear(PreviewSurface);
 
-	if (MoviesMix != NULL) {
-		delete MoviesMix;
-		MoviesMix = NULL;
-	}
+	Delete_And_Clear(MoviesMix);
 	while (MoviesMixLocal.Count() > 0) {
 		delete MoviesMixLocal[0];
 		MoviesMixLocal.Delete_Index(0);
 	}
-	if (ScoresMix != NULL) {
-		delete ScoresMix;
-		ScoresMix = NULL;
-	}
-	if (Scores01Mix != NULL) {
-		delete Scores01Mix;
-		Scores01Mix = NULL;
-	}
-	if (MainMix != NULL) {
-		delete MainMix;
-		MainMix = NULL;
-	}
-	if (ConquerMix != NULL) {
-		delete ConquerMix;
-		ConquerMix = NULL;
-	}
+	Delete_And_Clear(ConquerMix);
 	for (MFCD ** mix : {&BaseConquerMix, &GenericMix, &BaseGenericMix, &IsoGenericMix, &BaseIsoGenericMix,
 			&CameoMix, &BaseCameoMix, &ThemeMix, &BaseThemeMix, &LanguageMix, &BaseLanguageMix, &AudioMix}) {
 		delete *mix;
@@ -1009,99 +920,39 @@ void __cdecl Prog_End(void)
 		delete ExpandMix[0];
 		ExpandMix.Delete_Index(0);
 	}
-	if (CacheMix != NULL) {
-		delete CacheMix;
-		CacheMix = NULL;
-	}
-	if (LocalMix != NULL) {
-		delete LocalMix;
-		LocalMix = NULL;
-	}
-	if (BaseCacheMix != NULL) {
-		delete BaseCacheMix;
-		BaseCacheMix = NULL;
-	}
-	if (BaseLocalMix != NULL) {
-		delete BaseLocalMix;
-		BaseLocalMix = NULL;
-	}
-	if (SpeechMix != NULL) {
-		delete SpeechMix;
-		SpeechMix = NULL;
-	}
-	if (SoundsMix != NULL) {
-		delete SoundsMix;
-		SoundsMix = NULL;
-	}
-	if (Sounds01Mix != NULL) {
-		delete Sounds01Mix;
-		Sounds01Mix = NULL;
-	}
-	if (MapsMix != NULL) {
-		delete MapsMix;
-		MapsMix = NULL;
-	}
+	Delete_And_Clear(CacheMix);
+	Delete_And_Clear(LocalMix);
+	Delete_And_Clear(BaseCacheMix);
+	Delete_And_Clear(BaseLocalMix);
+	Delete_And_Clear(SpeechMix);
+	Delete_And_Clear(MapsMix);
 	while (MapsMixLocal.Count() > 0) {
 		delete MapsMixLocal[0];
 		MapsMixLocal.Delete_Index(0);
 	}
-	if (MultiMix != NULL) {
-		delete MultiMix;
-		MultiMix = NULL;
-	}
-	if (SideCMix != NULL) {
-		delete SideCMix;
-		SideCMix = NULL;
-	}
-	delete SideCMDMix;
-	SideCMDMix = NULL;
-	if (SideNCMix != NULL) {
-		delete SideNCMix;
-		SideNCMix = NULL;
-	}
-	if (SideCDMix != NULL) {
-		delete SideCDMix;
-		SideCDMix = NULL;
-	}
-	if (GameMix != NULL) {
-		delete GameMix;
-		GameMix = NULL;
-	}
-	if (BaseGameMix != NULL) {
-		delete BaseGameMix;
-		BaseGameMix = NULL;
-	}
+	Delete_And_Clear(MultiMix);
+	Delete_And_Clear(SideCMix);
+	Delete_And_Clear(SideCMDMix);
+	Delete_And_Clear(SideNCMix);
+	Delete_And_Clear(SideCDMix);
+	Delete_And_Clear(GameMix);
+	Delete_And_Clear(BaseGameMix);
 
-	if (TacticalMap != NULL) {
-		delete TacticalMap;
-		TacticalMap = NULL;
-	}
+	Delete_And_Clear(TacticalMap);
 
 	Free_Vocs();
 
 	CDFileClass::Clear_Search_Drives();
 
-	if (Keyboard != NULL) {
-		delete Keyboard;
-		Keyboard = NULL;
-	}
+	Delete_And_Clear(Keyboard);
 
 	Shutdown_Network();
 
-	if (UnkBuffer != NULL) {
-		delete UnkBuffer;
-		UnkBuffer = NULL;
-	}
+	Delete_And_Clear(UnkBuffer);
 
-	if (Rule != NULL) {
-		delete Rule;
-		Rule = NULL;
-	}
+	Delete_And_Clear(Rule);
 
-	if (Scen != NULL) {
-		delete Scen;
-		Scen = NULL;
-	}
+	Delete_And_Clear(Scen);
 
 	Unregister_Classes();
 

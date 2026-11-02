@@ -378,16 +378,8 @@ void const * MixFileClass::Resident_Member(int position, int size)
 		return(NULL);
 	}
 
-	CCFileClass file(Filename);
-	if (!file.Open(FileClass::READ)) {
-		return(NULL);
-	}
-	file.Bias(0);
-	file.Bias(DataStart);
-
 	std::unique_ptr<char[]> data(new char[size]);
-	file.Seek(position - DataStart, SEEK_SET);
-	if (file.Read(data.get(), size) != size) {
+	if (!Read_Range(position - DataStart, data.get(), size)) {
 		return(NULL);
 	}
 
@@ -705,6 +697,33 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 }
 
 
+// Returns the header entry for the name in any case, or NULL when this archive does not hold it.
+MixFileClass::SubBlock const * MixFileClass::Find_Block(char const * filename) const
+{
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+
+	SubBlock key;
+	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
+	return(Binary_Search<SubBlock>(HeaderBuffer, Count, key));
+}
+
+
+// Reads count bytes at offset, which counts from DataStart. Returns false when the file cannot be opened or the read is short.
+bool MixFileClass::Read_Range(int offset, void * bytes, int count) const
+{
+	CCFileClass file(Filename);
+	if (!file.Open(FileClass::READ)) {
+		return(false);
+	}
+	file.Bias(0);
+	file.Bias(DataStart);
+	file.Seek(offset, SEEK_SET);
+	return(file.Read(bytes, count) == count);
+}
+
+
 /// <summary>
 /// Reads the named member of this archive, or part of it, even when an archive attached before this one holds a member of the
 /// same name.
@@ -721,13 +740,7 @@ bool MixFileClass::Read_Member(char const * filename, std::vector<unsigned char>
 		return(false);
 	}
 
-	char filename_upper[_MAX_PATH];
-	strcpy(filename_upper, filename);
-	strupr(filename_upper);
-
-	SubBlock key;
-	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
-	SubBlock const * block = Binary_Search<SubBlock>(HeaderBuffer, Count, key);
+	SubBlock const * block = Find_Block(filename);
 	if (block == NULL || start > block->Size) {
 		return(false);
 	}
@@ -747,15 +760,7 @@ bool MixFileClass::Read_Member(char const * filename, std::vector<unsigned char>
 		return(true);
 	}
 
-	CCFileClass file(Filename);
-	if (!file.Open(FileClass::READ)) {
-		bytes.clear();
-		return(false);
-	}
-	file.Bias(0);
-	file.Bias(DataStart);
-	file.Seek(block->Offset + start, SEEK_SET);
-	if (file.Read(bytes.data(), count) != count) {
+	if (!Read_Range(block->Offset + start, bytes.data(), count)) {
 		bytes.clear();
 		return(false);
 	}
@@ -773,13 +778,7 @@ bool MixFileClass::Member_Size(char const * filename, int * size) const
 		return(false);
 	}
 
-	char filename_upper[_MAX_PATH];
-	strcpy(filename_upper, filename);
-	strupr(filename_upper);
-
-	SubBlock key;
-	key.CRC = (CRCEngine()(filename_upper, strlen(filename_upper)));
-	SubBlock const * block = Binary_Search<SubBlock>(HeaderBuffer, Count, key);
+	SubBlock const * block = Find_Block(filename);
 	if (block == NULL) {
 		return(false);
 	}
