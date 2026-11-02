@@ -289,7 +289,7 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		Size_Armor_Tables();
 
 		char buffer[128];
-		if (ini.Get_String(Name(), "Verses", "100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%,100%%", buffer, sizeof(buffer))) {
+		if (ini.Get_String(Name(), "Verses", "100%,100%,100%,100%,100%,100%,100%,100%,100%,100%,100%", buffer, sizeof(buffer))) {
 			char * aval = strtok(buffer, ",");
 			// A list shorter than the armor types leaves the rest unchanged; Yuri's Revenge
 			// crashes on one.
@@ -415,33 +415,38 @@ double WarheadTypeClass::Versus(ArmorType armor) const
 }
 
 
+// The switch value a targeting table holds for the armor: 0 or 1 when the table sets it, and negative when the
+// caller must use the Versus fallback (the armor is outside the table or its entry is unset).
+static int Table_Entry(std::vector<signed char> const & table, ArmorType armor)
+{
+	if (armor >= 0 && armor < (int)table.size()) {
+		return(table[armor]);
+	}
+	return(-1);
+}
+
+
 // Yuri's Revenge refuses to fire at an armor its warhead does nothing to (TechnoClass::GetFireError, 0x6FC3FE).
 bool WarheadTypeClass::Can_Force_Fire(ArmorType armor) const
 {
-	if (armor >= 0 && armor < (int)ForceFire.size() && ForceFire[armor] >= 0) {
-		return(ForceFire[armor] != 0);
-	}
-	return(Versus(armor) != 0.0);
+	int const entry = Table_Entry(ForceFire, armor);
+	return(entry >= 0 ? entry != 0 : Versus(armor) != 0.0);
 }
 
 
 // Yuri's Revenge fires back only when the multiplier is above the single-precision 0.01 (TechnoClass::CanRetaliateToAttacker), which a 1% entry passes.
 bool WarheadTypeClass::Can_Retaliate(ArmorType armor) const
 {
-	if (armor >= 0 && armor < (int)Retaliate.size() && Retaliate[armor] >= 0) {
-		return(Retaliate[armor] != 0);
-	}
-	return(Versus(armor) >= 0.0099999997);
+	int const entry = Table_Entry(Retaliate, armor);
+	return(entry >= 0 ? entry != 0 : Versus(armor) >= 0.0099999997);
 }
 
 
 // Automatic targeting needs a multiplier above the single-precision 2%, so 1% is refused and 2% accepted (TechnoClass::CanAutoTargetObject, 0x6F7CA0).
 bool WarheadTypeClass::Can_Passive_Acquire(ArmorType armor) const
 {
-	if (armor >= 0 && armor < (int)PassiveAcquire.size() && PassiveAcquire[armor] >= 0) {
-		return(PassiveAcquire[armor] != 0);
-	}
-	return(Versus(armor) > 0.019999999552965164);
+	int const entry = Table_Entry(PassiveAcquire, armor);
+	return(entry >= 0 ? entry != 0 : Versus(armor) > 0.019999999552965164);
 }
 
 
