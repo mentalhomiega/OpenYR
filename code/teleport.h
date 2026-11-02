@@ -69,7 +69,7 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybackee != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybackee.Has_Locomotor());}
 
 		// Holds the object on its cell for countdown frames, then runs the landing stages that set it down at to (chronosphere warps only).
 		void Begin_Chrono_Warp(Coord to, int countdown);
@@ -105,7 +105,7 @@ class TeleportLocomotionClass : public LocomotionClass, public IPiggyback
 		/*
 		 * The object's own locomotor while a chronosphere warp carries it. Null when nothing is carried.
 		 */
-		std::unique_ptr<ILocomotion> Piggybackee;
+		PiggybackSlot Piggybackee;
 
 		int Warp_Distance(Coord const & to) const;
 		bool Targets_Cell(Coord const & dest) const;

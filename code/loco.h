@@ -32,6 +32,29 @@ std::unique_ptr<ILocomotion> Create_Locomotor(ClassID const & classid);
 std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream);
 
 
+// The locomotor a piggybacking locomotor carries. The slot holds at most one. It saves as a
+// flag, followed by the locomotor when the flag is set.
+class PiggybackSlot
+{
+	public:
+		bool Begin(std::unique_ptr<ILocomotion> & carried)
+		{
+			if (carried == nullptr || Carried != nullptr) {
+				return(false);
+			}
+			Carried = std::move(carried);
+			return(true);
+		}
+
+		std::unique_ptr<ILocomotion> End(void) {return(std::move(Carried));}
+		bool Has_Locomotor(void) const {return(Carried != nullptr);}
+		void Serialize(SaveStreamClass & stream);
+
+	private:
+		std::unique_ptr<ILocomotion> Carried;
+};
+
+
 class LocomotionClass : public IPersistent, public ILocomotion
 {
 	public:

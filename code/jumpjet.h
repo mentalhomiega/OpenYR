@@ -48,7 +48,7 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker.Has_Locomotor());}
 		bool Stays_Aloft(void) const;
 		bool Hovers_At_Stop(void) const;
 
@@ -152,5 +152,5 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		bool IsLanding;
 
 		// The unit's own locomotor, carried while a locomotor warhead's holder controls the unit.
-		std::unique_ptr<ILocomotion> Piggybacker;
+		PiggybackSlot Piggybacker;
 };

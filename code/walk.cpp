@@ -631,16 +631,7 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsProcessingMovement);
 	stream.Serialize(IsReallyMoving);
 
-	bool haspiggy = (Piggybacker != NULL);
-	stream.Serialize(haspiggy);
-
-	if (haspiggy) {
-		if (stream.Is_Saving()) {
-			Save_Object(stream, Piggybacker.get());
-		} else {
-			Piggybacker = Load_Locomotor(stream);
-		}
-	}
+	Piggybacker.Serialize(stream);
 }
 
 
@@ -663,11 +654,7 @@ LayerType WalkLocomotionClass::In_Which_Layer(void)
 /// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
 bool WalkLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (carried == nullptr || Piggybacker != nullptr) {
-		return(false);
-	}
-	Piggybacker = std::move(carried);
-	return(true);
+	return(Piggybacker.Begin(carried));
 }
 
 
@@ -678,7 +665,7 @@ bool WalkLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried
 /// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
 std::unique_ptr<ILocomotion> WalkLocomotionClass::End_Piggyback(void)
 {
-	return(std::move(Piggybacker));
+	return(Piggybacker.End());
 }
 
 
@@ -690,7 +677,7 @@ std::unique_ptr<ILocomotion> WalkLocomotionClass::End_Piggyback(void)
 /// <returns>bool; Is it safe to end the piggyback?</returns>
 bool WalkLocomotionClass::Is_Ok_To_End(void)
 {
-	if (!Is_Moving() && Piggybacker != NULL && !IsProcessingMovement) {
+	if (!Is_Moving() && Piggybacker.Has_Locomotor() && !IsProcessingMovement) {
 		return(true);
 	}
 	return(false);
