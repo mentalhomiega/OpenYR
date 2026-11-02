@@ -4009,7 +4009,6 @@ class Dash_Table_Restore
 void Tactical::Draw_Waypoints(bool inshroud)
 {
 	int phase = (0x7FFFFFFF - Frame) % TICKS_PER_SECOND;
-	int frame = WAYPOINT_MARKER_FRAME;
 
 	if (Debug_Map) {
 		return;
@@ -4057,7 +4056,7 @@ void Tactical::Draw_Waypoints(bool inshroud)
 
 			if (onscreen) {
 				Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
-				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
+				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, WAYPOINT_MARKER_FRAME, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
 				// Holds any int, since MaxWaypointPathLength lets a path exceed 999 waypoints.
 				static char buffer[12];
