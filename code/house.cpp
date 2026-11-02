@@ -1090,6 +1090,175 @@ bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
 }
 
 
+static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
+{
+	for (int index = 0; index < ids.Count(); index++) {
+		if (tally.Value(ids[index]) > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+{
+	for (int i = 0; i < pre.Count(); i++) {
+		switch (pre[i]) {
+			case STRUCT_G_POWER:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower)) return(false);
+				break;
+
+			case STRUCT_G_FACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory)) return(false);
+				break;
+
+			case STRUCT_G_BARRACKS:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks)) return(false);
+				break;
+
+			case STRUCT_G_RADAR:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar)) return(false);
+				break;
+
+			case STRUCT_G_TECH:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech)) return(false);
+				break;
+
+			case STRUCT_G_PROC: {
+				bool found = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc);
+				for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
+					if (house.AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
+						found = true;
+					}
+				}
+				if (!found) return(false);
+			}
+			break;
+
+			case STRUCT_G_GDIFACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory)) return(false);
+				break;
+
+			case STRUCT_G_NODFACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory)) return(false);
+				break;
+
+			default: {
+				BuildingTypeClass * btype = BuildingTypes[pre[i]];
+				if (!btype->PowersUpBuilding.empty()) {
+					BuildingClass * bptr;
+					bool found = false;
+					for (int j = Buildings.Count() - 1; j >= 0; j--) {
+						bptr = Buildings[j];
+						if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn) {
+							if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
+								found = true;
+								break;
+							}
+						}
+					}
+					if (found) {
+						for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
+							if (bptr->Upgrades[k] == btype) {
+								goto breakout;
+							}
+						}
+					}
+					return(false);
+				}
+				if (house.ABQuantity.Value(pre[i]) == 0) return(false);
+				breakout:;
+			}
+			break;
+		}
+	}
+	return(true);
+}
+
+
+static int Build_Limit_Result(HouseClass const & house, ObjectTypeClass const * type, bool include_in_progress)
+{
+	switch ((RTTIType)type->RTTI) {
+		case RTTI_UNITTYPE: {
+			UnitTypeClass const * utype = (UnitTypeClass const *)type;
+			if (utype->BuildLimit <= 0) {
+				return(house.PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
+			}
+			int count = house.UQuantity.Value(type->Fetch_Heap_ID());
+			if (utype->DeploysInto != NULL) {
+				count += house.BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
+			}
+			if (count < utype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_INFANTRYTYPE: {
+			InfantryTypeClass const * itype = (InfantryTypeClass const *)type;
+			if (itype->BuildLimit <= 0) {
+				return(house.PIQuantity.Value(type->Fetch_Heap_ID()) < abs(itype->BuildLimit));
+			}
+			int count = house.IQuantity.Value(type->Fetch_Heap_ID());
+			if (itype->IsVehicleThief) {
+				for (int i = 0; i < Units.Count(); i++) {
+					UnitClass * unit = Units[i];
+					if (unit->House == &house && unit->EnteredByInfType == type->Fetch_Heap_ID()) {
+						count++;
+					}
+				}
+			}
+			if (itype->BuildLimit <= 0 || count < itype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && count == itype->BuildLimit && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_BUILDINGTYPE: {
+			BuildingTypeClass const * btype = (BuildingTypeClass const *)type;
+			if (btype->BuildLimit <= 0) {
+				return(house.PBQuantity.Value(type->Fetch_Heap_ID()) < abs(btype->BuildLimit));
+			}
+			int count = house.BQuantity.Value(type->Fetch_Heap_ID());
+			if (count < btype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_AIRCRAFTTYPE: {
+			AircraftTypeClass const * atype = (AircraftTypeClass const *)type;
+			if (atype->BuildLimit <= 0) {
+				return(house.PAQuantity.Value(type->Fetch_Heap_ID()) < abs(atype->BuildLimit));
+			}
+			int count = house.AQuantity.Value(type->Fetch_Heap_ID());
+			if (count < atype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+	}
+	return(1);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Can_Build -- General purpose build legality checker.                            *
  *                                                                                             *
@@ -1186,138 +1355,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		/*
 		**	See if the prerequisite requirements have been met.
 		*/
-		for (int i = 0; i < pre.Count(); i++) {
-			switch (pre[i]) {
-				case STRUCT_G_POWER: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisitePower.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisitePower[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_FACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_BARRACKS: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteBarracks.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteBarracks[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_RADAR: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteRadar.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteRadar[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_TECH: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteTech.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteTech[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_PROC: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteProc.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteProc[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
-						if (AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
-							found = true;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_GDIFACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteGDIFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteGDIFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_NODFACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteNodFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteNodFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				default: {
-					BuildingTypeClass * btype = BuildingTypes[pre[i]];
-					if (!btype->PowersUpBuilding.empty()) {
-						BuildingClass * bptr;
-						bool found = false;
-						for (int j = Buildings.Count() - 1; j >= 0; j--) {
-							bptr = Buildings[j];
-							if (!bptr->IsInLimbo && bptr->House == this && bptr->IsOn) {
-								if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-									found = true;
-									break;
-								}
-							}
-						}
-						if (found) {
-							for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
-								if (bptr->Upgrades[k] == btype) {
-									goto breakout;
-								}
-							}
-						}
-						return(0);
-					}
-					if (ABQuantity.Value(pre[i]) == 0) return(0);
-					breakout:;
-				}
-				break;
-			}
-		}
+		if (!Prerequisites_Met(*this, pre)) return(0);
 
 		/*
 		**	A structure that no side owns is never buildable. Which factory builds it is decided by
@@ -1328,115 +1366,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		}
 	}
 
-	switch ((RTTIType)type->RTTI) {
-		case RTTI_UNITTYPE: {
-			UnitTypeClass const * utype = (UnitTypeClass const *)type;
-			if (utype->BuildLimit <= 0) {
-				return(PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
-			}
-			int count = UQuantity.Value(type->Fetch_Heap_ID());
-			if (utype->DeploysInto != NULL) {
-				count += BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
-			}
-			if (count < utype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_INFANTRYTYPE: {
-			InfantryTypeClass const * itype = (InfantryTypeClass const *)type;
-			if (itype->BuildLimit <= 0) {
-				return(PIQuantity.Value(type->Fetch_Heap_ID()) < abs(itype->BuildLimit));
-			}
-			int count = IQuantity.Value(type->Fetch_Heap_ID());
-			if (itype->IsVehicleThief) {
-				for (int i = 0; i < Units.Count(); i++) {
-					UnitClass * unit = Units[i];
-					if (unit->House == this && unit->EnteredByInfType == type->Fetch_Heap_ID()) {
-						count++;
-					}
-				}
-			}
-			if (itype->BuildLimit <= 0 || count < itype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress && count == itype->BuildLimit) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_BUILDINGTYPE: {
-			BuildingTypeClass const * btype = (BuildingTypeClass const *)type;
-			if (btype->BuildLimit <= 0) {
-				return(PBQuantity.Value(type->Fetch_Heap_ID()) < abs(btype->BuildLimit));
-			}
-			int count = BQuantity.Value(type->Fetch_Heap_ID());
-			if (count < btype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_AIRCRAFTTYPE: {
-			AircraftTypeClass const * atype = (AircraftTypeClass const *)type;
-			if (atype->BuildLimit <= 0) {
-				return(PAQuantity.Value(type->Fetch_Heap_ID()) < abs(atype->BuildLimit));
-			}
-			int count = AQuantity.Value(type->Fetch_Heap_ID());
-			if (count < atype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-	}
-	return(1);
+	return(Build_Limit_Result(*this, type, include_in_progress));
 }
 
 
