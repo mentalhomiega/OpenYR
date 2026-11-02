@@ -1,6 +1,7 @@
 ; Zoom stress: the map zoom changes every frame from 31 to 130, then the view scrolls every frame while zoomed from 131 to 330.
 ; A zoom and a chronoshift start share frames 150 and 220. The run should reach quit at 400 with no exception.
 ; Run: scripts/run_autotest.ps1 -Build agent13 -Script src-agent13/tests/autotest/zoom-frame-stress.txt -Width 1024 -Height 768 -Seconds 150 -Filter "AUTOTEST|Exception" -Settings "[Options]`r`nInterfaceStyle=Modern"
+; Expected: the log has the frame 340 line for command ScreenCapture and no Exception line, and it ends with AUTOTEST quit after frame 400.
 1 glideclock
 30 command CenterBase
 31 zoom 0.8
