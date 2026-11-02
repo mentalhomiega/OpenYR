@@ -67,12 +67,36 @@ AttachEffectTypeClass const & AttachedEffectsClass::EffectStruct::Type(void) con
 }
 
 
+bool AttachedEffectsClass::EffectStruct::Is_Own(TechnoTypeClass const * own) const
+{
+	return(Warhead == nullptr && Techno == own);
+}
+
+
 void AttachedEffectsClass::EffectStruct::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Warhead);
 	stream.Serialize(Techno);
 	stream.Serialize(Remaining);
 	stream.Serialize(Anim);
+}
+
+
+namespace {
+
+void Force_Decloak(TechnoClass * owner, AttachEffectTypeClass const & type)
+{
+	if (type.IsForceDecloak && owner->Cloak != UNCLOAKED) {
+		owner->Do_Uncloak();
+	}
+}
+
+
+int Self_Delay(TechnoTypeClass const * type)
+{
+	return(type->AttachEffect.Delay < 0 ? -1 : type->AttachEffect.Delay);
+}
+
 }
 
 
@@ -110,9 +134,7 @@ void AttachedEffectsClass::Attach(TechnoClass * owner, WarheadTypeClass const * 
 		effect = &Effects.back();
 	}
 
-	if (type.IsForceDecloak && owner->Cloak != UNCLOAKED) {
-		owner->Do_Uncloak();
-	}
+	Force_Decloak(owner, type);
 	Update_Anim(owner, *effect);
 }
 
@@ -139,8 +161,8 @@ void AttachedEffectsClass::AI(TechnoClass * owner)
 	for (size_t index = 0; index < Effects.size();) {
 		EffectStruct & effect = Effects[index];
 		if (effect.Remaining > 0 && --effect.Remaining == 0) {
-			if (effect.Warhead == nullptr && effect.Techno == own) {
-				SelfDelay = own->AttachEffect.Delay < 0 ? -1 : own->AttachEffect.Delay;
+			if (effect.Is_Own(own)) {
+				SelfDelay = Self_Delay(own);
 			}
 			Remove_Anim(effect);
 			Effects.erase(Effects.begin() + index);
@@ -157,7 +179,7 @@ void AttachedEffectsClass::AI(TechnoClass * owner)
 			SelfDelay = std::max(type.InitialDelay, 0);
 		}
 		bool const active = std::any_of(Effects.begin(), Effects.end(), [own](EffectStruct const & effect) {
-			return(effect.Warhead == nullptr && effect.Techno == own);
+			return(effect.Is_Own(own));
 		});
 		if (!active && SelfDelay >= 0) {
 			if (SelfDelay > 0) {
@@ -167,9 +189,7 @@ void AttachedEffectsClass::AI(TechnoClass * owner)
 				added.Techno = own;
 				added.Remaining = type.Duration;
 				Effects.push_back(added);
-				if (type.IsForceDecloak && owner->Cloak != UNCLOAKED) {
-					owner->Do_Uncloak();
-				}
+				Force_Decloak(owner, type);
 				Update_Anim(owner, Effects.back());
 			}
 		}
@@ -185,8 +205,8 @@ void AttachedEffectsClass::Limbo(TechnoClass * owner)
 {
 	for (EffectStruct & effect : Effects) {
 		Remove_Anim(effect);
-		if (effect.Warhead == nullptr && effect.Techno == owner->TClass && effect.Type().IsDiscardOnEntry) {
-			SelfDelay = effect.Techno->AttachEffect.Delay < 0 ? -1 : effect.Techno->AttachEffect.Delay;
+		if (effect.Is_Own(owner->TClass) && effect.Type().IsDiscardOnEntry) {
+			SelfDelay = Self_Delay(effect.Techno);
 		}
 	}
 	std::erase_if(Effects, [](EffectStruct const & effect) { return(effect.Type().IsDiscardOnEntry); });
@@ -232,43 +252,37 @@ void AttachedEffectsClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-double AttachedEffectsClass::Speed_Multiplier(void) const
+double AttachedEffectsClass::Product(double AttachEffectTypeClass::* member) const
 {
 	double value = 1.0;
 	for (EffectStruct const & effect : Effects) {
-		value *= effect.Type().SpeedMultiplier;
+		value *= effect.Type().*member;
 	}
 	return(value);
+}
+
+
+double AttachedEffectsClass::Speed_Multiplier(void) const
+{
+	return(Product(&AttachEffectTypeClass::SpeedMultiplier));
 }
 
 
 double AttachedEffectsClass::Armor_Multiplier(void) const
 {
-	double value = 1.0;
-	for (EffectStruct const & effect : Effects) {
-		value *= effect.Type().ArmorMultiplier;
-	}
-	return(value);
+	return(Product(&AttachEffectTypeClass::ArmorMultiplier));
 }
 
 
 double AttachedEffectsClass::Firepower_Multiplier(void) const
 {
-	double value = 1.0;
-	for (EffectStruct const & effect : Effects) {
-		value *= effect.Type().FirepowerMultiplier;
-	}
-	return(value);
+	return(Product(&AttachEffectTypeClass::FirepowerMultiplier));
 }
 
 
 double AttachedEffectsClass::ROF_Multiplier(void) const
 {
-	double value = 1.0;
-	for (EffectStruct const & effect : Effects) {
-		value *= effect.Type().ROFMultiplier;
-	}
-	return(value);
+	return(Product(&AttachEffectTypeClass::ROFMultiplier));
 }
 
 
