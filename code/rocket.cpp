@@ -323,14 +323,7 @@ void RocketLocomotionClass::Explode(void)
 	RulesClass::RocketTypeStruct const & rocket = Rocket_Settings(LinkedTo);
 	AircraftTypeClass const * type = (AircraftTypeClass const *)LinkedTo->TClass;
 
-	WarheadTypeClass const * warhead = NULL;
-	if (type == Rule->V3Rocket.Type) {
-		warhead = IsSpawnerElite ? Rule->V3EliteWarhead : Rule->V3Warhead;
-	} else if (type == Rule->CMisl.Type) {
-		warhead = IsSpawnerElite ? Rule->CMislEliteWarhead : Rule->CMislWarhead;
-	} else {
-		warhead = IsSpawnerElite ? Rule->DMislEliteWarhead : Rule->DMislWarhead;
-	}
+	WarheadTypeClass const * warhead = Rule->Rocket_Warhead(type, IsSpawnerElite);
 	int const damage = IsSpawnerElite ? rocket.EliteDamage : rocket.Damage;
 
 	Coord const coord = LinkedTo->Get_Coord();

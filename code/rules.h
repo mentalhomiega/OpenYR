@@ -1891,6 +1891,10 @@ class RulesClass
 		// The rocket settings for a missile type, or nothing when it is none of the three.
 		RocketTypeStruct const * Rocket_Of(AircraftTypeClass const * type) const;
 
+		// The warhead a missile of this type detonates with, the elite one when its launcher was elite. A type that is
+		// neither V3 nor CMisl gets the DMisl warhead.
+		WarheadTypeClass const * Rocket_Warhead(AircraftTypeClass const * type, bool elite) const;
+
 		/*
 		 * This is the warhead an Ion Cannon strike damages with. It always destroys a
 		 * wall or a bridge outright rather than rolling for it.

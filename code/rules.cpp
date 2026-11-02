@@ -4175,3 +4175,15 @@ RulesClass::RocketTypeStruct const * RulesClass::Rocket_Of(AircraftTypeClass con
 	}
 	return(NULL);
 }
+
+
+WarheadTypeClass const * RulesClass::Rocket_Warhead(AircraftTypeClass const * type, bool elite) const
+{
+	if (type == V3Rocket.Type) {
+		return(elite ? V3EliteWarhead : V3Warhead);
+	}
+	if (type == CMisl.Type) {
+		return(elite ? CMislEliteWarhead : CMislWarhead);
+	}
+	return(elite ? DMislEliteWarhead : DMislWarhead);
+}
