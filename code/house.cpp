@@ -9842,6 +9842,18 @@ void HouseClass::Update_Production_Mode(RTTIType type)
 
 
 /// <summary>
+/// Fires the super weapon at a cell that a target picker found. CELL_NONE means no target was
+/// found, and nothing fires.
+/// </summary>
+void HouseClass::Fire_Super_At(SuperClass * super, Cell const & cell)
+{
+	if (cell != CELL_NONE) {
+		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+	}
+}
+
+
+/// <summary>
 /// Handles the computer's use of its charged super weapons.
 /// This routine is called from the house AI. Every super weapon that has finished
 /// charging is handed to the handler for its type, which picks a target and fires it.
@@ -9895,18 +9907,12 @@ void HouseClass::AI_Super_Weapons(void)
 
 					case SUPER_MULTI_MISSILE: {
 						// The nuke aims as the lightning storm does (the Nuke case of HouseClass::AI_TryFireSW).
-						Cell const cell = Pick_Strike_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Strike_Target());
 						break;
 					}
 
 					case SUPER_ION_CANNON: {
-						Cell const cell = Pick_Ion_Cannon_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Ion_Cannon_Target());
 						break;
 					}
 
@@ -9926,30 +9932,21 @@ void HouseClass::AI_Super_Weapons(void)
 					case SUPER_AMER_PARA_DROP:
 					case SUPER_SPY_PLANE:
 					case SUPER_PSYCHIC_REVEAL: {
-						Cell const cell = Pick_Drop_Target();
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, Pick_Drop_Target());
 						break;
 					}
 
 					case SUPER_PSYCHIC_DOMINATOR: {
 						// One blast at a time, only against an enemy, and not while a trigger aims the house (HouseClass::Fire_PsyDom).
 						if (!PsychicDominatorClass::Is_Active() && Enemy != HOUSE_NONE && PreferredTargetCell == CELL_NONE) {
-							Cell const cell = Pick_Dominator_Target();
-							if (cell != CELL_NONE) {
-								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-							}
+							Fire_Super_At(super, Pick_Dominator_Target());
 						}
 						break;
 					}
 
 					case SUPER_GENETIC_CONVERTER: {
 						// Not while a trigger aims the house (HouseClass::Fire_GenMutator).
-						Cell const cell = PreferredTargetCell == CELL_NONE ? Pick_Mutator_Target() : CELL_NONE;
-						if (cell != CELL_NONE) {
-							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-						}
+						Fire_Super_At(super, PreferredTargetCell == CELL_NONE ? Pick_Mutator_Target() : CELL_NONE);
 						break;
 					}
 
@@ -9969,10 +9966,7 @@ void HouseClass::AI_Super_Weapons(void)
 					case SUPER_LIGHTNING_STORM:
 						// One storm at a time (HouseClass::Fire_LightningStorm).
 						if (!LightningStormClass::Is_Active_Or_Pending()) {
-							Cell const cell = Pick_Strike_Target();
-							if (cell != CELL_NONE) {
-								Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
-							}
+							Fire_Super_At(super, Pick_Strike_Target());
 						}
 						break;
 
