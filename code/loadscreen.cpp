@@ -848,6 +848,23 @@ void LoadScreenClass::Draw_Preview(void)
 }
 
 
+static Rect Centred_Bar_Box(Rect const & frame, int left, int row_top, int row_height)
+{
+	int const top = row_top + (row_height - (frame.Height + 6)) / 2;
+	return(Rect(left, top, frame.Width + 6, frame.Height + 6));
+}
+
+
+static double Progress_Fraction(ProgressScreenClass const & progress, int index)
+{
+	double fraction = progress.Get_Current_Progress(index);
+	if (!(fraction > 0.0)) {
+		fraction = 0.0;
+	}
+	return(std::min(fraction, 1.0));
+}
+
+
 // Draws each player's row: an outline in the player's colour for the bar, the flag, and the name.
 void LoadScreenClass::Draw_Rows(int players)
 {
@@ -871,7 +888,7 @@ void LoadScreenClass::Draw_Rows(int players)
 		RGBClass const color = Scheme_Text_Color(Player_Scheme(node));
 		int const top = BarPos.Y + RowHeight * index;
 
-		Rect const box(BarPos.X + 5, top + (RowHeight - (frame.Height + 6)) / 2, frame.Width + 6, frame.Height + 6);
+		Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, top, RowHeight);
 		Backdrop->Draw_Rect(box, DSurface::Build_Hicolor_Pixel(color));
 
 		char const * flag_name = NULL;
@@ -918,13 +935,10 @@ void LoadScreenClass::Draw_Campaign_Progress(ProgressScreenClass const & progres
 
 	// The bar is centred in a row as tall as the text beside it, though no text is printed.
 	int const row = std::max(frame.Height + 6, Text_Font().Get_Height()) + 4;
-	Point2D const at = BarPos + Point2D(5 + 3, (row - (frame.Height + 6)) / 2 + 3);
+	Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, BarPos.Y, row);
+	Point2D const at(box.X + 3, box.Y + 3);
 
-	double fraction = progress.Get_Current_Progress(0);
-	if (!(fraction > 0.0)) {
-		fraction = 0.0;
-	}
-	fraction = std::min(fraction, 1.0);
+	double const fraction = Progress_Fraction(progress, 0);
 
 	Rect const strip(0, Height - STRIP_HEIGHT, Width, STRIP_HEIGHT);
 	Screen->Blit_From(strip, *Backdrop, strip);
@@ -952,14 +966,10 @@ void LoadScreenClass::Draw_Match_Progress(ProgressScreenClass const & progress)
 			continue;
 		}
 
-		double fraction = progress.Get_Current_Progress(index);
-		if (!(fraction > 0.0)) {
-			fraction = 0.0;
-		}
-		fraction = std::min(fraction, 1.0);
+		double const fraction = Progress_Fraction(progress, index);
 
-		int const top = BarPos.Y + RowHeight * index + (RowHeight - (frame.Height + 6)) / 2;
-		Rect const bar(BarPos.X + 5 + 3, top + 3, (int)(frame.Width * fraction), frame.Height);
+		Rect const box = Centred_Bar_Box(frame, BarPos.X + 5, BarPos.Y + RowHeight * index, RowHeight);
+		Rect const bar(box.X + 3, box.Y + 3, (int)(frame.Width * fraction), frame.Height);
 		if (bar.Width > 0) {
 			Draw_Shape(*Screen, *scheme->Converter, shape, 0, Point2D(0, 0), bar, SHAPE_WIN_REL);
 		}
