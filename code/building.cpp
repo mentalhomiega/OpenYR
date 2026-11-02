@@ -9695,11 +9695,7 @@ void BuildingClass::Power_On(void)
 		Toggle_Laser_Fence_Post(false);
 	}
 
-	for (int i = 0; i < BANIM_COUNT; i++) {
-		if (Class->AnimData[i].Powered && Anims[i] != NULL) {
-			Anims[i]->Enable();
-		}
-	}
+	Freeze_Powered_Anims(false);
 }
 
 
@@ -9724,11 +9720,7 @@ void BuildingClass::Power_Off(void)
 		Toggle_Laser_Fence_Post(false);
 	}
 
-	for (int i = 0; i < BANIM_COUNT; i++) {
-		if (Class->AnimData[i].Powered && Anims[i] != NULL) {
-			Anims[i]->Disable();
-		}
-	}
+	Freeze_Powered_Anims(true);
 }
 
 
