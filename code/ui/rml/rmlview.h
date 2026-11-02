@@ -32,6 +32,9 @@ namespace Rml
 }
 
 
+struct UIMapPreviewImage;
+
+
 class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 {
 	public:
@@ -61,6 +64,9 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual void Loaded(void) {}
 		virtual void ProcessEvent(Rml::Event & event) override;
 		void Queue(char const * name, int value = 0, char const * text = nullptr);
+		// Sets the image on the surface element with the id and stores the image's generation in shown. Nothing
+		// happens when shown already holds that generation, or when the document or the surface is missing.
+		void Show_Surface(char const * id, int & shown, UIMapPreviewImage const & image);
 
 		Rml::DataModelHandle Model;
 

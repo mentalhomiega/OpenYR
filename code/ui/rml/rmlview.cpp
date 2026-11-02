@@ -8,8 +8,10 @@
  ******************************************************************************/
 
 #include "numparse.h"
+#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
+#include "ui/uipreview.h"
 #include "ui/uishell.h"
 
 // windowsx.h defines macros with the names of these RmlUi Element methods.
@@ -1048,6 +1050,22 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 		Mark_Keyboard();
 		event.StopPropagation();
 	}
+}
+
+
+void UIRmlViewClass::Show_Surface(char const * id, int & shown, UIMapPreviewImage const & image)
+{
+	if (image.Generation == shown || Doc == nullptr) {
+		return;
+	}
+
+	UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Doc->GetElementById(id));
+	if (surface == nullptr) {
+		return;
+	}
+
+	shown = image.Generation;
+	surface->Set_Image(image.Width, image.Height, image.Pixels);
 }
 
 

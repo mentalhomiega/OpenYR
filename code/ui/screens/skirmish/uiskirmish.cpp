@@ -9,7 +9,6 @@
 
 #include "ui/screens/skirmish/uiskirmish.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/colorpick/uicolorpickview.h"
@@ -500,7 +499,7 @@ class UISkirmishViewClass : public UIColorPickViewClass
 			Model.DirtyVariable("picknear");
 			Model.DirtyVariable("pickramp");
 
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 			Show_Picker(Data.State.Picker);
 		}
 
@@ -618,22 +617,6 @@ class UISkirmishViewClass : public UIColorPickViewClass
 		}
 
 	private:
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UISkirmishPresenterClass & Data;
 		int Shown;
 		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];

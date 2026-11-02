@@ -9,7 +9,6 @@
 
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Element.h>
@@ -43,7 +42,7 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 			Model.DirtyVariable("notice");
 			Model.DirtyVariable("playable");
 			Model.DirtyVariable("haspreview");
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 		}
 
 	protected:
@@ -81,22 +80,6 @@ class UIMissionBrowserViewClass : public UIRmlViewClass
 		/// <summary>
 		/// Shows the selected mission's picture once per change. An empty picture clears the surface.
 		/// </summary>
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UIMissionBrowserPresenterClass & Data;
 		int Shown;
 };

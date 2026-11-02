@@ -9,7 +9,6 @@
 
 #include "ui/screens/netlobby/uinetlobby.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/colorpick/uicolorpickview.h"
@@ -454,25 +453,9 @@ class UINetLobbyViewClass : public UIColorPickViewClass
 			}
 		}
 
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
-		}
-
 		UINetLobbyPresenterClass & Data;
 
-	private:
+	protected:
 		int Shown;
 };
 
@@ -555,7 +538,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Model.DirtyVariable("cango");
 			Dirty_Color_Picker(Model);
 
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 			Show_Picker(Data.State.Picker);
 		}
 

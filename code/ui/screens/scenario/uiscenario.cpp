@@ -9,7 +9,6 @@
 
 #include "ui/screens/scenario/uiscenario.h"
 
-#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Element.h>
@@ -341,7 +340,7 @@ class UIScenarioViewClass : public UIRmlViewClass
 				Seen = Data.State.Generation;
 				Model.DirtyAllVariables();
 			}
-			Show_Preview();
+			Show_Surface("preview", Shown, Data.State.Preview);
 		}
 
 	protected:
@@ -466,22 +465,6 @@ class UIScenarioViewClass : public UIRmlViewClass
 			float const height = list->GetChild(0)->GetChild(0)->GetBox().GetSize(Rml::BoxArea::Border).y;
 			int const rows = height > 0.0f ? (int)(list->GetClientHeight() / height) - 1 : 8;
 			return(rows < 1 ? 1 : rows);
-		}
-
-		void Show_Preview(void)
-		{
-			UIMapPreviewImage & preview = Data.State.Preview;
-			if (preview.Generation == Shown || Document() == nullptr) {
-				return;
-			}
-
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("preview"));
-			if (surface == nullptr) {
-				return;
-			}
-
-			Shown = preview.Generation;
-			surface->Set_Image(preview.Width, preview.Height, preview.Pixels);
 		}
 
 		UIScenarioPresenterClass & Data;
