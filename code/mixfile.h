@@ -75,6 +75,8 @@ class MixFileClass : public Node<MixFileClass *>
 		static MixFileClass * Finder(char const * filename);
 		void const * Resident_Member(int position, int size);
 		int Offset(int crc, int * size = 0) const;
+		SubBlock const * Find_Block(char const * filename) const;
+		bool Read_Range(int offset, void * bytes, int count) const;
 
 		/*
 		**	If this mixfile has an attached message digest, then this flag
