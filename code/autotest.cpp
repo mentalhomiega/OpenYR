@@ -326,13 +326,27 @@ TechnoTypeClass const * Find_Type(std::string const & name)
 }
 
 
+// Whether the object belongs to the player's own house.
+static bool Is_Player_Object(TechnoClass const * techno)
+{
+	return(techno->House == PlayerPtr);
+}
+
+
+// Whether the object belongs to the player's house or to a house the map marks PlayerControl=yes.
+static bool Is_Player_Or_Control_Object(TechnoClass const * techno)
+{
+	return(techno->House == PlayerPtr || techno->House->Is_Player_Control());
+}
+
+
 template<class T>
 void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name, void (*action)(T *))
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
 		// A house the map marks PlayerControl=yes takes orders as the player's own do, so its objects count too.
-		if (object != NULL && (object->House == PlayerPtr || object->House->Is_Player_Control()) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		if (object != NULL && Is_Player_Or_Control_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			action(object);
 		}
 	}
@@ -346,7 +360,7 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object == NULL || object->IsInLimbo || (object->House != PlayerPtr && !object->House->Is_Player_Control()) || stricmp(object->TClass->Name(), name.c_str()) != 0) {
+		if (object == NULL || object->IsInLimbo || !Is_Player_Or_Control_Object(object) || stricmp(object->TClass->Name(), name.c_str()) != 0) {
 			continue;
 		}
 		Cell const at = object->Get_Cell();
@@ -386,7 +400,7 @@ void Queue_Player_Missions(DynamicVectorClass<T *> & list, std::string const & n
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object != NULL && object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		if (object != NULL && Is_Player_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			object->Player_Assign_Mission(mission, target, destination);
 		}
 	}
@@ -539,7 +553,7 @@ void Order(std::string const & name, int x, int y)
 	Cell const cell(x, y);
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
 			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
 		}
 	}
@@ -677,8 +691,8 @@ bool Strike_Side_Allows(bool naval, std::string const & side)
 // house or a PlayerControl house do.
 bool Strike_Attacker_Allows(TechnoClass const * techno, std::string const & attacker)
 {
-	if (attacker.empty()) return(techno->House == PlayerPtr);
-	return((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && stricmp(techno->TClass->Name(), attacker.c_str()) == 0);
+	if (attacker.empty()) return(Is_Player_Object(techno));
+	return(Is_Player_Or_Control_Object(techno) && stricmp(techno->TClass->Name(), attacker.c_str()) == 0);
 }
 
 
@@ -3429,7 +3443,7 @@ static void Strike_Step(StepType const & step)
 	PlanningRecordScope const recording(Map.IsPlanningMode);
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if ((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+		if (Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			Give_Attack_Order(techno, target, Network_Game());
 		}
 	}
@@ -3798,7 +3812,7 @@ static void Spy_Step(StepType const & step)
 	DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
 		}
 	}
@@ -3813,7 +3827,7 @@ static void Teamspy_Step(StepType const & step)
 	DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			techno->Assign_Mission(MISSION_CAPTURE);
 			techno->Assign_Target(building);
 		}
