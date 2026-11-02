@@ -77,6 +77,8 @@ class JumpjetLocomotionClass : public LocomotionClass, public IPiggyback
 		int Desired_Flight_Level(void) const;
 
 	private:
+		void Drop_Landing_Claim(void);
+
 		/*
 		 * This is the coordinate the jumpjet is flying to, or COORD_NONE if it has been
 		 * given nowhere to go. A jumpjet pays no attention to the path list and travels
