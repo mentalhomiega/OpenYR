@@ -116,11 +116,6 @@ bool ScoreStageClass::Open(bool fill_screen)
 
 	StageSurface = new DSurface(StageWidth, StageHeight);
 	BaseSurface = new DSurface(StageWidth, StageHeight);
-	if (StageSurface == NULL || BaseSurface == NULL) {
-		DebugString("ScoreStage: Failed to create surface!\n");
-		Close();
-		return(false);
-	}
 
 	if (fill_screen) {
 		Scale = 1.0;
@@ -138,6 +133,7 @@ bool ScoreStageClass::Open(bool fill_screen)
 		Close();
 		return(false);
 	}
+	// Yellow is the primary text color of gamemd's dialogs, 0x00FFFF for every side (0xac18a4, set at 0x600588 and 0x60fa3f).
 	Set_Text_Color(255, 255, 0);
 
 	if (MountCount++ == 0) {
@@ -154,25 +150,17 @@ bool ScoreStageClass::Open(bool fill_screen)
 /// </summary>
 void ScoreStageClass::Close(void)
 {
-	if (Drawer != NULL) {
-		delete Drawer;
-		Drawer = NULL;
-	}
-	if (TextConverter != NULL) {
-		delete TextConverter;
-		TextConverter = NULL;
-	}
+	delete Drawer;
+	Drawer = NULL;
+	delete TextConverter;
+	TextConverter = NULL;
 	Font = NULL;
 	KeyedShape = NULL;
 	KeyedFrames.clear();
-	if (BaseSurface != NULL) {
-		delete BaseSurface;
-		BaseSurface = NULL;
-	}
-	if (StageSurface != NULL) {
-		delete StageSurface;
-		StageSurface = NULL;
-	}
+	delete BaseSurface;
+	BaseSurface = NULL;
+	delete StageSurface;
+	StageSurface = NULL;
 	if (Mounted) {
 		Mounted = false;
 		if (--MountCount == 0) {
@@ -234,11 +222,8 @@ void ScoreStageClass::Present(Rect const & area)
 /// </summary>
 void ScoreStageClass::Clear_Screen(void)
 {
-	Rect const frame = HiddenSurface->Get_Rect();
 	HiddenSurface->Fill(TBLACK);
-	VisibleSurface->Blit_From(frame, *HiddenSurface, frame);
-	Video_Mark_Dirty();
-	Video_Present_Now();
+	Show_Screen();
 }
 
 
@@ -476,10 +461,8 @@ void ScoreStageClass::Set_Text_Color(int red, int green, int blue)
 	PaletteClass palette(RGBClass(0, 0, 0));
 	palette[1] = RGBClass(red, green, blue);
 	ConvertClass * converter = new ConvertClass(palette, palette, *VisibleSurface);
-	if (converter != NULL) {
-		delete TextConverter;
-		TextConverter = converter;
-	}
+	delete TextConverter;
+	TextConverter = converter;
 }
 
 

@@ -171,6 +171,19 @@ ColorScheme::ColorScheme(const char *name, HSVClass &hsv, const PaletteClass & b
 }
 
 
+static void Free_Converters(ColorScheme & scheme)
+{
+	for (ColorScheme::TintedConverterEntry & entry : scheme.TintedConverters) {
+		delete entry.Converter;
+		delete entry.Palette;
+	}
+	scheme.TintedConverters.clear();
+
+	delete scheme.Converter;
+	scheme.Converter = NULL;
+}
+
+
 /// <summary>
 /// Rebuilds the scheme's light converter with a new tint.
 /// Use this routine when the ambient lighting changes; any converter built earlier is thrown
@@ -184,16 +197,7 @@ ColorScheme::ColorScheme(const char *name, HSVClass &hsv, const PaletteClass & b
 void ColorScheme::Build_Light_Converters(const PaletteClass & base, const PaletteClass & screenpalette, int r, int g, int b)
 {
 	ScreenPalette = screenpalette;
-	for (TintedConverterEntry & entry : TintedConverters) {
-		delete entry.Converter;
-		delete entry.Palette;
-	}
-	TintedConverters.clear();
-
-	if (Converter != NULL) {
-		delete Converter;
-		Converter = NULL;
-	}
+	Free_Converters(*this);
 
 	Converter = (LightConvertClass *)Build_Light_Converter(HSV, base, screenpalette, &Palette, *VisibleSurface, IntensityLevels, r, g, b, _indexes);
 }
@@ -251,16 +255,7 @@ ColorScheme::~ColorScheme(void)
 	}
 	Name = NULL;
 
-	for (TintedConverterEntry & entry : TintedConverters) {
-		delete entry.Converter;
-		delete entry.Palette;
-	}
-	TintedConverters.clear();
-
-	if (Converter != NULL) {
-		delete Converter;
-	}
-	Converter = NULL;
+	Free_Converters(*this);
 
 	ColorSchemes.Delete(this);
 }

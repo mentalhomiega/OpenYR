@@ -31,7 +31,6 @@
  *   TabClass::AI -- Handles player I/O with the tab buttons.                                  *
  *   TabClass::Draw_It -- Displays the tab buttons as necessary.                               *
  *   TabClass::One_Time -- Performs one time initialization of tab handler class.              *
- *   TabClass::Set_Active -- Activates a "filefolder tab" button.                              *
  *   TabClass::TabClass -- Default construct for the tab button class.                         *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
@@ -175,8 +174,6 @@ void TabClass::Serialize(SaveStreamClass & stream)
  *   12/15/1994 JLB : Created.                                                                 *
  *   05/19/1995 JLB : New EVA style.                                                           *
  *=============================================================================================*/
-#define	EVA_WIDTH		80
-#define	TAB_HEIGHT		8
 void TabClass::Draw_It(bool complete)
 {
 	if (!Debug_Map) {
@@ -227,32 +224,6 @@ void TabClass::Draw_Credits_Tab(void)
 }
 
 
-/// <summary>
-/// Draws the specified tab in its highlighted state.
-/// This routine is used to give the player some feedback while a tab is being pressed.
-/// The tab imagery and its label are redrawn in the highlight style.
-/// </summary>
-/// <param name="tab">The tab to highlight; zero for the controls tab, non-zero for the
-/// sidebar tab.</param>
-void TabClass::Hilite_Tab(int tab)
-{
-	int xpos = 0;
-	int text = TXT_TAB_BUTTON_CONTROLS;
-	int textx = (EVA_WIDTH/2) * 2;
-
-	if (tab) {
-		xpos = (320-EVA_WIDTH) * 2;
-		//text = TXT_TAB_SIDEBAR;
-		//textx = (320-(EVA_WIDTH/2)) * 2;
-	} else {
-		xpos = Options.IsSidebarOnRight ? 0 : LogicalSurface->Get_Rect().Width - textx*2;
-	}
-
-	Draw_Shape(*LogicalSurface, *SidebarDrawer, TabShape, 1, Point2D(xpos, 0), VisibleRect);
-	Fancy_Text_Print(text, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(xpos + textx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_METAL12 | TPF_CENTER | TPF_USE_GRAD_PAL));
-}
-
-
 /***********************************************************************************************
  * TabClass::AI -- Handles player I/O with the tab buttons.                                    *
  *                                                                                             *
@@ -288,38 +259,6 @@ void TabClass::AI(KeyNumType &input, Point2D const & xy)
 	}
 	Command_Bar_AI(input);
 	BASECLASS::AI(input, xy);
-}
-
-
-/***********************************************************************************************
- * TabClass::Set_Active -- Activates a "filefolder tab" button.                                *
- *                                                                                             *
- *    This function is used to activate one of the file folder tab buttons that appear at the  *
- *    top edge of the screen.                                                                  *
- *                                                                                             *
- * INPUT:   select   -- The button to activate. 0 = left button, 1=next button, etc.           *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   12/15/1994 JLB : Created.                                                                 *
- *=============================================================================================*/
-void TabClass::Set_Active(int select)
-{
-	switch (select) {
-		case 0:
-			Queue_Options();
-			break;
-
-		case 1:
-			BASECLASS::Activate(-1);
-			break;
-
-		default:
-			break;
-	}
 }
 
 
@@ -360,11 +299,7 @@ void TabClass::Init_For_House(void)
 	LeftCapShape = (ShapeSet const *)MixFileClass::Retrieve("LENDCAP.SHP");
 	ButtonBackShape = (ShapeSet const *)MixFileClass::Retrieve("BTTNBKGD.SHP");
 	RightCapShape = (ShapeSet const *)MixFileClass::Retrieve("RENDCAP.SHP");
-	for (int index = 0; index < COMMAND_COUNT; index++) {
-		char name[16];
-		std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
-		CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
-	}
+	Load_Command_Shapes();
 
 	bool multiplayer = Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH;
 	std::vector<std::string> const & names = multiplayer ? UIControls.MultiplayerCommandBarButtons : UIControls.CommandBarButtons;
@@ -391,6 +326,22 @@ void TabClass::Init_For_House(void)
 /// Gives the modern command bar the side's icon sheets in place of Yuri's Revenge's buttons, when
 /// every command in the row has one. Otherwise the bar keeps the Yuri's Revenge art.
 /// </summary>
+void TabClass::Load_Command_Shapes(void)
+{
+	for (int index = 0; index < COMMAND_COUNT; index++) {
+		char name[16];
+		std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
+		CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
+	}
+}
+
+
+bool TabClass::Command_Bar_Art_Ready(void)
+{
+	return(LeftCapShape != NULL && ButtonBackShape != NULL && RightCapShape != NULL);
+}
+
+
 void TabClass::Use_Command_Icons(void)
 {
 	IsCommandIcons = false;
@@ -474,7 +425,7 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 {
 	CommandBarLayout layout {};
 	layout.Y = VisibleRect.Height - SidebarClass::COMMAND_BAR_HEIGHT;
-	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+	if (!Command_Bar_Art_Ready()) {
 		return(layout);
 	}
 
@@ -522,7 +473,7 @@ TabClass::CommandBarLayout TabClass::Command_Bar_Layout(void)
 /// </summary>
 Rect TabClass::Command_Bar_Frame(void)
 {
-	if (LeftCapShape == NULL || ButtonBackShape == NULL || RightCapShape == NULL) {
+	if (!Command_Bar_Art_Ready()) {
 		return(Rect(0, 0, 0, 0));
 	}
 	CommandBarLayout const layout = Command_Bar_Layout();
@@ -555,7 +506,7 @@ bool TabClass::Command_Button_Center(char const * name, Point2D & center)
 void TabClass::Place_Command_Buttons(void)
 {
 	CommandBarLayout layout = Command_Bar_Layout();
-	bool ready = LeftCapShape != NULL && ButtonBackShape != NULL && RightCapShape != NULL;
+	bool ready = Command_Bar_Art_Ready();
 
 	ToggleButton.ID = BUTTON_COMMAND_TOGGLE;
 	ToggleButton.IsSticky = true;
@@ -658,11 +609,7 @@ void TabClass::Draw_Command_Bar(void)
 	if (Modern_Interface()) {
 		// Init_For_House can run before the player's side is known.
 		if (Hud_Icon(CommandIconCodes[0]) != CommandIconSet) {
-			for (int index = 0; index < COMMAND_COUNT; index++) {
-				char name[16];
-				std::snprintf(name, sizeof(name), "BUTTON%02d.SHP", index);
-				CommandShapes[index] = (ShapeSet const *)MixFileClass::Retrieve(name);
-			}
+			Load_Command_Shapes();
 			Use_Command_Icons();
 			Map.Place_Command_Buttons();
 			layout = Command_Bar_Layout();
@@ -673,22 +620,15 @@ void TabClass::Draw_Command_Bar(void)
 				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
 			}
 		}
-		ToggleButton.Flag_To_Redraw();
-		for (int index = 0; index < COMMAND_COUNT; index++) {
-			if (IsCommandButtonListed[index]) {
-				CommandButtons[index].Flag_To_Redraw();
+	} else {
+		Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
+		if (IsCommandBarOpen) {
+			for (int slot = 0; slot < layout.Slots; slot++) {
+				Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
 			}
 		}
-		return;
+		Draw_Shape(*CompositeSurface, *SidebarDrawer, RightCapShape, 0, Point2D(layout.RightCapX, layout.Y), clip);
 	}
-
-	Draw_Shape(*CompositeSurface, *SidebarDrawer, SpacerShape, 0, Point2D(0, layout.Y), clip);
-	if (IsCommandBarOpen) {
-		for (int slot = 0; slot < layout.Slots; slot++) {
-			Draw_Shape(*CompositeSurface, *SidebarDrawer, ButtonBackShape, 0, Point2D(layout.ButtonX + slot * ButtonBackShape->Get_Width(), layout.Y), clip);
-		}
-	}
-	Draw_Shape(*CompositeSurface, *SidebarDrawer, RightCapShape, 0, Point2D(layout.RightCapX, layout.Y), clip);
 
 	ToggleButton.Flag_To_Redraw();
 	for (int index = 0; index < COMMAND_COUNT; index++) {
@@ -731,6 +671,26 @@ void TabClass::Command_Bar_AI(KeyNumType & input)
 /// </summary>
 void TabClass::Do_Command(CommandButtonType command)
 {
+	struct CommandKeyword {
+		CommandButtonType Command;
+		char const * Name;
+	};
+	static CommandKeyword const keywords[] = {
+		{COMMAND_TYPE_SELECT, "SelectType"},
+		{COMMAND_DEPLOY, "DeployObject"},
+		{COMMAND_GUARD, "GuardObject"},
+		{COMMAND_STOP, "StopObject"},
+		{COMMAND_ATTACK_MOVE, "AttackMove"},
+		{COMMAND_BEACON, "PlaceBeacon"},
+		{COMMAND_CHEER, "AllToCheer"},
+	};
+	for (CommandKeyword const & keyword : keywords) {
+		if (keyword.Command == command) {
+			Execute_Command(keyword.Name);
+			return;
+		}
+	}
+
 	switch (command) {
 		case COMMAND_TEAM01:
 		case COMMAND_TEAM02:
@@ -751,37 +711,9 @@ void TabClass::Do_Command(CommandButtonType command)
 			break;
 		}
 
-		case COMMAND_TYPE_SELECT:
-			Execute_Command("SelectType");
-			break;
-
-		case COMMAND_DEPLOY:
-			Execute_Command("DeployObject");
-			break;
-
-		case COMMAND_GUARD:
-			Execute_Command("GuardObject");
-			break;
-
-		case COMMAND_STOP:
-			Execute_Command("StopObject");
-			break;
-
 		// A click toggles planning mode: the first click starts it and the next one commits the plan.
 		case COMMAND_PLANNING_MODE:
 			Map.Planning_Mode_Control(-1, -1);
-			break;
-
-		case COMMAND_ATTACK_MOVE:
-			Execute_Command("AttackMove");
-			break;
-
-		case COMMAND_BEACON:
-			Execute_Command("PlaceBeacon");
-			break;
-
-		case COMMAND_CHEER:
-			Execute_Command("AllToCheer");
 			break;
 
 		default:
