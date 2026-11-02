@@ -190,8 +190,9 @@ static bool _Referenced = false;
 static bool _Pending = false;
 static std::uint32_t _ReadyFrame = 0;
 
-// True from a pass that handed the GPU its buffers without a copy until bgfx::frame reads them.
+// The GPU picture the check reads back with bgfx::readTexture, as RGBA bytes.
 static std::vector<unsigned char> _Pixels;
+// The software result the check compares with _Pixels, one value per area pixel.
 static std::vector<unsigned short> _Expected;
 static int _PendingFrame = 0;
 static int _PendingBlits = 0;
