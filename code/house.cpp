@@ -10725,6 +10725,22 @@ void HouseClass::AI_Takeover(void)
 
 
 /// <summary>
+/// Finds this house's super weapon of the given type.
+/// </summary>
+/// <returns>SuperClass *; The first super weapon of that type, or NULL when the house has none.</returns>
+SuperClass * HouseClass::Find_Super(SuperWeaponType type) const
+{
+	for (int index = 0; index < SuperWeapon.Count(); index++) {
+		SuperClass * super = SuperWeapon[index];
+		if (super != NULL && super->Class->Type == type) {
+			return(super);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Updates the availability of this house's super weapons.
 /// A super weapon that depends on a building is suspended while that building is shut
 /// down or the base is short of power, and taken away entirely once the building is gone

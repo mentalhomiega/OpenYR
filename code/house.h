@@ -984,6 +984,7 @@ class HouseClass : public AbstractClass
 		void Start_Power_Blackout(int frames);
 		void Start_Radar_Blackout(int frames);
 
+		SuperClass * Find_Super(SuperWeaponType type) const;
 		void Update_Present_Super_Weapons(void);
 		void Enable_Available_Super_Weapons(void);
 
