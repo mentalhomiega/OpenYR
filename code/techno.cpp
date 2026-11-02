@@ -3747,6 +3747,35 @@ void TechnoClass::Turret_Recoil_AI(void)
 }
 
 
+void TechnoClass::Powered_Unit_AI(void)
+{
+	// A PoweredUnit object shuts down while its owner has no working control structure for its
+	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
+	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
+		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
+		if (off != IsDeactivated) {
+			IsDeactivated = off;
+			FootClass * foot = (FootClass *)this;
+			if (off) {
+				DebugString("Powered unit: %s shuts down\n", TClass->Name());
+				Sound_Effect(TClass->DeactivateSound, Center_Coord());
+				Assign_Target(NULL);
+				foot->Assign_Destination(NULL);
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_Off();
+				}
+			} else {
+				DebugString("Powered unit: %s starts up\n", TClass->Name());
+				Sound_Effect(TClass->ActivateSound, Center_Coord());
+				if (foot->Locomotion != NULL) {
+					foot->Locomotion->Power_On();
+				}
+			}
+		}
+	}
+}
+
+
 void TechnoClass::AI(void)
 {
 	Turret_Recoil_AI();
@@ -3819,30 +3848,7 @@ void TechnoClass::AI(void)
 		CurrentTurretNumber = turret;
 	}
 
-	// A PoweredUnit object shuts down while its owner has no working control structure for its
-	// type, unless it stands in a structure, and starts again when one works (UnitClass::Update, 0x7360C0).
-	if (TClass->IsPoweredUnit && Is_Foot() && !IsInLimbo) {
-		bool const off = !House->Has_Powered_Unit_Source(TClass) && Map[Get_Cell()].Cell_Building() == NULL;
-		if (off != IsDeactivated) {
-			IsDeactivated = off;
-			FootClass * foot = (FootClass *)this;
-			if (off) {
-				DebugString("Powered unit: %s shuts down\n", TClass->Name());
-				Sound_Effect(TClass->DeactivateSound, Center_Coord());
-				Assign_Target(NULL);
-				foot->Assign_Destination(NULL);
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_Off();
-				}
-			} else {
-				DebugString("Powered unit: %s starts up\n", TClass->Name());
-				Sound_Effect(TClass->ActivateSound, Center_Coord());
-				if (foot->Locomotion != NULL) {
-					foot->Locomotion->Power_On();
-				}
-			}
-		}
-	}
+	Powered_Unit_AI();
 
 	// A drained refinery's owner pays the drainer's owner (TechnoClass::AI, 0x6F9E50).
 	if (DrainingMe != NULL && RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsRefinery && Rule->DrainMoneyFrameDelay > 0 && Frame % Rule->DrainMoneyFrameDelay == 0) {
