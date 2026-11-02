@@ -74,7 +74,7 @@ ADAPTER_UNITS = [
       }}),
     ("mapgen.cpp", "MapGeneratorClass", ["Init_Map"],
      {"file": "map file", "group": "random map generation"}),
-    ("netshare.cpp", "RandomMap", [":RandomMapWaypointCount"],
+    ("netshare.cpp", "RandomMap", [":Read_Scenario_Waypoints"],
      {"file": "map seed file", "group": "random map generation"}),
     ("rules.cpp", "DifficultyClass", [":Difficulty_Get"],
      {"file": "rules.ini", "group": "difficulty settings",

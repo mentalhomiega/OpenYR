@@ -493,14 +493,14 @@ fixed_exclusions:
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
   - sites:
-      - { file: code/init.cpp, function: Apply_Hotkeys, expression: KN_NONE }
+      - { file: code/init.cpp, function: Pair_Modifier_Keys, expression: KN_NONE }
       - { file: code/init.cpp, function: Grid_Modifier_Held, expression: KN_NONE }
       - { file: code/init.cpp, function: Held_Key_Of, expression: KN_NONE }
       - { file: code/techno.cpp, function: Attack_Move_Key_Held, expression: KN_NONE }
     reason: Empty-slot sentinel. An unbound first slot takes the second slot's key, and an unbound modifier is never held.
   - site: { file: code/init.cpp, function: Hotkey_Wheel, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
     reason: Selects the wheel step's key for its binding lookup; the command it runs is the control.
-  - site: { file: code/ui/screens/keyboard/uikeyboard.cpp, function: '<file-scope>', expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
+  - site: { file: code/ui/screens/keyboard/uikeyboard.cpp, function: Capture_Pointer, expression: 'VK_WHEEL_UP+VK_WHEEL_DOWN' }
     reason: The binding dialog turns a wheel step into the key it captures; it dispatches no command.
   - sites:
       - { file: code/ownrdraw.cpp, function: Mouse_Key_Name, expression: VK_LBUTTON }
