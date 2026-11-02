@@ -12292,6 +12292,25 @@ static Cell Run_Start_Cell(Cell const & cell, Cell const & step, bool (*part_of_
 
 
 /*
+ * Finds the first cell of the five-by-five square around a hut that satisfies pred, scanning the
+ * columns from the west. Returns false, and leaves found unchanged, when no cell in the square does.
+ */
+static bool Find_Hut_Neighbor(Cell const & cell, bool (*pred)(Cell const &), Cell & found)
+{
+	for (int x = -2; x < 3; x++) {
+		for (int y = -2; y < 3; y++) {
+			Cell const probe = cell + Cell(x, y);
+			if (pred(probe)) {
+				found = probe;
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+/*
  * gamemd's CellClass::IsBridgeOverlayType (0x5746C0): a span end or middle piece whose sub-tile
  * matches its place in the set. The line search stops at the first such piece.
  */
@@ -12368,14 +12387,10 @@ static bool Is_Bridge_Span_Piece_For_Walk(int pos, int dir, CellClass const & ce
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Destroy_Wood_Bridge_At(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Wood_Bridge_Overlay_Cell(probe)) {
-				Destroy_Wood_Bridge_Neighbors(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Wood_Bridge_Overlay_Cell, probe)) {
+		Destroy_Wood_Bridge_Neighbors(probe);
+		return;
 	}
 	Destroy_Bridge_Span_Near(cell);
 }
@@ -12877,14 +12892,10 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Concrete_Bridge_Cell(probe)) {
-				Destroy_Concrete_Bridge_Neighbors(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Concrete_Bridge_Cell, probe)) {
+		Destroy_Concrete_Bridge_Neighbors(probe);
+		return;
 	}
 	Destroy_Bridge_Span_Near(cell);
 }
@@ -13007,14 +13018,10 @@ void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
 /// <param name="cell">The cell the hut stands on.</param>
 void MapClass::Repair_Concrete_Bridge(Cell const & cell)
 {
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			Cell const probe = cell + Cell(x, y);
-			if (Is_Concrete_Bridge_Cell(probe)) {
-				Repair_Concrete_Bridge_Span(probe);
-				return;
-			}
-		}
+	Cell probe;
+	if (Find_Hut_Neighbor(cell, Is_Concrete_Bridge_Cell, probe)) {
+		Repair_Concrete_Bridge_Span(probe);
+		return;
 	}
 	Repair_Bridge(cell);
 }
