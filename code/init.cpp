@@ -171,6 +171,7 @@
 #include "ovrlight.h"
 #include "ownrdraw.h"
 #include "partsys.h"
+#include "planning.h"
 #include "png.h"
 #include "queue.h"
 #include "ramfile.h"

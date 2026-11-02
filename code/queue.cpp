@@ -136,6 +136,7 @@
 #include "overtype.h"
 #include "particle.h"
 #include "partsys.h"
+#include "planning.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "replay.h"
@@ -417,9 +418,6 @@ void Dump_Packet_Too_Late_Stuff(EventClass *event);
  *   09/21/1995 JLB : Created.                                               *
  *=========================================================================*/
 namespace {
-	bool Recording_Planned_Orders = false;
-
-
 	/// <summary>
 	/// Queues a planned order for one of the local player's units that can take one. An object
 	/// that cannot take a plan (an aircraft, a building or another kind) is refused with its message.
@@ -445,22 +443,9 @@ namespace {
 }
 
 
-PlanningRecordScope::PlanningRecordScope(bool recording)
-	: Previous(Recording_Planned_Orders)
-{
-	Recording_Planned_Orders = recording;
-}
-
-
-PlanningRecordScope::~PlanningRecordScope(void)
-{
-	Recording_Planned_Orders = Previous;
-}
-
-
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination)
 {
-	if (Recording_Planned_Orders) {
+	if (Planning_Recording_Orders()) {
 		return(Record_Planned_Order(whom, mission, target, destination));
 	}
 	OutList.push_back(EventClass(PlayerPtr->HeapID, whom, mission, target, destination));
@@ -651,6 +636,25 @@ static void Queue_AI_Normal(void)
 }	/* end of Queue_AI_Normal */
 
 
+static void Log_Sync_Frame(void)
+{
+	if (Debug_SyncLog) {
+		DebugString("SYNC frame %d crc %08x\n", Frame, GameCRC);
+		unsigned draw_count = 0;
+		std::uint32_t const draw_digest = Sync_Take_Draw_Digest(draw_count);
+		DebugString("SYNC_DRAWS frame %d draws %u digest %08x\n", Frame, draw_count, draw_digest);
+		for (int house_index = 0; house_index < Houses.Count(); house_index++) {
+			HouseClass const * house = Houses[house_index];
+			if (house != NULL) {
+				DebugString("HOUSE_SYNC frame %d house %d credits %d tiberium %d build %d %d %d %d\n", Frame, house_index,
+					house->Credits, house->Tiberium.Get_Total_Value(), (int)house->BuildUnit, (int)house->BuildInfantry,
+					(int)house->BuildAircraft, (int)house->BuildStructure);
+			}
+		}
+	}
+}
+
+
 /***************************************************************************
  * Queue_AI_Multiplayer -- Process all queued events.                      *
  *                                                                         *
@@ -821,6 +825,7 @@ static void Queue_AI_Multiplayer(void)
 		DebugString("Forcing a checksum mismatch on frame %d for out-of-sync testing\n", Frame);
 	}
 
+	// Frame info packets carry this value to the other machines.
 	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
 	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
 
@@ -833,21 +838,7 @@ static void Queue_AI_Multiplayer(void)
 			CurrentFrameDetail.Count[2], CurrentFrameDetail.Count[3]);
 	}
 
-	// Frame info packets carry this value to the other machines.
-	if (Debug_SyncLog) {
-		DebugString("SYNC frame %d crc %08x\n", Frame, GameCRC);
-		unsigned draw_count = 0;
-		std::uint32_t const draw_digest = Sync_Take_Draw_Digest(draw_count);
-		DebugString("SYNC_DRAWS frame %d draws %u digest %08x\n", Frame, draw_count, draw_digest);
-		for (int house_index = 0; house_index < Houses.Count(); house_index++) {
-			HouseClass const * house = Houses[house_index];
-			if (house != NULL) {
-				DebugString("HOUSE_SYNC frame %d house %d credits %d tiberium %d build %d %d %d %d\n", Frame, house_index,
-					house->Credits, house->Tiberium.Get_Total_Value(), (int)house->BuildUnit, (int)house->BuildInfantry,
-					(int)house->BuildAircraft, (int)house->BuildStructure);
-			}
-		}
-	}
+	Log_Sync_Frame();
 
 	//------------------------------------------------------------------------
 	// If we've just started a game, or loaded a multiplayer game, we must
@@ -1535,11 +1526,8 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			if (Session.DrawMPDebugStats && stalling) {
 				Multiplayer_Debug_Print();
 			}
-			int show_stall = 1;
-			if (stall_drawn && !(Session.ShowInternetDebug && stalling)) {
-				show_stall = 0;
-			}
-			if (show_stall) {
+			bool const count_now = !stall_drawn || (Session.ShowInternetDebug && stalling);
+			if (count_now) {
 				if (frame_stall != -1) {
 					Session.ConnectionStats[frame_stall].FrameSyncStalls++;
 				}

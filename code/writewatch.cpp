@@ -21,8 +21,6 @@
 // Resetting a page's watch makes its next write a page fault, which costs far more than the write. A page
 // written in two takes in a row is therefore left unreset and reported as written by every take until the next
 // full reset, so a take can report a page that was not written but never misses one.
-static constexpr unsigned STICKY_FULL_RESET_EVERY = 32;
-
 struct WatchState {
 	// Pages that are no longer reset.
 	std::vector<unsigned char> Sticky;
@@ -31,8 +29,8 @@ struct WatchState {
 	unsigned Takes = 0;
 };
 
-static std::mutex _Lock;
-static std::unordered_map<void const *, WatchState> _Watched;
+static std::mutex Watch_Lock;
+static std::unordered_map<void const *, WatchState> Watched_Blocks;
 
 
 void * WriteWatch_Alloc(std::size_t size)
@@ -40,8 +38,8 @@ void * WriteWatch_Alloc(std::size_t size)
 #ifdef _WIN32
 	void * memory = VirtualAlloc(NULL, size, MEM_RESERVE | MEM_COMMIT | MEM_WRITE_WATCH, PAGE_READWRITE);
 	if (memory != NULL) {
-		std::lock_guard<std::mutex> guard(_Lock);
-		_Watched[memory];
+		std::lock_guard<std::mutex> guard(Watch_Lock);
+		Watched_Blocks[memory];
 		return(memory);
 	}
 #endif
@@ -56,8 +54,8 @@ void WriteWatch_Free(void * memory)
 	}
 #ifdef _WIN32
 	{
-		std::lock_guard<std::mutex> guard(_Lock);
-		if (_Watched.erase(memory) != 0) {
+		std::lock_guard<std::mutex> guard(Watch_Lock);
+		if (Watched_Blocks.erase(memory) != 0) {
 			VirtualFree(memory, 0, MEM_RELEASE);
 			return;
 		}
@@ -73,9 +71,9 @@ bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pai
 #ifdef _WIN32
 	WatchState * state = NULL;
 	{
-		std::lock_guard<std::mutex> guard(_Lock);
-		auto found = _Watched.find(memory);
-		if (found == _Watched.end()) {
+		std::lock_guard<std::mutex> guard(Watch_Lock);
+		auto found = Watched_Blocks.find(memory);
+		if (found == Watched_Blocks.end()) {
 			return(false);
 		}
 		state = &found->second;

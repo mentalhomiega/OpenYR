@@ -14,6 +14,9 @@
 #include <vector>
 
 
+// The number of takes between the full resets of a steady block (see WriteWatch_Take).
+inline constexpr unsigned STICKY_FULL_RESET_EVERY = 32;
+
 // Allocates size bytes whose written pages WriteWatch_Take can list. Free it with WriteWatch_Free.
 void * WriteWatch_Alloc(std::size_t size);
 
@@ -23,6 +26,6 @@ void WriteWatch_Free(void * memory);
 // (all of them on the first call) and starts listing anew. False means writes to the block are not
 // listed on this system, and every byte must be treated as written.
 // With steady set, a page written in two takes in a row is reported by every take until a full reset
-// that happens every 32 takes, whether or not it is written again, and its writes stop costing a page fault.
+// that happens every STICKY_FULL_RESET_EVERY takes, whether or not it is written again, and its writes stop costing a page fault.
 // Set it for a block that many of the same pages are written in every frame.
 bool WriteWatch_Take(void const * memory, std::size_t size, std::vector<std::pair<std::size_t, std::size_t>> & runs, bool steady = false);

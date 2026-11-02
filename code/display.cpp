@@ -132,6 +132,7 @@
 #include "mixfile.h"
 #include "overtype.h"
 #include "palette.h"
+#include "planning.h"
 #include "queue.h"
 #include "replay.h"
 #include "rules.h"

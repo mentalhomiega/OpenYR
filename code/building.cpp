@@ -9145,6 +9145,10 @@ void BuildingClass::Update_Absorber_Anims(void)
 }
 
 
+// Multiply frame counts by this rather than divide: the float product sets the boundary frame of the charge check.
+static float const FRAMES_TO_MINUTES = 1.0f / TICKS_PER_MINUTE;
+
+
 /// <summary>
 /// Plays the animations that show how charged a superweapon building is, after the
 /// superweapon parts of BuildingClass::Place (0x445F80) and BuildingClass::UpdateAnimations
@@ -9182,7 +9186,7 @@ void BuildingClass::Update_Super_Anims(void)
 				}
 			}
 		}
-	} else if (Class->ChargedAnimTime < super->Control.Value() * 0.0011111111f) {
+	} else if (Class->ChargedAnimTime < super->Control.Value() * FRAMES_TO_MINUTES) {
 		// Only the ready animation is replaced by the fourth; a second animation still playing runs to its end (0x4509D0).
 		if (Anims[BANIM_SUPER_THREE] != NULL) {
 			End_Anim(BANIM_SUPER_THREE);
