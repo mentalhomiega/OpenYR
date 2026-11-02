@@ -1330,92 +1330,98 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 	}
 
 	if (drawpass == DRAW_PASS_FOREGROUND || drawpass == DRAW_PASS_FULL) {
-		int i;
+		Render_Foreground(*composite);
+	}
+}
 
-		Add_Buildings_To_Selectable(TacticalRect);
-		composite->Lock();
-		Surface * savedlogical = LogicalSurface;
-		LogicalSurface = composite;
-		{
-			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
-			Draw_Waypoints(false);
-			Draw_Rally_Points(false);
-			Draw_Placement(false);
-		}
+
+void Tactical::Render_Foreground(Surface & composite)
+{
+	int i;
+
+	Add_Buildings_To_Selectable(TacticalRect);
+	composite.Lock();
+	Surface * savedlogical = LogicalSurface;
+	LogicalSurface = &composite;
+	{
+		PerfScope overlay_scope(PERF_DRAW_OVERLAY);
+		Draw_Waypoints(false);
+		Draw_Rally_Points(false);
+		Draw_Placement(false);
+	}
 
 #ifdef _DEBUG
-		if (DrawOccupierLinks) Debug_Draw_Occupier_Links();
-		if (OccupationBitPrint) Debug_Draw_Occupation_Flags();
+	if (DrawOccupierLinks) Debug_Draw_Occupier_Links();
+	if (OccupationBitPrint) Debug_Draw_Occupation_Flags();
 #endif
 
-		{
-			PerfScope fx_scope(PERF_DRAW_FX);
-			VeinholeMonsterClass::Draw_All();
-			IonBlastClass::Draw_All();
+	{
+		PerfScope fx_scope(PERF_DRAW_FX);
+		VeinholeMonsterClass::Draw_All();
+		IonBlastClass::Draw_All();
+	}
+	{
+		PerfScope objects_scope(PERF_DRAW_OBJECTS);
+		Draw_Objects(true);
+	}
+	{
+		PerfScope fx_scope(PERF_DRAW_FX);
+		SpotLightClass::Draw_All();
+		LaserDrawClass::Draw_All();
+		EBoltClass::Draw_All();
+		LineTrailClass::Update_And_Draw_All();
+		RadBeamClass::Draw_All();
+		Draw_Mind_Control_Links();
+		Draw_Psychic_Lines();
+		Draw_Hidden_Markers();
+		Draw_Beacons();
+	}
+
+	for (i = 0; i < CurrentObject.Count(); i++) {
+		ObjectClass * object = CurrentObject[i];
+		if (object->Class_Of() != NULL && object->Class_Of()->IsHasRadialIndicator) {
+			object->Draw_Radial_Indicator();
 		}
-		{
-			PerfScope objects_scope(PERF_DRAW_OBJECTS);
-			Draw_Objects(true);
+	}
+
+	for (i = 0; i < CurrentObject.Count(); i++) {
+		ObjectClass * object = CurrentObject[i];
+		if (object->Fetch_RTTI() == RTTI_BUILDING) {
+			static_cast<BuildingClass *>(object)->Draw_Defence_Range();
 		}
-		{
-			PerfScope fx_scope(PERF_DRAW_FX);
-			SpotLightClass::Draw_All();
-			LaserDrawClass::Draw_All();
-			EBoltClass::Draw_All();
-			LineTrailClass::Update_And_Draw_All();
-			RadBeamClass::Draw_All();
-			Draw_Mind_Control_Links();
-			Draw_Psychic_Lines();
-			Draw_Hidden_Markers();
-			Draw_Beacons();
-		}
+	}
+
+	{
+		PerfScope overlay_scope(PERF_DRAW_OVERLAY);
+		Draw_Rubber_Band();
+		Draw_Waypoints(true);
+		Draw_Planned_Orders();
+		Draw_Rally_Points(true);
+		Draw_Placement(true);
+		Draw_Placement_Range();
+		Draw_Super_Range();
+		Draw_Chrono_Screen_Effect();
+		Draw_Flying_Texts();
 
 		for (i = 0; i < CurrentObject.Count(); i++) {
 			ObjectClass * object = CurrentObject[i];
-			if (object->Class_Of() != NULL && object->Class_Of()->IsHasRadialIndicator) {
-				object->Draw_Radial_Indicator();
-			}
-		}
-
-		for (i = 0; i < CurrentObject.Count(); i++) {
-			ObjectClass * object = CurrentObject[i];
-			if (object->Fetch_RTTI() == RTTI_BUILDING) {
-				static_cast<BuildingClass *>(object)->Draw_Defence_Range();
-			}
-		}
-
-		{
-			PerfScope overlay_scope(PERF_DRAW_OVERLAY);
-			Draw_Rubber_Band();
-			Draw_Waypoints(true);
-			Draw_Planned_Orders();
-			Draw_Rally_Points(true);
-			Draw_Placement(true);
-			Draw_Placement_Range();
-			Draw_Super_Range();
-			Draw_Chrono_Screen_Effect();
-			Draw_Flying_Texts();
-
-			for (i = 0; i < CurrentObject.Count(); i++) {
-				ObjectClass * object = CurrentObject[i];
-				if (object->Is_Techno() && ((TechnoClass*)object)->IsSelected) {
-					if (TechnoClass::ActionLines == true && ((TechnoClass*)object)->House->Is_Player_Control()) {
-						((TechnoClass*)object)->Draw_Action_Line();
-					}
+			if (object->Is_Techno() && ((TechnoClass*)object)->IsSelected) {
+				if (TechnoClass::ActionLines == true && ((TechnoClass*)object)->House->Is_Player_Control()) {
+					((TechnoClass*)object)->Draw_Action_Line();
 				}
 			}
-
-			Render_Outside_Map(*composite);
-			Ring_Glow_Flush(*composite);
 		}
 
-		LogicalSurface = savedlogical;
-		composite->Unlock();
-		Draw_Screen_Text(ScreenText);
-
-		IsFirstRender = false;
-		IsToRedraw = false;
+		Render_Outside_Map(composite);
+		Ring_Glow_Flush(composite);
 	}
+
+	LogicalSurface = savedlogical;
+	composite.Unlock();
+	Draw_Screen_Text(ScreenText);
+
+	IsFirstRender = false;
+	IsToRedraw = false;
 }
 
 
