@@ -194,6 +194,4 @@ void GpuDraw_Set_Replay_Check(bool enabled);
 // The gpucheck autotest step: each pass is also drawn on the GPU and compared (code/gpumap.h).
 void GpuDraw_Set_Gpu_Check(bool enabled);
 
-// The list recorded by the last pass.
-GpuDrawList const & GpuDraw_List(void);
 GpuAtlas const & GpuDraw_Atlas(void);

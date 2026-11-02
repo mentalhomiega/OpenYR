@@ -1165,9 +1165,3 @@ GpuAtlas const & GpuDraw_Atlas(void)
 {
 	return(_Atlas);
 }
-
-
-GpuDrawList const & GpuDraw_List(void)
-{
-	return(_List);
-}
