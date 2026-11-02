@@ -12,6 +12,7 @@
 #include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/colorpick/uicolorpick.h"
+#include "ui/screens/colorpick/uicolorpickview.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -267,6 +268,9 @@ bool UISkirmishPresenterClass::Judge_Setup(void)
 
 void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 {
+	if (UI_Color_Pick_Intent(State.Picker, intent.Name, intent.Value, intent.Text)) {
+		return;
+	}
 	if (intent.Name == "handle") {
 		State.Handle = intent.Text;
 	} else if (intent.Name == "slotkind") {
@@ -316,23 +320,8 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 		Settle_Slots();
 	} else if (intent.Name == "pickopen") {
 		Open_Picker(intent.Value);
-	} else if (intent.Name == "pickfield") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Field(State.Picker, intent.Value, std::atoi(intent.Text.c_str()));
-		}
-	} else if (intent.Name == "pickvalue") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Value(State.Picker, intent.Value);
-		}
-	} else if (intent.Name == "pickpreset") {
-		if (State.Picker.Open) {
-			UI_Color_Pick_Preset(State.Picker, intent.Value);
-		}
 	} else if (intent.Name == "pickok") {
 		Apply_Picker();
-	} else if (intent.Name == "pickcancel") {
-		State.Picker.Open = false;
-		State.Picker.Notice.clear();
 	} else if (intent.Name == "ok") {
 		if (Judge_Setup() && Service.Can_Start(State)) {
 			Choice = UI_SKIRMISH_START;
@@ -466,15 +455,13 @@ void UI_Skirmish_Slot_Parse(UISkirmishState & state, int row, std::string const 
 namespace
 {
 
-class UISkirmishViewClass : public UIRmlViewClass
+class UISkirmishViewClass : public UIColorPickViewClass
 {
 	public:
 		explicit UISkirmishViewClass(UISkirmishPresenterClass & presenter) :
-			UIRmlViewClass(presenter, "skirmish.rml", "skirmish"),
+			UIColorPickViewClass(presenter, "skirmish.rml", "skirmish"),
 			Data(presenter),
-			Shown(-1),
-			PickerShown(-1),
-			Dragging(false)
+			Shown(-1)
 		{
 			for (auto & row : Chosen) {
 				for (int & chosen : row) {
@@ -514,7 +501,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("pickramp");
 
 			Show_Preview();
-			Show_Picker();
+			Show_Picker(Data.State.Picker);
 		}
 
 		/// <summary>
@@ -631,65 +618,6 @@ class UISkirmishViewClass : public UIRmlViewClass
 		}
 
 	private:
-		/// Routes the free color square's pointer input into the picker while a button is held on it.
-		virtual void Loaded(void) override
-		{
-			UIRmlViewClass::Loaded();
-			if (Document() != nullptr) {
-				Document()->AddEventListener(Rml::EventId::Mouseup, this);
-			}
-		}
-
-		virtual void ProcessEvent(Rml::Event & event) override
-		{
-			Rml::ElementDocument * document = Document();
-			Rml::Element * field = document != nullptr ? document->GetElementById("colorfield") : nullptr;
-			if (field != nullptr) {
-				if (event.GetId() == Rml::EventId::Mouseup) {
-					Dragging = false;
-				} else if (event.GetId() == Rml::EventId::Mousedown && event.GetTargetElement() == field && event.GetParameter<int>("button", 0) == 0) {
-					Dragging = true;
-				}
-				if (Dragging && (event.GetId() == Rml::EventId::Mousedown || event.GetId() == Rml::EventId::Mousemove)) {
-					Queue_Field(field, event);
-				}
-			}
-			UIRmlViewClass::ProcessEvent(event);
-		}
-
-		void Queue_Field(Rml::Element * field, Rml::Event & event)
-		{
-			Rml::Vector2f const origin = field->GetAbsoluteOffset(Rml::BoxArea::Border);
-			Rml::Vector2f const size = field->GetBox().GetSize(Rml::BoxArea::Border);
-			if (size.x <= 0.0f || size.y <= 0.0f) {
-				return;
-			}
-			float const mouse_x = event.GetParameter<float>("mouse_x", 0.0f);
-			float const mouse_y = event.GetParameter<float>("mouse_y", 0.0f);
-			int const x = (int)((mouse_x - origin.x) * UI_COLOR_FIELD_SIZE / size.x);
-			int const y = (int)((mouse_y - origin.y) * UI_COLOR_FIELD_SIZE / size.y);
-			Queue("pickfield", x, std::to_string(y).c_str());
-		}
-
-		void Show_Picker(void)
-		{
-			UIColorPickState const & picker = Data.State.Picker;
-			Rml::Element * chip = Document() != nullptr ? Document()->GetElementById("picker-chip") : nullptr;
-			if (chip != nullptr && picker.Swatch != ShownSwatch) {
-				chip->SetProperty("background-color", picker.Swatch);
-				ShownSwatch = picker.Swatch;
-			}
-			if (picker.Generation == PickerShown || Document() == nullptr) {
-				return;
-			}
-			UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(Document()->GetElementById("colorfield"));
-			if (surface == nullptr) {
-				return;
-			}
-			PickerShown = picker.Generation;
-			surface->Set_Image(UI_COLOR_FIELD_SIZE, UI_COLOR_FIELD_SIZE, UI_Color_Pick_Pixels(picker));
-		}
-
 		void Show_Preview(void)
 		{
 			UIMapPreviewImage & preview = Data.State.Preview;
@@ -708,9 +636,6 @@ class UISkirmishViewClass : public UIRmlViewClass
 
 		UISkirmishPresenterClass & Data;
 		int Shown;
-		int PickerShown;
-		std::string ShownSwatch;
-		bool Dragging;
 		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];
 };
 

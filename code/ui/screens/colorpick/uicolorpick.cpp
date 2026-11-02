@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 namespace
@@ -323,6 +324,30 @@ void UI_Color_Pick_Preset(UIColorPickState & state, int index)
 	Place_Marker(state);
 	Show_Choice(state);
 	state.Generation++;
+}
+
+
+bool UI_Color_Pick_Intent(UIColorPickState & state, std::string const & name, int value, std::string const & text)
+{
+	if (name == "pickfield") {
+		if (state.Open) {
+			UI_Color_Pick_Field(state, value, std::atoi(text.c_str()));
+		}
+	} else if (name == "pickvalue") {
+		if (state.Open) {
+			UI_Color_Pick_Value(state, value);
+		}
+	} else if (name == "pickpreset") {
+		if (state.Open) {
+			UI_Color_Pick_Preset(state, value);
+		}
+	} else if (name == "pickcancel") {
+		state.Open = false;
+		state.Notice.clear();
+	} else {
+		return(false);
+	}
+	return(true);
 }
 
 
