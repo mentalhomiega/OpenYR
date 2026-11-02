@@ -770,6 +770,7 @@ class BuildingClass : public TechnoClass
 		int Exit_Structure(TechnoClass * base);
 		Coord Door_Coord(Cell const & exitcell) const;
 		bool Is_Damaged_Art(void) const;
+		std::vector<InfantryClass *> Take_Occupants(void);
 
 		/*
 		 * This is the scenario INI section that lists the buildings to place upon the map.

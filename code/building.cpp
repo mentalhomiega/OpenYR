@@ -10188,13 +10188,20 @@ void BuildingClass::Eject_Occupants(bool const keep_unplaced)
 		return;
 	}
 
-	// Deleting an occupant detaches it from the list, so work from a copy.
+// Deleting an occupant detaches it from the list, so the caller works from the returned copy.
+std::vector<InfantryClass *> BuildingClass::Take_Occupants(void)
+{
 	std::vector<InfantryClass *> occupants;
 	for (int index = 0; index < Occupants.Count(); index++) {
 		occupants.push_back(Occupants[index]);
 	}
 	Occupants.Clear();
 	Update_Threat_In_Cell();
+	return(occupants);
+}
+
+
+	std::vector<InfantryClass *> occupants = Take_Occupants();
 
 	Cell start = Get_Cell() + Cell(0, Class->Height());
 	for (InfantryClass * occupant : occupants) {
@@ -10226,13 +10233,7 @@ void BuildingClass::Kill_Occupants(TechnoClass * assaulter)
 	FiringOccupantIndex = 0;
 	WeaponTypeClass const * weapon = assaulter->Get_Primary_Weapon();
 
-	// Deleting an occupant detaches it from the list, so work from a copy.
-	std::vector<InfantryClass *> occupants;
-	for (int index = 0; index < Occupants.Count(); index++) {
-		occupants.push_back(Occupants[index]);
-	}
-	Occupants.Clear();
-	Update_Threat_In_Cell();
+	std::vector<InfantryClass *> occupants = Take_Occupants();
 
 	for (int index = (int)occupants.size() - 1; index >= 0; index--) {
 		InfantryClass * occupant = occupants[index];
