@@ -3077,19 +3077,25 @@ bool TActionClass::Not_Implemented(void) const
 }
 
 
+// Returns false and runs nothing when the house type names no house.
+static bool Run_On_House_Of(HousesType house_type, void (HouseClass::* action)(void))
+{
+	HouseClass * hptr = House_From_HousesType(house_type);
+	if (hptr == NULL) {
+		return(false);
+	}
+	(hptr->*action)();
+	return(true);
+}
+
+
 /// <summary>
 /// Makes the infantry of the named house cheer, as Yuri's Revenge's action 113 does.
 /// </summary>
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Cheer();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Cheer));
 }
 
 
@@ -3099,13 +3105,7 @@ bool TActionClass::TAction_CHEER(HouseClass * , ObjectClass * , TriggerClass * ,
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All));
 }
 
 
@@ -3115,13 +3115,7 @@ bool TActionClass::TAction_DESTROY_ALL(HouseClass * , ObjectClass * , TriggerCla
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Buildings();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Buildings));
 }
 
 
@@ -3131,13 +3125,7 @@ bool TActionClass::TAction_DESTROY_ALL_BUILDINGS(HouseClass * , ObjectClass * , 
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Non_Buildings_Non_Naval();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Non_Naval));
 }
 
 
@@ -3147,13 +3135,7 @@ bool TActionClass::TAction_DESTROY_ALL_LAND_UNITS(HouseClass * , ObjectClass * ,
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_DESTROY_ALL_NAVAL_UNITS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-
-	hptr->Destroy_All_Non_Buildings_Naval();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Destroy_All_Non_Buildings_Naval));
 }
 
 
@@ -3788,12 +3770,7 @@ bool TActionClass::TAction_RESHROUD_AT(HouseClass * , ObjectClass * , TriggerCla
 /// <returns>bool; Is the named house in play?</returns>
 bool TActionClass::TAction_RESTORE_STARTING_BUILDINGS(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	HouseClass * hptr = House_From_HousesType(Data.House);
-	if (hptr == NULL) {
-		return(false);
-	}
-	hptr->Restore_Starting_Buildings();
-	return(true);
+	return(Run_On_House_Of(Data.House, &HouseClass::Restore_Starting_Buildings));
 }
 
 
