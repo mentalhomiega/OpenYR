@@ -22,9 +22,9 @@
 #include "palette.h"
 #include "scheme.h"
 #include "scenario.h"
+#include "strutil.h"
 #include "theater.h"
 
-#include <cctype>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -52,9 +52,7 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	if (tildes != std::string::npos && Scen != NULL) {
 		name.replace(tildes, 3, (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix);
 	}
-	for (char & letter : name) {
-		letter = (char)toupper((unsigned char)letter);
-	}
+	name = Upper(name);
 
 	auto found = Drawers.find(name);
 	if (found != Drawers.end()) {
@@ -82,10 +80,7 @@ ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme)
 		return(NULL);
 	}
 
-	std::string name = filename + (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix + ".PAL";
-	for (char & letter : name) {
-		letter = (char)toupper((unsigned char)letter);
-	}
+	std::string const name = Upper(filename + (char const *)TheaterClass::As_Reference(Scen->Theater).Suffix + ".PAL");
 
 	// The palette takes the lighting tint of the house scheme it stands for, so its brightness follows the map.
 	ColorScheme const * house = ColorSchemes[scheme];
