@@ -84,6 +84,8 @@ static unsigned int _ResetFlags = BGFX_RESET_FLIP_AFTER_RENDER;
 // True while the frame texture holds the game's own 565 layout. When the hardware cannot
 // sample that format the frame is widened to 32 bits on the way in instead.
 static bool _FrameIs565 = false;
+// Set once the widening tables are built. They are never cleared, so the flag holds for the life of the process.
+static bool _ConvertTablesBuilt = false;
 static unsigned int _ConvertTable[65536];
 // The keyed frame's widening: the layer key is see-through and the tint keys are their tints.
 static unsigned int _KeyedTable[65536];
@@ -331,6 +333,15 @@ static void Build_Convert_Table(void)
 	_KeyedTable[BACKEND_LAYER_KEY] = 0;
 	for (size_t index = 0; index < std::size(_LayerTints); index++) {
 		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = _LayerTints[index];
+	}
+}
+
+
+static void Ensure_Convert_Tables(void)
+{
+	if (!_ConvertTablesBuilt) {
+		Build_Convert_Table();
+		_ConvertTablesBuilt = true;
 	}
 }
 
@@ -764,9 +775,7 @@ static bool Upload_Keyed_Frame(void const * pixels, int pitch)
 		}
 		_KeyedDiff.Reset(_FrameWidth, _FrameHeight, 2);
 	}
-	if (_ConvertTable[0xFFFF] == 0) {
-		Build_Convert_Table();
-	}
+	Ensure_Convert_Tables();
 
 	unsigned char const * source = (unsigned char const *)pixels;
 	_KeyedGrid.Resize(_FrameWidth, _FrameHeight);
@@ -1291,8 +1300,8 @@ bool Backend_Set_Frame_Size(int width, int height)
 	}
 	_FrameDiff.Reset(width, height, 2);
 
-	if (!_FrameIs565 && _ConvertTable[0xFFFF] == 0) {
-		Build_Convert_Table();
+	if (!_FrameIs565) {
+		Ensure_Convert_Tables();
 	}
 
 	_FrameWidth = width;
@@ -1575,7 +1584,7 @@ void Backend_Set_Layer_Tint(int index, unsigned char red, unsigned char green, u
 		return;
 	}
 	_LayerTints[index] = tint;
-	if (_ConvertTable[0xFFFF] != 0) {
+	if (_ConvertTablesBuilt) {
 		_KeyedTable[BACKEND_LAYER_TINT_KEYS[index]] = tint;
 	}
 	// The keyed frame texture holds the old tint wherever the frame did not change.
