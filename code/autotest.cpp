@@ -527,21 +527,25 @@ bool TriggerLog = false;
 std::map<TriggerTypeClass const *, int> TriggerSprings;
 
 
-TechnoTypeClass const * Find_Type(std::string const & name)
+// The first type in the list whose name matches, ignoring case, or NULL.
+template<class T>
+static TechnoTypeClass const * Find_Type_In(DynamicVectorClass<T *> const & types, std::string const & name)
 {
-	for (int index = 0; index < BuildingTypes.Count(); index++) {
-		if (stricmp(BuildingTypes[index]->Name(), name.c_str()) == 0) return(BuildingTypes[index]);
-	}
-	for (int index = 0; index < UnitTypes.Count(); index++) {
-		if (stricmp(UnitTypes[index]->Name(), name.c_str()) == 0) return(UnitTypes[index]);
-	}
-	for (int index = 0; index < InfantryTypes.Count(); index++) {
-		if (stricmp(InfantryTypes[index]->Name(), name.c_str()) == 0) return(InfantryTypes[index]);
-	}
-	for (int index = 0; index < AircraftTypes.Count(); index++) {
-		if (stricmp(AircraftTypes[index]->Name(), name.c_str()) == 0) return(AircraftTypes[index]);
+	for (int index = 0; index < types.Count(); index++) {
+		if (stricmp(types[index]->Name(), name.c_str()) == 0) return(types[index]);
 	}
 	return(NULL);
+}
+
+
+// Buildings are searched first, then units, infantry and aircraft; a name that two kinds share resolves to the first.
+TechnoTypeClass const * Find_Type(std::string const & name)
+{
+	TechnoTypeClass const * type = Find_Type_In(BuildingTypes, name);
+	if (type == NULL) type = Find_Type_In(UnitTypes, name);
+	if (type == NULL) type = Find_Type_In(InfantryTypes, name);
+	if (type == NULL) type = Find_Type_In(AircraftTypes, name);
+	return(type);
 }
 
 
@@ -1925,6 +1929,15 @@ static void Note_If_Gated(TechnoTypeClass const * other, int id, char const * ta
 		if (other->Prerequisite[pre] == id) {
 			DebugString("AUTOTEST   gated %s by %s\n", other->Name(), target);
 		}
+	}
+}
+
+
+template<class T>
+static void Note_Gated_Types(DynamicVectorClass<T *> const & types, int id, char const * target)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		Note_If_Gated(types[index], id, target);
 	}
 }
 
@@ -6054,9 +6067,10 @@ static void Quantity_Step(StepType const & step)
 	TechnoTypeClass const * ttype = Find_Type(step.Argument);
 	if (ttype != NULL) {
 		int const id = ttype->Fetch_Heap_ID();
-		bool const building = dynamic_cast<BuildingTypeClass const *>(ttype) != NULL;
-		bool const aircraft = dynamic_cast<AircraftTypeClass const *>(ttype) != NULL;
-		bool const infantry = dynamic_cast<InfantryTypeClass const *>(ttype) != NULL;
+		RTTIType const kind = ttype->Fetch_RTTI();
+		bool const building = kind == RTTI_BUILDINGTYPE;
+		bool const aircraft = kind == RTTI_AIRCRAFTTYPE;
+		bool const infantry = kind == RTTI_INFANTRYTYPE;
 		for (int house = 0; house < Houses.Count(); house++) {
 			HouseClass * owner = Houses[house];
 			CounterClass const & owned = building ? owner->BQuantity : aircraft ? owner->AQuantity : infantry ? owner->IQuantity : owner->UQuantity;
@@ -6436,12 +6450,12 @@ static void Prereqs_Step(StepType const & step)
 			DebugString("AUTOTEST   prereq of %s: %d %s\n", type->Name(), pre, pre >= 0 && pre < BuildingTypes.Count() ? BuildingTypes[pre]->Name() : "(group)");
 		}
 		// Prerequisite entries name structures by heap ID, so only a structure can be named by another type.
-		if (dynamic_cast<BuildingTypeClass const *>(type) != NULL) {
+		if (type->Fetch_RTTI() == RTTI_BUILDINGTYPE) {
 			int const id = type->Fetch_Heap_ID();
-			for (int index = 0; index < BuildingTypes.Count(); index++) Note_If_Gated(BuildingTypes[index], id, type->Name());
-			for (int index = 0; index < UnitTypes.Count(); index++) Note_If_Gated(UnitTypes[index], id, type->Name());
-			for (int index = 0; index < InfantryTypes.Count(); index++) Note_If_Gated(InfantryTypes[index], id, type->Name());
-			for (int index = 0; index < AircraftTypes.Count(); index++) Note_If_Gated(AircraftTypes[index], id, type->Name());
+			Note_Gated_Types(BuildingTypes, id, type->Name());
+			Note_Gated_Types(UnitTypes, id, type->Name());
+			Note_Gated_Types(InfantryTypes, id, type->Name());
+			Note_Gated_Types(AircraftTypes, id, type->Name());
 		}
 	}
 }
