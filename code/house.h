@@ -960,6 +960,7 @@ class HouseClass : public AbstractClass
 		SideClass const * Acted_Side(void) const;
 		bool Is_Acted_Tower(BuildingTypeClass const * type) const;
 		template<typename T> T const * Get_First_Acted(DynamicVectorClass<T const *> const & list) const;
+		template<typename T> bool Is_Acted_Candidate(T const * type) const;
 		int Planning_Side(void) const;
 		UnitTypeClass const * Preferred_Harvester(void) const;
 		UnitTypeClass const * Country_Unit(DynamicVectorClass<UnitTypeClass const *> const & list) const;
@@ -1336,20 +1337,31 @@ inline int HouseClass::Count_Owned(CounterClass const & tally, TypeList<T const 
 }
 
 
+// Whether the country this house builds for may own the entry and plan for it: the Ownable,
+// RequiredHouses, ForbiddenHouses and AIBasePlanningSide tests that Get_First_Acted applies.
+template<typename T>
+inline bool HouseClass::Is_Acted_Candidate(T const * type) const
+{
+	int mask = Acted_Mask();
+	int own = Own_Mask();
+	if ((mask & type->Ownable) == 0) return(false);
+	if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) return(false);
+	if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) return(false);
+	if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) return(false);
+	return(true);
+}
+
+
 // The first entry the country this house builds for may own and plan for, or NULL when there is
 // none (HouseClass::FirstBuildableFromArray, 0x5051E0 in gamemd).
 template<typename T>
 inline T const * HouseClass::Get_First_Acted(DynamicVectorClass<T const *> const & list) const
 {
-	int mask = Acted_Mask();
-	int own = Own_Mask();
 	for (int index = 0; index < list.Count(); index++) {
 		T const * type = list[index];
-		if ((mask & type->Ownable) == 0) continue;
-		if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) continue;
-		if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) continue;
-		if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) continue;
-		return(type);
+		if (Is_Acted_Candidate(type)) {
+			return(type);
+		}
 	}
 	return(NULL);
 }

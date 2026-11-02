@@ -8252,6 +8252,35 @@ static TypeList<int> const * Side_Base_Defense_Counts(int side)
 }
 
 
+// Negative entries from -3 to -1 are placeholder structure types, not building types.
+static void Add_Plan_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, DynamicVectorClass<BuildingTypeClass const *> const & plan)
+{
+	for (int index = 0; index < plan.Count(); index++) {
+		BuildingTypeClass const * b = plan[index];
+		if ((intptr_t)b < 0 && (intptr_t)b >= -3) {
+			nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
+		} else {
+			nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
+		}
+	}
+}
+
+
+static void Make_Counted_Base_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, DynamicVectorClass<BuildingTypeClass const *> const & startingqueue, TypeList<int> const & defense_counts, int difficulty)
+{
+	DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
+	for (int count = EconomyRules::Difficulty_Entry(defense_counts, difficulty); count > 0; count--) {
+		int after = Random_Pick(3, std::max(3, plan.Count() - 1));
+		if (after >= plan.Count()) {
+			plan.Add((BuildingTypeClass const *)-1);
+		} else {
+			plan.Insert_After(after, (BuildingTypeClass const *)-1);
+		}
+	}
+	Add_Plan_Nodes(nodes, plan);
+}
+
+
 /// <summary>
 /// Builds the computer's base construction plan.
 /// This routine fills the base node list with everything this house is allowed and able to
@@ -8292,18 +8321,12 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	int ownable = Acted_Mask();
-	int own = Own_Mask();
-
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
 
 	for (index = 0; index < BuildingTypes.Count(); index++) {
 		BuildingTypeClass const * builtype = BuildingTypes[index];
-		if (ownable & builtype->Ownable &&
-			(builtype->AIBasePlanningSide == -1 || builtype->AIBasePlanningSide == Planning_Side()) &&
-			(builtype->RequiredHouses == -1 || (builtype->RequiredHouses & own) != 0) &&
-			(builtype->ForbiddenHouses == -1 || (builtype->ForbiddenHouses & own) == 0) &&
+		if (Is_Acted_Candidate(builtype) &&
 			builtype->CanAIBuildThis &&
 			builtype->Level <= Control.TechLevel &&
 			(!builtype->IsWeeder || VeinholeMonsterClass::VeinholeMonsters.Count() > 0) &&
@@ -8399,15 +8422,7 @@ void HouseClass::Make_Base_Nodes(void)
 	int refcount = 2 - Difficulty;
 	if (counted_plan) {
 		// A house that can build no harvester mines with slaves, and its rules count the refinery it already plans.
-		bool harvests = false;
-		unsigned ownable_mask = Acted_Mask();
-		for (index = 0; index < Rule->HarvesterUnit.Count(); index++) {
-			UnitTypeClass const * harvester = Rule->HarvesterUnit[index];
-			if (harvester != NULL && (harvester->Ownable & ownable_mask) != 0) {
-				harvests = true;
-				break;
-			}
-		}
+		bool harvests = Country_Harvester() != NULL;
 		if (harvests) {
 			refcount = EconomyRules::Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
 		} else {
@@ -8431,30 +8446,12 @@ void HouseClass::Make_Base_Nodes(void)
 
 	// A queue too short to weave defenses into is the whole plan.
 	if (startingqueue.Count() < 3) {
-		for (index = 0; index < startingqueue.Count(); index++) {
-			Base.Nodes.Add(BaseNodeClass(startingqueue[index]->HeapID, Cell(0, 0)));
-		}
+		Add_Plan_Nodes(Base.Nodes, startingqueue);
 		return;
 	}
 
 	if (counted_plan) {
-		DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
-		for (int count = EconomyRules::Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
-			int after = Random_Pick(3, std::max(3, plan.Count() - 1));
-			if (after >= plan.Count()) {
-				plan.Add((BuildingTypeClass const *)-1);
-			} else {
-				plan.Insert_After(after, (BuildingTypeClass const *)-1);
-			}
-		}
-		for (index = 0; index < plan.Count(); index++) {
-			BuildingTypeClass const * b = plan[index];
-			if ((intptr_t)b < 0) {
-				Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
-			} else {
-				Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
-			}
-		}
+		Make_Counted_Base_Nodes(Base.Nodes, startingqueue, *defense_counts, Difficulty);
 		return;
 	}
 
@@ -8495,14 +8492,7 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	for (index = 0; index < finalqueue.Count(); index++) {
-		BuildingTypeClass const * b = finalqueue[index];
-		if ((intptr_t)b < 0 && (intptr_t)b >= -3) {
-			Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
-		} else {
-			Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
-		}
-	}
+	Add_Plan_Nodes(Base.Nodes, finalqueue);
 
 	if (builds_walls) {
 		Base.Nodes.Add(BaseNodeClass((StructType)-3, Cell(0, 0)));
