@@ -62,6 +62,7 @@ class BitFontClass : public FontClass
 		virtual int Set_YSpacing(int y) override;
 
 	private:
+		unsigned char const * Glyph_Or_Question(char32_t code) const;
 		void Draw_Glyph(unsigned char const * glyph, void * buffer, Surface & surface, Rect const & cliprect, int x, int y, int pixel) const;
 
 		std::shared_ptr<BitFontData const> Data;

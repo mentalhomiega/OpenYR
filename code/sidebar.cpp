@@ -140,12 +140,6 @@ ShapeSet const * SidebarClass::SidebarMiddleShape = NULL;
 ShapeSet const * SidebarClass::SidebarBottomShape = NULL;
 ShapeSet const * SidebarClass::SidebarAddonShape = NULL;
 
-/***************************************************************************
-**	This points to the main sidebar shapes. These include the upgrade and
-**	repair buttons.
-*/
-//TheaterType SidebarClass::StripClass::LastTheater = THEATER_NONE;
-
 enum ButtonNumberType {
 	BUTTON_REPAIR = 101,
 	BUTTON_POWER,
@@ -612,8 +606,6 @@ void SidebarClass::Init_IO(void)
 		if (IsSidebarActive) {
 			IsSidebarActive = false;
 			Activate(1);
-//			Background.Zap();
-//			Add_A_Button(Background);
 		}
 	}
 }
@@ -918,7 +910,6 @@ bool SidebarClass::Activate_Repair(int control)
 		IsToRedraw = true;
 
 		if (!IsRepairActive) {
-//			Help_Text(TXT_NONE);
 			Set_Default_Mouse(MOUSE_NORMAL, false);
 		}
 	}
@@ -1111,7 +1102,6 @@ bool SidebarClass::Scroll(bool up, int column)
 	// With one strip shown at a time, a command naming a strip moves the shown tab's.
 	if (Column[ActiveTab].Scroll(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -1149,7 +1139,6 @@ bool SidebarClass::Page(bool up, int column)
 
 	if (Column[ActiveTab].Page(up)) {
 		// No need to redraw the whole sidebar juts because we scrolled a strip is there? ST - 10/15/96 7:29PM
-		//IsToRedraw = true;
 		Flag_To_Redraw();
 		return(true);
 	}
@@ -1411,37 +1400,30 @@ void SidebarClass::AI(KeyNumType & input, Point2D const & xy)
 
 	// A classic tab with no items is disabled, as gamemd does when its last item goes (SidebarClass::RebuildScrollableStripList, 0x6AA600).
 	if (!Modern_Interface()) {
-		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const enabled = Column[index].BuildableCount > 0;
-			if (enabled == TabDisabled[index]) {
-				if (enabled) {
-					TabButton[index].Enable();
-				} else {
-					TabButton[index].Disable();
+		// Applies the wanted enabled state to the buttons when it differs from the state recorded in disabled.
+		auto sync = [this](bool & disabled, bool enabled, std::initializer_list<ShapeButtonClass *> buttons) {
+			if (enabled == disabled) {
+				for (ShapeButtonClass * button : buttons) {
+					if (enabled) {
+						button->Enable();
+					} else {
+						button->Disable();
+					}
+					button->Flag_To_Redraw();
 				}
-				TabDisabled[index] = !enabled;
-				TabButton[index].Flag_To_Redraw();
+				disabled = !enabled;
 				Flag_To_Redraw();
 			}
+		};
+
+		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
+			sync(TabDisabled[index], Column[index].BuildableCount > 0, { &TabButton[index] });
 		}
 
 		// The arrows of a classic strip are enabled only when it holds more cameos than fit, as gamemd's UpdateScrollButtons (0x6A6610) decides.
 		int const visible = Max_Visible();
 		for (int index = 0; index < SidebarClass::COLUMNS; index++) {
-			bool const scrollable = Column[index].BuildableCount > visible;
-			if (scrollable == ArrowsDisabled[index]) {
-				if (scrollable) {
-					StripClass::UpButton[index].Enable();
-					StripClass::DownButton[index].Enable();
-				} else {
-					StripClass::UpButton[index].Disable();
-					StripClass::DownButton[index].Disable();
-				}
-				ArrowsDisabled[index] = !scrollable;
-				StripClass::UpButton[index].Flag_To_Redraw();
-				StripClass::DownButton[index].Flag_To_Redraw();
-				Flag_To_Redraw();
-			}
+			sync(ArrowsDisabled[index], Column[index].BuildableCount > visible, { &StripClass::UpButton[index], &StripClass::DownButton[index] });
 		}
 	}
 
@@ -2108,29 +2090,24 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 	*/
 	// Both arrows page the strip by a screenful, as the classic sidebar's do (SidebarClass::Update, 0x6A7780).
 	// The modern panel's screenful is its row count, so a click moves it by the rows it shows.
-	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
-		UpButton[ID].IsPressed = false;
+	auto click_arrow = [this](ShapeButtonClass & button, bool up) {
+		button.IsPressed = false;
 		if (Modern_Interface()) {
-			if (!Page(true)) {
+			if (!Page(up)) {
 				Sound_Effect(Rule->ScoldSound);
 			}
-		} else if (Page(true)) {
+		} else if (Page(up)) {
 			Sound_Effect(Rule->GUITabSound);
 		} else {
 			Sound_Effect(Rule->ScoldSound);
 		}
+	};
+
+	if (key == KeyNumType(UpButton[ID].ID|KN_BUTTON)) {
+		click_arrow(UpButton[ID], true);
 	}
 	else if (key == KeyNumType(DownButton[ID].ID|KN_BUTTON)) {
-		DownButton[ID].IsPressed = false;
-		if (Modern_Interface()) {
-			if (!Page(false)) {
-				Sound_Effect(Rule->ScoldSound);
-			}
-		} else if (Page(false)) {
-			Sound_Effect(Rule->GUITabSound);
-		} else {
-			Sound_Effect(Rule->ScoldSound);
-		}
+		click_arrow(DownButton[ID], false);
 	}
 
 	/*
@@ -2284,6 +2261,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 char const * SidebarClass::StripClass::Help_Text(int id)
 {
 	static char _buffer[84];
+	static std::string _text;
 
 	int i = id + TopIndex;
 
@@ -2299,7 +2277,6 @@ char const * SidebarClass::StripClass::Help_Text(int id)
 			}
 
 			if (Modern_Interface()) {
-				static std::string _text;
 				_text = choice->Full_Name();
 				_text += "\n$" + std::to_string(choice->Cost_Of(PlayerPtr));
 				if (choice->RTTI == RTTI_BUILDINGTYPE) {
@@ -2431,7 +2408,6 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 							darken		= false;
 						} else {
 							production  = false;
-						//							darken      = IsBuilding;
 
 							/*
 							**	Darken the imagery if a factory of a matching type is
@@ -2458,20 +2434,8 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 					darken = false;
 				}
 
-				if (obj != NULL || spc != SUPER_NONE) {
-					/*
-					**	If this item is flashing then take care of it.
-					**
-					*/
-					// if (Flasher == index && (Fetch_Stage() & 0x01)) {
-					// 	remapper = Map.FadingLight;
-					// }
-
-				} else {
+				if (obj == NULL && spc == SUPER_NONE) {
 					shapefile	= LogoShapes;
-					// if (!darken) {
-					// 	shapenum		= SB_BLANK;
-					// }
 				}
 			} else {
 				shapefile	= LogoShapes;
@@ -3833,8 +3797,10 @@ void SidebarClass::Grid_Build(int index)
 /// <returns>Returns with a pointer to the help text, or NULL if the gadget has none.</returns>
 const char * SidebarClass::Help_Text(int id)
 {
+	// The branches below share _text, so the next call overwrites a pointer returned here.
+	static std::string _text;
+
 	if (Modern_Interface()) {
-		static std::string _text;
 		switch (id) {
 			case BUTTON_POWER:
 				_text = Panel_Text("GUI:PowerDown", "Power down");
@@ -3848,25 +3814,23 @@ const char * SidebarClass::Help_Text(int id)
 		}
 	} else {
 		// gamemd's tips for tabs and scroll arrows (0x6AC210) use these CSF labels.
-		static std::string _tip;
 		static char const * const tab_labels[COLUMNS] = {"Tip:Tab1", "Tip:Tab2", "Tip:Tab3", "Tip:Tab4"};
 		static char const * const tab_fallbacks[COLUMNS] = {"Structures Tab", "Armory Tab", "Infantry Tab", "Vehicles Tab"};
 		if (id >= BUTTON_TAB && id < BUTTON_TAB + COLUMNS) {
 			int const index = id - BUTTON_TAB;
-			_tip = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
-			return(_tip.c_str());
+			_text = Classic_Tip(tab_labels[index], tab_fallbacks[index], !TabDisabled[index]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_UP && id < StripClass::BUTTON_UP + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollUp", "Up Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_UP]);
+			return(_text.c_str());
 		}
 		if (id >= StripClass::BUTTON_DOWN && id < StripClass::BUTTON_DOWN + COLUMNS) {
-			_tip = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
-			return(_tip.c_str());
+			_text = Classic_Tip("Tip:ScrollDown", "Down Scroll Arrow", !ArrowsDisabled[id - StripClass::BUTTON_DOWN]);
+			return(_text.c_str());
 		}
 
 		// gamemd's tips for 0xF2 and 0xF3 (0x654320): the briefing in a campaign, else diplomacy.
-		static std::string _text;
 		switch (id) {
 			case BUTTON_OPTIONS:
 				_text = Panel_Text("Tip_OptionsButton", "Options");
@@ -3990,11 +3954,6 @@ void Print_Cameo_Text(char const * string, Point2D const & point, Rect const & c
 				w = font->String_Pixel_Width(buffer);
 
 			} while (len > 0 && w > maxlinelen);
-
-			/*
-			 * Print the rest of the string.
-			 */
-			finish:;
 		}
 
 		Fancy_Text_Print(string, *SidebarSurface, cliprect, drawpoint, Fetch_Scheme_By_Name("LightGrey"), TBLACK, TextPrintType(TPF_FULLSHADOW|TPF_EFNT));

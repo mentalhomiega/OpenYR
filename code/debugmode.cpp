@@ -60,50 +60,6 @@ bool Is_One_Shot(DebugCheat cheat)
 }
 
 
-char const * Cheat_Log_Name(DebugCheat cheat)
-{
-	switch (cheat) {
-		case DebugCheat::INFINITE_MONEY: return("infinite money");
-		case DebugCheat::UNLOCK_ALL: return("unlock everything");
-		case DebugCheat::INSTANT_BUILD: return("instant build");
-		case DebugCheat::REVEAL_MAP: return("reveal map");
-		case DebugCheat::FULL_POWER: return("full power");
-		case DebugCheat::INVULNERABLE_UNITS: return("invulnerable units");
-		case DebugCheat::FAST_FORWARD: return("fast forward");
-		case DebugCheat::WIN_MISSION: return("win mission");
-		case DebugCheat::LOSE_MISSION: return("lose mission");
-		case DebugCheat::CHARGE_SUPERWEAPONS: return("charge superweapons");
-		case DebugCheat::HEAL_SELECTED: return("heal selected");
-		case DebugCheat::PROMOTE_SELECTED: return("promote selected");
-		case DebugCheat::DESTROY_SELECTED: return("destroy selected");
-		default: break;
-	}
-	return("unknown");
-}
-
-
-int Cheat_Name_TXT(DebugCheat cheat)
-{
-	switch (cheat) {
-		case DebugCheat::INFINITE_MONEY: return(TXT_DEBUG_INFINITE_MONEY);
-		case DebugCheat::UNLOCK_ALL: return(TXT_DEBUG_UNLOCK_ALL);
-		case DebugCheat::INSTANT_BUILD: return(TXT_DEBUG_INSTANT_BUILD);
-		case DebugCheat::REVEAL_MAP: return(TXT_DEBUG_REVEAL_MAP);
-		case DebugCheat::FULL_POWER: return(TXT_DEBUG_FULL_POWER);
-		case DebugCheat::INVULNERABLE_UNITS: return(TXT_DEBUG_INVULNERABLE_UNITS);
-		case DebugCheat::FAST_FORWARD: return(TXT_DEBUG_FAST_FORWARD);
-		case DebugCheat::WIN_MISSION: return(TXT_DEBUG_WIN_MISSION);
-		case DebugCheat::LOSE_MISSION: return(TXT_DEBUG_LOSE_MISSION);
-		case DebugCheat::CHARGE_SUPERWEAPONS: return(TXT_DEBUG_CHARGE_SUPERWEAPONS);
-		case DebugCheat::HEAL_SELECTED: return(TXT_DEBUG_HEAL_SELECTED);
-		case DebugCheat::PROMOTE_SELECTED: return(TXT_DEBUG_PROMOTE_SELECTED);
-		case DebugCheat::DESTROY_SELECTED: return(TXT_DEBUG_DESTROY_SELECTED);
-		default: break;
-	}
-	return(TXT_NONE);
-}
-
-
 void Set_Reveal(bool on)
 {
 	if (on) {
@@ -124,6 +80,46 @@ void Refresh_Power_States(void)
 	PlayerPtr->RecalcPower = true;
 	PlayerPtr->Update_Present_Super_Weapons();
 }
+
+
+// The log name and message name of one cheat. On_Toggle runs after a toggle cheat changes state, with the new state.
+struct Cheat_Info
+{
+	char const * Log_Name;
+	int Name_TXT;
+	void (*On_Toggle)(bool on);
+};
+
+
+void Unlock_Toggled(bool)
+{
+	PlayerPtr->Production_Status_Changed();
+}
+
+
+void Power_Toggled(bool)
+{
+	Refresh_Power_States();
+}
+
+
+// Indexed by DebugCheat, so the rows must stay in enum order.
+Cheat_Info const Cheat_Table[] = {
+	{ "infinite money", TXT_DEBUG_INFINITE_MONEY, NULL },
+	{ "unlock everything", TXT_DEBUG_UNLOCK_ALL, Unlock_Toggled },
+	{ "instant build", TXT_DEBUG_INSTANT_BUILD, NULL },
+	{ "reveal map", TXT_DEBUG_REVEAL_MAP, Set_Reveal },
+	{ "full power", TXT_DEBUG_FULL_POWER, Power_Toggled },
+	{ "invulnerable units", TXT_DEBUG_INVULNERABLE_UNITS, NULL },
+	{ "fast forward", TXT_DEBUG_FAST_FORWARD, NULL },
+	{ "win mission", TXT_DEBUG_WIN_MISSION, NULL },
+	{ "lose mission", TXT_DEBUG_LOSE_MISSION, NULL },
+	{ "charge superweapons", TXT_DEBUG_CHARGE_SUPERWEAPONS, NULL },
+	{ "heal selected", TXT_DEBUG_HEAL_SELECTED, NULL },
+	{ "promote selected", TXT_DEBUG_PROMOTE_SELECTED, NULL },
+	{ "destroy selected", TXT_DEBUG_DESTROY_SELECTED, NULL },
+};
+static_assert(ARRAY_SIZE(Cheat_Table) == (int)DebugCheat::COUNT, "Cheat_Table needs one row per DebugCheat");
 
 
 void Charge_Superweapons(HouseClass * house)
@@ -210,7 +206,7 @@ void Log_First_Use(DebugCheat cheat)
 	int const index = (int)cheat;
 	if (!Cheat_Logged[index]) {
 		Cheat_Logged[index] = true;
-		DebugString("Debug cheat used: %s\n", Cheat_Log_Name(cheat));
+		DebugString("Debug cheat used: %s\n", Cheat_Table[index].Log_Name);
 	}
 }
 
@@ -269,18 +265,12 @@ void Debug_Cheat_Toggle(DebugCheat cheat)
 	Cheat_On[index] = on;
 	Log_First_Use(cheat);
 
-	if (cheat == DebugCheat::REVEAL_MAP) {
-		Set_Reveal(on);
-	}
-	if (cheat == DebugCheat::UNLOCK_ALL) {
-		PlayerPtr->Production_Status_Changed();
-	}
-	if (cheat == DebugCheat::FULL_POWER) {
-		Refresh_Power_States();
+	if (Cheat_Table[index].On_Toggle != NULL) {
+		Cheat_Table[index].On_Toggle(on);
 	}
 
 	char text[160];
-	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_TOGGLE), Fetch_String(Cheat_Name_TXT(cheat)), Fetch_String(on ? TXT_DEBUG_ON : TXT_DEBUG_OFF));
+	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_TOGGLE), Fetch_String(Cheat_Table[index].Name_TXT), Fetch_String(on ? TXT_DEBUG_ON : TXT_DEBUG_OFF));
 	Show_Cheat_Message(text);
 }
 
@@ -324,7 +314,7 @@ void Debug_Cheat_Run(DebugCheat cheat)
 	}
 
 	char text[160];
-	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_RUN), Fetch_String(Cheat_Name_TXT(cheat)));
+	std::snprintf(text, sizeof(text), Fetch_String(TXT_DEBUG_RUN), Fetch_String(Cheat_Table[(int)cheat].Name_TXT));
 	Show_Cheat_Message(text);
 }
 
