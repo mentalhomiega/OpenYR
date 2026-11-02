@@ -29,7 +29,7 @@
  *---------------------------------------------------------------------------------------------*
  * Functions:                                                                                  *
  *   PowerClass::AI -- Process the power bar logic.                                            *
- *   PowerClass::Draw_It -- Renders the power bar graphic.                                     *
+ *   PowerClass::Draw_Power_Bar -- Renders the power bar graphic.                              *
  *   PowerClass::Init_Clear -- Clears all the power bar variables.                             *
  *   PowerClass::One_Time -- One time processing for the power bar.                            *
  *   PowerClass::PowerButtonClass::Action -- Handles the mouse over the power bar area.        *
@@ -353,19 +353,6 @@ int PowerClass::Desired_Levels(int & green, int & yellow, int & red)
 	red += (desired_pips * green_fraction - green) + (desired_pips * yellow_fraction - yellow) + (desired_pips * red_fraction - red) + 0.01;
 
 	return(max_pips);
-}
-
-
-/// <summary>
-/// Draws the power bar and then the radar.
-/// The sidebar calls Draw_Power_Bar itself, after its body, so this routine is only used where
-/// the bar comes first.
-/// </summary>
-/// <param name="complete">Should the power bar be redrawn even if it isn't flagged to do so?</param>
-void PowerClass::Draw_It(bool complete)
-{
-	Draw_Power_Bar(complete);
-	BASECLASS::Draw_It(complete);
 }
 
 
