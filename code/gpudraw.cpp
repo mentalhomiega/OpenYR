@@ -548,6 +548,16 @@ static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned
 }
 
 
+// Copies row into copy when the two differ, and sets changed to 1 in that case.
+static void Sync_Row(void * copy, void const * row, std::size_t bytes, unsigned char & changed)
+{
+	if (std::memcmp(copy, row, bytes) != 0) {
+		std::memcpy(copy, row, bytes);
+		changed = 1;
+	}
+}
+
+
 // Brings pixels up to the area's pixels, flagging in changed each row that differed; a picture of
 // another size is read whole with every row flagged. With written, the byte ranges of the surface
 // written since pixels last matched it, only the rows they touch are compared.
@@ -579,11 +589,7 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 			continue;
 		}
 		void const * row = base + r * surface.Stride();
-		unsigned short * copy = &pixels[r * width];
-		if (std::memcmp(copy, row, width * sizeof(unsigned short)) != 0) {
-			std::memcpy(copy, row, width * sizeof(unsigned short));
-			changed[r] = 1;
-		}
+		Sync_Row(&pixels[r * width], row, width * sizeof(unsigned short), changed[r]);
 	}
 	surface.Unlock();
 	return(true);
@@ -616,10 +622,7 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 			}
 			lit[r] = 1;
 			unsigned char const * row = plane.Pixels + (std::size_t)(area.Y + r) * plane.Pitch + area.X;
-			if (std::memcmp(copy, row, width) != 0) {
-				std::memcpy(copy, row, width);
-				changed[r] = 1;
-			}
+			Sync_Row(copy, row, width, changed[r]);
 		}
 		return;
 	}
@@ -632,10 +635,7 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 		}
 		unsigned char * copy = &values[r * width];
 		lit[r] = 1;
-		if (std::memcmp(copy, row.data(), width) != 0) {
-			std::memcpy(copy, row.data(), width);
-			changed[r] = 1;
-		}
+		Sync_Row(copy, row.data(), width, changed[r]);
 	}
 }
 
