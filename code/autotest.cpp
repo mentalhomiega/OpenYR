@@ -4559,12 +4559,19 @@ static void Inifile_Step(StepType const & step)
 }
 
 
+// The house's super weapon with the type name, or NULL when the name is unknown or the house has no such weapon.
+static SuperClass * Super_Of(HouseClass * house, std::string const & name)
+{
+	SuperWeaponType const id = SuperWeaponTypeClass::From_Name(name.c_str());
+	return(id != SUPER_NONE && id < house->SuperWeapon.Count() ? house->SuperWeapon[id] : NULL);
+}
+
+
 // grant <SuperWeaponTypeID>: gives the player that super weapon, fully charged.
 static void Grant_Step(StepType const & step)
 {
-	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
-	if (id != SUPER_NONE && id < PlayerPtr->SuperWeapon.Count()) {
-		SuperClass * super = PlayerPtr->SuperWeapon[id];
+	SuperClass * super = Super_Of(PlayerPtr, step.Argument);
+	if (super != NULL) {
 		// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
 		super->Enable(false, true, PlayerPtr->Power_Fraction() < 1.0);
 		super->Forced_Charge(true);
@@ -4578,10 +4585,10 @@ static void Grant_Step(StepType const & step)
 // enable <SuperWeaponTypeID>: gives the player that super weapon the way a structure does, to charge from empty.
 static void Enable_Step(StepType const & step)
 {
-	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
-	if (id != SUPER_NONE && id < PlayerPtr->SuperWeapon.Count()) {
-		PlayerPtr->SuperWeapon[id]->Enable(false, true, false);
-		DebugString("AUTOTEST   enable %s ready %d\n", step.Argument.c_str(), (int)PlayerPtr->SuperWeapon[id]->Is_Ready());
+	SuperClass * super = Super_Of(PlayerPtr, step.Argument);
+	if (super != NULL) {
+		super->Enable(false, true, false);
+		DebugString("AUTOTEST   enable %s ready %d\n", step.Argument.c_str(), (int)super->Is_Ready());
 	}
 }
 
@@ -4589,10 +4596,9 @@ static void Enable_Step(StepType const & step)
 // grantai <SuperWeaponTypeID>: gives the first computer house with a construction yard that super weapon, fully charged.
 static void Grantai_Step(StepType const & step)
 {
-	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
 	HouseClass * house = First_Computer_House(false);
-	if (house != NULL && id != SUPER_NONE && id < house->SuperWeapon.Count()) {
-		SuperClass * super = house->SuperWeapon[id];
+	SuperClass * super = house != NULL ? Super_Of(house, step.Argument) : NULL;
+	if (super != NULL) {
 		// Quiet when the house is short of power, as Enable_Available_Super_Weapons grants it.
 		super->Enable(false, false, house->Power_Fraction() < 1.0);
 		super->Forced_Charge(true);
@@ -4604,10 +4610,9 @@ static void Grantai_Step(StepType const & step)
 // chargeai <SuperWeaponTypeID> <percent>: sets how charged the first computer house with a construction yard's super weapon is, as a SetSuperCharge trigger action does (SuperClass::Set_Charge).
 static void Chargeai_Step(StepType const & step)
 {
-	SuperWeaponType id = SuperWeaponTypeClass::From_Name(step.Argument.c_str());
 	HouseClass * house = First_Computer_House(false);
-	if (house != NULL && id != SUPER_NONE && id < house->SuperWeapon.Count()) {
-		SuperClass * super = house->SuperWeapon[id];
+	SuperClass * super = house != NULL ? Super_Of(house, step.Argument) : NULL;
+	if (super != NULL) {
 		super->Set_Charge(step.X);
 		DebugString("AUTOTEST   chargeai %s to %s percent %d ready %d suspended %d\n", step.Argument.c_str(), house->Class->Name(), step.X, (int)super->Is_Ready(), (int)super->Is_Suspended());
 	}
