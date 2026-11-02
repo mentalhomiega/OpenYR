@@ -3498,9 +3498,7 @@ bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , T
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	house->RadarBlackout = Data.Value;
-	house->IsRadarBlackout = true;
-	house->RecalcRadar = true;
+	house->Start_Radar_Blackout(Data.Value);
 	return(true);
 }
 

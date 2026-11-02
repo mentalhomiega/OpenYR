@@ -6371,9 +6371,7 @@ static void Playanim_Step(StepType const & step)
 // blackout <frames>: a spy's power blackout of that many frames on the player's house.
 static void Blackout_Step(StepType const & step)
 {
-	PlayerPtr->PowerBlackout = step.Argument_Int();
-	PlayerPtr->IsPowerBlackout = true;
-	PlayerPtr->RecalcPower = true;
+	PlayerPtr->Start_Power_Blackout(step.Argument_Int());
 }
 
 

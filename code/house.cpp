@@ -9446,6 +9446,30 @@ bool HouseClass::Is_Being_Drained(void) const
 
 
 /// <summary>
+/// Starts a power blackout that lasts the given number of frames and requests a power recalculation.
+/// Frames of 0 clears a running blackout when the house next runs its AI.
+/// </summary>
+void HouseClass::Start_Power_Blackout(int frames)
+{
+	PowerBlackout = frames;
+	IsPowerBlackout = true;
+	RecalcPower = true;
+}
+
+
+/// <summary>
+/// Starts a radar blackout that lasts the given number of frames and requests a radar recalculation.
+/// Frames of 0 clears a running blackout when the house next runs its AI.
+/// </summary>
+void HouseClass::Start_Radar_Blackout(int frames)
+{
+	RadarBlackout = frames;
+	IsRadarBlackout = true;
+	RecalcRadar = true;
+}
+
+
+/// <summary>
 /// Recalculates the power output and drain of this house.
 /// This routine tallies every structure the house has running and then refreshes whatever
 /// depends on the result -- factory speed and super weapon availability among them. An
