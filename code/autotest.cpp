@@ -3294,7 +3294,8 @@ static void Sell_Step(StepType const & step)
 }
 
 
-// repairon <TypeID>: starts repairing the player's structures of that type, as a click with the repair cursor does.
+// repairon <TypeID>: turns repair on for the player's structures of that type. Unlike the repair cursor, which toggles repair,
+// a structure that is already repairing keeps repairing.
 static void Repairon_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
