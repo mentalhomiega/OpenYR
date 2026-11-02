@@ -4526,22 +4526,22 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		&& !cellptr->Is_Sensed(House) && techno->House != House
 		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
 
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	/*
 	**	A falling object is too busy falling to fire.
 	*/
 	if (IsFalling) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	if (Is_Immobilized()) {
 		if (RTTI != RTTI_UNIT) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 	}
 
@@ -4550,7 +4550,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	*/
 	weapon = Get_Class_Weapon_Data(which)->Weapon;
 	if (weapon == NULL) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
@@ -4611,7 +4611,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	// A paralyzed object launches no spawned craft, and a paralyzed Organic one does not fire at all (TechnoClass::GetFireError, 0x6FC339).
 	if (Is_Foot() && ((FootClass *)this)->ParalysisTimer != 0) {
 		if (weapon->IsSpawner) {
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 		if (TClass->IsOrganic) {
 			return(FIRE_ILLEGAL);
@@ -4664,7 +4664,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	}
 
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {
-		goto CANT_FIRE;
+		return(FIRE_CANT);
 	}
 
 	other_weapon = Get_Class_Weapon_Data(which == 0 ? 1 : 0)->Weapon;
@@ -4674,7 +4674,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 			|| (other_weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
 			|| (other_weapon->IsSonic && Wave)) {
 
-			goto CANT_FIRE;
+			return(FIRE_CANT);
 		}
 	}
 
@@ -4755,9 +4755,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_RANGE);
 	}
 	return(FIRE_OK);
-
-CANT_FIRE:
-	return(FIRE_CANT);
 }
 
 
