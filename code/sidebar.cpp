@@ -256,6 +256,12 @@ struct CameoSortType {
 };
 
 
+static Point2D Cameo_Slot_Origin(int index, int columns, Point2D const & origin)
+{
+	return Point2D(origin.X + (index % columns) * SidebarClass::StripClass::Column_Step(), origin.Y + (index / columns) * SidebarClass::StripClass::OBJECT_HEIGHT);
+}
+
+
 static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & entry)
 {
 	CameoOrderType order;
@@ -1837,8 +1843,9 @@ void SidebarClass::StripClass::Init_IO(int id)
 	for (int index = 0; index < Map.Max_Visible(); index++) {
 		SelectClass & g = SelectButton[ID][index];
 		g.ID = BUTTON_SELECT;
-		g.X = SidebarRect.X + Map.Column[ID].X + (index % Slot_Columns()) * Column_Step();
-		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / Slot_Columns()));
+		Point2D const slot = Cameo_Slot_Origin(index, Slot_Columns(), Point2D(SidebarRect.X + Map.Column[ID].X, SidebarRect.Y + Map.Column[ID].Y));
+		g.X = slot.X;
+		g.Y = slot.Y;
 		g.Width = OBJECT_WIDTH;
 		g.Height = OBJECT_HEIGHT;
 		g.Set_Owner(*this, index);
@@ -3390,9 +3397,8 @@ void SidebarClass::Reposition_Sidebar(void)
 		StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
 
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				SidebarRect.X + Column[col].X + (i % StripClass::Slot_Columns()) * StripClass::Column_Step(),
-				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::Slot_Columns()));
+			Point2D const slot = Cameo_Slot_Origin(i, StripClass::Slot_Columns(), Point2D(SidebarRect.X + Column[col].X, SidebarRect.Y + Column[col].Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
@@ -3460,9 +3466,8 @@ void SidebarClass::Reposition_Panel(void)
 		Column[col].Y = layout.Grid.Y;
 		Column[col].ObjectRect = layout.Grid;
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				origin.X + layout.Grid.X + (i % HUD_GRID_COLUMNS) * StripClass::Column_Step(),
-				origin.Y + layout.Grid.Y + (i / HUD_GRID_COLUMNS) * StripClass::OBJECT_HEIGHT);
+			Point2D const slot = Cameo_Slot_Origin(i, HUD_GRID_COLUMNS, Point2D(origin.X + layout.Grid.X, origin.Y + layout.Grid.Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
