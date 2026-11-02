@@ -130,6 +130,9 @@ class CnCNetLobbyClass
 
 		static bool Same_Nick(std::string const & a, std::string const & b);
 
+		// True for the channel named by the config's BroadcastChannel, which carries game listings rather than chat.
+		bool Is_Broadcast_Channel(std::string const & name) const;
+
 	private:
 		CnCNetChannelType * Channel(std::string const & name, bool create, bool is_private = false);
 		void Remove_Channel(std::string const & name);

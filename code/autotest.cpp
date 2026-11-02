@@ -2421,7 +2421,7 @@ static void Target_Action_Step(StepType const & step)
 		}
 	}
 	if (attacker == NULL || target == NULL) {
-		DebugString("AUTOTEST   targetaction %s %s: no attacker or no target\n", words[2].c_str(), words[2].c_str());
+		DebugString("AUTOTEST   targetaction %s %s: no attacker or no target\n", words[2].c_str(), words[3].c_str());
 		return;
 	}
 	int const which = attacker->What_Weapon_Should_I_Use(target);
@@ -3296,7 +3296,8 @@ static void Sell_Step(StepType const & step)
 }
 
 
-// repairon <TypeID>: starts repairing the player's structures of that type, as a click with the repair cursor does.
+// repairon <TypeID>: turns repair on for the player's structures of that type. Unlike the repair cursor, which toggles repair,
+// a structure that is already repairing keeps repairing.
 static void Repairon_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -4209,7 +4210,15 @@ static void Own_Step(StepType const & step)
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		}
 	} else {
-		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no civilian house");
+		char const * reason = "no player house";
+		if (type == NULL) {
+			reason = "no such type";
+		} else if (step.Command == "neutral") {
+			reason = "no civilian house";
+		} else if (step.Command == "enemy") {
+			reason = "no enemy house";
+		}
+		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), reason);
 	}
 }
 
@@ -4772,12 +4781,13 @@ static void Rule_Step(StepType const & step)
 {
 	if (stricmp(step.Argument.c_str(), "CanDetonateTimeBomb") == 0) {
 		Rule->IsCanDetonateTimeBomb = step.X != 0;
-	}
-	if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
+	} else if (stricmp(step.Argument.c_str(), "BallisticScatter") == 0) {
 		Rule->BallisticScatter = step.X;
-	}
-	if (stricmp(step.Argument.c_str(), "AircraftWaypointReload") == 0) {
+	} else if (stricmp(step.Argument.c_str(), "AircraftWaypointReload") == 0) {
 		Rule->AircraftWaypointReload = step.X != 0;
+	} else {
+		DebugString("AUTOTEST   rule %s: unknown\n", step.Argument.c_str());
+		return;
 	}
 	DebugString("AUTOTEST   rule %s=%d\n", step.Argument.c_str(), step.X);
 }

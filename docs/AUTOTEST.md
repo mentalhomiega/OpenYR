@@ -117,7 +117,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
 | `warpout <TypeID> <0|1>` | Sets or clears the warping-out flag of the player's objects of that type, without a warp effect |
 | `unload <x> <y>` | Starts the unload mission of the player's structure on that cell. A vehicle on a cell with no structure unloads its passengers instead |
-| `repairon <TypeID>` | Starts repairing the player's structures of that type, as a click with the repair cursor does |
+| `repairon <TypeID>` | Turns repair on for the player's structures of that type. Unlike a click with the repair cursor, which toggles repair, a structure already repairing keeps repairing |
 | `poweroff <TypeID>` | Turns off the player's structures of that type, as a click with the power cursor does |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
 | `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
@@ -142,7 +142,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `modes` | Writes the repair, sell, power, waypoint and beacon placement flags and the targeting flag as 0 or 1, then the object pending placement |
 | `cell <x> <y>` | Writes the cell's map state, then its building and its occupier |
 | `log <text>` | Writes the whole text to the debug log, as `AUTOTEST frame N: log <text>` |
-| `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1) and `BallisticScatter` (leptons) |
+| `rule <Name> <value>` | Changes a rule for the rest of the run: `CanDetonateTimeBomb` (0 or 1), `BallisticScatter` (leptons) and `AircraftWaypointReload` (0 or 1). Any other name logs `unknown` and changes nothing |
 | `strike <TypeID> x y` | The player-controlled objects of that type (see `select`) attack the object on that cell |
 | `settarget <TypeID> x y [computer] [attack|hunt]` | Gives the player's objects of that type the object on that cell as a target, with `Assign_Target`. With `attack`, they also get the attack mission, which a computer's soldier turns into a capture (see `InfantryClass::Mission_Attack`); With `hunt`, they get the hunt mission instead (`InfantryClass::Mission_Hunt`); otherwise the mission is not changed. With `computer`, the objects of that type that neither the player nor an ally owns get it instead. It writes the target's type or `(none)` |
 | `threat <TypeID> [computer]` | Writes the target each of the player's objects of that type picks for itself, from the map-wide `Greatest_Threat` scan with no threat bits set (the scan a hunting or idle soldier makes): the object's cell, then the target's type and cell, or `(none)`. With `computer`, the objects of that type that neither the player nor an ally owns are asked instead |

@@ -362,7 +362,7 @@ void UICnCNetLobbyPresenterClass::Build_Chat(void)
 	}
 
 	for (CnCNetChannelType const & channel : Lobby.Channels()) {
-		if (CnCNetLobbyClass::Same_Nick(channel.Name, ChatChannel) || channel.Name.rfind("#cncnet-yr-games", 0) == 0) {
+		if (CnCNetLobbyClass::Same_Nick(channel.Name, ChatChannel) || Lobby.Is_Broadcast_Channel(channel.Name)) {
 			continue;
 		}
 		if (channel.Private) {

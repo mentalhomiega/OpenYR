@@ -61,8 +61,6 @@
 namespace
 {
 
-int const MIN_MONEY = 2500;
-
 char const PLAIN[] = "#70ff00";
 
 int const COLOR_NAMES[] = {
@@ -493,12 +491,12 @@ void CnCNetRoomServiceClass::Take_Options(std::map<std::string, std::string> con
 	options.BridgeDestruction = Option_Bool(values, "Bridges", options.BridgeDestruction);
 	options.CrapEngineers = Option_Bool(values, "MultiEngineer", options.CrapEngineers);
 	options.MCVRedeploy = Option_Bool(values, "MCVRedeploy", options.MCVRedeploy);
-	options.GameSpeed = CnCNet_Option_Number(values, "GameSpeed", options.GameSpeed, 0, 6);
-	options.AIPlayers = CnCNet_Option_Number(values, "AIPlayers", options.AIPlayers, 0, 6);
-	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, "AIDifficulty", options.AIDifficulty, 0, 2));
-	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, 1, 10);
-	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, 1, MPLAYER_BUILD_LEVEL_MAX);
-	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, MIN_MONEY, std::max(MIN_MONEY, Rule->MPMaxMoney));
+	options.GameSpeed = CnCNet_Option_Number(values, "GameSpeed", options.GameSpeed, 0, CNCNET_MAX_GAME_SPEED);
+	options.AIPlayers = CnCNet_Option_Number(values, "AIPlayers", options.AIPlayers, 0, CNCNET_MAX_AI_PLAYERS);
+	options.AIDifficulty = static_cast<DiffType>(CnCNet_Option_Number(values, "AIDifficulty", options.AIDifficulty, 0, CNCNET_MAX_AI_DIFFICULTY));
+	options.UnitCount = CnCNet_Option_Number(values, "UnitCount", options.UnitCount, CNCNET_MIN_UNIT_COUNT, CNCNET_MAX_UNIT_COUNT);
+	BuildLevel = CnCNet_Option_Number(values, "TechLevel", BuildLevel, CNCNET_MIN_TECH_LEVEL, MPLAYER_BUILD_LEVEL_MAX);
+	options.Credits = CnCNet_Option_Number(values, "Credits", options.Credits, CNCNET_MIN_CREDITS, std::max(CNCNET_MIN_CREDITS, Rule->MPMaxMoney));
 
 	NetTiming::HostNetworkOptions const network = CnCNet_Network_Options(values);
 	if (!(network == NetworkOptions)) {
@@ -779,7 +777,7 @@ void CnCNetRoomServiceClass::Read(UINetLobbyState & state)
 	state.UnitCount = options.UnitCount;
 	state.TechLevelMax = MPLAYER_BUILD_LEVEL_MAX;
 	state.TechLevel = BuildLevel;
-	state.CreditsMin = MIN_MONEY;
+	state.CreditsMin = CNCNET_MIN_CREDITS;
 	state.CreditsMax = Rule->MPMaxMoney;
 	state.CreditsStep = 100;
 	state.Credits = options.Credits;
@@ -1207,7 +1205,8 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 	char policy[32];
 	ConfigINI.Get_String("CnCNet", "TimingPolicy", "Adaptive", policy, sizeof(policy));
 	bool const adaptive = _stricmp(policy, "Gamemd") != 0;
-	std::string const ini = CnCNet_Spawn_Ini(match, options, Setup.Nick, bridge.Game_Port(), adaptive);
+	CnCNetRuleLimitsType const limits{Rule->MPMaxMoney, MPLAYER_BUILD_LEVEL_MAX};
+	std::string const ini = CnCNet_Spawn_Ini(match, options, Setup.Nick, bridge.Game_Port(), limits, adaptive);
 	std::string const spawn_path = User_Directory() + "SPAWN.INI";
 	{
 		std::ofstream file(spawn_path, std::ios::binary | std::ios::trunc);

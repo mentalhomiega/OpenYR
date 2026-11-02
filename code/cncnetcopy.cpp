@@ -300,7 +300,7 @@ bool Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & h
 		return(false);
 	}
 
-	std::uint64_t value = 1469598103934665603ull;
+	std::uint64_t value = 14695981039346656037ull;
 	std::vector<char> buffer(1024 * 1024);
 	size = 0;
 	while (in) {
@@ -827,6 +827,12 @@ CNCNetJobClass::~CNCNetJobClass(void)
 {
 	Cancel();
 	Wait();
+}
+
+
+bool CNCNet_Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & hash)
+{
+	return(Hash_File(path, size, hash));
 }
 
 
