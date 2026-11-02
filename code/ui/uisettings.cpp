@@ -142,7 +142,7 @@ void UI_Settings_Run(UISettingsTab first)
 		}
 
 		tab = session.Host->Shown_Tab();
-		if (result == UI_RESULT_FAILED_TO_OPEN || !picked.has_value() || Display_Mode_Kept(*picked, scale)) {
+		if (result == UI_RESULT_FAILED_TO_OPEN || !picked.has_value() || Try_Display_Mode(*picked, scale)) {
 			break;
 		}
 	}

@@ -51,7 +51,6 @@
 
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
-static bool Try_Display_Mode(UIDisplayMode const & picked, float scale);
 static void Draw_Display_Backdrop(void);
 static bool Classic_Options_Page(void);
 
@@ -344,17 +343,6 @@ void Display_Options_Dialog(int page)
 }
 
 
-
-/// <summary>
-/// Applies a picked mode as a trial, as the display options do after they close.
-/// </summary>
-/// <returns>bool; False if the player did not keep the mode.</returns>
-bool Display_Mode_Kept(UIDisplayMode const & picked, float scale)
-{
-	return(Try_Display_Mode(picked, scale));
-}
-
-
 /// <summary>
 /// Offers the player a resolution or interface scale they picked on the display options and
 /// keeps it if they confirm it.
@@ -362,7 +350,7 @@ bool Display_Mode_Kept(UIDisplayMode const & picked, float scale)
 /// <param name="picked">The mode to try; the current mode when only the scale changed.</param>
 /// <param name="scale">The interface scale from before the options opened, put back unless the player keeps the change.</param>
 /// <returns>bool; False if the player tried the mode and did not keep it, so the options open again.</returns>
-static bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
+bool Try_Display_Mode(UIDisplayMode const & picked, float scale)
 {
 	bool const rescaled = (Options.InterfaceScale != scale);
 	if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {
