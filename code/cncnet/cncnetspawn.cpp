@@ -10,6 +10,7 @@
 #include "cncnet/cncnetspawn.h"
 
 #include "cncnet/cncnetlobby.h"
+#include "cncnet/cncnettext.h"
 
 #include <algorithm>
 #include <cctype>
@@ -33,14 +34,8 @@ std::string Join(std::vector<std::string> const & values)
 std::vector<std::string> Split(std::string const & text)
 {
 	std::vector<std::string> values;
-	std::size_t start = 0;
-	while (start <= text.size()) {
-		std::size_t const comma = text.find(',', start);
-		values.push_back(text.substr(start, comma == std::string::npos ? std::string::npos : comma - start));
-		if (comma == std::string::npos) {
-			break;
-		}
-		start = comma + 1;
+	for (std::string_view const value : CnCNet_Split(text, ',')) {
+		values.emplace_back(value);
 	}
 	return(values);
 }
@@ -75,8 +70,7 @@ std::string Without_Controls(std::string_view text)
 {
 	std::string clean;
 	for (char ch : text) {
-		unsigned char const byte = static_cast<unsigned char>(ch);
-		if (byte >= 0x20 && byte != 0x7F) {
+		if (!CnCNet_Is_Control_Byte(ch)) {
 			clean.push_back(ch);
 		}
 	}
@@ -91,13 +85,6 @@ std::string Yes_No(std::map<std::string, std::string> const & options, char cons
 	return(on ? "yes" : "no");
 }
 
-
-bool Name_Less(std::string const & left, std::string const & right)
-{
-	return(std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
-		return(std::tolower(static_cast<unsigned char>(a)) < std::tolower(static_cast<unsigned char>(b)));
-	}));
-}
 
 }
 
@@ -361,7 +348,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		if (left->Color != right->Color) {
 			return(left->Color < right->Color);
 		}
-		return(Name_Less(left->Name, right->Name));
+		return(CnCNet_Less_No_Case(left->Name, right->Name));
 	});
 
 	ini += "\n[SpawnLocations]\n";

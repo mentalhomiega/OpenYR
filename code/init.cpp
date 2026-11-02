@@ -3394,6 +3394,31 @@ static void Assign_Selection_To_Team(int team)
 }
 
 
+// Ends the order modes that a selection command replaces. Previous and Next Object keep beacon placement running.
+static void Cancel_Order_Modes(bool with_beacon)
+{
+	Map.Power_Mode_Control(0);
+	Map.Waypoint_Mode_Control(0);
+	Map.Repair_Mode_Control(0);
+	Map.Sell_Mode_Control(0);
+	if (with_beacon) {
+		Map.Place_Beacon_Mode_Control(0);
+	}
+}
+
+
+// Refuses an order during planning mode, showing the message, and returns true so the caller issues nothing.
+// gamemd's TechnoClass::ClickedEvent (0x6FFE39) refuses stop, deploy and scatter the same way.
+static bool Refused_In_Planning(char const * label)
+{
+	if (!Map.IsPlanningMode) {
+		return(false);
+	}
+	Planning_Refusal(label);
+	return(true);
+}
+
+
 class CreateTeamCommandClass : public CommandClass
 {
 	public:
@@ -3444,11 +3469,7 @@ class SelectTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Cancel_Order_Modes(true);
 
 			bool already = CurrentObject.Count() > 0 && CurrentObject[0]->Is_Foot() && ((FootClass *)CurrentObject[0])->Group == (Team - 1);
 			if (CurrentObject.Count() > 0 && !already) {
@@ -3502,11 +3523,7 @@ class AddTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Cancel_Order_Modes(true);
 
 			Select_Team_Members(Team);
 		}
@@ -3539,11 +3556,7 @@ class AddToTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Cancel_Order_Modes(true);
 
 			// The team joins the selection first, or the assignment would drop its existing members.
 			Select_Team_Members(Team);
@@ -3578,11 +3591,7 @@ class CenterTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
-			Map.Place_Beacon_Mode_Control(0);
+			Cancel_Order_Modes(true);
 
 			if (CurrentObject.Count() && (!CurrentObject[0]->Is_Foot() || ((TechnoClass *)CurrentObject[0])->Group != Team - 1)) {
 				Unselect_All();
@@ -3621,10 +3630,7 @@ class PrevObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
+			Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Prev_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
@@ -3656,9 +3662,7 @@ class StopCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the stop order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_STOP);
+				if (Refused_In_Planning(PLANNING_MSG_NO_STOP)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -3702,9 +3706,7 @@ class DeployCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the deploy order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_DEPLOY);
+				if (Refused_In_Planning(PLANNING_MSG_NO_DEPLOY)) {
 					return;
 				}
 				// Matches the mixed-selection test in gamemd's deploy command (FUN_00730AF0, 0x730AF0): with
@@ -3794,8 +3796,7 @@ class GuardCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			// Planning mode refuses guard before it reads the selection (gamemd's guard command, 0x730D60).
-			if (Map.IsPlanningMode) {
-				Planning_Refusal(PLANNING_MSG_NO_GUARD_AREA);
+			if (Refused_In_Planning(PLANNING_MSG_NO_GUARD_AREA)) {
 				return;
 			}
 			if (CurrentObject.Count() > 0) {
@@ -3847,9 +3848,7 @@ class ScatterCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (CurrentObject.Count() > 0) {
-				// Planning mode refuses the scatter order instead of issuing it (gamemd's TechnoClass::ClickedEvent, 0x6FFE39).
-				if (Map.IsPlanningMode) {
-					Planning_Refusal(PLANNING_MSG_NO_SCATTER);
+				if (Refused_In_Planning(PLANNING_MSG_NO_SCATTER)) {
 					return;
 				}
 				for (int index = 0; index < CurrentObject.Count(); index++) {
@@ -5170,10 +5169,7 @@ class NextObjectCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			Map.Power_Mode_Control(0);
-			Map.Waypoint_Mode_Control(0);
-			Map.Repair_Mode_Control(0);
-			Map.Sell_Mode_Control(0);
+			Cancel_Order_Modes(false);
 
 			ObjectClass * obj = Map.Next_Object(CurrentObject.Count() ? CurrentObject[0] : NULL);
 
@@ -7262,6 +7258,16 @@ static KeyNumType Bound_Key_Of(char const * command, int slot)
 
 
 /// <summary>
+/// Sets both slots of a modifier pair from the keys bound in them. A key bound in one slot only serves both slots.
+/// </summary>
+static void Pair_Modifier_Keys(KeyNumType & slot_1, KeyNumType & slot_2, KeyNumType key_1, KeyNumType key_2)
+{
+	slot_1 = (key_1 != KN_NONE) ? key_1 : key_2;
+	slot_2 = (key_2 != KN_NONE) ? key_2 : key_1;
+}
+
+
+/// <summary>
 /// Turns the keyboard bindings into the tables the game reads: the press and trigger commands, the
 /// trigger timing, and the modifier keys the mouse commands test. A binding whose command does not
 /// exist is skipped.
@@ -7321,32 +7327,27 @@ void Apply_Hotkeys(void)
 		HotkeyTiming.Set_Triggers(entry->first, entry->second.Press, entry->second.Doubled, entry->second.Hold, entry->second.Held);
 	}
 
-	// The held modifiers are read from the options, which Keyboard->Down tests. A key bound in one slot only serves both slots.
+	// The held modifiers are read from the options, which Keyboard->Down tests.
 	KeyNumType const attack_1 = Held_Key_Of("ForceFire", 0);
 	KeyNumType const attack_2 = Held_Key_Of("ForceFire", 1);
-	Options.KeyForceAttack1 = (attack_1 != KN_NONE) ? attack_1 : attack_2;
-	Options.KeyForceAttack2 = (attack_2 != KN_NONE) ? attack_2 : attack_1;
+	Pair_Modifier_Keys(Options.KeyForceAttack1, Options.KeyForceAttack2, attack_1, attack_2);
 
 	KeyNumType const move_1 = Held_Key_Of("ForceMove", 0);
 	KeyNumType const move_2 = Held_Key_Of("ForceMove", 1);
-	Options.KeyForceMove1 = (move_1 != KN_NONE) ? move_1 : move_2;
-	Options.KeyForceMove2 = (move_2 != KN_NONE) ? move_2 : move_1;
+	Pair_Modifier_Keys(Options.KeyForceMove1, Options.KeyForceMove2, move_1, move_2);
 
 	KeyNumType const select_1 = Held_Key_Of("SelectModifier", 0);
 	KeyNumType const select_2 = Held_Key_Of("SelectModifier", 1);
-	Options.KeySelect1 = (select_1 != KN_NONE) ? select_1 : select_2;
-	Options.KeySelect2 = (select_2 != KN_NONE) ? select_2 : select_1;
+	Pair_Modifier_Keys(Options.KeySelect1, Options.KeySelect2, select_1, select_2);
 
 	KeyNumType const queue_1 = Held_Key_Of("QueueMove", 0);
 	KeyNumType const queue_2 = Held_Key_Of("QueueMove", 1);
-	Options.KeyQueueMove1 = (queue_1 != KN_NONE) ? queue_1 : queue_2;
-	Options.KeyQueueMove2 = (queue_2 != KN_NONE) ? queue_2 : queue_1;
+	Pair_Modifier_Keys(Options.KeyQueueMove1, Options.KeyQueueMove2, queue_1, queue_2);
 
 	// The attack-move key is read as held, whatever its trigger, so holding it keeps attack-move on for the clicks made meanwhile.
 	KeyNumType const attack_move_1 = Bound_Key_Of("AttackMove", 0);
 	KeyNumType const attack_move_2 = Bound_Key_Of("AttackMove", 1);
-	Options.KeyAttackMove1 = (attack_move_1 != KN_NONE) ? attack_move_1 : attack_move_2;
-	Options.KeyAttackMove2 = (attack_move_2 != KN_NONE) ? attack_move_2 : attack_move_1;
+	Pair_Modifier_Keys(Options.KeyAttackMove1, Options.KeyAttackMove2, attack_move_1, attack_move_2);
 
 	for (int slot = 0; slot < HOTKEY_SLOT_COUNT; slot++) {
 		GridModifierKeys[slot] = Held_Key_Of("GridBuildModifier", slot);

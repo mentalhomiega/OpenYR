@@ -188,6 +188,43 @@ bool CnCNetSessionClass::Pause(int milliseconds)
 }
 
 
+// Sends the queued lines in order and stops at the first failed send.
+static bool Send_Outgoing(TCPStreamClass & stream, IRCClientClass & client, int timeout_ms)
+{
+	std::string line;
+	while (client.Next_Outgoing(line)) {
+		line += "\r\n";
+		if (!stream.Send_All(line, timeout_ms)) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+static bool Is_Refusal(std::string const & reason)
+{
+	std::string lower;
+	for (char c : reason) {
+		lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+	}
+	for (char const * word : {"lined", "banned", "throttle", "excessive", "too fast", "too many"}) {
+		if (lower.find(word) != std::string::npos) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void CnCNetSessionClass::Set_Lobby_Status(CnCNetStatus status, std::string const & text)
+{
+	std::lock_guard<std::mutex> guard(Lock);
+	Lobby.Set_Status(status, text);
+	Changed();
+}
+
+
 void CnCNetSessionClass::Run(void)
 {
 	std::random_device seed;
@@ -209,11 +246,7 @@ void CnCNetSessionClass::Run(void)
 				continue;
 			}
 			uint16_t const port = server.Ports[std::uniform_int_distribution<std::size_t>(0, server.Ports.size() - 1)(random)];
-			{
-				std::lock_guard<std::mutex> guard(Lock);
-				Lobby.Set_Status(CnCNetStatus::CONNECTING, server.Name.empty() ? server.Host : server.Name);
-				Changed();
-			}
+			Set_Lobby_Status(CnCNetStatus::CONNECTING, server.Name.empty() ? server.Host : server.Name);
 
 			TCPStreamClass stream;
 			std::string error;
@@ -237,27 +270,14 @@ void CnCNetSessionClass::Run(void)
 		}
 		++failures;
 		// A ban or a throttle will not end by asking again soon, so the session stops at once.
-		bool banned = false;
-		{
-			std::string lower;
-			for (char c : LastReason) {
-				lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-			}
-			for (char const * word : {"lined", "banned", "throttle", "excessive", "too fast", "too many"}) {
-				banned = banned || lower.find(word) != std::string::npos;
-			}
-		}
+		bool const banned = Is_Refusal(LastReason);
 		if (banned) {
 			failures = Config.MaxAttempts;
 		}
 		if (failures >= Config.MaxAttempts) {
-			{
-				std::lock_guard<std::mutex> guard(Lock);
-				Lobby.Set_Status(CnCNetStatus::FAILED, banned ? "The CnCNet server refused this connection (" + LastReason + "). Try again later."
-					: reached ? "The CnCNet server keeps closing the connection. Try again later."
-					: "No CnCNet server answered. Try again later.");
-				Changed();
-			}
+			Set_Lobby_Status(CnCNetStatus::FAILED, banned ? "The CnCNet server refused this connection (" + LastReason + "). Try again later."
+				: reached ? "The CnCNet server keeps closing the connection. Try again later."
+				: "No CnCNet server answered. Try again later.");
 			while (Pause(1000)) {
 			}
 			break;
@@ -267,14 +287,10 @@ void CnCNetSessionClass::Run(void)
 			delay *= 2;
 		}
 		delay = std::min(delay, Config.MaxRetryDelayMS);
-		{
-			std::lock_guard<std::mutex> guard(Lock);
-			if (reached) {
-				Lobby.Set_Status(CnCNetStatus::RECONNECTING, std::string());
-			} else {
-				Lobby.Set_Status(CnCNetStatus::FAILED, "No CnCNet server answered. Trying again.");
-			}
-			Changed();
+		if (reached) {
+			Set_Lobby_Status(CnCNetStatus::RECONNECTING, std::string());
+		} else {
+			Set_Lobby_Status(CnCNetStatus::FAILED, "No CnCNet server answered. Trying again.");
 		}
 		if (!Pause(delay)) {
 			break;
@@ -305,12 +321,7 @@ bool CnCNetSessionClass::Session(TCPStreamClass & stream, IRCClientClass & clien
 	while (!lost) {
 		if (Stopping) {
 			client.Quit(Config.QuitMessage);
-			while (client.Next_Outgoing(line)) {
-				line += "\r\n";
-				if (!stream.Send_All(line, 1000)) {
-					break;
-				}
-			}
+			Send_Outgoing(stream, client, 1000);
 			stream.Close();
 			client.Disconnected();
 			return(false);
@@ -362,12 +373,9 @@ bool CnCNetSessionClass::Session(TCPStreamClass & stream, IRCClientClass & clien
 			client.Tick(now);
 		}
 
-		while (!lost && client.Next_Outgoing(line)) {
-			line += "\r\n";
-			if (!stream.Send_All(line, 5000)) {
-				reason = "the connection stopped taking data";
-				lost = true;
-			}
+		if (!lost && !Send_Outgoing(stream, client, 5000)) {
+			reason = "the connection stopped taking data";
+			lost = true;
 		}
 
 		std::lock_guard<std::mutex> guard(Lock);

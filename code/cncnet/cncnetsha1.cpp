@@ -117,12 +117,8 @@ void CnCNetSHA1Class::Block(uint8_t const * block)
 }
 
 
-std::string CnCNet_SHA1_Hex(std::string_view text)
+std::string CnCNet_Hex_Digest(std::array<uint8_t, 20> const & digest)
 {
-	CnCNetSHA1Class sha;
-	sha.Update(text.data(), text.size());
-	std::array<uint8_t, 20> const digest = sha.Finish();
-
 	static char const digits[] = "0123456789abcdef";
 	std::string hex;
 	hex.reserve(40);
@@ -131,6 +127,14 @@ std::string CnCNet_SHA1_Hex(std::string_view text)
 		hex.push_back(digits[byte & 15]);
 	}
 	return(hex);
+}
+
+
+std::string CnCNet_SHA1_Hex(std::string_view text)
+{
+	CnCNetSHA1Class sha;
+	sha.Update(text.data(), text.size());
+	return(CnCNet_Hex_Digest(sha.Finish()));
 }
 
 

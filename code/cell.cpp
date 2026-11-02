@@ -2441,6 +2441,22 @@ void CellClass::Draw_Overlay(Point2D const & xpoint, Rect const & cliprect)
 }
 
 
+/*
+ * The screen rectangle of a rubble overlay's artwork, or an empty rectangle when the rubble has no
+ * frame to draw.
+ */
+static Rect Rubble_Render_Rect(CellClass const & cell, bool shadow)
+{
+	ShapeSet const * image = NULL;
+	int frame = 0;
+	Point2D point;
+	if (!Rubble_Image(cell, image, frame, point, shadow)) {
+		return(Rect(0, 0, 0, 0));
+	}
+	return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+}
+
+
 /// <summary>
 /// Fetches the screen rectangle this cell's overlay occupies.
 /// This routine is used by the tactical map when working out how much of the display an
@@ -2459,12 +2475,7 @@ Rect CellClass::Overlay_Render_Rect(void) const
 	OverlayTypeClass const * overlay = OverlayTypes[Overlay];
 
 	if (overlay->IsRubble) {
-		int frame = 0;
-		Point2D point;
-		if (!Rubble_Image(*this, image, frame, point, false)) {
-			return(Rect(0, 0, 0, 0));
-		}
-		return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+		return(Rubble_Render_Rect(*this, false));
 	}
 
 	if (overlay->IsTiberium) {
@@ -2509,12 +2520,7 @@ Rect CellClass::Overlay_Shadow_Render_Rect(void) const
 	if (Overlay != OVERLAY_NONE) {
 		OverlayTypeClass const * overlay = OverlayTypes[Overlay];
 		if (overlay->IsRubble) {
-			int frame = 0;
-			Point2D point;
-			if (!Rubble_Image(*this, image, frame, point, true)) {
-				return(Rect(0, 0, 0, 0));
-			}
-			return(image->Get_Rect(frame) + (point - Point2D(image->Get_Width() / 2, image->Get_Height() / 2)));
+			return(Rubble_Render_Rect(*this, true));
 		}
 		if (overlay->IsTiberium) {
 			TiberiumType tibtype = Tiberium_Type_Here();

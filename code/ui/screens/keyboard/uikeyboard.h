@@ -88,7 +88,6 @@ struct UIKeyboardState
 
 	// The binding that already holds the captured key with the trigger, when assigning would conflict.
 	int ConflictCommand = -1;
-	int ConflictSlot = 0;
 	std::string Conflict;
 
 	// What the last reset or scheme change did, such as the bindings it removed.
@@ -112,6 +111,7 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 		void Reload_Rows(void);
 		void Select(int command, int slot);
 		void Check_Capture(void);
+		void Clear_Capture(void);
 		void Assign(bool swap);
 		void Reset_Category(void);
 		void Reset_All(void);

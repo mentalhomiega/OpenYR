@@ -16,16 +16,9 @@
 
 UISoundPresenterClass::UISoundPresenterClass(UISoundServiceClass & service, UISoundState state) :
 	State(std::move(state)),
-	Service(service)
+	Service(service),
+	Start(State)
 {
-	InitialScore = State.Score;
-	InitialSound = State.Sound;
-	InitialVoice = State.Voice;
-	InitialUnit = State.Unit;
-	InitialMovie = State.Movie;
-	InitialShuffle = State.Shuffle;
-	InitialRepeat = State.Repeat;
-	InitialCustomMusic = State.CustomMusic;
 }
 
 
@@ -138,19 +131,19 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 
 	} else if (intent.Name == "cancel") {
 		// Cancel puts back the levels and switches the screen opened with.
-		Service.Set_Score_Volume(Volume_Of(InitialScore), false);
-		Service.Set_Sound_Volume(Volume_Of(InitialSound), false);
-		Service.Set_Voice_Volume(Volume_Of(InitialVoice), false);
-		Service.Set_Unit_Voice_Volume(Volume_Of(InitialUnit), false);
-		Service.Set_Movie_Volume(Volume_Of(InitialMovie), false);
-		if (State.Shuffle != InitialShuffle) {
-			Service.Set_Shuffle(InitialShuffle);
+		Service.Set_Score_Volume(Volume_Of(Start.Score), false);
+		Service.Set_Sound_Volume(Volume_Of(Start.Sound), false);
+		Service.Set_Voice_Volume(Volume_Of(Start.Voice), false);
+		Service.Set_Unit_Voice_Volume(Volume_Of(Start.Unit), false);
+		Service.Set_Movie_Volume(Volume_Of(Start.Movie), false);
+		if (State.Shuffle != Start.Shuffle) {
+			Service.Set_Shuffle(Start.Shuffle);
 		}
-		if (State.Repeat != InitialRepeat) {
-			Service.Set_Repeat(InitialRepeat);
+		if (State.Repeat != Start.Repeat) {
+			Service.Set_Repeat(Start.Repeat);
 		}
-		if (State.CustomMusic != InitialCustomMusic) {
-			Service.Set_Custom_Music(InitialCustomMusic);
+		if (State.CustomMusic != Start.CustomMusic) {
+			Service.Set_Custom_Music(Start.CustomMusic);
 		}
 		Result = UI_RESULT_CANCELLED;
 	}

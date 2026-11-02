@@ -147,8 +147,7 @@ ShapeSet const * SidebarClass::SidebarAddonShape = NULL;
 //TheaterType SidebarClass::StripClass::LastTheater = THEATER_NONE;
 
 enum ButtonNumberType {
-	BUTTON_RADAR = 100,
-	BUTTON_REPAIR,
+	BUTTON_REPAIR = 101,
 	BUTTON_POWER,
 	BUTTON_SELL,
 	BUTTON_UPGRADE,
@@ -254,6 +253,12 @@ struct CameoSortType {
 	CameoOrderType Order;
 	SidebarClass::StripClass::BuildType Entry;
 };
+
+
+static Point2D Cameo_Slot_Origin(int index, int columns, Point2D const & origin)
+{
+	return Point2D(origin.X + (index % columns) * SidebarClass::StripClass::Column_Step(), origin.Y + (index / columns) * SidebarClass::StripClass::OBJECT_HEIGHT);
+}
 
 
 static CameoOrderType Cameo_Order(SidebarClass::StripClass::BuildType const & entry)
@@ -452,13 +457,12 @@ SidebarClass::SidebarClass(void) :
 	CompletedBuilding[0] = NULL;
 	CompletedBuilding[1] = NULL;
 
-	// Every strip covers the same grid; only the active tab's strip is shown.
 	for (int index = 0; index < COLUMNS; index++) {
 		new (&Column[index]) StripClass(InitClass());
-		Column[index].X = GRID_X;
-		Column[index].Y = GRID_Y;
-		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+
+	// Every strip covers the same grid; only the active tab's strip is shown.
+	Layout_Strips();
 }
 
 
@@ -564,78 +568,41 @@ void SidebarClass::Init_IO(void)
 		int xoff = -480;
 		int yoff = 3;
 
-		Repair.IsSticky = true;
-		Repair.ID = BUTTON_REPAIR;
-		Repair.X = SidebarRect.X;
-		Repair.Y = SidebarRect.Y;
-		Repair.DrawOffsetX = xoff;
-		Repair.DrawOffsetY = yoff;
-		Repair.DrawOnSidebar = true;
-		Repair.ShapeDrawer = SidebarDrawer;
-		Repair.IsPressed = false;
-		Repair.IsToggleType = true;
-		Repair.ReflectButtonState = true;
+		auto setup_button = [&](ShapeButtonClass & button) {
+			button.IsSticky = true;
+			button.DrawOffsetX = xoff;
+			button.DrawOffsetY = yoff;
+			button.DrawOnSidebar = true;
+			button.ShapeDrawer = SidebarDrawer;
+			button.IsPressed = false;
+		};
+		auto setup_toggle = [&](ShapeButtonClass & button, int id, int x) {
+			setup_button(button);
+			button.ID = id;
+			button.X = x;
+			button.Y = SidebarRect.Y;
+			button.IsToggleType = true;
+			button.ReflectButtonState = true;
+		};
 
-		Upgrade.IsSticky = true;
-		Upgrade.ID = BUTTON_UPGRADE;
-		Upgrade.X = Repair.X + BUTTON_SPACING;
-		Upgrade.Y = Repair.Y;
-		Upgrade.DrawOffsetX = xoff;
-		Upgrade.DrawOffsetY = yoff;
-		Upgrade.DrawOnSidebar = true;
-		Upgrade.ShapeDrawer = SidebarDrawer;
-		Upgrade.IsPressed = false;
-		Upgrade.IsToggleType = true;
-		Upgrade.ReflectButtonState = true;
-
-		Power.IsSticky = true;
-		Power.ID = BUTTON_POWER;
-		Power.X = Upgrade.X + BUTTON_SPACING;
-		Power.Y = Upgrade.Y;
-		Power.DrawOffsetX = xoff;
-		Power.DrawOffsetY = yoff;
-		Power.DrawOnSidebar = true;
-		Power.ShapeDrawer = SidebarDrawer;
-		Power.IsPressed = false;
-		Power.IsToggleType = true;
-		Power.ReflectButtonState = true;
-
-		Waypoint.IsSticky = true;
-		Waypoint.ID = BUTTON_WAYPOINT;
-		Waypoint.X = Power.X + BUTTON_SPACING;
-		Waypoint.Y = Power.Y;
-		Waypoint.DrawOffsetX = xoff;
-		Waypoint.DrawOffsetY = yoff;
-		Waypoint.DrawOnSidebar = true;
-		Waypoint.ShapeDrawer = SidebarDrawer;
-		Waypoint.IsPressed = false;
-		Waypoint.IsToggleType = true;
-		Waypoint.ReflectButtonState = true;
+		setup_toggle(Repair, BUTTON_REPAIR, SidebarRect.X);
+		setup_toggle(Upgrade, BUTTON_UPGRADE, Repair.X + BUTTON_SPACING);
+		setup_toggle(Power, BUTTON_POWER, Upgrade.X + BUTTON_SPACING);
+		setup_toggle(Waypoint, BUTTON_WAYPOINT, Power.X + BUTTON_SPACING);
 
 		Waypoint.Enable();
 
 		for (int index = 0; index < COLUMNS; index++) {
 			Column[index].Init_IO(index);
 
+			setup_button(TabButton[index]);
 			TabButton[index].ID = BUTTON_TAB + index;
-			TabButton[index].IsSticky = true;
-			TabButton[index].DrawOffsetX = xoff;
-			TabButton[index].DrawOffsetY = yoff;
-			TabButton[index].DrawOnSidebar = true;
-			TabButton[index].ShapeDrawer = SidebarDrawer;
-			TabButton[index].IsPressed = false;
 		}
 
 		OptionsButton.ID = BUTTON_OPTIONS;
 		DiplomacyButton.ID = BUTTON_DIPLOMACY;
-		for (ShapeButtonClass * button : {&OptionsButton, &DiplomacyButton}) {
-			button->IsSticky = true;
-			button->DrawOffsetX = xoff;
-			button->DrawOffsetY = yoff;
-			button->DrawOnSidebar = true;
-			button->ShapeDrawer = SidebarDrawer;
-			button->IsPressed = false;
-		}
+		setup_button(OptionsButton);
+		setup_button(DiplomacyButton);
 
 		Reposition_Sidebar();
 
@@ -801,7 +768,7 @@ void SidebarClass::Clear_For_House(void)
 
 
 /***********************************************************************************************
- * SidebarClass::Reload_Sidebar -- Loads appropriate sidebar shapes depending on house         *
+ * SidebarClass::Reload_Sidebar -- Resets each strip to the sidebar grid                       *
  *                                                                                             *
  * INPUT:  none                                                                                *
  *                                                                                             *
@@ -812,13 +779,19 @@ void SidebarClass::Clear_For_House(void)
  * HISTORY:                                                                                    *
  *   9/18/1996 BWG : Created.                                                                  *
  *=============================================================================================*/
-void SidebarClass::Reload_Sidebar(void)
+void SidebarClass::Layout_Strips(void)
 {
 	for (int index = 0; index < COLUMNS; index++) {
 		Column[index].X = GRID_X;
 		Column[index].Y = GRID_Y;
 		Column[index].ObjectRect = Rect(Column[index].X, Column[index].Y, StripClass::OBJECT_WIDTH * StripClass::Slot_Columns(), StripClass::OBJECT_HEIGHT * Max_Visible() / StripClass::Slot_Columns());
 	}
+}
+
+
+void SidebarClass::Reload_Sidebar(void)
+{
+	Layout_Strips();
 }
 
 
@@ -1874,8 +1847,9 @@ void SidebarClass::StripClass::Init_IO(int id)
 	for (int index = 0; index < Map.Max_Visible(); index++) {
 		SelectClass & g = SelectButton[ID][index];
 		g.ID = BUTTON_SELECT;
-		g.X = SidebarRect.X + Map.Column[ID].X + (index % Slot_Columns()) * Column_Step();
-		g.Y = SidebarRect.Y + Map.Column[ID].Y + (OBJECT_HEIGHT * (index / Slot_Columns()));
+		Point2D const slot = Cameo_Slot_Origin(index, Slot_Columns(), Point2D(SidebarRect.X + Map.Column[ID].X, SidebarRect.Y + Map.Column[ID].Y));
+		g.X = slot.X;
+		g.Y = slot.Y;
 		g.Width = OBJECT_WIDTH;
 		g.Height = OBJECT_HEIGHT;
 		g.Set_Owner(*this, index);
@@ -3427,9 +3401,8 @@ void SidebarClass::Reposition_Sidebar(void)
 		StripClass::DownButton[col].DrawOffsetX = -SidebarRect.X;
 
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				SidebarRect.X + Column[col].X + (i % StripClass::Slot_Columns()) * StripClass::Column_Step(),
-				SidebarRect.Y + Column[col].Y + StripClass::OBJECT_HEIGHT * (i / StripClass::Slot_Columns()));
+			Point2D const slot = Cameo_Slot_Origin(i, StripClass::Slot_Columns(), Point2D(SidebarRect.X + Column[col].X, SidebarRect.Y + Column[col].Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}
@@ -3497,9 +3470,8 @@ void SidebarClass::Reposition_Panel(void)
 		Column[col].Y = layout.Grid.Y;
 		Column[col].ObjectRect = layout.Grid;
 		for (int i = 0; i < Max_Visible(); i++) {
-			StripClass::SelectButton[col][i].Set_Position(
-				origin.X + layout.Grid.X + (i % HUD_GRID_COLUMNS) * StripClass::Column_Step(),
-				origin.Y + layout.Grid.Y + (i / HUD_GRID_COLUMNS) * StripClass::OBJECT_HEIGHT);
+			Point2D const slot = Cameo_Slot_Origin(i, HUD_GRID_COLUMNS, Point2D(origin.X + layout.Grid.X, origin.Y + layout.Grid.Y));
+			StripClass::SelectButton[col][i].Set_Position(slot.X, slot.Y);
 			StripClass::SelectButton[col][i].Flag_To_Redraw();
 		}
 	}

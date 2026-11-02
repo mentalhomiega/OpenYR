@@ -2171,12 +2171,6 @@ void RadarClass::Redraw_Radar(bool complete)
 
 
 /// <summary>
-/// Draws the radar map into the sidebar.
-/// This routine tracks the tactical view rectangle across the radar face, flushes any pending
-/// background and pixel updates, lets the radar events draw themselves, and then blits the
-/// dirty portion of the radar surface onto the sidebar.
-/// </summary>
-/// <summary>
 /// Draws the blinking marker of each beacon the local player can see onto the sidebar's radar.
 /// Each cycle is four times the marker's frame count; the marker shows its first frame count of them.
 /// </summary>
@@ -2207,6 +2201,12 @@ void RadarClass::Draw_Beacon_Blips(void)
 }
 
 
+/// <summary>
+/// Draws the radar map into the sidebar.
+/// This routine tracks the tactical view rectangle across the radar face, flushes any pending
+/// background and pixel updates, lets the radar events draw themselves, and then blits the
+/// dirty portion of the radar surface onto the sidebar.
+/// </summary>
 void RadarClass::Render_Radar(void)
 {
 	int i;

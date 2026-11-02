@@ -330,6 +330,21 @@ Presents also come from the message loop between draws, for example when the mou
 changes, and those change with the clock. Two runs of one build can therefore differ in their present lines.
 Use the draw digest below to compare the map view.
 
+## Log lines in every game
+
+Most test probes print only in a run started with `-AUTOTEST`, and their lines start with `AUTOTEST`. The events below print a line in every game, with no `AUTOTEST` prefix:
+
+| Prefix | Printed for |
+|---|---|
+| `Shrapnel:` | each shrapnel piece thrown at a target |
+| `Slave:` | each slave ore unload, deploy, pack-up and free |
+| `Disk laser:` | each disk laser charge and strike |
+| `Spawn:` | each spawned unit launched |
+| `Rocket:` | each rocket explosion |
+| `AICapture:` | each AI capture roll |
+
+The test scripts in `tests/autotest/` filter on or expect the `Slave:` and `Disk laser:` lines (`slave-*.txt` and `floating-disc-force-attack.txt`). No script there mentions the other four. A normal game writes all six, so keep only the lines a run needs with `-Filter`, for example `-Filter "AUTOTEST|Slave: |Exception"`.
+
 ## Listing map draws
 
 `drawprobe 1` counts every lock of the map view during the pass that draws objects and their overlays, and every blit into it. `drawprobe 0` logs the counts and stops:

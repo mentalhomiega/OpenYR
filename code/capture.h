@@ -31,7 +31,7 @@ class CaptureManagerClass
 
 		bool Can_Capture(TechnoClass const * target) const;
 		bool Capture_Unit(TechnoClass * target);
-		bool Free_Unit(TechnoClass * unit);
+		void Free_Unit(TechnoClass * unit);
 		void Free_All(void);
 		void Handle_Overload(void);
 		bool Is_Overloading(void) const;
@@ -56,6 +56,8 @@ class CaptureManagerClass
 
 			void Serialize(SaveStreamClass & stream);
 		};
+
+		NodeType const * Find_Node(TechnoClass const * unit) const;
 
 		TechnoClass * Owner = nullptr;
 		std::vector<NodeType> Nodes;

@@ -9,7 +9,7 @@
 
 #include "cncnet/cncnetgame.h"
 
-#include <charconv>
+#include "cncnet/cncnettext.h"
 
 
 namespace {
@@ -17,31 +17,6 @@ namespace {
 std::size_t const FIELD_COUNT = 14;
 
 char const * const DYNAMIC_TUNNEL = "[DYN]";
-
-
-std::vector<std::string_view> Split(std::string_view text, char separator)
-{
-	std::vector<std::string_view> parts;
-	for (;;) {
-		std::size_t const at = text.find(separator);
-		parts.push_back(text.substr(0, at));
-		if (at == std::string_view::npos) {
-			return(parts);
-		}
-		text.remove_prefix(at + 1);
-	}
-}
-
-
-std::optional<int> Number(std::string_view text)
-{
-	int value = 0;
-	auto const [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
-	if (error != std::errc() || end != text.data() + text.size()) {
-		return(std::nullopt);
-	}
-	return(value);
-}
 
 
 bool Flag(char c, bool fallback)
@@ -69,7 +44,7 @@ std::string Field(std::string_view text)
 
 std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view arguments)
 {
-	std::vector<std::string_view> const fields = Split(arguments, ';');
+	std::vector<std::string_view> const fields = CnCNet_Split(arguments, ';');
 	if (fields.size() != FIELD_COUNT || fields[5].size() < 5) {
 		return(std::nullopt);
 	}
@@ -77,7 +52,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	CnCNetGameListingType listing;
 	listing.Revision = std::string(fields[0]);
 	listing.GameVersion = std::string(fields[1]);
-	listing.MaxPlayers = Number(fields[2]).value_or(0);
+	listing.MaxPlayers = CnCNet_Parse_Int(fields[2]).value_or(0);
 	listing.RoomChannel = std::string(fields[3]);
 	listing.RoomName = std::string(fields[4]);
 
@@ -89,7 +64,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	listing.LoadedGame = Flag(fields[5][3], false);
 	listing.Ladder = Flag(fields[5][4], false);
 
-	for (std::string_view name : Split(fields[6], ',')) {
+	for (std::string_view name : CnCNet_Split(fields[6], ',')) {
 		if (!name.empty()) {
 			listing.Players.emplace_back(name);
 		}
@@ -104,7 +79,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 		if (colon == std::string_view::npos) {
 			return(std::nullopt);
 		}
-		std::optional<int> const port = Number(fields[9].substr(colon + 1));
+		std::optional<int> const port = CnCNet_Parse_Int(fields[9].substr(colon + 1));
 		if (!port || *port < 0 || *port > 65535) {
 			return(std::nullopt);
 		}
@@ -113,7 +88,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	}
 
 	listing.LoadedGameID = std::string(fields[10]);
-	listing.SkillLevel = Number(fields[11]).value_or(0);
+	listing.SkillLevel = CnCNet_Parse_Int(fields[11]).value_or(0);
 	listing.MapSHA1 = std::string(fields[12]);
 	listing.OptionValues = std::string(fields[13]);
 	return(listing);

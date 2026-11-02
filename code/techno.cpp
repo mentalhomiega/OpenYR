@@ -669,6 +669,18 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 }
 
 
+WeaponTypeClass const * TechnoClass::Weapon_Against(AbstractClass * target) const
+{
+	return(Get_Class_Weapon_Data(What_Weapon_Should_I_Use(target))->Weapon);
+}
+
+
+bool TechnoClass::Is_Firing_Garrison(void) const
+{
+	return(RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire());
+}
+
+
 /// <summary>
 /// Returns the weapon this object uses against a target on water, or -1 when it may not fire at
 /// it, as its type's NavalTargeting sets (TechnoClass::SelectNavalTargeting, 0x6F3820).
@@ -1997,9 +2009,9 @@ bool TechnoClass::Limbo(void)
 	}
 
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->Assign_Target(NULL);
-		}
+		});
 	}
 
 	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
@@ -2475,12 +2487,23 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		return(false);
 	}
 
+	// The weapon selection against object is made at most once for the tests below.
+	bool object_index_known = false;
+	int object_index = 0;
+	auto weapon_index_for_object = [&]() {
+		if (!object_index_known) {
+			object_index = What_Weapon_Should_I_Use((AbstractClass *)object);
+			object_index_known = true;
+		}
+		return(object_index);
+	};
+
 	/*
 	**	A candidate the weapon chosen against it cannot fire at is no threat, such as an airborne
 	**	aircraft for a weapon without AA. Capture, occupy and tech scans skip this test (TechnoClass::Evaluate_Object, 0x6F7CA0).
 	*/
 	if (!(method & (THREAT_CAPTURE|THREAT_OCCUPIABLE|THREAT_TECH))
-		&& Can_Fire(const_cast<TechnoClass *>(object), What_Weapon_Should_I_Use(const_cast<TechnoClass *>(object))) == FIRE_ILLEGAL) {
+		&& Can_Fire(const_cast<TechnoClass *>(object), weapon_index_for_object()) == FIRE_ILLEGAL) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -2586,7 +2609,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				return(false);
 			}
 		} else {
-			int primary = What_Weapon_Should_I_Use((AbstractClass *)object);
+			int primary = weapon_index_for_object();
 			if (!In_Range((TechnoClass *)object, primary)) {
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
@@ -2595,7 +2618,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	if (Is_Weapon_Equipped()) {
-		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((AbstractClass *)object))->Weapon;
+		WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 		if (weapon != NULL && weapon->WarheadPtr != NULL && !weapon->WarheadPtr->Can_Passive_Acquire(object->Class_Of()->Armor)) {
 			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
@@ -3274,7 +3297,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		// A garrison searches OccupyWeaponRange cells beyond half its narrower side, as
 		// BuildingClass::GetOccupyRangeBonus (0x458E00) and its caller work it out.
-		if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire()) {
+		if (Is_Firing_Garrison()) {
 			BuildingTypeClass const * type = static_cast<BuildingClass const *>(this)->Class;
 			crange = std::min<int>(type->Width(), type->Height()) / 2 + 1 + Rule->OccupyWeaponRange;
 		}
@@ -3921,7 +3944,7 @@ void TechnoClass::AI(void)
 	 * passenger of an open-topped transport guards, keeps thinking and stays at its position.
 	 */
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([this](FootClass * passenger) {
 			if (!passenger->IsInOpenToppedTransport) {
 				passenger->IsInOpenToppedTransport = true;
 				passenger->Transporter = this;
@@ -3932,7 +3955,7 @@ void TechnoClass::AI(void)
 				Logic.Submit(passenger);
 			}
 			passenger->Set_Coord(PositionCoord);
-		}
+		});
 	}
 
 	/*
@@ -4016,8 +4039,8 @@ void TechnoClass::AI(void)
 	/*
 	 * TechnoClass::Update (0x6F9E50, 0x6FA65A to 0x6FA6F5) runs this after the mission's own update. Once the
 	 * targeting timer has run out, an object on a move, harvest or guard mission that can opportunity-fire takes a
-	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). An attack-move mega mission, which
-	 * gamemd tests first, is not ported.
+	 * range scan, which restarts the timer (TargetAndEstimateDamage, 0x709820). Attack-move scans in
+	 * FootClass::Do_MISSION_ATTACK_MOVE. The attack-move mega mission check that gamemd runs first is not mirrored here.
 	 */
 	if (Targeting_Timer_Finished() && (Mission == MISSION_MOVE || Mission == MISSION_HARVEST || Mission == MISSION_GUARD) && Can_Opportunity_Fire()) {
 		Target_And_Estimate_Damage(PositionCoord, THREAT_RANGE);
@@ -5184,8 +5207,7 @@ int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
 		}
 	}
-	BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
-	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+	if (Is_Firing_Garrison()) {
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
 	if (IsInOpenToppedTransport) {
@@ -5590,7 +5612,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		a = weapon->OpenToppedAnim;
 	}
 	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
-	bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
+	bool const garrison_fire = Is_Firing_Garrison();
 	if (garrison_fire) {
 		a = weapon->OccupantAnim;
 	}
@@ -5982,17 +6004,28 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		*/
 		TechnoTypeClass const * ttype = TClass;
 
+		// The weapon selection against object is made at most once for the checks below.
+		bool object_index_known = false;
+		int object_index = 0;
+		auto weapon_index_for_object = [&]() {
+			if (!object_index_known) {
+				object_index = What_Weapon_Should_I_Use((ObjectClass *)object);
+				object_index_known = true;
+			}
+			return(object_index);
+		};
+
 		// A terrain object takes the attack cursor under TreeTargeting, or when the weapon that would fire at it has TerrainFire=yes (the terrain branch of gamemd's test, 0x70EF00).
 		bool terrain_target = false;
 		if (object->RTTI == RTTI_TERRAIN) {
-			WeaponTypeClass const * terrain_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			WeaponTypeClass const * terrain_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 			terrain_target = Rule->IsTreeTarget || (terrain_weapon != NULL && terrain_weapon->IsTerrainFire);
 		}
 
 		// A weapon with a sonic warhead takes the attack cursor over a foot that has a parasite inside, even an allied one (TechnoClass::MouseOverObject, 0x6FFEC0).
 		bool sonic_parasite = false;
 		if (object->Is_Foot() && ((FootClass const *)object)->ParasiteEatingMe != NULL) {
-			WeaponTypeClass const * sonic_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			WeaponTypeClass const * sonic_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 			sonic_parasite = sonic_weapon != NULL && sonic_weapon->WarheadPtr != NULL && sonic_weapon->WarheadPtr->IsSonic;
 		}
 
@@ -6007,7 +6040,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 				UnitClass const * unit = (UnitClass const *)object;
 				fooled = !unit->Is_Blinking_Disguise() && unit->Is_Disguised_As(House);
 				if (fooled) {
-					WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+					WeaponTypeClass const * weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 					fooled = weapon == NULL || !weapon->IsTerrainFire;
 				}
 			}
@@ -6015,7 +6048,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		// An Ivan bomb weapon over a transport is a boarding order, so AttackCursorOnFriendlies does not make the transport a target (TechnoClass::MouseOverObject, 0x6FFEC0).
 		bool ivan_transport = false;
 		if (object->Is_Techno() && ((TechnoClass const *)object)->TClass->Max_Passengers() > 0) {
-			WeaponTypeClass const * ivan_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use((ObjectClass *)object))->Weapon;
+			WeaponTypeClass const * ivan_weapon = Get_Class_Weapon_Data(weapon_index_for_object())->Weapon;
 			ivan_transport = ivan_weapon != NULL && ivan_weapon->WarheadPtr != NULL && ivan_weapon->WarheadPtr->IsIvanBomb;
 		}
 		bool const friendly_fire = TClass->IsAttackFriendlies || (TClass->IsAttackCursorOnFriendlies && !ivan_transport) || sonic_parasite;
@@ -6030,13 +6063,12 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 
 				// The attack cursor needs a weapon that can fire at the object, range aside, unless the force-fire key is held (TechnoClass::MouseOverObject, 0x700542).
 				// A spy's click on a structure it can infiltrate is an attack order whatever its weapon can fire at (TechnoClass::MouseOverObject, 0x6FFEC0).
-				int primary = What_Weapon_Should_I_Use((ObjectClass *)object);
+				int primary = weapon_index_for_object();
 				bool const infiltrates = RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
-					&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable);
+					&& ((InfantryClass *)this)->Can_Infiltrate((BuildingClass const *)object);
 				bool const can_fire = ctrldown || infiltrates || Can_Fire((ObjectClass *)object, primary) != FIRE_ILLEGAL;
 				if (can_fire && (Can_Player_Move() || In_Range((ObjectClass *)object, primary))) {
-					if (In_Range((ObjectClass *)object, primary) || (RTTI == RTTI_INFANTRY && ((InfantryClass *)this)->Class->IsCapture && object->RTTI == RTTI_BUILDING
-						&& (((InfantryClass *)this)->Class->IsAgent ? ((BuildingClass *)object)->Class->IsSpyable : ((BuildingClass *)object)->Class->IsCaptureable))) {
+					if (In_Range((ObjectClass *)object, primary) || infiltrates) {
 						return(ACTION_ATTACK);
 					} else {
 						if (!Can_Player_Move()) {
@@ -6164,7 +6196,7 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 		// An IsARock overlay takes the attack cursor for a TerrainFire weapon (the cell branch of gamemd's test, 0x70EF00, reads the IsARock flag at +0x2B5).
 		bool rock_target = false;
 		if (optr != NULL && optr->IsARock) {
-			WeaponTypeClass const * cell_weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(&Map[cell]))->Weapon;
+			WeaponTypeClass const * cell_weapon = Weapon_Against(&Map[cell]);
 			rock_target = cell_weapon != NULL && cell_weapon->IsTerrainFire;
 		}
 
@@ -6462,12 +6494,12 @@ int TechnoClass::Weapon_Range(int which) const
 	// As TechnoClass::GetWeaponRange (0x7012C0): an open-topped transport reaches no farther than its passengers' primary weapons.
 	if (TClass->IsOpenTopped) {
 		int range = weapon->Range;
-		for (FootClass const * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass const *)(ObjectClass const *)passenger->Next) {
+		Cargo.For_Each_Attached([&range](FootClass * passenger) {
 			WeaponTypeClass const * primary = passenger->Get_Class_Weapon_Data(0)->Weapon;
 			if (primary != NULL) {
 				range = std::min(range, primary->Range);
 			}
-		}
+		});
 		return(range);
 	}
 	return(weapon->Range);
@@ -8395,6 +8427,16 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 }
 
 
+// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
+static int Shadow_Cache_Key(int key, VoxelIndexClass const * cache, bool disable_cache)
+{
+	if (key != -1 && (cache == NULL || disable_cache)) {
+		return(-1);
+	}
+	return(key);
+}
+
+
 /// <summary>
 /// Draws the voxel shadow for this object, honoring the cache key when present.
 /// Skips drawing entirely if cloaked, mid-flash, or the voxel library failed to load.
@@ -8410,18 +8452,11 @@ void TechnoClass::Draw_Voxel(VoxelDataStruct const & voxeldata, int frame, int k
 /// <param name="force_cache">Force rendering even when a cache key is supplied.</param>
 void TechnoClass::Techno_Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const
 {
-	if (Cloak != UNCLOAKED || TClass->IsNoShadow || voxeldata.VoxLib->Load_Failed()) {
-		return;
-	}
-
-	// A type with DisableShadowCache=yes (TechnoClass::DrawVoxelShadow, 0x706BD0) draws its shadow afresh each frame.
-	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
-		key = -1;
-	}
-
 	if (Techno_Draw_Cached_Voxel_Shadow(voxeldata, key, cache, cliprect, point)) {
 		return;
 	}
+
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
 
 	if (key == -1 || force_cache) {
 		SurfaceRegion region = Techno_Render_Voxel_Shadow(voxeldata, matrix, point, cliprect, layer_index, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_ZGRAD), key != -1);
@@ -8456,9 +8491,7 @@ bool TechnoClass::Techno_Draw_Cached_Voxel_Shadow(VoxelDataStruct const & voxeld
 		return(true);
 	}
 
-	if (key != -1 && (cache == NULL || TClass->IsDisableShadowCache)) {
-		key = -1;
-	}
+	key = Shadow_Cache_Key(key, cache, TClass->IsDisableShadowCache);
 
 	if (key != -1) {
 		StaticBufferClass::Entry * entry = (*cache)[key];
@@ -10253,7 +10286,7 @@ bool TechnoClass::Target_Something_Nearby(Coord const & coord, ThreatType threat
 		// A target chosen by a scan that takes the estimate (TechnoClass::TargetAndEstimateDamage, 0x709820) takes this
 		// object's estimated damage at once, unless the weapon is inaccurate. A DistributedFire object takes no estimate.
 		if (estimate && !TClass->IsDistributedFire && TarCom != NULL && TarCom->Is_Techno() && Is_Weapon_Equipped()) {
-			WeaponTypeClass const * weapon = Get_Class_Weapon_Data(What_Weapon_Should_I_Use(TarCom))->Weapon;
+			WeaponTypeClass const * weapon = Weapon_Against(TarCom);
 			if (weapon != NULL && weapon->Bullet != NULL && !weapon->Bullet->IsInaccurate) {
 				TechnoClass * estimate_target = (TechnoClass *)TarCom;
 				estimate_target->EstimatedHealth -= Estimated_Damage(estimate_target, weapon);

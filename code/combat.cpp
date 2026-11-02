@@ -151,24 +151,6 @@ int Modify_Damage(int damage, WarheadTypeClass const * warhead, ArmorType armor,
 }
 
 
-/// <summary>
-/// Determines the distance between two points, ignoring a slight height difference.
-/// This routine is used when explosion damage is being dealt out, so that a victim
-/// perched a fraction of a level above or below the blast is not judged to be further
-/// away than one standing level with it.
-/// </summary>
-/// <returns>Returns with the distance between the two coordinates.</returns>
-inline static int Explosion_Distance(Coord const & coord1, Coord const & coord2)
-{
-	int z1 = coord1.Z;
-	int z2 = coord2.Z;
-	if (abs(z2 - z1) < LEVEL_LEPTON_H) {
-		z2 = coord1.Z;
-	}
-	return(Coord(coord1.X - coord2.X, coord1.Y - coord2.Y, z1 - z2).Gamemd_Length());
-}
-
-
 int Cell_Spread_Count(int radius)
 {
 	return(CellSpread::Count(radius));

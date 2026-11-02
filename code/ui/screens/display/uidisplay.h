@@ -204,44 +204,12 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		int Chosen_Rows(void) const;
 
 		UIDisplayServiceClass & Service;
-		int Initial;
-		int InitialScale;
-		bool InitialFullscreen;
-		bool InitialVSync;
-		bool InitialIntegerScaling;
-		bool InitialGpuRender;
-		bool InitialSoftShadows;
-		bool InitialShockwaves;
-		bool InitialBloom;
-		bool InitialWaterRipples;
-		bool InitialCloudShadows;
-		bool InitialWeather;
-		int InitialFilter;
-		int InitialFrameRate;
-		int InitialCursorScale;
-		int InitialMenuTheme;
-		bool InitialMenuBattle;
-		int InitialRenderer;
-		int InitialHighlights;
+		// The settings as the page opened. OK compares against these, and a bad pick falls back to them.
+		UIDisplayState const Start;
 		// The rows the player last picked on this page, or -1 for none. Only a pick is saved on OK.
 		int PickedRows = -1;
 		// The index of the row the drop-down shows, as the presenter last set it.
 		int ShownRowIndex = -1;
-		bool InitialBitmapSystemFont;
-		bool InitialShowFPS;
-		int InitialFrameLimit;
-		int InitialWindowSize;
-		int InitialHDROutput;
-		int InitialPaperWhite;
-		int InitialPeakBrightness;
-		int InitialColorBlindMode;
-		int InitialColorBlindStrength;
-		int InitialBrightness;
-		int InitialGamma;
-		int InitialPlayerColors;
-		bool InitialScreenShake;
-		bool InitialScriptedCameraZoom;
-		int InitialSidebarOpacity;
 		// Whether a colour preview has been shown, and whether the page has put its colour back.
 		bool PreviewShown = false;
 		bool PreviewRestored = false;

@@ -485,9 +485,6 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 }
 
 
-static int Difficulty_Entry(TypeList<int> const & list, int difficulty);
-
-
 /// <summary>
 /// Returns the first harvester type the house's acted country may own. Unlike
 /// Preferred_Harvester, no slave miner stands in when the country lists none.
@@ -504,6 +501,9 @@ UnitTypeClass const * HouseClass::Country_Unit(DynamicVectorClass<UnitTypeClass 
 	return(NULL);
 }
 
+// Uses only the acted-country mask. Can_Make_Money, AI, Check_Raise_Money and AI_Raise_Money use this
+// lookup; Preferred_Harvester and AI_Unit use Get_First_Acted, which also applies RequiredHouses,
+// ForbiddenHouses and the planning side.
 UnitTypeClass const * HouseClass::Country_Harvester(void) const
 {
 	return(Country_Unit(Rule->HarvesterUnit));
@@ -1010,37 +1010,6 @@ static bool Is_Withheld_Superweapon_Building(BuildingTypeClass const * type)
 }
 
 
-/***********************************************************************************************
- * HouseClass::Can_Build -- General purpose build legality checker.                            *
- *                                                                                             *
- *    This routine is called when it needs to be determined if the specified object type can   *
- *    be built by this house. Production and sidebar maintenance use this routine heavily.     *
- *                                                                                             *
- * INPUT:   type  -- Pointer to the type of object that legality is to be checked for.         *
- *                                                                                             *
- *          house -- This is the house to check for legality against. Note that this might     *
- *                   not be 'this' house since the check could be from a captured factory.     *
- *                   Captured factories build what the original owner of them could build.     *
- *                                                                                             *
- * OUTPUT:  Can the specified object be built?                                                 *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/04/1995 JLB : Created.                                                                 *
- *   08/12/1995 JLB : Updated for GDI building sandbag walls in #9.                            *
- *   10/23/1996 JLB : Hack to allow Tanya to both sides in multiplay.                          *
- *   11/04/1996 JLB : Computer uses prerequisite record.                                       *
- *=============================================================================================*/
-/*
- * 1 = can build
- * 0 = can't build
- * -1 = build limit reached
- */
-/// <summary>
-/// Whether this house reverse engineered the type, so that it builds it without the type's
-/// prerequisites, tech level, stolen tech and house limits (Ares).
-/// </summary>
 /// <summary>
 /// Whether the house owns an object that keeps it in a short game: one whose type sets
 /// KeepAlive=yes, or by default a building that is not Insignificant (Ares).
@@ -1092,6 +1061,10 @@ bool HouseClass::Owns_Prerequisite_Override(TechnoTypeClass const * type) const
 }
 
 
+/// <summary>
+/// Whether this house reverse engineered the type, so that it builds it without the type's
+/// prerequisites, tech level, stolen tech and house limits (Ares).
+/// </summary>
 bool HouseClass::Is_Reversed(ObjectTypeClass const * type) const
 {
 	for (std::string const & name : ReversedTypes) {
@@ -1117,6 +1090,202 @@ bool HouseClass::Add_Reversed(TechnoTypeClass const * type)
 }
 
 
+static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
+{
+	for (int index = 0; index < ids.Count(); index++) {
+		if (tally.Value(ids[index]) > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
+{
+	for (int i = 0; i < pre.Count(); i++) {
+		switch (pre[i]) {
+			case STRUCT_G_POWER:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower)) return(false);
+				break;
+
+			case STRUCT_G_FACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory)) return(false);
+				break;
+
+			case STRUCT_G_BARRACKS:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks)) return(false);
+				break;
+
+			case STRUCT_G_RADAR:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar)) return(false);
+				break;
+
+			case STRUCT_G_TECH:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech)) return(false);
+				break;
+
+			case STRUCT_G_PROC: {
+				bool found = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc);
+				for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
+					if (house.AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
+						found = true;
+					}
+				}
+				if (!found) return(false);
+			}
+			break;
+
+			case STRUCT_G_GDIFACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory)) return(false);
+				break;
+
+			case STRUCT_G_NODFACTORY:
+				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory)) return(false);
+				break;
+
+			default: {
+				BuildingTypeClass * btype = BuildingTypes[pre[i]];
+				if (!btype->PowersUpBuilding.empty()) {
+					BuildingClass * bptr;
+					bool found = false;
+					for (int j = Buildings.Count() - 1; j >= 0; j--) {
+						bptr = Buildings[j];
+						if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn) {
+							if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
+								found = true;
+								break;
+							}
+						}
+					}
+					if (found) {
+						for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
+							if (bptr->Upgrades[k] == btype) {
+								goto breakout;
+							}
+						}
+					}
+					return(false);
+				}
+				if (house.ABQuantity.Value(pre[i]) == 0) return(false);
+				breakout:;
+			}
+			break;
+		}
+	}
+	return(true);
+}
+
+
+static int Build_Limit_Result(HouseClass const & house, ObjectTypeClass const * type, bool include_in_progress)
+{
+	switch ((RTTIType)type->RTTI) {
+		case RTTI_UNITTYPE: {
+			UnitTypeClass const * utype = (UnitTypeClass const *)type;
+			if (utype->BuildLimit <= 0) {
+				return(house.PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
+			}
+			int count = house.UQuantity.Value(type->Fetch_Heap_ID());
+			if (utype->DeploysInto != NULL) {
+				count += house.BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
+			}
+			if (count < utype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_INFANTRYTYPE: {
+			InfantryTypeClass const * itype = (InfantryTypeClass const *)type;
+			if (itype->BuildLimit <= 0) {
+				return(house.PIQuantity.Value(type->Fetch_Heap_ID()) < abs(itype->BuildLimit));
+			}
+			int count = house.IQuantity.Value(type->Fetch_Heap_ID());
+			if (itype->IsVehicleThief) {
+				for (int i = 0; i < Units.Count(); i++) {
+					UnitClass * unit = Units[i];
+					if (unit->House == &house && unit->EnteredByInfType == type->Fetch_Heap_ID()) {
+						count++;
+					}
+				}
+			}
+			if (itype->BuildLimit <= 0 || count < itype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && count == itype->BuildLimit && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_BUILDINGTYPE: {
+			BuildingTypeClass const * btype = (BuildingTypeClass const *)type;
+			if (btype->BuildLimit <= 0) {
+				return(house.PBQuantity.Value(type->Fetch_Heap_ID()) < abs(btype->BuildLimit));
+			}
+			int count = house.BQuantity.Value(type->Fetch_Heap_ID());
+			if (count < btype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+
+		case RTTI_AIRCRAFTTYPE: {
+			AircraftTypeClass const * atype = (AircraftTypeClass const *)type;
+			if (atype->BuildLimit <= 0) {
+				return(house.PAQuantity.Value(type->Fetch_Heap_ID()) < abs(atype->BuildLimit));
+			}
+			int count = house.AQuantity.Value(type->Fetch_Heap_ID());
+			if (count < atype->BuildLimit) {
+				return(1);
+			}
+			if (include_in_progress && house.Factory_Producing_This(type) != NULL) {
+				return(1);
+			}
+			return(-1);
+		}
+		break;
+	}
+	return(1);
+}
+
+
+/***********************************************************************************************
+ * HouseClass::Can_Build -- General purpose build legality checker.                            *
+ *                                                                                             *
+ *    This routine is called when it needs to be determined if the specified object type can   *
+ *    be built by this house. Production and sidebar maintenance use this routine heavily.     *
+ *                                                                                             *
+ * INPUT:   type  -- Pointer to the type of object that legality is to be checked for.         *
+ *                                                                                             *
+ *          house -- This is the house to check for legality against. Note that this might     *
+ *                   not be 'this' house since the check could be from a captured factory.     *
+ *                   Captured factories build what the original owner of them could build.     *
+ *                                                                                             *
+ * OUTPUT:  Can the specified object be built?                                                 *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/04/1995 JLB : Created.                                                                 *
+ *   08/12/1995 JLB : Updated for GDI building sandbag walls in #9.                            *
+ *   10/23/1996 JLB : Hack to allow Tanya to both sides in multiplay.                          *
+ *   11/04/1996 JLB : Computer uses prerequisite record.                                       *
+ *=============================================================================================*/
+/*
+ * 1 = can build
+ * 0 = can't build
+ * -1 = build limit reached
+ */
 int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool include_in_progress) const
 {
 	assert(type != NULL);
@@ -1186,138 +1355,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		/*
 		**	See if the prerequisite requirements have been met.
 		*/
-		for (int i = 0; i < pre.Count(); i++) {
-			switch (pre[i]) {
-				case STRUCT_G_POWER: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisitePower.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisitePower[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_FACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_BARRACKS: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteBarracks.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteBarracks[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_RADAR: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteRadar.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteRadar[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_TECH: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteTech.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteTech[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_PROC: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteProc.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteProc[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
-						if (AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
-							found = true;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_GDIFACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteGDIFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteGDIFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				case STRUCT_G_NODFACTORY: {
-					bool found = false;
-					for (int j = 0; j < Rule->PrerequisiteNodFactory.Count(); j++) {
-						if (ABQuantity.Value(Rule->PrerequisiteNodFactory[j]) > 0) {
-							found = true;
-							break;
-						}
-					}
-					if (!found) return(0);
-				}
-				break;
-
-				default: {
-					BuildingTypeClass * btype = BuildingTypes[pre[i]];
-					if (!btype->PowersUpBuilding.empty()) {
-						BuildingClass * bptr;
-						bool found = false;
-						for (int j = Buildings.Count() - 1; j >= 0; j--) {
-							bptr = Buildings[j];
-							if (!bptr->IsInLimbo && bptr->House == this && bptr->IsOn) {
-								if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-									found = true;
-									break;
-								}
-							}
-						}
-						if (found) {
-							for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
-								if (bptr->Upgrades[k] == btype) {
-									goto breakout;
-								}
-							}
-						}
-						return(0);
-					}
-					if (ABQuantity.Value(pre[i]) == 0) return(0);
-					breakout:;
-				}
-				break;
-			}
-		}
+		if (!Prerequisites_Met(*this, pre)) return(0);
 
 		/*
 		**	A structure that no side owns is never buildable. Which factory builds it is decided by
@@ -1328,115 +1366,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		}
 	}
 
-	switch ((RTTIType)type->RTTI) {
-		case RTTI_UNITTYPE: {
-			UnitTypeClass const * utype = (UnitTypeClass const *)type;
-			if (utype->BuildLimit <= 0) {
-				return(PUQuantity.Value(type->Fetch_Heap_ID()) < abs(utype->BuildLimit));
-			}
-			int count = UQuantity.Value(type->Fetch_Heap_ID());
-			if (utype->DeploysInto != NULL) {
-				count += BQuantity.Value(utype->DeploysInto->Fetch_Heap_ID());
-			}
-			if (count < utype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_INFANTRYTYPE: {
-			InfantryTypeClass const * itype = (InfantryTypeClass const *)type;
-			if (itype->BuildLimit <= 0) {
-				return(PIQuantity.Value(type->Fetch_Heap_ID()) < abs(itype->BuildLimit));
-			}
-			int count = IQuantity.Value(type->Fetch_Heap_ID());
-			if (itype->IsVehicleThief) {
-				for (int i = 0; i < Units.Count(); i++) {
-					UnitClass * unit = Units[i];
-					if (unit->House == this && unit->EnteredByInfType == type->Fetch_Heap_ID()) {
-						count++;
-					}
-				}
-			}
-			if (itype->BuildLimit <= 0 || count < itype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress && count == itype->BuildLimit) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_BUILDINGTYPE: {
-			BuildingTypeClass const * btype = (BuildingTypeClass const *)type;
-			if (btype->BuildLimit <= 0) {
-				return(PBQuantity.Value(type->Fetch_Heap_ID()) < abs(btype->BuildLimit));
-			}
-			int count = BQuantity.Value(type->Fetch_Heap_ID());
-			if (count < btype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-
-		case RTTI_AIRCRAFTTYPE: {
-			AircraftTypeClass const * atype = (AircraftTypeClass const *)type;
-			if (atype->BuildLimit <= 0) {
-				return(PAQuantity.Value(type->Fetch_Heap_ID()) < abs(atype->BuildLimit));
-			}
-			int count = AQuantity.Value(type->Fetch_Heap_ID());
-			if (count < atype->BuildLimit) {
-				return(1);
-			}
-			if (include_in_progress) {
-				for (int i = 0; i < Factories.Count(); i++) {
-					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
-						if (Factories[i] != NULL) {
-							return(1);
-						}
-						break;
-					}
-				}
-			}
-			return(-1);
-		}
-		break;
-	}
-	return(1);
+	return(Build_Limit_Result(*this, type, include_in_progress));
 }
 
 
@@ -4664,37 +4594,25 @@ int HouseClass::Expert_AI(void)
 
 	/*
 	**	If there is no enemy assigned to this house, then assign one now. The
-	**	enemy that is closest is picked. However, don't pick an enemy if the
-	**	base has not been established yet.
+	**	first house that is not this one, not passive, not defeated and not an ally is picked.
+	**	However, don't pick an enemy if the base has not been established yet.
 	*/
 	if (PickEnemyTimer == 0) {
 		if (Enemy == HOUSE_NONE && Session.Type != GAME_NORMAL && !Class->IsMultiplayPassive) {
 			if (Starting_Cell_Or_Default() != CELL_NONE) {
-				int close = INT_MAX;
 				HouseClass * enemy = NULL;
 
+				// gamemd 0x4FD500 scores every candidate zero (0x4FD635-0x4FD651), so the first one is kept.
 				for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
 					HouseClass * h = Houses[house];
 					if (h != this && !h->Class->IsMultiplayPassive && !h->IsDefeated && !Is_Ally(h)) {
-
-						// gamemd 0x4FD500 reads this house's own starting cell for each candidate
-						// (0x4FD635-0x4FD651), so every value is zero and the first candidate is kept.
-						int const value = 0;
-
-						/*
-						**	Compare the calculated value for this candidate house and if it is
-						**	greater than the previously recorded maximum, record this house as
-						**	the prime candidate for enemy.
-						*/
-						if (value < close) {
-							enemy = h;
-							close = value;
-						}
+						enemy = h;
+						break;
 					}
 				}
 
 				/*
-				**	Record this closest enemy base as the first enemy to attack.
+				**	Record the picked house as the first enemy to attack.
 				*/
 				if (enemy) {
 					Add_Anger(1, enemy);
@@ -5122,7 +5040,7 @@ bool HouseClass::Can_Replace_Node(int index) const
 
 	BuildingTypeClass const * btype = BuildingTypes[node.Type];
 	if (btype->IsResourceGatherer && btype->IsResourceDestination) {
-		return(Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
+		return(Count_Resource_Gatherers() < EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
 	}
 	if (btype->Get_Weapon(0)->Weapon != NULL) {
 		return(true);
@@ -5218,7 +5136,7 @@ int HouseClass::AI_Building(void)
 		**	A defense turn may become a wall ring instead, when the roll picks walls.
 		*/
 		int const roll = Random_Pick(0, 99);
-		if (roll < Difficulty_Entry(Rule->AIPickWallDefensePercent, Difficulty)) {
+		if (roll < EconomyRules::Difficulty_Entry(Rule->AIPickWallDefensePercent, Difficulty)) {
 			int const count = Base.Nodes.Count();
 			if (AI_Build_Protective_Walls(nodeid)) {
 				Base.Nodes.Delete_Index(nodeid + Base.Nodes.Count() - count);
@@ -5364,8 +5282,8 @@ int HouseClass::AI_Unit(void)
 
 	// A computer house keeps HarvestersPerRefinery gatherers for each refinery it owns, or
 	// AISlaveMinerNumber when no refinery type is buildable (HouseClass::AI_VehicleConstructionUpdate, 0x4FEA60).
-	int const target = EconomyRules::Harvester_Target(Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty), ref,
-		Get_First_Acted(Rule->BuildRefinery) != NULL, Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
+	int const target = EconomyRules::Harvester_Target(EconomyRules::Difficulty_Entry(Rule->HarvestersPerRefinery, Difficulty), ref,
+		Get_First_Acted(Rule->BuildRefinery) != NULL, EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty));
 	int const gatherers = Count_Resource_Gatherers();
 
 	/*
@@ -5387,7 +5305,7 @@ int HouseClass::AI_Unit(void)
 		**	refinery packs up into, and keeps AISlaveMinerNumber of them at work.
 		*/
 		BuildingTypeClass const * refinery = Get_First_Acted(Rule->BuildRefinery);
-		if (refinery != NULL && refinery->UndeploysInto != NULL && Count_Resource_Gatherers() < Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty)) {
+		if (refinery != NULL && refinery->UndeploysInto != NULL && Count_Resource_Gatherers() < EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty)) {
 			BuildUnit = refinery->UndeploysInto->HeapID;
 			return(TICKS_PER_SECOND);
 		}
@@ -8287,13 +8205,6 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 
 
 /// <summary>
-/// Builds the computer's base construction plan.
-/// This routine fills the base node list with everything this house is allowed and able to
-/// build, ordered so that a prerequisite is always queued ahead of whatever needs it. Extra
-/// refineries and placeholders for base defenses are woven in along the way, according to
-/// the difficulty level and the side's appetite for fortification.
-/// </summary>
-/// <summary>
 /// Fetches the per-difficulty base defense counts for a side, as HouseClass::Make_Base_Nodes
 /// (0x5054B0) picks them: Allied for side 0, Soviet for side 1 and Third for side 2.
 /// </summary>
@@ -8312,12 +8223,13 @@ static TypeList<int> const * Side_Base_Defense_Counts(int side)
 }
 
 
-static int Difficulty_Entry(TypeList<int> const & list, int difficulty)
-{
-	return(EconomyRules::Difficulty_Entry(list, difficulty));
-}
-
-
+/// <summary>
+/// Builds the computer's base construction plan.
+/// This routine fills the base node list with everything this house is allowed and able to
+/// build, ordered so that a prerequisite is always queued ahead of whatever needs it. Extra
+/// refineries and placeholders for base defenses are woven in along the way, according to
+/// the difficulty level and the side's appetite for fortification.
+/// </summary>
 void HouseClass::Make_Base_Nodes(void)
 {
 	int index;
@@ -8468,9 +8380,9 @@ void HouseClass::Make_Base_Nodes(void)
 			}
 		}
 		if (harvests) {
-			refcount = Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
+			refcount = EconomyRules::Difficulty_Entry(Rule->AIExtraRefineries, Difficulty);
 		} else {
-			refcount = Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty) - 1;
+			refcount = EconomyRules::Difficulty_Entry(Rule->AISlaveMinerNumber, Difficulty) - 1;
 		}
 	}
 
@@ -8498,7 +8410,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	if (counted_plan) {
 		DynamicVectorClass<BuildingTypeClass const *> plan = startingqueue;
-		for (int count = Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
+		for (int count = EconomyRules::Difficulty_Entry(*defense_counts, Difficulty); count > 0; count--) {
 			int after = Random_Pick(3, std::max(3, plan.Count() - 1));
 			if (after >= plan.Count()) {
 				plan.Add((BuildingTypeClass const *)-1);
@@ -9253,6 +9165,23 @@ static TypeList<BuildingTypeClass const *> const & Side_Base_Defenses(int side)
 }
 
 
+static DynamicVectorClass<BuildingTypeClass *> Collect_Anti_Defenses(HouseClass const & house, int BuildingTypeClass::* value, DynamicVectorClass<BuildingTypeClass const *> & owned)
+{
+	unsigned ownable = house.Acted_Mask();
+	DynamicVectorClass<BuildingTypeClass *> defenses;
+
+	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(house.Planning_Side());
+	for (int i = list.Count() - 1; i >= 0; i--) {
+		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
+		if (ownable & b->Ownable && b->*value > 0 && b->Level <= house.Control.TechLevel && house.AI_Has_Prerequisites(b, owned, owned.Count())) {
+			defenses.Add(b);
+		}
+	}
+
+	return(defenses);
+}
+
+
 /// <summary>
 /// Fetches the anti-aircraft defenses this house could build.
 /// The candidates come from the AlliedBaseDefenses, SovietBaseDefenses or ThirdBaseDefenses
@@ -9263,18 +9192,7 @@ static TypeList<BuildingTypeClass const *> const & Side_Base_Defenses(int side)
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = Acted_Mask();
-	DynamicVectorClass<BuildingTypeClass *> defenses;
-
-	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
-	for (int i = list.Count() - 1; i >= 0; i--) {
-		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
-		if (ownable & b->Ownable && b->AntiAirValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
-			defenses.Add(b);
-		}
-	}
-
-	return(defenses);
+	return(Collect_Anti_Defenses(*this, &BuildingTypeClass::AntiAirValue, owned));
 }
 
 
@@ -9288,18 +9206,7 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildin
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = Acted_Mask();
-	DynamicVectorClass<BuildingTypeClass *> defenses;
-
-	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
-	for (int i = list.Count() - 1; i >= 0; i--) {
-		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
-		if (ownable & b->Ownable && b->AntiArmorValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
-			defenses.Add(b);
-		}
-	}
-
-	return(defenses);
+	return(Collect_Anti_Defenses(*this, &BuildingTypeClass::AntiArmorValue, owned));
 }
 
 
@@ -9313,18 +9220,7 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Build
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Ground_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = Acted_Mask();
-	DynamicVectorClass<BuildingTypeClass *> defenses;
-
-	TypeList<BuildingTypeClass const *> const & list = Side_Base_Defenses(Planning_Side());
-	for (int i = list.Count() - 1; i >= 0; i--) {
-		BuildingTypeClass * b = const_cast<BuildingTypeClass *>(list[i]);
-		if (ownable & b->Ownable && b->AntiInfantryValue > 0 && b->Level <= Control.TechLevel && AI_Has_Prerequisites(b, owned, owned.Count())) {
-			defenses.Add(b);
-		}
-	}
-
-	return(defenses);
+	return(Collect_Anti_Defenses(*this, &BuildingTypeClass::AntiInfantryValue, owned));
 }
 
 
@@ -9963,9 +9859,13 @@ void HouseClass::AI_Super_Weapons(void)
 						break;
 					}
 
-					case SUPER_ION_CANNON:
-						AI_Ion_Cannon(super);
+					case SUPER_ION_CANNON: {
+						Cell const cell = Pick_Ion_Cannon_Target();
+						if (cell != CELL_NONE) {
+							Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
+						}
 						break;
+					}
 
 					case SUPER_HUNTER_SEEKER:
 						AI_Hunter_Seeker(super);
@@ -10038,23 +9938,6 @@ void HouseClass::AI_Super_Weapons(void)
 				}
 			}
 		}
-	}
-}
-
-
-/// <summary>
-/// Handles the computer's use of the ion cannon super weapon.
-/// This routine rates the enemy's objects by how much their loss would hurt -- engineers,
-/// vehicle thieves, construction yards, war factories and power plants are all prized
-/// well above ordinary troops -- and strikes one of the best rated. Only objects that
-/// would actually die to the blast earn their premium rating, and cloaked objects are
-/// rated at random so the computer does not appear to see through them.
-/// </summary>
-void HouseClass::AI_Ion_Cannon(SuperClass * super)
-{
-	Cell const cell = Pick_Ion_Cannon_Target();
-	if (cell != CELL_NONE) {
-		Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 	}
 }
 
@@ -10247,9 +10130,7 @@ Cell HouseClass::Pick_Drop_Target(void)
 	HouseClass * target = Enemy != HOUSE_NONE ? Houses[Enemy] : this;
 	Cell cell = Map.Nearby_Location(target->Starting_Cell_Or_Default(), SPEED_FOOT, -1, MZONE_NORMAL, false, Point2D(5, 5));
 	cell = cell + Cell(2, 2);
-	if (cell == CELL_NONE) {
-		return(CELL_NONE);
-	}
+	// gamemd adds the offset before it compares the cell with CELL_NONE, so a failed search aims at (2, 2).
 	return(cell);
 }
 
@@ -10381,6 +10262,9 @@ Cell HouseClass::Pick_Strike_Target(void)
 /// <summary>
 /// Picks the cell of one of the enemy objects whose loss would hurt most, for the ion cannon and
 /// the Yuri's Revenge superweapons that aim the same way (HouseClass::PickIonCannonTarget).
+/// Engineers, vehicle thieves, construction yards, war factories and power plants are rated above
+/// ordinary troops. A cloaked object is rated at random, so the computer does not appear to see
+/// through it.
 /// </summary>
 /// <returns>Returns with the cell to strike, or CELL_NONE when the house has no enemy or the
 /// enemy has nothing to strike.</returns>

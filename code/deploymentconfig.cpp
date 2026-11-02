@@ -85,7 +85,6 @@ bool DeploymentConfigClass::Read_File(char const * directory)
 		INIClass ini;
 		ini.Load(file);
 		Read_INI(ini);
-		FileName = name;
 
 		DebugString("[DeploymentConfig] Read %s.\n", name.c_str());
 		return(true);

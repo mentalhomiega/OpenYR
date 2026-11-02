@@ -565,7 +565,7 @@ void BulletClass::AI(void)
 		 * than hugging the terrain on the way, since there is no ground between
 		 * the two of them that needs clearing.
 		 */
-		if (TarCom != NULL && (TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air()))) {
+		if (Target_Is_Airborne()) {
 			is_aircraft = true;
 		}
 
@@ -1300,6 +1300,13 @@ LayerType BulletClass::In_Which_Layer(void) const
 }
 
 
+// Is the bullet's target an aircraft or another techno in the air?
+bool BulletClass::Target_Is_Airborne(void) const
+{
+	return(TarCom != NULL && (TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air())));
+}
+
+
 /***********************************************************************************************
  * BulletClass::Is_Forced_To_Explode -- Checks if bullet should explode NOW.                   *
  *                                                                                             *
@@ -1352,8 +1359,7 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 	/*
 	**	Bullets are generally more effective when they are fired at aircraft.
 	*/
-	if (Class->IsAntiAircraft && TarCom != NULL &&
-		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->Is_Techno() && TarCom->In_Air())) &&
+	if (Class->IsAntiAircraft && Target_Is_Airborne() &&
 		Distance(TarCom) < CELL_LEPTON / 2) {
 
 		return(true);
@@ -1499,18 +1505,8 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 // 0x469579; the link is the unit's first radio link, at +0xE4).
 static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
 {
-	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
-		return(false);
-	}
-	TechnoClass const * factory = unit->Link(0);
-	if (factory == NULL || factory->RTTI != RTTI_BUILDING) {
-		return(false);
-	}
-	BuildingClass const * building = static_cast<BuildingClass const *>(factory);
-	if (!building->Class->IsWeaponsFactory) {
-		return(false);
-	}
-	return(Map[unit->Get_Coord()].Cell_Building() == building);
+	BuildingClass const * factory = Linked_Building_Underfoot(unit);
+	return(factory != NULL && factory->Class->IsWeaponsFactory);
 }
 
 
@@ -1518,15 +1514,8 @@ static bool Is_On_Own_Weapons_Factory(TechnoClass const * unit)
 // cell building 0x47C520).
 static bool Is_In_Own_Bunker(TechnoClass const * unit)
 {
-	if (unit == NULL || unit->RTTI != RTTI_UNIT || unit->Link_Count() == 0) {
-		return(false);
-	}
-	TechnoClass const * bunker = unit->Link(0);
-	if (bunker == NULL || bunker->RTTI != RTTI_BUILDING) {
-		return(false);
-	}
-	BuildingClass const * building = static_cast<BuildingClass const *>(bunker);
-	return(building->Class->IsBunker && Map[unit->Get_Coord()].Cell_Building() == building);
+	BuildingClass const * bunker = Linked_Building_Underfoot(unit);
+	return(bunker != NULL && bunker->Class->IsBunker);
 }
 
 
@@ -1580,7 +1569,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	// gamemd tests these flags in this order, and the first one set takes the shot (BulletClass::Detonate, 0x469211 to 0x469A2C).
-	// This port's ElectricAssault arm matches only an overpowerable building. EMEffect and Webby are not in gamemd's chain, so they come last.
+	// EMEffect and Webby are not in gamemd's chain, so they come last.
 	/*
 	 * A mind control warhead takes its target over for the firer instead of hurting it, with
 	 * YuriMindControlSound when either side is the player's (BulletClass::Detonate, 0x469210).
@@ -1612,6 +1601,7 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
+	// Matches only an overpowerable building. The empty body takes the shot, so the arms below it are skipped.
 	else if (warhead->IsElectricAssault && dynamic_cast<BuildingClass *>(TarCom) != NULL && static_cast<BuildingClass *>(TarCom)->Class->IsOverpowerable) {
 	}
 
@@ -2192,8 +2182,7 @@ void BulletClass::Shrapnel(void)
 	}
 
 	/*
-	 * A lambda rather than a free function, so that it keeps this class's access to the
-	 * private members of an electric bolt.
+	 * Uses BulletClass access to EBoltClass and Payback, so it must stay in this member function.
 	 */
 	auto throw_piece = [this, weapon, from](AbstractClass * target, Coord const & to) {
 		BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);

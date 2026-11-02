@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "cncnet/cncnetlobby.h"
+#include "cncnet/cncnettext.h"
 
 #include <algorithm>
 
@@ -61,10 +62,7 @@ bool CnCNetLobbyClass::Valid_Room_Channel(std::string const & channel) const
 			|| !Same_Nick(channel.substr(0, prefix), Config.RoomPrefix)) {
 		return(false);
 	}
-	return(std::none_of(channel.begin(), channel.end(), [](char ch) {
-		unsigned char const byte = static_cast<unsigned char>(ch);
-		return(byte <= 0x20 || byte == 0x7F || ch == ',');
-	}));
+	return(std::none_of(channel.begin(), channel.end(), CnCNet_Is_Join_Unsafe));
 }
 
 

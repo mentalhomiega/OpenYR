@@ -22,18 +22,6 @@
 #include "ui/uiview.h"
 
 
-namespace
-{
-
-std::string Text(char const * label, char const * fallback)
-{
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
-}
-
-}
-
-
 /// <summary>
 /// Shows the list of campaign movies the player has seen and the game can find, and plays the one
 /// the player picks. The list returns after each movie and closes with Back or Escape.
@@ -41,13 +29,13 @@ std::string Text(char const * label, char const * fallback)
 void UI_Movies_Dialog(void)
 {
 	UIMoviesState state;
-	state.Title = Text("GUI:SelectMovie", "Select Movie");
-	state.PlayCaption = Text("GUI:PlayMovie", "Play Movie");
-	state.BackCaption = Text("GUI:Back", "Back");
+	state.Title = StringTable.Find_UTF8("GUI:SelectMovie", "Select Movie");
+	state.PlayCaption = StringTable.Find_UTF8("GUI:PlayMovie", "Play Movie");
+	state.BackCaption = StringTable.Find_UTF8("GUI:Back", "Back");
 	for (CampaignMovieType const & movie : Seen_Campaign_Movies()) {
 		std::string const file = std::string(movie.Name) + ".BIK";
 		if (CCFileClass(file.c_str()).Is_Available()) {
-			state.Rows.push_back(UIMovieRow{Text(movie.Label, file.c_str()), file});
+			state.Rows.push_back(UIMovieRow{StringTable.Find_UTF8(movie.Label, file.c_str()), file});
 		}
 	}
 
@@ -55,11 +43,7 @@ void UI_Movies_Dialog(void)
 		UIMoviesPresenterClass presenter(state);
 		std::unique_ptr<UIViewClass> view = UI_Movies_View(presenter);
 
-		UIResult const result = UIShell.Run_Modal(*view, []() {
-			bool ended = UI_Service_Game();
-			Title_Screen_Restore();
-			return(ended);
-		});
+		UIResult const result = UIShell.Run_Modal(*view, UI_Service_Title);
 		if (result != UI_RESULT_ACCEPTED || presenter.State.Selected < 0 || presenter.State.Selected >= (int)state.Rows.size()) {
 			return;
 		}

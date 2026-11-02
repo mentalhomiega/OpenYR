@@ -195,6 +195,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsIdle(false),
 	IsPlanRunning(false),
 	IsPlanAdvanceDeferred(false),
+	PlannedRunningOrder(),
 	HasPlannedRunningOrder(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
@@ -1199,12 +1200,6 @@ bool FootClass::Is_Chrono_Warping(void) const
 
 
 /// <summary>
-/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
-/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
-/// way through. The place is not checked: the caller sees to what stands there.
-/// </summary>
-/// <param name="dest">Where the object goes.</param>
-/// <summary>
 /// Starts a chronosphere warp that lands the object at dest. The object stays on its cell for 60 frames
 /// (gamemd 0x7197E4), then its teleport locomotor clears the landing cell and sets it down at dest. A
 /// locomotor that is not a teleport is carried until the warp has landed, and the move it was making
@@ -1238,6 +1233,12 @@ void FootClass::Begin_Chrono_Warp(Coord dest)
 }
 
 
+/// <summary>
+/// Puts the object at a place on the map at once, as a teleport locomotor does, without leaving
+/// the map, so it keeps its team and its selection. A fresh locomotor drops any move it was part
+/// way through. The place is not checked: the caller sees to what stands there.
+/// </summary>
+/// <param name="dest">Where the object goes.</param>
 void FootClass::Teleport_To(Coord dest)
 {
 	CellClass * cellptr = &Map[dest.As_Cell()];
@@ -1689,11 +1690,15 @@ void FootClass::Approach_Target(void)
 
 					// A CloseRange object also takes a spot within 1.2 cells of the target, whatever its weapon's reach.
 					WeaponTypeClass * approach_weapon = Get_Class_Weapon_Data(primary)->Weapon;
-					bool reaches = TClass->In_Range(trycoord, TarCom, approach_weapon) && Clear_Line_Of_Fire(trycoord, TarCom, approach_weapon);
-					if (!reaches && TClass->IsCloseRange) {
-						Coord const at = TarCom->Center_Coord();
-						reaches = Gamemd_Length_2D(trycoord.X - at.X, trycoord.Y - at.Y) < 307.2;
-					}
+					auto reaches_from = [&](Coord const & spot) {
+						bool reach = TClass->In_Range(spot, TarCom, approach_weapon) && Clear_Line_Of_Fire(spot, TarCom, approach_weapon);
+						if (!reach && TClass->IsCloseRange) {
+							Coord const at = TarCom->Center_Coord();
+							reach = Gamemd_Length_2D(spot.X - at.X, spot.Y - at.Y) < 307.2;
+						}
+						return(reach);
+					};
+					bool reaches = reaches_from(trycoord);
 					if (reaches) {
 						trycell = trycoord.As_Cell();
 						bool const usable = Map.In_Local_Radar(trycell);
@@ -1713,11 +1718,7 @@ void FootClass::Approach_Target(void)
 								walk = walk + AdjacentCell[step];
 								if (!Map.Is_Valid(walk)) continue;
 								Coord const centre = Coord(walk.X * CELL_LEPTON_W + CELL_LEPTON_W / 2, walk.Y * CELL_LEPTON_H + CELL_LEPTON_H / 2, 0);
-								bool near_reach = TClass->In_Range(centre, TarCom, approach_weapon) && Clear_Line_Of_Fire(centre, TarCom, approach_weapon);
-								if (!near_reach && TClass->IsCloseRange) {
-									Coord const at = TarCom->Center_Coord();
-									near_reach = Gamemd_Length_2D(centre.X - at.X, centre.Y - at.Y) < 307.2;
-								}
+								bool near_reach = reaches_from(centre);
 								if (near_reach && clear_to_move(walk)) {
 									trycell = walk;
 									clear = true;
@@ -2507,16 +2508,6 @@ namespace {
 
 
 /// <summary>
-/// Tells whether the unit can take one more planned order.
-/// </summary>
-/// <returns>bool; True when Planned_Order_Block reports no block.</returns>
-bool FootClass::Can_Take_Planned_Order(void) const
-{
-	return(Planned_Order_Block() == PLANNED_ORDER_OPEN);
-}
-
-
-/// <summary>
 /// Tells why the unit cannot take another planned order, checking the last queued order first.
 /// </summary>
 /// <returns>PlannedOrderBlock; PLANNED_ORDER_OPEN when the unit can take one.</returns>
@@ -2545,13 +2536,19 @@ PlannedOrderBlock FootClass::Planned_Order_Block(void) const
 }
 
 
+bool FootClass::Planned_Leg_Replaces_Idle(bool result) const
+{
+	return(result && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission));
+}
+
+
 /// <summary>
 /// Appends a planned order to the unit's queue.
 /// </summary>
 /// <returns>bool; Was the order queued? False when the unit cannot take one (see Planned_Order_Block).</returns>
 bool FootClass::Add_Planned_Order(PlannedOrderClass const & order)
 {
-	if (!Can_Take_Planned_Order()) {
+	if (Planned_Order_Block() != PLANNED_ORDER_OPEN) {
 		return(false);
 	}
 	PlannedOrders.Add(order);

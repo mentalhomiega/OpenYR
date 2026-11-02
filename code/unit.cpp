@@ -1515,9 +1515,9 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 	**	A passenger of an open-topped vehicle is no longer riding in the open.
 	*/
 	if (Class->IsOpenTopped) {
-		for (FootClass * passenger = (FootClass *)Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->IsInOpenToppedTransport = false;
-		}
+		});
 	}
 
 	if (HeightAGL > 208) {
@@ -1983,7 +1983,7 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	bool res = BASECLASS::Enter_Idle_Mode(initial, resume_waypoint);
 
 	// A planned leg that the base routine has just issued is the unit's next mission, so the idle mission below must not replace it.
-	if (res && HasPlannedRunningOrder && (CurrentMission == PlannedRunningOrder.Mission || MissionQueue == PlannedRunningOrder.Mission)) {
+	if (Planned_Leg_Replaces_Idle(res)) {
 		return(res);
 	}
 
@@ -3375,27 +3375,6 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 }
 
 
-/***********************************************************************************************
- * UnitClass::Draw_It -- Draws a unit object.                                                  *
- *                                                                                             *
- *    This routine is the one that actually draws a unit object. It displays the unit          *
- *    according to its current state flags and centered at the location specified.             *
- *                                                                                             *
- * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
- *                                                                                             *
- *          window   -- The clipping window to use.                                            *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/20/1994 JLB : Created.                                                                 *
- *   06/27/1994 JLB : Takes a window parameter.                                                *
- *   08/15/1994 JLB : Removed infantry support.                                                *
- *   01/07/1995 JLB : Harvester animation support.                                             *
- *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
- *=============================================================================================*/
 /// <summary>
 /// Updates a DisguiseWhenStill vehicle's look (UnitClass::UpdateDisguise, 0x7468C0). Moving
 /// drops the disguise. On seven frames in eight, a soldier of a house that is not an ally
@@ -3541,6 +3520,27 @@ int UnitClass::Mirage_Shimmer_Flags(void) const
 }
 
 
+/***********************************************************************************************
+ * UnitClass::Draw_It -- Draws a unit object.                                                  *
+ *                                                                                             *
+ *    This routine is the one that actually draws a unit object. It displays the unit          *
+ *    according to its current state flags and centered at the location specified.             *
+ *                                                                                             *
+ * INPUT:   x,y   -- The X and Y coordinate of where to draw the unit.                         *
+ *                                                                                             *
+ *          window   -- The clipping window to use.                                            *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/20/1994 JLB : Created.                                                                 *
+ *   06/27/1994 JLB : Takes a window parameter.                                                *
+ *   08/15/1994 JLB : Removed infantry support.                                                *
+ *   01/07/1995 JLB : Harvester animation support.                                             *
+ *   07/08/1995 JLB : Uses general purpose draw routine.                                       *
+ *=============================================================================================*/
 void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	// A disguised Mirage is drawn as its terrain while Is_Shown_As_Terrain_To says the viewer sees it so.

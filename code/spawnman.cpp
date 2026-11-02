@@ -160,21 +160,12 @@ int SpawnManagerClass::Launching_Count(void) const
 
 
 /// <summary>
-/// Forgets a spawn or target that is leaving the game. A lost spawn is replaced after the
-/// regeneration delay.
-/// </summary>
-void SpawnManagerClass::Detach(AbstractClass const * target)
-{
-	Unlink_Pointer(target);
-}
-
-
-/// <summary>
 /// Forgets a target or a spawn that is leaving the game (SpawnManagerClass::UnlinkPointer, 0x6B7C60).
-/// Losing the target resets the spawns, so a missile still on the pad goes to the kamikaze list.
+/// A lost spawn is replaced after the regeneration delay. Losing the target resets the spawns, so a
+/// missile still on the pad goes to the kamikaze list.
 /// A living aircraft that is only limboed, as one docking is, keeps its node.
 /// </summary>
-void SpawnManagerClass::Unlink_Pointer(AbstractClass const * target)
+void SpawnManagerClass::Detach(AbstractClass const * target)
 {
 	if (target == Target) {
 		Target = NULL;
@@ -209,6 +200,13 @@ void SpawnManagerClass::Unlink_Pointer(AbstractClass const * target)
 }
 
 
+void SpawnManagerClass::Release_To_Kamikaze(AircraftClass * unit)
+{
+	Kamikaze.Add(unit, Target);
+	Kamikaze.Restart_Timer(2);
+}
+
+
 /// <summary>
 /// Stops the spawns' attack. A missile still on the pad is released to the kamikaze list, which
 /// flies it at the target's cell, or at the cell in front of it when there is no target. The
@@ -220,9 +218,8 @@ void SpawnManagerClass::Reset_Target(void)
 		if (node.Status != NODE_PREPARING || node.Unit == NULL || !node.Unit->Class->IsMissileSpawn) {
 			continue;
 		}
-		Kamikaze.Add(node.Unit, Target);
-		Kamikaze.Restart_Timer(2);
-		Unlink_Pointer(node.Unit);
+		Release_To_Kamikaze(node.Unit);
+		Detach(node.Unit);
 	}
 	Status = STATUS_IDLE;
 	NewTarget = NULL;
@@ -297,7 +294,8 @@ void SpawnManagerClass::Launch(NodeType & node, int index)
 		}
 		unit->Assign_Mission(MISSION_SLEEP);
 		unit->Locomotion->Move_To(Coord_Of(Target));
-		DebugString("Spawn: %s launches %s at %d,%d\n", Owner->TClass->Name(), unit->Class->Name(), Coord_Of(Target).As_Cell().X, Coord_Of(Target).As_Cell().Y);
+		Coord const target_coord = Coord_Of(Target);
+		DebugString("Spawn: %s launches %s at %d,%d\n", Owner->TClass->Name(), unit->Class->Name(), target_coord.As_Cell().X, target_coord.As_Cell().Y);
 	} else {
 		unit->Assign_Destination(&Map[Adjacent_Cell(Owner->Get_Cell(), FACING_N)]);
 		unit->Assign_Mission(MISSION_MOVE);
@@ -342,7 +340,7 @@ void SpawnManagerClass::AI(void)
 
 			case NODE_TAKEOFF:
 				if (node.Is_Timer_Expired() && unit != NULL) {
-					Unlink_Pointer(unit);
+					Detach(unit);
 				}
 				break;
 
@@ -453,15 +451,14 @@ void SpawnManagerClass::AI(void)
 				// A missile joins the kamikaze list aimed at the target, then a rocket takes off and any
 				// other missile is released (SpawnManagerClass::Update, 0x6B7230).
 				missile = true;
-				Kamikaze.Add(node.Unit, Target);
-				Kamikaze.Restart_Timer(2);
+				Release_To_Kamikaze(node.Unit);
 				if (node.IsMissile) {
 					// gamemd takes the V3's takeoff times for the V3 and the Dreadnought missile's for every other rocket (0x6B7230).
 					RulesClass::RocketTypeStruct const & rocket = SpawnType == Rule->V3Rocket.Type ? Rule->V3Rocket : Rule->DMisl;
 					node.Status = NODE_TAKEOFF;
 					node.Start_Timer(rocket.TiltFrames + rocket.PauseFrames);
 				} else {
-					Unlink_Pointer(node.Unit);
+					Detach(node.Unit);
 				}
 			}
 			if (missile) {

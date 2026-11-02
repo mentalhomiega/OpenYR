@@ -13,6 +13,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <utility>
@@ -127,18 +128,24 @@ std::vector<std::string> Split(std::string_view text, char separator)
 
 
 // The engine reads a whole number with atoi unless the value starts with '$' or ends with 'h',
-// which both read as hexadecimal.
-bool Integer_Fits(std::string const & value)
+// which both read as hexadecimal. The result is empty when the value holds no number.
+std::optional<int> Parse_Whole_Number(std::string const & value)
 {
 	if (value.empty()) {
-		return(false);
+		return(std::nullopt);
 	}
-	unsigned int hex = 0;
+	int number = 0;
 	if (value[0] == '$') {
-		return(std::sscanf(value.c_str(), "$%x", &hex) == 1);
+		if (std::sscanf(value.c_str(), "$%x", &number) != 1) {
+			return(std::nullopt);
+		}
+		return(number);
 	}
 	if (std::tolower((unsigned char)value.back()) == 'h') {
-		return(std::sscanf(value.c_str(), "%xh", &hex) == 1);
+		if (std::sscanf(value.c_str(), "%xh", &number) != 1) {
+			return(std::nullopt);
+		}
+		return(number);
 	}
 	std::size_t index = 0;
 	while (index < value.size() && std::isspace((unsigned char)value[index])) {
@@ -147,7 +154,16 @@ bool Integer_Fits(std::string const & value)
 	if (index < value.size() && (value[index] == '+' || value[index] == '-')) {
 		index++;
 	}
-	return(index < value.size() && std::isdigit((unsigned char)value[index]));
+	if (index >= value.size() || !std::isdigit((unsigned char)value[index])) {
+		return(std::nullopt);
+	}
+	return(std::atoi(value.c_str()));
+}
+
+
+bool Integer_Fits(std::string const & value)
+{
+	return(Parse_Whole_Number(value).has_value());
 }
 
 
@@ -415,7 +431,6 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		if (!fields[3].empty()) {
 			scope.AppliesTo = Split(fields[3], ',');
 		}
-		scope.ValueType = fields[4];
 		scope.Kind = Kind_From_Name(fields[4]);
 		Add(fields[0], std::move(scope));
 	}
@@ -816,18 +831,10 @@ Report Check_Art(Catalog const & catalog, std::string_view text, std::string_vie
 
 
 // Reads a whole number as INIClass::Get_Int does: '$' or a trailing 'h' marks hexadecimal, and
-// anything else reads as atoi does.
+// anything else reads as atoi does. A value without a number reads as 0.
 static int Read_Whole_Number(std::string const & value)
 {
-	int number = 0;
-	if (!value.empty() && value[0] == '$') {
-		std::sscanf(value.c_str(), "$%x", &number);
-	} else if (!value.empty() && std::tolower((unsigned char)value.back()) == 'h') {
-		std::sscanf(value.c_str(), "%xh", &number);
-	} else {
-		number = std::atoi(value.c_str());
-	}
-	return(number);
+	return(Parse_Whole_Number(value).value_or(0));
 }
 
 

@@ -7,6 +7,7 @@ opents_add_test(ModSyncContract
     SOURCES modsynccontract.cpp
     ENGINE
         modsync.cpp
+        cncnet/cncnettext.cpp
     INCLUDES ${OPENTS_GENERATED_DIR}
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     STAMP

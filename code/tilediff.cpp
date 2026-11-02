@@ -86,12 +86,6 @@ void TileGridClass::Add(TileGridClass const & other)
 }
 
 
-bool TileGridClass::Any(void) const
-{
-	return(std::find(Flags.begin(), Flags.end(), (std::uint8_t)1) != Flags.end());
-}
-
-
 void TileGridClass::Rects(std::vector<TileRect> & out) const
 {
 	out.clear();

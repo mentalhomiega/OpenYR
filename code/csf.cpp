@@ -275,6 +275,13 @@ std::string CSFClass::Find_UTF8(char const * label) const
 }
 
 
+std::string CSFClass::Find_UTF8(char const * label, char const * fallback) const
+{
+	std::string const text = Find_UTF8(label);
+	return(text.empty() ? std::string(fallback) : text);
+}
+
+
 std::string Fetch_String_UTF8(char const * label)
 {
 	return(Wide_To_UTF8(Fetch_String(label)));

@@ -32,8 +32,8 @@ enum MZoneType {
 	MZONE_INFANTRY_DESTROYER,
 	MZONE_FLYER,
 	MZONE_WATER,				// Ships, kept to water (Yuri's Revenge).
-	MZONE_WATER_BEACH,			// Ships that may also reach the shore; treated as Water here.
-	MZONE_CRUSHER_ALL,			// Crushes what Crusher does; treated as Crusher here.
+	MZONE_WATER_BEACH,			// Ships that may also reach beach cells.
+	MZONE_CRUSHER_ALL,			// Crushes any wall as well as crushable objects.
 
 	MZONE_COUNT,
 	MZONE_FIRST=0,

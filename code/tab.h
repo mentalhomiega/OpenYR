@@ -48,7 +48,6 @@ class TabClass: public SidebarClass
 		virtual void Draw_It(bool complete=false) override;
 		virtual void Draw_Panel_Backdrops(Surface & surface) override;
 		static void Draw_Credits_Tab(void);
-		static void Hilite_Tab(int tab);
 		void Flash_Money(void);
 
 		virtual void One_Time(void) override;							// One-time inits
@@ -71,7 +70,6 @@ class TabClass: public SidebarClass
 		bool IsToRedraw;
 
 	private:
-		void Set_Active(int select);
 
 		CDTimerClass<FrameTimerClass> MoneyFlashTimer;
 
@@ -113,6 +111,8 @@ class TabClass: public SidebarClass
 		void Command_Bar_AI(KeyNumType & input);
 		static void Do_Command(CommandButtonType command);
 		static void Use_Command_Icons(void);
+		static void Load_Command_Shapes(void);
+		static bool Command_Bar_Art_Ready(void);
 
 		static ShapeSet const * SpacerShape;
 		static ShapeSet const * LeftCapShape;
