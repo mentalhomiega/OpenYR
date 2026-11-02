@@ -74,7 +74,7 @@ void ScriptClass::Compute_CRC(CRCEngine &crc) const
 /// </summary>
 /// <returns>Returns with the current team mission. If the script has not been started, a
 /// TMISSION_NONE mission is returned.</returns>
-TeamMissionClass ScriptClass::Get_Current_Mission(void)
+TeamMissionClass ScriptClass::Get_Current_Mission(void) const
 {
 	if (CurrentLineNumber == -1) {
 		return(TeamMissionClass(TMISSION_NONE, 0));

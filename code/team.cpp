@@ -1963,6 +1963,8 @@ void TeamClass::Coordinate_Move(void)
 
 				if (_Is_It_Playing(unit) && unit->Mission != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
 					int stray = Stray_Distance();
+					// Airborne members double stray, as gamemd's move coordinator (0x6EBAD0) does.
+					// Lagging_Units uses a different multiplier on purpose.
 					if (unit->In_Air()) {
 						stray *= 2;
 					}
@@ -2081,6 +2083,8 @@ bool TeamClass::Lagging_Units(void)
 
 		if (_Is_It_Playing(unit)) {
 			int stray = Stray_Distance();
+			// Aircraft triple stray, as gamemd's lagging check (0x6EBF50) does. Coordinate_Move
+			// doubles airborne members on purpose.
 			if (unit->RTTI ==  RTTI_AIRCRAFT) {
 				stray *= 3;
 			}
@@ -2603,7 +2607,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 /// Fetches how far a member may stray from the team's center before it is called back: the
 /// RelaxedStray distance while the team runs a gather line, Stray otherwise.
 /// </summary>
-LEPTON TeamClass::Stray_Distance(void)
+LEPTON TeamClass::Stray_Distance(void) const
 {
 	TeamMissionType const mission = Script != NULL ? Script->Get_Current_Mission().Mission : TMISSION_NONE;
 	return(mission == TMISSION_GATHER_AT_ENEMY || mission == TMISSION_GATHER_AT_BASE ? Rule->RelaxedStrayDistance : Rule->StrayDistance);
