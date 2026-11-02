@@ -515,6 +515,14 @@ int Main_Window_Refresh_Rate(void)
 }
 
 
+// The pixel size of a display mode, with its pixel density applied.
+static std::pair<int, int> Mode_Pixel_Size(SDL_DisplayMode const & mode)
+{
+	float const density = mode.pixel_density > 0.0f ? mode.pixel_density : 1.0f;
+	return(std::pair<int, int>((int)std::lround(mode.w * density), (int)std::lround(mode.h * density)));
+}
+
+
 std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 {
 	std::vector<std::pair<int, int>> sizes;
@@ -530,8 +538,7 @@ std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 	}
 
 	for (int index = 0; index < count; index++) {
-		float const density = modes[index]->pixel_density > 0.0f ? modes[index]->pixel_density : 1.0f;
-		sizes.emplace_back((int)std::lround(modes[index]->w * density), (int)std::lround(modes[index]->h * density));
+		sizes.push_back(Mode_Pixel_Size(*modes[index]));
 	}
 	SDL_free(modes);
 
@@ -553,9 +560,9 @@ bool Main_Window_Desktop_Size(int & width, int & height)
 		return(false);
 	}
 
-	float const density = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
-	width = (int)std::lround(mode->w * density);
-	height = (int)std::lround(mode->h * density);
+	std::pair<int, int> const size = Mode_Pixel_Size(*mode);
+	width = size.first;
+	height = size.second;
 	return(true);
 }
 
