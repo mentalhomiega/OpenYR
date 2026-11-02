@@ -120,17 +120,6 @@ void Plot_Radar_Event_Point(Point2D const & point)
 
 
 /// <summary>
-/// Can this kind of radar event be suppressed?
-/// The flag comes from the kind's row in RadarEventKinds, which mirrors gamemd.
-/// </summary>
-/// <returns>bool; May a nearby event of this kind be discarded?</returns>
-bool Can_Suppress_Radar_Event(RadarEventType event)
-{
-	return(Radar_Event_Is_Valid(event) && RadarEventKinds[event].Suppressible);
-}
-
-
-/// <summary>
 /// Creates a radar event at the specified cell.
 /// The event starts out as a wide spinning box that will close in on the cell it is
 /// flagging. It adds itself to the master list, so the caller has no need to keep
@@ -304,25 +293,6 @@ void RadarEventClass::Remove_Finished(void)
 			delete RadarEventClass::RadarEvents[index];
 		}
 	}
-}
-
-
-/// <summary>
-/// Should a proposed radar event be suppressed?
-/// Some event kinds are raised in floods -- a firefight will submit one every time a
-/// shot lands. This routine spots a proposed event that is close enough to one already
-/// showing that the player would learn nothing from a second ping.
-/// </summary>
-/// <returns>bool; Should the proposed event be thrown away?</returns>
-bool Try_Suppress_Radar_Event(RadarEventType event, int, Cell cell)
-{
-	for (int index = 0; index < RadarEventClass::RadarEvents.Count(); index++) {
-		RadarEventClass const * existing = RadarEventClass::RadarEvents[index];
-		if (Radar_Event_Suppresses(event, cell, existing->Type, existing->Location)) {
-			return(true);
-		}
-	}
-	return(false);
 }
 
 
@@ -547,18 +517,6 @@ int RadarEventClass::Get_Visibility_Duration(void)
 int RadarEventClass::Get_Duration(void)
 {
 	return(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].DurationFrames : 0);
-}
-
-
-/// <summary>
-/// Fetches the suppression distance for this event.
-/// A fresh event of the same kind raised within this distance of this one will be
-/// swallowed rather than added to the radar.
-/// </summary>
-/// <returns>Returns with the suppression distance, in cells.</returns>
-int RadarEventClass::Get_Suppression_Distance(void)
-{
-	return(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].SuppressionDistance : 0);
 }
 
 
