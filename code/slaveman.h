@@ -75,7 +75,16 @@ class SlaveManagerClass
 			MINER_PACKING,
 		};
 
+		void Node_Ready(NodeType & node, bool working);
+		void Node_Scanning(NodeType & node, bool working);
+		void Node_Moving(NodeType & node, bool working);
+		void Node_Harvesting(NodeType & node, bool working);
+		void Node_Returning(NodeType & node);
 		void Miner_AI(void);
+		void Miner_Seeking(void);
+		void Miner_Moving(void);
+		void Miner_Deploying(void);
+		void Miner_Working(void);
 		Cell Find_Ore(int radius) const;
 		Cell Deploy_Cell(Cell ore) const;
 
