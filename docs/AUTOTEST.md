@@ -131,6 +131,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `cellpixel x y` | Writes the window pixel of the centre of that cell under the current view, for a `windowclick` step |
 | `windowdouble x y` | A left click at that window pixel, as `windowclick` gives it, but its press carries `Clicks` 2: the second click of a quick pair, as SDL reports it |
 | `commandbutton <Name>` | A left click at the centre of the command bar's button with that `ButtonList` name (`Beacon`, `Stop` and so on), at the same window pixel it covers in a window the size of the frame. The log gets the pixel, or `not shown` when the bar has no such button |
+| `beams` | Writes the emissive mask strength of each live electric bolt and laser beam, one `beam` line each, and nothing while there are none |
 | `beacon place x y` | Queues a beacon for the player on that cell, as a click in beacon mode does. In a network game the other copies place it too |
 | `beacon select x y` | Selects the beacon within 128 leptons of that cell's centre, or writes that none is there. Clears the unit selection |
 | `beacon delete` | Queues the removal of the selected beacon when the player owns it, as the Delete command does |

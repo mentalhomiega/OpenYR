@@ -263,6 +263,8 @@
 #include "autotest.h"
 #include "mainloop.h"
 #include "combat.h"
+#include "ebolt.h"
+#include "laser.h"
 #include "perfstat.h"
 #include "session.h"
 #include "replay.h"
@@ -3851,6 +3853,18 @@ static void Windowclick_Step(StepType const & step)
 }
 
 
+// beams: logs the strength of the emissive mask of each live electric bolt and laser beam, or nothing while there are none.
+static void Beams_Step(StepType const &)
+{
+	for (int index = 0; index < EBoltClass::Bolts.Count(); index++) {
+		DebugString("AUTOTEST   beam bolt emissive %d\n", (int)EBoltClass::Bolts[index]->Emissive_Strength());
+	}
+	for (int index = 0; index < LaserDrawClass::LaserDraws.Count(); index++) {
+		DebugString("AUTOTEST   beam laser emissive %d\n", (int)LaserDrawClass::LaserDraws[index]->EmissiveStrength);
+	}
+}
+
+
 // commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
 // or a line saying the bar does not show it.
 static void Commandbutton_Step(StepType const & step)
@@ -6993,6 +7007,7 @@ void Run(StepType const & step)
 		{"windowmove", Windowmove_Step},
 		{"windowclick", Windowclick_Step},
 		{"commandbutton", Commandbutton_Step},
+		{"beams", Beams_Step},
 		{"windowdouble", Windowclick_Step},
 		{"windowpress", Windowpress_Step},
 		{"windowrelease", Windowpress_Step},
