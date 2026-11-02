@@ -1492,13 +1492,6 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 
 
 /// <summary>
-/// Fetches the combat and damage control values.
-/// This section holds the constants the combat system works from -- the damage figures for
-/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
-/// suppression distances, and the scorches, craters and smoke systems left behind.
-/// </summary>
-/// <returns>bool; Was a combat damage section found in the control file?</returns>
-/// <summary>
 /// Fetches the radiation values.
 /// </summary>
 /// <returns>bool; Was the [Radiation] section found and processed?</returns>
@@ -1539,6 +1532,13 @@ bool RulesClass::Elevation_Model(CCINIClass const & ini)
 }
 
 
+/// <summary>
+/// Fetches the combat and damage control values.
+/// This section holds the constants the combat system works from -- the damage figures for
+/// the fixed weapons, the scatter of ballistic and homing projectiles, the crushing and
+/// suppression distances, and the scorches, craters and smoke systems left behind.
+/// </summary>
+/// <returns>bool; Was a combat damage section found in the control file?</returns>
 bool RulesClass::Combat_Damage(CCINIClass const & ini)
 {
 	static char const * const COMBATDAMAGE = "CombatDamage";
