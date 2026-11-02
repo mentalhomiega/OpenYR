@@ -304,10 +304,7 @@ void VoxelAnimClass::AI(void)
 	 * VoxelAnimClass::Update does through AudioController::PlayEvent (0x749F30, 0x750D40).
 	 */
 	if (Class->StartSound != VOC_NONE) {
-		if (LogSoundEffects) {
-			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(Class->StartSound), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
-		}
-		Play_If_In_Range(Class->StartSound, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(Class->StartSound));
+		Follow_Sound(Class->StartSound, Center_Coord(), &StartSoundHandle);
 	}
 
 	/*

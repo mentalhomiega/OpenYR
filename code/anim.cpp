@@ -876,10 +876,7 @@ void AnimClass::AI(void)
 	// Re-aims the start sound on every update, and starts it again once it has ended, as gamemd's
 	// AnimClass::Update (0x423AC0) does. An inert animation leaves its sound at the last place it was aimed.
 	if (!IsInert && StartSoundVoc != VOC_NONE) {
-		if (LogSoundEffects) {
-			DebugString("Sound follows: %s at %d,%d\n", Voc_Name(StartSoundVoc), Center_Coord().As_Cell().X, Center_Coord().As_Cell().Y);
-		}
-		Play_If_In_Range(StartSoundVoc, Center_Coord(), &StartSoundHandle, !Voc_Never_Ends(StartSoundVoc));
+		Follow_Sound(StartSoundVoc, Center_Coord(), &StartSoundHandle);
 	}
 
 	if (Class->IsPsiWarning) {

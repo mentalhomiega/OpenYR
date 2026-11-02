@@ -70,6 +70,10 @@ AudioHandle Voice_Sound_Effect(VocType voc, float volume = 1.0f);
 // comes back, and without its attack.
 AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle, bool start = false);
 
+// Re-aims a sound that follows an object at coord with Play_If_In_Range, and logs the place when
+// sound logging is on. An endless sound is restarted when it has ended.
+void Follow_Sound(VocType voc, Coord const & coord, AudioHandle * handle);
+
 // Starts a placed sound as gamemd's VocClass::PlayAt does: a live sound of another type is
 // stopped first, and a live sound of this type is re-aimed rather than doubled.
 AudioHandle Start_Placed_Sound(VocType voc, Coord const & coord, AudioHandle * handle);
