@@ -14,6 +14,7 @@
 #include "rect.h"
 
 class Cell;
+class FootClass;
 class TechnoClass;
 template<class T> class DynamicVectorClass;
 
@@ -46,6 +47,7 @@ class EMPulseClass : public AbstractClass
 	private:
 		void Create(TechnoClass * source);
 		void Stun(TechnoClass * techno, DynamicVectorClass<TechnoClass *> & doomed) const;
+		void Disable_Foot(FootClass * foot, DynamicVectorClass<TechnoClass *> & doomed) const;
 		void Destroy(void);
 
 		/*
