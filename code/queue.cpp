@@ -1608,6 +1608,23 @@ static void Queue_Timing_Event(NetTiming::TimingSettings settings, unsigned int 
 }
 
 
+// The frame rate the timing policy asks for, from the census and the session's desired rate.
+static unsigned int Desired_Frame_Rate_For(NetTiming::TimingCensus const & census)
+{
+	return(NetTiming::Select_Desired_Frame_Rate(census,
+		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed)));
+}
+
+
+static void Log_Sync_Timing(unsigned int frame, NetTiming::TimingCensus const & census, unsigned int desired_frame_rate,
+	NetTiming::TimingSettings settings, bool changed)
+{
+	DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
+		frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
+		(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, settings.FrameSendRate, settings.MaxAhead, (int)changed);
+}
+
+
 /// <summary>
 /// Queues gamemd's timing for the census. The master evaluates on frames that are multiples of 256.
 /// A seated player without a fresh process report stops the evaluation, as gamemd's Queue_AI does.
@@ -1618,8 +1635,7 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 		return;
 	}
 
-	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	unsigned int const desired_frame_rate = Desired_Frame_Rate_For(census);
 	NetTiming::TimingSettings const current = Session.Network_Timing_Target();
 	// A round trip that no connection has measured in 512 frames is treated as the slowest link, as the adaptive policy does.
 	NetTiming::TimingSettings const settings = census.RequiresConservativeTiming
@@ -1628,10 +1644,8 @@ static void Generate_Gamemd_Timing_Event(NetTiming::TimingCensus const & census,
 		: NetTiming::Gamemd_Timing_Settings(census.WorstRoundTrip, desired_frame_rate, current.MaxAhead, Session.NetworkTimingChoice);
 
 	if (Debug_SyncLog) {
-		DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
-			frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
-			(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, settings.FrameSendRate, settings.MaxAhead,
-			(int)(settings != current || desired_frame_rate != static_cast<unsigned int>(Session.DesiredFrameRate)));
+		Log_Sync_Timing(frame, census, desired_frame_rate, settings,
+			settings != current || desired_frame_rate != static_cast<unsigned int>(Session.DesiredFrameRate));
 	}
 	if (settings == current && desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate)) {
 		return;
@@ -1659,8 +1673,7 @@ static void Generate_Real_Timing_Event(void)
 		Generate_Gamemd_Timing_Event(census, frame);
 		return;
 	}
-	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	unsigned int const desired_frame_rate = Desired_Frame_Rate_For(census);
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
 	if (evaluation.Evaluated) {
 		DebugString("Network timing evaluation at frame %u: %u of %u reports fresh, worst process %u ms, RTT %u ms%s, wait %u ms, %u fps -> %s %u/%u\n",
@@ -1669,10 +1682,7 @@ static void Generate_Real_Timing_Event(void)
 			(unsigned int)census.WorstStallMilliseconds, desired_frame_rate, evaluation.Changed ? "change to" : "keep",
 			evaluation.Settings.FrameSendRate, evaluation.Settings.MaxAhead);
 		if (Debug_SyncLog) {
-			DebugString("SYNC timing frame %u rtt_ms %u rtt_complete %d stall_ms %u process_ms %u fps %u policy %u/%u changed %d\n",
-				frame, (unsigned int)census.WorstRoundTrip, (int)census.RoundTripComplete, (unsigned int)census.WorstStallMilliseconds,
-				(unsigned int)census.WorstProcessMilliseconds, desired_frame_rate, evaluation.Settings.FrameSendRate,
-				evaluation.Settings.MaxAhead, (int)evaluation.Changed);
+			Log_Sync_Timing(frame, census, desired_frame_rate, evaluation.Settings, evaluation.Changed);
 		}
 	}
 	// Comparing against the staged target avoids resending a change that has not activated yet.
