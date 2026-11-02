@@ -83,6 +83,44 @@ UICnCNetLobbyPresenterClass::UICnCNetLobbyPresenterClass(CnCNetSessionClass & se
 }
 
 
+void UICnCNetLobbyPresenterClass::Open_Conversation(std::string const & nick)
+{
+	Unlist(ClosedTabs, nick);
+	if (!Listed(OpenedTabs, nick)) {
+		OpenedTabs.push_back(nick);
+	}
+	SelectedChannel = nick;
+}
+
+
+void UICnCNetLobbyPresenterClass::Close_Conversation(std::string const & channel)
+{
+	Unlist(OpenedTabs, channel);
+	if (!Listed(ClosedTabs, channel)) {
+		ClosedTabs.push_back(channel);
+	}
+	SelectedChannel = ChatChannel;
+}
+
+
+void UICnCNetLobbyPresenterClass::Send_Line(std::string const & channel, std::string const & text)
+{
+	if (text.rfind("/me ", 0) == 0) {
+		Session.Send_CTCP(channel, "ACTION", text.substr(4), 50);
+	} else if (text.rfind("/msg ", 0) == 0) {
+		std::string const rest = text.substr(5);
+		std::size_t const space = rest.find(' ');
+		if (space != std::string::npos && space > 0) {
+			std::string const nick = rest.substr(0, space);
+			Open_Conversation(nick);
+			Session.Say(nick, Trim(rest.substr(space + 1)));
+		}
+	} else {
+		Session.Say(channel, text);
+	}
+}
+
+
 void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "game") {
@@ -108,20 +146,12 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 			SelectedUser = State.Users[intent.Value].Name;
 		}
 		if (!SelectedUser.empty() && !CnCNetLobbyClass::Same_Nick(SelectedUser, Lobby.Own_Nick())) {
-			Unlist(ClosedTabs, SelectedUser);
-			if (!Listed(OpenedTabs, SelectedUser)) {
-				OpenedTabs.push_back(SelectedUser);
-			}
-			SelectedChannel = SelectedUser;
+			Open_Conversation(SelectedUser);
 		}
 	} else if (intent.Name == "closetab") {
 		std::string const channel = Current_Channel();
 		if (!channel.empty() && channel.front() != '#') {
-			Unlist(OpenedTabs, channel);
-			if (!Listed(ClosedTabs, channel)) {
-				ClosedTabs.push_back(channel);
-			}
-			SelectedChannel = ChatChannel;
+			Close_Conversation(channel);
 		}
 	} else if (intent.Name == "say") {
 		State.Say = intent.Text;
@@ -130,23 +160,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 			State.Say.clear();
 			std::string const channel = Current_Channel();
 			if (!text.empty() && !channel.empty() && State.Online) {
-				if (text.rfind("/me ", 0) == 0) {
-					Session.Send_CTCP(channel, "ACTION", text.substr(4), 50);
-				} else if (text.rfind("/msg ", 0) == 0) {
-					std::string const rest = text.substr(5);
-					std::size_t const space = rest.find(' ');
-					if (space != std::string::npos && space > 0) {
-						std::string const nick = rest.substr(0, space);
-						Unlist(ClosedTabs, nick);
-						if (!Listed(OpenedTabs, nick)) {
-							OpenedTabs.push_back(nick);
-						}
-						SelectedChannel = nick;
-						Session.Say(nick, Trim(rest.substr(space + 1)));
-					}
-				} else {
-					Session.Say(channel, text);
-				}
+				Send_Line(channel, text);
 			}
 		}
 	} else if (intent.Name == "password") {

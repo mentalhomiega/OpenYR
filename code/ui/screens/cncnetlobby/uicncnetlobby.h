@@ -133,6 +133,9 @@ class UICnCNetLobbyPresenterClass : public UIPresenterClass
 		void Build_Games(void);
 		void Build_Chat(void);
 		std::string Current_Channel(void) const;
+		void Open_Conversation(std::string const & nick);
+		void Close_Conversation(std::string const & channel);
+		void Send_Line(std::string const & channel, std::string const & text);
 
 		CnCNetSessionClass & Session;
 		std::string ChatChannel;
