@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 
 // One byte per pixel, row by row. Zero is an ordinary pixel and 255 is the strongest boost.
 struct EmissivePlane
@@ -23,6 +25,113 @@ struct EmissivePlane
 	int Pitch;
 	// One byte per row, zero only where the whole row is zero; NULL treats every row as lit.
 	unsigned char * Lit = nullptr;
+};
+
+
+// The planes of up to N surfaces, one slot each. A slot is free while its plane has no pixels. A
+// plane keeps its address until it is released, so a caller may hold a pointer to it across frames.
+template <int N>
+class SurfacePlaneTable
+{
+	public:
+		// The plane bound to surface, or NULL when no plane is bound to it.
+		EmissivePlane * Find(void const * surface)
+		{
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface && binding.Plane.Pixels != nullptr) {
+					return(&binding.Plane);
+				}
+			}
+			return(nullptr);
+		}
+
+		// The plane for surface at width by height, reallocated when its size changed. Its Lit rows
+		// are allocated only when withLit is set. Returns NULL when no slot is free for surface.
+		EmissivePlane * Acquire(void const * surface, int width, int height, bool withLit)
+		{
+			Binding * slot = nullptr;
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface) {
+					slot = &binding;
+					break;
+				}
+				if (slot == nullptr && binding.Plane.Pixels == nullptr) {
+					slot = &binding;
+				}
+			}
+			if (slot == nullptr) {
+				return(nullptr);
+			}
+
+			EmissivePlane & plane = slot->Plane;
+			if (slot->Surface == surface && plane.Pixels != nullptr && plane.Width == width && plane.Height == height) {
+				return(&plane);
+			}
+
+			Release_Slot(*slot);
+			plane.Pixels = new unsigned char[(std::size_t)width * height]();
+			plane.Lit = withLit ? new unsigned char[(std::size_t)height]() : nullptr;
+			plane.Width = width;
+			plane.Height = height;
+			plane.Pitch = width;
+			slot->Surface = surface;
+			return(&plane);
+		}
+
+		// Releases every plane whose surface is not one of the count entries of keep.
+		void Retain(void const * const * keep, int count)
+		{
+			for (Binding & binding : _Slots) {
+				if (binding.Plane.Pixels == nullptr) {
+					continue;
+				}
+				bool kept = false;
+				for (int index = 0; index < count; index++) {
+					if (keep[index] == binding.Surface) {
+						kept = true;
+					}
+				}
+				if (!kept) {
+					Release_Slot(binding);
+				}
+			}
+		}
+
+		// Releases the plane bound to surface. A NULL surface releases nothing.
+		void Forget(void const * surface)
+		{
+			if (surface == nullptr) {
+				return;
+			}
+			for (Binding & binding : _Slots) {
+				if (binding.Surface == surface) {
+					Release_Slot(binding);
+				}
+			}
+		}
+
+		void Release_All(void)
+		{
+			for (Binding & binding : _Slots) {
+				Release_Slot(binding);
+			}
+		}
+
+	private:
+		struct Binding
+		{
+			void const * Surface = nullptr;
+			EmissivePlane Plane = {};
+		};
+
+		static void Release_Slot(Binding & binding)
+		{
+			delete [] binding.Plane.Pixels;
+			delete [] binding.Plane.Lit;
+			binding = Binding();
+		}
+
+		Binding _Slots[N];
 };
 
 // Whether a row may hold a value other than zero.

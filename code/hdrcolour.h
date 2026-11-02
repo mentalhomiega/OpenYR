@@ -46,6 +46,9 @@ struct HDRColourAdjust
 	float Gamma;
 };
 
+// The Matrix of the identity adjustment, row-major.
+inline constexpr float HDR_COLOUR_ADJUST_IDENTITY[9] = { 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+
 // Sets an adjustment to the identity.
 void HDR_Colour_Adjust_Reset(HDRColourAdjust & adjust);
 

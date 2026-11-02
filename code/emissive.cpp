@@ -39,13 +39,7 @@ bool _DebugView = false;
 // Emissive_Sync binds at most five surfaces (the screen pair, the map pair and the presented one); one slot is spare.
 constexpr int MaxBindings = 6;
 
-struct Binding
-{
-	void const * Surface;
-	EmissivePlane Plane;
-};
-
-Binding _Bindings[MaxBindings];
+SurfacePlaneTable<MaxBindings> _Bindings;
 
 // The one plane whose pixels the caller owns, and the surface it belongs to.
 EmissivePlane _FixedPlane = {NULL, 0, 0, 0};
@@ -70,19 +64,6 @@ unsigned char Emissive_Anim_Default(bool translucent, bool self_lit, int translu
 		strength = std::max(strength, EmissiveDefaults[EMISSIVE_ANIM_TIBERIUM].Strength);
 	}
 	return(strength);
-}
-
-
-namespace {
-
-void Free_Binding(Binding & binding)
-{
-	delete [] binding.Plane.Pixels;
-	delete [] binding.Plane.Lit;
-	binding.Plane = EmissivePlane{NULL, 0, 0, 0};
-	binding.Surface = NULL;
-}
-
 }
 
 
@@ -188,12 +169,7 @@ EmissivePlane * Emissive_Plane_For(void const * surface)
 	if (surface == _FixedSurface && _FixedPlane.Pixels != NULL) {
 		return(EmissiveActive ? &_FixedPlane : NULL);
 	}
-	for (Binding & binding : _Bindings) {
-		if (binding.Surface == surface && binding.Plane.Pixels != NULL) {
-			return(&binding.Plane);
-		}
-	}
-	return(NULL);
+	return(_Bindings.Find(surface));
 }
 
 
@@ -202,75 +178,25 @@ EmissivePlane * Emissive_Bind(void const * surface, int width, int height)
 	if (surface == NULL || width <= 0 || height <= 0) {
 		return(NULL);
 	}
-
-	Binding * slot = NULL;
-	for (Binding & binding : _Bindings) {
-		if (binding.Surface == surface) {
-			slot = &binding;
-			break;
-		}
-		if (slot == NULL && binding.Plane.Pixels == NULL) {
-			slot = &binding;
-		}
-	}
-	if (slot == NULL) {
-		return(NULL);
-	}
-
-	EmissivePlane & plane = slot->Plane;
-	if (slot->Surface == surface && plane.Pixels != NULL && plane.Width == width && plane.Height == height) {
-		return(&plane);
-	}
-
-	delete [] plane.Pixels;
-	delete [] plane.Lit;
-	plane.Pixels = new unsigned char[(size_t)width * height]();
-	plane.Lit = new unsigned char[(size_t)height]();
-	plane.Width = width;
-	plane.Height = height;
-	plane.Pitch = width;
-	slot->Surface = surface;
-	return(&plane);
+	return(_Bindings.Acquire(surface, width, height, true));
 }
 
 
 void Emissive_Retain(void const * const * keep, int count)
 {
-	for (Binding & binding : _Bindings) {
-		if (binding.Plane.Pixels == NULL) {
-			continue;
-		}
-		bool kept = false;
-		for (int index = 0; index < count; index++) {
-			if (keep[index] == binding.Surface) {
-				kept = true;
-			}
-		}
-		if (!kept) {
-			Free_Binding(binding);
-		}
-	}
+	_Bindings.Retain(keep, count);
 }
 
 
 void Emissive_Forget(void const * surface)
 {
-	if (surface == NULL) {
-		return;
-	}
-	for (Binding & binding : _Bindings) {
-		if (binding.Surface == surface) {
-			Free_Binding(binding);
-		}
-	}
+	_Bindings.Forget(surface);
 }
 
 
 void Emissive_Release_All(void)
 {
-	for (Binding & binding : _Bindings) {
-		Free_Binding(binding);
-	}
+	_Bindings.Release_All();
 }
 
 

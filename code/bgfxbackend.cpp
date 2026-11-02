@@ -1444,6 +1444,39 @@ static bool Present_With_Layer(void const * pixels, int pitch, int destx, int de
 }
 
 
+// The pixel art filter keeps whole pixels whole. An exact multiple needs nothing but
+// point sampling; anything else is magnified to the next whole multiple with point
+// sampling and then shrunk to the window smoothly, which keeps edges sharp without
+// the uneven pixel sizes that point sampling alone would give. Returns the texture to draw:
+// picture itself unless the picture was magnified, in which case from_prescale is set.
+static bgfx::TextureHandle Prescale_Picture(bgfx::TextureHandle picture, int destwidth, int destheight, unsigned int & samplerflags, bool & from_prescale)
+{
+	bgfx::TextureHandle source = picture;
+	if (destwidth > _FrameWidth && destheight > _FrameHeight) {
+		if ((destwidth % _FrameWidth) == 0 && (destheight % _FrameHeight) == 0) {
+			samplerflags |= BGFX_SAMPLER_POINT;
+		} else {
+			int scale = (destwidth + _FrameWidth - 1) / _FrameWidth;
+			int scaley = (destheight + _FrameHeight - 1) / _FrameHeight;
+			if (scaley > scale) {
+				scale = scaley;
+			}
+
+			if (Ensure_Prescale_Target(_FrameWidth * scale, _FrameHeight * scale)) {
+				bgfx::setViewFrameBuffer(VIEW_PRESCALE, _PrescaleTarget);
+				bgfx::setViewClear(VIEW_PRESCALE, BGFX_CLEAR_COLOR, 0x000000FF);
+				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
+				if (Submit_Quad(VIEW_PRESCALE, picture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
+					source = bgfx::getTexture(_PrescaleTarget);
+					from_prescale = true;
+				}
+			}
+		}
+	}
+	return(source);
+}
+
+
 /// <summary>
 /// Submits the frame to the window, uploading new pixels first when given any.
 /// The frame reaches the screen when Backend_End_Frame runs; whatever is submitted in
@@ -1525,30 +1558,8 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		samplerflags |= BGFX_SAMPLER_POINT;
 	}
 
-	// The pixel art filter keeps whole pixels whole. An exact multiple needs nothing but
-	// point sampling; anything else is magnified to the next whole multiple with point
-	// sampling and then shrunk to the window smoothly, which keeps edges sharp without
-	// the uneven pixel sizes that point sampling alone would give.
-	if (mode == BACKEND_SCALE_PIXELART && destwidth > _FrameWidth && destheight > _FrameHeight) {
-		if ((destwidth % _FrameWidth) == 0 && (destheight % _FrameHeight) == 0) {
-			samplerflags |= BGFX_SAMPLER_POINT;
-		} else {
-			int scale = (destwidth + _FrameWidth - 1) / _FrameWidth;
-			int scaley = (destheight + _FrameHeight - 1) / _FrameHeight;
-			if (scaley > scale) {
-				scale = scaley;
-			}
-
-			if (Ensure_Prescale_Target(_FrameWidth * scale, _FrameHeight * scale)) {
-				bgfx::setViewFrameBuffer(VIEW_PRESCALE, _PrescaleTarget);
-				bgfx::setViewClear(VIEW_PRESCALE, BGFX_CLEAR_COLOR, 0x000000FF);
-				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
-				if (Submit_Quad(VIEW_PRESCALE, picture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
-					source = bgfx::getTexture(_PrescaleTarget);
-					from_prescale = true;
-				}
-			}
-		}
+	if (mode == BACKEND_SCALE_PIXELART) {
+		source = Prescale_Picture(picture, destwidth, destheight, samplerflags, from_prescale);
 	}
 
 	// Clearing the whole window is what paints the bars beside a frame that does not

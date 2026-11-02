@@ -667,7 +667,7 @@ static void Submit_Shadows(GpuDrawList const & list, Rect const & area, float co
 		quad++;
 	}
 	for (GpuBlit const & blit : list.Blits) {
-		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Desc.Kind != BlitDesc::DARKEN) {
+		if (blit.Class() != GPU_BLIT_SHADOW) {
 			continue;
 		}
 		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, 0.0f, -1.0f };
@@ -743,7 +743,7 @@ static void Submit_Glow(GpuMapPass const & pass, Rect const & area)
 static int Count_Shadow_Blits(GpuDrawList const & list)
 {
 	return((int)std::count_if(list.Blits.begin(), list.Blits.end(), [](GpuBlit const & blit) {
-		return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind == BlitDesc::DARKEN);
+		return(blit.Class() == GPU_BLIT_SHADOW);
 	}));
 }
 
@@ -790,28 +790,14 @@ static bool Pass_Fits(GpuMapPass const & pass)
 }
 
 
-static bool Submit_Pass(GpuMapPass const & pass)
+// Every translator the list draws through is stacked into one texture of 256-entry rows, and
+// every lighting remap into another, 256 rows each.
+static void Build_Translator_Stacks(GpuDrawList const & list, std::unordered_map<unsigned short const *, std::pair<int, int>> & lutrow, std::unordered_map<AlphaLightingRemapClass const *, int> & alutbase, std::vector<unsigned short> & lut, std::vector<unsigned short> & alut)
 {
-	if (!Start()) {
-		return(false);
-	}
-	GpuDrawList const & list = *pass.List;
-	Rect const & area = pass.Area;
-	if (!Size_Target(area.Width, area.Height)) {
-		DebugString("GPU_DIFF frame %d: no %dx%d target\n", pass.Frame, area.Width, area.Height);
-		return(false);
-	}
-
-	// Every translator the list draws through is stacked into one texture of 256-entry rows, and
-	// every lighting remap into another, 256 rows each.
 	std::unordered_map<AlphaLightingRemapClass const *, int> bandrows;
-	std::unordered_map<unsigned short const *, std::pair<int, int>> lutrow;
-	std::unordered_map<AlphaLightingRemapClass const *, int> alutbase;
-	std::vector<unsigned short> lut;
-	std::vector<unsigned short> alut;
 	for (GpuBlit const & blit : list.Blits) {
 		BlitDesc const & desc = blit.Desc;
-		if (blit.Colour >= 0 || blit.Brighten >= 0 || blit.Line >= 0 || desc.Kind == BlitDesc::DARKEN) {
+		if (blit.Class() != GPU_BLIT_IMAGE) {
 			continue;
 		}
 		int const rows = Translator_Rows(desc.AlphaRemap, bandrows);
@@ -832,7 +818,16 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	if (alut.empty()) {
 		alut.assign(256, 0);
 	}
+}
 
+
+// Uploads the translator stacks and the pass's depth, alpha, shape and base stores. ring receives
+// the depth and alpha ring addressing that the shadow and blit shaders read. False means a store
+// could not take its data.
+static bool Upload_Pass_Stores(GpuMapPass const & pass, std::vector<unsigned short> const & lut, std::vector<unsigned short> const & alut, float * ring)
+{
+	GpuDrawList const & list = *pass.List;
+	Rect const & area = pass.Area;
 	bool valid = Fill_Index(_Stores[SLOT_INDEX], GpuDraw_Atlas(), list.PixelArena.data(), list.PixelArena.size());
 	valid = Fill_R16(_Stores[SLOT_LUT], lut.data(), 256, (int)(lut.size() / 256), false) && valid;
 	valid = Fill_R16(_Stores[SLOT_ALUT], alut.data(), 256, (int)(alut.size() / 256), false) && valid;
@@ -846,9 +841,6 @@ static bool Submit_Pass(GpuMapPass const & pass)
 		}
 		_Referenced = true;
 	}
-	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
-	// a ring of the area's width that starts at 0.
-	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
 	if (pass.Persistent) {
 		GpuRing const * const rings[2] = { &pass.DepthRing, &pass.AlphaRing };
 		Store * const stores[2] = { &_Stores[SLOT_ZBUF], &_Stores[SLOT_ABUF] };
@@ -873,6 +865,200 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	} else {
 		valid = Fill_R16(_Stores[SLOT_BASE], pass.Base->data(), area.Width, area.Height, true) && valid;
 	}
+	return(valid);
+}
+
+
+// Writes the base quad, then one quad per blit, into vertex. Returns each blit's shader kind in blit
+// order; the draw loop reads these back.
+static std::vector<int> Fill_Pass_Vertices(GpuDrawList const & list, Rect const & area, bool shadowed, MapVertex * vertex, std::unordered_map<unsigned short const *, std::pair<int, int>> & lutrow, std::unordered_map<AlphaLightingRemapClass const *, int> & alutbase)
+{
+	{
+		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
+		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+		float const t3[4] = { 0.0f, -1.0f, (float)(shadowed ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
+		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
+	}
+	std::vector<int> kinds(list.Blits.size(), KIND_BASE);
+	for (std::size_t i = 0; i < list.Blits.size(); i++) {
+		GpuBlit const & blit = list.Blits[i];
+		BlitDesc const & desc = blit.Desc;
+		GpuBlitClass const blitclass = blit.Class();
+		if (blitclass == GPU_BLIT_LIGHT) {
+			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_BRIGHTEN;
+			continue;
+		}
+		if (blitclass == GPU_BLIT_LINE) {
+			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_LINE + blit.LineKind;
+			continue;
+		}
+		if (blitclass == GPU_BLIT_FILL) {
+			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
+			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
+			float const t3[4] = { 0.0f, -1.0f, (float)KIND_PIXEL, 0.0f };
+			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+			kinds[i] = KIND_PIXEL;
+			continue;
+		}
+		float lutfirst = 0.0f;
+		float alutrow = -1.0f;
+		if (blitclass == GPU_BLIT_IMAGE) {
+			lutfirst = (float)lutrow[desc.Translator].first;
+			if (desc.AlphaRemap != NULL) {
+				int const level = std::max(blit.AlphaLevel, 0);
+				alutrow = (float)(alutbase[desc.AlphaRemap] + std::min((261 * level) >> 11, 254));
+			}
+		}
+		int const kind = Shader_Kind(desc);
+		kinds[i] = kind;
+		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, lutfirst, alutrow };
+		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
+		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)kind, desc.ZRead ? 0.0f : 1.0f };
+		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
+	}
+	return(kinds);
+}
+
+
+// The blend state and colour write mask for a quad of the given shader kind. channels is the
+// GPU_LINE_* mask of an antialiased line and is ignored for every other kind.
+static uint64_t Blend_State_For(int kind, int channels)
+{
+	uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
+	// The shader outputs the source term in rgb and the target's weight in alpha (fs_mapdraw.sc).
+	if (kind == KIND_DARKEN) {
+		state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA) | BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_REVSUB);
+	} else if (kind == KIND_SOURCE75 || kind == KIND_HALF || kind == KIND_SOURCE25 || kind == KIND_LINE) {
+		state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA);
+	} else if (kind == KIND_ADDITIVE_LINE) {
+		state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ONE);
+	} else if (kind == KIND_ANTIALIASED_LINE) {
+		// The line leaves the channels it does not blend unwritten.
+		state = BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA)
+			| ((channels & GPU_LINE_RED) ? BGFX_STATE_WRITE_R : 0)
+			| ((channels & GPU_LINE_GREEN) ? BGFX_STATE_WRITE_G : 0)
+			| ((channels & GPU_LINE_BLUE) ? BGFX_STATE_WRITE_B : 0);
+	} else if (kind == KIND_BRIGHTEN) {
+		// The shader outputs the brightening factor; the target gains itself times it.
+		state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_DST_COLOR, BGFX_STATE_BLEND_ONE);
+	}
+	return(state);
+}
+
+
+// Draws the base quad and then each blit's quad into the target, in blit order. A sonic wave copies
+// the target first, so it reads everything drawn before it.
+static void Submit_Draws(GpuDrawList const & list, std::vector<int> const & kinds, bgfx::TransientVertexBuffer const & buffer, Rect const & area, float const * projection, float const * ring, float const * world, bool shadowed, bool water)
+{
+	int const quads = (int)list.Blits.size() + 1;
+	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection);
+	bgfx::ViewId view = VIEW_MAPDRAW;
+	for (int i = 0; i < quads; i++) {
+		int kind = KIND_BASE;
+		if (i > 0) {
+			kind = kinds[i - 1];
+		}
+		if (kind == KIND_DARKEN && shadowed) {
+			continue;
+		}
+		uint64_t const state = Blend_State_For(kind, i > 0 ? list.Blits[i - 1].Fade : 0);
+		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
+		for (int slot = 0; slot < SLOT_COUNT; slot++) {
+			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
+		}
+		if (i == 0 && shadowed) {
+			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
+		}
+		if (i == 0) {
+			float water_params[4] = {};
+			if (water) {
+				water_params[1] = 1.5f * _WaterStrength / 100.0f;
+				water_params[2] = 0.06f * _WaterStrength / 100.0f;
+				water_params[3] = 0.4f * _WaterStrength / 100.0f;
+				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
+			}
+			bgfx::setUniform(_WaterUniform, water_params);
+			bgfx::setUniform(_WorldUniform, world);
+		}
+		if (kind == KIND_SONIC) {
+			// A view's blits run before its draws, so the wave reads everything drawn before it.
+			view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
+			Set_Map_View(view, _Target, area, projection);
+			bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
+			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
+		}
+		bgfx::setUniform(_RingUniform, ring, 2);
+		bgfx::setState(state);
+		bgfx::submit(view, _Program);
+	}
+}
+
+
+// Draws the ripples, bloom, clouds and weather over the picture the draws left in the target. The
+// pass is shown only when one of those effects applies.
+static void Submit_Post(GpuMapPass const & pass, Rect const & area, float const * projection, bgfx::TransientVertexBuffer const & buffer, float const * world, bool glow, bool clouds, bool weather)
+{
+	_PostShown = false;
+	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
+	if (ripple || glow || clouds || weather) {
+		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
+		float ripples[RIPPLE_LIMIT * 4] = {};
+		for (int i = 0; i < count; i++) {
+			GpuRipple const & entry = (*pass.Ripples)[i];
+			ripples[i * 4 + 0] = entry.X;
+			ripples[i * 4 + 1] = entry.Y;
+			ripples[i * 4 + 2] = entry.Radius;
+			ripples[i * 4 + 3] = entry.Strength;
+		}
+		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, glow ? 1.2f * (float)_BloomStrength / 100.0f : 0.0f };
+		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection);
+		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
+		bgfx::setUniform(_RippleInfoUniform, info);
+		bgfx::setUniform(_WorldUniform, world);
+		float const falling[4] = { weather ? (float)_Weather : 0.0f, _WeatherStrength / 100.0f, pass.Flash, 0.0f };
+		bgfx::setUniform(_WeatherUniform, falling);
+		bgfx::setVertexBuffer(0, &buffer, 0, 6);
+		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
+		if (glow) {
+			bgfx::setTexture(1, _GlowSampler, _GlowTexture[0]);
+		}
+		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
+		bgfx::submit(VIEW_MAPPOST, _PostProgram);
+		_PostShown = true;
+	}
+}
+
+
+static bool Submit_Pass(GpuMapPass const & pass)
+{
+	if (!Start()) {
+		return(false);
+	}
+	GpuDrawList const & list = *pass.List;
+	Rect const & area = pass.Area;
+	if (!Size_Target(area.Width, area.Height)) {
+		DebugString("GPU_DIFF frame %d: no %dx%d target\n", pass.Frame, area.Width, area.Height);
+		return(false);
+	}
+
+	std::unordered_map<unsigned short const *, std::pair<int, int>> lutrow;
+	std::unordered_map<AlphaLightingRemapClass const *, int> alutbase;
+	std::vector<unsigned short> lut;
+	std::vector<unsigned short> alut;
+	Build_Translator_Stacks(list, lutrow, alutbase, lut, alut);
+
+	// The shader finds an area pixel's depth and alpha through ring addressing; an unwrapped copy is
+	// a ring of the area's width that starts at 0.
+	float ring[8] = { 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f, 0.0f, (float)area.Width, (float)area.Width * area.Height, 0.0f };
+	bool valid = Upload_Pass_Stores(pass, lut, alut, ring);
 
 	int const shadows = _SoftShadowRadius > 0 ? Count_Shadow_Blits(list) : 0;
 	int const waves = Count_Sonic_Waves(list);
@@ -907,153 +1093,21 @@ static bool Submit_Pass(GpuMapPass const & pass)
 
 	bgfx::TransientVertexBuffer buffer;
 	bgfx::allocTransientVertexBuffer(&buffer, quads * 6, _Layout);
-	MapVertex * vertex = (MapVertex *)buffer.data;
-	{
-		float const t1[4] = { 0.0f, 0.0f, 0.0f, -1.0f };
-		float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-		float const t3[4] = { 0.0f, -1.0f, (float)(shadowed ? KIND_SHADOWED_BASE : KIND_BASE), 0.0f };
-		Set_Quad(vertex, area, area.X, area.Y, area.Width, area.Height, t1, t2, t3);
-	}
-	for (std::size_t i = 0; i < list.Blits.size(); i++) {
-		GpuBlit const & blit = list.Blits[i];
-		BlitDesc const & desc = blit.Desc;
-		if (blit.Brighten >= 0) {
-			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Brighten, -1.0f };
-			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-			float const t3[4] = { 0.0f, -1.0f, (float)KIND_BRIGHTEN, 1.0f };
-			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
-			continue;
-		}
-		if (blit.Line >= 0) {
-			float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, (float)blit.Line, (float)blit.Fade };
-			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-			float const t3[4] = { 0.0f, -1.0f, (float)(KIND_LINE + blit.LineKind), 1.0f };
-			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
-			continue;
-		}
-		if (blit.Colour >= 0) {
-			float const t1[4] = { (float)blit.Colour, 1.0f, 0.0f, -1.0f };
-			float const t2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };
-			float const t3[4] = { 0.0f, -1.0f, (float)KIND_PIXEL, 0.0f };
-			Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
-			continue;
-		}
-		float lutfirst = 0.0f;
-		float alutrow = -1.0f;
-		if (desc.Kind != BlitDesc::DARKEN) {
-			lutfirst = (float)lutrow[desc.Translator].first;
-			if (desc.AlphaRemap != NULL) {
-				int const level = std::max(blit.AlphaLevel, 0);
-				alutrow = (float)(alutbase[desc.AlphaRemap] + std::min((261 * level) >> 11, 254));
-			}
-		}
-		float const t1[4] = { Index_Offset(blit), (float)blit.Pitch, lutfirst, alutrow };
-		float const t2[4] = { (float)blit.ZFirst, (float)blit.ZFraction, (float)std::max(blit.ZNumerator, 1), (float)blit.ZDenominator };
-		float const t3[4] = { (float)blit.ZWrap, (float)blit.ZShape, (float)Shader_Kind(desc), desc.ZRead ? 0.0f : 1.0f };
-		Set_Quad(vertex + (i + 1) * 6, area, blit.X, blit.Y, blit.Width, blit.Height, t1, t2, t3);
-	}
+	std::vector<int> const kinds = Fill_Pass_Vertices(list, area, shadowed, (MapVertex *)buffer.data, lutrow, alutbase);
 
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, area.Width, area.Height);
 	if (shadowed) {
 		Submit_Shadows(list, area, projection, ring, shadowquads, tileshadow);
 	}
-	Set_Map_View(VIEW_MAPDRAW, _Target, area, projection);
-
-	uint64_t const write = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
-	bgfx::ViewId view = VIEW_MAPDRAW;
-	for (int i = 0; i < quads; i++) {
-		int kind = KIND_BASE;
-		if (i > 0) {
-			GpuBlit const & blit = list.Blits[i - 1];
-			kind = blit.Brighten >= 0 ? KIND_BRIGHTEN : (blit.Line >= 0 ? KIND_LINE + blit.LineKind : (blit.Colour >= 0 ? KIND_PIXEL : Shader_Kind(blit.Desc)));
-		}
-		if (kind == KIND_DARKEN && shadowed) {
-			continue;
-		}
-		uint64_t state = write;
-		// The shader outputs the source term in rgb and the target's weight in alpha (fs_mapdraw.sc).
-		if (kind == KIND_DARKEN) {
-			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA) | BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_REVSUB);
-		} else if (kind == KIND_SOURCE75 || kind == KIND_HALF || kind == KIND_SOURCE25 || kind == KIND_LINE) {
-			state |= BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA);
-		} else if (kind == KIND_ADDITIVE_LINE) {
-			state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ONE);
-		} else if (kind == KIND_ANTIALIASED_LINE) {
-			// The line leaves the channels it does not blend unwritten.
-			int const channels = list.Blits[i - 1].Fade;
-			state = BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_SRC_ALPHA)
-				| ((channels & GPU_LINE_RED) ? BGFX_STATE_WRITE_R : 0)
-				| ((channels & GPU_LINE_GREEN) ? BGFX_STATE_WRITE_G : 0)
-				| ((channels & GPU_LINE_BLUE) ? BGFX_STATE_WRITE_B : 0);
-		} else if (kind == KIND_BRIGHTEN) {
-			// The shader outputs the brightening factor; the target gains itself times it.
-			state = BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_DST_COLOR, BGFX_STATE_BLEND_ONE);
-		}
-		bgfx::setVertexBuffer(0, &buffer, (uint32_t)i * 6, 6);
-		for (int slot = 0; slot < SLOT_COUNT; slot++) {
-			bgfx::setTexture((uint8_t)slot, _Samplers[slot], _Stores[slot].Handle);
-		}
-		if (i == 0 && shadowed) {
-			bgfx::setTexture(SLOT_COUNT, _ShadowSampler, _ShadowTexture[0]);
-		}
-		if (i == 0) {
-			float waves[4] = {};
-			if (water) {
-				waves[1] = 1.5f * _WaterStrength / 100.0f;
-				waves[2] = 0.06f * _WaterStrength / 100.0f;
-				waves[3] = 0.4f * _WaterStrength / 100.0f;
-				bgfx::setTexture(SLOT_COUNT + 2, _TileShadowSampler, _TileShadow);
-			}
-			bgfx::setUniform(_WaterUniform, waves);
-			bgfx::setUniform(_WorldUniform, world);
-		}
-		if (kind == KIND_SONIC) {
-			// A view's blits run before its draws, so the wave reads everything drawn before it.
-			view = (bgfx::ViewId)(view == VIEW_MAPDRAW ? VIEW_MAPWAVE : view + 1);
-			Set_Map_View(view, _Target, area, projection);
-			bgfx::blit(view, _Snapshot, 0, 0, _TargetTexture);
-			bgfx::setTexture(SLOT_COUNT + 1, _SnapshotSampler, _Snapshot);
-		}
-		bgfx::setUniform(_RingUniform, ring, 2);
-		bgfx::setState(state);
-		bgfx::submit(view, _Program);
-	}
+	Submit_Draws(list, kinds, buffer, area, projection, ring, world, shadowed, water);
 
 	bool const glow = pass.Glow != NULL && pass.GlowChanged != NULL && _BloomStrength > 0 && bgfx::isValid(_GlowProgram)
 		&& pass.Glow->size() == (std::size_t)area.Width * area.Height;
 	if (glow) {
 		Submit_Glow(pass, area);
 	}
-
-	_PostShown = false;
-	bool const ripple = pass.Ripples != NULL && !pass.Ripples->empty();
-	if (ripple || glow || clouds || weather) {
-		int const count = ripple ? std::min((int)pass.Ripples->size(), RIPPLE_LIMIT) : 0;
-		float ripples[RIPPLE_LIMIT * 4] = {};
-		for (int i = 0; i < count; i++) {
-			GpuRipple const & ripple = (*pass.Ripples)[i];
-			ripples[i * 4 + 0] = ripple.X;
-			ripples[i * 4 + 1] = ripple.Y;
-			ripples[i * 4 + 2] = ripple.Radius;
-			ripples[i * 4 + 3] = ripple.Strength;
-		}
-		float const info[4] = { (float)count, (float)area.Width, (float)area.Height, glow ? 1.2f * (float)_BloomStrength / 100.0f : 0.0f };
-		Set_Map_View(VIEW_MAPPOST, _PostTarget, area, projection);
-		bgfx::setUniform(_RippleUniform, ripples, (uint16_t)std::max(count, 1));
-		bgfx::setUniform(_RippleInfoUniform, info);
-		bgfx::setUniform(_WorldUniform, world);
-		float const falling[4] = { weather ? (float)_Weather : 0.0f, _WeatherStrength / 100.0f, pass.Flash, 0.0f };
-		bgfx::setUniform(_WeatherUniform, falling);
-		bgfx::setVertexBuffer(0, &buffer, 0, 6);
-		bgfx::setTexture(0, _SceneSampler, _TargetTexture);
-		if (glow) {
-			bgfx::setTexture(1, _GlowSampler, _GlowTexture[0]);
-		}
-		bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
-		bgfx::submit(VIEW_MAPPOST, _PostProgram);
-		_PostShown = true;
-	}
+	Submit_Post(pass, area, projection, buffer, world, glow, clouds, weather);
 	return(true);
 }
 

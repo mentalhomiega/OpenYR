@@ -85,33 +85,15 @@ static unsigned _AtlasPass = 1;
 static bool _AtlasStale = false;
 
 
+// Writes the columns from leftmargin on, width texels a row, into out. Returns the end of the compressed rows.
+static unsigned char const * Decode_RLE_Rows(unsigned char * out, void const * rows, int leftmargin, int width, int height);
+
+
 // Decodes the whole RLE source image into out, Width bytes a row, and returns the size of its compressed rows.
 static std::size_t Decode_Image(BlitRecordSource const & source, unsigned char * out)
 {
-	unsigned char const * row = (unsigned char const *)source.Base;
-	for (int r = 0; r < source.Height; r++) {
-		unsigned char const * data = row + sizeof(unsigned short);
-		int position = 0;
-		while (position < source.Width) {
-			int count;
-			if (*data == 0) {
-				count = std::min((int)data[1], source.Width - position);
-				std::memset(out + position, 0, (std::size_t)count);
-				data += 2;
-			} else {
-				count = 1;
-				while (position + count < source.Width && data[count] != 0) {
-					count++;
-				}
-				std::memcpy(out + position, data, (std::size_t)count);
-				data += count;
-			}
-			position += count;
-		}
-		out += source.Width;
-		row += *(unsigned short const *)row;
-	}
-	return((std::size_t)(row - (unsigned char const *)source.Base));
+	unsigned char const * const rowsend = Decode_RLE_Rows(out, source.Base, 0, source.Width, source.Height);
+	return((std::size_t)(rowsend - (unsigned char const *)source.Base));
 }
 
 
@@ -243,10 +225,8 @@ static void Add_Z_Shape(GpuBlit & blit, signed char const * zshape, int zshapepi
 }
 
 
-// Writes the columns from leftmargin on, width texels a row, into the blit's arena pixels.
-static void Decode_RLE_Rows(GpuBlit const & blit, void const * rows, int leftmargin, int width, int height)
+static unsigned char const * Decode_RLE_Rows(unsigned char * out, void const * rows, int leftmargin, int width, int height)
 {
-	unsigned char * out = &_List.PixelArena[blit.Pixels];
 	unsigned char const * row = (unsigned char const *)rows;
 	int const end = leftmargin + width;
 	for (int r = 0; r < height; r++) {
@@ -280,6 +260,7 @@ static void Decode_RLE_Rows(GpuBlit const & blit, void const * rows, int leftmar
 		out += width;
 		row += *(unsigned short const *)row;
 	}
+	return(row);
 }
 
 
@@ -305,7 +286,7 @@ static bool Record_RLE(Surface const & dest, RLEBlitter const & blitter, int x, 
 	GpuBlit & blit = Add_Blit(desc, x, y, width, height, z, zfraction, znumerator, zshape != NULL ? 0 : zdenominator, zwrap, alpha, atlas, pitch);
 	_LockedBlits++;
 	if (image < 0) {
-		Decode_RLE_Rows(blit, rows, leftmargin, width, height);
+		Decode_RLE_Rows(&_List.PixelArena[blit.Pixels], rows, leftmargin, width, height);
 	}
 	if (zshape != NULL) {
 		Add_Z_Shape(blit, zshape, zshapepitch, width, height);
@@ -467,7 +448,8 @@ static void Replay_Line(GpuBlit const & blit, std::vector<unsigned short> & pict
 static void Replay(std::vector<unsigned short> & picture)
 {
 	for (GpuBlit const & blit : _List.Blits) {
-		if (blit.Colour >= 0) {
+		GpuBlitClass const blitclass = blit.Class();
+		if (blitclass == GPU_BLIT_FILL) {
 			Rect const fill = Intersect(_Area, Rect(blit.X, blit.Y, blit.Width, blit.Height));
 			for (int y = fill.Y; y < fill.Y + fill.Height; y++) {
 				for (int x = fill.X; x < fill.X + fill.Width; x++) {
@@ -476,11 +458,11 @@ static void Replay(std::vector<unsigned short> & picture)
 			}
 			continue;
 		}
-		if (blit.Brighten >= 0) {
+		if (blitclass == GPU_BLIT_LIGHT) {
 			Replay_Brighten(blit, picture);
 			continue;
 		}
-		if (blit.Line >= 0) {
+		if (blitclass == GPU_BLIT_LINE) {
 			Replay_Line(blit, picture);
 			continue;
 		}
@@ -952,10 +934,11 @@ static bool Finish_Render(Surface & target)
 	}
 	if (_List.Unsupported == 0 && Backend_Is_Running()) {
 		bool const alpharead = std::any_of(_List.Blits.begin(), _List.Blits.end(), [](GpuBlit const & blit) {
-			if (blit.Line >= 0) {
+			GpuBlitClass const blitclass = blit.Class();
+			if (blitclass == GPU_BLIT_LINE) {
 				return(blit.LineKind == GPU_LINE_ANTIALIASED);
 			}
-			return(blit.Colour < 0 && blit.Brighten < 0 && blit.Desc.Kind != BlitDesc::DARKEN && blit.Desc.AlphaRemap != NULL);
+			return(blitclass == GPU_BLIT_IMAGE && blit.Desc.AlphaRemap != NULL);
 		});
 		GpuMapPass pass;
 		pass.Area = _Area;

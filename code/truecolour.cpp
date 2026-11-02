@@ -153,10 +153,7 @@ bool Is_Shape_Name(char const * name, std::string & stem, std::string & extensio
 	if (dot == NULL || dot == name) {
 		return(false);
 	}
-	extension.assign(dot + 1);
-	for (char & ch : extension) {
-		ch = (char)toupper((unsigned char)ch);
-	}
+	extension = Upper(dot + 1);
 	static char const * const Extensions[] = {"SHP", "TEM", "SNO", "URB", "UBN", "DES", "LUN"};
 	for (char const * known : Extensions) {
 		if (extension == known) {

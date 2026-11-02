@@ -18,27 +18,10 @@
 #include <algorithm>
 
 
-namespace {
-
-struct Binding
-{
-	void const * Surface = NULL;
-	EmissivePlane Plane = {};
-};
-
-}
-
 static bool _Enabled = false;
 static bool _Shadows = false;
 static bool _Water = false;
-static Binding _Bindings[4];
-
-
-static void Free_Plane(Binding & binding)
-{
-	delete [] binding.Plane.Pixels;
-	binding = Binding();
-}
+static SurfacePlaneTable<4> _Bindings;
 
 
 bool ShadowPlane_Is_Enabled(void)
@@ -62,9 +45,7 @@ bool ShadowPlane_Set_Enabled(bool shadows, bool water)
 	_Water = water;
 	_Enabled = shadows || water;
 	if (!_Enabled) {
-		for (Binding & binding : _Bindings) {
-			Free_Plane(binding);
-		}
+		_Bindings.Release_All();
 	}
 	return(true);
 }
@@ -72,43 +53,18 @@ bool ShadowPlane_Set_Enabled(bool shadows, bool water)
 
 void ShadowPlane_Sync(Surface const * composite, Surface const * tile, Surface const * map_composite, Surface const * map_tile)
 {
-	Surface const * const surfaces[4] = { composite, tile, map_composite, map_tile };
-	for (Binding & binding : _Bindings) {
-		if (binding.Plane.Pixels != NULL && (!_Enabled || std::find(std::begin(surfaces), std::end(surfaces), binding.Surface) == std::end(surfaces))) {
-			Free_Plane(binding);
-		}
-	}
 	if (!_Enabled) {
+		_Bindings.Release_All();
 		return;
 	}
+	void const * const keep[4] = { composite, tile, map_composite, map_tile };
+	_Bindings.Retain(keep, 4);
+	Surface const * const surfaces[4] = { composite, tile, map_composite, map_tile };
 	for (Surface const * surface : surfaces) {
 		if (surface == NULL) {
 			continue;
 		}
-		Binding * slot = NULL;
-		for (Binding & binding : _Bindings) {
-			if (binding.Surface == surface) {
-				slot = &binding;
-				break;
-			}
-			if (slot == NULL && binding.Plane.Pixels == NULL) {
-				slot = &binding;
-			}
-		}
-		if (slot == NULL) {
-			continue;
-		}
-		int const width = surface->Get_Width();
-		int const height = surface->Get_Height();
-		if (slot->Surface == surface && slot->Plane.Width == width && slot->Plane.Height == height) {
-			continue;
-		}
-		Free_Plane(*slot);
-		slot->Surface = surface;
-		slot->Plane.Pixels = new unsigned char[(std::size_t)width * height]();
-		slot->Plane.Width = width;
-		slot->Plane.Height = height;
-		slot->Plane.Pitch = width;
+		_Bindings.Acquire(surface, surface->Get_Width(), surface->Get_Height(), false);
 	}
 }
 
@@ -118,22 +74,13 @@ EmissivePlane * ShadowPlane_For(void const * surface)
 	if (!_Enabled || surface == NULL) {
 		return(NULL);
 	}
-	for (Binding & binding : _Bindings) {
-		if (binding.Surface == surface && binding.Plane.Pixels != NULL) {
-			return(&binding.Plane);
-		}
-	}
-	return(NULL);
+	return(_Bindings.Find(surface));
 }
 
 
 void ShadowPlane_Forget(void const * surface)
 {
-	for (Binding & binding : _Bindings) {
-		if (binding.Surface == surface && surface != NULL) {
-			Free_Plane(binding);
-		}
-	}
+	_Bindings.Forget(surface);
 }
 
 
