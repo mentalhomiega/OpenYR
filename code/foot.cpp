@@ -195,6 +195,7 @@ FootClass::FootClass(HouseClass * house) :
 	IsIdle(false),
 	IsPlanRunning(false),
 	IsPlanAdvanceDeferred(false),
+	PlannedRunningOrder(),
 	HasPlannedRunningOrder(false),
 	IonBlastYDrawOffset(0),
 	IsCrushing(false),
