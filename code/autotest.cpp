@@ -372,7 +372,6 @@
 #include "motlib.h"
 #include "mixfile.h"
 #include "mouse.h"
-#include "shapeset.h"
 #include "_pk.h"
 #include "particle.h"
 #include "ptype.h"
@@ -381,8 +380,6 @@
 #include "pcx.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
-
-extern int VoxelNormalTableEntryCount[];
 #include "unittype.h"
 #include "light.h"
 #include "warhead.h"
@@ -414,17 +411,21 @@ extern int VoxelNormalTableEntryCount[];
 #include <span>
 #include <sstream>
 #include <string>
+#include <string_view>
+#include <unordered_map>
 #include <vector>
 
+extern int VoxelNormalTableEntryCount[];
+
 // Where the pointer rests, in window pixels.
-static int _CursorX = 200;
-static int _CursorY = 200;
+static int Pointer_X = 200;
+static int Pointer_Y = 200;
 
 // What each house has finished producing: units, infantry, aircraft and structures.
 struct ProducedTallyStruct {
 	int Count[4];
 };
-static std::map<HouseClass const *, ProducedTallyStruct> _ProducedBy;
+static std::map<HouseClass const *, ProducedTallyStruct> Produced_Tally;
 
 // The folder of the script being read, absolute and ending in a separator. Empty before a script is read.
 static std::string AutoTest_Script_Folder;
@@ -461,7 +462,7 @@ void AutoTest_Note_Built(HouseClass const * house, int rtti)
 	else if (rtti == RTTI_AIRCRAFT) slot = 2;
 	else if (rtti == RTTI_BUILDING) slot = 3;
 	if (slot >= 0) {
-		_ProducedBy[house].Count[slot]++;
+		Produced_Tally[house].Count[slot]++;
 	}
 }
 
@@ -739,8 +740,8 @@ static WindowEvent Move_Pointer(int x, int y)
 	event.Type = WINDOW_EVENT_MOUSE_MOVE;
 	event.X = x;
 	event.Y = y;
-	_CursorX = event.X;
-	_CursorY = event.Y;
+	Pointer_X = event.X;
+	Pointer_Y = event.Y;
 	Game_Window_Handle_Event(event);
 	return(event);
 }
@@ -3910,8 +3911,8 @@ static void Xbutton_Step(StepType const & step)
 	WindowEvent event;
 	event.Button = (step.Argument.find('2') != std::string::npos) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1;
 	event.Clicks = 1;
-	event.X = _CursorX;
-	event.Y = _CursorY;
+	event.X = Pointer_X;
+	event.Y = Pointer_Y;
 	Send_Click(event, ScriptReceiver::GAME_WINDOW);
 }
 
@@ -5980,7 +5981,7 @@ static void Census_Step(StepType const & step)
 					owner->BuildStructure != STRUCT_NONE ? BuildingTypes[owner->BuildStructure]->Name() : "-", owner->BuildUnit != UNIT_NONE ? UnitTypes[owner->BuildUnit]->Name() : "-",
 					owner->BuildInfantry != INFANTRY_NONE ? InfantryTypes[owner->BuildInfantry]->Name() : "-", owner->BuildAircraft != AIRCRAFT_NONE ? AircraftTypes[owner->BuildAircraft]->Name() : "-",
 					(int)owner->State, (int)owner->ProductionMode, (int)owner->IsTiberiumShort, owner->Control.TechLevel);
-				ProducedTallyStruct const produced = _ProducedBy[owner];
+				ProducedTallyStruct const produced = Produced_Tally[owner];
 				DebugString("AUTOTEST     economy difficulty %d gatherers %d on map %d slave miners %d destinations %d produced units %d infantry %d aircraft %d structures %d factories units %d infantry %d aircraft %d\n",
 					(int)owner->Difficulty, owner->Count_Resource_Gatherers(), gatherers_on_map, slave_miners, destinations, produced.Count[0], produced.Count[1], produced.Count[2], produced.Count[3],
 					owner->Factory_Count(RTTI_UNIT), owner->Factory_Count(RTTI_INFANTRY), owner->Factory_Count(RTTI_AIRCRAFT));
@@ -7207,8 +7208,8 @@ void Run(StepType const & step)
 
 void AutoTest_Cursor_Position(int & x, int & y)
 {
-	x = _CursorX;
-	y = _CursorY;
+	x = Pointer_X;
+	y = Pointer_Y;
 }
 
 
