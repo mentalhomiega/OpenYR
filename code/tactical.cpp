@@ -4061,8 +4061,9 @@ void Tactical::Draw_Waypoints(bool inshroud)
 				Point2D cursor(pixel.X, pixel.Y - (TacticalRect.Y + 1));
 				Draw_Shape(*LogicalSurface, *MouseDrawer, mouseshapes, frame, cursor, TacticalRect, (ShapeFlags_Type)(SHAPE_CENTER | SHAPE_WIN_REL));
 
-				static char buffer[4];
-				sprintf(buffer, "%d", index);
+				// Holds any int, since MaxWaypointPathLength lets a path exceed 999 waypoints.
+				static char buffer[12];
+				std::snprintf(buffer, sizeof(buffer), "%d", index);
 				Point2D label(pixel.X - 1, pixel.Y - (TacticalRect.Y + 1) - 25);
 				Simple_Text_Print(buffer, *LogicalSurface, TacticalRect, label, ColorSchemes[coloridx], 0, (TextPrintType)(TPF_CENTER | TPF_EFNT), 1);
 			}

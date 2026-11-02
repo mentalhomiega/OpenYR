@@ -234,8 +234,14 @@ static bool Start(void)
 	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
 	_GlowMaskSampler = bgfx::createUniform("s_glowmask", bgfx::UniformType::Sampler);
 	_GlowSampler = bgfx::createUniform("s_glow", bgfx::UniformType::Sampler);
-	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram) || !bgfx::isValid(_GlowProgram)) {
-		DebugString("GPU_DIFF: the shadow blur, shockwave or glow program did not build\n");
+	// The GPU map cannot draw its shadows or shockwaves without the blur and shockwave programs, so Start fails
+	// without them. The glow pass checks its program before it submits, so a missing glow program only turns glow off.
+	if (!bgfx::isValid(_BlurProgram) || !bgfx::isValid(_PostProgram)) {
+		DebugString("GPU_DIFF unavailable: the shadow blur or shockwave program did not build\n");
+		return(false);
+	}
+	if (!bgfx::isValid(_GlowProgram)) {
+		DebugString("GPU_DIFF: the glow program did not build, so the glow pass is off\n");
 	}
 	_Layout.begin()
 		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
