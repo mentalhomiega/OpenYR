@@ -95,7 +95,7 @@ void KamikazeClass::Update(void)
 
 	for (NodeType const & node : Nodes) {
 		AircraftClass * aircraft = node.Aircraft;
-		CellClass * cell = node.TargetCell != NULL ? node.TargetCell : Facing_Neighbour(aircraft);
+		CellClass * cell = node.TargetCell;
 		aircraft->Ammo = 1;
 		aircraft->Assign_Target(cell);
 		aircraft->Assign_Mission(MISSION_ATTACK);
