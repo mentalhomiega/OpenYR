@@ -31,7 +31,6 @@
  *   TabClass::AI -- Handles player I/O with the tab buttons.                                  *
  *   TabClass::Draw_It -- Displays the tab buttons as necessary.                               *
  *   TabClass::One_Time -- Performs one time initialization of tab handler class.              *
- *   TabClass::Set_Active -- Activates a "filefolder tab" button.                              *
  *   TabClass::TabClass -- Default construct for the tab button class.                         *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
@@ -175,8 +174,6 @@ void TabClass::Serialize(SaveStreamClass & stream)
  *   12/15/1994 JLB : Created.                                                                 *
  *   05/19/1995 JLB : New EVA style.                                                           *
  *=============================================================================================*/
-#define	EVA_WIDTH		80
-#define	TAB_HEIGHT		8
 void TabClass::Draw_It(bool complete)
 {
 	if (!Debug_Map) {
@@ -227,32 +224,6 @@ void TabClass::Draw_Credits_Tab(void)
 }
 
 
-/// <summary>
-/// Draws the specified tab in its highlighted state.
-/// This routine is used to give the player some feedback while a tab is being pressed.
-/// The tab imagery and its label are redrawn in the highlight style.
-/// </summary>
-/// <param name="tab">The tab to highlight; zero for the controls tab, non-zero for the
-/// sidebar tab.</param>
-void TabClass::Hilite_Tab(int tab)
-{
-	int xpos = 0;
-	int text = TXT_TAB_BUTTON_CONTROLS;
-	int textx = (EVA_WIDTH/2) * 2;
-
-	if (tab) {
-		xpos = (320-EVA_WIDTH) * 2;
-		//text = TXT_TAB_SIDEBAR;
-		//textx = (320-(EVA_WIDTH/2)) * 2;
-	} else {
-		xpos = Options.IsSidebarOnRight ? 0 : LogicalSurface->Get_Rect().Width - textx*2;
-	}
-
-	Draw_Shape(*LogicalSurface, *SidebarDrawer, TabShape, 1, Point2D(xpos, 0), VisibleRect);
-	Fancy_Text_Print(text, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(xpos + textx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_METAL12 | TPF_CENTER | TPF_USE_GRAD_PAL));
-}
-
-
 /***********************************************************************************************
  * TabClass::AI -- Handles player I/O with the tab buttons.                                    *
  *                                                                                             *
@@ -288,38 +259,6 @@ void TabClass::AI(KeyNumType &input, Point2D const & xy)
 	}
 	Command_Bar_AI(input);
 	BASECLASS::AI(input, xy);
-}
-
-
-/***********************************************************************************************
- * TabClass::Set_Active -- Activates a "filefolder tab" button.                                *
- *                                                                                             *
- *    This function is used to activate one of the file folder tab buttons that appear at the  *
- *    top edge of the screen.                                                                  *
- *                                                                                             *
- * INPUT:   select   -- The button to activate. 0 = left button, 1=next button, etc.           *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   12/15/1994 JLB : Created.                                                                 *
- *=============================================================================================*/
-void TabClass::Set_Active(int select)
-{
-	switch (select) {
-		case 0:
-			Queue_Options();
-			break;
-
-		case 1:
-			BASECLASS::Activate(-1);
-			break;
-
-		default:
-			break;
-	}
 }
 
 

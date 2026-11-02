@@ -147,8 +147,7 @@ ShapeSet const * SidebarClass::SidebarAddonShape = NULL;
 //TheaterType SidebarClass::StripClass::LastTheater = THEATER_NONE;
 
 enum ButtonNumberType {
-	BUTTON_RADAR = 100,
-	BUTTON_REPAIR,
+	BUTTON_REPAIR = 101,
 	BUTTON_POWER,
 	BUTTON_SELL,
 	BUTTON_UPGRADE,
