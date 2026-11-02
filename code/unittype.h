@@ -365,6 +365,7 @@ class UnitTypeClass : public TechnoTypeClass
 		virtual bool Is_Immune_To_EMP(void) const override;
 
 		TPoint2D<int> Turret_Adjust(Dir256 dir, TPoint2D<int> const & xy) const;
+		bool Fires_While_Moving(void) const;
 
 		/*
 		 * These point to the shape sets that the small and large visceroids are drawn

@@ -547,6 +547,15 @@ bool UnitTypeClass::Is_Immune_To_EMP(void) const
 }
 
 
+/// <summary>
+/// Can a unit of this type fire while its locomotor moves it? A unit that cannot must stop first.
+/// </summary>
+bool UnitTypeClass::Fires_While_Moving(void) const
+{
+	return(!IsNoFireWhileMoving && IsMobileFire);
+}
+
+
 ClassID UnitTypeClass::Class_ID(void) const
 {
 	return(ClassID_UnitTypeClass);
