@@ -1263,9 +1263,9 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		BarrelParticle = TGet_Class(ini, YR_GENERAL, "BarrelParticle", BarrelParticle);
 		Wake = TGet_Class(ini, AUDIOVISUAL, "Wake", Wake);
 		// Yuri's Revenge keeps Wake under [General]; that entry wins when both are present.
-		Wake = TGet_Class(ini, "General", "Wake", Wake);
-		OreTwinkle = TGet_Class(ini, "General", "OreTwinkle", OreTwinkle);
-		WeaponNullifyAnim = TGet_Class(ini, "General", "WeaponNullifyAnim", WeaponNullifyAnim);
+		Wake = TGet_Class(ini, YR_GENERAL, "Wake", Wake);
+		OreTwinkle = TGet_Class(ini, YR_GENERAL, "OreTwinkle", OreTwinkle);
+		WeaponNullifyAnim = TGet_Class(ini, YR_GENERAL, "WeaponNullifyAnim", WeaponNullifyAnim);
 		OreTwinkleChance = ini.Get_Int(AUDIOVISUAL, "OreTwinkleChance", OreTwinkleChance);
 		FlamingInfantry = TGet_Class(ini, AUDIOVISUAL, "FlamingInfantry", FlamingInfantry);
 		FlamingInfantry = TGet_Class(ini, YR_GENERAL, "FlamingInfantry", FlamingInfantry);
