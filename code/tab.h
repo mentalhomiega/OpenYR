@@ -129,4 +129,5 @@ class TabClass: public SidebarClass
 
 	public:
 		static Rect Command_Bar_Frame(void);
+		static bool Command_Button_Center(char const * name, Point2D & center);
 };

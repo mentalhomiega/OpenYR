@@ -3851,6 +3851,26 @@ static void Windowclick_Step(StepType const & step)
 }
 
 
+// commandbutton <Name>: a left click at the centre of the command bar's button with that ButtonList name,
+// or a line saying the bar does not show it.
+static void Commandbutton_Step(StepType const & step)
+{
+	Point2D center;
+	if (!TabClass::Command_Button_Center(step.Argument.c_str(), center)) {
+		DebugString("AUTOTEST   commandbutton %s: not shown\n", step.Argument.c_str());
+		return;
+	}
+	DebugString("AUTOTEST   commandbutton %s at %d,%d\n", step.Argument.c_str(), center.X, center.Y);
+	WindowEvent event = Move_Pointer(center.X, center.Y);
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	event.Button = WINDOW_BUTTON_LEFT;
+	event.Clicks = 1;
+	Game_Window_Handle_Event(event);
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	Game_Window_Handle_Event(event);
+}
+
+
 // windowpress x y and windowrelease x y: move the pointer to that window pixel and press or release the left
 // button there, so a drag can start on the map and end over the command bar or the panel.
 static void Windowpress_Step(StepType const & step)
@@ -6972,6 +6992,7 @@ void Run(StepType const & step)
 		{"click", Click_Step},
 		{"windowmove", Windowmove_Step},
 		{"windowclick", Windowclick_Step},
+		{"commandbutton", Commandbutton_Step},
 		{"windowdouble", Windowclick_Step},
 		{"windowpress", Windowpress_Step},
 		{"windowrelease", Windowpress_Step},
