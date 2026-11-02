@@ -4577,6 +4577,16 @@ void Tactical::Serialize(SaveStreamClass & stream)
 }
 
 
+static void Format_Timer_Line(char * buffer, std::size_t size, char const * label, int seconds)
+{
+	if (seconds >= 3600) {
+		std::snprintf(buffer, size, "%s  %d:%02d:%02d", label, seconds / 3600, (seconds / 60) % 60, seconds % 60);
+	} else {
+		std::snprintf(buffer, size, "%s  %02d:%02d", label, seconds / 60, seconds % 60);
+	}
+}
+
+
 /// <summary>
 /// Lists the countdown of every ShowTimer superweapon a house holds in the bottom right corner of the screen, one line each in the owner's colors, as "name  minutes:seconds", with hours
 /// in front once there are any (TacticalClass::DrawTimer, 0x6D4B50). Weapons
@@ -4608,11 +4618,7 @@ void Tactical::Draw_Super_Timers(void)
 		int const seconds = (int)Scen->MissionTimer / TICKS_PER_SECOND;
 		std::string const label = Scen->MissionTimerText[0] != '\0' ? StringTable.Find_UTF8(Scen->MissionTimerText) : std::string();
 		char buffer[160];
-		if (seconds >= 3600) {
-			std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", label.c_str(), seconds / 3600, (seconds / 60) % 60, seconds % 60);
-		} else {
-			std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", label.c_str(), seconds / 60, seconds % 60);
-		}
+		Format_Timer_Line(buffer, sizeof(buffer), label.c_str(), seconds);
 		bool const urgent = (int)Scen->MissionTimer < TICKS_PER_MINUTE * Rule->TimerWarning;
 		ColorScheme * scheme = urgent ? Fetch_Scheme_By_Name("Red") : NULL;
 		if (scheme == NULL) scheme = ColorSchemes[House_Display_Scheme(PlayerPtr)];
@@ -4632,11 +4638,7 @@ void Tactical::Draw_Super_Timers(void)
 			int const seconds = left / 15;
 			char buffer[96];
 			char const * name = super->Class->Full_Name() != NULL && super->Class->Full_Name()[0] != '\0' ? super->Class->Full_Name() : super->Class->Name();
-			if (seconds >= 3600) {
-				std::snprintf(buffer, sizeof(buffer), "%s  %d:%02d:%02d", name, seconds / 3600, (seconds / 60) % 60, seconds % 60);
-			} else {
-				std::snprintf(buffer, sizeof(buffer), "%s  %02d:%02d", name, seconds / 60, seconds % 60);
-			}
+			Format_Timer_Line(buffer, sizeof(buffer), name, seconds);
 			// A ready weapon's timer blinks once a second between the house colour and a grey (the original blinks
 			// between the house colour and a palette entry of its scheme).
 			ColorScheme * scheme = ColorSchemes[House_Display_Scheme(house)];
