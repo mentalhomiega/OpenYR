@@ -288,7 +288,6 @@ static bool Init_Rules(void);
 static void Init_Commands(void);
 static CampaignType Choose_Campaign(void);
 static void Init_Threads(void);
-void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
 
 void Init_Random(void);
@@ -3270,7 +3269,8 @@ void Title_Screen_Restore(bool force)
 
 
 // The modern menus show a loading notice over their backdrop from the start of the data load until the
-// title menu stands, so the wait is not a bare screen. The notice is left allocated at exit.
+// title menu stands, so the wait is not a bare screen. Startup_Notice_Hide frees the notice; a notice
+// still shown at exit is not freed.
 static UIWaitBoxClass * StartupNotice = NULL;
 
 
@@ -3316,14 +3316,13 @@ static std::string Version_Text(void)
 /// <param name="surface">The surface to print the version text upon.</param>
 void Draw_Version_Text(Surface * surface)
 {
-	char version[128];
 	Rect rect;
 
 	if (Fetch_Scheme_By_Name("Green") == NULL) {
 		return;
 	}
 
-	strcpy(version, Version_Text().c_str());
+	std::string const version = Version_Text();
 
 	rect = surface->Get_Rect();
 
@@ -3335,7 +3334,7 @@ void Draw_Version_Text(Surface * surface)
 		Fetch_Scheme_By_Name("Green"),
 		TBLACK,
 		(TextPrintType)(TPF_EFNT|TPF_NOSHADOW|TPF_RIGHT),
-		version
+		version.c_str()
 	);
 
 	Fancy_Text_Print(
