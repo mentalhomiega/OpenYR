@@ -10,6 +10,7 @@
 
 #include "spawnerconfig.h"
 
+#include "cncnet/spawnkeys.h"
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
@@ -25,6 +26,8 @@
 #include <filesystem>
 #include <sstream>
 #include <vector>
+
+static_assert(SpawnerConfigClass::SLOT_COUNT == std::size(SPAWN_ALLY_KEYS), "one SPAWN.INI alliance key per seat");
 
 
 namespace {
@@ -227,11 +230,6 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 	}
 
 	// The alliance sections name seats in sorted order, so they are read after the sort.
-	static char const * const _ordinals[SLOT_COUNT] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
-
 	for (int index = 0; index < SLOT_COUNT; index++) {
 		SlotType & slot = Slots[index];
 
@@ -250,7 +248,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		}
 
 		for (int ally = 0; ally < SLOT_COUNT; ally++) {
-			slot.Alliances[ally] = ini.Get_Int(section.c_str(), _ordinals[ally], -1);
+			slot.Alliances[ally] = ini.Get_Int(section.c_str(), SPAWN_ALLY_KEYS[ally], -1);
 		}
 	}
 }
@@ -656,11 +654,6 @@ void Write_Free_Color(std::ostringstream & out, unsigned int custom)
 /// </summary>
 std::string SpawnerConfigClass::Write_INI(void) const
 {
-	static char const * const _ordinals[SLOT_COUNT] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
-
 	std::ostringstream out;
 	out << "[Settings]\n";
 	out << "Scenario=" << ScenarioName << "\n";
@@ -748,7 +741,7 @@ std::string SpawnerConfigClass::Write_INI(void) const
 		std::ostringstream allies;
 		for (int ally : slot.Alliances) {
 			if (ally >= 0 && ally < SLOT_COUNT && written < SLOT_COUNT) {
-				allies << _ordinals[written++] << "=" << ally << "\n";
+				allies << SPAWN_ALLY_KEYS[written++] << "=" << ally << "\n";
 			}
 		}
 		if (written > 0) {

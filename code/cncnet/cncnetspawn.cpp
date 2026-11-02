@@ -11,6 +11,7 @@
 
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnettext.h"
+#include "cncnet/spawnkeys.h"
 
 #include <algorithm>
 #include <cctype>
@@ -356,10 +357,6 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		line("Multi" + std::to_string(index + 1), std::to_string(sorted[index]->Start));
 	}
 
-	static char const * const ALLIES[] = {
-		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
-		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
-	};
 	for (std::size_t index = 0; index < sorted.size(); ++index) {
 		if (sorted[index]->Team < 0) {
 			continue;
@@ -368,7 +365,7 @@ std::string CnCNet_Spawn_Ini(CnCNetMatchType const & match, std::map<std::string
 		std::string section;
 		for (std::size_t friend_index = 0; friend_index < sorted.size() && ally < 8; ++friend_index) {
 			if (friend_index != index && sorted[friend_index]->Team == sorted[index]->Team) {
-				section += std::string(ALLIES[ally++]) + "=" + std::to_string(friend_index) + "\n";
+				section += std::string(SPAWN_ALLY_KEYS[ally++]) + "=" + std::to_string(friend_index) + "\n";
 			}
 		}
 		if (!section.empty()) {
