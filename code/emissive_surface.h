@@ -27,6 +27,12 @@ void Emissive_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const
 // Clears the emissive values under a rectangle that was filled with a plain colour.
 void Emissive_After_Fill(Surface & dest, Rect const & rect);
 
+// Runs Emissive_After_Fill when masks are on, then ShadowPlane_After_Fill.
+void Planes_After_Fill(Surface & dest, Rect const & rect);
+
+// Runs Emissive_After_Bit_Blit when masks are on, then ShadowPlane_After_Bit_Blit when shadows are on.
+void Planes_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const & source, int sourcex, int sourcey, int width, int height);
+
 // Writes strength, with the bits of keep that the pixel already has, to each pixel of one RLE row that the blitter
 // draws; zbuf and zshape are NULL without a depth buffer.
 void Emissive_RLE_Row(unsigned char * mask, void const * source, int length, int leadskip, unsigned char strength, unsigned short * zbuf, signed char const * zshape, int zmin, bool writedepth = false, unsigned char keep = 0);

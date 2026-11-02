@@ -21,6 +21,7 @@
 #include "point.h"
 #include "rect.h"
 #include "rlerle.h"
+#include "shadowplane.h"
 #include "surface.h"
 #include "zbuffer.h"
 
@@ -77,6 +78,26 @@ void Emissive_After_Fill(Surface & dest, Rect const & rect)
 	EmissivePlane * dplane = Emissive_Plane_For(&dest);
 	if (dplane != NULL) {
 		Emissive_Fill_Rect(*dplane, rect.X, rect.Y, rect.Width, rect.Height, 0);
+	}
+}
+
+
+void Planes_After_Fill(Surface & dest, Rect const & rect)
+{
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Fill(dest, rect);
+	}
+	ShadowPlane_After_Fill(dest, rect);
+}
+
+
+void Planes_After_Bit_Blit(Surface & dest, int destx, int desty, Surface const & source, int sourcex, int sourcey, int width, int height)
+{
+	if (Emissive_Is_Enabled()) {
+		Emissive_After_Bit_Blit(dest, destx, desty, source, sourcex, sourcey, width, height);
+	}
+	if (ShadowPlane_Is_Enabled()) {
+		ShadowPlane_After_Bit_Blit(dest, destx, desty, source, sourcex, sourcey, width, height);
 	}
 }
 

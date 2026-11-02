@@ -579,11 +579,8 @@ bool DSurface::Blit_From(Rect const & dcliprect, Rect const & destrect, Surface 
 	GdiFlush();
 
 	// A stretched picture has no mask of its own, so the area it covers reads as ordinary.
-	if (result && Emissive_Is_Enabled()) {
-		Emissive_After_Fill(*this, drect);
-	}
 	if (result) {
-		ShadowPlane_After_Fill(*this, drect);
+		Planes_After_Fill(*this, drect);
 	}
 
 	if (result && IsPrimary) {
@@ -646,11 +643,8 @@ bool DSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 	// A fill the GPU draws still clears the glow and shadow planes under it.
 	bool result = GpuDraw_Fill(*this, area, (unsigned short)color) || BASECLASS::Fill_Rect(cliprect, fillrect, color);
 
-	if (result && Emissive_Is_Enabled()) {
-		Emissive_After_Fill(*this, area);
-	}
 	if (result) {
-		ShadowPlane_After_Fill(*this, area);
+		Planes_After_Fill(*this, area);
 	}
 
 	if (result && IsPrimary) {
