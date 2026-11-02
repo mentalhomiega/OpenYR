@@ -1563,7 +1563,7 @@ void BulletClass::Detonate(Coord const & coord)
 	}
 
 	// gamemd tests these flags in this order, and the first one set takes the shot (BulletClass::Detonate, 0x469211 to 0x469A2C).
-	// This port's ElectricAssault arm matches only an overpowerable building. EMEffect and Webby are not in gamemd's chain, so they come last.
+	// EMEffect and Webby are not in gamemd's chain, so they come last.
 	/*
 	 * A mind control warhead takes its target over for the firer instead of hurting it, with
 	 * YuriMindControlSound when either side is the player's (BulletClass::Detonate, 0x469210).
@@ -1595,6 +1595,7 @@ void BulletClass::Detonate(Coord const & coord)
 		}
 	}
 
+	// Matches only an overpowerable building. The empty body takes the shot, so the arms below it are skipped.
 	else if (warhead->IsElectricAssault && dynamic_cast<BuildingClass *>(TarCom) != NULL && static_cast<BuildingClass *>(TarCom)->Class->IsOverpowerable) {
 	}
 
@@ -2175,8 +2176,7 @@ void BulletClass::Shrapnel(void)
 	}
 
 	/*
-	 * A lambda rather than a free function, so that it keeps this class's access to the
-	 * private members of an electric bolt.
+	 * Uses BulletClass access to EBoltClass and Payback, so it must stay in this member function.
 	 */
 	auto throw_piece = [this, weapon, from](AbstractClass * target, Coord const & to) {
 		BulletClass * piece = Create_Bullet(weapon->Bullet, target, Payback, weapon->Attack, weapon->WarheadPtr, weapon->MaxSpeed, weapon->IsBright);
