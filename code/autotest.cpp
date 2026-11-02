@@ -510,10 +510,10 @@ int LoadShotCount = 0;
 
 // Set by a continuewin step; a won mission then carries on instead of ending the run.
 bool ContinueAfterWin = false;
-bool PostWinContinue = false;
 // Set by a continuelose line; a lost game then carries on to its score screen instead of ending the run.
 bool ContinueAfterLose = false;
-bool PostLoseContinue = false;
+// Set when a won or lost game carries on past AutoTest_Game_Over; AutoTest_Post_Win reads it.
+bool PostGameContinue = false;
 // Set by a requirera2 line; the run then ends if the mission was read without Red Alert 2 house numbering.
 bool RequireRA2 = false;
 
@@ -7479,11 +7479,11 @@ void AutoTest_Game_Over(bool won)
 	}
 	DebugString("AUTOTEST game over frame %d: %s\n", Frame, won ? "won" : "lost");
 	if (won && ContinueAfterWin) {
-		PostWinContinue = true;
+		PostGameContinue = true;
 		return;
 	}
 	if (!won && ContinueAfterLose) {
-		PostLoseContinue = true;
+		PostGameContinue = true;
 		return;
 	}
 	std::exit(0);
@@ -7507,5 +7507,5 @@ void AutoTest_Require_RA2_Numbering(bool numbered)
 
 bool AutoTest_Post_Win(void)
 {
-	return(Active && (PostWinContinue || PostLoseContinue));
+	return(Active && PostGameContinue);
 }
