@@ -71,15 +71,6 @@ class UIPresenterClass
 
 		std::optional<UIResult> Result;
 
-		/// <summary>
-		/// Makes this screen one page of the tabbed Settings. Choosing another tab then applies
-		/// the page as OK does, ends it, and leaves the chosen tab in Tab_Request for the host to
-		/// open next.
-		/// </summary>
-		/// <param name="tab">The tab this screen stands for.</param>
-		/// <param name="offered">A bit for every tab the tab bar offers, 1 << UISettingsTab.</param>
-		void Set_Settings_Tab(UISettingsTab tab, unsigned offered);
-		UISettingsTab Settings_Tab(void) const { return(OwnTab); }
 		unsigned Settings_Tabs_Offered(void) const { return(Offered); }
 
 		/// <summary>Sets the tabs a tab request may name, as a bit for every tab, without making this screen a page.</summary>
@@ -91,7 +82,6 @@ class UIPresenterClass
 	private:
 		void Switch_Tab(int tab);
 
-		UISettingsTab OwnTab = UI_TAB_NONE;
 		unsigned Offered = 0;
 		std::vector<UIIntent> Pending;
 };

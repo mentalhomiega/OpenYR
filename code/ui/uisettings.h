@@ -38,9 +38,6 @@ void UI_Settings_Run(UISettingsTab first);
 /// <param name="tab">The tab the page stands for.</param>
 void UI_Settings_Join(UIPresenterClass & presenter, UISettingsTab tab);
 
-/// <summary>The text of the button that leaves the Settings: "Back" from the string table.</summary>
-std::string UI_Settings_Back_Label(void);
-
 /// <summary>Takes the tab a page that has just closed asked to move to.</summary>
 void UI_Settings_Leave(UIPresenterClass const & presenter);
 

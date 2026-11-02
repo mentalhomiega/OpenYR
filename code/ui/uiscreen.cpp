@@ -34,18 +34,11 @@ void UIPresenterClass::Drain(void)
 }
 
 
-void UIPresenterClass::Set_Settings_Tab(UISettingsTab tab, unsigned offered)
-{
-	OwnTab = tab;
-	Offered = offered;
-}
-
-
 void UIPresenterClass::Switch_Tab(int tab)
 {
 	// A tab request applies nothing: the host moves to the page and the pending values stay on their pages until
 	// OK or Cancel acts on every page.
-	if (tab < 0 || tab >= UI_TAB_COUNT || tab == OwnTab || (Offered & (1u << tab)) == 0) {
+	if (tab < 0 || tab >= UI_TAB_COUNT || (Offered & (1u << tab)) == 0) {
 		return;
 	}
 	Tab_Request = (UISettingsTab)tab;

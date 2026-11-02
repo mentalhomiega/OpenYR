@@ -27,7 +27,6 @@ struct UISettingsPageClass
 {
 	UISettingsTab Tab = UI_TAB_NONE;
 	UIViewClass * View = nullptr;
-	UIPresenterClass * Presenter = nullptr;
 	// Runs when the page is shown, before its view is, so the page can follow the tab (such as the display pages).
 	std::function<void(void)> Enter;
 };

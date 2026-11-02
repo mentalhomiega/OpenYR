@@ -81,7 +81,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		bool Type_Ahead(Rml::Element * list, Rml::String const & text);
 		void Mark_Keyboard(void);
 		void Apply_Tabs(void);
-		// The tab this view stands for: the one Set_Tab gave, or else the presenter's.
+		// The tab this view stands for, as Set_Tab gave it; UI_TAB_NONE when the view is not a page.
 		UISettingsTab Tab_Of_View(void) const;
 		unsigned Offered_Of_View(void) const;
 		bool Step_Tab(Rml::Event & event, int key);

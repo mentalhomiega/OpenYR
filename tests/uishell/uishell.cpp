@@ -4217,15 +4217,15 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingGameControlsServiceClass service;
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
-		presenter.Set_Settings_Tab(UI_TAB_GAME, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "edge", 1);
-		Drive(presenter, "tab", UI_TAB_GAME);
-		Check(!presenter.Result.has_value(), "choosing the tab already on show does nothing");
 		Drive(presenter, "tab", UI_TAB_COUNT);
 		Drive(presenter, "tab", -1);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab that does not exist is ignored");
 		Drive(presenter, "tab", UI_TAB_AUDIO);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_AUDIO, "another tab names itself and leaves the page open");
+		Drive(presenter, "tab", UI_TAB_GAME);
+		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "the tab on show is named like any other; the host leaves it open");
 		Check(service.Calls.empty(), "a tab request applies nothing; the edits wait for OK or Cancel");
 	}
 
@@ -4233,7 +4233,7 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingGameControlsServiceClass service;
 		UIGameControlsState state;
 		UIGameControlsPresenterClass presenter(service, state);
-		presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD));
+		presenter.Offer_Tabs((1u << UI_TAB_GAME) | (1u << UI_TAB_KEYBOARD));
 		Drive(presenter, "tab", UI_TAB_MODS);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_NONE, "a tab the bar does not offer is ignored");
 	}
@@ -4242,7 +4242,7 @@ void Test_Settings_Tabs_Presenter(void)
 		RecordingModsServiceClass service;
 		service.Writable = false;
 		UIModsPresenterClass presenter(service, Mods_Fixture());
-		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "toggle", presenter.State.Rows[0].Id);
 		Drive(presenter, "tab", UI_TAB_GAME);
 		Check(!presenter.Result.has_value() && presenter.Tab_Request == UI_TAB_GAME, "a page that cannot save still hands its edits to the next tab");
@@ -4251,7 +4251,7 @@ void Test_Settings_Tabs_Presenter(void)
 	{
 		RecordingModsServiceClass service;
 		UIModsPresenterClass presenter(service, Mods_Fixture());
-		presenter.Set_Settings_Tab(UI_TAB_MODS, all);
+		presenter.Offer_Tabs(all);
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Tab_Request == UI_TAB_NONE, "Back leaves the Settings and asks for no tab");
 	}
@@ -4297,9 +4297,11 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	int const problems = system.Problems;
 
 	RecordingGameControlsServiceClass service;
+	unsigned const settings_tabs = (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD);
 	UIGameControlsPresenterClass presenter(service, Game_Controls_Fixture());
-	presenter.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	presenter.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+	view->Set_Tab(UI_TAB_GAME, settings_tabs);
 
 	Check(Rml(*view).Prepare(context), "a Settings page prepares");
 	view->Show(true);
@@ -4316,8 +4318,9 @@ void Test_Settings_Tabs_Screen(Rml::Context & context, CountingSystemInterfaceCl
 	context.Update();
 
 	UIGameControlsPresenterClass back(service, Game_Controls_Fixture());
-	back.Set_Settings_Tab(UI_TAB_GAME, (1u << UI_TAB_GAME) | (1u << UI_TAB_AUDIO) | (1u << UI_TAB_KEYBOARD));
+	back.Offer_Tabs(settings_tabs);
 	std::unique_ptr<UIViewClass> second = UI_Game_Controls_View(back);
+	second->Set_Tab(UI_TAB_GAME, settings_tabs);
 	Check(Rml(*second).Prepare(context), "a second Settings page prepares");
 	second->Show(true);
 	context.Update();
@@ -7983,19 +7986,15 @@ void Test_Settings_Host(void)
 	UISettingsPageClass page;
 	page.Tab = UI_TAB_GAME;
 	page.View = &game_view;
-	page.Presenter = &game;
 	pages.push_back(page);
 	page.Tab = UI_TAB_DISPLAY;
 	page.View = &display_view;
-	page.Presenter = &display;
 	pages.push_back(page);
 	page.Tab = UI_TAB_GRAPHICS;
 	page.View = &graphics_view;
-	page.Presenter = &display;
 	pages.push_back(page);
 	page.Tab = UI_TAB_AUDIO;
 	page.View = &audio_view;
-	page.Presenter = &audio;
 	pages.push_back(page);
 
 	unsigned const offered = (1u << UI_TAB_GAME) | (1u << UI_TAB_DISPLAY) | (1u << UI_TAB_GRAPHICS) | (1u << UI_TAB_AUDIO);
