@@ -469,6 +469,17 @@ static void Set_View_Transform(bgfx::ViewId view, int width, int height)
 }
 
 
+// Destroys a valid handle and resets it to invalid. An invalid handle is left as it is.
+template<class Handle>
+static void Release_Handle(Handle & handle)
+{
+	if (bgfx::isValid(handle)) {
+		bgfx::destroy(handle);
+		handle = BGFX_INVALID_HANDLE;
+	}
+}
+
+
 /// <summary>
 /// Discards the intermediate target the pixel art filter magnifies through.
 /// </summary>

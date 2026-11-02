@@ -256,6 +256,16 @@ static bool Start(void)
 }
 
 
+template<class Handle>
+static void Release_Handle(Handle & handle)
+{
+	if (bgfx::isValid(handle)) {
+		bgfx::destroy(handle);
+		handle = BGFX_INVALID_HANDLE;
+	}
+}
+
+
 static void Destroy_Target(void)
 {
 	if (bgfx::isValid(_PostTarget)) {

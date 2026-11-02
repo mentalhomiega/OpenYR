@@ -9,19 +9,6 @@
 
 #pragma once
 
-#include <bgfx/bgfx.h>
-
-
-// Destroys a valid handle and resets it to invalid. An invalid handle is left as it is.
-template<class Handle>
-inline void Release_Handle(Handle & handle)
-{
-	if (bgfx::isValid(handle)) {
-		bgfx::destroy(handle);
-		handle = BGFX_INVALID_HANDLE;
-	}
-}
-
 
 enum BgfxViewType : unsigned short
 {
