@@ -413,7 +413,7 @@ static RGBClass Radar_Tile_Color(RGBStruct const & color, float brightness)
  *   04/30/1994 JLB : Converted to member function.                                            *
  *   05/31/1994 JLB : Takes into account any stealth characteristics of object.                *
  *=============================================================================================*/
-void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
+RGBClass CellClass::Cell_Color(void) const
 {
 	/*
 	 * A terrain object (tree, etc.) draws in one fixed light tan, whatever its artwork or RadarColor
@@ -421,16 +421,14 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 	 */
 	TerrainClass * tptr = Cell_Terrain();
 	if (tptr != NULL) {
-		highcolor = lowcolor = RGBClass(200, 200, 160);
-		return;
+		return(RGBClass(200, 200, 160));
 	}
 
 	/*
 	 * Cells covered by a (high) bridge use the bridge overlay radar color.
 	 */
 	if (IsUnderBridge) {
-		highcolor = lowcolor = OverlayTypes[OVERLAY_BRIDGE1]->Get_Radar_Color(0);
-		return;
+		return(OverlayTypes[OVERLAY_BRIDGE1]->Get_Radar_Color(0));
 	}
 
 	IsometricTileTypeClass * itype = (ITType != ISOTILE_NONE) ? IsometricTileTypes[ITType] : IsometricTileTypes[TILE_CLEAR];
@@ -444,11 +442,9 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		 */
 		if (!otype->IsTiberium) {
 			if (overlay >= OVERLAY_LOWBRIDGE_01 && overlay <= OVERLAY_LOWBRIDGE_26) {
-				highcolor = lowcolor = OverlayTypes[overlay]->Get_Radar_Color(1);
-			} else {
-				highcolor = lowcolor = OverlayTypes[overlay]->Get_Radar_Color(OverlayData);
+				return(OverlayTypes[overlay]->Get_Radar_Color(1));
 			}
-			return;
+			return(OverlayTypes[overlay]->Get_Radar_Color(OverlayData));
 		}
 
 		/*
@@ -456,14 +452,13 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		 */
 		if (otype->CellAnim != NULL) {
 			ShapeSet * shape = (ShapeSet *)otype->CellAnim->Get_Image_Data();
-			highcolor = lowcolor = shape->Get_Color(OverlayData);
-			return;
+			return(shape->Get_Color(OverlayData));
 		}
 
 		/*
 		 * Tiberium present in this cell. Pick the overlay shape for the tiberium type
-		 * (taking ramp/variety into account) and use its palette color. The high and
-		 * low colors are swapped for the second and third tiberium types and veinholes.
+		 * (taking ramp/variety into account) and use its palette color. A cell whose overlay is a
+		 * second or third tiberium overlay swaps green and blue.
 		 */
 		TiberiumType tib = Tiberium_Type_Here();
 		if (tib != TIBERIUM_NONE) {
@@ -484,8 +479,7 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 					color = RGBClass(color.Get_Red(), color.Get_Blue(), color.Get_Green());
 				}
 
-				highcolor = lowcolor = color;
-				return;
+				return(color);
 			}
 		}
 	}
@@ -515,10 +509,9 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 	IsoTileRecord const * record = ((IsoTileSet *)next->ImageData)->Fetch_Record_Pointer_Unsafe(SubTile);
 	if (record != NULL) {
 		TheaterClass const & theater = TheaterClass::As_Reference(Scen->Theater);
-		lowcolor = highcolor = Radar_Tile_Color(record->LowColor, theater.LowRadarBrightness);
-	} else {
-		lowcolor = highcolor = RGBClass(60, 60, 60);
+		return(Radar_Tile_Color(record->LowColor, theater.LowRadarBrightness));
 	}
+	return(RGBClass(60, 60, 60));
 }
 
 
