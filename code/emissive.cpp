@@ -7,10 +7,10 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "always.h"
 #include "emissive.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -75,16 +75,6 @@ unsigned char Emissive_Anim_Default(bool translucent, bool self_lit, int translu
 
 namespace {
 
-bool Equals_Ignore_Case(char const * text, char const * word)
-{
-	for (; *text != '\0' && *word != '\0'; text++, word++) {
-		if (std::tolower((unsigned char)*text) != std::tolower((unsigned char)*word)) {
-			return(false);
-		}
-	}
-	return(*text == *word);
-}
-
 void Free_Binding(Binding & binding)
 {
 	delete [] binding.Plane.Pixels;
@@ -101,10 +91,10 @@ unsigned char Emissive_Parse_Strength(char const * text, unsigned char fallback)
 	if (text == NULL || *text == '\0') {
 		return(fallback);
 	}
-	if (Equals_Ignore_Case(text, "yes")) {
+	if (stricmp(text, "yes") == 0) {
 		return(255);
 	}
-	if (Equals_Ignore_Case(text, "no")) {
+	if (stricmp(text, "no") == 0) {
 		return(0);
 	}
 
@@ -122,7 +112,7 @@ unsigned char Emissive_Anim_Name_Default(char const * name)
 	if (name == NULL) {
 		return(0);
 	}
-	if (Equals_Ignore_Case(name, "NAPOST_A") || Equals_Ignore_Case(name, "NAPOST_AD") || Equals_Ignore_Case(name, "NAPOST_B")) {
+	if (stricmp(name, "NAPOST_A") == 0 || stricmp(name, "NAPOST_AD") == 0 || stricmp(name, "NAPOST_B") == 0) {
 		return(EmissiveDefaults[EMISSIVE_ANIM_LIGHT_POST].Strength);
 	}
 	return(0);
