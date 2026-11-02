@@ -10206,6 +10206,32 @@ Cell HouseClass::Pick_Drop_Target(void)
 }
 
 
+// Returns the cell of the object with the highest count_at score, or CELL_NONE when that score is 0 or
+// the cell is off the local radar. Objects are visited from the last index to the first, so a tie goes
+// to the object visited first.
+template<typename T, typename CountFn>
+static Cell Best_Cell_By_Count(DynamicVectorClass<T *> const & objects, CountFn count_at)
+{
+	Cell best_cell = CELL_NONE;
+	int best = 0;
+	for (int index = objects.Count() - 1; index >= 0; index--) {
+		T * object = objects[index];
+		if (object->IsInLimbo) continue;
+
+		Cell const center = object->Get_Cell();
+		int count = count_at(object, center);
+		if (count > best) {
+			best = count;
+			best_cell = center;
+		}
+	}
+	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
+		return(CELL_NONE);
+	}
+	return(best_cell);
+}
+
+
 /// <summary>
 /// Picks where a computer house fires its genetic mutator (HouseClass::Fire_GenMutator): the
 /// cell of the infantryman with the most infantry of other, unallied houses on or around its
@@ -10220,13 +10246,7 @@ Cell HouseClass::Pick_Mutator_Target(void)
 		Cell(-1, -1), Cell(1, -1), Cell(-1, 1), Cell(1, 1), Cell(0, -2)
 	};
 
-	Cell best_cell = CELL_NONE;
-	int best = 0;
-	for (int index = Infantry.Count() - 1; index >= 0; index--) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsInLimbo) continue;
-
-		Cell const center = infantry->Get_Cell();
+	return(Best_Cell_By_Count(Infantry, [this](InfantryClass * infantry, Cell const & center) {
 		int count = 0;
 		for (Cell const & offset : _offsets) {
 			Cell const where = center + offset;
@@ -10239,15 +10259,8 @@ Cell HouseClass::Pick_Mutator_Target(void)
 				}
 			}
 		}
-		if (count > best) {
-			best = count;
-			best_cell = center;
-		}
-	}
-	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
-		return(CELL_NONE);
-	}
-	return(best_cell);
+		return(count);
+	}));
 }
 
 
@@ -10259,13 +10272,7 @@ Cell HouseClass::Pick_Mutator_Target(void)
 /// <returns>Returns with the cell to aim at, or CELL_NONE when no such unit is near anything.</returns>
 Cell HouseClass::Pick_Dominator_Target(void)
 {
-	Cell best_cell = CELL_NONE;
-	int best = 0;
-	for (int index = Technos.Count() - 1; index >= 0; index--) {
-		TechnoClass * techno = Technos[index];
-		if (techno->IsInLimbo) continue;
-
-		Cell const center = techno->Get_Cell();
+	return(Best_Cell_By_Count(Technos, [this](TechnoClass *, Cell const & center) {
 		int count = 0;
 		for (int spread = 0; spread < 38; spread++) {
 			Cell const where = center + Cell_Spread_Offset(spread);
@@ -10277,15 +10284,8 @@ Cell HouseClass::Pick_Dominator_Target(void)
 				}
 			}
 		}
-		if (count > best) {
-			best = count;
-			best_cell = center;
-		}
-	}
-	if (best == 0 || !Map.In_Local_Radar(best_cell)) {
-		return(CELL_NONE);
-	}
-	return(best_cell);
+		return(count);
+	}));
 }
 
 
