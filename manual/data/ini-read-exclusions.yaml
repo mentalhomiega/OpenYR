@@ -269,7 +269,7 @@ site_exclusions:
     reason: The map a host last picked in a LAN lobby, which the lobby writes to [LAN] when a map is picked; it is remembered state, not a setting.
   - path: code/ui/screens/skirmish/uiskirmishdlg.cpp
     function: Load_Memory
-    keys: [Map, Units, Credits, Tech, Speed, Bases, Crates, Fog, Bridges, Redeploy, ShortGame, Engineer, SuperWeapons, BuildOffAlly]
+    keys: [Map]
     classification: excluded
     reason: The setup the skirmish screen remembers in [Skirmish], which the screen writes when it closes; the skirmish setup page owns it, and a launch file does not use it.
 
