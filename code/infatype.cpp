@@ -331,6 +331,33 @@ char const * SequenceName[DO_COUNT] = {
 };
 
 
+// Maps a facing name in a sequence entry to its facing. Names match case-sensitively, so a name in
+// another case, or one not listed, returns the fallback.
+static FacingType Sequence_Facing_Named(char const * name, FacingType fallback)
+{
+	struct FacingName {
+		char const * Name;
+		FacingType Facing;
+	};
+	static FacingName const NAMES[] = {
+		{"N", FACING_N},
+		{"NE", FACING_NE},
+		{"E", FACING_E},
+		{"SE", FACING_SE},
+		{"S", FACING_S},
+		{"SW", FACING_SW},
+		{"W", FACING_W},
+		{"NW", FACING_NW},
+	};
+	for (FacingName const & entry : NAMES) {
+		if (strcmp(name, entry.Name) == 0) {
+			return(entry.Facing);
+		}
+	}
+	return(fallback);
+}
+
+
 /// <summary>
 /// Fetches the animation sequence controls for this infantry type from the art database.
 /// Every do-type the soldier can perform -- walking, firing, dying, going prone -- gets its
@@ -354,23 +381,7 @@ void InfantryTypeClass::Read_Sequence_INI(void)
 				DoInfoStruct * doinfo = &control[i];
 
 				sscanf(dostring, "%d,%d,%d,%9s", &doinfo->Frame, &doinfo->Count, &doinfo->Jump, facing);
-				if (strcmp("N", facing) == 0) {
-					doinfo->Facing = FACING_N;
-				} else if (strcmp("NE", facing) == 0) {
-					doinfo->Facing = FACING_NE;
-				} else if (strcmp("E", facing) == 0) {
-					doinfo->Facing = FACING_E;
-				} else if (strcmp("SE", facing) == 0) {
-					doinfo->Facing = FACING_SE;
-				} else if (strcmp("S", facing) == 0) {
-					doinfo->Facing = FACING_S;
-				} else if (strcmp("SW", facing) == 0) {
-					doinfo->Facing = FACING_SW;
-				} else if (strcmp("W", facing) == 0) {
-					doinfo->Facing = FACING_W;
-				} else if (strcmp("NW", facing) == 0) {
-					doinfo->Facing = FACING_NW;
-				}
+				doinfo->Facing = Sequence_Facing_Named(facing, doinfo->Facing);
 			}
 
 			// Each pair is a stage then a sound name; a pair whose sound is unknown is dropped.
