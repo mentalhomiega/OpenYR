@@ -25,6 +25,7 @@
 #include "tactical.h"
 #include "techno.h"
 #include "vector.h"
+#include "weapon.h"
 
 #include <cmath>
 #include <cstring>
@@ -60,6 +61,16 @@ EBoltClass::~EBoltClass(void)
 /// Starts the bolt between two points and adds it to the list drawn each frame, as EBolt::Fire
 /// (0x4C2A60) does. The default spark system starts at the target end.
 /// </summary>
+EBoltClass * EBoltClass::Fire_For_Weapon(WeaponTypeClass const * weapon, Coord const & start, Coord const & end, int zadjust)
+{
+	EBoltClass * bolt = new EBoltClass;
+	bolt->IsAlternateColor = weapon->IsAlternateColor;
+	bolt->EmissiveStrength = weapon->EmissiveStrength;
+	bolt->Fire(start, end, zadjust);
+	return(bolt);
+}
+
+
 void EBoltClass::Fire(Coord const & start, Coord const & end, int zadjust)
 {
 	Start = start;

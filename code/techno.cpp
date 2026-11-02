@@ -5036,10 +5036,7 @@ void TechnoClass::Electric_Zap(AbstractClass * target, int which, WeaponTypeClas
 		zadjust = std::min(muzzle.Y - base.Y, 0);
 	}
 
-	EBoltClass * bolt = new EBoltClass;
-	bolt->IsAlternateColor = weapon->IsAlternateColor;
-	bolt->EmissiveStrength = weapon->EmissiveStrength;
-	bolt->Fire(source, Beam_Target_Coord(target), zadjust);
+	EBoltClass * bolt = EBoltClass::Fire_For_Weapon(weapon, source, Beam_Target_Coord(target), zadjust);
 	bolt->Set_Owner(this, which);
 }
 
