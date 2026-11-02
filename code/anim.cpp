@@ -443,6 +443,25 @@ void Shorten_Attached_Anims(ObjectClass * obj)
 }
 
 
+/// <summary>
+/// Starts a single-loop animation of the named animation type at a coordinate.
+/// </summary>
+/// <param name="name">The rules name of the animation type.</param>
+/// <param name="coord">Where the animation plays.</param>
+/// <param name="timedelay">The frames to wait before the animation starts.</param>
+/// <param name="zadjust">The height adjustment of the animation.</param>
+/// <param name="flags">The shape flags the animation is drawn with.</param>
+/// <returns>The new animation, or NULL when no animation type has that name. Nothing is created then.</returns>
+AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedelay, int zadjust, ShapeFlags_Type flags)
+{
+	AnimType const anim = AnimTypeClass::From_Name(name);
+	if (anim == ANIM_NONE) {
+		return(NULL);
+	}
+	return(new AnimClass(AnimTypes[anim], coord, timedelay, 1, flags, zadjust));
+}
+
+
 /***********************************************************************************************
  * AnimClass::Sort_Y -- Returns with the sorting coordinate for the animation.                 *
  *                                                                                             *

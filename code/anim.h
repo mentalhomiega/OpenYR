@@ -344,3 +344,4 @@ class AnimClass : public ObjectClass, public StageClass
 
 void Shorten_Attached_Anims(ObjectClass * obj);
 AnimType Anim_From_Name(char const * name);
+AnimClass * Spawn_Named_Anim(char const * name, Coord const & coord, int timedelay = 0, int zadjust = 0, ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_WIN_REL|SHAPE_CENTER));
