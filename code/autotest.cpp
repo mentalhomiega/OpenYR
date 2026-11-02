@@ -477,6 +477,8 @@ struct StepType
 	int Y;
 	// The line as written, without trailing white space, for the wait messages.
 	std::string Line;
+	// The words of Line from Line_Words, split once at load so a step does not split its line again.
+	std::vector<std::string> Words;
 
 	// The argument as a decimal number, 0 when it does not start with one, as std::atoi reads it.
 	int Argument_Int(void) const {return(std::atoi(Argument.c_str()));}
@@ -1512,6 +1514,37 @@ int Number(std::vector<std::string> const & words, std::size_t index, int fallba
 }
 
 
+// Whether word <first> or word <second> of a script line is name.
+bool Either_Word_Is(std::vector<std::string> const & words, std::size_t first, std::size_t second, char const * name)
+{
+	return(Word(words, first) == name || Word(words, second) == name);
+}
+
+
+// Splits the first count words of an argument at its spaces or tabs and returns them. rest gets the text after
+// them, from its first non-blank character on, so inner spaces are kept. rest is empty when no such text follows,
+// and then the list may hold fewer than count words.
+std::vector<std::string> Split_Argument(std::string const & argument, std::size_t count, std::string & rest)
+{
+	std::vector<std::string> words;
+	rest.clear();
+	std::size_t start = 0;
+	while (words.size() < count) {
+		std::size_t const gap = argument.find_first_of(" \t", start);
+		words.push_back(argument.substr(start, gap - start));
+		if (gap == std::string::npos) {
+			return(words);
+		}
+		start = argument.find_first_not_of(" \t", gap);
+		if (start == std::string::npos) {
+			return(words);
+		}
+	}
+	rest = argument.substr(start);
+	return(words);
+}
+
+
 // The fewest words a wait line needs. A command that is not in the wait table gets waitlocal's value.
 std::size_t Wait_Min_Words(std::string const & command)
 {
@@ -1634,10 +1667,9 @@ bool Wait_Met(std::vector<std::string> const & words)
 */
 bool Wait_Over(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
-	int const timeout = Number(words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
+	int const timeout = Number(step.Words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
 	int const start = step.Frame + WaitShift;
-	bool const met = Wait_Met(words);
+	bool const met = Wait_Met(step.Words);
 	if (!met && Frame < start + timeout) {
 		return(false);
 	}
@@ -1910,8 +1942,8 @@ static int Key_Code(std::string const & name)
 static int Key_Modifiers(std::string const & argument)
 {
 	int modifiers = 0;
-	std::size_t const first = argument.find_first_of(" \t");
-	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	std::string rest;
+	Split_Argument(argument, 1, rest);
 	if (rest.find("ctrl") != std::string::npos) modifiers |= WINDOW_MOD_CTRL;
 	if (rest.find("shift") != std::string::npos) modifiers |= WINDOW_MOD_SHIFT;
 	if (rest.find("alt") != std::string::npos) modifiers |= WINDOW_MOD_ALT;
@@ -1923,8 +1955,8 @@ static int Key_Modifiers(std::string const & argument)
 static HotkeyTrigger Binding_Trigger(std::string const & argument)
 {
 	HotkeyTrigger trigger = HOTKEY_PRESS;
-	std::size_t const first = argument.find_first_of(" \t");
-	std::string const rest = (first == std::string::npos) ? std::string() : argument.substr(first);
+	std::string rest;
+	Split_Argument(argument, 1, rest);
 	char const * const names[] = { "Double", "Hold", "Held" };
 	HotkeyTrigger const found[] = { HOTKEY_DOUBLE, HOTKEY_HOLD, HOTKEY_HELD };
 	for (int index = 0; index < 3; index++) {
@@ -2465,7 +2497,7 @@ static void Passable_Step(StepType const & step)
 /// <param name="step">The attacker's and target's types, the words after the command in the line.</param>
 static void Target_Action_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	if (words.size() < 4) {
 		DebugString("AUTOTEST   targetaction needs an attacker type and a target type\n");
 		return;
@@ -2561,12 +2593,11 @@ static void Hut_Action_Step(StepType const & step)
 /// the attack mission.</param>
 static void Set_Target_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
-	bool const computer = Word(words, 5) == "computer" || Word(words, 6) == "computer";
-	bool const attack = Word(words, 5) == "attack" || Word(words, 6) == "attack";
-	bool const hunt = Word(words, 5) == "hunt" || Word(words, 6) == "hunt";
+	bool const computer = Either_Word_Is(step.Words, 5, 6, "computer");
+	bool const attack = Either_Word_Is(step.Words, 5, 6, "attack");
+	bool const hunt = Either_Word_Is(step.Words, 5, 6, "hunt");
 	// capturedest sets the structure as the destination of the Capture mission with no target, as a team's garrison mission does.
-	bool const capturedest = Word(words, 5) == "capturedest" || Word(words, 6) == "capturedest";
+	bool const capturedest = Either_Word_Is(step.Words, 5, 6, "capturedest");
 	TechnoClass * target = Techno_Over_Cell(Cell(step.X, step.Y));
 	DebugString("AUTOTEST settarget %s -> %s\n", step.Argument.c_str(), target != NULL ? target->TClass->Name() : "(none)");
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
@@ -2597,7 +2628,7 @@ static void Set_Target_Step(StepType const & step)
 /// ally owns; otherwise the player's objects are picked.</param>
 static void Threat_Probe_Step(StepType const & step)
 {
-	bool const computer = Word(Line_Words(step.Line), 3) == "computer";
+	bool const computer = Word(step.Words, 3) == "computer";
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		bool const owned = computer ? (techno->House != PlayerPtr && !techno->House->Is_Ally(PlayerPtr)) : techno->House == PlayerPtr;
@@ -2912,7 +2943,7 @@ static void Stop_Step(StepType const & step)
 // strikeobj <TypeID> x y [radius]: see Strike_Object.
 static void Strikeobj_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	Strike_Object(step.Argument, step.X, step.Y, Number(words, 5, 3), Word(words, 6), Word(words, 7));
 }
 
@@ -2920,7 +2951,7 @@ static void Strikeobj_Step(StepType const & step)
 // scatter <TypeID> x y [forced] [nokidding]: see Scatter_Objects.
 static void Scatter_Step(StepType const & step)
 {
-	std::vector<std::string> const words = Line_Words(step.Line);
+	std::vector<std::string> const & words = step.Words;
 	Scatter_Objects(step.Argument, step.X, step.Y, Number(words, 5, 0) != 0, Number(words, 6, 0) != 0);
 }
 
@@ -4009,7 +4040,7 @@ static void Follow_Step(StepType const & step)
 // With enemy, the objects of the type that the player does not own and is not allied with enter it instead.
 static void Enter_Step(StepType const & step)
 {
-	bool const enemy_enters = Word(Line_Words(step.Line), 5) == "enemy";
+	bool const enemy_enters = Word(step.Words, 5) == "enemy";
 	TechnoClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	if (building == NULL) {
 		building = Map[Cell(step.X, step.Y)].Cell_Unit();
@@ -4698,20 +4729,20 @@ static void Truecolourdir_Step(StepType const & step)
 static void Extract_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const gap = argument.find_first_of(" \t");
-	size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
-	CCFileClass in(argument.substr(0, gap).c_str());
-	if (start == std::string::npos || !in.Is_Available()) {
+	std::string out_path;
+	std::string const in_name = Split_Argument(argument, 1, out_path).front();
+	CCFileClass in(in_name.c_str());
+	if (out_path.empty() || !in.Is_Available()) {
 		DebugString("AUTOTEST   extract %s: not found\n", argument.c_str());
 	} else {
 		std::vector<unsigned char> bytes((std::size_t)in.Size());
 		in.Read(bytes.data(), (int)bytes.size());
-		FILE * out = std::fopen(argument.substr(start).c_str(), "wb");
+		FILE * out = std::fopen(out_path.c_str(), "wb");
 		if (out != NULL) {
 			std::fwrite(bytes.data(), 1, bytes.size(), out);
 			std::fclose(out);
 		}
-		DebugString("AUTOTEST   extract %s: %d bytes\n", argument.substr(0, gap).c_str(), (int)bytes.size());
+		DebugString("AUTOTEST   extract %s: %d bytes\n", in_name.c_str(), (int)bytes.size());
 	}
 }
 
@@ -4720,10 +4751,10 @@ static void Extract_Step(StepType const & step)
 static void Exportshape_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const gap = argument.find_first_of(" \t");
-	size_t const start = gap != std::string::npos ? argument.find_first_not_of(" \t", gap) : std::string::npos;
-	if (start != std::string::npos) {
-		TrueColour_Export(argument.substr(0, gap).c_str(), argument.substr(start).c_str());
+	std::string out_path;
+	std::string const shape_name = Split_Argument(argument, 1, out_path).front();
+	if (!out_path.empty()) {
+		TrueColour_Export(shape_name.c_str(), out_path.c_str());
 	} else {
 		DebugString("AUTOTEST   exportshape %s: needs a shape name and an output path\n", argument.c_str());
 	}
@@ -4735,16 +4766,14 @@ static void Exportshape_Step(StepType const & step)
 static void Exportpal_Step(StepType const & step)
 {
 	std::string const & argument = step.Argument;
-	size_t const first = argument.find_first_of(" \t");
-	size_t const second = first != std::string::npos ? argument.find_first_not_of(" \t", first) : std::string::npos;
-	size_t const third = second != std::string::npos ? argument.find_first_of(" \t", second) : std::string::npos;
-	size_t const last = third != std::string::npos ? argument.find_first_not_of(" \t", third) : std::string::npos;
-	if (last != std::string::npos) {
-		std::string palette = argument.substr(second, third - second);
+	std::string out_path;
+	std::vector<std::string> const words = Split_Argument(argument, 2, out_path);
+	if (!out_path.empty()) {
+		std::string palette = words[1];
 		if (palette == "house") {
 			palette = "house:" + std::to_string(PlayerPtr->Scheme);
 		}
-		TrueColour_Export_Palette(argument.substr(0, first).c_str(), palette.c_str(), argument.substr(last).c_str());
+		TrueColour_Export_Palette(words[0].c_str(), palette.c_str(), out_path.c_str());
 	} else {
 		DebugString("AUTOTEST   exportpal %s: needs a shape name, a palette and an output path\n", argument.c_str());
 	}
@@ -6439,9 +6468,9 @@ static void Clickcameo_Step(StepType const & step)
 // state the script holds decides what the press does, as it does for a player.
 static void Cameopress_Step(StepType const & step)
 {
-	std::size_t const space = step.Argument.find_first_of(" \t");
-	std::string const name = step.Argument.substr(0, space);
-	bool const right = space != std::string::npos && step.Argument.find("right", space) != std::string::npos;
+	std::string after_name;
+	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
+	bool const right = after_name.find("right") != std::string::npos;
 	TechnoTypeClass const * type = Find_Type(name);
 	bool pressed = false;
 	for (int column = 0; type != NULL && !pressed && column < SidebarClass::COLUMNS; column++) {
@@ -7361,7 +7390,7 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string source = line;
 		source.erase(source.find_last_not_of(" \t\r\n") + 1);
-		Steps.push_back(StepType{frame, command, text, x, y, source});
+		Steps.push_back(StepType{frame, command, text, x, y, source, Line_Words(source)});
 	}
 	std::fclose(file);
 
@@ -7383,7 +7412,7 @@ void AutoTest_Frame(void)
 		if (Is_Wait_Command(step.Command)) {
 			if (WaitChecked != Next) {
 				WaitChecked = Next;
-				std::string const problem = Wait_Problem(Line_Words(step.Line));
+				std::string const problem = Wait_Problem(step.Words);
 				if (!problem.empty()) {
 					DebugString("AUTOTEST wait problem: %s: %s\n", problem.c_str(), step.Line.c_str());
 				}
