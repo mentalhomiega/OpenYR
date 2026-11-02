@@ -486,6 +486,21 @@ struct StepType
 	Cell Argument_Cell(void) const {return(Cell(Argument_Int(), X));}
 };
 
+
+// The cell of an object's centre, or Cell(-1, -1) when there is no object.
+Cell Cell_Or_None(AbstractClass const * object)
+{
+	return(object != NULL ? object->Center_Coord().As_Cell() : Cell(-1, -1));
+}
+
+
+// The rank a log line writes for an object's veterancy: 2 for elite, 1 for veteran, 0 otherwise.
+int Rank_Of(VeterancyClass const & veterancy)
+{
+	return(veterancy.Is_Elite() ? 2 : (veterancy.Is_Veteran() ? 1 : 0));
+}
+
+
 bool Active = false;
 
 // The keys a script holds with hold and lets go with release. An unattended run reads the held keys from here,
@@ -1002,7 +1017,7 @@ void Scatter_Objects(std::string const & name, int x, int y, bool forced, bool n
 		int const before = Scen->RandomNumber.Index_1();
 		soldier->Scatter(threat, forced, nokidding);
 		int const draws = (Scen->RandomNumber.Index_1() - before + Random2Class::TABLE_SIZE) % Random2Class::TABLE_SIZE;
-		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(soldier->NavCom);
 		DebugString("AUTOTEST   scatter %s of %s at %d,%d (%d,%d) do %d threat %d,%d forced %d nokidding %d: mission %s nav %d,%d draws %d\n", soldier->Class->Name(), soldier->House->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y,
 			from.X & 255, from.Y & 255, (int)soldier->Doing, x, y, (int)forced, (int)nokidding, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, draws);
 	}
@@ -1022,14 +1037,14 @@ static void Enemies_Step(StepType const &)
 		UnitClass const * unit = Units[index];
 		if (unit->House == PlayerPtr) continue;
 		units++;
-		Cell const tar = unit->TarCom != NULL ? unit->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(unit->TarCom);
 		DebugString("AUTOTEST   enemy unit %s cell %d,%d height %d layer %d strength %d berzerk %d tar %d,%d\n", unit->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y, unit->HeightAGL, (int)unit->In_Which_Layer(), unit->Strength, (int)unit->IsBerzerk, tar.X, tar.Y);
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass const * soldier = Infantry[index];
 		if (soldier->House == PlayerPtr) continue;
 		infantry++;
-		Cell const nav = soldier->NavCom != NULL ? soldier->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(soldier->NavCom);
 		DebugString("AUTOTEST   enemy infantry %s cell %d,%d strength %d mission %s nav %d,%d limbo %d\n", soldier->Class->Name(), soldier->Get_Cell().X, soldier->Get_Cell().Y, soldier->Strength, MissionClass::Mission_Name(soldier->Get_Mission()), nav.X, nav.Y, (int)soldier->IsInLimbo);
 	}
 	DebugString("AUTOTEST   enemy units %d infantry %d\n", units, infantry);
@@ -1068,8 +1083,8 @@ static void Dump_Step(StepType const &)
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * object = Units[index];
 		if (object->House != PlayerPtr) continue;
-		Cell const nav = object->NavCom != NULL ? object->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(object->NavCom);
+		Cell const tar = Cell_Or_None(object->TarCom);
 		ClassID const loco = Locomotion_Class_ID(object->Locomotion.get());
 		DebugString("AUTOTEST   unit %s cell %d,%d mission %s status %d nav %d,%d tar %d,%d strength %d moving %d limbo %d loco %08X typeloco %08X speed %d load %d%% ore %d curtain %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), object->Status, nav.X, nav.Y, tar.X, tar.Y, object->Strength, (int)object->Locomotion->Is_Moving(), (int)object->IsInLimbo, (unsigned)loco.Data1, (unsigned)object->Class->Locomotor.Data1, object->Class->MaxSpeed, (int)(object->Tiberium_Load() * 100), (int)object->Get_Cell_Ptr()->Tiberium_Value(), (int)object->IronCurtainTimer);
 		if (object->Is_Iron_Curtained()) {
@@ -1095,7 +1110,7 @@ static void Dump_Step(StepType const &)
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * object = Infantry[index];
 		if (object->House != PlayerPtr) continue;
-		Cell const tar = object->TarCom != NULL ? object->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(object->TarCom);
 		DebugString("AUTOTEST   infantry %s cell %d,%d mission %s do %d deployed %d strength %d rank %d tar %d,%d opentopped %d lastfire %d height %d speed %d nav %d\n", object->Class->Name(), object->Get_Cell().X, object->Get_Cell().Y, MissionClass::Mission_Name(object->Get_Mission()), (int)object->Doing, (int)object->Is_Deployed(), (int)object->Strength, object->Veterancy.Is_Elite() ? 2 : (object->Veterancy.Is_Veteran() ? 1 : 0), tar.X, tar.Y, (int)object->IsInOpenToppedTransport, object->LastFireFrame, object->HeightAGL, (int)(object->Speed * 100), object->NavCom != NULL ? 1 : 0);
 		if (object->DisguiseType != NULL) {
 			DebugString("AUTOTEST     disguised as %s of %s\n", object->DisguiseType->Name(), object->DisguiseHouse != NULL ? object->DisguiseHouse->Class->Name() : "-");
@@ -1182,7 +1197,7 @@ void Log_Speed_Probe(void)
 			continue;
 		}
 		FootClass const * foot = static_cast<FootClass const *>(techno);
-		Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const nav = Cell_Or_None(foot->NavCom);
 		FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
 		JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
 		DebugString("AUTOTEST facing %s frame %d primary %d desired %d loco %d\n", techno->TClass->Name(), Frame, (int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), jump != NULL ? (int)jump->Facing_Current().As_Int() : -1);
@@ -2059,7 +2074,7 @@ static void Spawn_Probe_Step(StepType const & step)
 		bool const foot = techno->Is_Foot();
 		FootClass const * vehicle = foot ? static_cast<FootClass const *>(techno) : NULL;
 		Coord const dest = vehicle != NULL ? vehicle->Locomotion->Destination() : Coord(-1, -1, -1);
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		DebugString("AUTOTEST   spawns %s of %s frame %d cell %d,%d body %d desired %d rotating %d moving %d moving_now %d dest %d,%d tarcom %d,%d mission %s\n",
 			techno->TClass->Name(), techno->House->Class->Name(), Frame, cell.X, cell.Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
 			(int)techno->PrimaryFacing.Is_Rotating(), vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving() : -1, vehicle != NULL ? (int)vehicle->Locomotion->Is_Moving_Now() : -1,
@@ -2068,8 +2083,8 @@ static void Spawn_Probe_Step(StepType const & step)
 		SpawnManagerClass const & spawns = *techno->SpawnManager;
 		AbstractClass const * target = spawns.Current_Target();
 		AbstractClass const * queued = spawns.Queued_Target();
-		Cell const aim = target != NULL ? target->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const next = queued != NULL ? queued->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const aim = Cell_Or_None(target);
+		Cell const next = Cell_Or_None(queued);
 		DebugString("AUTOTEST   spawncycle %s frame %d target %d,%d queued %d,%d status %d next_spawn %d nodes", techno->TClass->Name(), Frame, aim.X, aim.Y, next.X, next.Y, spawns.Cycle_Status(), spawns.Next_Spawn_Frame());
 		for (int node = 0; node < spawns.Node_Count(); node++) DebugString(" %d", spawns.Node_Status(node));
 		DebugStringNoPrefix("\n");
@@ -3337,7 +3352,7 @@ static void Veterancy_Step(StepType const & step)
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			int const rank = techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0);
+			int const rank = Rank_Of(techno->Veterancy);
 			DebugString("AUTOTEST   veterancy %s house %s at %d,%d rank %d experience %.6f cost %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, rank, techno->Veterancy.Experience, techno->TClass->Cost_Of(techno->House));
 		}
 	}
@@ -5356,7 +5371,7 @@ static void Aiscan_Step(StepType const &)
 		AbstractClass * scan = techno->Greatest_Threat(THREAT_RANGE, techno->Center_Coord(), false);
 		foot->IsScanLimited = scan_limited;
 		ObjectClass const * scanobject = dynamic_cast<ObjectClass const *>(scan);
-		Cell const scancell = scan != NULL ? scan->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const scancell = Cell_Or_None(scan);
 		TechnoClass * nearest = NULL;
 		int nearest_dist = 0;
 		for (int other = 0; other < Technos.Count(); other++) {
@@ -5384,8 +5399,8 @@ static void Aiscan_Step(StepType const &)
 		AbstractClass * area = techno->Greatest_Threat(THREAT_AREA, home_coord, false);
 		foot->IsScanLimited = scan_limited;
 		ObjectClass const * areaobject = dynamic_cast<ObjectClass const *>(area);
-		Cell const areacell = area != NULL ? area->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const homecell = home != NULL ? home->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const areacell = Cell_Or_None(area);
+		Cell const homecell = Cell_Or_None(home);
 		DebugString("AUTOTEST   aiscan %s of %s cell %d,%d mission %s queued %d team %s tarcom %s tarcell %d,%d scan %s scancell %d,%d passive %d slave %d near %s dist %d inrange %d fire %d nearnothreat %d nearlocked %d home %d,%d navcom %d firing %d area %s areacell %d,%d\n",
 			techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)foot->MissionQueue,
 			foot->Team != NULL ? foot->Team->Class->Name() : "-", tarobject != NULL ? tarobject->Class_Of()->Name() : (tarcell ? "cell" : "-"),
@@ -5422,7 +5437,7 @@ static void Gattling_Step(StepType const & step)
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		int const aim = techno->TarCom != NULL && techno->RTTI == RTTI_BUILDING ? (int)static_cast<BuildingClass const *>(techno)->Aim_Direction(techno->TarCom).As_Int() : -1;
 		int const center = techno->TarCom != NULL ? (int)::Direction(techno->Center_Coord(), techno->TarCom->Center_Coord()).As_Int() : -1;
 		int const fire = techno->RTTI == RTTI_BUILDING && techno->TarCom != NULL ? (int)static_cast<BuildingClass const *>(techno)->Can_Fire(techno->TarCom, 0) : -1;
@@ -5571,7 +5586,7 @@ static void Rallyof_Step(StepType const & step)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass const * building = Buildings[index];
 		if (building->House != PlayerPtr || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const rally = building->ArchiveTarget != NULL ? building->ArchiveTarget->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const rally = Cell_Or_None(building->ArchiveTarget);
 		DebugString("AUTOTEST   rallyof %s cell %d,%d rally %d,%d\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y, rally.X, rally.Y);
 	}
 }
@@ -5661,12 +5676,12 @@ static void Where_Step(StepType const & step)
 		TechnoClass const * techno = Technos[index];
 		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
 		Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const tar = techno->TarCom != NULL ? techno->TarCom->Center_Coord().As_Cell() : Cell(-1, -1);
+		Cell const tar = Cell_Or_None(techno->TarCom);
 		ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
 		DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
 		DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
 		DebugString("AUTOTEST   usable %s cell %d,%d inlocal %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)Map.In_Local_Radar(techno->Get_Cell()));
-		DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), techno->Veterancy.Is_Elite() ? 2 : (techno->Veterancy.Is_Veteran() ? 1 : 0));
+		DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), Rank_Of(techno->Veterancy));
 		if (techno->RTTI == RTTI_UNIT) {
 			UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
 			DebugString("AUTOTEST   mirage look %s blink %d owner %d ally %d cycle %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->House->Is_Player_Control(), (int)vehicle->House->Is_Ally(PlayerPtr), vehicle->Mirage_Cycle(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
@@ -5935,7 +5950,7 @@ static void Census_Step(StepType const & step)
 			else units++;
 			if (step.Argument == "units" && (techno->What_Am_I() != RTTI_INFANTRY || stricmp(techno->TClass->Name(), "SLAV") == 0)) {
 				FootClass const * foot = static_cast<FootClass const *>(techno);
-				Cell const nav = foot->NavCom != NULL ? foot->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+				Cell const nav = Cell_Or_None(foot->NavCom);
 				DebugString("AUTOTEST     %s %s cell %d,%d mission %s nav %d,%d strength %d\n", Houses[house]->Class->Name(), techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)techno->Strength);
 			}
 			if (techno->Is_Foot()) {
@@ -6315,7 +6330,7 @@ static void Unitstate_Step(StepType const & step)
 		}
 		DebugString("AUTOTEST   unitstate %s house %s at %d,%d mission %d queued %d team %s navcom %d strength %d deployfits %d\n", unit->Class->Name(), unit->House->Class->Name(), unit->Get_Cell().X, unit->Get_Cell().Y,
 			(int)unit->Mission, (int)unit->MissionQueue, unit->Team != NULL ? unit->Team->Class->Name() : "-", unit->NavCom != NULL ? 1 : 0, (int)unit->Strength, fits);
-			DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), unit->Veterancy.Is_Elite() ? 2 : (unit->Veterancy.Is_Veteran() ? 1 : 0));
+			DebugString("AUTOTEST   rank %s %d\n", unit->Class->Name(), Rank_Of(unit->Veterancy));
 	}
 }
 
