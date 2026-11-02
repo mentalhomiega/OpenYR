@@ -231,9 +231,6 @@ class BulletClass : public ObjectClass
 		 * reaches zero it is reloaded from the animation rate of the projectile type.
 		 */
 		unsigned char AnimRate;
-
-	public:
-		friend BulletClass *Create_Bullet(BulletTypeClass const *type, TechnoClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, bool bright);
 };
 
 

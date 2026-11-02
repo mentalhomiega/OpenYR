@@ -431,16 +431,6 @@ void IonStormClass::Retint(int red, int green, int blue)
 
 
 /// <summary>
-/// Forgets which special lighting the palettes wear, for a scenario that has just started or a
-/// game just loaded. The next Update_Special_Lighting applies the lighting that suits the state.
-/// </summary>
-void IonStormClass::Reset_Special_Lighting(void)
-{
-	Applied_Light = SPECIAL_LIGHT_NONE;
-}
-
-
-/// <summary>
 /// Puts the scenario's own lighting back once the effects behind the special lighting have been cleared.
 /// </summary>
 void IonStormClass::Clear_Special_Lighting(void)

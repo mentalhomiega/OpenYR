@@ -42,7 +42,6 @@ class IonStormClass
 		 * A chronoshift screen effect that runs counts as the flash.
 		 */
 		static void Update_Special_Lighting(void);
-		static void Reset_Special_Lighting(void);
 		static void Clear_Special_Lighting(void);
 		static void Restore_Special_Lighting(void);
 		static void Special_Tint(int & red, int & green, int & blue);
