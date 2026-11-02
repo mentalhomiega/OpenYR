@@ -1010,10 +1010,7 @@ bool TrueColour_Export_Palette(char const * name, char const * palette, char con
 			DebugString("AUTOTEST   exportpal %s: ANIM.PAL not found\n", name);
 			return(false);
 		}
-		memmove(&pal[0], data, sizeof(pal));
-		for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-			pal[index] = RGBClass((unsigned char)(pal[index].Get_Red() << 2), (unsigned char)(pal[index].Get_Green() << 2), (unsigned char)(pal[index].Get_Blue() << 2));
-		}
+		pal = Widen_Six_Bit_Palette(data);
 	} else if (strnicmp(palette, "house:", 6) == 0) {
 		int const scheme = std::atoi(palette + 6);
 		if (scheme < 0 || scheme >= ColorSchemes.Count()) {

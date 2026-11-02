@@ -284,12 +284,7 @@ bool MSFont::Init(char const * file_name, char const * palette_name)
 	strncpy(PaletteName, palette_name, sizeof(PaletteName) - 1);
 	PaletteName[sizeof(PaletteName) - 1] = '\0';
 
-	for (int gindex = 0; gindex < 256; gindex++) {
-		CCPalette[gindex] = RGBClass(
-			((unsigned char *)*palette)[gindex*3]<<2,
-			((unsigned char *)*palette)[gindex*3+1]<<2,
-			((unsigned char *)*palette)[gindex*3+2]<<2);
-	}
+	CCPalette = Widen_Six_Bit_Palette(*palette);
 
 	unsigned char red = (*palette)[68].Get_Red()<<2;
 	unsigned char blue = (*palette)[68].Get_Blue()<<2;

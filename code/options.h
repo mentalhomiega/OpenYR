@@ -152,12 +152,6 @@ class OptionsClass {
 		 */
 		int DetailLevel;
 
-		/*
-		 * If the sidebar is to be drawn down the right hand edge of the screen, then this flag
-		 * will be true. Tiberian Sun offers no way to move it, so it is always true.
-		 */
-		bool IsSidebarOnRight;
-
 		// The modern interface draws the map over the whole screen with the controls in panels over it.
 		bool ModernInterface;
 

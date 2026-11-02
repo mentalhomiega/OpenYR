@@ -387,6 +387,20 @@ int ScoreStageClass::Text_Height(void) const
 }
 
 
+// Reads a six-bit palette file into CCPalette. Returns false, and leaves CCPalette unchanged, when the file is missing.
+static bool Read_Six_Bit_Palette(char const * name)
+{
+	CCFileClass file(name);
+	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
+	file.Close();
+	if (palette == NULL) return(false);
+
+	CCPalette = Widen_Six_Bit_Palette(*palette);
+	delete palette;
+	return(true);
+}
+
+
 /// <summary>
 /// Loads a palette stored in 6 bit values into the game palette, and makes the drawer that
 /// converts shapes through it.
@@ -394,18 +408,7 @@ int ScoreStageClass::Text_Height(void) const
 /// <param name="name">The palette's file name.</param>
 void ScoreStageClass::Load_Palette(char const * name)
 {
-	CCFileClass file(name);
-	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
-	file.Close();
-	if (palette == NULL) return;
-
-	for (int i = 0; i < 256; i++) {
-		CCPalette[i] = RGBClass(
-			((unsigned char *)*palette)[i*3] << 2,
-			((unsigned char *)*palette)[i*3+1] << 2,
-			((unsigned char *)*palette)[i*3+2] << 2);
-	}
-	delete palette;
+	if (!Read_Six_Bit_Palette(name)) return;
 
 	if (Drawer != NULL) {
 		delete Drawer;
@@ -426,18 +429,7 @@ void ScoreStageClass::Load_Palette(char const * name)
 /// <remarks>The global CCPalette is overwritten with the palette.</remarks>
 ConvertClass * ScoreStageClass::Load_Drawer(char const * name) const
 {
-	CCFileClass file(name);
-	PaletteClass * palette = (PaletteClass *)Load_Alloc_Data(file);
-	file.Close();
-	if (palette == NULL) return(NULL);
-
-	for (int i = 0; i < 256; i++) {
-		CCPalette[i] = RGBClass(
-			((unsigned char *)*palette)[i*3] << 2,
-			((unsigned char *)*palette)[i*3+1] << 2,
-			((unsigned char *)*palette)[i*3+2] << 2);
-	}
-	delete palette;
+	if (!Read_Six_Bit_Palette(name)) return(NULL);
 
 	return(new ConvertClass(CCPalette, CCPalette, *StageSurface));
 }

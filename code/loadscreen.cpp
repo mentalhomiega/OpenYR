@@ -147,14 +147,9 @@ std::unique_ptr<ConvertClass> Load_Drawer(std::string const & name, Surface cons
 		return(nullptr);
 	}
 
-	PaletteClass palette;
-	file.Read(&palette[0], size);
-
-	// Palette files hold six-bit colours, which the game widens to eight bits.
-	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-		RGBClass const rgb = palette[index];
-		palette[index] = RGBClass((unsigned char)(rgb.Get_Red() << 2), (unsigned char)(rgb.Get_Green() << 2), (unsigned char)(rgb.Get_Blue() << 2));
-	}
+	PaletteClass six_bit;
+	file.Read(&six_bit[0], size);
+	PaletteClass const palette = Widen_Six_Bit_Palette(&six_bit[0]);
 	return(std::make_unique<ConvertClass>(palette, palette, surface));
 }
 

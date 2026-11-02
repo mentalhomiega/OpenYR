@@ -67,3 +67,7 @@ class PaletteClass
 	protected:
 		RGBClass Palette[COLOR_COUNT];
 };
+
+
+// Widens a 256-entry palette of six-bit guns (values 0 to 63) to eight bits per gun.
+PaletteClass Widen_Six_Bit_Palette(void const * six_bit_palette);

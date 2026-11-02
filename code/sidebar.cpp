@@ -627,13 +627,7 @@ void SidebarClass::Init_For_House(void)
 	StripClass::ClockShapes = (ShapeSet const *)MFCD::Retrieve("GCLOCK2.SHP");
 	StripClass::RechargeClockShapes = StripClass::ClockShapes;
 
-	PaletteClass pal;
-
-	memmove(&pal, MFCD::Retrieve("SIDEBAR.PAL"), sizeof(pal));
-
-	for (i = 0; i < PaletteClass::COLOR_COUNT; i++) {
-		pal[i] = RGBClass(pal[i].Get_Red() * 4, pal[i].Get_Green() * 4, pal[i].Get_Blue() * 4);
-	}
+	PaletteClass const pal = Widen_Six_Bit_Palette(MFCD::Retrieve("SIDEBAR.PAL"));
 
 	if (SidebarDrawer != NULL) {
 		delete SidebarDrawer;
@@ -1223,22 +1217,16 @@ void SidebarClass::Draw_It(bool complete)
 		Column[ActiveTab].Draw_It(complete);
 	}
 	Draw_Power_Bar(complete || body_drawn);
-	if (Repair.IsDrawn) {
-		IsToBlitSidebar = true;
-		Repair.IsDrawn = false;
-	}
-	if (Upgrade.IsDrawn) {
-		IsToBlitSidebar = true;
-		Upgrade.IsDrawn = false;
-	}
-	if (Power.IsDrawn) {
-		IsToBlitSidebar = true;
-		Power.IsDrawn = false;
-	}
-	if (Waypoint.IsDrawn) {
-		IsToBlitSidebar = true;
-		Waypoint.IsDrawn = false;
-	}
+	auto const blit_if_drawn = [](auto & button) {
+		if (button.IsDrawn) {
+			IsToBlitSidebar = true;
+			button.IsDrawn = false;
+		}
+	};
+	blit_if_drawn(Repair);
+	blit_if_drawn(Upgrade);
+	blit_if_drawn(Power);
+	blit_if_drawn(Waypoint);
 	if (ToolTips != NULL) {
 		ToolTips->Draw_Current(true);
 	}
@@ -1331,7 +1319,7 @@ void SidebarClass::Blit_Sidebar(bool complete)
 			if (Map.LastDrawRect == RECT_NONE) {
 				if (IsToRedrawCredits) {
 					VisibleSurface->Blit_From(
-						Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT),
+						Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT),
 						*SidebarSurface,
 						Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT),
 						false,
@@ -1347,13 +1335,13 @@ void SidebarClass::Blit_Sidebar(bool complete)
 		}
 
 		if (Map.LastDrawRect == RECT_NONE && !complete) {
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
 		} else if (!IsToBlitSidebar) {
-			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + (Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
+			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + ScreenTacticalRect.Width,Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
 		} else {
 			Rect sb_rect = SidebarSurface->Get_Rect();
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? ScreenTacticalRect.Width : 0), 0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
+			VisibleSurface->Blit_From(Rect(ScreenTacticalRect.Width,0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
 		}
 	}
 	IsToBlitSidebar = false;
@@ -2540,17 +2528,22 @@ void SidebarClass::StripClass::Draw_It(bool complete)
 		LastSlid = Slid;
 
 	} else {
-
-		if (UpButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			UpButton[ID].IsDrawn = false;
-		}
-
-		if (DownButton[ID].IsDrawn) {
-			IsToBlitSidebar = true;
-			DownButton[ID].IsDrawn = false;
-		}
+		auto const blit_if_drawn = [](auto & button) {
+			if (button.IsDrawn) {
+				IsToBlitSidebar = true;
+				button.IsDrawn = false;
+			}
+		};
+		blit_if_drawn(UpButton[ID]);
+		blit_if_drawn(DownButton[ID]);
 	}
+}
+
+
+static int Pending_Count(RTTIType type, int id, TechnoTypeClass const * tech)
+{
+	FactoryClass * fptr = PlayerPtr->Fetch_Factory(type, id);
+	return((fptr != NULL) ? fptr->Total(tech) : 0);
 }
 
 
@@ -2614,8 +2607,7 @@ bool SidebarClass::StripClass::Recalc(void)
 		if (!ok) {
 			// This sweep runs for the local player alone, so the abandon travels as an event.
 			if (Rule->IsRecheckPrerequisites && tech != NULL) {
-				FactoryClass * fptr = PlayerPtr->Fetch_Factory(Buildables[index].BuildableType, Buildables[index].BuildableID);
-				int pending = (fptr != NULL) ? fptr->Total(tech) : 0;
+				int const pending = Pending_Count(Buildables[index].BuildableType, Buildables[index].BuildableID, tech);
 				if (pending > 0) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT,
 							Buildables[index].BuildableType, Buildables[index].BuildableID, pending));
@@ -2840,8 +2832,7 @@ static int Cameo_Produce_Count(FactoryClass const * factory)
 static void Cameo_Abandon(RTTIType otype, int oid, TechnoTypeClass const * choice)
 {
 	if (Keyboard->Down(KN_LSHIFT)) {
-		FactoryClass * fptr = PlayerPtr->Fetch_Factory(otype, oid);
-		int const pending = (fptr != NULL) ? fptr->Total(choice) : 0;
+		int const pending = Pending_Count(otype, oid, choice);
 		if (pending > 1) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ABANDON_COUNT, otype, oid, pending));
 			return;
@@ -3373,13 +3364,8 @@ void SidebarClass::Reposition_Sidebar(void)
 
 	Add_Tool_Tips();
 
-	int x = 0;
 	int y = RadarButton.Y + RadarButton.Height;
-	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(Sidebar_Screen_X(), y);
-	} else {
-		Background.Set_Position(x, y);
-	}
+	Background.Set_Position(Sidebar_Screen_X(), y);
 	Background.Set_Size(SidebarSurface->Get_Width(), SidebarSurface->Get_Height() - y);
 }
 

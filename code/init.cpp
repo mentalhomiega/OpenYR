@@ -3058,21 +3058,13 @@ static int const MENU_CNCNET_LOBBY = 107;
 static int const MENU_REPLAYS = 108;
 
 
-// The text of a string table label, or the fallback when the table lacks it.
-static std::string Menu_Text(char const * label, char const * fallback)
-{
-	std::string const text = StringTable.Find_UTF8(label);
-	return(text.empty() ? std::string(fallback) : text);
-}
-
-
 // The button that leaves a sub-menu: Yuri's Revenge's "Main Menu", or "Back" in the modern style.
 static UIMenuItemType Back_Item(void)
 {
 	if (Options.IsClassicMenus) {
-		return(UIMenuItemType{Menu_Text("GUI:MainMenu", "Main Menu"), MENU_BACK, true});
+		return(UIMenuItemType{StringTable.Find_UTF8("GUI:MainMenu", "Main Menu"), MENU_BACK, true});
 	}
-	return(UIMenuItemType{Menu_Text("GUI:Back", "Back"), MENU_BACK, true});
+	return(UIMenuItemType{StringTable.Find_UTF8("GUI:Back", "Back"), MENU_BACK, true});
 }
 
 
@@ -3090,10 +3082,10 @@ static int Single_Player_Menu(void)
 {
 	UIMenuState menu;
 	menu.Kind = UI_MENU_SINGLE_PLAYER;
-	menu.Title = Menu_Text("GUI:SinglePlayerMenu", "Single Player");
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:NewCampaign", "New Campaign"), SEL_CAMPAIGN_GAME, true});
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
-	menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
+	menu.Title = StringTable.Find_UTF8("GUI:SinglePlayerMenu", "Single Player");
+	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:NewCampaign", "New Campaign"), SEL_CAMPAIGN_GAME, true});
+	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:LoadSavedGame", "Load Saved Game"), SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+	menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Skirmish", "Skirmish"), MENU_SKIRMISH, true});
 	menu.Items.push_back(Back_Item());
 	Show_Title_Badges(menu);
 	UI_Menu_Place(menu);
@@ -3106,10 +3098,10 @@ static int Movies_Menu(void)
 	while (true) {
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MOVIES;
-		menu.Title = Menu_Text("GUI:MoviesAndCredits", "Movies & Credits");
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
+		menu.Title = StringTable.Find_UTF8("GUI:MoviesAndCredits", "Movies & Credits");
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:SneakPeeks", "Sneak Peeks"), SEL_INTRO, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:PlayMovies", "Play Movies"), MENU_PLAY_MOVIES, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:ViewCredits", "View Credits"), SEL_VIEW_CREDITS, true});
 		menu.Items.push_back(Back_Item());
 		Show_Title_Badges(menu);
 		UI_Menu_Place(menu);
@@ -3200,19 +3192,19 @@ int Main_Menu(unsigned int timeout)
 
 		UIMenuState menu;
 		menu.Kind = UI_MENU_MAIN;
-		menu.Title = Menu_Text("GUI:MainMenu", "Main Menu");
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
+		menu.Title = StringTable.Find_UTF8("GUI:MainMenu", "Main Menu");
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:SinglePlayer", "Single Player"), MENU_SINGLE_PLAYER, true});
 		if (UI_CnCNet_Lobby_Enabled()) {
-			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNetLobby", "CnCNet (experimental)"), MENU_CNCNET_LOBBY, true});
+			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNetLobby", "CnCNet (experimental)"), MENU_CNCNET_LOBBY, true});
 		}
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Network", "Network"), MENU_NETWORK, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:CnCNet", "CnCNet"), MENU_CNCNET, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Network", "Network"), MENU_NETWORK, true});
 		if (!Options.IsClassicMenus) {
-			menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Replays", "Replays"), MENU_REPLAYS, true});
+			menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Replays", "Replays"), MENU_REPLAYS, true});
 		}
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:Options", "Options"), SEL_OPTIONS, true});
-		menu.Items.push_back(UIMenuItemType{Menu_Text("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:MoviesAndCredits", "Movies & Credits"), MENU_MOVIES, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:Options", "Options"), SEL_OPTIONS, true});
+		menu.Items.push_back(UIMenuItemType{StringTable.Find_UTF8("GUI:ExitGame", "Exit Game"), SEL_EXIT, true});
 		if (Options.IsClassicMenus) {
 			menu.Stamp.push_back(Version_Text());
 		}

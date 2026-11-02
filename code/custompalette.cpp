@@ -64,12 +64,7 @@ ConvertClass * Custom_Palette_Drawer(std::string const & filename)
 	std::unique_ptr<ConvertClass> drawer;
 	void const * data = MFCD::Retrieve(name.c_str());
 	if (data != NULL && VisibleSurface != NULL) {
-		// Palette files hold six-bit colours, which the game widens to eight bits.
-		PaletteClass palette;
-		memmove(&palette[0], data, sizeof(palette));
-		for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-			palette[index] = RGBClass((unsigned char)(palette[index].Get_Red() << 2), (unsigned char)(palette[index].Get_Green() << 2), (unsigned char)(palette[index].Get_Blue() << 2));
-		}
+		PaletteClass const palette = Widen_Six_Bit_Palette(data);
 		drawer = std::make_unique<ConvertClass>(palette, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 	} else {
 		DebugString("Custom palette %s not found; the normal palette is used.\n", name.c_str());
@@ -108,12 +103,7 @@ ConvertClass * Palette_Scheme_Drawer(std::string const & filename, int scheme)
 	std::unique_ptr<ConvertClass> drawer;
 	void const * data = MFCD::Retrieve(name.c_str());
 	if (data != NULL) {
-		// Palette files hold six-bit colours, which the game widens to eight bits.
-		PaletteClass palette;
-		memmove(&palette[0], data, sizeof(palette));
-		for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-			palette[index] = RGBClass((unsigned char)(palette[index].Get_Red() << 2), (unsigned char)(palette[index].Get_Green() << 2), (unsigned char)(palette[index].Get_Blue() << 2));
-		}
+		PaletteClass const palette = Widen_Six_Bit_Palette(data);
 		PaletteClass remapped;
 		HSVClass hsv = house->HSV;
 		drawer.reset(Build_Light_Converter(hsv, palette, GamePalette, &remapped, *VisibleSurface, house->IntensityLevels, red, green, blue, _indexes));
