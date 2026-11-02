@@ -2506,7 +2506,7 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 	**	A soldier that is digging in or dug in climbs out of it when the scatter is forced and
 	**	insistent. A human player's soldier otherwise stays put (InfantryClass 0x51D0D0).
 	*/
-	bool const digging = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+	bool const digging = Is_Digging_In();
 	if (digging && forced && nokidding) {
 		Do_Action(DO_UNDEPLOY);
 	} else if (digging && House->Is_Human_Player()) {
@@ -2642,6 +2642,12 @@ bool InfantryClass::Is_Deployed(void) const
 	if (!Class->IsDeployer) {
 		return(false);
 	}
+	return(Is_Digging_In());
+}
+
+
+bool InfantryClass::Is_Digging_In(void) const
+{
 	return(Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE);
 }
 
@@ -4042,7 +4048,7 @@ void InfantryClass::Write_INI(CCINIClass & ini)
  *=============================================================================================*/
 void InfantryClass::Fear_AI(void)
 {
-	bool const deployed = Doing == DO_DEPLOY || Doing == DO_DEPLOYED || Doing == DO_DEPLOYED_FIRE || Doing == DO_DEPLOYED_IDLE;
+	bool const deployed = Is_Digging_In();
 
 	/*
 	**	After a time, the infantry will gain courage.
