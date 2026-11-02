@@ -2003,9 +2003,9 @@ bool TechnoClass::Limbo(void)
 	}
 
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->Assign_Target(NULL);
-		}
+		});
 	}
 
 	if (TemporalImUsing && TemporalImUsing->Target != NULL) {
@@ -3938,7 +3938,7 @@ void TechnoClass::AI(void)
 	 * passenger of an open-topped transport guards, keeps thinking and stays at its position.
 	 */
 	if (TClass->IsOpenTopped) {
-		for (FootClass * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)(ObjectClass *)passenger->Next) {
+		Cargo.For_Each_Attached([this](FootClass * passenger) {
 			if (!passenger->IsInOpenToppedTransport) {
 				passenger->IsInOpenToppedTransport = true;
 				passenger->Transporter = this;
@@ -3949,7 +3949,7 @@ void TechnoClass::AI(void)
 				Logic.Submit(passenger);
 			}
 			passenger->Set_Coord(PositionCoord);
-		}
+		});
 	}
 
 	/*
@@ -6490,12 +6490,12 @@ int TechnoClass::Weapon_Range(int which) const
 	// As TechnoClass::GetWeaponRange (0x7012C0): an open-topped transport reaches no farther than its passengers' primary weapons.
 	if (TClass->IsOpenTopped) {
 		int range = weapon->Range;
-		for (FootClass const * passenger = Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass const *)(ObjectClass const *)passenger->Next) {
+		Cargo.For_Each_Attached([&range](FootClass * passenger) {
 			WeaponTypeClass const * primary = passenger->Get_Class_Weapon_Data(0)->Weapon;
 			if (primary != NULL) {
 				range = std::min(range, primary->Range);
 			}
-		}
+		});
 		return(range);
 	}
 	return(weapon->Range);

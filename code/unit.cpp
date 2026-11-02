@@ -1515,9 +1515,9 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 	**	A passenger of an open-topped vehicle is no longer riding in the open.
 	*/
 	if (Class->IsOpenTopped) {
-		for (FootClass * passenger = (FootClass *)Cargo.Attached_Object(); passenger != NULL; passenger = (FootClass *)passenger->Next) {
+		Cargo.For_Each_Attached([](FootClass * passenger) {
 			passenger->IsInOpenToppedTransport = false;
-		}
+		});
 	}
 
 	if (HeightAGL > 208) {
