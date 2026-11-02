@@ -772,6 +772,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Scatter_Incoming_Infantry(void) const;
 		int What_Weapon_Should_I_Use(AbstractClass * target) const;
 		WeaponTypeClass const * Weapon_Against(AbstractClass * target) const;	// NULL when the selected slot is empty.
+		bool Is_Firing_Garrison(void) const;
 		int Naval_Weapon(TechnoClass const * target) const;
 		void Set_Turret_Weapon(int position);
 		void Receive_Gunner(FootClass * gunner);

@@ -675,6 +675,12 @@ WeaponTypeClass const * TechnoClass::Weapon_Against(AbstractClass * target) cons
 }
 
 
+bool TechnoClass::Is_Firing_Garrison(void) const
+{
+	return(RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire());
+}
+
+
 /// <summary>
 /// Returns the weapon this object uses against a target on water, or -1 when it may not fire at
 /// it, as its type's NavalTargeting sets (TechnoClass::SelectNavalTargeting, 0x6F3820).
@@ -3291,7 +3297,7 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 
 		// A garrison searches OccupyWeaponRange cells beyond half its narrower side, as
 		// BuildingClass::GetOccupyRangeBonus (0x458E00) and its caller work it out.
-		if (RTTI == RTTI_BUILDING && static_cast<BuildingClass const *>(this)->Can_Occupy_Fire()) {
+		if (Is_Firing_Garrison()) {
 			BuildingTypeClass const * type = static_cast<BuildingClass const *>(this)->Class;
 			crange = std::min<int>(type->Width(), type->Height()) / 2 + 1 + Rule->OccupyWeaponRange;
 		}
@@ -5201,8 +5207,7 @@ int TechnoClass::Fire_Damage(WeaponTypeClass const * weapon) const
 			firepower = (int)(firepower * Rule->BunkerDamageMultiplier);
 		}
 	}
-	BuildingClass const * garrison = RTTI == RTTI_BUILDING ? static_cast<BuildingClass const *>(this) : NULL;
-	if (garrison != NULL && garrison->Can_Occupy_Fire()) {
+	if (Is_Firing_Garrison()) {
 		firepower = (int)(firepower * Rule->OccupyDamageMultiplier);
 	}
 	if (IsInOpenToppedTransport) {
@@ -5607,7 +5612,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		a = weapon->OpenToppedAnim;
 	}
 	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
-	bool const garrison_fire = garrison != NULL && garrison->Can_Occupy_Fire();
+	bool const garrison_fire = Is_Firing_Garrison();
 	if (garrison_fire) {
 		a = weapon->OccupantAnim;
 	}
