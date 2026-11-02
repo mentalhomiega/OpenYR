@@ -449,6 +449,32 @@ void RadarEventClass::Serialize(SaveStreamClass & stream)
 }
 
 
+// The bright and dark ends of the color cycle that a color group pulses between.
+struct RadarEventColorCycle
+{
+	RGBClass Max;
+	RGBClass Min;
+};
+
+
+static RadarEventColorCycle Radar_Event_Color_Cycle(RadarEventColorGroup group)
+{
+	switch (group) {
+		case RADAREVENT_GROUP_MAGENTA:
+			return(RadarEventColorCycle{RGBClass(255,0,255), RGBClass(128,0,128)});
+
+		case RADAREVENT_GROUP_YELLOW:
+			return(RadarEventColorCycle{RGBClass(255,255,0), RGBClass(128,128,0)});
+
+		case RADAREVENT_GROUP_CYAN:
+			return(RadarEventColorCycle{RGBClass(0,255,255), RGBClass(0,128,128)});
+
+		default:
+			return(RadarEventColorCycle{RGBClass(0,0,0), RGBClass(0,0,0)});
+	}
+}
+
+
 /// <summary>
 /// Fetches the bright end of this event's color cycle.
 /// The event pulses between this color and the one Get_Min_Color returns. Gamemd
@@ -457,19 +483,7 @@ void RadarEventClass::Serialize(SaveStreamClass & stream)
 /// <returns>Returns with the brightest color this event will be drawn in.</returns>
 RGBClass RadarEventClass::Get_Max_Color(void) const
 {
-	switch (Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE) {
-		case RADAREVENT_GROUP_MAGENTA:
-			return(RGBClass(255,0,255));
-
-		case RADAREVENT_GROUP_YELLOW:
-			return(RGBClass(255,255,0));
-
-		case RADAREVENT_GROUP_CYAN:
-			return(RGBClass(0,255,255));
-
-		default:
-			return(RGBClass(0,0,0));
-	}
+	return(Radar_Event_Color_Cycle(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE).Max);
 }
 
 
@@ -480,19 +494,7 @@ RGBClass RadarEventClass::Get_Max_Color(void) const
 /// <returns>Returns with the darkest color this event will be drawn in.</returns>
 RGBClass RadarEventClass::Get_Min_Color(void) const
 {
-	switch (Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE) {
-		case RADAREVENT_GROUP_MAGENTA:
-			return(RGBClass(128,0,128));
-
-		case RADAREVENT_GROUP_YELLOW:
-			return(RGBClass(128,128,0));
-
-		case RADAREVENT_GROUP_CYAN:
-			return(RGBClass(0,128,128));
-
-		default:
-			return(RGBClass(0,0,0));
-	}
+	return(Radar_Event_Color_Cycle(Radar_Event_Is_Valid(Type) ? RadarEventKinds[Type].ColorGroup : RADAREVENT_GROUP_NONE).Min);
 }
 
 
