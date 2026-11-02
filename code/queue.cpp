@@ -655,6 +655,14 @@ static void Log_Sync_Frame(void)
 }
 
 
+// Stores the current frame's checksum for the frame info packets and records its parts for the sync log.
+static void Store_Frame_Checksum(void)
+{
+	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
+	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+}
+
+
 /***************************************************************************
  * Queue_AI_Multiplayer -- Process all queued events.                      *
  *                                                                         *
@@ -826,8 +834,7 @@ static void Queue_AI_Multiplayer(void)
 	}
 
 	// Frame info packets carry this value to the other machines.
-	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
-	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+	Store_Frame_Checksum();
 
 	// Once a second the debug log keeps the checksum and its parts, so the logs of two machines that went out of
 	// sync show the frame and the part of the game where they first differed, with the sync log off too.
@@ -3801,8 +3808,7 @@ static void Queue_Playback(void)
 	// Compute the Game's CRC
 	//------------------------------------------------------------------------
 	Compute_Game_CRC();
-	CRC[Frame & (ARRAY_SIZE(CRC) - 1)] = GameCRC;
-	Sync_Record_Frame_Detail(Frame, CurrentFrameDetail);
+	Store_Frame_Checksum();
 
 	//------------------------------------------------------------------------
 	// If we've reached the CRC print frame, do so & exit
