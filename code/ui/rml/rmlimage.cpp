@@ -10,6 +10,7 @@
 #include "ui/rml/rmlimage.h"
 
 #include "dbgprint.h"
+#include "pcxrle.h"
 #include "ui/rml/rmlrendermath.h"
 
 #include <algorithm>
@@ -161,30 +162,19 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 
 	std::vector<std::uint8_t> pixels((std::size_t)width * (std::size_t)height);
 	std::size_t source = UI_PCX_HEADER_BYTES;
+	// The run data ends where the palette begins, so a read at the palette fails the line.
+	auto get_byte = [&](std::uint8_t & value) {
+		if (source >= palette) {
+			return(false);
+		}
+		value = encoded[source++];
+		return(true);
+	};
 
 	for (int row = 0; row < height; row++) {
 		std::uint8_t * line = pixels.data() + (std::size_t)row * width;
-
-		for (int produced = 0; produced < bytesperline; ) {
-			if (source >= palette) {
-				return(false);
-			}
-
-			std::uint8_t value = encoded[source++];
-			int count = 1;
-
-			if ((value & 0xC0) == 0xC0) {
-				count = value & 0x3F;
-				if (count == 0 || source >= palette) {
-					return(false);
-				}
-				value = encoded[source++];
-			}
-
-			for (int step = 0; step < count && produced + step < width; step++) {
-				line[produced + step] = value;
-			}
-			produced += count;
+		if (!Decode_PCX_RLE_Line(get_byte, line, bytesperline, width, false)) {
+			return(false);
 		}
 	}
 
