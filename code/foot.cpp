@@ -2410,10 +2410,8 @@ bool FootClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		}
 
 		if (CurrentMission != MISSION_PATROL || Status == 0) {
-			if (CurrentPath != PATH_NONE && resume_waypoint) {
-				WaypointClass * wp = PlayerPtr->Paths[CurrentPath]->Get_Waypoint(NextWaypoint);
-				WaypointClass * next_wp = PlayerPtr->Paths[CurrentPath]->Get_Next_Waypoint(wp);
-				Execute_Waypoint_Path(next_wp);
+			if (resume_waypoint) {
+				Advance_Waypoint_Path();
 			}
 		}
 
