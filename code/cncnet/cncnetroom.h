@@ -198,6 +198,7 @@ class CnCNetRoomClass
 		void Player_Left(std::string const & nick);
 		void Refuse(std::string const & nick, std::string const & reason);
 		void Seat_Joiner(CnCNetRoomPlayerType player);
+		bool Admit(CnCNetRoomPlayerType const & player);
 		bool Host_Build(std::string & build) const;
 		bool Setup_Allowed(CnCNetRoomPlayerType const & player, int side, int color, int start, int team) const;
 		void Send_CTCP(std::string const & command, std::string const & arguments, std::string const & key = std::string());

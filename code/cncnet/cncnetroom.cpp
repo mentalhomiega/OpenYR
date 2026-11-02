@@ -168,19 +168,12 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 				}
 				Changed();
 			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
-				if (CurrentStatus == CnCNetRoomStatus::STARTING) {
-					Refuse(event.Nick, "The game has already started.");
-				} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
-					Refuse(event.Nick, "The room is full.");
-				} else {
-					// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
-					Pending.push_back({event.Nick, now});
-					CnCNetRoomPlayerType player;
-					player.Name = event.Nick;
-					Seat_Joiner(player);
-					if (!Config.Notice.empty()) {
-						Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
-					}
+				// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
+				Pending.push_back({event.Nick, now});
+				CnCNetRoomPlayerType player;
+				player.Name = event.Nick;
+				if (Admit(player) && !Config.Notice.empty()) {
+					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
 				}
 			}
 			break;
@@ -274,17 +267,11 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 			Send_Players();
 			return;
 		}
-		if (CurrentStatus == CnCNetRoomStatus::STARTING) {
-			Refuse(event.Nick, "The game has already started.");
-		} else if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
-			Refuse(event.Nick, "The room is full.");
-		} else {
-			CnCNetRoomPlayerType player;
-			player.Name = event.Nick;
-			player.OpenYR = true;
-			player.Build = build;
-			Seat_Joiner(player);
-		}
+		CnCNetRoomPlayerType player;
+		player.Name = event.Nick;
+		player.OpenYR = true;
+		player.Build = build;
+		Admit(player);
 		return;
 	}
 
@@ -409,6 +396,21 @@ void CnCNetRoomClass::Seat_Joiner(CnCNetRoomPlayerType player)
 	Changed();
 	Send_Options();
 	Send_Players();
+}
+
+
+bool CnCNetRoomClass::Admit(CnCNetRoomPlayerType const & player)
+{
+	if (CurrentStatus == CnCNetRoomStatus::STARTING) {
+		Refuse(player.Name, "The game has already started.");
+		return(false);
+	}
+	if (static_cast<int>(PlayerList.size()) >= Config.Limits.MaxPlayers) {
+		Refuse(player.Name, "The room is full.");
+		return(false);
+	}
+	Seat_Joiner(player);
+	return(true);
 }
 
 
