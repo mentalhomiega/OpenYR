@@ -4358,16 +4358,22 @@ static void Reveal_Step(StepType const &)
 
 
 // ini <section>: every entry of that section of the rules file, as the game read it.
+// Logs each entry of a section as "<label> [section] entry=value", in the file's order.
+static void Log_Ini_Section(char const * label, CCINIClass const & ini, char const * section)
+{
+	int count = ini.Entry_Count(section);
+	for (int index = 0; index < count; index++) {
+		char const * entry = ini.Get_Entry(section, index);
+		char value[256] = "";
+		ini.Get_String(section, entry, "", value, sizeof(value));
+		DebugString("AUTOTEST   %s [%s] %s=%s\n", label, section, entry, value);
+	}
+}
+
+
 static void Ini_Step(StepType const & step)
 {
-	CCINIClass const & ini = *RuleINI;
-	int count = ini.Entry_Count(step.Argument.c_str());
-	for (int index = 0; index < count; index++) {
-		char const * entry = ini.Get_Entry(step.Argument.c_str(), index);
-		char value[256] = "";
-		ini.Get_String(step.Argument.c_str(), entry, "", value, sizeof(value));
-		DebugString("AUTOTEST   ini [%s] %s=%s\n", step.Argument.c_str(), entry, value);
-	}
+	Log_Ini_Section("ini", *RuleINI, step.Argument.c_str());
 }
 
 
@@ -4519,14 +4525,7 @@ static void Inifile_Step(StepType const & step)
 		DebugString("AUTOTEST   inifile %s: not found\n", step.Argument.c_str());
 	}
 	for (int section = 0; section < ini.Section_Count(); section++) {
-		char const * name = ini.Section_Name(section);
-		int count = ini.Entry_Count(name);
-		for (int index = 0; index < count; index++) {
-			char const * entry = ini.Get_Entry(name, index);
-			char value[256] = "";
-			ini.Get_String(name, entry, "", value, sizeof(value));
-			DebugString("AUTOTEST   inifile [%s] %s=%s\n", name, entry, value);
-		}
+		Log_Ini_Section("inifile", ini, ini.Section_Name(section));
 	}
 }
 
@@ -4602,15 +4601,25 @@ static void Fire_Step(StepType const & step)
 
 
 // rules <path>: reads that INI file over the rules, as a map's rule overrides are read.
+// Loads the INI file a script names, from the path the script's files resolve to. When the file is not on hand or does not
+// load, logs "<label> <path>: not found" and returns false.
+static bool Load_Input_Ini(char const * label, std::string const & argument, CCINIClass & ini)
+{
+	std::string const resolved = AutoTest_Input_Path(argument);
+	RawFileClass file(resolved.c_str());
+	if (file.Is_Available() && ini.Load(file, false)) {
+		return(true);
+	}
+	DebugString("AUTOTEST   %s %s: not found\n", label, resolved.c_str());
+	return(false);
+}
+
+
 static void Rules_Step(StepType const & step)
 {
 	CCINIClass ini;
-	std::string const resolved = AutoTest_Input_Path(step.Argument);
-	RawFileClass file(resolved.c_str());
-	if (file.Is_Available() && ini.Load(file, false)) {
+	if (Load_Input_Ini("rules", step.Argument, ini)) {
 		Rule->Addition(ini);
-	} else {
-		DebugString("AUTOTEST   rules %s: not found\n", resolved.c_str());
 	}
 }
 
@@ -5157,14 +5166,10 @@ static void Highcell_Step(StepType const &)
 static void Teamini_Step(StepType const & step)
 {
 	CCINIClass ini;
-	std::string const resolved = AutoTest_Input_Path(step.Argument);
-	RawFileClass file(resolved.c_str());
-	if (file.Is_Available() && ini.Load(file, false)) {
+	if (Load_Input_Ini("teamini", step.Argument, ini)) {
 		TaskForceClass::Read_All(ini, SCOPE_LOCAL);
 		ScriptTypeClass::Read_All(ini, SCOPE_LOCAL);
 		TeamTypeClass::Read_All(ini, SCOPE_LOCAL);
-	} else {
-		DebugString("AUTOTEST   teamini %s: not found\n", resolved.c_str());
 	}
 }
 
