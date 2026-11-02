@@ -14,21 +14,19 @@
 
 UISettingsHostPresenterClass::UISettingsHostPresenterClass(std::vector<UISettingsPageClass> pages, std::vector<UIPresenterClass *> presenters, unsigned offered, UISettingsTab first) :
 	Pages(std::move(pages)),
-	Presenters(std::move(presenters)),
-	Offered(offered)
+	Presenters(std::move(presenters))
 {
 	Offer_Tabs(offered);
 	for (UIPresenterClass * presenter : Presenters) {
 		presenter->Offer_Tabs(offered);
 	}
 
-	for (int index = 0; index < (int)Pages.size(); index++) {
-		if (Pages[index].Tab == first) {
-			Current = index;
-		}
+	int const index = Index_Of(first);
+	if (index >= 0) {
+		Current = index;
 	}
-	for (UISettingsPageClass const & page : Pages) {
-		page.View->Set_Tab((int)Pages[Current].Tab, Offered);
+	if (!Pages.empty()) {
+		Retab_Pages(Pages[Current].Tab);
 	}
 }
 
@@ -51,7 +49,6 @@ void UISettingsHostPresenterClass::Refresh(void)
 // moves to the page at once; a page that ends the screen ends it for all of them.
 void UISettingsHostPresenterClass::Drain(void)
 {
-	UIPresenterClass::Drain();
 	for (UIPresenterClass * presenter : Presenters) {
 		if (Result.has_value()) {
 			break;
@@ -80,24 +77,37 @@ void UISettingsHostPresenterClass::Enter_Current(void)
 
 void UISettingsHostPresenterClass::Show_Tab(UISettingsTab tab)
 {
-	int next = -1;
-	for (int index = 0; index < (int)Pages.size(); index++) {
-		if (Pages[index].Tab == tab) {
-			next = index;
-		}
-	}
+	int const next = Index_Of(tab);
 	if (next < 0 || next == Current) {
 		return;
 	}
 
 	Pages[Current].View->Hide();
 	Current = next;
-	for (UISettingsPageClass const & page : Pages) {
-		page.View->Set_Tab((int)tab, Offered);
-	}
+	Retab_Pages(tab);
 	Enter_Current();
 	Pages[Current].View->Sync();
 	Pages[Current].View->Show(true);
+}
+
+
+int UISettingsHostPresenterClass::Index_Of(UISettingsTab tab) const
+{
+	int index = -1;
+	for (int page = 0; page < (int)Pages.size(); page++) {
+		if (Pages[page].Tab == tab) {
+			index = page;
+		}
+	}
+	return(index);
+}
+
+
+void UISettingsHostPresenterClass::Retab_Pages(UISettingsTab tab)
+{
+	for (UISettingsPageClass const & page : Pages) {
+		page.View->Set_Tab((int)tab, Settings_Tabs_Offered());
+	}
 }
 
 
