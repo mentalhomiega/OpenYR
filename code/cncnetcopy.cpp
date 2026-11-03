@@ -270,16 +270,10 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 
 bool List_Has(std::string const & list, std::string const & item)
 {
-	std::size_t start = 0;
-	while (start <= list.size()) {
-		std::size_t comma = list.find(',', start);
-		if (comma == std::string::npos) {
-			comma = list.size();
-		}
-		if (CnCNet_Equals_No_Case(Trim(list.substr(start, comma - start)), item)) {
+	for (std::string const & entry : Split_Parts(list, ',')) {
+		if (CnCNet_Equals_No_Case(Trim(entry), item)) {
 			return(true);
 		}
-		start = comma + 1;
 	}
 	return(false);
 }

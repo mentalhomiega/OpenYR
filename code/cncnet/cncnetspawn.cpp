@@ -12,6 +12,7 @@
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnettext.h"
 #include "cncnet/spawnkeys.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -29,16 +30,6 @@ std::string Join(std::vector<std::string> const & values)
 		text += (text.empty() ? "" : ",") + value;
 	}
 	return(text);
-}
-
-
-std::vector<std::string> Split(std::string const & text)
-{
-	std::vector<std::string> values;
-	for (std::string_view const value : CnCNet_Split(text, ',')) {
-		values.emplace_back(value);
-	}
-	return(values);
 }
 
 
@@ -196,12 +187,12 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 	}
 	match.TunnelPort = static_cast<uint16_t>(port);
 
-	std::vector<std::string> const names = Split(info.at("Names"));
-	std::vector<std::string> const sides = Split(info.at("Sides"));
-	std::vector<std::string> const colors = Split(info.at("Colors"));
-	std::vector<std::string> const starts = Split(info.at("Starts"));
-	std::vector<std::string> const teams = Split(info.at("Teams"));
-	std::vector<std::string> const ids = Split(info.at("Ids"));
+	std::vector<std::string> const names = Split_Parts(info.at("Names"), ',');
+	std::vector<std::string> const sides = Split_Parts(info.at("Sides"), ',');
+	std::vector<std::string> const colors = Split_Parts(info.at("Colors"), ',');
+	std::vector<std::string> const starts = Split_Parts(info.at("Starts"), ',');
+	std::vector<std::string> const teams = Split_Parts(info.at("Teams"), ',');
+	std::vector<std::string> const ids = Split_Parts(info.at("Ids"), ',');
 	std::size_t const count = names.size();
 	if (info.at("Count") != std::to_string(count)) {
 		return(false);

@@ -43,20 +43,9 @@ char const * const DIALOG_SECTION = "MultiplayerDialogSettings";
 std::vector<std::string> Split_Fields(std::string const & text)
 {
 	std::vector<std::string> fields;
-	std::string::size_type start = 0;
-
-	while (true) {
-		std::string::size_type comma = text.find(',', start);
-		std::string field = text.substr(start, comma == std::string::npos ? std::string::npos : comma - start);
-
+	for (std::string const & field : Split_Parts(text, ',')) {
 		fields.push_back(std::string(Trim_Chars(field, " \t")));
-
-		if (comma == std::string::npos) {
-			break;
-		}
-		start = comma + 1;
 	}
-
 	return(fields);
 }
 

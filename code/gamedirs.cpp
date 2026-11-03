@@ -13,6 +13,7 @@
 
 #include "cdfile.h"
 #include "dbgprint.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstring>
@@ -186,20 +187,12 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		return(folders);
 	}
 
-	std::string const text = list;
-	std::string::size_type start = 0;
-
-	while (start <= text.length()) {
-		std::string::size_type end = text.find(',', start);
-		if (end == std::string::npos) {
-			end = text.length();
-		}
-
+	for (std::string const & part : Split_Parts(list, ',')) {
 		/*
 		 * Comparing the folders only once they are in the form they will be searched in
 		 * keeps the same folder written two ways from being searched twice.
 		 */
-		std::string const folder = Terminate_Path(Trim_Path(text.substr(start, end - start)));
+		std::string const folder = Terminate_Path(Trim_Path(part));
 
 		/*
 		 * The game's own directory is examined before any of these, so naming it adds
@@ -207,10 +200,6 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		 * with nothing after the equals sign being one an INI file cannot carry.
 		 */
 		if (folder == ".\\" || folder == "./") {
-			if (end == text.length()) {
-				break;
-			}
-			start = end + 1;
 			continue;
 		}
 
@@ -227,11 +216,6 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 				folders.push_back(folder);
 			}
 		}
-
-		if (end == text.length()) {
-			break;
-		}
-		start = end + 1;
 	}
 
 	return(folders);

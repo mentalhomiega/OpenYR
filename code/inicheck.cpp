@@ -102,22 +102,6 @@ std::string_view Trim(std::string_view text)
 }
 
 
-std::vector<std::string> Split(std::string_view text, char separator)
-{
-	std::vector<std::string> parts;
-	std::size_t start = 0;
-	while (true) {
-		std::size_t const end = text.find(separator, start);
-		parts.emplace_back(text.substr(start, end == std::string_view::npos ? std::string_view::npos : end - start));
-		if (end == std::string_view::npos) {
-			break;
-		}
-		start = end + 1;
-	}
-	return(parts);
-}
-
-
 // The engine reads a whole number with atoi unless the value starts with '$' or ends with 'h',
 // which both read as hexadecimal. The result is empty when the value holds no number.
 std::optional<int> Parse_Whole_Number(std::string const & value)
@@ -376,7 +360,7 @@ bool Value_Fits(ValueKind kind, std::string_view text)
 			return(Whole_Numbers_Fit(value, 3));
 
 		case ValueKind::INTEGER_LIST:
-			for (std::string const & part : Split(value, ',')) {
+			for (std::string const & part : Split_Parts(value, ',')) {
 				if (!Integer_Fits(std::string(Trim(part)))) {
 					return(false);
 				}
@@ -411,7 +395,7 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		if (line.empty() || line[0] == '#') {
 			continue;
 		}
-		std::vector<std::string> const fields = Split(line, '\t');
+		std::vector<std::string> const fields = Split_Parts(line, '\t');
 		if (fields.size() != 5 || fields[0].empty() || fields[2].empty()) {
 			error = "line " + std::to_string(line_number) + " does not hold five tab separated fields";
 			return(false);
@@ -420,7 +404,7 @@ bool Catalog::Load(std::istream & in, std::string & error)
 		scope.File = fields[1];
 		scope.Section = fields[2] == "*" ? std::string() : fields[2];
 		if (!fields[3].empty()) {
-			scope.AppliesTo = Split(fields[3], ',');
+			scope.AppliesTo = Split_Parts(fields[3], ',');
 		}
 		scope.Kind = Kind_From_Name(fields[4]);
 		Add(fields[0], std::move(scope));
@@ -599,7 +583,7 @@ static void Follow_References(std::vector<Section> const & sections, KindMap & k
 			for (Entry const & entry : section.Entries) {
 				for (Reference const & reference : RULES_REFERENCES) {
 					bool from = false;
-					for (std::string const & type : Split(reference.From, ',')) {
+					for (std::string const & type : Split_Parts(reference.From, ',')) {
 						from = from || kind->second.contains(type);
 					}
 					if (from && Names_Key(reference.Key, entry.Key) && !kinds[entry.Value].contains(reference.Kind)) {

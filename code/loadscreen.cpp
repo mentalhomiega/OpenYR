@@ -43,6 +43,7 @@
 #include "scheme.h"
 #include "session.h"
 #include "shapeset.h"
+#include "strutil.h"
 #include "tactical.h"
 #include "truecolour.h"
 #include "utf8.h"
@@ -715,19 +716,14 @@ static bool Coop_Picture(char const * scenario, std::string & picture, std::stri
 			std::string const list = ini.Get_String(section.c_str(), key);
 
 			// Each Map entry holds up to three names, one per difficulty.
-			size_t start = 0;
-			for (int slot = 0; slot < 3 && start <= list.size(); slot++) {
-				size_t const comma = list.find(',', start);
-				std::string const name = list.substr(start, comma == std::string::npos ? std::string::npos : comma - start);
+			std::vector<std::string> const names = Split_Parts(list, ',');
+			for (size_t slot = 0; slot < names.size() && slot < 3; slot++) {
+				std::string const & name = names[slot];
 				if (!name.empty() && _strnicmp(scenario, name.c_str(), name.size()) == 0) {
 					picture = ini.Get_String(section.c_str(), "CampaignLoadScreen");
 					palette = ini.Get_String(section.c_str(), "CampaignLoadScreenPallet");
 					return(!picture.empty() && !palette.empty());
 				}
-				if (comma == std::string::npos) {
-					break;
-				}
-				start = comma + 1;
 			}
 		}
 	}
