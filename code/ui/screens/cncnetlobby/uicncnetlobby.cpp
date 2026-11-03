@@ -15,6 +15,7 @@
 #include "cncnet/cncnettext.h"
 #include "ui/rml/rmlview.h"
 #include "strutil.h"
+#include "wallclock.h"
 
 #include <algorithm>
 #include <cctype>
@@ -39,11 +40,7 @@ std::string Clock_Text(uint64_t stamp, uint64_t now)
 {
 	std::time_t const wall = std::time(nullptr) - static_cast<std::time_t>((now > stamp ? now - stamp : 0) / 1000);
 	std::tm parts{};
-#if defined(_WIN32)
-	localtime_s(&parts, &wall);
-#else
-	localtime_r(&wall, &parts);
-#endif
+	Local_Time(wall, parts);
 	char text[8];
 	std::snprintf(text, sizeof(text), "%02d:%02d", parts.tm_hour, parts.tm_min);
 	return(text);

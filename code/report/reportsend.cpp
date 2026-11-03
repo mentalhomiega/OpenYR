@@ -21,6 +21,7 @@
 #include "msgbox.h"
 #include "opents_build.h"
 #include "report/reportupload.h"
+#include "wallclock.h"
 
 #include <atomic>
 #include <cstdio>
@@ -102,11 +103,7 @@ std::string Utc_Text(char const * format)
 {
 	std::time_t const now = std::time(nullptr);
 	std::tm parts{};
-#if defined(_WIN32)
-	gmtime_s(&parts, &now);
-#else
-	gmtime_r(&now, &parts);
-#endif
+	Utc_Time(now, parts);
 	char text[32];
 	std::strftime(text, sizeof(text), format, &parts);
 	return(text);

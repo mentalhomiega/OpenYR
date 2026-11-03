@@ -9,6 +9,7 @@
 
 
 #include "replaylist.h"
+#include "wallclock.h"
 
 #include <algorithm>
 #include <chrono>
@@ -92,15 +93,9 @@ std::string Format_Date(std::uint32_t seconds)
 
 	std::time_t const stamp = static_cast<std::time_t>(seconds);
 	std::tm local = {};
-#ifdef _WIN32
-	if (localtime_s(&local, &stamp) != 0) {
+	if (!Local_Time(stamp, local)) {
 		return(std::string());
 	}
-#else
-	if (localtime_r(&stamp, &local) == nullptr) {
-		return(std::string());
-	}
-#endif
 	char text[32];
 	std::strftime(text, sizeof(text), "%Y-%m-%d %H:%M", &local);
 	return(text);
