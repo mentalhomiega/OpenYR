@@ -10082,6 +10082,18 @@ bool BuildingClass::Release_Passenger(void)
 }
 
 
+template<typename T>
+static T * First_Type_Named(DynamicVectorClass<T *> const & types, char const * name)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		if (stricmp(types[index]->Name(), name) == 0) {
+			return(types[index]);
+		}
+	}
+	return(NULL);
+}
+
+
 /// <summary>
 /// Grinds up an infantryman or vehicle that has come in, as the arrival code of
 /// InfantryClass (0x519630) and UnitClass (0x739EC0) does: the owner is paid the refund of the
@@ -10129,16 +10141,11 @@ void BuildingClass::Grind(FootClass * object)
 	if (Class->IsReverseEngineersVictims && object->TClass->IsCanBeReversed) {
 		TechnoTypeClass const * learned = object->TClass;
 		if (!object->TClass->ReversedAs.empty()) {
-			learned = NULL;
-			for (int index = 0; learned == NULL && index < UnitTypes.Count(); index++) {
-				if (stricmp(UnitTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = UnitTypes[index];
-			}
-			for (int index = 0; learned == NULL && index < InfantryTypes.Count(); index++) {
-				if (stricmp(InfantryTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = InfantryTypes[index];
-			}
-			for (int index = 0; learned == NULL && index < AircraftTypes.Count(); index++) {
-				if (stricmp(AircraftTypes[index]->Name(), object->TClass->ReversedAs.c_str()) == 0) learned = AircraftTypes[index];
-			}
+			// Vehicles are searched first, then infantry, then aircraft; structures are never learned.
+			char const * const reversed = object->TClass->ReversedAs.c_str();
+			learned = First_Type_Named(UnitTypes, reversed);
+			if (learned == NULL) learned = First_Type_Named(InfantryTypes, reversed);
+			if (learned == NULL) learned = First_Type_Named(AircraftTypes, reversed);
 		}
 		if (House->Add_Reversed(learned) && House->Is_Player_Control()) {
 			Speak_Eva(object->RTTI == RTTI_INFANTRY ? "EVA_ReverseEngineeredInfantry" : "EVA_ReverseEngineeredVehicle");

@@ -3341,14 +3341,13 @@ bool TActionClass::TAction_JUMP_CAMERA_HOME(HouseClass * , ObjectClass * , Trigg
 /// <returns>bool; Is there an object type of that name?</returns>
 bool TActionClass::TAction_SET_TECH_LEVEL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	for (int index = 0; index < TechnoTypes.Count(); index++) {
-		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
-			TechnoTypes[index]->Level = Extra;
-			for (int house = 0; house < Houses.Count(); house++) {
-				Houses[house]->Production_Status_Changed();
-			}
-			return(true);
+	TechnoTypeClass * const type = TechnoTypeClass::From_Name(Text);
+	if (type != NULL) {
+		type->Level = Extra;
+		for (int house = 0; house < Houses.Count(); house++) {
+			Houses[house]->Production_Status_Changed();
 		}
+		return(true);
 	}
 	return(false);
 }
@@ -3424,14 +3423,13 @@ bool TActionClass::TAction_SET_TAB(HouseClass * , ObjectClass * , TriggerClass *
 /// <returns>bool; Is there an object type of that name?</returns>
 bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	for (int index = 0; index < TechnoTypes.Count(); index++) {
-		if (stricmp(TechnoTypes[index]->Name(), Text) == 0) {
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST   flash cameo %s for %d frames\n", TechnoTypes[index]->Name(), Extra);
-			}
-			Map.Flash_Cameo(TechnoTypes[index], Extra);
-			return(true);
+	TechnoTypeClass * const type = TechnoTypeClass::From_Name(Text);
+	if (type != NULL) {
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST   flash cameo %s for %d frames\n", type->Name(), Extra);
 		}
+		Map.Flash_Cameo(type, Extra);
+		return(true);
 	}
 	DebugString("TAction: flash cameo names %s, which is not an object type\n", Text);
 	return(false);
