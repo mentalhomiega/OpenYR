@@ -326,6 +326,22 @@ static void Net2Apply_Network_Options(void)
 }
 
 
+static void Net2_Set_Start_Timing(void)
+{
+	PregameSetup();
+	Net2Apply_Network_Options();
+
+	if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
+		NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
+		Session.FrameSendRate = initial.FrameSendRate;
+		Session.MaxAhead = initial.MaxAhead;
+	} else {
+		Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
+		Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
+	}
+}
+
+
 /// <summary>
 /// Shows a line of chat locally and sends it to the other players in the game this machine
 /// hosts or has joined, or otherwise to every contact in the game browser.
@@ -1109,17 +1125,7 @@ bool Net2Remote_Connect(void)
 			delete MultiplayerMapPreview;
 			MultiplayerMapPreview = NULL;
 
-			PregameSetup();
-			Net2Apply_Network_Options();
-
-			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
-				Session.FrameSendRate = initial.FrameSendRate;
-				Session.MaxAhead = initial.MaxAhead;
-			} else {
-				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
-				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
-			}
+			Net2_Set_Start_Timing();
 
 			break;
 		}
@@ -1134,17 +1140,7 @@ bool Net2Remote_Connect(void)
 				MultiplayerMapPreview = NULL;
 			}
 
-			PregameSetup();
-			Net2Apply_Network_Options();
-
-			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				NetTiming::TimingSettings const initial = Session.Network_Start_Timing();
-				Session.FrameSendRate = initial.FrameSendRate;
-				Session.MaxAhead = initial.MaxAhead;
-			} else {
-				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
-				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
-			}
+			Net2_Set_Start_Timing();
 
 			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 2, (unsigned int)Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
 
