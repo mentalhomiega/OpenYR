@@ -51,24 +51,6 @@ static std::string Trim(std::string const & text)
 }
 
 
-static std::string Terminate_Folder(std::string const & path)
-{
-	if (path.empty()) {
-		return(path);
-	}
-
-	switch (path.back()) {
-		case '\\':
-		case '/':
-		case ':':
-			return(path);
-
-		default:
-			return(path + (char)std::filesystem::path::preferred_separator);
-	}
-}
-
-
 /// <summary>
 /// Splits a configured mod list into the mods it names, in the order written, with the
 /// whitespace around each name dropped and empty entries passed over. Names are separated by
@@ -105,10 +87,10 @@ std::string Mod_Folder_Name(std::string const & name, std::string const & datadi
 	std::string const trimmed = Trim(name);
 
 	if (std::filesystem::path(trimmed).has_root_path()) {
-		return(Terminate_Folder(trimmed));
+		return(Terminate_Path(trimmed));
 	}
 
-	return(Terminate_Folder(datadirectory + ModsFolder + (char)std::filesystem::path::preferred_separator + trimmed));
+	return(Terminate_Path(datadirectory + ModsFolder + (char)std::filesystem::path::preferred_separator + trimmed));
 }
 
 
@@ -199,7 +181,7 @@ std::vector<ModClass> Find_Mods(std::string const & datadirectory)
 	for (; !error && entry != end; entry.increment(error)) {
 		std::error_code kind;
 		if (entry->is_directory(kind)) {
-			mods.push_back(Read_Mod(Terminate_Folder(entry->path().string())));
+			mods.push_back(Read_Mod(Terminate_Path(entry->path().string())));
 		}
 	}
 

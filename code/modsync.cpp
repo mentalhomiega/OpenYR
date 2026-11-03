@@ -10,6 +10,7 @@
 #include "modsync.h"
 #include "cncnet/cncnettext.h"
 #include "fnv.h"
+#include "hexdigit.h"
 
 #include <algorithm>
 #include <cctype>
@@ -105,14 +106,8 @@ namespace ModSync
 			}
 			value = 0;
 			for (char c : text) {
-				int digit;
-				if (c >= '0' && c <= '9') {
-					digit = c - '0';
-				} else if (c >= 'a' && c <= 'f') {
-					digit = c - 'a' + 10;
-				} else if (c >= 'A' && c <= 'F') {
-					digit = c - 'A' + 10;
-				} else {
+				int const digit = Hex_Digit_Value(c);
+				if (digit < 0) {
 					return(false);
 				}
 				value = (value << 4) | static_cast<std::uint32_t>(digit);

@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "report/reportupload.h"
+#include "littleendian.h"
 #include "strutil.h"
 
 #include <miniz/miniz.h>
@@ -90,20 +91,6 @@ std::string Json_Escape(std::string const & text)
 		}
 	}
 	return(out);
-}
-
-
-void Put16(std::string & out, unsigned value)
-{
-	out += static_cast<char>(value & 0xFF);
-	out += static_cast<char>((value >> 8) & 0xFF);
-}
-
-
-void Put32(std::string & out, std::uint32_t value)
-{
-	Put16(out, value & 0xFFFF);
-	Put16(out, value >> 16);
 }
 
 
@@ -313,37 +300,37 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 		std::uint32_t const offset = static_cast<std::uint32_t>(entries.size());
 		unsigned const method = deflated ? 8 : 0;
 
-		Put32(entries, 0x04034b50);
-		Put16(entries, 20);								// Version needed: 2.0.
-		Put16(entries, 0);								// Flags.
-		Put16(entries, method);
-		Put16(entries, 0);								// Time.
-		Put16(entries, 0);								// Date.
-		Put32(entries, crc);
-		Put32(entries, static_cast<std::uint32_t>(body.size()));
-		Put32(entries, static_cast<std::uint32_t>(data.size()));
-		Put16(entries, static_cast<unsigned>(file.Name.size()));
-		Put16(entries, 0);								// Extra field length.
+		Put_U32_LE(entries, 0x04034b50);
+		Put_U16_LE(entries, 20);						// Version needed: 2.0.
+		Put_U16_LE(entries, 0);							// Flags.
+		Put_U16_LE(entries, method);
+		Put_U16_LE(entries, 0);							// Time.
+		Put_U16_LE(entries, 0);							// Date.
+		Put_U32_LE(entries, crc);
+		Put_U32_LE(entries, static_cast<std::uint32_t>(body.size()));
+		Put_U32_LE(entries, static_cast<std::uint32_t>(data.size()));
+		Put_U16_LE(entries, static_cast<unsigned>(file.Name.size()));
+		Put_U16_LE(entries, 0);							// Extra field length.
 		entries += file.Name;
 		entries += body;
 
-		Put32(central, 0x02014b50);
-		Put16(central, 20);							// Version made by.
-		Put16(central, 20);
-		Put16(central, 0);
-		Put16(central, method);
-		Put16(central, 0);
-		Put16(central, 0);
-		Put32(central, crc);
-		Put32(central, static_cast<std::uint32_t>(body.size()));
-		Put32(central, static_cast<std::uint32_t>(data.size()));
-		Put16(central, static_cast<unsigned>(file.Name.size()));
-		Put16(central, 0);							// Extra field length.
-		Put16(central, 0);							// Comment length.
-		Put16(central, 0);							// Disk number.
-		Put16(central, 0);							// Internal attributes.
-		Put32(central, 0);							// External attributes.
-		Put32(central, offset);
+		Put_U32_LE(central, 0x02014b50);
+		Put_U16_LE(central, 20);					// Version made by.
+		Put_U16_LE(central, 20);
+		Put_U16_LE(central, 0);
+		Put_U16_LE(central, method);
+		Put_U16_LE(central, 0);
+		Put_U16_LE(central, 0);
+		Put_U32_LE(central, crc);
+		Put_U32_LE(central, static_cast<std::uint32_t>(body.size()));
+		Put_U32_LE(central, static_cast<std::uint32_t>(data.size()));
+		Put_U16_LE(central, static_cast<unsigned>(file.Name.size()));
+		Put_U16_LE(central, 0);						// Extra field length.
+		Put_U16_LE(central, 0);						// Comment length.
+		Put_U16_LE(central, 0);						// Disk number.
+		Put_U16_LE(central, 0);						// Internal attributes.
+		Put_U32_LE(central, 0);						// External attributes.
+		Put_U32_LE(central, offset);
 		central += file.Name;
 		ReportFileType sent = file;
 		sent.Size = static_cast<std::uintmax_t>(on_disk);
@@ -353,14 +340,14 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 
 	std::uint32_t const central_offset = static_cast<std::uint32_t>(entries.size());
 	zip = entries + central;
-	Put32(zip, 0x06054b50);
-	Put16(zip, 0);									// This disk.
-	Put16(zip, 0);									// Disk with the directory.
-	Put16(zip, static_cast<unsigned>(kept.size()));
-	Put16(zip, static_cast<unsigned>(kept.size()));
-	Put32(zip, static_cast<std::uint32_t>(central.size()));
-	Put32(zip, central_offset);
-	Put16(zip, 0);									// Comment length.
+	Put_U32_LE(zip, 0x06054b50);
+	Put_U16_LE(zip, 0);								// This disk.
+	Put_U16_LE(zip, 0);								// Disk with the directory.
+	Put_U16_LE(zip, static_cast<unsigned>(kept.size()));
+	Put_U16_LE(zip, static_cast<unsigned>(kept.size()));
+	Put_U32_LE(zip, static_cast<std::uint32_t>(central.size()));
+	Put_U32_LE(zip, central_offset);
+	Put_U16_LE(zip, 0);								// Comment length.
 	return(true);
 }
 

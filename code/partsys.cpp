@@ -288,7 +288,7 @@ void ParticleSystemClass::Clear_System(void)
 
 
 /// <summary>
-/// Handles the per-frame logic for a gas particle system.
+/// Handles the per-frame logic for a gas or web particle system.
 /// This routine drifts the system's particles along and, as each one expires,
 /// spawns the successor particle its type calls for, so that the cloud can change
 /// character as it ages.
@@ -701,42 +701,6 @@ void ParticleSystemClass::Fire_AI(void)
 
 
 /// <summary>
-/// Handles the per-frame logic for a web particle system.
-/// This routine drifts the system's particles along and, as each one expires,
-/// spawns the successor particle its type calls for in its place.
-/// </summary>
-void ParticleSystemClass::Web_AI(void)
-{
-	int i;
-
-	for (i = SystemParticles.Count()-1; i >= 0; i--) {
-		SystemParticles[i]->Behavior_AI();
-	}
-
-	for (i = SystemParticles.Count()-1; i >= 0; i--) {
-		ParticleClass *spart = SystemParticles[i];
-		if (spart->IsToDie) {
-			if (spart->Class->NextParticle != PARTICLE_NONE) {
-				Coord coord = spart->PositionCoord;
-				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
-				Coord ncoord = coord + spart->Class->NextParticleOffset;
-				ParticleClass *npart = new ParticleClass(next, ncoord, COORD_NONE, this);
-				if (npart != NULL) {
-					SystemParticles.Add(npart);
-					npart->Speed = spart->Speed;
-					npart->GasDrift = spart->GasDrift;
-					npart->SourceHouse = spart->SourceHouse;
-				}
-			}
-			spart->Delete_Me();
-		} else {
-			spart->Motion_AI();
-		}
-	}
-}
-
-
-/// <summary>
 /// Handles the per-frame logic for this particle system.
 /// This routine hands the system over to the update handler for whatever behavior
 /// its type calls for, ages the system, and retires it once its lifetime has run
@@ -749,9 +713,8 @@ void ParticleSystemClass::AI(void)
 			Smoke_AI();
 			break;
 		case PSYS_BEHAVIOR_GAS:
-			Gas_AI();
-			break;
 		case PSYS_BEHAVIOR_WEAKGAS:
+		case PSYS_BEHAVIOR_WEB:
 			Gas_AI();
 			break;
 		case PSYS_BEHAVIOR_FIRE:
@@ -762,9 +725,6 @@ void ParticleSystemClass::AI(void)
 			break;
 		case PSYS_BEHAVIOR_RAILGUN:
 			Railgun_AI();
-			break;
-		case PSYS_BEHAVIOR_WEB:
-			Web_AI();
 			break;
 	}
 

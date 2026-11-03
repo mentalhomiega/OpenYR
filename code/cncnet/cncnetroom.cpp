@@ -12,6 +12,7 @@
 #include "cncnet/cncnetlobby.h"
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnettext.h"
+#include "hexdigit.h"
 
 #include <algorithm>
 #include <cctype>
@@ -50,15 +51,6 @@ std::string Escape(std::string_view text, bool commas = true)
 }
 
 
-int Hex_Digit(char ch)
-{
-	if (ch >= '0' && ch <= '9') return(ch - '0');
-	if (ch >= 'A' && ch <= 'F') return(ch - 'A' + 10);
-	if (ch >= 'a' && ch <= 'f') return(ch - 'a' + 10);
-	return(-1);
-}
-
-
 // Control characters never survive unescaping: a value that reaches a text file cannot add a line to it.
 std::string Unescape(std::string_view text)
 {
@@ -70,8 +62,8 @@ std::string Unescape(std::string_view text)
 	};
 	for (std::size_t index = 0; index < text.size(); ++index) {
 		if (text[index] == '%' && index + 2 < text.size()) {
-			int const high = Hex_Digit(text[index + 1]);
-			int const low = Hex_Digit(text[index + 2]);
+			int const high = Hex_Digit_Value(text[index + 1]);
+			int const low = Hex_Digit_Value(text[index + 2]);
 			if (high >= 0 && low >= 0) {
 				push(static_cast<char>(high * 16 + low));
 				index += 2;
