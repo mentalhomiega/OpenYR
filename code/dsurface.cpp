@@ -2056,29 +2056,26 @@ unsigned short DSurface::Shade_Line_Pixel(unsigned short under, unsigned color, 
 }
 
 
-/// <summary>
-/// Draws a clipped, depth-tested, alpha-masked colored line into the locked DSurface.
-/// Uses the global DepthBuffer for the Z-test and the global AlphaBuffer for a per-pixel
-/// brightness value (0..127) that darkens the source color. The depth endpoints are
-/// re-interpolated across the portion of the line that survives clipping, then the line is
-/// rasterized with a 3-axis Bresenham whose major axis is max(dx, |dy|, |dz|).
-/// </summary>
-/// <param name="cliprect">Clipping rectangle (intersected with the surface rect).</param>
-/// <param name="startpoint">Line start point.</param>
-/// <param name="endpoint">Line end point.</param>
-/// <param name="color">Source color (hicolor pixel value).</param>
-/// <param name="start_depth">Depth value at the start point.</param>
-/// <param name="end_depth">Depth value at the end point.</param>
-/// <param name="write_depth">If true, the depth buffer is updated at each plotted pixel.</param>
-/// <param name="shade_by_alpha">If false, each pixel is plotted at the color given, without the
-/// alpha-buffer darkening or the skip of zero-alpha pixels.</param>
-/// <returns>True if any portion of the line was drawn, false otherwise.</returns>
-bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth, bool shade_by_alpha, int fade)
+// A depth line after clipping: the endpoints that survive, left to right, and the depth at each.
+struct Depth_Line_Span {
+	Rect clipped_rect;
+	Point2D start;
+	Point2D end;
+	int zstart;
+	int zend;
+};
+
+
+/*
+ * Clips a depth line to the surface and works out the depth at the ends of what is left.
+ * Returns false when nothing of the line is inside the clipping rectangle. The caller locks the surface.
+ */
+static bool Prepare_Depth_Line(Rect const & cliprect, Rect const & surface_rect, Point2D const & startpoint, Point2D const & endpoint, int start_depth, int end_depth, Depth_Line_Span & span)
 {
 	/*
 	**	Ensure that the clipping rectangle is legal.
 	*/
-	Rect clipped_rect = Intersect(cliprect, Get_Rect());
+	Rect clipped_rect = Intersect(cliprect, surface_rect);
 	if (clipped_rect.Width == 0 && clipped_rect.Height == 0) {
 		return(false);
 	}
@@ -2161,6 +2158,185 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 		}
 	}
 
+	span.clipped_rect = clipped_rect;
+	span.start = start;
+	span.end = end;
+	span.zstart = zstart;
+	span.zend = zend;
+	return(true);
+}
+
+
+/*
+ * Walks a depth line one pixel at a time with a 3-axis Bresenham whose major axis is max(dx, |dy|, |dz|),
+ * keeping the depth buffer, alpha buffer and surface positions in step. plot(pixel, zpixel, apixel, z) is
+ * called for each step with the surface pixel, the depth and alpha buffer entries and the line's depth there.
+ * The shaded line moves the alpha position along the row with the depth position. The additive line
+ * leaves it at the first pixel of the row, which is how gamemd does it.
+ */
+template<bool StepAlphaAlongRow, typename Plot>
+static void Walk_Depth_Line(int stride, void * buffer, unsigned short * zbuffer, unsigned short * abuffer, unsigned short z, int zwidth, int dx, int dy, int dz, Plot const & plot)
+{
+	int zwrap = -1;
+	int pitch = stride;
+	if (dy < 0) {
+		pitch = -pitch;
+		zwidth = -zwidth;
+		zwrap = 1;
+	}
+
+	int zstep = 1;
+	int abs_dy = abs(dy);
+	if (dz < 0) {
+		zstep = -1;
+	}
+
+	int abs_dz = abs(dz);
+	int dx2 = 2 * dx;
+	int dy2 = 2 * abs_dy;
+	int dz2 = 2 * abs_dz;
+
+	int offset = 0;
+
+	/*
+	 * Move down (or up) one row of the surface and of the depth and alpha buffers.
+	 */
+	auto step_row = [&]() {
+		buffer = (unsigned char *)buffer + pitch;
+		zbuffer += zwidth;
+		if (zwidth > 0) {
+			zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+		} else {
+			zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
+		}
+		abuffer += zwidth;
+		if (zwidth > 0) {
+			abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
+		} else {
+			abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
+		}
+		z += zwrap;
+	};
+
+	/*
+	 * Move one pixel along the row.
+	 */
+	auto step_column = [&]() {
+		zbuffer++;
+		offset += 2;
+		zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
+		if constexpr (StepAlphaAlongRow) {
+			abuffer++;
+			abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
+		}
+	};
+
+	if (abs_dz > dx && abs_dz > abs_dy) {
+
+		/*
+		 * The depth axis changes fastest.
+		 */
+		int xdelta = dy2 - abs_dz;
+		int ydelta = dx2 - abs_dz;
+		for (int i = abs_dz; i != 0; i--) {
+
+			plot((unsigned short *)((char *)buffer + offset), zbuffer, abuffer, z);
+
+			if (xdelta > 0) {
+				step_row();
+				xdelta -= dz2;
+			}
+
+			if (ydelta > 0) {
+				step_column();
+				ydelta -= dz2;
+			}
+
+			z += zstep;
+			ydelta += dx2;
+			xdelta += dy2;
+		}
+	} else if (dx > abs_dy) {
+
+		/*
+		 * The slope is not steep -- plot a low line.
+		 */
+		int ydelta = dy2 - dx;
+		int zdelta = dz2 - dx;
+		for (int i = 0; i < dx; i++) {
+
+			plot((unsigned short *)((char *)buffer + offset), zbuffer, abuffer, z);
+
+			if (ydelta > 0) {
+				step_row();
+				ydelta -= 2 * dx;
+			}
+
+			if (zdelta > 0) {
+				z += zstep;
+				zdelta -= 2 * dx;
+			}
+
+			step_column();
+			ydelta += dy2;
+			zdelta += dz2;
+		}
+	} else {
+
+		/*
+		 * The slope is steep -- plot a high line.
+		 */
+		int xdelta = dx2 - abs_dy;
+		int zdelta = dz2 - abs_dy;
+		for (int i = abs_dy; i != 0; i--) {
+
+			plot((unsigned short *)((char *)buffer + offset), zbuffer, abuffer, z);
+
+			if (xdelta > 0) {
+				step_column();
+				xdelta -= dy2;
+			}
+
+			if (zdelta > 0) {
+				z += zstep;
+				zdelta -= dy2;
+			}
+
+			xdelta += dx2;
+			zdelta += dz2;
+			step_row();
+		}
+	}
+}
+
+
+/// <summary>
+/// Draws a clipped, depth-tested, alpha-masked colored line into the locked DSurface.
+/// Uses the global DepthBuffer for the Z-test and the global AlphaBuffer for a per-pixel
+/// brightness value (0..127) that darkens the source color. The depth endpoints are
+/// re-interpolated across the portion of the line that survives clipping, then the line is
+/// rasterized with a 3-axis Bresenham whose major axis is max(dx, |dy|, |dz|).
+/// </summary>
+/// <param name="cliprect">Clipping rectangle (intersected with the surface rect).</param>
+/// <param name="startpoint">Line start point.</param>
+/// <param name="endpoint">Line end point.</param>
+/// <param name="color">Source color (hicolor pixel value).</param>
+/// <param name="start_depth">Depth value at the start point.</param>
+/// <param name="end_depth">Depth value at the end point.</param>
+/// <param name="write_depth">If true, the depth buffer is updated at each plotted pixel.</param>
+/// <param name="shade_by_alpha">If false, each pixel is plotted at the color given, without the
+/// alpha-buffer darkening or the skip of zero-alpha pixels.</param>
+/// <returns>True if any portion of the line was drawn, false otherwise.</returns>
+bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & startpoint, Point2D const & endpoint, unsigned color, int start_depth, int end_depth, bool write_depth, bool shade_by_alpha, int fade)
+{
+	Depth_Line_Span span;
+	if (!Prepare_Depth_Line(cliprect, Get_Rect(), startpoint, endpoint, start_depth, end_depth, span)) {
+		return(false);
+	}
+	Rect const clipped_rect = span.clipped_rect;
+	Point2D const start = span.start;
+	Point2D const end = span.end;
+
 	Bytes_Per_Pixel();
 	void * buffer = Lock(start);
 
@@ -2176,8 +2352,7 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
 
 	int start_y = start.Y;
-	int zwrap = -1;
-	unsigned short z = (unsigned short)(zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
+	unsigned short z = (unsigned short)(span.zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
 	int zwidth = DepthBuffer->Get_Buffer_Width();
 
 	if (buffer == NULL) {
@@ -2197,188 +2372,16 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 		*pixel = Shade_Line_Pixel(*pixel, color, v, fade);
 	};
 
-	/*
-	 * Distances to x, y and depth.
-	 */
-	int dy = end.Y - start.Y;
-	int dx = end.X - start.X;
-	int dz = zend - zstart;
-
-	int pitch = Stride();
-	if (dy < 0) {
-		pitch = -pitch;
-		zwidth = -zwidth;
-		zwrap = 1;
-	}
-
-	int zstep = 1;
-	int abs_dy = abs(dy);
-	if (dz < 0) {
-		zstep = -1;
-	}
-
-	int abs_dz = abs(dz);
-	int dx2 = 2 * dx;
-	int dy2 = 2 * abs_dy;
-	int dz2 = 2 * abs_dz;
-
-	if (abs_dz > dx && abs_dz > abs_dy) {
-
-		/*
-		 * The depth axis changes fastest.
-		 */
-		int xdelta = dy2 - abs_dz;
-		int ydelta = dx2 - abs_dz;
-		if (abs_dz > 0) {
-			int offset = 0;
-			for (int i = abs_dz; i != 0; i--) {
-
-				int v = shade_by_alpha ? *abuffer : 127;
-				if (z < *zbuffer && v != 0) {
-					plot((unsigned short *)((char *)buffer + offset), v);
-					if (write_depth) {
-						*zbuffer = z;
-					}
+	Walk_Depth_Line<true>(Stride(), buffer, zbuffer, abuffer, z, zwidth, end.X - start.X, end.Y - start.Y, span.zend - span.zstart,
+		[&](unsigned short * pixel, unsigned short * zpixel, unsigned short * apixel, unsigned short depth) {
+			int v = shade_by_alpha ? *apixel : 127;
+			if (depth < *zpixel && v != 0) {
+				plot(pixel, v);
+				if (write_depth) {
+					*zpixel = depth;
 				}
-
-				if (xdelta > 0) {
-					buffer = (unsigned char *)buffer + pitch;
-					xdelta -= dz2;
-					zbuffer += zwidth;
-					if (zwidth > 0) {
-						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					} else {
-						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-					}
-					abuffer += zwidth;
-					if (zwidth > 0) {
-						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					} else {
-						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-					}
-					z += zwrap;
-				}
-
-				if (ydelta > 0) {
-					zbuffer++;
-					offset += 2;
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					abuffer++;
-					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					ydelta -= dz2;
-				}
-
-				z += zstep;
-				ydelta += dx2;
-				xdelta += dy2;
 			}
-		}
-	} else if (dx > abs_dy) {
-
-		/*
-		 * The slope is not steep -- plot a low line.
-		 */
-		int ydelta = dy2 - dx;
-		int i = 0;
-		int zdelta = dz2 - dx;
-		if (dx > 0) {
-			for (; i < dx; i++) {
-
-				int v = shade_by_alpha ? *abuffer : 127;
-				if (z < *zbuffer && v != 0) {
-					plot((unsigned short *)((char *)buffer + 2 * i), v);
-					if (write_depth) {
-						*zbuffer = z;
-					}
-				}
-
-				if (ydelta > 0) {
-					buffer = (unsigned char *)buffer + pitch;
-					ydelta -= 2 * dx;
-					zbuffer += zwidth;
-					if (zwidth > 0) {
-						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					} else {
-						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-					}
-					z += zwrap;
-					abuffer += zwidth;
-					if (zwidth > 0) {
-						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					} else {
-						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-					}
-				}
-
-				if (zdelta > 0) {
-					z += zstep;
-					zdelta -= 2 * dx;
-				}
-
-				zbuffer++;
-				ydelta += dy2;
-				zdelta += dz2;
-				zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-				abuffer++;
-				abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-			}
-		}
-	} else {
-
-		/*
-		 * The slope is steep -- plot a high line.
-		 */
-		int xdelta = dx2 - abs_dy;
-		int zdelta = 2 * abs_dz - abs_dy;
-		if (abs_dy > 0) {
-			int i = abs_dy;
-			int offset = 0;
-			do {
-
-				int v = shade_by_alpha ? *abuffer : 127;
-				if (z < *zbuffer && v != 0) {
-					plot((unsigned short *)((char *)buffer + offset), v);
-					if (write_depth) {
-						*zbuffer = z;
-					}
-				}
-
-				if (xdelta > 0) {
-					zbuffer++;
-					offset += 2;
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					abuffer++;
-					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					xdelta -= dy2;
-				}
-
-				if (zdelta > 0) {
-					z += zstep;
-					zdelta -= dy2;
-				}
-
-				xdelta += dx2;
-				zdelta += dz2;
-				buffer = (unsigned char *)buffer + pitch;
-
-				zbuffer += zwidth;
-				if (zwidth > 0) {
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-				} else {
-					zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-				}
-				z += zwrap;
-				abuffer += zwidth;
-				if (zwidth > 0) {
-					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-				} else {
-					abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-				}
-
-				i--;
-			} while (i != 0);
-		}
-	}
+		});
 
 	if (record) {
 		GpuDraw_Line_End();
@@ -2475,91 +2478,13 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 		return(false);
 	}
 
-	/*
-	**	Ensure that the clipping rectangle is legal.
-	*/
-	Rect clipped_rect = Intersect(cliprect, Get_Rect());
-	if (clipped_rect.Width == 0 && clipped_rect.Height == 0) {
+	Depth_Line_Span span;
+	if (!Prepare_Depth_Line(cliprect, Get_Rect(), startpoint, endpoint, start_depth, end_depth, span)) {
 		return(false);
 	}
-
-	/*
-	**	High-speed working variables for the clipping rectangle and clipping operation.
-	*/
-	Point2D start = Bias_To(startpoint, clipped_rect);
-	Point2D end = Bias_To(endpoint, clipped_rect);
-
-	/*
-	 * Sort the endpoints left-to-right, carrying the depth values with them.
-	 */
-	int zfirst = start_depth;
-	int zlast = end_depth;
-	if (start.X > end.X) {
-		std::swap(start, end);
-		zfirst = end_depth;
-		zlast = start_depth;
-	}
-
-	/*
-	 * Remember the pre-clip endpoints so the depth values can be re-interpolated
-	 * across the portion of the line that survives clipping.
-	 */
-	Point2D unclipped = end;
-	int px = start.X;
-	int py = start.Y;
-
-	if (!Clip_Line_To_Rect(start, end, clipped_rect)) {
-		return(false);
-	}
-
-	int zend = zlast;
-	int zstart = zfirst;
-
-	/*
-	 * Re-interpolate the far depth value if the far endpoint was clipped.
-	 */
-	if (end.X != unclipped.X || end.Y != unclipped.Y) {
-		Point2D clipped_point;
-		clipped_point.X = px - end.X;
-		double clipped_dx = (double)clipped_point.X;
-		clipped_point.Y = py - end.Y;
-		int clipped = (int)(int)std::sqrt((double)clipped_point.Y * (double)clipped_point.Y + clipped_dx * clipped_dx);
-		Point2D full_point;
-		full_point.X = px - unclipped.X;
-		double full_dx = (double)full_point.X;
-		full_point.Y = py - unclipped.Y;
-		int amount = abs((int)(int)((double)clipped
-			/ (double)(int)(int)std::sqrt((double)full_point.Y * (double)full_point.Y + full_dx * full_dx)
-			* (double)(zfirst - zlast)));
-		if (zfirst < zlast) {
-			zend = zfirst + amount;
-		} else {
-			zend = zfirst - amount;
-		}
-	}
-
-	/*
-	 * Re-interpolate the near depth value if the near endpoint was clipped.
-	 */
-	if (start.X != px || start.Y != py) {
-		Point2D clipped_point;
-		clipped_point.X = start.X - unclipped.X;
-		double clipped_dx = (double)clipped_point.X;
-		clipped_point.Y = start.Y - unclipped.Y;
-		int clipped = (int)(int)std::sqrt((double)clipped_point.Y * (double)clipped_point.Y + clipped_dx * clipped_dx);
-		Point2D full_point;
-		full_point.X = px - unclipped.X;
-		double full_dx = (double)full_point.X;
-		full_point.Y = py - unclipped.Y;
-		int amount = abs((int)(int)((double)clipped
-			/ (double)(int)(int)std::sqrt((double)full_point.Y * (double)full_point.Y + full_dx * full_dx)
-			* (double)(zfirst - zlast)));
-		if (zlast > zfirst) {
-			zstart = zlast - amount;
-		} else {
-			zstart = zlast + amount;
-		}
-	}
+	Rect const clipped_rect = span.clipped_rect;
+	Point2D const start = span.start;
+	Point2D const end = span.end;
 
 	Bytes_Per_Pixel();
 	void * buffer = Lock(start);
@@ -2577,8 +2502,7 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
 
 	int start_y = start.Y;
-	int zwrap = -1;
-	unsigned short z = (unsigned short)(zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
+	unsigned short z = (unsigned short)(span.zstart + (short)DepthBuffer->Get_Scroll_Delta(start_y + clipped_rect.Y - DepthBuffer->Get_Bounds().Y));
 	int zwidth = DepthBuffer->Get_Buffer_Width();
 
 	if (buffer == NULL) {
@@ -2590,180 +2514,19 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 	bool const record = GpuDraw_Line_Begin(*this, GPU_LINE_ADDITIVE, (red << 16) | (green << 8) | blue, 0);
 	char const * const origin = (char const *)buffer - start.Y * Stride() - start.X * 2;
 
-	/*
-	 * Distances to x, y and depth.
-	 */
-	int dy = end.Y - start.Y;
-	int dx = end.X - start.X;
-	int dz = zend - zstart;
-
-	int pitch = Stride();
-	if (dy < 0) {
-		pitch = -pitch;
-		zwidth = -zwidth;
-		zwrap = 1;
-	}
-
-	int zstep = 1;
-	int abs_dy = abs(dy);
-	if (dz < 0) {
-		zstep = -1;
-	}
-
-	int abs_dz = abs(dz);
-	int dx2 = 2 * dx;
-	int dy2 = 2 * abs_dy;
-	int dz2 = 2 * abs_dz;
-
-	/*
-	 * The pixel update shared by the three cases below.
-	 */
-	auto plot = [&](int offset) {
-		if (z < *zbuffer) {
-			int const alpha = *abuffer;
-			unsigned short * pixel = (unsigned short *)((char *)buffer + offset);
-			if (record) {
-				std::ptrdiff_t const position = (char const *)pixel - origin;
-				if (GpuDraw_Line_Pixel((int)(position % Stride()) / 2, (int)(position / Stride()), alpha)) {
-					return;
+	Walk_Depth_Line<false>(Stride(), buffer, zbuffer, abuffer, z, zwidth, end.X - start.X, end.Y - start.Y, span.zend - span.zstart,
+		[&](unsigned short * pixel, unsigned short * zpixel, unsigned short * apixel, unsigned short depth) {
+			if (depth < *zpixel) {
+				int const alpha = *apixel;
+				if (record) {
+					std::ptrdiff_t const position = (char const *)pixel - origin;
+					if (GpuDraw_Line_Pixel((int)(position % Stride()) / 2, (int)(position / Stride()), alpha)) {
+						return;
+					}
 				}
+				*pixel = Add_Beam_Light(*pixel, (alpha * red) >> 7, (alpha * green) >> 7, (alpha * blue) >> 7);
 			}
-			*pixel = Add_Beam_Light(*pixel, (alpha * red) >> 7, (alpha * green) >> 7, (alpha * blue) >> 7);
-		}
-	};
-
-	if (abs_dz > dx && abs_dz > abs_dy) {
-
-		/*
-		 * The depth axis changes fastest.
-		 */
-		int xdelta = dy2 - abs_dz;
-		int ydelta = dx2 - abs_dz;
-		if (abs_dz > 0) {
-			int offset = 0;
-			for (int i = abs_dz; i != 0; i--) {
-
-				plot(offset);
-
-				if (xdelta > 0) {
-					buffer = (unsigned char *)buffer + pitch;
-					xdelta -= dz2;
-					zbuffer += zwidth;
-					if (zwidth > 0) {
-						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					} else {
-						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-					}
-					abuffer += zwidth;
-					if (zwidth > 0) {
-						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					} else {
-						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-					}
-					z += zwrap;
-				}
-
-				if (ydelta > 0) {
-					zbuffer++;
-					offset += 2;
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					ydelta -= dz2;
-				}
-
-				z += zstep;
-				ydelta += dx2;
-				xdelta += dy2;
-			}
-		}
-	} else if (dx > abs_dy) {
-
-		/*
-		 * The slope is not steep -- plot a low line.
-		 */
-		int ydelta = dy2 - dx;
-		int zdelta = dz2 - dx;
-		if (dx > 0) {
-			for (int i = 0; i < dx; i++) {
-
-				plot(2 * i);
-
-				if (ydelta > 0) {
-					buffer = (unsigned char *)buffer + pitch;
-					ydelta -= 2 * dx;
-					zbuffer += zwidth;
-					if (zwidth > 0) {
-						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					} else {
-						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-					}
-					z += zwrap;
-					abuffer += zwidth;
-					if (zwidth > 0) {
-						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-					} else {
-						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-					}
-				}
-
-				if (zdelta > 0) {
-					z += zstep;
-					zdelta -= 2 * dx;
-				}
-
-				zbuffer++;
-				ydelta += dy2;
-				zdelta += dz2;
-				zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-			}
-		}
-	} else {
-
-		/*
-		 * The slope is steep -- plot a high line.
-		 */
-		int xdelta = dx2 - abs_dy;
-		int zdelta = dz2 - abs_dy;
-		if (abs_dy > 0) {
-			int i = abs_dy;
-			int offset = 0;
-			do {
-
-				plot(offset);
-
-				if (xdelta > 0) {
-					zbuffer++;
-					offset += 2;
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-					xdelta -= dy2;
-				}
-
-				if (zdelta > 0) {
-					z += zstep;
-					zdelta -= dy2;
-				}
-
-				xdelta += dx2;
-				zdelta += dz2;
-				buffer = (unsigned char *)buffer + pitch;
-
-				zbuffer += zwidth;
-				if (zwidth > 0) {
-					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
-				} else {
-					zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
-				}
-				z += zwrap;
-				abuffer += zwidth;
-				if (zwidth > 0) {
-					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
-				} else {
-					abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
-				}
-
-				i--;
-			} while (i != 0);
-		}
-	}
+		});
 
 	if (record) {
 		GpuDraw_Line_End();
