@@ -5302,8 +5302,139 @@ bool TechnoClass::Fire_Without_Projectile(AbstractClass * target, WeaponTypeClas
 }
 
 
+void TechnoClass::Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which)
+{
+	/*
+	**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
+	**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
+	**	flak shell that stays visible takes a share of BallisticScatter that grows with its
+	**	distance to the target over its weapon's range.
+	*/
+	char const * path = "A";
+	int spread = 0;
+	int distance = 0;
+	int range = 0;
+	if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
+		spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
+	} else {
+		path = "B";
+		distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
+		range = Weapon_Range(which);
+		int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
+		spread = range > 0 ? (share * distance) / range : 0;
+	}
+	int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
+	Coord const aim = displacement;
+	displacement = Ballistic_Offset(displacement, spread, angle);
+	if (AutoTest_Active()) {
+		DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
+	}
+}
+
+
+/// <summary>
+/// Returns the facing a new projectile leaves at, sets the bullet's top speed, and lowers
+/// max_speed to the launch speed. A dropping projectile also moves fire_coord to this object's
+/// center. Each call advances RadialFireIndex when the type has RadialFireSegments.
+/// </summary>
+DirType TechnoClass::Launch_Direction(BulletClass * bullet, WeaponTypeClass const * weapon, Coord const & displacement, Coord & fire_coord, int & max_speed)
+{
+	BulletTypeClass const & btype = *weapon->Bullet;
+	DirType dir;
+
+	/*
+	**	If the projectile is a homing type (such as a missile), then it will
+	**	launch in the direction the turret is facing, NOT necessarily the same
+	**	direction as the target.
+	*/
+	if (btype.ROT != 0 || btype.IsDropping) {
+		dir = Fire_Direction();
+		if (btype.IsDropping) {
+			fire_coord = Center_Coord();
+		}
+	} else {
+		dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
+	}
+
+	if (max_speed > displacement.Gamemd_Length() / 2) {
+		max_speed = displacement.Gamemd_Length() / 2;
+	}
+
+	// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
+	// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
+	int const segments = TClass->RadialFireSegments;
+	if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
+		bullet->MaxSpeed = weapon->MaxSpeed;
+		if (segments == 0) {
+			max_speed = 1;
+		}
+	}
+
+	// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
+	// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
+	if (segments > 0) {
+		double const step = -9.587672516830327e-05;
+		double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
+		double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
+		dir = DirType((int)(short)(int)raw);
+		RadialFireIndex++;
+		if (RadialFireIndex >= segments) {
+			RadialFireIndex = 0;
+		}
+	}
+	return(dir);
+}
+
+
+/// <summary>
+/// Sets pitch to the launch pitch of a new projectile, leaving it unchanged for a low
+/// non-arcing, non-voxel shot. Returns false when an arcing projectile cannot reach the target
+/// at max_speed.
+/// </summary>
+bool TechnoClass::Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const
+{
+	bool valid_arc = true;
+	if (bullet->Class->IsArcing) {
+		double gravity = Rule->Gravity;
+		if (bullet->Class->IsFloater) {
+			gravity = Get_Floater_Gravity();
+		}
+
+		int planar = Point2D(displacement).Gamemd_Length();
+		valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
+	} else if (bullet->Class->IsVoxel) {
+		// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
+		pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
+	} else {
+		int abs_z = abs(displacement.Z);
+		if (abs_z > 200) {
+			double y = 20.0;
+			BuildingClass * building = TarCom->As_BuildingClass();
+			if (building != NULL) {
+				displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
+				abs_z = abs((displacement.Z));
+				if ((double)abs_z < y) {
+					y = 0.0;
+				}
+			}
+
+			double planar = Point2D(displacement).Gamemd_Length();
+			if (planar < 0.05) {
+				planar = 0.05;
+			}
+			double angle = std::atan2f((double)abs_z - y, planar);
+			if (displacement.Z < 0) {
+				angle = -angle;
+			}
+			pitch = angle;
+		}
+	}
+	return(valid_arc);
+}
+
+
 /***********************************************************************************************
- * TechnoClass::Fire_At -- Fires projectile at target specified.                             *
+ * TechnoClass::Fire_At -- Fires projectile at target specified.                           *
  *                                                                                             *
  *    This is the main projectile firing code. Buildings, units, and infantry route fire       *
  *    requests through this function.                                                          *
@@ -5337,8 +5468,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	**	cannot ever succeed. Return with failure flag.
 	*/
 	if (weapon == NULL) return(NULL);
-
-	BulletTypeClass const & btype = *weapon->Bullet;
 
 	/*
 	**	Perform a quick legality check to see if firing can occur.
@@ -5405,74 +5534,11 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	Coord turret_coord = Turret_Coord(which);
 	Coord displacement = Predict_Target_Coord() - turret_coord;
 
-	/*
-	**	An inaccurate arcing shell moves its aim (TechnoClass::Fire, 0x6FDD50). A shell that is
-	**	not a flak shell, or is invisible, takes a spread of half to all of BallisticScatter. A
-	**	flak shell that stays visible takes a share of BallisticScatter that grows with its
-	**	distance to the target over its weapon's range.
-	*/
 	if (bullet->Class->IsInaccurate && bullet->Class->IsArcing) {
-		char const * path = "A";
-		int spread = 0;
-		int distance = 0;
-		int range = 0;
-		if (!bullet->Class->FlakScatter || bullet->Class->IsInvisible) {
-			spread = Scen->RandomNumber(Rule->BallisticScatter / 2, Rule->BallisticScatter);
-		} else {
-			path = "B";
-			distance = Gamemd_Length_3D(displacement.X, displacement.Y, displacement.Z);
-			range = Weapon_Range(which);
-			int const share = Scen->RandomNumber(0, Rule->BallisticScatter);
-			spread = range > 0 ? (share * distance) / range : 0;
-		}
-		int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
-		Coord const aim = displacement;
-		displacement = Ballistic_Offset(displacement, spread, angle);
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
-		}
+		Apply_Ballistic_Scatter(bullet, displacement, turret_coord, which);
 	}
 
-	/*
-	**	If the projectile is a homing type (such as a missile), then it will
-	**	launch in the direction the turret is facing, NOT necessarily the same
-	**	direction as the target.
-	*/
-	if (btype.ROT != 0 || btype.IsDropping) {
-		dir = Fire_Direction();
-		if (btype.IsDropping) {
-			fire_coord = Center_Coord();
-		}
-	} else {
-		dir = Gamemd_Atan2((double)-displacement.Y, (double)displacement.X);
-	}
-
-	if (max_speed > displacement.Gamemd_Length() / 2) {
-		max_speed = displacement.Gamemd_Length() / 2;
-	}
-
-	// A homing or vertical projectile launches at speed 1 and builds up to its weapon's speed, unless the firer's type has
-	// RadialFireSegments (TechnoClass::Fire, 0x6FDD50). A homing one is slowed to speed 1 again when it is placed on the map.
-	int const segments = TClass->RadialFireSegments;
-	if (weapon->Bullet->ROT > 0 || weapon->Bullet->IsVertical) {
-		bullet->MaxSpeed = weapon->MaxSpeed;
-		if (segments == 0) {
-			max_speed = 1;
-		}
-	}
-
-	// With RadialFireSegments above zero, each shot leaves at the next angle of a 180-degree fan centered on the
-	// body facing, from 90 degrees on its right to 90 degrees on its left. The counter wraps after the last segment.
-	if (segments > 0) {
-		double const step = -9.587672516830327e-05;
-		double const angle = (M_PI / segments) * RadialFireIndex - M_PI / 2;
-		double const raw = (((PrimaryFacing.Current().As_Int() - 0x3FFF) * step) + angle - M_PI / 2) * -10430.060040584269;
-		dir = DirType((int)(short)(int)raw);
-		RadialFireIndex++;
-		if (RadialFireIndex >= segments) {
-			RadialFireIndex = 0;
-		}
-	}
+	dir = Launch_Direction(bullet, weapon, displacement, fire_coord, max_speed);
 
 	TVelocity3D<double> velocity;
 	velocity.Set(0.0, 0.0, 0.0);
@@ -5480,43 +5546,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	velocity.Set_Speed((double)max_speed);
 
 	DirType pitch((DirType(DIR_E)-DirType(DIR_STEP_256)).As_Int());
-	bool valid_arc = true;
-	if (bullet->Class->IsArcing) {
-		double gravity = Rule->Gravity;
-		if (bullet->Class->IsFloater) {
-			gravity = Get_Floater_Gravity();
-		}
-
-		int planar = Point2D(displacement).Gamemd_Length();
-		valid_arc = Calculate_Projectile_Pitch(Should_Use_High_Arc(which), max_speed, planar, displacement.Z, gravity, pitch);
-	} else if (bullet->Class->IsVoxel) {
-		// A plain 0 is DirType's straight up, so level flight is 0.0 radians and a Vertical projectile falls.
-		pitch = bullet->Class->IsVertical ? DirType(-M_PI / 2) : DirType(0.0);
-	} else {
-		int abs_z = abs(displacement.Z);
-		if (abs_z > 200) {
-			double y = 20.0;
-			BuildingClass * building = TarCom->As_BuildingClass();
-			if (building != NULL) {
-				displacement.Z = 200 * building->Class->ZHeight - turret_coord.Z;
-				abs_z = abs((displacement.Z));
-				if ((double)abs_z < y) {
-					y = 0.0;
-				}
-			}
-
-			double planar = Point2D(displacement).Gamemd_Length();
-			if (planar < 0.05) {
-				planar = 0.05;
-			}
-			double angle = std::atan2f((double)abs_z - y, planar);
-			if (displacement.Z < 0) {
-				angle = -angle;
-			}
-			pitch = angle;
-		}
-	}
-
+	bool const valid_arc = Launch_Pitch(bullet, which, max_speed, displacement, turret_coord, pitch);
 	velocity.Set_Pitch(pitch);
 
 	if (!valid_arc || !bullet->Unlimbo(turret_coord, velocity)) {

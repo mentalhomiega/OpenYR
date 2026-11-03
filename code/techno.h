@@ -1086,6 +1086,9 @@ class TechnoClass :	public RadioClass,
 	private:
 		AbstractClass * Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which);
+		void Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which);
+		DirType Launch_Direction(BulletClass * bullet, WeaponTypeClass const * weapon, Coord const & displacement, Coord & fire_coord, int & max_speed);
+		bool Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const;
 };
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }
