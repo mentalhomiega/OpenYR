@@ -46,6 +46,7 @@ bool Hotkey_Wheel(int delta, int modifiers);
 int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
+bool Team_Has_Members(int team);
 
 #define ATTRACT_MODE_TIMEOUT	TIMER_MINUTE
 

@@ -3355,13 +3355,33 @@ static char const * Team_Command_String(std::string & cache, char const * format
 }
 
 
+static bool Is_Team_Member(TechnoClass const * obj, int team)
+{
+	return obj != NULL && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control();
+}
+
+
+/// <summary>
+/// Reports whether any player-controlled object that is not in limbo belongs to the team.
+/// </summary>
+bool Team_Has_Members(int team)
+{
+	for (int i = 0; i < Technos.Count(); i++) {
+		if (Is_Team_Member(Technos[i], team)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 static void Select_Team_Members(int team)
 {
 	// The first member selected speaks (gamemd's team select, 0x7311C0, clears MoveFeedback after it).
 	SelectionVoiceScope voice;
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * obj = Technos[i];
-		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control()) {
+		if (Is_Team_Member(obj, team)) {
 			if (!obj->IsSelected) {
 				voice.Select(obj);
 			}

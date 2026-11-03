@@ -698,14 +698,7 @@ void TabClass::Do_Command(CommandButtonType command)
 		case COMMAND_TEAM03:
 		{
 			int team = command - COMMAND_TEAM01 + 1;
-			bool empty = true;
-			for (int index = 0; index < Technos.Count(); index++) {
-				TechnoClass const * object = Technos[index];
-				if (object != NULL && !object->IsInLimbo && object->Group == team - 1 && object->House->Is_Player_Control()) {
-					empty = false;
-					break;
-				}
-			}
+			bool empty = !Team_Has_Members(team);
 			char name[32];
 			std::snprintf(name, sizeof(name), empty ? "TeamCreate_%d" : "TeamSelect_%d", team);
 			Execute_Command(name);
