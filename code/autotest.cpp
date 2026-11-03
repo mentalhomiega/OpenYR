@@ -6219,14 +6219,8 @@ static void Cameos_Step(StepType const &)
 static void Clickcameo_Step(StepType const & step)
 {
 	TechnoTypeClass const * type = Find_Type(step.Argument);
-	bool offered = false;
-	for (int column = 0; type != NULL && column < SidebarClass::COLUMNS; column++) {
-		for (int index = 0; index < Map.Column[column].BuildableCount; index++) {
-			SidebarClass::StripClass::BuildType const & entry = Map.Column[column].Buildables[index];
-			offered = offered || Fetch_Techno_Type(entry.BuildableType, entry.BuildableID) == type;
-		}
-	}
-	if (type != NULL && offered) {
+	bool const offered = type != NULL && Map.Is_On_Sidebar(type->Fetch_RTTI(), type->Fetch_Heap_ID());
+	if (offered) {
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
 	}
 	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
