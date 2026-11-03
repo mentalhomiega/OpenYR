@@ -293,8 +293,7 @@ static std::string Expand_Credit_Labels(char const * line)
 		} else if (label.size() >= 32) {
 			result += "Bad Label";
 		} else {
-			std::string const text = StringTable.Find_UTF8(label.c_str());
-			result += text.empty() ? label : text;
+			result += StringTable.Find_UTF8(label.c_str(), label.c_str());
 		}
 	}
 	return(result);

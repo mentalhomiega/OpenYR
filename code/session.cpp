@@ -1459,8 +1459,8 @@ MultiMission::MultiMission(INIClass const & ini, char const * name)
 			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), description);
 		} else {
 			ini.Get_String(name, "Description", "", description, sizeof(description));
-			std::string const text = StringTable.Find_UTF8(description);
-			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.empty() ? description : text.c_str());
+			std::string const text = StringTable.Find_UTF8(description, description);
+			UTF8::Copy(ScenarioDescription, sizeof(ScenarioDescription), text.c_str());
 		}
 
 		MinPlayers = ini.Get_Int(name, "MinPlayers", MinPlayers);
