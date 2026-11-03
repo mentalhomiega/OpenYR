@@ -30,12 +30,6 @@ bool ShadowPlane_Is_Enabled(void)
 }
 
 
-bool ShadowPlane_Keeps_Water(void)
-{
-	return(_Water);
-}
-
-
 bool ShadowPlane_Set_Enabled(bool shadows, bool water)
 {
 	if (shadows == _Shadows && water == _Water) {

@@ -27,7 +27,6 @@ constexpr unsigned char SHADOWPLANE_WATER = 0x01;
 
 // Planes are on while shadows or water are kept.
 bool ShadowPlane_Is_Enabled(void);
-bool ShadowPlane_Keeps_Water(void);
 
 // Sets what the planes keep and returns true when that changed. The caller must then draw the
 // whole tile layer again, since shadows drawn before the change are in the pixels or the plane,

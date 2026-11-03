@@ -51,15 +51,14 @@ enum KeyboardScheme {
 	KEYBOARD_SCHEME_MODERN = 1,
 };
 
-// The timing of the triggers, in milliseconds. A keyboard file and the controls screen both keep the
-// double-press and hold windows within their range; the controls screen moves them by one step.
+// The timing of the triggers, in milliseconds. A keyboard file keeps the double-press and hold
+// windows within their range.
 int const HOTKEY_DOUBLE_PRESS_MS = 250;
 int const HOTKEY_DOUBLE_PRESS_MIN_MS = 150;
 int const HOTKEY_DOUBLE_PRESS_MAX_MS = 500;
 int const HOTKEY_HOLD_MS = 400;
 int const HOTKEY_HOLD_MIN_MS = 200;
 int const HOTKEY_HOLD_MAX_MS = 800;
-int const HOTKEY_TIMING_STEP_MS = 25;
 int const HOTKEY_HELD_REPEAT_MS = 40;
 
 // The name a keyboard file writes for a trigger, such as "Double".
