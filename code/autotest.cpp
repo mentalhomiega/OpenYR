@@ -8,254 +8,7 @@
  ******************************************************************************/
 
 /*
-**	A test script is a text file of lines "<frame> <command> [arguments]". Blank lines and
-**	lines starting with ';' are ignored. Commands run once the game frame reaches their frame:
-**
-**	command <Name>			runs a registered command, such as CenterBase or ScreenCapture
-**	options					opens the options menu, as Escape does during play
-**	select <TypeID>			selects every object of that type the player owns
-**	produce <TypeID>		starts building that type
-**	produceai <TypeID> x y	starts building that type in the structure on that cell, as a computer house's factory does
-**	place <TypeID>			places a finished structure at the first legal cell near the
-**							player's construction yard
-**	move <TypeID> <x> <y>	orders the player's objects of that type to a cell
-**	order <TypeID> <x> <y>	gives the player's objects of that type the move order a click gives, through the mission event,
-**							which drops their target as a player's order does
-**	cmove <TypeID> <x> <y>	gives the computer's foot objects of that type a move to a cell, keeping any target they hold
-**	attack <TypeID>			orders the player's objects of that type to attack the nearest
-**							structure of an enemy that has a base
-**	enemies					writes the structures of other houses and the count of their units
-**	scatter <TypeID> x y [forced] [nokidding]	calls Scatter on each live soldier of that type, whoever owns it, with the threat at the
-**							centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given
-**							and how many numbers the game's random generator handed out
-**	strikeobj <TypeID> x y [radius] [land|naval|all] [AttackerTypeID]	orders the player's armed units and infantry to attack the nearest
-**							live object of that type within radius cells (default 3) of the cell, looked up when the line runs;
-**							land or naval limits the orders to units that are not, or are, ships (default all); an attacker type
-**							limits them to objects of that type, PlayerControl houses' included
-**	owners <TypeID>			writes the type's owner bits and each house's country bit
-**	canbuild <TypeID>		writes each house's own and acted country, the type's RequiredHouses and ForbiddenHouses, and whether the house can build it now
-**	cameos					writes each sidebar strip's cameos in order, with the type and whether the player can build it now
-**	clickcameo <TypeID>		starts production of the type, as a click on its cameo does, when a strip still offers the cameo
-**	cameopress <TypeID> <left|right>	presses the type's visible sidebar cameo through the cameo's own action, as a click does, so Shift held with hold applies its Shift behaviour
-**	queuestate <TypeID>		writes how many of the type the player's factory holds, in production and queued, how many are queued, and the player's credits
-**	prereqs <TypeID>		writes the prerequisites the type lists, then each type whose Prerequisite list names it
-**	view x y				centres the view on a cell
-**	cell x y				writes a cell's shroud state, tile, height and occupier
-**	bridge x y				writes a cell's bridge tile, overlay, deck and under-bridge flags
-**	bridgecensus			writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay
-**	bridgearea x y			writes the bridge tile, overlay and flags of each cell within four cells of x,y
-**	wallcensus				writes each overlay type the rules mark as a wall, with the wall overlays the scenario's OverlayPack names (outside the radar counted apart) and the ones the loaded map holds, and whether the type has an image and a cell animation
-**	repairbridge x y		writes what MapClass::Can_Repair_Bridge says about the cell
-**	bridgehit x y			damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down
-**	bridgehut x y			brings the bridge near the cell down as a bridge repair hut's C4 does (MapClass::Destroy_Bridge_At)
-**	bridgedecks x0 x1 y		writes how many high bridge deck overlays are left on row y from x0 to x1
-**	blast <Warhead|ion> x y	explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit
-**	concretehit x y			damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down
-**	passable x y			writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell
-**	targetaction <AttackerTypeID> <TargetTypeID>	writes the action the player's first object of the attacker type gets over the first live enemy object of the target type,
-**							with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it
-**	enemystrike <TypeID> x y	orders the first computer-owned object of that type to attack what stands on that cell
-**	hutaction <TypeID> x y	writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes
-**	hutclick <TypeID> x y	clicks the building on that cell with the player's object of that type, through the object path a real click takes
-**	hutc4 x y				writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength
-**	c4watch <frames> x y	follows the building on that cell for that many frames: writes its charge's placement, countdown and strength
-**							changes, and its destruction with the saboteur's experience and the player's money and points
-**	click x y				queues a left click at that screen position
-**	windowmove x y			moves the pointer to that window pixel, which the hover and placement code reads
-**	key <Key> [ctrl|shift|alt]	presses and releases that key on the keyboard queue, skipping the interface; the key
-**							is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or
-**							digit, so Tab is written 09); the modifier words hold that key with the modifier
-**	hold <Key> [ctrl|shift|alt]	presses that key on the keyboard queue and leaves it down, as a player holding it does, until a release
-**	release <Key> [ctrl|shift|alt]	lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's
-**	winkey <Key> [ctrl|shift|alt]	presses and releases that key through the game window, so the interface sees it first as it does
-**							a player's key; a one-character name is read as a letter or digit, so Backspace is written 08
-**	binding <Key> [Double|Hold|Held]	writes the command the key's binding of that trigger runs, with the modifier words
-**	scheme <Classic|Modern>	replaces the bindings with that scheme's defaults, as the keyboard screen does when the scheme changes
-**	camera					writes the tactical position the view is centred on, in leptons
-**	wintype <text>			types the text through the game window, one character at a time, each as a press, its text event and a release
-**	alliance <house>		queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame
-**	tab				writes the sidebar tab shown, how many items each tab lists, and the object pending placement
-**	modes				writes which special mode is on (repair, sell, power, waypoint, beacon, and targeting) and the object pending placement
-**	placement				writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map
-**	windowpress x y			moves the pointer to that window pixel and presses the left button there, as the start of a drag does
-**	windowrelease x y		moves the pointer to that window pixel and releases the left button there, as the end of a drag does
-**	windowclick x y			moves the pointer to that window pixel and clicks there through the window's event path,
-**							which converts it to the frame
-**	follow <TypeID>			keeps the view centred on one of the player's objects of that type
-**	record <frames>			saves a screenshot every that many frames; 0 stops
-**	spawn <TypeID> x y		puts an object owned by the first computer house with a
-**							construction yard on that cell
-**	own <TypeID> x y		puts an object owned by the player on that cell
-**	face <dir256> x y		turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north)
-**	voxelshade <type>		writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight
-**	team <TeamTypeID> [plane]	makes a team of that type for that computer house, holding all its free units, active at once. With plane, it holds the house's first free aircraft instead, added with Team::Add so the aircraft keeps its mission and target
-**	runtrigger <TriggerTypeID>	carries out the actions of that trigger type for its house, as if its events had all happened;
-**							actions that look at attached objects see the map's trigger of that type
-**	typecounts				writes how many types of each kind there are, and any whose ID is not a plain name
-**	triggers [all]			writes the trigger types with their owner, events and whether a live trigger of each is enabled (only
-**							the enabled ones, unless "all"), then every tag with the objects and cells it rides on, and the
-**							local and global variables that are set
-**	triggerlog <0|1>		writes a line each time a trigger springs
-**	triggercoverage			writes each trigger type with how many times it has sprung, then those that never did
-**	waitcell <TypeID> x y [radius] [timeout]	pauses the script until one of the player's objects of that type is within radius cells of the cell
-**	waittrigger <TriggerID|name> [timeout]	pauses the script until that trigger has sprung once
-**	waitowns <House> <TypeID> <count> [timeout]	pauses the script until the house owns at least count of the type
-**	waitlocal <index> <0|1> [timeout]	pauses the script until that local variable has that value
-**	waitgone <TypeID> x y [radius] [timeout]	pauses the script until no object of that type that strikeobj could pick is within radius cells of the cell
-**	hurt <TypeID> <percent>	sets the strength of the player's objects of that type
-**	warpout <TypeID> <0|1>	sets or clears the warping-out flag of the player's objects of that type, without a warp effect
-**	cover x y			writes how many buildings screen that cell and whether it counts as covered
-**	hiddenmarker <mode>		0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of
-**							the Behind animation
-**	beacon place x y	queues a beacon for the player on that cell, as a click in beacon mode does
-**	beacon select x y	selects the beacon near that cell, as a click on it does
-**	beacon delete		deletes the selected beacon when the player owns it, as the Delete command does
-**	beacon list		writes each beacon with its house, slot, cell, visibility and text
-**	beacontext <text>	sets the text of the player's selected beacon through the beacon event
-**	clickcell <TypeID> x y	clicks the player's object of that type on that cell, as the player would
-**							with it selected
-**	typesounds <TypeID>		writes the sound numbers the type's create and transport sounds resolved to
-**	maps					writes every XMP multiplayer map the file system finds
-**	cratesounds				writes the sound numbers the crate pickup sounds resolved to
-**	elite <TypeID>			makes the player's objects of that type elite
-**	canrepair x y			writes whether the structure on that cell can be repaired with the repair cursor
-**	overpower x y			writes how many objects charge the structure on that cell and whether it is
-**							overpowered
-**	ruleanims				writes the animations some rules settings resolved to
-**	canfire <TypeID> x y	writes whether the player's object of that type could fire its primary
-**							weapon at the object on that cell now, and why not, then the
-**							weapon it would choose and whether that one could fire
-**	weapons <TypeID>		writes each weapon slot of the type with its bullet's AA and AG flags and range
-**	waypoint <any> x y	places a waypoint on the cell on the selected path, as a click in waypoint mode does
-**	wpcell <n>		writes the cell of the map's waypoint n and the structure on it
-**	wpsend <any> x y	gives the selected objects the follow-path order a click on the waypoint at the cell gives
-**	wpstate <TypeID>	writes each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status,
-**					ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact
-**	airborne <TypeID>		writes each object of the type with its height above ground, whether it is in the air,
-**							its render layer, and whether the ground or bridge occupier chain of its cell holds it
-**	rocket <TypeID>			writes each foot object of the type with its coordinate in leptons, its height above ground, its flat and
-**							vertical distance to the destination its locomotor flies to, and whether that locomotor is moving
-**	shake <Warhead>			starts the screen shake that warhead's detonation would
-**	screen					writes the current screen shake offset
-**	setlocal <index> <0|1>	sets or clears that local variable, as a trigger action would; setglobal does the same to a global
-**	dumpfile <name>	copies a file the game can read to dump-<name> in the working directory
-**	mixof <name>	writes each attached archive that holds that file, in lookup order, with its size; the first is the copy Retrieve returns
-**	stockcheck		reads every VXL, HVA, SHP and PCX that the art and rules files name, through the loaders, and logs each one refused
-**	previewtime		reads the preview of each map on the multiplayer list three times and logs how long each pass took
-**	trigaction <number>[@<House>] <value> <waypoint>	carries out that trigger action for the player's house, or the named one, with the value in its number, house or time field
-**	killhouse <House> [1|2|3]	destroys the buildings (1), the units, infantry and aircraft (2) or everything (0, the default) the house owns,
-**							with a player's object as the attacker; 3 destroys only the units, infantry and aircraft on cells the player can see
-**	killtag <Tag>			destroys every object that carries a tag of that type, with a player's object as the attacker
-**	counts <House>			writes the house's owned unit, building, infantry and aircraft counts, the ones the map events read
-**	listhouse <House>		writes every object the house has, limbo'd ones too, with its limbo and transport state, cargo, team, occupants and visibility, then the counts the land-units event reads
-**	transfer <TypeID>		gives the first computer object of that type to the player through Set_Owning_House
-**	primary <TypeID>		makes the player's first building of that type its house's primary factory, as the sidebar's primary command does
-**	factories				writes each factory structure, whoever owns it, with what it builds, its naval, primary and limbo flags
-**	kill <TypeID>			destroys the objects of that type other houses own
-**	crate <Powerup> x y		puts a crate holding that powerup (money, unit, heal, cloak, explosion, napalm, squad, darkness, reveal, armor, speed, firepower, icbm, invuln, veteran, ion, gas, tiberium or pod) on the nearest free cell to the cell
-**	hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>	hits every object of that type, whoever owns it, with that
-**							warhead, fired by one of the player's objects of another type, or of the named type
-**	infiltrate barracks|warfactory	marks the player's house as having spied on that building, so its new trainable infantry or units start as veterans
-**	occupy <TypeID> x y	puts the player's infantry of that type inside the structure on that cell, without walking there
-**	rank <TypeID> <0|1|2>	makes every object of that type, whoever owns it, rookie, veteran or elite
-**	veterancy <TypeID>	writes the experience, rank and cost of every object of that type, with the veterancy rules and the player's score
-**	action <TypeID> x y		writes what the player's object of that type would do when clicked
-**							on the object standing on that cell
-**	rule <Key> <0|1>		overrides a rules setting the tests need: CanDetonateTimeBomb and AircraftWaypointReload
-**	clickon <TypeID> x y	clicks the player's object of that type on the object standing on that
-**							cell, as the player would with it selected
-**	enter <TypeID> x y		sends the player's soldiers or vehicles of that type into the structure on
-**							that cell
-**	unload x y				orders the structure on that cell to unload
-**	capture <TypeID> x y	sends the player's idle objects of that type to capture or infiltrate
-**							the structure on that cell
-**	tabflash				writes which tabs of the modern sidebar panel flash, one bit per tab
-**	ambient <TypeID>		writes the ambient sound each object of that type has attached
-**	trails					writes how many line trails exist and how many of their places still show
-**	ammo <TypeID>			writes the ammunition and reload countdown of each vehicle of that type
-**	enable <SuperWeaponTypeID>	gives the player that super weapon to charge from empty, as a structure does
-**	houses					writes each house's money, power, spy effects, resource gatherers and powered unit centres
-**	defeat <house>			runs the defeat a house gets once it has nothing left, on that house: its objects are destroyed
-**							(HouseClass::Destroy_All), then MPlayer_Defeated runs. The house is named as the waits name one; "player" is the local player
-**	houseobjects <house>	writes the units, infantry, aircraft and buildings the house owns outside limbo, its objects in limbo,
-**							the objects it originally owns, and the living vehicles it owns
-**	shortgame <0|1>			sets the Short Game option on this copy, as the setup screen does
-**	observer				writes the local player's defeat, watching, whole-map and Session.ObiWan state, its owned objects,
-**							the houses still playing, its selection and the beacon and planning modes
-**	statics					writes how many sounds that Play Sound Effect At started are still going
-**	supers					writes each house's aimed cell and base center, and each present super weapon: owner, charge
-**							left, charge time and whether it is ready
-**	garrisons				writes every structure that can be garrisoned
-**	radar <TypeID>			writes each player object of that type with its limbo, radar tracking, discovery and whether Is_Radar_Visible plots it
-**	radarall <TypeID>		writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it
-**	stripfill <column> <count>	offers building types 0 to count-1 to that sidebar strip and writes how many it took
-**	aiscan					writes each foot object no player owns with its mission, team, target, range and area scan picks,
-**							and the nearest player object with whether it is in range and can be fired at
-**	lockscan				writes each object outside limbo whose IsLocked flag is clear, whoever owns it, with whether its cell is in
-**							the local radar now, then the count of such objects and how many of them are in the local radar
-**	gattling <TypeID>		writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's
-**							aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret
-**							animation frame, recoil state, target cell, and a building's turret and barrel frame counts
-**	where <TypeID>			writes each object of that type, whoever owns it, with its cell, mission, destination and target,
-**							then whether its cell lies in the usable area (`inlocal`, MapClass::In_Local_Radar), then its cloak state, whether it is firing, and the fire error its target gets from its primary weapon,
-**							then how the local player is shown it (visual: the Visual_Character values, its sensed cell, whether it is
-**							ready to cloak and its CloakDelay), whether the local player's radar plots it (radar: plotted, and how it
-**							counts as detected), then the checks of Is_Ready_To_Cloak (recloak: its rearm, immobilizing
-**							state, radio contact, and whether its target is close enough to fire at)
-**	animlog <TypeID>		writes each object of that type, whoever owns it, with its walk counter and the body voxel frame it draws,
-**							its turret frame and facings, whether its locomotor is moving, its firing state, its target, and whether a DiskLaser ring is active
-**	forceattack <TypeID> x y	orders the player's objects of that type to force-attack the object on that cell, or the ground there, as a Ctrl+click does
-**	turretcoord <TypeID>	writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its
-**							TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point,
-**							with the body's draw matrix rows
-**	recoil <TypeID>			writes the recoil phase, frames left and travel of the turret body and barrel of each building of that type
-**	rock <TypeID>			writes the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it
-**	speed <TypeID> [interval]	writes the current and target speed of the player's flying or jump-jet objects of that type,
-**							now and every interval frames after when one is given
-**	stop <TypeID>			sends the Stop command's idle event to the player's objects of that type that can move or fire
-**	quantity <TypeID>		writes how many of that type each house is counted as having, owned and active
-**	count <TypeID>			writes how many live objects of that type each house has
-**	load <TypeID>			fills the player's objects of that type, a harvester for one, with ore to capacity
-**	partsys					writes each live particle system with its type, the frames it has left and the object it rides on
-**	bullets					writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays
-**	radbeams				writes how many radiation beams of each kind are live and how many eruption beams are visible
-**	radlevel x y			writes the radiation level of a cell on a line of its own
-**	effects <TypeID>		writes the AttachEffect count and multipliers, speed, strength and
-**							reload countdown of every live object of that type
-**	price <TypeID>			writes what the player pays for the type
-**	types <prefix>			writes every structure type whose ID starts with the prefix
-**	schemes					writes the color schemes and the scheme each house draws with
-**	seq <TypeID>			writes an infantry type's art sequences
-**	plan					writes each computer house's base plan
-**	buildtrace <0|1>		logs the structures a computer house starts and places
-**	truecolour <NAME.SHP>	writes whether a PNG replaces that shape, with its sheet size and one pixel
-**	truecolourdir <path>	adds a directory the game searches for files, such as PNG sprites
-**	dump					writes the player's credits, objects and missions to the log
-**	fps					writes the game frames counted in the last whole second, which the game's FPS readout shows
-**	log <text>				writes the text to the log
-**	uploadverify <0|1>		1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches
-**	presentdigest <0|1>		1 logs a PRESENT_DIGEST line at each present: the game frame, the present index, and a hash of the frame and the map layer; 0 stops the lines
-**	drawdigest <0|1>		1 logs a DRAW_DIGEST line at each draw of the map view: the game frame, the draw index, and a hash of the map view's pixels; 0 stops the lines
-**	drawprobe <0|1>		1 counts the call stacks that lock the map view during its foreground pass; 0 logs a DRAW_PROBE line per stack with its count
-**	gpureplay <0|1>		1 records each object pass of the map view and logs a GPU_REPLAY line comparing a replay of the record with it; 0 stops
-**	gpucheck <0|1>		1 also draws each recorded pass on the GPU and logs a GPU_DIFF line comparing it with the map view; 0 stops
-**	searchdir <path>		adds a directory the game searches for files; it is added as the
-**							script is read, before the game reads any file, whatever the frame
-**	recordreplay <name>	records the skirmish to Replays/<name> in the user directory; it applies from the start,
-**							whatever the frame
-**	playreplay <name>		plays the recorded events of Replays/<name> in place of the orders given; it applies from
-**							the start, whatever the frame
-**	loadshot <name>			saves what the window shows each time a loading screen is
-**							complete, as <name>-<count>.tga in the screenshots folder; it
-**							applies from the start, whatever the frame
-**	continuewin				a won mission goes on to the next one instead of ending the run; the game over
-**							line still says won. The score screen then ends at once. The next mission is
-**							chosen without a map selection screen, so no step is needed there. It applies
-**							from the start, whatever the frame
-**	continuelose			a lost game goes on to its score screen instead of ending the run; the game over
-**							line still says lost. The score screen then ends at once. It applies from the start,
-**							whatever the frame
-**	quit					ends the process
+**	The step list is in docs/AUTOTEST.md. The handler table maps each command name to its handler.
 */
 
 #include "always.h"
@@ -573,13 +326,27 @@ TechnoTypeClass const * Find_Type(std::string const & name)
 }
 
 
+// Whether the object belongs to the player's own house.
+static bool Is_Player_Object(TechnoClass const * techno)
+{
+	return(techno->House == PlayerPtr);
+}
+
+
+// Whether the object belongs to the player's house or to a house the map marks PlayerControl=yes.
+static bool Is_Player_Or_Control_Object(TechnoClass const * techno)
+{
+	return(techno->House == PlayerPtr || techno->House->Is_Player_Control());
+}
+
+
 template<class T>
 void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name, void (*action)(T *))
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
 		// A house the map marks PlayerControl=yes takes orders as the player's own do, so its objects count too.
-		if (object != NULL && (object->House == PlayerPtr || object->House->Is_Player_Control()) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		if (object != NULL && Is_Player_Or_Control_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			action(object);
 		}
 	}
@@ -593,7 +360,7 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object == NULL || object->IsInLimbo || (object->House != PlayerPtr && !object->House->Is_Player_Control()) || stricmp(object->TClass->Name(), name.c_str()) != 0) {
+		if (object == NULL || object->IsInLimbo || !Is_Player_Or_Control_Object(object) || stricmp(object->TClass->Name(), name.c_str()) != 0) {
 			continue;
 		}
 		Cell const at = object->Get_Cell();
@@ -604,6 +371,18 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 		}
 	}
 	return(false);
+}
+
+
+template<class T, class Action>
+static void For_Selected(DynamicVectorClass<T *> & list, Action action)
+{
+	for (int index = 0; index < list.Count(); index++) {
+		T * object = list[index];
+		if (object->IsSelected) {
+			action(object);
+		}
+	}
 }
 
 
@@ -621,7 +400,7 @@ void Queue_Player_Missions(DynamicVectorClass<T *> & list, std::string const & n
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object != NULL && object->House == PlayerPtr && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		if (object != NULL && Is_Player_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			object->Player_Assign_Mission(mission, target, destination);
 		}
 	}
@@ -642,6 +421,21 @@ void Select_Type(std::string const & name)
 {
 	Unselect_All();
 	Select_Add_Type(name);
+}
+
+
+// Whether the player can place the building type on the cell now: the cell is on the local radar and passes both placement checks.
+static bool Placement_Legal(BuildingTypeClass const * building, Cell const & cell)
+{
+	return(Map.In_Local_Radar(cell) && building->Legal_Placement(cell, PlayerPtr)
+		&& Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell));
+}
+
+
+// Queues the player's PLACE event for the building type on the cell.
+static void Queue_Place(BuildingTypeClass const * building, Cell const & cell)
+{
+	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
 }
 
 
@@ -668,11 +462,9 @@ static void Place_Step(StepType const & step)
 			for (int dx = -radius; dx <= radius; dx++) {
 				if (std::abs(dx) != radius && std::abs(dy) != radius) continue;
 				Cell const cell = center + Cell(dx, dy);
-				if (!Map.In_Local_Radar(cell)) continue;
-				if (!building->Legal_Placement(cell, PlayerPtr)) continue;
-				if (!Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell)) continue;
+				if (!Placement_Legal(building, cell)) continue;
 				DebugString("AUTOTEST place %s at %d,%d\n", name.c_str(), cell.X, cell.Y);
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+				Queue_Place(building, cell);
 				return;
 			}
 		}
@@ -694,11 +486,10 @@ static void Placeat_Step(StepType const & step)
 	}
 	BuildingTypeClass const * building = (BuildingTypeClass const *)type;
 	Cell const cell(x, y);
-	bool const legal = Map.In_Local_Radar(cell) && building->Legal_Placement(cell, PlayerPtr)
-		&& Map.Passes_Proximity_Check(building, PlayerPtr->Class->House, building->Occupy_List(true), cell);
+	bool const legal = Placement_Legal(building, cell);
 	DebugString("AUTOTEST placeat %s at %d,%d: %s\n", name.c_str(), x, y, legal ? "queued" : "not legal");
 	if (legal) {
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PLACE, RTTI_BUILDINGTYPE, building->Fetch_Heap_ID(), cell));
+		Queue_Place(building, cell);
 	}
 }
 
@@ -759,18 +550,13 @@ void Move(std::string const & name, int x, int y)
 		Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
 		return;
 	}
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * unit = Units[index];
-		if (unit->IsSelected) unit->Assign_Destination(&Map[cell]), unit->Assign_Mission(MISSION_MOVE);
-	}
-	for (int index = 0; index < Infantry.Count(); index++) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsSelected) infantry->Assign_Destination(&Map[cell]), infantry->Assign_Mission(MISSION_MOVE);
-	}
-	for (int index = 0; index < Aircraft.Count(); index++) {
-		AircraftClass * aircraft = Aircraft[index];
-		if (aircraft->IsSelected) aircraft->Assign_Destination(&Map[cell]), aircraft->Assign_Mission(MISSION_MOVE);
-	}
+	auto const move = [&cell](auto * object) {
+		object->Assign_Destination(&Map[cell]);
+		object->Assign_Mission(MISSION_MOVE);
+	};
+	For_Selected(Units, move);
+	For_Selected(Infantry, move);
+	For_Selected(Aircraft, move);
 }
 
 
@@ -779,7 +565,7 @@ void Order(std::string const & name, int x, int y)
 	Cell const cell(x, y);
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
 			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
 		}
 	}
@@ -895,18 +681,13 @@ static void Attack_Step(StepType const & step)
 		Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
 		return;
 	}
-	for (int index = 0; index < Units.Count(); index++) {
-		UnitClass * unit = Units[index];
-		if (unit->IsSelected) unit->Assign_Target(target), unit->Assign_Mission(MISSION_ATTACK);
-	}
-	for (int index = 0; index < Infantry.Count(); index++) {
-		InfantryClass * infantry = Infantry[index];
-		if (infantry->IsSelected) infantry->Assign_Target(target), infantry->Assign_Mission(MISSION_ATTACK);
-	}
-	for (int index = 0; index < Aircraft.Count(); index++) {
-		AircraftClass * aircraft = Aircraft[index];
-		if (aircraft->IsSelected) aircraft->Assign_Target(target), aircraft->Assign_Mission(MISSION_ATTACK);
-	}
+	auto const attack = [target](auto * object) {
+		object->Assign_Target(target);
+		object->Assign_Mission(MISSION_ATTACK);
+	};
+	For_Selected(Units, attack);
+	For_Selected(Infantry, attack);
+	For_Selected(Aircraft, attack);
 }
 
 
@@ -922,8 +703,8 @@ bool Strike_Side_Allows(bool naval, std::string const & side)
 // house or a PlayerControl house do.
 bool Strike_Attacker_Allows(TechnoClass const * techno, std::string const & attacker)
 {
-	if (attacker.empty()) return(techno->House == PlayerPtr);
-	return((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && stricmp(techno->TClass->Name(), attacker.c_str()) == 0);
+	if (attacker.empty()) return(Is_Player_Object(techno));
+	return(Is_Player_Or_Control_Object(techno) && stricmp(techno->TClass->Name(), attacker.c_str()) == 0);
 }
 
 
@@ -956,6 +737,18 @@ TechnoClass * Strike_Target(std::string const & name, int x, int y, int radius)
 }
 
 
+// The attack order a click gives. A network game queues it as an event, so every copy applies it.
+static void Give_Attack_Order(TechnoClass * techno, AbstractClass * target, bool network)
+{
+	if (network) {
+		techno->Player_Assign_Mission(MISSION_ATTACK, target);
+	} else {
+		techno->Assign_Target(target);
+		techno->Assign_Mission(MISSION_ATTACK);
+	}
+}
+
+
 /*
 **	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
 **	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
@@ -980,24 +773,14 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 		if (Strike_Attacker_Allows(unit, attacker) && !unit->IsInLimbo && unit->Is_Weapon_Equipped() && Strike_Side_Allows(unit->TClass->IsNaval, side)) {
-			if (network) {
-				unit->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				unit->Assign_Target(target);
-				unit->Assign_Mission(MISSION_ATTACK);
-			}
+			Give_Attack_Order(unit, target, network);
 			orders++;
 		}
 	}
 	for (int index = 0; index < Infantry.Count(); index++) {
 		InfantryClass * infantry = Infantry[index];
 		if (Strike_Attacker_Allows(infantry, attacker) && !infantry->IsInLimbo && infantry->Is_Weapon_Equipped() && Strike_Side_Allows(infantry->TClass->IsNaval, side)) {
-			if (network) {
-				infantry->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				infantry->Assign_Target(target);
-				infantry->Assign_Mission(MISSION_ATTACK);
-			}
+			Give_Attack_Order(infantry, target, network);
 			orders++;
 		}
 	}
@@ -1729,21 +1512,32 @@ static void Add_Stock_Names(std::set<std::string> & names, char const * text)
 }
 
 
-/*
-**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
-**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
-**	each name, so the names are the words of the INI files' sections and values, which is how the art and
-**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
-**	the MIX archives the game attached with their entry counts.
-*/
-static void Stock_Check_Step(StepType const &)
+// The counts the stockcheck step writes to its summary line.
+struct StockCheckCounts {
+	int found_voxels = 0;
+	int found_anims = 0;
+	int found_shapes = 0;
+	int found_pictures = 0;
+	int pairs = 0;
+	int refused_voxels = 0;
+	int refused_anims = 0;
+	int refused_shapes = 0;
+	int refused_pictures = 0;
+	int frames = 0;
+	int empty_shapes = 0;
+	int mixes = 0;
+	int entries = 0;
+};
+
+
+// Adds the words of the INI files and of the engine's own code to the names, and counts the INI files and sections read.
+static void Stock_Check_Names(std::set<std::string> & names, int & sections, int & sources_read)
 {
 	static char const * const sources[] = {
 		"ART.INI", "ARTMD.INI", "RULES.INI", "RULESMD.INI", "UI.INI", "UIMD.INI", "MISSION.INI", "MISSIONMD.INI",
 		"THEME.INI", "THEMEMD.INI", "BATTLE.INI", "BATTLEMD.INI", "AI.INI", "AIMD.INI", "SOUND.INI", "SOUNDMD.INI",
 		"MULTI.INI", "MULTIMD.INI", "EVA.INI", "EVAMD.INI", "SCORE.INI", "SCOREMD.INI", "CAMEO.INI", "CAMEOMD.INI"};
 
-	std::set<std::string> names;
 	// Picture names the engine's own code opens by name, such as the loading screens and the side pictures.
 	static char const * const coded[] = {"ARBI", "DJBI", "FRAI", "GBRI", "GERI", "JAPI", "LATI", "OBSI", "RUSI", "USAI", "YRII",
 		"LOADING", "TITLE", "LOAD400A", "LOAD400B", "LOAD400C", "LOAD400D", "LOAD480A", "LOAD480B", "LOAD480C", "LOAD480D",
@@ -1751,8 +1545,6 @@ static void Stock_Check_Step(StepType const &)
 	for (char const * text : coded) {
 		Add_Stock_Names(names, text);
 	}
-	int sections = 0;
-	int sources_read = 0;
 	for (char const * source : sources) {
 		CCFileClass file(source);
 		CCINIClass ini;
@@ -1776,127 +1568,156 @@ static void Stock_Check_Step(StepType const &)
 			}
 		}
 	}
+}
 
-	int found_voxels = 0;
-	int found_anims = 0;
-	int found_shapes = 0;
-	int found_pictures = 0;
-	int pairs = 0;
-	int refused_voxels = 0;
-	int refused_anims = 0;
-	int refused_shapes = 0;
-	int refused_pictures = 0;
-	int frames = 0;
-	int empty_shapes = 0;
 
-	for (std::string const & name : names) {
-		std::string const vxl = name + ".VXL";
-		std::string const hva = name + ".HVA";
-		std::string const shp = name + ".SHP";
-		std::string const pcx = name + ".PCX";
-
-		bool const has_vxl = CCFileClass(vxl.c_str()).Is_Available();
-		bool const has_hva = CCFileClass(hva.c_str()).Is_Available();
-		if (has_vxl) {
-			CCFileClass file(vxl.c_str());
-			VoxelLibrary library;
-			found_voxels++;
-			if (!library.Read_File(file, false)) {
-				refused_voxels++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", vxl.c_str());
-			}
-		}
-		if (has_hva) {
-			CCFileClass file(hva.c_str());
-			MotionLibrary motion;
-			found_anims++;
-			if (!motion.Read_File(file)) {
-				refused_anims++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
-			} else if (motion.Get_Frame_Count() > 1) {
-				DebugString("AUTOTEST   stockcheck multiframe %s frames %d\n", hva.c_str(), motion.Get_Frame_Count());
-			}
-		}
-		if (has_vxl && has_hva) {
-			pairs++;
-		}
-
-		if (CCFileClass(shp.c_str()).Is_Available()) {
-			std::vector<std::uint8_t> bytes;
-			CCFileClass file(shp.c_str());
-			if (file.Open(FileClass::READ)) {
-				int const size = file.Size();
-				if (size > 0) {
-					bytes.resize(static_cast<std::size_t>(size));
-					if (file.Read(bytes.data(), size) != size) {
-						bytes.clear();
-					}
-				}
-				file.Close();
-			}
-
-			found_shapes++;
-			int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;
-			bool loaded = bytes.size() >= 8;
-			if (loaded && count == 0) {
-				empty_shapes++;
-			}
-			int failed = -1;
-			for (int frame = 0; loaded && frame < count; frame++) {
-				UIImageIndexed image;
-				loaded = UI_Decode_SHP(std::span<std::uint8_t const>(bytes.data(), bytes.size()), frame, image);
-				frames += loaded ? 1 : 0;
-				if (!loaded) {
-					failed = frame;
-				}
-			}
-			if (!loaded) {
-				refused_shapes++;
-				if (bytes.size() >= 8 && failed >= 0) {
-					std::size_t const at = 8 + 24 * static_cast<std::size_t>(failed);
-					if (at + 24 <= bytes.size()) {
-						auto const word = [&bytes](std::size_t where) {return(bytes[where] | (bytes[where + 1] << 8));};
-						DebugString("AUTOTEST   stockcheck refused %s: frame %d of %d, canvas %dx%d, frame box %d,%d %dx%d, kind %d\n",
-							shp.c_str(), failed, count, word(2), word(4), word(at), word(at + 2), word(at + 4), word(at + 6), bytes[at + 8]);
-					} else {
-						DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for its %d frames\n", shp.c_str(), (int)bytes.size(), count);
-					}
-				} else {
-					DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for a header\n", shp.c_str(), (int)bytes.size());
-				}
-			}
-		}
-
-		if (CCFileClass(pcx.c_str()).Is_Available()) {
-			CCFileClass file(pcx.c_str());
-			std::unique_ptr<Surface> picture(Read_PCX_File(file));
-			found_pictures++;
-			if (picture == NULL) {
-				refused_pictures++;
-				DebugString("AUTOTEST   stockcheck refused %s\n", pcx.c_str());
-			}
+// Loads the name's VXL and HVA files, when they exist, and counts each one that loads and each pair.
+static void Stock_Check_Voxel_And_Anim(std::string const & name, StockCheckCounts & counts)
+{
+	std::string const vxl = name + ".VXL";
+	std::string const hva = name + ".HVA";
+	bool const has_vxl = CCFileClass(vxl.c_str()).Is_Available();
+	bool const has_hva = CCFileClass(hva.c_str()).Is_Available();
+	if (has_vxl) {
+		CCFileClass file(vxl.c_str());
+		VoxelLibrary library;
+		counts.found_voxels++;
+		if (!library.Read_File(file, false)) {
+			counts.refused_voxels++;
+			DebugString("AUTOTEST   stockcheck refused %s\n", vxl.c_str());
 		}
 	}
+	if (has_hva) {
+		CCFileClass file(hva.c_str());
+		MotionLibrary motion;
+		counts.found_anims++;
+		if (!motion.Read_File(file)) {
+			counts.refused_anims++;
+			DebugString("AUTOTEST   stockcheck refused %s\n", hva.c_str());
+		} else if (motion.Get_Frame_Count() > 1) {
+			DebugString("AUTOTEST   stockcheck multiframe %s frames %d\n", hva.c_str(), motion.Get_Frame_Count());
+		}
+	}
+	if (has_vxl && has_hva) {
+		counts.pairs++;
+	}
+}
 
-	int mixes = 0;
-	int entries = 0;
+
+// Reads the SHP file, decodes each frame, and logs the header fields of a frame that does not decode.
+static void Stock_Check_Shape(std::string const & shp, StockCheckCounts & counts)
+{
+	std::vector<std::uint8_t> bytes;
+	CCFileClass file(shp.c_str());
+	if (file.Open(FileClass::READ)) {
+		int const size = file.Size();
+		if (size > 0) {
+			bytes.resize(static_cast<std::size_t>(size));
+			if (file.Read(bytes.data(), size) != size) {
+				bytes.clear();
+			}
+		}
+		file.Close();
+	}
+
+	counts.found_shapes++;
+	int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;
+	bool loaded = bytes.size() >= 8;
+	if (loaded && count == 0) {
+		counts.empty_shapes++;
+	}
+	int failed = -1;
+	for (int frame = 0; loaded && frame < count; frame++) {
+		UIImageIndexed image;
+		loaded = UI_Decode_SHP(std::span<std::uint8_t const>(bytes.data(), bytes.size()), frame, image);
+		counts.frames += loaded ? 1 : 0;
+		if (!loaded) {
+			failed = frame;
+		}
+	}
+	if (!loaded) {
+		counts.refused_shapes++;
+		if (bytes.size() >= 8 && failed >= 0) {
+			std::size_t const at = 8 + 24 * static_cast<std::size_t>(failed);
+			if (at + 24 <= bytes.size()) {
+				auto const word = [&bytes](std::size_t where) {return(bytes[where] | (bytes[where + 1] << 8));};
+				DebugString("AUTOTEST   stockcheck refused %s: frame %d of %d, canvas %dx%d, frame box %d,%d %dx%d, kind %d\n",
+					shp.c_str(), failed, count, word(2), word(4), word(at), word(at + 2), word(at + 4), word(at + 6), bytes[at + 8]);
+			} else {
+				DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for its %d frames\n", shp.c_str(), (int)bytes.size(), count);
+			}
+		} else {
+			DebugString("AUTOTEST   stockcheck refused %s: %d bytes, too short for a header\n", shp.c_str(), (int)bytes.size());
+		}
+	}
+}
+
+
+// Reads the PCX file and counts it, and logs it when no picture comes out of it.
+static void Stock_Check_Picture(std::string const & pcx, StockCheckCounts & counts)
+{
+	CCFileClass file(pcx.c_str());
+	std::unique_ptr<Surface> picture(Read_PCX_File(file));
+	counts.found_pictures++;
+	if (picture == NULL) {
+		counts.refused_pictures++;
+		DebugString("AUTOTEST   stockcheck refused %s\n", pcx.c_str());
+	}
+}
+
+
+// Logs each attached MIX file and the WDT.MIX that the world domination setup mounts, and totals their entries.
+static void Stock_Check_Mixes(StockCheckCounts & counts)
+{
 	for (MixFileClass * mix = MixFileClass::First_Attached(); mix != NULL; mix = mix->Next_Attached()) {
-		mixes++;
-		entries += mix->Member_Count();
+		counts.mixes++;
+		counts.entries += mix->Member_Count();
 		DebugString("AUTOTEST   stockcheck mix %s: %d entries\n", mix->Filename, mix->Member_Count());
 	}
 
 	// WDT.MIX is mounted only by the world domination setup, when it is on hand. The check mounts it the same way.
 	if (CCFileClass("WDT.MIX").Is_Available()) {
 		MixFileClass * wdt = new MixFileClass("WDT.MIX", &FastKey);
-		mixes++;
-		entries += wdt->Member_Count();
+		counts.mixes++;
+		counts.entries += wdt->Member_Count();
 		DebugString("AUTOTEST   stockcheck mix WDT.MIX (mounted by the world domination setup): %d entries\n", wdt->Member_Count());
 		delete wdt;
 	}
+}
+
+
+/*
+**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
+**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
+**	each name, so the names are the words of the INI files' sections and values, which is how the art and
+**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
+**	the MIX archives the game attached with their entry counts.
+*/
+static void Stock_Check_Step(StepType const &)
+{
+	std::set<std::string> names;
+	int sections = 0;
+	int sources_read = 0;
+	Stock_Check_Names(names, sections, sources_read);
+
+	StockCheckCounts counts;
+	for (std::string const & name : names) {
+		Stock_Check_Voxel_And_Anim(name, counts);
+
+		std::string const shp = name + ".SHP";
+		if (CCFileClass(shp.c_str()).Is_Available()) {
+			Stock_Check_Shape(shp, counts);
+		}
+
+		std::string const pcx = name + ".PCX";
+		if (CCFileClass(pcx.c_str()).Is_Available()) {
+			Stock_Check_Picture(pcx, counts);
+		}
+	}
+	Stock_Check_Mixes(counts);
 
 	DebugString("AUTOTEST stockcheck: %d INI files, %d sections, %d names; found VXL %d, HVA %d, SHP %d, PCX %d; %d VXL and HVA pairs; refused VXL %d, HVA %d, SHP %d, PCX %d; %d SHP frames decoded, %d SHP empty; %d mixes attached with %d entries\n",
-		sources_read, sections, (int)names.size(), found_voxels, found_anims, found_shapes, found_pictures, pairs, refused_voxels, refused_anims, refused_shapes, refused_pictures, frames, empty_shapes, mixes, entries);
+		sources_read, sections, (int)names.size(), counts.found_voxels, counts.found_anims, counts.found_shapes, counts.found_pictures, counts.pairs, counts.refused_voxels, counts.refused_anims, counts.refused_shapes, counts.refused_pictures, counts.frames, counts.empty_shapes, counts.mixes, counts.entries);
 }
 
 
@@ -3213,6 +3034,17 @@ static void Veinholes_Step(StepType const &)
 }
 
 
+// Writes the bytes to a new binary file at the path. Nothing is written when the file cannot be created.
+static void Write_Binary_File(std::string const & path, void const * data, std::size_t size)
+{
+	FILE * f = std::fopen(path.c_str(), "wb");
+	if (f != NULL) {
+		std::fwrite(data, 1, size, f);
+		std::fclose(f);
+	}
+}
+
+
 // dumpfile <name>: copies a file the game can read, from a MIX or the game folder, to "dump-<name>" in the working directory.
 static void Dumpfile_Step(StepType const & step)
 {
@@ -3223,11 +3055,7 @@ static void Dumpfile_Step(StepType const & step)
 		std::vector<char> data(size);
 		file.Read(data.data(), size);
 		file.Close();
-		FILE * f = std::fopen(path.c_str(), "wb");
-		if (f != NULL) {
-			std::fwrite(data.data(), 1, size, f);
-			std::fclose(f);
-		}
+		Write_Binary_File(path, data.data(), static_cast<std::size_t>(size));
 		DebugString("AUTOTEST   dumpfile %s: %d bytes to %s\n", step.Argument.c_str(), size, path.c_str());
 	} else {
 		DebugString("AUTOTEST   dumpfile %s: not found\n", step.Argument.c_str());
@@ -3634,13 +3462,8 @@ static void Strike_Step(StepType const & step)
 	PlanningRecordScope const recording(Map.IsPlanningMode);
 	for (int index = 0; target != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if ((techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			if (Network_Game()) {
-				techno->Player_Assign_Mission(MISSION_ATTACK, target);
-			} else {
-				techno->Assign_Target(target);
-				techno->Assign_Mission(MISSION_ATTACK);
-			}
+		if (Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+			Give_Attack_Order(techno, target, Network_Game());
 		}
 	}
 }
@@ -4008,7 +3831,7 @@ static void Spy_Step(StepType const & step)
 	DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
 		}
 	}
@@ -4023,7 +3846,7 @@ static void Teamspy_Step(StepType const & step)
 	DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
 	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && (techno->House == PlayerPtr || techno->House->Is_Player_Control()) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
 			techno->Assign_Mission(MISSION_CAPTURE);
 			techno->Assign_Target(building);
 		}
@@ -4688,11 +4511,7 @@ static void Extract_Step(StepType const & step)
 	} else {
 		std::vector<unsigned char> bytes((std::size_t)in.Size());
 		in.Read(bytes.data(), (int)bytes.size());
-		FILE * out = std::fopen(out_path.c_str(), "wb");
-		if (out != NULL) {
-			std::fwrite(bytes.data(), 1, bytes.size(), out);
-			std::fclose(out);
-		}
+		Write_Binary_File(out_path, bytes.data(), bytes.size());
 		DebugString("AUTOTEST   extract %s: %d bytes\n", in_name.c_str(), (int)bytes.size());
 	}
 }
@@ -6836,7 +6655,7 @@ static void Syncrec_Step(StepType const & step)
 
 // log writes nothing more than the step line every step writes. searchdir <path> and loadshot <name>
 // take effect when the script is read (AutoTest_Load).
-static void Read_Time_Step(StepType const &)
+static void No_Action_Step(StepType const &)
 {
 }
 
@@ -6864,7 +6683,8 @@ static void Quit_Step(StepType const &)
 }
 
 
-void Run(StepType const & step)
+// The handler for each script command name. The table is built on the first call.
+static std::unordered_map<std::string_view, void (*)(StepType const &)> const & Step_Handlers(void)
 {
 	static std::unordered_map<std::string_view, void (*)(StepType const &)> const handlers = {
 		{"presentdigest", [](StepType const & step) {Draw_Check_Step(step, Video_Set_Present_Digest);}},
@@ -7184,16 +7004,23 @@ void Run(StepType const & step)
 		{"hash", Hash_Step},
 		{"statecrc", Statecrc_Step},
 		{"syncrec", Syncrec_Step},
-		{"log", Read_Time_Step},
-		{"searchdir", Read_Time_Step},
-		{"loadshot", Read_Time_Step},
+		{"log", No_Action_Step},
+		{"searchdir", No_Action_Step},
+		{"loadshot", No_Action_Step},
 		{"stall", Stall_Step},
 		{"rounding", Rounding_Step},
 		{"quit", Quit_Step},
 	};
 
+	return(handlers);
+}
+
+
+void Run(StepType const & step)
+{
 	DebugString("AUTOTEST frame %d: %s %s\n", Frame, step.Command.c_str(), step.Argument.c_str());
 
+	auto const & handlers = Step_Handlers();
 	auto const handler = handlers.find(std::string_view(step.Command));
 	if (handler != handlers.end()) {
 		handler->second(step);
@@ -7244,6 +7071,70 @@ void AutoTest_Loading_Screen_Shown(void)
 }
 
 
+// Adds a "ui " line, which has no frame, to the menu script.
+static void Add_UI_Script_Line(char const * line)
+{
+	std::string rest = line + 3;
+	rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
+	std::string::size_type const space = rest.find(' ');
+	UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
+}
+
+
+// Whether the command takes the rest of its script line as its argument, so the argument may hold spaces.
+static bool Takes_Rest_Of_Line(char const * command)
+{
+	static std::set<std::string_view> const names = {"rules", "art", "pcxcameo", "truecolourdir", "exportshape", "exportpal", "teamini",
+		"searchdir", "statedump", "extract", "log", "beacontext", "wintype", "key", "winkey", "hold", "release", "cameopress",
+		"binding", "scheme"};
+	return(names.contains(command));
+}
+
+
+// Applies a command that takes effect when the script is read. Returns true when the command needs no step.
+static bool Apply_Load_Time_Command(char const * command, std::string const & text)
+{
+	// A search directory has to be in place before startup reads the files it holds, such
+	// as the extra string tables, so it is added now rather than at its frame.
+	if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
+		std::string path = AutoTest_Input_Path(text);
+		if (path.back() != '\\' && path.back() != '/') {
+			path += '\\';
+		}
+		CDFileClass::Add_Search_Drive(path.c_str());
+	}
+	// The first loading screen comes before any game frame.
+	if (std::strcmp(command, "loadshot") == 0) {
+		LoadShotName = text;
+	}
+	// recordreplay and playreplay take effect when the script is read, before the game starts.
+	if (std::strcmp(command, "recordreplay") == 0) {
+		Replay_Set_Recording(true, text.c_str());
+		return(true);
+	}
+	if (std::strcmp(command, "playreplay") == 0) {
+		Replay_Request_Playback(text.c_str());
+		Spawner_Request();
+		return(true);
+	}
+	// requirera2 is kept when the script is read, so it needs no step.
+	if (std::strcmp(command, "requirera2") == 0) {
+		RequireRA2 = true;
+		return(true);
+	}
+	// continuewin and continuelose are kept when the script is read, so they need no step.
+	if (std::strcmp(command, "continuewin") == 0) {
+		ContinueAfterWin = true;
+		return(true);
+	}
+	if (std::strcmp(command, "continuelose") == 0) {
+		ContinueAfterLose = true;
+		return(true);
+	}
+	return(false);
+}
+
+
 /// <summary>
 /// Reads a test script and turns unattended mode on. Steps are played in file order.
 /// </summary>
@@ -7266,10 +7157,7 @@ bool AutoTest_Load(char const * filename)
 		int y = 0;
 		// A menu step has no frame, since the menus run before any game does.
 		if (std::strncmp(line, "ui ", 3) == 0) {
-			std::string rest = line + 3;
-			rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
-			std::string::size_type const space = rest.find(' ');
-			UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
+			Add_UI_Script_Line(line);
 			continue;
 		}
 		if (line[0] == ';' || std::sscanf(line, "%d %63s %255s %d %d", &frame, command, argument, &x, &y) < 2) {
@@ -7277,52 +7165,12 @@ bool AutoTest_Load(char const * filename)
 		}
 		std::string text = argument;
 		// A rules step's path and a log line's text are the rest of the line, so they may hold spaces.
-		if (std::strcmp(command, "rules") == 0 || std::strcmp(command, "art") == 0 || std::strcmp(command, "pcxcameo") == 0
-			|| std::strcmp(command, "truecolourdir") == 0 || std::strcmp(command, "exportshape") == 0 || std::strcmp(command, "exportpal") == 0 || std::strcmp(command, "teamini") == 0
-			|| std::strcmp(command, "searchdir") == 0 || std::strcmp(command, "statedump") == 0 || std::strcmp(command, "extract") == 0
-			|| std::strcmp(command, "log") == 0 || std::strcmp(command, "beacontext") == 0
-			|| std::strcmp(command, "wintype") == 0 || std::strcmp(command, "key") == 0 || std::strcmp(command, "winkey") == 0
-			|| std::strcmp(command, "hold") == 0 || std::strcmp(command, "release") == 0 || std::strcmp(command, "cameopress") == 0
-			|| std::strcmp(command, "binding") == 0 || std::strcmp(command, "scheme") == 0) {
+		if (Takes_Rest_Of_Line(command)) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
 			text.erase(text.find_last_not_of(" \t\r\n") + 1);
 		}
-		// A search directory has to be in place before startup reads the files it holds, such
-		// as the extra string tables, so it is added now rather than at its frame.
-		if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
-			std::string path = AutoTest_Input_Path(text);
-			if (path.back() != '\\' && path.back() != '/') {
-				path += '\\';
-			}
-			CDFileClass::Add_Search_Drive(path.c_str());
-		}
-		// The first loading screen comes before any game frame.
-		if (std::strcmp(command, "loadshot") == 0) {
-			LoadShotName = text;
-		}
-		// recordreplay and playreplay take effect when the script is read, before the game starts.
-		if (std::strcmp(command, "recordreplay") == 0) {
-			Replay_Set_Recording(true, text.c_str());
-			continue;
-		}
-		if (std::strcmp(command, "playreplay") == 0) {
-			Replay_Request_Playback(text.c_str());
-			Spawner_Request();
-			continue;
-		}
-		// requirera2 is kept when the script is read, so it needs no step.
-		if (std::strcmp(command, "requirera2") == 0) {
-			RequireRA2 = true;
-			continue;
-		}
-		// continuewin and continuelose are kept when the script is read, so they need no step.
-		if (std::strcmp(command, "continuewin") == 0) {
-			ContinueAfterWin = true;
-			continue;
-		}
-		if (std::strcmp(command, "continuelose") == 0) {
-			ContinueAfterLose = true;
+		if (Apply_Load_Time_Command(command, text)) {
 			continue;
 		}
 		std::string source = line;

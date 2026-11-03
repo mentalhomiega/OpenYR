@@ -166,6 +166,99 @@ A command runs once the game frame reaches its frame, in file order.
 | `queuestate <TypeID>` | Writes how many of the type the player's factory holds, in production and queued, how many are queued behind it, and the player's credits |
 | `rounding <near\|chop\|up\|down>` | Sets the game thread's rounding mode for the rest of the run, so one copy of a network test can play in a different mode from the others. The game starts in round toward zero, logged as `Rounding mode at frame 0` with `(toward zero)`, and a later change is logged as `Rounding mode changed` |
 | `quit` | Ends the process |
+| `options` | opens the options menu, as Escape does during play |
+| `scatter <TypeID> x y [forced] [nokidding]` | calls Scatter on each live soldier of that type, whoever owns it, with the threat at the centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given and how many numbers the game's random generator handed out |
+| `cameos` | writes each sidebar strip's cameos in order, with the type and whether the player can build it now |
+| `clickcameo <TypeID>` | starts production of the type, as a click on its cameo does, when a strip still offers the cameo |
+| `prereqs <TypeID>` | writes the prerequisites the type lists, then each type whose Prerequisite list names it |
+| `bridge x y` | writes a cell's bridge tile, overlay, deck and under-bridge flags |
+| `bridgecensus` | writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay |
+| `bridgearea x y` | writes the bridge tile, overlay and flags of each cell within four cells of x,y |
+| `wallcensus` | writes each overlay type the rules mark as a wall, with the wall overlays the scenario's OverlayPack names (outside the radar counted apart) and the ones the loaded map holds, and whether the type has an image and a cell animation |
+| `repairbridge x y` | writes what MapClass::Can_Repair_Bridge says about the cell |
+| `bridgehit x y` | damages the bridge on the cell as a weapon impact does (MapClass::Damage_Bridge) and writes whether a span came down |
+| `bridgehut x y` | brings the bridge near the cell down as a bridge repair hut's C4 does (MapClass::Destroy_Bridge_At) |
+| `bridgedecks x0 x1 y` | writes how many high bridge deck overlays are left on row y from x0 to x1 |
+| `blast <Warhead\|ion> x y` | explodes the warhead on the cell as a weapon impact does (Explosion_Damage); a wood low bridge there takes one hit |
+| `concretehit x y` | damages the concrete low bridge on the cell as a weapon impact does (MapClass::Damage_Concrete_Bridge) and writes whether a span came down |
+| `passable x y` | writes whether a foot or tracked unit can move onto the cell, and the overlay of the cell |
+| `targetaction <AttackerTypeID> <TargetTypeID>` | writes the action the player's first object of the attacker type gets over the first live enemy object of the target type, with that target's height, whether it is in the air, and whether the attacker's chosen weapon can fire at it |
+| `enemystrike <TypeID> x y` | orders the first computer-owned object of that type to attack what stands on that cell |
+| `hutaction <TypeID> x y` | writes the action the player's object of that type gets over the building on that cell, the object path a mouse-over takes |
+| `hutclick <TypeID> x y` | clicks the building on that cell with the player's object of that type, through the object path a real click takes |
+| `hutc4 x y` | writes the C4 state of the building on that cell: whether a charge is on it, its countdown and strength |
+| `c4watch <frames> x y` | follows the building on that cell for that many frames: writes its charge's placement, countdown and strength changes, and its destruction with the saboteur's experience and the player's money and points |
+| `click x y` | queues a left click at that screen position |
+| `windowmove x y` | moves the pointer to that window pixel, which the hover and placement code reads |
+| `key <Key> [ctrl\|shift\|alt]` | presses and releases that key on the keyboard queue, skipping the interface; the key is a letter or digit, or a virtual-key code in decimal (one character is read as a letter or digit, so Tab is written 09); the modifier words hold that key with the modifier |
+| `release <Key> [ctrl\|shift\|alt]` | lets go of a key a hold step left down; Keyboard->Down stays false in autotests, so the held state is the queue's |
+| `winkey <Key> [ctrl\|shift\|alt]` | presses and releases that key through the game window, so the interface sees it first as it does a player's key; a one-character name is read as a letter or digit, so Backspace is written 08 |
+| `binding <Key> [Double\|Hold\|Held]` | writes the command the key's binding of that trigger runs, with the modifier words |
+| `camera` | writes the tactical position the view is centred on, in leptons |
+| `wintype <text>` | types the text through the game window, one character at a time, each as a press, its text event and a release |
+| `alliance <house>` | queues the alliance toggle for the house with that index, so every copy of a match makes it on one frame |
+| `tab` | writes the sidebar tab shown, how many items each tab lists, and the object pending placement |
+| `placement` | writes the object pending placement, the cell its cursor is on, how many cells of its footprint are marked, and whether the pointer is over the tactical view and over the map |
+| `windowpress x y` | moves the pointer to that window pixel and presses the left button there, as the start of a drag does |
+| `windowrelease x y` | moves the pointer to that window pixel and releases the left button there, as the end of a drag does |
+| `face <dir256> x y` | turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north) |
+| `voxelshade <type>` | writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight |
+| `cover x y` | writes how many buildings screen that cell and whether it counts as covered |
+| `hiddenmarker <mode>` | 0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of the Behind animation |
+| `typesounds <TypeID>` | writes the sound numbers the type's create and transport sounds resolved to |
+| `maps` | writes every XMP multiplayer map the file system finds |
+| `cratesounds` | writes the sound numbers the crate pickup sounds resolved to |
+| `elite <TypeID>` | makes the player's objects of that type elite |
+| `canrepair x y` | writes whether the structure on that cell can be repaired with the repair cursor |
+| `overpower x y` | writes how many objects charge the structure on that cell and whether it is overpowered |
+| `ruleanims` | writes the animations some rules settings resolved to |
+| `canfire <TypeID> x y` | writes whether the player's object of that type could fire its primary weapon at the object on that cell now, and why not, then the weapon it would choose and whether that one could fire |
+| `weapons <TypeID>` | writes each weapon slot of the type with its bullet's AA and AG flags and range |
+| `waypoint <any> x y` | places a waypoint on the cell on the selected path, as a click in waypoint mode does |
+| `wpsend <any> x y` | gives the selected objects the follow-path order a click on the waypoint at the cell gives |
+| `wpstate <TypeID>` | writes each aircraft of the type, whoever owns it, with its cell, height above ground, mission and status, ammo, the waypoint path and next waypoint it follows, whether it moves, and its radio contact |
+| `airborne <TypeID>` | writes each object of the type with its height above ground, whether it is in the air, its render layer, and whether the ground or bridge occupier chain of its cell holds it |
+| `rocket <TypeID>` | writes each foot object of the type with its coordinate in leptons, its height above ground, its flat and vertical distance to the destination its locomotor flies to, and whether that locomotor is moving |
+| `shake <Warhead>` | starts the screen shake that warhead's detonation would |
+| `screen` | writes the current screen shake offset |
+| `hit <TypeID>:<Warhead>[@<FirerTypeID>] <amount>` | hits every object of that type, whoever owns it, with that warhead, fired by one of the player's objects of another type, or of the named type |
+| `action <TypeID> x y` | writes what the player's object of that type would do when clicked on the object standing on that cell |
+| `clickon <TypeID> x y` | clicks the player's object of that type on the object standing on that cell, as the player would with it selected |
+| `enter <TypeID> x y` | sends the player's soldiers or vehicles of that type into the structure on that cell |
+| `capture <TypeID> x y` | sends the player's idle objects of that type to capture or infiltrate the structure on that cell |
+| `tabflash` | writes which tabs of the modern sidebar panel flash, one bit per tab |
+| `ambient <TypeID>` | writes the ambient sound each object of that type has attached |
+| `trails` | writes how many line trails exist and how many of their places still show |
+| `ammo <TypeID>` | writes the ammunition and reload countdown of each vehicle of that type |
+| `enable <SuperWeaponTypeID>` | gives the player that super weapon to charge from empty, as a structure does |
+| `houses` | writes each house's money, power, spy effects, resource gatherers and powered unit centres |
+| `houseobjects <house>` | writes the units, infantry, aircraft and buildings the house owns outside limbo, its objects in limbo, the objects it originally owns, and the living vehicles it owns |
+| `shortgame <0\|1>` | sets the Short Game option on this copy, as the setup screen does |
+| `statics` | writes how many sounds that Play Sound Effect At started are still going |
+| `garrisons` | writes every structure that can be garrisoned |
+| `radarall <TypeID>` | writes each object of that type whoever owns it, with its owner and whether Is_Radar_Visible plots it |
+| `stripfill <column> <count>` | offers building types 0 to count-1 to that sidebar strip and writes how many it took |
+| `aiscan` | writes each foot object no player owns with its mission, team, target, range and area scan picks, and the nearest player object with whether it is in range and can be fired at |
+| `lockscan` | writes each object outside limbo whose IsLocked flag is clear, whoever owns it, with whether its cell is in the local radar now, then the count of such objects and how many of them are in the local radar |
+| `gattling <TypeID>` | writes each object of that type, whoever owns it, with its primary facing and the facing it turns to, a building's aim point, the fire error of its primary weapon (a building only), barrel pitch, spin, gattling stage, turret animation frame, recoil state, target cell, and a building's turret and barrel frame counts |
+| `turretcoord <TypeID>` | writes each object of that type, whoever owns it, with its body and turret facings in 256 directions, its TurretOffset, its weapon 0 mounting, and the point Turret_Coord returns relative to its render point, with the body's draw matrix rows |
+| `recoil <TypeID>` | writes the recoil phase, frames left and travel of the turret body and barrel of each building of that type |
+| `rock <TypeID>` | writes the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it |
+| `load <TypeID>` | fills the player's objects of that type, a harvester for one, with ore to capacity |
+| `partsys` | writes each live particle system with its type, the frames it has left and the object it rides on |
+| `bullets` | writes each live projectile with its type, the house whose color scheme it uses and its type's trail delays |
+| `radbeams` | writes how many radiation beams of each kind are live and how many eruption beams are visible |
+| `radlevel x y` | writes the radiation level of a cell on a line of its own |
+| `effects <TypeID>` | writes the AttachEffect count and multipliers, speed, strength and reload countdown of every live object of that type |
+| `price <TypeID>` | writes what the player pays for the type |
+| `types <prefix>` | writes every structure type whose ID starts with the prefix |
+| `schemes` | writes the color schemes and the scheme each house draws with |
+| `seq <TypeID>` | writes an infantry type's art sequences |
+| `plan` | writes each computer house's base plan |
+| `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
+| `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
+
+Some steps count the objects of a house the map marks `PlayerControl=yes` as the player's, and others do not. `select`, `selectadd`, `waitcell`, `strike`, `strikeobj` with an attacker type, `spy` and `teamspy` count those houses' objects as the player's. `move` and `attack` select them too, but a network game orders only the player's own objects, so a local run and a network run order different sets. `order`, `planmove`, `planguard`, `forceattack` and `capture` order only the player's own objects.
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to A shot's flash writes `AUTOTEST muzzle frame`, with the firer, weapon, anim, the size of the weapon's `Anim` list, the turret facing and the start point. A bolt or radiation beam writes `AUTOTEST beam end`, the point it ends on and the target's center. A bullet's blast writes `AUTOTEST explode frame`, with the warhead, the land type, the damage and the animation picked. A wave made for a sonic or magnetron weapon writes `AUTOTEST wave`, with its type number, the points it runs between and whether it is aimed at an object or a cell. A laser shot writes `AUTOTEST laser zap`, with the firer, the weapon that fired, the weapon the beam takes its look from and the beam's duration; the beam itself writes `AUTOTEST laser beam`.
 the `Screenshots` folder of the user data directory, numbered in order, so a recording can be joined
