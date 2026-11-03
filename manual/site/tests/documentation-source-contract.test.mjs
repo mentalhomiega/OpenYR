@@ -734,9 +734,13 @@ test('The scenario file is kept from its first read and carried in the save', ()
 
 	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
 		'Scen->SourceFile.Clear();',
+		'Read_Mission_Files();',
+	], 'a generated map holds no file, and the mission files are read after it');
+
+	assertOrdered(functionBody(scenario, 'static void Read_Mission_Files(void)'), [
 		'Scen->SourceFile.Matches(buffer)',
 		'Load_Held_Scenario_File(mini, buffer, false);',
-	], 'a generated map holds no file, and the sidecar comes from the holder when it is the same file');
+	], 'the sidecar comes from the holder when it is the same file');
 
 	assert.match(
 		functionBody(scenario, 'void ScenarioClass::Serialize(SaveStreamClass & stream)'),
@@ -879,7 +883,9 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
 	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
 	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
-	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 4, 'the Owner tests of the availability test, the buildable scan, the harvester scan (Country_Unit) and the shared defense scan (Collect_Anti_Defenses) ask the seam');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 2, 'the harvester scan (Country_Unit) and the shared defense scan (Collect_Anti_Defenses) ask the seam');
+	assert.match(header, /inline bool HouseClass::Is_Acted_Candidate\(T const \* type\) const\r?\n\{\r?\n\tint mask = Acted_Mask\(\);/, 'the availability test and the buildable scan ask the seam through Is_Acted_Candidate');
+	assert.match(house, /Is_Acted_Candidate\(builtype\)/, 'the availability test uses the shared candidate test');
 	assert.match(house, /required & Own_Mask\(\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
@@ -1302,7 +1308,7 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assert.match(
 		harvest,
-		/Straight_Line_Leptons\(Get_Coord\(\), anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
+		/Get_Coord\(\)\.Gamemd_Distance_To\(anybay->Get_Coord\(\)\) > 3 \* CELL_LEPTON/,
 		'a harvester out of reach drives only when the nearest bay is over three cells away',
 	);
 });
@@ -1609,7 +1615,7 @@ test('A Tiberium overlay is chosen inside the type that owns it', () => {
 	);
 
 	assert.match(
-		functionBody(cell, 'void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const'),
+		functionBody(cell, 'RGBClass CellClass::Cell_Color(void) const'),
 		/Tiberium_Overlay_Here\(\*this, \*tiberium\)/,
 		'and the radar picks its color by the same rule',
 	);
