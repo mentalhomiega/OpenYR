@@ -33,6 +33,7 @@
 #pragma once
 
 #include "facing.h"
+#include "fly.h"
 #include "fuse.h"
 #include "object.h"
 #include "velocity.h"
@@ -135,6 +136,13 @@ class BulletClass : public ObjectClass
 	private:
 		// Every projectile of a Scalable=yes type that a vehicle has fired and that is still in flight.
 		static DynamicVectorClass<BulletClass *> ScalableBullets;
+
+		// The steps of AI(): one flight model each, then the outcome of the move.
+		void Fly_Vertical(Coord & coord, bool & forced, ImpactType & impact);
+		void Fly_Homing(Coord & coord, bool & forced, ImpactType & impact);
+		void Fly_Ballistic(Coord & coord, bool & forced, bool & collided, ImpactType & impact);
+		void Vanish_If_Off_Map(Coord & coord, bool & forced, ImpactType & impact) const;
+		void Resolve_Impact(Coord & coord, bool forced, bool collided, ImpactType impact);
 
 	public:
 

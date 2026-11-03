@@ -216,69 +216,16 @@ static void Damage_Bridge_Span(Cell const & cell, CellClass * cellptr, Coord con
 }
 
 
-/***********************************************************************************************
- * Explosion_Damage -- Inflict an explosion damage affect.                                     *
- *                                                                                             *
- *    Processes the collateral damage affects typically caused by an                           *
- *    explosion.                                                                               *
- *                                                                                             *
- * INPUT:   coord    -- The coordinate of ground zero.                                         *
- *                                                                                             *
- *          strength -- Raw damage points at ground zero.                                      *
- *                                                                                             *
- *          source   -- Source of the explosion (who is responsible).                          *
- *                                                                                             *
- *          warhead  -- The kind of explosion to process.                                      *
- *                                                                                             *
- *          sourcehouse -- The house that gets the credit for what the blast destroys when     *
- *                      no attacker does. It goes to every victim as the house argument of     *
- *                      Take_Damage (Explosion_Damage, 0x489280).                              *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   This routine can consume some time and will affect the AI                       *
- *             of nearby enemy units (possibly).                                               *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   08/16/1991 JLB : Created.                                                                 *
- *   11/30/1991 JLB : Uses coordinate system.                                                  *
- *   12/27/1991 JLB : Radius of explosion damage effect.                                       *
- *   04/13/1994 JLB : Streamlined.                                                             *
- *   04/16/1994 JLB : Warhead damage type modifier.                                            *
- *   04/17/1994 JLB : Cleaned up.                                                              *
- *   06/20/1994 JLB : Uses object pointers to distribute damage.                               *
- *   06/20/1994 JLB : Source is a pointer.                                                     *
- *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
- *=============================================================================================*/
-bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of)
+// One object in reach of a blast and its distance from ground zero.
+struct BlastHit {
+	ObjectClass * Object;
+	int Distance;
+};
+
+
+// Adds the airborne objects in range of the blast to hits. A pinpoint blast on an Iron Curtained one sets curtain_hit.
+static void Collect_Flying_Hits(Coord const & coord, Cell const & cell, int range, bool pinpoint, std::vector<BlastHit> & hits, bool & curtain_hit)
 {
-	Cell								cell;		// Cell number under explosion.
-	ObjectClass *						object;		// Working object pointer.
-	DynamicVectorClass<ObjectClass *>	objects;	// Maximum number of objects that can be damaged.
-	int									distance;	// Distance to unit.
-	int									range;		// Damage effect radius.
-
-	if (Scen->Special.IsInert || warhead == NULL) return(false);
-
-	if (!strength && !warhead->IsWebby) return(false);
-
-	/*
-	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
-	 * from the blast, and damaged once the list is complete (MapClass::DamageArea, 0x489280).
-	 */
-	range = (int)(warhead->CellSpread * CELL_LEPTON_W);
-	bool const pinpoint = warhead->CellSpread <= 0.5f;
-	bool curtain_hit = false;
-	cell = coord.As_Cell();
-
-	CellClass * cellptr = &Map[cell];
-
-	struct HitStruct {
-		ObjectClass * Object;
-		int Distance;
-	};
-	std::vector<HitStruct> hits;
-
 	/*
 	 * Objects flying over the blast. A pinpoint blast on an object under the Iron Curtain
 	 * spends itself there and spares everything else.
@@ -297,7 +244,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		for (int index = 0; index < flyers.Count(); index++) {
 			FootClass * flyer = flyers[index];
 			if (flyer->IsActive && flyer->IsDown && flyer->Strength > 0 && flyer->In_Air()) {
-				distance = (coord - flyer->PositionCoord).Gamemd_Length();
+				int const distance = (coord - flyer->PositionCoord).Gamemd_Length();
 				if (distance <= range) {
 					if (pinpoint && distance < 85 && flyer->Is_Iron_Curtained() && !flyer->IsForceShielded) {
 						curtain_hit = true;
@@ -307,12 +254,34 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
-	bool isbridge = false;
-	if (cellptr->IsUnderBridge && coord.Z > Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT / 2) {
-		isbridge = true;
+
+// Ore and walls in the cell take their share of the blast.
+static void Damage_Overlay_In_Reach(CellClass * cptr, int strength, WarheadTypeClass const * warhead, bool dochainreaction)
+{
+	if (cptr->Overlay != OVERLAY_NONE) {
+		OverlayTypeClass const * optr = OverlayTypes[cptr->Overlay];
+		if (optr->IsChainReaction && (!optr->IsTiberium || warhead->IsTiberiumDestroyer) && dochainreaction) {
+			cptr->Reduce_Tiberium(strength / 10);
+		}
+		if (optr->IsWall) {
+			if (warhead->IsWallAbsoluteDestroyer) {
+				cptr->Reduce_Wall(-1);
+			} else if (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
+				cptr->Reduce_Wall(strength);
+			}
+		}
+		if (cptr->Overlay == OVERLAY_NONE) {
+			TechnoClass::Remove_Target(cptr);
+		}
 	}
+}
 
+
+// Adds the occupiers and veinhole monsters of every cell in reach to hits. A pinpoint blast on an Iron Curtained one sets curtain_hit.
+static void Collect_Cell_Hits(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass const * spare_infantry_of, Cell const & cell, bool pinpoint, bool isbridge, std::vector<BlastHit> & hits, bool & curtain_hit)
+{
 	int const radius = CellSpread::Radius_For(warhead->CellSpread);
 	int const count = Cell_Spread_Count(radius);
 	for (int index = 0; index < count; index++) {
@@ -320,25 +289,7 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		if (!Map.In_Radar(where)) continue;
 		CellClass * cptr = &Map[where];
 
-		/*
-		 * Ore and walls in reach take their share of the blast.
-		 */
-		if (cptr->Overlay != OVERLAY_NONE) {
-			OverlayTypeClass const * optr = OverlayTypes[cptr->Overlay];
-			if (optr->IsChainReaction && (!optr->IsTiberium || warhead->IsTiberiumDestroyer) && dochainreaction) {
-				cptr->Reduce_Tiberium(strength / 10);
-			}
-			if (optr->IsWall) {
-				if (warhead->IsWallAbsoluteDestroyer) {
-					cptr->Reduce_Wall(-1);
-				} else if (warhead->IsWallDestroyer || (warhead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
-					cptr->Reduce_Wall(strength);
-				}
-			}
-			if (cptr->Overlay == OVERLAY_NONE) {
-				TechnoClass::Remove_Target(cptr);
-			}
-		}
+		Damage_Overlay_In_Reach(cptr, strength, warhead, dochainreaction);
 
 		/*
 		 * A structure is measured from the cell it is found in, so a large one is struck once
@@ -346,12 +297,13 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 		 * the blast is CrushWarhead's. Harvesters are spared in a scenario that protects them.
 		 */
 		Coord const cell_coord = cptr->Center_Coord();
-		for (object = cptr->Cell_Occupier(isbridge); object != NULL; object = object->Next) {
+		for (ObjectClass * object = cptr->Cell_Occupier(isbridge); object != NULL; object = object->Next) {
 			if (object == source && !source->TClass->IsDamageSelf && warhead != Rule->CrushWarhead) continue;
 			if (!object->IsActive) continue;
 			if (object->RTTI == RTTI_UNIT && Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass *)object->Class_Of())) continue;
 			if (spare_infantry_of != NULL && object->RTTI == RTTI_INFANTRY && spare_infantry_of->Is_Ally(((InfantryClass *)object)->House)) continue;
 
+			int distance;
 			if (object->RTTI == RTTI_BUILDING) {
 				if (index != 0) {
 					distance = (cell_coord - coord).Gamemd_Length();
@@ -377,18 +329,23 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
+
+// Damages every collected object that is still alive and in range. After a curtain_hit only Iron Curtained objects are damaged.
+static void Deal_Blast_Damage(std::vector<BlastHit> const & hits, Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, HouseClass * sourcehouse, int range, bool curtain_hit)
+{
 	/*
 	 * Deal the damage. An aircraft in the air counts as half as far away.
 	 */
-	for (HitStruct const & hit : hits) {
-		object = hit.Object;
+	for (BlastHit const & hit : hits) {
+		ObjectClass * object = hit.Object;
 		object->IsToDamage = false;
 		if (!object->IsActive) continue;
 		if (object->RTTI == RTTI_BUILDING && ((BuildingClass *)object)->Class->IsInvisibleInGame) continue;
 		if (curtain_hit && !(object->Is_Techno() && ((TechnoClass *)object)->Is_Iron_Curtained())) continue;
 
-		distance = hit.Distance;
+		int distance = hit.Distance;
 		if (object->RTTI == RTTI_AIRCRAFT && object->In_Air()) {
 			distance /= 2;
 		}
@@ -402,12 +359,17 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
+
+// Rocks the vehicles and infantry around ground zero when the warhead is a Rocker.
+static void Rock_Blast_Cells(Coord const & coord, Cell const & cell, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool isbridge)
+{
 	double rocking_force = std::min(strength * 0.01, 4.0);
 	if (warhead->IsRocker && rocking_force > 0.3) {
 		for (int x = cell.X - 3; x <= cell.X + 3; x++) {
 			for (int y = cell.Y - 3; y <= cell.Y + 3; y++) {
-				object = isbridge ? Map[Cell(x, y)].Cell_Occupier(true) : Map[Cell(x, y)].Cell_Occupier(false);
+				ObjectClass * object = isbridge ? Map[Cell(x, y)].Cell_Occupier(true) : Map[Cell(x, y)].Cell_Occupier(false);
 
 				while (object) {
 					TechnoClass * techno = Dynamic_Cast<TechnoClass *>(object);
@@ -430,9 +392,12 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
-	cellptr = &Map[cell];
 
+// Damages the bridge piece at the cell when the warhead destroys bridges.
+static void Damage_Blast_Bridges(Coord const & coord, Cell const & cell, CellClass * cellptr, int strength, WarheadTypeClass const * warhead)
+{
 	/*
 	**	If there is a bridge at this location, then it may be destroyed by the
 	**	combat damage.
@@ -475,7 +440,12 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
+
+// Detonates the explosive barrel at the cell, if there is one, and sets fire to explosive neighbours.
+static void Explode_Barrel(Coord const & coord, CellClass * cellptr)
+{
 	if (cellptr->Overlay != OVERLAY_NONE && OverlayTypes[cellptr->Overlay]->IsExplosive) {
 		cellptr->Register_For_Redraw();
 		cellptr->Overlay = OVERLAY_NONE;
@@ -506,7 +476,12 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			}
 		}
 	}
+}
 
+
+// Deforms the terrain, collapses cliffs, spawns the warhead's particle and cracks ice at the blast.
+static void Apply_Blast_Terrain_Effects(Coord const & coord, CellClass * cellptr, int strength, WarheadTypeClass const * warhead, HouseClass * sourcehouse)
+{
 	if (strength > warhead->DeformThreshhold) {
 		if (Percent_Chance((strength * 0.01) * warhead->Deform * 100.0) && !(Map[coord].IsUnderBridge && coord.Z >= BRIDGE_LEPTON_HEIGHT + Map.Get_Height_GL(coord))) {
 			Map.Deform_Terrain(coord.As_Cell(), false);
@@ -538,6 +513,75 @@ bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 			Map.Recalc_Ice_Cells();
 		}
 	}
+}
+
+
+/***********************************************************************************************
+ * Explosion_Damage -- Inflict an explosion damage affect.                                     *
+ *                                                                                             *
+ *    Processes the collateral damage affects typically caused by an                           *
+ *    explosion.                                                                               *
+ *                                                                                             *
+ * INPUT:   coord    -- The coordinate of ground zero.                                         *
+ *                                                                                             *
+ *          strength -- Raw damage points at ground zero.                                      *
+ *                                                                                             *
+ *          source   -- Source of the explosion (who is responsible).                          *
+ *                                                                                             *
+ *          warhead  -- The kind of explosion to process.                                      *
+ *                                                                                             *
+ *          sourcehouse -- The house that gets the credit for what the blast destroys when     *
+ *                      no attacker does. It goes to every victim as the house argument of     *
+ *                      Take_Damage (Explosion_Damage, 0x489280).                              *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   This routine can consume some time and will affect the AI                       *
+ *             of nearby enemy units (possibly).                                               *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   08/16/1991 JLB : Created.                                                                 *
+ *   11/30/1991 JLB : Uses coordinate system.                                                  *
+ *   12/27/1991 JLB : Radius of explosion damage effect.                                       *
+ *   04/13/1994 JLB : Streamlined.                                                             *
+ *   04/16/1994 JLB : Warhead damage type modifier.                                            *
+ *   04/17/1994 JLB : Cleaned up.                                                              *
+ *   06/20/1994 JLB : Uses object pointers to distribute damage.                               *
+ *   06/20/1994 JLB : Source is a pointer.                                                     *
+ *   06/18/1996 JLB : Strength could be negative for healing effects.                          *
+ *=============================================================================================*/
+bool Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, WarheadTypeClass const * warhead, bool dochainreaction, HouseClass * sourcehouse, HouseClass const * spare_infantry_of)
+{
+	if (Scen->Special.IsInert || warhead == NULL) return(false);
+
+	if (!strength && !warhead->IsWebby) return(false);
+
+	/*
+	 * The blast reaches CellSpread cells. Every object in that reach is listed with its distance
+	 * from the blast, and damaged once the list is complete (MapClass::DamageArea, 0x489280).
+	 */
+	int const range = (int)(warhead->CellSpread * CELL_LEPTON_W);
+	bool const pinpoint = warhead->CellSpread <= 0.5f;
+	bool curtain_hit = false;
+	Cell const cell = coord.As_Cell();
+
+	CellClass * cellptr = &Map[cell];
+
+	std::vector<BlastHit> hits;
+
+	Collect_Flying_Hits(coord, cell, range, pinpoint, hits, curtain_hit);
+
+	bool isbridge = false;
+	if (cellptr->IsUnderBridge && coord.Z > Map.Get_Height_GL(coord) + BRIDGE_LEPTON_HEIGHT / 2) {
+		isbridge = true;
+	}
+
+	Collect_Cell_Hits(coord, strength, source, warhead, dochainreaction, spare_infantry_of, cell, pinpoint, isbridge, hits, curtain_hit);
+	Deal_Blast_Damage(hits, coord, strength, source, warhead, sourcehouse, range, curtain_hit);
+	Rock_Blast_Cells(coord, cell, strength, source, warhead, isbridge);
+	Damage_Blast_Bridges(coord, cell, cellptr, strength, warhead);
+	Explode_Barrel(coord, cellptr);
+	Apply_Blast_Terrain_Effects(coord, cellptr, strength, warhead, sourcehouse);
 	return(curtain_hit);
 }
 
