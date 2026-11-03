@@ -10577,29 +10577,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		xy.X += 11;
 	}
 
-	/*
-	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
-	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
-	*/
-	if (TClass->SpawnsNumber > 0) {
-		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
-		for (int index = 0; index < TClass->SpawnsNumber; index++) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-	}
+	Draw_Spawner_Pips(xy, offset, pip_shapes, rect);
 
-	if (RTTI == RTTI_BUILDING) {
-		BuildingClass const * building = (BuildingClass const *)this;
-		if (building->Class->IsShowOccupantPips) {
-			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
-				PipEnum pip = PIP_PERSON_EMPTY;
-				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
-					pip = building->Occupants[index]->Class->OccupyPip;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
-	}
+	Draw_Occupant_Pips(xy, offset, pip_shapes, rect);
 
 	/*
 	**	Transporter type objects have a different graphic representation for the pips. The
@@ -10609,41 +10589,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	vehicle blue. A structure that absorbs its owner's units shows one pip per passenger.
 	*/
 	if (TClass->Max_Passengers() > 0) {
-		int const count = std::max(Class_Of()->Max_Pips(), 0);
-		std::vector<int> slots(count, PIP_EMPTY);
-		bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
-
-		ObjectClass const * object = Cargo.Attached_Object();
-		int last = absorber ? 0 : Cargo.Total_Size() - 1;
-		for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
-			int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
-			if (absorber) {
-				if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
-				last++;
-				continue;
-			}
-			if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
-				for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
-					if (last >= 0 && last < count) slots[last] = PIP_WHITE;
-					last--;
-				}
-			}
-			if (last >= 0 && last < count) slots[last] = shape;
-			last--;
-		}
-
-		// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
-		int first = 0;
-		Point2D gap(0, 0);
-		if (TClass->IsGunner && count > 0) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			first = 1;
-			gap = offset * 2;
-		}
-		for (int index = first; index < count; index++) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-
+		Draw_Passenger_Pips(xy, offset, pip_shapes, rect);
 	} else {
 
 		/*
@@ -10657,26 +10603,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	various minerals it could have harvested.
 		*/
 		if (RTTI != RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
-
-			// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
-			// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
-			int const count = Class_Of()->Max_Pips();
-			double const capacity = TClass->Capacity;
-			double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
-			int orepips = (int)(ore / capacity * count + 0.5);
-			int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
-
-			for (int index = 0; index < count; index++) {
-				int shape = PIP_EMPTY;
-				if (gempips > 0) {
-					shape = PIP_BLUE;
-					gempips--;
-				} else if (orepips > 0) {
-					shape = PIP_YELLOW;
-					orepips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+			Draw_Tiberium_Pips(xy, offset, pip_shapes, rect);
 		}
 
 		/*
@@ -10684,56 +10611,187 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	after them a red pip while it holds more than that, white as the overload strikes.
 		*/
 		else if (TClass->PipScale == PIPSCALE_MINDCONTROL) {
-			if (CaptureManager) {
-				int const count = CaptureManager->Max_Nodes();
-				int const held = CaptureManager->Controlled_Count();
-				for (int index = 0; index < count; index++) {
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-				if (CaptureManager->Is_Overloading()) {
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-			}
+			Draw_Mind_Control_Pips(xy, offset, pip_shapes, rect);
 		}
 
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
-			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
-			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
-			int const wrap = TClass->PipWrap;
-			int const count = Class_Of()->Max_Pips();
-			if (wrap == 0) {
-				int _pips = pips;
-				for (int index = 0; index < count; index++) {
-					if (_pips > 0) {
-						_pips--;
-						Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-					}
-				}
-			} else if (wrap > 0) {
-				int const rows = count / wrap;
-				for (int column = 0; column < wrap; column++) {
-					int frame = 14;
-					for (int row = rows - 1; row >= 0; row--) {
-						if (row * wrap + column < Ammo) {
-							frame = row + 15;
-							break;
-						}
-					}
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-			}
-
+			Draw_Ammo_Pips(pips, xy, offset, pips2, rect);
 		}
 		/*
 		**
 		*/
 		else if (TClass->PipScale == PIPSCALE_CHARGE) {
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+			Draw_Charge_Pips(pips, xy, offset, pip_shapes, rect);
 		}
 	}
 
+	Draw_Heal_Icon(xy, rect);
+
+	/*
+	**	Display whether this unit is a leader unit or not.
+	*/
+	if (RTTI != RTTI_BUILDING) {
+		Draw_Text_Overlay(bottomleft + Point2D(-10, 10), bottomleft, rect);
+	}
+
+	/*
+	**	Display what group this unit belongs to. This corresponds to the team
+	**	number assigned with the <CTRL> key.
+	*/
+	Draw_Group_Number(bottomleft, rect);
+}
+
+
+void TechnoClass::Draw_Spawner_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	/*
+	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
+	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (TClass->SpawnsNumber > 0) {
+		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
+		for (int index = 0; index < TClass->SpawnsNumber; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Occupant_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (building->Class->IsShowOccupantPips) {
+			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
+				PipEnum pip = PIP_PERSON_EMPTY;
+				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
+					pip = building->Occupants[index]->Class->OccupyPip;
+				}
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Passenger_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	int const count = std::max(Class_Of()->Max_Pips(), 0);
+	std::vector<int> slots(count, PIP_EMPTY);
+	bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
+
+	ObjectClass const * object = Cargo.Attached_Object();
+	int last = absorber ? 0 : Cargo.Total_Size() - 1;
+	for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
+		int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
+		if (absorber) {
+			if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
+			last++;
+			continue;
+		}
+		if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
+			for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
+				if (last >= 0 && last < count) slots[last] = PIP_WHITE;
+				last--;
+			}
+		}
+		if (last >= 0 && last < count) slots[last] = shape;
+		last--;
+	}
+
+	// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
+	int first = 0;
+	Point2D gap(0, 0);
+	if (TClass->IsGunner && count > 0) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		first = 1;
+		gap = offset * 2;
+	}
+	for (int index = first; index < count; index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Tiberium_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
+	// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
+	int const count = Class_Of()->Max_Pips();
+	double const capacity = TClass->Capacity;
+	double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
+	int orepips = (int)(ore / capacity * count + 0.5);
+	int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
+
+	for (int index = 0; index < count; index++) {
+		int shape = PIP_EMPTY;
+		if (gempips > 0) {
+			shape = PIP_BLUE;
+			gempips--;
+		} else if (orepips > 0) {
+			shape = PIP_YELLOW;
+			orepips--;
+		}
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Mind_Control_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (CaptureManager) {
+		int const count = CaptureManager->Max_Nodes();
+		int const held = CaptureManager->Controlled_Count();
+		for (int index = 0; index < count; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (CaptureManager->Is_Overloading()) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Ammo_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pips2, Rect const & rect) const
+{
+	// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
+	// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
+	int const wrap = TClass->PipWrap;
+	int const count = Class_Of()->Max_Pips();
+	if (wrap == 0) {
+		int _pips = pips;
+		for (int index = 0; index < count; index++) {
+			if (_pips > 0) {
+				_pips--;
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	} else if (wrap > 0) {
+		int const rows = count / wrap;
+		for (int column = 0; column < wrap; column++) {
+			int frame = 14;
+			for (int row = rows - 1; row >= 0; row--) {
+				if (row * wrap + column < Ammo) {
+					frame = row + 15;
+					break;
+				}
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Charge_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Heal_Icon(Point2D const & xy, Rect const & rect) const
+{
 	/*
 	**	Show that the owner's hospitals mend soldiers and organic vehicles, or its machine shops other
 	**	vehicles, with a cross or a spanner that blinks while this one is hurt (TechnoClass::DrawPipScalePips, 0x709A90).
@@ -10747,18 +10805,11 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)Class_Of()->PipShapes, infantry ? 13 : 20, icon, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|(blink ? SHAPE_DARKEN : 0)));
 		}
 	}
+}
 
-	/*
-	**	Display whether this unit is a leader unit or not.
-	*/
-	if (RTTI != RTTI_BUILDING) {
-		Draw_Text_Overlay(bottomleft + Point2D(-10, 10), bottomleft, rect);
-	}
 
-	/*
-	**	Display what group this unit belongs to. This corresponds to the team
-	**	number assigned with the <CTRL> key.
-	*/
+void TechnoClass::Draw_Group_Number(Point2D const & bottomleft, Rect const & rect) const
+{
 	if (Group >= 0 && Group < 10) {
 		int group = Group+1;
 
