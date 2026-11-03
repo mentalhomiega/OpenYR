@@ -29,6 +29,10 @@ bool Apply_Game_Directories(void);
  */
 std::string Data_Directory(void);
 
+// Returns path with a separator appended. Returns it unchanged when it is empty or already
+// ends in a backslash, a slash or a colon.
+std::string Terminate_Path(std::string const & path);
+
 // The user directory as applied, empty or ending in a separator.
 std::string User_Directory(void);
 

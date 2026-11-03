@@ -56,7 +56,7 @@ static std::string Trim_Path(std::string const & path)
 /// </summary>
 /// <param name="path">The directory to terminate.</param>
 /// <returns>The directory, ending in a separator.</returns>
-static std::string Terminate_Path(std::string const & path)
+std::string Terminate_Path(std::string const & path)
 {
 	if (path.empty()) {
 		return(path);
