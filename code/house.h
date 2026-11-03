@@ -1184,6 +1184,7 @@ class HouseClass : public AbstractClass
 		**	and infantry for a house is destroyed.
 		*/
 		void MPlayer_Defeated(void);
+		void Defeat_Now(void);
 
 		/*
 		**	When the game's over, this routine assigns everyone their score.
@@ -1201,6 +1202,7 @@ class HouseClass : public AbstractClass
 		int AI_Infantry(void);
 		int AI_Aircraft(void);
 		void Update_Spy_Satellite(void);
+		void Start_Borrowed_Time(void);
 
 		/*
 		**	This is a bit field record of all the other houses that are allies with

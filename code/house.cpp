@@ -1819,8 +1819,7 @@ void HouseClass::Check_Multiplayer_Defeat(void)
 		}
 
 		if (defeated) {
-			Destroy_All();
-			MPlayer_Defeated();
+			Defeat_Now();
 		}
 	}
 }
@@ -4101,6 +4100,29 @@ void HouseClass::Destroy_All_Non_Buildings_Naval(void)
 }
 
 
+/// <summary>
+/// Defeats this house: destroys every object it still owns, then runs MPlayer_Defeated.
+/// </summary>
+void HouseClass::Defeat_Now(void)
+{
+	Destroy_All();
+	MPlayer_Defeated();
+}
+
+
+// Starts the grace period a flagged house plays out. Outside GAME_NORMAL and GAME_SKIRMISH sessions
+// it ends on a multiple of 10 frames that is at least MaxAhead frames away.
+void HouseClass::Start_Borrowed_Time(void)
+{
+	BorrowedTime = int(TICKS_PER_MINUTE * Rule->SavourDelay);
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
+		int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
+		BorrowedTime = 10 * ((time + 9) / 10) - Frame;
+	}
+	DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Flag_To_Die -- Flags the house to blow up soon.                                 *
  *                                                                                             *
@@ -4120,12 +4142,7 @@ bool HouseClass::Flag_To_Die(void)
 {
 	if (!IsToWin && !IsToDie && !IsToLose) {
 		IsToDie = true;
-		BorrowedTime = TICKS_PER_MINUTE * Rule->SavourDelay;
-		if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-			int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
-			BorrowedTime = 10 * ((time + 9) / 10) - Frame;
-		}
-		DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
+		Start_Borrowed_Time();
 	}
 	return(IsToDie);
 }
@@ -4151,12 +4168,7 @@ bool HouseClass::Flag_To_Win(bool silent)
 	if (!IsToWin && !IsToDie && !IsToLose) {
 		IsToWin = true;
 		if (!silent) {
-			BorrowedTime = int(TICKS_PER_MINUTE * Rule->SavourDelay);
-			if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-				int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
-				BorrowedTime = 10 * ((time + 9) / 10) - Frame;
-			}
-			DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
+			Start_Borrowed_Time();
 		}
 		if (Session.Type == GAME_NORMAL && Is_Player_Control()) {
 			Lock_Scenario_Input();
@@ -4196,12 +4208,7 @@ bool HouseClass::Flag_To_Lose(bool silent)
 	if (!IsToDie && !IsToLose) {
 		IsToLose = true;
 		if (!silent) {
-			BorrowedTime = int(TICKS_PER_MINUTE * Rule->SavourDelay);
-			if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-				int time = Frame + std::max((int)BorrowedTime, (int)Session.MaxAhead);
-				BorrowedTime = 10 * ((time + 9) / 10) - Frame;
-			}
-			DebugString("Frame %d, BorrowedTime == %d\n", Frame, (int)BorrowedTime);
+			Start_Borrowed_Time();
 		}
 		if (Session.Type == GAME_NORMAL && Is_Player_Control()) {
 			Lock_Scenario_Input();

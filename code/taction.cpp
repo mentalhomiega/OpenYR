@@ -2886,8 +2886,7 @@ bool TActionClass::TAction_HOUSE_DESTROY_ALL(HouseClass * , ObjectClass * , Trig
 		return(false);
 	}
 
-	hptr->Destroy_All();
-	hptr->MPlayer_Defeated();
+	hptr->Defeat_Now();
 	return(true);
 }
 

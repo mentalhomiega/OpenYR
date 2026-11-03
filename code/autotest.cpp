@@ -6322,8 +6322,7 @@ static void Defeat_Step(StepType const & step)
 	if (house == NULL || house->IsDefeated) {
 		DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
 	} else {
-		house->Destroy_All();
-		house->MPlayer_Defeated();
+		house->Defeat_Now();
 		DebugString("AUTOTEST defeat %s: defeated frame %d, local %d\n", house->Class->Name(), Frame, (int)(house == PlayerPtr));
 	}
 }
