@@ -3738,6 +3738,117 @@ bool UnitClass::Harvesting(void)
  *=============================================================================================*/
 int UnitClass::Do_MISSION_UNLOAD(void)
 {
+	int delay = 0;
+	if (Do_Special_Unload(delay)) {
+		return(delay);
+	}
+
+	if (Class->Max_Passengers() > 0) {
+		return(Unload_Passengers());
+	} else if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Class->DeploysInto == NULL) {
+		return(Unload_Harvester());
+	} else if (Class->DeploysInto != NULL) {
+		return(Unload_Into_Structure());
+	} else {
+		if (Class->IsMobileEMP && !Is_Immobilized()) {
+			EMPulse_Blast();
+			Assign_Mission(MISSION_GUARD);
+		}
+	}
+
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+bool UnitClass::Do_Special_Unload(int & delay)
+{
+	if (Class->IsSimpleDeployer) {
+		delay = Simple_Deploy_AI();
+		return(true);
+	}
+
+	// A DeployFire=yes vehicle without IsSimpleDeployer or passenger seats fires its first weapon at its own cell
+	// and retries after 14 to 16 frames (UnitClass::Mission_Unload, 0x73D630). It never deploys, so it never uses DeployFireWeapon.
+	if (Class->IsDeployFire && Class->Max_Passengers() < 1 && BunkerLinkedItem == NULL) {
+		Assign_Target(&Map[Get_Cell()]);
+		Fire_At(&Map[Get_Cell()], 0);
+		delay = 14 + Random_Pick(0, 2);
+		return(true);
+	}
+
+	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
+	if (Class->IsDeployer) {
+		Assign_Destination(NULL);
+		Assign_Target(&Map[Get_Cell()]);
+		Assign_Mission(MISSION_ATTACK);
+		delay = 1;
+		return(true);
+	}
+	return(false);
+}
+
+
+bool UnitClass::Unload_Next_Passenger(void)
+{
+	FootClass * passenger = Cargo.Detach_Object();
+	if (passenger != NULL && Class->IsGunner && Cargo.How_Many() == 0) {
+		Remove_Gunner(passenger);
+	}
+
+	if (passenger != NULL) {
+		/// The 8 grid wrap is deferred until each facing is tested.
+		FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
+		FacingType nextface = toface;
+		bool placed = false;
+		Cell newcell;
+
+		for (FacingType face = FACING_N; face < FACING_COUNT; face++, nextface++) {
+			FacingType newface = Facing_Add(nextface, FACING_0);
+			newcell = Adjacent_Cell(PositionCell, newface);
+
+			if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
+				if (Map[newcell].IsUnderBridge == false) {
+					Coord coord = newcell.As_Coord();
+
+					// Sub-cell spots are for infantry. A vehicle left on one
+					// draws wrong and cannot dock a repair bay.
+					if (passenger->RTTI == RTTI_INFANTRY) {
+						coord = Map.Closest_Free_Spot(coord);
+					}
+
+					ScenarioInit++;
+					placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
+					ScenarioInit--;
+					break;
+				}
+			}
+		}
+
+
+		if (placed) {
+			// gamemd's UnitClass::Mission_Unload (0x73DC67) plays this only once the passenger is placed.
+			Play_Transport_Sound(false);
+			passenger->Assign_Mission(MISSION_MOVE);
+			passenger->Assign_Destination(&Map[newcell]);
+			if (Team != NULL) {
+				Team->Add(passenger);
+			}
+		} else {
+			/*
+			**	If the attached unit could NOT be deployed, then re-attach
+			**	it and then bail out of this deploy process.
+			*/
+			Cargo.Attach(passenger);
+			passenger->Hidden();
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+int UnitClass::Unload_Passengers(void)
+{
 	enum {
 		INITIAL_CHECK,
 		MANEUVERING,
@@ -3748,317 +3859,262 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 	FacingType	dir;
 	Cell		cell;
-	BuildingClass * building;
 
-	if (Class->IsSimpleDeployer) {
-		return(Simple_Deploy_AI());
-	}
+	/// derives from RA's UNIT_TRUCK
+	switch (Status) {
+		case INITIAL_CHECK:
+			if (Locomotion->Is_Moving()) {
+				return(10);
+			}
+			dir = Desired_Load_Dir(NULL, cell);
+			if (Cargo.How_Many() && cell != CELL_NONE) {
+				Locomotion->Do_Turn(DirType(dir));
+				Status = MANEUVERING;
+				return(1);
+			} else {
+				Assign_Mission(MISSION_GUARD);
+			}
+			break;
 
-	// A DeployFire=yes vehicle without IsSimpleDeployer or passenger seats fires its first weapon at its own cell
-	// and retries after 14 to 16 frames (UnitClass::Mission_Unload, 0x73D630). It never deploys, so it never uses DeployFireWeapon.
-	if (Class->IsDeployFire && Class->Max_Passengers() < 1 && BunkerLinkedItem == NULL) {
-		Assign_Target(&Map[Get_Cell()]);
-		Fire_At(&Map[Get_Cell()], 0);
-		return(14 + Random_Pick(0, 2));
-	}
+		case MANEUVERING:
+			if (!IsRotating) {
+				Status = UNLOADING;
+				return(1);
+			}
+			break;
 
-	// A Deployer=yes vehicle, such as the Chaos Drone, fires its AreaFire weapon where it stands.
-	if (Class->IsDeployer) {
-		Assign_Destination(NULL);
-		Assign_Target(&Map[Get_Cell()]);
-		Assign_Mission(MISSION_ATTACK);
-		return(1);
-	}
-
-	if (Class->Max_Passengers() > 0) {
-		/// derives from RA's UNIT_TRUCK
-		switch (Status) {
-			case INITIAL_CHECK:
-				if (Locomotion->Is_Moving()) {
-					return(10);
-				}
-				dir = Desired_Load_Dir(NULL, cell);
-				if (Cargo.How_Many() && cell != CELL_NONE) {
-					Locomotion->Do_Turn(DirType(dir));
-					Status = MANEUVERING;
-					return(1);
-				} else {
-					Assign_Mission(MISSION_GUARD);
-				}
-				break;
-
-			case MANEUVERING:
-				if (!IsRotating) {
-					Status = UNLOADING;
-					return(1);
-				}
-				break;
-
-			case UNLOADING:
-				if (Cargo.How_Many()) {
-					FootClass * passenger = Cargo.Detach_Object();
-					if (passenger != NULL && Class->IsGunner && Cargo.How_Many() == 0) {
-						Remove_Gunner(passenger);
-					}
-
-					if (passenger != NULL) {
-						/// The 8 grid wrap is deferred until each facing is tested.
-						FacingType toface = (FacingType)(DirType((DirType(DIR_S)-DirType(DIR_STEP_256)).As_Int()) + PrimaryFacing.Current()).Round_To_8();
-						FacingType nextface = toface;
-						bool placed = false;
-						Cell newcell;
-
-						for (FacingType face = FACING_N; face < FACING_COUNT; face++, nextface++) {
-							FacingType newface = Facing_Add(nextface, FACING_0);
-							newcell = Adjacent_Cell(PositionCell, newface);
-
-							if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
-								if (Map[newcell].IsUnderBridge == false) {
-									Coord coord = newcell.As_Coord();
-
-									// Sub-cell spots are for infantry. A vehicle left on one
-									// draws wrong and cannot dock a repair bay.
-									if (passenger->RTTI == RTTI_INFANTRY) {
-										coord = Map.Closest_Free_Spot(coord);
-									}
-
-									ScenarioInit++;
-									placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
-									ScenarioInit--;
-									break;
-								}
-							}
-						}
-
-
-						if (placed) {
-							// gamemd's UnitClass::Mission_Unload (0x73DC67) plays this only once the passenger is placed.
-							Play_Transport_Sound(false);
-							passenger->Assign_Mission(MISSION_MOVE);
-							passenger->Assign_Destination(&Map[newcell]);
-							if (Team != NULL) {
-								Team->Add(passenger);
-							}
-						} else {
-							/*
-							**	If the attached unit could NOT be deployed, then re-attach
-							**	it and then bail out of this deploy process.
-							*/
-							Cargo.Attach(passenger);
-							passenger->Hidden();
-							Status = CLOSING_DOOR;
-						}
-					}
-				} else {
+		case UNLOADING:
+			if (Cargo.How_Many()) {
+				if (!Unload_Next_Passenger()) {
 					Status = CLOSING_DOOR;
 				}
-				break;
+			} else {
+				Status = CLOSING_DOOR;
+			}
+			break;
 
-			/*
-			**	Close APC door in preparation for normal operation.
-			*/
-			case CLOSING_DOOR:
-				Assign_Mission(MISSION_GUARD);
-				IsMissionUnloadStandby = true;
-				break;
-		}
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-	} else if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Class->DeploysInto == NULL) {
-		/// derives from RA's UNIT_HARVESTER
-		if (!In_Radio_Contact()) {
-			Enter_Idle_Mode();
-			IsDumping = false;
+		/*
+		**	Close APC door in preparation for normal operation.
+		*/
+		case CLOSING_DOOR:
+			Assign_Mission(MISSION_GUARD);
+			IsMissionUnloadStandby = true;
+			break;
+	}
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+int UnitClass::Unload_Into_Structure(void)
+{
+	/// derives from RA's UNIT_MCV
+	switch (Status) {
+		case 0:
+			Transmit_Message(RADIO_OVER_OUT);
+			Path[0] = FACING_NONE;
+			Status = 1;
+			// fall through
+
+		case 1:
+			if (!Locomotion->Is_Moving()) {
+				Try_To_Deploy();
+				if (IsActive) {
+					if (IsDeploying) {
+						Status = 2;
+					} else {
+						if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL) {
+							Assign_Mission(MISSION_HUNT);
+						} else {
+							Assign_Mission(MISSION_GUARD);
+						}
+					}
+				}
+			} else if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_UNLOAD) {
+				Commence();
+			}
+			break;
+
+		case 2:
+			if (!IsDeploying) {
+				Enter_Idle_Mode();
+				Commence();
+			} else if (!Try_To_Deploy()) {
+				if (NavCom != NULL) {
+					IsDeploying = false;
+				}
+			}
+			break;
+	}
+	//return(1);
+	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
+}
+
+
+bool UnitClass::Finish_Harvester_Unload(void)
+{
+	if (Class->IsToVeinHarvest) {
+		IsDumping = false;
+		if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
 			if (Locomotion->Is_Moving()) {
 				Stop_Driver();
 			}
 			if (Ready_To_Commence()) {
 				Commence();
 			}
-			return(1);
-		}
-
-		if (PrimaryFacing.Current().As_Dir256() != DIR_E) {
-			if (!IsRotating) {
-				Locomotion->Do_Turn(DirType(DIR_E));
-			}
-			return(5);
-		}
-
-		if (!IsDumping) {
-			IsDumping = true;
-			DebugString("Harvester: frame %d %s docks carrying %d\n", Frame, Class->Name(), Storage.Get_Total_Amount());
-			Set_Stage(0);
-			Set_Rate(1);
-
-			if (Class->IsToHarvest) {
-				building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-				if (building != NULL) {
-					building->Begin_Anim(BANIM_PRE_PRODUCTION, false);
-				}
-			}
-
-			Status = 3;
 		} else {
-			switch (Status) {
-				case 4:
-					if (Class->IsToVeinHarvest) {
-						IsDumping = false;
-						if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-							if (Locomotion->Is_Moving()) {
-								Stop_Driver();
-							}
-							if (Ready_To_Commence()) {
-								Commence();
-							}
-						} else {
-							Assign_Mission(MISSION_HARVEST);
-							if (Ready_To_Commence()) {
-								if (In_Radio_Contact()) {
-									Transmit_Message(RADIO_OVER_OUT);
-								}
-								Commence();
-							}
-						}
-					} else {
-						building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-						bool active = false;
-						if (building != NULL && building->Class->IsRefinery) {
-							active = building->Anim_Active(BANIM_PRODUCTION);
-						}
-						if (!active) {
-							IsDumping = false;
-							if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-								if (Locomotion->Is_Moving()) {
-									Stop_Driver();
-								}
-								if (Ready_To_Commence()) {
-									Commence();
-								}
-							} else {
-								Assign_Mission(MISSION_HARVEST);
-								if (Ready_To_Commence()) {
-									if (In_Radio_Contact()) {
-										Transmit_Message(RADIO_OVER_OUT);
-									}
-									Commence();
-								}
-							}
-						} else {
-							return(1);
-						}
-					}
-					break;
-
-				case 3:
-					building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
-					if (building == NULL) {
-						// The dock was removed while the unload was under way.
-						if (In_Radio_Contact()) {
-							Transmit_Message(RADIO_OVER_OUT);
-						}
-						IsDumping = false;
-						Assign_Mission(MISSION_HARVEST);
-						return(1);
-					}
-					if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
-						building->Update_Refinery_Smoke_Systems();
-						if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
-							building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
-						}
-						bool dumped = false;
-						int slot = Storage.First_Used_Slot();
-						if (slot != -1) {
-							// Each pass hands over everything held of one ore type.
-							int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
-							if (amount > 0) {
-								dumped = true;
-								// Ore is paid to the house that owns the dock building, as UnitClass::Mission_Unload
-								// (0x73D630) does; weed goes to the harvester's house.
-								HouseClass * const payee = Class->IsToVeinHarvest ? House : building->House;
-								int const before = payee->Credits;
-								if (Class->IsToVeinHarvest) {
-									payee->Harvested_Weed(amount, slot);
-								} else {
-									payee->Harvested(amount, (TiberiumType)slot);
-									payee->Purified(amount, (TiberiumType)slot);
-								}
-								DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, payee->Credits - before);
-								Set_Stage(0);
-							}
-						}
-						if (!dumped) {
-							DebugString("Harvester: frame %d %s is empty\n", Frame, Class->Name());
-							if (building->Class->IsRefinery) {
-								building->Begin_Anim(BANIM_PRODUCTION, false);
-							}
-							building->End_Anim(BANIM_SPECIAL_ONE);
-							Status = 4;
-						}
-					}
-					if (Status == 3 && NavCom != NULL) {
-						if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
-							if (building->Class->IsRefinery) {
-								building->Begin_Anim(BANIM_PRODUCTION, false);
-							}
-							building->End_Anim(BANIM_SPECIAL_ONE);
-							Status = 4;
-						}
-					}
-					return(1);
-
-				default:
-					break;
+			Assign_Mission(MISSION_HARVEST);
+			if (Ready_To_Commence()) {
+				if (In_Radio_Contact()) {
+					Transmit_Message(RADIO_OVER_OUT);
+				}
+				Commence();
 			}
 		}
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
-	} else if (Class->DeploysInto != NULL) {
-		/// derives from RA's UNIT_MCV
-		switch (Status) {
-			case 0:
-				Transmit_Message(RADIO_OVER_OUT);
-				Path[0] = FACING_NONE;
-				Status = 1;
-				// fall through
-
-			case 1:
-				if (!Locomotion->Is_Moving()) {
-					Try_To_Deploy();
-					if (IsActive) {
-						if (IsDeploying) {
-							Status = 2;
-						} else {
-							if (!House->Is_Human_Player() && Session.Type != GAME_NORMAL) {
-								Assign_Mission(MISSION_HUNT);
-							} else {
-								Assign_Mission(MISSION_GUARD);
-							}
-						}
-					}
-				} else if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_UNLOAD) {
-					Commence();
-				}
-				break;
-
-			case 2:
-				if (!IsDeploying) {
-					Enter_Idle_Mode();
-					Commence();
-				} else if (!Try_To_Deploy()) {
-					if (NavCom != NULL) {
-						IsDeploying = false;
-					}
-				}
-				break;
-		}
-		//return(1);
-		return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 	} else {
-		if (Class->IsMobileEMP && !Is_Immobilized()) {
-			EMPulse_Blast();
-			Assign_Mission(MISSION_GUARD);
+		BuildingClass * building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+		bool active = false;
+		if (building != NULL && building->Class->IsRefinery) {
+			active = building->Anim_Active(BANIM_PRODUCTION);
+		}
+		if (!active) {
+			IsDumping = false;
+			if (NavCom != NULL && MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
+				if (Locomotion->Is_Moving()) {
+					Stop_Driver();
+				}
+				if (Ready_To_Commence()) {
+					Commence();
+				}
+			} else {
+				Assign_Mission(MISSION_HARVEST);
+				if (Ready_To_Commence()) {
+					if (In_Radio_Contact()) {
+						Transmit_Message(RADIO_OVER_OUT);
+					}
+					Commence();
+				}
+			}
+		} else {
+			return(true);
 		}
 	}
+	return(false);
+}
 
+
+int UnitClass::Dump_Harvester_Load(void)
+{
+	BuildingClass * building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+	if (building == NULL) {
+		// The dock was removed while the unload was under way.
+		if (In_Radio_Contact()) {
+			Transmit_Message(RADIO_OVER_OUT);
+		}
+		IsDumping = false;
+		Assign_Mission(MISSION_HARVEST);
+		return(1);
+	}
+	if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
+		building->Update_Refinery_Smoke_Systems();
+		if (!building->Anim_Active(BANIM_SPECIAL_ONE)) {
+			building->Begin_Anim(BANIM_SPECIAL_ONE, building->HealthRatio <= Rule->ConditionYellow);
+		}
+		bool dumped = false;
+		int slot = Storage.First_Used_Slot();
+		if (slot != -1) {
+			// Each pass hands over everything held of one ore type.
+			int amount = Storage.Decrease_Amount(Storage.Get_Amount(slot), slot);
+			if (amount > 0) {
+				dumped = true;
+				// Ore is paid to the house that owns the dock building, as UnitClass::Mission_Unload
+				// (0x73D630) does; weed goes to the harvester's house.
+				HouseClass * const payee = Class->IsToVeinHarvest ? House : building->House;
+				int const before = payee->Credits;
+				if (Class->IsToVeinHarvest) {
+					payee->Harvested_Weed(amount, slot);
+				} else {
+					payee->Harvested(amount, (TiberiumType)slot);
+					payee->Purified(amount, (TiberiumType)slot);
+				}
+				DebugString("Harvester: frame %d %s unloads %d of ore type %d for %d credits\n", Frame, Class->Name(), amount, slot, payee->Credits - before);
+				Set_Stage(0);
+			}
+		}
+		if (!dumped) {
+			DebugString("Harvester: frame %d %s is empty\n", Frame, Class->Name());
+			if (building->Class->IsRefinery) {
+				building->Begin_Anim(BANIM_PRODUCTION, false);
+			}
+			building->End_Anim(BANIM_SPECIAL_ONE);
+			Status = 4;
+		}
+	}
+	if (Status == 3 && NavCom != NULL) {
+		if (MissionQueue != MISSION_NONE && MissionQueue != MISSION_HARVEST) {
+			if (building->Class->IsRefinery) {
+				building->Begin_Anim(BANIM_PRODUCTION, false);
+			}
+			building->End_Anim(BANIM_SPECIAL_ONE);
+			Status = 4;
+		}
+	}
+	return(1);
+}
+
+
+int UnitClass::Unload_Harvester(void)
+{
+	BuildingClass * building;
+
+	/// derives from RA's UNIT_HARVESTER
+	if (!In_Radio_Contact()) {
+		Enter_Idle_Mode();
+		IsDumping = false;
+		if (Locomotion->Is_Moving()) {
+			Stop_Driver();
+		}
+		if (Ready_To_Commence()) {
+			Commence();
+		}
+		return(1);
+	}
+
+	if (PrimaryFacing.Current().As_Dir256() != DIR_E) {
+		if (!IsRotating) {
+			Locomotion->Do_Turn(DirType(DIR_E));
+		}
+		return(5);
+	}
+
+	if (!IsDumping) {
+		IsDumping = true;
+		DebugString("Harvester: frame %d %s docks carrying %d\n", Frame, Class->Name(), Storage.Get_Total_Amount());
+		Set_Stage(0);
+		Set_Rate(1);
+
+		if (Class->IsToHarvest) {
+			building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+			if (building != NULL) {
+				building->Begin_Anim(BANIM_PRE_PRODUCTION, false);
+			}
+		}
+
+		Status = 3;
+	} else {
+		switch (Status) {
+			case 4:
+				if (Finish_Harvester_Unload()) {
+					return(1);
+				}
+				break;
+
+			case 3:
+				return(Dump_Harvester_Load());
+
+			default:
+				break;
+		}
+	}
 	return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 }
 

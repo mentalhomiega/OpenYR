@@ -312,6 +312,13 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		bool Do_Special_Unload(int & delay);
+		bool Unload_Next_Passenger(void);
+		int Unload_Passengers(void);
+		int Unload_Into_Structure(void);
+		bool Finish_Harvester_Unload(void);
+		int Dump_Harvester_Load(void);
+		int Unload_Harvester(void);
 		bool Balloon_Hover_Holds_Destination(AbstractClass const * target);
 		void Update_Teleporter_Locomotor(AbstractClass const * target);
 		bool Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b);
