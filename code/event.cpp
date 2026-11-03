@@ -58,6 +58,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "aircraft.h"
+#include "factory.h"
 #include "foot.h"
 #include "goptions.h"
 #include "house.h"
@@ -1056,7 +1057,7 @@ void EventClass::Execute(void)
 				Log_Event_Rejection(EventRejectReason::InvalidProductionSelector, Type, ID, Data.AbandonCount.ID);
 				break;
 			}
-			if (Data.AbandonCount.Count < 1 || Data.AbandonCount.Count > Rule->MaximumQueuedObjects + 1) {
+			if (Data.AbandonCount.Count < 1 || Data.AbandonCount.Count > FactoryClass::Capacity()) {
 				Log_Event_Rejection(EventRejectReason::InvalidAbandonCount, Type, ID, Data.AbandonCount.Count);
 				break;
 			}

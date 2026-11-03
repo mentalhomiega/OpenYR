@@ -2816,8 +2816,7 @@ static int Cameo_Produce_Count(FactoryClass const * factory)
 		return(1);
 	}
 
-	// A factory holds one object in production and up to MaximumQueuedObjects behind it.
-	int room = Rule->MaximumQueuedObjects + 1;
+	int room = FactoryClass::Capacity();
 	if (factory != NULL) {
 		room = Rule->MaximumQueuedObjects - factory->Queued_Count() + (factory->Get_Object() == NULL ? 1 : 0);
 	}

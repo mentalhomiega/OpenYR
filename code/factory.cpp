@@ -783,6 +783,17 @@ bool FactoryClass::Is_Queued(const TechnoTypeClass *type)
 
 
 /// <summary>
+/// Returns how many objects a factory holds at once: the one in production and up to
+/// MaximumQueuedObjects queued behind it. The build limit is not applied here.
+/// </summary>
+/// <returns>int; The capacity under the current rules.</returns>
+int FactoryClass::Capacity(void)
+{
+	return(Rule->MaximumQueuedObjects + 1);
+}
+
+
+/// <summary>
 /// Refreshes the production rate of a house's factories.
 /// This routine is used after something has changed how fast a house can build, so that
 /// every factory it owns picks up the new rate without losing its current progress.

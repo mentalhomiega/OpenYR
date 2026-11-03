@@ -88,6 +88,7 @@ class FactoryClass : public AbstractClass, private StageClass
 		int Total(const TechnoTypeClass *type);
 		bool Is_Queued(const TechnoTypeClass *type);
 		int Queued_Count(void) const {return(QueuedObjects.Count());};
+		static int Capacity(void);
 
 		bool Has_Production_Target(void) const
 		{
