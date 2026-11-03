@@ -2309,6 +2309,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	/*
 	**
 	*/
+	// Skirmish never calls Commit_Session_Specials, so a non-campaign session with the bridge option off
+	// turns DestroyableBridges off here, after the map's [SpecialFlags] are read.
 	if (Session.Type != GAME_NORMAL && !Session.Options.BridgeDestruction) {
 		Special.IsDestroyBridges = Session.Options.BridgeDestruction;
 	}
