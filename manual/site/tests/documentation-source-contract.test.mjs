@@ -470,7 +470,7 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 		functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'),
 		[
 			'Session.CampaignDifficulty = (DiffType)Options.Difficulty;',
-			'Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);',
+			'Session.CampaignCDifficulty = (DiffType)Opposite_Difficulty(Options.Difficulty);',
 		],
 		'the menu derives the pair the mission reader used to compute, ahead of the start',
 	);

@@ -137,6 +137,6 @@ std::optional<UIMissionEntry> UI_Mission_Select_Dialog(int difficulty)
 
 	Options.Difficulty = presenter.State.Difficulty;
 	DebugString("Mission select: %s at difficulty %d, with the computers at %d\n",
-		presenter.Picked->Map.c_str(), Options.Difficulty, (int)DIFF_COUNT - 1 - Options.Difficulty);
+		presenter.Picked->Map.c_str(), Options.Difficulty, Opposite_Difficulty(Options.Difficulty));
 	return(presenter.Picked);
 }

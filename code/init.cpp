@@ -1312,7 +1312,7 @@ restart:
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
 		if (!Spawner_Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
-			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
+			Session.CampaignCDifficulty = (DiffType)Opposite_Difficulty(Options.Difficulty);
 		}
 
 		// A launched game whose scenario cannot be read has shown its error, and ends here. A restart

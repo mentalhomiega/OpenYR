@@ -2124,7 +2124,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Special.IsFogOfWar = false;
 	} else {
 		Scen->Difficulty = (DiffType)Session.Options.AIDifficulty;
-		Scen->CDifficulty = (DiffType)(DIFF_COUNT - 1 - Scen->Difficulty);
+		Scen->CDifficulty = (DiffType)Opposite_Difficulty(Scen->Difficulty);
 		Scen->Special.IsFogOfWar = Session.Options.FogOfWar;
 		Special.IsFogOfWar = Session.Options.FogOfWar;
 	}

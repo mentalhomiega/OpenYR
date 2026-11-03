@@ -24,3 +24,10 @@ enum DiffType {
 	DIFF_COUNT,
 	DIFF_FIRST=0
 };
+
+
+// The computer difficulty paired with a human difficulty. The two sides are numbered in reverse.
+inline int Opposite_Difficulty(int difficulty)
+{
+	return(DIFF_COUNT - 1 - difficulty);
+}

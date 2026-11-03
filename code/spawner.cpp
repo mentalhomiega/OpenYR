@@ -209,7 +209,7 @@ static void Spawner_Seat_Computers(void)
 		if (SpawnConfig.AINamesByDifficulty) {
 			int played = node->Player.Handicap >= 0
 				? node->Player.Handicap
-				: (DIFF_COUNT - 1 - SpawnConfig.AIDifficulty);
+				: Opposite_Difficulty(SpawnConfig.AIDifficulty);
 			std::snprintf(node->Name, sizeof(node->Name), "%s",
 				_ai_names[std::clamp(played, 0, DIFF_COUNT - 1)]);
 		}
