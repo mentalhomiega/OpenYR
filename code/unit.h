@@ -35,6 +35,7 @@
 #include "foot.h"
 
 #include <cstdint>
+#include <optional>
 
 class Surface;
 
@@ -312,6 +313,11 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		bool Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell_height) const;
+		bool Tunnel_Direction_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tunnel) const;
+		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
+		std::optional<MoveType> Building_Occupant_Verdict(ObjectClass * obj, CellClass const * cellptr, FacingType dir, MoveType & retval, bool & skip) const;
+		std::optional<MoveType> Occupant_Verdict(ObjectClass * obj, MoveType & retval, bool & crushable) const;
 		bool Do_Special_Unload(int & delay);
 		bool Unload_Next_Passenger(void);
 		int Unload_Passengers(void);

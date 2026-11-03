@@ -4463,22 +4463,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	HousesType inftype = cellptr->InfType;
 	TubeClass *tunnel = cellptr->Get_Tunnel();
 
-	if (Class->MovementRestrictedTo != LAND_NONE) {
-		if (cellptr->Land_Type() == LAND_TUNNEL) {
-			IsometricTileTypeClass * itptr = IsometricTileTypes[cellptr->ITType];
-			if (itptr->Width == 5 && itptr->Height == 3 || itptr->Width == 4 && itptr->Height == 3) {
-				if (cellptr->SubTile != 2) {
-					return(MOVE_NO);
-				}
-			} else if ((itptr->Width == 3 && itptr->Height == 4 || itptr->Width == 3 && itptr->Height == 5) && cellptr->SubTile != 6) {
-				return(MOVE_NO);
-			}
-		}
-		if (cellptr->Land_Type() != Class->MovementRestrictedTo && cellptr->Land_Type() != LAND_TUNNEL) {
-			if (cellptr->Overlay < OVERLAY_RAILWAY_BRIDGE1 || cellptr->Overlay > OVERLAY_RAILWAY_BRIDGE2 || cell_height == cellptr->Height) {
-				return(MOVE_NO);
-			}
-		}
+	if (Restricted_Land_Blocks_Entry(cellptr, cell_height)) {
+		return(MOVE_NO);
 	}
 
 	if (dir == FACING_COUNT) {
@@ -4491,23 +4477,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 		return(MOVE_NO);
 	}
 
-	if (tunnel != NULL) {
-		int dist = abs(dir - tunnel->EnterDir);
-		if (dist > 2 && dist < 6 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
-	}
-
-	/*
-	 * Check the tunnel of the cell entered from (the cell in the opposite
-	 * direction) so that the unit can't drive through a tunnel sideways.
-	 */
-	TubeClass *backtunnel = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
-	if (backtunnel != NULL) {
-		int dist = abs(Facing_Sub(dir, FACING_180) - backtunnel->EnterDir);
-		if (dist > FACING_90 && dist < FACING_270 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
+	if (Tunnel_Direction_Blocks_Entry(cellptr, dir, tunnel)) {
+		return(MOVE_NO);
 	}
 
 	MoveType retval = Can_Reach(cellptr, dir, cell_height, bridge, cellptr2);
@@ -4537,47 +4508,8 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	}
 
 
-	/*
-	**	Certain vehicles can drive over walls. Check for this case and
-	**	and return the appropriate flag. Other units treat walls as impassable.
-	*/
-	if (cellptr->Overlay != OVERLAY_NONE) {
-		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
-
-		if (optr->IsCrate && !House->Is_Human_Player() && Session.Type == GAME_NORMAL) {
-			return(MOVE_NO);
-		}
-
-		if (optr->IsWall) {
-
-			/*
-			**	If the blocking wall is crushable (and not owned by this player or one of this players
-			**	allies, then record that it is crushable and let the normal logic take over. The end
-			**	result should cause this unit to consider the cell passable.
-			*/
-			// A CrusherAll vehicle takes any wall as a crusher takes a crushable one (UnitClass::CanReach, 0x73F42E).
-			if ((optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) || Class->MZone == MZONE_CRUSHER_ALL) {
-				if (House->Is_Ally(cellptr->Owner)) {
-					if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
-				}
-			} else {
-				if (Is_Weapon_Equipped()) {
-					WarheadTypeClass const * whead = PrimaryWeapon->WarheadPtr;
-
-					if (whead->IsWallDestroyer || (whead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
-						if (House->Is_Ally(cellptr->Owner)) {
-							if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
-						} else {
-							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-						}
-					} else {
-						return(MOVE_NO);
-					}
-				} else {
-					return(MOVE_NO);
-				}
-			}
-		}
+	if (Overlay_Blocks_Entry(cellptr, retval)) {
+		return(MOVE_NO);
 	}
 
 	/*
@@ -4616,197 +4548,20 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			}
 
 			if (obj->RTTI == RTTI_BUILDING) {
-				BuildingClass *bptr = (BuildingClass *)obj;
-
-				if (bptr->Class->IsGate) {
-					if (!bptr->Is_Gate_Open()) {
-						if (bptr->House->Is_Ally(House)) {
-							if (retval < MOVE_CLOSED_GATE) retval = MOVE_CLOSED_GATE;
-						} else {
-							if (!Is_Weapon_Equipped()) {
-								return(MOVE_NO);
-							}
-							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-						}
-					}
+				bool skip = false;
+				std::optional<MoveType> const verdict = Building_Occupant_Verdict(obj, cellptr, dir, retval, skip);
+				if (verdict) {
+					return(*verdict);
+				}
+				if (skip) {
 					obj = obj->Next;
 					continue;
-				}
-
-				// The cells outside the NumberImpassableRows of a service depot or bunker do not stop a vehicle (UnitClass::CanReach, 0x73F0A0).
-				if ((bptr->Class->IsCanUnitRepair || bptr->Class->IsBunker) && !bptr->Blocks_Cell(cellptr)) {
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * A unit entering a repair bay drives over the bay's blocked cells, as the ENTER check
-				 * of UnitClass::CanReach (0x73F0A0) allows. Any other unit stops at them.
-				 */
-				if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Mission == MISSION_ENTER && obj == NavCom) {
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * Various special-purpose buildings do not block movement.
-				 */
-				if (bptr->Class->IsInvisibleInGame) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsLimpetMine) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsLaserFence && (bptr->LaserFenceFrame == 12 || bptr->LaserFenceFrame == 8)) {
-					obj = obj->Next;
-					continue;
-				}
-				if (bptr->Class->IsFirestormWall) {
-					if (bptr->House->FirestormDefenseActivated) {
-						return(MOVE_NO);
-					}
-					obj = obj->Next;
-					continue;
-				}
-
-				/*
-				 * The bib of a refinery or weeder is a legal destination for a
-				 * harvester whose house is mutually allied and that is heading for the dock.
-				 */
-				if (bptr->Class->IsBibbed) {
-					if (Map[Adjacent_Cell(cellptr->CellID, FACING_E)].Cell_Building() != bptr) {
-						obj = obj->Next;
-						continue;
-					}
-					if (Class->IsToHarvest && bptr->Class->IsRefinery &&
-						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
-						if (cellptr->CellID == bcell + Cell(2, 1)) {
-							obj = obj->Next;
-							continue;
-						}
-					}
-					if (Class->IsToVeinHarvest && bptr->Class->IsWeeder &&
-						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
-						if (cellptr->CellID == bcell + Cell(2, 1)) {
-							obj = obj->Next;
-							continue;
-						}
-					}
 				}
 			}
 
-			/*
-			**	Special check to allow entry into the sea transport this vehicle
-			**	is trying to enter.
-			*/
-			if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
-				return(MOVE_OK);
-			}
-
-			/*
-			**	Guard area should not allow the guarding unit to enter the cell with the
-			**	guarded unit.
-			*/
-			if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj) {
-				return(MOVE_NO);
-			}
-
-			FootClass *foot = dynamic_cast<FootClass *>(obj);
-
-			bool is_moving = foot != NULL &&
-					(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());
-
-			if (House->Is_Ally(obj)) {
-				if (is_moving) {
-					int face = PrimaryFacing.Current().As_Dir8();
-					DirType d = ((FootClass const *)obj)->PrimaryFacing.Current().Right_180();
-					int techface = d.As_Dir8();
-					DirType direction = ::Direction(PositionCoord, ((ObjectClass *)obj)->PositionCoord);
-					if (face == techface && Distance(((ObjectClass *)obj)->Center_Coord()) <= 2 * CELL_LEPTON - 1 && direction.As_Dir8() == face) {
-						return(MOVE_NO);
-					}
-					if ((foot->IsOccupyingCell && foot->RTTI != RTTI_INFANTRY) || foot->Locomotion->Will_Jump_Tracks()) {
-						if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
-					}
-				} else {
-
-					/*
-					 * An allied object that is not moving blocks the cell outright
-					 * if it is a building; otherwise it only temporarily blocks
-					 * the cell.
-					 */
-					if (obj->RTTI == RTTI_BUILDING) return(MOVE_NO);
-
-					if (!Class->IsJellyfish) {
-						if (retval < MOVE_TEMP) retval = MOVE_TEMP;
-					}
-				}
-			} else {
-
-				/*
-				**	Cloaked enemy objects are not considered if this is a Find_Path()
-				**	call.
-				*/
-				TechnoClass * tech = Dynamic_Cast<TechnoClass *>(obj);
-				if (tech == NULL || tech->Cloak != CLOAKED) {
-
-					/*
-					**	If this unit can crush infantry, and there is an enemy infantry in the
-					**	cell, don't consider the cell impassible. This is true even if the unit
-					**	doesn't contain a legitimate weapon.
-					*/
-					bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
-					if (!crusher || !Can_Crush(obj)) {
-
-						/*
-						 * Any non-allied blockage is considered impassable if the unit
-						 * is not equipped with a weapon (unless it is a train).
-						 */
-						if (PrimaryWeapon == NULL && !Class->IsTrain) return(MOVE_NO);
-
-						/*
-						**	Some kinds of terrain are considered destroyable if the unit is equipped
-						**	with the weapon that can destroy it. Otherwise, the terrain is considered
-						**	impassable.
-						*/
-						RTTIType rtti = obj->RTTI;
-						switch (rtti) {
-							case RTTI_TERRAIN: {
-
-								WeaponTypeClass const * weapon = Class->Get_Weapon(What_Weapon_Should_I_Use(obj))->Weapon;
-								if (weapon != NULL && weapon->WarheadPtr != NULL &&
-									weapon->WarheadPtr->IsWoodDestroyer) {
-
-									if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								} else {
-									return(MOVE_NO);
-								}
-								break;
-							}
-
-							case RTTI_BUILDING: {
-
-								if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
-									return(MOVE_NO);
-								}
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-							}
-
-							default:
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-						}
-					} else {
-						if (!House->Is_Ally(obj)) crushable = true;
-					}
-				} else {
-					if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
-				}
+			std::optional<MoveType> const verdict = Occupant_Verdict(obj, retval, crushable);
+			if (verdict) {
+				return(*verdict);
 			}
 		} else {
 
@@ -4886,6 +4641,303 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 	**	Return with the most severe reason why this cell would be impassable.
 	*/
 	return(retval);
+}
+
+
+bool UnitClass::Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell_height) const
+{
+	if (Class->MovementRestrictedTo != LAND_NONE) {
+		if (cellptr->Land_Type() == LAND_TUNNEL) {
+			IsometricTileTypeClass * itptr = IsometricTileTypes[cellptr->ITType];
+			if (itptr->Width == 5 && itptr->Height == 3 || itptr->Width == 4 && itptr->Height == 3) {
+				if (cellptr->SubTile != 2) {
+					return(true);
+				}
+			} else if ((itptr->Width == 3 && itptr->Height == 4 || itptr->Width == 3 && itptr->Height == 5) && cellptr->SubTile != 6) {
+				return(true);
+			}
+		}
+		if (cellptr->Land_Type() != Class->MovementRestrictedTo && cellptr->Land_Type() != LAND_TUNNEL) {
+			if (cellptr->Overlay < OVERLAY_RAILWAY_BRIDGE1 || cellptr->Overlay > OVERLAY_RAILWAY_BRIDGE2 || cell_height == cellptr->Height) {
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool UnitClass::Tunnel_Direction_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tunnel) const
+{
+	if (tunnel != NULL) {
+		int dist = abs(dir - tunnel->EnterDir);
+		if (dist > 2 && dist < 6 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+
+	/*
+	 * Check the tunnel of the cell entered from (the cell in the opposite
+	 * direction) so that the unit can't drive through a tunnel sideways.
+	 */
+	TubeClass *backtunnel = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
+	if (backtunnel != NULL) {
+		int dist = abs(Facing_Sub(dir, FACING_180) - backtunnel->EnterDir);
+		if (dist > FACING_90 && dist < FACING_270 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+bool UnitClass::Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const
+{
+	/*
+	**	Certain vehicles can drive over walls. Check for this case and
+	**	and return the appropriate flag. Other units treat walls as impassable.
+	*/
+	if (cellptr->Overlay != OVERLAY_NONE) {
+		OverlayTypeClass const * optr = OverlayTypes[cellptr->Overlay];
+
+		if (optr->IsCrate && !House->Is_Human_Player() && Session.Type == GAME_NORMAL) {
+			return(true);
+		}
+
+		if (optr->IsWall) {
+
+			/*
+			**	If the blocking wall is crushable (and not owned by this player or one of this players
+			**	allies, then record that it is crushable and let the normal logic take over. The end
+			**	result should cause this unit to consider the cell passable.
+			*/
+			// A CrusherAll vehicle takes any wall as a crusher takes a crushable one (UnitClass::CanReach, 0x73F42E).
+			if ((optr->IsCrushable && (Class->IsCrusher || Has_Ability(ABILITY_CRUSHER))) || Class->MZone == MZONE_CRUSHER_ALL) {
+				if (House->Is_Ally(cellptr->Owner)) {
+					if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
+				}
+			} else {
+				if (Is_Weapon_Equipped()) {
+					WarheadTypeClass const * whead = PrimaryWeapon->WarheadPtr;
+
+					if (whead->IsWallDestroyer || (whead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
+						if (House->Is_Ally(cellptr->Owner)) {
+							if (retval < MOVE_FRIENDLY_DESTROYABLE) retval = MOVE_FRIENDLY_DESTROYABLE;
+						} else {
+							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						}
+					} else {
+						return(true);
+					}
+				} else {
+					return(true);
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+
+std::optional<MoveType> UnitClass::Building_Occupant_Verdict(ObjectClass * obj, CellClass const * cellptr, FacingType dir, MoveType & retval, bool & skip) const
+{
+	BuildingClass * bptr = (BuildingClass *)obj;
+
+	if (bptr->Class->IsGate) {
+		if (!bptr->Is_Gate_Open()) {
+			if (bptr->House->Is_Ally(House)) {
+				if (retval < MOVE_CLOSED_GATE) retval = MOVE_CLOSED_GATE;
+			} else {
+				if (!Is_Weapon_Equipped()) {
+					return(MOVE_NO);
+				}
+				if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+			}
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+
+	// The cells outside the NumberImpassableRows of a service depot or bunker do not stop a vehicle (UnitClass::CanReach, 0x73F0A0).
+	if ((bptr->Class->IsCanUnitRepair || bptr->Class->IsBunker) && !bptr->Blocks_Cell(cellptr)) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	/*
+	 * A unit entering a repair bay drives over the bay's blocked cells, as the ENTER check
+	 * of UnitClass::CanReach (0x73F0A0) allows. Any other unit stops at them.
+	 */
+	if (dir != FACING_NONE && bptr->Class->IsCanUnitRepair && Mission == MISSION_ENTER && obj == NavCom) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	/*
+	 * Various special-purpose buildings do not block movement.
+	 */
+	if (bptr->Class->IsInvisibleInGame) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (bptr->Class->IsLimpetMine) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (bptr->Class->IsLaserFence && (bptr->LaserFenceFrame == 12 || bptr->LaserFenceFrame == 8)) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (bptr->Class->IsFirestormWall) {
+		if (bptr->House->FirestormDefenseActivated) {
+			return(MOVE_NO);
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+
+	/*
+	 * The bib of a refinery or weeder is a legal destination for a
+	 * harvester whose house is mutually allied and that is heading for the dock.
+	 */
+	if (bptr->Class->IsBibbed) {
+		if (Map[Adjacent_Cell(cellptr->CellID, FACING_E)].Cell_Building() != bptr) {
+			skip = true;
+			return(std::nullopt);
+		}
+		if (Class->IsToHarvest && bptr->Class->IsRefinery &&
+			House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
+			Cell bcell = bptr->PositionCell;
+			if (cellptr->CellID == bcell + Cell(2, 1)) {
+				skip = true;
+				return(std::nullopt);
+			}
+		}
+		if (Class->IsToVeinHarvest && bptr->Class->IsWeeder &&
+			House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
+			Cell bcell = bptr->PositionCell;
+			if (cellptr->CellID == bcell + Cell(2, 1)) {
+				skip = true;
+				return(std::nullopt);
+			}
+		}
+	}
+	return(std::nullopt);
+}
+
+
+std::optional<MoveType> UnitClass::Occupant_Verdict(ObjectClass * obj, MoveType & retval, bool & crushable) const
+{
+	/*
+	**	Special check to allow entry into the sea transport this vehicle
+	**	is trying to enter.
+	*/
+	if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
+		return(MOVE_OK);
+	}
+
+	/*
+	**	Guard area should not allow the guarding unit to enter the cell with the
+	**	guarded unit.
+	*/
+	if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj) {
+		return(MOVE_NO);
+	}
+
+	FootClass *foot = dynamic_cast<FootClass *>(obj);
+
+	bool is_moving = foot != NULL &&
+			(foot->NavCom || foot->PrimaryFacing.Is_Rotating() || foot->Locomotion->Is_Moving());
+
+	if (House->Is_Ally(obj)) {
+		if (is_moving) {
+			int face = PrimaryFacing.Current().As_Dir8();
+			DirType d = ((FootClass const *)obj)->PrimaryFacing.Current().Right_180();
+			int techface = d.As_Dir8();
+			DirType direction = ::Direction(PositionCoord, ((ObjectClass *)obj)->PositionCoord);
+			if (face == techface && Distance(((ObjectClass *)obj)->Center_Coord()) <= 2 * CELL_LEPTON - 1 && direction.As_Dir8() == face) {
+				return(MOVE_NO);
+			}
+			if ((foot->IsOccupyingCell && foot->RTTI != RTTI_INFANTRY) || foot->Locomotion->Will_Jump_Tracks()) {
+				if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
+			}
+		} else {
+
+			/*
+			 * An allied object that is not moving blocks the cell outright
+			 * if it is a building; otherwise it only temporarily blocks
+			 * the cell.
+			 */
+			if (obj->RTTI == RTTI_BUILDING) return(MOVE_NO);
+
+			if (!Class->IsJellyfish) {
+				if (retval < MOVE_TEMP) retval = MOVE_TEMP;
+			}
+		}
+	} else {
+
+		/*
+		**	Cloaked enemy objects are not considered if this is a Find_Path()
+		**	call.
+		*/
+		TechnoClass * tech = Dynamic_Cast<TechnoClass *>(obj);
+		if (tech == NULL || tech->Cloak != CLOAKED) {
+
+			/*
+			**	If this unit can crush infantry, and there is an enemy infantry in the
+			**	cell, don't consider the cell impassible. This is true even if the unit
+			**	doesn't contain a legitimate weapon.
+			*/
+			bool crusher = Class->IsCrusher || Has_Ability(ABILITY_CRUSHER);
+			if (!crusher || !Can_Crush(obj)) {
+
+				/*
+				 * Any non-allied blockage is considered impassable if the unit
+				 * is not equipped with a weapon (unless it is a train).
+				 */
+				if (PrimaryWeapon == NULL && !Class->IsTrain) return(MOVE_NO);
+
+				/*
+				**	Some kinds of terrain are considered destroyable if the unit is equipped
+				**	with the weapon that can destroy it. Otherwise, the terrain is considered
+				**	impassable.
+				*/
+				RTTIType rtti = obj->RTTI;
+				switch (rtti) {
+					case RTTI_TERRAIN: {
+
+						WeaponTypeClass const * weapon = Class->Get_Weapon(What_Weapon_Should_I_Use(obj))->Weapon;
+						if (weapon != NULL && weapon->WarheadPtr != NULL &&
+							weapon->WarheadPtr->IsWoodDestroyer) {
+
+							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						} else {
+							return(MOVE_NO);
+						}
+						break;
+					}
+
+					case RTTI_BUILDING: {
+
+						if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
+							return(MOVE_NO);
+						}
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+					}
+
+					default:
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+				}
+			} else {
+				if (!House->Is_Ally(obj)) crushable = true;
+			}
+		} else {
+			if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
+		}
+	}
+	return(std::nullopt);
 }
 
 
