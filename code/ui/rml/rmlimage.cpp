@@ -11,6 +11,7 @@
 
 #include "dbgprint.h"
 #include "pcxrle.h"
+#include "rgb565.h"
 #include "ui/rml/rmlrendermath.h"
 
 #include <algorithm>
@@ -239,10 +240,7 @@ bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int he
 		std::uint8_t * out = rgba.data() + (std::size_t)row * (std::size_t)width * 4;
 
 		for (int column = 0; column < width; column++) {
-			unsigned int color = source[column];
-			out[0] = (std::uint8_t)(((color >> 11) & 31) * 255 / 31);
-			out[1] = (std::uint8_t)(((color >> 5) & 63) * 255 / 63);
-			out[2] = (std::uint8_t)((color & 31) * 255 / 31);
+			Rgb565_Widen(source[column], out[0], out[1], out[2]);
 			out[3] = 255;
 			out += 4;
 		}

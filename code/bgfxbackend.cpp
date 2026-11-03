@@ -19,6 +19,7 @@
 
 #include "bgfxviews.hh"
 #include "hdrcolour.h"
+#include "rgb565.h"
 #include "tilediff.h"
 
 #include <algorithm>
@@ -323,9 +324,10 @@ static BackendAllocator _Allocator;
 static void Build_Convert_Table(void)
 {
 	for (int pixel = 0; pixel < 65536; pixel++) {
-		unsigned int red = (unsigned int)(((pixel >> 11) & 0x1F) * 255 / 31);
-		unsigned int green = (unsigned int)(((pixel >> 5) & 0x3F) * 255 / 63);
-		unsigned int blue = (unsigned int)((pixel & 0x1F) * 255 / 31);
+		std::uint8_t red;
+		std::uint8_t green;
+		std::uint8_t blue;
+		Rgb565_Widen((std::uint16_t)pixel, red, green, blue);
 
 		_ConvertTable[pixel] = 0xFF000000 | (red << 16) | (green << 8) | blue;
 	}
