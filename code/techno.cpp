@@ -5198,8 +5198,112 @@ int TechnoClass::Estimated_Damage(TechnoClass const * target, WeaponTypeClass co
 }
 
 
+AbstractClass * TechnoClass::Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon)
+{
+	// A SprayAttack object strikes a ring of eight points one cell out, starting each burst at a random point and
+	// spacing its shots evenly round the ring; an AreaFire weapon strikes the firer's own cell (TechnoClass::Fire, 0x6FE140).
+	if (TClass->IsSprayAttack) {
+		static Coord const spray[8] = {
+			Coord(256, 0, 0), Coord(180, 180, 0), Coord(0, 256, 0), Coord(-180, 180, 0),
+			Coord(-256, 0, 0), Coord(-180, -180, 0), Coord(0, -256, 0), Coord(180, -180, 0)
+		};
+		if (BurstIndex == 0) {
+			SprayIndex = Random_Pick(0, 7);
+		} else {
+			SprayIndex = (SprayIndex + 8 / weapon->Burst) % 8;
+		}
+		target = &Map[Get_Coord() + spray[SprayIndex]];
+	} else if (weapon->IsAreaFire) {
+		target = &Map[Get_Cell()];
+	}
+	return(target);
+}
+
+
+/// <summary>
+/// Handles a weapon that fires no projectile, and refuses a shot while this object's attached
+/// particle system or sonic wave from an earlier shot is still active. Returns true when Fire_At
+/// must return NULL.
+/// </summary>
+bool TechnoClass::Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which)
+{
+	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsSuicide) {
+		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
+		int damage = TClass->MaxStrength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
+		return(true);
+	}
+
+	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDrainWeapon) {
+		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
+			if (Map[Get_Cell()].Cell_Building() == target) {
+				Start_Drain((TechnoClass *)target);
+				Assign_Target(NULL);
+			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
+				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
+			}
+		}
+		return(true);
+	}
+
+	// A DiskLaser weapon draws its ring and strikes when the ring closes, at an object or at a cell (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsDiskLaser) {
+		if (!DiskLaser.Is_Active()) {
+			// The burst index advances before the rate is read, as TechnoClass::Fire (0x6FDD50) does,
+			// so a one-shot laser waits out its full ROF rather than the short burst delay.
+			BurstIndex++;
+			DiskLaser.Fire(this, target, weapon, Fire_Damage(weapon));
+			LastFireFrame = Frame;
+			Arm = Rearm_Delay(which);
+			ChargeTurretDelay = (int)Arm;
+			BurstIndex %= weapon->Burst;
+		}
+		return(true);
+	}
+
+	// A Spawner weapon sends the carried aircraft or missiles instead of a projectile (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsSpawner) {
+		if (SpawnManager) {
+			SpawnManager->Set_Target(target);
+		}
+		Reveal_Firer_On_Fire(this, target, weapon);
+		return(true);
+	}
+
+	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->LimpetFactor > 0 && target->Is_Techno() == true) {
+		TechnoClass * techno = (TechnoClass *)target;
+		if (!techno->LimpetType[House]) {
+			techno->LimpetType.Set(House);
+			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
+			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			if (weapon->Sound.Count() > 0) {
+				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
+			}
+			if (techno->Tag != NULL) {
+				techno->Tag->Spring(TEVENT_LIMPED, techno);
+			}
+			DebugString("Limped %s\n", (char const *)techno->TClass->IniName);
+			Delete_Me();
+		}
+		return(true);
+	}
+
+	if ((weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE])
+		|| (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN])
+		|| (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
+		|| (weapon->IsSonic && Wave)) {
+
+		return(true);
+	}
+	return(false);
+}
+
+
 /***********************************************************************************************
- * TechnoClass::Fire_At -- Fires projectile at target specified.                               *
+ * TechnoClass::Fire_At -- Fires projectile at target specified.                             *
  *                                                                                             *
  *    This is the main projectile firing code. Buildings, units, and infantry route fire       *
  *    requests through this function.                                                          *
@@ -5243,92 +5347,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		return(NULL);
 	}
 
-	// A SprayAttack object strikes a ring of eight points one cell out, starting each burst at a random point and
-	// spacing its shots evenly round the ring; an AreaFire weapon strikes the firer's own cell (TechnoClass::Fire, 0x6FE140).
-	if (TClass->IsSprayAttack) {
-		static Coord const spray[8] = {
-			Coord(256, 0, 0), Coord(180, 180, 0), Coord(0, 256, 0), Coord(-180, 180, 0),
-			Coord(-256, 0, 0), Coord(-180, -180, 0), Coord(0, -256, 0), Coord(180, -180, 0)
-		};
-		if (BurstIndex == 0) {
-			SprayIndex = Random_Pick(0, 7);
-		} else {
-			SprayIndex = (SprayIndex + 8 / weapon->Burst) % 8;
-		}
-		target = &Map[Get_Coord() + spray[SprayIndex]];
-	} else if (weapon->IsAreaFire) {
-		target = &Map[Get_Cell()];
-	}
-
-	// A Suicide weapon destroys the firer, whose death weapon then explodes (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsSuicide) {
-		DebugString("Suicide: %s fires %s\n", TClass->Name(), weapon->Name());
-		int damage = TClass->MaxStrength;
-		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true, false);
-		return(NULL);
-	}
-
-	// A DrainWeapon starts draining once the firer is over the structure, and sends it there first (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsDrainWeapon) {
-		if (target->Is_Techno() && ((TechnoClass *)target)->TClass->IsDrainable && DrainTarget == NULL) {
-			if (Map[Get_Cell()].Cell_Building() == target) {
-				Start_Drain((TechnoClass *)target);
-				Assign_Target(NULL);
-			} else if (Is_Foot() && ((FootClass *)this)->NavCom == NULL) {
-				Assign_Destination(&Map[((TechnoClass *)target)->Center_Coord().As_Cell()]);
-			}
-		}
-		return(NULL);
-	}
-
-	// A DiskLaser weapon draws its ring and strikes when the ring closes, at an object or at a cell (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsDiskLaser) {
-		if (!DiskLaser.Is_Active()) {
-			// The burst index advances before the rate is read, as TechnoClass::Fire (0x6FDD50) does,
-			// so a one-shot laser waits out its full ROF rather than the short burst delay.
-			BurstIndex++;
-			DiskLaser.Fire(this, target, weapon, Fire_Damage(weapon));
-			LastFireFrame = Frame;
-			Arm = Rearm_Delay(which);
-			ChargeTurretDelay = (int)Arm;
-			BurstIndex %= weapon->Burst;
-		}
-		return(NULL);
-	}
-
-	// A Spawner weapon sends the carried aircraft or missiles instead of a projectile (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsSpawner) {
-		if (SpawnManager) {
-			SpawnManager->Set_Target(target);
-		}
-		Reveal_Firer_On_Fire(this, target, weapon);
-		return(NULL);
-	}
-
-	if (weapon->WarheadPtr != NULL && weapon->WarheadPtr->LimpetFactor > 0 && target->Is_Techno() == true) {
-		TechnoClass * techno = (TechnoClass *)target;
-		if (!techno->LimpetType[House]) {
-			techno->LimpetType.Set(House);
-			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
-			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			if (weapon->Sound.Count() > 0) {
-				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
-			}
-			if (techno->Tag != NULL) {
-				techno->Tag->Spring(TEVENT_LIMPED, techno);
-			}
-			DebugString("Limped %s\n", (char const *)techno->TClass->IniName);
-			Delete_Me();
-		}
-		return(NULL);
-	}
-
-	if ((weapon->UseFireParticles && ParticleSystems[ATTACHED_PARTICLE_FIRE])
-		|| (weapon->IsRailgun && ParticleSystems[ATTACHED_PARTICLE_RAILGUN])
-		|| (weapon->UseSparkParticles && ParticleSystems[ATTACHED_PARTICLE_SPARK])
-		|| (weapon->IsSonic && Wave)) {
-
+	target = Spray_Or_Area_Fire_Target(target, weapon);
+	if (Fire_Without_Projectile(target, weapon, which)) {
 		return(NULL);
 	}
 

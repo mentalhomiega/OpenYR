@@ -1082,6 +1082,10 @@ class TechnoClass :	public RadioClass,
 		**	it renders 45 degree angles.
 		*/
 		static int const BodyShape[FACING_COUNT * 4];
+
+	private:
+		AbstractClass * Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon);
+		bool Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which);
 };
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }
