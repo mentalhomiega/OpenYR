@@ -25,17 +25,6 @@ char const * const EXTENSIONS[] = {
 	".wav", ".ogg", ".flac", ".mp3"
 };
 
-// The position of the extension's dot, or npos for a name with none.
-size_t Extension_Start(std::string const & filename)
-{
-	size_t dot = filename.rfind('.');
-	size_t slash = filename.find_last_of("\\/");
-	if (dot == std::string::npos || (slash != std::string::npos && dot < slash)) {
-		return(std::string::npos);
-	}
-	return(dot);
-}
-
 }
 
 

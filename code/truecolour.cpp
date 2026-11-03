@@ -962,9 +962,8 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 
 	std::string sheetname = path;
 	std::string maskname = sheetname;
-	size_t dot = maskname.find_last_of('.');
-	size_t slash = maskname.find_last_of("\\/");
-	if (dot != std::string::npos && (slash == std::string::npos || dot > slash)) {
+	size_t const dot = Extension_Start(maskname);
+	if (dot != std::string::npos) {
 		maskname.insert(dot, "_hc");
 	} else {
 		maskname += "_hc";

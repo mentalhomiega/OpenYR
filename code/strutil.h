@@ -68,3 +68,16 @@ inline std::vector<std::string> Split_Parts(std::string_view text, char separato
 		start = end + 1;
 	}
 }
+
+
+// Returns the position of the dot that starts a file name's extension, or npos when the name has none. A dot
+// before the last '/' or '\\' belongs to a directory, so it does not count.
+inline std::size_t Extension_Start(std::string_view name)
+{
+	std::size_t const dot = name.rfind('.');
+	std::size_t const slash = name.find_last_of("\\/");
+	if (dot == std::string_view::npos || (slash != std::string_view::npos && dot < slash)) {
+		return(std::string_view::npos);
+	}
+	return(dot);
+}

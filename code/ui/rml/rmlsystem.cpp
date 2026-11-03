@@ -10,6 +10,7 @@
 #include "ui/rml/rmlsystem.h"
 
 #include "opents_strings.h"
+#include "ui/rml/rmlfile.h"
 #include "ui/uihost.h"
 #include "ui/uiunicode.h"
 
@@ -66,8 +67,7 @@ bool UIRmlSystemClass::LogMessage(Rml::Log::Type type, Rml::String const & messa
 
 void UIRmlSystemClass::JoinPath(Rml::String & translated, Rml::String const &, Rml::String const & path)
 {
-	size_t start = path.find_last_of("/\\");
-	translated = (start == Rml::String::npos) ? path : path.substr(start + 1);
+	translated = UI_Rml_Base_Name(path);
 }
 
 

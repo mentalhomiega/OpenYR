@@ -21,13 +21,6 @@
 #include <climits>
 
 
-static Rml::String Base_Name(Rml::String const & path)
-{
-	size_t start = path.find_last_of("/\\");
-	return((start == Rml::String::npos) ? path : path.substr(start + 1));
-}
-
-
 // Is the file a loose copy found ahead of the UI directory, such as a mod's?
 static bool Is_Found_Ahead_Of_UI(CCFileClass & file, Rml::String const & name)
 {
@@ -41,7 +34,7 @@ static bool Is_Found_Ahead_Of_UI(CCFileClass & file, Rml::String const & name)
 
 Rml::FileHandle UIRmlFileClass::Open(Rml::String const & path)
 {
-	Rml::String name = Base_Name(path);
+	Rml::String name = UI_Rml_Base_Name(path);
 	if (name.empty()) {
 		return(0);
 	}
