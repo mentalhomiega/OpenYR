@@ -89,9 +89,9 @@ fs::path Pending_Folder(void)
 fs::path Exceptions_Folder(void)
 {
 #if defined(_WIN32)
-	char path[MAX_PATH];
-	if (GetModuleFileNameA(NULL, path, sizeof(path)) != 0) {
-		return(fs::path(path).parent_path() / "Exceptions");
+	std::string const exe = Executable_Path();
+	if (!exe.empty()) {
+		return(fs::path(exe).parent_path() / "Exceptions");
 	}
 #endif
 	return(fs::path("Exceptions"));

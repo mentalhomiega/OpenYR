@@ -13,6 +13,7 @@
 
 #include "ccfile.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "inicheck.h"
 #include "mods.h"
 #include "rawfile.h"
@@ -29,11 +30,10 @@ static int const MAX_LOGGED_FINDINGS = 200;
 
 static std::string Catalog_Path(void)
 {
-	char path[MAX_PATH] = {};
-	if (GetModuleFileNameA(NULL, path, sizeof(path)) == 0) {
+	std::string result = Executable_Path();
+	if (result.empty()) {
 		return(std::string());
 	}
-	std::string result(path);
 	std::string::size_type slash = result.find_last_of("\\/");
 	result.erase(slash == std::string::npos ? 0 : slash + 1);
 	return(result + "inicheck-catalog.tsv");

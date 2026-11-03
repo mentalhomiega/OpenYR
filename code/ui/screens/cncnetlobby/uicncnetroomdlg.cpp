@@ -1261,9 +1261,9 @@ std::string CnCNetRoomServiceClass::Play_Match(void)
 #if defined(_WIN32)
 std::string CnCNetRoomServiceClass::Run_Child(CnCNetTunnelBridgeClass & bridge, CnCNetMatchType const & match)
 {
-	char exe[MAX_PATH];
-	DWORD const length = GetModuleFileNameA(nullptr, exe, MAX_PATH);
-	if (length == 0 || length >= MAX_PATH) {
+	bool truncated = false;
+	std::string const exe = Executable_Path(&truncated);
+	if (exe.empty() || truncated) {
 		return("The game's own path could not be read.");
 	}
 	std::string const command = Match_Command_Line(exe, Setup.MatchArguments);
@@ -1273,7 +1273,7 @@ std::string CnCNetRoomServiceClass::Run_Child(CnCNetTunnelBridgeClass & bridge, 
 	STARTUPINFOA startup{};
 	startup.cb = sizeof(startup);
 	PROCESS_INFORMATION process{};
-	if (!CreateProcessA(exe, line.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup, &process)) {
+	if (!CreateProcessA(exe.c_str(), line.data(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup, &process)) {
 		return("The match could not start (error " + std::to_string(GetLastError()) + ").");
 	}
 	CloseHandle(process.hThread);

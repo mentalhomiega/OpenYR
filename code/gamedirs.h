@@ -33,6 +33,10 @@ std::string Data_Directory(void);
 // ends in a backslash, a slash or a colon.
 std::string Terminate_Path(std::string const & path);
 
+// The full path of the running executable, or an empty string when Windows reports none. A path
+// too long for MAX_PATH is cut short, and *truncated (when given) is set to say so.
+std::string Executable_Path(bool * truncated = nullptr);
+
 // The user directory as applied, empty or ending in a separator.
 std::string User_Directory(void);
 

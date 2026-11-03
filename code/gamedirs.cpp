@@ -74,6 +74,20 @@ std::string Terminate_Path(std::string const & path)
 }
 
 
+std::string Executable_Path(bool * truncated)
+{
+	char path[MAX_PATH];
+	DWORD const length = GetModuleFileNameA(NULL, path, sizeof(path));
+	if (truncated != nullptr) {
+		*truncated = length >= MAX_PATH;
+	}
+	if (length == 0) {
+		return(std::string());
+	}
+	return(std::string(path));
+}
+
+
 static bool Is_Same_Path(std::string const & left, std::string const & right)
 {
 	return(_stricmp(left.c_str(), right.c_str()) == 0);

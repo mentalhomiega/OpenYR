@@ -19,6 +19,7 @@
 #include "event.h"
 #include "face.h"
 #include "fnv.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "mission.h"
 #include "object.h"
@@ -117,12 +118,12 @@ namespace {
 /// <returns>The preferred base, or zero when the header could not be read.</returns>
 static uint32_t Sync_Preferred_Image_Base(void)
 {
-	char path[MAX_PATH];
-	if (GetModuleFileName(GetModuleHandle(nullptr), path, sizeof(path)) == 0) {
+	std::string const path = Executable_Path();
+	if (path.empty()) {
 		return(0);
 	}
 
-	HANDLE const file = CreateFile(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
+	HANDLE const file = CreateFile(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE,
 					nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (file == INVALID_HANDLE_VALUE) {
 		return(0);
