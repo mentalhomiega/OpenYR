@@ -219,6 +219,9 @@ class TechnoClass :	public RadioClass,
 		std::vector<TechnoClass *> AttackedTargets;
 		AbstractClass * Distributed_Target(void);
 		AbstractClass * Greatest_Threat_Scan(ThreatType method, Coord const & coord, bool onlyenemy) const;
+		void Scan_Threats_Air(ThreatType method, int mask, int range, bool onlyenemy, ObjectClass const *& bestobject, int & bestval) const;
+		bool Scan_Threats_Ring(ThreatType method, int mask, int range, int crange, Cell const & cell, bool onlyenemy, int zone, ObjectClass const *& bestobject, int & bestval, AbstractClass *& found) const;
+		void Scan_Threats_Full(ThreatType method, int mask, bool onlyenemy, int zone, Coord const & coord, ObjectClass const *& bestobject, int & bestval) const;
 		bool Is_Bunkered(void) const { return(BunkerLinkedItem != NULL && RTTI != RTTI_BUILDING); }
 		void Transfer_Slaves(TechnoClass * to);
 
