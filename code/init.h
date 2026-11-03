@@ -15,6 +15,7 @@
 
 #include "stimer.h"
 
+#include "keybinddefaults.h"
 #include "side.hh"
 #include "theater.hh"
 #include "theme.hh"
@@ -42,6 +43,7 @@ void Hotkey_Release(int key);
 void Hotkey_Poll(void);
 void Hotkey_Reset_Pending(void);
 bool Hotkey_Wheel(int delta, int modifiers);
+int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger);
 void Execute_Command(char const * name);
 void Reset_Selection_Filters(void);
 

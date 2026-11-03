@@ -27,6 +27,7 @@
 
 #include "_command.h"
 #include "_keyboar.h"
+#include "init.h"
 #include "_map.h"
 #include "beacon.h"
 #include "queue.h"
@@ -2852,10 +2853,9 @@ static void Hold_Key(StepType const & step, bool down)
 static void Binding_Step(StepType const & step)
 {
 	int const mods = Key_Modifiers(step.Argument);
-	int const key = Key_Code(step.Argument) | ((mods & WINDOW_MOD_SHIFT) != 0 ? WWKEY_SHIFT_BIT : 0)
-		| ((mods & WINDOW_MOD_CTRL) != 0 ? WWKEY_CTRL_BIT : 0) | ((mods & WINDOW_MOD_ALT) != 0 ? WWKEY_ALT_BIT : 0);
+	int const key = Key_Code(step.Argument) | Key_Bits_From_Window(mods);
 	HotkeyTrigger const trigger = Binding_Trigger(step.Argument);
-	CommandClass const * command = (trigger == HOTKEY_PRESS) ? HotkeyCommands[key] : HotkeyTriggered[key * 4 + (int)trigger];
+	CommandClass const * command = (trigger == HOTKEY_PRESS) ? HotkeyCommands[key] : HotkeyTriggered[Hotkey_Trigger_Index(key, trigger)];
 	DebugString("AUTOTEST   binding %d %s %s\n", key, Hotkey_Trigger_Name(trigger), command != NULL ? command->Get_Unique_Name() : "none");
 }
 

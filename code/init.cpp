@@ -7151,7 +7151,7 @@ static KeyNumType GridModifierKeys[HOTKEY_SLOT_COUNT] = { KN_NONE, KN_NONE };
 /// <summary>
 /// Returns the HotkeyTriggered index of the key with the trigger.
 /// </summary>
-static int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger)
+int Hotkey_Trigger_Index(int key, HotkeyTrigger trigger)
 {
 	return(key * 4 + (int)trigger);
 }
@@ -7449,15 +7449,7 @@ void Hotkey_Reset_Pending(void)
 bool Hotkey_Wheel(int delta, int modifiers)
 {
 	int key = (delta > 0) ? VK_WHEEL_UP : VK_WHEEL_DOWN;
-	if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
-		key |= WWKEY_SHIFT_BIT;
-	}
-	if ((modifiers & WINDOW_MOD_CTRL) != 0) {
-		key |= WWKEY_CTRL_BIT;
-	}
-	if ((modifiers & WINDOW_MOD_ALT) != 0) {
-		key |= WWKEY_ALT_BIT;
-	}
+	key |= Key_Bits_From_Window(modifiers);
 	if (!Key_Has_Binding(key)) {
 		return(false);
 	}

@@ -548,11 +548,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		// The Shift, Ctrl and Alt bits the event carries.
 		static int Event_Modifiers(Rml::Event & event)
 		{
-			int modifiers = 0;
-			modifiers |= event.GetParameter<bool>("shift_key", false) ? WWKEY_SHIFT_BIT : 0;
-			modifiers |= event.GetParameter<bool>("ctrl_key", false) ? WWKEY_CTRL_BIT : 0;
-			modifiers |= event.GetParameter<bool>("alt_key", false) ? WWKEY_ALT_BIT : 0;
-			return(modifiers);
+			return(Key_Bits(event.GetParameter<bool>("shift_key", false), event.GetParameter<bool>("ctrl_key", false), event.GetParameter<bool>("alt_key", false)));
 		}
 
 		// The modifier bit a Shift, Ctrl or Alt key sets, or 0 for any other key.

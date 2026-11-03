@@ -248,15 +248,7 @@ bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int m
 	**	incompatible with the dos version.
 	*/
 	if (!Is_Mouse_Key(vk_key)) {
-		if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
-			vk_key |= WWKEY_SHIFT_BIT;
-		}
-		if ((modifiers & WINDOW_MOD_CTRL) != 0) {
-			vk_key |= WWKEY_CTRL_BIT;
-		}
-		if ((modifiers & WINDOW_MOD_ALT) != 0) {
-			vk_key |= WWKEY_ALT_BIT;
-		}
+		vk_key |= Key_Bits_From_Window(modifiers);
 	}
 
 	if (release) {
