@@ -1903,19 +1903,8 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 		return(MOVE_NO);
 	}
 
-	if (tube != NULL) {
-		int a = abs(dir - tube->EnterDir);
-		if (a > 2 && a < 6 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
-	}
-
-	TubeClass *tube_adj = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
-	if (tube_adj != NULL) {
-		int a = abs(Facing_Sub(dir, FACING_180) - tube_adj->EnterDir);
-		if (a > FACING_90 && a < FACING_270 && dir != FACING_NONE) {
-			return(MOVE_NO);
-		}
+	if (Tunnel_Blocks_Entry(cellptr, dir, tube)) {
+		return(MOVE_NO);
 	}
 
 	if (cell_height - cellptr->Height > 4) {
@@ -1941,36 +1930,8 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 
 	MoveType retval = MOVE_OK;
 
-	/*
-	**	Walls are considered impassable for infantry UNLESS the wall has a hole
-	**	in it.
-	*/
-	if (cellptr->Overlay != OVERLAY_NONE) {
-		OverlayTypeClass const & otype = *OverlayTypes[cellptr->Overlay];
-
-		if (otype.IsCrate && !House->Is_Human_Player()) {
-			return(MOVE_NO);
-		}
-
-		if (otype.IsWall) {
-			if ((cellptr->OverlayData / 16) != otype.DamageLevels) {
-
-				/*
-				**	If the wall can be destroyed, then return this fact instead of
-				**	a complete failure to enter.
-				*/
-				if (Is_Weapon_Equipped() && PrimaryWeapon->Is_Wall_Destroyer()) {
-					if (House->Is_Ally(cellptr->Owner)) {
-						retval = MOVE_FRIENDLY_DESTROYABLE;
-					} else {
-						retval = MOVE_DESTROYABLE;
-					}
-				} else {
-					return(MOVE_NO);
-				}
-			}
-		}
-
+	if (Overlay_Blocks_Entry(cellptr, retval)) {
+		return(MOVE_NO);
 	}
 
 	/*
@@ -1997,29 +1958,14 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			}
 
 			TechnoClass * techno = Dynamic_Cast<TechnoClass *>(obj);
-			bool const warping_out = techno != NULL && techno->IsBeingWarpedOut;
-
-			// A mission that enters, captures, sabotages, or is carried out by an engineer may pass
-			// its destination and the building beside it.
-			bool const mission_ok = !warping_out && (mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_EATEN
-				|| (mission == MISSION_SABOTAGE && Class->IsBomber)
-				|| ((mission == MISSION_GUARD_AREA || mission == MISSION_PATROL || mission == MISSION_GUARD) && Class->IsEngineer));
-			if (mission_ok) {
-				if (obj == NavCom || &Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom) {
-					if (techno != NULL && techno->Is_Iron_Curtained()) {
-						return(MOVE_NO);
-					}
-					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
-						return(MOVE_NO);
-					}
-					return(MOVE_OK);
-				}
-
-				BuildingClass *building = cellptr->Cell_Building();
-				if (building != NULL && obj != building && (building == NavCom || &Map[building->Center_Coord()] == NavCom || building == TarCom)) {
-					obj = obj->Next;
-					continue;
-				}
+			bool skip = false;
+			std::optional<MoveType> verdict = Mission_Destination_Verdict(obj, techno, cellptr, mission, isbridge, skip);
+			if (verdict) {
+				return(*verdict);
+			}
+			if (skip) {
+				obj = obj->Next;
+				continue;
 			}
 
 			/*
@@ -2035,172 +1981,21 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				return(MOVE_OK);
 			}
 
-			/*
-			**	If object is a land mine, allow movement
-			*/
 			if (obj->RTTI == RTTI_BUILDING) {
-				BuildingClass *building = (BuildingClass *)obj;
-				if (building->Class->IsInvisibleInGame) {
-					obj = obj->Next;
-					continue;
+				verdict = Special_Building_Verdict(obj, retval, skip);
+				if (verdict) {
+					return(*verdict);
 				}
-
-				if (building->Class->IsLaserFence && (building->LaserFenceFrame == 12 || building->LaserFenceFrame == 8)) {
-					obj = obj->Next;
-					continue;
-				}
-
-				if (building->Class->IsFirestormWall) {
-					if (building->House->FirestormDefenseActivated) {
-						return(MOVE_NO);
-					}
-					obj = obj->Next;
-					continue;
-				}
-
-				if (building->Class->IsGate) {
-					if (!building->Is_Gate_Open()) {
-						if (building->House->Is_Ally(House)) {
-							if (retval < MOVE_CLOSED_GATE) {
-								retval = MOVE_CLOSED_GATE;
-							}
-						} else {
-							if (!Is_Weapon_Equipped()) {
-								return(MOVE_NO);
-							}
-							if (retval < MOVE_DESTROYABLE) {
-								retval = MOVE_DESTROYABLE;
-							}
-						}
-					}
+				if (skip) {
 					obj = obj->Next;
 					continue;
 				}
 			}
 
-			/*
-			**	Special case check so that a landed aircraft that is in radio contact, will not block
-			**	a capture attempt. It is presumed that this case happens when a helicopter is landed
-			**	at a helipad.
-			*/
-//			if ((Mission != MISSION_CAPTURE && Mission != MISSION_SABOTAGE) || obj->What_Am_I() != RTTI_AIRCRAFT || !((AircraftClass *)obj)->In_Radio_Contact()) {
-
-				/*
-				**	Special check to always allow entry into the building that this infantry
-				**	is trying to capture.
-				*/
-//				if (obj->What_Am_I() == RTTI_BUILDING || obj->What_Am_I() == RTTI_AIRCRAFT || obj->What_Am_I() == RTTI_UNIT) {
-//					if ((Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE) && (obj == NavCom || obj == TarCom)) {
-//						return(MOVE_OK);
-//					}
-//				}
-
-				/*
-				**	Special check to always allow entry into the building that this infantry
-				**	is trying to capture.
-				*/
-				if (Mission == MISSION_ENTER && obj == NavCom && IsTethered) {
-					return(MOVE_OK);
-				}
-
-				/*
-				**	Allied objects block movement using different rules than for enemy
-				**	objects.
-				*/
-				if (House->Is_Ally(obj) || ScenarioInit) {
-					switch ((RTTIType)obj->RTTI) {
-
-						/*
-						**	A unit blocks as either a moving blockage or a stationary temp blockage.
-						**	This depends on whether the unit is currently moving or not.
-						*/
-						case RTTI_UNIT:
-							if (((UnitClass *)obj)->Locomotion->Is_Moving() || ((UnitClass *)obj)->NavCom != NULL) {
-								if (((UnitClass *)obj)->IsOccupyingCell || ((UnitClass *)obj)->Locomotion->Will_Jump_Tracks()) {
-									if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
-								}
-							} else {
-								if (retval < MOVE_TEMP) retval = MOVE_TEMP;
-							}
-							break;
-
-						/*
-						**	Aircraft and buildings always block movement. If for some reason there is an
-						**	allied terrain object, that blocks movement as well.
-						*/
-						//case RTTI_TERRAIN:
-						case RTTI_AIRCRAFT:
-						case RTTI_BUILDING:
-							return(MOVE_NO);
-
-						case RTTI_INFANTRY:
-							if (!((InfantryClass *)obj)->Locomotion->Is_Moving()) {
-								trynum++;
-							}
-							break;
-
-						case RTTI_TERRAIN:
-						default:
-							break;
-					}
-
-				} else {
-
-					/*
-					**	Cloaked enemy objects are not considered if this is a Find_Path()
-					**	call.
-					*/
-					if (techno == NULL || techno->Cloak != CLOAKED) {
-
-						RTTIType rtti = obj->RTTI;
-
-						/*
-						**	Any non-allied blockage is considered impassible if the infantry
-						**	is not equipped with a weapon.
-						*/
-						if (Combat_Damage() <= 0 && rtti != RTTI_TERRAIN) return(MOVE_NO);
-
-						/*
-						**	Some kinds of terrain are considered destroyable if the infantry is equipped
-						**	with the weapon that can destroy it. Otherwise, the terrain is considered
-						**	impassable.
-						*/
-						switch (rtti) {
-							case RTTI_TERRAIN:
-#ifdef OBSOLETE
-								if (((TerrainClass *)obj)->Class->Armor == ARMOR_WOOD &&
-										Class->PrimaryWeapon->WarheadPtr->IsWoodDestroyer) {
-
-									if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								} else {
-									return(MOVE_NO);
-								}
-								break;
-#else
-								break;
-#endif
-							case RTTI_INFANTRY:
-								if (((InfantryClass *)obj)->Is_Disguised_As(House)) {
-									retval = MOVE_TEMP;
-								}
-								break;
-
-							case RTTI_BUILDING:
-								if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
-									return(MOVE_NO);
-								}
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-
-							default:
-								if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
-								break;
-						}
-					} else {
-						if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
-					}
-				}
-//			}
+			verdict = Occupant_Verdict(obj, techno, retval, trynum);
+			if (verdict) {
+				return(*verdict);
+			}
 		}
 
 		/*
@@ -2273,6 +2068,265 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 	**	Return with the most severe reason why this cell would be impassable.
 	*/
 	return(retval);
+}
+
+
+bool InfantryClass::Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tube) const
+{
+	if (tube != NULL) {
+		int a = abs(dir - tube->EnterDir);
+		if (a > 2 && a < 6 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+
+	TubeClass *tube_adj = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
+	if (tube_adj != NULL) {
+		int a = abs(Facing_Sub(dir, FACING_180) - tube_adj->EnterDir);
+		if (a > FACING_90 && a < FACING_270 && dir != FACING_NONE) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+bool InfantryClass::Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const
+{
+	/*
+	**	Walls are considered impassable for infantry UNLESS the wall has a hole
+	**	in it.
+	*/
+	if (cellptr->Overlay != OVERLAY_NONE) {
+		OverlayTypeClass const & otype = *OverlayTypes[cellptr->Overlay];
+
+		if (otype.IsCrate && !House->Is_Human_Player()) {
+			return(true);
+		}
+
+		if (otype.IsWall) {
+			if ((cellptr->OverlayData / 16) != otype.DamageLevels) {
+
+				/*
+				**	If the wall can be destroyed, then return this fact instead of
+				**	a complete failure to enter.
+				*/
+				if (Is_Weapon_Equipped() && PrimaryWeapon->Is_Wall_Destroyer()) {
+					if (House->Is_Ally(cellptr->Owner)) {
+						retval = MOVE_FRIENDLY_DESTROYABLE;
+					} else {
+						retval = MOVE_DESTROYABLE;
+					}
+				} else {
+					return(true);
+				}
+			}
+		}
+
+	}
+	return(false);
+}
+
+
+std::optional<MoveType> InfantryClass::Mission_Destination_Verdict(ObjectClass * obj, TechnoClass * techno, CellClass const * cellptr, MissionType mission, bool isbridge, bool & skip) const
+{
+	bool const warping_out = techno != NULL && techno->IsBeingWarpedOut;
+
+	// A mission that enters, captures, sabotages, or is carried out by an engineer may pass
+	// its destination and the building beside it.
+	bool const mission_ok = !warping_out && (mission == MISSION_ENTER || mission == MISSION_CAPTURE || mission == MISSION_EATEN
+		|| (mission == MISSION_SABOTAGE && Class->IsBomber)
+		|| ((mission == MISSION_GUARD_AREA || mission == MISSION_PATROL || mission == MISSION_GUARD) && Class->IsEngineer));
+	if (mission_ok) {
+		if (obj == NavCom || &Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom) {
+			if (techno != NULL && techno->Is_Iron_Curtained()) {
+				return(MOVE_NO);
+			}
+			if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
+				return(MOVE_NO);
+			}
+			return(MOVE_OK);
+		}
+
+		BuildingClass *building = cellptr->Cell_Building();
+		if (building != NULL && obj != building && (building == NavCom || &Map[building->Center_Coord()] == NavCom || building == TarCom)) {
+			skip = true;
+			return(std::nullopt);
+		}
+	}
+	return(std::nullopt);
+}
+
+
+std::optional<MoveType> InfantryClass::Special_Building_Verdict(ObjectClass * obj, MoveType & retval, bool & skip) const
+{
+	BuildingClass * building = (BuildingClass *)obj;
+	if (building->Class->IsInvisibleInGame) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	if (building->Class->IsLaserFence && (building->LaserFenceFrame == 12 || building->LaserFenceFrame == 8)) {
+		skip = true;
+		return(std::nullopt);
+	}
+
+	if (building->Class->IsFirestormWall) {
+		if (building->House->FirestormDefenseActivated) {
+			return(MOVE_NO);
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+
+	if (building->Class->IsGate) {
+		if (!building->Is_Gate_Open()) {
+			if (building->House->Is_Ally(House)) {
+				if (retval < MOVE_CLOSED_GATE) {
+					retval = MOVE_CLOSED_GATE;
+				}
+			} else {
+				if (!Is_Weapon_Equipped()) {
+					return(MOVE_NO);
+				}
+				if (retval < MOVE_DESTROYABLE) {
+					retval = MOVE_DESTROYABLE;
+				}
+			}
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+	return(std::nullopt);
+}
+
+
+std::optional<MoveType> InfantryClass::Occupant_Verdict(ObjectClass * obj, TechnoClass * techno, MoveType & retval, int & trynum) const
+{
+	/*
+	**	Special case check so that a landed aircraft that is in radio contact, will not block
+	**	a capture attempt. It is presumed that this case happens when a helicopter is landed
+	**	at a helipad.
+	*/
+//			if ((Mission != MISSION_CAPTURE && Mission != MISSION_SABOTAGE) || obj->What_Am_I() != RTTI_AIRCRAFT || !((AircraftClass *)obj)->In_Radio_Contact()) {
+
+		/*
+		**	Special check to always allow entry into the building that this infantry
+		**	is trying to capture.
+		*/
+//				if (obj->What_Am_I() == RTTI_BUILDING || obj->What_Am_I() == RTTI_AIRCRAFT || obj->What_Am_I() == RTTI_UNIT) {
+//					if ((Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE) && (obj == NavCom || obj == TarCom)) {
+//						return(MOVE_OK);
+//					}
+//				}
+
+		/*
+		**	Special check to always allow entry into the building that this infantry
+		**	is trying to capture.
+		*/
+		if (Mission == MISSION_ENTER && obj == NavCom && IsTethered) {
+			return(MOVE_OK);
+		}
+
+		/*
+		**	Allied objects block movement using different rules than for enemy
+		**	objects.
+		*/
+		if (House->Is_Ally(obj) || ScenarioInit) {
+			switch ((RTTIType)obj->RTTI) {
+
+				/*
+				**	A unit blocks as either a moving blockage or a stationary temp blockage.
+				**	This depends on whether the unit is currently moving or not.
+				*/
+				case RTTI_UNIT:
+					if (((UnitClass *)obj)->Locomotion->Is_Moving() || ((UnitClass *)obj)->NavCom != NULL) {
+						if (((UnitClass *)obj)->IsOccupyingCell || ((UnitClass *)obj)->Locomotion->Will_Jump_Tracks()) {
+							if (retval < MOVE_MOVING_BLOCK) retval = MOVE_MOVING_BLOCK;
+						}
+					} else {
+						if (retval < MOVE_TEMP) retval = MOVE_TEMP;
+					}
+					break;
+
+				/*
+				**	Aircraft and buildings always block movement. If for some reason there is an
+				**	allied terrain object, that blocks movement as well.
+				*/
+				//case RTTI_TERRAIN:
+				case RTTI_AIRCRAFT:
+				case RTTI_BUILDING:
+					return(MOVE_NO);
+
+				case RTTI_INFANTRY:
+					if (!((InfantryClass *)obj)->Locomotion->Is_Moving()) {
+						trynum++;
+					}
+					break;
+
+				case RTTI_TERRAIN:
+				default:
+					break;
+			}
+
+		} else {
+
+			/*
+			**	Cloaked enemy objects are not considered if this is a Find_Path()
+			**	call.
+			*/
+			if (techno == NULL || techno->Cloak != CLOAKED) {
+
+				RTTIType rtti = obj->RTTI;
+
+				/*
+				**	Any non-allied blockage is considered impassible if the infantry
+				**	is not equipped with a weapon.
+				*/
+				if (Combat_Damage() <= 0 && rtti != RTTI_TERRAIN) return(MOVE_NO);
+
+				/*
+				**	Some kinds of terrain are considered destroyable if the infantry is equipped
+				**	with the weapon that can destroy it. Otherwise, the terrain is considered
+				**	impassable.
+				*/
+				switch (rtti) {
+					case RTTI_TERRAIN:
+#ifdef OBSOLETE
+						if (((TerrainClass *)obj)->Class->Armor == ARMOR_WOOD &&
+								Class->PrimaryWeapon->WarheadPtr->IsWoodDestroyer) {
+
+							if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						} else {
+							return(MOVE_NO);
+						}
+						break;
+#else
+						break;
+#endif
+					case RTTI_INFANTRY:
+						if (((InfantryClass *)obj)->Is_Disguised_As(House)) {
+							retval = MOVE_TEMP;
+						}
+						break;
+
+					case RTTI_BUILDING:
+						if (((BuildingClass *)obj)->Class->IsBridgeRepairHut) {
+							return(MOVE_NO);
+						}
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+
+					default:
+						if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
+						break;
+				}
+			} else {
+				if (retval < MOVE_CLOAK) retval = MOVE_CLOAK;
+			}
+		}
+//			}
+	return(std::nullopt);
 }
 
 
