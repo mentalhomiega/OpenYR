@@ -27,10 +27,10 @@
 #include "hangwatch.h"
 #include "hud.h"
 #include "init.h"
+#include "monotonic.h"
 
 #include <algorithm>
 #include <cctype>
-#include <chrono>
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -50,11 +50,6 @@ long long WaitForSince = 0;
 
 // The capture request keeps the path's address until the next frame is shown.
 std::string ShotPath;
-
-long long Now_Milliseconds(void)
-{
-	return(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
-}
 
 
 // Moves the pointer to the element's centre, then presses and releases the button there through the shell's window
@@ -261,7 +256,7 @@ void UIScript_Tick(Rml::Context * context)
 	}
 
 	while (Next < Steps.size()) {
-		long long const now = Now_Milliseconds();
+		long long const now = Monotonic_Milliseconds();
 		if (now < WaitUntil) {
 			return;
 		}
@@ -496,7 +491,7 @@ void UIScript_Tick(Rml::Context * context)
 			return;
 		} else if (step.Command == "movie") {
 			Play_Movie(step.Argument.c_str());
-			WaitUntil = Now_Milliseconds() + 300;
+			WaitUntil = Monotonic_Milliseconds() + 300;
 			return;
 		} else if (step.Command == "checked") {
 			Rml::Element * element = Find_Element(context, step.Argument);
@@ -520,7 +515,7 @@ void UIScript_Tick(Rml::Context * context)
 bool UIScript_Fullscreen_Tick(void)
 {
 	while (Next < Steps.size()) {
-		long long const now = Now_Milliseconds();
+		long long const now = Monotonic_Milliseconds();
 		if (now < WaitUntil) {
 			return(false);
 		}

@@ -10,6 +10,7 @@
 #include "cncnet/cncnetsession.h"
 
 #include "cncnet/tcpstream.h"
+#include "monotonic.h"
 
 #include <algorithm>
 #include <cctype>
@@ -19,8 +20,7 @@
 
 uint64_t CnCNet_Clock(void)
 {
-	return(static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
-		std::chrono::steady_clock::now().time_since_epoch()).count()));
+	return(static_cast<uint64_t>(Monotonic_Milliseconds()));
 }
 
 

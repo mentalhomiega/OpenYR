@@ -9,8 +9,6 @@
 
 #include "mpload.h"
 
-#include <chrono>
-
 
 bool MultiplayerLoadClass::Schedule(int slot, std::int64_t now)
 {
@@ -56,11 +54,4 @@ void MultiplayerLoadClass::Clear(void)
 	IsPending = false;
 	DueAt = 0;
 	SlotNumber = -1;
-}
-
-
-std::int64_t Monotonic_Milliseconds(void)
-{
-	return(std::chrono::duration_cast<std::chrono::milliseconds>(
-		std::chrono::steady_clock::now().time_since_epoch()).count());
 }

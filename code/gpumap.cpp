@@ -14,12 +14,12 @@
 #include "bgfxviews.hh"
 #include "dbgprint.h"
 #include "gpudraw.h"
+#include "monotonic.h"
 #include "writewatch.h"
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
-#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -1078,7 +1078,7 @@ static bool Submit_Pass(GpuMapPass const & pass)
 	float world[4] = { (float)pass.WorldX, (float)pass.WorldY, 0.0f, clouds ? 0.3f * _CloudStrength / 100.0f : 0.0f };
 	if (water || clouds || weather) {
 		// Wrapped every 1,000 seconds, so the float keeps its precision.
-		long long const ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+		long long const ms = Monotonic_Milliseconds();
 		world[2] = (float)(ms % 1000000) / 1000.0f;
 	}
 	int const quads = (int)list.Blits.size() + 1;

@@ -10,6 +10,7 @@
 #include "cncnet/cncnettunnellist.h"
 #include "cncnet/cncnettext.h"
 #include "cncnet/cncnetnative.h"
+#include "monotonic.h"
 
 #include <algorithm>
 #include <cctype>
@@ -198,7 +199,7 @@ void Collect_Replies(NativeSocket sock, std::vector<CnCNetTunnelEntryType> & tun
 	std::vector<PingTarget> const & targets, uint32_t salt, std::chrono::steady_clock::time_point begin, int timeout_ms)
 {
 	for (;;) {
-		auto const elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+		auto const elapsed = Monotonic_Elapsed_Milliseconds(begin);
 		if (elapsed >= timeout_ms) {
 			break;
 		}
@@ -224,7 +225,7 @@ void Collect_Replies(NativeSocket sock, std::vector<CnCNetTunnelEntryType> & tun
 			|| from.sin_addr.s_addr != targets[slot].Address.sin_addr.s_addr || from.sin_port != targets[slot].Address.sin_port) {
 			continue;
 		}
-		int const ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count());
+		int const ms = static_cast<int>(Monotonic_Elapsed_Milliseconds(begin));
 		CnCNetTunnelEntryType & tunnel = tunnels[asked[slot]];
 		tunnel.PingMS = tunnel.PingMS < 0 ? ms : std::min(tunnel.PingMS, ms);
 	}

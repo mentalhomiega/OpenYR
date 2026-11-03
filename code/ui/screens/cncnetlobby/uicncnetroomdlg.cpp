@@ -31,6 +31,7 @@
 #include "language/language.h"
 #include "misc.h"
 #include "mods.h"
+#include "monotonic.h"
 #include "netshare.h"
 #include "nettiming.h"
 #include "opents_build.h"
@@ -1056,7 +1057,7 @@ std::string CnCNetRoomServiceClass::Relay_Refusal(std::string const & host, uint
 	bool looked_up = false;
 	CnCNetTunnelCheckType const check = CnCNet_Check_Tunnel(list.Tunnels, host, port,
 		[&](std::string const & name) -> std::optional<uint32_t> {
-			auto const spent = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+			auto const spent = Monotonic_Elapsed_Milliseconds(begin);
 			if (!may_look_up || spent >= 3000) {
 				return(std::nullopt);
 			}
