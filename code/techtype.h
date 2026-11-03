@@ -1357,6 +1357,7 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		virtual void Compute_CRC(CRCEngine & crc) const override;
 		bool Is_Two_Shooter(void) const;
+		bool Allows_Country_Mask(int mask) const;
 		virtual bool Is_Immune_To_EMP(void) const;
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house) const;
 		virtual int Raw_Cost(void) const;

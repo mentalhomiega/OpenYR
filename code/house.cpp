@@ -1316,10 +1316,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 		if (((TechnoTypeClass const *)type)->Level == -1) return(0);
 
 		// gamemd HouseClass::CanBuild (0x4F7870) tests the house's own country bit here, not the acted one.
-		int const required = ((TechnoTypeClass const *)type)->RequiredHouses;
-		int const forbidden = ((TechnoTypeClass const *)type)->ForbiddenHouses;
-		if (required != -1 && (required & Own_Mask()) == 0) return(0);
-		if (forbidden != -1 && (forbidden & Own_Mask()) != 0) return(0);
+		if (!((TechnoTypeClass const *)type)->Allows_Country_Mask(Own_Mask())) return(0);
 
 		// The unlock cheat skips the stolen tech, prerequisite and tech level gates.
 		bool const unlocked = Debug_Cheat_Active_For(DebugCheat::UNLOCK_ALL, this);

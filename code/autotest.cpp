@@ -2056,8 +2056,8 @@ static void Can_Build_Step(StepType const & step)
 		int const forbidden = type->ForbiddenHouses;
 		int const own = house->Own_Mask();
 		int const acted = house->Acted_Mask();
-		bool const own_gate = (required == -1 || (required & own) != 0) && (forbidden == -1 || (forbidden & own) == 0);
-		bool const acted_gate = (required == -1 || (required & acted) != 0) && (forbidden == -1 || (forbidden & acted) == 0);
+		bool const own_gate = type->Allows_Country_Mask(own);
+		bool const acted_gate = type->Allows_Country_Mask(acted);
 		DebugString("AUTOTEST   canbuild %s house %s own %s acted %s required %08X forbidden %08X gate own %d acted %d level %d tech %d can %d\n",
 			type->Name(), house->Class->Name(),
 			house->OwnCountry != HOUSE_NONE ? HouseTypes[house->OwnCountry]->Name() : "<none>",

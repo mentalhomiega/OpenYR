@@ -886,7 +886,7 @@ test('One resolver answers which type of a role a house builds, against the coun
 	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 2, 'the harvester scan (Country_Unit) and the shared defense scan (Collect_Anti_Defenses) ask the seam');
 	assert.match(header, /inline bool HouseClass::Is_Acted_Candidate\(T const \* type\) const\r?\n\{\r?\n\tint mask = Acted_Mask\(\);/, 'the availability test and the buildable scan ask the seam through Is_Acted_Candidate');
 	assert.match(house, /Is_Acted_Candidate\(builtype\)/, 'the availability test uses the shared candidate test');
-	assert.match(house, /required & Own_Mask\(\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
+	assert.match(house, /Allows_Country_Mask\(Own_Mask\(\)\)/, 'RequiredHouses and ForbiddenHouses test the house\'s own country');
 	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
 });
 

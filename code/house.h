@@ -1353,8 +1353,7 @@ inline bool HouseClass::Is_Acted_Candidate(T const * type) const
 	int mask = Acted_Mask();
 	int own = Own_Mask();
 	if ((mask & type->Ownable) == 0) return(false);
-	if (type->RequiredHouses != -1 && (type->RequiredHouses & own) == 0) return(false);
-	if (type->ForbiddenHouses != -1 && (type->ForbiddenHouses & own) != 0) return(false);
+	if (!type->Allows_Country_Mask(own)) return(false);
 	if (type->AIBasePlanningSide != -1 && type->AIBasePlanningSide != Planning_Side()) return(false);
 	return(true);
 }

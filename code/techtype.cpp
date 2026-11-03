@@ -734,6 +734,20 @@ bool TechnoTypeClass::Is_Two_Shooter(void) const
 
 
 /// <summary>
+/// Tests a country's Ownable bits against this type's RequiredHouses and ForbiddenHouses.
+/// </summary>
+/// <param name="mask">The country bits to test, in the Ownable layout.</param>
+/// <returns>Returns false when RequiredHouses is set and shares no bit with the mask, or when
+/// ForbiddenHouses is set and shares a bit with it. A value of -1 places no limit.</returns>
+bool TechnoTypeClass::Allows_Country_Mask(int mask) const
+{
+	if (RequiredHouses != -1 && (RequiredHouses & mask) == 0) return(false);
+	if (ForbiddenHouses != -1 && (ForbiddenHouses & mask) != 0) return(false);
+	return(true);
+}
+
+
+/// <summary>
 /// Does an EM pulse leave this type alone? An immune object still springs its paralyzed
 /// trigger event.
 /// </summary>
