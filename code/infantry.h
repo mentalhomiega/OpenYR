@@ -276,6 +276,17 @@ class InfantryClass : public FootClass
 
 	private:
 
+		bool Garrison_Arrival(CellClass * cellptr);
+		void Repair_Bridge_Hut(TechnoClass * tech);
+		bool Engineer_Arrival(TechnoClass * tech);
+		void Infiltrate_Building(TechnoClass * tech);
+		bool Capture_Arrival(CellClass * cellptr);
+		bool Transport_Arrival(void);
+		bool Sabotage_Arrival(CellClass * cellptr);
+		void Release_Tether(CellClass * cellptr);
+		void Settle_Into_Cell(void);
+		bool Take_Cell_Hazard_Damage(void);
+
 		static DoStruct const MasterDoControls[DO_COUNT];
 
 		/*

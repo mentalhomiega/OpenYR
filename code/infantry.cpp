@@ -896,390 +896,466 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 	CellClass * cellptr = &Map[Get_Coord()];
 
 	if (why == PCP_END) {
-
-		// A soldier that reaches the structure it was sent to garrison on the Capture mission goes inside, as gamemd's
-		// InfantryClass cell arrival (0x519630, the branch at 0x51967F) does; one that may no longer enter is turned away.
-		// An Assaulter that is not an Occupier kills the occupants instead of joining them, then steps away.
-		if (Mission == MISSION_CAPTURE && (Class->IsOccupier || Class->IsAssaulter) && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
-			BuildingClass * building = (BuildingClass *)NavCom;
-			if (building == cellptr->Cell_Building()) {
-				if (building->Can_Be_Occupied_By(this)) {
-					if (building->Tag) {
-						building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-					}
-					Assign_Destination(NULL);
-					ArchiveTarget = NULL;
-					if (Class->IsOccupier) {
-						building->Occupy(this);
-					} else {
-						building->Kill_Occupants(this);
-						Scatter(COORD_NONE, true);
-					}
-				} else {
-					Assign_Destination(NULL);
-					Scatter(COORD_NONE, true);
-				}
-				return;
-			}
-		}
-
-		/*
-		**	If the infantry unit is entering a cell that contains the building it is trying to
-		**	capture, then capture it.
-		*/
-		if (Mission == MISSION_CAPTURE || Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL) {
-			if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass*)NavCom)->Considered_Vehicle()) {
-				TechnoClass * tech = (TechnoClass *)NavCom;
-				if (tech != NULL) {
-					if (PositionCell == tech->PositionCell) {
-						if (tech->Tag) {
-							tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-						}
-						tech->Detach_All(false);
-						tech->Captured(House);
-						tech->EnteredByInfType = Class->HeapID;
-						tech->Scatter_Incoming_Infantry();
-						if (Tag && Tag->Is_To_Inherit()) {
-							tech->Attach_Tag(Tag);
-						}
-						if (Tag) {
-							Tag->Spring(TEVENT_DESTROYED_ANY, this);
-						}
-						Delete_Me();
-						return;
-					} else {
-						Coord destination = Locomotion->Destination();
-						if (destination == COORD_NONE || PositionCell == Cell(destination)) {
-							Assign_Destination(NavCom);
-							return;
-						}
-					}
-				}
-			}
-
-			TechnoClass * tech = cellptr->Cell_Building();
-
-			if (tech != NULL && (tech == NavCom || tech == TarCom)) {
-				if (tech->Tag) {
-					tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-				}
-
-				if (Class->IsEngineer) {
-					// are we trying to repair a bridge?
-					if (tech->RTTI == RTTI_BUILDING && ((BuildingClass*)tech)->Class->IsBridgeRepairHut) {
-						if (House->Is_Player_Control() && Submit_Radar_Event(RADAREVENT_FACTORY_FOUND, Get_Coord().As_Cell())) {
-							Speak(VOX_BRIDGE_REPAIRED);
-						}
-						Sound_Effect(Rule->RepairBridgeSound, tech->Center_Coord());
-
-						bool train = false;
-						bool road_or_wood = false;
-						for (int y = -2; y < 3; y++) {
-							for (int x = -2; x < 3; x++) {
-								Cell cell = (Cell)Cell(PositionCell + Cell(x, y));
-								IsometricTileType ittype = Map[cell].ITType;
-								if (ittype >= IsometricTileTypeClass::TrainBridgeSet && ittype < IsometricTileTypeClass::TrainBridgeSet + TRAIN_BRIDGE_COUNT) {
-									train = true;
-								}
-								if (ittype >= IsometricTileTypeClass::BridgeSet && ittype < IsometricTileTypeClass::BridgeSet + BRIDGE_COUNT) {
-									road_or_wood = true;
-								}
-								if (Map[cell].Overlay >= OVERLAY_LOWBRIDGE_01 && Map[cell].Overlay <= OVERLAY_LOWBRIDGE_28) {
-									road_or_wood = true;
-								}
-							}
-						}
-
-						// gamemd's engineer repair (InfantryClass.c) uses the wood walker when a road or wood piece is in
-						// the five-cell square, and RepairConcreteBridgeAt (0x573540) otherwise.
-						if (train) {
-							Map.Repair_Train_Bridge(PositionCell);
-						} else if (road_or_wood) {
-							Map.Repair_Bridge(PositionCell);
-						} else {
-							Map.Repair_Concrete_Bridge(PositionCell);
-						}
-						for (int i = Infantry.Count() - 1; i >= 0; i--) {
-							Infantry[i]->Detach(tech, false);
-						}
-						tech->Scatter_Incoming_Infantry();
-					}
-
-					/*
-					**	An engineer will either mega-repair a friendly, allied or
-					**	occupiable multiplayer-passive building or it will damage/capture
-					**	an enemy building. Whether it damages or captures depends on how
-					**	badly damaged the enemy building is.
-					*/
-					else if (House->Is_Ally(tech) || (tech->RTTI == RTTI_BUILDING && Is_Passive_Occupiable_Building((BuildingClass *)tech))) {
-						// A whole building takes nothing, so the engineer lives and walks away (the engineer arrival in 0x519630).
-						if (tech->Strength == tech->TClass->MaxStrength) {
-							Assign_Destination(NULL);
-							Scatter(tech->Center_Coord(), true, true);
-							return;
-						}
-						tech->Renovate();
-					} else {
-						bool iscapturable = false;
-						if (tech->RTTI == RTTI_BUILDING) {
-							iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
-						}
-
-						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
-							&& tech->House->Class->HeapID != HouseTypeClass::From_Name("Neutral")) {
-							int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
-							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
-							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
-						} else if (iscapturable) {
-							// A building that is being sold or warped out cannot be taken, and the engineer lives.
-							if (tech->Mission == MISSION_DECONSTRUCTION || tech->IsBeingWarpedOut) {
-								Assign_Destination(NULL);
-								Scatter(tech->Center_Coord(), true, true);
-								return;
-							}
-							if (tech->Tag) {
-								tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-							}
-							tech->House->IsThieved = true;
-							if (Tag && Tag->Is_To_Inherit()) {
-								tech->Attach_Tag(Tag);
-							}
-							tech->Captured(House);
-							tech->EnteredByInfType = Class->HeapID;
-							tech->Scatter_Incoming_Infantry();
-						}
-					}
-				} else if (!Class->IsAgent) {
-					// A soldier that infiltrates but is neither engineer nor agent takes nothing and walks out (0x519630).
-					Assign_Destination(NULL);
-					Scatter(tech->Center_Coord(), true, true);
-					return;
-				} else {
-					// The announcer file names the infiltration lines as the building gives up its secrets instead.
-					if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
-					((BuildingClass *)tech)->Spied_By(House);
-				}
-				if (Tag) {
-					Tag->Spring(TEVENT_DESTROYED_ANY, this);
-				}
-				Delete_Me();
-				return;
-
-			} else {
-				if (NavCom == NULL) {
-					if (CurrentMission != MISSION_GUARD_AREA) {
-						Enter_Idle_Mode();
-					}
-					if (Map[Get_Coord()].Cell_Building()) {
-						Scatter(COORD_NONE, true);
-					}
-				}
-			}
-		}
-
-		/*
-		**	Infantry entering a transport vehicle will break radio contact
-		**	at attach itself to the transporter.
-		*/
-		TechnoClass * techno;
-		if (Class->IsVehicleThief) {
-			techno = Get_Cell_Ptr()->Cell_Unit(IsOnBridge);
-			if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Aircraft(IsOnBridge);
-			if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Building();
-		} else {
-			techno = Get_Cell_Ptr()->Cell_Building();
-			if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Aircraft(IsOnBridge);
-			if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Unit(IsOnBridge);
-		}
-
-		TechnoClass * on_target_cell = NULL;
-		if (NavCom != NULL && NavCom->RTTI == RTTI_CELL) {
-			CellClass * cellptr = &Map[NavCom->Center_Coord()];
-			if (Class->IsVehicleThief) {
-				on_target_cell = cellptr->Cell_Unit(true);
-				if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Aircraft(true);
-				if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Building();
-			} else {
-				on_target_cell = cellptr->Cell_Building();
-				if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Aircraft(true);
-				if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Unit(true);
-			}
-		}
-
-		if (Mission == MISSION_ENTER && techno != NULL && (NavCom == techno || TarCom == techno || on_target_cell != NULL && techno == on_target_cell)) {
-			if (techno->Tag) {
-				techno->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-			}
-			if (techno->RTTI == RTTI_BUILDING) {
-				// A grinder takes the soldier in for good.
-				if (((BuildingClass *)techno)->Class->IsGrinding && techno == Get_Cell_Ptr()->Cell_Building() && techno->House == House) {
-					((BuildingClass *)techno)->Grind(this);
-					return;
-				}
-				if (((BuildingClass *)techno)->Class->IsInfantryAbsorb && techno == Get_Cell_Ptr()->Cell_Building()) {
-					if (((BuildingClass *)techno)->Can_Absorb(this)) {
-						NavCom = NULL;
-						ArchiveTarget = NULL;
-						((BuildingClass *)techno)->Absorb(this);
-					} else {
-						Assign_Destination(NULL);
-						Scatter(COORD_NONE, true);
-					}
-					return;
-				}
-				if (techno == Get_Cell_Ptr()->Cell_Building() && Transmit_Message(RADIO_IM_IN) == RADIO_ROGER) {
-					Limbo();
-					Transmit_Message(RADIO_HELLO, techno);
-					techno->Cargo.Attach(this);
-					NavCom = NULL;
-					return;
-				}
-			} else {
-				if (Get_Cell() == techno->Get_Cell() && techno == NavCom) {
-					if (Transmit_Message(RADIO_CAN_LOAD, techno) == RADIO_ROGER) {
-						ArchiveTarget = NULL;
-						Board_Transport(techno);
-					} else {
-						Assign_Destination(NULL);
-						Assign_Mission(MISSION_GUARD);
-						Scatter(COORD_NONE, true, true);
-					}
-					return;
-				}
-			}
-		}
-
-		/*
-		**	If the infantry unit is entering a cell that contains the building it is trying to
-		**	sabotage, then sabotage it.
-		*/
-		if (Mission == MISSION_SABOTAGE) {
-			BuildingClass * building = cellptr->Cell_Building();
-			if (building != NULL && building == NavCom) {
-				if (!building->Class->Can_Plant_C4()) {
-					Assign_Target(NULL);
-					Assign_Destination(NULL);
-					Enter_Idle_Mode();
-					return;
-				}
-				if (building->Tag) {
-					building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
-				}
-				if (building->Mission != MISSION_DECONSTRUCTION && !building->Is_Iron_Curtained()) {
-					// A building that already carries a C4 keeps its timer and planter, so this infantry only re-arms and runs (0x51A550).
-					if (building->IsC4Applied) {
-						Assign_Destination(NULL);
-						Arm = Rearm_Delay(true);
-						Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
-						return;
-					}
-					building->IsGoingToBlow = true;
-					building->IsC4Applied = true;
-					building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
-					building->CountDown = Rule->C4Delay * TICKS_PER_MINUTE;
-					building->WhomToRepay = this;
-				}
-				NavCom = NULL;
-				Do_Uncloak();
-				Arm = Rearm_Delay(true);
-				// gamemd calls InfantryClass::Ignite (0x51D0D0) here; Scatter chooses the cell differently.
-				Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
-				return;
-			} else {
-				if (&Map[Center_Coord()] == NavCom) {
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, this, Rule->C4Warhead);
-
-					Stop_Driver();
-					Scatter(Adjacent_Cell(PositionCoord, (FacingType)PrimaryFacing.Current().As_Dir8()), true, true);
-					Assign_Mission(MISSION_MOVE);
-
-					if (NavCom == NULL || Map[NavCom->Center_Coord()].Land_Type() == LAND_WATER) {
-						Mark(MARK_DOWN);		// Needed only so that Tanya will get destroyed by the explosion.
-					}
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
-					if (!IsActive) {
-						return;
-					}
-
-					Mark(MARK_DOWN);
-				}
-			}
-		}
-
-		/*
-		**	If this unit is on a teather, then cut it at this time so that
-		**	the "parent" unit is free to proceed. Note that the parent
-		**	unit might actually be a building.
-		*/
-		if (IsTethered) {
-			Transmit_Message(RADIO_UNLOADED);
-
-			/*
-			**	Special voice play.
-			*/
-			if (Class->VoiceComment.Count() > 1) {
-				Unit_Voice_Effect((VocType)Class->VoiceComment[1], PositionCoord);
-			}
-
-			/*
-			**	If the cell is now full of infantry, tell them all to scatter
-			**	in order to make room for more.
-			*/
-			if (IsOnBridge) {
-				if ((cellptr->BridgeFlag.Composite & 0x01C) == 0x01C) {
-					cellptr->Incoming(COORD_NONE, true, true, true);
-				}
-			} else {
-				if ((cellptr->Flag.Composite & 0x01C) == 0x01C) {
-					cellptr->Incoming(COORD_NONE, true, true, false);
-				}
-			}
-		}
-
-		/*
-		**	When the infantry reaches the center of the cell, it may begin a new mission.
-		*/
-		if (MissionQueue == MISSION_NONE && NavCom == NULL && TarCom == NULL && !In_Radio_Contact()) {
-			Enter_Idle_Mode();
-		}
-		Commence();
-
-		if (IsPlanningToLook) {
-			IsPlanningToLook = false;
-			Look(false);
-		} else {
-			Look(true);
-		}
-
-		/*
-		**	If after all is said and done, the unit finishes its move on an impassable cell, then
-		**	it must presume that it is in the case of a unit driving onto a bridge that blows up
-		**	before the unit completes it's move. In such a case the unit should have been destroyed
-		**	anyway, so blow it up now.
-		*/
-		CellClass * cellptr = &Map[Get_Coord()];
-		LandType land = cellptr->Land_Type();
-		if (!Locomotion->Is_Moving() && !Class->IsBomber && !Has_Ability(ABILITY_C4) && (land == LAND_ROCK || land == LAND_WATER) && Ground[land].Cost[Class->Speed] == 0 && (!IsOnBridge || !cellptr->IsUnderBridge)) {
-			int damage = Strength;
-			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+		if (Garrison_Arrival(cellptr)) {
 			return;
 		}
 
-		if (!Class->IsTiberiumProof && !Has_Ability(ABILITY_TIBERIUM_PROOF) && Strength > 0) {
-			TiberiumType tiberium = Map[Get_Coord()].Tiberium_Type_Here();
-			if (tiberium != TIBERIUM_NONE) {
-				int damage = Tiberiums[tiberium]->Power / 10;
-				if (damage <= 1) damage = 1;
-				// A tiberium death leaves no visceroid: gamemd never reads TiberiumDeathToVisceroid (ScenarioClass+0x34B3).
-				Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
-			}
+		if (Capture_Arrival(cellptr)) {
+			return;
+		}
+
+		if (Transport_Arrival()) {
+			return;
+		}
+
+		if (Sabotage_Arrival(cellptr)) {
+			return;
+		}
+
+		Release_Tether(cellptr);
+
+		Settle_Into_Cell();
+
+		if (Take_Cell_Hazard_Damage()) {
+			return;
 		}
 	}
 
 	if (IsActive) {
 		BASECLASS::Per_Cell_Process(why);
 	}
+}
+
+
+bool InfantryClass::Garrison_Arrival(CellClass * cellptr)
+{
+	// A soldier that reaches the structure it was sent to garrison on the Capture mission goes inside, as gamemd's
+	// InfantryClass cell arrival (0x519630, the branch at 0x51967F) does; one that may no longer enter is turned away.
+	// An Assaulter that is not an Occupier kills the occupants instead of joining them, then steps away.
+	if (Mission == MISSION_CAPTURE && (Class->IsOccupier || Class->IsAssaulter) && NavCom != NULL && NavCom->RTTI == RTTI_BUILDING) {
+		BuildingClass * building = (BuildingClass *)NavCom;
+		if (building == cellptr->Cell_Building()) {
+			if (building->Can_Be_Occupied_By(this)) {
+				if (building->Tag) {
+					building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+				}
+				Assign_Destination(NULL);
+				ArchiveTarget = NULL;
+				if (Class->IsOccupier) {
+					building->Occupy(this);
+				} else {
+					building->Kill_Occupants(this);
+					Scatter(COORD_NONE, true);
+				}
+			} else {
+				Assign_Destination(NULL);
+				Scatter(COORD_NONE, true);
+			}
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void InfantryClass::Repair_Bridge_Hut(TechnoClass * tech)
+{
+	if (House->Is_Player_Control() && Submit_Radar_Event(RADAREVENT_FACTORY_FOUND, Get_Coord().As_Cell())) {
+		Speak(VOX_BRIDGE_REPAIRED);
+	}
+	Sound_Effect(Rule->RepairBridgeSound, tech->Center_Coord());
+
+	bool train = false;
+	bool road_or_wood = false;
+	for (int y = -2; y < 3; y++) {
+		for (int x = -2; x < 3; x++) {
+			Cell cell = (Cell)Cell(PositionCell + Cell(x, y));
+			IsometricTileType ittype = Map[cell].ITType;
+			if (ittype >= IsometricTileTypeClass::TrainBridgeSet && ittype < IsometricTileTypeClass::TrainBridgeSet + TRAIN_BRIDGE_COUNT) {
+				train = true;
+			}
+			if (ittype >= IsometricTileTypeClass::BridgeSet && ittype < IsometricTileTypeClass::BridgeSet + BRIDGE_COUNT) {
+				road_or_wood = true;
+			}
+			if (Map[cell].Overlay >= OVERLAY_LOWBRIDGE_01 && Map[cell].Overlay <= OVERLAY_LOWBRIDGE_28) {
+				road_or_wood = true;
+			}
+		}
+	}
+
+	// gamemd's engineer repair (InfantryClass.c) uses the wood walker when a road or wood piece is in
+	// the five-cell square, and RepairConcreteBridgeAt (0x573540) otherwise.
+	if (train) {
+		Map.Repair_Train_Bridge(PositionCell);
+	} else if (road_or_wood) {
+		Map.Repair_Bridge(PositionCell);
+	} else {
+		Map.Repair_Concrete_Bridge(PositionCell);
+	}
+	for (int i = Infantry.Count() - 1; i >= 0; i--) {
+		Infantry[i]->Detach(tech, false);
+	}
+	tech->Scatter_Incoming_Infantry();
+}
+
+
+bool InfantryClass::Engineer_Arrival(TechnoClass * tech)
+{
+	// are we trying to repair a bridge?
+	if (tech->RTTI == RTTI_BUILDING && ((BuildingClass*)tech)->Class->IsBridgeRepairHut) {
+		Repair_Bridge_Hut(tech);
+	}
+
+	/*
+	**	An engineer will either mega-repair a friendly, allied or
+	**	occupiable multiplayer-passive building or it will damage/capture
+	**	an enemy building. Whether it damages or captures depends on how
+	**	badly damaged the enemy building is.
+	*/
+	else if (House->Is_Ally(tech) || (tech->RTTI == RTTI_BUILDING && Is_Passive_Occupiable_Building((BuildingClass *)tech))) {
+		// A whole building takes nothing, so the engineer lives and walks away (the engineer arrival in 0x519630).
+		if (tech->Strength == tech->TClass->MaxStrength) {
+			Assign_Destination(NULL);
+			Scatter(tech->Center_Coord(), true, true);
+			return(false);
+		}
+		tech->Renovate();
+	} else {
+		bool iscapturable = false;
+		if (tech->RTTI == RTTI_BUILDING) {
+			iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
+		}
+
+		if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
+			&& tech->House->Class->HeapID != HouseTypeClass::From_Name("Neutral")) {
+			int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
+			int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
+			tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
+		} else if (iscapturable) {
+			// A building that is being sold or warped out cannot be taken, and the engineer lives.
+			if (tech->Mission == MISSION_DECONSTRUCTION || tech->IsBeingWarpedOut) {
+				Assign_Destination(NULL);
+				Scatter(tech->Center_Coord(), true, true);
+				return(false);
+			}
+			if (tech->Tag) {
+				tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+			}
+			tech->House->IsThieved = true;
+			if (Tag && Tag->Is_To_Inherit()) {
+				tech->Attach_Tag(Tag);
+			}
+			tech->Captured(House);
+			tech->EnteredByInfType = Class->HeapID;
+			tech->Scatter_Incoming_Infantry();
+		}
+	}
+	return(true);
+}
+
+
+void InfantryClass::Infiltrate_Building(TechnoClass * tech)
+{
+	if (tech->Tag) {
+		tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+	}
+
+	if (Class->IsEngineer) {
+		if (!Engineer_Arrival(tech)) {
+			return;
+		}
+	} else if (!Class->IsAgent) {
+		// A soldier that infiltrates but is neither engineer nor agent takes nothing and walks out (0x519630).
+		Assign_Destination(NULL);
+		Scatter(tech->Center_Coord(), true, true);
+		return;
+	} else {
+		// The announcer file names the infiltration lines as the building gives up its secrets instead.
+		if (House->Is_Player_Control() && !Is_Eva_Loaded()) Speak(VOX_BUILDING_INFILTRATED);
+		((BuildingClass *)tech)->Spied_By(House);
+	}
+	if (Tag) {
+		Tag->Spring(TEVENT_DESTROYED_ANY, this);
+	}
+	Delete_Me();
+}
+
+
+bool InfantryClass::Capture_Arrival(CellClass * cellptr)
+{
+	/*
+	**	If the infantry unit is entering a cell that contains the building it is trying to
+	**	capture, then capture it.
+	*/
+	if (Mission == MISSION_CAPTURE || Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL) {
+		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass*)NavCom)->Considered_Vehicle()) {
+			TechnoClass * tech = (TechnoClass *)NavCom;
+			if (tech != NULL) {
+				if (PositionCell == tech->PositionCell) {
+					if (tech->Tag) {
+						tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+					}
+					tech->Detach_All(false);
+					tech->Captured(House);
+					tech->EnteredByInfType = Class->HeapID;
+					tech->Scatter_Incoming_Infantry();
+					if (Tag && Tag->Is_To_Inherit()) {
+						tech->Attach_Tag(Tag);
+					}
+					if (Tag) {
+						Tag->Spring(TEVENT_DESTROYED_ANY, this);
+					}
+					Delete_Me();
+					return(true);
+				} else {
+					Coord destination = Locomotion->Destination();
+					if (destination == COORD_NONE || PositionCell == Cell(destination)) {
+						Assign_Destination(NavCom);
+						return(true);
+					}
+				}
+			}
+		}
+
+		TechnoClass * tech = cellptr->Cell_Building();
+
+		if (tech != NULL && (tech == NavCom || tech == TarCom)) {
+			Infiltrate_Building(tech);
+			return(true);
+		} else {
+			if (NavCom == NULL) {
+				if (CurrentMission != MISSION_GUARD_AREA) {
+					Enter_Idle_Mode();
+				}
+				if (Map[Get_Coord()].Cell_Building()) {
+					Scatter(COORD_NONE, true);
+				}
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool InfantryClass::Transport_Arrival(void)
+{
+	/*
+	**	Infantry entering a transport vehicle will break radio contact
+	**	at attach itself to the transporter.
+	*/
+	TechnoClass * techno;
+	if (Class->IsVehicleThief) {
+		techno = Get_Cell_Ptr()->Cell_Unit(IsOnBridge);
+		if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Aircraft(IsOnBridge);
+		if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Building();
+	} else {
+		techno = Get_Cell_Ptr()->Cell_Building();
+		if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Aircraft(IsOnBridge);
+		if (techno == NULL) techno = Get_Cell_Ptr()->Cell_Unit(IsOnBridge);
+	}
+
+	TechnoClass * on_target_cell = NULL;
+	if (NavCom != NULL && NavCom->RTTI == RTTI_CELL) {
+		CellClass * cellptr = &Map[NavCom->Center_Coord()];
+		if (Class->IsVehicleThief) {
+			on_target_cell = cellptr->Cell_Unit(true);
+			if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Aircraft(true);
+			if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Building();
+		} else {
+			on_target_cell = cellptr->Cell_Building();
+			if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Aircraft(true);
+			if (on_target_cell == NULL) on_target_cell = cellptr->Cell_Unit(true);
+		}
+	}
+
+	if (Mission == MISSION_ENTER && techno != NULL && (NavCom == techno || TarCom == techno || on_target_cell != NULL && techno == on_target_cell)) {
+		if (techno->Tag) {
+			techno->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+		}
+		if (techno->RTTI == RTTI_BUILDING) {
+			// A grinder takes the soldier in for good.
+			if (((BuildingClass *)techno)->Class->IsGrinding && techno == Get_Cell_Ptr()->Cell_Building() && techno->House == House) {
+				((BuildingClass *)techno)->Grind(this);
+				return(true);
+			}
+			if (((BuildingClass *)techno)->Class->IsInfantryAbsorb && techno == Get_Cell_Ptr()->Cell_Building()) {
+				if (((BuildingClass *)techno)->Can_Absorb(this)) {
+					NavCom = NULL;
+					ArchiveTarget = NULL;
+					((BuildingClass *)techno)->Absorb(this);
+				} else {
+					Assign_Destination(NULL);
+					Scatter(COORD_NONE, true);
+				}
+				return(true);
+			}
+			if (techno == Get_Cell_Ptr()->Cell_Building() && Transmit_Message(RADIO_IM_IN) == RADIO_ROGER) {
+				Limbo();
+				Transmit_Message(RADIO_HELLO, techno);
+				techno->Cargo.Attach(this);
+				NavCom = NULL;
+				return(true);
+			}
+		} else {
+			if (Get_Cell() == techno->Get_Cell() && techno == NavCom) {
+				if (Transmit_Message(RADIO_CAN_LOAD, techno) == RADIO_ROGER) {
+					ArchiveTarget = NULL;
+					Board_Transport(techno);
+				} else {
+					Assign_Destination(NULL);
+					Assign_Mission(MISSION_GUARD);
+					Scatter(COORD_NONE, true, true);
+				}
+				return(true);
+			}
+		}
+	}
+	return(false);
+}
+
+
+bool InfantryClass::Sabotage_Arrival(CellClass * cellptr)
+{
+	/*
+	**	If the infantry unit is entering a cell that contains the building it is trying to
+	**	sabotage, then sabotage it.
+	*/
+	if (Mission == MISSION_SABOTAGE) {
+		BuildingClass * building = cellptr->Cell_Building();
+		if (building != NULL && building == NavCom) {
+			if (!building->Class->Can_Plant_C4()) {
+				Assign_Target(NULL);
+				Assign_Destination(NULL);
+				Enter_Idle_Mode();
+				return(true);
+			}
+			if (building->Tag) {
+				building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
+			}
+			if (building->Mission != MISSION_DECONSTRUCTION && !building->Is_Iron_Curtained()) {
+				// A building that already carries a C4 keeps its timer and planter, so this infantry only re-arms and runs (0x51A550).
+				if (building->IsC4Applied) {
+					Assign_Destination(NULL);
+					Arm = Rearm_Delay(true);
+					Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
+					return(true);
+				}
+				building->IsGoingToBlow = true;
+				building->IsC4Applied = true;
+				building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
+				building->CountDown = Rule->C4Delay * TICKS_PER_MINUTE;
+				building->WhomToRepay = this;
+			}
+			NavCom = NULL;
+			Do_Uncloak();
+			Arm = Rearm_Delay(true);
+			// gamemd calls InfantryClass::Ignite (0x51D0D0) here; Scatter chooses the cell differently.
+			Scatter(building->Center_Coord(), true, true);	// RUN AWAY!
+			return(true);
+		} else {
+			if (&Map[Center_Coord()] == NavCom) {
+				Explosion_Damage(PositionCoord, Rule->BridgeStrength, this, Rule->C4Warhead);
+
+				Stop_Driver();
+				Scatter(Adjacent_Cell(PositionCoord, (FacingType)PrimaryFacing.Current().As_Dir8()), true, true);
+				Assign_Mission(MISSION_MOVE);
+
+				if (NavCom == NULL || Map[NavCom->Center_Coord()].Land_Type() == LAND_WATER) {
+					Mark(MARK_DOWN);		// Needed only so that Tanya will get destroyed by the explosion.
+				}
+				Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
+				Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
+				if (!IsActive) {
+					return(true);
+				}
+
+				Mark(MARK_DOWN);
+			}
+		}
+	}
+	return(false);
+}
+
+
+void InfantryClass::Release_Tether(CellClass * cellptr)
+{
+	/*
+	**	If this unit is on a teather, then cut it at this time so that
+	**	the "parent" unit is free to proceed. Note that the parent
+	**	unit might actually be a building.
+	*/
+	if (IsTethered) {
+		Transmit_Message(RADIO_UNLOADED);
+
+		/*
+		**	Special voice play.
+		*/
+		if (Class->VoiceComment.Count() > 1) {
+			Unit_Voice_Effect((VocType)Class->VoiceComment[1], PositionCoord);
+		}
+
+		/*
+		**	If the cell is now full of infantry, tell them all to scatter
+		**	in order to make room for more.
+		*/
+		if (IsOnBridge) {
+			if ((cellptr->BridgeFlag.Composite & 0x01C) == 0x01C) {
+				cellptr->Incoming(COORD_NONE, true, true, true);
+			}
+		} else {
+			if ((cellptr->Flag.Composite & 0x01C) == 0x01C) {
+				cellptr->Incoming(COORD_NONE, true, true, false);
+			}
+		}
+	}
+}
+
+
+void InfantryClass::Settle_Into_Cell(void)
+{
+	/*
+	**	When the infantry reaches the center of the cell, it may begin a new mission.
+	*/
+	if (MissionQueue == MISSION_NONE && NavCom == NULL && TarCom == NULL && !In_Radio_Contact()) {
+		Enter_Idle_Mode();
+	}
+	Commence();
+
+	if (IsPlanningToLook) {
+		IsPlanningToLook = false;
+		Look(false);
+	} else {
+		Look(true);
+	}
+}
+
+
+bool InfantryClass::Take_Cell_Hazard_Damage(void)
+{
+	/*
+	**	If after all is said and done, the unit finishes its move on an impassable cell, then
+	**	it must presume that it is in the case of a unit driving onto a bridge that blows up
+	**	before the unit completes it's move. In such a case the unit should have been destroyed
+	**	anyway, so blow it up now.
+	*/
+	CellClass * cellptr = &Map[Get_Coord()];
+	LandType land = cellptr->Land_Type();
+	if (!Locomotion->Is_Moving() && !Class->IsBomber && !Has_Ability(ABILITY_C4) && (land == LAND_ROCK || land == LAND_WATER) && Ground[land].Cost[Class->Speed] == 0 && (!IsOnBridge || !cellptr->IsUnderBridge)) {
+		int damage = Strength;
+		Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+		return(true);
+	}
+
+	if (!Class->IsTiberiumProof && !Has_Ability(ABILITY_TIBERIUM_PROOF) && Strength > 0) {
+		TiberiumType tiberium = Map[Get_Coord()].Tiberium_Type_Here();
+		if (tiberium != TIBERIUM_NONE) {
+			int damage = Tiberiums[tiberium]->Power / 10;
+			if (damage <= 1) damage = 1;
+			// A tiberium death leaves no visceroid: gamemd never reads TiberiumDeathToVisceroid (ScenarioClass+0x34B3).
+			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
+		}
+	}
+	return(false);
 }
 
 
