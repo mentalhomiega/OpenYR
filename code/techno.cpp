@@ -6821,33 +6821,20 @@ void TechnoClass::Set_Owner(HouseClass * newowner)
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Take_Damage -- Records damage assessed to this object.                         *
- *                                                                                             *
- *    This routine is called when this object has taken damage. It handles recording whether   *
- *    this object has been destroyed. If it has, then mark the appropriate kill records as     *
- *    necessary.                                                                               *
- *                                                                                             *
- * INPUT:                                                                                      *
- *                                                                                             *
- * OUTPUT:                                                                                     *
- *                                                                                             *
- * WARNINGS:                                                                                   *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   06/20/1995 JLB : Created.                                                                 *
- *=============================================================================================*/
-ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
+/// <summary>
+/// Adjusts damage for armor, veterancy and immunities, and applies the effects a hit has before
+/// it does any damage. Returns true when Take_Damage must return RESULT_NONE without applying
+/// the hit.
+/// </summary>
+bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool negative)
 {
-	bool negative = damage < 0;
-
 	// A vehicle in its bunker is hurt only by PenetratesBunker warheads, which leave the bunker
 	// itself unharmed (TechnoClass::ReceiveDamage, 0x701B67).
 	if (BunkerLinkedItem != NULL && !forced && warhead != NULL) {
 		bool const penetrates = warhead->IsPenetratesBunker;
 		if (RTTI == RTTI_BUILDING ? penetrates : (!penetrates && Map[Get_Cell()].Cell_Building() == BunkerLinkedItem)) {
 			damage = 0;
-			return(RESULT_NONE);
+			return(true);
 		}
 	}
 
@@ -6875,7 +6862,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		if (source != NULL) {
 			if (TClass->IsTypeImmune) {
 				if (TClass == source->TClass && House == source->House) {
-					return(RESULT_NONE);
+					return(true);
 				}
 			}
 		}
@@ -6884,19 +6871,19 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	// A radiation warhead does nothing to a type immune to radiation (TechnoClass::ReceiveDamage, 0x701900).
 	if (warhead != NULL && warhead->IsRadiation && Is_Immune_To_Radiation()) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// Nor does a PsychicDamage warhead to an ImmuneToPsionicWeapons type, or a Poison warhead to an ImmuneToPoison one.
 	if (warhead != NULL && ((warhead->IsPsychicDamage && Is_Immune_To_Psionic_Weapons()) || (warhead->IsPoison && Is_Immune_To_Poison()))) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// An AffectsAllies=no warhead does nothing to an object whose owner is an ally of the firer's house, forced or not (TechnoClass::ReceiveDamage, 0x701900).
 	if (warhead != NULL && !warhead->IsAffectsAllies && source != NULL && House->Is_Ally(source->House)) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// A warhead with a 0% Verses against the object's armor attaches no effect (Ares AttachEffect).
@@ -6916,13 +6903,13 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			DebugString("AUTOTEST curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
 		}
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// A warping-out object takes no unforced damage, healing included; a forced hit still applies (TechnoClass::ReceiveDamage, 0x701900).
 	if (IsBeingWarpedOut && !forced) {
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	// Healing adds ammunition here as damage removes it, with no cap at the full load (TechnoClass::ReceiveDamage, 0x701AE5).
@@ -6952,7 +6939,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 		Strength = 1;
 		damage = 0;
-		return(RESULT_NONE);
+		return(true);
 	}
 
 	/*
@@ -6975,6 +6962,124 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			}
 		}
 		damage = 0;
+		return(true);
+	}
+	return(false);
+}
+
+
+void TechnoClass::Release_Dependents_On_Death(TechnoClass * source)
+{
+	// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
+	if (CaptureManager) {
+		CaptureManager->Free_All();
+	}
+	if (SpawnManager) {
+		SpawnManager->Kill_Nodes();
+	}
+	if (SlaveManager) {
+		SlaveManager->Free_All(source);
+		SlaveManager.reset();
+	}
+	Stop_Drain();
+	if (DrainingMe != NULL) {
+		DrainingMe->Stop_Drain();
+	}
+	Release_Locomotor(false);
+	Release_Warp();
+}
+
+
+void TechnoClass::Play_Death_Voices(void)
+{
+	/*
+	 * Play the death voice response, heard only for an object the local player controls
+	 * (TechnoClass::ReceiveDamage, 0x701900).
+	 */
+	if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
+		VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
+		Unit_Voice_Effect(voc, Get_Coord());
+	}
+
+	// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
+	if (TClass->DieSound.Count() > 0) {
+		VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
+		Sound_Effect(voc, Get_Coord());
+	}
+}
+
+
+void TechnoClass::Spawn_Death_Debris(void)
+{
+	/*
+	 * Spawn destruction debris as Yuri's Revenge does (TechnoClass::ReceiveDamage). Voxel
+	 * debris is dealt out round the DebrisTypes list until the count is used up; flat
+	 * animations come from DebrisAnims, or from MetallicDebris when the type has neither.
+	 */
+	if (TClass->MaxDebris > 0) {
+		int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
+
+		if (TClass->DebrisTypes.Count() > 0) {
+			int const types = TClass->DebrisTypes.Count();
+			TypeList<int> const & maximums = TClass->DebrisMaximums;
+
+			// A missing or negative figure throws nothing. When no figure is above zero, gamemd's loop never ends, so this port throws no voxel pieces.
+			auto figure_of = [&maximums](int type) {
+				return type < maximums.Count() ? std::max(maximums[type], 0) : 0;
+			};
+			bool can_throw = false;
+			for (int type = 0; type < types; type++) {
+				can_throw = can_throw || figure_of(type) > 0;
+			}
+
+			int index = 0;
+			while (remaining > 0 && can_throw) {
+				// Two's complement absolute value, as gamemd computes it: a draw of INT_MIN stays negative, so it throws nothing and adds to the count.
+				int const draw = Scen->RandomNumber();
+				int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
+				int count = magnitude % (figure_of(index) + 1);
+				if (count >= remaining) {
+					count = remaining;
+				}
+				for (int j = 0; j < count; j++) {
+					new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
+				}
+				remaining -= count;
+				index = (index + 1) % types;
+			}
+		}
+
+		TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
+		if ((TClass->DebrisAnims.Count() > 0 || TClass->DebrisTypes.Count() == 0) && anims.Count() > 0) {
+			for (; remaining > 0; remaining--) {
+				new AnimClass(anims[Scen->RandomNumber(0, anims.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			}
+		}
+	}
+}
+
+
+/***********************************************************************************************
+ * TechnoClass::Take_Damage -- Records damage assessed to this object.                       *
+ *                                                                                             *
+ *    This routine is called when this object has taken damage. It handles recording whether   *
+ *    this object has been destroyed. If it has, then mark the appropriate kill records as     *
+ *    necessary.                                                                               *
+ *                                                                                             *
+ * INPUT:                                                                                      *
+ *                                                                                             *
+ * OUTPUT:                                                                                     *
+ *                                                                                             *
+ * WARNINGS:                                                                                   *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   06/20/1995 JLB : Created.                                                                 *
+ *=============================================================================================*/
+ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass const * warhead, TechnoClass * source, bool forced, bool no_crew, HouseClass * sourcehouse)
+{
+	bool negative = damage < 0;
+
+	if (Apply_Damage_Modifiers(damage, distance, warhead, source, forced, negative)) {
 		return(RESULT_NONE);
 	}
 
@@ -7042,39 +7147,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 	switch (result) {
 		case RESULT_DESTROYED:
-
-			// A dying mind controller lets its units go (TechnoClass::ReceiveDamage, 0x701900).
-			if (CaptureManager) {
-				CaptureManager->Free_All();
-			}
-			if (SpawnManager) {
-				SpawnManager->Kill_Nodes();
-			}
-			if (SlaveManager) {
-				SlaveManager->Free_All(source);
-				SlaveManager.reset();
-			}
-			Stop_Drain();
-			if (DrainingMe != NULL) {
-				DrainingMe->Stop_Drain();
-			}
-			Release_Locomotor(false);
-			Release_Warp();
-
-			/*
-			 * Play the death voice response, heard only for an object the local player controls
-			 * (TechnoClass::ReceiveDamage, 0x701900).
-			 */
-			if (TClass->VoiceDie.Count() > 0 && House->Is_Player_Control()) {
-				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
-				Unit_Voice_Effect(voc, Get_Coord());
-			}
-
-			// The death sound follows the death voice, picked with the same unsynchronised generator (TechnoClass::ReceiveDamage).
-			if (TClass->DieSound.Count() > 0) {
-				VocType voc = (VocType)TClass->DieSound.Pick(NonCriticalRandomNumber());
-				Sound_Effect(voc, Get_Coord());
-			}
+			Release_Dependents_On_Death(source);
+			Play_Death_Voices();
 
 			Transmit_Message(RADIO_OVER_OUT);
 			Stun();
@@ -7113,51 +7187,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				}
 			}
 
-			/*
-			 * Spawn destruction debris as Yuri's Revenge does (TechnoClass::ReceiveDamage). Voxel
-			 * debris is dealt out round the DebrisTypes list until the count is used up; flat
-			 * animations come from DebrisAnims, or from MetallicDebris when the type has neither.
-			 */
-			if (TClass->MaxDebris > 0) {
-				int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
-
-				if (TClass->DebrisTypes.Count() > 0) {
-					int const types = TClass->DebrisTypes.Count();
-					TypeList<int> const & maximums = TClass->DebrisMaximums;
-
-					// A missing or negative figure throws nothing. When no figure is above zero, gamemd's loop never ends, so this port throws no voxel pieces.
-					auto figure_of = [&maximums](int type) {
-						return type < maximums.Count() ? std::max(maximums[type], 0) : 0;
-					};
-					bool can_throw = false;
-					for (int type = 0; type < types; type++) {
-						can_throw = can_throw || figure_of(type) > 0;
-					}
-
-					int index = 0;
-					while (remaining > 0 && can_throw) {
-						// Two's complement absolute value, as gamemd computes it: a draw of INT_MIN stays negative, so it throws nothing and adds to the count.
-						int const draw = Scen->RandomNumber();
-						int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
-						int count = magnitude % (figure_of(index) + 1);
-						if (count >= remaining) {
-							count = remaining;
-						}
-						for (int j = 0; j < count; j++) {
-							new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
-						}
-						remaining -= count;
-						index = (index + 1) % types;
-					}
-				}
-
-				TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
-				if ((TClass->DebrisAnims.Count() > 0 || TClass->DebrisTypes.Count() == 0) && anims.Count() > 0) {
-					for (; remaining > 0; remaining--) {
-						new AnimClass(anims[Scen->RandomNumber(0, anims.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-					}
-				}
-			}
+			Spawn_Death_Debris();
 
 			/*
 			 * Determine whether this object performs a violent collateral explosion on death.
