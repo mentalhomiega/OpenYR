@@ -1089,6 +1089,8 @@ class TechnoClass :	public RadioClass,
 		void Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which);
 		DirType Launch_Direction(BulletClass * bullet, WeaponTypeClass const * weapon, Coord const & displacement, Coord & fire_coord, int & max_speed);
 		bool Launch_Pitch(BulletClass const * bullet, int which, int max_speed, Coord displacement, Coord const & turret_coord, DirType & pitch) const;
+		void Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire);
+		void Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord);
 };
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }

@@ -5433,8 +5433,120 @@ bool TechnoClass::Launch_Pitch(BulletClass const * bullet, int which, int max_sp
 }
 
 
+void TechnoClass::Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord const & fire_coord, BuildingClass * garrison, bool garrison_fire)
+{
+	/*
+	**	Perform any animation effect for this weapon.
+	*/
+	AnimTypeClass const * a = NULL;
+	if (weapon->Anim.Count() > 0) {
+		int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
+		a = weapon->Anim[entry];
+	}
+	if (a == NULL && IsInOpenToppedTransport) {
+		a = weapon->OpenToppedAnim;
+	}
+	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
+	if (garrison_fire) {
+		a = weapon->OccupantAnim;
+	}
+
+	/*
+	**	Play any sound effect tied to this weapon type.
+	*/
+	if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
+		Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
+	}
+
+	/*
+	**	If there is a special firing animation, then create and attach it
+	**	now.
+	*/
+	if (a != NULL) {
+		// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
+		Coord anim_coord = fire_coord;
+		AnimClass * anim = new AnimClass(a, anim_coord);
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
+		}
+		if (RTTI == RTTI_BUILDING) {
+			int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
+			anim->ZAdjust = std::min(zadjust, 0);
+			// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
+			if (garrison->Occupants.Count() > 0) {
+				anim->ZAdjust = -200;
+			}
+		}
+		if (anim != NULL && RTTI != RTTI_BUILDING) {
+			anim->Attach_To(this);
+		}
+	}
+}
+
+
+void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass const * weapon, int which, Coord const & fire_coord, Coord const & target_coord)
+{
+	if (weapon->IsSonic) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
+	}
+
+	// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
+		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
+	}
+
+	if (TClass->IsTargetLaser && House->Is_Player_Control()) {
+		TargetingLaserTimer = UIControls.TargetLaserTime;
+	}
+
+	if (weapon->IsElectricBolt && !weapon->IsLaser) {
+		Electric_Zap(target, which, weapon);
+	}
+
+	// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
+	if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
+		bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
+		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
+	}
+
+	// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
+	if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
+		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
+	}
+
+	/*
+	 * Laser zap animation.
+	 */
+	if (weapon->IsLaser) {
+		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
+		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
+		WeaponTypeClass const * beam_weapon = weapon;
+		if (building != NULL) {
+			WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
+			if (turret_weapon != NULL) {
+				beam_weapon = turret_weapon;
+			}
+		}
+		if (AutoTest_Active()) {
+			DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
+		}
+		Laser_Zap(target, which, beam_weapon, COORD_NONE);
+		if (building != NULL) {
+			building->BuildingStage.Set_Stage(0);
+			building->BuildingStage.Set_Rate(0);
+		}
+		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
+			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
+			if (discharge != NULL) {
+				discharge->Discharge_Turret();
+			}
+		}
+	}
+}
+
+
 /***********************************************************************************************
- * TechnoClass::Fire_At -- Fires projectile at target specified.                           *
+ * TechnoClass::Fire_At -- Fires projectile at target specified.                         *
  *                                                                                             *
  *    This is the main projectile firing code. Buildings, units, and infantry route fire       *
  *    requests through this function.                                                          *
@@ -5589,53 +5701,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	ChargeTurretDelay = (int)Arm;
 	BurstIndex %= weapon->Burst;
 
-	/*
-	**	Perform any animation effect for this weapon.
-	*/
-	AnimTypeClass const * a = NULL;
-	if (weapon->Anim.Count() > 0) {
-		int const entry = weapon->Anim_Picks_By_Facing() ? Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count()) : 0;
-		a = weapon->Anim[entry];
-	}
-	if (a == NULL && IsInOpenToppedTransport) {
-		a = weapon->OpenToppedAnim;
-	}
-	// A garrison's shot takes OccupantAnim even when it is NULL, so the weapon's own anim is not shown (TechnoClass::Fire, 0x6FDD50).
 	bool const garrison_fire = Is_Firing_Garrison();
-	if (garrison_fire) {
-		a = weapon->OccupantAnim;
-	}
-
-	/*
-	**	Play any sound effect tied to this weapon type.
-	*/
-	if (weapon->Sound.Count() > 0 && !TClass->IsGattling) {
-		Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed), fire_coord);
-	}
-
-	/*
-	**	If there is a special firing animation, then create and attach it
-	**	now.
-	*/
-	if (a != NULL) {
-		// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
-		Coord anim_coord = fire_coord;
-		AnimClass * anim = new AnimClass(a, anim_coord);
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
-		}
-		if (RTTI == RTTI_BUILDING) {
-			int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
-			anim->ZAdjust = std::min(zadjust, 0);
-			// A structure with occupants draws its shots at -200 (TechnoClass::Fire, 0x6FDD50).
-			if (garrison->Occupants.Count() > 0) {
-				anim->ZAdjust = -200;
-			}
-		}
-		if (anim != NULL && RTTI != RTTI_BUILDING) {
-			anim->Attach_To(this);
-		}
-	}
+	Play_Fire_Anim_And_Sound(weapon, fire_coord, garrison, garrison_fire);
 
 	// A DistributedFire object moves on to another target after each shot, unless it was
 	// ordered to attack this one (TechnoClass::Fire_At, 0x6FF87C).
@@ -5652,62 +5719,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		garrison->FiringOccupantIndex = (garrison->FiringOccupantIndex + 1) % garrison->Occupants.Count();
 	}
 
-	if (weapon->IsSonic) {
-		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_SONIC, target);
-	}
-
-	// A magnetron beam is drawn while none is showing, when the weapon is no laser, bolt or radiation weapon. A cell target is enough (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsMagBeam && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && !weapon->IsRadEruption && Wave == NULL) {
-		Wave = new WaveClass(fire_coord, target_coord, this, WAVE_MAGNETRON, target);
-	}
-
-	if (TClass->IsTargetLaser && House->Is_Player_Control()) {
-		TargetingLaserTimer = UIControls.TargetLaserTime;
-	}
-
-	if (weapon->IsElectricBolt && !weapon->IsLaser) {
-		Electric_Zap(target, which, weapon);
-	}
-
-	// As TechnoClass::Fire (0x6FDD50): a temporal warhead's beam takes ChronoBeamColor. A laser or bolt weapon makes no radiation beam.
-	if (weapon->IsRadBeam && !weapon->IsLaser && !weapon->IsElectricBolt) {
-		bool const temporal = weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsTemporal;
-		RadBeamClass::Fire(Turret_Coord(which), Beam_Target_Coord(target), temporal ? Rule->ChronoBeamColor : Rule->RadColor);
-	}
-
-	// An eruption weapon throws arching beams to the cells around the firer, as many cells out as the warhead's whole CellSpread (TechnoClass::Fire, 0x6FDD50).
-	if (weapon->IsRadEruption && !weapon->IsLaser && !weapon->IsElectricBolt && !weapon->IsRadBeam && weapon->WarheadPtr != NULL) {
-		RadBeamClass::Fire_Eruption(Center_Coord(), (int)weapon->WarheadPtr->CellSpread, Rule->RadColor);
-	}
-
-	/*
-	 * Laser zap animation.
-	 */
-	if (weapon->IsLaser) {
-		BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-		// A structure's beam takes its colors and duration from its turret weapon, whichever weapon fired (TechnoClass::Fire, 0x6FDD50).
-		WeaponTypeClass const * beam_weapon = weapon;
-		if (building != NULL) {
-			WeaponTypeClass const * turret_weapon = Get_Class_Weapon_Data(TClass->Has_Multiple_Turrets() ? std::max(CurrentWeaponNumber, 0) : 0)->Weapon;
-			if (turret_weapon != NULL) {
-				beam_weapon = turret_weapon;
-			}
-		}
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
-		}
-		Laser_Zap(target, which, beam_weapon, COORD_NONE);
-		if (building != NULL) {
-			building->BuildingStage.Set_Stage(0);
-			building->BuildingStage.Set_Rate(0);
-		}
-		if (Ammo <= 1 && RTTI == RTTI_BUILDING) {
-			BuildingClass * discharge = dynamic_cast<BuildingClass *>(this);
-			if (discharge != NULL) {
-				discharge->Discharge_Turret();
-			}
-		}
-	}
+	Start_Beam_Effects(target, weapon, which, fire_coord, target_coord);
 
 	/*
 	**	Reduce ammunition for this object.
