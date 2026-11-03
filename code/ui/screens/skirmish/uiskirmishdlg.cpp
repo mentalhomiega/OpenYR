@@ -428,7 +428,8 @@ void UI_Skirmish_State(UISkirmishState & state)
 {
 	state.Handle = Session.Handle;
 
-	static char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {"Open", "Closed", "Easy AI", "Medium AI", "Hard AI"};
+	static char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {
+		"Open", "Closed", Computer_Difficulty_Name(DIFF_EASY), Computer_Difficulty_Name(DIFF_NORMAL), Computer_Difficulty_Name(DIFF_HARD)};
 	state.Kinds.clear();
 	for (int kind = 0; kind < UI_SKIRMISH_SLOT_KINDS; kind++) {
 		UISkirmishOption option;
