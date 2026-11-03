@@ -312,6 +312,16 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		bool Balloon_Hover_Holds_Destination(AbstractClass const * target);
+		void Update_Teleporter_Locomotor(AbstractClass const * target);
+		bool Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b);
+		void Retarget_Subterranean_Drive(AbstractClass *& target, bool & immediate);
+		bool Plan_Subterranean_Route(AbstractClass *& target, bool & needsswap);
+		void Swap_Tunnel_For_Drive_Locomotor(AbstractClass * target, bool needsswap);
+		bool Dock_At_Repair_Facility(BuildingClass * b, AbstractClass *& target, bool immediate);
+		bool Queue_For_Weapons_Factory(AbstractClass * target);
+		void Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target);
+		void Power_On_At_Repair_Facility(void);
 		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);
 		void Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select);
 

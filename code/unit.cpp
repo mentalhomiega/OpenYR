@@ -5922,24 +5922,8 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (target == NavCom) return;
 
-	// A BalloonHover vehicle with a target keeps its destination and its Attack mission when it is told to stop, unless the
-	// target lies within a quarter turn of its facing (gamemd UnitClass::SetDestination, 0x741970).
-	if (target == NULL && Class->IsBalloonHover && NavCom != NULL && TarCom != NULL) {
-		bool keep = NavCom == TarCom;
-		if (!keep) {
-			CellClass const * navcell = dynamic_cast<CellClass const *>(NavCom);
-			keep = navcell != NULL && navcell->Cell_Occupier() == TarCom;
-		}
-		if (!keep) {
-			int const turn = (short)(Direction(TarCom).Raw - PrimaryFacing.Current().Raw);
-			keep = turn >= 0x4000 || turn <= -0x4000;
-		}
-		if (keep) {
-			if (Get_Mission() != MISSION_ATTACK) {
-				Set_Mission(MISSION_ATTACK);
-			}
-			return;
-		}
+	if (Balloon_Hover_Holds_Destination(target)) {
+		return;
 	}
 
 	// A simple deployer takes no new destination while its deploy or pack-up animation runs (gamemd UnitClass::SetDestination, 0x741970).
@@ -5975,6 +5959,101 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 
 	BuildingClass * b = dynamic_cast<BuildingClass *>(target);
 
+	Update_Teleporter_Locomotor(target);
+
+	if (Negotiate_Entry_Contact(target, b)) {
+		return;
+	}
+
+	Retarget_Subterranean_Drive(target, immediate);
+
+	bool needsswap = false;
+
+	if (target != NULL) {
+		bool surface = false;
+
+		/*
+		 * A subterranean unit that is told to move immediately must decide whether
+		 * it can burrow straight to the destination or has to plan a surface route.
+		 */
+		if (Class->IsSubterranean && immediate) {
+			surface = Plan_Subterranean_Route(target, needsswap);
+		}
+
+		/*
+		 * The non-subterranean (and the no-plan subterranean) immediate path clears
+		 * the route queue before surfacing a tunneler that is on its way up.
+		 */
+		if (!surface) {
+			if (immediate) {
+				RouteQueue.Clear();
+				surface = true;
+			}
+		}
+
+		/*
+		 * Surfacing tunneler keeps its current cell at the route front.
+		 */
+		if (surface) {
+			if (Locomotion->Is_Surfacing()) {
+				RouteQueue.Add_Head(target);
+				target = &Map[Get_Coord()];
+			}
+		}
+
+		/*
+		 * If the locomotor is a tunnel locomotor and the unit is on the ground,
+		 * surface the tunneler by swapping the tunnel locomotor for a drive one.
+		 * (Mirrors BuildingClass weapons-factory exit, building.cpp:6236-6251.)
+		 */
+		Swap_Tunnel_For_Drive_Locomotor(target, needsswap);
+	} else {
+		RouteQueue.Clear();
+	}
+
+	if (Dock_At_Repair_Facility(b, target, immediate)) {
+		return;
+	}
+
+	if (Queue_For_Weapons_Factory(target)) {
+		return;
+	}
+
+	Send_Harvester_To_Dock(b, target);
+
+	Power_On_At_Repair_Facility();
+
+	BASECLASS::Assign_Destination(target, immediate);
+}
+
+
+bool UnitClass::Balloon_Hover_Holds_Destination(AbstractClass const * target)
+{
+	// A BalloonHover vehicle with a target keeps its destination and its Attack mission when it is told to stop, unless the
+	// target lies within a quarter turn of its facing (gamemd UnitClass::SetDestination, 0x741970).
+	if (target == NULL && Class->IsBalloonHover && NavCom != NULL && TarCom != NULL) {
+		bool keep = NavCom == TarCom;
+		if (!keep) {
+			CellClass const * navcell = dynamic_cast<CellClass const *>(NavCom);
+			keep = navcell != NULL && navcell->Cell_Occupier() == TarCom;
+		}
+		if (!keep) {
+			int const turn = (short)(Direction(TarCom).Raw - PrimaryFacing.Current().Raw);
+			keep = turn >= 0x4000 || turn <= -0x4000;
+		}
+		if (keep) {
+			if (Get_Mission() != MISSION_ATTACK) {
+				Set_Mission(MISSION_ATTACK);
+			}
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void UnitClass::Update_Teleporter_Locomotor(AbstractClass const * target)
+{
 	/*
 	**	A teleporter drives, carrying its own locomotor, unless it is being sent onto a free dock
 	**	cell of the refinery it is talking to; then it goes back to its own locomotor and enters.
@@ -6008,7 +6087,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
+
+bool UnitClass::Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b)
+{
 	/*
 	**	Handle entry logic here.
 	*/
@@ -6063,7 +6146,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					} else {
 						if (Transmit_Message(RADIO_HELLO, techno) == RADIO_ROGER) {
 							if (Transmit_Message(RADIO_DOCKING) == RADIO_ROGER) {
-								return;
+								return(true);
 							}
 							Transmit_Message(RADIO_OVER_OUT);
 						}
@@ -6076,9 +6159,12 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	} else {
 		Path[0] = FACING_NONE;
 	}
+	return(false);
+}
 
-	bool useplan = false;
 
+void UnitClass::Retarget_Subterranean_Drive(AbstractClass *& target, bool & immediate)
+{
 	/*
 	 * Subterranean units prepend their navigation target onto the queue and
 	 * re-target the nearest reachable cell when driving rather than burrowing.
@@ -6099,124 +6185,98 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
-	bool needsswap = false;
 
-	if (target != NULL) {
-		bool surface = false;
+bool UnitClass::Plan_Subterranean_Route(AbstractClass *& target, bool & needsswap)
+{
+	bool useplan = false;
+	bool isbridge = Is_Moving_Onto_Bridge();
 
-		/*
-		 * A subterranean unit that is told to move immediately must decide whether
-		 * it can burrow straight to the destination or has to plan a surface route.
-		 */
-		if (Class->IsSubterranean && immediate) {
-			bool isbridge = Is_Moving_Onto_Bridge();
+	Cell from = Destination_Coord().As_Cell();
+	bool canburrowfrom = Map[from].Can_Burrow_Here();
 
-			Cell from = Destination_Coord().As_Cell();
-			bool canburrowfrom = Map[from].Can_Burrow_Here();
+	Cell to = target->Center_Coord().As_Cell();
+	CellClass * tocell = &Map[to];
+	bool isunderbridgeto = tocell->IsUnderBridge;
+	bool canburrowto = tocell->Can_Burrow_Here();
+	int height = Get_Height_AGL();
 
-			Cell to = target->Center_Coord().As_Cell();
-			CellClass * tocell = &Map[to];
-			bool isunderbridgeto = tocell->IsUnderBridge;
-			bool canburrowto = tocell->Can_Burrow_Here();
-			int height = Get_Height_AGL();
-
-			if (isbridge) {
-				if (isunderbridgeto) {
-					int z1 = Map.Zone_Connection_Index(from, 3, 0);
-					if (z1 == Map.Zone_Connection_Index(to, 3, 0) && z1 != -1) {
-						if (!Map.ZoneConnections[z1].IsPassable) {
-							Cell d1 = Map.Get_Zone_Connection_Destination(from, from);
-							Cell d2 = Map.Get_Zone_Connection_Destination(to, to);
-							if (d1.Gamemd_Distance_To(d2) <= 2) {
-								needsswap = true;
-							}
-						} else {
-							needsswap = true;
-						}
+	if (isbridge) {
+		if (isunderbridgeto) {
+			int z1 = Map.Zone_Connection_Index(from, 3, 0);
+			if (z1 == Map.Zone_Connection_Index(to, 3, 0) && z1 != -1) {
+				if (!Map.ZoneConnections[z1].IsPassable) {
+					Cell d1 = Map.Get_Zone_Connection_Destination(from, from);
+					Cell d2 = Map.Get_Zone_Connection_Destination(to, to);
+					if (d1.Gamemd_Distance_To(d2) <= 2) {
+						needsswap = true;
 					}
-				}
-				if (!needsswap) {
-					useplan = true;
-				}
-			} else if (isunderbridgeto) {
-				useplan = true;
-			}
-
-			if (((!canburrowfrom && height >= 0) || !canburrowto) && !needsswap || useplan) {
-				target = Plan_Route(*target);
-				surface = true;
-			}
-		}
-
-		/*
-		 * The non-subterranean (and the no-plan subterranean) immediate path clears
-		 * the route queue before surfacing a tunneler that is on its way up.
-		 */
-		if (!surface) {
-			if (immediate) {
-				RouteQueue.Clear();
-				surface = true;
-			}
-		}
-
-		/*
-		 * Surfacing tunneler keeps its current cell at the route front.
-		 */
-		if (surface) {
-			if (Locomotion->Is_Surfacing()) {
-				RouteQueue.Add_Head(target);
-				target = &Map[Get_Coord()];
-			}
-		}
-
-		/*
-		 * If the locomotor is a tunnel locomotor and the unit is on the ground,
-		 * surface the tunneler by swapping the tunnel locomotor for a drive one.
-		 * (Mirrors BuildingClass weapons-factory exit, building.cpp:6236-6251.)
-		 */
-		if (target != NULL && !Locomotion->Is_Moving()) {
-			ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
-			if (clsid == ClassID_TunnelLocomotion && Get_Height_AGL() == 0) {
-				Coord tc = target->Center_Coord();
-				int gl = Map.Get_Height_GL(tc);
-				if (tc.Z < gl) tc.Z = gl;
-
-				bool doswap = needsswap;
-				if (!doswap) {
-					if (!Is_Moving_Onto_Bridge()
-						&& !Map[target->Center_Coord()].IsUnderBridge
-						&& Map[Destination_Coord()].Can_Burrow_Here()
-						&& Map[target->Center_Coord()].Can_Burrow_Here()) {
-						Cell to = target->Center_Coord().As_Cell();
-						if (!Is_Route_Broken(Get_Target_Cell(), to)) {
-							doswap = true;
-						}
-					} else {
-						doswap = true;
-					}
-				}
-
-				if (doswap) {
-					IPiggyback * piggy = Piggyback_Of(Locomotion.get());
-					if (piggy != NULL && piggy->Is_Piggybacking()) {
-						Locomotion = piggy->End_Piggyback();
-					}
-					std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
-					walk->Link_To_Object(this);
-					piggy = Piggyback_Of(walk.get());
-					if (piggy != NULL) {
-						piggy->Begin_Piggyback(Locomotion);
-						Locomotion = std::move(walk);
-						Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
-					}
+				} else {
+					needsswap = true;
 				}
 			}
 		}
-	} else {
-		RouteQueue.Clear();
+		if (!needsswap) {
+			useplan = true;
+		}
+	} else if (isunderbridgeto) {
+		useplan = true;
 	}
 
+	if (((!canburrowfrom && height >= 0) || !canburrowto) && !needsswap || useplan) {
+		target = Plan_Route(*target);
+		return(true);
+	}
+	return(false);
+}
+
+
+void UnitClass::Swap_Tunnel_For_Drive_Locomotor(AbstractClass * target, bool needsswap)
+{
+	if (target != NULL && !Locomotion->Is_Moving()) {
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+		if (clsid == ClassID_TunnelLocomotion && Get_Height_AGL() == 0) {
+			Coord tc = target->Center_Coord();
+			int gl = Map.Get_Height_GL(tc);
+			if (tc.Z < gl) tc.Z = gl;
+
+			bool doswap = needsswap;
+			if (!doswap) {
+				if (!Is_Moving_Onto_Bridge()
+					&& !Map[target->Center_Coord()].IsUnderBridge
+					&& Map[Destination_Coord()].Can_Burrow_Here()
+					&& Map[target->Center_Coord()].Can_Burrow_Here()) {
+					Cell to = target->Center_Coord().As_Cell();
+					if (!Is_Route_Broken(Get_Target_Cell(), to)) {
+						doswap = true;
+					}
+				} else {
+					doswap = true;
+				}
+			}
+
+			if (doswap) {
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
+				if (piggy != NULL && piggy->Is_Piggybacking()) {
+					Locomotion = piggy->End_Piggyback();
+				}
+				std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
+				walk->Link_To_Object(this);
+				piggy = Piggyback_Of(walk.get());
+				if (piggy != NULL) {
+					piggy->Begin_Piggyback(Locomotion);
+					Locomotion = std::move(walk);
+					Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
+				}
+			}
+		}
+	}
+}
+
+
+bool UnitClass::Dock_At_Repair_Facility(BuildingClass * b, AbstractClass *& target, bool immediate)
+{
 	/*
 	**	If the player clicked on a friendly repair facility and the repair
 	**	facility is currently not involved with some other unit (radio or unloading).
@@ -6234,7 +6294,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 				if (Transmit_Message(RADIO_DOCKING) == RADIO_ROGER) {
 					BASECLASS::Assign_Destination(target, immediate);
 					Path[0] = FACING_NONE;
-					return;
+					return(true);
 				}
 
 				/*
@@ -6246,7 +6306,12 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+	return(false);
+}
 
+
+bool UnitClass::Queue_For_Weapons_Factory(AbstractClass * target)
+{
 	// In contact with a weapons factory, a destination other than the cell (3,1) from its top-left cell is queued, not assigned.
 	BuildingClass * wf = (BuildingClass *)Contact_With_Whom();
 	if (wf != NULL && wf->Fetch_RTTI() == RTTI_BUILDING && wf->Class->IsWeaponsFactory) {
@@ -6257,10 +6322,15 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			if (target != NULL) {
 				Queue_Navigation_List(target);
 			}
-			return;
+			return(true);
 		}
 	}
+	return(false);
+}
 
+
+void UnitClass::Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target)
+{
 	/*
 	 * Harvesters and weeders automatically enter their dock building when the
 	 * clicked target is that building (and the houses are allied).
@@ -6284,7 +6354,11 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
+}
 
+
+void UnitClass::Power_On_At_Repair_Facility(void)
+{
 	/*
 	 * If the locomotor is unpowered and we are not in an ion storm, power it
 	 * back on when an adjacent friendly repair facility occupies our cell.
@@ -6302,8 +6376,6 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 			}
 		}
 	}
-
-	BASECLASS::Assign_Destination(target, immediate);
 }
 
 
