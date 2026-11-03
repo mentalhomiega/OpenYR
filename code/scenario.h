@@ -53,6 +53,8 @@
 #include "waypoint.hh"
 
 #include <cstdlib>
+#include <optional>
+#include <string>
 
 #define SCEN_LOCAL_COUNT 100
 #define SCEN_GLOBAL_COUNT 50
@@ -663,6 +665,12 @@ void Do_Restart(void);
 void Do_Abort(void);
 void Fill_In_Data(void);
 bool Restate_Mission(char const * name, int button1, int button2);
+
+// The string table text of a UIName label, or nothing when the label is empty or the table has no such label.
+std::optional<std::string> Mission_UI_Text(std::string const & label);
+
+// The string table text of a label. A label the table lacks reads as MISSING:'<label>'; log_missing writes it to the debug log.
+std::string Mission_Label_Text(char const * label, bool log_missing);
 
 void Lock_Scenario_Input(void);
 void Unlock_Scenario_Input(void);

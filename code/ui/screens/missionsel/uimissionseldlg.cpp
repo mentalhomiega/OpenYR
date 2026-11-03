@@ -23,11 +23,13 @@
 #include "globals.h"
 #include "init.h"
 #include "options.h"
+#include "scenario.h"
 #include "ui/screens/missionsel/uimissionsel.h"
 #include "ui/uienginehost.h"
 #include "ui/uiview.h"
 
 #include <cstring>
+#include <optional>
 #include <utility>
 
 
@@ -38,8 +40,9 @@ namespace
 std::string Mission_Name(CCINIClass const & missions, char const * map)
 {
 	std::string const label = missions.Get_String(map, "UIName");
-	if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-		return(StringTable.Find_UTF8(label.c_str()));
+	std::optional<std::string> const name = Mission_UI_Text(label);
+	if (name.has_value()) {
+		return(*name);
 	}
 	return(map);
 }

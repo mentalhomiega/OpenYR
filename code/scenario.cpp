@@ -2021,6 +2021,27 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 }
 
 
+std::optional<std::string> Mission_UI_Text(std::string const & label)
+{
+	if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
+		return(StringTable.Find_UTF8(label.c_str()));
+	}
+	return(std::nullopt);
+}
+
+
+std::string Mission_Label_Text(char const * label, bool log_missing)
+{
+	if (StringTable.Find(label) == nullptr) {
+		if (log_missing) {
+			DebugString("Restate: no string table label %s\n", label);
+		}
+		return(std::string("MISSING:'") + label + "'");
+	}
+	return(StringTable.Find_UTF8(label));
+}
+
+
 // Adds the mission INI files of the scenario being started to the rules, and reads its name and
 // briefing from them.
 static void Read_Mission_Files(void)
@@ -2074,8 +2095,9 @@ static void Read_Mission_Files(void)
 			CCINIClass missions;
 			missions.Load(database, false);
 			std::string const label = missions.Get_String(Scen->ScenarioName, "UIName");
-			if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-				UTF8::Copy(Scen->Description, sizeof(Scen->Description), StringTable.Find_UTF8(label.c_str()).c_str());
+			std::optional<std::string> const name = Mission_UI_Text(label);
+			if (name.has_value()) {
+				UTF8::Copy(Scen->Description, sizeof(Scen->Description), name->c_str());
 			}
 		}
 	}

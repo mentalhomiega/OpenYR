@@ -41,16 +41,6 @@
 namespace
 {
 
-// A label the string table lacks reads as MISSING:'<label>', as the objectives screen shows it.
-std::string Label_Text(char const * label)
-{
-	if (StringTable.Find(label) == nullptr) {
-		return(std::string("MISSING:'") + label + "'");
-	}
-	return(StringTable.Find_UTF8(label));
-}
-
-
 /// <summary>
 /// The briefing a mission's objectives screen gives, read from the files before the map loads. The sources and their
 /// order follow Briefing_Text in restate.cpp: the text MISSIONMD.INI names, then the map's own briefing, then the
@@ -65,7 +55,7 @@ std::string Mission_Briefing(char const * map)
 		missions.Load(database, false);
 		std::string const label = missions.Get_String(map, "Briefing");
 		if (!label.empty()) {
-			return(Label_Text(label.c_str()));
+			return(Mission_Label_Text(label.c_str(), false));
 		}
 	}
 
@@ -85,7 +75,7 @@ std::string Mission_Briefing(char const * map)
 			// Red Alert 2 names a string table label here, and Yuri's Revenge's text blocks name a section.
 			std::string const entry = ini.Get_String(map, "Briefing");
 			if (!entry.empty() && StringTable.Find(entry.c_str()) != nullptr) {
-				return(Label_Text(entry.c_str()));
+				return(Mission_Label_Text(entry.c_str(), false));
 			}
 			if (!entry.empty()) {
 				ini.Get_TextBlock(entry.c_str(), text, sizeof(text));
@@ -94,7 +84,7 @@ std::string Mission_Briefing(char const * map)
 	}
 
 	if (text[0] == '\0' && has_database) {
-		return(Label_Text("Brief:Error"));
+		return(Mission_Label_Text("Brief:Error", false));
 	}
 	return(std::string(text));
 }
@@ -131,8 +121,9 @@ std::string Mission_Title(CampaignClass const & campaign, CCINIClass const & ra2
 {
 	if (campaign.ScenarioArchive == "RA2") {
 		std::string const label = ra2_missions.Get_String(campaign.ScenarioName, "UIName");
-		if (!label.empty() && StringTable.Find(label.c_str()) != nullptr) {
-			return(StringTable.Find_UTF8(label.c_str()));
+		std::optional<std::string> const name = Mission_UI_Text(label);
+		if (name.has_value()) {
+			return(*name);
 		}
 	}
 

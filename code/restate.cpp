@@ -32,17 +32,6 @@
 #include <string>
 
 
-// A label the string table lacks reads as MISSING:'<label>', as in Yuri's Revenge.
-static std::string Label_Text(char const * label)
-{
-	if (StringTable.Find(label) == nullptr) {
-		DebugString("Restate: no string table label %s\n", label);
-		return(std::string("MISSING:'") + label + "'");
-	}
-	return(StringTable.Find_UTF8(label));
-}
-
-
 /*
  * The scenario's briefing: the string table text its MISSIONMD.INI entry names, else the text
  * the scenario holds, else its text in the mission INI. When none of these gives text but
@@ -59,7 +48,7 @@ static std::string Briefing_Text(ScenarioClass * scen)
 		std::string const label = ini.Get_String(scen->ScenarioName, "Briefing");
 		if (!label.empty()) {
 			DebugString("Restate: Fetching briefing %s from MissionMD.ini\n", label.c_str());
-			return(Label_Text(label.c_str()));
+			return(Mission_Label_Text(label.c_str(), true));
 		}
 	}
 
@@ -92,7 +81,7 @@ static std::string Briefing_Text(ScenarioClass * scen)
 	}
 
 	if (text[0] == '\0' && has_database) {
-		return(Label_Text("Brief:Error"));
+		return(Mission_Label_Text("Brief:Error", true));
 	}
 	return(text);
 }
