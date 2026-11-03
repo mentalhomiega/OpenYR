@@ -14,6 +14,7 @@
 #include "audio/samplebagset.h"
 #include "_rand.h"
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
 #include "random.h"
 
@@ -142,17 +143,7 @@ class CCFileReaderClass : public AudioAssetReaderClass
 			if (!file.Is_Available()) {
 				return(Bags.Read_From_Bag(filename, bytes));
 			}
-			if (!file.Open(FileClass::READ)) {
-				return(false);
-			}
-			int size = file.Size();
-			bool ok = false;
-			if (size > 0) {
-				bytes.resize((size_t)size);
-				ok = file.Read(bytes.data(), size) == size;
-			}
-			file.Close();
-			return(ok);
+			return(Read_File_Bytes(file, bytes));
 		}
 
 	private:

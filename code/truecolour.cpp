@@ -175,20 +175,7 @@ std::string Png_Name(std::string const & name, char const * suffix)
 bool Read_File(std::string const & name, std::vector<unsigned char> & bytes)
 {
 	CCFileClass file(name.c_str());
-	if (!file.Is_Available()) {
-		return(false);
-	}
-	int size = file.Size();
-	if (size <= 0) {
-		return(false);
-	}
-	bytes.resize((size_t)size);
-	if (!file.Open(FileClass::READ)) {
-		return(false);
-	}
-	bool ok = file.Read(bytes.data(), size) == size;
-	file.Close();
-	return(ok);
+	return(Read_File_Bytes(file, bytes));
 }
 
 

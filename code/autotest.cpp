@@ -42,6 +42,7 @@
 #include "factory.h"
 #include "ccfile.h"
 #include "ccini.h"
+#include "data.h"
 #include "lcwstraw.h"
 #include "xstraw.h"
 #include "builtype.h"
@@ -1610,16 +1611,7 @@ static void Stock_Check_Shape(std::string const & shp, StockCheckCounts & counts
 {
 	std::vector<std::uint8_t> bytes;
 	CCFileClass file(shp.c_str());
-	if (file.Open(FileClass::READ)) {
-		int const size = file.Size();
-		if (size > 0) {
-			bytes.resize(static_cast<std::size_t>(size));
-			if (file.Read(bytes.data(), size) != size) {
-				bytes.clear();
-			}
-		}
-		file.Close();
-	}
+	Read_File_Bytes(file, bytes);
 
 	counts.found_shapes++;
 	int const count = bytes.size() >= 8 ? (bytes[6] | (bytes[7] << 8)) : 0;

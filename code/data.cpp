@@ -80,6 +80,30 @@ void * Load_Alloc_Data(FileClass & file)
 }
 
 
+/// <summary>Reads the whole file into bytes. Returns false, with bytes empty, when the file is missing, empty, or not read in full.</summary>
+bool Read_File_Bytes(FileClass & file, std::vector<unsigned char> & bytes)
+{
+	bytes.clear();
+	if (!file.Is_Available()) {
+		return(false);
+	}
+
+	int size = file.Size();
+	if (size <= 0) {
+		return(false);
+	}
+
+	bytes.resize((size_t)size);
+	if (!file.Open(FileClass::READ) || file.Read(bytes.data(), size) != size) {
+		bytes.clear();
+		return(false);
+	}
+	file.Close();
+
+	return(true);
+}
+
+
 /***********************************************************************************************
  * Load_Uncompress -- Loads and uncompresses data to a buffer.                                 *
  *                                                                                             *
