@@ -127,3 +127,28 @@ class Surface
 		int Width;
 		int Height;
 };
+
+
+/// <summary>
+/// Locks a surface for the lifetime of the object. The surface is unlocked on
+/// exit only when Lock returned a pixel pointer, so a failed lock leaves the
+/// lock count unchanged.
+/// </summary>
+class SurfaceLock
+{
+	public:
+		explicit SurfaceLock(Surface const & surface) : Locked(surface), Pixels(surface.Lock()) {}
+		SurfaceLock(Surface const & surface, Point2D point) : Locked(surface), Pixels(surface.Lock(point)) {}
+		~SurfaceLock() {if (Pixels != NULL) Locked.Unlock();}
+		SurfaceLock(SurfaceLock const &) = delete;
+		SurfaceLock & operator = (SurfaceLock const &) = delete;
+
+		/// The pixel pointer from Lock, or NULL if the surface could not be locked.
+		template<typename T>
+		T * As(void) const {return(static_cast<T *>(Pixels));}
+		bool Is_Valid(void) const {return(Pixels != NULL);}
+
+	private:
+		Surface const & Locked;
+		void * Pixels;
+};

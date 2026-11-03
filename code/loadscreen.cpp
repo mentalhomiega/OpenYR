@@ -306,8 +306,10 @@ void Draw_Flag(Surface & dest, Point2D const & point, FlagType const & flag)
 	}
 
 	int const magenta = DSurface::Build_Hicolor_Pixel(255, 0, 255);
-	unsigned char const * pixels = (unsigned char const *)picture->Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock picture_lock(*picture);
+	SurfaceLock dest_lock(dest);
+	unsigned char const * pixels = picture_lock.As<unsigned char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (pixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < picture->Get_Height(); y++) {
 			int const dy = point.Y + y;
@@ -337,12 +339,6 @@ void Draw_Flag(Surface & dest, Point2D const & point, FlagType const & flag)
 			}
 		}
 	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (pixels != NULL) {
-		picture->Unlock();
-	}
 }
 
 
@@ -353,8 +349,10 @@ void Blit_Stretched(Surface & dest, Rect const & to, Surface const & source)
 		return;
 	}
 
-	char const * spixels = (char const *)source.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock source_lock(source);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = source_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < to.Height; y++) {
 			int const dy = to.Y + y;
@@ -370,12 +368,6 @@ void Blit_Stretched(Surface & dest, Rect const & to, Surface const & source)
 				}
 			}
 		}
-	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		source.Unlock();
 	}
 }
 
@@ -429,8 +421,10 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 		column_weight[x] = (int)((at - column[x]) * 256);
 	}
 
-	char const * spixels = (char const *)source.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock source_lock(source);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = source_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < reach.Height; y++) {
 			double const at = std::max(0.0, ((reach.Y + y - origin.Y) + 0.5) / yscale - 0.5);
@@ -461,12 +455,6 @@ void Blit_Smooth(Surface & dest, Point2D const & origin, Point2D const & dest_si
 				drow[x] = (unsigned short)pixel;
 			}
 		}
-	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		source.Unlock();
 	}
 }
 

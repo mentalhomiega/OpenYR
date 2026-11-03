@@ -46,20 +46,16 @@ std::unique_ptr<Surface> Load(std::string const & filename)
 	int const width = picture->Get_Width();
 	int const height = picture->Get_Height();
 	auto hicolor = std::make_unique<BSurface>(width, height, 2);
-	unsigned char const * source = (unsigned char const *)picture->Lock();
-	unsigned short * dest = (unsigned short *)hicolor->Lock();
+	SurfaceLock picture_lock(*picture);
+	SurfaceLock hicolor_lock(*hicolor);
+	unsigned char const * source = picture_lock.As<unsigned char const>();
+	unsigned short * dest = hicolor_lock.As<unsigned short>();
 	if (source != NULL && dest != NULL) {
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
 				dest[y * width + x] = (unsigned short)DSurface::Build_Hicolor_Pixel(palette[source[y * picture->Stride() + x]]);
 			}
 		}
-	}
-	if (dest != NULL) {
-		hicolor->Unlock();
-	}
-	if (source != NULL) {
-		picture->Unlock();
 	}
 	return(hicolor);
 }
@@ -77,18 +73,14 @@ void Draw_PCX_Cameo(Surface & surface, Surface const & cameo, Point2D const & po
 	if (!area.Is_Valid()) {
 		return;
 	}
-	unsigned char * dest = (unsigned char *)surface.Lock(Point2D(area.X, area.Y));
-	unsigned char const * source = (unsigned char const *)cameo.Lock(Point2D(area.X - (cliprect.X + point.X), area.Y - (cliprect.Y + point.Y)));
+	SurfaceLock dest_lock(surface, Point2D(area.X, area.Y));
+	SurfaceLock source_lock(cameo, Point2D(area.X - (cliprect.X + point.X), area.Y - (cliprect.Y + point.Y)));
+	unsigned char * dest = dest_lock.As<unsigned char>();
+	unsigned char const * source = source_lock.As<unsigned char const>();
 	if (dest != NULL && source != NULL) {
 		for (int row = 0; row < area.Height; row++) {
 			memcpy(dest + row * surface.Stride(), source + row * cameo.Stride(), area.Width * 2);
 		}
-	}
-	if (source != NULL) {
-		cameo.Unlock();
-	}
-	if (dest != NULL) {
-		surface.Unlock();
 	}
 }
 

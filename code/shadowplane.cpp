@@ -125,7 +125,8 @@ void ShadowPlane_After_Bit_Blit(Surface & dest, int destx, int desty, Surface co
 		return;
 	}
 	if (source.Bytes_Per_Pixel() == 1) {
-		unsigned char const * pixels = (unsigned char const *)source.Lock(Point2D(sourcex, sourcey));
+		SurfaceLock source_lock(source, Point2D(sourcex, sourcey));
+		unsigned char const * pixels = source_lock.As<unsigned char const>();
 		if (pixels != NULL) {
 			int const stride = source.Stride();
 			for (int y = std::max(0, -desty); y < height && desty + y < dplane->Height; y++) {
@@ -136,7 +137,6 @@ void ShadowPlane_After_Bit_Blit(Surface & dest, int destx, int desty, Surface co
 					}
 				}
 			}
-			source.Unlock();
 			return;
 		}
 	}
@@ -199,7 +199,8 @@ void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short hal
 	if (plane == NULL || !clipped.Is_Valid()) {
 		return;
 	}
-	unsigned short * pixels = (unsigned short *)surface.Lock(Point2D(clipped.X, clipped.Y));
+	SurfaceLock lock(surface, Point2D(clipped.X, clipped.Y));
+	unsigned short * pixels = lock.As<unsigned short>();
 	if (pixels == NULL) {
 		return;
 	}
@@ -212,7 +213,6 @@ void ShadowPlane_Darken(Surface & surface, Rect const & area, unsigned short hal
 			}
 		}
 	}
-	surface.Unlock();
 }
 
 

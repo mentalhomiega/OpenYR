@@ -4774,8 +4774,10 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 		{DSurface::GreenRight, (1 << (8 - DSurface::GreenLeft)) - 1},
 		{DSurface::BlueRight, (1 << (8 - DSurface::BlueLeft)) - 1}};
 
-	char const * spixels = (char const *)picture.Lock();
-	char * dpixels = (char *)dest.Lock();
+	SurfaceLock picture_lock(picture);
+	SurfaceLock dest_lock(dest);
+	char const * spixels = picture_lock.As<char const>();
+	char * dpixels = dest_lock.As<char>();
 	if (spixels != NULL && dpixels != NULL) {
 		for (int y = 0; y < height; y++) {
 			double const dy = y - cy;
@@ -4799,12 +4801,6 @@ static void Draw_Chrono_Swirl(Surface & dest, Surface const & picture, int count
 				drow[x] = (unsigned short)pixel;
 			}
 		}
-	}
-	if (dpixels != NULL) {
-		dest.Unlock();
-	}
-	if (spixels != NULL) {
-		picture.Unlock();
 	}
 }
 
