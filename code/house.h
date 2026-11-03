@@ -995,6 +995,8 @@ class HouseClass : public AbstractClass
 		SuperClass * Find_Super(SuperWeaponType type) const;
 		void Update_Present_Super_Weapons(void);
 		void Enable_Available_Super_Weapons(void);
+		// Shows the sidebar button for a super weapon. It does not test the house; callers check for the local player first.
+		void Add_Super_Cameo(int s);
 
 		void Calculate_Enemy_Predictions(void);
 		bool AI_Build_Defense(int nodeid, DynamicVectorClass<Cell> * cells);

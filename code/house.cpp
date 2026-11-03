@@ -10803,6 +10803,21 @@ SuperClass * HouseClass::Find_Super(SuperWeaponType type) const
 
 
 /// <summary>
+/// Cancels the local player's targeting of super weapon s and flags the sidebar for redraw.
+/// When house is the local player, targeting stops only if it is aimed at s. Other houses are left alone.
+/// </summary>
+static void Cancel_Player_Targetting(HouseClass const & house, int s)
+{
+	if (PlayerPtr != NULL && house.Fetch_ID() == PlayerPtr->Fetch_ID()) {
+		if (Map.IsTargettingMode == s) {
+			Map.IsTargettingMode = SUPER_NONE;
+		}
+		Map.Flag_Strips_To_Redraw();
+	}
+}
+
+
+/// <summary>
 /// Updates the availability of this house's super weapons.
 /// A super weapon that depends on a building is suspended while that building is shut
 /// down or the base is short of power, and taken away entirely once the building is gone
@@ -10846,38 +10861,34 @@ void HouseClass::Update_Present_Super_Weapons(void)
 
 				if (present && !IsDefeated) {
 					if (!enabled && SuperWeapon[s]->Is_Powered() && SuperWeapon[s]->Suspend(true)) {
-						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
-							if (Map.IsTargettingMode == s) {
-								Map.IsTargettingMode = SUPER_NONE;
-							}
-							Map.Flag_Strips_To_Redraw();
-						}
+						Cancel_Player_Targetting(*this, s);
 						IsRecalcNeeded = true;
 					}
 
 					if (enabled && SuperWeapon[s]->Suspend(false)) {
-						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
-							if (s == Map.IsTargettingMode) {
-								Map.IsTargettingMode = SUPER_NONE;
-							}
-							Map.Flag_Strips_To_Redraw();
-						}
+						Cancel_Player_Targetting(*this, s);
 						IsRecalcNeeded = true;
 					}
 				} else {
 					if (SuperWeapon[s]->Remove() && PlayerPtr != NULL) {
-						if (Fetch_ID() == PlayerPtr->Fetch_ID()) {
-							if (Map.IsTargettingMode == s) {
-								Map.IsTargettingMode = SUPER_NONE;
-							}
-							Map.Flag_Strips_To_Redraw();
-						}
+						Cancel_Player_Targetting(*this, s);
 						IsRecalcNeeded = true;
 					}
 				}
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Shows the sidebar button for super weapon s.
+/// The routine does not test the house; callers call it only when the house is the local player.
+/// </summary>
+void HouseClass::Add_Super_Cameo(int s)
+{
+	Map.Add(RTTI_SPECIAL, s);
+	Map.Flag_Strips_To_Redraw();
 }
 
 
@@ -10909,8 +10920,7 @@ void HouseClass::Enable_Available_Super_Weapons(void)
 							if (b->Fetch_Super_Weapon() == s || b->Fetch_Super_Weapon2() == s || from_upgrade) {
 								SuperWeapon[s]->Enable(false, this == PlayerPtr, Power_Fraction() < 1.0);
 								if (this == PlayerPtr) {
-									Map.Add(RTTI_SPECIAL, s);
-									Map.Flag_Strips_To_Redraw();
+									Add_Super_Cameo(s);
 								}
 								break;
 							}

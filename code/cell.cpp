@@ -4036,8 +4036,7 @@ crate_money:
 					}
 				}
 				if (super != NULL && sindex != -1 && object->House->SuperWeapon[super->HeapID]->Enable(true, false, false) && object->IsOwnedByPlayer) {
-					Map.Add(RTTI_SPECIAL, super->HeapID);
-					Map.Flag_Strips_To_Redraw();
+					object->House->Add_Super_Cameo(super->HeapID);
 				}
 				break;
 			}

@@ -1808,8 +1808,7 @@ bool TActionClass::TAction_1_SPECIAL(HouseClass * house, ObjectClass * , Trigger
 	house->SuperWeapon[Data.Special]->Enable(true, false);
 
 	if (PlayerPtr == house) {
-		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Flag_Strips_To_Redraw();
+		house->Add_Super_Cameo(Data.Special);
 	}
 	return(true);
 }
@@ -1827,8 +1826,7 @@ bool TActionClass::TAction_FULL_SPECIAL(HouseClass * house, ObjectClass * , Trig
 	house->SuperWeapon[Data.Special]->NeedsBuilding = false;
 
 	if (PlayerPtr == house) {
-		Map.Add(RTTI_SPECIAL, Data.Special);
-		Map.Flag_Strips_To_Redraw();
+		house->Add_Super_Cameo(Data.Special);
 	}
 	return(true);
 }
