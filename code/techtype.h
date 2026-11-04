@@ -344,9 +344,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		// Does this type fly on a jump jet? (Rules key JumpJet.) A moving jumpjet's shot is not inaccurate.
 		bool IsJumpJet;
 
-		// Read from the rules key TiltCrashJumpjet; nothing in this engine uses it yet.
-		bool IsTiltCrashJumpjet;
-
 		// How a scan by this type weighs targets by their estimated health. (Rules key VHPScan.)
 		int VHPScan;
 
@@ -530,9 +527,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		VocType EnterTransportSound;
 		VocType LeaveTransportSound;
 
-		// Read from the object's section, but nothing plays them: a grinder plays the rules' EnterGrinderSound, and a bio reactor the rules' LeaveBioReactorSound.
-		VocType EnterGrinderSound;
-		VocType LeaveGrinderSound;
+		// Read from the object's section, but nothing plays it: a bio reactor plays the rules' LeaveBioReactorSound.
 		VocType LeaveBioReactorSound;
 
 		// What a unit of this type says when the player orders it into something, to capture something, or to harvest.
@@ -1161,9 +1156,6 @@ class TechnoTypeClass : public ObjectTypeClass
 		**	combat logic must be performed.
 		*/
 		bool IsTurretEquipped;
-
-		// Read from the rules key HasTurretTooltips; nothing in this engine uses it yet.
-		bool IsHasTurretTooltips;
 
 		/*
 		 * How one part of a turret recoils when the object fires: the distance it slides back in

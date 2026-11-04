@@ -589,7 +589,6 @@ RulesClass::RulesClass(void) :
 	SpySatActivationSound(VOC_NONE),
 	SpySatDeactivationSound(VOC_NONE),
 	EnterGrinderSound(VOC_NONE),
-	LeaveGrinderSound(VOC_NONE),
 	GateDownSound(VOC_NONE),
 	JumpjetTurnRate(3),
 	JumpjetSpeed(30),
@@ -1293,7 +1292,8 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 		SpySatActivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatActivationSound", SpySatActivationSound);
 		SpySatDeactivationSound = ini.Get_VocType(AUDIOVISUAL, "SpySatDeactivationSound", SpySatDeactivationSound);
 		EnterGrinderSound = ini.Get_VocType(AUDIOVISUAL, "EnterGrinderSound", EnterGrinderSound);
-		LeaveGrinderSound = ini.Get_VocType(AUDIOVISUAL, "LeaveGrinderSound", LeaveGrinderSound);
+		// Accepted from Yuri's Revenge rules, but nothing plays it.
+		ini.Get_VocType(AUDIOVISUAL, "LeaveGrinderSound", VOC_NONE);
 		GateDownSound = ini.Get_VocType(AUDIOVISUAL, "GateDown", GateDownSound);
 		IsShroudGrow = ini.Get_Bool(AUDIOVISUAL, "ShroudGrow", IsShroudGrow);
 		ScrollMultiplier = ini.Get_Float(AUDIOVISUAL, "ScrollMultiplier", ScrollMultiplier);
@@ -3181,7 +3181,6 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(SpySatActivationSound);
 	stream.Serialize(SpySatDeactivationSound);
 	stream.Serialize(EnterGrinderSound);
-	stream.Serialize(LeaveGrinderSound);
 	stream.Serialize(GateDownSound);
 	stream.Serialize(JumpjetTurnRate);
 	stream.Serialize(JumpjetSpeed);
