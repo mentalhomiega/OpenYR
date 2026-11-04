@@ -660,7 +660,7 @@ void ParticleSystemClass::Fire_AI(void)
 			if (source->TarCom != NULL && source->PrimaryFacing.Is_Rotating()) {
 				Coord cc = source->TarCom->Center_Coord();
 				Coord delta = cc - source->Get_Coord();
-				int dist = (int)std::sqrt((double)delta.X * (double)delta.X + (double)delta.Y * (double)delta.Y + (double)delta.Z * (double)delta.Z);
+				int dist = delta.Length();
 				SpawnCoord = Move_Coord(source->Get_Coord(), source->PrimaryFacing.Current(), dist);
 				Set_Coord(source->Turret_Coord(0));
 				reaimed = true;

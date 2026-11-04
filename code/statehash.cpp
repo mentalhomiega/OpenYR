@@ -76,10 +76,7 @@ SimStateHash Compute_Sim_State_Hash(void)
 	for (int index = 0; index < Houses.Count(); index++) {
 		Hash_Value(hash, Houses[index]->Credits);
 	}
-	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
-	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
-		hash = (hash ^ random[index]) * FNV_PRIME;
-	}
+	hash = Fnv_Add_Bytes(hash, &Scen->RandomNumber, sizeof(Scen->RandomNumber));
 	result.State = hash;
 
 	unsigned int targets = FNV_BASIS;

@@ -19,6 +19,7 @@
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "dsurface.h"
+#include "fnv.h"
 #include "globals.h"
 #include "surface.h"
 
@@ -48,7 +49,6 @@ static std::uint64_t _DrawDigestCount = 0;
 // FNV-1a with 64-bit lanes: each whole 8-byte word of a row is mixed in, then the row's tail bytes one by one.
 static std::uint64_t Digest_Rows(std::uint64_t hash, char const * base, int pitch, int row_bytes, int rows)
 {
-	std::uint64_t const prime = 0x100000001b3ULL;
 	for (int row = 0; row < rows; row++) {
 		char const * line = base + (std::ptrdiff_t)row * pitch;
 		int offset = 0;
@@ -56,11 +56,11 @@ static std::uint64_t Digest_Rows(std::uint64_t hash, char const * base, int pitc
 			std::uint64_t word;
 			std::memcpy(&word, line + offset, sizeof(word));
 			hash ^= word;
-			hash *= prime;
+			hash *= FNV64_PRIME;
 		}
 		for (; offset < row_bytes; offset++) {
 			hash ^= (unsigned char)line[offset];
-			hash *= prime;
+			hash *= FNV64_PRIME;
 		}
 	}
 	return(hash);
@@ -73,16 +73,15 @@ void Video_Log_Present_Digest(DSurface const * surface, BackendLayer const * lay
 	if (!_PresentDigest) {
 		return;
 	}
-	std::uint64_t const basis = 0xcbf29ce484222325ULL;
 	char const * frame = (char const *)surface->Get_Buffer();
 	unsigned long long frame_hash = 0;
 	if (frame != NULL) {
-		frame_hash = Digest_Rows(basis, frame, surface->Stride(), surface->Get_Width() * surface->Bytes_Per_Pixel(), surface->Get_Height());
+		frame_hash = Digest_Rows(FNV64_BASIS, frame, surface->Stride(), surface->Get_Width() * surface->Bytes_Per_Pixel(), surface->Get_Height());
 	}
 
 	char layer_text[24] = "none";
 	if (layer != NULL && layer->Pixels != NULL) {
-		snprintf(layer_text, sizeof(layer_text), "%016llx", (unsigned long long)Digest_Rows(basis, (char const *)layer->Pixels, layer->Pitch, layer->Width * 2, layer->Height));
+		snprintf(layer_text, sizeof(layer_text), "%016llx", (unsigned long long)Digest_Rows(FNV64_BASIS, (char const *)layer->Pixels, layer->Pitch, layer->Width * 2, layer->Height));
 	}
 
 	DebugString("PRESENT_DIGEST frame %d present %llu hash %016llx layer %s\n", Frame, (unsigned long long)_PresentDigestCount, frame_hash, layer_text);
@@ -120,7 +119,7 @@ void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
 		return;
 	}
 	Rect const clipped = Intersect(area, surface.Get_Rect());
-	unsigned long long hash = 0xcbf29ce484222325ULL;
+	unsigned long long hash = FNV64_BASIS;
 	if (clipped.Width > 0 && clipped.Height > 0) {
 		char const * base = (char const *)surface.Lock(Point2D(clipped.X, clipped.Y));
 		if (base != NULL) {
