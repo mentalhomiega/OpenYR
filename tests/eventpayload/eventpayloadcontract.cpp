@@ -58,7 +58,7 @@ struct ExpectedPayload
 };
 
 
-// Recorded from dev eddea67b. Each hash is the FNV-1a of the bytes that path copies. The packet
+// Recorded from dev eddea67b; the ADDPLAYER and BEACON_TEXT sync rows from a7e59c73. Each hash is the FNV-1a of the bytes that path copies. The packet
 // length counts the type byte, the MEGAMISSION count byte and the variable payload that a
 // compressed packet carries. The rules differ on purpose and stay so: a replay keeps BEACON_TEXT's
 // text and refuses ADDPLAYER, a sync record keeps the payload size and payload hash of both, and
