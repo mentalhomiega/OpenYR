@@ -304,19 +304,70 @@ COMPUTED_KEY_READS = {
 }
 
 
-def computed_key_records(path, cls, raw, body, offset):
-    """Expand one declared formatted-name read into ordinary records."""
+# Private helpers that a Read_INI calls to read part of its keys. Discovery
+# scans only the Read_INI body, so a key read in a helper would be missing from
+# the catalog. The helpers listed here are scanned as part of their reader, at
+# the place the reader calls them. Each must be defined in the reader's file
+# and called exactly once from the Read_INI body, or extraction fails; a helper
+# left off the list fails the inventory check instead.
+READ_INI_HELPERS = {}
+
+
+def reader_pieces(path, cls, text, body, offset):
+    """The reader's source in call order, as (body, offset, start, end) spans.
+
+    The Read_INI body is cut at each declared helper call and the helper's own
+    body is placed at the cut, so records come out in the order the engine
+    reads them. A span indexes into its whole function body so lookbehind and
+    #ifdef guards see the full function.
+    """
+
+    calls = []
+    for name in READ_INI_HELPERS.get((os.path.basename(path), cls), []):
+        sites = list(re.finditer(r"(?<![\w:.>])" + re.escape(name) + r"\s*\(", body))
+        helper, helper_offset = find_body(
+            text, re.compile(r"\b" + re.escape(cls) + r"::" + re.escape(name) + r"\s*\("))
+        if len(sites) != 1 or helper is None:
+            raise ValueError(
+                "INI reader helper %s::%s: expected one call from Read_INI and "
+                "one definition in code/%s, found %d call(s)%s; reconcile "
+                "READ_INI_HELPERS with the current reader"
+                % (cls, name, os.path.basename(path), len(sites),
+                   "" if helper is not None else " and no definition"))
+        calls.append((sites[0].start(), helper, helper_offset))
+
+    pieces = []
+    cursor = 0
+    for start, helper, helper_offset in sorted(calls, key=lambda call: call[0]):
+        pieces.append((body, offset, cursor, start))
+        pieces.append((helper, helper_offset, 0, len(helper)))
+        cursor = start
+    pieces.append((body, offset, cursor, len(body)))
+    return pieces
+
+
+def computed_key_records(path, cls, raw, bodies):
+    """Expand one declared formatted-name read into ordinary records.
+
+    bodies is the reader's own (body, offset) followed by its declared helpers;
+    the formatting call and the read may sit in any one of them.
+    """
 
     records = []
     for supplement in COMPUTED_KEY_READS.get((os.path.basename(path), cls), []):
         for field in ("format", "read"):
-            if len(re.findall(supplement[field], body)) != 1:
+            if sum(len(re.findall(supplement[field], body))
+                   for body, _ in bodies) != 1:
                 raise ValueError(
                     "computed INI key supplement for %s::Read_INI: the %s site "
                     "%r no longer appears exactly once in code/%s; reconcile "
                     "COMPUTED_KEY_READS with the current reader"
                     % (cls, field, supplement[field], os.path.basename(path)))
-        match = re.search(supplement["read"], body)
+        body, offset, match = next(
+            (body, offset, match)
+            for body, offset in bodies
+            for match in [re.search(supplement["read"], body)]
+            if match)
         line = (raw[:offset].count("\n")
                 + body[:match.start()].count("\n") + 1)
         for key in supplement["keys"]:
@@ -729,9 +780,19 @@ def extract_file(path, cls, tree):
         return [], {}
 
     defaults = parse_ctor_defaults(text, cls)
-    records = computed_key_records(path, cls, raw, body, offset)
+    pieces = reader_pieces(path, cls, text, body, offset)
+    functions = list(dict.fromkeys((piece[0], piece[1]) for piece in pieces))
+    records = computed_key_records(path, cls, raw, functions)
+    for piece in pieces:
+        records.extend(_literal_records(path, cls, raw, *piece))
+    return records, defaults
 
-    for m in GET_CALL_RE.finditer(body):
+
+def _literal_records(path, cls, raw, body, offset, start, stop):
+    """Records for the typed literal reads in body[start:stop]."""
+
+    records = []
+    for m in GET_CALL_RE.finditer(body, start, stop):
         inner, end = match_call(body, m.end() - 1)
         if inner is None:
             continue
@@ -810,7 +871,7 @@ def extract_file(path, cls, tree):
             "src": os.path.basename(path),
         })
 
-    return records, defaults
+    return records
 
 
 # ---------------------------------------------------------------------------
