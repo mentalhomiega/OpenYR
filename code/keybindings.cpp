@@ -14,28 +14,13 @@
 
 #include <cctype>
 #include <cstring>
+#include <optional>
 #include <set>
 #include <utility>
 
 
 namespace
 {
-
-// Whether the name starts with the prefix, ignoring the case of ASCII letters.
-bool Starts_With(std::string const & name, char const * prefix)
-{
-	size_t const length = std::strlen(prefix);
-	if (name.size() < length) {
-		return(false);
-	}
-	for (size_t index = 0; index < length; index++) {
-		if (std::tolower((unsigned char)name[index]) != std::tolower((unsigned char)prefix[index])) {
-			return(false);
-		}
-	}
-	return(true);
-}
-
 
 // A category for the commands whose names start with Text. An Exact rule matches only the command named Text.
 struct CategoryRule
@@ -121,7 +106,7 @@ CategoryRule const Category_Rules[] = {
 HotkeyCategory Hotkey_Category_Of(std::string const & command)
 {
 	for (CategoryRule const & rule : Category_Rules) {
-		bool const matches = rule.Exact ? command == rule.Text : Starts_With(command, rule.Text);
+		bool const matches = rule.Exact ? command == rule.Text : Starts_With_No_Case(command, rule.Text);
 		if (matches) {
 			return(rule.Category);
 		}
@@ -366,33 +351,18 @@ std::string const * Find_Value(HotkeyFileSection const * section, std::string co
 }
 
 
-// Reads a whole decimal number, or returns false for anything else.
+// Reads a whole non-negative decimal number, ignoring blanks around it, or returns false for anything else.
 bool Parse_Int(std::string const & text, int & value)
 {
-	size_t start = 0;
-	while (start < text.size() && std::isspace((unsigned char)text[start])) {
-		start++;
-	}
-	size_t end = text.size();
-	while (end > start && std::isspace((unsigned char)text[end - 1])) {
-		end--;
-	}
-	if (start == end) {
+	std::string_view const digits = Trim_Chars(text, TRIM_ISSPACE);
+	if (digits.empty() || digits.front() == '-') {
 		return(false);
 	}
-
-	long long result = 0;
-	for (size_t index = start; index < end; index++) {
-		char const letter = text[index];
-		if (letter < '0' || letter > '9') {
-			return(false);
-		}
-		result = result * 10 + (letter - '0');
-		if (result > 0x7FFFFFFF) {
-			return(false);
-		}
+	std::optional<int> const number = Parse_Decimal_Int(digits);
+	if (!number) {
+		return(false);
 	}
-	value = (int)result;
+	value = *number;
 	return(true);
 }
 

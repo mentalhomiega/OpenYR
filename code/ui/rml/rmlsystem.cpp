@@ -10,6 +10,7 @@
 #include "ui/rml/rmlsystem.h"
 
 #include "opents_strings.h"
+#include "strutil.h"
 #include "ui/rml/rmlfile.h"
 #include "ui/uihost.h"
 #include "ui/uiunicode.h"
@@ -67,7 +68,7 @@ bool UIRmlSystemClass::LogMessage(Rml::Log::Type type, Rml::String const & messa
 
 void UIRmlSystemClass::JoinPath(Rml::String & translated, Rml::String const &, Rml::String const & path)
 {
-	translated = UI_Rml_Base_Name(path);
+	translated = std::string(Base_Name(path));
 }
 
 

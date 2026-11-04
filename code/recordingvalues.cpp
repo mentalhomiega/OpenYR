@@ -12,6 +12,8 @@
 #include <cassert>
 #include <cstring>
 
+#include "littleendian.h"
+
 namespace RecordingValues {
 
 namespace {
@@ -37,14 +39,6 @@ struct FlagStream
 		}
 	}
 };
-
-
-void Put_U32(std::vector<std::uint8_t> & out, std::uint32_t value)
-{
-	for (int shift = 0; shift < 32; shift += 8) {
-		out.push_back(static_cast<std::uint8_t>(value >> shift));
-	}
-}
 
 
 bool Get_U32(std::function<bool(void *, std::size_t)> const & read, std::uint32_t & value)
@@ -77,22 +71,22 @@ bool Get_I32(std::function<bool(void *, std::size_t)> const & read, std::int32_t
 std::vector<std::uint8_t> Encode(ValuesType const & values)
 {
 	std::vector<std::uint8_t> out(MAGIC, MAGIC + sizeof(MAGIC));
-	Put_U32(out, REVISION);
-	Put_U32(out, static_cast<std::uint32_t>(values.BuildLevel));
+	Put_U32_LE(out, REVISION);
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.BuildLevel));
 	out.push_back(values.Unshroud ? 1 : 0);
-	Put_U32(out, static_cast<std::uint32_t>(values.Seed));
-	Put_U32(out, static_cast<std::uint32_t>(values.Scenario));
-	Put_U32(out, static_cast<std::uint32_t>(values.ScenarioName.size()));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.Seed));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.Scenario));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.ScenarioName.size()));
 	out.insert(out.end(), values.ScenarioName.begin(), values.ScenarioName.end());
-	Put_U32(out, static_cast<std::uint32_t>(values.Whom));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.Whom));
 
 	FlagStream flags;
 	SpecialClass special = values.Special;
 	special.Serialize(flags);
-	Put_U32(out, flags.Bits);
+	Put_U32_LE(out, flags.Bits);
 
-	Put_U32(out, static_cast<std::uint32_t>(values.GameSpeed));
-	Put_U32(out, static_cast<std::uint32_t>(values.Difficulty));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.GameSpeed));
+	Put_U32_LE(out, static_cast<std::uint32_t>(values.Difficulty));
 	return(out);
 }
 

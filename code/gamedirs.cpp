@@ -39,18 +39,6 @@ static char const * const ReplaysFolder = "Replays";
 static char const * const MusicFolder = "Music";
 
 
-static std::string Trim_Path(std::string const & path)
-{
-	std::string::size_type first = path.find_first_not_of(" \t");
-	if (first == std::string::npos) {
-		return(std::string());
-	}
-
-	std::string::size_type last = path.find_last_not_of(" \t");
-	return(path.substr(first, last - first + 1));
-}
-
-
 /// <summary>
 /// Puts a directory in the form a file name can simply be appended to, which is what the
 /// search chain has always expected of one.
@@ -157,13 +145,13 @@ static bool Is_Directory(std::string const & path)
 
 void Set_Data_Directory(char const * path)
 {
-	DataDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+	DataDirectory = Terminate_Path(Trimmed(path != NULL ? path : "", TRIM_SPACE_TAB));
 }
 
 
 void Set_User_Directory(char const * path)
 {
-	UserDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+	UserDirectory = Terminate_Path(Trimmed(path != NULL ? path : "", TRIM_SPACE_TAB));
 
 	// The file layer places and finds the player's own files; this is the only thing that
 	// tells it where they go.
@@ -192,7 +180,7 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		 * Comparing the folders only once they are in the form they will be searched in
 		 * keeps the same folder written two ways from being searched twice.
 		 */
-		std::string const folder = Terminate_Path(Trim_Path(part));
+		std::string const folder = Terminate_Path(Trimmed(part, TRIM_SPACE_TAB));
 
 		/*
 		 * The game's own directory is examined before any of these, so naming it adds

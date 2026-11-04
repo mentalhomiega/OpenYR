@@ -31,7 +31,7 @@ std::size_t const MAX_SAY = 400;
 
 bool Contains(std::string const & haystack, std::string const & needle)
 {
-	return(needle.empty() || CnCNet_Lower(haystack).find(CnCNet_Lower(needle)) != std::string::npos);
+	return(needle.empty() || Lower(haystack).find(Lower(needle)) != std::string::npos);
 }
 
 
@@ -44,12 +44,6 @@ std::string Clock_Text(uint64_t stamp, uint64_t now)
 	char text[8];
 	std::snprintf(text, sizeof(text), "%02d:%02d", parts.tm_hour, parts.tm_min);
 	return(text);
-}
-
-
-std::string Trim(std::string text)
-{
-	return(std::string(Trim_Chars(text, " \t")));
 }
 
 
@@ -106,7 +100,7 @@ void UICnCNetLobbyPresenterClass::Send_Line(std::string const & channel, std::st
 		if (space != std::string::npos && space > 0) {
 			std::string const nick = rest.substr(0, space);
 			Open_Conversation(nick);
-			Session.Say(nick, Trim(rest.substr(space + 1)));
+			Session.Say(nick, Trimmed(rest.substr(space + 1), TRIM_SPACE_TAB));
 		}
 	} else {
 		Session.Say(channel, text);
@@ -149,7 +143,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "say") {
 		State.Say = intent.Text;
 		if (intent.Value != 0) {
-			std::string const text = Trim(State.Say).substr(0, MAX_SAY);
+			std::string const text = Trimmed(State.Say, TRIM_SPACE_TAB).substr(0, MAX_SAY);
 			State.Say.clear();
 			std::string const channel = Current_Channel();
 			if (!text.empty() && !channel.empty() && State.Online) {
@@ -157,7 +151,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 			}
 		}
 	} else if (intent.Name == "password") {
-		State.Password = Trim(intent.Text);
+		State.Password = Trimmed(intent.Text, TRIM_SPACE_TAB);
 	} else if (intent.Name == "join") {
 		if (State.CanJoin) {
 			for (CnCNetGameType const & game : Lobby.Games()) {
@@ -259,7 +253,7 @@ void UICnCNetLobbyPresenterClass::Build_Games(void)
 		if (a->Listing.Players.size() != b->Listing.Players.size()) {
 			return(a->Listing.Players.size() > b->Listing.Players.size());
 		}
-		return(CnCNet_Lower(a->Listing.RoomName) < CnCNet_Lower(b->Listing.RoomName));
+		return(Lower(a->Listing.RoomName) < Lower(b->Listing.RoomName));
 	});
 
 	State.Games.clear();

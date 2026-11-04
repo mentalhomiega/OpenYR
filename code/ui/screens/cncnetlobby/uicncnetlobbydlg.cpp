@@ -26,6 +26,7 @@
 #include "ui/uienginehost.h"
 #include "ui/screens/cncnetlobby/uicncnetroom.h"
 #include "ui/uiview.h"
+#include "strutil.h"
 
 #include <cstdlib>
 #include <random>
@@ -68,13 +69,13 @@ bool Is_Loopback(std::string const & host)
 std::vector<CnCNetServerType> Parse_Servers(std::string const & text, bool live)
 {
 	std::vector<CnCNetServerType> servers;
-	for (std::string_view const entry : CnCNet_Split(text, ';')) {
+	for (std::string_view const entry : Split_Views(text, ';')) {
 		std::size_t const colon = entry.rfind(':');
 		if (colon != std::string_view::npos && colon > 0) {
 			CnCNetServerType server;
 			server.Host = std::string(entry.substr(0, colon));
 			server.Name = server.Host;
-			for (std::string_view const port_text : CnCNet_Split(entry.substr(colon + 1), ',')) {
+			for (std::string_view const port_text : Split_Views(entry.substr(colon + 1), ',')) {
 				int const port = std::atoi(std::string(port_text).c_str());
 				if (port > 0 && port < 65536) {
 					server.Ports.push_back(static_cast<uint16_t>(port));

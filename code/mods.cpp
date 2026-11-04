@@ -45,12 +45,6 @@ std::string const & ModClass::Overlay(ModOverlayType type) const
 }
 
 
-static std::string Trim(std::string const & text)
-{
-	return(std::string(Trim_Chars(text, " \t")));
-}
-
-
 /// <summary>
 /// Splits a configured mod list into the mods it names, in the order written, with the
 /// whitespace around each name dropped and empty entries passed over. Names are separated by
@@ -65,7 +59,7 @@ std::vector<std::string> Parse_Mod_List(char const * list)
 	}
 
 	for (std::string const & part : Split_Parts(list, ',')) {
-		std::string const name = Trim(part);
+		std::string const name = Trimmed(part, TRIM_SPACE_TAB);
 		if (!name.empty()) {
 			names.push_back(name);
 		}
@@ -84,7 +78,7 @@ std::vector<std::string> Parse_Mod_List(char const * list)
 /// <returns>The folder, ending in a separator.</returns>
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory)
 {
-	std::string const trimmed = Trim(name);
+	std::string const trimmed = Trimmed(name, TRIM_SPACE_TAB);
 
 	if (std::filesystem::path(trimmed).has_root_path()) {
 		return(Terminate_Path(trimmed));
@@ -121,7 +115,7 @@ static std::string Folder_Own_Name(std::string const & folder)
 
 static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key)
 {
-	std::string const file = Trim(ini.Get_String("Mod", key));
+	std::string const file = Trimmed(ini.Get_String("Mod", key), TRIM_SPACE_TAB);
 	return(file.empty() ? file : folder + file);
 }
 
@@ -139,7 +133,7 @@ static void Read_Manifest(ModClass & mod)
 	INIClass ini;
 	ini.Load(file, false);
 
-	std::string const name = Trim(ini.Get_String("Mod", "Name"));
+	std::string const name = Trimmed(ini.Get_String("Mod", "Name"), TRIM_SPACE_TAB);
 	if (!name.empty()) {
 		mod.Name = name;
 	}
@@ -209,7 +203,7 @@ static std::vector<ModChoiceType> Named_Choices(std::vector<std::string> const &
 	std::vector<ModChoiceType> choices;
 
 	for (std::string const & name : names) {
-		std::string const entry = Trim(name);
+		std::string const entry = Trimmed(name, TRIM_SPACE_TAB);
 		if (entry.empty()) {
 			continue;
 		}
@@ -316,7 +310,7 @@ void Init_Mods(char const * list)
 	std::string const datadirectory = Data_Directory();
 
 	for (std::string const & name : names) {
-		if (Trim(name).empty()) {
+		if (Trimmed(name, TRIM_SPACE_TAB).empty()) {
 			continue;
 		}
 

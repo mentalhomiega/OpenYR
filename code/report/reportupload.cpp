@@ -27,25 +27,6 @@ namespace fs = std::filesystem;
 
 namespace {
 
-std::string Trim(std::string const & text)
-{
-	std::size_t first = 0;
-	std::size_t last = text.size();
-	while (first < last && std::isspace(static_cast<unsigned char>(text[first]))) {
-		first++;
-	}
-	while (last > first && std::isspace(static_cast<unsigned char>(text[last - 1]))) {
-		last--;
-	}
-	return(text.substr(first, last - first));
-}
-
-
-bool Starts_With(std::string const & text, char const * prefix)
-{
-	return(text.rfind(prefix, 0) == 0);
-}
-
 
 // The prefixes of the folders the crash handler writes: exception-YYYYMMDD-HHMMSS-pid, and
 // exception-hang-... for a hang.
@@ -56,7 +37,7 @@ constexpr char const HANG_FOLDER_PREFIX[] = "exception-hang-";
 // The YYYYMMDD-HHMMSS part of a folder name. The prefix match is case-sensitive.
 std::string Folder_Stamp(std::string const & name)
 {
-	std::size_t const prefix_length = Starts_With(name, HANG_FOLDER_PREFIX) ? sizeof(HANG_FOLDER_PREFIX) - 1 : sizeof(EXCEPTION_FOLDER_PREFIX) - 1;
+	std::size_t const prefix_length = name.starts_with(HANG_FOLDER_PREFIX) ? sizeof(HANG_FOLDER_PREFIX) - 1 : sizeof(EXCEPTION_FOLDER_PREFIX) - 1;
 	return(name.substr(prefix_length));
 }
 
@@ -129,7 +110,7 @@ bool Deflate_Raw(std::string const & data, std::string & packed)
 
 ReportPolicy Report_Policy_From_Text(std::string const & text)
 {
-	std::string const value = Lower(Trim(text));
+	std::string const value = Lower(Trimmed(text, TRIM_ISSPACE));
 	if (value == "always") {
 		return(ReportPolicy::Always);
 	}
@@ -142,7 +123,7 @@ ReportPolicy Report_Policy_From_Text(std::string const & text)
 
 ReportDecision Report_Decide(ReportPolicy policy, std::string const & url)
 {
-	if (Trim(url).empty() || policy == ReportPolicy::Never) {
+	if (Trimmed(url, TRIM_ISSPACE).empty() || policy == ReportPolicy::Never) {
 		return(ReportDecision::Skip);
 	}
 	return(policy == ReportPolicy::Always ? ReportDecision::Send : ReportDecision::Ask);
@@ -161,7 +142,7 @@ char const * Report_Kind_Name(ReportKind kind)
 
 ReportKind Report_Kind_From_Folder(fs::path const & folder)
 {
-	return(Starts_With(Lower(folder.filename().string()), HANG_FOLDER_PREFIX) ? ReportKind::Hang : ReportKind::Crash);
+	return(Lower(folder.filename().string()).starts_with(HANG_FOLDER_PREFIX) ? ReportKind::Hang : ReportKind::Crash);
 }
 
 
@@ -170,7 +151,7 @@ std::vector<fs::path> Report_Undecided_Folders(fs::path const & exceptions)
 	std::vector<fs::path> folders;
 	std::error_code error;
 	for (fs::directory_iterator it(exceptions, error), end; !error && it != end; it.increment(error)) {
-		if (!it->is_directory(error) || !Starts_With(Lower(it->path().filename().string()), EXCEPTION_FOLDER_PREFIX)) {
+		if (!it->is_directory(error) || !Lower(it->path().filename().string()).starts_with(EXCEPTION_FOLDER_PREFIX)) {
 			continue;
 		}
 		if (fs::exists(it->path() / REPORT_DECIDED_MARKER, error)) {
@@ -393,12 +374,12 @@ std::string Report_Desync_Session_Key(std::string const & sync_text)
 		if (end == std::string::npos) {
 			end = sync_text.size();
 		}
-		std::string const line = Trim(sync_text.substr(start, end - start));
+		std::string const line = Trimmed(sync_text.substr(start, end - start), TRIM_ISSPACE);
 		start = end + 1;
-		if (Starts_With(line, "Session identity:")) {
-			identity = Trim(line.substr(17));
-		} else if (Starts_With(line, "Seed:")) {
-			seed = Trim(line.substr(5));
+		if (line.starts_with("Session identity:")) {
+			identity = Trimmed(line.substr(17), TRIM_ISSPACE);
+		} else if (line.starts_with("Seed:")) {
+			seed = Trimmed(line.substr(5), TRIM_ISSPACE);
 		}
 	}
 	if (identity.empty() && seed.empty()) {
