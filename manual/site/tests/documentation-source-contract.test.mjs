@@ -792,7 +792,7 @@ test('A map file may ask to be generated, and is built from the match seed', () 
 	], 'the generator writes its own entries over the requesting file before the scenario is read from it, and a file that fails to read stops the build');
 
 	const lighting = [...initMap.slice(0, initMap.indexOf('Read_Scenario_INI(ini, true)')).matchAll(/ini\.Put_Float\("Lighting", "(\w+)"/g)].map((match) => match[1]);
-	assert.deepEqual(lighting, ['Ambient', 'Red', 'Green', 'Blue', 'Ground', 'Level'], 'the key page names every [Lighting] entry the generator writes');
+	assert.deepEqual(lighting, ['Ambient', 'Red', 'Green', 'Blue', 'Ground', 'Level', 'IonAmbient', 'IonRed', 'IonGreen', 'IonBlue', 'IonGround', 'IonLevel'], 'the key page names every [Lighting] entry the generator writes');
 	const readScenario = functionBody(source('code/scenario.cpp'), 'bool ScenarioClass::Read_INI(CCINIClass const & ini)');
 	for (const key of lighting) {
 		assert.ok(readScenario.includes(`ini.Get_Float(LIGHTING, "${key}"`), `the scenario reads the [Lighting] ${key} the generator writes`);
