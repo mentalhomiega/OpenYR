@@ -44,6 +44,29 @@ inline bool Campaign_Split_Scenario(std::string const & value, std::string & arc
 
 
 /*
+ * Which side a campaign's first map belongs to. The battle files name Allied maps with an ALL
+ * prefix and Soviet maps with an SOV prefix; anything else, such as a tutorial, is neither. The
+ * map name is upper case.
+ */
+enum CampaignSideType {
+	CAMPAIGN_SIDE_ALLIED,
+	CAMPAIGN_SIDE_SOVIET,
+	CAMPAIGN_SIDE_OTHER
+};
+
+inline CampaignSideType Campaign_Side_Of_Map(std::string const & map)
+{
+	if (map.compare(0, 3, "ALL") == 0) {
+		return(CAMPAIGN_SIDE_ALLIED);
+	}
+	if (map.compare(0, 3, "SOV") == 0) {
+		return(CAMPAIGN_SIDE_SOVIET);
+	}
+	return(CAMPAIGN_SIDE_OTHER);
+}
+
+
+/*
  * Is this a map file name? A campaign whose Scenario= is not a map, such as a movie sequence or a
  * header line, cannot start a mission.
  */

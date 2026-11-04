@@ -104,6 +104,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "campaign.h"
+#include "campaignname.hh"
 #include "ccfile.h"
 #include "cctooltip.h"
 #include "cdfile.h"
@@ -731,6 +732,19 @@ bool Campaign_Available(CampaignClass * campaign)
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Can this campaign's first map be started from a campaign list?
+/// The campaign must exist, be available with the addons that are enabled, and name a map rather than a
+/// movie sequence or a header line.
+/// </summary>
+/// <param name="campaign">The campaign to be tested; may be null.</param>
+/// <returns>bool; Should the campaign pickers list the campaign?</returns>
+bool Campaign_Is_Offered(CampaignClass * campaign)
+{
+	return(campaign != NULL && Campaign_Available(campaign) && Campaign_Is_Mission_File(campaign->ScenarioName));
 }
 
 

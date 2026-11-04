@@ -37,7 +37,7 @@ void UI_Campaign_State(UICampaignState & state)
 	for (int index = 0; index < Campaigns.Count(); index++) {
 		CampaignClass * campaign = Campaigns[index];
 		// A battle file's headers and movie sequences name no map, so they cannot start a mission and are left out.
-		if (campaign == NULL || campaign->DebugOnly || !Campaign_Available(campaign) || !Campaign_Is_Mission_File(campaign->ScenarioName)) {
+		if (campaign == NULL || campaign->DebugOnly || !Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 

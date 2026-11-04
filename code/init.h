@@ -57,6 +57,7 @@ void Init_Campaigns(void);
 class CampaignClass;
 
 bool Campaign_Available(CampaignClass * campaign);
+bool Campaign_Is_Offered(CampaignClass * campaign);
 
 void Prepare_Theater_Roster(void);
 void Prepare_Side_Roster(void);
