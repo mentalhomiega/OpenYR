@@ -5,7 +5,7 @@ label: Random map generation
 see_also: [UseIonStorms, "system:ion-storms"]
 when_omitted:
   kind: context-dependent
-  note: "0, so storms shade the map flat. A generated map writes Level=0, so it is shaded flat outside storms too."
+  note: "0, so storms shade the map flat. Outside storms a generated map adds 3 thousandths of full light per height level."
 ---
 
 Random map generation reads this key from the `[Lighting]` section of `ION.INI`, and only for a map whose seed sets [`UseIonStorms=yes`](/keys/useionstorms/). A loose `ION.INI` in the game directory takes precedence over one in a [MIX archive](/formats/mix/). The value applies to every generated map with ion storms.

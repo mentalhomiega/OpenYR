@@ -126,7 +126,7 @@ int main(void)
 			&& Thousandths_Round_Trips("DominatorLevel", thousandths)
 			&& Thousandths_Round_Trips("DominatorAmbientChangeRate", thousandths);
 	}
-	Check(dominator_thousandths, "DominatorGround, Level and the change rate read back every value from 0 to 5000");
+	Check(dominator_thousandths, "DominatorLevel and the change rate read back every value from 0 to 5000");
 
 	Check(Percent_Round_Trips("DominatorAmbient", 150) && Percent_Round_Trips("DominatorRed", 85)
 		&& Percent_Round_Trips("DominatorGreen", 20) && Percent_Round_Trips("DominatorBlue", 30)
@@ -151,14 +151,11 @@ int main(void)
 		"a generated map writes Level=0 at every time of day, the stock 3 divided by 100 in whole numbers");
 	Check(LightingIni::Generated_Level(99) == 0.0 && LightingIni::Generated_Level(100) == 1.0 && LightingIni::Generated_Level(250) == 2.0,
 		"the generator's Level setting is divided by 100 and its remainder dropped");
-	{
-		INIClass written;
-		written.Put_Float("Lighting", "Level", LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[1]));
-		INIClass read;
-		Reload(written, read);
-		Check(LightingIni::Fraction_Thousandths(read.Get_Float("Lighting", "Level", LightingIni::Thousandths_Fraction(LightingIni::LEVEL))) == 0,
-			"a generated map reads back no height brightness, not the 8 thousandths an omitted Level gives");
+	bool generated_light = true;
+	for (int time = 0; time < LightingIni::RMG_TIME_COUNT; time++) {
+		generated_light = generated_light && LightingIni::Generated_Level_Light(time) == 3;
 	}
+	Check(generated_light, "a generated map plays with 3 thousandths of light per height level at every time of day");
 
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);
