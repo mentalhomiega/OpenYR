@@ -57,7 +57,7 @@ struct Matrix3
 
 /// The normal view, then a protanope and a deuteranope (Machado, Oliveira and Fernandes 2009,
 /// severity 1.0). The matrices act on linear light, after the sRGB curve is removed.
-Matrix3 const VIEWS[] = {
+constexpr Matrix3 VIEWS[] = {
 	{{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}},
 	{{{COLORBLIND_PROTANOPIA_SIMULATION_D[0], COLORBLIND_PROTANOPIA_SIMULATION_D[1], COLORBLIND_PROTANOPIA_SIMULATION_D[2]},
 	  {COLORBLIND_PROTANOPIA_SIMULATION_D[3], COLORBLIND_PROTANOPIA_SIMULATION_D[4], COLORBLIND_PROTANOPIA_SIMULATION_D[5]},
