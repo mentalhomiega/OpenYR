@@ -10,10 +10,9 @@
 // Pins, for every event type, the payload bytes that a compressed packet, a replay and a sync
 // record each copy from an event. Run with --print to list the current values as table rows.
 //
-// The replay and sync record rules live in code/replay.cpp (Capture_Event) and
-// code/syncrechook.cpp (Sync_Record_Event_Impl), which need the whole engine, so the harness
-// repeats their length rules beside the table. The packet bytes are checked against the real
-// decoder.
+// The replay rule lives in code/replay.cpp (Capture_Event), which needs the whole engine, so the
+// harness repeats its length rule beside the table. The sync record bytes come from
+// EventClass::Sync_Record_Bytes and the packet bytes from the real decoder.
 
 #include "event.h"
 #include "fnv.h"
@@ -62,8 +61,8 @@ struct ExpectedPayload
 // Recorded from dev eddea67b. Each hash is the FNV-1a of the bytes that path copies. The packet
 // length counts the type byte, the MEGAMISSION count byte and the variable payload that a
 // compressed packet carries. The rules differ on purpose and stay so: a replay keeps BEACON_TEXT's
-// text and refuses ADDPLAYER, a sync record keeps the first four Data bytes of both (the low bytes
-// of Data.Variable.Pointer), and RESPONSE_TIME's packet byte is FrameInfo.Delay while a replay
+// text and refuses ADDPLAYER, a sync record keeps the payload size and payload hash of both, and
+// RESPONSE_TIME's packet byte is FrameInfo.Delay while a replay
 // keeps the first Data byte.
 ExpectedPayload const Expected[EventClass::LAST_EVENT] = {
 	{"EMPTY",            0,  0, 0x811C9DC5,  0, 0x811C9DC5,  1, 0x050C5D1F},
@@ -96,7 +95,7 @@ ExpectedPayload const Expected[EventClass::LAST_EVENT] = {
 	{"FRAMEINFO",        7,  7, 0x2B00E6A9, -1, 0x00000000,  8, 0xB8699BA8},
 	{"SAVEGAME",         0,  0, 0x811C9DC5,  0, 0x811C9DC5,  1, 0x190C7C9B},
 	{"ARCHIVE",         16, 16, 0xDE58A475, 16, 0xDE58A475, 17, 0xA998F528},
-	{"ADDPLAYER",        4, -1, 0x00000000,  4, 0x512492E1, 16, 0x656A5B72},
+	{"ADDPLAYER",        4, -1, 0x00000000,  8, 0x50F3C976, 16, 0x656A5B72},
 	{"TIMING",           5,  5, 0x3A929C5A, -1, 0x00000000,  6, 0xCD92B8DB},
 	{"PROCESS_TIME",     2,  2, 0x978D310E, -1, 0x00000000,  3, 0x956C37C4},
 	{"PAGEUSER",         0,  0, 0x811C9DC5,  0, 0x811C9DC5,  1, 0x240C8DEC},
@@ -110,7 +109,7 @@ ExpectedPayload const Expected[EventClass::LAST_EVENT] = {
 	{"PLAN_COMMIT",      0,  0, 0x811C9DC5,  0, 0x811C9DC5,  1, 0x2C0C9A84},
 	{"BEACON_PLACE",     8,  8, 0x596B18E5,  8, 0x596B18E5,  9, 0x8CAD216D},
 	{"BEACON_DELETE",    4,  4, 0x512492E1,  4, 0x512492E1,  5, 0x514C9D9A},
-	{"BEACON_TEXT",      4, 11, 0x6BF8D67B,  4, 0x512492E1, 16, 0x599A08A0},
+	{"BEACON_TEXT",      4, 11, 0x6BF8D67B,  8, 0x50F3C976, 16, 0x599A08A0},
 };
 
 
@@ -214,13 +213,10 @@ std::optional<Bytes> Sync_Payload(EventClass const & event)
 	}
 
 	SyncEventEntryType entry {};
-	unsigned length = (unsigned)EventClass::Fixed_Length(event.Type);
-	if (length > sizeof(entry.Bytes)) {
-		length = sizeof(entry.Bytes);
-	}
+	std::size_t const length = event.Sync_Record_Bytes(entry.Bytes, sizeof(entry.Bytes));
 
 	Bytes bytes;
-	Append_Raw(bytes, &event.Data, length);
+	Append_Raw(bytes, entry.Bytes, length);
 	return(bytes);
 }
 
@@ -319,7 +315,7 @@ void Print_Table(void)
 		std::uint8_t const type = static_cast<std::uint8_t>(index);
 		EventClass const sample = Sample_Event(type);
 		std::optional<Bytes> const replay = Replay_Payload(sample);
-		std::optional<Bytes> const sync = Sync_Payload(Pattern_Event(type));
+		std::optional<Bytes> const sync = Sync_Payload(sample);
 		Bytes const packet = Packet_Payload(sample);
 		std::printf("\t{%-18s %2d, %2d, 0x%08X, %2d, 0x%08X, %2d, 0x%08X},\n",
 			(std::string("\"") + EventClass::EventNames[type] + "\",").c_str(),
@@ -347,10 +343,8 @@ void Test_Table(void)
 
 		EventClass const sample = Sample_Event(type);
 
-		// A sync record never follows Data.Variable.Pointer, so its sample keeps the offset pattern
-		// in the pointer's place.
 		std::optional<Bytes> const replay = Replay_Payload(sample);
-		std::optional<Bytes> const sync = Sync_Payload(Pattern_Event(type));
+		std::optional<Bytes> const sync = Sync_Payload(sample);
 		Bytes const packet = Packet_Payload(sample);
 
 		std::snprintf(label, sizeof(label), "%s replay payload keeps its length and bytes", name);
@@ -366,6 +360,32 @@ void Test_Table(void)
 	}
 }
 
+
+// Two peers hold the same text at different addresses, and their sync records must match.
+void Test_Sync_Record_Ignores_Pointer(void)
+{
+	for (std::uint8_t type : {(std::uint8_t)EventClass::ADDPLAYER, (std::uint8_t)EventClass::BEACON_TEXT}) {
+		char const * name = EventClass::EventNames[type];
+		char other[sizeof(SampleText)];
+		std::memcpy(other, SampleText, sizeof(SampleText));
+
+		EventClass first = Sample_Event(type);
+		EventClass second = Sample_Event(type);
+		second.Data.Variable.Pointer = other;
+
+		std::optional<Bytes> const a = Sync_Payload(first);
+		std::optional<Bytes> const b = Sync_Payload(second);
+		char label[96];
+		std::snprintf(label, sizeof(label), "%s sync record is the same for the same text at another address", name);
+		Check(first.Data.Variable.Pointer != second.Data.Variable.Pointer && a && b && *a == *b && a->size() == 8, label);
+
+		other[0] = 'X';
+		std::optional<Bytes> const c = Sync_Payload(second);
+		std::snprintf(label, sizeof(label), "%s sync record changes with the text", name);
+		Check(a && c && *a != *c, label);
+	}
+}
+
 }
 
 
@@ -377,6 +397,7 @@ int main(int argc, char ** argv)
 	}
 
 	Test_Table();
+	Test_Sync_Record_Ignores_Pointer();
 	Check(EventClass::Fixed_Length(EventClass::LAST_EVENT) == 0 && EventClass::Fixed_Length(0xFF) == 0,
 		"a type past LAST_EVENT copies no Data bytes");
 
