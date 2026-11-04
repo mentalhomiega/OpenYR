@@ -13,7 +13,9 @@
 #pragma once
 
 #include <cctype>
+#include <charconv>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -81,20 +83,43 @@ inline bool Starts_With_No_Case(std::string_view text, std::string_view prefix)
 }
 
 
+// Splits at each separator and keeps empty parts: "a;;b" gives "a", "" and "b", and "" gives one empty part.
+// The views point into text, so text must outlive them.
+inline std::vector<std::string_view> Split_Views(std::string_view text, char separator)
+{
+	std::vector<std::string_view> parts;
+	for (;;) {
+		std::size_t const at = text.find(separator);
+		parts.push_back(text.substr(0, at));
+		if (at == std::string_view::npos) {
+			return(parts);
+		}
+		text.remove_prefix(at + 1);
+	}
+}
+
+
 // Returns the parts of text between each separator, in order. An empty part is kept, so "a,,b" has three parts.
 inline std::vector<std::string> Split_Parts(std::string_view text, char separator)
 {
 	std::vector<std::string> parts;
-	std::size_t start = 0;
-	for (;;) {
-		std::size_t const end = text.find(separator, start);
-		if (end == std::string_view::npos) {
-			parts.emplace_back(text.substr(start));
-			return(parts);
-		}
-		parts.emplace_back(text.substr(start, end - start));
-		start = end + 1;
+	for (std::string_view const part : Split_Views(text, separator)) {
+		parts.emplace_back(part);
 	}
+	return(parts);
+}
+
+
+// Reads the whole text as a decimal int. Returns nothing unless the text is an optional minus sign and digits that
+// fit an int, so blanks, a plus sign and trailing letters all fail.
+inline std::optional<int> Parse_Decimal_Int(std::string_view text)
+{
+	int value = 0;
+	auto const [end, error] = std::from_chars(text.data(), text.data() + text.size(), value);
+	if (error != std::errc() || end != text.data() + text.size()) {
+		return(std::nullopt);
+	}
+	return(value);
 }
 
 

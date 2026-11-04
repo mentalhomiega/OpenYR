@@ -6,5 +6,7 @@
 opents_add_test(SharedHelpers
     NAME sharedhelpers
     SOURCES sharedhelperstest.cpp
+    ENGINE
+        ahtoi.cpp
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
 )

@@ -14,6 +14,7 @@
 
 #include <cctype>
 #include <cstring>
+#include <optional>
 #include <set>
 #include <utility>
 
@@ -350,33 +351,18 @@ std::string const * Find_Value(HotkeyFileSection const * section, std::string co
 }
 
 
-// Reads a whole decimal number, or returns false for anything else.
+// Reads a whole non-negative decimal number, ignoring blanks around it, or returns false for anything else.
 bool Parse_Int(std::string const & text, int & value)
 {
-	size_t start = 0;
-	while (start < text.size() && std::isspace((unsigned char)text[start])) {
-		start++;
-	}
-	size_t end = text.size();
-	while (end > start && std::isspace((unsigned char)text[end - 1])) {
-		end--;
-	}
-	if (start == end) {
+	std::string_view const digits = Trim_Chars(text, TRIM_ISSPACE);
+	if (digits.empty() || digits.front() == '-') {
 		return(false);
 	}
-
-	long long result = 0;
-	for (size_t index = start; index < end; index++) {
-		char const letter = text[index];
-		if (letter < '0' || letter > '9') {
-			return(false);
-		}
-		result = result * 10 + (letter - '0');
-		if (result > 0x7FFFFFFF) {
-			return(false);
-		}
+	std::optional<int> const number = Parse_Decimal_Int(digits);
+	if (!number) {
+		return(false);
 	}
-	value = (int)result;
+	value = *number;
 	return(true);
 }
 

@@ -13,6 +13,7 @@
 #include "cncnet/cncnetsha1.h"
 #include "cncnet/cncnettext.h"
 #include "hexdigit.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -78,7 +79,7 @@ std::string Unescape(std::string_view text)
 
 int To_Int(std::string_view text, int fallback)
 {
-	return(CnCNet_Parse_Int(text).value_or(fallback));
+	return(Parse_Decimal_Int(text).value_or(fallback));
 }
 
 }
@@ -246,7 +247,7 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 {
 	if (event.Command == HELLO) {
 		Forget_Pending(event.Nick);
-		std::vector<std::string_view> const parts = CnCNet_Split(event.Text, ';');
+		std::vector<std::string_view> const parts = Split_Views(event.Text, ';');
 		// A hello in another room protocol announces no build id, so it differs from ours.
 		bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
 		std::string const build = readable && parts.size() > 1 ? Unescape(parts[1]) : std::string();
@@ -272,7 +273,7 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 		return;
 	}
 	if (event.Command == REQUEST) {
-		std::vector<std::string_view> const parts = CnCNet_Split(event.Text, ',');
+		std::vector<std::string_view> const parts = Split_Views(event.Text, ',');
 		if (parts.size() >= 4) {
 			int const side = To_Int(parts[0], -2);
 			int const color = To_Int(parts[1], -2);
@@ -703,7 +704,7 @@ std::map<std::string, std::string> CnCNetRoomClass::Decode_Map(std::string_view 
 	if (text.empty()) {
 		return(values);
 	}
-	for (std::string_view entry : CnCNet_Split(text, ';')) {
+	for (std::string_view entry : Split_Views(text, ';')) {
 		std::size_t const equals = entry.find('=');
 		if (equals == std::string_view::npos || equals == 0) {
 			continue;
@@ -738,8 +739,8 @@ std::vector<CnCNetRoomPlayerType> CnCNetRoomClass::Decode_Players(std::string_vi
 	if (text.empty()) {
 		return(players);
 	}
-	for (std::string_view entry : CnCNet_Split(text, '|')) {
-		std::vector<std::string_view> const fields = CnCNet_Split(entry, ',');
+	for (std::string_view entry : Split_Views(text, '|')) {
+		std::vector<std::string_view> const fields = Split_Views(entry, ',');
 		if (fields.size() < 6 || fields[0].empty()) {
 			continue;
 		}

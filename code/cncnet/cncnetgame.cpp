@@ -10,6 +10,7 @@
 #include "cncnet/cncnetgame.h"
 
 #include "cncnet/cncnettext.h"
+#include "strutil.h"
 
 
 namespace {
@@ -44,7 +45,7 @@ std::string Field(std::string_view text)
 
 std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view arguments)
 {
-	std::vector<std::string_view> const fields = CnCNet_Split(arguments, ';');
+	std::vector<std::string_view> const fields = Split_Views(arguments, ';');
 	if (fields.size() != FIELD_COUNT || fields[5].size() < 5) {
 		return(std::nullopt);
 	}
@@ -52,7 +53,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	CnCNetGameListingType listing;
 	listing.Revision = std::string(fields[0]);
 	listing.GameVersion = std::string(fields[1]);
-	listing.MaxPlayers = CnCNet_Parse_Int(fields[2]).value_or(0);
+	listing.MaxPlayers = Parse_Decimal_Int(fields[2]).value_or(0);
 	listing.RoomChannel = std::string(fields[3]);
 	listing.RoomName = std::string(fields[4]);
 
@@ -64,7 +65,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	listing.LoadedGame = Flag(fields[5][3], false);
 	listing.Ladder = Flag(fields[5][4], false);
 
-	for (std::string_view name : CnCNet_Split(fields[6], ',')) {
+	for (std::string_view name : Split_Views(fields[6], ',')) {
 		if (!name.empty()) {
 			listing.Players.emplace_back(name);
 		}
@@ -79,7 +80,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 		if (colon == std::string_view::npos) {
 			return(std::nullopt);
 		}
-		std::optional<int> const port = CnCNet_Parse_Int(fields[9].substr(colon + 1));
+		std::optional<int> const port = Parse_Decimal_Int(fields[9].substr(colon + 1));
 		if (!port || *port < 0 || *port > 65535) {
 			return(std::nullopt);
 		}
@@ -88,7 +89,7 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	}
 
 	listing.LoadedGameID = std::string(fields[10]);
-	listing.SkillLevel = CnCNet_Parse_Int(fields[11]).value_or(0);
+	listing.SkillLevel = Parse_Decimal_Int(fields[11]).value_or(0);
 	listing.MapSHA1 = std::string(fields[12]);
 	listing.OptionValues = std::string(fields[13]);
 	return(listing);

@@ -50,13 +50,13 @@ needs them.
 | `Trimmed(text, blanks)`, `TRIM_SPACE_TAB`, `TRIM_SPACE_TAB_EOL`, `TRIM_ISSPACE` | `strutil.h` | The same trim as an owned string, and the three blank sets callers pass: space and tab, those plus CR and LF, and everything `isspace` accepts. Pick the set the file format needs. |
 | `Starts_With_No_Case(text, prefix)` | `strutil.h` | Whether `text` starts with `prefix`, ignoring ASCII case. For an exact match use `std::string::starts_with`. |
 | `Split_Parts(text, separator)` | `strutil.h` | Splits into strings and keeps empty parts, so `"a,,b"` gives three. |
-| `CnCNet_Split(text, separator)` | `cncnet/cncnettext.h` | Same split, but returns views into `text`, so `text` must outlive them. |
-| `CnCNet_Parse_Int(text)` | `cncnet/cncnettext.h` | Reads the whole text as a decimal int. Returns nothing for anything but an optional minus sign and digits that fit. |
-| `CnCNet_Equals_No_Case`, `CnCNet_Less_No_Case`, `CnCNet_Lower` | `cncnet/cncnettext.h` | Case folding with `tolower`; only the C locale's letters fold. |
+| `Split_Views(text, separator)` | `strutil.h` | The same split, but returns views into `text`, so `text` must outlive them. |
+| `Parse_Decimal_Int(text)` | `strutil.h` | Reads the whole text as a decimal int. Returns nothing for anything but an optional minus sign and digits that fit. Blanks and a plus sign fail. |
+| `CnCNet_Equals_No_Case`, `CnCNet_Less_No_Case` | `cncnet/cncnettext.h` | Case folding with `tolower`; only the C locale's letters fold. |
 | `CnCNet_Is_Control_Byte(ch)`, `CnCNet_Is_Join_Unsafe(ch)` | `cncnet/cncnettext.h` | Tests for 0x00 to 0x1F and 0x7F, and for those plus space and comma. |
 | `Hex_Text(value, digits, upper_case)` | `hexformat.h` | Hex text of a number, zero-padded to at least `digits` digits. A wider value is written in full. |
 | `Hex_Digit_Value(ch)` | `hexdigit.h` | Value 0 to 15 of a hex digit in either case, or -1. |
-| `ahtoi(str)` | `ahtoi.h` | Hex string to int; stops at the first character that is not a hex digit. |
+| `ahtoi(str)` | `ahtoi.h` | Hex string to int, built on `Hex_Digit_Value`; stops at the first character that is not a hex digit. |
 | `stricmp`, `strcmpi` | `always.h` | Case-insensitive C string compare. Off Windows both map to `strcasecmp`. |
 | `Fetch_String(label)` | `csf.h` | String-table text for a label. A missing label gives `MISSING:'<label>'` and a log line. `Fetch_String(int)` in `data.h` is the old numeric form. |
 | `Fetch_String_UTF8(label)`, `Wide_To_UTF8(wide)` | `csf.h` | The same text, or any table string, as UTF-8. |

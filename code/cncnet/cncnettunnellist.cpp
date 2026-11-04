@@ -11,6 +11,7 @@
 #include "cncnet/cncnettext.h"
 #include "cncnet/cncnetnative.h"
 #include "monotonic.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
@@ -95,7 +96,7 @@ std::vector<CnCNetTunnelEntryType> CnCNet_Parse_Tunnel_List(std::string_view tex
 			continue;       // The header.
 		}
 
-		std::vector<std::string_view> const fields = CnCNet_Split(line, ';');
+		std::vector<std::string_view> const fields = Split_Views(line, ';');
 		if (fields.size() < 11) {
 			continue;
 		}
