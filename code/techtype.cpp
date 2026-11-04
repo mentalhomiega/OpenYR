@@ -1020,7 +1020,7 @@ void TechnoTypeClass::Read_Movement_INI(CCINIClass const & ini)
 
 void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 {
-	IsOrganic =ini.Get_Bool(Name(), "Organic", IsOrganic);
+	IsOrganic = ini.Get_Bool(Name(), "Organic", IsOrganic);
 	IsDamageSelf = ini.Get_Bool(Name(), "DamageSelf", IsDamageSelf);
 	IsImmuneToPsionics = ini.Get_Bool(Name(), "ImmuneToPsionics", IsImmuneToPsionics);
 	IsBerserkFriendly = ini.Get_Bool(Name(), "BerserkFriendly", IsBerserkFriendly);
@@ -1079,7 +1079,7 @@ void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)
 
 void TechnoTypeClass::Read_Targeting_INI(CCINIClass const & ini)
 {
-	ThreatRange =ini.Get_Lepton(Name(), "GuardRange", ThreatRange);
+	ThreatRange = ini.Get_Lepton(Name(), "GuardRange", ThreatRange);
 	IsCanPassiveAquire = ini.Get_Bool(Name(), "CanPassiveAquire", IsCanPassiveAquire);
 	IsCanRetaliate = ini.Get_Bool(Name(), "CanRetaliate", IsCanRetaliate);
 	IsHoverAttack = ini.Get_Bool(Name(), "HoverAttack", IsHoverAttack);
