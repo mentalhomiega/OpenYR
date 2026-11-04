@@ -219,6 +219,18 @@ class TechnoClass :	public RadioClass,
 		std::vector<TechnoClass *> AttackedTargets;
 		AbstractClass * Distributed_Target(void);
 		AbstractClass * Greatest_Threat_Scan(ThreatType method, Coord const & coord, bool onlyenemy) const;
+		void Draw_Spawner_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Occupant_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Passenger_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Tiberium_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Mind_Control_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Ammo_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pips2, Rect const & rect) const;
+		void Draw_Charge_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const;
+		void Draw_Heal_Icon(Point2D const & xy, Rect const & rect) const;
+		void Draw_Group_Number(Point2D const & bottomleft, Rect const & rect) const;
+		void Scan_Threats_Air(ThreatType method, int mask, int range, bool onlyenemy, ObjectClass const *& bestobject, int & bestval) const;
+		bool Scan_Threats_Ring(ThreatType method, int mask, int range, int crange, Cell const & cell, bool onlyenemy, int zone, ObjectClass const *& bestobject, int & bestval, AbstractClass *& found) const;
+		void Scan_Threats_Full(ThreatType method, int mask, bool onlyenemy, int zone, Coord const & coord, ObjectClass const *& bestobject, int & bestval) const;
 		bool Is_Bunkered(void) const { return(BunkerLinkedItem != NULL && RTTI != RTTI_BUILDING); }
 		void Transfer_Slaves(TechnoClass * to);
 

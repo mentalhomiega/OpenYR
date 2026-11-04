@@ -3263,45 +3263,8 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 		**	Scanning by cell is not possible for aircraft since they are not recorded
 		**	at the cell level.
 		*/
-		// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
 		if (method & THREAT_AIR) {
-			Perf_Count(PERF_COUNT_SCANS_AIR);
-			int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
-			int value;
-			int index;
-			for (index = 0; index < Map.Layer[LAYER_TOP].Count(); index++) {
-				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_TOP][index];
-
-				if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
-					value = 0;
-					if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
-						(!onlyenemy || object->House->HeapID == House->Enemy) &&
-						Evaluate_Object(method, _mask, range, object, value)) {
-
-						if (value > bestval) {
-							bestobject = object;
-							bestval = value;
-						}
-					}
-				}
-			}
-
-			for (index = 0; index < Map.Layer[LAYER_AIR].Count(); index++) {
-				TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_AIR][index];
-
-				if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
-					value = 0;
-					if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
-						(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
-						Evaluate_Object(method, _mask, range, object, value)) {
-
-						if (value > bestval) {
-							bestobject = object;
-							bestval = value;
-						}
-					}
-				}
-			}
+			Scan_Threats_Air(method, mask, range, onlyenemy, bestobject, bestval);
 		}
 
 		/*
@@ -3313,132 +3276,13 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 			mask |= (1 << RTTI_AIRCRAFT);
 		}
 
-		/*
-		**	Radiate outward from the object's location, looking for the best
-		**	target.
-		*/
-		Cell bestcell(0, 0);
-		int bestcellvalue = 0;
-		TechnoClass const * object;
-		int value;
-
-		// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
-		bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
-		if (scan_cells) {
-			Perf_Count(PERF_COUNT_SCANS_RING);
-		}
-		PerfScope ring_scope(PERF_FRAME_THREAT_RING);
-		// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
-		auto Visit_Ring_Cell = [&](Cell const & newcell) {
-			if (Map.In_Radar(newcell)) {
-				Perf_Count(PERF_COUNT_RING_CELLS);
-				if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
-					if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
-					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
-						if (bestval < value) {
-							bestobject = object;
-							bestval = value;
-						}
-					}
-				}
-				if (bestobject == NULL) {
-					value = Evaluate_Just_Cell(newcell);
-					if (bestcellvalue < value) {
-						bestcellvalue = value;
-						bestcell = newcell;
-					}
-				}
-			}
-		};
-
-		for (int radius = 0; scan_cells && radius < crange; radius++) {
-
-			/*
-			**	Scan the top and bottom rows of the "box".
-			*/
-			for (int x = -radius; x <= radius; x++) {
-				Visit_Ring_Cell(cell + Cell(x, -radius));
-				Visit_Ring_Cell(cell + Cell(x, radius));
-			}
-
-			/*
-			**	Scan the left and right columns of the "box".
-			*/
-			for (int y = -(radius-1); y < radius; y++) {
-				Visit_Ring_Cell(cell + Cell(-radius, y));
-				Visit_Ring_Cell(cell + Cell(radius, y));
-			}
-
-			/*
-			**	Bail early if a target has already been found and the range is at
-			**	one of the breaking points (i.e., normal range or range * 2).
-			*/
-			if (bestobject != NULL) {
-				if (radius == crange/4) {
-					return((ObjectClass *)bestobject);
-				}
-				if (radius == crange/2) {
-					return((ObjectClass *)bestobject);
-				}
-			}
-			if (bestcell != CELL_NONE) {
-				return(&Map[bestcell]);
-			}
+		AbstractClass * found = NULL;
+		if (Scan_Threats_Ring(method, mask, range, crange, cell, onlyenemy, zone, bestobject, bestval, found)) {
+			return(found);
 		}
 
 	} else {
-		Perf_Count(PERF_COUNT_SCANS_FULL);
-		/*
-		**	A full map scan was requested. First scan through aircraft. The top map layer
-		**	is NOT scanned since that layer will probably contain more bullets and animations
-		**	than aircraft.
-		*/
-		int index;
-		if (mask & (1L << RTTI_AIRCRAFT)) {
-			for (index = 0; index < Aircraft.Count(); index++) {
-				TechnoClass * object = Aircraft[index];
-
-				int value = 0;
-				if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
-					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
-					Evaluate_Object(method, mask, -1, object, value)) {
-
-					if (value > bestval) {
-						bestobject = object;
-						bestval = value;
-					}
-				}
-			}
-		}
-
-		/*
-		**	When scanning the ground, always consider landed aircraft as a valid
-		**	potential target. This is only true if vehicles are considered a
-		**	valid target. A landed aircraft is considered a vehicle.
-		*/
-		if (method & THREAT_VEHICLES) {
-			mask |= (1 << RTTI_AIRCRAFT);
-		}
-
-		/*
-		**	Now scan through the entire ground layer. This is painful, but what other
-		**	choice is there?
-		*/
-		for (index = 0; index < Technos.Count(); index++) {
-				TechnoClass * object = Technos[index];
-
-				int value = 0;
-				if (object->Layer == LAYER_GROUND &&
-					(!onlyenemy || object->House->HeapID == House->Enemy) &&
-					(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
-					Evaluate_Object(method, mask, -1, object, value, zone, coord)) {
-
-					if (value > bestval) {
-						bestobject = object;
-						bestval = value;
-					}
-				}
-			}
+		Scan_Threats_Full(method, mask, onlyenemy, zone, coord, bestobject, bestval);
 	}
 
 	BEnd(BENCH_GREATEST_THREAT);
@@ -3448,6 +3292,187 @@ AbstractClass * TechnoClass::Greatest_Threat_Scan(ThreatType method, Coord const
 	**	of it.
 	*/
 	return((ObjectClass *)bestobject);
+}
+
+
+void TechnoClass::Scan_Threats_Air(ThreatType method, int mask, int range, bool onlyenemy, ObjectClass const *& bestobject, int & bestval) const
+{
+	// An air scan takes In_Air objects, which gamemd's AircraftTrackerClass holds (TechnoClass::GreatestThreat, 0x6F8DF0).
+	Perf_Count(PERF_COUNT_SCANS_AIR);
+	int _mask = mask|(1 << RTTI_INFANTRY)|(1 << RTTI_UNIT);
+	int value;
+	int index;
+	for (index = 0; index < Map.Layer[LAYER_TOP].Count(); index++) {
+		TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_TOP][index];
+
+		if (object->RTTI == RTTI_AIRCRAFT || (object->RTTI == RTTI_INFANTRY && ((InfantryClass *)object)->Class->IsJumpJet) || (object->RTTI == RTTI_UNIT && object->In_Air())) {
+			value = 0;
+			if ((!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
+				(!onlyenemy || object->House->HeapID == House->Enemy) &&
+				Evaluate_Object(method, _mask, range, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+
+	for (index = 0; index < Map.Layer[LAYER_AIR].Count(); index++) {
+		TechnoClass * object = (TechnoClass *)Map.Layer[LAYER_AIR][index];
+
+		if (object->RTTI == RTTI_INFANTRY || (object->RTTI == RTTI_UNIT && object->In_Air())) {
+			value = 0;
+			if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) && object->In_Air() &&
+				Evaluate_Object(method, _mask, range, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+}
+
+
+bool TechnoClass::Scan_Threats_Ring(ThreatType method, int mask, int range, int crange, Cell const & cell, bool onlyenemy, int zone, ObjectClass const *& bestobject, int & bestval, AbstractClass *& found) const
+{
+	/*
+	**	Radiate outward from the object's location, looking for the best
+	**	target.
+	*/
+	Cell bestcell(0, 0);
+	int bestcellvalue = 0;
+	TechnoClass const * object;
+	int value;
+
+	// An air-only range scan skips the cell scan, as TechnoClass::GreatestThreat (0x6F8DF0) does for Air|Range.
+	bool const scan_cells = method != (THREAT_AIR|THREAT_RANGE);
+	if (scan_cells) {
+		Perf_Count(PERF_COUNT_SCANS_RING);
+	}
+	PerfScope ring_scope(PERF_FRAME_THREAT_RING);
+	// Evaluates one ring cell: its occupant, then the cell as a wall while no object has been found.
+	auto Visit_Ring_Cell = [&](Cell const & newcell) {
+		if (Map.In_Radar(newcell)) {
+			Perf_Count(PERF_COUNT_RING_CELLS);
+			if (Evaluate_Cell(method, mask, newcell, range, &object, value, zone)) {
+				if (object != NULL && (!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House))) {
+					if (bestval < value) {
+						bestobject = object;
+						bestval = value;
+					}
+				}
+			}
+			if (bestobject == NULL) {
+				value = Evaluate_Just_Cell(newcell);
+				if (bestcellvalue < value) {
+					bestcellvalue = value;
+					bestcell = newcell;
+				}
+			}
+		}
+	};
+
+	for (int radius = 0; scan_cells && radius < crange; radius++) {
+
+		/*
+		**	Scan the top and bottom rows of the "box".
+		*/
+		for (int x = -radius; x <= radius; x++) {
+			Visit_Ring_Cell(cell + Cell(x, -radius));
+			Visit_Ring_Cell(cell + Cell(x, radius));
+		}
+
+		/*
+		**	Scan the left and right columns of the "box".
+		*/
+		for (int y = -(radius-1); y < radius; y++) {
+			Visit_Ring_Cell(cell + Cell(-radius, y));
+			Visit_Ring_Cell(cell + Cell(radius, y));
+		}
+
+		/*
+		**	Bail early if a target has already been found and the range is at
+		**	one of the breaking points (i.e., normal range or range * 2).
+		*/
+		if (bestobject != NULL) {
+			if (radius == crange/4) {
+				found = (ObjectClass *)bestobject;
+				return(true);
+			}
+			if (radius == crange/2) {
+				found = (ObjectClass *)bestobject;
+				return(true);
+			}
+		}
+		if (bestcell != CELL_NONE) {
+			found = &Map[bestcell];
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+void TechnoClass::Scan_Threats_Full(ThreatType method, int mask, bool onlyenemy, int zone, Coord const & coord, ObjectClass const *& bestobject, int & bestval) const
+{
+	Perf_Count(PERF_COUNT_SCANS_FULL);
+	/*
+	**	A full map scan was requested. First scan through aircraft. The top map layer
+	**	is NOT scanned since that layer will probably contain more bullets and animations
+	**	than aircraft.
+	*/
+	int index;
+	if (mask & (1L << RTTI_AIRCRAFT)) {
+		for (index = 0; index < Aircraft.Count(); index++) {
+			TechnoClass * object = Aircraft[index];
+
+			int value = 0;
+			if ((!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
+				Evaluate_Object(method, mask, -1, object, value)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
+	}
+
+	/*
+	**	When scanning the ground, always consider landed aircraft as a valid
+	**	potential target. This is only true if vehicles are considered a
+	**	valid target. A landed aircraft is considered a vehicle.
+	*/
+	if (method & THREAT_VEHICLES) {
+		mask |= (1 << RTTI_AIRCRAFT);
+	}
+
+	/*
+	**	Now scan through the entire ground layer. This is painful, but what other
+	**	choice is there?
+	*/
+	for (index = 0; index < Technos.Count(); index++) {
+			TechnoClass * object = Technos[index];
+
+			int value = 0;
+			if (object->Layer == LAYER_GROUND &&
+				(!onlyenemy || object->House->HeapID == House->Enemy) &&
+				(!(method & THREAT_ALLIES) || House->Is_Ally(object->House)) &&
+				Evaluate_Object(method, mask, -1, object, value, zone, coord)) {
+
+				if (value > bestval) {
+					bestobject = object;
+					bestval = value;
+				}
+			}
+		}
 }
 
 
@@ -10644,29 +10669,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		xy.X += 11;
 	}
 
-	/*
-	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
-	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
-	*/
-	if (TClass->SpawnsNumber > 0) {
-		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
-		for (int index = 0; index < TClass->SpawnsNumber; index++) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-	}
+	Draw_Spawner_Pips(xy, offset, pip_shapes, rect);
 
-	if (RTTI == RTTI_BUILDING) {
-		BuildingClass const * building = (BuildingClass const *)this;
-		if (building->Class->IsShowOccupantPips) {
-			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
-				PipEnum pip = PIP_PERSON_EMPTY;
-				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
-					pip = building->Occupants[index]->Class->OccupyPip;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
-		}
-	}
+	Draw_Occupant_Pips(xy, offset, pip_shapes, rect);
 
 	/*
 	**	Transporter type objects have a different graphic representation for the pips. The
@@ -10676,41 +10681,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	vehicle blue. A structure that absorbs its owner's units shows one pip per passenger.
 	*/
 	if (TClass->Max_Passengers() > 0) {
-		int const count = std::max(Class_Of()->Max_Pips(), 0);
-		std::vector<int> slots(count, PIP_EMPTY);
-		bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
-
-		ObjectClass const * object = Cargo.Attached_Object();
-		int last = absorber ? 0 : Cargo.Total_Size() - 1;
-		for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
-			int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
-			if (absorber) {
-				if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
-				last++;
-				continue;
-			}
-			if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
-				for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
-					if (last >= 0 && last < count) slots[last] = PIP_WHITE;
-					last--;
-				}
-			}
-			if (last >= 0 && last < count) slots[last] = shape;
-			last--;
-		}
-
-		// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
-		int first = 0;
-		Point2D gap(0, 0);
-		if (TClass->IsGunner && count > 0) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			first = 1;
-			gap = offset * 2;
-		}
-		for (int index = first; index < count; index++) {
-			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-		}
-
+		Draw_Passenger_Pips(xy, offset, pip_shapes, rect);
 	} else {
 
 		/*
@@ -10724,26 +10695,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	various minerals it could have harvested.
 		*/
 		if (RTTI != RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
-
-			// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
-			// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
-			int const count = Class_Of()->Max_Pips();
-			double const capacity = TClass->Capacity;
-			double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
-			int orepips = (int)(ore / capacity * count + 0.5);
-			int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
-
-			for (int index = 0; index < count; index++) {
-				int shape = PIP_EMPTY;
-				if (gempips > 0) {
-					shape = PIP_BLUE;
-					gempips--;
-				} else if (orepips > 0) {
-					shape = PIP_YELLOW;
-					orepips--;
-				}
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+			Draw_Tiberium_Pips(xy, offset, pip_shapes, rect);
 		}
 
 		/*
@@ -10751,56 +10703,187 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	after them a red pip while it holds more than that, white as the overload strikes.
 		*/
 		else if (TClass->PipScale == PIPSCALE_MINDCONTROL) {
-			if (CaptureManager) {
-				int const count = CaptureManager->Max_Nodes();
-				int const held = CaptureManager->Controlled_Count();
-				for (int index = 0; index < count; index++) {
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-				if (CaptureManager->Is_Overloading()) {
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-			}
+			Draw_Mind_Control_Pips(xy, offset, pip_shapes, rect);
 		}
 
 		else if (TClass->PipScale == PIPSCALE_AMMO) {
-			// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
-			// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
-			int const wrap = TClass->PipWrap;
-			int const count = Class_Of()->Max_Pips();
-			if (wrap == 0) {
-				int _pips = pips;
-				for (int index = 0; index < count; index++) {
-					if (_pips > 0) {
-						_pips--;
-						Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-					}
-				}
-			} else if (wrap > 0) {
-				int const rows = count / wrap;
-				for (int column = 0; column < wrap; column++) {
-					int frame = 14;
-					for (int row = rows - 1; row >= 0; row--) {
-						if (row * wrap + column < Ammo) {
-							frame = row + 15;
-							break;
-						}
-					}
-					Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-				}
-			}
-
+			Draw_Ammo_Pips(pips, xy, offset, pips2, rect);
 		}
 		/*
 		**
 		*/
 		else if (TClass->PipScale == PIPSCALE_CHARGE) {
-			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
-				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
-			}
+			Draw_Charge_Pips(pips, xy, offset, pip_shapes, rect);
 		}
 	}
 
+	Draw_Heal_Icon(xy, rect);
+
+	/*
+	**	Display whether this unit is a leader unit or not.
+	*/
+	if (RTTI != RTTI_BUILDING) {
+		Draw_Text_Overlay(bottomleft + Point2D(-10, 10), bottomleft, rect);
+	}
+
+	/*
+	**	Display what group this unit belongs to. This corresponds to the team
+	**	number assigned with the <CTRL> key.
+	*/
+	Draw_Group_Number(bottomleft, rect);
+}
+
+
+void TechnoClass::Draw_Spawner_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	/*
+	**	A spawner shows one pip for each missile or aircraft it can launch, lit while that one is
+	**	docked (TechnoClass::DrawPipScalePips, 0x709A90).
+	*/
+	if (TClass->SpawnsNumber > 0) {
+		int const docked = SpawnManager ? SpawnManager->Docked_Count() : 0;
+		for (int index = 0; index < TClass->SpawnsNumber; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < docked ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Occupant_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (RTTI == RTTI_BUILDING) {
+		BuildingClass const * building = (BuildingClass const *)this;
+		if (building->Class->IsShowOccupantPips) {
+			for (int index = 0; index < building->Class->MaxNumberOccupants; index++) {
+				PipEnum pip = PIP_PERSON_EMPTY;
+				if (index < building->Occupants.Count() && building->Occupants[index] != NULL) {
+					pip = building->Occupants[index]->Class->OccupyPip;
+				}
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Passenger_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	int const count = std::max(Class_Of()->Max_Pips(), 0);
+	std::vector<int> slots(count, PIP_EMPTY);
+	bool const absorber = RTTI == RTTI_BUILDING && ((BuildingClass const *)this)->Class->Is_Absorber();
+
+	ObjectClass const * object = Cargo.Attached_Object();
+	int last = absorber ? 0 : Cargo.Total_Size() - 1;
+	for (int passengers = 0; object != NULL && passengers < Cargo.How_Many(); passengers++, object = object->Next) {
+		int const shape = object->RTTI == RTTI_INFANTRY ? (int)((InfantryClass const *)object)->Class->Pip : (object->RTTI == RTTI_UNIT ? 5 : 1);
+		if (absorber) {
+			if (last < count) slots[last] = object->RTTI == RTTI_INFANTRY ? shape : (object->RTTI == RTTI_UNIT ? 4 : 1);
+			last++;
+			continue;
+		}
+		if (object->RTTI == RTTI_INFANTRY || object->RTTI == RTTI_UNIT) {
+			for (int extra = (int)(object->TClass->Size - 1.0); extra > 0; extra--) {
+				if (last >= 0 && last < count) slots[last] = PIP_WHITE;
+				last--;
+			}
+		}
+		if (last >= 0 && last < count) slots[last] = shape;
+		last--;
+	}
+
+	// A gunner's pip stands on its own, followed by a gap of two pips before the passengers'.
+	int first = 0;
+	Point2D gap(0, 0);
+	if (TClass->IsGunner && count > 0) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[0], xy, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		first = 1;
+		gap = offset * 2;
+	}
+	for (int index = first; index < count; index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, slots[index], xy + gap + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Tiberium_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	// Gems fill the row first, in blue, then the other kinds of Tiberium in yellow, each rounded to
+	// whole pips as TechnoClass::DrawPipScalePips (0x709A90) does.
+	int const count = Class_Of()->Max_Pips();
+	double const capacity = TClass->Capacity;
+	double const ore = Storage.Get_Amount(0) + Storage.Get_Amount(2) + Storage.Get_Amount(3);
+	int orepips = (int)(ore / capacity * count + 0.5);
+	int gempips = (int)(Storage.Get_Amount(1) / capacity * count + 0.5);
+
+	for (int index = 0; index < count; index++) {
+		int shape = PIP_EMPTY;
+		if (gempips > 0) {
+			shape = PIP_BLUE;
+			gempips--;
+		} else if (orepips > 0) {
+			shape = PIP_YELLOW;
+			orepips--;
+		}
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, shape, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Mind_Control_Pips(Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	if (CaptureManager) {
+		int const count = CaptureManager->Max_Nodes();
+		int const held = CaptureManager->Controlled_Count();
+		for (int index = 0; index < count; index++) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < held ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+		if (CaptureManager->Is_Overloading()) {
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, CaptureManager->Is_Overload_Pip_Lit() ? 3 : 4, xy + offset * count, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Ammo_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pips2, Rect const & rect) const
+{
+	// TechnoClass::DrawPipScalePips (0x709A90). Without PipWrap, a pip is drawn for each shot held. With it, the pips
+	// form PipWrap columns of rows; a column shows the fullest row it reaches (frame 15 and up) or the empty frame 14.
+	int const wrap = TClass->PipWrap;
+	int const count = Class_Of()->Max_Pips();
+	if (wrap == 0) {
+		int _pips = pips;
+		for (int index = 0; index < count; index++) {
+			if (_pips > 0) {
+				_pips--;
+				Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, 13, xy + offset * index - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+			}
+		}
+	} else if (wrap > 0) {
+		int const rows = count / wrap;
+		for (int column = 0; column < wrap; column++) {
+			int frame = 14;
+			for (int row = rows - 1; row >= 0; row--) {
+				if (row * wrap + column < Ammo) {
+					frame = row + 15;
+					break;
+				}
+			}
+			Draw_Shape(*LogicalSurface, *NormalDrawer, pips2, frame, xy + offset * column - Point2D(0, 3), rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+		}
+	}
+}
+
+
+void TechnoClass::Draw_Charge_Pips(int pips, Point2D const & xy, Point2D const & offset, ShapeSet const * pip_shapes, Rect const & rect) const
+{
+	for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
+		Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
+	}
+}
+
+
+void TechnoClass::Draw_Heal_Icon(Point2D const & xy, Rect const & rect) const
+{
 	/*
 	**	Show that the owner's hospitals mend soldiers and organic vehicles, or its machine shops other
 	**	vehicles, with a cross or a spanner that blinks while this one is hurt (TechnoClass::DrawPipScalePips, 0x709A90).
@@ -10814,18 +10897,11 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 			Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)Class_Of()->PipShapes, infantry ? 13 : 20, icon, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|(blink ? SHAPE_DARKEN : 0)));
 		}
 	}
+}
 
-	/*
-	**	Display whether this unit is a leader unit or not.
-	*/
-	if (RTTI != RTTI_BUILDING) {
-		Draw_Text_Overlay(bottomleft + Point2D(-10, 10), bottomleft, rect);
-	}
 
-	/*
-	**	Display what group this unit belongs to. This corresponds to the team
-	**	number assigned with the <CTRL> key.
-	*/
+void TechnoClass::Draw_Group_Number(Point2D const & bottomleft, Rect const & rect) const
+{
 	if (Group >= 0 && Group < 10) {
 		int group = Group+1;
 

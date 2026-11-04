@@ -35,6 +35,7 @@
 #include "foot.h"
 
 #include <cstdint>
+#include <optional>
 
 class Surface;
 
@@ -312,6 +313,28 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		bool Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell_height) const;
+		bool Tunnel_Direction_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tunnel) const;
+		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
+		std::optional<MoveType> Building_Occupant_Verdict(ObjectClass * obj, CellClass const * cellptr, FacingType dir, MoveType & retval, bool & skip) const;
+		std::optional<MoveType> Occupant_Verdict(ObjectClass * obj, MoveType & retval, bool & crushable) const;
+		bool Do_Special_Unload(int & delay);
+		bool Unload_Next_Passenger(void);
+		int Unload_Passengers(void);
+		int Unload_Into_Structure(void);
+		bool Finish_Harvester_Unload(void);
+		int Dump_Harvester_Load(void);
+		int Unload_Harvester(void);
+		bool Balloon_Hover_Holds_Destination(AbstractClass const * target);
+		void Update_Teleporter_Locomotor(AbstractClass const * target);
+		bool Negotiate_Entry_Contact(AbstractClass *& target, BuildingClass * b);
+		void Retarget_Subterranean_Drive(AbstractClass *& target, bool & immediate);
+		bool Plan_Subterranean_Route(AbstractClass *& target, bool & needsswap);
+		void Swap_Tunnel_For_Drive_Locomotor(AbstractClass * target, bool needsswap);
+		bool Dock_At_Repair_Facility(BuildingClass * b, AbstractClass *& target, bool immediate);
+		bool Queue_For_Weapons_Factory(AbstractClass * target);
+		void Send_Harvester_To_Dock(BuildingClass * b, AbstractClass *& target);
+		void Power_On_At_Repair_Facility(void);
 		void Resolve_Passengers_On_Death(TechnoClass * source, bool forced, bool select);
 		void Resolve_Crew_And_Crate_On_Death(bool no_crew, bool select);
 

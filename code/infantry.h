@@ -276,6 +276,23 @@ class InfantryClass : public FootClass
 
 	private:
 
+		bool Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tube) const;
+		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
+		std::optional<MoveType> Mission_Destination_Verdict(ObjectClass * obj, TechnoClass * techno, CellClass const * cellptr, MissionType mission, bool isbridge, bool & skip) const;
+		std::optional<MoveType> Special_Building_Verdict(ObjectClass * obj, MoveType & retval, bool & skip) const;
+		std::optional<MoveType> Occupant_Verdict(ObjectClass * obj, TechnoClass * techno, MoveType & retval, int & trynum) const;
+
+		bool Garrison_Arrival(CellClass * cellptr);
+		void Repair_Bridge_Hut(TechnoClass * tech);
+		bool Engineer_Arrival(TechnoClass * tech);
+		void Infiltrate_Building(TechnoClass * tech);
+		bool Capture_Arrival(CellClass * cellptr);
+		bool Transport_Arrival(void);
+		bool Sabotage_Arrival(CellClass * cellptr);
+		void Release_Tether(CellClass * cellptr);
+		void Settle_Into_Cell(void);
+		bool Take_Cell_Hazard_Damage(void);
+
 		static DoStruct const MasterDoControls[DO_COUNT];
 
 		/*
