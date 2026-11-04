@@ -54,10 +54,14 @@ RecordingValues::ValuesType Sample(void)
 }
 
 
+// The house types the engine would have loaded.
+constexpr int HOUSE_COUNT = 10;
+
+
 RecordingValues::LoadResult Read_Bytes(std::vector<std::uint8_t> const & bytes, RecordingValues::ValuesType & values)
 {
 	std::size_t at = 0;
-	return(RecordingValues::Read(values, [&](void * buffer, std::size_t size) {
+	return(RecordingValues::Read(values, HOUSE_COUNT, [&](void * buffer, std::size_t size) {
 		if (bytes.size() - at < size) {
 			return(false);
 		}
@@ -93,6 +97,20 @@ bool Same(RecordingValues::ValuesType const & a, RecordingValues::ValuesType con
 }
 
 
+int Special_Flag_Count(void)
+{
+	int count = 0;
+	struct
+	{
+		int * Count;
+		void Serialize(bool &) { (*Count)++; }
+	} stream{&count};
+	SpecialClass special{};
+	special.Serialize(stream);
+	return(count);
+}
+
+
 RecordingValues::ValuesType Untouched(void)
 {
 	RecordingValues::ValuesType values;
@@ -105,6 +123,17 @@ RecordingValues::ValuesType Untouched(void)
 bool Is_Untouched(RecordingValues::ValuesType const & values)
 {
 	return(Same(values, Untouched()));
+}
+
+
+// Encodes the sample with one value changed and reads it back into untouched values.
+template<typename Change>
+bool Is_Refused(Change change)
+{
+	RecordingValues::ValuesType values = Sample();
+	change(values);
+	RecordingValues::ValuesType loaded = Untouched();
+	return(Read_Bytes(RecordingValues::Encode(values), loaded) == RecordingValues::LoadResult::DAMAGED && Is_Untouched(loaded));
 }
 
 }
@@ -201,6 +230,32 @@ int main(void)
 		bad_flag[16] = 2;
 		Check(Read_Bytes(bad_flag, values) == RecordingValues::LoadResult::DAMAGED, "an unshroud byte other than 0 or 1 is refused");
 		Check(Is_Untouched(values), "a damaged recording leaves the values alone");
+	}
+
+	{
+		Check(Special_Flag_Count() <= RecordingValues::FLAG_LIMIT, "the special flags fit the 32-bit field");
+
+		Check(Is_Refused([](auto & v) { v.Difficulty = 3; }), "a difficulty past hard is refused");
+		Check(Is_Refused([](auto & v) { v.Difficulty = 7; }), "difficulty 7 is refused");
+		Check(Is_Refused([](auto & v) { v.Difficulty = -1; }), "a negative difficulty is refused");
+		Check(Is_Refused([](auto & v) { v.GameSpeed = 7; }), "a game speed past 6 is refused");
+		Check(Is_Refused([](auto & v) { v.GameSpeed = -1; }), "a negative game speed is refused");
+		Check(Is_Refused([](auto & v) { v.Whom = HOUSE_COUNT; }), "a house past the loaded house types is refused");
+		Check(Is_Refused([](auto & v) { v.Whom = -2; }), "a house below none is refused");
+
+		RecordingValues::ValuesType edges = Sample();
+		edges.Whom = -1;
+		edges.GameSpeed = 6;
+		edges.Difficulty = 2;
+		RecordingValues::ValuesType loaded;
+		Check(Read_Bytes(RecordingValues::Encode(edges), loaded) == RecordingValues::LoadResult::OK && Same(loaded, edges),
+			"no house, speed 6 and difficulty 2 read back");
+
+		std::vector<std::uint8_t> extra_flag = bytes;
+		extra_flag[45 + Special_Flag_Count() / 8] |= static_cast<std::uint8_t>(1u << (Special_Flag_Count() % 8));
+		RecordingValues::ValuesType values = Untouched();
+		Check(Read_Bytes(extra_flag, values) == RecordingValues::LoadResult::DAMAGED && Is_Untouched(values),
+			"a special flag bit past the known flags is refused");
 	}
 
 	if (Failures != 0) {

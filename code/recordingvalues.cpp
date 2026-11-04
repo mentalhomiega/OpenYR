@@ -9,6 +9,7 @@
 
 #include "recordingvalues.h"
 
+#include <cassert>
 #include <cstring>
 
 namespace RecordingValues {
@@ -27,6 +28,7 @@ struct FlagStream
 
 	void Serialize(bool & flag)
 	{
+		assert(Next < FLAG_LIMIT);
 		std::uint32_t const bit = 1u << Next++;
 		if (IsLoading) {
 			flag = (Bits & bit) != 0;
@@ -95,7 +97,7 @@ std::vector<std::uint8_t> Encode(ValuesType const & values)
 }
 
 
-LoadResult Read(ValuesType & values, std::function<bool(void *, std::size_t)> const & read)
+LoadResult Read(ValuesType & values, int house_count, std::function<bool(void *, std::size_t)> const & read)
 {
 	char magic[sizeof(MAGIC)];
 	if (!read(magic, sizeof(magic)) || std::memcmp(magic, MAGIC, sizeof(MAGIC)) != 0) {
@@ -130,7 +132,15 @@ LoadResult Read(ValuesType & values, std::function<bool(void *, std::size_t)> co
 		|| !Get_I32(read, loaded.GameSpeed) || !Get_I32(read, loaded.Difficulty)) {
 		return(LoadResult::DAMAGED);
 	}
+	if (loaded.Whom < -1 || loaded.Whom >= house_count
+		|| loaded.GameSpeed < 0 || loaded.GameSpeed >= GAME_SPEED_COUNT
+		|| loaded.Difficulty < 0 || loaded.Difficulty >= DIFFICULTY_COUNT) {
+		return(LoadResult::DAMAGED);
+	}
 	loaded.Special.Serialize(flags);
+	if (flags.Next < FLAG_LIMIT && (flags.Bits >> flags.Next) != 0) {
+		return(LoadResult::DAMAGED);
+	}
 
 	values = std::move(loaded);
 	return(LoadResult::OK);

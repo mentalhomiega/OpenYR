@@ -1351,9 +1351,8 @@ restart:
 		**	Save initialization values if we're recording this game.
 		*/
 		if (Session.Record) {
-			if (Session.RecordFile.Open(FileClass::WRITE)) {
-				Save_Recording_Values(Session.RecordFile);
-			} else {
+			if (!Session.RecordFile.Open(FileClass::WRITE) || !Save_Recording_Values(Session.RecordFile)) {
+				Session.RecordFile.Close();
 				Session.Record = false;
 			}
 		}
@@ -2917,9 +2916,11 @@ bool Save_Recording_Values(CCFileClass & file)
  *=========================================================================*/
 bool Load_Recording_Values(CCFileClass & file)
 {
+	static_assert(RecordingValues::GAME_SPEED_COUNT == OptionsClass::MAX_SPEED_SETTING, "a recording checks the game speeds the options offer");
+	static_assert(RecordingValues::DIFFICULTY_COUNT == DIFF_COUNT, "a recording checks the difficulties the game defines");
 	//Session.Load(file);
 	RecordingValues::ValuesType values;
-	RecordingValues::LoadResult const result = RecordingValues::Read(values, [&file](void * buffer, std::size_t size) {
+	RecordingValues::LoadResult const result = RecordingValues::Read(values, HouseTypes.Count(), [&file](void * buffer, std::size_t size) {
 		return(file.Read(buffer, static_cast<int>(size)) == static_cast<int>(size));
 	});
 	if (result != RecordingValues::LoadResult::OK) {

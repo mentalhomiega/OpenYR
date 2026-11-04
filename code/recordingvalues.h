@@ -36,6 +36,13 @@ namespace RecordingValues
 	// A scenario name this long or longer marks a damaged file; the engine keeps it in _MAX_PATH bytes.
 	constexpr std::uint32_t NAME_LIMIT = 260;
 
+	// A game speed or difficulty at or past these counts marks a damaged file.
+	constexpr std::int32_t GAME_SPEED_COUNT = 7;
+	constexpr std::int32_t DIFFICULTY_COUNT = 3;
+
+	// The special flags are packed into one 32-bit field.
+	constexpr int FLAG_LIMIT = 32;
+
 	struct ValuesType
 	{
 		std::int32_t BuildLevel = 0;
@@ -59,7 +66,8 @@ namespace RecordingValues
 
 	std::vector<std::uint8_t> Encode(ValuesType const & values);
 
-	// Reads the values through read, which fills the buffer and answers false on a short read.
-	// The values are only changed when the answer is OK.
-	LoadResult Read(ValuesType & values, std::function<bool(void *, std::size_t)> const & read);
+	// Reads the values through read, which fills the buffer and answers false on a short read. A
+	// player house other than -1 (none) or below house_count marks a damaged file, as does a game
+	// speed, difficulty or special flag out of range. The values are only changed when the answer is OK.
+	LoadResult Read(ValuesType & values, int house_count, std::function<bool(void *, std::size_t)> const & read);
 }
