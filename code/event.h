@@ -125,7 +125,7 @@ class EventClass
 		// The payload of these events follows them in a packet, with its length in Data.Variable.Size.
 		static bool Has_Variable_Payload(unsigned char type) { return type == ADDPLAYER || type == BEACON_TEXT; }
 
-		// The Data bytes that a replay or sync record copies for this type: EventLength, at most
+		// The Data bytes that a replay copies, and a sync record copies for a fixed-size type: EventLength, at most
 		// sizeof(Data), and 0 for a type past LAST_EVENT. A variable payload's text is not counted.
 		static std::size_t Fixed_Length(unsigned char type)
 		{
@@ -134,6 +134,12 @@ class EventClass
 			}
 			return(EventLength[type] < sizeof(Data) ? EventLength[type] : sizeof(Data));
 		}
+
+		// Writes the bytes a sync record keeps for this event into out and returns their count, at most capacity.
+		// Types with fixed data keep their first Fixed_Length bytes. ADDPLAYER and BEACON_TEXT keep their payload size
+		// then the FNV-1a hash of the payload (4 bytes each, little endian), because Data.Variable.Pointer differs
+		// between peers.
+		std::size_t Sync_Record_Bytes(unsigned char * out, std::size_t capacity) const;
 
 		static constexpr std::uint16_t NETWORK_RTT_UNAVAILABLE = UINT16_MAX;
 

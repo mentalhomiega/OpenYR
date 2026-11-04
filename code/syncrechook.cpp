@@ -296,14 +296,7 @@ void Sync_Record_Event_Impl(EventClass const & event, int source)
 	entry.Type = event.Type;
 	entry.Source = (uint8_t)source;
 
-	// For ADDPLAYER and BEACON_TEXT these are the low bytes of Data.Variable.Pointer, not the text.
-	// tests/eventpayload repeats this length rule; keep the two in step.
-	unsigned length = (unsigned)EventClass::Fixed_Length(event.Type);
-	if (length > sizeof(entry.Bytes)) {
-		length = sizeof(entry.Bytes);
-	}
-	entry.Length = (uint8_t)length;
-	memcpy(entry.Bytes, &event.Data, length);
+	entry.Length = (uint8_t)event.Sync_Record_Bytes(entry.Bytes, sizeof(entry.Bytes));
 
 	if (source == SYNC_EVENT_QUEUED) {
 		SyncRecorder.Add_Queued_Event(entry);
