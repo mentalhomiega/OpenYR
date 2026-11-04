@@ -607,7 +607,6 @@ class SessionClass
 		unsigned int CustomColor;           // actual free color, zero for the stock color at ColorIdx
 		int House;                          // GDI / NOD
 		int ObiWan;                         // 1 = player can see all
-		bool AIOnly;                        // no human seat plays; kept in saves, and game over does not read it
 		int Solo;                           // 1 = player can play alone
 
 		/*

@@ -1143,7 +1143,6 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	stream.Serialize(CrateData);
 	stream.Serialize(MissionControl);
 	stream.Serialize(Session.ObiWan);
-	stream.Serialize(Session.AIOnly);
 
 	/*
 	 * Speech is reached through a pair of accessors rather than a variable of its own,

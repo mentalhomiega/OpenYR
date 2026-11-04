@@ -2759,14 +2759,6 @@ void Assign_Houses(void)
 //		DebugString( "Assigned ID of %i to %s\n", house, player->Name );
 	}
 
-	// True when no person plays, only watchers. Game over does not read it (see MPlayer_Defeated).
-	Session.AIOnly = true;
-	for (i = 0; i < Session.Players.Count(); i++) {
-		if (!Session.Players[i]->Player.IsObserver) {
-			Session.AIOnly = false;
-		}
-	}
-
 	// A computer player is given one of the countries the lobby offers.
 	DynamicVectorClass<HousesType> playable;
 	for (int country = HOUSE_FIRST; country < HouseTypes.Count(); country++) {

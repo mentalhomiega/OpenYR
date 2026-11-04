@@ -201,7 +201,6 @@ SessionClass::SessionClass(void)
 	House = HOUSE_FIRST;
 
 	ObiWan = 0;
-	AIOnly = false;
 	Solo = 0;
 	CampaignDifficulty = DIFF_NORMAL;
 	CampaignCDifficulty = DIFF_NORMAL;
@@ -892,7 +891,6 @@ bool SessionClass::Log_To_File(FILE *out)
 	fprintf(out,"Options.AttackNeutralUnits = %d\n", Options.AttackNeutralUnits);
 	fprintf(out,"Options.ScrapMetal = %d\n", Options.ScrapMetal);
 	fprintf(out,"ObiWan = %d\n", ObiWan);
-	fprintf(out,"AIOnly = %d\n", AIOnly);
 
 	if (Session.Type == GAME_IPX) {
 		fprintf(out, "Type = IPX\n");
