@@ -12,6 +12,8 @@
 
 #include <cstring>
 
+#include "littleendian.h"
+
 
 namespace ReplayFile {
 
@@ -30,17 +32,9 @@ void Put_U8(std::vector<std::uint8_t> & out, std::uint8_t value)
 }
 
 
-void Put_U32(std::vector<std::uint8_t> & out, std::uint32_t value)
-{
-	for (int shift = 0; shift < 32; shift += 8) {
-		out.push_back(static_cast<std::uint8_t>(value >> shift));
-	}
-}
-
-
 void Put_Text(std::vector<std::uint8_t> & out, std::string const & text)
 {
-	Put_U32(out, static_cast<std::uint32_t>(text.size()));
+	Put_U32_LE(out, static_cast<std::uint32_t>(text.size()));
 	out.insert(out.end(), text.begin(), text.end());
 }
 
@@ -48,25 +42,25 @@ void Put_Text(std::vector<std::uint8_t> & out, std::string const & text)
 void Put_Header(std::vector<std::uint8_t> & out, HeaderType const & header)
 {
 	out.insert(out.end(), MAGIC, MAGIC + sizeof(MAGIC));
-	Put_U32(out, REVISION);
-	Put_U32(out, header.Version);
+	Put_U32_LE(out, REVISION);
+	Put_U32_LE(out, header.Version);
 	Put_Text(out, header.Commit);
 	Put_U8(out, header.Modified ? 1 : 0);
 	Put_Text(out, header.Architecture);
 	Put_Text(out, header.Map);
-	Put_U32(out, header.MapCrc);
-	Put_U32(out, header.RulesCrc);
-	Put_U32(out, header.ArtCrc);
-	Put_U32(out, header.AiCrc);
+	Put_U32_LE(out, header.MapCrc);
+	Put_U32_LE(out, header.RulesCrc);
+	Put_U32_LE(out, header.ArtCrc);
+	Put_U32_LE(out, header.AiCrc);
 	Put_Text(out, header.Mods);
-	Put_U32(out, header.Seed);
-	Put_U32(out, static_cast<std::uint32_t>(header.GameSpeed));
-	Put_U32(out, header.HashInterval);
-	Put_U32(out, static_cast<std::uint32_t>(header.LocalHouse));
+	Put_U32_LE(out, header.Seed);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.GameSpeed));
+	Put_U32_LE(out, header.HashInterval);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.LocalHouse));
 	Put_Text(out, header.SpawnIni);
 	Put_Text(out, header.MapTitle);
-	Put_U32(out, header.Recorded);
-	Put_U32(out, static_cast<std::uint32_t>(header.Players.size()));
+	Put_U32_LE(out, header.Recorded);
+	Put_U32_LE(out, static_cast<std::uint32_t>(header.Players.size()));
 	for (PlayerType const & player : header.Players) {
 		Put_Text(out, player.Name);
 		Put_U8(out, player.IsComputer ? 1 : 0);
@@ -390,11 +384,11 @@ void WriterClass::Add_Event(EventType const & event)
 {
 	std::vector<std::uint8_t> bytes;
 	Put_U8(bytes, TAG_EVENT);
-	Put_U32(bytes, event.Frame);
+	Put_U32_LE(bytes, event.Frame);
 	Put_U8(bytes, event.Type);
-	Put_U32(bytes, static_cast<std::uint32_t>(event.EventFrame));
-	Put_U32(bytes, static_cast<std::uint32_t>(event.House));
-	Put_U32(bytes, static_cast<std::uint32_t>(event.Data.size()));
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.EventFrame));
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.House));
+	Put_U32_LE(bytes, static_cast<std::uint32_t>(event.Data.size()));
 	bytes.insert(bytes.end(), event.Data.begin(), event.Data.end());
 	Put(bytes);
 }
@@ -407,9 +401,9 @@ void WriterClass::Add_Hash(HashType const & hash)
 {
 	std::vector<std::uint8_t> bytes;
 	Put_U8(bytes, TAG_HASH);
-	Put_U32(bytes, hash.Frame);
-	Put_U32(bytes, hash.State);
-	Put_U32(bytes, hash.Targets);
+	Put_U32_LE(bytes, hash.Frame);
+	Put_U32_LE(bytes, hash.State);
+	Put_U32_LE(bytes, hash.Targets);
 	Put(bytes);
 	if (File != nullptr) {
 		std::fflush(File);
@@ -424,9 +418,9 @@ void WriterClass::Finish(HashType const & end, ResultType result)
 {
 	std::vector<std::uint8_t> bytes;
 	Put_U8(bytes, TAG_END);
-	Put_U32(bytes, end.Frame);
-	Put_U32(bytes, end.State);
-	Put_U32(bytes, end.Targets);
+	Put_U32_LE(bytes, end.Frame);
+	Put_U32_LE(bytes, end.State);
+	Put_U32_LE(bytes, end.Targets);
 	Put_U8(bytes, static_cast<std::uint8_t>(result));
 	Put(bytes);
 	Close();
