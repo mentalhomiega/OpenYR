@@ -2965,7 +2965,7 @@ void BuildingClass::Drop_Debris(AbstractClass * source)
 				if (i != NULL) {
 					DebugString("Creating survivor type '%s' from building type '%s'\n", i->Class->GivenName.c_str(), Class->GivenName.c_str());
 					if (HasBuildupData && i->Class->IsNominal) i->IsTechnician = true;
-					ScenarioInit++;
+					ScenarioInitScope scenario_init;
 					Coord newcoord = Coord(newcell) + Coord(0, 36, 0);
 					newcoord = Map[newcoord].Closest_Free_Spot(newcoord);
 
@@ -2987,7 +2987,6 @@ void BuildingClass::Drop_Debris(AbstractClass * source)
 					} else {
 						delete i;
 					}
-					ScenarioInit--;
 				}
 			}
 		}
@@ -3289,12 +3288,11 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 		AircraftClass * air = (AircraftClass *)base;
 
 		air->Set_Height(0);
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 
 		if (IonStormClass::Is_Ion_Storm_Active()) {
 			Cell nearby = air->Nearby_Location(this);
 			if (air->Unlimbo(Coord(nearby, 0), air->Pose_Dir())) {
-				ScenarioInit--;
 				return(2);
 			}
 		} else {
@@ -3312,11 +3310,9 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 					air->Assign_Destination(rally);
 					air->Assign_Mission(MISSION_MOVE);
 				}
-				ScenarioInit--;
 				return(2);
 			}
 		}
-		ScenarioInit--;
 
 	} else {
 
@@ -3340,7 +3336,7 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 		int random = Random_Pick(0, Map.LocalRect.Height);
 		spawncell = spawncell + Cell(random, random);
 
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 		if (base->Unlimbo(Coord(spawncell, 0), DIR_N)) {
 			AbstractClass * rally = Rally_Point_For(base);
 			if (rally != NULL) {
@@ -3356,10 +3352,8 @@ int BuildingClass::Exit_Aircraft(TechnoClass * base)
 					base->Assign_Mission(MISSION_MOVE);
 				}
 			}
-			ScenarioInit--;
 			return(2);
 		}
-		ScenarioInit--;
 	}
 	return(0);
 }
@@ -3434,7 +3428,7 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 		}
 		return(1);	// fail while we're still unloading previous
 	}
-	ScenarioInit++;
+	ScenarioInitScope scenario_init;
 	if (base->Unlimbo(Exit_Coord(), DIR_E)) {
 		base->Mark(MARK_UP);
 		base->Set_Coord(Exit_Coord());
@@ -3442,10 +3436,8 @@ int BuildingClass::Exit_Weapons_Factory(TechnoClass * base)
 		Transmit_Message(RADIO_HELLO, base);
 		Transmit_Message(RADIO_TETHER, base);
 		Assign_Mission(MISSION_UNLOAD);
-		ScenarioInit--;
 		return(2);
 	}
-	ScenarioInit--;
 	return(0);
 }
 
@@ -3477,7 +3469,7 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 
 	Dir256 dir = ::Direction(Center_Coord(), Coord(exitcell)).As_Dir256();
 
-	ScenarioInit++;
+	ScenarioInitScope scenario_init;
 	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
 
 		Begin_Anim(BANIM_PRODUCTION, false);
@@ -3493,10 +3485,8 @@ int BuildingClass::Exit_Vehicle_Door(TechnoClass * base)
 			Send_Computer_Unit_To_Guard(base);
 		}
 
-		ScenarioInit--;
 		return(2);
 	}
-	ScenarioInit--;
 	return(0);
 }
 
@@ -3534,7 +3524,7 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 	Coord exitcellcoord(exitcell);
 	Dir256 dir = ::Direction(Center_Coord(), exitcellcoord).As_Dir256();
 
-	ScenarioInit++;
+	ScenarioInitScope scenario_init;
 	if (base->Unlimbo(Door_Coord(exitcell), dir)) {
 
 		// A hospital or armory also exits its infantry here without having produced them.
@@ -3576,10 +3566,8 @@ int BuildingClass::Exit_Infantry(TechnoClass * base)
 				flying_jumpjet->Transmit_Message(RADIO_OVER_OUT);
 			}
 		}
-		ScenarioInit--;
 		return(2);
 	}
-	ScenarioInit--;
 	return(0);
 }
 
@@ -3600,7 +3588,7 @@ int BuildingClass::Exit_Refinery(TechnoClass * base)
 
 		cell = Adjacent_Cell(Center_Coord().As_Cell(), FACING_SW);
 
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 		if (base->Unlimbo(Coord(Adjacent_Cell(cell, FACING_S), 0), DIR_SW)) {
 			base->PrimaryFacing.Set(DirType(DIR_S));
 			base->Assign_Mission(MISSION_HARVEST);
@@ -3610,7 +3598,6 @@ int BuildingClass::Exit_Refinery(TechnoClass * base)
 		base->Scatter(COORD_NONE, true, false);
 		return(0);
 	}
-	ScenarioInit--;
 	return(0);
 }
 
@@ -4108,7 +4095,7 @@ AbstractClass * BuildingClass::Greatest_Threat(ThreatType threat, Coord const & 
 /// <returns>The aircraft, or null if it could not be created or placed.</returns>
 AircraftClass * BuildingClass::Place_Free_Aircraft(AircraftTypeClass const * type)
 {
-	ScenarioInit++;
+	ScenarioInitScope scenario_init;
 
 	AircraftClass * air = new AircraftClass(type, House);
 	if (air != NULL) {
@@ -4121,7 +4108,6 @@ AircraftClass * BuildingClass::Place_Free_Aircraft(AircraftTypeClass const * typ
 		}
 	}
 
-	ScenarioInit--;
 	return(air);
 }
 
@@ -7818,7 +7804,7 @@ int BuildingClass::Exit_Naval_Object(TechnoClass * base)
 	}
 
 	Coord const exitcoord = Map[exitcell].Center_Coord();
-	ScenarioInit++;
+	ScenarioInitScope scenario_init;
 	if (base->Unlimbo(exitcoord, DIR_E)) {
 		base->Mark(MARK_UP);
 		base->Set_Coord(exitcoord);
@@ -7827,10 +7813,8 @@ int BuildingClass::Exit_Naval_Object(TechnoClass * base)
 			base->Assign_Destination(rally);
 			base->Assign_Mission(MISSION_MOVE);
 		}
-		ScenarioInit--;
 		return(2);
 	}
-	ScenarioInit--;
 	return(0);
 }
 

@@ -1542,7 +1542,7 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 			Remove_Gunner(object);
 		}
 
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 
 		/*
 		**	The cell test runs before the passenger takes the vehicle's OnBridge state, as gamemd does.
@@ -1577,8 +1577,6 @@ void UnitClass::Resolve_Passengers_On_Death(TechnoClass * source, bool forced, b
 			object->Record_The_Kill(source);
 			object->Delete_Me();
 		}
-
-		ScenarioInit--;
 	}
 }
 

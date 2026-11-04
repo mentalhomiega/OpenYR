@@ -6682,7 +6682,7 @@ void HouseClass::Restore_Starting_Forces(void)
 		StartingObjectType const & start = StartingObjects[index];
 		TechnoClass * object = NULL;
 
-		ScenarioInit++;
+		ScenarioInitScope scenario_init;
 		TechnoTypeClass const * type = Fetch_Techno_Type((RTTIType)start.Kind, start.Type);
 		if (type != NULL) {
 			object = static_cast<TechnoClass *>(type->Create_One_Of(this));
@@ -6690,7 +6690,6 @@ void HouseClass::Restore_Starting_Forces(void)
 		if (object != NULL && !object->Unlimbo(Coord(start.Position))) {
 			delete object;
 		}
-		ScenarioInit--;
 	}
 }
 
