@@ -17,6 +17,10 @@ namespace NetSemantic
 	// The largest frame count the compressed response-time check and the max-ahead check accept.
 	constexpr unsigned int LEGACY_MAX_AHEAD_LIMIT = 250;
 
+	// The game speeds the game controls offer, 0 to SPEED_SETTING_COUNT - 1. OptionsClass::MAX_SPEED_SETTING
+	// is defined as this count, so the network, recording and options ranges cannot drift apart.
+	constexpr int SPEED_SETTING_COUNT = 7;
+
 	bool Index_Is_Valid(int index, std::size_t count) noexcept;
 	bool Subject_Owner_Is_Valid(int sender, int owner) noexcept;
 	bool Game_Speed_Is_Valid(int game_speed) noexcept;

@@ -37,6 +37,7 @@
 #include "video.h"
 
 #include "diff.hh"
+#include "netsemantic.h"
 
 #include <string>
 
@@ -71,7 +72,7 @@ class OptionsClass {
 	public:
 		enum {
 			MAX_SCROLL_SETTING=7,
-			MAX_SPEED_SETTING=7,
+			MAX_SPEED_SETTING=NetSemantic::SPEED_SETTING_COUNT,
 			MAX_DETAIL_SETTING=3,
 			MAX_DIFFICULTY_SETTING=DIFF_COUNT,
 			RENDER_FRAME_RATE_MATCH_DISPLAY=-1

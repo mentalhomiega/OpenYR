@@ -29,18 +29,20 @@ namespace NetSemantic
 	/// <summary>Checks a game-speed selector before table lookup.</summary>
 	bool Game_Speed_Is_Valid(int game_speed) noexcept
 	{
-		return(game_speed >= 0 && game_speed <= 6);
+		return(game_speed >= 0 && game_speed < SPEED_SETTING_COUNT);
 	}
 
 
 	/// <summary>
-	/// Holds a game speed read from the settings file to the range the speed tables cover.
-	/// gamemd stores the value unchecked (0x5FA650); its Normalize_Delay (0x5FB2E0) then divides by
-	/// zero at -1 and indexes past its table outside 0 to 7.
+	/// Holds a game speed read from the settings file to the range the speed tables cover, 0 to
+	/// SPEED_SETTING_COUNT. gamemd stores the value unchecked (0x5FA650). Its Normalize_Delay
+	/// (0x5FB2E0) has a column for every speed up to SPEED_SETTING_COUNT, so that last speed works
+	/// and runs solo play with no frame limit, but it divides by zero at -1 and indexes past the
+	/// table outside that range.
 	/// </summary>
 	int Clamp_Game_Speed(int game_speed) noexcept
 	{
-		return(game_speed < 0 ? 0 : (game_speed > 6 ? 6 : game_speed));
+		return(game_speed < 0 ? 0 : (game_speed > SPEED_SETTING_COUNT ? SPEED_SETTING_COUNT : game_speed));
 	}
 
 

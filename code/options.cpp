@@ -682,7 +682,7 @@ void OptionsClass::Load_Settings(void)
 	/*
 	**	Read in the Options values
 	*/
-	// gamemd keeps any number here; -1 crashes it, so the value is held to the speeds the game controls offer.
+	// gamemd keeps any number here; -1 crashes it, so the value is held to the speeds its tables cover, 0 to 7.
 	GameSpeed = ConfigINI.Get_Int("Options", "GameSpeed", GameSpeed);
 	GameSpeed = NetSemantic::Clamp_Game_Speed(GameSpeed);
 	DebugString("GameSpeed = %d\n", GameSpeed);
