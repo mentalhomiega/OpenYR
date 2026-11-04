@@ -110,7 +110,7 @@ The first pass builds the blank map that the other passes work on.
 
 [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) selects a row of minimum and maximum sizes, and [`Width`](/keys/width/#scope-random-map-generation) and [`Height`](/keys/height/#scope-random-map-generation) each pick a point within that row. [Map seed files](/formats/map-seed/) has the table. The result is the playable area. The playfield is four cells wider and twelve cells taller, with the playable area inset two columns and five rows. No setting changes that border.
 
-[`Biome`](/keys/biome/) selects the theater: snow for tundra and taiga, temperate for the other three. [`Time`](/keys/time/) selects the ambient light level. Every cell starts as `Clear` ground at height 4, whatever the biome.
+[`Biome`](/keys/biome/) selects the theater: snow for tundra and taiga, temperate for the other three. [`Time`](/keys/time/) selects the ambient light level. The map is written with [`Level=0`](/keys/level/#scope-scenarios-2) at every hour, so high ground is lit the same as low ground. Every cell starts as `Clear` ground at height 4, whatever the biome.
 
 Two settings load extra files before any terrain is placed:
 

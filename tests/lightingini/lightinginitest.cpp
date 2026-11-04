@@ -146,6 +146,20 @@ int main(void)
 			"the change rate is written as value x 0.001 and a tint as value x 0.01, in %f");
 	}
 
+	Check(LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[0]) == 0.0 && LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[1]) == 0.0
+		&& LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[2]) == 0.0 && LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[3]) == 0.0,
+		"a generated map writes Level=0 at every time of day, the stock 3 divided by 100 in whole numbers");
+	Check(LightingIni::Generated_Level(99) == 0.0 && LightingIni::Generated_Level(100) == 1.0 && LightingIni::Generated_Level(250) == 2.0,
+		"the generator's Level setting is divided by 100 and its remainder dropped");
+	{
+		INIClass written;
+		written.Put_Float("Lighting", "Level", LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[1]));
+		INIClass read;
+		Reload(written, read);
+		Check(LightingIni::Fraction_Thousandths(read.Get_Float("Lighting", "Level", LightingIni::Thousandths_Fraction(LightingIni::LEVEL))) == 0,
+			"a generated map reads back no height brightness, not the 8 thousandths an omitted Level gives");
+	}
+
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);
 		return(1);

@@ -59,4 +59,14 @@ namespace LightingIni
 	{
 		return(thousandths * 0.001);
 	}
+
+	// RMGLevelLightSettings in [General] of the stock RMGMD.INI, by time of day: morning, day, dusk, night.
+	constexpr int RMG_LEVEL_LIGHT[4] = {3, 3, 3, 3};
+
+	// The random map generator writes [Lighting] Level as the setting divided by 100 in whole
+	// numbers (0x59990D to 0x59994A), so the stock settings write Level=0.
+	inline double Generated_Level(int setting)
+	{
+		return(static_cast<double>(setting / 100));
+	}
 }
