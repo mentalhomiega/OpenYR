@@ -342,6 +342,28 @@ static bool Is_Player_Or_Control_Object(TechnoClass const * techno)
 }
 
 
+// Whether the object is on the map, belongs to the player's own house and is of the type with that ID.
+// A house the map marks PlayerControl=yes does not count here.
+static bool Is_Player_Techno_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0);
+}
+
+
+// Runs the action on every techno the filter accepts, in list order. The count is read again on every pass, so
+// an action that adds or removes technos is handled as the hand-written loops did. Each step supplies its own filter.
+template<class Filter, class Action>
+static void For_Technos(Filter filter, Action action)
+{
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * techno = Technos[index];
+		if (filter(techno)) {
+			action(techno);
+		}
+	}
+}
+
+
 template<class T>
 void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name, void (*action)(T *))
 {
@@ -616,13 +638,12 @@ static void Hunt_Step(StepType const & step)
 static void Repairmission_Step(StepType const & step)
 {
 	std::string const & name = step.Argument;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && Is_Player_Techno_Named(techno, name));},
+		[](TechnoClass * techno) {
 			FootClass * foot = static_cast<FootClass *>(techno);
 			foot->Assign_Mission(MISSION_REPAIR);
-		}
-	}
+		});
 }
 
 
@@ -3462,13 +3483,12 @@ static void Planmove_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
 	PlanningRecordScope const recording(Map.IsPlanningMode);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
+		[&](TechnoClass * techno) {
 			DebugString("AUTOTEST   planmove %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
 			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
-		}
-	}
+		});
 }
 
 
@@ -3481,13 +3501,13 @@ static void Plantbomb_Step(StepType const & step)
 			planter = Infantry[index];
 		}
 	}
-	for (int index = 0; planter != NULL && index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	if (planter == NULL) return;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			techno->Plant_Bomb(planter);
 			DebugString("AUTOTEST   plantbomb %s at %d,%d detonates at frame %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->BombDetonateFrame);
-		}
-	}
+		});
 }
 
 
@@ -3497,13 +3517,12 @@ static void Planguard_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
 	PlanningRecordScope const recording(Map.IsPlanningMode);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0 && techno->Is_Foot()) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
+		[&](TechnoClass * techno) {
 			DebugString("AUTOTEST   planguard %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
 			techno->Player_Assign_Mission(MISSION_GUARD_AREA, &Map[cell]);
-		}
-	}
+		});
 }
 
 
@@ -3516,15 +3535,14 @@ static void Forceattack_Step(StepType const & step)
 	TechnoClass * over = Techno_Over_Cell(cell);
 	AbstractClass * target = over != NULL ? static_cast<AbstractClass *>(over) : static_cast<AbstractClass *>(&Map[cell]);
 	PlanningRecordScope const recording(Map.IsPlanningMode);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			DebugString("AUTOTEST   forceattack %s at %d,%d on %s (fire %d)\n", techno->TClass->Name(), step.X, step.Y, over != NULL ? over->TClass->Name() : "ground", (int)techno->Can_Player_Fire());
 			if (techno->Can_Player_Fire()) {
 				techno->Player_Assign_Mission(MISSION_ATTACK, target);
 			}
-		}
-	}
+		});
 }
 
 
@@ -4114,25 +4132,21 @@ static void Voxelshade_Step(StepType const & step)
 static void Hurt_Step(StepType const & step)
 {
 	int percent = step.X;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Strength > 0);},
+		[&](TechnoClass * techno) {techno->Strength = std::max(1, techno->TClass->MaxStrength * percent / 100);});
 }
 
 
 // warpout <TypeID> <0|1>: sets or clears the warping-out flag on the player's objects of that type, without a warp effect.
 static void Warpout_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			techno->IsBeingWarpedOut = step.X != 0;
 			DebugString("AUTOTEST   warpout %s at %d,%d: %d strength %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsBeingWarpedOut, (int)techno->Strength);
-		}
-	}
+		});
 }
 
 
@@ -4554,14 +4568,13 @@ static void Versus_Step(StepType const & step)
 // damage <TypeID> <amount>: hits every player object of the type for that much unforced damage.
 static void Damage_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Strength > 0);},
+		[&](TechnoClass * techno) {
 			int damage = step.X;
 			techno->Take_Damage(damage, 0, Rule->C4Warhead, NULL, false);
 			DebugString("AUTOTEST   damage %s at %d,%d took %d strength %d curtain %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, damage, (int)techno->Strength, (int)techno->IronCurtainTimer);
-		}
-	}
+		});
 }
 
 
