@@ -4297,7 +4297,7 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 	DominatorBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorBlue", LightingIni::Percent_Fraction(DominatorBlueTint)));
 	DominatorGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorGround", LightingIni::Thousandths_Fraction(DominatorGroundLight)));
 	DominatorLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorLevel", LightingIni::Thousandths_Fraction(DominatorLevelLight)));
-	// gamemd reads this frame count in thousandths like Ground (0x68AC59), so DominatorAmbientChangeRate=1 is 1000 frames.
+	// gamemd reads this like Ground (0x68AC59): the INI value counts thousands of frames, so DominatorAmbientChangeRate=1 is 1000 frames.
 	DominatorAmbientChangeRate = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", LightingIni::Thousandths_Fraction(DominatorAmbientChangeRate)));
 
 	Session.Update_Progress(55);
