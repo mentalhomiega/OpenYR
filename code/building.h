@@ -627,6 +627,7 @@ class BuildingClass : public TechnoClass
 		void Charging_AI(void);
 		void Rotation_AI(void) {}
 		void Factory_AI(void);
+		bool Start_Production_Of(TechnoTypeClass const & type);
 		void Repair_AI(void);
 		void Produce_Cash_AI(void);
 		void Update_Service_State(void);

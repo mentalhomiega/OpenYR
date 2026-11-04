@@ -3430,14 +3430,9 @@ static void Produceai_Step(StepType const & step)
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	if (type != NULL && building != NULL && building->House != NULL && building->Factory == NULL) {
-		building->Factory = new FactoryClass;
-		if (building->Factory->Set(*type, *building->House, false)) {
-			building->House->Production_Begun(building->Factory->Get_Object());
-			building->Factory->Start(false);
+		if (building->Start_Production_Of(*type)) {
 			DebugString("AUTOTEST produceai %s for %s at %d,%d started\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
 		} else {
-			delete building->Factory;
-			building->Factory = NULL;
 			DebugString("AUTOTEST produceai %s for %s at %d,%d refused\n", type->Name(), building->House->Class->Name(), step.X, step.Y);
 		}
 	} else {

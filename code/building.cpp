@@ -8494,21 +8494,33 @@ void BuildingClass::Factory_AI(void)
 					**	producing it now.
 					*/
 					if (techno != NULL) {
-						Factory = new FactoryClass;
-						if (Factory != NULL) {
-							if (!Factory->Set(*techno, *House, false)) {
-								delete (FactoryClass *)Factory;
-								Factory = 0;
-							} else {
-								House->Production_Begun(Factory->Get_Object());
-								Factory->Start(false);
-							}
-						}
+						Start_Production_Of(*techno);
 					}
 				}
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Gives this structure a factory building the type and starts it. Returns false, with no factory
+/// left on the structure, when the factory refuses the type. The structure must have no factory yet.
+/// </summary>
+bool BuildingClass::Start_Production_Of(TechnoTypeClass const & type)
+{
+	Factory = new FactoryClass;
+	if (Factory == NULL) {
+		return false;
+	}
+	if (!Factory->Set(type, *House, false)) {
+		delete (FactoryClass *)Factory;
+		Factory = 0;
+		return false;
+	}
+	House->Production_Begun(Factory->Get_Object());
+	Factory->Start(false);
+	return true;
 }
 
 
