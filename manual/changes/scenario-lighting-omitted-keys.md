@@ -45,6 +45,9 @@ targets:
 - type: key
   id: DominatorLevel
   effect: changed
+- type: key
+  id: DominatorAmbientChangeRate
+  effect: changed
 - type: system
   id: ion-storms
   effect: changed
@@ -52,4 +55,4 @@ credit:
 - MentalHomiega
 ---
 
-A map that omits a `[Lighting]` key now gets the value Yuri's Revenge gives it: `Ground=.05`, `Level=.008`, `IonAmbient=.87`, `IonRed=.3`, `IonGreen=.4`, `IonBlue=.75`, `IonGround=0` and `IonLevel=0`. Before, an omitted `Ground` or `Level` was `0`, and an omitted ion key copied the ordinary key it pairs with. The ion keys and the `Dominator` keys now also add a hundredth before dropping the fraction, as the ordinary keys already did, so `IonRed=.88` is `.88` rather than `.87`, and `DominatorRed=.857` is `.85` rather than `.86`. Maps that write every key look the same apart from that rounding.
+A map that omits a `[Lighting]` key now gets the value Yuri's Revenge gives it: `Ground=.05`, `Level=.008`, `IonAmbient=.87`, `IonRed=.3`, `IonGreen=.4`, `IonBlue=.75`, `IonGround=0` and `IonLevel=0`. Before, an omitted `Ground` or `Level` was `0`, and an omitted ion key copied the ordinary key it pairs with. The ion keys and the `Dominator` keys now also add a hundredth before dropping the fraction, as the ordinary keys already did, so `IonRed=.88` is `.88` rather than `.87`, and `DominatorRed=.857` is `.85` rather than `.86`. `DominatorAmbientChangeRate` is now read in thousands of frames, as Yuri's Revenge reads it, so `DominatorAmbientChangeRate=1` waits 1,000 frames between light steps rather than one; the default stays one frame. Apart from these, maps that write every key look the same.

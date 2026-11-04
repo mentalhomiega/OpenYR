@@ -69,6 +69,10 @@ int main(void)
 	Check(LightingIni::Fraction_Thousandths(Written(0.1f)) == 100, "Ground=.1 reads as 100 thousandths");
 	Check(LightingIni::Fraction_Thousandths(Written(0.0005f)) == 0, "a part finer than a thousandth is dropped");
 
+	Check(LightingIni::Fraction_Thousandths(Written(2.0f)) == 2000, "DominatorAmbientChangeRate=2 is 2000 frames, read like Ground");
+	Check(LightingIni::Fraction_Thousandths(LightingIni::Thousandths_Fraction(1)) == 1,
+		"an omitted DominatorAmbientChangeRate keeps its one frame");
+
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);
 		return(1);
