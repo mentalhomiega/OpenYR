@@ -37,3 +37,19 @@ inline std::uint32_t Fnv_Add_U32(std::uint32_t hash, std::uint32_t value)
 	}
 	return(hash);
 }
+
+
+// The 64-bit FNV-1a offset basis and prime.
+constexpr std::uint64_t FNV64_BASIS = 14695981039346656037ull;
+constexpr std::uint64_t FNV64_PRIME = 1099511628211ull;
+
+
+// Adds the bytes at data to a 64-bit hash, in memory order.
+inline std::uint64_t Fnv64_Add_Bytes(std::uint64_t hash, void const * data, std::size_t length)
+{
+	unsigned char const * bytes = static_cast<unsigned char const *>(data);
+	for (std::size_t index = 0; index < length; index++) {
+		hash = (hash ^ bytes[index]) * FNV64_PRIME;
+	}
+	return(hash);
+}

@@ -9,6 +9,7 @@
 
 #include "cncnetcopy.h"
 #include "cncnet/cncnettext.h"
+#include "fnv.h"
 #include "strutil.h"
 
 #include "win.h"
@@ -286,16 +287,13 @@ bool Hash_File(std::string const & path, std::uint64_t & size, std::uint64_t & h
 		return(false);
 	}
 
-	std::uint64_t value = 14695981039346656037ull;
+	std::uint64_t value = FNV64_BASIS;
 	std::vector<char> buffer(1024 * 1024);
 	size = 0;
 	while (in) {
 		in.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
 		std::streamsize const count = in.gcount();
-		for (std::streamsize index = 0; index < count; index++) {
-			value ^= static_cast<unsigned char>(buffer[static_cast<std::size_t>(index)]);
-			value *= 1099511628211ull;
-		}
+		value = Fnv64_Add_Bytes(value, buffer.data(), static_cast<std::size_t>(count));
 		size += static_cast<std::uint64_t>(count);
 	}
 	hash = value;
