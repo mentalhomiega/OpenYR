@@ -12697,7 +12697,7 @@ DominatorAmbientChangeRate:
     _provenance:
       default_candidate: null
       declared_in: ScenarioClass
-      member: DominatorAmbientChangeRate
+      member: null
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass

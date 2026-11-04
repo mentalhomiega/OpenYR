@@ -5,8 +5,7 @@ label: Height brightness
 see_also: [Ground, IonLevel, "system:ion-storms"]
 when_omitted:
   kind: value
-  value: "0"
-  note: An absent key gives 0, not the engine's starting value of about .016 (a sixtieth of full brightness), because the fallback is truncated to a whole number.
+  value: ".008"
 ---
 
 ```ini title="map file"
@@ -20,4 +19,4 @@ Level=.016
 
 The same value brightens objects raised above the ground. An aircraft gains it once for every two height levels of altitude. A vehicle on a bridge gains four times this value, and an infantryman on a bridge gains nothing from it.
 
-[`IonLevel`](/keys/ionlevel/) replaces this value while [an ion storm](/systems/ion-storms/#lighting) runs. Leaving `IonLevel` out does not carry this value over.
+[`IonLevel`](/keys/ionlevel/) replaces this value while [an ion storm](/systems/ion-storms/#lighting) runs. An omitted `IonLevel` is `0` whatever this key says.

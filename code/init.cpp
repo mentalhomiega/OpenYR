@@ -177,6 +177,7 @@
 #include "png.h"
 #include "queue.h"
 #include "ramfile.h"
+#include "recordingvalues.h"
 #include "revent.h"
 #include "rndstraw.h"
 #include "rules.h"
@@ -1001,11 +1002,11 @@ restart:
 		**	the menu loop.  Hide the now-useless mouse pointer.
 		*/
 		if (Session.Play && Session.RecordFile.Is_Available()) {
-			if (Session.RecordFile.Open(FileClass::READ)) {
-				Load_Recording_Values(Session.RecordFile);
+			if (Session.RecordFile.Open(FileClass::READ) && Load_Recording_Values(Session.RecordFile)) {
 				process = false;
 				Theme.Stop(true);
 			} else {
+				Session.RecordFile.Close();
 				Session.Play = false;
 			}
 		}
@@ -1258,11 +1259,11 @@ restart:
 						if (Session.Attract && Session.RecordFile.Is_Available()) {
 							Session.Play = true;
 
-							if (Session.RecordFile.Open(FileClass::READ)) {
-								Load_Recording_Values(Session.RecordFile);
+							if (Session.RecordFile.Open(FileClass::READ) && Load_Recording_Values(Session.RecordFile)) {
 								process = false;
 								Theme.Stop(true);
 							} else {
+								Session.RecordFile.Close();
 								Session.Play = false;
 								selection = SEL_NONE;
 							}
@@ -1364,9 +1365,8 @@ restart:
 		**	Save initialization values if we're recording this game.
 		*/
 		if (Session.Record) {
-			if (Session.RecordFile.Open(FileClass::WRITE)) {
-				Save_Recording_Values(Session.RecordFile);
-			} else {
+			if (!Session.RecordFile.Open(FileClass::WRITE) || !Save_Recording_Values(Session.RecordFile)) {
+				Session.RecordFile.Close();
 				Session.Record = false;
 			}
 		}
@@ -2898,17 +2898,18 @@ bool Save_Recording_Values(CCFileClass & file)
 {
 	//Session.Save(file);
 	DebugString("Saving recording values for scenario : %s\n", Scen->ScenarioName);
-	file.Write(&BuildLevel, sizeof(BuildLevel));
-#if defined(_DEBUG)
-	file.Write(&Debug_Unshroud, sizeof(Debug_Unshroud));
-#endif
-	file.Write(&Seed, sizeof(Seed));
-	file.Write(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Write(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Write(&Whom, sizeof(Whom));
-	file.Write(&Special, sizeof(SpecialClass));
-	file.Write(&Options, sizeof(OptionsClass));
-	return(true);
+	RecordingValues::ValuesType values;
+	values.BuildLevel = BuildLevel;
+	values.Unshroud = Debug_Unshroud;
+	values.Seed = Seed;
+	values.Scenario = Scen->Scenario;
+	values.ScenarioName = Scen->ScenarioName;
+	values.Whom = Whom;
+	values.Special = Special;
+	values.GameSpeed = Options.GameSpeed;
+	values.Difficulty = Options.Difficulty;
+	std::vector<std::uint8_t> const bytes = RecordingValues::Encode(values);
+	return(file.Write(bytes.data(), static_cast<int>(bytes.size())) == static_cast<int>(bytes.size()));
 }
 
 
@@ -2929,17 +2930,30 @@ bool Save_Recording_Values(CCFileClass & file)
  *=========================================================================*/
 bool Load_Recording_Values(CCFileClass & file)
 {
+	static_assert(RecordingValues::GAME_SPEED_COUNT == OptionsClass::MAX_SPEED_SETTING, "a recording checks the game speeds the options offer");
+	static_assert(RecordingValues::DIFFICULTY_COUNT == DIFF_COUNT, "a recording checks the difficulties the game defines");
 	//Session.Load(file);
-	file.Read(&BuildLevel, sizeof(BuildLevel));
+	RecordingValues::ValuesType values;
+	RecordingValues::LoadResult const result = RecordingValues::Read(values, HouseTypes.Count(), [&file](void * buffer, std::size_t size) {
+		return(file.Read(buffer, static_cast<int>(size)) == static_cast<int>(size));
+	});
+	if (result != RecordingValues::LoadResult::OK) {
+		DebugString("Recording %s refused: %s\n", file.File_Name(),
+			result == RecordingValues::LoadResult::OTHER_REVISION ? "another revision" : "not a recording or damaged");
+		return(false);
+	}
+
+	BuildLevel = values.BuildLevel;
 #if defined(_DEBUG)
-	file.Read(&Debug_Unshroud, sizeof(Debug_Unshroud));
+	Debug_Unshroud = values.Unshroud;
 #endif
-	file.Read(&Seed, sizeof(Seed));
-	file.Read(&Scen->Scenario, sizeof(Scen->Scenario));
-	file.Read(Scen->ScenarioName, sizeof(Scen->ScenarioName));
-	file.Read(&Whom, sizeof(Whom));
-	file.Read(&Special, sizeof(SpecialClass));
-	file.Read(&Options, sizeof(OptionsClass));
+	Seed = values.Seed;
+	Scen->Scenario = values.Scenario;
+	std::snprintf(Scen->ScenarioName, sizeof(Scen->ScenarioName), "%s", values.ScenarioName.c_str());
+	Whom = static_cast<HousesType>(values.Whom);
+	Special = values.Special;
+	Options.GameSpeed = values.GameSpeed;
+	Options.Difficulty = values.Difficulty;
 	DebugString("Loaded recording values for scenario : %s\n", Scen->ScenarioName);
 	return(true);
 }

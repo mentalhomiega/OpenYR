@@ -39,6 +39,7 @@
 #include "inline.h"
 #include "isotype.h"
 #include "language/language.h"
+#include "lightingini.h"
 #include "netshare.h"
 #include "nodes.h"
 #include "overtype.h"
@@ -4594,6 +4595,14 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_Float("Lighting", "Ground", 0.0);
 	ini.Put_Float("Lighting", "Level", 0.01);
 
+	// gamemd's generator writes the storm lighting as well (0x599951 to 0x5999DC): the ambient level, then a dark blue tint.
+	ini.Put_Float("Lighting", "IonAmbient", tod * scale);
+	ini.Put_Float("Lighting", "IonRed", LightingIni::Percent_Fraction(LightingIni::ION_RED));
+	ini.Put_Float("Lighting", "IonGreen", LightingIni::Percent_Fraction(LightingIni::ION_GREEN));
+	ini.Put_Float("Lighting", "IonBlue", LightingIni::Percent_Fraction(LightingIni::ION_BLUE));
+	ini.Put_Float("Lighting", "IonGround", LightingIni::Thousandths_Fraction(LightingIni::ION_GROUND));
+	ini.Put_Float("Lighting", "IonLevel", LightingIni::Thousandths_Fraction(LightingIni::ION_LEVEL));
+
 	if (!Scen->IsReadingScenario) {
 		Progress.Set_Progress_Percent(0, 1);
 	}
@@ -4874,12 +4883,13 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		ini.Load(file, false);
 		Rule->General(ini);
 		char const * const LIGHTING = "Lighting";
-		Scen->IonAmbientLight= (int) (100.0 * ini.Get_Float(LIGHTING, "IonAmbient", Scen->AmbientLight / 100.0));
-		Scen->IonRedTint     = (int) (100.0 * ini.Get_Float(LIGHTING, "IonRed",  Scen->RedTint / 100.0));
-		Scen->IonGreenTint   = (int) (100.0 * ini.Get_Float(LIGHTING, "IonGreen",Scen->GreenTint / 100.0));
-		Scen->IonBlueTint    = (int) (100.0 * ini.Get_Float(LIGHTING, "IonBlue", Scen->BlueTint / 100.0));
-		Scen->IonGroundLight = (int) (NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", Scen->GroundLight / NORMAL_LIGHT));
-		Scen->IonLevelLight  = (int) (NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", Scen->LevelLight / NORMAL_LIGHT));
+		// An omitted key keeps the storm lighting the generated map already read, as ScenarioClass::Read_INI does.
+		Scen->IonAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonAmbient", LightingIni::Percent_Fraction(Scen->IonAmbientLight)));
+		Scen->IonRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonRed", LightingIni::Percent_Fraction(Scen->IonRedTint)));
+		Scen->IonGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonGreen", LightingIni::Percent_Fraction(Scen->IonGreenTint)));
+		Scen->IonBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonBlue", LightingIni::Percent_Fraction(Scen->IonBlueTint)));
+		Scen->IonGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonGround", LightingIni::Thousandths_Fraction(Scen->IonGroundLight)));
+		Scen->IonLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonLevel", LightingIni::Thousandths_Fraction(Scen->IonLevelLight)));
 		TriggerTypeClass::Read_All(ini);
 		TagTypeClass::Read_All(ini);
 	}
