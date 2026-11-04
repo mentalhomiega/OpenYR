@@ -511,3 +511,6 @@ class SidebarClass : public PowerClass
 		// The completed building each of the structure and defense tabs holds, or NULL.
 		BuildingClass * CompletedBuilding[2];
 };
+
+
+void Queue_Produce(RTTIType type, int id, int count = 1);
