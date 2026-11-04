@@ -261,9 +261,8 @@ bool Capture_Event(EventClass const & event, ReplayFile::EventType & out)
 	} else if (EventClass::Has_Variable_Payload(event.Type)) {
 		return(false);
 	} else {
-		std::size_t const length = std::min<std::size_t>(EventClass::EventLength[event.Type], sizeof(event.Data));
 		unsigned char const * bytes = reinterpret_cast<unsigned char const *>(&event.Data);
-		out.Data.assign(bytes, bytes + length);
+		out.Data.assign(bytes, bytes + EventClass::Fixed_Length(event.Type));
 	}
 
 	out.Type = event.Type;

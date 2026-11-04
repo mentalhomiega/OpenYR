@@ -125,6 +125,16 @@ class EventClass
 		// The payload of these events follows them in a packet, with its length in Data.Variable.Size.
 		static bool Has_Variable_Payload(unsigned char type) { return type == ADDPLAYER || type == BEACON_TEXT; }
 
+		// The Data bytes that a replay or sync record copies for this type: EventLength, at most
+		// sizeof(Data), and 0 for a type past LAST_EVENT. A variable payload's text is not counted.
+		static std::size_t Fixed_Length(unsigned char type)
+		{
+			if (type >= LAST_EVENT) {
+				return(0);
+			}
+			return(EventLength[type] < sizeof(Data) ? EventLength[type] : sizeof(Data));
+		}
+
 		static constexpr std::uint16_t NETWORK_RTT_UNAVAILABLE = UINT16_MAX;
 
 		unsigned char Type;		// Type of queue command object.

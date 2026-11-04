@@ -193,8 +193,7 @@ std::optional<Bytes> Replay_Payload(EventClass const & event)
 	} else if (EventClass::Has_Variable_Payload(event.Type)) {
 		return(std::nullopt);
 	} else {
-		std::size_t const length = std::min<std::size_t>(EventClass::EventLength[event.Type], sizeof(event.Data));
-		Append_Raw(bytes, &event.Data, length);
+		Append_Raw(bytes, &event.Data, EventClass::Fixed_Length(event.Type));
 	}
 	return(bytes);
 }
@@ -215,10 +214,7 @@ std::optional<Bytes> Sync_Payload(EventClass const & event)
 	}
 
 	SyncEventEntryType entry {};
-	unsigned length = 0;
-	if (event.Type < EventClass::LAST_EVENT) {
-		length = EventClass::EventLength[event.Type];
-	}
+	unsigned length = (unsigned)EventClass::Fixed_Length(event.Type);
 	if (length > sizeof(entry.Bytes)) {
 		length = sizeof(entry.Bytes);
 	}
@@ -381,6 +377,8 @@ int main(int argc, char ** argv)
 	}
 
 	Test_Table();
+	Check(EventClass::Fixed_Length(EventClass::LAST_EVENT) == 0 && EventClass::Fixed_Length(0xFF) == 0,
+		"a type past LAST_EVENT copies no Data bytes");
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Some checks FAILED.");
 	return(Failures == 0 ? 0 : 1);
