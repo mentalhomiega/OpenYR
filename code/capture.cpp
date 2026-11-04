@@ -127,10 +127,8 @@ bool CaptureManagerClass::Capture_Unit(TechnoClass * target)
 	node.LinkTimer = Rule->MindControlAttackLineFrames;
 	Nodes.push_back(node);
 	target->MindControlledBy = Owner;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST mind control %s taken from %s by %s, link %d frames, ring %s\n", target->TClass->Name(), original != NULL ? original->Class->Name() : "-",
-			Owner->House->Class->Name(), (int)Rule->MindControlAttackLineFrames, Rule->ControlledAnimationType != NULL ? Rule->ControlledAnimationType->Name() : "none");
-	}
+	AUTOTEST_LOG("mind control %s taken from %s by %s, link %d frames, ring %s\n", target->TClass->Name(), original != NULL ? original->Class->Name() : "-",
+		Owner->House->Class->Name(), (int)Rule->MindControlAttackLineFrames, Rule->ControlledAnimationType != NULL ? Rule->ControlledAnimationType->Name() : "none");
 
 	bool const unloading = target->RTTI == RTTI_UNIT && ((UnitClass *)target)->Class->IsToHarvest && target->CurrentMission == MISSION_UNLOAD;
 	if (!unloading && !Is_Being_Built_Or_Sold(target)) {
@@ -170,9 +168,7 @@ void CaptureManagerClass::Free_Unit(TechnoClass * unit)
 		VocType const sound = unit->TClass->MindClearedSound != VOC_NONE ? unit->TClass->MindClearedSound : Rule->MindClearedSound;
 		Sound_Effect(sound, unit->Center_Coord());
 
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST mind control released %s to %s\n", unit->TClass->Name(), original != NULL ? original->Class->Name() : "-");
-		}
+		AUTOTEST_LOG("mind control released %s to %s\n", unit->TClass->Name(), original != NULL ? original->Class->Name() : "-");
 		if (original != NULL) {
 			unit->Set_Owning_House(original, true);
 		}

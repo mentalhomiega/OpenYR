@@ -3617,9 +3617,7 @@ void TechnoClass::Call_Airstrike(AbstractClass * target)
 			Sound_Effect(Rule->AirstrikeAttackVoice);
 		}
 		DebugString("Airstrike: %s calls %d %s on %s\n", TClass->Name(), count, type->Name(), target->As_ObjectClass()->Class_Of()->Name());
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
-		}
+		AUTOTEST_LOG("airstrike call %s frame %d planes %d\n", TClass->Name(), Frame, (int)AirstrikePlanes.size());
 	}
 }
 
@@ -3647,9 +3645,7 @@ void TechnoClass::Retire_Airstrike_Planes(void)
 void TechnoClass::Start_Airstrike_Recharge(void)
 {
 	AirstrikeReadyFrame = Frame + (Veterancy.Is_Elite() ? TClass->EliteAirstrikeRechargeTime : TClass->AirstrikeRechargeTime);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
-	}
+	AUTOTEST_LOG("airstrike recharge %s frame %d ready %d\n", TClass->Name(), Frame, AirstrikeReadyFrame);
 }
 
 
@@ -3669,9 +3665,7 @@ void TechnoClass::Mark_Airstrike_Target(AbstractClass * target)
 
 	structure->AirstrikeMarkedBy = this;
 	AirstrikeMarkedTarget = structure;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
-	}
+	AUTOTEST_LOG("airstrike mark %s by %s color %d of %d\n", structure->TClass->Name(), TClass->Name(), Rule->LaserTargetColor, (int)Rule->ColorAdd.size());
 }
 
 
@@ -3688,9 +3682,7 @@ void TechnoClass::Clear_Airstrike_Designation(void)
 		structure->AirstrikeMarkedBy = NULL;
 	}
 	AirstrikeMarkedTarget = NULL;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
-	}
+	AUTOTEST_LOG("airstrike unmark %s by %s\n", structure->TClass->Name(), TClass->Name());
 }
 
 
@@ -5351,9 +5343,7 @@ void TechnoClass::Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & di
 	int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
 	Coord const aim = displacement;
 	displacement = Ballistic_Offset(displacement, spread, angle);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
-	}
+	AUTOTEST_LOG("scatter fire %s path %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", bullet->Class->Name(), path, range, distance, spread, angle, turret_coord.X + aim.X, turret_coord.Y + aim.Y, turret_coord.X + displacement.X, turret_coord.Y + displacement.Y);
 }
 
 
@@ -5491,9 +5481,7 @@ void TechnoClass::Play_Fire_Anim_And_Sound(WeaponTypeClass const * weapon, Coord
 		// The firing animation starts at the mounting, as the projectile does (TechnoClass::Fire, 0x6FDD50, CStack_74).
 		Coord anim_coord = fire_coord;
 		AnimClass * anim = new AnimClass(a, anim_coord);
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
-		}
+		AUTOTEST_LOG("muzzle frame %d %s weapon %s anim %s of %d facing %d burst %d at %d,%d,%d\n", (int)Frame, TClass->Name(), weapon->Name(), a->Name(), weapon->Anim.Count(), (int)Fire_Direction().As_Int(), BurstIndex, anim_coord.X, anim_coord.Y, anim_coord.Z);
 		if (RTTI == RTTI_BUILDING) {
 			int zadjust = (anim_coord.Y - Render_Coord().Y) / -4;
 			anim->ZAdjust = std::min(zadjust, 0);
@@ -5552,9 +5540,7 @@ void TechnoClass::Start_Beam_Effects(AbstractClass * target, WeaponTypeClass con
 				beam_weapon = turret_weapon;
 			}
 		}
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
-		}
+		AUTOTEST_LOG("laser zap by %s fired %s beam %s duration %d\n", TClass->Name(), weapon->Name(), beam_weapon->Name(), beam_weapon->LaserDuration);
 		Laser_Zap(target, which, beam_weapon, COORD_NONE);
 		if (building != NULL) {
 			building->BuildingStage.Set_Stage(0);
@@ -6924,9 +6910,7 @@ bool TechnoClass::Apply_Damage_Modifiers(int & damage, int distance, WarheadType
 		// The hit makes a flash over the object, blue for a force shield, as big as a blast of twice the damage (TechnoClass::ReceiveDamage, 0x701A93).
 		int const channels = IsForceShielded ? (SpotLightClass::DISABLE_RED | SpotLightClass::DISABLE_GREEN) : 1;
 		Combat_Lighting(PositionCoord, damage * 2, warhead, true, channels);
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
-		}
+		AUTOTEST_LOG("curtain flash %s at %d,%d damage %d channels %d\n", TClass->Name(), Get_Cell().X, Get_Cell().Y, damage * 2, channels);
 		damage = 0;
 		return(true);
 	}

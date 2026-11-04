@@ -1226,9 +1226,7 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 			int const angle = Scen->RandomNumber(0, 0x7FFFFFFE);
 			Coord const aim = tcoord;
 			tcoord = Ballistic_Offset(tcoord, spread, angle);
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST scatter moveto %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", Class->Name(), range, distance, spread, angle, aim.X, aim.Y, tcoord.X, tcoord.Y);
-			}
+			AUTOTEST_LOG("scatter moveto %s range %d dist %d spread %d angle %d: aim %d,%d -> %d,%d\n", Class->Name(), range, distance, spread, angle, aim.X, aim.Y, tcoord.X, tcoord.Y);
 		}
 
 		/*
@@ -1515,9 +1513,7 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 		}
 	}
 
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST debris %s voxel %d metallic %d at %d,%d,%d\n", warhead->Name(), voxels, metallic, origin.X, origin.Y, origin.Z);
-	}
+	AUTOTEST_LOG("debris %s voxel %d metallic %d at %d,%d,%d\n", warhead->Name(), voxels, metallic, origin.X, origin.Y, origin.Z);
 }
 
 
@@ -1619,9 +1615,7 @@ void BulletClass::Detonate(Coord const & coord)
 
 	// gamemd selects the blast animation before it checks for a nullified shot, so an EMEffect warhead draws its random animation either way (BulletClass::Detonate, 0x469BCF).
 	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST explode frame %d %s warhead %s land %d damage %d anim %s at %d,%d,%d\n", (int)Frame, Class->Name(), Warhead != NULL ? Warhead->Name() : "none", (int)land, Strength, anim != NULL ? anim->Name() : "none", PositionCoord.X, PositionCoord.Y, PositionCoord.Z);
-	}
+	AUTOTEST_LOG("explode frame %d %s warhead %s land %d damage %d anim %s at %d,%d,%d\n", (int)Frame, Class->Name(), Warhead != NULL ? Warhead->Name() : "none", (int)land, Strength, anim != NULL ? anim->Name() : "none", PositionCoord.X, PositionCoord.Y, PositionCoord.Z);
 
 	// A shot the Iron Curtain turned away shows WeaponNullifyAnim alone, with no light, blast or debris (BulletClass::Detonate, 0x469BDE and 0x46A2A1).
 	if (nullified) {
@@ -2147,9 +2141,7 @@ bool BulletClass::Start_Nuke_Blast(void)
 	}
 	NextAnim = nukeball;
 	SpawnNextAnim = true;
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST nuke blast builds up at frame %d\n", Frame);
-	}
+	AUTOTEST_LOG("nuke blast builds up at frame %d\n", Frame);
 	return(true);
 }
 
@@ -2176,9 +2168,7 @@ void BulletClass::Nuke_Maker(void)
 	if (bullet != NULL) {
 		// The payload keeps its weapon, so its blast leaves the weapon's RadLevel behind (0x46B310).
 		bullet->Weapon = weapon;
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST nuke payload released at frame %d from height %d\n", Frame, coord.Z);
-		}
+		AUTOTEST_LOG("nuke payload released at frame %d from height %d\n", Frame, coord.Z);
 		if (!bullet->Unlimbo(coord, TVelocity3D<double>(0.0, 0.0, -1.0))) {
 			delete bullet;
 		}

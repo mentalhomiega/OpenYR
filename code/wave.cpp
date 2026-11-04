@@ -111,9 +111,7 @@ WaveClass::WaveClass(Coord const & source_coord, Coord const & target_coord, Tec
 	Create_ID();
 	Waves.Add(this);
 
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST wave type %d from %d,%d,%d to %d,%d,%d at %s\n", (int)type, source_coord.X, source_coord.Y, source_coord.Z, target_coord.X, target_coord.Y, target_coord.Z, target == NULL ? "none" : (target->RTTI == RTTI_CELL ? "cell" : "object"));
-	}
+	AUTOTEST_LOG("wave type %d from %d,%d,%d to %d,%d,%d at %s\n", (int)type, source_coord.X, source_coord.Y, source_coord.Z, target_coord.X, target_coord.Y, target_coord.Z, target == NULL ? "none" : (target->RTTI == RTTI_CELL ? "cell" : "object"));
 
 	if (!_tables_calculated) {
 		Init_Statics();

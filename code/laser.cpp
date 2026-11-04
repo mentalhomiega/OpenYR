@@ -90,9 +90,7 @@ LaserDrawClass::LaserDrawClass(Coord start, Coord end, int zadjust, RGBClass inn
 
 	LaserDraws.Add(this);
 
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST laser beam from %d,%d,%d to %d,%d,%d duration %d\n", start.X, start.Y, start.Z, end.X, end.Y, end.Z, duration);
-	}
+	AUTOTEST_LOG("laser beam from %d,%d,%d to %d,%d,%d duration %d\n", start.X, start.Y, start.Z, end.X, end.Y, end.Z, duration);
 }
 
 
