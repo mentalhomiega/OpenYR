@@ -181,10 +181,7 @@ void EBoltClass::Draw_It(void) const
 		int ToZ;
 	};
 
-	int dx = Start.X - End.X;
-	int dy = Start.Y - End.Y;
-	int dz = Start.Z - End.Z;
-	int length = (int)std::sqrt((double)dx * dx + (double)dy * dy + (double)dz * dz);
+	int length = (Start - End).Length();
 	if (length == 0) {
 		return;
 	}
