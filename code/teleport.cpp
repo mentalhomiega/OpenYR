@@ -321,9 +321,7 @@ bool TeleportLocomotionClass::Process(void)
 					break;
 				}
 				WarpPhase = TELEPORT_IDLE;
-				if (AutoTest_Active()) {
-					DebugString("AUTOTEST   warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
-				}
+				AUTOTEST_LOG("  warp released %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 			}
 			break;
 
@@ -577,9 +575,7 @@ void TeleportLocomotionClass::Chrono_Land_Stage(void)
 	foot->IsOnBridge = bridge;
 	foot->Mark(MARK_DOWN);
 	foot->Assign_Destination(NULL);
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   chrono landed %s cell %d,%d frame %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y, Frame);
-	}
+	AUTOTEST_LOG("  chrono landed %s cell %d,%d frame %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y, Frame);
 	// Processing the arrival can end the piggyback and destroy this locomotor, so the phase is set first and the unit is kept in a local.
 	WarpPhase = TELEPORT_ARRIVE;
 	foot->Per_Cell_Process(PCP_END);
@@ -665,9 +661,7 @@ void TeleportLocomotionClass::Chrono_Arrive_Stage(void)
 	if (Rule->WarpOut != NULL) {
 		new AnimClass(Rule->WarpOut, landing);
 	}
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   chrono arrived %s cell %d,%d frame %d hold until %d sinking %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y, Frame, WarpEnd, (int)foot->IsSinking);
-	}
+	AUTOTEST_LOG("  chrono arrived %s cell %d,%d frame %d hold until %d sinking %d\n", foot->TClass->Name(), foot->Get_Cell().X, foot->Get_Cell().Y, Frame, WarpEnd, (int)foot->IsSinking);
 }
 
 
@@ -702,9 +696,7 @@ void TeleportLocomotionClass::Start_Warp(void)
 	if (out != VOC_NONE) {
 		Sound_Effect(out, from);
 	}
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   warp out %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
-	}
+	AUTOTEST_LOG("  warp out %s cell %d,%d frame %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame);
 
 	// The jump releases any parasite first, onto the nearest cell it can enter from the cell the object leaves (gamemd: 0x7195CF).
 	if (LinkedTo->ParasiteEatingMe != NULL && LinkedTo->ParasiteEatingMe->ParasiteImUsing) {
@@ -724,9 +716,7 @@ void TeleportLocomotionClass::Start_Warp(void)
 	if (in != VOC_NONE) {
 		Sound_Effect(in, landing);
 	}
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   warp in %s cell %d,%d frame %d hold until %d distance %d factor %d minimum %d range %d trigger %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd, distance, Rule->ChronoDistanceFactor, Rule->ChronoMinimumDelay, Rule->ChronoRangeMinimum, (int)Rule->ChronoTrigger);
-	}
+	AUTOTEST_LOG("  warp in %s cell %d,%d frame %d hold until %d distance %d factor %d minimum %d range %d trigger %d\n", LinkedTo->TClass->Name(), LinkedTo->Get_Cell().X, LinkedTo->Get_Cell().Y, Frame, WarpEnd, distance, Rule->ChronoDistanceFactor, Rule->ChronoMinimumDelay, Rule->ChronoRangeMinimum, (int)Rule->ChronoTrigger);
 	// A soldier landing on the cell of the transport it was ordered into is processed with the order
 	// still set so that the arrival boards it (gamemd: 0x7196AB, before SetDestination(NULL) at 0x719733).
 	// Any other landing ends the move first, as a walking locomotor's arrival does; otherwise the owner's

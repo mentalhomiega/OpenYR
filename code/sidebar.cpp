@@ -2205,6 +2205,7 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 						switch ((RTTIType)pending->RTTI) {
 							case RTTI_UNIT:
 							case RTTI_AIRCRAFT:
+							case RTTI_INFANTRY:
 								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
 								Speak(VOX_UNIT_READY);
 								break;
@@ -2212,11 +2213,6 @@ bool SidebarClass::StripClass::AI(KeyNumType & input, Point2D const & xy)
 							case RTTI_BUILDING:
 								Map.Note_Completed_Building((BuildingClass *)pending);
 								Speak(VOX_CONSTRUCTION);
-								break;
-
-							case RTTI_INFANTRY:
-								OutList.push_back(EventClass(pending->Owner(), EventClass::PLACE, pending->RTTI, pending->Class_Of()->Fetch_Heap_ID(), CELL_NONE));
-								Speak(VOX_UNIT_READY);
 								break;
 						}
 					}
@@ -2825,6 +2821,28 @@ static int Cameo_Produce_Count(FactoryClass const * factory)
 
 
 /// <summary>
+/// Sends the player's PRODUCE event for the type count times.
+/// </summary>
+static void Send_Produce(RTTIType type, int id, int count)
+{
+	for (int queued = 0; queued < count; queued++) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type, id));
+	}
+}
+
+
+/// <summary>
+/// Announces that production of the type has started or resumed, then sends the player's PRODUCE event for it
+/// count times.
+/// </summary>
+void Queue_Produce(RTTIType type, int id, int count)
+{
+	Speak(type == RTTI_INFANTRYTYPE ? VOX_TRAINING : VOX_BUILDING);
+	Send_Produce(type, id, count);
+}
+
+
+/// <summary>
 /// Sends the abandon for a cameo's type. Shift held abandons every object of that type, queued or in
 /// production, in one event; without Shift it abandons one.
 /// </summary>
@@ -3023,12 +3041,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						**	The factory must have been in a suspended state. Resume construction
 						**	normally.
 						*/
-						if (otype == RTTI_INFANTRYTYPE) {
-							Speak(VOX_TRAINING);
-						} else {
-							Speak(VOX_BUILDING);
-						}
-						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
+						Queue_Produce(otype, oid);
 					}
 
 				} else {
@@ -3039,12 +3052,12 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					**	ignore the click.
 					*/
 					factory = PlayerPtr->Fetch_Factory(otype, oid);
-					bool produce = false;
+					int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
 					if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
 						if (otype == RTTI_BUILDINGTYPE) {
 							Speak(VOX_NO_FACTORY);
 						} else {
-							produce = true;
+							Send_Produce(otype, oid, count);
 						}
 
 					} else {
@@ -3053,18 +3066,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 						**	If this side strip is already busy with production, then ignore the
 						**	input and announce this fact.
 						*/
-						if (otype == RTTI_INFANTRYTYPE) {
-							Speak(VOX_TRAINING);
-						} else {
-							Speak(VOX_BUILDING);
-						}
-						produce = true;
-					}
-					if (produce) {
-						int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
-						for (int queued = 0; queued < count; queued++) {
-							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, otype, oid));
-						}
+						Queue_Produce(otype, oid, count);
 					}
 				}
 			}

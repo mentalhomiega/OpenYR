@@ -621,9 +621,7 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 			Seed = rand();
 
 			Restore_Lan_Map();
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST lan host map %s\n", Session.ScenarioFileName);
-			}
+			AUTOTEST_LOG("lan host map %s\n", Session.ScenarioFileName);
 			Update_Network_Dialog_Preview();
 
 			if (Session.Players.Count() > 0) {

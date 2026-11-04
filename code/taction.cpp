@@ -1243,9 +1243,7 @@ bool TActionClass::TAction_SELL_ATTACHED(HouseClass * , ObjectClass * , TriggerC
 		if (building->Is_Tagged_By(trig)) {
 
 			building->Sell_Back(1);
-			if (AutoTest_Active()) {
-				DebugString("AUTOTEST   sell attached %s of %s buildup %d mission %s\n", building->Class->Name(), building->House->Class->Name(), (int)building->HasBuildupData, MissionClass::Mission_Name(building->Get_Mission()));
-			}
+			AUTOTEST_LOG("  sell attached %s of %s buildup %d mission %s\n", building->Class->Name(), building->House->Class->Name(), (int)building->HasBuildupData, MissionClass::Mission_Name(building->Get_Mission()));
 			success = true;
 		}
 	}
@@ -1859,9 +1857,7 @@ bool TActionClass::TAction_DZ(HouseClass * , ObjectClass * , TriggerClass * , Ce
 /// </summary>
 bool TActionClass::TAction_WIN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
-	}
+	AUTOTEST_LOG("  win for house %d, the player is %s (%d)\n", (int)Data.House, PlayerPtr->Class->Name(), (int)PlayerPtr->Class->House);
 	if (House_Matches(PlayerPtr, Data.House)) {
 		PlayerPtr->Flag_To_Win();
 	} else {
@@ -2174,9 +2170,7 @@ bool TActionClass::TAction_PLAY_ANIM(HouseClass * , ObjectClass * , TriggerClass
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST   play animation %s\n", AnimTypes[Data.Anim]->Name());
-	}
+	AUTOTEST_LOG("  play animation %s\n", AnimTypes[Data.Anim]->Name());
 	AnimClass * anim = new AnimClass(AnimTypes[Data.Anim], coord);
 	anim->IsInert = true;
 	return(true);
@@ -3422,9 +3416,7 @@ bool TActionClass::TAction_FLASH_CAMEO(HouseClass * , ObjectClass * , TriggerCla
 {
 	TechnoTypeClass * const type = TechnoTypeClass::From_Name(Text);
 	if (type != NULL) {
-		if (AutoTest_Active()) {
-			DebugString("AUTOTEST   flash cameo %s for %d frames\n", type->Name(), Extra);
-		}
+		AUTOTEST_LOG("  flash cameo %s for %d frames\n", type->Name(), Extra);
 		Map.Flash_Cameo(type, Extra);
 		return(true);
 	}

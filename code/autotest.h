@@ -17,6 +17,11 @@
 */
 
 bool AutoTest_Active(void);
+
+// Writes an "AUTOTEST " debug line only in an unattended run. The format and its arguments are not evaluated
+// otherwise, so they may follow pointers that only exist during a test.
+#define AUTOTEST_LOG(...) do { if (AutoTest_Active()) DebugString("AUTOTEST " __VA_ARGS__); } while (0)
+
 bool AutoTest_Key_Held(int virtualkey);
 
 // Where an unattended run's pointer rests, in window pixels. A script moves it with the windowmove

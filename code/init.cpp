@@ -5805,8 +5805,7 @@ static void Repeat_Last_Production(RTTIType type, int id)
 		}
 	}
 
-	Speak(type == RTTI_INFANTRYTYPE ? VOX_TRAINING : VOX_BUILDING);
-	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type, id));
+	Queue_Produce(type, id);
 }
 
 

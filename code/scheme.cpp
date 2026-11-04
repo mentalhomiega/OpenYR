@@ -236,9 +236,7 @@ ConvertClass * ColorScheme::Designated_Converter(int red, int green, int blue)
 	Converter->Get_Tint(tint_red, tint_green, tint_blue);
 	LightConvertClass * converter = new LightConvertClass(*tinted, ScreenPalette, *VisibleSurface, tint_red, tint_green, tint_blue, false, _indexes, IntensityLevels);
 	TintedConverters.push_back(TintedConverterEntry{red, green, blue, tinted, converter});
-	if (AutoTest_Active()) {
-		DebugString("AUTOTEST airstrike tint built %d,%d,%d\n", red, green, blue);
-	}
+	AUTOTEST_LOG("airstrike tint built %d,%d,%d\n", red, green, blue);
 	return converter;
 }
 

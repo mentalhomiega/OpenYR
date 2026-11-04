@@ -259,9 +259,7 @@ void LightningStormClass::AI(void)
 				IsActive = false;
 				Owner = NULL;
 				IonStormClass::Update_Special_Lighting();
-				if (AutoTest_Active()) {
-					DebugString("AUTOTEST storm ends at frame %d\n", Frame);
-				}
+				AUTOTEST_LOG("storm ends at frame %d\n", Frame);
 			}
 			IsTimeToEnd = false;
 		}
