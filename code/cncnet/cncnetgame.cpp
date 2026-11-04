@@ -9,7 +9,6 @@
 
 #include "cncnet/cncnetgame.h"
 
-#include "cncnet/cncnettext.h"
 #include "strutil.h"
 
 

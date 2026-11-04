@@ -12,10 +12,8 @@
 
 #pragma once
 
-#include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 
 // Compares texts byte by byte after tolower, so only the C locale's letters fold case.

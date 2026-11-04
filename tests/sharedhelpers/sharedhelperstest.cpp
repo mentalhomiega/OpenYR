@@ -106,6 +106,8 @@ void Test_Split_And_Parse()
 	Check(Parse_Decimal_Int("-7") == -7, "a minus sign is accepted");
 	Check(Parse_Decimal_Int("2147483647") == 2147483647, "the largest int parses");
 	Check(!Parse_Decimal_Int("2147483648"), "an overflowing number fails");
+	Check(Parse_Decimal_Int("-2147483648") == -2147483647 - 1, "the smallest int parses");
+	Check(Parse_Decimal_Int("007") == 7, "leading zeros are read as decimal");
 	Check(!Parse_Decimal_Int(""), "empty text fails");
 	Check(!Parse_Decimal_Int("+5"), "a plus sign fails");
 	Check(!Parse_Decimal_Int(" 5"), "a leading blank fails");

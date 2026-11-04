@@ -11,10 +11,9 @@
 
 #include "dbgprint.h"
 #include "ini.h"
+#include "strutil.h"
 
-#include <charconv>
-#include <cstring>
-#include <system_error>
+#include <optional>
 
 /***************************************************************************
 **	There are various tutorial messages that can appear in the game. These
@@ -25,31 +24,18 @@ TutorialTextClass TutorialText;
 static char const * const TUTORIAL_SECTION = "Tutorial";
 
 
-static bool Parse_Line_Number(char const * entry, int & id)
-{
-	if (entry == NULL) {
-		return(false);
-	}
-
-	char const * const end = entry + strlen(entry);
-	std::from_chars_result const result = std::from_chars(entry, end, id);
-
-	return(result.ec == std::errc() && result.ptr == end);
-}
-
-
 void TutorialTextClass::Read_Section(INIClass const & ini, LineList & into)
 {
 	int count = ini.Entry_Count(TUTORIAL_SECTION);
 
 	for (int index = 0; index < count; index++) {
 		char const * entry = ini.Get_Entry(TUTORIAL_SECTION, index);
-		int id = 0;
-
-		if (!Parse_Line_Number(entry, id)) {
+		std::optional<int> const number = entry != NULL ? Parse_Decimal_Int(entry) : std::nullopt;
+		if (!number) {
 			DebugString("Tutorial: %s is not a line number and was skipped.\n", entry != NULL ? entry : "");
 			continue;
 		}
+		int const id = *number;
 
 		// A line with nothing after the "=" never became an entry, so no line can be blanked.
 		std::string text = ini.Get_String(TUTORIAL_SECTION, entry);

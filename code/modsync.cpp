@@ -8,7 +8,6 @@
  ******************************************************************************/
 
 #include "modsync.h"
-#include "cncnet/cncnettext.h"
 #include "diskfile.h"
 #include "fnv.h"
 #include "hexdigit.h"
