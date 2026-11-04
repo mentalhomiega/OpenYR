@@ -1405,7 +1405,7 @@ test('A rally point is set with the plain click', () => {
 });
 
 test('An EM pulse can be refused by type', () => {
-	const read = functionBody(source('code/techtype.cpp'), 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)');
+	const read = functionBody(source('code/techtype.cpp'), 'void TechnoTypeClass::Read_Abilities_INI(CCINIClass const & ini)');
 
 	assertOrdered(
 		read,
@@ -1454,7 +1454,7 @@ test('A type can set how many pips its row has', () => {
 	const techtype = source('code/techtype.cpp');
 
 	assertOrdered(
-		functionBody(techtype, 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)'),
+		functionBody(techtype, 'void TechnoTypeClass::Read_Ammo_INI(CCINIClass const & ini)'),
 		['if (ini.Is_Present(Name(), "MaxPips")) {', 'MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);'],
 		'an absent entry leaves the length an earlier layer gave',
 	);
