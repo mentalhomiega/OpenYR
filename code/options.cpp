@@ -103,6 +103,7 @@
 #include "colourblind.h"
 #include "emissive.h"
 #include "goptions.h"
+#include "netsemantic.h"
 #include "replay.h"
 
 
@@ -681,7 +682,9 @@ void OptionsClass::Load_Settings(void)
 	/*
 	**	Read in the Options values
 	*/
+	// gamemd keeps any number here; -1 crashes it, so the value is held to the speeds the game controls offer.
 	GameSpeed = ConfigINI.Get_Int("Options", "GameSpeed", GameSpeed);
+	GameSpeed = NetSemantic::Clamp_Game_Speed(GameSpeed);
 	DebugString("GameSpeed = %d\n", GameSpeed);
 
 	Difficulty = ConfigINI.Get_Int("Options", "Difficulty", Difficulty);

@@ -298,6 +298,11 @@ void Test_Event_Semantics(void)
 	Check(!NetSemantic::Subject_Owner_Is_Valid(3, 4), "a synchronized subject rejects another player's identity");
 	Check(NetSemantic::Game_Speed_Is_Valid(0) && NetSemantic::Game_Speed_Is_Valid(6), "game-speed validation accepts both legal edges");
 	Check(!NetSemantic::Game_Speed_Is_Valid(-1) && !NetSemantic::Game_Speed_Is_Valid(7), "game-speed validation rejects both outside edges");
+	Check(NetSemantic::Clamp_Game_Speed(0) == 0 && NetSemantic::Clamp_Game_Speed(3) == 3 && NetSemantic::Clamp_Game_Speed(6) == 6,
+		"a settings-file game speed from 0 to 6 is kept");
+	Check(NetSemantic::Clamp_Game_Speed(-1) == 0 && NetSemantic::Clamp_Game_Speed(-50) == 0
+		&& NetSemantic::Clamp_Game_Speed(7) == 6 && NetSemantic::Clamp_Game_Speed(99) == 6,
+		"a settings-file game speed outside 0 to 6 is held to the nearest end");
 	Check(NetSemantic::Latency_Fudge_Is_Valid(0) && NetSemantic::Latency_Fudge_Is_Valid(3), "latency-margin validation accepts both legal edges");
 	Check(!NetSemantic::Latency_Fudge_Is_Valid(-1) && !NetSemantic::Latency_Fudge_Is_Valid(4), "latency-margin validation rejects both outside edges");
 	Check(NetSemantic::Animation_Type_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Type_Is_Valid(4, -1, 5),

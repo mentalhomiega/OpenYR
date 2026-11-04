@@ -33,6 +33,17 @@ namespace NetSemantic
 	}
 
 
+	/// <summary>
+	/// Holds a game speed read from the settings file to the range the speed tables cover.
+	/// gamemd stores the value unchecked (0x5FA650); its Normalize_Delay (0x5FB2E0) then divides by
+	/// zero at -1 and indexes past its table outside 0 to 7.
+	/// </summary>
+	int Clamp_Game_Speed(int game_speed) noexcept
+	{
+		return(game_speed < 0 ? 0 : (game_speed > 6 ? 6 : game_speed));
+	}
+
+
 	/// <summary>Checks a latency-margin selector before use.</summary>
 	bool Latency_Fudge_Is_Valid(int latency_fudge) noexcept
 	{
