@@ -12,6 +12,7 @@
 
 #include <cstring>
 
+#include "hexformat.h"
 #include "littleendian.h"
 
 
@@ -193,14 +194,6 @@ bool Get_Hash(ReaderClass & reader, HashType & hash)
 }
 
 
-std::string Hex(std::uint32_t value)
-{
-	char text[16];
-	std::snprintf(text, sizeof(text), "%08X", static_cast<unsigned int>(value));
-	return(text);
-}
-
-
 std::string Or_None(std::string const & text)
 {
 	return(text.empty() ? std::string("none") : text);
@@ -323,16 +316,16 @@ std::string Find_Incompatibility(HeaderType const & recorded, HeaderType const &
 		return(Difference("the map", recorded.Map, current.Map));
 	}
 	if (recorded.MapCrc != current.MapCrc) {
-		return(Difference("a map file with checksum", Hex(recorded.MapCrc), Hex(current.MapCrc)));
+		return(Difference("a map file with checksum", Hex_Text(recorded.MapCrc, 8, true), Hex_Text(current.MapCrc, 8, true)));
 	}
 	if (recorded.RulesCrc != current.RulesCrc) {
-		return(Difference("rules with checksum", Hex(recorded.RulesCrc), Hex(current.RulesCrc)));
+		return(Difference("rules with checksum", Hex_Text(recorded.RulesCrc, 8, true), Hex_Text(current.RulesCrc, 8, true)));
 	}
 	if (recorded.ArtCrc != current.ArtCrc) {
-		return(Difference("art rules with checksum", Hex(recorded.ArtCrc), Hex(current.ArtCrc)));
+		return(Difference("art rules with checksum", Hex_Text(recorded.ArtCrc, 8, true), Hex_Text(current.ArtCrc, 8, true)));
 	}
 	if (recorded.AiCrc != current.AiCrc) {
-		return(Difference("AI rules with checksum", Hex(recorded.AiCrc), Hex(current.AiCrc)));
+		return(Difference("AI rules with checksum", Hex_Text(recorded.AiCrc, 8, true), Hex_Text(current.AiCrc, 8, true)));
 	}
 	if (recorded.Mods != current.Mods) {
 		return(Difference("the mods", recorded.Mods, current.Mods));

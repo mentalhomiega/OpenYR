@@ -11,6 +11,7 @@
 #include "cncnet/cncnettext.h"
 #include "diskfile.h"
 #include "fnv.h"
+#include "hexformat.h"
 #include "strutil.h"
 
 #include "win.h"
@@ -317,17 +318,9 @@ std::uint64_t Folder_Bytes(std::string const & folder, std::uint64_t & files)
 }
 
 
-std::string Hex(std::uint64_t value)
-{
-	char text[24];
-	std::snprintf(text, sizeof(text), "%016llx", static_cast<unsigned long long>(value));
-	return(std::string(text));
-}
-
-
 std::string Game_Info(std::uint64_t size, std::uint64_t hash)
 {
-	return(std::to_string(size) + " bytes, hash " + Hex(hash));
+	return(std::to_string(size) + " bytes, hash " + Hex_Text(hash, 16, false));
 }
 
 

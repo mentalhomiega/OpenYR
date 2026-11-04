@@ -54,6 +54,7 @@ needs them.
 | `CnCNet_Parse_Int(text)` | `cncnet/cncnettext.h` | Reads the whole text as a decimal int. Returns nothing for anything but an optional minus sign and digits that fit. |
 | `CnCNet_Equals_No_Case`, `CnCNet_Less_No_Case`, `CnCNet_Lower` | `cncnet/cncnettext.h` | Case folding with `tolower`; only the C locale's letters fold. |
 | `CnCNet_Is_Control_Byte(ch)`, `CnCNet_Is_Join_Unsafe(ch)` | `cncnet/cncnettext.h` | Tests for 0x00 to 0x1F and 0x7F, and for those plus space and comma. |
+| `Hex_Text(value, digits, upper_case)` | `hexformat.h` | Hex text of a number, zero-padded to at least `digits` digits. A wider value is written in full. |
 | `Hex_Digit_Value(ch)` | `hexdigit.h` | Value 0 to 15 of a hex digit in either case, or -1. |
 | `ahtoi(str)` | `ahtoi.h` | Hex string to int; stops at the first character that is not a hex digit. |
 | `stricmp`, `strcmpi` | `always.h` | Case-insensitive C string compare. Off Windows both map to `strcasecmp`. |

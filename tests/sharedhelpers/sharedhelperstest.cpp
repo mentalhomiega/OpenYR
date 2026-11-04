@@ -10,6 +10,7 @@
 // Pins the edge cases of the small helpers that several files share: the little-endian writers
 // and the trim and text helpers in strutil.h. Needs no game data.
 
+#include "hexformat.h"
 #include "littleendian.h"
 #include "strutil.h"
 
@@ -78,6 +79,17 @@ void Test_Starts_With()
 	Check(!Starts_With_No_Case("xselect", "select"), "the prefix must be at the start");
 }
 
+
+void Test_Hex_Text()
+{
+	Check(Hex_Text(0xBEEF, 8, true) == "0000BEEF", "32-bit form is padded upper case");
+	Check(Hex_Text(0, 8, true) == "00000000", "zero is all zeros");
+	Check(Hex_Text(0xDEADBEEFu, 8, true) == "DEADBEEF", "a full width value has no padding");
+	Check(Hex_Text(0xABCDEF0123456789ull, 16, false) == "abcdef0123456789", "64-bit form is lower case");
+	Check(Hex_Text(0x1F, 16, false) == "000000000000001f", "64-bit form is padded to 16 digits");
+	Check(Hex_Text(0x123456789ull, 8, true) == "123456789", "a value wider than digits is written in full");
+}
+
 } // namespace
 
 
@@ -86,6 +98,7 @@ int main()
 	Test_Little_Endian();
 	Test_Trim();
 	Test_Starts_With();
+	Test_Hex_Text();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);
