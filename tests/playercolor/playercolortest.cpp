@@ -163,6 +163,40 @@ void Test_Distance(void)
 	Check(Player_Color_Too_Close(red, green), "red and green are too close for a color-blind viewer");
 }
 
+void Test_Clash_Pins(void)
+{
+	// Player_Color_Distance feeds Net2_Color_Clashes through Player_Color_Too_Close, so a lobby
+	// colour decision depends on its last digits. These pairs pin the distance to the bit, the
+	// pair at (200,60,40) and (235,86,40) lying just above PLAYER_COLOR_MIN_DISTANCE and its
+	// neighbours on both sides. The bits were recorded before the colour-blind matrices were shared.
+	struct Pin
+	{
+		RGBClass First;
+		RGBClass Second;
+		unsigned long long Bits;
+		bool Close;
+	};
+	Pin const pins[] = {
+		{RGBClass(200, 60, 40), RGBClass(235, 86, 40), 0x402e0019a676233bULL, false},
+		{RGBClass(200, 60, 40), RGBClass(234, 86, 40), 0x402d64f67a16e1bfULL, true},
+		{RGBClass(200, 60, 40), RGBClass(235, 85, 40), 0x402db145dcc1ad49ULL, true},
+		{RGBClass(200, 60, 40), RGBClass(236, 86, 40), 0x402e9b3fcb287707ULL, false},
+		{RGBClass(200, 60, 40), RGBClass(235, 87, 40), 0x402e4fd1dc86c89bULL, false},
+		{RGBClass(255, 0, 0), RGBClass(0, 160, 0), 0x4028364e5ebbcda7ULL, true},
+		{RGBClass(0, 0, 0), RGBClass(255, 255, 255), 0x4058ffff9c3c1c1aULL, false},
+		{RGBClass(0x00, 0x72, 0xB2), RGBClass(0x56, 0xB4, 0xE9), 0x4038cee2e7877b0bULL, false},
+		{RGBClass(0xD5, 0x5E, 0x00), RGBClass(0xE6, 0x9F, 0x00), 0x40325917ad48c81bULL, false},
+		{RGBClass(255, 223, 94), RGBClass(250, 4, 4), 0x403ff3b4802e613eULL, false},
+	};
+	for (Pin const & pin : pins) {
+		double const distance = Player_Color_Distance(pin.First, pin.Second);
+		unsigned long long bits = 0;
+		std::memcpy(&bits, &distance, sizeof(bits));
+		Check(bits == pin.Bits, "a pinned distance is bit-identical");
+		Check(Player_Color_Too_Close(pin.First, pin.Second) == pin.Close, "a pinned pair keeps its clash decision");
+	}
+}
+
 void Test_Text_Round_Trip(void)
 {
 	char text[32];
@@ -232,6 +266,7 @@ int main(void)
 	Test_Ramp_Is_Sensible();
 	Test_Packing();
 	Test_Distance();
+	Test_Clash_Pins();
 	Test_Text_Round_Trip();
 	Test_Presets();
 
