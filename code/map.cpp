@@ -12441,114 +12441,92 @@ static bool Is_Concrete_Bridge_Cell(Cell const & cell)
 
 
 /*
- * Tests whether an overlay belongs to the north-south family (205 to 213, 223 to 226 and 231).
+ * The overlays and directions of one concrete low bridge family. A span is a run of sections, each three cells
+ * long across the run. The north-south family's sections cover a cell and its north and south neighbors, and the
+ * run goes west to east; the east-west family's sections cover west and east, and the run goes north to south.
+ * A family's overlays are its four intact shapes First to First + 3, the side and cracked shapes First + 4 to
+ * First + 8, the end caps Cap and Cap + 2 with their damaged shapes one above each, and the fallen piece.
  */
-static bool Is_Concrete_NS_Overlay(int overlay)
+struct ConcreteFamily
 {
-	return((overlay >= 205 && overlay <= 213) || (overlay >= 223 && overlay <= 226) || overlay == OVERLAY_CONCRETE_BRIDGE_END1);
+	Cell Run;      // One step along the run, toward higher coordinates.
+	Cell Across;   // One step across the run, within a section.
+	Cell ToCap;    // One step along the run toward the end that holds Cap.
+	int First;
+	int Cap;
+	int Fallen;
+};
+
+
+// The north-south family: 205 to 213, caps 223 and 225, fallen 231.
+static ConcreteFamily const CONCRETE_NS = {Cell(1, 0), Cell(0, 1), Cell(1, 0), OVERLAY_CONCRETE_BRIDGE_FIRST, OVERLAY_CONCRETE_BRIDGE_FIRST + 18, OVERLAY_CONCRETE_BRIDGE_END1};
+
+// The east-west family: 214 to 222, caps 227 and 229, fallen 232.
+static ConcreteFamily const CONCRETE_EW = {Cell(0, 1), Cell(1, 0), Cell(0, -1), OVERLAY_CONCRETE_BRIDGE_FIRST + 9, OVERLAY_CONCRETE_BRIDGE_FIRST + 22, OVERLAY_CONCRETE_BRIDGE_END2};
+
+
+static bool Is_Concrete_Family_Overlay(ConcreteFamily const & family, int overlay)
+{
+	return((overlay >= family.First && overlay <= family.First + 8) || (overlay >= family.Cap && overlay <= family.Cap + 3) || overlay == family.Fallen);
 }
 
 
 /*
- * Tests whether an overlay belongs to the east-west family (214 to 222, 227 to 230 and 232).
+ * The neighbor mask of a side piece (gamemd FUN_0057CAB0 for the north-south family and FUN_0057CBE0 for the
+ * east-west family). For the north-south family, bit 1 is set when the piece to the east is 209, 211, 213 or 224,
+ * bit 2 when it is 212 or 231, bit 4 when the piece to the west is 210, 211, 212 or 226, and bit 8 when it is 213
+ * or 231. The east-west family reads its north neighbor for bits 1 and 2 and its south neighbor for bits 4 and 8,
+ * with its own overlays: 218, 220, 222 and 228; 221 and 232; 219, 220, 221 and 230; 222 and 232.
  */
-static bool Is_Concrete_EW_Overlay(int overlay)
+static int Concrete_Side_Mask(ConcreteFamily const & family, Cell const & cell)
 {
-	return((overlay >= 214 && overlay <= 222) || (overlay >= 227 && overlay <= 230) || overlay == OVERLAY_CONCRETE_BRIDGE_END2);
-}
-
-
-/*
- * The neighbor mask of a north-south concrete piece (gamemd FUN_0057CAB0): bit 1 when the piece to the
- * east is 209, 211, 213 or 224, bit 2 when it is 212 or 231, bit 4 when the piece to the west is 210,
- * 211, 212 or 226, and bit 8 when it is 213 or 231.
- */
-static int Concrete_NS_Side_Mask(Cell const & cell)
-{
+	int const first = family.First;
 	int index = 0;
-	switch (Concrete_Overlay_At(cell + Cell(1, 0))) {
-		case 209:
-		case 211:
-		case 213:
-		case 224:
-			index |= 1;
-			break;
-		case 212:
-		case OVERLAY_CONCRETE_BRIDGE_END1:
-			index |= 2;
-			break;
-		default:
-			break;
+
+	int const toward_cap = Concrete_Overlay_At(cell + family.ToCap);
+	if (toward_cap == first + 4 || toward_cap == first + 6 || toward_cap == first + 8 || toward_cap == family.Cap + 1) {
+		index |= 1;
+	} else if (toward_cap == first + 7 || toward_cap == family.Fallen) {
+		index |= 2;
 	}
-	switch (Concrete_Overlay_At(cell + Cell(-1, 0))) {
-		case 210:
-		case 211:
-		case 212:
-		case 226:
-			index |= 4;
-			break;
-		case 213:
-		case OVERLAY_CONCRETE_BRIDGE_END1:
-			index |= 8;
-			break;
-		default:
-			break;
+
+	int const away_from_cap = Concrete_Overlay_At(cell - family.ToCap);
+	if (away_from_cap == first + 5 || away_from_cap == first + 6 || away_from_cap == first + 7 || away_from_cap == family.Cap + 3) {
+		index |= 4;
+	} else if (away_from_cap == first + 8 || away_from_cap == family.Fallen) {
+		index |= 8;
 	}
+
 	return(index);
 }
 
 
 /*
- * The neighbor mask of an east-west concrete piece (gamemd FUN_0057CBE0): bit 1 when the piece to the
- * north is 218, 220, 222 or 228, bit 2 when it is 221 or 232, bit 4 when the piece to the south is 219,
- * 220, 221 or 230, and bit 8 when it is 222 or 232.
+ * The overlay a side piece takes for its neighbor mask (gamemd FUN_0057E7A0's and FUN_0057ED00's tables), or -1
+ * for a mask that cannot occur. Only masks 1, 2, 4, 5, 6, 8, 9 and 10 can occur, since a piece has one overlay on
+ * each side.
  */
-static int Concrete_EW_Side_Mask(Cell const & cell)
+static int Concrete_Side_Shape(ConcreteFamily const & family, int mask)
 {
-	int index = 0;
-	switch (Concrete_Overlay_At(cell + Cell(0, -1))) {
-		case 218:
-		case 220:
-		case 222:
-		case 228:
-			index |= 1;
-			break;
-		case 221:
-		case OVERLAY_CONCRETE_BRIDGE_END2:
-			index |= 2;
-			break;
+	switch (mask) {
+		case 1:
+			return(family.First + 5);
+		case 2:
+		case 6:
+			return(family.First + 8);
+		case 4:
+			return(family.First + 4);
+		case 5:
+			return(family.First + 6);
+		case 8:
+		case 9:
+			return(family.First + 7);
+		case 10:
+			return(family.Fallen);
 		default:
-			break;
+			return(-1);
 	}
-	switch (Concrete_Overlay_At(cell + Cell(0, 1))) {
-		case 219:
-		case 220:
-		case 221:
-		case 230:
-			index |= 4;
-			break;
-		case 222:
-		case OVERLAY_CONCRETE_BRIDGE_END2:
-			index |= 8;
-			break;
-		default:
-			break;
-	}
-	return(index);
 }
-
-
-/*
- * The overlay a north-south side piece takes for each neighbor mask (gamemd FUN_0057E7A0's table). Only
- * masks 1, 2, 4, 5, 6, 8, 9 and 10 can occur, since a piece has one overlay on each side.
- */
-static int const Concrete_NS_Side_Table[16] = {-1, 210, 213, -1, 209, 211, 213, -1, 212, 212, 231, -1, -1, -1, -1, -1};
-
-
-/*
- * The overlay an east-west side piece takes for each neighbor mask (gamemd FUN_0057ED00's table).
- */
-static int const Concrete_EW_Side_Table[16] = {-1, 219, 222, -1, 218, 220, 222, -1, 221, 221, 232, -1, -1, -1, -1, -1};
 
 
 /// <summary>
@@ -12578,219 +12556,121 @@ void MapClass::Set_Concrete_Piece(Cell const & cell, int overlay)
 
 
 /// <summary>
-/// Sets the three pieces a span break covers: the hit cell and its two neighbors across the span. A
-/// north-south family break covers the cells north and south of the cell, and an east-west family
-/// break covers the cells west and east of it.
+/// Sets the three pieces of a section: the cell and its neighbors on either side across the run.
 /// </summary>
-/// <param name="cell">The middle piece of the break.</param>
-/// <param name="along_x">True to cover the cells west and east, false to cover the cells north and south.</param>
+/// <param name="cell">The middle piece of the section.</param>
+/// <param name="across">One step across the run.</param>
 /// <param name="overlay">The overlay all three pieces take.</param>
-void MapClass::Set_Concrete_Section(Cell const & cell, bool along_x, int overlay)
+void MapClass::Set_Concrete_Section(Cell const & cell, Cell const & across, int overlay)
 {
-	Cell const step = along_x ? Cell(1, 0) : Cell(0, 1);
-	Set_Concrete_Piece(cell - step, overlay);
+	Set_Concrete_Piece(cell - across, overlay);
 	Set_Concrete_Piece(cell, overlay);
-	Set_Concrete_Piece(cell + step, overlay);
+	Set_Concrete_Piece(cell + across, overlay);
 }
 
 
 /// <summary>
-/// Moves a north-south concrete piece on by its neighbors (gamemd FUN_0057E7A0). The piece is changed only
-/// when its east and west neighbors call for a new shape, and then its north and south neighbors change
-/// with it.
+/// Moves a side piece on by its neighbors (gamemd FUN_0057E7A0 for the north-south family and FUN_0057ED00 for the
+/// east-west family). The piece changes only when its neighbors along the run call for a new shape, and then the
+/// rest of its section changes with it.
 /// </summary>
-/// <param name="cell">The side piece, which lies east or west of a hit.</param>
-void MapClass::Update_Concrete_Side_NS(Cell const & cell)
+/// <param name="family">The family of the span.</param>
+/// <param name="cell">The side piece, which lies next to a hit along the run.</param>
+void MapClass::Update_Concrete_Side(ConcreteFamily const & family, Cell const & cell)
 {
 	int const overlay = Concrete_Overlay_At(cell);
 	if (overlay < OVERLAY_CONCRETE_BRIDGE_FIRST || overlay > OVERLAY_CONCRETE_BRIDGE_LAST) {
 		return;
 	}
 
-	int const mask = Concrete_NS_Side_Mask(cell);
+	int const mask = Concrete_Side_Mask(family, cell);
 	if (mask == 0) {
 		return;
 	}
 
 	int next = overlay;
-	if (overlay < 223) {
-		next = Concrete_NS_Side_Table[mask];
+	if (overlay < family.Cap) {
+		next = Concrete_Side_Shape(family, mask);
 		if (next == overlay) {
 			return;
 		}
-	} else if (overlay == 223) {
-		next = 224;
-	} else if (overlay == 225) {
-		next = 226;
+	} else if (overlay == family.Cap) {
+		next = family.Cap + 1;
+	} else if (overlay == family.Cap + 2) {
+		next = family.Cap + 3;
 	} else {
 		return;
 	}
 
-	Set_Concrete_Section(cell, false, next);
+	Set_Concrete_Section(cell, family.Across, next);
 }
 
 
 /// <summary>
-/// Moves an east-west concrete piece on by its neighbors (gamemd FUN_0057ED00). The north-south
-/// counterpart of Update_Concrete_Side_NS: the piece's own shape follows its north and south neighbors,
-/// and its west and east neighbors change with it.
+/// Springs the destruction triggers for a concrete span that has just fallen (gamemd FUN_0057DC20 for the
+/// north-south family and FUN_0057DAF0 for the east-west family, through FUN_00575EE0). The run of concrete
+/// pieces through the cell is measured toward lower coordinates first.
 /// </summary>
-/// <param name="cell">The side piece, which lies north or south of a hit.</param>
-void MapClass::Update_Concrete_Side_EW(Cell const & cell)
-{
-	int const overlay = Concrete_Overlay_At(cell);
-	if (overlay < OVERLAY_CONCRETE_BRIDGE_FIRST || overlay > OVERLAY_CONCRETE_BRIDGE_LAST) {
-		return;
-	}
-
-	int const mask = Concrete_EW_Side_Mask(cell);
-	if (mask == 0) {
-		return;
-	}
-
-	int next = overlay;
-	if (overlay < 227) {
-		next = Concrete_EW_Side_Table[mask];
-		if (next == overlay) {
-			return;
-		}
-	} else if (overlay == 227) {
-		next = 228;
-	} else if (overlay == 229) {
-		next = 230;
-	} else {
-		return;
-	}
-
-	Set_Concrete_Section(cell, true, next);
-}
-
-
-/// <summary>
-/// Springs the destruction triggers for a north-south concrete span that has just fallen (gamemd FUN_0057DC20
-/// through FUN_00575EE0). The run of concrete pieces along the row is measured west and east first.
-/// </summary>
+/// <param name="family">The family of the span.</param>
 /// <param name="cell">A cell of the fallen piece.</param>
-void MapClass::Spring_Concrete_Bridge_Destroyed_NS(Cell cell)
+void MapClass::Spring_Concrete_Bridge_Destroyed(ConcreteFamily const & family, Cell cell)
 {
-	Cell west = cell;
-	while (Is_Concrete_Bridge_Cell(west + Cell(-1, 0))) {
-		west = west + Cell(-1, 0);
+	Cell low = cell;
+	while (Is_Concrete_Bridge_Cell(low - family.Run)) {
+		low = low - family.Run;
 	}
 
-	Cell east = cell;
-	while (Is_Concrete_Bridge_Cell(east + Cell(1, 0))) {
-		east = east + Cell(1, 0);
+	Cell high = cell;
+	while (Is_Concrete_Bridge_Cell(high + family.Run)) {
+		high = high + family.Run;
 	}
 
-	Spring_Bridge_Destruction_Triggers(west, east);
+	Spring_Bridge_Destruction_Triggers(low, high);
 }
 
 
 /// <summary>
-/// Springs the destruction triggers for an east-west concrete span that has just fallen (gamemd FUN_0057DAF0
-/// through FUN_00575EE0). The run of concrete pieces along the column is measured north and south first.
+/// Hits one concrete section (gamemd FUN_0057CF60 for the north-south family and FUN_0057D530 for the east-west
+/// family). An intact end cap takes its damaged shape. A piece below the cracked shape (205 to 210, or 214 to 219)
+/// cracks to 211 or 220. A piece from the cracked shape to First + 8 (211 to 213, or 220 to 222) falls: its section
+/// becomes the fallen piece, the span is sprung for its triggers, and the pathfinding around it is refreshed. The
+/// side pieces along the run take their new shape as well.
 /// </summary>
-/// <param name="cell">A cell of the fallen piece.</param>
-void MapClass::Spring_Concrete_Bridge_Destroyed_EW(Cell cell)
-{
-	Cell north = cell;
-	while (Is_Concrete_Bridge_Cell(north + Cell(0, -1))) {
-		north = north + Cell(0, -1);
-	}
-
-	Cell south = cell;
-	while (Is_Concrete_Bridge_Cell(south + Cell(0, 1))) {
-		south = south + Cell(0, 1);
-	}
-
-	Spring_Bridge_Destruction_Triggers(north, south);
-}
-
-
-/// <summary>
-/// Hits a north-south concrete piece (gamemd FUN_0057CF60, 0x57CF60). A piece in the first stage (205 to 210)
-/// moves to the cracked stage 211. A piece in the cracked stages (211 to 213) falls: the three cells north, middle
-/// and south become the fallen piece 231, the span is sprung for its triggers, and the pathfinding around it is
-/// refreshed. The side pieces east and west take their new shape as well.
-/// </summary>
-/// <param name="cell">The middle piece of the north-south break that was hit.</param>
+/// <param name="family">The family of the span.</param>
+/// <param name="cell">The middle cell of the section that was hit.</param>
 /// <returns>bool; Did this hit bring the span down?</returns>
-bool MapClass::Damage_Concrete_Bridge_NS(Cell const & cell)
+bool MapClass::Damage_Concrete_Section(ConcreteFamily const & family, Cell const & cell)
 {
 	int const overlay = Concrete_Overlay_At(cell);
+	int const cracked = family.First + 6;
 
-	if (overlay == 223) {
-		Set_Concrete_Section(cell, false, 224);
-		Update_Concrete_Side_NS(cell - Cell(1, 0));
+	if (overlay == family.Cap) {
+		Set_Concrete_Section(cell, family.Across, family.Cap + 1);
+		Update_Concrete_Side(family, cell - family.ToCap);
 		return(false);
 	}
 
-	if (overlay == 225) {
-		Set_Concrete_Section(cell, false, 226);
-		Update_Concrete_Side_NS(cell + Cell(1, 0));
+	if (overlay == family.Cap + 2) {
+		Set_Concrete_Section(cell, family.Across, family.Cap + 3);
+		Update_Concrete_Side(family, cell + family.ToCap);
 		return(false);
 	}
 
-	if (overlay < 211) {
-		Set_Concrete_Section(cell, false, 211);
-		Update_Concrete_Side_NS(cell - Cell(1, 0));
-		Update_Concrete_Side_NS(cell + Cell(1, 0));
+	if (overlay < cracked) {
+		Set_Concrete_Section(cell, family.Across, cracked);
+		Update_Concrete_Side(family, cell - family.Run);
+		Update_Concrete_Side(family, cell + family.Run);
 		return(false);
 	}
 
-	if (overlay > 213) {
+	if (overlay > family.First + 8) {
 		return(false);
 	}
 
-	Set_Concrete_Section(cell, false, OVERLAY_CONCRETE_BRIDGE_END1);
-	Update_Concrete_Side_NS(cell - Cell(1, 0));
-	Update_Concrete_Side_NS(cell + Cell(1, 0));
-	Spring_Concrete_Bridge_Destroyed_NS(cell);
-	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
-	Zone_Reset();
-	return(true);
-}
-
-
-/// <summary>
-/// Hits an east-west concrete piece (gamemd FUN_0057D530, 0x57D530). The counterpart of Damage_Concrete_Bridge_NS:
-/// a piece in the first stage (214 to 219) moves to 220, a piece in 220 to 222 falls to the fallen piece 232, and
-/// the span is sprung for its triggers with the pathfinding refreshed.
-/// </summary>
-/// <param name="cell">The middle piece of the east-west break that was hit.</param>
-/// <returns>bool; Did this hit bring the span down?</returns>
-bool MapClass::Damage_Concrete_Bridge_EW(Cell const & cell)
-{
-	int const overlay = Concrete_Overlay_At(cell);
-
-	if (overlay == 227) {
-		Set_Concrete_Section(cell, true, 228);
-		Update_Concrete_Side_EW(cell + Cell(0, 1));
-		return(false);
-	}
-
-	if (overlay == 229) {
-		Set_Concrete_Section(cell, true, 230);
-		Update_Concrete_Side_EW(cell - Cell(0, 1));
-		return(false);
-	}
-
-	if (overlay < 220) {
-		Set_Concrete_Section(cell, true, 220);
-		Update_Concrete_Side_EW(cell - Cell(0, 1));
-		Update_Concrete_Side_EW(cell + Cell(0, 1));
-		return(false);
-	}
-
-	if (overlay > 222) {
-		return(false);
-	}
-
-	Set_Concrete_Section(cell, true, OVERLAY_CONCRETE_BRIDGE_END2);
-	Update_Concrete_Side_EW(cell - Cell(0, 1));
-	Update_Concrete_Side_EW(cell + Cell(0, 1));
-	Spring_Concrete_Bridge_Destroyed_EW(cell);
+	Set_Concrete_Section(cell, family.Across, family.Fallen);
+	Update_Concrete_Side(family, cell - family.Run);
+	Update_Concrete_Side(family, cell + family.Run);
+	Spring_Concrete_Bridge_Destroyed(family, cell);
 	Recalc_Cells_In_Rect(Rect(cell.X - 1, cell.Y - 1, 3, 3));
 	Zone_Reset();
 	return(true);
@@ -12809,12 +12689,12 @@ bool MapClass::Damage_Concrete_Bridge(Cell const & cell)
 {
 	int const overlay = Concrete_Overlay_At(cell);
 
-	if (Is_Concrete_NS_Overlay(overlay)) {
-		return(Damage_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell)));
+	if (Is_Concrete_Family_Overlay(CONCRETE_NS, overlay)) {
+		return(Damage_Concrete_Section(CONCRETE_NS, Run_Start_Cell(cell, CONCRETE_NS.Across, Is_Concrete_Bridge_Cell)));
 	}
 
-	if (Is_Concrete_EW_Overlay(overlay)) {
-		return(Damage_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell)));
+	if (Is_Concrete_Family_Overlay(CONCRETE_EW, overlay)) {
+		return(Damage_Concrete_Section(CONCRETE_EW, Run_Start_Cell(cell, CONCRETE_EW.Across, Is_Concrete_Bridge_Cell)));
 	}
 
 	return(false);
@@ -12902,12 +12782,12 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 {
 	int const overlay = Concrete_Overlay_At(cell);
 
-	if (Is_Concrete_NS_Overlay(overlay)) {
-		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell), FACING_E);
+	if (Is_Concrete_Family_Overlay(CONCRETE_NS, overlay)) {
+		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, CONCRETE_NS.Across, Is_Concrete_Bridge_Cell), FACING_E);
 		return;
 	}
 
-	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell), FACING_S);
+	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, CONCRETE_EW.Across, Is_Concrete_Bridge_Cell), FACING_S);
 }
 
 
@@ -12930,89 +12810,48 @@ void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
 
 
 /// <summary>
-/// Repairs a north-south concrete run (gamemd FUN_005800D0). The run is walked from its western end. A fallen
-/// or cracked piece takes one of the four intact north-south shapes at random, and a transitional piece goes
-/// back to the shape it came from. The pathfinding around the run is refreshed once a piece has been rebuilt.
+/// Repairs a concrete run (gamemd FUN_005800D0 for the north-south family and FUN_00580600 for the east-west
+/// family). A fallen, side or cracked piece takes one of the family's four intact shapes at random, and a
+/// damaged cap goes back to its intact shape. The pathfinding around the run is refreshed once a piece has been
+/// rebuilt.
 /// </summary>
+/// <param name="family">The family of the span.</param>
 /// <param name="cell">A piece on the run to repair.</param>
-void MapClass::Repair_Concrete_Bridge_NS(Cell const & cell)
+void MapClass::Repair_Concrete_Run(ConcreteFamily const & family, Cell const & cell)
 {
 	Cell start = cell;
-	while (Is_Concrete_Bridge_Cell(start + Cell(-1, 0))) {
-		start = start + Cell(-1, 0);
+	while (Is_Concrete_Bridge_Cell(start - family.Run)) {
+		start = start - family.Run;
 	}
 
 	bool rebuilt = false;
-	int min_x = start.X;
-	int max_x = start.X;
+	Cell last_rebuilt = start;
 
-	for (Cell cur = start; Is_Concrete_Bridge_Cell(cur); cur = cur + Cell(1, 0)) {
+	for (Cell cur = start; Is_Concrete_Bridge_Cell(cur); cur = cur + family.Run) {
 		int const overlay = Concrete_Overlay_At(cur);
 		int next = overlay;
 
-		if ((overlay >= 209 && overlay <= 213) || overlay == OVERLAY_CONCRETE_BRIDGE_END1) {
-			next = OVERLAY_CONCRETE_BRIDGE_FIRST + Random_Pick(0, 3);
+		if ((overlay >= family.First + 4 && overlay <= family.First + 8) || overlay == family.Fallen) {
+			next = family.First + Random_Pick(0, 3);
 			rebuilt = true;
-			min_x = min_x < cur.X ? min_x : cur.X;
-			max_x = max_x > cur.X ? max_x : cur.X;
-		} else if (overlay == 223 || overlay == 224) {
-			next = 223;
-		} else if (overlay == 225 || overlay == 226) {
-			next = 225;
+			last_rebuilt = cur;
+		} else if (overlay == family.Cap || overlay == family.Cap + 1) {
+			next = family.Cap;
+		} else if (overlay == family.Cap + 2 || overlay == family.Cap + 3) {
+			next = family.Cap + 2;
 		}
 
 		if (next != overlay) {
-			Set_Concrete_Section(cur, false, next);
+			Set_Concrete_Section(cur, family.Across, next);
 		}
 	}
 
 	if (rebuilt) {
 		Zone_Reset();
-		Recalc_Cells_In_Rect(Rect(min_x, cell.Y - 1, max_x - min_x + 1, 3));
-	}
-}
-
-
-/// <summary>
-/// Repairs an east-west concrete run (gamemd FUN_00580600). The counterpart of Repair_Concrete_Bridge_NS: the
-/// run is walked from its northern end, and a fallen or damaged piece takes one of the four intact east-west
-/// shapes at random (214 to 217).
-/// </summary>
-/// <param name="cell">A piece on the run to repair.</param>
-void MapClass::Repair_Concrete_Bridge_EW(Cell const & cell)
-{
-	Cell start = cell;
-	while (Is_Concrete_Bridge_Cell(start + Cell(0, -1))) {
-		start = start + Cell(0, -1);
-	}
-
-	bool rebuilt = false;
-	int min_y = start.Y;
-	int max_y = start.Y;
-
-	for (Cell cur = start; Is_Concrete_Bridge_Cell(cur); cur = cur + Cell(0, 1)) {
-		int const overlay = Concrete_Overlay_At(cur);
-		int next = overlay;
-
-		if ((overlay >= 218 && overlay <= 222) || overlay == OVERLAY_CONCRETE_BRIDGE_END2) {
-			next = 214 + Random_Pick(0, 3);
-			rebuilt = true;
-			min_y = min_y < cur.Y ? min_y : cur.Y;
-			max_y = max_y > cur.Y ? max_y : cur.Y;
-		} else if (overlay == 227 || overlay == 228) {
-			next = 227;
-		} else if (overlay == 229 || overlay == 230) {
-			next = 229;
-		}
-
-		if (next != overlay) {
-			Set_Concrete_Section(cur, true, next);
-		}
-	}
-
-	if (rebuilt) {
-		Zone_Reset();
-		Recalc_Cells_In_Rect(Rect(cell.X - 1, min_y, 3, max_y - min_y + 1));
+		int const across_x = family.Across.X;
+		int const across_y = family.Across.Y;
+		Recalc_Cells_In_Rect(Rect(start.X - across_x, start.Y - across_y,
+			last_rebuilt.X - start.X + 1 + 2 * across_x, last_rebuilt.Y - start.Y + 1 + 2 * across_y));
 	}
 }
 
@@ -13026,13 +12865,13 @@ void MapClass::Repair_Concrete_Bridge_Span(Cell const & cell)
 {
 	int const overlay = Concrete_Overlay_At(cell);
 
-	if (Is_Concrete_NS_Overlay(overlay)) {
-		Repair_Concrete_Bridge_NS(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell));
+	if (Is_Concrete_Family_Overlay(CONCRETE_NS, overlay)) {
+		Repair_Concrete_Run(CONCRETE_NS, Run_Start_Cell(cell, CONCRETE_NS.Across, Is_Concrete_Bridge_Cell));
 		return;
 	}
 
-	if (Is_Concrete_EW_Overlay(overlay)) {
-		Repair_Concrete_Bridge_EW(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell));
+	if (Is_Concrete_Family_Overlay(CONCRETE_EW, overlay)) {
+		Repair_Concrete_Run(CONCRETE_EW, Run_Start_Cell(cell, CONCRETE_EW.Across, Is_Concrete_Bridge_Cell));
 	}
 }
 
@@ -13081,7 +12920,7 @@ bool MapClass::Concrete_Bridge_Repairable(Cell const & cell)
 		return(false);
 	}
 
-	bool const ns = Is_Concrete_NS_Overlay(Concrete_Overlay_At(linked));
+	bool const ns = Is_Concrete_Family_Overlay(CONCRETE_NS, Concrete_Overlay_At(linked));
 	Cell const step_a = ns ? Cell(-1, 0) : Cell(0, -1);
 	Cell const step_b = ns ? Cell(1, 0) : Cell(0, 1);
 
