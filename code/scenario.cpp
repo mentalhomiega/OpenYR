@@ -117,6 +117,7 @@
 #include "inline.h"
 #include "intro.h"
 #include "ion.h"
+#include "lightingini.h"
 #include "lstorm.h"
 #include "ipxmgr.h"
 #include "isotype.h"
@@ -344,14 +345,14 @@ void ScenarioClass::Reset(void)
 	RedTint = 100;
 	GreenTint = 100;
 	BlueTint = 100;
-	GroundLight = NORMAL_LIGHT / 10;
-	LevelLight = NORMAL_LIGHT / 60;
-	IonAmbientLight = 100;
-	IonRedTint = 0;
-	IonGreenTint = 0;
-	IonBlueTint = 0;
-	IonGroundLight = NORMAL_LIGHT / 10;
-	IonLevelLight = NORMAL_LIGHT / 60;
+	GroundLight = LightingIni::GROUND;
+	LevelLight = LightingIni::LEVEL;
+	IonAmbientLight = LightingIni::ION_AMBIENT;
+	IonRedTint = LightingIni::ION_RED;
+	IonGreenTint = LightingIni::ION_GREEN;
+	IonBlueTint = LightingIni::ION_BLUE;
+	IonGroundLight = LightingIni::ION_GROUND;
+	IonLevelLight = LightingIni::ION_LEVEL;
 	DominatorAmbientLight = 150;
 	DominatorRedTint = 85;
 	DominatorGreenTint = 20;
@@ -4282,28 +4283,28 @@ bool ScenarioClass::Read_INI(CCINIClass const & ini)
 
 	char const * const LIGHTING = "Lighting";
 
-	// gamemd adds 0.01 before truncating (0x68A846 to 0x68A974), so a float32 just below a whole step, such as Red=0.88, keeps that step.
-	AmbientLight        = (int)(100.0 * ini.Get_Float(LIGHTING, "Ambient", AmbientLight / 100.0) + 0.01);
+	// lightingini.h has gamemd's conversion; an omitted key keeps the value Reset gave it.
+	AmbientLight        = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Ambient", LightingIni::Percent_Fraction(AmbientLight)));
 	CurrentAmbientLight = AmbientLight;
 	DesiredAmbientLight = AmbientLight;
-	RedTint         = (int)(100.0 * ini.Get_Float(LIGHTING, "Red", RedTint / 100.0) + 0.01);
-	GreenTint       = (int)(100.0 * ini.Get_Float(LIGHTING, "Green", GreenTint / 100.0) + 0.01);
-	BlueTint        = (int)(100.0 * ini.Get_Float(LIGHTING, "Blue", BlueTint / 100.0) + 0.01);
-	GroundLight     = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Ground", GroundLight / NORMAL_LIGHT) + 0.01);
-	LevelLight      = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "Level", LevelLight / NORMAL_LIGHT) + 0.01);
-	IonAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "IonAmbient", AmbientLight / 100.0));
-	IonRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "IonRed", RedTint / 100.0));
-	IonGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "IonGreen", GreenTint / 100.0));
-	IonBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "IonBlue", BlueTint / 100.0));
-	IonGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonGround", GroundLight / NORMAL_LIGHT));
-	IonLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "IonLevel", LevelLight / NORMAL_LIGHT));
+	RedTint         = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Red", LightingIni::Percent_Fraction(RedTint)));
+	GreenTint       = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Green", LightingIni::Percent_Fraction(GreenTint)));
+	BlueTint        = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "Blue", LightingIni::Percent_Fraction(BlueTint)));
+	GroundLight     = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "Ground", LightingIni::Thousandths_Fraction(GroundLight)));
+	LevelLight      = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "Level", LightingIni::Thousandths_Fraction(LevelLight)));
+	IonAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonAmbient", LightingIni::Percent_Fraction(IonAmbientLight)));
+	IonRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonRed", LightingIni::Percent_Fraction(IonRedTint)));
+	IonGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonGreen", LightingIni::Percent_Fraction(IonGreenTint)));
+	IonBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "IonBlue", LightingIni::Percent_Fraction(IonBlueTint)));
+	IonGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonGround", LightingIni::Thousandths_Fraction(IonGroundLight)));
+	IonLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "IonLevel", LightingIni::Thousandths_Fraction(IonLevelLight)));
 	NukeAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "NukeAmbientChangeRate", (float)NukeAmbientChangeRate);
-	DominatorAmbientLight = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorAmbient", DominatorAmbientLight / 100.0) + 0.5);
-	DominatorRedTint      = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorRed", DominatorRedTint / 100.0) + 0.5);
-	DominatorGreenTint    = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorGreen", DominatorGreenTint / 100.0) + 0.5);
-	DominatorBlueTint     = (int)(100.0 * ini.Get_Float(LIGHTING, "DominatorBlue", DominatorBlueTint / 100.0) + 0.5);
-	DominatorGroundLight  = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorGround", DominatorGroundLight / (float)NORMAL_LIGHT) + 0.5);
-	DominatorLevelLight   = (int)(NORMAL_LIGHT * ini.Get_Float(LIGHTING, "DominatorLevel", DominatorLevelLight / (float)NORMAL_LIGHT) + 0.5);
+	DominatorAmbientLight = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorAmbient", LightingIni::Percent_Fraction(DominatorAmbientLight)));
+	DominatorRedTint      = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorRed", LightingIni::Percent_Fraction(DominatorRedTint)));
+	DominatorGreenTint    = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorGreen", LightingIni::Percent_Fraction(DominatorGreenTint)));
+	DominatorBlueTint     = LightingIni::Fraction_Percent(ini.Get_Float(LIGHTING, "DominatorBlue", LightingIni::Percent_Fraction(DominatorBlueTint)));
+	DominatorGroundLight  = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorGround", LightingIni::Thousandths_Fraction(DominatorGroundLight)));
+	DominatorLevelLight   = LightingIni::Fraction_Thousandths(ini.Get_Float(LIGHTING, "DominatorLevel", LightingIni::Thousandths_Fraction(DominatorLevelLight)));
 	DominatorAmbientChangeRate = (int)ini.Get_Float(LIGHTING, "DominatorAmbientChangeRate", (float)DominatorAmbientChangeRate);
 
 	Session.Update_Progress(55);

@@ -216,10 +216,19 @@ While a storm runs, cell brightness uses [`IonLevel`](/keys/ionlevel/) and [`Ion
 
 The tint and the light level change on different schedules. The tint switches when the storm breaks and switches back when it ends. The light level fades toward `IonAmbient` through [the ambient ramp](#the-ambient-ramp), and fades back to `Ambient` after the storm.
 
-An omitted ion key takes the value of the ordinary key it pairs with, so a map that sets only `Ambient`, `Red`, `Green`, and `Blue` gets matching ion values. The ground and level keys are the exception.
+An omitted key keeps a fixed starting value; no ion key copies the ordinary key it pairs with.
 
-:::caution[Set IonGround and IonLevel explicitly]
-When `Ground`, `Level`, `IonGround`, or `IonLevel` is omitted, its fallback value is rounded down to a whole number, so any fraction becomes `0`. An omitted `Ground` or `Level` is therefore `0`. An omitted `IonGround` or `IonLevel` copies `Ground` or `Level` rounded down, which is `0` unless that key is `1` or more. A value written to any of the four keys is kept as written. To have ground darkening or height shading during a storm, set `IonGround` and `IonLevel`.
+| Key | Omitted | Ion key | Omitted |
+| --- | --- | --- | --- |
+| `Ambient` | `1` | `IonAmbient` | `.87` |
+| `Red` | `1` | `IonRed` | `.3` |
+| `Green` | `1` | `IonGreen` | `.4` |
+| `Blue` | `1` | `IonBlue` | `.75` |
+| `Ground` | `.05` | `IonGround` | `0` |
+| `Level` | `.008` | `IonLevel` | `0` |
+
+:::caution[Write both sets of keys]
+A map that sets only the ordinary keys gets the storm values in the right-hand column during a storm: a dark blue tint, no ground darkening and no height shading. Write the `Ion` keys as well to control how a storm looks.
 :::
 
 ### The ambient ramp
