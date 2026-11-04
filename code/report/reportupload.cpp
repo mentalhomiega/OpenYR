@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "report/reportupload.h"
+#include "diskfile.h"
 #include "littleendian.h"
 #include "strutil.h"
 
@@ -96,9 +97,7 @@ std::string Json_Escape(std::string const & text)
 
 bool Write_File(fs::path const & path, std::string const & bytes)
 {
-	std::ofstream file(path, std::ios::binary | std::ios::trunc);
-	file.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
-	return(static_cast<bool>(file));
+	return(Write_Disk_File(path, bytes));
 }
 
 
