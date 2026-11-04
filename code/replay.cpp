@@ -262,6 +262,7 @@ bool Capture_Event(EventClass const & event, ReplayFile::EventType & out)
 		return(false);
 	} else {
 		unsigned char const * bytes = reinterpret_cast<unsigned char const *>(&event.Data);
+		// tests/eventpayload repeats this length rule; keep the two in step.
 		out.Data.assign(bytes, bytes + EventClass::Fixed_Length(event.Type));
 	}
 
