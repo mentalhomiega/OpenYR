@@ -296,10 +296,8 @@ void Sync_Record_Event_Impl(EventClass const & event, int source)
 	entry.Type = event.Type;
 	entry.Source = (uint8_t)source;
 
-	unsigned length = 0;
-	if (event.Type < EventClass::LAST_EVENT) {
-		length = EventClass::EventLength[event.Type];
-	}
+	// For ADDPLAYER and BEACON_TEXT these are the low bytes of Data.Variable.Pointer, not the text.
+	unsigned length = (unsigned)EventClass::Fixed_Length(event.Type);
 	if (length > sizeof(entry.Bytes)) {
 		length = sizeof(entry.Bytes);
 	}
