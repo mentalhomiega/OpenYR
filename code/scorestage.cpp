@@ -308,7 +308,8 @@ void ScoreStageClass::Fill_Backdrop(Surface & target, Rect const & source)
 	int const width = target.Get_Width();
 	int const height = target.Get_Height();
 	for (int y = 0; y < height; y++) {
-		unsigned short * line = (unsigned short *)target.Lock(Point2D(0, y));
+		SurfaceLock line_lock(target, Point2D(0, y));
+		unsigned short * line = line_lock.As<unsigned short>();
 		if (line == NULL) {
 			break;
 		}
@@ -329,7 +330,6 @@ void ScoreStageClass::Fill_Backdrop(Surface & target, Rect const & source)
 			}
 			line[x] = (unsigned short)DSurface::Build_Hicolor_Pixel(channel[0], channel[1], channel[2]);
 		}
-		target.Unlock();
 	}
 }
 
@@ -578,7 +578,8 @@ void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect 
 		if (row < 0 || row >= StageHeight) {
 			continue;
 		}
-		unsigned short * line = (unsigned short *)StageSurface->Lock(Point2D(0, row));
+		SurfaceLock line_lock(*StageSurface, Point2D(0, row));
+		unsigned short * line = line_lock.As<unsigned short>();
 		if (line == NULL) {
 			break;
 		}
@@ -611,7 +612,6 @@ void ScoreStageClass::Draw_Keyed_Frame(ShapeSet const * shapes, int frame, Rect 
 			int const blue = std::clamp((int)(behind.Get_Blue() * keep + sample[2] + 0.5), 0, 255);
 			line[column] = (unsigned short)DSurface::Build_Hicolor_Pixel(red, green, blue);
 		}
-		StageSurface->Unlock();
 	}
 }
 

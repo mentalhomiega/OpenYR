@@ -227,6 +227,19 @@ extern int							SidebarRedraws;
 extern bool							GameActive;
 extern bool							SpecialFlag;
 extern int							ScenarioInit;
+
+/// <summary>
+/// Raises ScenarioInit until the scope ends, on every path out of it.
+/// </summary>
+class ScenarioInitScope
+{
+	public:
+		ScenarioInitScope(void) {ScenarioInit++;}
+		~ScenarioInitScope(void) {ScenarioInit--;}
+		ScenarioInitScope(ScenarioInitScope const &) = delete;
+		ScenarioInitScope & operator = (ScenarioInitScope const &) = delete;
+};
+
 extern HouseClass *					PlayerPtr;
 
 extern int							BuildLevel;

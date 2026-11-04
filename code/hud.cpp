@@ -307,8 +307,10 @@ void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * 
 	};
 
 	Rect const bounds = surface.Get_Rect();
-	unsigned short const * source = static_cast<unsigned short const *>(_scratch->Lock());
-	unsigned short * dest = static_cast<unsigned short *>(surface.Lock());
+	SurfaceLock scratch_lock(*_scratch);
+	SurfaceLock dest_lock(surface);
+	unsigned short const * source = scratch_lock.As<unsigned short const>();
+	unsigned short * dest = dest_lock.As<unsigned short>();
 	if (source != NULL && dest != NULL) {
 		int const sstride = _scratch->Stride() / 2;
 		int const dstride = surface.Stride() / 2;
@@ -335,8 +337,6 @@ void Draw_Hud_Cutout(Surface & surface, ConvertClass & drawer, ShapeSet const * 
 			}
 		}
 	}
-	if (source != NULL) _scratch->Unlock();
-	if (dest != NULL) surface.Unlock();
 }
 
 

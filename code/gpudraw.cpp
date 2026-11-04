@@ -552,14 +552,14 @@ static GpuRing Ring_Of(T * buffer, std::vector<unsigned short> & fallback)
 static bool Read_Area(Surface & surface, Rect const & area, std::vector<unsigned short> & pixels)
 {
 	pixels.resize((std::size_t)area.Width * area.Height);
-	char const * base = (char const *)surface.Lock(Point2D(area.X, area.Y));
+	SurfaceLock lock(surface, Point2D(area.X, area.Y));
+	char const * base = lock.As<char const>();
 	if (base == NULL) {
 		return(false);
 	}
 	for (int r = 0; r < area.Height; r++) {
 		std::memcpy(&pixels[(std::size_t)r * area.Width], base + r * surface.Stride(), area.Width * sizeof(unsigned short));
 	}
-	surface.Unlock();
 	return(true);
 }
 
@@ -596,7 +596,8 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 			}
 		}
 	}
-	char const * base = (char const *)surface.Lock(Point2D(area.X, area.Y));
+	SurfaceLock lock(surface, Point2D(area.X, area.Y));
+	char const * base = lock.As<char const>();
 	if (base == NULL) {
 		return(false);
 	}
@@ -607,7 +608,6 @@ static bool Read_Changes(Surface & surface, Rect const & area, std::vector<unsig
 		void const * row = base + r * surface.Stride();
 		Sync_Row(&pixels[r * width], row, width * sizeof(unsigned short), changed[r]);
 	}
-	surface.Unlock();
 	return(true);
 }
 
@@ -658,14 +658,14 @@ static void Read_Plane(EmissivePlane const & plane, Rect const & area, std::vect
 
 static void Write_Area(Surface & surface, Rect const & area, std::vector<unsigned short> const & pixels)
 {
-	char * base = (char *)surface.Lock(Point2D(area.X, area.Y));
+	SurfaceLock lock(surface, Point2D(area.X, area.Y));
+	char * base = lock.As<char>();
 	if (base == NULL) {
 		return;
 	}
 	for (int r = 0; r < area.Height; r++) {
 		std::memcpy(base + r * surface.Stride(), &pixels[(std::size_t)r * area.Width], area.Width * sizeof(unsigned short));
 	}
-	surface.Unlock();
 }
 
 

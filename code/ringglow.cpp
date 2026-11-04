@@ -147,7 +147,8 @@ void Ring_Glow_Flush(Surface & surface)
 			columns[index] = std::clamp((area.X + index - left) * TEXTURE_SIZE / width, 0, TEXTURE_SIZE - 1);
 		}
 
-		unsigned char * dest = (unsigned char *)surface.Lock(Point2D(area.X, area.Y));
+		SurfaceLock dest_lock(surface, Point2D(area.X, area.Y));
+		unsigned char * dest = dest_lock.As<unsigned char>();
 		if (dest == NULL) {
 			continue;
 		}
@@ -206,8 +207,6 @@ void Ring_Glow_Flush(Surface & surface)
 				abuffer = AlphaBuffer->Wrap_Overflow(abuffer + 1);
 			}
 		}
-
-		surface.Unlock();
 	}
 
 	Glows.clear();

@@ -150,7 +150,8 @@ Point2D BitFontClass::Print(char const * string, Surface & surface, Rect const &
 		return(drawpoint);
 	}
 
-	void * buffer = surface.Lock();
+	SurfaceLock lock(surface);
+	void * buffer = lock.As<void>();
 	if (buffer == NULL) {
 		return(drawpoint);
 	}
@@ -187,6 +188,5 @@ Point2D BitFontClass::Print(char const * string, Surface & surface, Rect const &
 		xpos += glyph[0] + XSpacing;
 	}
 
-	surface.Unlock();
 	return(Point2D(xpos - cliprect.X, ypos - cliprect.Y));
 }
