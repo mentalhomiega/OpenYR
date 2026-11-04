@@ -310,7 +310,18 @@ COMPUTED_KEY_READS = {
 # the place the reader calls them. Each must be defined in the reader's file
 # and called exactly once from the Read_INI body, or extraction fails; a helper
 # left off the list fails the inventory check instead.
-READ_INI_HELPERS = {}
+READ_INI_HELPERS = {
+    ("techtype.cpp", "TechnoTypeClass"): [
+        "Read_General_INI", "Read_Movement_INI", "Read_Abilities_INI",
+        "Read_Targeting_INI", "Read_Bounty_INI", "Read_Insignia_INI",
+        "Read_Attach_Effect_INI", "Read_Spawns_INI", "Read_Jumpjet_INI",
+        "Read_Airstrike_INI", "Read_Destruction_INI", "Read_Weapons_INI",
+        "Read_Transport_INI", "Read_Gattling_INI", "Read_Deploy_INI",
+        "Read_Turret_INI", "Read_Effects_INI", "Read_Ammo_INI",
+        "Read_Production_INI", "Read_AI_INI", "Read_Sounds_INI",
+        "Read_Art_INI", "Read_Weapon_FLH_INI",
+    ],
+}
 
 
 def reader_pieces(path, cls, text, body, offset):
