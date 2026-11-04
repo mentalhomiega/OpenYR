@@ -65,7 +65,6 @@ struct SessionPart
 	int GameSpeed = 0;
 	std::vector<NodeNameType *> Players;
 	std::vector<NodeNameType *> Computers;
-	bool AIOnly = false;
 	HousesType PlayerHouse = HOUSE_NONE;
 	bool ScenarioActive = false;
 	bool TacticalActive = false;
@@ -137,7 +136,6 @@ void Take(SessionPart & part)
 	part.GameSpeed = Options.GameSpeed;
 	Move_List(Session.Players, part.Players);
 	Move_List(Session.Computers, part.Computers);
-	part.AIOnly = Session.AIOnly;
 	part.PlayerHouse = Session.PlayerHouse;
 	part.ScenarioActive = ScenarioActive;
 	part.TacticalActive = TacticalActive;
@@ -155,7 +153,6 @@ void Give(SessionPart const & part)
 	Options.GameSpeed = part.GameSpeed;
 	Fill_List(Session.Players, part.Players);
 	Fill_List(Session.Computers, part.Computers);
-	Session.AIOnly = part.AIOnly;
 	Session.PlayerHouse = part.PlayerHouse;
 	ScenarioActive = part.ScenarioActive;
 	TacticalActive = part.TacticalActive;
@@ -356,7 +353,6 @@ bool Prepare_Battle(char * file, int file_size)
 	Battle.Options.BuildOffAlly = false;
 	Battle.Options.AutoDeployMCV = true;
 	Battle.Options.SWAllowed = ConfigINI.Get_Bool("MenuBattle", "SuperWeapons", false);
-	Battle.AIOnly = true;
 	Battle.PlayerHouse = (HousesType)observer_house;
 	Battle.ScenarioActive = false;
 	Battle.TacticalActive = false;

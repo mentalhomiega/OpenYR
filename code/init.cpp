@@ -927,7 +927,6 @@ restart:
 	PlayerRestarts = false;
 	PlayerAborts = false;
 	Session.ObiWan = false;
-	Session.AIOnly = false;
 	Debug_Cheats_Reset();
 #ifdef _DEBUG
 	Debug_Unshroud = false;

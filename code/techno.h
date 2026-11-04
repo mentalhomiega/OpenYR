@@ -619,12 +619,6 @@ class TechnoClass :	public RadioClass,
 		TechnoRecoilState BarrelRecoil;
 
 		/*
-		**	Set when this object fires with a turret recoil and cleared at the start of its next
-		**	AI pass. The draw does not read it. It only feeds the monochrome debug display.
-		*/
-		bool IsInRecoilState;
-
-		/*
 		**	If this unit is "loosely attached" to another unit it is given special
 		**	processing. A unit is in such a condition when it is in the process of
 		**	unloading from a transport type object. During the unloading process

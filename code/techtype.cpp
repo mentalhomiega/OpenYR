@@ -86,7 +86,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsScanner(false),
 	IsNominal(false),
 	IsTurretEquipped(false),
-	IsHasTurretTooltips(false),
 	IsTurretRecoil(false),
 	IsCrew(false),
 	IsRepairable(true),
@@ -194,7 +193,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsCanRetaliate(true),
 	IsHoverAttack(false),
 	IsJumpJet(false),
-	IsTiltCrashJumpjet(false),
 	VHPScan(VHP_SCAN_NONE),
 	IsOpportunityFire(false),
 	IsWarpable(true),
@@ -251,8 +249,6 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CreateSound(VOC_NONE),
 	EnterTransportSound(VOC_NONE),
 	LeaveTransportSound(VOC_NONE),
-	EnterGrinderSound(VOC_NONE),
-	LeaveGrinderSound(VOC_NONE),
 	LeaveBioReactorSound(VOC_NONE),
 	VoiceEnter(VOC_NONE),
 	VoiceDeploy(VOC_NONE),
@@ -1191,7 +1187,8 @@ void TechnoTypeClass::Read_Spawns_INI(CCINIClass const & ini)
 
 void TechnoTypeClass::Read_Jumpjet_INI(CCINIClass const & ini)
 {
-	IsTiltCrashJumpjet = ini.Get_Bool(Name(), "TiltCrashJumpjet", IsTiltCrashJumpjet);
+	// Accepted from Yuri's Revenge rules, but nothing uses it.
+	ini.Get_Bool(Name(), "TiltCrashJumpjet", false);
 
 	// The first read takes its jumpjet defaults from [JumpjetControls], read before the types.
 	if (!IsJumpjetDataSet) {
@@ -1352,7 +1349,8 @@ void TechnoTypeClass::Read_Turret_INI(CCINIClass const & ini)
 {
 	IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
 	IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
-	IsHasTurretTooltips = ini.Get_Bool(Name(), "HasTurretTooltips", IsHasTurretTooltips);
+	// Accepted from Yuri's Revenge rules, but nothing uses it.
+	ini.Get_Bool(Name(), "HasTurretTooltips", false);
 	IsTurretRecoil = ini.Get_Bool(Name(), "TurretRecoil", IsTurretRecoil);
 	TurretRecoilControl.Travel = ini.Get_Int(Name(), "TurretTravel", TurretRecoilControl.Travel);
 	TurretRecoilControl.CompressFrames = ini.Get_Int(Name(), "TurretCompressFrames", TurretRecoilControl.CompressFrames);
@@ -1462,8 +1460,9 @@ void TechnoTypeClass::Read_Sounds_INI(CCINIClass const & ini)
 	CreateSound = ini.Get_VocType(Name(), "CreateSound", CreateSound);
 	EnterTransportSound = ini.Get_VocType(Name(), "EnterTransportSound", EnterTransportSound);
 	LeaveTransportSound = ini.Get_VocType(Name(), "LeaveTransportSound", LeaveTransportSound);
-	EnterGrinderSound = ini.Get_VocType(Name(), "EnterGrinderSound", EnterGrinderSound);
-	LeaveGrinderSound = ini.Get_VocType(Name(), "LeaveGrinderSound", LeaveGrinderSound);
+	// Accepted from Yuri's Revenge rules, but nothing plays them: a grinder plays the rules' EnterGrinderSound.
+	ini.Get_VocType(Name(), "EnterGrinderSound", VOC_NONE);
+	ini.Get_VocType(Name(), "LeaveGrinderSound", VOC_NONE);
 	LeaveBioReactorSound = ini.Get_VocType(Name(), "LeaveBioReactorSound", LeaveBioReactorSound);
 	VoiceEnter = ini.Get_VocType(Name(), "VoiceEnter", VoiceEnter);
 	VoiceDeploy = ini.Get_VocType(Name(), "VoiceDeploy", VoiceDeploy);
@@ -1894,7 +1893,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsCanRetaliate);
 	stream.Serialize(IsHoverAttack);
 	stream.Serialize(IsJumpJet);
-	stream.Serialize(IsTiltCrashJumpjet);
 	stream.Serialize(VHPScan);
 	stream.Serialize(IsOpportunityFire);
 	stream.Serialize(IsWarpable);
@@ -1954,8 +1952,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CreateSound);
 	stream.Serialize(EnterTransportSound);
 	stream.Serialize(LeaveTransportSound);
-	stream.Serialize(EnterGrinderSound);
-	stream.Serialize(LeaveGrinderSound);
 	stream.Serialize(LeaveBioReactorSound);
 	stream.Serialize(VoiceEnter);
 	stream.Serialize(VoiceDeploy);
@@ -2128,7 +2124,6 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsScanner);
 	stream.Serialize(IsNominal);
 	stream.Serialize(IsTurretEquipped);
-	stream.Serialize(IsHasTurretTooltips);
 	stream.Serialize(IsTurretRecoil);
 	stream.Serialize(TurretRecoilControl.Travel);
 	stream.Serialize(TurretRecoilControl.CompressFrames);
@@ -2270,7 +2265,6 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsScanner);
 	crc(IsNominal);
 	crc(IsTurretEquipped);
-	crc(IsHasTurretTooltips);
 	crc(IsTurretRecoil);
 	crc(TurretRecoilControl.Travel);
 	crc(TurretRecoilControl.CompressFrames);
@@ -2303,7 +2297,6 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsVisibleLoad);
 	crc(IsLightningRod);
 	crc(IsJumpJet);
-	crc(IsTiltCrashJumpjet);
 	crc(VHPScan);
 	crc(SuperGapRadiusInCells);
 	crc(IsCloseRange);

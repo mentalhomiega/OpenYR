@@ -5262,10 +5262,10 @@ static void Gattling_Step(StepType const & step)
 			turret_frames = btype->AuxVoxel.MotLib != NULL ? btype->AuxVoxel.MotLib->Get_Frame_Count() : -1;
 			barrel_frames = btype->AuxVoxel2.MotLib != NULL ? btype->AuxVoxel2.MotLib->Get_Frame_Count() : -1;
 		}
-		DebugString("AUTOTEST   gattling %s of %s cell %d,%d mission %s facing %d desired %d dir32 %d aim %d center %d fire %d pitch %d spin %d stage %d frame %d recoil %d target %d,%d at %d hva %d %d\n",
+		DebugString("AUTOTEST   gattling %s of %s cell %d,%d mission %s facing %d desired %d dir32 %d aim %d center %d fire %d pitch %d spin %d stage %d frame %d target %d,%d at %d hva %d %d\n",
 			techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
 			(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
-			(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, (int)techno->IsInRecoilState, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+			(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
 		Coord const turret = techno->Turret_Coord();
 		Coord const lead = techno->Predict_Target_Coord();
 		DebugString("AUTOTEST   barrelstate %s barrel desired %d current %d center z %d tarz %d turret %d,%d,%d lead %d,%d,%d\n",

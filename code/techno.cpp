@@ -266,7 +266,6 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsLeader(false),
 	IsALoaner(false),
 	IsLocked(false),
-	IsInRecoilState(false),
 	IsTethered(false),
 	IsOwnedByPlayer(false),
 	DiscoveredBy(),
@@ -940,7 +939,6 @@ void TechnoClass::Debug_Dump(MonoClass * mono) const
 	mono->Fill_Attrib(27, 13, 12, 1, IsLeader ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 14, 12, 1, IsALoaner ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 15, 12, 1, IsLocked ? MonoClass::INVERSE : MonoClass::NORMAL);
-	mono->Fill_Attrib(27, 16, 12, 1, IsInRecoilState ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 17, 12, 1, IsTethered ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 13, 12, 1, IsOwnedByPlayer ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 14, 12, 1, DiscoveredBy[PlayerPtr] ? MonoClass::INVERSE : MonoClass::NORMAL);
@@ -3954,13 +3952,6 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	/*
-	**	Handle recoil recovery here.
-	*/
-	if (IsInRecoilState) {
-		IsInRecoilState = false;
-	}
-
 	// A vehicle's barrel is not aimed at its target. gamemd sets it only when the vehicle is placed (TechnoClass::Unlimbo,
 	// 0x6F6DAF) and when it deploys (UnitClass::TryToDeploy, 0x739819), so it rests at FireAngle otherwise.
 	if (TarCom != NULL && PrimaryWeapon != NULL && RTTI != RTTI_UNIT) {
@@ -5684,7 +5675,6 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 	// gamemd starts the recoil of any object with a turret in TechnoClass::Fire (0x6FDD50), for units and buildings alike.
 	if (Is_Turret_Equipped()) {
 		Start_Turret_Recoil();
-		IsInRecoilState = TClass->IsTurretRecoil;
 	}
 
 	// A new bullet takes no AI tick here (TechnoClass::Fire, 0x6FDD50). Its first tick is the logic pass, later in this frame.
@@ -11581,7 +11571,6 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsLeader);
 	stream.Serialize(IsALoaner);
 	stream.Serialize(IsLocked);
-	stream.Serialize(IsInRecoilState);
 	stream.Serialize(IsTethered);
 	stream.Serialize(IsOwnedByPlayer);
 	stream.Serialize(DiscoveredBy);
@@ -11654,7 +11643,6 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsLeader);
 	crc(IsALoaner);
 	crc(IsLocked);
-	crc(IsInRecoilState);
 	crc(IsTethered);
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		crc(IsOwnedByPlayer);

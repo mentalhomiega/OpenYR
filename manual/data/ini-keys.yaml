@@ -15052,9 +15052,9 @@ EnterGrinderSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: null
+      default_candidate: none
       declared_in: TechnoTypeClass
-      member: EnterGrinderSound
+      member: VOC_NONE
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -18174,7 +18174,7 @@ HasTurretTooltips:
     _provenance:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
-      member: IsHasTurretTooltips
+      member: 'false'
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -22544,9 +22544,9 @@ LeaveGrinderSound:
     value_type: sound
     status: needs_review
     _provenance:
-      default_candidate: null
+      default_candidate: none
       declared_in: TechnoTypeClass
-      member: LeaveGrinderSound
+      member: VOC_NONE
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
@@ -22561,7 +22561,7 @@ LeaveGrinderSound:
     _provenance:
       default_candidate: none
       declared_in: RulesClass
-      member: LeaveGrinderSound
+      member: null
       source: code/rules.cpp
       guard: null
     level: RulesClass
@@ -40922,7 +40922,7 @@ TiltCrashJumpjet:
     _provenance:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
-      member: IsTiltCrashJumpjet
+      member: 'false'
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

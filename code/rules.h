@@ -747,9 +747,8 @@ class RulesClass
 		VocType SpySatActivationSound;
 		VocType SpySatDeactivationSound;
 
-		// Played where an object is ground up in a grinder. The rules read LeaveGrinderSound too, but nothing plays it.
+		// Played where an object is ground up in a grinder.
 		VocType EnterGrinderSound;
-		VocType LeaveGrinderSound;
 		VocType GateDownSound;
 
 		/*
