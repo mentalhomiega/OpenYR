@@ -129,11 +129,7 @@ static void Spawner_Seat_Local(void)
 
 	std::snprintf(Session.Handle, sizeof(Session.Handle), "%s",
 		local.Name.empty() ? "Player" : local.Name.c_str());
-	Session.House = local.Country;
-	Session.ColorIdx = local.Color;
-	Session.PrefColor = Session.ColorIdx;
-	Session.CustomColor = local.CustomColor;
-	Session.PrefCustomColor = local.CustomColor;
+	Session.Set_Local_Look(local.Country, local.Color, local.CustomColor);
 }
 
 

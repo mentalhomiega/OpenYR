@@ -10,6 +10,7 @@
 #include "cncnet/cncnettunnelchoice.h"
 
 #include "cncnet/cncnethttp.h"
+#include "diskfile.h"
 
 #include <filesystem>
 #include <fstream>
@@ -58,9 +59,7 @@ void CnCNetTunnelChoiceClass::Start(std::string const & url, std::string const &
 		} else {
 			note = error.empty() ? "The tunnel list from " + url + " had no usable tunnel." : error;
 			text.clear();
-			std::ifstream file(cache_file, std::ios::binary);
-			if (!cache_file.empty() && file) {
-				text.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+			if (!cache_file.empty() && Read_Disk_File(cache_file, text)) {
 				note += " Using the list kept from the last good download.";
 			}
 		}

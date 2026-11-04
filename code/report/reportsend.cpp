@@ -14,6 +14,7 @@
 #include "_rules.h"
 #include "ccini.h"
 #include "data.h"
+#include "diskfile.h"
 #include "cncnet/cncnethttp.h"
 #include "dbgprint.h"
 #include "gamedirs.h"
@@ -208,10 +209,8 @@ void Start_Sender(SettingsType const & settings)
 			std::string meta;
 			{
 				// Closed before the files are removed, since Windows keeps an open file.
-				std::ifstream zip_file(pending / (id + ".zip"), std::ios::binary);
-				std::ifstream meta_file(pending / (id + ".json"), std::ios::binary);
-				zip.assign(std::istreambuf_iterator<char>(zip_file), std::istreambuf_iterator<char>());
-				meta.assign(std::istreambuf_iterator<char>(meta_file), std::istreambuf_iterator<char>());
+				Read_Disk_File(pending / (id + ".zip"), zip);
+				Read_Disk_File(pending / (id + ".json"), meta);
 			}
 			std::string answer;
 			std::string error;

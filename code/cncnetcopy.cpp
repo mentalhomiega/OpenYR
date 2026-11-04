@@ -9,6 +9,7 @@
 
 #include "cncnetcopy.h"
 #include "cncnet/cncnettext.h"
+#include "diskfile.h"
 #include "fnv.h"
 #include "strutil.h"
 
@@ -89,24 +90,14 @@ void Clear_Read_Only(std::string const & path)
 
 bool Read_File(std::string const & path, std::string & text)
 {
-	std::ifstream in(Path(path), std::ios::binary);
-	if (!in) {
-		return(false);
-	}
-	text.assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
-	return(true);
+	return(Read_Disk_File(Path(path), text));
 }
 
 
 bool Write_File(std::string const & path, std::string const & text)
 {
 	Clear_Read_Only(path);
-	std::ofstream out(Path(path), std::ios::binary | std::ios::trunc);
-	if (!out) {
-		return(false);
-	}
-	out.write(text.data(), static_cast<std::streamsize>(text.size()));
-	return(static_cast<bool>(out));
+	return(Write_Disk_File(Path(path), text));
 }
 
 

@@ -895,11 +895,7 @@ int Net2SetHouseAndColor(char *who, int house, int color, unsigned int custom)
 		}
 
 	if (offset == 0) {
-		Session.PrefColor = color;
-		Session.PrefCustomColor = custom;
-		Session.ColorIdx=color;
-		Session.CustomColor = custom;
-		Session.House=house;
+		Session.Set_Local_Look(house, color, custom);
 	}
 
 	return(retval);

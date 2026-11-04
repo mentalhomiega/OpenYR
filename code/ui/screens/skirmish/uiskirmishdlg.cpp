@@ -204,14 +204,7 @@ static void Remember_Preferences(UISkirmishState const & state)
 
 	if (!state.Slots.empty()) {
 		int const side = Slot_Side(state, state.Slots[0]);
-		if (side >= 0) {
-			Session.House = side;
-		}
-
-		Session.ColorIdx = state.Slots[0].Color;
-		Session.CustomColor = state.Slots[0].Custom;
-		Session.PrefColor = state.Slots[0].Color;
-		Session.PrefCustomColor = state.Slots[0].Custom;
+		Session.Set_Local_Look(side >= 0 ? side : Session.House, state.Slots[0].Color, state.Slots[0].Custom);
 	}
 
 	Memory.Loaded = true;

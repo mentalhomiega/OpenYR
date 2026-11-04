@@ -523,6 +523,16 @@ class SessionClass
 		void One_Time(void);
 		void Init(void);
 
+		// Sets this machine's house and colour, and makes the colour the preferred one too.
+		void Set_Local_Look(int house, int color, unsigned int custom)
+		{
+			House = house;
+			ColorIdx = color;
+			CustomColor = custom;
+			PrefColor = color;
+			PrefCustomColor = custom;
+		}
+
 		//.....................................................................
 		// Reads/writes to the INI file
 		//.....................................................................

@@ -9,6 +9,7 @@
 
 #include "modsync.h"
 #include "cncnet/cncnettext.h"
+#include "diskfile.h"
 #include "fnv.h"
 #include "hexdigit.h"
 
@@ -66,13 +67,12 @@ namespace ModSync
 				return(Hash_Bytes(hash, &none, 1));
 			}
 
-			std::ifstream file(path, std::ios::binary);
-			if (!file) {
+			std::string content;
+			if (!Read_Disk_File(path, content)) {
 				unsigned char const missing = 1;
 				return(Hash_Bytes(hash, &missing, 1));
 			}
 
-			std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 			content.erase(std::remove(content.begin(), content.end(), '\r'), content.end());
 
 			unsigned char const present = 2;
