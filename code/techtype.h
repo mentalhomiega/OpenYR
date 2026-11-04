@@ -1392,4 +1392,29 @@ class TechnoTypeClass : public ObjectTypeClass
 		static void const * WakeShapes;
 
 		static TechnoTypeClass * From_Name(char const * name);
+
+	private:
+		void Read_General_INI(CCINIClass const & ini);
+		void Read_Movement_INI(CCINIClass const & ini);
+		void Read_Abilities_INI(CCINIClass const & ini);
+		void Read_Targeting_INI(CCINIClass const & ini);
+		void Read_Bounty_INI(CCINIClass const & ini);
+		void Read_Insignia_INI(CCINIClass const & ini);
+		void Read_Attach_Effect_INI(CCINIClass const & ini);
+		void Read_Spawns_INI(CCINIClass const & ini);
+		void Read_Jumpjet_INI(CCINIClass const & ini);
+		void Read_Airstrike_INI(CCINIClass const & ini);
+		void Read_Destruction_INI(CCINIClass const & ini);
+		void Read_Weapons_INI(CCINIClass const & ini);
+		void Read_Transport_INI(CCINIClass const & ini);
+		void Read_Gattling_INI(CCINIClass const & ini);
+		void Read_Deploy_INI(CCINIClass const & ini);
+		void Read_Turret_INI(CCINIClass const & ini);
+		void Read_Effects_INI(CCINIClass const & ini);
+		void Read_Ammo_INI(CCINIClass const & ini);
+		void Read_Production_INI(CCINIClass const & ini);
+		void Read_AI_INI(CCINIClass const & ini);
+		void Read_Sounds_INI(CCINIClass const & ini);
+		void Read_Art_INI(void);
+		void Read_Weapon_FLH_INI(void);
 };
