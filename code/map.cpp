@@ -12783,11 +12783,11 @@ void MapClass::Destroy_Concrete_Bridge_Neighbors(Cell const & cell)
 	int const overlay = Concrete_Overlay_At(cell);
 
 	if (Is_Concrete_Family_Overlay(CONCRETE_NS, overlay)) {
-		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(0, 1), Is_Concrete_Bridge_Cell), FACING_E);
+		Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, CONCRETE_NS.Across, Is_Concrete_Bridge_Cell), FACING_E);
 		return;
 	}
 
-	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, Cell(1, 0), Is_Concrete_Bridge_Cell), FACING_S);
+	Detonate_Concrete_Bridge_Run(Run_Start_Cell(cell, CONCRETE_EW.Across, Is_Concrete_Bridge_Cell), FACING_S);
 }
 
 
@@ -12811,9 +12811,9 @@ void MapClass::Destroy_Concrete_Bridge_At(Cell const & cell)
 
 /// <summary>
 /// Repairs a concrete run (gamemd FUN_005800D0 for the north-south family and FUN_00580600 for the east-west
-/// family). The run is walked from its end at lower coordinates. A fallen, side or cracked piece takes one of the
-/// family's four intact shapes at random, and a damaged cap goes back to its intact shape. The pathfinding around
-/// the run is refreshed once a piece has been rebuilt.
+/// family). A fallen, side or cracked piece takes one of the family's four intact shapes at random, and a
+/// damaged cap goes back to its intact shape. The pathfinding around the run is refreshed once a piece has been
+/// rebuilt.
 /// </summary>
 /// <param name="family">The family of the span.</param>
 /// <param name="cell">A piece on the run to repair.</param>
@@ -12848,7 +12848,6 @@ void MapClass::Repair_Concrete_Run(ConcreteFamily const & family, Cell const & c
 
 	if (rebuilt) {
 		Zone_Reset();
-		// The refreshed rectangle runs from the start to the last rebuilt piece and one cell across on each side.
 		int const across_x = family.Across.X;
 		int const across_y = family.Across.Y;
 		Recalc_Cells_In_Rect(Rect(start.X - across_x, start.Y - across_y,
