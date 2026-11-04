@@ -773,29 +773,7 @@ bool CnCNetRoomServiceClass::Fill_Map_Status(UINetLobbyState & state)
 
 void CnCNetRoomServiceClass::Fill_Options(UINetLobbyState & state)
 {
-	GameOptionsType const & options = Session.Options;
-	state.Bases = options.Bases;
-	state.Crates = options.Goodies;
-	state.ShortGame = options.ShortGame;
-	state.Allies = options.AlliesAllowed;
-	state.HarvesterTruce = options.HarvTruce;
-	state.FogOfWar = options.FogOfWar;
-	state.Bridges = options.BridgeDestruction;
-	state.MultiEngineer = options.CrapEngineers;
-	state.Redeploy = options.MCVRedeploy;
-	state.GameSpeed = 6 - options.GameSpeed;
-	state.AIPlayers = options.AIPlayers;
-	state.AIPlayersMax = std::max(0, std::min(6, Map_Player_Limit() - Playing_Count()));
-	state.AILevel = options.AIDifficulty;
-	state.UnitCountMin = 1;
-	state.UnitCountMax = 10;
-	state.UnitCount = options.UnitCount;
-	state.TechLevelMax = MPLAYER_BUILD_LEVEL_MAX;
-	state.TechLevel = BuildLevel;
-	state.CreditsMin = CNCNET_MIN_CREDITS;
-	state.CreditsMax = Rule->MPMaxMoney;
-	state.CreditsStep = 100;
-	state.Credits = options.Credits;
+	UI_Net_Fill_Options(state, std::max(0, std::min(6, Map_Player_Limit() - Playing_Count())), CNCNET_MIN_CREDITS);
 }
 
 
@@ -961,17 +939,8 @@ void CnCNetRoomServiceClass::Set_Switch(UINetSwitch which, bool on)
 	if (!TheRoom.Is_Host()) {
 		return;
 	}
-	switch (which) {
-		case UI_NET_BASES: Session.Options.Bases = on; break;
-		case UI_NET_CRATES: Session.Options.Goodies = on; break;
-		case UI_NET_SHORT_GAME: Session.Options.ShortGame = on; break;
-		case UI_NET_ALLIES: Session.Options.AlliesAllowed = on; break;
-		case UI_NET_HARVESTER_TRUCE: Session.Options.HarvTruce = on; break;
-		case UI_NET_FOG_OF_WAR: Session.Options.FogOfWar = on; break;
-		case UI_NET_BRIDGES: Session.Options.BridgeDestruction = on; break;
-		case UI_NET_ENGINEER: Session.Options.CrapEngineers = on; break;
-		case UI_NET_REDEPLOY: Session.Options.MCVRedeploy = on; break;
-		default: return;
+	if (!UI_Net_Apply_Switch(which, on)) {
+		return;
 	}
 	Publish();
 }
@@ -982,14 +951,8 @@ void CnCNetRoomServiceClass::Set_Slider(UINetSlider which, int value)
 	if (!TheRoom.Is_Host()) {
 		return;
 	}
-	switch (which) {
-		case UI_NET_SPEED: Session.Options.GameSpeed = 6 - value; break;
-		case UI_NET_AI_PLAYERS: Session.Options.AIPlayers = value; break;
-		case UI_NET_AI_LEVEL: Session.Options.AIDifficulty = static_cast<DiffType>(value); break;
-		case UI_NET_UNITS: Session.Options.UnitCount = value; break;
-		case UI_NET_TECH: BuildLevel = value; break;
-		case UI_NET_CREDITS: Session.Options.Credits = value; break;
-		default: return;
+	if (!UI_Net_Apply_Slider(which, value)) {
+		return;
 	}
 	Publish();
 }

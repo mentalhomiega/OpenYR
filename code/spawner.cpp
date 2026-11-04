@@ -189,9 +189,6 @@ static void Spawner_Seat_Humans(void)
 /// </summary>
 static void Spawner_Seat_Computers(void)
 {
-	// Handicap 0 is the rules' easy table, which makes the hardest opponent.
-	static char const * const _ai_names[DIFF_COUNT] = { "Hard AI", "Medium AI", "Easy AI" };
-
 	for (int index = SpawnConfig.HumanCount; index < SpawnerConfigClass::SLOT_COUNT; index++) {
 		SpawnerConfigClass::SlotType const & seat = SpawnConfig.Slots[index];
 		if (seat.Occupancy != SpawnerConfigClass::OccupancyType::Computer) {
@@ -210,8 +207,9 @@ static void Spawner_Seat_Computers(void)
 			int played = node->Player.Handicap >= 0
 				? node->Player.Handicap
 				: Opposite_Difficulty(SpawnConfig.AIDifficulty);
+			// Handicap 0 is the rules' easy table, which makes the hardest opponent.
 			std::snprintf(node->Name, sizeof(node->Name), "%s",
-				_ai_names[std::clamp(played, 0, DIFF_COUNT - 1)]);
+				Computer_Difficulty_Name(Opposite_Difficulty(std::clamp(played, 0, DIFF_COUNT - 1))));
 		}
 
 		Session.Computers.Add(node);

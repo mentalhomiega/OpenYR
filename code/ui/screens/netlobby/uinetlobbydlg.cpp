@@ -55,6 +55,80 @@ static UINetLobbyKind Kind_Of(Net2LobbyPhaseType phase)
 }
 
 
+/// <summary>
+/// Writes a lobby switch into Session.Options and returns false for a switch that has no option.
+/// The caller sends the change to the other machines.
+/// </summary>
+bool UI_Net_Apply_Switch(UINetSwitch which, bool on)
+{
+	switch (which) {
+		case UI_NET_BASES: Session.Options.Bases = on; break;
+		case UI_NET_CRATES: Session.Options.Goodies = on; break;
+		case UI_NET_SHORT_GAME: Session.Options.ShortGame = on; break;
+		case UI_NET_ALLIES: Session.Options.AlliesAllowed = on; break;
+		case UI_NET_HARVESTER_TRUCE: Session.Options.HarvTruce = on; break;
+		case UI_NET_FOG_OF_WAR: Session.Options.FogOfWar = on; break;
+		case UI_NET_BRIDGES: Session.Options.BridgeDestruction = on; break;
+		case UI_NET_ENGINEER: Session.Options.CrapEngineers = on; break;
+		case UI_NET_REDEPLOY: Session.Options.MCVRedeploy = on; break;
+		default: return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Writes a lobby slider into Session.Options (the tech level into BuildLevel) and returns false for a
+/// slider that has no option. The caller sends the change to the other machines.
+/// </summary>
+bool UI_Net_Apply_Slider(UINetSlider which, int value)
+{
+	switch (which) {
+		case UI_NET_SPEED: Session.Options.GameSpeed = 6 - value; break;
+		case UI_NET_AI_PLAYERS: Session.Options.AIPlayers = value; break;
+		case UI_NET_AI_LEVEL: Session.Options.AIDifficulty = (DiffType)value; break;
+		case UI_NET_UNITS: Session.Options.UnitCount = value; break;
+		case UI_NET_TECH: BuildLevel = value; break;
+		case UI_NET_CREDITS: Session.Options.Credits = value; break;
+		default: return(false);
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Fills the option switches and sliders of a lobby state from Session.Options. The most computer
+/// players and the least credits the lobby offers are its own.
+/// </summary>
+void UI_Net_Fill_Options(UINetLobbyState & state, int ai_players_max, int credits_min)
+{
+	GameOptionsType const & options = Session.Options;
+	state.Bases = options.Bases;
+	state.Crates = options.Goodies;
+	state.ShortGame = options.ShortGame;
+	state.Allies = options.AlliesAllowed;
+	state.HarvesterTruce = options.HarvTruce;
+	state.FogOfWar = options.FogOfWar;
+	state.Bridges = options.BridgeDestruction;
+	state.MultiEngineer = options.CrapEngineers;
+	state.Redeploy = options.MCVRedeploy;
+
+	state.GameSpeed = 6 - options.GameSpeed;
+	state.AIPlayers = options.AIPlayers;
+	state.AIPlayersMax = ai_players_max;
+	state.AILevel = options.AIDifficulty;
+	state.UnitCountMin = 1;
+	state.UnitCountMax = 10;
+	state.UnitCount = options.UnitCount;
+	state.TechLevelMax = MPLAYER_BUILD_LEVEL_MAX;
+	state.TechLevel = BuildLevel;
+	state.CreditsMin = credits_min;
+	state.CreditsMax = Rule->MPMaxMoney;
+	state.CreditsStep = 100;
+	state.Credits = options.Credits;
+}
+
+
 namespace
 {
 
@@ -200,29 +274,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 	state.MapName = Session.Options.ScenarioDescription;
 	UI_Map_Preview_Image(state.Preview);
 
-	state.Bases = Session.Options.Bases;
-	state.Crates = Session.Options.Goodies;
-	state.ShortGame = Session.Options.ShortGame;
-	state.Allies = Session.Options.AlliesAllowed;
-	state.HarvesterTruce = Session.Options.HarvTruce;
-	state.FogOfWar = Session.Options.FogOfWar;
-	state.Bridges = Session.Options.BridgeDestruction;
-	state.MultiEngineer = Session.Options.CrapEngineers;
-	state.Redeploy = Session.Options.MCVRedeploy;
-
-	state.GameSpeed = 6 - Session.Options.GameSpeed;
-	state.AIPlayers = Session.Options.AIPlayers;
-	state.AIPlayersMax = 6;
-	state.AILevel = Session.Options.AIDifficulty;
-	state.UnitCountMin = 1;
-	state.UnitCountMax = 10;
-	state.UnitCount = Session.Options.UnitCount;
-	state.TechLevelMax = MPLAYER_BUILD_LEVEL_MAX;
-	state.TechLevel = BuildLevel;
-	state.CreditsMin = UI_NET_MIN_MONEY;
-	state.CreditsMax = Rule->MPMaxMoney;
-	state.CreditsStep = 100;
-	state.Credits = Session.Options.Credits;
+	UI_Net_Fill_Options(state, 6, UI_NET_MIN_MONEY);
 
 	state.CanAccept = state.Kind == UI_NET_LOBBY_GUEST && Session.Players.Count() > 0 && Session.Players[0]->Player.Status == 0;
 	state.CanGo = true;
@@ -284,17 +336,8 @@ void UINetLobbyEngineServiceClass::Set_Color(int index, unsigned int custom)
 
 void UINetLobbyEngineServiceClass::Set_Switch(UINetSwitch which, bool on)
 {
-	switch (which) {
-		case UI_NET_BASES: Session.Options.Bases = on; break;
-		case UI_NET_CRATES: Session.Options.Goodies = on; break;
-		case UI_NET_SHORT_GAME: Session.Options.ShortGame = on; break;
-		case UI_NET_ALLIES: Session.Options.AlliesAllowed = on; break;
-		case UI_NET_HARVESTER_TRUCE: Session.Options.HarvTruce = on; break;
-		case UI_NET_FOG_OF_WAR: Session.Options.FogOfWar = on; break;
-		case UI_NET_BRIDGES: Session.Options.BridgeDestruction = on; break;
-		case UI_NET_ENGINEER: Session.Options.CrapEngineers = on; break;
-		case UI_NET_REDEPLOY: Session.Options.MCVRedeploy = on; break;
-		default: return;
+	if (!UI_Net_Apply_Switch(which, on)) {
+		return;
 	}
 
 	PumpGameopts(1, 0);
@@ -303,14 +346,8 @@ void UINetLobbyEngineServiceClass::Set_Switch(UINetSwitch which, bool on)
 
 void UINetLobbyEngineServiceClass::Set_Slider(UINetSlider which, int value)
 {
-	switch (which) {
-		case UI_NET_SPEED: Session.Options.GameSpeed = 6 - value; break;
-		case UI_NET_AI_PLAYERS: Session.Options.AIPlayers = value; break;
-		case UI_NET_AI_LEVEL: Session.Options.AIDifficulty = (DiffType)value; break;
-		case UI_NET_UNITS: Session.Options.UnitCount = value; break;
-		case UI_NET_TECH: BuildLevel = value; break;
-		case UI_NET_CREDITS: Session.Options.Credits = value; break;
-		default: return;
+	if (!UI_Net_Apply_Slider(which, value)) {
+		return;
 	}
 
 	PumpGameopts(1, 0);

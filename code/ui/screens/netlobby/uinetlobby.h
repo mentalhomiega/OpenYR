@@ -230,5 +230,10 @@ class UINetLobbyPresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Net_Browser_View(UINetLobbyPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Net_Setup_View(UINetLobbyPresenterClass & presenter);
 
+// Shared by the LAN and CnCNet lobby services; defined in uinetlobbydlg.cpp.
+bool UI_Net_Apply_Switch(UINetSwitch which, bool on);
+bool UI_Net_Apply_Slider(UINetSlider which, int value);
+void UI_Net_Fill_Options(UINetLobbyState & state, int ai_players_max, int credits_min);
+
 UINetLobbyServiceClass & UI_Net_Lobby_Service(void);
 UINetChoice UI_Net_Lobby_Run(void);
