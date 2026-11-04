@@ -5973,7 +5973,7 @@ class QuickLoadCommandClass : public CommandClass
 
 			AutosaveClass::KindType kind = Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish;
 			SaveVersionInfo info;
-			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion) {
+			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || !info.Is_Expected_Version(ExpectedGameVersion)) {
 				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}

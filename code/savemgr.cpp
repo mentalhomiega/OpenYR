@@ -474,8 +474,7 @@ bool SaveManagerClass::Multiplayer_Load_Request(int slot)
 
 	std::string file_name = Multiplayer_Save_File_Name(slot);
 	SaveVersionInfo info;
-	if (!Get_Savefile_Info(file_name.c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion
-		|| !info.Is_Current_Revision() || (GameType)info.Get_Game_Type() != Session.Type) {
+	if (!Get_Savefile_Info(file_name.c_str(), &info) || !info.Can_Load(ExpectedGameVersion) || (GameType)info.Get_Game_Type() != Session.Type) {
 		DebugString("Refusing to request the multiplayer save %s\n", file_name.c_str());
 		return(false);
 	}

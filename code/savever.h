@@ -53,7 +53,7 @@ class SaveVersionInfo
 		int Get_Version(void);
 
 		void Set_Internal_Version(int num);
-		int Get_Internal_Version(void);
+		int Get_Internal_Version(void) const;
 
 		void Set_Scenario_Description(const char * desc);
 		const char * Get_Scenario_Description(void);
@@ -89,6 +89,8 @@ class SaveVersionInfo
 		void Set_Revision(int num);
 		int Get_Revision(void) const;
 		bool Is_Current_Revision(void) const;
+		bool Is_Expected_Version(unsigned int expected) const;
+		bool Can_Load(unsigned int expected) const;
 
 		void Save(SaveFileClass & file) const;
 		bool Load(SaveFileClass const & file);

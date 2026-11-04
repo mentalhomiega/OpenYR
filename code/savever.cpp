@@ -87,7 +87,7 @@ void SaveVersionInfo::Set_Internal_Version(int num)
 /// Fetches the build version of the game that wrote the save.
 /// </summary>
 /// <returns>Returns with the internal version recorded in the save.</returns>
-int SaveVersionInfo::Get_Internal_Version(void)
+int SaveVersionInfo::Get_Internal_Version(void) const
 {
 	return(InternalVersion);
 }
@@ -335,6 +335,29 @@ int SaveVersionInfo::Get_Revision(void) const
 bool SaveVersionInfo::Is_Current_Revision(void) const
 {
 	return(Revision == REVISION);
+}
+
+
+/// <summary>
+/// Tells whether the save was written by the game version this build expects.
+/// </summary>
+/// <param name="expected">The internal version this build stamps its saves with.</param>
+/// <returns>bool; Does the save carry that internal version?</returns>
+bool SaveVersionInfo::Is_Expected_Version(unsigned int expected) const
+{
+	return(Get_Internal_Version() == expected);
+}
+
+
+/// <summary>
+/// Tells whether this build can read the save: it carries the expected internal version and
+/// the current revision. A caller that must say which of the two failed asks each on its own.
+/// </summary>
+/// <param name="expected">The internal version this build stamps its saves with.</param>
+/// <returns>bool; Is the save loadable?</returns>
+bool SaveVersionInfo::Can_Load(unsigned int expected) const
+{
+	return(Is_Expected_Version(expected) && Is_Current_Revision());
 }
 
 

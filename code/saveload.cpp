@@ -1027,7 +1027,7 @@ bool Load_Game(const char *file_name)
 	if (!info.Load(file)) {
 		return(false);
 	}
-	if (info.Get_Internal_Version() != ExpectedGameVersion) {
+	if (!info.Is_Expected_Version(ExpectedGameVersion)) {
 		return(false);
 	}
 	if (!info.Is_Current_Revision()) {
