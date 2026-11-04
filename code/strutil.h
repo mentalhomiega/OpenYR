@@ -41,6 +41,12 @@ inline std::string Upper(std::string_view text)
 }
 
 
+// Sets of blank characters for Trim_Chars and Trimmed. Pick the one the file format being read needs.
+inline constexpr std::string_view TRIM_SPACE_TAB = " \t";
+inline constexpr std::string_view TRIM_SPACE_TAB_EOL = " \t\r\n";
+inline constexpr std::string_view TRIM_ISSPACE = " \t\n\v\f\r";
+
+
 // Returns text without the characters found in blanks at either end. Text made only of blanks gives an empty view.
 inline std::string_view Trim_Chars(std::string_view text, std::string_view blanks)
 {
@@ -50,6 +56,13 @@ inline std::string_view Trim_Chars(std::string_view text, std::string_view blank
 	}
 	std::size_t const last = text.find_last_not_of(blanks);
 	return(text.substr(first, last - first + 1));
+}
+
+
+// Returns an owned copy of text without the characters found in blanks at either end.
+inline std::string Trimmed(std::string_view text, std::string_view blanks)
+{
+	return(std::string(Trim_Chars(text, blanks)));
 }
 
 

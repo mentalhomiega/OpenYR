@@ -47,12 +47,6 @@ std::string Clock_Text(uint64_t stamp, uint64_t now)
 }
 
 
-std::string Trim(std::string text)
-{
-	return(std::string(Trim_Chars(text, " \t")));
-}
-
-
 bool Listed(std::vector<std::string> const & names, std::string const & name)
 {
 	return(std::any_of(names.begin(), names.end(), [&name](std::string const & entry) { return(CnCNetLobbyClass::Same_Nick(entry, name)); }));
@@ -106,7 +100,7 @@ void UICnCNetLobbyPresenterClass::Send_Line(std::string const & channel, std::st
 		if (space != std::string::npos && space > 0) {
 			std::string const nick = rest.substr(0, space);
 			Open_Conversation(nick);
-			Session.Say(nick, Trim(rest.substr(space + 1)));
+			Session.Say(nick, Trimmed(rest.substr(space + 1), TRIM_SPACE_TAB));
 		}
 	} else {
 		Session.Say(channel, text);
@@ -149,7 +143,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "say") {
 		State.Say = intent.Text;
 		if (intent.Value != 0) {
-			std::string const text = Trim(State.Say).substr(0, MAX_SAY);
+			std::string const text = Trimmed(State.Say, TRIM_SPACE_TAB).substr(0, MAX_SAY);
 			State.Say.clear();
 			std::string const channel = Current_Channel();
 			if (!text.empty() && !channel.empty() && State.Online) {
@@ -157,7 +151,7 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 			}
 		}
 	} else if (intent.Name == "password") {
-		State.Password = Trim(intent.Text);
+		State.Password = Trimmed(intent.Text, TRIM_SPACE_TAB);
 	} else if (intent.Name == "join") {
 		if (State.CanJoin) {
 			for (CnCNetGameType const & game : Lobby.Games()) {

@@ -71,12 +71,6 @@ bool Same_Folder(std::string const & left, std::string const & right)
 }
 
 
-std::string Trim(std::string const & text)
-{
-	return(std::string(Trim_Chars(text, " \t\r\n")));
-}
-
-
 // Clears the read-only flag so the file can be replaced or deleted. A missing file is left alone.
 void Clear_Read_Only(std::string const & path)
 {
@@ -153,7 +147,7 @@ bool Write_Lines(std::string const & path, TextType const & text)
 // The name in a "[Section]" line, or false when the line is not a section header.
 bool Section_Name(std::string const & line, std::string & name)
 {
-	std::string const text = Trim(line);
+	std::string const text = Trimmed(line, TRIM_SPACE_TAB_EOL);
 	if (text.size() < 2 || text.front() != '[' || text.back() != ']') {
 		return(false);
 	}
@@ -196,7 +190,7 @@ bool Ini_Value(std::vector<std::string> const & lines, char const * section, std
 		}
 		std::string current;
 		if (inside && Key_Value(line, key, current)) {
-			value = Trim(current);
+			value = Trimmed(current, TRIM_SPACE_TAB_EOL);
 			return(true);
 		}
 	}
@@ -245,10 +239,10 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 	for (std::size_t index = header + 1; index < end; index++) {
 		std::string current;
 		if (Key_Value(lines[index], key, current)) {
-			if (Trim(current) == value) {
+			if (Trimmed(current, TRIM_SPACE_TAB_EOL) == value) {
 				return(false);
 			}
-			edit = EditType{Trim(lines[index]), wanted};
+			edit = EditType{Trimmed(lines[index], TRIM_SPACE_TAB_EOL), wanted};
 			lines[index] = wanted;
 			return(true);
 		}
@@ -263,7 +257,7 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 bool List_Has(std::string const & list, std::string const & item)
 {
 	for (std::string const & entry : Split_Parts(list, ',')) {
-		if (CnCNet_Equals_No_Case(Trim(entry), item)) {
+		if (CnCNet_Equals_No_Case(Trimmed(entry, TRIM_SPACE_TAB_EOL), item)) {
 			return(true);
 		}
 	}
@@ -353,7 +347,7 @@ std::string Marker_Install(std::string const & copy)
 		}
 		std::string const line = bytes.substr(start, end - start);
 		if (line.compare(0, 8, "Install:") == 0) {
-			return(Trim(line.substr(8)));
+			return(Trimmed(line.substr(8), TRIM_SPACE_TAB_EOL));
 		}
 		start = end + 1;
 	}
@@ -629,7 +623,7 @@ bool Edit_Definitions(RunType & run, std::string const & destination, std::strin
 		std::string value;
 		if (Key_Value(line, "CompatibilityCheckExecutables", value)) {
 			has_compat = true;
-			compat = Trim(value);
+			compat = Trimmed(value, TRIM_SPACE_TAB_EOL);
 		}
 	}
 	if (has_compat && !compat.empty() && !List_Has(compat, "Game.exe")) {
@@ -977,7 +971,7 @@ CNCNetStatusType CNCNet_Status(std::string const & destination, std::string cons
 	bool mirror = Read_Lines(Under(status.Copy_Folder, UPDATER_FILE), updater);
 	bool found = false;
 	for (std::string const & line : updater.Lines) {
-		found = found || Trim(line) == MIRROR_LINE;
+		found = found || Trimmed(line, TRIM_SPACE_TAB_EOL) == MIRROR_LINE;
 	}
 	intact = intact && mirror && found;
 	intact = intact && Is_File(Under(status.Copy_Folder, "OPENTS.INI"));

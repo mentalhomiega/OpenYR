@@ -90,16 +90,9 @@ bool Is_Blank(char letter)
 }
 
 
-std::string_view Trim(std::string_view text)
-{
-	while (!text.empty() && Is_Blank(text.front())) {
-		text.remove_prefix(1);
-	}
-	while (!text.empty() && Is_Blank(text.back())) {
-		text.remove_suffix(1);
-	}
-	return(text);
-}
+// The bytes Is_Blank accepts: NUL, the control characters and space.
+constexpr char BLANK_BYTES[] = "\0\1\2\3\4\5\6\7\10\11\12\13\14\15\16\17\20\21\22\23\24\25\26\27\30\31\32\33\34\35\36\37 ";
+constexpr std::string_view BLANKS(BLANK_BYTES, sizeof(BLANK_BYTES) - 1);
 
 
 // The engine reads a whole number with atoi unless the value starts with '$' or ends with 'h',
@@ -244,7 +237,7 @@ std::vector<Section> Parse(std::string_view text)
 			line.remove_suffix(1);
 		}
 
-		std::string_view const lead = Trim(line);
+		std::string_view const lead = Trim_Chars(line, BLANKS);
 		if (!lead.empty() && lead.front() == '[' && lead.find(']') != std::string_view::npos) {
 			std::string const name(lead.substr(1, lead.find(']') - 1));
 			auto found = index.find(name);
@@ -267,8 +260,8 @@ std::vector<Section> Parse(std::string_view text)
 		if (divider == std::string_view::npos) {
 			continue;
 		}
-		std::string_view const key = Trim(line.substr(0, divider));
-		std::string_view const value = Trim(line.substr(divider + 1));
+		std::string_view const key = Trim_Chars(line.substr(0, divider), BLANKS);
+		std::string_view const value = Trim_Chars(line.substr(divider + 1), BLANKS);
 		if (key.empty() || value.empty()) {
 			continue;
 		}
@@ -361,7 +354,7 @@ bool Value_Fits(ValueKind kind, std::string_view text)
 
 		case ValueKind::INTEGER_LIST:
 			for (std::string const & part : Split_Parts(value, ',')) {
-				if (!Integer_Fits(std::string(Trim(part)))) {
+				if (!Integer_Fits(std::string(Trim_Chars(part, BLANKS)))) {
 					return(false);
 				}
 			}

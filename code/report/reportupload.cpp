@@ -27,20 +27,6 @@ namespace fs = std::filesystem;
 
 namespace {
 
-std::string Trim(std::string const & text)
-{
-	std::size_t first = 0;
-	std::size_t last = text.size();
-	while (first < last && std::isspace(static_cast<unsigned char>(text[first]))) {
-		first++;
-	}
-	while (last > first && std::isspace(static_cast<unsigned char>(text[last - 1]))) {
-		last--;
-	}
-	return(text.substr(first, last - first));
-}
-
-
 bool Starts_With(std::string const & text, char const * prefix)
 {
 	return(text.rfind(prefix, 0) == 0);
@@ -129,7 +115,7 @@ bool Deflate_Raw(std::string const & data, std::string & packed)
 
 ReportPolicy Report_Policy_From_Text(std::string const & text)
 {
-	std::string const value = Lower(Trim(text));
+	std::string const value = Lower(Trimmed(text, TRIM_ISSPACE));
 	if (value == "always") {
 		return(ReportPolicy::Always);
 	}
@@ -142,7 +128,7 @@ ReportPolicy Report_Policy_From_Text(std::string const & text)
 
 ReportDecision Report_Decide(ReportPolicy policy, std::string const & url)
 {
-	if (Trim(url).empty() || policy == ReportPolicy::Never) {
+	if (Trimmed(url, TRIM_ISSPACE).empty() || policy == ReportPolicy::Never) {
 		return(ReportDecision::Skip);
 	}
 	return(policy == ReportPolicy::Always ? ReportDecision::Send : ReportDecision::Ask);
@@ -393,12 +379,12 @@ std::string Report_Desync_Session_Key(std::string const & sync_text)
 		if (end == std::string::npos) {
 			end = sync_text.size();
 		}
-		std::string const line = Trim(sync_text.substr(start, end - start));
+		std::string const line = Trimmed(sync_text.substr(start, end - start), TRIM_ISSPACE);
 		start = end + 1;
 		if (Starts_With(line, "Session identity:")) {
-			identity = Trim(line.substr(17));
+			identity = Trimmed(line.substr(17), TRIM_ISSPACE);
 		} else if (Starts_With(line, "Seed:")) {
-			seed = Trim(line.substr(5));
+			seed = Trimmed(line.substr(5), TRIM_ISSPACE);
 		}
 	}
 	if (identity.empty() && seed.empty()) {
