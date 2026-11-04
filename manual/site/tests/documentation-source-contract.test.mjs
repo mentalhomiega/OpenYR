@@ -998,7 +998,7 @@ test('A lobby side entry carries its country', () => {
 	);
 	assert.match(
 		functionBody(skirmish, 'static void Remember_Preferences(UISkirmishState const & state)'),
-		/Session\.House = side;/,
+		/Session\.Set_Local_Look\(side >= 0 \? side : Session\.House,/,
 		'the first row remembers the country its entry carries',
 	);
 });
