@@ -16,11 +16,26 @@ namespace {
 
 // Severity 1.0 simulation matrices on linear RGB, rows first: Machado, Oliveira and Fernandes 2009,
 // tables for protanopia, deuteranopia and tritanopia. Each row sums to 1, so white stays white.
-float const SimulationMatrices[COLORBLIND_MODE_COUNT - 1][9] = {
+constexpr float SimulationMatrices[COLORBLIND_MODE_COUNT - 1][9] = {
 	{ 0.152286f,  1.052583f, -0.204868f,   0.114503f,  0.786281f,  0.099216f,  -0.003882f, -0.048116f,  1.051998f },
 	{ 0.367322f,  0.860646f, -0.227968f,   0.280085f,  0.672501f,  0.047413f,  -0.011820f,  0.042940f,  0.968881f },
 	{ 1.255528f, -0.076749f, -0.178779f,  -0.078411f,  0.930809f,  0.147602f,   0.004733f,  0.691367f,  0.303900f },
 };
+
+constexpr bool Matches_Double_Table(float const (&table)[9], double const (&double_table)[9])
+{
+	for (int index = 0; index < 9; index++) {
+		if (table[index] != static_cast<float>(double_table[index])) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+// The player colour distance reads the double copies in colourblind.h; both copies must hold the same digits.
+static_assert(Matches_Double_Table(SimulationMatrices[COLORBLIND_PROTANOPIA - 1], COLORBLIND_PROTANOPIA_SIMULATION_D));
+static_assert(Matches_Double_Table(SimulationMatrices[COLORBLIND_DEUTERANOPIA - 1], COLORBLIND_DEUTERANOPIA_SIMULATION_D));
+
 
 // Error redistribution K for the Daltonize correction M = I + K (I - S). Protanopia and deuteranopia
 // move the lost red-green difference into green and blue. Tritanopia moves the lost blue-yellow
