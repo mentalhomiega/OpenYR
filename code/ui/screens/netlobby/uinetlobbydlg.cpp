@@ -20,6 +20,7 @@
 #include "netdlg.h"
 #include "netdlg2.h"
 #include "netshare.h"
+#include "options.h"
 #include "rules.h"
 #include "session.h"
 #include "ui/screens/colorpick/uicolorpick.h"
@@ -84,7 +85,7 @@ bool UI_Net_Apply_Switch(UINetSwitch which, bool on)
 bool UI_Net_Apply_Slider(UINetSlider which, int value)
 {
 	switch (which) {
-		case UI_NET_SPEED: Session.Options.GameSpeed = 6 - value; break;
+		case UI_NET_SPEED: Session.Options.GameSpeed = OptionsClass::Speed_From_Slider(value); break;
 		case UI_NET_AI_PLAYERS: Session.Options.AIPlayers = value; break;
 		case UI_NET_AI_LEVEL: Session.Options.AIDifficulty = (DiffType)value; break;
 		case UI_NET_UNITS: Session.Options.UnitCount = value; break;
@@ -113,7 +114,7 @@ void UI_Net_Fill_Options(UINetLobbyState & state, int ai_players_max, int credit
 	state.MultiEngineer = options.CrapEngineers;
 	state.Redeploy = options.MCVRedeploy;
 
-	state.GameSpeed = 6 - options.GameSpeed;
+	state.GameSpeed = OptionsClass::Slider_From_Speed(options.GameSpeed);
 	state.AIPlayers = options.AIPlayers;
 	state.AIPlayersMax = ai_players_max;
 	state.AILevel = options.AIDifficulty;
