@@ -7,6 +7,8 @@ The developer guides are split by subject:
 - [The launcher and beta updates](LAUNCHER.md) — `OpenYR.exe`, its update
   check, the `OPENTS.INI` keys and switches it reads, and the release assets.
 - [Style](STYLE.md) — source formatting, naming, C++ use, and comments.
+- [Shared helpers](HELPERS.md) — the utilities new code should reuse, grouped
+  by job, with the traps each one has.
 - [History](HISTORY.md) — source lineage and reconstruction history.
 - [Rationale](RATIONALE.md) — reconstruction tools, recovered structure, and
   non-obvious implementation choices.

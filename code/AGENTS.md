@@ -8,6 +8,9 @@ instructions in [`../AGENTS.md`](../AGENTS.md).
 - Use [`../docs/BUILDING.md`](../docs/BUILDING.md) for supported build paths.
 - Use [`../docs/STYLE.md`](../docs/STYLE.md) for source conventions.
 - Read the relevant implementation, callers, data paths, and tests first.
+- Check [`../docs/HELPERS.md`](../docs/HELPERS.md) before writing a new
+  utility, and add a line there when you add a helper that another file could
+  use.
 
 ## Language and change discipline
 
