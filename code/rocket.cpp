@@ -34,8 +34,6 @@
 
 namespace {
 
-constexpr double HALF_PI = 1.5707963267948966;
-
 RulesClass::RocketTypeStruct const & Rocket_Settings(FootClass const * object)
 {
 	RulesClass::RocketTypeStruct const * rocket = Rule->Rocket_Of((AircraftTypeClass const *)object->TClass);
@@ -198,10 +196,10 @@ bool RocketLocomotionClass::Process(void)
 			CurrentSpeed = 0.0;
 			if (!Timer_Expired()) {
 				double const progress = Timer_Progress();
-				CurrentPitch = float((rocket.PitchInitial + (rocket.PitchFinal - rocket.PitchInitial) * progress) * HALF_PI);
+				CurrentPitch = float((rocket.PitchInitial + (rocket.PitchFinal - rocket.PitchInitial) * progress) * M_PI_2);
 				break;
 			}
-			CurrentPitch = float(rocket.PitchFinal * HALF_PI);
+			CurrentPitch = float(rocket.PitchFinal * M_PI_2);
 			MissionState = STATE_CLIMB;
 			// The takeoff starts two frames into its life, with a ZAdjust of -10 (gamemd 0x66238A).
 			Spawn_Named_Anim("V3TAKOFF", position, 2, -10);
@@ -236,8 +234,8 @@ bool RocketLocomotionClass::Process(void)
 					return(false);
 				}
 				double const ratio = horizontal / double(ApogeeDistance);
-				double const angle = horizontal > 0.0 ? std::atan(below / horizontal) : -HALF_PI;
-				CurrentPitch = float(angle * (1.0 - ratio) + rocket.PitchFinal * ratio * HALF_PI);
+				double const angle = horizontal > 0.0 ? std::atan(below / horizontal) : -M_PI_2;
+				CurrentPitch = float(angle * (1.0 - ratio) + rocket.PitchFinal * ratio * M_PI_2);
 			}
 			if (horizontal > 0.0) {
 				DirType const dir = Direction(position, DestinationCoord);
@@ -250,7 +248,7 @@ bool RocketLocomotionClass::Process(void)
 			if (Is_Impact_Due()) {
 				return(false);
 			}
-			double const desired = horizontal > 0.0 ? std::atan(below / horizontal) : -HALF_PI;
+			double const desired = horizontal > 0.0 ? std::atan(below / horizontal) : -M_PI_2;
 			double const turn = desired - CurrentPitch;
 			if (std::abs(turn) <= rocket.TurnRate) {
 				CurrentPitch = float(desired);

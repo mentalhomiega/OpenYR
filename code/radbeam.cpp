@@ -211,7 +211,7 @@ void RadBeamClass::Draw_It(void) const
 	}
 
 	double const height = Amplitude * Age / Duration;
-	double const turn = 3.141592653589793 / 180.0 * 2.0 * std::max(length, 360.0) / pieces;
+	double const turn = M_PI / 180.0 * 2.0 * std::max(length, 360.0) / pieces;
 
 	auto point = [&](int piece) {
 		double const wave = std::sin(turn * piece) * height;

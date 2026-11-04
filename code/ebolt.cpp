@@ -222,7 +222,7 @@ void EBoltClass::Draw_It(void) const
 				first = false;
 				int sway[6];
 				for (int index = 0; index < 6; index++) {
-					sway[index] = (int)(std::sin(Sway * 3.141592653589793 / (index + 7)) * amplitude);
+					sway[index] = (int)(std::sin(Sway * M_PI / (index + 7)) * amplitude);
 				}
 				for (int strand = 0; strand < 3; strand++) {
 					mid[strand][0] += sway[3] + sway[0];
