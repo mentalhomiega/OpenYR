@@ -137,6 +137,7 @@
 #include "getcpu.h"
 #include "globals.h"
 #include "houstype.h"
+#include "hud.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -7666,6 +7667,22 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 
 
 	return(success);
+}
+
+
+/// <summary>
+/// Allocates the drawing surfaces for the tactical view the interface currently has.
+/// The hidden surface covers the visible area, while the composite and tile surfaces are as wide as the tactical
+/// view and the sidebar surface as wide as the sidebar. The caller sets the map's view dimensions afterwards.
+/// </summary>
+/// <returns>Rect; The tactical view rectangle the surfaces were sized for.</returns>
+Rect Allocate_Tactical_Surfaces(void)
+{
+	Rect view = Tactical_View_Rect();
+
+	Allocate_Surfaces(VisibleRect, Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
+
+	return(view);
 }
 
 
