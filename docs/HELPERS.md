@@ -48,6 +48,7 @@ needs them.
 | `Lower(text)`, `Upper(text)` | `strutil.h` | Copies with each byte passed through `tolower` or `toupper`, so the letters changed follow the C locale. |
 | `Trim_Chars(text, blanks)` | `strutil.h` | A view of `text` without the characters in `blanks` at either end. It points into `text`. |
 | `Trimmed(text, blanks)`, `TRIM_SPACE_TAB`, `TRIM_SPACE_TAB_EOL`, `TRIM_ISSPACE` | `strutil.h` | The same trim as an owned string, and the three blank sets callers pass: space and tab, those plus CR and LF, and everything `isspace` accepts. Pick the set the file format needs. |
+| `Starts_With_No_Case(text, prefix)` | `strutil.h` | Whether `text` starts with `prefix`, ignoring ASCII case. For an exact match use `std::string::starts_with`. |
 | `Split_Parts(text, separator)` | `strutil.h` | Splits into strings and keeps empty parts, so `"a,,b"` gives three. |
 | `CnCNet_Split(text, separator)` | `cncnet/cncnettext.h` | Same split, but returns views into `text`, so `text` must outlive them. |
 | `CnCNet_Parse_Int(text)` | `cncnet/cncnettext.h` | Reads the whole text as a decimal int. Returns nothing for anything but an optional minus sign and digits that fit. |

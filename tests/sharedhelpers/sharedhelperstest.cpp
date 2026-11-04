@@ -67,6 +67,17 @@ void Test_Trim()
 	Check(Trimmed(std::string_view("\0a\x01", 3), TRIM_ISSPACE) == std::string("\0a\x01", 3), "isspace set leaves control bytes");
 }
 
+
+void Test_Starts_With()
+{
+	Check(Starts_With_No_Case("Select_All", "select"), "prefix match ignores case");
+	Check(Starts_With_No_Case("select", "select"), "a whole-text prefix matches");
+	Check(!Starts_With_No_Case("sel", "select"), "text shorter than the prefix does not match");
+	Check(Starts_With_No_Case("anything", ""), "an empty prefix always matches");
+	Check(!Starts_With_No_Case("", "a"), "empty text does not match a prefix");
+	Check(!Starts_With_No_Case("xselect", "select"), "the prefix must be at the start");
+}
+
 } // namespace
 
 
@@ -74,6 +85,7 @@ int main()
 {
 	Test_Little_Endian();
 	Test_Trim();
+	Test_Starts_With();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

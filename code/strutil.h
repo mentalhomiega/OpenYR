@@ -66,6 +66,21 @@ inline std::string Trimmed(std::string_view text, std::string_view blanks)
 }
 
 
+// Whether text starts with prefix, ignoring the case of ASCII letters.
+inline bool Starts_With_No_Case(std::string_view text, std::string_view prefix)
+{
+	if (text.size() < prefix.size()) {
+		return(false);
+	}
+	for (std::size_t index = 0; index < prefix.size(); index++) {
+		if (std::tolower((unsigned char)text[index]) != std::tolower((unsigned char)prefix[index])) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
 // Returns the parts of text between each separator, in order. An empty part is kept, so "a,,b" has three parts.
 inline std::vector<std::string> Split_Parts(std::string_view text, char separator)
 {

@@ -21,22 +21,6 @@
 namespace
 {
 
-// Whether the name starts with the prefix, ignoring the case of ASCII letters.
-bool Starts_With(std::string const & name, char const * prefix)
-{
-	size_t const length = std::strlen(prefix);
-	if (name.size() < length) {
-		return(false);
-	}
-	for (size_t index = 0; index < length; index++) {
-		if (std::tolower((unsigned char)name[index]) != std::tolower((unsigned char)prefix[index])) {
-			return(false);
-		}
-	}
-	return(true);
-}
-
-
 // A category for the commands whose names start with Text. An Exact rule matches only the command named Text.
 struct CategoryRule
 {
@@ -121,7 +105,7 @@ CategoryRule const Category_Rules[] = {
 HotkeyCategory Hotkey_Category_Of(std::string const & command)
 {
 	for (CategoryRule const & rule : Category_Rules) {
-		bool const matches = rule.Exact ? command == rule.Text : Starts_With(command, rule.Text);
+		bool const matches = rule.Exact ? command == rule.Text : Starts_With_No_Case(command, rule.Text);
 		if (matches) {
 			return(rule.Category);
 		}
