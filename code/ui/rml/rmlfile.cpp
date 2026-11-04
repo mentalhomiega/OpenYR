@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "ui/rml/rmlfile.h"
+#include "strutil.h"
 
 #include "_mixfile.h"
 #include "ccfile.h"
@@ -34,7 +35,7 @@ static bool Is_Found_Ahead_Of_UI(CCFileClass & file, Rml::String const & name)
 
 Rml::FileHandle UIRmlFileClass::Open(Rml::String const & path)
 {
-	Rml::String name = UI_Rml_Base_Name(path);
+	Rml::String name = std::string(Base_Name(path));
 	if (name.empty()) {
 		return(0);
 	}

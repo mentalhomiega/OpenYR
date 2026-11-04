@@ -37,7 +37,7 @@ needs them.
 | `User_File_Write_Name`, `Saved_Game_Name`, `Screenshot_Name`, `Replay_Name`, `Music_Folder` | `gamedirs.h` | Where a file the game writes belongs. Do not build these paths by hand. |
 | `Executable_Path(&truncated)` | `gamedirs.h` | Full path of the running executable. A path longer than `MAX_PATH` is cut and `*truncated` is set. |
 | `Extension_Start(name)` | `strutil.h` | Position of the dot that starts the extension, or `npos`. A dot in a directory name does not count. |
-| `UI_Rml_Base_Name(path)` | `ui/rml/rmlfile.h` | The part of a path after the last `/` or `\`. |
+| `Base_Name(path)`, `Directory_Prefix(path)` | `strutil.h` | The part of a path after its last `/` or `\`, and the part up to and including it. Each is a view into `path`. |
 | `LCW_Uncomp_Checked(source, source_length, dest, dest_length)` | `lcw.h` | LCW decompression that never reads or writes outside the two buffers. Use it on data you did not build. `LCW_Uncomp` does no bounds check. |
 | `Decode_PCX_RLE_Line(get, out, length, store, allow_empty_run)` | `pcxrle.h` | Decodes one PCX run-length line from a byte callback. Returns false when the data ends before the line does. |
 

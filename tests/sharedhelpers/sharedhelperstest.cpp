@@ -126,6 +126,20 @@ void Test_Hex_Digits()
 	Check(ahtoi("") == 0 && ahtoi("g1") == 0, "ahtoi gives 0 when nothing is read");
 }
 
+
+void Test_Paths()
+{
+	Check(Base_Name("a/b/c.txt") == "c.txt", "base name after a forward slash");
+	Check(Base_Name("a\\b\\c.txt") == "c.txt", "base name after a backslash");
+	Check(Base_Name("a/b\\c.txt") == "c.txt", "base name after mixed separators");
+	Check(Base_Name("c.txt") == "c.txt", "a bare name is its own base name");
+	Check(Base_Name("dir/").empty() && Base_Name("").empty(), "a trailing separator or empty path has no base name");
+
+	Check(Directory_Prefix("a/b/c.txt") == "a/b/", "directory prefix keeps the last separator");
+	Check(Directory_Prefix("C:\\Game\\gamemd.exe") == "C:\\Game\\", "directory prefix with backslashes");
+	Check(Directory_Prefix("gamemd.exe").empty() && Directory_Prefix("").empty(), "no separator gives an empty prefix");
+}
+
 } // namespace
 
 
@@ -137,6 +151,7 @@ int main()
 	Test_Hex_Text();
 	Test_Split_And_Parse();
 	Test_Hex_Digits();
+	Test_Paths();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

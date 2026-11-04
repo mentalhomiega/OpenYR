@@ -83,12 +83,6 @@ void Clear_Read_Only(std::string const & path)
 }
 
 
-bool Read_File(std::string const & path, std::string & text)
-{
-	return(Read_Disk_File(Path(path), text));
-}
-
-
 bool Write_File(std::string const & path, std::string const & text)
 {
 	Clear_Read_Only(path);
@@ -107,7 +101,7 @@ struct TextType
 bool Read_Lines(std::string const & path, TextType & text)
 {
 	std::string bytes;
-	if (!Read_File(path, bytes)) {
+	if (!Read_Disk_File(Path(path), bytes)) {
 		return(false);
 	}
 
@@ -328,7 +322,7 @@ std::string Game_Info(std::uint64_t size, std::uint64_t hash)
 std::string Marker_Install(std::string const & copy)
 {
 	std::string bytes;
-	if (!Read_File(Under(copy, CNCNET_MARKER_FILE), bytes)) {
+	if (!Read_Disk_File(Path(Under(copy, CNCNET_MARKER_FILE)), bytes)) {
 		return(std::string());
 	}
 

@@ -123,6 +123,22 @@ inline std::optional<int> Parse_Decimal_Int(std::string_view text)
 }
 
 
+// Returns the part of path after its last '/' or '\\', or all of path when it has neither.
+inline std::string_view Base_Name(std::string_view path)
+{
+	std::size_t const slash = path.find_last_of("\\/");
+	return(slash == std::string_view::npos ? path : path.substr(slash + 1));
+}
+
+
+// Returns the part of path up to and including its last '/' or '\\', or nothing when it has neither.
+inline std::string_view Directory_Prefix(std::string_view path)
+{
+	std::size_t const slash = path.find_last_of("\\/");
+	return(slash == std::string_view::npos ? std::string_view() : path.substr(0, slash + 1));
+}
+
+
 // Returns the position of the dot that starts a file name's extension, or npos when the name has none. A dot
 // before the last '/' or '\\' belongs to a directory, so it does not count.
 inline std::size_t Extension_Start(std::string_view name)
