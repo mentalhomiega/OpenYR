@@ -689,7 +689,7 @@ bool LoadOptionsClass::Read_File(FileEntryClass * fdata, WIN32_FIND_DATAA * ff)
 		return(false);
 	}
 
-	if (savever.Get_Internal_Version() != ExpectedGameVersion) {
+	if (!savever.Is_Expected_Version(ExpectedGameVersion)) {
 		return(false);
 	}
 

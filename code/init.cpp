@@ -104,6 +104,7 @@
 #include "bullet.h"
 #include "bullettype.h"
 #include "campaign.h"
+#include "campaignname.hh"
 #include "ccfile.h"
 #include "cctooltip.h"
 #include "cdfile.h"
@@ -136,6 +137,7 @@
 #include "getcpu.h"
 #include "globals.h"
 #include "houstype.h"
+#include "hud.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -731,6 +733,19 @@ bool Campaign_Available(CampaignClass * campaign)
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Can this campaign's first map be started from a campaign list?
+/// The campaign must exist, be available with the addons that are enabled, and name a map rather than a
+/// movie sequence or a header line.
+/// </summary>
+/// <param name="campaign">The campaign to be tested; may be null.</param>
+/// <returns>bool; Should the campaign pickers list the campaign?</returns>
+bool Campaign_Is_Offered(CampaignClass * campaign)
+{
+	return(campaign != NULL && Campaign_Available(campaign) && Campaign_Is_Mission_File(campaign->ScenarioName));
 }
 
 
@@ -5959,7 +5974,7 @@ class QuickLoadCommandClass : public CommandClass
 
 			AutosaveClass::KindType kind = Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish;
 			SaveVersionInfo info;
-			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion) {
+			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || !info.Is_Expected_Version(ExpectedGameVersion)) {
 				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}
@@ -7652,6 +7667,22 @@ bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, co
 
 
 	return(success);
+}
+
+
+/// <summary>
+/// Allocates the drawing surfaces for the tactical view the interface currently has.
+/// The hidden surface covers the visible area, while the composite and tile surfaces are as wide as the tactical
+/// view and the sidebar surface as wide as the sidebar. The caller sets the map's view dimensions afterwards.
+/// </summary>
+/// <returns>Rect; The tactical view rectangle the surfaces were sized for.</returns>
+Rect Allocate_Tactical_Surfaces(void)
+{
+	Rect view = Tactical_View_Rect();
+
+	Allocate_Surfaces(VisibleRect, Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, view.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
+
+	return(view);
 }
 
 

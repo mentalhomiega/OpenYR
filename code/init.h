@@ -33,6 +33,7 @@ bool Select_Game(bool fade);
 int Main_Menu(unsigned int timeout);
 
 bool Allocate_Surfaces(const Rect & hidden_rect, const Rect & composite_rect, const Rect & tile_rect, const Rect & sidebar_rect, bool hidden_first = false);
+Rect Allocate_Tactical_Surfaces(void);
 
 bool Init_Hotkeys(void);
 void Save_Hotkeys(void);
@@ -57,6 +58,7 @@ void Init_Campaigns(void);
 class CampaignClass;
 
 bool Campaign_Available(CampaignClass * campaign);
+bool Campaign_Is_Offered(CampaignClass * campaign);
 
 void Prepare_Theater_Roster(void);
 void Prepare_Side_Roster(void);

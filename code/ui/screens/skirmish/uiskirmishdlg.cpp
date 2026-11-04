@@ -338,7 +338,7 @@ static void Commit(UISkirmishState const & state)
 	Session.Options.UnitCount = state.UnitCount;
 	BuildLevel = state.TechLevel;
 	Session.Options.Credits = state.Credits;
-	Session.Options.GameSpeed = 6 - state.GameSpeed;
+	Session.Options.GameSpeed = OptionsClass::Speed_From_Slider(state.GameSpeed);
 	Options.GameSpeed = Session.Options.GameSpeed;
 
 	Seat_Players(state);
@@ -488,7 +488,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 	// Until a match starts from this screen, these options take the values of [MultiplayerDialogSettings].
 	bool const rules_defaults = !Options_Started;
-	state.GameSpeed = 6 - (rules_defaults ? Rule->MPGameSpeed : Session.Options.GameSpeed);
+	state.GameSpeed = OptionsClass::Slider_From_Speed(rules_defaults ? Rule->MPGameSpeed : Session.Options.GameSpeed);
 
 	state.Bases = Session.Options.Bases;
 	state.Crates = Session.Options.Goodies;

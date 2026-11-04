@@ -101,12 +101,13 @@ UIBrowserGroupType Group_Of(CampaignClass const & campaign)
 	}
 
 	bool const ra2 = campaign.ScenarioArchive == "RA2";
-	std::string const map = campaign.ScenarioName;
-	if (map.compare(0, 3, "ALL") == 0) {
-		return(ra2 ? UI_BROWSER_RA2_ALLIED : UI_BROWSER_YR_ALLIED);
-	}
-	if (map.compare(0, 3, "SOV") == 0) {
-		return(ra2 ? UI_BROWSER_RA2_SOVIET : UI_BROWSER_YR_SOVIET);
+	switch (Campaign_Side_Of_Map(campaign.ScenarioName)) {
+		case CAMPAIGN_SIDE_ALLIED:
+			return(ra2 ? UI_BROWSER_RA2_ALLIED : UI_BROWSER_YR_ALLIED);
+		case CAMPAIGN_SIDE_SOVIET:
+			return(ra2 ? UI_BROWSER_RA2_SOVIET : UI_BROWSER_YR_SOVIET);
+		default:
+			break;
 	}
 	return(UI_BROWSER_OTHER);
 }
@@ -155,7 +156,7 @@ UIMissionBrowserState Mission_Browser_State(void)
 
 	for (int index = 0; index < Campaigns.Count(); index++) {
 		CampaignClass * campaign = Campaigns[index];
-		if (campaign == nullptr || !Campaign_Available(campaign) || !Campaign_Is_Mission_File(campaign->ScenarioName)) {
+		if (!Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 

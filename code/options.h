@@ -79,6 +79,10 @@ class OptionsClass {
 
 		OptionsClass(void);
 
+		// The speed sliders run opposite to the frame delay: the fastest speed is delay 0 and slider position 6.
+		static int Slider_From_Speed(int speed) {return((MAX_SPEED_SETTING - 1) - speed);}
+		static int Speed_From_Slider(int slider) {return((MAX_SPEED_SETTING - 1) - slider);}
+
 		void One_Time(void);
 
 		void Fixup_Palette(void) const;

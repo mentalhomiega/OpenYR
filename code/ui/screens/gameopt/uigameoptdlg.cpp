@@ -90,7 +90,7 @@ void UI_Game_Options_State(UIGameOptionsState & state)
 	for (int index = 0; index < OptionsClass::MAX_SPEED_SETTING; index++) {
 		state.SpeedNames.push_back(Fetch_String(GameSpeedNames[index]));
 	}
-	state.Speed = (OptionsClass::MAX_SPEED_SETTING - 1) - Options.GameSpeed;
+	state.Speed = OptionsClass::Slider_From_Speed(Options.GameSpeed);
 
 	NetTiming::TimingSettings const settings = Session.Network_Quality_Settings();
 	NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
@@ -125,7 +125,7 @@ UIGameOptionsChoice UI_Game_Options_Dialog(void)
 	UIGameOptionsChoice const choice = presenter.Choice;
 
 	if (state.Internet && presenter.SpeedChanged) {
-		int const speed = (OptionsClass::MAX_SPEED_SETTING - 1) - presenter.State.Speed;
+		int const speed = OptionsClass::Speed_From_Slider(presenter.State.Speed);
 		if (Options.GameSpeed != speed && !PlayerPtr->Is_Watching()) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
 		}

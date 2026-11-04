@@ -607,9 +607,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	Rect temp = Tactical_View_Rect();
-
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, Sidebar_Surface_Width(), VisibleRect.Height));
+	Rect temp = Allocate_Tactical_Surfaces();
 
 	Map.Set_View_Dimensions(temp);
 
@@ -1027,7 +1025,7 @@ bool Load_Game(const char *file_name)
 	if (!info.Load(file)) {
 		return(false);
 	}
-	if (info.Get_Internal_Version() != ExpectedGameVersion) {
+	if (!info.Is_Expected_Version(ExpectedGameVersion)) {
 		return(false);
 	}
 	if (!info.Is_Current_Revision()) {

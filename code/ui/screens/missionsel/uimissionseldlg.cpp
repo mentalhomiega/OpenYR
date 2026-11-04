@@ -52,7 +52,7 @@ std::string Mission_Name(CCINIClass const & missions, char const * map)
 // "Player House" rather than a side. The campaign's map name is upper case.
 bool Mission_Is_Soviet(char const * map)
 {
-	return(std::strncmp(map, "SOV", 3) == 0);
+	return(Campaign_Side_Of_Map(map) == CAMPAIGN_SIDE_SOVIET);
 }
 
 
@@ -90,7 +90,7 @@ UIMissionSelState Mission_Select_State(int difficulty)
 
 		CampaignType const type = CampaignClass::From_Name(name);
 		CampaignClass * campaign = (type == CAMPAIGN_NONE) ? nullptr : Campaigns[type];
-		if (campaign == nullptr || !Campaign_Is_Mission_File(campaign->ScenarioName) || !Campaign_Available(campaign)) {
+		if (!Campaign_Is_Offered(campaign)) {
 			continue;
 		}
 
