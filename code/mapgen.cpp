@@ -4593,7 +4593,8 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_Float("Lighting", "Green", 1.0);
 	ini.Put_Float("Lighting", "Blue", 1.0);
 	ini.Put_Float("Lighting", "Ground", 0.0);
-	ini.Put_Float("Lighting", "Level", 0.01);
+	static_assert(LightingIni::RMG_TIME_COUNT == TIME_OF_DAY_COUNT, "one Level setting per time of day");
+	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[SeedData.Time]));
 
 	// gamemd's generator writes the storm lighting as well (0x599951 to 0x5999DC): the ambient level, then a dark blue tint.
 	ini.Put_Float("Lighting", "IonAmbient", tod * scale);
@@ -4850,7 +4851,9 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	Map.Compute_Radar_Image();
 
 	Scen->AmbientLight = tod * 100.0;
-	Scen->LevelLight = 1;
+	// Both paths reach this, so the map plays with the setting itself in thousandths, as gamemd stores
+	// it at 0x59A554; the Level=0 written above does not survive.
+	Scen->LevelLight = LightingIni::Generated_Level_Light(SeedData.Time);
 
 	if (SeedData.UseTransitions) {
 		CCINIClass ini;
