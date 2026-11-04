@@ -47,4 +47,16 @@ namespace LightingIni
 	{
 		return((int)(1000.0 * fraction + 0.01));
 	}
+
+	// The numbers Write_INI prints with "%f": gamemd multiplies by the double constants 0.01 and
+	// 0.001 (0x68B5F8 to 0x68B88C) rather than dividing.
+	inline double Percent_Written(int percent)
+	{
+		return(percent * 0.01);
+	}
+
+	inline double Thousandths_Written(int thousandths)
+	{
+		return(thousandths * 0.001);
+	}
 }

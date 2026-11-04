@@ -4429,6 +4429,14 @@ bool ScenarioClass::Write_INI(CCINIClass & ini, bool mplayer) const
 	ini.Put_Float(LIGHTING, "IonBlue",    ((double)IonBlueTint)     / 100.0);
 	ini.Put_Float(LIGHTING, "IonGround",  ((double)IonGroundLight)  / NORMAL_LIGHT);
 	ini.Put_Float(LIGHTING, "IonLevel",   ((double)IonLevelLight)   / NORMAL_LIGHT);
+	// gamemd writes the Dominator lighting next (0x68B79C to 0x68B88C); the change rate is kept in thousandths like Ground.
+	ini.Put_Float(LIGHTING, "DominatorAmbient", LightingIni::Percent_Written(DominatorAmbientLight));
+	ini.Put_Float(LIGHTING, "DominatorRed", LightingIni::Percent_Written(DominatorRedTint));
+	ini.Put_Float(LIGHTING, "DominatorGreen", LightingIni::Percent_Written(DominatorGreenTint));
+	ini.Put_Float(LIGHTING, "DominatorBlue", LightingIni::Percent_Written(DominatorBlueTint));
+	ini.Put_Float(LIGHTING, "DominatorGround", LightingIni::Thousandths_Written(DominatorGroundLight));
+	ini.Put_Float(LIGHTING, "DominatorLevel", LightingIni::Thousandths_Written(DominatorLevelLight));
+	ini.Put_Float(LIGHTING, "DominatorAmbientChangeRate", LightingIni::Thousandths_Written(DominatorAmbientChangeRate));
 	return(true);
 }
 

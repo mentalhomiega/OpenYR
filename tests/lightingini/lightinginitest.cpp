@@ -9,10 +9,16 @@
 
 // Pins how a scenario's [Lighting] numbers are read: an omitted key keeps the value the scenario
 // held, values are truncated after 0.01 is added, and the starting values match gamemd's reset.
+// Also pins that what Write_INI writes for the Dominator keys reads back as the same numbers.
 
 #include <cstdio>
+#include <cstring>
+#include <string>
 
+#include "ini.h"
 #include "lightingini.h"
+#include "xpipe.h"
+#include "xstraw.h"
 
 namespace {
 
@@ -33,6 +39,40 @@ void Check(bool condition, char const * what)
 double Written(float value)
 {
 	return(static_cast<double>(value));
+}
+
+
+// Saves the INI as text and loads it into a fresh one, as a map written to disk and read again.
+void Reload(INIClass const & from, INIClass & to)
+{
+	std::string bytes(1 << 16, '\0');
+	BufferPipe pipe(bytes.data(), (int)bytes.size());
+	int total = from.Save(pipe);
+	bytes.resize(total > 0 ? total : 0);
+	BufferStraw straw(bytes.data(), (int)bytes.size());
+	to.Load(straw, false);
+}
+
+
+// Writes one Dominator key as ScenarioClass::Write_INI does and reads it back as Read_INI does,
+// with a fallback that differs from the value so a missing key cannot pass.
+bool Percent_Round_Trips(char const * key, int value)
+{
+	INIClass written;
+	written.Put_Float("Lighting", key, LightingIni::Percent_Written(value));
+	INIClass read;
+	Reload(written, read);
+	return(LightingIni::Fraction_Percent(read.Get_Float("Lighting", key, LightingIni::Percent_Fraction(value + 1))) == value);
+}
+
+
+bool Thousandths_Round_Trips(char const * key, int value)
+{
+	INIClass written;
+	written.Put_Float("Lighting", key, LightingIni::Thousandths_Written(value));
+	INIClass read;
+	Reload(written, read);
+	return(LightingIni::Fraction_Thousandths(read.Get_Float("Lighting", key, LightingIni::Thousandths_Fraction(value + 1))) == value);
 }
 
 }
@@ -72,6 +112,39 @@ int main(void)
 	Check(LightingIni::Fraction_Thousandths(Written(2.0f)) == 2000, "DominatorAmbientChangeRate=2 is 2000 frames, read like Ground");
 	Check(LightingIni::Fraction_Thousandths(LightingIni::Thousandths_Fraction(1)) == 1,
 		"an omitted DominatorAmbientChangeRate keeps its one frame");
+
+	bool dominator_percent = true;
+	for (int percent = 0; percent <= 400; percent++) {
+		dominator_percent = dominator_percent
+			&& Percent_Round_Trips("DominatorAmbient", percent) && Percent_Round_Trips("DominatorRed", percent);
+	}
+	Check(dominator_percent, "DominatorAmbient and the tints write and read back every value from 0 to 400");
+
+	bool dominator_thousandths = true;
+	for (int thousandths = 0; thousandths <= 5000; thousandths++) {
+		dominator_thousandths = dominator_thousandths
+			&& Thousandths_Round_Trips("DominatorLevel", thousandths)
+			&& Thousandths_Round_Trips("DominatorAmbientChangeRate", thousandths);
+	}
+	Check(dominator_thousandths, "DominatorGround, Level and the change rate read back every value from 0 to 5000");
+
+	Check(Percent_Round_Trips("DominatorAmbient", 150) && Percent_Round_Trips("DominatorRed", 85)
+		&& Percent_Round_Trips("DominatorGreen", 20) && Percent_Round_Trips("DominatorBlue", 30)
+		&& Thousandths_Round_Trips("DominatorGround", 0) && Thousandths_Round_Trips("DominatorLevel", 0)
+		&& Thousandths_Round_Trips("DominatorAmbientChangeRate", 1),
+		"the reset Dominator lighting survives a write and a read");
+
+	{
+		INIClass ini;
+		ini.Put_Float("Lighting", "DominatorAmbientChangeRate", LightingIni::Thousandths_Written(1));
+		ini.Put_Float("Lighting", "DominatorRed", LightingIni::Percent_Written(85));
+		char rate[64];
+		char red[64];
+		ini.Get_String("Lighting", "DominatorAmbientChangeRate", "", rate, sizeof(rate));
+		ini.Get_String("Lighting", "DominatorRed", "", red, sizeof(red));
+		Check(std::strcmp(rate, "0.001000") == 0 && std::strcmp(red, "0.850000") == 0,
+			"the change rate is written as value x 0.001 and a tint as value x 0.01, in %f");
+	}
 
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);
