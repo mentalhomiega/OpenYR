@@ -3876,7 +3876,7 @@ void MapClass::Set_Bridge_Middle_State(Cell const & cell, IsometricTileType new_
 /// Finds the anchor of the bridge span an engineer's repair order meant.
 /// Looks for a bridge cell within three cells of the given one and reports where its span
 /// is anchored and which way it runs. A low bridge within two cells is repaired on the spot
-/// instead. Returns false when no span remains to be repaired.
+/// instead, and false is returned then too; false also means no high or train span is there.
 /// </summary>
 /// <param name="cell">The cell the repair order was given at.</param>
 /// <param name="origin">Receives the span anchor cell.</param>
@@ -5901,12 +5901,12 @@ int MapClass::Get_Height_GL(Coord const & coord)
 
 /// <summary>
 /// Reports whether a step between two coordinates passes through a bridge deck.
-/// Only cells under a bridge can be crossed. Ground and air objects use the result to land on
+/// Only cells under a bridge can be crossed. Bullets and particles use the result to land on
 /// or bounce off the deck.
 /// </summary>
 /// <param name="old_coord">Position before the step.</param>
 /// <param name="new_coord">Position after the step.</param>
-/// <param name="bridge_height">Deck height above the ground at new_coord.</param>
+/// <param name="bridge_height">Absolute height of the deck at new_coord (ground height plus BRIDGE_LEPTON_HEIGHT).</param>
 BridgeDeckCrossing MapClass::Cross_Bridge_Deck(Coord const & old_coord, Coord const & new_coord, int bridge_height)
 {
 	if (!Map[new_coord].IsUnderBridge && !Map[old_coord].IsUnderBridge) {
@@ -9283,11 +9283,13 @@ void MapClass::Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int s
 void MapClass::Collapse_Cliff(CellClass * cptr)
 {
 	if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-2) {
-
-		Collapse_Cliff_Tile(Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID, IsometricTileTypeClass::DestroyableCliffs, IsometricTileTypeClass::SlopeSetPieces, IsometricTileTypeClass::SlopeSetPieces + 1, Cell(3, 0), Cell(5, 3));
+		Cell corner = Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID;
+		Collapse_Cliff_Tile(corner, IsometricTileTypeClass::DestroyableCliffs,
+			IsometricTileTypeClass::SlopeSetPieces, IsometricTileTypeClass::SlopeSetPieces + 1, Cell(3, 0), Cell(5, 3));
 	} else if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-1) {
-
-		Collapse_Cliff_Tile(Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID, IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1, IsometricTileTypeClass::SlopeSetPieces + 3, IsometricTileTypeClass::SlopeSetPieces + 2, Cell(0, 3), Cell(3, 5));
+		Cell corner = Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID;
+		Collapse_Cliff_Tile(corner, IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1,
+			IsometricTileTypeClass::SlopeSetPieces + 3, IsometricTileTypeClass::SlopeSetPieces + 2, Cell(0, 3), Cell(3, 5));
 	}
 }
 

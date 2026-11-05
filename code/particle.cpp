@@ -227,7 +227,7 @@ inline Vector3 Slope_Vector(Vector3 & vector, Coord const & coord, double length
 }
 
 
-/// What a falling particle met when it was moved one step.
+// What a falling particle met when it was moved one step.
 struct ParticleStep {
 	Coord NewCoord;
 	int GroundHeight;
@@ -275,7 +275,6 @@ static ParticleStep Step_Particle_Over_Terrain(Vector3 & position, Vector3 const
 }
 
 
-
 /// <summary>
 /// Handles the per frame logic for a gas particle.
 /// The cloud wanders sideways and sinks under gravity, glancing off the terrain and
@@ -317,7 +316,6 @@ void ParticleClass::Gas_Behavior_AI(void)
 		ParticleStep step = Step_Particle_Over_Terrain(position, velocity);
 		Coord coord2 = step.NewCoord;
 		int height_gl = step.GroundHeight;
-		int height_bridge = step.BridgeHeight;
 		bool start_under_bridge = (step.Crossing == DECK_CROSSING_FELL_ONTO);
 		bool end_under_bridge = (step.Crossing == DECK_CROSSING_ROSE_INTO);
 		bool blocked = step.Blocked;

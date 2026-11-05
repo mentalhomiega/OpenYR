@@ -58,7 +58,7 @@ class SaveStreamClass;
 struct ConcreteFamily;
 
 
-/// How a moving projectile or particle passed through a bridge deck during one step.
+// How a moving projectile or particle passed through a bridge deck during one step.
 enum BridgeDeckCrossing {
 	DECK_CROSSING_NONE,
 	DECK_CROSSING_FELL_ONTO,	// dropped onto the deck from above
