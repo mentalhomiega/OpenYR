@@ -144,11 +144,11 @@ ShapeHeader Header_Of(void const * data)
 
 bool Is_Shape_Name(char const * name, std::string & stem, std::string & extension)
 {
-	char const * dot = std::strrchr(name, '.');
-	if (dot == NULL || dot == name) {
+	std::size_t const dot = Extension_Start(name);
+	if (dot == std::string::npos || dot == 0) {
 		return(false);
 	}
-	extension = Upper(dot + 1);
+	extension = Upper(name + dot + 1);
 	static char const * const Extensions[] = {"SHP", "TEM", "SNO", "URB", "UBN", "DES", "LUN"};
 	for (char const * known : Extensions) {
 		if (extension == known) {
