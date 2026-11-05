@@ -353,6 +353,14 @@ static bool Is_Player_Techno_Named(TechnoClass const * techno, std::string const
 }
 
 
+// Whether the soldier or vehicle is on the map, is of the type with that ID, and belongs to the player's house or to a
+// house the map marks PlayerControl=yes.
+static bool Is_Player_Or_Control_Foot_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0);
+}
+
+
 // Runs the action on every techno the filter accepts, in list order. The count is read again on every pass, so
 // an action that adds or removes technos is handled as the hand-written loops did. Each step supplies its own filter.
 template<class Filter, class Action>
@@ -3858,12 +3866,10 @@ static void Spy_Step(StepType const & step)
 {
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
-	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
-		}
-	}
+	if (building == NULL) return;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Or_Control_Foot_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);});
 }
 
 
@@ -3873,13 +3879,13 @@ static void Teamspy_Step(StepType const & step)
 {
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
-	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	if (building == NULL) return;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Or_Control_Foot_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			techno->Assign_Mission(MISSION_CAPTURE);
 			techno->Assign_Target(building);
-		}
-	}
+		});
 }
 
 
