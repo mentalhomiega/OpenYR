@@ -400,18 +400,6 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 }
 
 
-template<class T, class Action>
-static void For_Selected(DynamicVectorClass<T *> & list, Action action)
-{
-	for (int index = 0; index < list.Count(); index++) {
-		T * object = list[index];
-		if (object->IsSelected) {
-			action(object);
-		}
-	}
-}
-
-
 // Whether other people's copies of the game take part. Their orders then go through the event queue, as a
 // player's orders do, so every copy applies them. Direct state changes would leave the other copies behind.
 bool Network_Game(void)
@@ -569,20 +557,10 @@ void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
 	Cell const cell(x, y);
-	if (Network_Game()) {
-		PlanningRecordScope const recording(Map.IsPlanningMode);
-		Queue_Player_Missions(Units, name, MISSION_MOVE, NULL, &Map[cell]);
-		Queue_Player_Missions(Infantry, name, MISSION_MOVE, NULL, &Map[cell]);
-		Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
-		return;
-	}
-	auto const move = [&cell](auto * object) {
-		object->Assign_Destination(&Map[cell]);
-		object->Assign_Mission(MISSION_MOVE);
-	};
-	For_Selected(Units, move);
-	For_Selected(Infantry, move);
-	For_Selected(Aircraft, move);
+	PlanningRecordScope const recording(Map.IsPlanningMode);
+	Queue_Player_Missions(Units, name, MISSION_MOVE, NULL, &Map[cell]);
+	Queue_Player_Missions(Infantry, name, MISSION_MOVE, NULL, &Map[cell]);
+	Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
 }
 
 
@@ -699,20 +677,10 @@ static void Attack_Step(StepType const & step)
 	DebugString("AUTOTEST attack %s -> %s at %d,%d\n", name.c_str(), target->Class->Name(), target->Get_Cell().X, target->Get_Cell().Y);
 
 	Select_Type(name);
-	if (Network_Game()) {
-		PlanningRecordScope const recording(Map.IsPlanningMode);
-		Queue_Player_Missions(Units, name, MISSION_ATTACK, target, NULL);
-		Queue_Player_Missions(Infantry, name, MISSION_ATTACK, target, NULL);
-		Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
-		return;
-	}
-	auto const attack = [target](auto * object) {
-		object->Assign_Target(target);
-		object->Assign_Mission(MISSION_ATTACK);
-	};
-	For_Selected(Units, attack);
-	For_Selected(Infantry, attack);
-	For_Selected(Aircraft, attack);
+	PlanningRecordScope const recording(Map.IsPlanningMode);
+	Queue_Player_Missions(Units, name, MISSION_ATTACK, target, NULL);
+	Queue_Player_Missions(Infantry, name, MISSION_ATTACK, target, NULL);
+	Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
 }
 
 
@@ -3229,30 +3197,30 @@ static void Veterancy_Step(StepType const & step)
 }
 
 
-// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does.
+// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does, with a queued SELL event.
 static void Sell_Step(StepType const & step)
 {
 	BuildingClass * building = Map[step.Argument_Cell()].Cell_Building();
 	DebugString("AUTOTEST sell %s at %d,%d\n", building != NULL ? building->Class->Name() : "(none)", step.Argument_Int(), step.X);
 	if (building != NULL && building->House == PlayerPtr) {
-		if (Network_Game()) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SELL, TargetClass(building)));
-		} else {
-			building->Sell_Back(-1);
-		}
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SELL, TargetClass(building)));
 	}
 }
 
 
 // repairon <TypeID>: turns repair on for the player's structures of that type. Unlike the repair cursor, which toggles repair,
-// a structure that is already repairing keeps repairing.
+// a structure that is already repairing keeps repairing, so the REPAIR event is queued only for one that is not. The queued
+// event has not run yet, so two repairon steps on one type in the same frame queue two events and the second turns repair off.
 static void Repairon_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			building->Repair(1);
-			DebugString("AUTOTEST repairon %s repairing %d\n", building->Class->Name(), (int)building->IsRepairing);
+			bool const was_repairing = building->IsRepairing;
+			if (!was_repairing) {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REPAIR, TargetClass(building)));
+			}
+			DebugString("AUTOTEST repairon %s was repairing %d queued %d\n", building->Class->Name(), (int)was_repairing, (int)!was_repairing);
 		}
 	}
 }
@@ -3264,24 +3232,20 @@ static void Poweroff_Step(StepType const & step)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			building->Turn_Off();
-			DebugString("AUTOTEST poweroff %s on %d\n", building->Class->Name(), (int)building->IsOn);
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::POWEROFF, TargetClass(building)));
+			DebugString("AUTOTEST poweroff %s queued\n", building->Class->Name());
 		}
 	}
 }
 
 
-// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell, skipping the nearby-cell search an Alt-click makes.
+// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell with a queued ARCHIVE event, skipping the nearby-cell search an Alt-click makes.
 static void Rally_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			if (Network_Game()) {
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ARCHIVE, TargetClass(building), TargetClass(&Map[Cell(step.X, step.Y)])));
-			} else {
-				building->Assign_Archive_Target(&Map[Cell(step.X, step.Y)]);
-			}
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ARCHIVE, TargetClass(building), TargetClass(&Map[Cell(step.X, step.Y)])));
 			DebugString("AUTOTEST rally %s to %d,%d\n", building->Class->Name(), step.X, step.Y);
 		}
 	}
@@ -6277,30 +6241,13 @@ static void Cameos_Step(StepType const &)
 }
 
 
-// clickcameo <TypeID>: starts production of the type, as a click on its cameo does, when a sidebar strip still offers the cameo.
-static void Clickcameo_Step(StepType const & step)
+// Presses the type's visible cameo through the cameo's own action, so the Shift state the script holds decides what the
+// press does, as it does for a player. Returns false when no strip shows the cameo.
+static bool Press_Cameo(TechnoTypeClass const * type, bool right)
 {
-	TechnoTypeClass const * type = Find_Type(step.Argument);
-	bool const offered = type != NULL && Map.Is_On_Sidebar(type->Fetch_RTTI(), type->Fetch_Heap_ID());
-	if (offered) {
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
-	}
-	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
-}
-
-
-// cameopress <TypeID> left|right: presses the type's visible cameo through the cameo's own action, so the Shift
-// state the script holds decides what the press does, as it does for a player.
-static void Cameopress_Step(StepType const & step)
-{
-	std::string after_name;
-	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
-	bool const right = after_name.find("right") != std::string::npos;
-	TechnoTypeClass const * type = Find_Type(name);
-	bool pressed = false;
-	for (int column = 0; type != NULL && !pressed && column < SidebarClass::COLUMNS; column++) {
+	for (int column = 0; type != NULL && column < SidebarClass::COLUMNS; column++) {
 		SidebarClass::StripClass & strip = Map.Column[column];
-		for (int index = 0; index < strip.BuildableCount && !pressed; index++) {
+		for (int index = 0; index < strip.BuildableCount; index++) {
 			if (Fetch_Techno_Type(strip.Buildables[index].BuildableType, strip.Buildables[index].BuildableID) != type) {
 				continue;
 			}
@@ -6315,9 +6262,29 @@ static void Cameopress_Step(StepType const & step)
 			} else {
 				cameo.Press_Left();
 			}
-			pressed = true;
+			return(true);
 		}
 	}
+	return(false);
+}
+
+
+// clickcameo <TypeID>: left-clicks the type's visible cameo, which starts, resumes or places its production as a click does.
+static void Clickcameo_Step(StepType const & step)
+{
+	bool const offered = Press_Cameo(Find_Type(step.Argument), false);
+	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
+}
+
+
+// cameopress <TypeID> left|right: presses the type's visible cameo, as clickcameo does for the left button.
+static void Cameopress_Step(StepType const & step)
+{
+	std::string after_name;
+	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
+	bool const right = after_name.find("right") != std::string::npos;
+	TechnoTypeClass const * type = Find_Type(name);
+	bool const pressed = Press_Cameo(type, right);
 	DebugString("AUTOTEST   cameopress %s %s: %s\n", name.c_str(), right ? "right" : "left",
 		type == NULL ? "no such type" : (pressed ? "pressed" : "no visible cameo"));
 }
