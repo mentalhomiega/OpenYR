@@ -2193,6 +2193,39 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 
 		RETURN_TO_BASE
 	};
+
+	// Fires one middle shot of a strafing run, moves on to next_status and returns the mission delay.
+	auto strafe_shot = [&](int next_status) -> int {
+		if (TarCom == NULL) {
+			Status = RETURN_TO_BASE;
+			return(1);
+		}
+		switch (Can_Fire(TarCom, 0)) {
+			case FIRE_OK:
+			case FIRE_FACING:
+			case FIRE_CLOAKED:
+				break;
+
+			case FIRE_RANGE:
+				Assign_Destination(TarCom);
+				break;
+
+			default:
+				if (!Ammo) {
+					Status = RETURN_TO_BASE;
+					IsLockedStraight = false;
+				}
+				return(1);
+		}
+		if (In_Range(TarCom)) {
+			Fire_At(TarCom, 0);
+		}
+		Announce_Incoming();
+		Assign_Destination(TarCom);
+		Status = next_status;
+		return(PrimaryWeapon->ROF);
+	};
+
 	switch (Status) {
 
 		/*
@@ -2472,94 +2505,13 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			break;
 
 		case STRAFE_SHOT2:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			Announce_Incoming();
-			Assign_Destination(TarCom);
-			Status = STRAFE_SHOT3;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_SHOT3));
 
 		case STRAFE_SHOT3:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			Announce_Incoming();
-			Assign_Destination(TarCom);
-			Status = STRAFE_SHOT4;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_SHOT4));
 
 		case STRAFE_SHOT4:
-			if (TarCom == NULL) {
-				Status = RETURN_TO_BASE;
-				return(1);
-			}
-			switch (Can_Fire(TarCom, 0)) {
-				case FIRE_OK:
-				case FIRE_FACING:
-				case FIRE_CLOAKED:
-					break;
-
-				case FIRE_RANGE:
-					Assign_Destination(TarCom);
-					break;
-
-				default:
-					if (!Ammo) {
-						Status = RETURN_TO_BASE;
-						IsLockedStraight = false;
-					}
-					return(1);
-			}
-			if (In_Range(TarCom)) {
-				Fire_At(TarCom, 0);
-			}
-			Announce_Incoming();
-			Assign_Destination(TarCom);
-			Status = STRAFE_LAST_SHOT;
-			return(PrimaryWeapon->ROF);
+			return(strafe_shot(STRAFE_LAST_SHOT));
 
 		case STRAFE_LAST_SHOT:
 			if (TarCom == NULL) {

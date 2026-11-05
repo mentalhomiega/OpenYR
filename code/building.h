@@ -587,6 +587,8 @@ class BuildingClass : public TechnoClass
 		void Draw_Overlays(Point2D const & point, Rect const & cliprect) const;
 		void Begin_Mode(BStateType bstate);
 		virtual void Draw_Extras(Point2D &point, Rect &rect);
+		void Draw_Voxel_Turret_And_Barrel(Point2D const & xy, Rect & rect, Cell cell);
+		void Draw_Voxel_Barrel_With_Anim(Point2D const & xy, Rect & rect, Cell cell);
 		virtual DirType Aim_Direction(AbstractClass * target) const;
 		void Make_Fogged(DynamicVectorClass<FoggedObjectClass *> * fogged_objects = NULL, CellClass * cellptr = NULL, bool fade = false);
 		void Charge_Turret(void);
