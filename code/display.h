@@ -187,6 +187,7 @@ class DisplayClass: public MapClass
 		void Power_Mode_Control(int control);
 		void Repair_Mode_Control(int control);
 		void Cancel_Order_Modes(bool with_beacon);
+		void Cancel_Other_Modes(void);
 		ObjectClass * Object_To_Follow(void) const;
 		void Set_To_Follow(ObjectClass * object);
 		void Break_Follow_Mode(void) { Set_To_Follow(NULL); }
