@@ -34,3 +34,15 @@ enum BgfxViewType : unsigned short
 	VIEW_READBACK,
 	VIEW_MAPREAD,
 };
+
+
+// Destroys a valid handle and resets it to invalid. An invalid handle is left as it is.
+// Include <bgfx/bgfx.h> before this header.
+template<class Handle>
+inline void Release_Handle(Handle & handle)
+{
+	if (bgfx::isValid(handle)) {
+		bgfx::destroy(handle);
+		handle = BGFX_INVALID_HANDLE;
+	}
+}

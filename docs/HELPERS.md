@@ -236,6 +236,7 @@ a default and returns it when the section or entry is missing.
 | `Allocate_Map_Surfaces()` | `viewzoom.h` | Rebuilds the map's own surfaces to match the view and zoom. |
 | `Draw_Shape(...)`, `Blit_Block(...)` | `draw.h` | Draw a shape or surface block with a convert table and clip window. |
 | `Video_Mark_Dirty()` | `video.h` | Records that the visible surface was drawn to since the last present. |
+| `Release_Handle(handle)` | `bgfxviews.hh` | Destroys a valid bgfx handle and resets it to invalid; an invalid handle is left alone. |
 
 ## Save and load
 

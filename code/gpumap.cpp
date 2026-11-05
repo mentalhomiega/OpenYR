@@ -11,7 +11,6 @@
 
 #include "alphalighting.h"
 #include "bgfxbackend.h"
-#include "bgfxviews.hh"
 #include "dbgprint.h"
 #include "gpudraw.h"
 #include "monotonic.h"
@@ -19,6 +18,7 @@
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
+#include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
 #include <cstdlib>
 #include <cstring>
@@ -254,16 +254,6 @@ static bool Start(void)
 	_Failed = false;
 	_Ready = true;
 	return(true);
-}
-
-
-template<class Handle>
-static void Release_Handle(Handle & handle)
-{
-	if (bgfx::isValid(handle)) {
-		bgfx::destroy(handle);
-		handle = BGFX_INVALID_HANDLE;
-	}
 }
 
 

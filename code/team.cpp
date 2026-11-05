@@ -136,21 +136,6 @@ BuildingClass *Pick_Building_With_Property(BuildingTypeClass *type, HouseClass *
 bool TeamClass::TraceScripts = false;
 
 /// <summary>
-/// Finds the house's super weapon of the given type, or NULL when it has none.
-/// </summary>
-static SuperClass * Find_Super(HouseClass const * house, SuperWeaponType type)
-{
-	SuperClass * found = NULL;
-	for (int index = 0; index < house->SuperWeapon.Count(); index++) {
-		if (house->SuperWeapon[index]->Class->Type == type) {
-			found = house->SuperWeapon[index];
-		}
-	}
-	return(found);
-}
-
-
-/// <summary>
 /// Tells whether a team waiting for a super weapon that is not ready yet should keep waiting:
 /// the weapon must exist and be within AIMinorSuperReadyPercent of charged.
 /// </summary>
@@ -2584,7 +2569,7 @@ void TeamClass::TMission_IRON_CURTAIN_ME(TeamMissionClass *, bool)
 	}
 
 	HouseClass * house = chosen->House;
-	SuperClass * super = Find_Super(house, SUPER_IRON_CURTAIN);
+	SuperClass * super = house->Find_Super(SUPER_IRON_CURTAIN);
 	if (super == NULL) {
 		IsNextMission = true;
 		return;
@@ -2631,8 +2616,8 @@ void TeamClass::Chrono_Prep(TeamMissionClass * mission, bool by_building)
 	}
 
 	HouseClass * house = leader->House;
-	SuperClass * sphere = Find_Super(house, SUPER_CHRONOSPHERE);
-	SuperClass * warp = Find_Super(house, SUPER_CHRONO_WARP);
+	SuperClass * sphere = house->Find_Super(SUPER_CHRONOSPHERE);
+	SuperClass * warp = house->Find_Super(SUPER_CHRONO_WARP);
 	if (sphere == NULL || warp == NULL) {
 		IsNextMission = true;
 		return;

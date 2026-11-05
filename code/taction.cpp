@@ -309,21 +309,6 @@ enum ParamCodeType {
 
 
 /// <summary>
-/// Is this one of Yuri's Revenge's actions that this engine does not carry out yet?
-/// </summary>
-/// <param name="action">The action to look up.</param>
-/// <returns>bool; Is the action skipped when it runs?</returns>
-static bool Is_Skipped_Action(TActionType action)
-{
-	switch (action) {
-		default:
-			break;
-	}
-	return(false);
-}
-
-
-/// <summary>
 /// Constructor for the trigger action object.
 /// The new action is registered with the action heap and the trackers, but does nothing at
 /// all until the scenario reader fills in which action it is and what it acts upon.
@@ -526,12 +511,6 @@ void TActionClass::Read_INI(void)
 	if (action < TACTION_NONE || action >= TACTION_COUNT) {
 		DebugString("TAction: map uses action %d, which this engine does not know; it does nothing\n", action);
 		Action = TACTION_NONE;
-	} else if (Is_Skipped_Action(Action)) {
-		static bool noted[TACTION_COUNT] = {};
-		if (!noted[Action]) {
-			noted[Action] = true;
-			DebugString("TAction: map uses action %d, which is not implemented and is skipped\n", action);
-		}
 	}
 	ParamCodeType code = (ParamCodeType)atoi(strtok(NULL, ","));
 	char * text = strtok(NULL, ",");
@@ -929,14 +908,7 @@ bool TActionClass::operator() (HouseClass * house, ObjectClass * object, Trigger
 		case TACTION_NONE:
 			break;
 
-		/*
-		**	Yuri's Revenge actions this engine does not carry out yet are skipped, with a note in
-		**	the log the first time one runs, rather than being taken for some other action.
-		*/
 		default:
-			if (Is_Skipped_Action(Action)) {
-				success = Not_Implemented();
-			}
 			break;
 	}
 	return(success);
@@ -3002,23 +2974,6 @@ bool TActionClass::TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * 
 	}
 	return(true);
 }
-
-/// <summary>
-/// Notes in the log that an action this engine does not carry out was skipped.
-/// Each kind of action is noted only the first time it runs, so a trigger that fires every few
-/// frames does not fill the log.
-/// </summary>
-/// <returns>bool; Always true, as the stock game also reports success for an action it skips.</returns>
-bool TActionClass::Not_Implemented(void) const
-{
-	static bool noted[TACTION_COUNT] = {};
-	if (Action >= TACTION_NONE && Action < TACTION_COUNT && !noted[Action]) {
-		noted[Action] = true;
-		DebugString("TAction: action %d is not implemented and was skipped\n", (int)Action);
-	}
-	return(true);
-}
-
 
 // Returns false and runs nothing when the house type names no house.
 static bool Run_On_House_Of(HousesType house_type, void (HouseClass::* action)(void))
