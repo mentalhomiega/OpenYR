@@ -2040,11 +2040,6 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 	}
 
 	/*
-	**	Don't allow selection of an object that is located in shadowed terrain.
-	**	In fact, just show the normal move cursor in order to keep the shadowed
-	**	terrain a mystery.
-	*/
-	/*
 	**	Pick the cursor for the action, as Yuri's Revenge does (DisplayClass::ConvertAction,
 	**	0x4AAE90). Under the shroud, most actions show the plain cursor and an attack shows
 	**	the move cursor, to keep the shrouded ground a mystery.
