@@ -4015,20 +4015,8 @@ static void Houseunit_Step(StepType const & step)
 // own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
 // same for the house of the Civilian side. enemy does it for the first computer house with a
 // construction yard that the player is not allied with.
-static void Own_Step(StepType const & step)
+static void Own_Step(StepType const & step, HouseClass * owner, char const * no_house_reason)
 {
-	HouseClass * owner = PlayerPtr;
-	if (step.Command == "neutral") {
-		owner = NULL;
-		SideType const civilian = SideClass::From_Name("Civilian");
-		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-			if (Houses[index]->Class->Side == civilian) {
-				owner = Houses[index];
-			}
-		}
-	} else if (step.Command == "enemy") {
-		owner = First_Computer_House(true);
-	}
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
 		Cell cell(step.X, step.Y);
@@ -4037,16 +4025,21 @@ static void Own_Step(StepType const & step)
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		}
 	} else {
-		char const * reason = "no player house";
-		if (type == NULL) {
-			reason = "no such type";
-		} else if (step.Command == "neutral") {
-			reason = "no civilian house";
-		} else if (step.Command == "enemy") {
-			reason = "no enemy house";
-		}
-		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), reason);
+		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : no_house_reason);
 	}
+}
+
+
+// The first house on the Civilian side, or NULL when there is none.
+static HouseClass * Civilian_House()
+{
+	SideType const civilian = SideClass::From_Name("Civilian");
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->Class->Side == civilian) {
+			return(Houses[index]);
+		}
+	}
+	return(NULL);
 }
 
 
@@ -6894,9 +6887,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"spawn", [](StepType const & step) {Spawn_Object(step, false);}},
 		{"grantunit", [](StepType const & step) {Spawn_Object(step, true);}},
 		{"houseunit", Houseunit_Step},
-		{"own", Own_Step},
-		{"neutral", Own_Step},
-		{"enemy", Own_Step},
+		{"own", [](StepType const & step) {Own_Step(step, PlayerPtr, "no player house");}},
+		{"neutral", [](StepType const & step) {Own_Step(step, Civilian_House(), "no civilian house");}},
+		{"enemy", [](StepType const & step) {Own_Step(step, First_Computer_House(true), "no enemy house");}},
 		{"face", Face_Step},
 		{"pitch", Pitch_Step},
 		{"barrelpitch", Barrelpitch_Step},
