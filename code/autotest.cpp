@@ -1190,7 +1190,7 @@ static void Randommap_Step(StepType const &)
 	DebugString("AUTOTEST   randommap random %d ambient %d current %d tint %d,%d,%d ground %d level %d ion ambient %d\n", (int)Scen->IsRandom,
 		Scen->AmbientLight, Scen->CurrentAmbientLight, Scen->RedTint, Scen->GreenTint, Scen->BlueTint, Scen->GroundLight, Scen->LevelLight, Scen->IonAmbientLight);
 	DebugString("AUTOTEST   randommap trees %d other terrain %d lamps %d, %d more trees allowed\n", trees, Terrains.Count() - trees, lamps, RandomMapGen.TreesLeft);
-	DebugString("AUTOTEST   randommap settings id %08X rules id %08X\n", (unsigned)RandomMapGen.Settings.Unique_ID(),
+	DebugString("AUTOTEST   randommap settings checksum %08X rules checksum %08X\n", (unsigned)RandomMapGen.Settings.Unique_ID(),
 		(unsigned)RulesClass::Get_Rule_Unique_ID());
 }
 
