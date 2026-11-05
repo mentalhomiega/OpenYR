@@ -163,21 +163,11 @@ bool UIRmlBgfxRenderClass::Init(void)
 
 	if (!bgfx::isValid(program) || !bgfx::isValid(sampler) || !bgfx::isValid(whitetexture)
 		|| !bgfx::isValid(clearvertices) || !bgfx::isValid(clearindices)) {
-		if (bgfx::isValid(program)) {
-			bgfx::destroy(program);
-		}
-		if (bgfx::isValid(sampler)) {
-			bgfx::destroy(sampler);
-		}
-		if (bgfx::isValid(whitetexture)) {
-			bgfx::destroy(whitetexture);
-		}
-		if (bgfx::isValid(clearvertices)) {
-			bgfx::destroy(clearvertices);
-		}
-		if (bgfx::isValid(clearindices)) {
-			bgfx::destroy(clearindices);
-		}
+		Release_Handle(program);
+		Release_Handle(sampler);
+		Release_Handle(whitetexture);
+		Release_Handle(clearvertices);
+		Release_Handle(clearindices);
 		DebugString("UI: the overlay renderer could not be created\n");
 		return(false);
 	}
@@ -362,12 +352,8 @@ Rml::CompiledGeometryHandle UIRmlBgfxRenderClass::CompileGeometry(Rml::Span<cons
 	}
 
 	if (!bgfx::isValid(vertexbuffer) || !bgfx::isValid(indexbuffer)) {
-		if (bgfx::isValid(vertexbuffer)) {
-			bgfx::destroy(vertexbuffer);
-		}
-		if (bgfx::isValid(indexbuffer)) {
-			bgfx::destroy(indexbuffer);
-		}
+		Release_Handle(vertexbuffer);
+		Release_Handle(indexbuffer);
 		Fail("a fragment's buffers could not be created");
 		return(0);
 	}
