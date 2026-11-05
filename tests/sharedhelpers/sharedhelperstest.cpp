@@ -123,6 +123,11 @@ void Test_Split_And_Parse()
 	Check(v6 && v6->Host == ":" && v6->Port == "1", "the last colon splits");
 	std::optional<HostPortText> const junk = Split_Host_Port("h: 80abc");
 	Check(junk && junk->Host == "h" && junk->Port == " 80abc", "the port text is kept as written");
+	std::optional<HostPortText> const trailing = Split_Host_Port("host:");
+	Check(trailing && trailing->Host == "host" && trailing->Port.empty(), "a trailing colon gives an empty port");
+	Check(!Split_Host_Port(""), "empty text gives nothing");
+	std::optional<HostPortText> const bracketed = Split_Host_Port("[::1]:80");
+	Check(bracketed && bracketed->Host == "[::1]" && bracketed->Port == "80", "a bracketed address keeps its colons in the host");
 
 	Check(Lower("MiXed 1") == "mixed 1", "Lower folds ASCII letters");
 	Check(Lower("").empty(), "Lower of empty text is empty");

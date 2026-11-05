@@ -131,7 +131,7 @@ struct HostPortText
 };
 
 
-// Splits at the last ':'. Returns nothing when text has no ':', so "[::1]" gives host "[:" and port "1]".
+// Splits at the last ':', so "[::1]" gives host "[:" and port "1]". Returns nothing when text has no ':'.
 inline std::optional<HostPortText> Split_Host_Port(std::string_view text)
 {
 	std::size_t const colon = text.rfind(':');
