@@ -1494,6 +1494,239 @@ void Anim_Init(void)
 }
 
 
+// Returns the text after prefix when string starts with it, ignoring case, else NULL. The text is taken
+// from original, the copy of the argument that kept its case; an option read in upper case passes string again.
+template<class Char>
+static Char * Option_Value(char const * string, Char * original, char const * prefix)
+{
+	std::size_t const length = strlen(prefix);
+	return(strnicmp(string, prefix, length) == 0 ? original + length : NULL);
+}
+
+
+static bool Parse_Directory_Option(char const * string, char * original)
+{
+	if (char * value = Option_Value(string, original, "-DATADIR=")) {
+		Set_Data_Directory(value);
+		return(true);
+	}
+
+	if (char * value = Option_Value(string, original, "-USERDIR=")) {
+		Set_User_Directory(value);
+		return(true);
+	}
+
+	if (char * value = Option_Value(string, original, "-MOD=")) {
+		Add_Command_Line_Mod(value);
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Launch_Option(char const * string, char * original)
+{
+	if (char const * script = Option_Value(string, original, "-AUTOTEST=")) {
+		if (AutoTest_Load(script)) {
+			GameInFocus = true;
+		} else {
+			DebugString("AUTOTEST: cannot read %s\n", script);
+		}
+		return(true);
+	}
+
+	// A client asking the game to launch what SPAWN.INI describes.
+	if (stricmp(string, "-SPAWN") == 0) {
+		Spawner_Request();
+		return(true);
+	}
+
+	// Plays a recorded skirmish in place of the launch file's match.
+	if (char const * recording = Option_Value(string, original, "-REPLAY=")) {
+		Replay_Request_Playback(recording);
+		Spawner_Request();
+		return(true);
+	}
+	return(false);
+}
+
+
+// -TIME= and -MPDEBUG set their globals and leave the argument for the options after them.
+static bool Parse_Network_Option(char const * string)
+{
+	if (memcmp(string, "-TIME=", 6) == 0) {
+		sscanf(&string[6], "%d", &TournamentTime);
+	}
+
+	if (strstr(string, "-MPDEBUG")) {
+		Session.ShowInternetDebug = true;
+		Session.DrawMPDebugStats = true;
+	}
+
+	/*
+	**	Set the Net Stealth option
+	*/
+	if (strstr(string, "-STEALTH")) {
+		Session.NetStealth = true;
+		return(true);
+	}
+
+	/*
+	**	Allow "attract" mode
+	*/
+	if (strstr(string, "-ATTRACT")) {
+		Session.Attract = true;
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Screen_Option(char const * string)
+{
+	if (isdigit((unsigned char)string[1])) {
+		sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
+		return(true);
+	}
+
+	/*
+	**	Set screen to 640x480 instead of 640x400
+	*/
+	if (strcmp(string, "-480") == 0) {
+		Options.ScreenHeight = 480;
+		return(true);
+	}
+
+	if (stricmp(string, "-WIN") == 0) {
+		WindowedMode = true;
+		return(true);
+	}
+	return(false);
+}
+
+
+static bool Parse_Debug_Option(char const * string)
+{
+	if (stricmp(string, "-MULTIINSTANCE") == 0) {
+		Debug_MultipleInstances = true;
+		return(true);
+	}
+
+	/*
+	 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
+	 */
+	if (stricmp(string, "-SYNCLOG") == 0) {
+		Debug_SyncLog = true;
+		return(true);
+	}
+
+	/*
+	 * Arms a deliberate fault; the mode decides where it is raised later.
+	 */
+	if (char const * mode = Option_Value(string, string, "-EXCEPTIONTEST=")) {
+		Exception_Set_Test_Mode(mode);
+		return(true);
+	}
+
+	/*
+	 * Arms one deliberate checksum mismatch, so that the out-of-sync path can be
+	 * exercised without waiting for a real desynchronization.
+	 */
+	if (char const * frame = Option_Value(string, string, "-DESYNCTEST=")) {
+		Session.ForceDesyncFrame = atoi(frame);
+		return(true);
+	}
+#ifdef _DEBUG
+	/*
+	**	Specify the random number seed (for debugging)
+	*/
+	if (strstr(string, "-SEED")) {
+		CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
+		return(true);
+	}
+#endif
+	return(false);
+}
+
+
+// The letters after -X, each turning on one debug aid. Returns false for a letter that is none.
+static bool Parse_Switch_Letters(char const * letters)
+{
+	while (*letters) {
+		char code = *letters++;
+		switch (toupper((unsigned char)code)) {
+
+#ifdef _DEBUG
+
+			/*
+			**	Monochrome debug screen enable.
+			*/
+			case 'M':
+				MonoClass::Enable();
+				break;
+
+			/*
+			**	Inert weapons -- no units take damage.
+			*/
+			case 'I':
+				Special.IsInert = true;
+				Debug_Inert = true;
+				break;
+
+			/*
+			**	Hussled recharge timer.
+			*/
+			case 'H':
+				Special.IsSpeedBuild = true;
+				Debug_SpeedBuild = true;
+				break;
+
+			/*
+			**	"Record" a multi-player game
+			*/
+			case 'X':
+				Session.Record = 1;
+				break;
+
+			/*
+			**	"Play Back" a multi-player game
+			*/
+			case 'Y':
+				Session.Play = 1;
+				break;
+
+			/*
+			**	Print lots of debug stuff about events & packets
+			*/
+			case 'P':
+				Debug_Print_Events = true;
+				break;
+#endif
+
+			/*
+			 * Enable debug output to a console.
+			 */
+			case 'C':
+				Debug_Console = true;
+				Debug_Init_Console();
+				break;
+
+			/*
+			**	Quiet mode override control.
+			*/
+			case 'Q':
+				Debug_Quiet = true;
+				break;
+
+			default:
+				puts(Fetch_String(TXT_INVALID));
+				return(false);
+		}
+	}
+	return(true);
+}
+
+
 /***********************************************************************************************
  * Parse_Command_Line -- Parses the command line parameters.                                   *
  *                                                                                             *
@@ -1606,204 +1839,21 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 #endif
 
-		if (strnicmp(string, "-DATADIR=", strlen("-DATADIR=")) == 0) {
-			Set_Data_Directory(&original[strlen("-DATADIR=")]);
+		if (Parse_Directory_Option(string, original) || Parse_Launch_Option(string, original)) {
 			continue;
 		}
 
-		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
-			Set_User_Directory(&original[strlen("-USERDIR=")]);
+		if (Parse_Network_Option(string) || Parse_Screen_Option(string) || Parse_Debug_Option(string)) {
 			continue;
 		}
-
-		if (strnicmp(string, "-MOD=", strlen("-MOD=")) == 0) {
-			Add_Command_Line_Mod(&original[strlen("-MOD=")]);
-			continue;
-		}
-
-		if (strnicmp(string, "-AUTOTEST=", strlen("-AUTOTEST=")) == 0) {
-			char const * script = &original[strlen("-AUTOTEST=")];
-			if (AutoTest_Load(script)) {
-				GameInFocus = true;
-			} else {
-				DebugString("AUTOTEST: cannot read %s\n", script);
-			}
-			continue;
-		}
-
-		// A client asking the game to launch what SPAWN.INI describes.
-		if (stricmp(string, "-SPAWN") == 0) {
-			Spawner_Request();
-			continue;
-		}
-
-		// Plays a recorded skirmish in place of the launch file's match.
-		if (strnicmp(string, "-REPLAY=", strlen("-REPLAY=")) == 0) {
-			Replay_Request_Playback(&original[strlen("-REPLAY=")]);
-			Spawner_Request();
-			continue;
-		}
-
-		if (memcmp(string, "-TIME=", 6) == 0) {
-			sscanf(&string[6], "%d", &TournamentTime);
-		}
-
-		if (strstr(string, "-MPDEBUG")) {
-			Session.ShowInternetDebug = true;
-			Session.DrawMPDebugStats = true;
-		}
-
-		/*
-		**	Set the Net Stealth option
-		*/
-		if (strstr(string, "-STEALTH")) {
-			Session.NetStealth = true;
-			continue;
-		}
-
-		/*
-		**	Allow "attract" mode
-		*/
-		if (strstr(string, "-ATTRACT")) {
-			Session.Attract = true;
-			continue;
-		}
-
-		if (isdigit((unsigned char)string[1])) {
-			sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
-			continue;
-		}
-
-		/*
-		**	Set screen to 640x480 instead of 640x400
-		*/
-		if (strcmp(string, "-480") == 0) {
-			Options.ScreenHeight = 480;
-			continue;
-		}
-
-		if (stricmp(string, "-WIN") == 0) {
-			WindowedMode = true;
-			continue;
-		}
-
-		if (stricmp(string, "-MULTIINSTANCE") == 0) {
-			Debug_MultipleInstances = true;
-			continue;
-		}
-
-		/*
-		 * Writes the frame check value to the debug log on every game frame, for comparing two copies.
-		 */
-		if (stricmp(string, "-SYNCLOG") == 0) {
-			Debug_SyncLog = true;
-			continue;
-		}
-
-		/*
-		 * Arms a deliberate fault; the mode decides where it is raised later.
-		 */
-		if (strnicmp(string, "-EXCEPTIONTEST=", strlen("-EXCEPTIONTEST=")) == 0) {
-			Exception_Set_Test_Mode(string + strlen("-EXCEPTIONTEST="));
-			continue;
-		}
-
-		/*
-		 * Arms one deliberate checksum mismatch, so that the out-of-sync path can be
-		 * exercised without waiting for a real desynchronization.
-		 */
-		if (strnicmp(string, "-DESYNCTEST=", strlen("-DESYNCTEST=")) == 0) {
-			Session.ForceDesyncFrame = atoi(string + strlen("-DESYNCTEST="));
-			continue;
-		}
-#ifdef _DEBUG
-		/*
-		**	Specify the random number seed (for debugging)
-		*/
-		if (strstr(string, "-SEED")) {
-			CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
-			continue;
-		}
-#endif
 
 		/*
 		**	Special command line control parsing.
 		*/
 		if (strnicmp(string, "-X", strlen("-O")) == 0) {
-			string += strlen("-X");
-			while (*string) {
-				char code = *string++;
-				switch (toupper((unsigned char)code)) {
-
-#ifdef _DEBUG
-
-					/*
-					**	Monochrome debug screen enable.
-					*/
-					case 'M':
-						MonoClass::Enable();
-						break;
-
-					/*
-					**	Inert weapons -- no units take damage.
-					*/
-					case 'I':
-						Special.IsInert = true;
-						Debug_Inert = true;
-						break;
-
-					/*
-					**	Hussled recharge timer.
-					*/
-					case 'H':
-						Special.IsSpeedBuild = true;
-						Debug_SpeedBuild = true;
-						break;
-
-					/*
-					**	"Record" a multi-player game
-					*/
-					case 'X':
-						Session.Record = 1;
-						break;
-
-					/*
-					**	"Play Back" a multi-player game
-					*/
-					case 'Y':
-						Session.Play = 1;
-						break;
-
-					/*
-					**	Print lots of debug stuff about events & packets
-					*/
-					case 'P':
-						Debug_Print_Events = true;
-						break;
-#endif
-
-					/*
-					 * Enable debug output to a console.
-					 */
-					case 'C':
-						Debug_Console = true;
-						Debug_Init_Console();
-						break;
-
-					/*
-					**	Quiet mode override control.
-					*/
-					case 'Q':
-						Debug_Quiet = true;
-						break;
-
-					default:
-						puts(Fetch_String(TXT_INVALID));
-						return(false);
-				}
-
+			if (!Parse_Switch_Letters(string + strlen("-X"))) {
+				return(false);
 			}
-
 			continue;
 		}
 	}
@@ -1886,7 +1936,7 @@ void Init_Random(void)
 		ftime(&t);
 		CryptRandom.Seed_Byte(t.millitm);
 		CryptRandom.Seed_Byte(t.time);
-	#endif
+#endif
 
 		/*
 		**	Set the optional user-specified seed
