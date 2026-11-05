@@ -217,6 +217,25 @@ bool Report_Out_Of_Sync(EventClass const * events, int count, unsigned const * c
 }
 
 
+// Writes a TarCom or NavCom target as "Type(index)": the heap ID of a techno, the packed cell
+// coordinates of a cell, or "None(0)" for no target. `text` needs room for 32 bytes.
+static void Format_Command_Target(AbstractClass * target, char * text, size_t size)
+{
+	int index = 0;
+	char const * name = "None";
+	if (target != NULL) {
+		if (target->Is_Techno()) {
+			index = target->Fetch_Heap_ID();
+		} else if (target->RTTI == RTTI_CELL) {
+			CellClass * cptr = (CellClass *)target;
+			index = cptr->CellID.X | cptr->CellID.Y << 16;
+		}
+		name = Name_From_RTTI(target->RTTI);
+	}
+	snprintf(text, size, "%s(%d)", name, index);
+}
+
+
 /**************************************************************************
  * Print_CRCs -- Prints a data file for finding Sync Bugs                 *
  *                                                                        *
@@ -375,38 +394,13 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 				Coord coord = infp->PositionCoord;
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
 
-				int tarcom_index = 0;
-				const char *tarcom_name = _NO_NAME;
-				AbstractClass *tarcom = infp->TarCom;
-				if (tarcom != NULL) {
-					if (tarcom->Is_Techno()) {
-						tarcom_index = tarcom->Fetch_Heap_ID();
-					} else if (tarcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)tarcom;
-						tarcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					tarcom_name = Name_From_RTTI(tarcom->RTTI);
-				}
-
-				int navcom_index = 0;
-				const char *navcom_name = _NO_NAME;
-				AbstractClass *navcom = infp->NavCom;
-				if (navcom != NULL) {
-					if (navcom->Is_Techno()) {
-						navcom_index = navcom->Fetch_Heap_ID();
-					} else if (navcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)navcom;
-						navcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					navcom_name = Name_From_RTTI(navcom->RTTI);
-				}
 
 				char type_text[32];
 				char tarcom_text[32];
 				char navcom_text[32];
 				snprintf(type_text, sizeof(type_text), "%d(%s)", infp->Class->HeapID, infp->Class->Name());
-				snprintf(tarcom_text, sizeof(tarcom_text), "%s(%d)", tarcom_name, tarcom_index);
-				snprintf(navcom_text, sizeof(navcom_text), "%s(%d)", navcom_name, navcom_index);
+				Format_Command_Target(infp->TarCom, tarcom_text, sizeof(tarcom_text));
+				Format_Command_Target(infp->NavCom, navcom_text, sizeof(navcom_text));
 
 				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%-16s Speed:%4d  NavCom:%s\n",
 					coord.X,coord.Y,coord.Z,(int)infp->PrimaryFacing.Current().As_Dir256(),infp->Get_Mission(),
@@ -431,37 +425,12 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
 					(int)unitp->SecondaryFacing.Current().As_Dir256());
 
-				int tarcom_index = 0;
-				const char *tarcom_name = _NO_NAME;
-				AbstractClass *tarcom = unitp->TarCom;
-				if (tarcom != NULL) {
-					if (tarcom->Is_Techno()) {
-						tarcom_index = tarcom->Fetch_Heap_ID();
-					} else if (tarcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)tarcom;
-						tarcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					tarcom_name = Name_From_RTTI(tarcom->RTTI);
-				}
-
-				int navcom_index = 0;
-				const char *navcom_name = _NO_NAME;
-				AbstractClass *navcom = unitp->NavCom;
-				if (navcom != NULL) {
-					if (navcom->Is_Techno()) {
-						navcom_index = navcom->Fetch_Heap_ID();
-					} else if (navcom->RTTI == RTTI_CELL) {
-						CellClass *cptr = (CellClass *)navcom;
-						navcom_index = cptr->CellID.X | cptr->CellID.Y << 16;
-					}
-					navcom_name = Name_From_RTTI(navcom->RTTI);
-				}
 				char type_text[32];
 				char tarcom_text[32];
 				char navcom_text[32];
 				snprintf(type_text, sizeof(type_text), "%d(%s)", unitp->Class->HeapID, unitp->Class->Name());
-				snprintf(tarcom_text, sizeof(tarcom_text), "%s(%d)", tarcom_name, tarcom_index);
-				snprintf(navcom_text, sizeof(navcom_text), "%s(%d)", navcom_name, navcom_index);
+				Format_Command_Target(unitp->TarCom, tarcom_text, sizeof(tarcom_text));
+				Format_Command_Target(unitp->NavCom, navcom_text, sizeof(navcom_text));
 
 				fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Facing2:%3d  Mission:%2d  Type:%-14s Tgt:%-16s NavCom:%-16s TrkNum:%3d TrkInd:%3d SpdAc:%d\n",
 					coord.X,coord.Y,coord.Z,(int)unitp->PrimaryFacing.Current().As_Dir256(),(int)unitp->SecondaryFacing.Current().As_Dir256(),unitp->Get_Mission(),
