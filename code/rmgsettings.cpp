@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <span>
+#include <cstdlib>
 #include <string>
 
 namespace {
@@ -30,7 +31,8 @@ void Read_List(INIClass const & ini, char const * entry, std::span<int> values)
 	std::size_t index = 0;
 	for (std::string_view const part : Split_Views(text, ',')) {
 		if (!part.empty() && index < values.size()) {
-			values[index++] = Parse_Decimal_Int(Trim_Chars(part, TRIM_SPACE_TAB)).value_or(0);
+			// atoi as gamemd uses: leading blanks are skipped and a number stops at the first non-digit.
+			values[index++] = std::atoi(std::string(part).c_str());
 		}
 	}
 }
