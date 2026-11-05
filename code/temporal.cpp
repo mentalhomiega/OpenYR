@@ -137,7 +137,7 @@ void TemporalClass::Fire(TechnoClass * target)
 
 int TemporalClass::Own_Warp_Rate(void)
 {
-	WeaponTypeClass const * weapon = Owner->Get_Class_Weapon_Data(Owner->What_Weapon_Should_I_Use(nullptr))->Weapon;
+	WeaponTypeClass const * weapon = Owner->Weapon_Against(nullptr);
 	WarpPerStep = weapon != nullptr ? weapon->Attack : 0;
 	return(WarpPerStep);
 }
