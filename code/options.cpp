@@ -81,6 +81,7 @@
 #include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
+#include "nametable.h"
 #include "numparse.h"
 #include "playerdisplay.h"
 #include "rules.h"
@@ -484,40 +485,6 @@ void OptionsClass::Set_Movie_Volume(float volume, bool feedback)
 		Sound_Effect(Rule->GenericBeep, 1.0f, SOUND_PAN_CENTER, nullptr, AUDIO_GROUP_MOVIE);
 	}
 	DebugString("MovieVolume = %f\n", MovieVolume);
-}
-
-
-// One settings-file name and the enum value it stands for.
-struct NameEntry
-{
-	char const * Name;
-	int Value;
-};
-
-
-// Returns the value of the first entry whose name matches text, ignoring case, or fallback when none does.
-template<size_t N>
-static int Enum_From_Name(NameEntry const (&table)[N], char const * text, int fallback)
-{
-	for (NameEntry const & entry : table) {
-		if (stricmp(text, entry.Name) == 0) {
-			return(entry.Value);
-		}
-	}
-	return(fallback);
-}
-
-
-// Returns the name of the first entry with the value, or fallback when the table has none.
-template<size_t N>
-static char const * Enum_Name(NameEntry const (&table)[N], int value, char const * fallback)
-{
-	for (NameEntry const & entry : table) {
-		if (entry.Value == value) {
-			return(entry.Name);
-		}
-	}
-	return(fallback);
 }
 
 

@@ -10,6 +10,7 @@
 #include "always.h"
 
 #include "custommusic.h"
+#include "nametable.h"
 #include "strutil.h"
 
 #include <algorithm>
@@ -100,18 +101,16 @@ bool Custom_Music_Mode_Allows(CustomMusicModeType mode, bool custom, bool any_cu
 }
 
 
+static NameEntry const Mode_Names[] = {
+	{ "Both", CUSTOM_MUSIC_BOTH },
+	{ "Stock", CUSTOM_MUSIC_STOCK },
+	{ "Custom", CUSTOM_MUSIC_CUSTOM },
+};
+
+
 char const * Custom_Music_Mode_Name(CustomMusicModeType mode)
 {
-	switch (mode) {
-		case CUSTOM_MUSIC_STOCK:
-			return("Stock");
-
-		case CUSTOM_MUSIC_CUSTOM:
-			return("Custom");
-
-		default:
-			return("Both");
-	}
+	return(Enum_Name(Mode_Names, mode, "Both"));
 }
 
 
@@ -120,18 +119,10 @@ bool Custom_Music_Mode_From_Name(char const * name, CustomMusicModeType & mode)
 	if (name == nullptr) {
 		return(false);
 	}
-	struct EntryType {
-		char const * Name;
-		CustomMusicModeType Mode;
-	};
-	static EntryType const entries[] = {
-		{ "Both", CUSTOM_MUSIC_BOTH }, { "Stock", CUSTOM_MUSIC_STOCK }, { "Custom", CUSTOM_MUSIC_CUSTOM }
-	};
-	for (EntryType const & entry : entries) {
-		if (stricmp(name, entry.Name) == 0) {
-			mode = entry.Mode;
-			return(true);
-		}
+	int const value = Enum_From_Name(Mode_Names, name, -1);
+	if (value < 0) {
+		return(false);
 	}
-	return(false);
+	mode = (CustomMusicModeType)value;
+	return(true);
 }
