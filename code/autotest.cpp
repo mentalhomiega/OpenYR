@@ -6159,6 +6159,10 @@ static void Bshadow_Step(StepType const & step)
 				}
 				data += length;
 			}
+		} else if (data != NULL) {
+			for (int at = 0; at < rect.Width * rect.Height; at++) {
+				pixels += (data[at] != 0);
+			}
 		}
 		DebugString("AUTOTEST   bshadow %s at %d,%d body frame %d shadow frame %d of %d is %dx%d with %d pixels\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
 			body, shadow, frames, rect.Width, rect.Height, pixels);
