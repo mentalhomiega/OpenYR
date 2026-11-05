@@ -40,11 +40,6 @@ static int const UI_NET_MIN_MONEY = 2500;
 
 static char const UI_NET_PLAIN[] = "#70ff00";
 
-static int const UI_NET_COLORS[] = {
-	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
-};
-
-
 static UINetLobbyKind Kind_Of(Net2LobbyPhaseType phase)
 {
 	switch (phase) {
@@ -249,15 +244,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		state.Sides.push_back(option);
 	}
 
-	int const palette = (int)(sizeof(UI_NET_COLORS) / sizeof(UI_NET_COLORS[0]));
-	state.Colors.clear();
-	for (int index = 0; index < MAX_MPLAYER_COLORS && index < palette; index++) {
-		UINetOption option;
-		option.Label = Fetch_String(UI_NET_COLORS[index]);
-		option.Value = index;
-		option.Color = UI_Color_Text(PlayerColorTable[index]);
-		state.Colors.push_back(option);
-	}
+	UI_Fill_Stock_Colors(state.Colors, MAX_MPLAYER_COLORS);
 	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
 	state.CustomColor = Player_Color_Is_Custom(Session.CustomColor) ? Session.CustomColor : 0;
 	state.Rivals.clear();

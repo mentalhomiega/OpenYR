@@ -83,11 +83,6 @@ struct SkirmishMemory
 
 static SkirmishMemory Memory;
 
-static int const UI_SKIRMISH_COLORS[] = {
-	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
-};
-
-
 static void Refresh_Preview(void)
 {
 	int index = Session.Options.ScenarioIndex;
@@ -456,16 +451,8 @@ void UI_Skirmish_State(UISkirmishState & state)
 		state.Sides.push_back(option);
 	}
 
-	int const palette = (int)(sizeof(UI_SKIRMISH_COLORS) / sizeof(UI_SKIRMISH_COLORS[0]));
 	UI_Color_Pick_Build_Presets(state.Picker);
-	state.Colors.clear();
-	for (int index = 0; index < MAX_PLAYERS && index < palette; index++) {
-		UISkirmishOption option;
-		option.Label = Fetch_String(UI_SKIRMISH_COLORS[index]);
-		option.Value = index;
-		option.Color = UI_Color_Text(PlayerColorTable[index]);
-		state.Colors.push_back(option);
-	}
+	UI_Fill_Stock_Colors(state.Colors, MAX_PLAYERS);
 
 	state.UnitCountMin = SessionClass::CountMin[1];
 	state.UnitCountMax = SessionClass::CountMax[1];
