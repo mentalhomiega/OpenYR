@@ -46,7 +46,7 @@ An aircraft that is destroyed, and a missile once it has taken off, is replaced 
 
 ## Missiles
 
-The AircraftTypes that `V3RocketType`, `DMislType` and `CMislType` in `[General]` name fly as missiles. Each flies to the target's position when it was launched and explodes when it reaches that height or the ground. The settings come from `[General]` keys that begin with the same prefix:
+The AircraftTypes that `V3RocketType`, `DMislType` and `CMislType` in `[General]` name fly as missiles. Each flies to the target's position when it was launched and explodes when its nose reaches that height or it reaches the ground. The blast is at the nose. A missile in a cell under a bridge also explodes when its nose is within 416 leptons (a bridge's height) above a target that is at the ground height of that cell. The settings come from `[General]` keys that begin with the same prefix:
 
 | Key (after `V3Rocket`, `DMisl` or `CMisl`) | Effect |
 | --- | --- |
@@ -55,9 +55,10 @@ The AircraftTypes that `V3RocketType`, `DMislType` and `CMislType` in `[General]
 | `PitchInitial`, `PitchFinal` | Nose angles as fractions of straight up. The missile climbs at `PitchFinal`. |
 | `Acceleration` | Speed gained each frame after the tilt, up to the type's `Speed`. |
 | `Altitude` | Height in leptons where the climb ends. |
+| `BodyLength` | Length in leptons of the missile's body. With `LazyCurve=yes`, and while it dives with `LazyCurve=no`, the missile explodes once its nose, this far ahead of its centre along its facing and nose angle, is at or below the target's height. |
 | `LazyCurve` | With `yes`, the missile bends smoothly from the climb into a dive at the target. With `no`, it levels off by `TurnRate` each frame, then dives once its distance to the target across the ground is no more than its height above the target, so the dive starts about that far out. |
 | `TurnRate` | Radians the nose turns each frame while leveling off or diving. |
 | `Damage`, `EliteDamage` | Damage of the explosion, the elite value when the launcher was elite when the missile left. |
 | `Type` | The AircraftType flown with these settings. |
 
-The explosion uses [`V3Warhead`](/keys/v3warhead/#scope-global-rules), [`DMislWarhead`](/keys/dmislwarhead/#scope-global-rules) or [`CMislWarhead`](/keys/cmislwarhead/#scope-global-rules) in `[CombatDamage]`, or their elite counterparts, and the kill goes to the house that fired the missile, even after the launcher is destroyed. The launcher also gets the experience while it is alive. A missile plays its type's `AuxSound1` when its climb starts. The `V3TAKOFF` animation starts two frames later, with a Z adjust of -10, and the missile leaves `V3TRAIL` puffs every 3 frames. `RaiseRate` and `BodyLength` are read but have no effect.
+The explosion uses [`V3Warhead`](/keys/v3warhead/#scope-global-rules), [`DMislWarhead`](/keys/dmislwarhead/#scope-global-rules) or [`CMislWarhead`](/keys/cmislwarhead/#scope-global-rules) in `[CombatDamage]`, or their elite counterparts, and the kill goes to the house that fired the missile, even after the launcher is destroyed. The launcher also gets the experience while it is alive. A missile plays its type's `AuxSound1` when its climb starts. The `V3TAKOFF` animation starts two frames later, with a Z adjust of -10, and the missile leaves `V3TRAIL` puffs every 3 frames. `RaiseRate` is read but has no effect.
