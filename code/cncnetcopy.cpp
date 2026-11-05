@@ -224,8 +224,8 @@ bool Set_Ini_Value(std::vector<std::string> & lines, char const * section, std::
 
 	std::size_t end = lines.size();
 	for (std::size_t index = header + 1; index < lines.size(); index++) {
-		std::size_t const first = lines[index].find_first_not_of(" \t");
-		if (first != std::string::npos && lines[index][first] == '[') {
+		std::string_view const trimmed = Trim_Chars(lines[index], " \t");
+		if (!trimmed.empty() && trimmed.front() == '[') {
 			end = index;
 			break;
 		}
@@ -509,6 +509,26 @@ bool Keep_Original(RunType & run, fs::path const & from, std::string const & bac
 }
 
 
+// Keeps the file's original once as a backup, then reads its lines. name is how the file is called in the change list
+// and the error text.
+bool Open_For_Edit(RunType & run, std::string const & path, std::string const & name, TextType & text, std::string & error)
+{
+	std::string const backup = path + BACKUP_SUFFIX;
+	if (!Is_File(backup)) {
+		std::string const failure = "Could not keep the original " + name + ".";
+		std::string const change = "backup    " + name + " -> " + name + ".cncnet-orig";
+		if (!Keep_Original(run, Path(path), backup, failure, change, error)) {
+			return(false);
+		}
+	}
+	if (!Read_Lines(path, text)) {
+		error = "Could not read " + name + ".";
+		return(false);
+	}
+	return(true);
+}
+
+
 // Copies Game.exe, Language.dll and the ui folder from the build. A stock game.exe is kept once as game.exe.cncnet-orig.
 bool Install_Engine(RunType & run, std::string const & build, std::string const & destination, std::string & error)
 {
@@ -579,18 +599,8 @@ bool Edit_Definitions(RunType & run, std::string const & destination, std::strin
 		return(false);
 	}
 
-	std::string const backup = path + BACKUP_SUFFIX;
-	if (!Is_File(backup)) {
-		std::string const failure = "Could not keep the original " + std::string(DEFINITIONS) + ".";
-		std::string const change = std::string("backup    ") + DEFINITIONS + " -> " + DEFINITIONS + ".cncnet-orig";
-		if (!Keep_Original(run, Path(path), backup, failure, change, error)) {
-			return(false);
-		}
-	}
-
 	TextType text;
-	if (!Read_Lines(path, text)) {
-		error = "Could not read " + std::string(DEFINITIONS) + ".";
+	if (!Open_For_Edit(run, path, DEFINITIONS, text, error)) {
 		return(false);
 	}
 
@@ -668,18 +678,8 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 		}
 		std::string const name = Path(file).lexically_relative(Path(destination)).string();
 
-		std::string const backup = file + BACKUP_SUFFIX;
-		if (!Is_File(backup)) {
-			std::string const failure = "Could not keep the original " + name + ".";
-			std::string const change = "backup    " + name + " -> " + name + ".cncnet-orig";
-			if (!Keep_Original(run, Path(file), backup, failure, change, error)) {
-				return(false);
-			}
-		}
-
 		TextType text;
-		if (!Read_Lines(file, text)) {
-			error = "Could not read " + name + ".";
+		if (!Open_For_Edit(run, file, name, text, error)) {
 			return(false);
 		}
 
@@ -689,8 +689,8 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 		for (std::size_t index = 0; index < text.Lines.size(); index++) {
 			std::string const & line = text.Lines[index];
 			bool const ends_file = index + 1 == text.Lines.size() && line.empty();
-			std::size_t const first = line.find_first_not_of(" \t\r");
-			if (!ends_file && (first == std::string::npos || line[first] == ';')) {
+			std::string_view const trimmed = Trim_Chars(line, " \t\r");
+			if (!ends_file && (trimmed.empty() || trimmed.front() == ';')) {
 				kept.Lines.push_back(line);
 			}
 		}
