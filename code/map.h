@@ -252,6 +252,7 @@ class MapClass: public GScreenClass
 		void Repair_All_High_Bridges(void);
 		void Repair_High_Bridge_From_Cell(Cell const & cell);
 		void Repair_Train_Bridge_From_Cell(Cell const & cell);
+		void Repair_Bridge_From_Cell(Cell const & cell, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns);
 
 		/*
 		 * Low bridge piece damage and repair

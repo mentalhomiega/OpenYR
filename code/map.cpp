@@ -1729,13 +1729,15 @@ void MapClass::Repair_All_High_Bridges(void)
 }
 
 /// <summary>
-/// Repairs the high bridge nearest to the cell specified.
+/// Repairs the bridge of one kind (high or train) nearest to the cell specified.
 /// The search works outward from the cell until it meets a bridge anchor, and that one span
-/// is put back together. Use this routine when the bridge to mend is known only by
-/// something standing near it.
+/// is put back together.
 /// </summary>
 /// <param name="cell">The cell to search outward from.</param>
-void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+/// <param name="overlay_ew">Deck overlay laid on an east-west span.</param>
+/// <param name="overlay_ns">Deck overlay laid on a north-south span.</param>
+void MapClass::Repair_Bridge_From_Cell(Cell const & cell, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns)
 {
 	int radius = 1;
 
@@ -1762,14 +1764,14 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 
 						CellClass * cptr = &Map[candidate];
 
-						int bridgetile = cptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+						int bridgetile = cptr->ITType - tileset + 1;
 
 						/*
 						 * East-west bridge, top-left end piece.
 						 */
 						if ((bridgetile == IsometricTileTypeClass::BridgeTopLeft1 || bridgetile == IsometricTileTypeClass::BridgeTopLeft2) && cptr->SubTile == 8) {
 							Set_Bridge_End_State(candidate, false, false);
-							Repair_High_Bridge_Span(cptr, FACING_E);
+							Repair_Bridge_Span(cptr, FACING_E, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1779,7 +1781,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 2) && cptr->SubTile == 5) {
 
 							if (bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + tileset - 1), ISOTILE_INVALID, -1, false);
 
 								Cell base = Adjacent_Cell(candidate, FACING_W);
 								Map[base].Height += BRIDGE_CELL_HEIGHT;
@@ -1787,7 +1789,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 								Map[Adjacent_Cell(base, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
 							}
 
-							Repair_High_Bridge_Span(cptr, FACING_E);
+							Repair_Bridge_Span(cptr, FACING_E, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1796,7 +1798,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						 */
 						if ((bridgetile == IsometricTileTypeClass::BridgeTopRight1 || bridgetile == IsometricTileTypeClass::BridgeTopRight2) && cptr->SubTile == 12) {
 							Set_Bridge_End_State(candidate, false, false);
-							Repair_High_Bridge_Span(cptr, FACING_S);
+							Repair_Bridge_Span(cptr, FACING_S, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1806,7 +1808,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 1) && cptr->SubTile == 7) {
 
 							if (bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + tileset - 1), ISOTILE_INVALID, -1, false);
 
 								Cell base = Adjacent_Cell(candidate, FACING_N);
 								Map[base].Height += BRIDGE_CELL_HEIGHT;
@@ -1814,7 +1816,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 								Map[Adjacent_Cell(base, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
 							}
 
-							Repair_High_Bridge_Span(cptr, FACING_S);
+							Repair_Bridge_Span(cptr, FACING_S, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 					}
@@ -1827,6 +1829,18 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 }
 
 /// <summary>
+/// Repairs the high bridge nearest to the cell specified.
+/// The search works outward from the cell until it meets a bridge anchor, and that one span
+/// is put back together. Use this routine when the bridge to mend is known only by
+/// something standing near it.
+/// </summary>
+/// <param name="cell">The cell to search outward from.</param>
+void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
+{
+	Repair_Bridge_From_Cell(cell, IsometricTileTypeClass::BridgeSet, OVERLAY_BRIDGE1, OVERLAY_BRIDGE2);
+}
+
+/// <summary>
 /// Repairs the train bridge nearest to the cell specified.
 /// This routine is the train bridge counterpart of Repair_High_Bridge_From_Cell. The search
 /// works outward from the cell until it meets a bridge anchor, and that one span is put
@@ -1835,93 +1849,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 /// <param name="cell">The cell to search outward from.</param>
 void MapClass::Repair_Train_Bridge_From_Cell(Cell const & cell)
 {
-	int radius = 1;
-
-	while (true) {
-
-		int extent = MapRect.Width;
-		if (extent <= MapRect.Height) {
-			extent = MapRect.Height;
-		}
-		if (radius >= extent) {
-			break;
-		}
-
-		for (int dy = -radius; dy < radius; dy++) {
-			for (int dx = -radius; dx < radius; dx++) {
-
-				Cell candidate = cell + Cell(dx, dy);
-
-				if (candidate.X >= MapRect.X && candidate.X <= MapRect.X + MapRect.Width &&
-					candidate.Y >= MapRect.Y && candidate.Y <= MapRect.Y + MapRect.Height) {
-
-					int idx = candidate.X + candidate.Y * MAP_CELL_W;
-					if (Array[idx] != NULL) {
-
-						CellClass * cptr = &Map[candidate];
-
-						int bridgetile = cptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-
-						/*
-						 * East-west train bridge, top-left end piece.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeTopLeft1 || bridgetile == IsometricTileTypeClass::BridgeTopLeft2) && cptr->SubTile == 8) {
-							Set_Bridge_End_State(candidate, false, false);
-							Repair_Train_Bridge_Span(cptr, FACING_E, NULL);
-							return;
-						}
-
-						/*
-						 * East-west train bridge, middle pieces.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 2) && cptr->SubTile == 5) {
-
-							if (bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-
-								Cell base = Adjacent_Cell(candidate, FACING_W);
-								Map[base].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_N)].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
-							}
-
-							Repair_Train_Bridge_Span(cptr, FACING_E, NULL);
-							return;
-						}
-
-						/*
-						 * South train bridge, top-right end piece.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeTopRight1 || bridgetile == IsometricTileTypeClass::BridgeTopRight2) && cptr->SubTile == 12) {
-							Set_Bridge_End_State(candidate, false, false);
-							Repair_Train_Bridge_Span(cptr, FACING_S, NULL);
-							return;
-						}
-
-						/*
-						 * South train bridge, middle pieces.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 1) && cptr->SubTile == 7) {
-
-							if (bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-
-								Cell base = Adjacent_Cell(candidate, FACING_N);
-								Map[base].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_E)].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
-							}
-
-							Repair_Train_Bridge_Span(cptr, FACING_S, NULL);
-							return;
-						}
-					}
-				}
-			}
-		}
-
-		radius++;
-	}
+	Repair_Bridge_From_Cell(cell, IsometricTileTypeClass::TrainBridgeSet, OVERLAY_RAILWAY_BRIDGE1, OVERLAY_RAILWAY_BRIDGE2);
 }
 
 
