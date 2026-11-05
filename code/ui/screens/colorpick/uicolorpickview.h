@@ -19,6 +19,9 @@ namespace Rml
 
 struct UIColorPickState;
 
+// Registers the picker's preset and ramp-step structs with a document model. Returns false when RmlUi refuses either.
+bool UI_Register_Color_Structs(Rml::DataModelConstructor & model);
+
 // The view of a screen that offers the free color picker. It routes the color field's pointer input into the
 // picker and shows the picker's swatch and field.
 class UIColorPickViewClass : public UIRmlViewClass

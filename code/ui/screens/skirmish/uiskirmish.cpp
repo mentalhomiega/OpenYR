@@ -523,21 +523,9 @@ class UISkirmishViewClass : public UIColorPickViewClass
 			slot.RegisterMember("colorname", &UISkirmishSlot::ColorName);
 			slot.RegisterMember("colortip", &UISkirmishSlot::ColorTip);
 
-			Rml::StructHandle<UIColorPresetOption> preset = model.RegisterStruct<UIColorPresetOption>();
-			if (!preset) {
+			if (!UI_Register_Color_Structs(model)) {
 				return(false);
 			}
-			preset.RegisterMember("label", &UIColorPresetOption::Label);
-			preset.RegisterMember("value", &UIColorPresetOption::Value);
-			preset.RegisterMember("color", &UIColorPresetOption::Color);
-			preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
-			preset.RegisterMember("taken", &UIColorPresetOption::Taken);
-			preset.RegisterMember("caption", &UIColorPresetOption::Caption);
-			Rml::StructHandle<UIColorRampStep> step = model.RegisterStruct<UIColorRampStep>();
-			if (!step) {
-				return(false);
-			}
-			step.RegisterMember("color", &UIColorRampStep::Color);
 
 			UISkirmishState & state = Data.State;
 			// A value the presenter changes is bound through live, so Sync dirties exactly the names bound here.

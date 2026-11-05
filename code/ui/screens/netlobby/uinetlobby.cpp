@@ -316,22 +316,8 @@ namespace
 /// <summary>Registers the free color picker's presets and binds its variables into a document model.</summary>
 static bool Bind_Color_Picker(Rml::DataModelConstructor & model, UIColorPickState & picker)
 {
-	Rml::StructHandle<UIColorPresetOption> preset = model.RegisterStruct<UIColorPresetOption>();
-	if (!preset) {
-		return(false);
-	}
-	preset.RegisterMember("label", &UIColorPresetOption::Label);
-	preset.RegisterMember("value", &UIColorPresetOption::Value);
-	preset.RegisterMember("color", &UIColorPresetOption::Color);
-	preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
-	preset.RegisterMember("taken", &UIColorPresetOption::Taken);
-	preset.RegisterMember("caption", &UIColorPresetOption::Caption);
-	Rml::StructHandle<UIColorRampStep> step = model.RegisterStruct<UIColorRampStep>();
-	if (!step) {
-		return(false);
-	}
-	step.RegisterMember("color", &UIColorRampStep::Color);
-	return(model.RegisterArray<std::vector<UIColorPresetOption>>()
+	return(UI_Register_Color_Structs(model)
+		&& model.RegisterArray<std::vector<UIColorPresetOption>>()
 		&& model.RegisterArray<std::vector<UIColorRampStep>>()
 		&& model.Bind("pickopen", &picker.Open)
 		&& model.Bind("pickswatch", &picker.Swatch)
