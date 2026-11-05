@@ -4193,15 +4193,15 @@ void MapClass::Internal_Destroy_Train_Bridge_NS_TopRight(Cell const & cell, Faci
 
 
 /// <summary>
-/// Repairs a broken train bridge near the given cell.
-/// This routine is used by an engineer sent out to a damaged rail bridge. A low bridge
-/// lying close by is handed straight to the low bridge repair; otherwise it works out
-/// which span the order meant and puts the deck back a section at a time until the
-/// crossing is whole again. It is the counterpart of Repair_Bridge.
+/// Finds the anchor of the bridge span an engineer's repair order meant.
+/// Looks for a bridge cell within three cells of the given one and reports where its span
+/// is anchored and which way it runs. A low bridge within two cells is repaired on the spot
+/// instead. Returns false when no span remains to be repaired.
 /// </summary>
-/// <param name="cell">Where the repair was ordered; the bridge itself may be a few cells
-/// away.</param>
-void MapClass::Repair_Train_Bridge(Cell const & cell)
+/// <param name="cell">The cell the repair order was given at.</param>
+/// <param name="origin">Receives the span anchor cell.</param>
+/// <param name="east_west">Receives true if the bridge runs east-west.</param>
+bool MapClass::Locate_Bridge_Repair_Origin(Cell const & cell, Cell & origin, bool & east_west)
 {
 	/*
 	 * Scan the 5x5 block of cells around the supplied cell looking for a low
@@ -4212,7 +4212,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 		for (int y = -2; y < 3; y++) {
 			if (Is_Low_Bridge(cell + Cell(x, y))) {
 				Repair_Low_Bridge_Span(cell + Cell(x, y));
-				return;
+				return false;
 			}
 		}
 	}
@@ -4254,13 +4254,12 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 	 * Nothing bridge related found nearby - there is nothing to repair.
 	 */
 	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		return;
+		return false;
 	}
 
 	/*
 	 * Resolve the span anchor cell.
 	 */
-	Cell origin;
 	if (cellptr->IsUnderBridge) {
 
 		/*
@@ -4287,7 +4286,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 				break;
 			}
 			if (++count >= 4) {
-				return;
+				return false;
 			}
 		}
 
@@ -4295,11 +4294,33 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 		origin = Adjacent_Cell(Adjacent_Cell(walk, back), back);
 	}
 
+	east_west = cellptr->IsBridgeEastWest;
+	return true;
+}
+
+
+/// <summary>
+/// Repairs a broken train bridge near the given cell.
+/// This routine is used by an engineer sent out to a damaged rail bridge. A low bridge
+/// lying close by is handed straight to the low bridge repair; otherwise it works out
+/// which span the order meant and puts the deck back a section at a time until the
+/// crossing is whole again. It is the counterpart of Repair_Bridge.
+/// </summary>
+/// <param name="cell">Where the repair was ordered; the bridge itself may be a few cells
+/// away.</param>
+void MapClass::Repair_Train_Bridge(Cell const & cell)
+{
+	Cell origin;
+	bool east_west;
+	if (!Locate_Bridge_Repair_Origin(cell, origin, east_west)) {
+		return;
+	}
+
 	/*
 	 * Walk the span looking for the end or middle tiles, repairing as we go.
 	 */
 	Cell spancell = origin;
-	int advance = cellptr->IsBridgeEastWest ? FACING_W : FACING_N;
+	int advance = east_west ? FACING_W : FACING_N;
 
 	char zonechanged = 0;
 	IsometricTileType ittype = ISOTILE_CLEAR;
@@ -5368,103 +5389,17 @@ void MapClass::Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, Facin
 /// away.</param>
 void MapClass::Repair_Bridge(Cell const & cell)
 {
-	/*
-	 * Scan the 5x5 block of cells around the supplied cell looking for a low
-	 * bridge overlay. If one is found, hand off to the low bridge repair routine
-	 * and exit.
-	 */
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			if (Is_Low_Bridge(cell + Cell(x, y))) {
-				Repair_Low_Bridge_Span(cell + Cell(x, y));
-				return;
-			}
-		}
-	}
-
-	/*
-	 * Locate a cell that is part of a bridge. Start at the supplied cell and, if it
-	 * is not itself bridge related, walk up to three cells out along each of the
-	 * eight facings until a bridge cell is found.
-	 */
-	CellClass * cellptr = &Map[cell];
-
-	char facing = FACING_FIRST;
-	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		for (int index = 0; index < FACING_COUNT; index++) {
-
-			Cell adjacent = Adjacent_Cell(cell, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			adjacent = Adjacent_Cell(adjacent, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			adjacent = Adjacent_Cell(adjacent, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			facing = Facing_Add(facing, FACING_45);
-		}
-	}
-
-	/*
-	 * Nothing bridge related found nearby - there is nothing to repair.
-	 */
-	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		return;
-	}
-
-	/*
-	 * Resolve the span anchor cell.
-	 */
 	Cell origin;
-	if (cellptr->IsUnderBridge) {
-
-		/*
-		 * A live bridge cell points at the bridge owner (or is the owner).
-		 */
-		origin = cellptr->Get_Bridge_Deck_Cell();
-
-	} else {
-
-		/*
-		 * An already damaged ("was under") bridge cell. Walk along the bridge body
-		 * until a cell that is no longer marked as a former bridge cell is found,
-		 * giving up after four steps, then step back two cells to recover the span
-		 * end.
-		 */
-		int count = 0;
-		int step = cellptr->IsBridgeEastWest ? FACING_S : FACING_E;
-		Cell walk = cellptr->CellID;
-		CellClass * walkptr;
-		while (true) {
-			walk = Adjacent_Cell(walk, Facing_Add(step, FACING_0));
-			walkptr = &Map[walk];
-			if (!walkptr->WasUnderBridge) {
-				break;
-			}
-			if (++count >= 4) {
-				return;
-			}
-		}
-
-		FacingType back = Facing_Sub(step, FACING_180);
-		origin = Adjacent_Cell(Adjacent_Cell(walk, back), back);
+	bool east_west;
+	if (!Locate_Bridge_Repair_Origin(cell, origin, east_west)) {
+		return;
 	}
 
 	/*
 	 * Walk the span looking for the end or middle tiles, repairing as we go.
 	 */
 	Cell spancell = origin;
-	int advance = cellptr->IsBridgeEastWest ? FACING_W : FACING_N;
+	int advance = east_west ? FACING_W : FACING_N;
 
 	char zonechanged = 0;
 	IsometricTileType ittype = ISOTILE_CLEAR;

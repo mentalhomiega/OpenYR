@@ -248,6 +248,7 @@ class MapClass: public GScreenClass
 		 */
 		void Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty = NULL);
 		void Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty);
+		bool Locate_Bridge_Repair_Origin(Cell const & cell, Cell & origin, bool & east_west);
 		void Repair_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns);
 		void Repair_All_High_Bridges(void);
 		void Repair_High_Bridge_From_Cell(Cell const & cell);
