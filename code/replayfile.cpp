@@ -9,6 +9,7 @@
 
 
 #include "replayfile.h"
+#include "diskfile.h"
 
 #include <cstring>
 
@@ -272,20 +273,12 @@ LoadResult Parse(std::vector<std::uint8_t> const & bytes, ReplayType & replay)
 
 LoadResult Load(char const * path, ReplayType & replay)
 {
-	std::FILE * file = std::fopen(path, "rb");
-	if (file == nullptr) {
+	std::string text;
+	if (!Read_Disk_File(path, text)) {
 		return(LoadResult::CANNOT_OPEN);
 	}
 
-	std::vector<std::uint8_t> bytes;
-	std::uint8_t block[4096];
-	std::size_t got = 0;
-	while ((got = std::fread(block, 1, sizeof(block), file)) > 0) {
-		bytes.insert(bytes.end(), block, block + got);
-	}
-	std::fclose(file);
-
-	return(Parse(bytes, replay));
+	return(Parse(std::vector<std::uint8_t>(text.begin(), text.end()), replay));
 }
 
 

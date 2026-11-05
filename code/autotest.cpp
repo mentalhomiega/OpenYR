@@ -43,6 +43,7 @@
 #include "ccfile.h"
 #include "ccini.h"
 #include "data.h"
+#include "diskfile.h"
 #include "lcwstraw.h"
 #include "xstraw.h"
 #include "builtype.h"
@@ -3068,11 +3069,7 @@ static void Veinholes_Step(StepType const &)
 // Writes the bytes to a new binary file at the path. Nothing is written when the file cannot be created.
 static void Write_Binary_File(std::string const & path, void const * data, std::size_t size)
 {
-	FILE * f = std::fopen(path.c_str(), "wb");
-	if (f != NULL) {
-		std::fwrite(data, 1, size, f);
-		std::fclose(f);
-	}
+	Write_Disk_File(path, std::string(static_cast<char const *>(data), size));
 }
 
 
@@ -4273,12 +4270,11 @@ static void Musicstage_Step(StepType const &)
 				put16((unsigned)(sample & 0xFFFF));
 			}
 		}
-		std::ofstream out(path, std::ios::binary);
-		out.write((char const *)wav.data(), (std::streamsize)wav.size());
+		Write_Binary_File(path, wav.data(), wav.size());
 	}
-	{ std::ofstream out(folder + "Stage Empty.mp3", std::ios::binary); }
-	{ std::ofstream out(folder + "Stage Broken.ogg", std::ios::binary); out << "This is not an Ogg file."; }
-	{ std::ofstream out(folder + "Stage Notes.txt", std::ios::binary); out << "Not music."; }
+	Write_Disk_File(folder + "Stage Empty.mp3", "");
+	Write_Disk_File(folder + "Stage Broken.ogg", "This is not an Ogg file.");
+	Write_Disk_File(folder + "Stage Notes.txt", "Not music.");
 	DebugString("AUTOTEST   musicstage %s\n", folder.c_str());
 }
 
