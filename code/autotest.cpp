@@ -398,18 +398,6 @@ bool Player_Object_Within(DynamicVectorClass<T *> & list, std::string const & na
 }
 
 
-template<class T, class Action>
-static void For_Selected(DynamicVectorClass<T *> & list, Action action)
-{
-	for (int index = 0; index < list.Count(); index++) {
-		T * object = list[index];
-		if (object->IsSelected) {
-			action(object);
-		}
-	}
-}
-
-
 // Whether other people's copies of the game take part. Their orders then go through the event queue, as a
 // player's orders do, so every copy applies them. Direct state changes would leave the other copies behind.
 bool Network_Game(void)
@@ -567,20 +555,10 @@ void Move(std::string const & name, int x, int y)
 {
 	Select_Type(name);
 	Cell const cell(x, y);
-	if (Network_Game()) {
-		PlanningRecordScope const recording(Map.IsPlanningMode);
-		Queue_Player_Missions(Units, name, MISSION_MOVE, NULL, &Map[cell]);
-		Queue_Player_Missions(Infantry, name, MISSION_MOVE, NULL, &Map[cell]);
-		Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
-		return;
-	}
-	auto const move = [&cell](auto * object) {
-		object->Assign_Destination(&Map[cell]);
-		object->Assign_Mission(MISSION_MOVE);
-	};
-	For_Selected(Units, move);
-	For_Selected(Infantry, move);
-	For_Selected(Aircraft, move);
+	PlanningRecordScope const recording(Map.IsPlanningMode);
+	Queue_Player_Missions(Units, name, MISSION_MOVE, NULL, &Map[cell]);
+	Queue_Player_Missions(Infantry, name, MISSION_MOVE, NULL, &Map[cell]);
+	Queue_Player_Missions(Aircraft, name, MISSION_MOVE, NULL, &Map[cell]);
 }
 
 
@@ -697,20 +675,10 @@ static void Attack_Step(StepType const & step)
 	DebugString("AUTOTEST attack %s -> %s at %d,%d\n", name.c_str(), target->Class->Name(), target->Get_Cell().X, target->Get_Cell().Y);
 
 	Select_Type(name);
-	if (Network_Game()) {
-		PlanningRecordScope const recording(Map.IsPlanningMode);
-		Queue_Player_Missions(Units, name, MISSION_ATTACK, target, NULL);
-		Queue_Player_Missions(Infantry, name, MISSION_ATTACK, target, NULL);
-		Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
-		return;
-	}
-	auto const attack = [target](auto * object) {
-		object->Assign_Target(target);
-		object->Assign_Mission(MISSION_ATTACK);
-	};
-	For_Selected(Units, attack);
-	For_Selected(Infantry, attack);
-	For_Selected(Aircraft, attack);
+	PlanningRecordScope const recording(Map.IsPlanningMode);
+	Queue_Player_Missions(Units, name, MISSION_ATTACK, target, NULL);
+	Queue_Player_Missions(Infantry, name, MISSION_ATTACK, target, NULL);
+	Queue_Player_Missions(Aircraft, name, MISSION_ATTACK, target, NULL);
 }
 
 
