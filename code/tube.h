@@ -79,3 +79,8 @@ class TubeClass : public AbstractClass
 		 */
 		static char const * INI_NAME;
 };
+
+// Whether a unit moving in direction `dir` into `cellptr` would enter a tunnel sideways, either the
+// tunnel `tunnel` of that cell or the one of the cell behind it. Shared by UnitClass and InfantryClass.
+bool Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass const * tunnel);
+

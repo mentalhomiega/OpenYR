@@ -2071,26 +2071,6 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 }
 
 
-bool InfantryClass::Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tube) const
-{
-	if (tube != NULL) {
-		int a = abs(dir - tube->EnterDir);
-		if (a > 2 && a < 6 && dir != FACING_NONE) {
-			return(true);
-		}
-	}
-
-	TubeClass *tube_adj = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
-	if (tube_adj != NULL) {
-		int a = abs(Facing_Sub(dir, FACING_180) - tube_adj->EnterDir);
-		if (a > FACING_90 && a < FACING_270 && dir != FACING_NONE) {
-			return(true);
-		}
-	}
-	return(false);
-}
-
-
 bool InfantryClass::Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const
 {
 	/*
@@ -2166,17 +2146,8 @@ std::optional<MoveType> InfantryClass::Special_Building_Verdict(ObjectClass * ob
 		return(std::nullopt);
 	}
 
-	if (building->Class->IsLaserFence && (building->LaserFenceFrame == 12 || building->LaserFenceFrame == 8)) {
-		skip = true;
-		return(std::nullopt);
-	}
-
-	if (building->Class->IsFirestormWall) {
-		if (building->House->FirestormDefenseActivated) {
-			return(MOVE_NO);
-		}
-		skip = true;
-		return(std::nullopt);
+	if (std::optional<MoveType> fence = Fence_Wall_Verdict(building, skip); fence || skip) {
+		return(fence);
 	}
 
 	if (building->Class->IsGate) {

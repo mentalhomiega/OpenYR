@@ -4475,7 +4475,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 		return(MOVE_NO);
 	}
 
-	if (Tunnel_Direction_Blocks_Entry(cellptr, dir, tunnel)) {
+	if (Tunnel_Blocks_Entry(cellptr, dir, tunnel)) {
 		return(MOVE_NO);
 	}
 
@@ -4665,30 +4665,6 @@ bool UnitClass::Restricted_Land_Blocks_Entry(CellClass const * cellptr, int cell
 }
 
 
-bool UnitClass::Tunnel_Direction_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tunnel) const
-{
-	if (tunnel != NULL) {
-		int dist = abs(dir - tunnel->EnterDir);
-		if (dist > 2 && dist < 6 && dir != FACING_NONE) {
-			return(true);
-		}
-	}
-
-	/*
-	 * Check the tunnel of the cell entered from (the cell in the opposite
-	 * direction) so that the unit can't drive through a tunnel sideways.
-	 */
-	TubeClass *backtunnel = cellptr->Adjacent_Cell(Facing_Sub(dir, FACING_180)).Get_Tunnel();
-	if (backtunnel != NULL) {
-		int dist = abs(Facing_Sub(dir, FACING_180) - backtunnel->EnterDir);
-		if (dist > FACING_90 && dist < FACING_270 && dir != FACING_NONE) {
-			return(true);
-		}
-	}
-	return(false);
-}
-
-
 bool UnitClass::Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const
 {
 	/*
@@ -4782,16 +4758,8 @@ std::optional<MoveType> UnitClass::Building_Occupant_Verdict(ObjectClass * obj, 
 		skip = true;
 		return(std::nullopt);
 	}
-	if (bptr->Class->IsLaserFence && (bptr->LaserFenceFrame == 12 || bptr->LaserFenceFrame == 8)) {
-		skip = true;
-		return(std::nullopt);
-	}
-	if (bptr->Class->IsFirestormWall) {
-		if (bptr->House->FirestormDefenseActivated) {
-			return(MOVE_NO);
-		}
-		skip = true;
-		return(std::nullopt);
+	if (std::optional<MoveType> fence = Fence_Wall_Verdict(bptr, skip); fence || skip) {
+		return(fence);
 	}
 
 	/*

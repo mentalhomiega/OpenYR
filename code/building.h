@@ -809,3 +809,10 @@ inline BuildingClass const * AbstractClass::As_BuildingClass(void) const
 {
 	return(dynamic_cast<BuildingClass const *>(this));
 }
+
+
+// Verdict of a laser fence post or firestorm wall on a mover entering its cell: MOVE_NO for an active
+// firestorm wall, otherwise nothing, with `skip` set when the building does not block. Shared by
+// UnitClass and InfantryClass.
+std::optional<MoveType> Fence_Wall_Verdict(BuildingClass const * building, bool & skip);
+

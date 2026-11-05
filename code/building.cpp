@@ -13096,3 +13096,20 @@ void BuildingClass::Update_Powered_Unit_Source(bool working)
 		PoweredUnitHouse->PoweredUnitCenters++;
 	}
 }
+
+
+std::optional<MoveType> Fence_Wall_Verdict(BuildingClass const * building, bool & skip)
+{
+	if (building->Class->IsLaserFence && (building->LaserFenceFrame == 12 || building->LaserFenceFrame == 8)) {
+		skip = true;
+		return(std::nullopt);
+	}
+	if (building->Class->IsFirestormWall) {
+		if (building->House->FirestormDefenseActivated) {
+			return(MOVE_NO);
+		}
+		skip = true;
+		return(std::nullopt);
+	}
+	return(std::nullopt);
+}
