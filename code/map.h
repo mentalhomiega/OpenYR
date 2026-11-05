@@ -58,6 +58,14 @@ class SaveStreamClass;
 struct ConcreteFamily;
 
 
+/// How a moving projectile or particle passed through a bridge deck during one step.
+enum BridgeDeckCrossing {
+	DECK_CROSSING_NONE,
+	DECK_CROSSING_FELL_ONTO,	// dropped onto the deck from above
+	DECK_CROSSING_ROSE_INTO		// rose into the deck from below
+};
+
+
 class MapClass: public GScreenClass
 {
 		typedef GScreenClass BASECLASS;
@@ -344,6 +352,7 @@ class MapClass: public GScreenClass
 		 * Miscellaneous map queries and helpers
 		 */
 		int Get_Height_GL(Coord const & coord);
+		BridgeDeckCrossing Cross_Bridge_Deck(Coord const & old_coord, Coord const & new_coord, int bridge_height);
 		void Increment_Redraw_Counter(void);
 		bool Try_Open_Gate(FootClass * foot, Cell const & cell);
 		bool Is_Something_Nearby(Cell const & cell, int radius);

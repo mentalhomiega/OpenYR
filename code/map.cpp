@@ -5900,6 +5900,26 @@ int MapClass::Get_Height_GL(Coord const & coord)
 
 
 /// <summary>
+/// Reports whether a step between two coordinates passes through a bridge deck.
+/// Only cells under a bridge can be crossed. Ground and air objects use the result to land on
+/// or bounce off the deck.
+/// </summary>
+/// <param name="old_coord">Position before the step.</param>
+/// <param name="new_coord">Position after the step.</param>
+/// <param name="bridge_height">Deck height above the ground at new_coord.</param>
+BridgeDeckCrossing MapClass::Cross_Bridge_Deck(Coord const & old_coord, Coord const & new_coord, int bridge_height)
+{
+	if (!Map[new_coord].IsUnderBridge && !Map[old_coord].IsUnderBridge) {
+		return(DECK_CROSSING_NONE);
+	}
+	if (new_coord.Z >= bridge_height) {
+		return(old_coord.Z < bridge_height ? DECK_CROSSING_ROSE_INTO : DECK_CROSSING_NONE);
+	}
+	return(old_coord.Z >= bridge_height ? DECK_CROSSING_FELL_ONTO : DECK_CROSSING_NONE);
+}
+
+
+/// <summary>
 /// Fetches the next cell of the playable map.
 /// This routine walks every cell inside the play area, one call at a time. Call
 /// Reset_Iterator first, then keep calling this until it comes back empty handed.
