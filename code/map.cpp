@@ -9118,6 +9118,142 @@ void MapClass::Shutdown(void)
 
 
 /// <summary>
+/// Swaps one destroyable cliff tile for its ruined counterpart and two slope pieces.
+/// The zones and subzones under the footprint are rebuilt, everything standing there is
+/// retargeted, and rubble animations are scattered over it.
+/// </summary>
+/// <param name="point">Top corner cell of the cliff tile.</param>
+/// <param name="tile_type">Index of the cliff tile type that came down.</param>
+/// <param name="slope_a">Index of the slope piece placed at the corner.</param>
+/// <param name="slope_b">Index of the slope piece placed at slope_b_offset.</param>
+/// <param name="slope_b_offset">Cell offset of the second slope piece.</param>
+/// <param name="extent">Footprint size in cells; also the far corner used for the redraw area.</param>
+void MapClass::Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int slope_b, Cell slope_b_offset, Cell extent)
+{
+	/*
+	 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
+	 */
+	ObjectClass * tile = IsometricTileTypes[tile_type]->Create_One_Of(NULL);
+	tile->Set_Coord(Coord(point));
+	tile->IsInLimbo = false;
+	tile->IsDown = true;
+	tile->Mark(MARK_UP);
+	delete tile;
+
+	/*
+	 * Place the two slope set pieces that form the new sloped ground.
+	 */
+	ObjectClass * slope1 = IsometricTileTypes[slope_a]->Create_One_Of(NULL);
+	slope1->Unlimbo(Coord(point), DIR_N);
+
+	ObjectClass * slope2 = IsometricTileTypes[slope_b]->Create_One_Of(NULL);
+	slope2->Unlimbo(Coord(point + slope_b_offset), DIR_N);
+
+	Zone_Reset();
+
+	IsometricTileTypeClass * ittype = IsometricTileTypes[tile_type];
+	IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
+
+	/*
+	 * Recalculate the attributes of every cell the cliff tile touches.
+	 */
+	int x;
+	int y;
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true)) {
+					CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
+					Map[cell].Recalc_Attributes();
+				}
+			}
+		}
+	}
+
+	/*
+	 * Rebuild the subzone graph for those cells.
+	 */
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
+					Update_Cell_Subzones(cell);
+				}
+			}
+		}
+	}
+
+	/*
+	 * Refresh mission targets and the radar background for those cells.
+	 */
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true)) {
+					TechnoClass::Remove_Target(&Map[cell]);
+					Map.Radar_Background(cell);
+				}
+			}
+		}
+	}
+
+	/*
+	 * Mark the affected screen region as dirty so it gets redrawn.
+	 */
+	Point2D pixel1;
+	TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
+
+	Point2D pixel2;
+	TacticalMap->Coord_To_Pixel(Coord(point + extent, LEVEL_LEPTON_H * Map[point + extent].Height), pixel2);
+
+	// The footprint runs right of the origin cell when it is wider than tall, else left.
+	bool runs_right = extent.X > extent.Y;
+	int left_pixel_x = runs_right ? pixel1.X : pixel2.X;
+	int right_pixel_x = runs_right ? pixel2.X : pixel1.X;
+
+	Rect dirty;
+	dirty.X = left_pixel_x - 2 * ISO_TILE_PIXEL_W;
+	dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
+	dirty.Width = right_pixel_x + 4 * ISO_TILE_PIXEL_W - left_pixel_x;
+	dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
+	TacticalMap->Register_Dirty_Area(dirty, false);
+
+	/*
+	 * Scatter the debris animations across the collapsed area.
+	 */
+	AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
+	AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
+	AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
+
+	for (y = point.Y; y < point.Y + extent.Y; y++) {
+		for (x = point.X; x < point.X + extent.X; x++) {
+			Cell cell(x, y);
+			AnimTypeClass * type = NULL;
+			for (int i = 0; i < 2; i++) {
+				switch (Scen->RandomNumber(0, 2)) {
+					case 0:
+						type = med1;
+						break;
+
+					case 1:
+						type = med2;
+						break;
+
+					case 2:
+						type = sml1;
+						break;
+				}
+				AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Collapses a destroyable cliff into a slope.
 /// The cliff tile is swapped for its ruined counterpart and a pair of slope pieces, which
 /// leaves a way up where there was none -- so the zones and subzones are rebuilt, everything
@@ -9128,243 +9264,10 @@ void MapClass::Collapse_Cliff(CellClass * cptr)
 {
 	if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-2) {
 
-		Cell point = Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID;
-
-		/*
-		 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
-		 */
-		ObjectClass * tile = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs]->Create_One_Of(NULL);
-		tile->Set_Coord(Coord(point));
-		tile->IsInLimbo = false;
-		tile->IsDown = true;
-		tile->Mark(MARK_UP);
-		delete tile;
-
-		/*
-		 * Place the two slope set pieces that form the new sloped ground.
-		 */
-		ObjectClass * slope1 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces]->Create_One_Of(NULL);
-		slope1->Unlimbo(Coord(point), DIR_N);
-
-		ObjectClass * slope2 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 1]->Create_One_Of(NULL);
-		slope2->Unlimbo(Coord(point + Cell(3, 0)), DIR_N);
-
-		Zone_Reset();
-
-		IsometricTileTypeClass * ittype = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs];
-		IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
-
-		/*
-		 * Recalculate the attributes of every cell the cliff tile touches.
-		 */
-		int x;
-		int y;
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
-						Map[cell].Recalc_Attributes();
-					}
-				}
-			}
-		}
-
-		/*
-		 * Rebuild the subzone graph for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
-						Update_Cell_Subzones(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Refresh mission targets and the radar background for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						TechnoClass::Remove_Target(&Map[cell]);
-						Map.Radar_Background(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Mark the affected screen region as dirty so it gets redrawn.
-		 */
-		Point2D pixel1;
-		TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
-
-		Point2D pixel2;
-		TacticalMap->Coord_To_Pixel(Coord(point + Cell(5, 3), LEVEL_LEPTON_H * Map[point + Cell(5, 3)].Height), pixel2);
-
-		Rect dirty;
-		dirty.X = pixel1.X - 2 * ISO_TILE_PIXEL_W;
-		dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
-		dirty.Width = pixel2.X + 4 * ISO_TILE_PIXEL_W - pixel1.X;
-		dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
-		TacticalMap->Register_Dirty_Area(dirty, false);
-
-		/*
-		 * Scatter the debris animations across the collapsed area.
-		 */
-		AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
-		AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
-		AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
-
-		for (y = point.Y; y < point.Y + 3; y++) {
-			for (x = point.X; x < point.X + 5; x++) {
-				Cell cell(x, y);
-				AnimTypeClass * type = NULL;
-				for (int i = 0; i < 2; i++) {
-					switch (Scen->RandomNumber(0, 2)) {
-						case 0:
-							type = med1;
-							break;
-
-						case 1:
-							type = med2;
-							break;
-
-						case 2:
-							type = sml1;
-							break;
-					}
-					AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-				}
-			}
-		}
-
+		Collapse_Cliff_Tile(Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID, IsometricTileTypeClass::DestroyableCliffs, IsometricTileTypeClass::SlopeSetPieces, IsometricTileTypeClass::SlopeSetPieces + 1, Cell(3, 0), Cell(5, 3));
 	} else if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-1) {
 
-		Cell point = Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID;
-
-		/*
-		 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
-		 */
-		ObjectClass * tile = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1]->Create_One_Of(NULL);
-		tile->Set_Coord(Coord(point));
-		tile->IsInLimbo = false;
-		tile->IsDown = true;
-		tile->Mark(MARK_UP);
-		delete tile;
-
-		/*
-		 * Place the two slope set pieces that form the new sloped ground.
-		 */
-		ObjectClass * slope1 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 3]->Create_One_Of(NULL);
-		slope1->Unlimbo(Coord(point), DIR_N);
-
-		ObjectClass * slope2 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 2]->Create_One_Of(NULL);
-		slope2->Unlimbo(Coord(point + Cell(0, 3)), DIR_N);
-
-		Zone_Reset();
-
-		IsometricTileTypeClass * ittype = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1];
-		IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
-
-		/*
-		 * Recalculate the attributes of every cell the cliff tile touches.
-		 */
-		int x;
-		int y;
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
-						Map[cell].Recalc_Attributes();
-					}
-				}
-			}
-		}
-
-		/*
-		 * Rebuild the subzone graph for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
-						Update_Cell_Subzones(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Refresh mission targets and the radar background for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						TechnoClass::Remove_Target(&Map[cell]);
-						Map.Radar_Background(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Mark the affected screen region as dirty so it gets redrawn.
-		 */
-		Point2D pixel1;
-		TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
-
-		Point2D pixel2;
-		TacticalMap->Coord_To_Pixel(Coord(point + Cell(3, 5), LEVEL_LEPTON_H * Map[point + Cell(3, 5)].Height), pixel2);
-
-		Rect dirty;
-		dirty.X = pixel2.X - 2 * ISO_TILE_PIXEL_W;
-		dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
-		dirty.Width = pixel1.X + 4 * ISO_TILE_PIXEL_W - pixel2.X;
-		dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
-		TacticalMap->Register_Dirty_Area(dirty, false);
-
-		/*
-		 * Scatter the debris animations across the collapsed area.
-		 */
-		AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
-		AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
-		AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
-
-		for (y = point.Y; y < point.Y + 5; y++) {
-			for (x = point.X; x < point.X + 3; x++) {
-				Cell cell(x, y);
-				AnimTypeClass * type = NULL;
-				for (int i = 0; i < 2; i++) {
-					switch (Scen->RandomNumber(0, 2)) {
-						case 0:
-							type = med1;
-							break;
-
-						case 1:
-							type = med2;
-							break;
-
-						case 2:
-							type = sml1;
-							break;
-					}
-					AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-				}
-			}
-		}
+		Collapse_Cliff_Tile(Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID, IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1, IsometricTileTypeClass::SlopeSetPieces + 3, IsometricTileTypeClass::SlopeSetPieces + 2, Cell(0, 3), Cell(3, 5));
 	}
 }
 

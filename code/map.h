@@ -306,6 +306,7 @@ class MapClass: public GScreenClass
 		bool Deform_Terrain(Cell const & cell, bool forced);
 		void Terrain_Deformation_AI(void);
 		void Collapse_Cliff(CellClass * cptr);
+		void Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int slope_b, Cell slope_b_offset, Cell extent);
 		void Area_Reduce_Tiberium(Cell const & cell);
 		void Recalc_Cells_In_Rect(Rect const & rect);
 		void Recalc_Cells_In_List(DynamicVectorClass<Cell> const & vec);
