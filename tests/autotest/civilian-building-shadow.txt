@@ -1,0 +1,13 @@
+; A McBurger Kong (CAMSC10) and a Washington office (CAWASH06) stand on open grass of XMP29U2. Each draws its body from frame 0
+; and its shadow from the frame half the image's frames further on (TechnoClass::DrawObject, 0x705E00).
+; Expected: the McBurger Kong's shadow frame, 4, sets 1299 pixels, so a shadow shows beside its roof. The Washington office's
+; shadow frame, 4, is empty in its urban art (CUWASH06.SHP in ISOURB.MIX), so it casts none until it is damaged and draws frame 1.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/civilian-building-shadow.txt -Seconds 60 -Filter AUTOTEST
+30 view 63 50
+35 reveal
+40 own CAMSC10 60 52
+41 own CAWASH06 66 52
+60 bshadow CAMSC10
+61 bshadow CAWASH06
+80 windowshot civilian-building-shadow
+100 quit
