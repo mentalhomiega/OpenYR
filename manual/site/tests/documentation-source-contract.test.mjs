@@ -1296,7 +1296,7 @@ test('A harvester reserves a free refinery only within reach and otherwise waits
 
 	assertOrdered(
 		harvest,
-		['Find_Docking_Bay(Class->Dock, false, true);', 'ScenarioInit++;', 'Find_Docking_Bay(Class->Dock, false, false);', 'ScenarioInit--;'],
+		['Find_Docking_Bay(Class->Dock, false, true);', 'ScenarioInitScope const scope;', 'Find_Docking_Bay(Class->Dock, false, false);'],
 		'the dock list is searched once for a free bay and once for any bay',
 	);
 
