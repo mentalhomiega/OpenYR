@@ -228,6 +228,8 @@ public:
 		bool Is_Ramp_Area_Clear(Rect & rect, int region_id);
 		void Flatten_Area(Rect const & rect, int region_id);
 		void Flatten_Area(Rect const & rect);
+		void Set_Ramp_Jog_Cell(Cell const & cell, int row, int ramp);
+		void Set_Ramp_Straight_Cell(Cell const & cell, int index, int ramp, int region_id);
 
 	public:
 		/*
