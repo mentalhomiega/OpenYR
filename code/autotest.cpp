@@ -7124,7 +7124,7 @@ void AutoTest_Loading_Screen_Shown(void)
 static void Add_UI_Script_Line(char const * line)
 {
 	std::string rest = line + 3;
-	rest.erase(rest.find_last_not_of(" \t\r\n") + 1);
+	rest.resize(Trim_End_Chars(rest, TRIM_SPACE_TAB_EOL).size());
 	std::string::size_type const space = rest.find(' ');
 	UIScript_Add(rest.substr(0, space), space == std::string::npos ? std::string() : rest.substr(space + 1));
 }
@@ -7217,13 +7217,13 @@ bool AutoTest_Load(char const * filename)
 		if (Takes_Rest_Of_Line(command)) {
 			char const * rest = std::strstr(line, command) + std::strlen(command);
 			text = rest + std::strspn(rest, " \t");
-			text.erase(text.find_last_not_of(" \t\r\n") + 1);
+			text.resize(Trim_End_Chars(text, TRIM_SPACE_TAB_EOL).size());
 		}
 		if (Apply_Load_Time_Command(command, text)) {
 			continue;
 		}
 		std::string source = line;
-		source.erase(source.find_last_not_of(" \t\r\n") + 1);
+		source.resize(Trim_End_Chars(source, TRIM_SPACE_TAB_EOL).size());
 		Steps.push_back(StepType{frame, command, text, x, y, source, Line_Words(source)});
 	}
 	std::fclose(file);

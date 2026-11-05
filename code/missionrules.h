@@ -10,6 +10,7 @@
 #pragma once
 
 #include "mission.hh"
+#include "strutil.h"
 
 
 /*
@@ -39,19 +40,6 @@ namespace MissionRules
 	constexpr double NoMissionRate = 0;
 	constexpr double NoMissionAARate = 0;
 
-	// True when the two names match, ignoring the case of ASCII letters.
-	inline bool Same_Name(char const * a, char const * b)
-	{
-		for (; *a != '\0' && *b != '\0'; a++, b++) {
-			char x = *a;
-			char y = *b;
-			if (x >= 'A' && x <= 'Z') x = (char)(x - 'A' + 'a');
-			if (y >= 'A' && y <= 'Z') y = (char)(y - 'A' + 'a');
-			if (x != y) return(false);
-		}
-		return(*a == *b);
-	}
-
 	// The mission whose name matches in the table of MISSION_COUNT names, ignoring case, or
 	// MISSION_NONE when name is NULL or matches none. MISSION_EATEN, MISSION_WAIT and
 	// MISSION_ATTACK_MOVE are found by name like any other.
@@ -59,7 +47,7 @@ namespace MissionRules
 	{
 		if (name != nullptr) {
 			for (int mission = MISSION_FIRST; mission < MISSION_COUNT; mission++) {
-				if (Same_Name(names[mission], name)) {
+				if (Equals_No_Case(names[mission], name)) {
 					return((MissionType)mission);
 				}
 			}

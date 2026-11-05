@@ -9,22 +9,24 @@
 
 #include "cncnet/cncnettext.h"
 
+#include "strutil.h"
+
 #include <algorithm>
-#include <cctype>
 
 
 bool CnCNet_Equals_No_Case(std::string_view left, std::string_view right)
 {
-	return(std::equal(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
-		return(std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)));
-	}));
+	return(Equals_No_Case(left, right));
 }
 
 
 bool CnCNet_Less_No_Case(std::string_view left, std::string_view right)
 {
-	return(std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end(), [](char a, char b) {
-		return(std::tolower(static_cast<unsigned char>(a)) < std::tolower(static_cast<unsigned char>(b)));
+	auto const fold = [](char ch) {
+		return(static_cast<unsigned char>(ch >= 'A' && ch <= 'Z' ? ch - 'A' + 'a' : ch));
+	};
+	return(std::lexicographical_compare(left.begin(), left.end(), right.begin(), right.end(), [&](char a, char b) {
+		return(fold(a) < fold(b));
 	}));
 }
 

@@ -10,6 +10,7 @@
 #include "ui/uishell.h"
 
 #include "numparse.h"
+#include "strutil.h"
 #include "ui/dev/uidev.h"
 #include "ui/rml/rmlfont.h"
 #include "ui/rml/rmlkeys.h"
@@ -785,13 +786,12 @@ void UIShellClass::On_Archives_Change(int side)
 /// </summary>
 std::string UIShellClass::Side_Sheet(void) const
 {
-	std::string name = Host.Side_Name(Side);
+	std::string const name = Host.Side_Name(Side);
 	if (Side < 0 || name.empty()) {
 		return(std::string());
 	}
 
-	std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) { return((char)std::tolower(c)); });
-	return("side-" + name + ".rcss");
+	return("side-" + Lower(name) + ".rcss");
 }
 
 

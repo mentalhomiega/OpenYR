@@ -9,6 +9,7 @@
 
 
 #include "replaylist.h"
+#include "strutil.h"
 #include "wallclock.h"
 
 #include <algorithm>
@@ -25,9 +26,7 @@ namespace {
 
 bool Has_Replay_Extension(std::filesystem::path const & path)
 {
-	std::string extension = path.extension().string();
-	std::transform(extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	return(extension == ".rep");
+	return(Lower(path.extension().string()) == ".rep");
 }
 
 

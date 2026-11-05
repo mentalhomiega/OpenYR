@@ -11,9 +11,9 @@
 
 #include "cncnet/tcpstream.h"
 #include "monotonic.h"
+#include "strutil.h"
 
 #include <algorithm>
-#include <cctype>
 #include <chrono>
 #include <random>
 
@@ -204,10 +204,7 @@ static bool Send_Outgoing(TCPStreamClass & stream, IRCClientClass & client, int 
 
 static bool Is_Refusal(std::string const & reason)
 {
-	std::string lower;
-	for (char c : reason) {
-		lower.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
-	}
+	std::string const lower = Lower(reason);
 	for (char const * word : {"lined", "banned", "throttle", "excessive", "too fast", "too many"}) {
 		if (lower.find(word) != std::string::npos) {
 			return(true);

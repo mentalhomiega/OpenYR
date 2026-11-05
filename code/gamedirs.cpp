@@ -79,7 +79,7 @@ std::string Executable_Path(bool * truncated)
 
 static bool Is_Same_Path(std::string const & left, std::string const & right)
 {
-	return(_stricmp(left.c_str(), right.c_str()) == 0);
+	return(Equals_No_Case(left.c_str(), right.c_str()));
 }
 
 
@@ -175,12 +175,12 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 		return(folders);
 	}
 
-	for (std::string const & part : Split_Parts(list, ',')) {
+	for (std::string const & part : Split_List(list, ',', TRIM_SPACE_TAB, false)) {
 		/*
 		 * Comparing the folders only once they are in the form they will be searched in
 		 * keeps the same folder written two ways from being searched twice.
 		 */
-		std::string const folder = Terminate_Path(Trimmed(part, TRIM_SPACE_TAB));
+		std::string const folder = Terminate_Path(part);
 
 		/*
 		 * The game's own directory is examined before any of these, so naming it adds
