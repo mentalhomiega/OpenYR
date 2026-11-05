@@ -17,8 +17,8 @@
 #include "ui/rml/rmltexture.h"
 
 #include <bgfx/bgfx.h>
-#include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
+#include "bgfxviews.hh"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -123,28 +123,14 @@ bool UIRmlBgfxRenderClass::Init(void)
 		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
 		.end();
 
-	_DevVertexLayout.begin()
-		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
-		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-		.end();
+	_DevVertexLayout = Make_Ui_Vertex_Layout();
 
-	bgfx::RendererType::Enum type = bgfx::getRendererType();
-	bgfx::ShaderHandle vertexshader = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "vs_debugdraw_fill_texture");
-	bgfx::ShaderHandle fragmentshader = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "fs_debugdraw_fill_texture");
-
-	if (!bgfx::isValid(vertexshader) || !bgfx::isValid(fragmentshader)) {
-		if (bgfx::isValid(vertexshader)) {
-			bgfx::destroy(vertexshader);
-		}
-		if (bgfx::isValid(fragmentshader)) {
-			bgfx::destroy(fragmentshader);
-		}
+	bgfx::ProgramHandle program = Create_Embedded_Program(_EmbeddedShaders, "vs_debugdraw_fill_texture", _EmbeddedShaders, "fs_debugdraw_fill_texture");
+	if (!bgfx::isValid(program)) {
 		DebugString("UI: the overlay shaders are unavailable for %s\n", Backend_Renderer_Name());
 		return(false);
 	}
 
-	bgfx::ProgramHandle program = bgfx::createProgram(vertexshader, fragmentshader, true);
 	bgfx::UniformHandle sampler = bgfx::createUniform("s_texColor", bgfx::UniformType::Sampler);
 
 	const unsigned int white = 0xFFFFFFFF;
@@ -679,7 +665,6 @@ void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 		texture->SetStatus(ImTextureStatus_OK);
 	}
 
-	texture->SetStatus(ImTextureStatus_Destroyed);
 	if (texture->Status == ImTextureStatus_WantDestroy && texture->UnusedFrames > 0) {
 		Destroy_ImGui_Texture(texture);
 	}
@@ -694,6 +679,7 @@ void UIRmlBgfxRenderClass::Destroy_ImGui_Texture(ImTextureData * texture)
 		bgfx::destroy(handle);
 		texture->SetTexID(ImTextureID_Invalid);
 	}
+	texture->SetStatus(ImTextureStatus_Destroyed);
 }
 
 

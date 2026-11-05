@@ -18,8 +18,8 @@
 
 #include <algorithm>
 #include <bgfx/bgfx.h>
-#include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
+#include "bgfxviews.hh"
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
@@ -178,8 +178,7 @@ static bool Start(void)
 		DebugString("GPU_DIFF unavailable: the map shaders exist for Direct3D 11 only\n");
 		return(false);
 	}
-	bgfx::RendererType::Enum const type = bgfx::getRendererType();
-	_Program = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapdraw"), true);
+	_Program = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapdraw");
 	if (!bgfx::isValid(_Program)) {
 		DebugString("GPU_DIFF unavailable: the map program did not build\n");
 		return(false);
@@ -190,7 +189,7 @@ static bool Start(void)
 	_ShadowSampler = bgfx::createUniform("s_shadow", bgfx::UniformType::Sampler);
 	_MaskSampler = bgfx::createUniform("s_mask", bgfx::UniformType::Sampler);
 	_BlurUniform = bgfx::createUniform("u_blur", bgfx::UniformType::Vec4);
-	_BlurProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapblur"), true);
+	_BlurProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapblur");
 	_SceneSampler = bgfx::createUniform("s_scene", bgfx::UniformType::Sampler);
 	_RippleUniform = bgfx::createUniform("u_ripples", bgfx::UniformType::Vec4, RIPPLE_LIMIT);
 	_RippleInfoUniform = bgfx::createUniform("u_rippleinfo", bgfx::UniformType::Vec4);
@@ -200,8 +199,8 @@ static bool Start(void)
 	_WaterUniform = bgfx::createUniform("u_water", bgfx::UniformType::Vec4);
 	_WorldUniform = bgfx::createUniform("u_world", bgfx::UniformType::Vec4);
 	_WeatherUniform = bgfx::createUniform("u_weather", bgfx::UniformType::Vec4);
-	_PostProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mappost"), true);
-	_GlowProgram = bgfx::createProgram(bgfx::createEmbeddedShader(_MapShaders, type, "vs_mapdraw"), bgfx::createEmbeddedShader(_MapShaders, type, "fs_mapglow"), true);
+	_PostProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mappost");
+	_GlowProgram = Create_Embedded_Program(_MapShaders, "vs_mapdraw", _MapShaders, "fs_mapglow");
 	_GlowUniform = bgfx::createUniform("u_glow", bgfx::UniformType::Vec4);
 	_GlowMaskSampler = bgfx::createUniform("s_glowmask", bgfx::UniformType::Sampler);
 	_GlowSampler = bgfx::createUniform("s_glow", bgfx::UniformType::Sampler);
