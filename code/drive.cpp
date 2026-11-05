@@ -1296,6 +1296,48 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 }
 
 
+std::optional<bool> DriveLocomotionClass::Scatter_Friendly_Blockage(FacingType dir)
+{
+	Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), dir);
+	if (Map.In_Local_Radar(cell)) {
+		MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], dir, LinkedTo->Get_Cell_Height());
+
+		if (ok == MOVE_CLOSED_GATE) {
+			Incoming(cell);
+		} else if (ok == MOVE_TEMP) {
+			CellClass * cellptr = &Map[cell];
+			TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
+			if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
+
+				/*
+				**	If the target can be told to get out of the way, only bother
+				**	to do so if we aren't very close to the target and this
+				**	object can just say "good enough" and stop here.
+				*/
+				if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
+					if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
+						if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
+							Stop_Driver();
+							return(Abandon_Navigation());
+						}
+					}
+				}
+
+				bool is_bridge;
+				if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
+					is_bridge = false;
+				} else {
+					is_bridge = true;
+				}
+				cellptr->Incoming(COORD_NONE, true, true, is_bridge);
+			}
+		}
+	}
+
+	return(std::nullopt);
+}
+
+
 /***********************************************************************************************
  * DriveClass::Start_Of_Move -- Tries to get a unit to advance toward cell.                    *
  *                                                                                             *
@@ -1397,39 +1439,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 					**	blocked by a friendly temporary blockage, then cause that blockage
 					**	to scatter.
 					*/
-					Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), LinkedTo->PrimaryFacing.Current().As_Dir8());
-					if (Map.In_Local_Radar(cell)) {
-						MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], LinkedTo->PrimaryFacing.Current().As_Dir8(), LinkedTo->Get_Cell_Height());
-						if (ok == MOVE_CLOSED_GATE) {
-							Incoming(cell);
-						} else if (ok == MOVE_TEMP) {
-							CellClass * cellptr = &Map[cell];
-							TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-							if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
-
-								/*
-								**	If the target can be told to get out of the way, only bother
-								**	to do so if we aren't very close to the target and this
-								**	object can just say "good enough" and stop here.
-								*/
-								if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-									if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-										if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
-											Stop_Driver();
-											return(Abandon_Navigation());
-										}
-									}
-								}
-
-								bool is_bridge;
-								if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
-									is_bridge = false;
-								} else {
-									is_bridge = true;
-								}
-								cellptr->Incoming(COORD_NONE, true, true, is_bridge);
-							}
-						}
+					if (std::optional<bool> done = Scatter_Friendly_Blockage(LinkedTo->PrimaryFacing.Current().As_Dir8())) {
+						return(*done);
 					}
 
 					if (LinkedTo->TryTryAgain > 0) {
@@ -1478,40 +1489,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		**	blocked by a friendly temporary blockage, then cause that blockage
 		**	to scatter.
 		*/
-		Cell cell = Adjacent_Cell(LinkedTo->Center_Coord().As_Cell(), LinkedTo->Path[0]);
-		if (Map.In_Local_Radar(cell)) {
-			MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], LinkedTo->Path[0], LinkedTo->Get_Cell_Height());
-
-			if (ok == MOVE_CLOSED_GATE) {
-				Incoming(cell);
-			} else if (ok == MOVE_TEMP) {
-				CellClass * cellptr = &Map[cell];
-				TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-				if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
-
-					/*
-					**	If the target can be told to get out of the way, only bother
-					**	to do so if we aren't very close to the target and this
-					**	object can just say "good enough" and stop here.
-					*/
-					if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-						if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-							if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
-								Stop_Driver();
-								return(Abandon_Navigation());
-							}
-						}
-					}
-
-					bool is_bridge;
-					if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
-						is_bridge = false;
-					} else {
-						is_bridge = true;
-					}
-					cellptr->Incoming(COORD_NONE, true, true, is_bridge);
-				}
-			}
+		if (std::optional<bool> done = Scatter_Friendly_Blockage(LinkedTo->Path[0])) {
+			return(*done);
 		}
 
 		LinkedTo->TryTryAgain = FootClass::PATH_RETRY;
