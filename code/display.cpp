@@ -2707,12 +2707,7 @@ void DisplayClass::Planning_Mode_Control(int control, int hold_key)
 	if (PendingObject || PlayerPtr->Is_Watching()) {
 		return;
 	}
-	IsRepairMode = false;
-	IsSellMode = false;
-	IsPowerMode = false;
-	if (IsWaypointMode) {
-		Waypoint_Mode_Control(0);
-	}
+	Cancel_Other_Modes();
 	IsPlanningMode = true;
 	PlanningHoldKey = hold_key;
 	Revert_Mouse_Shape();
@@ -2779,26 +2774,13 @@ void DisplayClass::Place_Beacon_Mode_Control(int control)
 	if (PendingObject || !Beacons.Is_Available() || PlayerPtr->Is_Watching() || !Beacons.Has_Free_Slot(PlayerPtr->HeapID)) {
 		return;
 	}
-	IsRepairMode = false;
-	IsSellMode = false;
-	IsPowerMode = false;
-	if (IsWaypointMode) {
-		Waypoint_Mode_Control(0);
-	}
+	Cancel_Other_Modes();
 	Unselect_All();
 	IsPlaceBeaconMode = true;
 	Revert_Mouse_Shape();
 }
 
 
-/// <summary>
-/// Controls the power mode.
-/// This routine will control the power mode for the player. Turning the mode on cancels the
-/// other special modes and unselects whatever the player had selected. The mode is refused
-/// if the player has no buildings to redistribute power between.
-/// </summary>
-/// <param name="control">The mode to set the power state to. Zero turns power mode off, one
-/// turns it on, and -1 toggles it.</param>
 // Turns off the power, waypoint, repair and sell modes, and beacon placement when with_beacon is true.
 void DisplayClass::Cancel_Order_Modes(bool with_beacon)
 {
@@ -2812,6 +2794,26 @@ void DisplayClass::Cancel_Order_Modes(bool with_beacon)
 }
 
 
+// Clears the repair, sell and power flags directly and cancels waypoint mode, for a mode that is about to turn on.
+void DisplayClass::Cancel_Other_Modes(void)
+{
+	IsRepairMode = false;
+	IsSellMode = false;
+	IsPowerMode = false;
+	if (IsWaypointMode) {
+		Waypoint_Mode_Control(0);
+	}
+}
+
+
+/// <summary>
+/// Controls the power mode.
+/// This routine will control the power mode for the player. Turning the mode on cancels the
+/// other special modes and unselects whatever the player had selected. The mode is refused
+/// if the player has no buildings to redistribute power between.
+/// </summary>
+/// <param name="control">The mode to set the power state to. Zero turns power mode off, one
+/// turns it on, and -1 toggles it.</param>
 void DisplayClass::Power_Mode_Control(int control)
 {
 	bool mode = IsPowerMode;

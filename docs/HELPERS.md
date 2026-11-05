@@ -52,6 +52,7 @@ needs them.
 | `Equals_No_Case(left, right)` | `strutil.h` | Whether two texts are equal when only ASCII letters ignore case. High-bit bytes never fold. |
 | `Split_List(text, separator, blanks, skip_empty)` | `strutil.h` | Splits a list into trimmed strings. An empty `blanks` keeps entries as written. `skip_empty` drops the entries that are empty after trimming. |
 | `Starts_With_No_Case(text, prefix)` | `strutil.h` | Whether `text` starts with `prefix`, ignoring ASCII case. For an exact match use `std::string::starts_with`. |
+| `NameEntry`, `Enum_From_Name(table, text, fallback)`, `Enum_Name(table, value, fallback)` | `nametable.h` | Name table for an enum saved as text. The lookup ignores case with `stricmp`, takes the first match and gives `fallback` when none matches. Include `always.h` first. |
 | `Split_Parts(text, separator)` | `strutil.h` | Splits into strings and keeps empty parts, so `"a,,b"` gives three. |
 | `Split_Views(text, separator)` | `strutil.h` | The same split, but returns views into `text`, so `text` must outlive them. |
 | `Split_Host_Port(text)` | `strutil.h` | Splits `host:port` at the last colon into two views of `text` and checks neither side. Returns nothing without a colon. Each caller keeps its own host and port rules. |
