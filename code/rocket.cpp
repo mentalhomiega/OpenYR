@@ -273,14 +273,14 @@ bool RocketLocomotionClass::Process(void)
 
 
 /// <summary>
-/// Detonates the missile if its next step would take it to its target's height, and returns
-/// whether it did.
+/// Detonates the missile if its nose, one body length ahead along its pitch, is at or below its target's height,
+/// or if it is on the ground, and returns whether it did (gamemd 0x6620F0).
 /// </summary>
 bool RocketLocomotionClass::Is_Impact_Due(void)
 {
 	Coord const position = LinkedTo->Get_Coord();
-	int const nextz = position.Z + int(std::sin(CurrentPitch) * CurrentSpeed);
-	if (nextz <= DestinationCoord.Z || LinkedTo->HeightAGL < 1) {
+	int const nose_z = int(std::sin(CurrentPitch) * Rocket_Settings(LinkedTo).BodyLength + position.Z);
+	if (nose_z <= DestinationCoord.Z || LinkedTo->HeightAGL < 1) {
 		Explode();
 		return(true);
 	}
