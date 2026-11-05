@@ -241,6 +241,14 @@ a default and returns it when the section or entry is missing.
 | `Get_Savefile_Info(name, info)` | `saveload.h` | Reads a save's listing fields without loading it. |
 | `Save_Object`, `Load_Object`, `Load_Object_As<T>` | `saveload.h` | Object records. `Load_Object_As` destroys a record of the wrong class and fails the stream. |
 
+## UI screens
+
+| Helper | Header | Use |
+|---|---|---|
+| `Clamp_Low_Wins(value, low, high)` | `ui/uiclamp.h` | Like `std::clamp`, but safe when rules leave the range empty (low above high): then a value below low gives low and any other value gives high. |
+| `UI_Name_At(names, index)` | `ui/uiscreen.h` | The name at an index, or an empty string outside the list. |
+| `UI_Difficulty_Names()` | `ui/uienginehost.h` | The display names of the difficulty levels, easiest first. |
+
 ## Lobby and network
 
 | Helper | Header | Use |

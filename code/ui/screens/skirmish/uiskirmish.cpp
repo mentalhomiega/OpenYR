@@ -10,6 +10,7 @@
 #include "ui/screens/skirmish/uiskirmish.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/colorpick/uicolorpickview.h"
 
@@ -35,15 +36,6 @@ enum SlotField
 	FIELD_START,
 	FIELD_TEAM,
 };
-
-
-int Clamp(int value, int low, int high)
-{
-	if (value < low) {
-		return(low);
-	}
-	return(value > high ? high : value);
-}
 
 
 /// The position of the first option holding the value, or none.
@@ -99,15 +91,15 @@ void UISkirmishPresenterClass::Settle_Slots(void)
 
 	state.Slots.resize(UI_SKIRMISH_MAX_SLOTS);
 	state.Rows = state.Starts.size() > 1 ? (int)state.Starts.size() - 1 : state.Rows;
-	state.Rows = Clamp(state.Rows, 2, UI_SKIRMISH_MAX_SLOTS);
+	state.Rows = Clamp_Low_Wins(state.Rows, 2, UI_SKIRMISH_MAX_SLOTS);
 
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
 		UISkirmishSlot & slot = state.Slots[row];
-		slot.Kind = Clamp(slot.Kind, 0, UI_SKIRMISH_SLOT_KINDS - 1);
-		slot.Side = Clamp(slot.Side, 0, state.Sides.empty() ? 0 : (int)state.Sides.size() - 1);
-		slot.Color = Clamp(slot.Color, 0, state.Colors.empty() ? 0 : (int)state.Colors.size() - 1);
-		slot.Start = Clamp(slot.Start, 0, state.Starts.empty() ? 0 : (int)state.Starts.size() - 1);
-		slot.Team = Clamp(slot.Team, 0, UI_SKIRMISH_MAX_TEAMS);
+		slot.Kind = Clamp_Low_Wins(slot.Kind, 0, UI_SKIRMISH_SLOT_KINDS - 1);
+		slot.Side = Clamp_Low_Wins(slot.Side, 0, state.Sides.empty() ? 0 : (int)state.Sides.size() - 1);
+		slot.Color = Clamp_Low_Wins(slot.Color, 0, state.Colors.empty() ? 0 : (int)state.Colors.size() - 1);
+		slot.Start = Clamp_Low_Wins(slot.Start, 0, state.Starts.empty() ? 0 : (int)state.Starts.size() - 1);
+		slot.Team = Clamp_Low_Wins(slot.Team, 0, UI_SKIRMISH_MAX_TEAMS);
 	}
 
 	// A color already taken by an earlier row goes to the first one nobody holds.
@@ -306,13 +298,13 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "buildoffally") {
 		State.BuildOffAlly = intent.Value != 0;
 	} else if (intent.Name == "units") {
-		State.UnitCount = Clamp(intent.Value, State.UnitCountMin, State.UnitCountMax);
+		State.UnitCount = Clamp_Low_Wins(intent.Value, State.UnitCountMin, State.UnitCountMax);
 	} else if (intent.Name == "credits") {
-		State.Credits = Clamp(intent.Value, State.CreditsMin, State.CreditsMax);
+		State.Credits = Clamp_Low_Wins(intent.Value, State.CreditsMin, State.CreditsMax);
 	} else if (intent.Name == "tech") {
-		State.TechLevel = Clamp(intent.Value, 1, State.TechLevelMax);
+		State.TechLevel = Clamp_Low_Wins(intent.Value, 1, State.TechLevelMax);
 	} else if (intent.Name == "speed") {
-		State.GameSpeed = Clamp(intent.Value, 0, 6);
+		State.GameSpeed = Clamp_Low_Wins(intent.Value, 0, 6);
 	} else if (intent.Name == "map") {
 		Service.Pick_Map(State);
 		State.Notice.clear();

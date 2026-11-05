@@ -19,8 +19,8 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "diff.hh"
-#include "gamedlg.h"
 #include "globals.h"
+#include "goptions.h"
 #include "init.h"
 #include "options.h"
 #include "scenario.h"
@@ -66,9 +66,7 @@ UIMissionSelState Mission_Select_State(int difficulty)
 	UIMissionSelState state;
 	state.Title = "Mission Select (testing)";
 
-	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
-		state.DifficultyNames.push_back(Fetch_String(GameDifficultyNames[index]));
-	}
+	state.DifficultyNames = UI_Difficulty_Names();
 	state.Difficulty = difficulty;
 
 	CCINIClass missions;

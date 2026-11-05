@@ -13,6 +13,7 @@
 #include "ui/uiscreen.h"
 
 #include <string>
+#include <vector>
 
 class UIViewClass;
 
@@ -20,6 +21,9 @@ class UIViewClass;
 UIShellHostClass & UI_Engine_Host(void);
 
 std::string UI_Color_Text(COLORREF color);
+
+// The display names of the difficulty levels, easiest first.
+std::vector<std::string> UI_Difficulty_Names(void);
 
 bool UI_Service_Game(void);
 

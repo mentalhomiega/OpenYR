@@ -11,6 +11,7 @@
 
 #include "ui/rml/rmlview.h"
 
+#include <algorithm>
 #include <utility>
 
 
@@ -24,13 +25,7 @@ UISoundPresenterClass::UISoundPresenterClass(UISoundServiceClass & service, UISo
 
 static int Clamp_Level(int level)
 {
-	if (level < 0) {
-		return(0);
-	}
-	if (level > UISoundPresenterClass::LEVELS) {
-		return(UISoundPresenterClass::LEVELS);
-	}
-	return(level);
+	return(std::clamp(level, 0, (int)UISoundPresenterClass::LEVELS));
 }
 
 

@@ -12,6 +12,15 @@
 #include <cstdio>
 
 
+std::string UI_Name_At(std::vector<std::string> const & names, int index)
+{
+	if (index >= 0 && index < (int)names.size()) {
+		return(names[index]);
+	}
+	return(std::string());
+}
+
+
 // Adds the choices to the list and returns the index of the one with the current value, adding
 // the current value under its own label when the list does not have it.
 int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format)

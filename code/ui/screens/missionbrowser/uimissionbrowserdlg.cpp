@@ -17,8 +17,8 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dsurface.h"
-#include "gamedlg.h"
 #include "globals.h"
+#include "goptions.h"
 #include "gscreen.h"
 #include "init.h"
 #include "loadscreen.h"
@@ -146,9 +146,10 @@ UIMissionBrowserState Mission_Browser_State(void)
 		ra2_missions.Load(ra2_file, false);
 	}
 
-	for (int level = 0; level < OptionsClass::MAX_DIFFICULTY_SETTING; level++) {
+	std::vector<std::string> const difficulty_names = UI_Difficulty_Names();
+	for (int level = 0; level < (int)difficulty_names.size(); level++) {
 		UIChoice option;
-		option.Label = Fetch_String(GameDifficultyNames[level]);
+		option.Label = difficulty_names[level];
 		option.Value = level;
 		state.Difficulties.push_back(option);
 	}

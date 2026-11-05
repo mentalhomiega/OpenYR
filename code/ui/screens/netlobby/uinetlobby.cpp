@@ -10,6 +10,7 @@
 #include "ui/screens/netlobby/uinetlobby.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/colorpick/uicolorpickview.h"
 
@@ -227,26 +228,17 @@ void UINetLobbyPresenterClass::Toggle(UINetSwitch which, bool on)
 }
 
 
-static int Clamp(int value, int low, int high)
-{
-	if (value < low) {
-		return(low);
-	}
-	return(value > high ? high : value);
-}
-
-
 void UINetLobbyPresenterClass::Move(UINetSlider which, int value)
 {
 	int const before = Reading(which);
 
 	switch (which) {
-		case UI_NET_SPEED: State.GameSpeed = Clamp(value, 0, 6); break;
-		case UI_NET_AI_PLAYERS: State.AIPlayers = Clamp(value, 0, State.AIPlayersMax); break;
-		case UI_NET_AI_LEVEL: State.AILevel = Clamp(value, 0, 2); break;
-		case UI_NET_UNITS: State.UnitCount = Clamp(value, State.UnitCountMin, State.UnitCountMax); break;
-		case UI_NET_TECH: State.TechLevel = Clamp(value, 1, State.TechLevelMax); break;
-		case UI_NET_CREDITS: State.Credits = Clamp(value, State.CreditsMin, State.CreditsMax); break;
+		case UI_NET_SPEED: State.GameSpeed = Clamp_Low_Wins(value, 0, 6); break;
+		case UI_NET_AI_PLAYERS: State.AIPlayers = Clamp_Low_Wins(value, 0, State.AIPlayersMax); break;
+		case UI_NET_AI_LEVEL: State.AILevel = Clamp_Low_Wins(value, 0, 2); break;
+		case UI_NET_UNITS: State.UnitCount = Clamp_Low_Wins(value, State.UnitCountMin, State.UnitCountMax); break;
+		case UI_NET_TECH: State.TechLevel = Clamp_Low_Wins(value, 1, State.TechLevelMax); break;
+		case UI_NET_CREDITS: State.Credits = Clamp_Low_Wins(value, State.CreditsMin, State.CreditsMax); break;
 		default: return;
 	}
 

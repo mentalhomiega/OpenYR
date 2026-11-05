@@ -207,7 +207,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	Fetch_Names(state.SpeedNames, GameSpeedNames, OptionsClass::MAX_SPEED_SETTING);
 	Fetch_Names(state.ScrollNames, GameScrollSpeedNames, OptionsClass::MAX_SCROLL_SETTING);
 	Fetch_Names(state.DetailNames, GameDetailLevelNames, OptionsClass::MAX_DETAIL_SETTING);
-	Fetch_Names(state.DifficultyNames, GameDifficultyNames, OptionsClass::MAX_DIFFICULTY_SETTING);
+	state.DifficultyNames = UI_Difficulty_Names();
 
 	state.AltToRally = Options.AltToRally;
 	state.SimulateUnfocused = Options.SimulateWhileUnfocused;

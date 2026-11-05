@@ -42,6 +42,9 @@ struct UIChoice
 
 int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format);
 
+// The name at index, or an empty string when index is outside the list.
+std::string UI_Name_At(std::vector<std::string> const & names, int index);
+
 
 /// <summary>
 /// The pages of the tabbed Settings screen the modern menu style uses in place of separate

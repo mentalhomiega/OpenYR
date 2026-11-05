@@ -11,28 +11,8 @@
 
 #include "ui/rml/rmlview.h"
 
+#include <algorithm>
 #include <utility>
-
-
-static int Clamp_Level(int level, int count)
-{
-	if (level < 0) {
-		return(0);
-	}
-	if (level > count - 1) {
-		return(count - 1);
-	}
-	return(level);
-}
-
-
-static std::string Name_Of(std::vector<std::string> const & names, int level)
-{
-	if (level < 0 || level >= (int)names.size()) {
-		return(std::string());
-	}
-	return(names[level]);
-}
 
 
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
@@ -47,13 +27,13 @@ UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsService
 void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "speed") {
-		State.Speed = Clamp_Level(intent.Value, SPEED_LEVELS);
+		State.Speed = std::clamp(intent.Value, 0, SPEED_LEVELS - 1);
 	} else if (intent.Name == "scroll") {
-		State.Scroll = Clamp_Level(intent.Value, SCROLL_LEVELS);
+		State.Scroll = std::clamp(intent.Value, 0, SCROLL_LEVELS - 1);
 	} else if (intent.Name == "detail") {
-		State.Detail = Clamp_Level(intent.Value, DETAIL_LEVELS);
+		State.Detail = std::clamp(intent.Value, 0, DETAIL_LEVELS - 1);
 	} else if (intent.Name == "difficulty") {
-		State.Difficulty = Clamp_Level(intent.Value, DIFFICULTY_LEVELS);
+		State.Difficulty = std::clamp(intent.Value, 0, DIFFICULTY_LEVELS - 1);
 	} else if (intent.Name == "cameo") {
 		State.CameoText = (intent.Value != 0);
 	} else if (intent.Name == "lines") {
@@ -176,10 +156,10 @@ void UIGameControlsPresenterClass::Apply(void)
 
 void UIGameControlsPresenterClass::Update_Names(void)
 {
-	State.SpeedName = Name_Of(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
-	State.ScrollName = Name_Of(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
-	State.DetailName = Name_Of(State.DetailNames, State.Detail);
-	State.DifficultyName = Name_Of(State.DifficultyNames, State.Difficulty);
+	State.SpeedName = UI_Name_At(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
+	State.ScrollName = UI_Name_At(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
+	State.DetailName = UI_Name_At(State.DetailNames, State.Detail);
+	State.DifficultyName = UI_Name_At(State.DifficultyNames, State.Difficulty);
 }
 
 
