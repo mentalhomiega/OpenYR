@@ -2843,6 +2843,27 @@ void Queue_Produce(RTTIType type, int id, int count)
 
 
 /// <summary>
+/// What a left click on a cameo whose type is not the one its strip is building does: a structure refuses
+/// while another is under way, a unit or infantry type queues the Shift count (or one) more, and otherwise
+/// production starts with the announcement.
+/// </summary>
+void Click_Cameo_Produce(RTTIType otype, int oid)
+{
+	FactoryClass const * factory = PlayerPtr->Fetch_Factory(otype, oid);
+	int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
+	if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
+		if (otype == RTTI_BUILDINGTYPE) {
+			Speak(VOX_NO_FACTORY);
+		} else {
+			Send_Produce(otype, oid, count);
+		}
+	} else {
+		Queue_Produce(otype, oid, count);
+	}
+}
+
+
+/// <summary>
 /// Sends the abandon for a cameo's type. Shift held abandons every object of that type, queued or in
 /// production, in one event; without Shift it abandons one.
 /// </summary>
@@ -3051,23 +3072,7 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 					**	on the icon that has the attached factory, then say that the factory is busy and
 					**	ignore the click.
 					*/
-					factory = PlayerPtr->Fetch_Factory(otype, oid);
-					int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;
-					if (factory != NULL && (factory->Is_Building() || factory->Has_Production_Target())) {
-						if (otype == RTTI_BUILDINGTYPE) {
-							Speak(VOX_NO_FACTORY);
-						} else {
-							Send_Produce(otype, oid, count);
-						}
-
-					} else {
-
-						/*
-						**	If this side strip is already busy with production, then ignore the
-						**	input and announce this fact.
-						*/
-						Queue_Produce(otype, oid, count);
-					}
+					Click_Cameo_Produce(otype, oid);
 				}
 			}
 		} else {

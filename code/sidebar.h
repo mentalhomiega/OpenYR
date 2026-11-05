@@ -514,3 +514,4 @@ class SidebarClass : public PowerClass
 
 
 void Queue_Produce(RTTIType type, int id, int count = 1);
+void Click_Cameo_Produce(RTTIType otype, int oid);

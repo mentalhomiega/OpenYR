@@ -6215,13 +6215,13 @@ static void Cameos_Step(StepType const &)
 }
 
 
-// clickcameo <TypeID>: starts production of the type, as a click on its cameo does, when a sidebar strip still offers the cameo.
+// clickcameo <TypeID>: starts production of the type through the same path as a click on its cameo, when a sidebar strip still offers the cameo.
 static void Clickcameo_Step(StepType const & step)
 {
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	bool const offered = type != NULL && Map.Is_On_Sidebar(type->Fetch_RTTI(), type->Fetch_Heap_ID());
 	if (offered) {
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PRODUCE, type->Fetch_RTTI(), type->Fetch_Heap_ID()));
+		Click_Cameo_Produce(type->Fetch_RTTI(), type->Fetch_Heap_ID());
 	}
 	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
 }
