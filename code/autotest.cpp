@@ -3792,6 +3792,24 @@ static void Terrain_Step(StepType const & step)
 }
 
 
+// raise x y width height level: sets the ground height of that block of cells to the level, so a test can put a cliff
+// under a building. Cells are not redrawn or re-zoned.
+static void Raise_Step(StepType const & step)
+{
+	int const left = step.Argument_Int();
+	int const top = step.X;
+	int const width = std::atoi(Word(step.Words, 4).c_str());
+	int const height = std::atoi(Word(step.Words, 5).c_str());
+	int const level = std::atoi(Word(step.Words, 6).c_str());
+	for (int y = top; y < top + height; y++) {
+		for (int x = left; x < left + width; x++) {
+			Map[Cell(x, y)].Height = (char)level;
+		}
+	}
+	DebugString("AUTOTEST   raise %d,%d %dx%d to level %d\n", left, top, width, height, level);
+}
+
+
 static void Follow_Step(StepType const & step)
 {
 	FollowType = step.Argument;
@@ -6846,6 +6864,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"cell", Cell_Step},
 		{"water", Water_Step},
 		{"terrain", Terrain_Step},
+		{"raise", Raise_Step},
 		{"follow", Follow_Step},
 		{"enter", Enter_Step},
 		{"spy", Spy_Step},
