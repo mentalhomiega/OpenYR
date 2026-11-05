@@ -1,0 +1,17 @@
+; A Chrono Legionnaire (CLEG) teleports itself 20 cells east on a move order at frame 52.
+; Expected: it is drawn half see-through in its own colours while it warps out and in (gamemd 0x705E00), not inverted.
+; Screenshots every 2 frames from frame 50 to 130 cover the departure, the hold and the landing.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/chrono-warp-colour-legionnaire.txt -Width 800 -Height 600 -Seconds 90 -ShotDir "E:/Claude ra2 decomp/scratch-agent/chrono-palette/legionnaire" -Filter "AUTOTEST   where|AUTOTEST   warp|AUTOTEST   chrono|Exception"
+10 command CenterBase
+20 reveal
+30 view 50 40
+40 own CLEG 40 40
+50 where CLEG
+50 record 2
+52 order CLEG 60 40
+55 where CLEG
+70 where CLEG
+100 where CLEG
+130 record 0
+140 where CLEG
+160 quit
