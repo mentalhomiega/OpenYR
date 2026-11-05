@@ -33,6 +33,7 @@
 #include "session.h"
 #include "spawner.h"
 #include "statehash.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -89,7 +90,7 @@ std::string Recording_Path(void)
 	}
 
 	std::string map = Scen->ScenarioName;
-	std::string::size_type const dot = map.find_last_of('.');
+	std::string::size_type const dot = Extension_Start(map);
 	if (dot != std::string::npos) {
 		map.erase(dot);
 	}

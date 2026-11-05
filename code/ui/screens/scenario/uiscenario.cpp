@@ -171,7 +171,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 		if (all) {
 			std::string text = entry.Label;
 			if (named[Lower(entry.Label)] > 1) {
-				std::size_t const dot = entry.File.rfind('.');
+				std::size_t const dot = Extension_Start(entry.File);
 				text += " (" + entry.File.substr(0, dot == std::string::npos ? std::string::npos : dot) + ")";
 			}
 			State.Rows.push_back(UIScenarioRow{text, Count_Text(entry.Players), index});

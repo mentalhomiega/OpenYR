@@ -11,6 +11,7 @@
 
 #include "truecolour.h"
 #include "strutil.h"
+#include "gamedirs.h"
 
 #include "_alpha.h"
 #include "abuffer.h"
@@ -143,11 +144,11 @@ ShapeHeader Header_Of(void const * data)
 
 bool Is_Shape_Name(char const * name, std::string & stem, std::string & extension)
 {
-	char const * dot = std::strrchr(name, '.');
-	if (dot == NULL || dot == name) {
+	std::size_t const dot = Extension_Start(name);
+	if (dot == std::string::npos || dot == 0) {
 		return(false);
 	}
-	extension = Upper(dot + 1);
+	extension = Upper(name + dot + 1);
 	static char const * const Extensions[] = {"SHP", "TEM", "SNO", "URB", "UBN", "DES", "LUN"};
 	for (char const * known : Extensions) {
 		if (extension == known) {
@@ -678,10 +679,7 @@ void TrueColour_Forget_Range(void const * begin, std::size_t size)
 /// </summary>
 void TrueColour_Add_Directory(char const * path)
 {
-	std::string directory = path;
-	if (!directory.empty() && directory.back() != '\\' && directory.back() != '/') {
-		directory += '\\';
-	}
+	std::string const directory = Terminate_Path(path);
 	CDFileClass::Add_Search_Drive(directory.c_str());
 	for (auto & [name, record] : Sheets) {
 		if (record.State != STATE_LOADED) {

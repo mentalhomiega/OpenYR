@@ -36,6 +36,7 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "session.h"
+#include "strutil.h"
 #include "_tactica.h"
 #include "tactical.h"
 #include "tracker.h"
@@ -1790,10 +1791,7 @@ bool TechnoTypeClass::Can_Attack_Move(void) const
 std::string TechnoTypeClass::Select_Group(void) const
 {
 	std::string group = GroupAs.empty() ? std::string(Name()) : GroupAs;
-	for (char & letter : group) {
-		letter = (char)toupper((unsigned char)letter);
-	}
-	return(group);
+	return(Upper(group));
 }
 
 
