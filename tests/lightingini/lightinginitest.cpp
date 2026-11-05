@@ -146,16 +146,8 @@ int main(void)
 			"the change rate is written as value x 0.001 and a tint as value x 0.01, in %f");
 	}
 
-	Check(LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[0]) == 0.0 && LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[1]) == 0.0
-		&& LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[2]) == 0.0 && LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[3]) == 0.0,
-		"a generated map writes Level=0 at every time of day, the stock 3 divided by 100 in whole numbers");
-	Check(LightingIni::Generated_Level(99) == 0.0 && LightingIni::Generated_Level(100) == 1.0 && LightingIni::Generated_Level(250) == 2.0,
-		"the generator's Level setting is divided by 100 and its remainder dropped");
-	bool generated_light = true;
-	for (int time = 0; time < LightingIni::RMG_TIME_COUNT; time++) {
-		generated_light = generated_light && LightingIni::Generated_Level_Light(time) == 3;
-	}
-	Check(generated_light, "a generated map plays with 3 thousandths of light per height level at every time of day");
+	Check(LightingIni::Generated_Level(3) == 0.0 && LightingIni::Generated_Level(99) == 0.0 && LightingIni::Generated_Level(100) == 1.0 && LightingIni::Generated_Level(250) == 2.0,
+		"the generator's Level setting is divided by 100 and its remainder dropped, so the stock 3 writes Level=0");
 
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);

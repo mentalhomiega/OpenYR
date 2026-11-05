@@ -10,6 +10,7 @@
 #pragma once
 
 #include "loaddlg.h"
+#include "rmgsettings.h"
 
 #include "isotype.hh"
 
@@ -628,6 +629,11 @@ class MapGeneratorClass
 		 * player and the multiplayer code passes on to the other players.
 		 */
 		MapPreviewClass * MapPreview;
+
+		/*
+		 * These are the RMGMD.INI settings, read again each time a map is laid out.
+		 */
+		RMGSettingsClass Settings;
 
 		/*
 		 * These are the dimensions of the playable part of the map in cells, chosen from the

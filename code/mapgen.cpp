@@ -4503,6 +4503,18 @@ void MapGeneratorClass::Cleanup(void)
 }
 
 
+// The RMGMD.INI settings the game finds, or the defaults when it has no such file.
+static RMGSettingsClass Load_RMG_Settings(void)
+{
+	CCFileClass file("RMGMD.INI");
+	CCINIClass ini;
+	ini.Load(file, false);
+	RMGSettingsClass settings;
+	settings.Read_INI(ini);
+	return(settings);
+}
+
+
 /// <summary>
 /// Prepares a blank map for the generator to work on.
 /// The biome, size and time of day the player chose are written out as a scenario the engine can
@@ -4534,14 +4546,7 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		"Clear"
 	};
 
-	double _tod_values[TIME_OF_DAY_COUNT] = {
-		0.75,
-		1.0,
-		0.75,
-		0.5
-	};
-
-	double tod = _tod_values[SeedData.Time];
+	Settings = Load_RMG_Settings();
 
 	// The generator lays out only the two theaters Tiberian Sun shipped, so it names them
 	// rather than numbering them.
@@ -4555,7 +4560,9 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		return(theater);
 	};
 
-	double scale = TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic ? 0.75 : 1.0;
+	static_assert(RMGSettingsClass::TIME_COUNT == TIME_OF_DAY_COUNT, "one lighting setting per time of day");
+	RMGSettingsClass::LightingType const lighting = Settings.Lighting(TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic, SeedData.Time);
+	double const ambient = lighting.Ambient * 0.01;
 
 	/*
 	 * Interpolate the local map dimensions between the minimum and maximum size
@@ -4588,16 +4595,15 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_String("Map", "Fill", _fills[biome]);
 	ini.Put_String(HouseTypes[HOUSE_GOOD]->IniName, "TechLevel", "0");
 	ini.Put_String("Basic", "Player", HouseTypes[HOUSE_GOOD]->IniName);
-	ini.Put_Float("Lighting", "Ambient", tod * scale);
+	ini.Put_Float("Lighting", "Ambient", ambient);
 	ini.Put_Float("Lighting", "Red", 1.0);
 	ini.Put_Float("Lighting", "Green", 1.0);
 	ini.Put_Float("Lighting", "Blue", 1.0);
 	ini.Put_Float("Lighting", "Ground", 0.0);
-	static_assert(LightingIni::RMG_TIME_COUNT == TIME_OF_DAY_COUNT, "one Level setting per time of day");
-	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[SeedData.Time]));
+	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(lighting.Level));
 
 	// gamemd's generator writes the storm lighting as well (0x599951 to 0x5999DC): the ambient level, then a dark blue tint.
-	ini.Put_Float("Lighting", "IonAmbient", tod * scale);
+	ini.Put_Float("Lighting", "IonAmbient", ambient);
 	ini.Put_Float("Lighting", "IonRed", LightingIni::Percent_Fraction(LightingIni::ION_RED));
 	ini.Put_Float("Lighting", "IonGreen", LightingIni::Percent_Fraction(LightingIni::ION_GREEN));
 	ini.Put_Float("Lighting", "IonBlue", LightingIni::Percent_Fraction(LightingIni::ION_BLUE));
@@ -4850,10 +4856,13 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	Map.Init_Radar();
 	Map.Compute_Radar_Image();
 
-	Scen->AmbientLight = tod * 100.0;
-	// Both paths reach this, so the map plays with the setting itself in thousandths, as gamemd stores
-	// it at 0x59A554; the Level=0 written above does not survive.
-	Scen->LevelLight = LightingIni::Generated_Level_Light(SeedData.Time);
+	// Both paths reach this, so the map plays with the settings themselves, as gamemd stores them from
+	// 0x59A529; the Level=0 and the plain tints written above do not survive.
+	Scen->AmbientLight = lighting.Ambient;
+	Scen->RedTint = lighting.Red;
+	Scen->GreenTint = lighting.Green;
+	Scen->BlueTint = lighting.Blue;
+	Scen->LevelLight = lighting.Level;
 
 	if (SeedData.UseTransitions) {
 		CCINIClass ini;
