@@ -70,12 +70,12 @@ std::vector<CnCNetServerType> Parse_Servers(std::string const & text, bool live)
 {
 	std::vector<CnCNetServerType> servers;
 	for (std::string_view const entry : Split_Views(text, ';')) {
-		std::size_t const colon = entry.rfind(':');
-		if (colon != std::string_view::npos && colon > 0) {
+		std::optional<HostPortText> const address = Split_Host_Port(entry);
+		if (address && !address->Host.empty()) {
 			CnCNetServerType server;
-			server.Host = std::string(entry.substr(0, colon));
+			server.Host = std::string(address->Host);
 			server.Name = server.Host;
-			for (std::string_view const port_text : Split_Views(entry.substr(colon + 1), ',')) {
+			for (std::string_view const port_text : Split_Views(address->Port, ',')) {
 				int const port = std::atoi(std::string(port_text).c_str());
 				if (port > 0 && port < 65536) {
 					server.Ports.push_back(static_cast<uint16_t>(port));
@@ -181,15 +181,16 @@ bool UI_CnCNet_Lobby_Dialog(void)
 	// Matches play through the relay Tunnel= names, or else the nearest one on the master list. Like the
 	// servers, a named relay must be on this machine unless live servers are allowed.
 	std::string tunnel = Setting("Tunnel", "");
-	if (!live && (tunnel.empty() || !Is_Loopback(tunnel.substr(0, tunnel.rfind(':'))))) {
+	std::optional<HostPortText> relay = Split_Host_Port(tunnel);
+	if (!live && (tunnel.empty() || !Is_Loopback(std::string(relay ? relay->Host : std::string_view(tunnel))))) {
 		if (!tunnel.empty()) {
 			session.Note(chat, "Tunnel=" + tunnel + " is not on this machine, so matches use 127.0.0.1:50000.");
 		}
 		tunnel = "127.0.0.1:50000";
+		relay = Split_Host_Port(tunnel);
 	}
-	std::size_t const tunnel_colon = tunnel.rfind(':');
-	bool const local_relay = tunnel_colon != std::string::npos
-		&& CnCNet_Is_Local_Relay(tunnel, tunnel.substr(0, tunnel_colon), static_cast<uint16_t>(std::atoi(tunnel.c_str() + tunnel_colon + 1)));
+	bool const local_relay = relay
+		&& CnCNet_Is_Local_Relay(tunnel, relay->Host, static_cast<uint16_t>(std::atoi(std::string(relay->Port).c_str())));
 	CnCNetTunnelChoiceClass tunnels;
 
 	std::mt19937 random{std::random_device{}()};

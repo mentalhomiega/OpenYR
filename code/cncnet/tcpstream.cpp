@@ -119,14 +119,12 @@ int TCP_Wait_Sliced(int total_ms, int slice_ms, std::atomic<bool> const * stop, 
 }
 
 
+TCPStreamClass::TCPStreamClass(void) = default;
+
+
 TCPStreamClass::~TCPStreamClass(void)
 {
 	Close();
-#if defined(_WIN32)
-	if (Started) {
-		WSACleanup();
-	}
-#endif
 }
 
 
@@ -139,16 +137,14 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 {
 	Close();
 
-#if defined(_WIN32)
-	if (!Started) {
-		WSADATA data;
-		if (WSAStartup(MAKEWORD(2, 2), &data) != 0) {
+	if (!Network) {
+		std::unique_ptr<WinsockGuard> network = std::make_unique<WinsockGuard>();
+		if (!network->Started()) {
 			error = "the network library did not start";
 			return(false);
 		}
-		Started = true;
+		Network = std::move(network);
 	}
-#endif
 
 	addrinfo hints{};
 	hints.ai_family = AF_UNSPEC;

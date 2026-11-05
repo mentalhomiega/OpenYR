@@ -123,6 +123,25 @@ inline std::optional<int> Parse_Decimal_Int(std::string_view text)
 }
 
 
+// The two sides of the last ':' in a "host:port" text. Neither side is checked: either may be empty or not a number.
+struct HostPortText
+{
+	std::string_view Host;
+	std::string_view Port;
+};
+
+
+// Splits at the last ':', so "[::1]" gives host "[:" and port "1]". Returns nothing when text has no ':'.
+inline std::optional<HostPortText> Split_Host_Port(std::string_view text)
+{
+	std::size_t const colon = text.rfind(':');
+	if (colon == std::string_view::npos) {
+		return(std::nullopt);
+	}
+	return(HostPortText{text.substr(0, colon), text.substr(colon + 1)});
+}
+
+
 // Returns the part of path after its last '/' or '\\', or all of path when it has neither.
 inline std::string_view Base_Name(std::string_view path)
 {

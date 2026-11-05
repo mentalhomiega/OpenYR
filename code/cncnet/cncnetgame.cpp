@@ -75,15 +75,15 @@ std::optional<CnCNetGameListingType> CnCNet_Parse_Game_Listing(std::string_view 
 	if (fields[9] == DYNAMIC_TUNNEL) {
 		listing.DynamicTunnel = true;
 	} else {
-		std::size_t const colon = fields[9].rfind(':');
-		if (colon == std::string_view::npos) {
+		std::optional<HostPortText> const address = Split_Host_Port(fields[9]);
+		if (!address) {
 			return(std::nullopt);
 		}
-		std::optional<int> const port = Parse_Decimal_Int(fields[9].substr(colon + 1));
+		std::optional<int> const port = Parse_Decimal_Int(address->Port);
 		if (!port || *port < 0 || *port > 65535) {
 			return(std::nullopt);
 		}
-		listing.TunnelAddress = std::string(fields[9].substr(0, colon));
+		listing.TunnelAddress = std::string(address->Host);
 		listing.TunnelPort = static_cast<uint16_t>(*port);
 	}
 

@@ -25,10 +25,13 @@
 #include <vector>
 
 
+class WinsockGuard;
+
+
 class CnCNetTunnelBridgeClass
 {
 	public:
-		CnCNetTunnelBridgeClass(void) = default;
+		CnCNetTunnelBridgeClass(void);
 		~CnCNetTunnelBridgeClass(void);
 		CnCNetTunnelBridgeClass(CnCNetTunnelBridgeClass const &) = delete;
 		CnCNetTunnelBridgeClass & operator=(CnCNetTunnelBridgeClass const &) = delete;
@@ -79,6 +82,6 @@ class CnCNetTunnelBridgeClass
 		std::atomic<bool> Stopping{false};
 		std::atomic<uint64_t> SentCount{0};
 		std::atomic<uint64_t> ReceivedCount{0};
-		bool NetworkStarted = false;
+		std::unique_ptr<WinsockGuard> Network;
 		std::thread Worker;
 };

@@ -176,12 +176,12 @@ bool CnCNet_Read_Match(std::map<std::string, std::string> const & info, CnCNetMa
 	match = CnCNetMatchType();
 	match.Seed = std::atoi(info.at("Seed").c_str());
 	std::string const tunnel = info.at("Tunnel");
-	std::size_t const colon = tunnel.rfind(':');
-	if (colon == std::string::npos) {
+	std::optional<HostPortText> const address = Split_Host_Port(tunnel);
+	if (!address) {
 		return(false);
 	}
-	match.TunnelHost = tunnel.substr(0, colon);
-	int const port = std::atoi(tunnel.c_str() + colon + 1);
+	match.TunnelHost = std::string(address->Host);
+	int const port = std::atoi(std::string(address->Port).c_str());
 	if (port <= 0 || port > 65535) {
 		return(false);
 	}

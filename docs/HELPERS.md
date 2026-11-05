@@ -51,6 +51,7 @@ needs them.
 | `Starts_With_No_Case(text, prefix)` | `strutil.h` | Whether `text` starts with `prefix`, ignoring ASCII case. For an exact match use `std::string::starts_with`. |
 | `Split_Parts(text, separator)` | `strutil.h` | Splits into strings and keeps empty parts, so `"a,,b"` gives three. |
 | `Split_Views(text, separator)` | `strutil.h` | The same split, but returns views into `text`, so `text` must outlive them. |
+| `Split_Host_Port(text)` | `strutil.h` | Splits `host:port` at the last colon into two views of `text` and checks neither side. Returns nothing without a colon. Each caller keeps its own host and port rules. |
 | `Parse_Decimal_Int(text)` | `strutil.h` | Reads the whole text as a decimal int. Returns nothing for anything but an optional minus sign and digits that fit. Blanks and a plus sign fail. |
 | `CnCNet_Equals_No_Case`, `CnCNet_Less_No_Case` | `cncnet/cncnettext.h` | Case folding with `tolower`; only the C locale's letters fold. |
 | `CnCNet_Is_Control_Byte(ch)`, `CnCNet_Is_Join_Unsafe(ch)` | `cncnet/cncnettext.h` | Tests for 0x00 to 0x1F and 0x7F, and for those plus space and comma. |

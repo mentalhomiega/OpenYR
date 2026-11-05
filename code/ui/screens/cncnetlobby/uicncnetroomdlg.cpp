@@ -39,6 +39,7 @@
 #include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shellmap.h"
+#include "strutil.h"
 #include "theme.h"
 #include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/uienginehost.h"
@@ -1049,14 +1050,14 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		tunnel = choice.Host + ":" + std::to_string(choice.Port);
 		Note(choice.Text);
 	}
-	std::size_t const colon = tunnel.rfind(':');
-	int const port = colon == std::string::npos ? 0 : std::atoi(tunnel.c_str() + colon + 1);
-	if (colon == 0 || port <= 0 || port > 65535) {
+	std::optional<HostPortText> const address = Split_Host_Port(tunnel);
+	int const port = address ? std::atoi(std::string(address->Port).c_str()) : 0;
+	if (!address || address->Host.empty() || port <= 0 || port > 65535) {
 		error = "The tunnel setting \"" + tunnel + "\" is not host:port.";
 		return(false);
 	}
 	if (!Setup.Tunnel.empty()) {
-		error = Relay_Refusal(tunnel.substr(0, colon), static_cast<uint16_t>(port), true);
+		error = Relay_Refusal(std::string(address->Host), static_cast<uint16_t>(port), true);
 		if (!error.empty()) {
 			return(false);
 		}
@@ -1071,7 +1072,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 	std::mt19937 random{std::random_device{}()};
 	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, UI_Stock_Color_Count()),
 		Map_Starts(Session.ScenarioFileName),
-		tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
+		std::string(address->Host), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
 		error = TheRoom.Take_Problem();
 		if (error.empty()) {
