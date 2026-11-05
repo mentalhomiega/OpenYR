@@ -5656,6 +5656,34 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Rml::Element * shown = document->GetElementById("swatch1");
 	Check(shown != nullptr && shown->GetInnerRML().find("Color " + std::to_string(first)) != std::string::npos, "the color button of the row that gave up a color shows its new name");
 
+	// A setting the code changes shows on its check box at the next Sync, as the other settings do.
+	{
+		auto checked = [&](char const * label) {
+			Rml::ElementList labels;
+			document->GetElementsByClassName(labels, "check");
+			for (Rml::Element * check : labels) {
+				if (check->GetInnerRML().find(label) != std::string::npos) {
+					Rml::ElementList inputs;
+					check->GetElementsByTagName(inputs, "input");
+					return(!inputs.empty() && inputs[0]->HasAttribute("checked"));
+				}
+			}
+			return(false);
+		};
+		bool const superweapons = presenter.State.SuperWeapons;
+		bool const buildoffally = presenter.State.BuildOffAlly;
+		presenter.State.SuperWeapons = !superweapons;
+		presenter.State.BuildOffAlly = !buildoffally;
+		view->Sync();
+		context.Update();
+		Check(checked("Superweapons") == !superweapons, "the Superweapons check box follows a change made in code");
+		Check(checked("Build Off Ally") == !buildoffally, "the Build Off Ally check box follows a change made in code");
+		presenter.State.SuperWeapons = superweapons;
+		presenter.State.BuildOffAlly = buildoffally;
+		view->Sync();
+		context.Update();
+	}
+
 	// Numbered starts are the same, and Random may repeat.
 	Choose_Slot(presenter, "slotkind", 2, UI_SKIRMISH_SLOT_EASY);
 	Choose_Slot(presenter, "slotstart", 0, 3);
