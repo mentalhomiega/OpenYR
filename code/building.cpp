@@ -11644,7 +11644,8 @@ void BuildingClass::Cloaking_AI(bool fast)
 				CurrentCloakRadius++;
 				cloaking_surface->Fill(0);
 				cloaking_surface->Draw_Circle(Point2D(width_half, width_half), CurrentCloakRadius, cloaking_surface->Get_Rect(), 1);
-				char * data = (char *)cloaking_surface->Lock();
+				SurfaceLock const lock(*cloaking_surface);
+				char * data = lock.As<char>();
 				Cell origin = center - Cell(width_half, width_half);
 
 				for (int y = 0; y < width; y++) {
@@ -11658,7 +11659,6 @@ void BuildingClass::Cloaking_AI(bool fast)
 								if (building != NULL && building->House->HeapID == houseid) {
 									if (building->Center_Coord().As_Cell() == current) {
 										CurrentCloakRadius--;
-										cloaking_surface->Unlock();
 										return;
 									}
 								}
@@ -11666,7 +11666,6 @@ void BuildingClass::Cloaking_AI(bool fast)
 						}
 					}
 				}
-				cloaking_surface->Unlock();
 			}
 		}
 		else if (CurrentCloakRadius == 0) {
@@ -11679,7 +11678,8 @@ void BuildingClass::Cloaking_AI(bool fast)
 			if (CurrentCloakRadius != 0) {
 				cloaking_surface->Draw_Circle(Point2D(width_half, width_half), CurrentCloakRadius, cloaking_surface->Get_Rect(), 1);
 			}
-			char * data = (char *)cloaking_surface->Lock();
+			SurfaceLock const lock(*cloaking_surface);
+			char * data = lock.As<char>();
 			Cell origin = center - Cell(width_half, width_half);
 
 			for (int y = 0; y < width; y++) {
@@ -11693,7 +11693,6 @@ void BuildingClass::Cloaking_AI(bool fast)
 							if (building != NULL && building->House->HeapID == houseid) {
 								if (building->Center_Coord().As_Cell() == current && !fast) {
 									CurrentCloakRadius++;
-									cloaking_surface->Unlock();
 									return;
 								}
 							}
@@ -11701,7 +11700,6 @@ void BuildingClass::Cloaking_AI(bool fast)
 					}
 				}
 			}
-			cloaking_surface->Unlock();
 		}
 	}
 }
