@@ -353,6 +353,14 @@ static bool Is_Player_Techno_Named(TechnoClass const * techno, std::string const
 }
 
 
+// Whether the soldier or vehicle is on the map, is of the type with that ID, and belongs to the player's house or to a
+// house the map marks PlayerControl=yes.
+static bool Is_Player_Or_Control_Foot_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0);
+}
+
+
 // Runs the action on every techno the filter accepts, in list order. The count is read again on every pass, so
 // an action that adds or removes technos is handled as the hand-written loops did. Each step supplies its own filter.
 template<class Filter, class Action>
@@ -596,12 +604,9 @@ void Move(std::string const & name, int x, int y)
 void Order(std::string const & name, int x, int y)
 {
 	Cell const cell(x, y);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && Is_Player_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
-			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && Is_Player_Techno_Named(techno, name));},
+		[&](TechnoClass * techno) {techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);});
 }
 
 
@@ -663,13 +668,12 @@ static void Stop_Step(StepType const & step)
 {
 	std::string const & name = step.Argument;
 	int sent = 0;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && (techno->Can_Player_Move() || techno->Can_Player_Fire()) && stricmp(techno->TClass->Name(), name.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, name) && (techno->Can_Player_Move() || techno->Can_Player_Fire()));},
+		[&](TechnoClass * techno) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::IDLE, TargetClass(techno)));
 			sent++;
-		}
-	}
+		});
 	DebugString("AUTOTEST stop %s: sent to %d\n", name.c_str(), sent);
 }
 
@@ -998,25 +1002,23 @@ void Log_State_CRC(void)
 /// </summary>
 void Log_Speed_Probe(void)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || techno->IsInLimbo || !techno->Is_Foot() || stricmp(techno->TClass->Name(), SpeedProbeType.c_str()) != 0) {
-			continue;
-		}
-		FootClass const * foot = static_cast<FootClass const *>(techno);
-		Cell const nav = Cell_Or_None(foot->NavCom);
-		FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
-		JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
-		DebugString("AUTOTEST facing %s frame %d primary %d desired %d loco %d\n", techno->TClass->Name(), Frame, (int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), jump != NULL ? (int)jump->Facing_Current().As_Int() : -1);
-		if (fly != NULL) {
-			DebugString("AUTOTEST speed %s frame %d kind fly cell %d,%d height %d mission %s nav %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)foot->Locomotion->Is_Moving(), fly->Current_Speed(), fly->Target_Speed());
-		} else if (jump != NULL) {
-			Cell const head = foot->Locomotion->Head_To_Coord().As_Cell();
-			DebugString("AUTOTEST speed %s frame %d kind jump state %s cell %d,%d height %d mission %s nav %d,%d head %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, jump->State_Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, head.X, head.Y, (int)foot->Locomotion->Is_Moving(), jump->Current_Speed(), jump->Target_Speed());
-		} else {
-			DebugString("AUTOTEST speed %s frame %d kind other cell %d,%d height %d mission %s\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()));
-		}
-	}
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && Is_Player_Techno_Named(techno, SpeedProbeType));},
+		[&](TechnoClass * techno) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			Cell const nav = Cell_Or_None(foot->NavCom);
+			FlyLocomotionClass const * fly = dynamic_cast<FlyLocomotionClass const *>(foot->Locomotion.get());
+			JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+			DebugString("AUTOTEST facing %s frame %d primary %d desired %d loco %d\n", techno->TClass->Name(), Frame, (int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), jump != NULL ? (int)jump->Facing_Current().As_Int() : -1);
+			if (fly != NULL) {
+				DebugString("AUTOTEST speed %s frame %d kind fly cell %d,%d height %d mission %s nav %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, (int)foot->Locomotion->Is_Moving(), fly->Current_Speed(), fly->Target_Speed());
+			} else if (jump != NULL) {
+				Cell const head = foot->Locomotion->Head_To_Coord().As_Cell();
+				DebugString("AUTOTEST speed %s frame %d kind jump state %s cell %d,%d height %d mission %s nav %d,%d head %d,%d moving %d current %.4f target %.4f\n", techno->TClass->Name(), Frame, jump->State_Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, head.X, head.Y, (int)foot->Locomotion->Is_Moving(), jump->Current_Speed(), jump->Target_Speed());
+			} else {
+				DebugString("AUTOTEST speed %s frame %d kind other cell %d,%d height %d mission %s\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->HeightAGL, MissionClass::Mission_Name(techno->Get_Mission()));
+			}
+		});
 }
 
 
@@ -2254,16 +2256,14 @@ static void Wall_Census_Step(StepType const & step)
 /// <param name="step">A step whose argument is the type name.</param>
 static void Bridge_Unit_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (!techno->Is_Foot() || techno->House != PlayerPtr || techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) {
-			continue;
-		}
-		FootClass const * foot = static_cast<FootClass const *>(techno);
-		Cell const cell = foot->Get_Cell();
-		DebugString("AUTOTEST   bridgeunit %s cell %d,%d onbridge %d under %d deck %d height %d\n", foot->TClass->Name(), cell.X, cell.Y,
-			(int)foot->IsOnBridge, (int)Map[cell].IsUnderBridge, (int)Map[cell].IsBridgeDeck, Map.Get_Height_GL(foot->Center_Coord()));
-	}
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Is_Foot() && Is_Player_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			Cell const cell = foot->Get_Cell();
+			DebugString("AUTOTEST   bridgeunit %s cell %d,%d onbridge %d under %d deck %d height %d\n", foot->TClass->Name(), cell.X, cell.Y,
+				(int)foot->IsOnBridge, (int)Map[cell].IsUnderBridge, (int)Map[cell].IsBridgeDeck, Map.Get_Height_GL(foot->Center_Coord()));
+		});
 }
 
 
@@ -3488,18 +3488,25 @@ static void Strike_Step(StepType const & step)
 }
 
 
-// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
-// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
-static void Planmove_Step(StepType const & step)
+// Gives the player's soldiers and vehicles of the step's type the order, logging it under the step's name. While planning
+// is on, the order is recorded as a planned leg.
+static void Plan_Order_Step(StepType const & step, char const * label, MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	Cell const cell(step.X, step.Y);
 	PlanningRecordScope const recording(Map.IsPlanningMode);
 	For_Technos(
 		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
 		[&](TechnoClass * techno) {
-			DebugString("AUTOTEST   planmove %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
-			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
+			DebugString("AUTOTEST   %s %s from %d,%d to %d,%d\n", label, techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
+			techno->Player_Assign_Mission(mission, target, destination);
 		});
+}
+
+
+// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
+// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
+static void Planmove_Step(StepType const & step)
+{
+	Plan_Order_Step(step, "planmove", MISSION_MOVE, NULL, &Map[Cell(step.X, step.Y)]);
 }
 
 
@@ -3526,14 +3533,7 @@ static void Plantbomb_Step(StepType const & step)
 // action gives them. While planning is on, the order is recorded as a planned leg.
 static void Planguard_Step(StepType const & step)
 {
-	Cell const cell(step.X, step.Y);
-	PlanningRecordScope const recording(Map.IsPlanningMode);
-	For_Technos(
-		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
-		[&](TechnoClass * techno) {
-			DebugString("AUTOTEST   planguard %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
-			techno->Player_Assign_Mission(MISSION_GUARD_AREA, &Map[cell]);
-		});
+	Plan_Order_Step(step, "planguard", MISSION_GUARD_AREA, &Map[Cell(step.X, step.Y)], NULL);
 }
 
 
@@ -3866,12 +3866,10 @@ static void Spy_Step(StepType const & step)
 {
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	DebugString("AUTOTEST spy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
-	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);
-		}
-	}
+	if (building == NULL) return;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Or_Control_Foot_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {techno->Player_Assign_Mission(MISSION_CAPTURE, NULL, building);});
 }
 
 
@@ -3881,13 +3879,13 @@ static void Teamspy_Step(StepType const & step)
 {
 	BuildingClass * building = Map[Cell(step.X, step.Y)].Cell_Building();
 	DebugString("AUTOTEST teamspy %s -> %s\n", step.Argument.c_str(), building != NULL ? building->TClass->Name() : "(none)");
-	for (int index = 0; building != NULL && index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Is_Foot() && Is_Player_Or_Control_Object(techno) && !techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	if (building == NULL) return;
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Or_Control_Foot_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			techno->Assign_Mission(MISSION_CAPTURE);
 			techno->Assign_Target(building);
-		}
-	}
+		});
 }
 
 
