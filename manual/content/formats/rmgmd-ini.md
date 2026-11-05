@@ -21,6 +21,8 @@ source_files:
 
 `RMGMD.INI` holds the random map generator's settings, all in its `[General]` section. The generator reads the file each time it lays out a map, for a dialog preview and for a map that is played, and the map generator dialog reads it again each time its randomize button is pressed. The file is found through the ordinary file search, so a mod folder's copy takes precedence over the game's. When no copy is found, every setting keeps its default.
 
+Every player in a multiplayer random map match needs the same file, because different settings lay out a different map from the same seed and the match goes out of sync. The settings are part of the rules checksum, so a LAN host refuses a player whose settings differ from its own, as it refuses one with different rules, and a replay recorded with other settings does not play. A match started from a launch file, such as one the CnCNet client starts, is not checked.
+
 ```ini title="RMGMD.INI"
 [General]
 RMGMinimumTiberium=900
