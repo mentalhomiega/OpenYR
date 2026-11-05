@@ -40,6 +40,7 @@
 
 #include "house.hh"
 #include "isotype.hh"
+#include "overlay.hh"
 #include "mzone.hh"
 #include "passblty.hh"
 #include "speed.hh"
@@ -247,6 +248,7 @@ class MapClass: public GScreenClass
 		 */
 		void Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty = NULL);
 		void Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty);
+		void Repair_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns);
 		void Repair_All_High_Bridges(void);
 		void Repair_High_Bridge_From_Cell(Cell const & cell);
 		void Repair_Train_Bridge_From_Cell(Cell const & cell);

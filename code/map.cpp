@@ -1438,16 +1438,18 @@ int MapClass::Overpass(void)
 
 
 /// <summary>
-/// Repairs one span of a high bridge.
+/// Repairs one span of a bridge, high or train, using that bridge kind's tile set and deck overlays.
 /// The span is followed from its anchor cell, the broken pieces are restored, the supports
-/// are put back under the raised center pieces, and the bridge deck is laid down again. The
-/// zones and subzone connections are re-linked as the span is mended, so traffic may cross
-/// the bridge once more. The repair gives up if the far end of the span is never reached.
+/// are put back under the raised center pieces, and the deck is laid down again. The repair
+/// gives up if the far end of the span is never reached.
 /// </summary>
 /// <param name="cptr">Pointer to the cell that anchors the span; the repair starts here.</param>
 /// <param name="dir">The direction to follow the span in.</param>
 /// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
-void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+/// <param name="overlay_ew">Deck overlay laid on an east-west span.</param>
+/// <param name="overlay_ns">Deck overlay laid on a north-south span.</param>
+void MapClass::Repair_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns)
 {
 	Cell cell = CELL_NONE;
 	CellClass * cellptr = &Map[cptr->Fetch_CellID()];
@@ -1465,7 +1467,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 		cell = newcell;
 		cellptr = &Map[newcell];
 
-		int ittype = cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+		int ittype = cellptr->ITType - tileset + 1;
 
 		if (dir == FACING_E) {
 
@@ -1488,7 +1490,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 			 */
 			if ((ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 2) && cellptr->SubTile == 4) {
 
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + tileset - 1), ISOTILE_INVALID, -1, false);
 				reset_zones |= Register_Subzone_Connections(cell);
 
 				if (ittype == IsometricTileTypeClass::BridgeMiddle1 + 4) {
@@ -1525,7 +1527,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 			 */
 			if ((ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 1) && cellptr->SubTile == 2) {
 
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
+				Set_Bridge_Middle_State(cell, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
 				reset_zones |= Register_Subzone_Connections(cell);
 
 				if (ittype == IsometricTileTypeClass::BridgeMiddle2 + 4) {
@@ -1571,12 +1573,12 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 	if (length > 0) {
 		int remaining = length;
 		do {
-			int ittype = cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+			int ittype = cellptr->ITType - tileset + 1;
 			if ((ittype != IsometricTileTypeClass::BridgeMiddle1 || (cellptr->SubTile & 1) != 0) && (ittype != IsometricTileTypeClass::BridgeMiddle2 || (unsigned char)cellptr->SubTile >= 5)) {
 				if (dir == FACING_E) {
-					new OverlayClass(OverlayTypes[OVERLAY_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[overlay_ew], cellptr->Fetch_CellID(), HOUSE_NONE);
 				} else {
-					new OverlayClass(OverlayTypes[OVERLAY_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[overlay_ns], cellptr->Fetch_CellID(), HOUSE_NONE);
 				}
 			}
 
@@ -1623,6 +1625,22 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 
 
 /// <summary>
+/// Repairs one span of a high bridge.
+/// The span is followed from its anchor cell, the broken pieces are restored, the supports
+/// are put back under the raised center pieces, and the bridge deck is laid down again. The
+/// zones and subzone connections are re-linked as the span is mended, so traffic may cross
+/// the bridge once more. The repair gives up if the far end of the span is never reached.
+/// </summary>
+/// <param name="cptr">Pointer to the cell that anchors the span; the repair starts here.</param>
+/// <param name="dir">The direction to follow the span in.</param>
+/// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
+void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
+{
+	Repair_Bridge_Span(cptr, dir, dirty, IsometricTileTypeClass::BridgeSet, OVERLAY_BRIDGE1, OVERLAY_BRIDGE2);
+}
+
+
+/// <summary>
 /// Repairs one span of a train bridge.
 /// This routine is the train bridge counterpart of Repair_High_Bridge_Span. The span is
 /// followed from its anchor cell, the broken pieces are restored, the supports are put back
@@ -1634,176 +1652,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 /// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
 void MapClass::Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
 {
-	Cell cell = CELL_NONE;
-	CellClass * cellptr = &Map[cptr->Fetch_CellID()];
-
-	bool reset_zones = false;
-	DynamicVectorClass<Cell> cells;
-
-	/*
-	 * Walk up to 30 cells in the requested facing, repairing bridge middle
-	 * pieces and stopping at the far end piece.
-	 */
-	int length = 1;
-	while (length < 30) {
-		Cell newcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-		cell = newcell;
-		cellptr = &Map[newcell];
-
-		int ittype = cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-
-		if (dir == FACING_E) {
-
-			/*
-			 * East-west bridge bottom-right end pieces terminate the walk.
-			 */
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight1 && cellptr->SubTile == 4) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_W));
-				break;
-			}
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight2 && cellptr->SubTile == 4) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_W));
-				break;
-			}
-
-			/*
-			 * East-west bridge middle pieces.
-			 */
-			if ((ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 2) && cellptr->SubTile == 4) {
-
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-				reset_zones |= Register_Subzone_Connections(cell);
-
-				if (ittype == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-					Map[cell].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_N)].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
-
-					for (int x = 0; x < 2; x++) {
-						for (int y = -2; y < 3; y++) {
-							cells.Add(Cell(cell + Cell(x, y)));
-						}
-					}
-				}
-			}
-
-		} else if (dir == FACING_S) {
-
-			/*
-			 * South bridge bottom-left end pieces terminate the walk.
-			 */
-			if (ittype == IsometricTileTypeClass::BridgeBottomLeft1 && cellptr->SubTile == 2) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_N));
-				break;
-			}
-			if (ittype == IsometricTileTypeClass::BridgeBottomLeft2 && cellptr->SubTile == 2) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_N));
-				break;
-			}
-
-			/*
-			 * South bridge middle pieces.
-			 */
-			if ((ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 1) && cellptr->SubTile == 2) {
-
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
-				reset_zones |= Register_Subzone_Connections(cell);
-
-				if (ittype == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-					Map[cell].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_E)].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
-
-					for (int y = 0; y < 2; y++) {
-						for (int x = -2; x < 3; x++) {
-							cells.Add(Cell(cell + Cell(x, y)));
-						}
-					}
-				}
-			}
-		}
-
-		length++;
-	}
-
-	/*
-	 * If the entire span was scanned without finding the end piece there is
-	 * nothing more to do.
-	 */
-	if (length == 30) {
-		return;
-	}
-
-	/*
-	 * An end piece was found. Re-walk the span placing the bridge-piece
-	 * overlay on each undamaged middle cell, and accumulate the dirty
-	 * rectangle for the caller.
-	 */
-	cellptr = &Map[cptr->Fetch_CellID()];
-
-	if (dirty != NULL) {
-		Coord coord = Coord(cptr->Fetch_CellID(), LEVEL_LEPTON_H * cptr->Height);
-		Point2D point;
-		TacticalMap->Coord_To_Pixel(coord, point);
-		dirty->X = point.X;
-		dirty->Y = point.Y;
-	}
-
-	if (length > 0) {
-		int remaining = length;
-		do {
-			int ittype = cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-			if ((ittype != IsometricTileTypeClass::BridgeMiddle1 || (cellptr->SubTile & 1) != 0) && (ittype != IsometricTileTypeClass::BridgeMiddle2 || (unsigned char)cellptr->SubTile >= 5)) {
-				if (dir == FACING_E) {
-					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
-				} else {
-					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
-				}
-			}
-
-			Cell newcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-			cell = newcell;
-			cellptr = &Map[newcell];
-
-			remaining--;
-		} while (remaining != 0);
-	}
-
-	/*
-	 * Finalize the dirty rectangle from the two span endpoints.
-	 */
-	if (dirty != NULL) {
-		Coord coord = Coord(cell, LEVEL_LEPTON_H * Map[cell].Height);
-		Point2D point;
-		TacticalMap->Coord_To_Pixel(coord, point);
-
-		int x1 = dirty->X;
-		int y1 = dirty->Y;
-		int minx = dirty->X;
-		if (dirty->X >= point.X) {
-			minx = point.X;
-		}
-		int miny = dirty->Y;
-		dirty->X = minx - 64;
-		if (y1 >= point.Y) {
-			miny = point.Y;
-		}
-		dirty->Y = miny - 64;
-		dirty->Width = abs(x1 - point.X) + 128;
-		dirty->Height = abs(y1 - point.Y) + 128;
-	}
-
-	if (reset_zones) {
-		Zone_Reset();
-	}
-
-	if (cells.Count() != 0) {
-		Recalc_Cells_In_List(cells);
-	}
+	Repair_Bridge_Span(cptr, dir, dirty, IsometricTileTypeClass::TrainBridgeSet, OVERLAY_RAILWAY_BRIDGE1, OVERLAY_RAILWAY_BRIDGE2);
 }
 
 
