@@ -15,6 +15,7 @@
 #include "_alpha.h"
 #include "abuffer.h"
 #include "alphalighting.h"
+#include "autotest.h"
 #include "blit.h"
 #include "blitter.h"
 #include "bsurface.h"
@@ -813,21 +814,21 @@ void TrueColour_Report(char const * name)
 	LooseShape loose;
 	void const * data = Fetch_Shape(name, loose);
 	if (data == NULL) {
-		DebugString("AUTOTEST   truecolour %s: no such shape\n", name);
+		AUTOTEST_LOG("  truecolour %s: no such shape\n", name);
 		return;
 	}
 	ShapeHeader header = Header_Of(data);
 	SheetRecord const * record = Record_For(data);
 	SheetType const * sheet = record != NULL ? record->Sheet.get() : NULL;
 	if (sheet == NULL) {
-		DebugString("AUTOTEST   truecolour %s shp %d frames %dx%d: no override (%s)\n", name, header.Count, header.Width, header.Height,
+		AUTOTEST_LOG("  truecolour %s shp %d frames %dx%d: no override (%s)\n", name, header.Count, header.Width, header.Height,
 			record != NULL && record->State == STATE_REJECTED ? "rejected" : "no png");
 		return;
 	}
 	int x = sheet->CellWidth / 2;
 	int y = sheet->CellHeight / 2;
 	std::uint32_t pixel = sheet->Pixels[(size_t)y * sheet->Width + x];
-	DebugString("AUTOTEST   truecolour %s %s %d frames %dx%d: png %s sheet %dx%d frames %d house %d shadows %s pixel %d,%d rgba %d,%d,%d,%d\n", name,
+	AUTOTEST_LOG("  truecolour %s %s %d frames %dx%d: png %s sheet %dx%d frames %d house %d shadows %s pixel %d,%d rgba %d,%d,%d,%d\n", name,
 		Is_Made_Shape(data) ? "png-only" : "shp", header.Count, header.Width, header.Height, record->PngName.c_str(), sheet->Width, sheet->Height, sheet->Frames,
 		(int)sheet->HasHouse, sheet->Frames == header.Count ? "png" : "shp", x, y,
 		(int)(pixel & 0xFF), (int)((pixel >> 8) & 0xFF), (int)((pixel >> 16) & 0xFF), (int)(pixel >> 24));
@@ -844,7 +845,7 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 	LooseShape loose;
 	ShapeSet const * shape = (ShapeSet const *)Fetch_Shape(name, loose);
 	if (shape == NULL) {
-		DebugString("AUTOTEST   exportshape %s: no such shape\n", name);
+		AUTOTEST_LOG("  exportshape %s: no such shape\n", name);
 		return(false);
 	}
 
@@ -957,7 +958,7 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 	}
 
 	bool ok = write(sheetname, pixels) && (!house || write(maskname, mask));
-	DebugString("AUTOTEST   exportshape %s frames %d cell %dx%d sheet %dx%d house %d -> %s %s\n", name, count, width, height, sheetwidth, sheetheight, (int)house, path,
+	AUTOTEST_LOG("  exportshape %s frames %d cell %dx%d sheet %dx%d house %d -> %s %s\n", name, count, width, height, sheetwidth, sheetheight, (int)house, path,
 		ok ? "ok" : "failed");
 	return(ok);
 }
@@ -993,19 +994,19 @@ bool TrueColour_Export_Palette(char const * name, char const * palette, char con
 	} else if (stricmp(palette, "anim") == 0) {
 		void const * data = MFCD::Retrieve("ANIM.PAL");
 		if (data == NULL) {
-			DebugString("AUTOTEST   exportpal %s: ANIM.PAL not found\n", name);
+			AUTOTEST_LOG("  exportpal %s: ANIM.PAL not found\n", name);
 			return(false);
 		}
 		pal = Widen_Six_Bit_Palette(data);
 	} else if (strnicmp(palette, "house:", 6) == 0) {
 		int const scheme = std::atoi(palette + 6);
 		if (scheme < 0 || scheme >= ColorSchemes.Count()) {
-			DebugString("AUTOTEST   exportpal %s: no colour scheme %d\n", name, scheme);
+			AUTOTEST_LOG("  exportpal %s: no colour scheme %d\n", name, scheme);
 			return(false);
 		}
 		pal = ColorSchemes[scheme]->Palette;
 	} else {
-		DebugString("AUTOTEST   exportpal %s: no palette named %s\n", name, palette);
+		AUTOTEST_LOG("  exportpal %s: no palette named %s\n", name, palette);
 		return(false);
 	}
 	return(Export_Shape_Sheet(name, pal, true, path));

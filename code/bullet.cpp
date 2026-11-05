@@ -1511,8 +1511,8 @@ static bool Is_In_Own_Bunker(TechnoClass const * unit)
 /// <param name="coord">The location that the projectile detonates at.</param>
 void BulletClass::Detonate(Coord const & coord)
 {
-	if (AutoTest_Active() && Class->FlakScatter) {
-		DebugString("AUTOTEST flak impact %s at %d,%d,%d\n", Class->Name(), coord.X, coord.Y, coord.Z);
+	if (Class->FlakScatter) {
+		AUTOTEST_LOG("flak impact %s at %d,%d,%d\n", Class->Name(), coord.X, coord.Y, coord.Z);
 	}
 	if (AutoTest_Active()) {
 		Coord const aim = Fuse.Fuse_Target();
