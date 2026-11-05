@@ -48,15 +48,10 @@ namespace
 /// </summary>
 std::string Mission_Briefing(char const * map)
 {
-	CCFileClass database("MISSIONMD.INI");
-	bool const has_database = database.Is_Available();
-	if (has_database) {
-		CCINIClass missions;
-		missions.Load(database, false);
-		std::string const label = missions.Get_String(map, "Briefing");
-		if (!label.empty()) {
-			return(Mission_Label_Text(label.c_str(), false));
-		}
+	bool has_database;
+	std::string const label = Mission_Database_Briefing_Label(map, has_database);
+	if (!label.empty()) {
+		return(Mission_Label_Text(label.c_str(), false));
 	}
 
 	char text[1024] = "";
