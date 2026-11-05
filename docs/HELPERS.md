@@ -248,6 +248,7 @@ a default and returns it when the section or entry is missing.
 | `Clamp_Low_Wins(value, low, high)` | `ui/uiclamp.h` | Like `std::clamp`, but safe when rules leave the range empty (low above high): then a value below low gives low and any other value gives high. |
 | `UI_Name_At(names, index)` | `ui/uiscreen.h` | The name at an index, or an empty string outside the list. |
 | `UI_Difficulty_Names()` | `ui/uienginehost.h` | The display names of the difficulty levels, easiest first. |
+| `UI_Fill_Stock_Colors(colors, limit)`, `UI_Stock_Color_Count()`, `UI_Stock_Color_Name(i)` | `ui/uienginehost.h` | The eight stock player colours (name, index, CSS colour) for a lobby's colour list. |
 
 ## Lobby and network
 

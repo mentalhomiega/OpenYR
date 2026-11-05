@@ -24,10 +24,12 @@
 #include "goptions.h"
 #include "init.h"
 #include "keyboard.h"
+#include "language/language.h"
 #include "mainloop.h"
 #include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
+#include "netshare.h"
 #include "rules.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
@@ -44,6 +46,29 @@
 std::string UI_Color_Text(COLORREF color)
 {
 	return(UI_Color_CSS(RGBClass(GetRValue(color), GetGValue(color), GetBValue(color))));
+}
+
+
+static int const UI_STOCK_COLORS[] = {
+	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
+};
+
+
+int UI_Stock_Color_Count(void)
+{
+	return((int)(sizeof(UI_STOCK_COLORS) / sizeof(UI_STOCK_COLORS[0])));
+}
+
+
+char const * UI_Stock_Color_Name(int index)
+{
+	return(Fetch_String(UI_STOCK_COLORS[index]));
+}
+
+
+std::string UI_Stock_Color_Text(int index)
+{
+	return(UI_Color_Text(PlayerColorTable[index]));
 }
 
 

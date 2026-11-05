@@ -65,13 +65,6 @@ namespace
 
 char const PLAIN[] = "#70ff00";
 
-int const COLOR_NAMES[] = {
-	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
-};
-
-int const COLOR_COUNT = static_cast<int>(sizeof(COLOR_NAMES) / sizeof(COLOR_NAMES[0]));
-
-
 int Option_Int(std::map<std::string, std::string> const & options, char const * key, int fallback)
 {
 	auto const found = options.find(key);
@@ -603,14 +596,7 @@ void CnCNetRoomServiceClass::Fill_Sides(UINetLobbyState & state, CnCNetRoomPlaye
 
 void CnCNetRoomServiceClass::Fill_Colors_Teams_Starts(UINetLobbyState & state, CnCNetRoomPlayerType const * self)
 {
-	state.Colors.clear();
-	for (int index = 0; index < MAX_MPLAYER_COLORS && index < COLOR_COUNT; index++) {
-		UINetOption option;
-		option.Label = Fetch_String(COLOR_NAMES[index]);
-		option.Value = index;
-		option.Color = UI_Color_Text(PlayerColorTable[index]);
-		state.Colors.push_back(option);
-	}
+	UI_Fill_Stock_Colors(state.Colors, MAX_MPLAYER_COLORS);
 	state.Color = (self != nullptr && self->Color >= 0 && self->Color < static_cast<int>(state.Colors.size())) ? self->Color : 0;
 	state.CustomColor = 0;
 	state.Rivals.clear();
@@ -650,7 +636,7 @@ void CnCNetRoomServiceClass::Fill_Players(UINetLobbyState & state, CnCNetRoomPla
 		row.Name = player.Name;
 		row.Note = TheRoom.Build_Problem(player);
 		row.Kickable = !player.Host;
-		row.ColorName = (player.Color >= 0 && player.Color < COLOR_COUNT) ? std::string(Fetch_String(COLOR_NAMES[player.Color])) : std::string("Random");
+		row.ColorName = (player.Color >= 0 && player.Color < UI_Stock_Color_Count()) ? std::string(UI_Stock_Color_Name(player.Color)) : std::string("Random");
 		row.Status = player.Host ? "Host" : player.Ready ? "Ready" : "Not ready";
 		row.Color = (player.Color >= 0 && player.Color < MAX_MPLAYER_COLORS) ? UI_Color_Text(PlayerColorTable[player.Color]) : std::string(PLAIN);
 		if (player.Side == CNCNET_SPECTATOR_SIDE) {
@@ -1083,7 +1069,7 @@ bool CnCNetRoomServiceClass::Begin_Match(std::string & error)
 		}
 	}
 	std::mt19937 random{std::random_device{}()};
-	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, COLOR_COUNT),
+	CnCNetMatchType const match = CnCNet_Settle_Match(TheRoom.Players(), sides, std::min(MAX_MPLAYER_COLORS, UI_Stock_Color_Count()),
 		Map_Starts(Session.ScenarioFileName),
 		tunnel.substr(0, colon), static_cast<uint16_t>(port), random);
 	if (!TheRoom.Start(CnCNet_Match_Info(match))) {
