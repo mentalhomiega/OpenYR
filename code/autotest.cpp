@@ -345,11 +345,25 @@ static bool Is_Player_Or_Control_Object(TechnoClass const * techno)
 }
 
 
+// Whether the object belongs to the player's own house and is of the type with that ID, on the map or not.
+static bool Is_Player_Object_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(Is_Player_Object(techno) && stricmp(techno->TClass->Name(), name.c_str()) == 0);
+}
+
+
 // Whether the object is on the map, belongs to the player's own house and is of the type with that ID.
 // A house the map marks PlayerControl=yes does not count here.
 static bool Is_Player_Techno_Named(TechnoClass const * techno, std::string const & name)
 {
-	return(techno->House == PlayerPtr && !techno->IsInLimbo && stricmp(techno->TClass->Name(), name.c_str()) == 0);
+	return(!techno->IsInLimbo && Is_Player_Object_Named(techno, name));
+}
+
+
+// Whether the object is on the map, belongs to the player's own house and stands in the cell.
+static bool Is_Player_Techno_At(TechnoClass const * techno, Cell const & cell)
+{
+	return(Is_Player_Object(techno) && !techno->IsInLimbo && techno->Get_Cell() == cell);
 }
 
 
@@ -372,6 +386,21 @@ static void For_Technos(Filter filter, Action action)
 			action(techno);
 		}
 	}
+}
+
+
+// Runs the action on every pair of technos where the outer one passes the outer filter and the other one passes the
+// pair filter, in list order. The pair filter is given both technos. A techno is never paired with itself.
+template<class OuterFilter, class PairFilter, class Action>
+static void For_Techno_Pairs(OuterFilter outer_filter, PairFilter pair_filter, Action action)
+{
+	For_Technos(
+		outer_filter,
+		[&](TechnoClass * techno) {
+			For_Technos(
+				[&](TechnoClass * other) {return(other != techno && pair_filter(techno, other));},
+				[&](TechnoClass * other) {action(techno, other);});
+		});
 }
 
 
@@ -3922,15 +3951,14 @@ static void Garrisons_Step(StepType const &)
 // and whether Is_Radar_Visible plots it.
 static void Radar_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			DetectedType detected = DETECTED_NONE;
 			bool const visible = techno->Is_Radar_Visible(detected);
 			DebugString("AUTOTEST   radar %s at %d,%d limbo %d tracked %d discovered %d pos %d,%d visible %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
 				techno->IsInLimbo ? 1 : 0, techno->IsRadarTracked ? 1 : 0, techno->DiscoveredBy[PlayerPtr] ? 1 : 0, techno->RadarPos.X, techno->RadarPos.Y, visible ? 1 : 0);
-		}
-	}
+		});
 }
 
 
@@ -4061,14 +4089,13 @@ static void Face_Step(StepType const & step)
 {
 	Cell const cell(step.X, step.Y);
 	Dir256 const facing = static_cast<Dir256>(step.Argument_Int() & 255);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Cell() == cell) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_At(techno, cell));},
+		[&](TechnoClass * techno) {
 			techno->PrimaryFacing.Set(DirType(facing));
 			techno->SecondaryFacing.Set(DirType(facing));
 			DebugString("AUTOTEST   face %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
-		}
-	}
+		});
 }
 
 
@@ -4078,13 +4105,12 @@ static void Pitch_Step(StepType const & step)
 	Cell const cell(step.X, step.Y);
 	int const value = step.Argument_Int() & 255;
 	DirType const pitch = DirType(value);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Cell() == cell) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_At(techno, cell));},
+		[&](TechnoClass * techno) {
 			techno->BarrelPitch.Set(pitch);
 			DebugString("AUTOTEST   pitch %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, value);
-		}
-	}
+		});
 }
 
 
@@ -4094,13 +4120,12 @@ static void Barrelpitch_Step(StepType const & step)
 	Cell const cell(step.X, step.Y);
 	Dir256 const value = static_cast<Dir256>(step.Argument_Int() & 255);
 	DirType const pitch = DirType(value);
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && !techno->IsInLimbo && techno->Get_Cell() == cell) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_At(techno, cell));},
+		[&](TechnoClass * techno) {
 			techno->BarrelPitch.Set(pitch);
 			DebugString("AUTOTEST   barrelpitch %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)value);
-		}
-	}
+		});
 }
 
 
@@ -4753,25 +4778,21 @@ static void Cratesounds_Step(StepType const &)
 
 static void Elite_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			techno->Veterancy.Set_Elite(true);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {techno->Veterancy.Set_Elite(true);});
 }
 
 
 // Puts the capacity divided by divisor, of one Tiberium kind, into each player's object of the named type, and logs the held total under label.
 static void Fill_Storage(StepType const & step, char const * label, int divisor, int kind)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->House == PlayerPtr && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			techno->Storage.Increase_Amount(techno->TClass->Capacity / divisor, kind);
 			DebugString("AUTOTEST   %s %s: %d held\n", label, techno->TClass->Name(), techno->Storage.Get_Total_Amount());
-		}
-	}
+		});
 }
 
 
@@ -5138,30 +5159,24 @@ static void Planes_Step(StepType const &)
 // inrange <TypeID>: whether each of the player's objects of that type has each other player object in primary weapon range.
 static void Inrange_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		for (int other = 0; other < Technos.Count(); other++) {
-			TechnoClass * target = Technos[other];
-			if (target == techno || target->House != PlayerPtr) continue;
+	For_Techno_Pairs(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[](TechnoClass *, TechnoClass * target) {return(Is_Player_Object(target));},
+		[](TechnoClass * techno, TechnoClass * target) {
 			DebugString("AUTOTEST   inrange %s -> %s at %d leptons: %d fire error %d turret %d wants %d\n", techno->TClass->Name(), target->TClass->Name(), (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length(), (int)techno->In_Range(target, 0), (int)techno->Can_Fire(target, 0), (int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256());
-		}
-	}
+		});
 }
 
 
 // elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
 static void Elevation_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		for (int other = 0; other < Technos.Count(); other++) {
-			TechnoClass * target = Technos[other];
-			if (target == techno || target->House != PlayerPtr || stricmp(target->TClass->Name(), step.Argument.c_str()) != 0) continue;
+	For_Techno_Pairs(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass *, TechnoClass * target) {return(Is_Player_Object_Named(target, step.Argument));},
+		[](TechnoClass * techno, TechnoClass * target) {
 			DebugString("AUTOTEST   elevation %d,%d height %d -> %d,%d height %d bonus %d\n", techno->Get_Cell().X, techno->Get_Cell().Y, Map[techno->Get_Cell()].Height, target->Get_Cell().X, target->Get_Cell().Y, Map[target->Get_Cell()].Height, techno->Elevation_Range_Bonus(target));
-		}
-	}
+		});
 }
 
 
