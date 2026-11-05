@@ -4480,86 +4480,9 @@ bool TechnoClass::Select(void)
 }
 
 
-/***********************************************************************************************
- * TechnoClass::Can_Fire -- Determines if this techno object can fire.                         *
- *                                                                                             *
- *    This performs a simple check to make sure that this techno object can fire. At this      *
- *    level, the only thing checked for is the rearming delay.                                 *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  Returns with the fire legality control code.                                       *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   12/23/1994 JLB : Created.                                                                 *
- *=============================================================================================*/
-FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
+// Returns the first reason this weapon cannot fire at the target, or FIRE_OK when none applies.
+FireErrorType TechnoClass::Weapon_Target_Refusal(WeaponTypeClass const * weapon, TechnoClass const * techno, AbstractClass * target, CellClass const * cellptr) const
 {
-	/*
-	**	Don't allow firing if the target is illegal.
-	*/
-	if (target == NULL) {
-		return(FIRE_ILLEGAL);
-	}
-
-	// A unit warping in cannot fire (FIRE_REARM) and one being warped out cannot fire (FIRE_ILLEGAL), as TechnoClass::GetFireError (0x6FC0B0) checks.
-	if (Is_Chrono_Warping()) {
-		return(FIRE_REARM);
-	}
-
-	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
-	if (Is_Foot() && IsAttackedByLocomotor) {
-		return(FIRE_ILLEGAL);
-	}
-	if (LocomotorTarget == target) {
-		return(FIRE_REARM);
-	}
-	if (IsBeingWarpedOut) {
-		return(FIRE_ILLEGAL);
-	}
-
-	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
-	CellClass * cellptr = &Map[target->Center_Coord()];
-	WeaponTypeClass const * weapon;
-	WeaponTypeClass const * other_weapon;
-	bool check_rearm;
-
-	/*
-	**	If the object is completely cloaked, then you can't fire on it.
-	*/
-	if (techno != NULL && techno->Visual_Character(true, House) == VISUAL_HIDDEN
-		&& !cellptr->Is_Sensed(House) && techno->House != House
-		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
-
-		return(FIRE_CANT);
-	}
-
-	/*
-	**	A falling object is too busy falling to fire.
-	*/
-	if (IsFalling) {
-		return(FIRE_CANT);
-	}
-
-	if (Is_Immobilized()) {
-		if (RTTI != RTTI_UNIT) {
-			return(FIRE_CANT);
-		}
-		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
-			return(FIRE_CANT);
-		}
-	}
-
-	/*
-	**	If there is no weapon, then firing is not allowed.
-	*/
-	weapon = Get_Class_Weapon_Data(which)->Weapon;
-	if (weapon == NULL) {
-		return(FIRE_CANT);
-	}
-
 	// As TechnoClass::GetFireError (0x6FC0B0): a passenger fires only a FireInTransport weapon, and not from a transport that is itself carried or being warped out.
 	if (IsInOpenToppedTransport && (!weapon->IsFireInTransport || (Transporter != NULL && (Transporter->IsInLimbo || Transporter->IsBeingWarpedOut)))) {
 		return(FIRE_ILLEGAL);
@@ -4668,6 +4591,96 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 				return(FIRE_ILLEGAL);
 			}
 		}
+	}
+
+	return(FIRE_OK);
+}
+
+
+/***********************************************************************************************
+ * TechnoClass::Can_Fire -- Determines if this techno object can fire.                         *
+ *                                                                                             *
+ *    This performs a simple check to make sure that this techno object can fire. At this      *
+ *    level, the only thing checked for is the rearming delay.                                 *
+ *                                                                                             *
+ * INPUT:   none                                                                               *
+ *                                                                                             *
+ * OUTPUT:  Returns with the fire legality control code.                                       *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   12/23/1994 JLB : Created.                                                                 *
+ *=============================================================================================*/
+FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
+{
+	/*
+	**	Don't allow firing if the target is illegal.
+	*/
+	if (target == NULL) {
+		return(FIRE_ILLEGAL);
+	}
+
+	// A unit warping in cannot fire (FIRE_REARM) and one being warped out cannot fire (FIRE_ILLEGAL), as TechnoClass::GetFireError (0x6FC0B0) checks.
+	if (Is_Chrono_Warping()) {
+		return(FIRE_REARM);
+	}
+
+	// A vehicle a locomotor holds cannot fire, and a holder does not fire at the vehicle it holds (TechnoClass::GetFireError, 0x6FC0B0).
+	if (Is_Foot() && IsAttackedByLocomotor) {
+		return(FIRE_ILLEGAL);
+	}
+	if (LocomotorTarget == target) {
+		return(FIRE_REARM);
+	}
+	if (IsBeingWarpedOut) {
+		return(FIRE_ILLEGAL);
+	}
+
+	TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
+	CellClass * cellptr = &Map[target->Center_Coord()];
+	WeaponTypeClass const * weapon;
+	WeaponTypeClass const * other_weapon;
+	bool check_rearm;
+
+	/*
+	**	If the object is completely cloaked, then you can't fire on it.
+	*/
+	if (techno != NULL && techno->Visual_Character(true, House) == VISUAL_HIDDEN
+		&& !cellptr->Is_Sensed(House) && techno->House != House
+		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
+
+		return(FIRE_CANT);
+	}
+
+	/*
+	**	A falling object is too busy falling to fire.
+	*/
+	if (IsFalling) {
+		return(FIRE_CANT);
+	}
+
+	if (Is_Immobilized()) {
+		if (RTTI != RTTI_UNIT) {
+			return(FIRE_CANT);
+		}
+		if (!((UnitClass*)this)->Class->IsLargeVisceroid && !((UnitClass*)this)->Class->IsSmallVisceroid) {
+			return(FIRE_CANT);
+		}
+	}
+
+	/*
+	**	If there is no weapon, then firing is not allowed.
+	*/
+	weapon = Get_Class_Weapon_Data(which)->Weapon;
+	if (weapon == NULL) {
+		return(FIRE_CANT);
+	}
+
+	// The refusals that depend on the weapon and the target, in the order GetFireError checks them.
+	FireErrorType const refusal = Weapon_Target_Refusal(weapon, techno, target, cellptr);
+	if (refusal != FIRE_OK) {
+		return(refusal);
 	}
 
 	if (weapon->IsIonSensitive && IonStormClass::Is_Ion_Storm_Active()) {

@@ -1090,6 +1090,7 @@ class TechnoClass :	public RadioClass,
 		static int const BodyShape[FACING_COUNT * 4];
 
 	private:
+		FireErrorType Weapon_Target_Refusal(WeaponTypeClass const * weapon, TechnoClass const * techno, AbstractClass * target, CellClass const * cellptr) const;
 		AbstractClass * Spray_Or_Area_Fire_Target(AbstractClass * target, WeaponTypeClass const * weapon);
 		bool Fire_Without_Projectile(AbstractClass * target, WeaponTypeClass * weapon, int which);
 		void Apply_Ballistic_Scatter(BulletClass const * bullet, Coord & displacement, Coord const & turret_coord, int which);
