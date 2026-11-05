@@ -3476,6 +3476,18 @@ void Do_Random_Map(bool (*callback)())
 }
 
 
+// The RMGMD.INI settings the game finds, or the defaults when it has no such file.
+static RMGSettingsClass Load_RMG_Settings(void)
+{
+	CCFileClass file("RMGMD.INI");
+	CCINIClass ini;
+	ini.Load(file, false);
+	RMGSettingsClass settings;
+	settings.Read_INI(ini);
+	return(settings);
+}
+
+
 /// <summary>
 /// Rolls a fresh set of map generation settings.
 /// This routine is what the dialog's randomize button calls, handing the player a whole new
@@ -3520,7 +3532,8 @@ void MapSeedClass::Randomize(void)
 		WaterAmount = Sim_Random_Pick(0U, 100U);
 		Tiberium = Sim_Random_Pick(0U, 100U);
 		TiberiumLayout = Sim_Random_Pick(0U, 100U);
-		Vegetation = Sim_Random_Pick(0U, 100U);
+		RMGSettingsClass const settings = Load_RMG_Settings();
+		Vegetation = Sim_Random_Pick(settings.Vegetation_Minimum(), settings.Vegetation_Maximum());
 		Cities = Sim_Random_Pick(0U, 100U);
 		Accessibility = Sim_Random_Pick(0U, 100U);
 		Cliffs = Sim_Random_Pick(0U, 100U);
@@ -4500,18 +4513,6 @@ void MapGeneratorClass::Cleanup(void)
 	DebugString("RMG: Compute Radar Image\n");
 	Map.Set_Local_Dimensions(Map.LocalRect);
 	Map.Compute_Radar_Image();
-}
-
-
-// The RMGMD.INI settings the game finds, or the defaults when it has no such file.
-static RMGSettingsClass Load_RMG_Settings(void)
-{
-	CCFileClass file("RMGMD.INI");
-	CCINIClass ini;
-	ini.Load(file, false);
-	RMGSettingsClass settings;
-	settings.Read_INI(ini);
-	return(settings);
 }
 
 
