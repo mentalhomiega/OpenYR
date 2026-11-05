@@ -84,12 +84,13 @@ RMGSettingsClass::LightingType RMGSettingsClass::Lighting(bool snow, int time) c
 
 
 /// <summary>
-/// Returns the tiberium cells each player's share of the map gets for a tiberium setting from 0 to
-/// 100: the minimum plus that percentage of the gap to the maximum, dropping any fraction.
+/// Returns the tiberium each player adds to the map for a tiberium setting from 0 to 100: the
+/// minimum plus that percentage of the gap to the maximum. It matches gamemd at 0x5A254C only while
+/// the FPU rounds toward zero, as the game sets it to.
 /// </summary>
 int RMGSettingsClass::Tiberium_Amount(int tiberium) const
 {
-	return(MinimumTiberium + (MaximumTiberium - MinimumTiberium) * tiberium / 100);
+	return((int)(tiberium * 0.01 * (MaximumTiberium - MinimumTiberium) + MinimumTiberium));
 }
 
 

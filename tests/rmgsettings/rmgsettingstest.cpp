@@ -113,13 +113,18 @@ int main(void)
 	Check(dusk.Ambient == 75 && dusk.Red == 106 && dusk.Green == 107 && dusk.Blue == 154 && dusk.Level == 3,
 		"a snow dusk takes the snow lists' third entries");
 
-	bool old_amounts = true;
-	for (int tiberium = 0; tiberium <= 100; tiberium++) {
-		old_amounts = old_amounts && defaults.Tiberium_Amount(tiberium) == 30 * tiberium + 2500;
-	}
-	Check(old_amounts, "with 2500 to 5500, every tiberium setting gives the old 30 x setting + 2500");
-	Check(stock.Tiberium_Amount(0) == 900 && stock.Tiberium_Amount(50) == 975 && stock.Tiberium_Amount(33) == 949
-		&& stock.Tiberium_Amount(100) == 1050, "the stock range gives 900, 949, 975 and 1050 at 0, 33, 50 and 100");
+	// The game runs with rounding toward zero, as gamemd does, so the formulas below are taken in that mode.
+	int const rounding = std::fegetround();
+	std::fesetround(FE_TOWARDZERO);
+
+	Check(stock.Tiberium_Amount(0) == 900 && stock.Tiberium_Amount(30) == 944 && stock.Tiberium_Amount(50) == 975
+		&& stock.Tiberium_Amount(100) == 1050, "the stock range gives 900, 944, 975 and 1050 at 0, 30, 50 and 100, as gamemd rounds");
+	Check(defaults.Tiberium_Amount(0) == 2500 && defaults.Tiberium_Amount(29) == 3369 && defaults.Tiberium_Amount(100) == 5500,
+		"the default range gives 2500, 3369 and 5500 at 0, 29 and 100");
+	Check(Read("[General]\nRMGMinimumTiberium=0\nRMGMaximumTiberium=3000\n").Tiberium_Amount(29) == 869,
+		"0 to 3000 gives gamemd's 869 at 29, one below the exact 870");
+	Check(Read("[General]\nRMGMinimumTiberium=1050\nRMGMaximumTiberium=900\n").Tiberium_Amount(29) == 1006,
+		"a maximum below the minimum makes the amount fall: 1050 to 900 gives gamemd's 1006 at 29");
 
 	Check(stock.VegetationMapType == RMGSettingsClass::CONTINENT && stock.Vegetation_Minimum() == 60 && stock.Vegetation_Maximum() == 100,
 		"the randomize button picks vegetation from 60 to 100, the continent entries");
@@ -134,9 +139,6 @@ int main(void)
 	RMGSettingsClass const negative = Read("[General]\nRMGVegetationMinimums=0,-20,0,0,0\nRMGVegetationMaximums=0,-5,0,0,0\n");
 	Check(negative.Vegetation_Minimum() == 0 && negative.Vegetation_Maximum() == 0, "negative ends are held to 0");
 
-	// The game runs with rounding toward zero, as gamemd does, so the tree limit is taken in that mode.
-	int const rounding = std::fegetround();
-	std::fesetround(FE_TOWARDZERO);
 	Check(stock.Tree_Limit(0, 100) == 419 && stock.Tree_Limit(3, 100) == 599 && stock.Tree_Limit(1, 80) == 383,
 		"600 trees allow 419 on the smallest width and 599 on the largest at full vegetation, as gamemd rounds");
 	std::fesetround(rounding);
