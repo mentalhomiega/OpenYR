@@ -389,6 +389,21 @@ static void For_Technos(Filter filter, Action action)
 }
 
 
+// Runs the action on every pair of technos where the outer one passes the outer filter and the other one passes the
+// pair filter, in list order. The pair filter is given both technos. A techno is never paired with itself.
+template<class OuterFilter, class PairFilter, class Action>
+static void For_Techno_Pairs(OuterFilter outer_filter, PairFilter pair_filter, Action action)
+{
+	For_Technos(
+		outer_filter,
+		[&](TechnoClass * techno) {
+			For_Technos(
+				[&](TechnoClass * other) {return(other != techno && pair_filter(techno, other));},
+				[&](TechnoClass * other) {action(techno, other);});
+		});
+}
+
+
 template<class T>
 void For_Player_Objects(DynamicVectorClass<T *> & list, std::string const & name, void (*action)(T *))
 {
@@ -5144,30 +5159,24 @@ static void Planes_Step(StepType const &)
 // inrange <TypeID>: whether each of the player's objects of that type has each other player object in primary weapon range.
 static void Inrange_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		for (int other = 0; other < Technos.Count(); other++) {
-			TechnoClass * target = Technos[other];
-			if (target == techno || target->House != PlayerPtr) continue;
+	For_Techno_Pairs(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[](TechnoClass *, TechnoClass * target) {return(Is_Player_Object(target));},
+		[](TechnoClass * techno, TechnoClass * target) {
 			DebugString("AUTOTEST   inrange %s -> %s at %d leptons: %d fire error %d turret %d wants %d\n", techno->TClass->Name(), target->TClass->Name(), (int)(Point2D(techno->Center_Coord()) - Point2D(target->Center_Coord())).Length(), (int)techno->In_Range(target, 0), (int)techno->Can_Fire(target, 0), (int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256());
-		}
-	}
+		});
 }
 
 
 // elevation <TypeID>: the elevation range bonus each of the player's objects of that type has against each other one.
 static void Elevation_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		for (int other = 0; other < Technos.Count(); other++) {
-			TechnoClass * target = Technos[other];
-			if (target == techno || target->House != PlayerPtr || stricmp(target->TClass->Name(), step.Argument.c_str()) != 0) continue;
+	For_Techno_Pairs(
+		[&](TechnoClass * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass *, TechnoClass * target) {return(Is_Player_Object_Named(target, step.Argument));},
+		[](TechnoClass * techno, TechnoClass * target) {
 			DebugString("AUTOTEST   elevation %d,%d height %d -> %d,%d height %d bonus %d\n", techno->Get_Cell().X, techno->Get_Cell().Y, Map[techno->Get_Cell()].Height, target->Get_Cell().X, target->Get_Cell().Y, Map[target->Get_Cell()].Height, techno->Elevation_Range_Bonus(target));
-		}
-	}
+		});
 }
 
 
