@@ -1,0 +1,7 @@
+; A snow dusk random map (RMGSNOW.MAP: width 2, tiberium 30, vegetation 100) built with the stock RMGMD.INI.
+; Expected: the map plays with SnowAmbientLight, SnowAmbientRed, Green and Blue and RMGLevelLightSettings at dusk
+; (ambient 75, tint 106,107,154, level 3), and its woods stay under the MaxTrees=600 limit of 539 trees. Dusk puts 2 GALITE lamps at each of the 2 starts.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/rmg-snow.txt -Mods src-agent26/tests/autotest/rmg-maps -Map RMGSNOW.MAP -Seconds 150
+2 randommap
+2 census ore
+3 quit

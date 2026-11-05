@@ -1,0 +1,8 @@
+; A temperate night random map (RMGTEMP.MAP: width 1, tiberium 50, vegetation 80) built with the stock RMGMD.INI.
+; Expected: the map plays with TemperateAmbientLight, TemperateAmbientRed, Green and Blue and RMGLevelLightSettings at
+; night (ambient 35, tint 51,46,141, level 3); its fields hold the 900 to 1050 tiberium range rather than the built-in
+; 2500 to 5500, and its woods stay under the MaxTrees=600 limit of 383 trees. The night puts 4 GALITE lamps at each of the 2 starts.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/rmg-temperate.txt -Mods src-agent26/tests/autotest/rmg-maps -Map RMGTEMP.MAP -Seconds 150
+2 randommap
+2 census ore
+3 quit
