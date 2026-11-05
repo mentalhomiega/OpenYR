@@ -3182,7 +3182,8 @@ static void Sell_Step(StepType const & step)
 
 
 // repairon <TypeID>: turns repair on for the player's structures of that type. Unlike the repair cursor, which toggles repair,
-// a structure that is already repairing keeps repairing, so the REPAIR event is queued only for one that is not.
+// a structure that is already repairing keeps repairing, so the REPAIR event is queued only for one that is not. The queued
+// event has not run yet, so two repairon steps on one type in the same frame queue two events and the second turns repair off.
 static void Repairon_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
@@ -6178,30 +6179,13 @@ static void Cameos_Step(StepType const &)
 }
 
 
-// clickcameo <TypeID>: starts production of the type through the same path as a click on its cameo, when a sidebar strip still offers the cameo.
-static void Clickcameo_Step(StepType const & step)
+// Presses the type's visible cameo through the cameo's own action, so the Shift state the script holds decides what the
+// press does, as it does for a player. Returns false when no strip shows the cameo.
+static bool Press_Cameo(TechnoTypeClass const * type, bool right)
 {
-	TechnoTypeClass const * type = Find_Type(step.Argument);
-	bool const offered = type != NULL && Map.Is_On_Sidebar(type->Fetch_RTTI(), type->Fetch_Heap_ID());
-	if (offered) {
-		Click_Cameo_Produce(type->Fetch_RTTI(), type->Fetch_Heap_ID());
-	}
-	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
-}
-
-
-// cameopress <TypeID> left|right: presses the type's visible cameo through the cameo's own action, so the Shift
-// state the script holds decides what the press does, as it does for a player.
-static void Cameopress_Step(StepType const & step)
-{
-	std::string after_name;
-	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
-	bool const right = after_name.find("right") != std::string::npos;
-	TechnoTypeClass const * type = Find_Type(name);
-	bool pressed = false;
-	for (int column = 0; type != NULL && !pressed && column < SidebarClass::COLUMNS; column++) {
+	for (int column = 0; type != NULL && column < SidebarClass::COLUMNS; column++) {
 		SidebarClass::StripClass & strip = Map.Column[column];
-		for (int index = 0; index < strip.BuildableCount && !pressed; index++) {
+		for (int index = 0; index < strip.BuildableCount; index++) {
 			if (Fetch_Techno_Type(strip.Buildables[index].BuildableType, strip.Buildables[index].BuildableID) != type) {
 				continue;
 			}
@@ -6216,9 +6200,29 @@ static void Cameopress_Step(StepType const & step)
 			} else {
 				cameo.Press_Left();
 			}
-			pressed = true;
+			return(true);
 		}
 	}
+	return(false);
+}
+
+
+// clickcameo <TypeID>: left-clicks the type's visible cameo, which starts, resumes or places its production as a click does.
+static void Clickcameo_Step(StepType const & step)
+{
+	bool const offered = Press_Cameo(Find_Type(step.Argument), false);
+	DebugString("AUTOTEST   clickcameo %s: %s\n", step.Argument.c_str(), offered ? "offered" : "no cameo");
+}
+
+
+// cameopress <TypeID> left|right: presses the type's visible cameo, as clickcameo does for the left button.
+static void Cameopress_Step(StepType const & step)
+{
+	std::string after_name;
+	std::string const name = Split_Argument(step.Argument, 1, after_name).front();
+	bool const right = after_name.find("right") != std::string::npos;
+	TechnoTypeClass const * type = Find_Type(name);
+	bool const pressed = Press_Cameo(type, right);
 	DebugString("AUTOTEST   cameopress %s %s: %s\n", name.c_str(), right ? "right" : "left",
 		type == NULL ? "no such type" : (pressed ? "pressed" : "no visible cameo"));
 }

@@ -2847,7 +2847,7 @@ void Queue_Produce(RTTIType type, int id, int count)
 /// while another is under way, a unit or infantry type queues the Shift count (or one) more, and otherwise
 /// production starts with the announcement.
 /// </summary>
-void Click_Cameo_Produce(RTTIType otype, int oid)
+static void Click_Cameo_Produce(RTTIType otype, int oid)
 {
 	FactoryClass const * factory = PlayerPtr->Fetch_Factory(otype, oid);
 	int const count = (otype != RTTI_BUILDINGTYPE) ? Cameo_Produce_Count(factory) : 1;

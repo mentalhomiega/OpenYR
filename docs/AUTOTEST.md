@@ -117,7 +117,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `crate <Powerup> x y` | Puts a crate that holds that powerup, named as in the crate list (`money`, `unit`, `heal`, `cloak`, `explosion`, `napalm`, `squad`, `darkness`, `reveal`, `armor`, `speed`, `firepower`, `icbm`, `invuln`, `veteran`, `ion`, `gas`, `tiberium` or `pod`), on the nearest free cell to the cell |
 | `warpout <TypeID> <0|1>` | Sets or clears the warping-out flag of the player's objects of that type, without a warp effect |
 | `unload <x> <y>` | Starts the unload mission of the player's structure on that cell. A vehicle on a cell with no structure unloads its passengers instead |
-| `repairon <TypeID>` | Turns repair on for the player's structures of that type. Unlike a click with the repair cursor, which toggles repair, a structure already repairing keeps repairing |
+| `repairon <TypeID>` | Turns repair on for the player's structures of that type. Unlike a click with the repair cursor, which toggles repair, a structure already repairing keeps repairing. The REPAIR event runs one queue step later, so two `repairon` steps in one frame turn repair off again |
 | `poweroff <TypeID>` | Turns off the player's structures of that type, as a click with the power cursor does |
 | `rally <TypeID> x y` | Sets the rally point of the player's structures of that type to the cell, without the nearby-cell search an Alt-click makes |
 | `census cells` | Writes the eight tiberium cells nearest the player's first building, nearest first, with their squared distance in cells |
@@ -169,7 +169,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `options` | opens the options menu, as Escape does during play |
 | `scatter <TypeID> x y [forced] [nokidding]` | calls Scatter on each live soldier of that type, whoever owns it, with the threat at the centre of the cell (x -1 for no threat), then writes its cell and sub-cell position, the destination it was given and how many numbers the game's random generator handed out |
 | `cameos` | writes each sidebar strip's cameos in order, with the type and whether the player can build it now |
-| `clickcameo <TypeID>` | starts production of the type, as a click on its cameo does, when a strip still offers the cameo |
+| `clickcameo <TypeID>` | Left-clicks the type's visible cameo, which starts, resumes or places its production as a click does; the Shift state the script holds applies |
 | `prereqs <TypeID>` | writes the prerequisites the type lists, then each type whose Prerequisite list names it |
 | `bridge x y` | writes a cell's bridge tile, overlay, deck and under-bridge flags |
 | `bridgecensus` | writes each bridge deck overlay on the map with its flags, then how many high and railway decks are flagged, and how many low-bridge and concrete-bridge overlays there are, and the cell of each concrete-bridge overlay |
@@ -258,7 +258,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
 | `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
 
-Some steps count the objects of a house the map marks `PlayerControl=yes` as the player's, and others do not. `select`, `selectadd`, `waitcell`, `strike`, `strikeobj` with an attacker type, `spy` and `teamspy` count those houses' objects as the player's. `move` and `attack` select them too, but a network game orders only the player's own objects, so a local run and a network run order different sets. `order`, `planmove`, `planguard`, `forceattack` and `capture` order only the player's own objects.
+Some steps count the objects of a house the map marks `PlayerControl=yes` as the player's, and others do not. `select`, `selectadd`, `waitcell`, `strike`, `strikeobj` with an attacker type, `spy` and `teamspy` count those houses' objects as the player's. `move` and `attack` select them too, but they order only the player's own objects (`Is_Player_Object`), in local and network runs alike. `order`, `planmove`, `planguard`, `forceattack` and `capture` order only the player's own objects.
 
 Every step writes an `AUTOTEST` line to the debug log. A flak shot writes `AUTOTEST scatter fire` (an arcing shell that is not invisible) or `AUTOTEST scatter moveto` (an invisible shell), with the range, distance, spread, angle draw and the aim point before and after the scatter, in leptons. The shell's burst writes `AUTOTEST flak impact`, at the cell where it detonates. A nuclear missile writes `AUTOTEST missile leaves` with the frame its silo launches it, `AUTOTEST nuke payload released` where its carrier bursts, `AUTOTEST nuke blast builds up` where the payload lands and `AUTOTEST nuke detonates` with the frame and coordinates of the blast. `ScreenCapture` and `record` save pictures to A shot's flash writes `AUTOTEST muzzle frame`, with the firer, weapon, anim, the size of the weapon's `Anim` list, the turret facing and the start point. A bolt or radiation beam writes `AUTOTEST beam end`, the point it ends on and the target's center. A bullet's blast writes `AUTOTEST explode frame`, with the warhead, the land type, the damage and the animation picked. A wave made for a sonic or magnetron weapon writes `AUTOTEST wave`, with its type number, the points it runs between and whether it is aimed at an object or a cell. A laser shot writes `AUTOTEST laser zap`, with the firer, the weapon that fired, the weapon the beam takes its look from and the beam's duration; the beam itself writes `AUTOTEST laser beam`.
 the `Screenshots` folder of the user data directory, numbered in order, so a recording can be joined
@@ -538,12 +538,13 @@ Each copy has its own user folder, `side-a-user` or `side-b-user` in the work fo
 
 ### Orders in a network game
 
-In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that gives an order queues it as an event, as a player's click does, so the other copy applies it too. Outside a network game, `move`, `attack`, `strike`, `strikeobj`, `rally` and `sell` change the object directly.
+In a network game (`Session.Type` is `GAME_IPX` or `GAME_INTERNET`), a step that gives an order queues it as an event, as a player's click does, so the other copy applies it too. `move`, `attack`, `rally`, `sell`, `repairon` and `poweroff` queue their event in every game. Outside a network game, `strike` and `strikeobj` change the object directly.
 
 | Steps | In a network game |
 | --- | --- |
 | `produce`, `place`, `primary`, `stop`, `order`, `command DeployObject`, `clickcell`, `fire` | Already queue events, as the sidebar and the map clicks do |
-| `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell` | Queue an event: a mission for each object, an archive target or a sale |
+| `move`, `attack`, `strike`, `strikeobj`, `rally`, `sell`, `repairon`, `poweroff` | Queue an event: a mission for each object, an archive target, a sale, a repair or a power-off |
+| `clickcameo` | Presses the visible cameo as a click does, so the cameo's own events are queued |
 | `planning 1`, `planning 0` | `planning 1` sets this copy's mode only. Orders given while the mode is on are recorded as planned orders, and `planning 0` queues the commit that starts them |
 | `beacon place x y`, `beacontext <text>` | Queue the beacon event: a placement on the cell, or the text of the selected beacon. `beacon select x y` and `beacon delete` change this copy's selection, and `beacon delete` queues a removal only for a beacon the player owns |
 
