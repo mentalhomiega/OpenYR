@@ -114,6 +114,16 @@ void Test_Split_And_Parse()
 	Check(!Parse_Decimal_Int("5 "), "a trailing blank fails");
 	Check(!Parse_Decimal_Int("5x"), "trailing letters fail");
 
+	std::optional<HostPortText> const relay = Split_Host_Port("relay.example:50000");
+	Check(relay && relay->Host == "relay.example" && relay->Port == "50000", "host and port split at the colon");
+	Check(!Split_Host_Port("relay.example"), "no colon gives nothing");
+	std::optional<HostPortText> const bare = Split_Host_Port(":");
+	Check(bare && bare->Host.empty() && bare->Port.empty(), "a lone colon gives two empty sides");
+	std::optional<HostPortText> const v6 = Split_Host_Port("::1");
+	Check(v6 && v6->Host == ":" && v6->Port == "1", "the last colon splits");
+	std::optional<HostPortText> const junk = Split_Host_Port("h: 80abc");
+	Check(junk && junk->Host == "h" && junk->Port == " 80abc", "the port text is kept as written");
+
 	Check(Lower("MiXed 1") == "mixed 1", "Lower folds ASCII letters");
 	Check(Lower("").empty(), "Lower of empty text is empty");
 }

@@ -100,17 +100,17 @@ std::vector<CnCNetTunnelEntryType> CnCNet_Parse_Tunnel_List(std::string_view tex
 		if (fields.size() < 11) {
 			continue;
 		}
-		std::size_t const colon = fields[0].rfind(':');
-		if (colon == std::string_view::npos || colon == 0) {
+		std::optional<HostPortText> const address = Split_Host_Port(fields[0]);
+		if (!address || address->Host.empty()) {
 			continue;
 		}
-		int const port = Number(fields[0].substr(colon + 1));
+		int const port = Number(address->Port);
 		if (port <= 0 || port > 65535) {
 			continue;
 		}
 
 		CnCNetTunnelEntryType tunnel;
-		tunnel.Host = std::string(fields[0].substr(0, colon));
+		tunnel.Host = std::string(address->Host);
 		tunnel.Port = static_cast<uint16_t>(port);
 		tunnel.Country = std::string(fields[1]);
 		tunnel.Name = std::string(fields[3]);
@@ -356,14 +356,14 @@ std::optional<uint32_t> CnCNet_Resolve_IPv4(std::string const & host, int timeou
 
 bool CnCNet_Is_Local_Relay(std::string_view configured, std::string_view host, uint16_t port)
 {
-	std::size_t const colon = configured.rfind(':');
-	if (colon == std::string_view::npos || colon == 0) {
+	std::optional<HostPortText> const address = Split_Host_Port(configured);
+	if (!address || address->Host.empty()) {
 		return(false);
 	}
-	std::string_view const configured_host = configured.substr(0, colon);
+	std::string_view const configured_host = address->Host;
 	if (!CnCNet_Equals_No_Case(configured_host, "127.0.0.1") && !CnCNet_Equals_No_Case(configured_host, "localhost")) {
 		return(false);
 	}
-	int const configured_port = Number(configured.substr(colon + 1));
+	int const configured_port = Number(address->Port);
 	return(configured_port > 0 && configured_port == port && CnCNet_Equals_No_Case(configured_host, host));
 }
