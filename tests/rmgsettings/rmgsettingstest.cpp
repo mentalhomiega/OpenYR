@@ -141,6 +141,35 @@ int main(void)
 	Check(stock.Tree_Limit(2, 0) == 0, "no vegetation allows no trees");
 	Check(Read("[General]\nMaxTrees=-10\n").Tree_Limit(3, 100) < 0, "a negative MaxTrees gives a limit below zero");
 
+	Check(Read("[General]\n").Unique_ID() == defaults.Unique_ID() && Read(STOCK).Unique_ID() == stock.Unique_ID(),
+		"the same settings give the same checksum");
+	void (* const changes[])(RMGSettingsClass &) = {
+		[](RMGSettingsClass & s) { s.MinimumTiberium++; },
+		[](RMGSettingsClass & s) { s.MaximumTiberium++; },
+		[](RMGSettingsClass & s) { s.LevelLight[3]++; },
+		[](RMGSettingsClass & s) { s.VegetationMinimums[4]++; },
+		[](RMGSettingsClass & s) { s.VegetationMaximums[0]++; },
+		[](RMGSettingsClass & s) { s.VegetationMapType = 2; },
+		[](RMGSettingsClass & s) { s.TemperateAmbientLight[3]++; },
+		[](RMGSettingsClass & s) { s.SnowAmbientLight[3]++; },
+		[](RMGSettingsClass & s) { s.TemperateAmbientRed[0]++; },
+		[](RMGSettingsClass & s) { s.TemperateAmbientGreen[1]++; },
+		[](RMGSettingsClass & s) { s.TemperateAmbientBlue[2]++; },
+		[](RMGSettingsClass & s) { s.SnowAmbientRed[0]++; },
+		[](RMGSettingsClass & s) { s.SnowAmbientGreen[1]++; },
+		[](RMGSettingsClass & s) { s.SnowAmbientBlue[2]++; },
+		[](RMGSettingsClass & s) { s.MaxTrees++; },
+	};
+	bool all_change = true;
+	for (auto const change : changes) {
+		RMGSettingsClass changed = stock;
+		change(changed);
+		all_change = all_change && changed.Unique_ID() != stock.Unique_ID();
+	}
+	Check(all_change, "changing any one setting changes the checksum");
+	Check(Read("[General]\nMaxTrees=601\n").Unique_ID() != Read("[General]\nMaxTrees=600\n").Unique_ID(),
+		"a file that changes one value gives a different checksum");
+
 	if (Failures != 0) {
 		std::printf("%d check(s) failed\n", Failures);
 		return(1);

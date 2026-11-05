@@ -63,4 +63,5 @@ struct RMGSettingsClass
 	int Vegetation_Minimum() const;
 	int Vegetation_Maximum() const;
 	int Tree_Limit(int width, int vegetation) const;
+	int Unique_ID() const;
 };

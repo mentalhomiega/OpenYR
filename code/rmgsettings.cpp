@@ -9,6 +9,7 @@
 
 #include "rmgsettings.h"
 
+#include "crc.h"
 #include "ini.h"
 
 #include <algorithm>
@@ -113,4 +114,35 @@ int RMGSettingsClass::Vegetation_Maximum() const
 int RMGSettingsClass::Tree_Limit(int width, int vegetation) const
 {
 	return((int)((width * 0.1 + 0.7) * (vegetation * 0.01) * MaxTrees));
+}
+
+
+/// <summary>
+/// Returns a checksum of every setting, so that two machines can tell whether their settings
+/// differ before they lay out the same random map.
+/// </summary>
+int RMGSettingsClass::Unique_ID() const
+{
+	CRCEngine crc;
+	auto const add = [&crc](auto const & values) {
+		for (int value : values) {
+			crc(value);
+		}
+	};
+	crc(MinimumTiberium);
+	crc(MaximumTiberium);
+	add(LevelLight);
+	add(VegetationMinimums);
+	add(VegetationMaximums);
+	crc(VegetationMapType);
+	add(TemperateAmbientLight);
+	add(SnowAmbientLight);
+	add(TemperateAmbientRed);
+	add(TemperateAmbientGreen);
+	add(TemperateAmbientBlue);
+	add(SnowAmbientRed);
+	add(SnowAmbientGreen);
+	add(SnowAmbientBlue);
+	crc(MaxTrees);
+	return(crc());
 }

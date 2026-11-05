@@ -689,6 +689,8 @@ inline bool My_In_Radar(Cell const &cell)
 }
 
 void Do_Random_Map(bool (*callback)());
+// The settings of the RMGMD.INI the game finds, or the defaults when it finds none.
+RMGSettingsClass Load_RMG_Settings(void);
 int Do_Random_Map_Dialog(bool (*callback)());
 
 extern MapRegionClass::CellData *RMGCellData;

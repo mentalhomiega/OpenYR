@@ -3477,8 +3477,7 @@ void Do_Random_Map(bool (*callback)())
 }
 
 
-// The RMGMD.INI settings the game finds, or the defaults when it has no such file.
-static RMGSettingsClass Load_RMG_Settings(void)
+RMGSettingsClass Load_RMG_Settings(void)
 {
 	CCFileClass file("RMGMD.INI");
 	CCINIClass ini;
