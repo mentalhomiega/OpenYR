@@ -96,6 +96,7 @@ class AITriggerTypeClass : public AbstractTypeClass
 	private:
 		bool Check_Enemy_Owns(HouseClass *house, HouseClass *enemy);
 		bool Check_House_Owns(HouseClass *house, HouseClass *enemy);
+		bool Owned_Count_Meets_Condition(HouseClass * owner);
 		bool Check_Enemy_Yellow_Power(HouseClass *house, HouseClass *enemy);
 		bool Check_Enemy_Red_Power(HouseClass *house, HouseClass *enemy);
 		bool Check_Enemy_Money(HouseClass *house, HouseClass *enemy);

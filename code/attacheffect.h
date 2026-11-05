@@ -14,6 +14,7 @@
 class AbstractClass;
 class AnimClass;
 class AnimTypeClass;
+class CCINIClass;
 class CRCEngine;
 class SaveStreamClass;
 class TechnoClass;
@@ -27,6 +28,9 @@ class AttachEffectTypeClass
 	public:
 		void Serialize(SaveStreamClass & stream);
 		void Compute_CRC(CRCEngine & crc) const;
+
+		// Reads the AttachEffect.* keys that warheads and techno types share from `section`, keeping the current values as defaults.
+		void Read_Shared_INI(CCINIClass const & ini, char const * section);
 
 		// A duration of 0, the default, attaches nothing.
 		bool Is_Defined(void) const {return(Duration != 0);}

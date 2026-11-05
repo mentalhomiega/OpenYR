@@ -16,6 +16,7 @@
 #include "audio/audiohandle.h"
 #include "bounce.h"
 #include "object.h"
+#include "typelist.h"
 
 class VoxelAnimTypeClass;
 class ParticleSystemClass;
@@ -104,3 +105,11 @@ class VoxelAnimClass : public ObjectClass, public BounceClass
 		 */
 		AudioHandle StartSoundHandle;
 };
+
+
+// Throws voxel debris pieces for a destroyed object or a detonated warhead, up to `remaining` of them,
+// and returns how many were thrown (`remaining` drops by that number). Pieces are dealt out round the
+// type list, each draw up to that type's figure in `maximums`. The Random calls follow
+// BulletClass::Detonate (0x469D06) and TechnoClass::ReceiveDamage (0x701900), so their order must not change.
+int Throw_Voxel_Debris(TypeList<VoxelAnimTypeClass const *> const & types, TypeList<int> const & maximums, int & remaining, Coord const & origin, HouseClass * house);
+

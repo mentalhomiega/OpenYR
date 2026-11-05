@@ -474,6 +474,59 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 
 
 /// <summary>
+/// Compares the number of the condition object that `owner` has with the trigger's number,
+/// using the trigger's comparison. A trigger without a condition object counts zero.
+/// </summary>
+bool AITriggerTypeClass::Owned_Count_Meets_Condition(HouseClass * owner)
+{
+	int count = 0;
+	TechnoTypeClass * obj = ConditionObject;
+
+	if (obj != NULL) {
+		int id = obj->Fetch_Heap_ID();
+		switch (obj->RTTI) {
+			case RTTI_BUILDINGTYPE:
+				count = owner->ABQuantity.Value(id);
+				break;
+
+			case RTTI_UNITTYPE:
+				count = owner->AUQuantity.Value(id);
+				break;
+
+			case RTTI_INFANTRYTYPE:
+				count = owner->AIQuantity.Value(id);
+				break;
+
+			case RTTI_AIRCRAFTTYPE:
+				count = owner->AAQuantity.Value(id);
+				break;
+		}
+	}
+
+	switch (Params.Condition) {
+		case COND_LT:
+			return(count < Params.Number);
+
+		case COND_LE:
+			return(count <= Params.Number);
+
+		case COND_EQ:
+			return(count == Params.Number);
+
+		case COND_GE:
+			return(count >= Params.Number);
+
+		case COND_GT:
+			return(count > Params.Number);
+
+		case COND_NE:
+			return(count != Params.Number);
+	}
+	return(false);
+}
+
+
+/// <summary>
 /// Checks how many of the condition object the enemy has.
 /// This routine serves the enemy owns trigger condition. The enemy's tally of the
 /// trigger's condition object is measured against the trigger's number using whichever
@@ -482,66 +535,7 @@ bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip
 /// <returns>bool; Does the enemy's count satisfy the condition?</returns>
 bool AITriggerTypeClass::Check_Enemy_Owns(HouseClass *house, HouseClass *enemy)
 {
-	bool res = false;
-
-	if (enemy != NULL) {
-		int count;
-		TechnoTypeClass *obj = ConditionObject;
-
-		if (obj != NULL) {
-			int id = obj->Fetch_Heap_ID();
-			int hcount = 0;
-			RTTIType rtti = obj->RTTI;
-			switch (rtti) {
-				case RTTI_BUILDINGTYPE:
-					hcount = enemy->ABQuantity.Value(id);
-					break;
-
-				case RTTI_UNITTYPE:
-					hcount = enemy->AUQuantity.Value(id);
-					break;
-
-				case RTTI_INFANTRYTYPE:
-					hcount = enemy->AIQuantity.Value(id);
-					break;
-
-				case RTTI_AIRCRAFTTYPE:
-					hcount = enemy->AAQuantity.Value(id);
-					break;
-			}
-			count = hcount;
-		} else {
-			count = 0;
-		}
-
-		switch (Params.Condition) {
-			case COND_LT:
-				res = count < Params.Number;
-				break;
-
-			case COND_LE:
-				res = count <= Params.Number;
-				break;
-
-			case COND_EQ:
-				res = count == Params.Number;
-				break;
-
-			case COND_GE:
-				res = count >= Params.Number;
-				break;
-
-			case COND_GT:
-				res = count > Params.Number;
-				break;
-
-			case COND_NE:
-				res = count != Params.Number;
-				break;
-		}
-	}
-
-	return(res);
+	return(enemy != NULL && Owned_Count_Meets_Condition(enemy));
 }
 
 
@@ -554,66 +548,7 @@ bool AITriggerTypeClass::Check_Enemy_Owns(HouseClass *house, HouseClass *enemy)
 /// <returns>bool; Does the house's count satisfy the condition?</returns>
 bool AITriggerTypeClass::Check_House_Owns(HouseClass *house, HouseClass *enemy)
 {
-	bool res = false;
-
-	if (house != NULL) {
-		int count;
-		TechnoTypeClass *obj = ConditionObject;
-
-		if (obj != NULL) {
-			int id = obj->Fetch_Heap_ID();
-			int hcount = 0;
-			RTTIType rtti = obj->RTTI;
-			switch (rtti) {
-				case RTTI_BUILDINGTYPE:
-					hcount = house->ABQuantity.Value(id);
-					break;
-
-				case RTTI_UNITTYPE:
-					hcount = house->AUQuantity.Value(id);
-					break;
-
-				case RTTI_INFANTRYTYPE:
-					hcount = house->AIQuantity.Value(id);
-					break;
-
-				case RTTI_AIRCRAFTTYPE:
-					hcount = house->AAQuantity.Value(id);
-					break;
-			}
-			count = hcount;
-		} else {
-			count = 0;
-		}
-
-		switch (Params.Condition) {
-			case COND_LT:
-				res = count < Params.Number;
-				break;
-
-			case COND_LE:
-				res = count <= Params.Number;
-				break;
-
-			case COND_EQ:
-				res = count == Params.Number;
-				break;
-
-			case COND_GE:
-				res = count >= Params.Number;
-				break;
-
-			case COND_GT:
-				res = count > Params.Number;
-				break;
-
-			case COND_NE:
-				res = count != Params.Number;
-				break;
-		}
-	}
-
-	return(res);
+	return(house != NULL && Owned_Count_Meets_Condition(house));
 }
 
 

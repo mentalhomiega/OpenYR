@@ -41,6 +41,7 @@
 #include "timer.h"
 
 #include <memory>
+#include <optional>
 
 #include "mark.hh"
 
@@ -139,6 +140,10 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		static int Travel_Frames(int maxspeed, int leptons);
 
 	private:
+
+		// Tells a friendly blocker in the cell in direction `dir` to move. Returns Abandon_Navigation()'s
+		// result when the unit stops here, else nothing.
+		std::optional<bool> Scatter_Friendly_Blockage(FacingType dir);
 
 		struct TurnTrackType {
 			char					Track;      // Which track to use.

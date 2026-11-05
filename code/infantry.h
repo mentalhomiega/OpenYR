@@ -276,7 +276,6 @@ class InfantryClass : public FootClass
 
 	private:
 
-		bool Tunnel_Blocks_Entry(CellClass const * cellptr, FacingType dir, TubeClass * tube) const;
 		bool Overlay_Blocks_Entry(CellClass const * cellptr, MoveType & retval) const;
 		std::optional<MoveType> Mission_Destination_Verdict(ObjectClass * obj, TechnoClass * techno, CellClass const * cellptr, MissionType mission, bool isbridge, bool & skip) const;
 		std::optional<MoveType> Special_Building_Verdict(ObjectClass * obj, MoveType & retval, bool & skip) const;

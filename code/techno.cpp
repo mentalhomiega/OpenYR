@@ -7019,33 +7019,7 @@ void TechnoClass::Spawn_Death_Debris(void)
 		int remaining = Scen->RandomNumber(TClass->MinDebris, TClass->MaxDebris - 1);
 
 		if (TClass->DebrisTypes.Count() > 0) {
-			int const types = TClass->DebrisTypes.Count();
-			TypeList<int> const & maximums = TClass->DebrisMaximums;
-
-			// A missing or negative figure throws nothing. When no figure is above zero, gamemd's loop never ends, so this port throws no voxel pieces.
-			auto figure_of = [&maximums](int type) {
-				return type < maximums.Count() ? std::max(maximums[type], 0) : 0;
-			};
-			bool can_throw = false;
-			for (int type = 0; type < types; type++) {
-				can_throw = can_throw || figure_of(type) > 0;
-			}
-
-			int index = 0;
-			while (remaining > 0 && can_throw) {
-				// Two's complement absolute value, as gamemd computes it: a draw of INT_MIN stays negative, so it throws nothing and adds to the count.
-				int const draw = Scen->RandomNumber();
-				int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
-				int count = magnitude % (figure_of(index) + 1);
-				if (count >= remaining) {
-					count = remaining;
-				}
-				for (int j = 0; j < count; j++) {
-					new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
-				}
-				remaining -= count;
-				index = (index + 1) % types;
-			}
+			Throw_Voxel_Debris(TClass->DebrisTypes, TClass->DebrisMaximums, remaining, Center_Coord(), House);
 		}
 
 		TypeList<AnimTypeClass const *> const & anims = TClass->DebrisAnims.Count() > 0 ? TClass->DebrisAnims : Rule->MetallicDebris;
@@ -9515,183 +9489,103 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 	*/
 	TeamClass::Suspend_Teams(Rule->SuspendPriority, House);
 
+	// Considers one foot soldier or vehicle as a defender. Its threat is multiplied by `boost` when this
+	// building's own ArchiveTarget is this building, and only a positive threat is when `boost_positive_only` is set.
+	auto consider_defender = [&](FootClass * foot, int boost, bool boost_positive_only) {
+		if (foot == NULL || !foot->IsActive || foot->Owner() != Owner()) {
+			return;
+		}
+
+		/*
+		**	Never recruit sticky guard units to defend a base.
+		*/
+		bool basedefense = foot->Team != NULL && foot->Team->Class->IsBaseDefense;
+		if (foot->Team != NULL && !basedefense) {
+			return;
+		}
+
+		if (foot->SlaveOwner != NULL || !foot->IsTeamRecruitable || !foot->Is_Weapon_Equipped() || !foot->IsAutocreateRecruitable ||
+				(!foot->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) return;
+
+		/*
+		**	Don't allow a response if it doesn't have a weapon that will affect the
+		**	enemy object.
+		*/
+		if (foot->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
+			return;
+		}
+
+		/*
+		**	Don't try to help if the building is on another planet.
+		*/
+		if (!Map.Is_Same_Cell_Zone(foot->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), foot->TClass->MZone, foot->Is_Moving_Onto_Bridge(), false, false)) return;
+
+		/*
+		**	Find the amount of threat that this unit can apply to the
+		**	enemy.
+		*/
+		int threat = foot->Rescue_Mission((AbstractClass *)enemy);
+
+		/*
+		**	If it can't apply any threat then do just skip it and do not
+		**	add it to the list.
+		*/
+		if (!threat) {
+			return;
+		}
+
+		/*
+		**	Greatly increase the threat value if this unit is already assigned to protect
+		**	the target.
+		*/
+		if ((!boost_positive_only || threat > 0) && ArchiveTarget == this) {
+			threat *= boost;
+		}
+
+		/*
+		**	If the value returned is negative then this unit is already
+		**	assigned to fighting the enemy, so subtract its value from
+		**	the enemy's desired value.
+		*/
+		if (threat < 0) {
+			desired += threat;
+			return;
+		}
+
+		if (count < ARRAY_SIZE(defender)) {
+			defender[count] = foot;
+			value[count] = threat;
+			count++;
+			return;
+		}
+
+		if (threat > weakest) {
+			int newweakest = threat;
+
+			for (int lp = 0; lp < count; lp++) {
+				if (value[lp] == weakest) {
+					value[lp] = threat;
+					defender[lp] = foot;
+					continue;
+				}
+				if (value[lp] < newweakest) {
+					newweakest = value[lp];
+				}
+			}
+			weakest = newweakest;
+		}
+	};
+
 	/*
-	**	Loop through the infantry looking for those who are capable of going
-	**	on a rescue mission.
+	**	Loop through the infantry, then the units, looking for those who are capable of
+	**	going on a rescue mission.
 	*/
 	int index;
 	for (index = 0; index < Infantry.Count() && desired > 0; index++) {
-	 	InfantryClass * infantry = Infantry[index];
-		if (infantry != NULL && infantry->IsActive && infantry->Owner() == Owner()) {
-
-			/*
-			**	Never recruit sticky guard units to defend a base.
-			*/
-			bool basedefense = infantry->Team != NULL && infantry->Team->Class->IsBaseDefense;
-			if (infantry->Team != NULL && !basedefense) {
-				continue;
-			}
-
-			if (infantry->SlaveOwner != NULL || !infantry->IsTeamRecruitable || !infantry->Is_Weapon_Equipped() || !infantry->IsAutocreateRecruitable ||
-					(!infantry->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
-
-			/*
-			**	Don't allow a response if it doesn't have a weapon that will affect the
-			**	enemy object.
-			*/
-			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
-				continue;
-			}
-
-			/*
-			**	Don't try to help if the building is on another planet.
-			*/
-			if (!Map.Is_Same_Cell_Zone(infantry->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), infantry->Class->MZone, infantry->Is_Moving_Onto_Bridge(), false, false)) continue;
-
-			/*
-			**	Find the amount of threat that this unit can apply to the
-			**	enemy.
-			*/
-			int threat = infantry->Rescue_Mission((AbstractClass *)enemy);
-
-			/*
-			**	If it can't apply any threat then do just skip it and do not
-			**	add it to the list.
-			*/
-			if (!threat) {
-				continue;
-			}
-
-			/*
-			**	Greatly increase the threat value if this unit is already assigned to protect
-			**	the target.
-			*/
-			if (ArchiveTarget == this) {
-				threat *= 100;
-			}
-
-			/*
-			**	If the value returned is negative then this unit is already
-			**	assigned to fighting the enemy, so subtract its value from
-			**	the enemy's desired value.
-			*/
-			if (threat < 0) {
-				desired += threat;
-				continue;
-			}
-
-			if (count < ARRAY_SIZE(defender)) {
-				defender[count] = infantry;
-				value[count] = threat;
-				count++;
-				continue;
-			}
-
-			if (threat > weakest) {
-				int newweakest = threat;
-
-				for (int lp = 0; lp < count; lp++) {
-					if (value[lp] == weakest) {
-						value[lp] = threat;
-						defender[lp] = (FootClass *) infantry;
-						continue;
-					}
-					if (value[lp] < newweakest) {
-						newweakest = value[lp];
-					}
-				}
-				weakest = newweakest;
-			}
-		}
+		consider_defender(Infantry[index], 100, false);
 	}
-
-	/*
-	**	Loop through the units looking for those who are capable of going
-	**	on a rescue mission.
-	*/
 	for (index = 0; index < Units.Count() && desired > 0; index++) {
-	 	UnitClass * unit = Units[index];
-		if (unit != NULL && unit->IsActive && unit->Owner() == Owner()) {
-
-			/*
-			**	Never recruit sticky guard units to defend a base.
-			*/
-			bool basedefense = unit->Team != NULL && unit->Team->Class->IsBaseDefense;
-			if (unit->Team != NULL && !basedefense) {
-				continue;
-			}
-
-			if (unit->SlaveOwner != NULL || !unit->IsTeamRecruitable || !unit->Is_Weapon_Equipped() || !unit->IsAutocreateRecruitable ||
-					(!unit->Current_Mission_Control().IsRecruitable && Session.Type == GAME_NORMAL)) continue;
-
-			/*
-			**	Don't allow a response if it doesn't have a weapon that will affect the
-			**	enemy object.
-			*/
-			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Versus(enemy->TClass->Armor) == 0) {
-				continue;
-			}
-
-			/*
-			**	Don't try to help if the building is on another planet.
-			*/
-			if (!Map.Is_Same_Cell_Zone(unit->Destination_Coord().As_Cell(), Destination_Coord().As_Cell(), unit->Class->MZone, unit->Is_Moving_Onto_Bridge(), false, false)) continue;
-
-			/*
-			**	Find the amount of threat that this unit can apply to the
-			**	enemy.
-			*/
-			int threat = unit->Rescue_Mission((AbstractClass *)enemy);
-
-			/*
-			**	If it can't apply any threat then do just skip it and do not
-			**	add it to the list.
-			*/
-			if (!threat) {
-				continue;
-			}
-
-			/*
-			**	Greatly increase the threat value if this unit is already assigned to protect
-			**	the target.
-			*/
-			if (threat > 0 && ArchiveTarget == this) {
-				threat *= 10;
-			}
-
-			/*
-			**	If the value returned is negative then this unit is already
-			**	assigned to fighting the enemy, so subtract its value from
-			**	the enemy's desired value.
-			*/
-			if (threat < 0) {
-				desired += threat;
-				continue;
-			}
-
-			if (count < ARRAY_SIZE(defender)) {
-				defender[count] = unit;
-				value[count] = threat;
-				count++;
-				continue;
-			}
-			if (threat > weakest) {
-				int newweakest = threat;
-
-				for (int lp = 0; lp < count; lp ++) {
-					if (value[lp] == weakest) {
-						value[lp] = threat;
-						defender[lp] = (FootClass *) unit;
-						continue;
-					}
-					if (value[lp] < newweakest) {
-//					if (value[count] < newweakest) {
-						newweakest = value[lp];
-					}
-				}
-				weakest = newweakest;
-			}
-		}
+		consider_defender(Units[index], 10, true);
 	}
 
 	if (desired > 0) {
