@@ -1474,33 +1474,7 @@ static void Throw_Warhead_Debris(WarheadTypeClass const * warhead, Coord const &
 	int metallic = 0;
 
 	if (types > 0) {
-		// A missing or non-positive figure throws nothing. With no figure above zero, gamemd's loop never ends,
-		// so this port throws nothing.
-		auto figure_of = [warhead](int type) {
-			return type < warhead->DebrisMaximums.Count() ? std::max(warhead->DebrisMaximums[type], 0) : 0;
-		};
-		bool can_throw = false;
-		for (int type = 0; type < types; type++) {
-			can_throw = can_throw || figure_of(type) > 0;
-		}
-
-		int type = 0;
-		while (remaining > 0 && can_throw) {
-			// Two's complement absolute value, as gamemd computes it (BulletClass::Detonate, 0x469D7A). A draw of
-			// INT_MIN stays negative, so its count is never positive and it throws nothing.
-			int const draw = Scen->RandomNumber();
-			int const magnitude = draw < 0 ? (int)(0u - (unsigned)draw) : draw;
-			int count = magnitude % (figure_of(type) + 1);
-			if (remaining <= count) {
-				count = remaining;
-			}
-			for (int piece = 0; piece < count; piece++) {
-				new VoxelAnimClass(warhead->DebrisTypes[type], origin, NULL);
-			}
-			voxels += count;
-			remaining -= count;
-			type = (type + 1) % types;
-		}
+		voxels = Throw_Voxel_Debris(warhead->DebrisTypes, warhead->DebrisMaximums, remaining, origin, NULL);
 	}
 
 	// Metallic pieces come from the rules list only when the warhead names no voxel type, and sit 20 leptons up.
