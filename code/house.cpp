@@ -7985,10 +7985,9 @@ void HouseClass::Lost_Firestorm_Generator(void)
 				return;
 			}
 		}
-		for (int super = 0; super < SuperWeapon.Count(); super++) {
-			if (SuperWeapon[super]->Class->Type == SUPER_FIRESTORM) {
-				SuperWeapon[super]->Discharged(this == PlayerPtr, Cell(0, 0));
-			}
+		SuperClass * firestorm = Find_Super(SUPER_FIRESTORM);
+		if (firestorm != NULL) {
+			firestorm->Discharged(this == PlayerPtr, Cell(0, 0));
 		}
 	}
 }
