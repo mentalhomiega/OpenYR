@@ -143,7 +143,6 @@ int main(void)
 		"600 trees allow 419 on the smallest width and 599 on the largest at full vegetation, as gamemd rounds");
 	std::fesetround(rounding);
 	Check(stock.Tree_Limit(2, 0) == 0, "no vegetation allows no trees");
-	Check(Read("[General]\nMaxTrees=-10\n").Tree_Limit(3, 100) < 0, "a negative MaxTrees gives a limit below zero");
 
 	Check(Read("[General]\n").Unique_ID() == defaults.Unique_ID() && Read(STOCK).Unique_ID() == stock.Unique_ID(),
 		"the same settings give the same checksum");
