@@ -559,13 +559,7 @@ namespace NetTiming
 	{
 		std::string_view Trim(std::string_view text)
 		{
-			while (!text.empty() && (text.front() == ' ' || text.front() == '\t')) {
-				text.remove_prefix(1);
-			}
-			while (!text.empty() && (text.back() == ' ' || text.back() == '\t' || text.back() == '\r' || text.back() == '\n')) {
-				text.remove_suffix(1);
-			}
-			return(text);
+			return(Trim_End_Chars(Trim_Chars(text, TRIM_SPACE_TAB), TRIM_SPACE_TAB_EOL));
 		}
 
 		// A whole number of up to five digits.

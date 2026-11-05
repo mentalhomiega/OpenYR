@@ -39,17 +39,11 @@
  */
 static std::string Briefing_Text(ScenarioClass * scen)
 {
-	CCFileClass database("MISSIONMD.INI");
-	bool const has_database = database.Is_Available();
-	if (has_database) {
-		CCINIClass ini;
-		ini.Load(database, false);
-
-		std::string const label = ini.Get_String(scen->ScenarioName, "Briefing");
-		if (!label.empty()) {
-			DebugString("Restate: Fetching briefing %s from MissionMD.ini\n", label.c_str());
-			return(Mission_Label_Text(label.c_str(), true));
-		}
+	bool has_database;
+	std::string const label = Mission_Database_Briefing_Label(scen->ScenarioName, has_database);
+	if (!label.empty()) {
+		DebugString("Restate: Fetching briefing %s from MissionMD.ini\n", label.c_str());
+		return(Mission_Label_Text(label.c_str(), true));
 	}
 
 	if (strlen(scen->BriefingText)) {
