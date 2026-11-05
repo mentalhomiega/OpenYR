@@ -2043,6 +2043,19 @@ std::string Mission_Label_Text(char const * label, bool log_missing)
 }
 
 
+std::string Mission_Database_Briefing_Label(char const * map, bool & has_database)
+{
+	CCFileClass database("MISSIONMD.INI");
+	has_database = database.Is_Available();
+	if (!has_database) {
+		return(std::string());
+	}
+	CCINIClass missions;
+	missions.Load(database, false);
+	return(missions.Get_String(map, "Briefing"));
+}
+
+
 // Adds the mission INI files of the scenario being started to the rules, and reads its name and
 // briefing from them.
 static void Read_Mission_Files(void)

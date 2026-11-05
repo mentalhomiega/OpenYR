@@ -672,6 +672,9 @@ std::optional<std::string> Mission_UI_Text(std::string const & label);
 // The string table text of a label. A label the table lacks reads as MISSING:'<label>'; log_missing writes it to the debug log.
 std::string Mission_Label_Text(char const * label, bool log_missing);
 
+// The label MISSIONMD.INI gives a map's briefing, empty when it names none. has_database is whether MISSIONMD.INI exists.
+std::string Mission_Database_Briefing_Label(char const * map, bool & has_database);
+
 void Lock_Scenario_Input(void);
 void Unlock_Scenario_Input(void);
 
