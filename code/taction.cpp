@@ -2834,11 +2834,7 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 	Cell cell = Scen->Get_Waypoint_Cell(EffectLocation);
 
 	if (TriggerRect.Y > 0) {
-		ScenarioInitScope const scope;
-		BuildingClass * building = new BuildingClass(btype, hptr);
-		bool placed = building != nullptr && building->Unlimbo(Coord(cell));
-		if (!placed) delete building;
-		return(placed);
+		return(hptr->Place_Scenario_Building(btype, cell));
 	}
 
 	BuildingClass * building = new BuildingClass(btype, hptr);
