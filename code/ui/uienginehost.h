@@ -44,8 +44,8 @@ void UI_Fill_Stock_Colors(std::vector<Option> & colors, int limit)
 	}
 }
 
-// The houses a player can pick in a lobby (those with IsMultiplay), in HouseTypes order. At returns the
-// HouseTypes index of the house at a position in that list, or -1 outside it.
+// The houses a player can pick in a lobby (those with IsMultiplay), in HouseTypes order. UI_Multiplay_House_At
+// returns the HouseTypes index of the house at a position in that list, or -1 outside it.
 int UI_Multiplay_House_Count(void);
 int UI_Multiplay_House_At(int position);
 char const * UI_House_Name(int house);
