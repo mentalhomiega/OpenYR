@@ -1,9 +1,9 @@
-; A V3 launcher fires at the Yuri bust statue (CAEAST02) on a plateau nine levels above the launcher, more than the
-; rocket's 768-lepton cruise altitude. The rocket's nose, one BodyLength ahead along its pitch, is above the plateau
-; when the climb ends, so it flies on and detonates at the statue (cell 93,80). Counting the nose's travel as one frame's
-; step instead made it detonate over cell 98,80 just after it left the launcher.
+; A V3 launcher fires at the Yuri bust statue (CAEAST02) on a plateau nine levels (936 leptons) above the launcher, close
+; to the most the rocket can clear: it climbs 768 leptons (V3RocketAltitude), and with V3RocketPitchFinal=0.5 (45
+; degrees) its nose, 256 leptons (V3RocketBodyLength) ahead of its centre, is about 181 leptons higher still. The nose
+; is only a little above the plateau when the climb ends, so the rocket flies on and detonates at the statue (cell 93,80).
 ; The "rocket" lines log each V3ROCKET's coordinate, height above ground and destination every 4 frames after the launch.
-; Run from E:\Claude ra2 decomp: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/v3-attack-statue-cliff.txt -Map XMP08T2.MAP -Seconds 120
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/v3-attack-statue-cliff.txt -Map XMP08T2.MAP -Seconds 120 -Filter "AUTOTEST|Rocket: |Exception"
 10 command CenterBase
 30 reveal
 40 own V3 100 80

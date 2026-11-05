@@ -3793,17 +3793,20 @@ static void Terrain_Step(StepType const & step)
 
 
 // raise x y width height level: sets the ground height of that block of cells to the level, so a test can put a cliff
-// under a building. Cells are not redrawn or re-zoned.
+// under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned.
 static void Raise_Step(StepType const & step)
 {
 	int const left = step.Argument_Int();
 	int const top = step.X;
-	int const width = std::atoi(Word(step.Words, 4).c_str());
-	int const height = std::atoi(Word(step.Words, 5).c_str());
-	int const level = std::atoi(Word(step.Words, 6).c_str());
+	int const width = Number(step.Words, 4, 0);
+	int const height = Number(step.Words, 5, 0);
+	int const level = Number(step.Words, 6, 0);
 	for (int y = top; y < top + height; y++) {
 		for (int x = left; x < left + width; x++) {
-			Map[Cell(x, y)].Height = (char)level;
+			Cell const cell(x, y);
+			if (Map.Is_Valid(cell)) {
+				Map[cell].Height = (char)level;
+			}
 		}
 	}
 	DebugString("AUTOTEST   raise %d,%d %dx%d to level %d\n", left, top, width, height, level);
