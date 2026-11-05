@@ -1160,6 +1160,9 @@ void CalcRandomMapDigest(char * digest, int bufsize)
 		}
 	}
 
+	// The RMGMD.INI settings shape the map as well, so a preview cached under other settings is not reused.
+	checksum += (unsigned int)Load_RMG_Settings().Unique_ID();
+
 	snprintf(digest, bufsize, "%08X", checksum);
 	memcpy(RandomMapGen.SeedData.MapDescription, description, sizeof(description));
 }
