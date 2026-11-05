@@ -2707,15 +2707,11 @@ bool TActionClass::TAction_ION_CANNON(HouseClass * , ObjectClass * , TriggerClas
 }
 
 
-/// <summary>
-/// Launches a cluster missile at the action's waypoint.
-/// The missile is flown in from the nearest map edge just as the multi missile super
-/// weapon does, so the player sees the usual approach before the impact.
-/// </summary>
-/// <returns>bool; Was the missile launched?</returns>
-bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+// Flies a missile of the super weapon `launcher_name` in from the nearest map edge onto `location`. Returns
+// false when the bullet could not be created.
+static bool Launch_Missile_At_Waypoint(WAYPOINT location, char const * launcher_name, int max_speed)
 {
-	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
+	Cell waypoint = Scen->Get_Waypoint_Cell(location);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
 	if (Map[waypoint].IsUnderBridge) {
@@ -2724,9 +2720,9 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 
 	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
 
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("MultiLauncher")];
+	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name(launcher_name)];
 	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 50, false);
+	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, max_speed, false);
 
 	if (bullet != NULL) {
 		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
@@ -2739,6 +2735,18 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 
 
 /// <summary>
+/// Launches a cluster missile at the action's waypoint.
+/// The missile is flown in from the nearest map edge just as the multi missile super
+/// weapon does, so the player sees the usual approach before the impact.
+/// </summary>
+/// <returns>bool; Was the missile launched?</returns>
+bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
+{
+	return(Launch_Missile_At_Waypoint(EffectLocation, "MultiLauncher", 50));
+}
+
+
+/// <summary>
 /// Launches a chemical missile at the action's waypoint.
 /// The missile is flown in from the nearest map edge just as the chemical missile super
 /// weapon does, so the player sees the usual approach before the impact.
@@ -2746,26 +2754,7 @@ bool TActionClass::TAction_MULTI_MISSILE(HouseClass * , ObjectClass * , TriggerC
 /// <returns>bool; Was the missile launched?</returns>
 bool TActionClass::TAction_CHEM_MISSILE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
-	Coord coord = Coord (waypoint);
-	coord.Z = Map.Get_Height_GL(coord);
-	if (Map[waypoint].IsUnderBridge) {
-		coord.Z += BRIDGE_LEPTON_HEIGHT;
-	}
-
-	Cell closest = Map.Closest_Edge_Cell(coord.As_Cell());
-
-	WeaponTypeClass const * weapon_type = Weapons[WeaponTypeClass::From_Name("ChemLauncher")];
-	BulletTypeClass const * bullet_type = weapon_type->Bullet;
-	BulletClass * bullet = Create_Bullet(bullet_type, &Map[coord], NULL, weapon_type->Attack, weapon_type->WarheadPtr, 20, false);
-
-	if (bullet != NULL) {
-		TVelocity3D<double> velocity(DIR_E, DIR_N, 100);
-		bullet->Unlimbo(closest, velocity);
-		return(true);
-	}
-
-	return(false);
+	return(Launch_Missile_At_Waypoint(EffectLocation, "ChemLauncher", 20));
 }
 
 
