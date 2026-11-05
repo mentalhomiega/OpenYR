@@ -549,16 +549,7 @@ void UI_Display_State(UIDisplayState & state)
 	int frame_height = 0;
 	_Service.Frame_Size(Options.ScreenWidth, Options.ScreenHeight, Options.InterfaceScale, frame_width, frame_height);
 	// The fewest rows when the saved count is below every choice.
-	state.RowCount = 0;
-	for (int value : _Service.Sidebar_Row_Counts(frame_height)) {
-		UIChoice choice;
-		choice.Value = value;
-		choice.Label = std::to_string(value);
-		if (value <= Options.SidebarRows) {
-			state.RowCount = (int)state.RowCounts.size();
-		}
-		state.RowCounts.push_back(choice);
-	}
+	state.RowCount = std::max(0, Fill_Count_Choices(state.RowCounts, _Service.Sidebar_Row_Counts(frame_height), Options.SidebarRows));
 
 	// Automatic, the usual steps, and whatever else the settings file has asked for.
 	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};

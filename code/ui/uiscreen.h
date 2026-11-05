@@ -42,6 +42,8 @@ struct UIChoice
 
 int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> choices, int current, char const * format);
 
+int Fill_Count_Choices(std::vector<UIChoice> & list, std::vector<int> const & values, int limit);
+
 // The name at index, or an empty string when index is outside the list.
 std::string UI_Name_At(std::vector<std::string> const & names, int index);
 
