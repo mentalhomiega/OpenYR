@@ -3488,18 +3488,25 @@ static void Strike_Step(StepType const & step)
 }
 
 
-// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
-// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
-static void Planmove_Step(StepType const & step)
+// Gives the player's soldiers and vehicles of the step's type the order, logging it under the step's name. While planning
+// is on, the order is recorded as a planned leg.
+static void Plan_Order_Step(StepType const & step, char const * label, MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
-	Cell const cell(step.X, step.Y);
 	PlanningRecordScope const recording(Map.IsPlanningMode);
 	For_Technos(
 		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
 		[&](TechnoClass * techno) {
-			DebugString("AUTOTEST   planmove %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
-			techno->Player_Assign_Mission(MISSION_MOVE, NULL, &Map[cell]);
+			DebugString("AUTOTEST   %s %s from %d,%d to %d,%d\n", label, techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
+			techno->Player_Assign_Mission(mission, target, destination);
 		});
+}
+
+
+// planmove <TypeID> x y: the player's objects of that type are given a move to the cell, as a click on the ground
+// gives them. While planning is on, the move is recorded as a planned leg, so the next leg of the plan follows it.
+static void Planmove_Step(StepType const & step)
+{
+	Plan_Order_Step(step, "planmove", MISSION_MOVE, NULL, &Map[Cell(step.X, step.Y)]);
 }
 
 
@@ -3526,14 +3533,7 @@ static void Plantbomb_Step(StepType const & step)
 // action gives them. While planning is on, the order is recorded as a planned leg.
 static void Planguard_Step(StepType const & step)
 {
-	Cell const cell(step.X, step.Y);
-	PlanningRecordScope const recording(Map.IsPlanningMode);
-	For_Technos(
-		[&](TechnoClass * techno) {return(Is_Player_Techno_Named(techno, step.Argument) && techno->Is_Foot());},
-		[&](TechnoClass * techno) {
-			DebugString("AUTOTEST   planguard %s from %d,%d to %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, step.X, step.Y);
-			techno->Player_Assign_Mission(MISSION_GUARD_AREA, &Map[cell]);
-		});
+	Plan_Order_Step(step, "planguard", MISSION_GUARD_AREA, &Map[Cell(step.X, step.Y)], NULL);
 }
 
 
