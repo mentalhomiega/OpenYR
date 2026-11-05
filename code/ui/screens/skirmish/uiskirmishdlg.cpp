@@ -439,17 +439,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	random.Label = "Random";
 	random.Value = -1;
 	state.Sides.push_back(random);
-	for (int index = 0; index < HouseTypes.Count(); index++) {
-		HouseTypeClass * house = HouseTypes[index];
-		if (!house->IsMultiplay) {
-			continue;
-		}
-
-		UISkirmishOption option;
-		option.Label = house->Full_Name();
-		option.Value = index;
-		state.Sides.push_back(option);
-	}
+	UI_Fill_Multiplay_Sides(state.Sides, -1);
 
 	UI_Color_Pick_Build_Presets(state.Picker);
 	UI_Fill_Stock_Colors(state.Colors, MAX_PLAYERS);

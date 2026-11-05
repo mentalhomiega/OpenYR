@@ -229,20 +229,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 	state.Sides.clear();
 	state.Side = 0;
-	for (int index = 0; index < HouseTypes.Count(); index++) {
-		HouseTypeClass * house = HouseTypes[index];
-		if (!house->IsMultiplay) {
-			continue;
-		}
-
-		UINetOption option;
-		option.Label = house->Full_Name();
-		option.Value = index;
-		if (index == Session.House) {
-			state.Side = (int)state.Sides.size();
-		}
-		state.Sides.push_back(option);
-	}
+	UI_Fill_Multiplay_Sides(state.Sides, Session.House, &state.Side);
 
 	UI_Fill_Stock_Colors(state.Colors, MAX_MPLAYER_COLORS);
 	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
