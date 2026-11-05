@@ -17,6 +17,7 @@ version: 1
 records:
   # Our own keys.
   added-usecameosortorder: OpenYR
+  added-rmgvegetationmaptype: OpenYR
   animation-fires-key: OpenYR
   added-barrelanimzadjust: OpenYR
   added-extendedanimfacings: OpenYR

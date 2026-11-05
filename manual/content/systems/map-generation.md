@@ -21,14 +21,29 @@ keys:
   - IonGround
   - IonLevel
   - IonRed
+  - MaxTrees
   - NumPlayers
   - PavedRoadEnds
   - PavedRoadSlopes
   - PavedRoads
+  - RMGLevelLightSettings
+  - RMGMaximumTiberium
+  - RMGMinimumTiberium
+  - RMGVegetationMapType
+  - RMGVegetationMaximums
+  - RMGVegetationMinimums
   - RegionSize
   - RequiredForRMG
   - Ruggedness
   - Seed
+  - SnowAmbientBlue
+  - SnowAmbientGreen
+  - SnowAmbientLight
+  - SnowAmbientRed
+  - TemperateAmbientBlue
+  - TemperateAmbientGreen
+  - TemperateAmbientLight
+  - TemperateAmbientRed
   - Tiberium
   - TiberiumLayout
   - TiberiumWildlife
@@ -45,6 +60,8 @@ keys:
 related:
   - type: format
     id: map-seed
+  - type: format
+    id: rmgmd-ini
   - type: format
     id: theater-control
   - type: system
@@ -102,6 +119,8 @@ The preview is never played. Accepting the dialog saves its settings to `RandMap
 
 Accepting the dialog builds a preview only when none has been built since the dialog opened. Otherwise it reuses the last preview. If a setting changed after the last preview, the lobby thumbnail still shows the older map, while the match uses the new settings.
 
+The randomize button picks `Vegetation` from the range that [`RMGVegetationMinimums`](/keys/rmgvegetationminimums/) and [`RMGVegetationMaximums`](/keys/rmgvegetationmaximums/) set, and every other setting from its full range.
+
 Both routes hold every setting to its legal range before a map is built. The dialog does this whenever it reads its controls, fills them in or rolls a random set. The scenario route does it after reading the file. Each setting's key page gives its range.
 
 ## Sizing and the blank map
@@ -110,7 +129,7 @@ The first pass builds the blank map that the other passes work on.
 
 [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) selects a row of minimum and maximum sizes, and [`Width`](/keys/width/#scope-random-map-generation) and [`Height`](/keys/height/#scope-random-map-generation) each pick a point within that row. [Map seed files](/formats/map-seed/) has the table. The result is the playable area. The playfield is four cells wider and twelve cells taller, with the playable area inset two columns and five rows. No setting changes that border.
 
-[`Biome`](/keys/biome/) selects the theater: snow for tundra and taiga, temperate for the other three. [`Time`](/keys/time/) selects the ambient light level. Outside storms, each height level adds 3 thousandths of full light at every hour, a fixed amount that works as [`Level=.003`](/keys/level/#scope-scenarios-2) does in a map file. Every cell starts as `Clear` ground at height 4, whatever the biome.
+[`Biome`](/keys/biome/) selects the theater: snow for tundra and taiga, temperate for the other three. [`Time`](/keys/time/) selects the map's lighting from the lists in [RMGMD.INI](/formats/rmgmd-ini/): the ambient light, the red, green and blue tints, and the light each height level adds. A tundra or taiga map takes the snow lists, such as [`SnowAmbientLight`](/keys/snowambientlight/), and the other biomes take the temperate lists, such as [`TemperateAmbientLight`](/keys/temperateambientlight/). [`RMGLevelLightSettings`](/keys/rmglevellightsettings/) sets the height level light for both. Every cell starts as `Clear` ground at height 4, whatever the biome.
 
 Two settings load extra files before any terrain is placed:
 
@@ -119,27 +138,23 @@ Two settings load extra files before any terrain is placed:
 
 This pass also decides, with one chance in four, whether a river on this map may have a waterfall.
 
-:::caution[An ion storm leaves a snow map brighter than it started]
-A tundra or taiga map is lit at three quarters of the hour's ambient level. The level an ion storm restores when it ends is the hour's full level. On a snow map with `UseIonStorms=yes`, the first storm to end therefore leaves the map brighter than it began.
-:::
-
 ## The passes in order
 
 The passes run in the order below. Each reads only the settings listed beside it. No pass reads [`Description`](/keys/description/#scope-random-map-generation).
 
 | Pass | Settings it reads |
 | --- | --- |
-| Sizing and the blank map | `NumPlayers`, `Width`, `Height`, `Biome`, `Time`, `UseTransitions`, `UseIonStorms` |
+| Sizing and the blank map | `NumPlayers`, `Width`, `Height`, `Biome`, `Time`, `UseTransitions`, `UseIonStorms`, and the lighting lists of `RMGMD.INI` |
 | Water | `WaterAmount`, `Biome` |
 | Ice smoothing | `Biome` |
 | Regions, cliffs and ramps | `RegionSize`, `Accessibility`, `Biome` |
 | Start points and the layout spread | `NumPlayers`, `TiberiumLayout` |
 | Floodlights | `Time`, `UseTransitions`, `NumPlayers` |
 | Veinholes | `VeinholeMonsters`, `Biome` |
-| Tiberium | `Tiberium`, `NumPlayers`, `UseBlueTiberium`, `TiberiumWildlife` |
+| Tiberium | `Tiberium`, `NumPlayers`, `UseBlueTiberium`, `TiberiumWildlife`, `RMGMinimumTiberium`, `RMGMaximumTiberium` |
 | Settlements | `UrbanPresence`, `Biome` |
 | Hills | `Ruggedness` |
-| Ground cover | `Vegetation`, `Biome`, `Width`, `Height` |
+| Ground cover | `Vegetation`, `Biome`, `Width`, `Height`, `MaxTrees` |
 
 Many passes and branches run only under a condition, and most of those conditions are the biome:
 
@@ -222,7 +237,7 @@ An accepted cell takes the `VEINHOLE` overlay, and its eight neighbors take `VEI
 
 The tiberium pass grows a field at every layout site, then one at each start point.
 
-The layout fields share an amount of tiberium set by [`Tiberium`](/keys/tiberium/#scope-random-map-generation) and `NumPlayers`. It is divided evenly among them, with a small random variation per field, so more fields means smaller ones.
+Each player adds an amount of tiberium to the layout fields. [`Tiberium`](/keys/tiberium/#scope-random-map-generation) picks the amount between [`RMGMinimumTiberium`](/keys/rmgminimumtiberium/) and [`RMGMaximumTiberium`](/keys/rmgmaximumtiberium/), and the total for `NumPlayers` players is divided evenly among the fields, with a small random variation per field, so more fields means smaller ones.
 
 Each player's start field has a size of 500, plus 15 for every cell the player sits farther from the layout sites, on average, than the closest player does. The player farthest from the map's tiberium gets the largest start field, and the closest player gets 500. `Tiberium` does not change start fields.
 
@@ -279,7 +294,7 @@ Ground cover is placed last, and the two biome groups are handled differently. B
 
 A patch or wood starts only on a cell that is clear ground, has no ramp and is not protected. On temperate, desert and mutated maps, that cell must also have no overlay and nothing standing on it.
 
-From that cell, a patch spreads over neighboring clear ground with no ramp, no overlay and nothing standing on it. Protected ground does not stop it. A wood also spreads, but never onto protected ground.
+From that cell, a patch spreads over neighboring clear ground with no ramp, no overlay and nothing standing on it. Protected ground does not stop it. A wood also spreads, but never onto protected ground. Once the woods have planted as many trees as [`MaxTrees`](/keys/maxtrees/) allows for the map's `Width` and `Vegetation`, they plant no more, though they still spread.
 
 On **temperate, desert and mutated** maps:
 

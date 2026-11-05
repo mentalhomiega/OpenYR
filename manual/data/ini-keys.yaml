@@ -24200,6 +24200,24 @@ MaxPlayers:
       source: code/session.cpp
       guard: null
     level: MultiMission
+MaxTrees:
+  key: MaxTrees
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: MaxTrees
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
 MaxVeinholeGrowth:
   key: MaxVeinholeGrowth
   scopes:
@@ -30546,6 +30564,114 @@ QueueingCell:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+RMGLevelLightSettings:
+  key: RMGLevelLightSettings
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+RMGMaximumTiberium:
+  key: RMGMaximumTiberium
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: MaximumTiberium
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+RMGMinimumTiberium:
+  key: RMGMinimumTiberium
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: MinimumTiberium
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+RMGVegetationMapType:
+  key: RMGVegetationMapType
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: map_type
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+RMGVegetationMaximums:
+  key: RMGVegetationMaximums
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+RMGVegetationMinimums:
+  key: RMGVegetationMinimums
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
 ROF:
   key: ROF
   scopes:
@@ -35420,6 +35546,78 @@ SniperTurretWeapon:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+SnowAmbientBlue:
+  key: SnowAmbientBlue
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+SnowAmbientGreen:
+  key: SnowAmbientGreen
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+SnowAmbientLight:
+  key: SnowAmbientLight
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+SnowAmbientRed:
+  key: SnowAmbientRed
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
 SnowOccupationBits:
   key: SnowOccupationBits
   scopes:
@@ -39989,6 +40187,78 @@ Teleporter:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+TemperateAmbientBlue:
+  key: TemperateAmbientBlue
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+TemperateAmbientGreen:
+  key: TemperateAmbientGreen
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+TemperateAmbientLight:
+  key: TemperateAmbientLight
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
+TemperateAmbientRed:
+  key: TemperateAmbientRed
+  scopes:
+  - applies_to:
+    - random map generation
+    file: rmgmd.ini
+    section:
+      kind: literal
+      name: General
+    value_type: list of integers
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: RMGSettingsClass
+      member: null
+      source: code/rmgsettings.cpp
+      guard: null
+    level: RMGSettingsClass
 TemperateOccupationBits:
   key: TemperateOccupationBits
   scopes:
