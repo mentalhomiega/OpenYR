@@ -74,6 +74,7 @@
 #include "b64straw.h"
 #include "cstraw.h"
 #include "dbgprint.h"
+#include "hexdigit.h"
 #include "numparse.h"
 #include "pk.h"
 #include "rect.h"
@@ -964,20 +965,12 @@ static bool Parse_Hex_Field(char const * & ptr, int digits, unsigned int & value
 	value = 0;
 
 	for (int index = 0; index < digits; index++) {
-		char const letter = *ptr++;
-		unsigned int digit;
-
-		if (letter >= '0' && letter <= '9') {
-			digit = (unsigned int)(letter - '0');
-		} else if (letter >= 'A' && letter <= 'F') {
-			digit = (unsigned int)(letter - 'A') + 10;
-		} else if (letter >= 'a' && letter <= 'f') {
-			digit = (unsigned int)(letter - 'a') + 10;
-		} else {
+		int const digit = Hex_Digit_Value(*ptr++);
+		if (digit < 0) {
 			return(false);
 		}
 
-		value = (value << 4) | digit;
+		value = (value << 4) | (unsigned int)digit;
 	}
 
 	return(true);
