@@ -667,6 +667,12 @@ class MapGeneratorClass
 		 * rolled once per map, so a map either has them or it does not.
 		 */
 		bool PlaceWaterfall;
+
+		/*
+		 * This is how many more trees the woods of the map being made may plant. MaxTrees in
+		 * RMGMD.INI sets it before the vegetation pass, from the map's width and vegetation.
+		 */
+		int TreesLeft;
 };
 
 extern MapGeneratorClass RandomMapGen;

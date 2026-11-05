@@ -3244,7 +3244,8 @@ MapGeneratorClass::MapGeneratorClass(void) :
 	LocalHeight(0),
 	SeededWaterAmount(0),
 	PlaceWaterfall(0),
-	CellHeight(4)
+	CellHeight(4),
+	TreesLeft(0)
 {
 	//nothing
 }
@@ -4416,6 +4417,8 @@ ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, CCINIClass 
 	if (RMGCallback != NULL) RMGCallback();
 
 	DebugString("RMG: Creating LATs, rocks etc\n");
+
+	TreesLeft = Settings.Tree_Limit(SeedData.Width, SeedData.Vegetation);
 
 	if (SeedData.Biome == BIOME_DESERT || SeedData.Biome == BIOME_TEMPERATE || SeedData.Biome == BIOME_MUTATED) {
 		Seed_Vegetation();
@@ -7948,7 +7951,10 @@ void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, doubl
 				char tree_name[20];
 				int tree_index = Pick_Random_UInt(min_tree, max_tree);
 				sprintf(tree_name, "TREE%d%d", tree_index / 10, tree_index % 10);
-				new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+				if (TreesLeft > 0) {
+					new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+					TreesLeft--;
+				}
 			}
 		}
 

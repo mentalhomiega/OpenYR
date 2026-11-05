@@ -145,6 +145,7 @@
 #include "armortypes.h"
 #include "cameopcx.h"
 #include "empulse.h"
+#include "mapgen.h"
 #include "strutil.h"
 #include "surface.h"
 #include "truecolour.h"
@@ -1169,8 +1170,9 @@ static void Trees_Step(StepType const &)
 }
 
 
-// randommap: writes the scenario lighting, the number of trees and other terrain objects, and the number of
-// GALITE lamps, for checking what the map generator made.
+// randommap: writes the scenario lighting, the number of trees and other terrain objects, the number of
+// GALITE lamps, and how many more trees the generator's woods could have planted, for checking what the map
+// generator made.
 static void Randommap_Step(StepType const &)
 {
 	int trees = 0;
@@ -1187,7 +1189,7 @@ static void Randommap_Step(StepType const &)
 	}
 	DebugString("AUTOTEST   randommap random %d ambient %d current %d tint %d,%d,%d ground %d level %d ion ambient %d\n", (int)Scen->IsRandom,
 		Scen->AmbientLight, Scen->CurrentAmbientLight, Scen->RedTint, Scen->GreenTint, Scen->BlueTint, Scen->GroundLight, Scen->LevelLight, Scen->IonAmbientLight);
-	DebugString("AUTOTEST   randommap trees %d other terrain %d lamps %d\n", trees, Terrains.Count() - trees, lamps);
+	DebugString("AUTOTEST   randommap trees %d other terrain %d lamps %d, %d more trees allowed\n", trees, Terrains.Count() - trees, lamps, RandomMapGen.TreesLeft);
 }
 
 
