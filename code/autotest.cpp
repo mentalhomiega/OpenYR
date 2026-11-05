@@ -115,6 +115,7 @@
 #include "video.h"
 #include "bgfxbackend.h"
 #include "gamedirs.h"
+#include "littleendian.h"
 #include "theme.h"
 #include "_rect.h"
 #include "vox.h"
@@ -4270,24 +4271,22 @@ static void Musicstage_Step(StepType const &)
 		}
 		unsigned const rate = 22050, channels = stereo ? 2 : 1, frames = rate;
 		std::vector<unsigned char> wav;
-		auto put32 = [&wav](unsigned value) { for (int i = 0; i < 4; i++) wav.push_back((unsigned char)(value >> (8 * i))); };
-		auto put16 = [&wav](unsigned value) { for (int i = 0; i < 2; i++) wav.push_back((unsigned char)(value >> (8 * i))); };
 		wav.insert(wav.end(), { 'R', 'I', 'F', 'F' });
-		put32(36 + frames * channels * 2);
+		Put_U32_LE(wav, 36 + frames * channels * 2);
 		wav.insert(wav.end(), { 'W', 'A', 'V', 'E', 'f', 'm', 't', ' ' });
-		put32(16);
-		put16(1);
-		put16(channels);
-		put32(rate);
-		put32(rate * channels * 2);
-		put16(channels * 2);
-		put16(16);
+		Put_U32_LE(wav, 16);
+		Put_U16_LE(wav, 1);
+		Put_U16_LE(wav, channels);
+		Put_U32_LE(wav, rate);
+		Put_U32_LE(wav, rate * channels * 2);
+		Put_U16_LE(wav, channels * 2);
+		Put_U16_LE(wav, 16);
 		wav.insert(wav.end(), { 'd', 'a', 't', 'a' });
-		put32(frames * channels * 2);
+		Put_U32_LE(wav, frames * channels * 2);
 		for (unsigned frame = 0; frame < frames; frame++) {
 			int const sample = ((frame / 25) & 1) ? 6000 : -6000;
 			for (unsigned channel = 0; channel < channels; channel++) {
-				put16((unsigned)(sample & 0xFFFF));
+				Put_U16_LE(wav, (unsigned)(sample & 0xFFFF));
 			}
 		}
 		Write_Binary_File(path, wav.data(), wav.size());
