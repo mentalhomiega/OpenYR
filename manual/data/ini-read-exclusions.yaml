@@ -298,6 +298,11 @@ site_exclusions:
     reason: A switch the menu battle test scripts write with -Settings so the battle runs during a test; the manual does not document it.
 
   # Campaign mission labels and palettes that the mission browser shows as menu text.
+  - path: code/scenario.cpp
+    function: Mission_Database_Briefing_Label
+    keys: [Briefing]
+    classification: excluded
+    reason: A campaign mission's briefing label in MISSIONMD.INI, which the mission browser and the objectives screen show as menu text rather than game data.
   - path: code/ui/screens/missionbrowser/uimissionbrowserdlg.cpp
     function: Mission_Briefing
     keys: [Briefing]
