@@ -132,17 +132,19 @@ bool Write_PCX_File(FileClass & file, Surface & pic, PaletteClass * palette)
 		unsigned char *file_ptr = new unsigned char[pic.Get_Width() * ((4 + 1) * 2)];
 
 		for (int line = 0; line < header.height + 1; line++) {
-			unsigned short * buffer = (unsigned short *)pic.Lock(Point2D(0, line));
-			if (buffer == NULL) {
-				return(1);
+			{
+				SurfaceLock lock(pic, Point2D(0, line));
+				unsigned short * buffer = lock.As<unsigned short>();
+				if (buffer == NULL) {
+					return(1);
+				}
+				for (int j = 0; j < pic.Get_Width(); j++) {
+					RGBClass color = DSurface::Deconstruct_Hicolor_Pixel(*buffer++);
+					line1[j] = color.Get_Red();
+					line2[j] = color.Get_Green();
+					line3[j] = color.Get_Blue();
+				}
 			}
-			for (int j = 0; j < pic.Get_Width(); j++) {
-				RGBClass color = DSurface::Deconstruct_Hicolor_Pixel(*buffer++);
-				line1[j] = color.Get_Red();
-				line2[j] = color.Get_Green();
-				line3[j] = color.Get_Blue();
-			}
-			pic.Unlock();
 			int size = 0;
 			size += Write_Pcx_ScanLine_Buf(pic.Get_Width(),(char *)line1, (char *)file_ptr + size);
 			size += Write_Pcx_ScanLine_Buf(pic.Get_Width(),(char *)line2, (char *)file_ptr + size);

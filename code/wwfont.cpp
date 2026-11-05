@@ -477,7 +477,8 @@ Point2D WWFontClass::Print(char const * string, Surface & surface, Rect const & 
 	/*
 	**	Check to see if access to the surface buffer is possible.
 	*/
-	void * buffer = surface.Lock();
+	SurfaceLock lock(surface);
+	void * buffer = lock.As<void>();
 	if (buffer != NULL) {
 		int startx = xpos;
 		unsigned char * fontwidth = ((unsigned char*)FontData) + FontData->WidthBlockOffset;
@@ -688,7 +689,6 @@ Point2D WWFontClass::Print(char const * string, Surface & surface, Rect const & 
 		}
 
 		point = Point2D(xpos - cliprect.X, ypos - cliprect.Y);
-		surface.Unlock();
 	}
 	return(point);
 }

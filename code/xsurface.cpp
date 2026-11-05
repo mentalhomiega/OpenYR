@@ -710,14 +710,13 @@ bool XSurface::Draw_Rect(Rect const & cliprect, Rect const & crect, int color)
 int XSurface::Get_Pixel(Point2D const & point) const
 {
 	int color = 0;
-	void * pointer = ((Surface*)this)->Lock(point);
-	if (pointer != NULL) {
+	SurfaceLock lock(*this, point);
+	if (lock.Is_Valid()) {
 		if (Bytes_Per_Pixel() == 2) {
-			color = *((unsigned short*)pointer);
+			color = *lock.As<unsigned short>();
 		} else {
-			color = *((unsigned char*)pointer);
+			color = *lock.As<unsigned char>();
 		}
-		((Surface*)this)->Unlock();
 	}
 	return(color);
 }
@@ -742,14 +741,13 @@ int XSurface::Get_Pixel(Point2D const & point) const
  *=============================================================================================*/
 bool XSurface::Put_Pixel(Point2D const & point, int color)
 {
-	void * pointer = Lock(point);
-	if (pointer != NULL) {
+	SurfaceLock lock(*this, point);
+	if (lock.Is_Valid()) {
 		if (Bytes_Per_Pixel() == 2) {
-			*((unsigned short*)pointer) = (unsigned short)color;
+			*lock.As<unsigned short>() = (unsigned short)color;
 		} else {
-			*((unsigned char*)pointer) = (unsigned char)color;
+			*lock.As<unsigned char>() = (unsigned char)color;
 		}
-		Unlock();
 		return(true);
 	}
 	return(false);
@@ -767,15 +765,14 @@ int XSurface::Get_Pixel_Clip(Point2D const & point, Rect const & rect) const
 	unsigned pixel = 0;
 
 	if (rect.Is_Point_Within(point)) {
-		void *buffptr = Lock(point);
+		SurfaceLock lock(*this, point);
 
-		if (buffptr != NULL) {
+		if (lock.Is_Valid()) {
 			if (Bytes_Per_Pixel() == 2) {
-				pixel = *static_cast<unsigned short *>(buffptr);
+				pixel = *lock.As<unsigned short>();
 			} else {
-				pixel = *static_cast<unsigned char *>(buffptr);
+				pixel = *lock.As<unsigned char>();
 			}
-			Unlock();
 		}
 	}
 	return(pixel);
@@ -790,15 +787,14 @@ int XSurface::Get_Pixel_Clip(Point2D const & point, Rect const & rect) const
 bool XSurface::Put_Pixel_Clip(Point2D const & point, int color, Rect const & rect)
 {
 	if (rect.Is_Point_Within(point)) {
-		void *buffptr = Lock(point);
+		SurfaceLock lock(*this, point);
 
-		if (buffptr != NULL) {
+		if (lock.Is_Valid()) {
 			if (Bytes_Per_Pixel() == 2) {
-				*static_cast<unsigned short *>(buffptr) = color;
+				*lock.As<unsigned short>() = color;
 			} else {
-				*static_cast<unsigned char *>(buffptr) = color;
+				*lock.As<unsigned char>() = color;
 			}
-			Unlock();
 			return(true);
 		}
 	}
@@ -890,7 +886,8 @@ bool XSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 	int width = crect.Width;
 	int pitch = Stride();
 
-	void * buffer = Lock(crect.Top_Left());
+	SurfaceLock lock(*this, crect.Top_Left());
+	void * buffer = lock.As<void>();
 	if (buffer != NULL) {
 		if (Bytes_Per_Pixel() == 1) {
 			for (int y = 0; y < crect.Height; y++) {
@@ -949,7 +946,6 @@ bool XSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 				}
 			}
 		}
-		Unlock();
 		return(true);
 	}
 	return(false);
