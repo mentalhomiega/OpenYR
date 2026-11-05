@@ -1777,7 +1777,8 @@ static void Mod_Signature_Step(StepType const & step)
 // The virtual-key code of a key step's first word: a single character gives its upper-case code, and a longer word is read as a decimal number.
 static int Key_Code(std::string const & name)
 {
-	std::string const word = name.substr(0, name.find_first_of(" \t"));
+	std::string rest;
+	std::string const word = Split_Argument(name, 1, rest).front();
 	if (word.size() == 1) {
 		return(std::toupper((unsigned char)word[0]));
 	}
@@ -2868,7 +2869,8 @@ static void Binding_Step(StepType const & step)
 static void Scheme_Step(StepType const & step)
 {
 	KeyboardScheme scheme = KEYBOARD_SCHEME_CLASSIC;
-	Keyboard_Scheme_From_Name(step.Argument.substr(0, step.Argument.find_first_of(" \t")), scheme);
+	std::string rest;
+	Keyboard_Scheme_From_Name(Split_Argument(step.Argument, 1, rest).front(), scheme);
 	HotkeyScheme = scheme;
 	HotkeyBindings = Scheme_Hotkeys(scheme);
 	Apply_Hotkeys();
