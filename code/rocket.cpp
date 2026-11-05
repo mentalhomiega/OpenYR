@@ -22,6 +22,7 @@
 #include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
+#include "gmmath.h"
 #include "inline.h"
 #include "map.h"
 #include "rules.h"
@@ -273,14 +274,32 @@ bool RocketLocomotionClass::Process(void)
 
 
 /// <summary>
-/// Detonates the missile if its nose, one body length ahead along its pitch, is at or below its target's height,
-/// or if it is on the ground, and returns whether it did (gamemd 0x6620F0).
+/// Returns the point one body length ahead of the missile's centre along its facing and pitch, where it explodes
+/// (gamemd 0x663030 and 0x6620F0).
+/// </summary>
+Coord RocketLocomotionClass::Nose_Coord(void) const
+{
+	int const length = Rocket_Settings(LinkedTo).BodyLength;
+	Coord const position = LinkedTo->Get_Coord();
+	int const flat = int(double(Gamemd_Cosine(CurrentPitch)) * length);
+	Coord nose = Move_Coord(position, LinkedTo->SecondaryFacing.Current(), flat);
+	nose.Z = int(double(Gamemd_Sine(CurrentPitch)) * length + position.Z);
+	return(nose);
+}
+
+
+/// <summary>
+/// Detonates the missile if its nose is at or below its target's height, if it is under a bridge deck at the target's
+/// height and its nose is within a bridge's height above it, or if it is on the ground, and returns whether it did
+/// (gamemd 0x6620F0).
 /// </summary>
 bool RocketLocomotionClass::Is_Impact_Due(void)
 {
-	Coord const position = LinkedTo->Get_Coord();
-	int const nose_z = int(std::sin(CurrentPitch) * Rocket_Settings(LinkedTo).BodyLength + position.Z);
-	if (nose_z <= DestinationCoord.Z || LinkedTo->HeightAGL < 1) {
+	int const nose_z = Nose_Coord().Z;
+	CellClass const * cell = LinkedTo->Get_Cell_Ptr();
+	bool const under_target_bridge = cell != NULL && cell->IsUnderBridge && cell->Center_Coord().Z == DestinationCoord.Z &&
+		nose_z <= DestinationCoord.Z + BRIDGE_LEPTON_HEIGHT;
+	if (nose_z <= DestinationCoord.Z || under_target_bridge || LinkedTo->HeightAGL < 1) {
 		Explode();
 		return(true);
 	}
@@ -313,7 +332,7 @@ void RocketLocomotionClass::Move_Along(void)
 
 
 /// <summary>
-/// Blows the missile up where it is with its type's damage and warhead, elite ones when its
+/// Blows the missile up at its nose with its type's damage and warhead, elite ones when its
 /// launcher was elite (0x663030), and removes it.
 /// </summary>
 void RocketLocomotionClass::Explode(void)
@@ -324,9 +343,9 @@ void RocketLocomotionClass::Explode(void)
 	WarheadTypeClass const * warhead = Rule->Rocket_Warhead(type, IsSpawnerElite);
 	int const damage = IsSpawnerElite ? rocket.EliteDamage : rocket.Damage;
 
-	Coord const coord = LinkedTo->Get_Coord();
+	Coord const coord = Nose_Coord();
 	MissionState = STATE_NONE;
-	DebugString("Rocket: %s explodes at %d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y);
+	DebugString("Rocket: %s explodes at %d,%d at %d,%d,%d\n", LinkedTo->TClass->Name(), coord.As_Cell().X, coord.As_Cell().Y, coord.X, coord.Y, coord.Z);
 
 	// The missile deals the blast and keeps its house after its launcher is gone, so the kill is
 	// credited to the house that fired it (RocketLocomotionClass::Explode, 0x6632C7). The blast names

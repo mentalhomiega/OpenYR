@@ -52,6 +52,7 @@ class RocketLocomotionClass : public LocomotionClass
 		bool Timer_Expired(void) const;
 		double Timer_Progress(void) const;
 		void Start_Timer(int frames);
+		Coord Nose_Coord(void) const;
 		bool Is_Impact_Due(void);
 		void Explode(void);
 		void Move_Along(void);
