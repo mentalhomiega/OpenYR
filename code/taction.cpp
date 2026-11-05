@@ -2834,11 +2834,7 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 	Cell cell = Scen->Get_Waypoint_Cell(EffectLocation);
 
 	if (TriggerRect.Y > 0) {
-		ScenarioInitScope const scope;
-		BuildingClass * building = new BuildingClass(btype, hptr);
-		bool placed = building != nullptr && building->Unlimbo(Coord(cell));
-		if (!placed) delete building;
-		return(placed);
+		return(hptr->Place_Scenario_Building(btype, cell));
 	}
 
 	BuildingClass * building = new BuildingClass(btype, hptr);
@@ -3457,9 +3453,7 @@ bool TActionClass::TAction_FLASH_BUILDINGS(HouseClass * house, ObjectClass * , T
 /// <returns>bool; Does the trigger have a house?</returns>
 bool TActionClass::TAction_BLACKOUT_RADAR(HouseClass * house, ObjectClass * , TriggerClass * , Cell const & )
 {
-	house->RadarBlackout = Data.Value;
-	house->IsRadarBlackout = true;
-	house->RecalcRadar = true;
+	house->Start_Radar_Blackout(Data.Value);
 	return(true);
 }
 
