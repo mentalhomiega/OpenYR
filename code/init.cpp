@@ -2314,14 +2314,7 @@ static void Read_Palette(PaletteClass & palette, char const * name)
 		return;
 	}
 
-	memmove(&palette[0], data, sizeof(palette));
-
-	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
-		palette[index] = RGBClass(
-				(unsigned char)(palette[index].Get_Red()<<2),
-				(unsigned char)(palette[index].Get_Green()<<2),
-				(unsigned char)(palette[index].Get_Blue()<<2));
-	}
+	palette = Widen_Six_Bit_Palette(data);
 }
 
 
@@ -7979,12 +7972,7 @@ void Init_Theater(TheaterType theater)
 			SchemePalette = *unitpal;
 		}
 
-		for (int index = 0; index < 256; index++) {
-			SchemePalette[index] = RGBClass(
-					(unsigned char)(SchemePalette[index].Get_Red()<<2),
-					(unsigned char)(SchemePalette[index].Get_Green()<<2),
-					(unsigned char)(SchemePalette[index].Get_Blue()<<2));
-		}
+		SchemePalette = Widen_Six_Bit_Palette(&SchemePalette[0]);
 
 		int last_percent = 12;
 		int prog_step = ColorSchemes.Count() / (25 - 12);
