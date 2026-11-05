@@ -103,6 +103,8 @@ int main(void)
 	Check(shorter.TemperateAmbientLight == RMGSettingsClass::TimeList{10, 20, 75, 35},
 		"a short list sets its entries and the rest keep their defaults");
 	Check(shorter.SnowAmbientRed == RMGSettingsClass::TimeList{1, 2, 3, 4}, "entries past the fourth time of day are ignored");
+	Check(Read("[General]\nSnowAmbientLight=10,,20, 30\n").SnowAmbientLight == RMGSettingsClass::TimeList{10, 20, 30, 55},
+		"empty entries are skipped and blanks around an entry are allowed, as gamemd reads a list");
 
 	RMGSettingsClass::LightingType const night = stock.Lighting(false, 3);
 	Check(night.Ambient == 35 && night.Red == 51 && night.Green == 46 && night.Blue == 141 && night.Level == 3,
