@@ -182,22 +182,14 @@ class MapClass: public GScreenClass
 		/*
 		 * Train / high per-direction damage and destruction walkers
 		 */
-		void Internal_Damage_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
+		void Internal_Damage_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
 
 		/*
 		 * Train and high bridge span damage and destruction
