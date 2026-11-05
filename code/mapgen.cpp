@@ -7164,7 +7164,7 @@ bool MapGeneratorClass::Init_Start_Points(void)
 /// </summary>
 void MapGeneratorClass::Create_Tiberium(void)
 {
-	int tiberium_count = SeedData.NumPlayers * (30 * SeedData.Tiberium + 2500) / TiberiumLayoutCells->Count();
+	int tiberium_count = SeedData.NumPlayers * Settings.Tiberium_Amount(SeedData.Tiberium) / TiberiumLayoutCells->Count();
 	int tib_index = 0;
 	int layout_index = 0;
 
