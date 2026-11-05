@@ -20,6 +20,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "globals.h"
+#include "gamedlg.h"
 #include "goptions.h"
 #include "init.h"
 #include "keyboard.h"
@@ -32,6 +33,7 @@
 #include "session.h"
 #include "shellmap.h"
 #include "side.h"
+#include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/uishell.h"
 #include "ui/uitheme.h"
 #include "video.h"
@@ -43,9 +45,17 @@
 
 std::string UI_Color_Text(COLORREF color)
 {
-	char text[16];
-	std::snprintf(text, sizeof(text), "#%02x%02x%02x", (unsigned)GetRValue(color), (unsigned)GetGValue(color), (unsigned)GetBValue(color));
-	return(std::string(text));
+	return(UI_Color_CSS(RGBClass(GetRValue(color), GetGValue(color), GetBValue(color))));
+}
+
+
+std::vector<std::string> UI_Difficulty_Names(void)
+{
+	std::vector<std::string> names;
+	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
+		names.push_back(Fetch_String(GameDifficultyNames[index]));
+	}
+	return(names);
 }
 
 

@@ -26,11 +26,7 @@ UICampaignPresenterClass::UICampaignPresenterClass(UICampaignState state) :
 
 void UICampaignPresenterClass::Name_Difficulty(void)
 {
-	if (State.Difficulty >= 0 && State.Difficulty < (int)State.DifficultyNames.size()) {
-		State.DifficultyName = State.DifficultyNames[State.Difficulty];
-	} else {
-		State.DifficultyName.clear();
-	}
+	State.DifficultyName = UI_Difficulty_Name(State.DifficultyNames, State.Difficulty);
 }
 
 

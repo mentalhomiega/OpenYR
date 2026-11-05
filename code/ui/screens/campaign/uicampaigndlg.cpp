@@ -48,9 +48,7 @@ void UI_Campaign_State(UICampaignState & state)
 		state.Entries.push_back(entry);
 	}
 
-	for (int index = 0; index < OptionsClass::MAX_DIFFICULTY_SETTING; index++) {
-		state.DifficultyNames.push_back(Fetch_String(GameDifficultyNames[index]));
-	}
+	state.DifficultyNames = UI_Difficulty_Names();
 
 	state.Difficulty = Options.Difficulty;
 
