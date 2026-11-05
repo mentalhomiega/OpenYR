@@ -3215,7 +3215,8 @@ MapGeneratorClass::MapGeneratorClass(void) :
 	LocalHeight(0),
 	SeededWaterAmount(0),
 	PlaceWaterfall(0),
-	CellHeight(4)
+	CellHeight(4),
+	TreesLeft(0)
 {
 	//nothing
 }
@@ -3447,6 +3448,17 @@ void Do_Random_Map(bool (*callback)())
 }
 
 
+RMGSettingsClass Load_RMG_Settings(void)
+{
+	CCFileClass file("RMGMD.INI");
+	CCINIClass ini;
+	ini.Load(file, false);
+	RMGSettingsClass settings;
+	settings.Read_INI(ini);
+	return(settings);
+}
+
+
 /// <summary>
 /// Rolls a fresh set of map generation settings.
 /// This routine is what the dialog's randomize button calls, handing the player a whole new
@@ -3491,7 +3503,8 @@ void MapSeedClass::Randomize(void)
 		WaterAmount = Sim_Random_Pick(0U, 100U);
 		Tiberium = Sim_Random_Pick(0U, 100U);
 		TiberiumLayout = Sim_Random_Pick(0U, 100U);
-		Vegetation = Sim_Random_Pick(0U, 100U);
+		RMGSettingsClass const settings = Load_RMG_Settings();
+		Vegetation = Sim_Random_Pick(settings.Vegetation_Minimum(), settings.Vegetation_Maximum());
 		Cities = Sim_Random_Pick(0U, 100U);
 		Accessibility = Sim_Random_Pick(0U, 100U);
 		Cliffs = Sim_Random_Pick(0U, 100U);
@@ -4375,6 +4388,8 @@ ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, CCINIClass 
 
 	DebugString("RMG: Creating LATs, rocks etc\n");
 
+	TreesLeft = Settings.Tree_Limit(SeedData.Width, SeedData.Vegetation);
+
 	if (SeedData.Biome == BIOME_DESERT || SeedData.Biome == BIOME_TEMPERATE || SeedData.Biome == BIOME_MUTATED) {
 		Seed_Vegetation();
 		Generate_Vegetation();
@@ -4505,14 +4520,7 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		"Clear"
 	};
 
-	double _tod_values[TIME_OF_DAY_COUNT] = {
-		0.75,
-		1.0,
-		0.75,
-		0.5
-	};
-
-	double tod = _tod_values[SeedData.Time];
+	Settings = Load_RMG_Settings();
 
 	// The generator lays out only the two theaters Tiberian Sun shipped, so it names them
 	// rather than numbering them.
@@ -4526,7 +4534,9 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 		return(theater);
 	};
 
-	double scale = TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic ? 0.75 : 1.0;
+	static_assert(RMGSettingsClass::TIME_COUNT == TIME_OF_DAY_COUNT, "one lighting setting per time of day");
+	RMGSettingsClass::LightingType const lighting = Settings.Lighting(TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic, SeedData.Time);
+	double const ambient = LightingIni::Percent_Fraction(lighting.Ambient);
 
 	/*
 	 * Interpolate the local map dimensions between the minimum and maximum size
@@ -4559,16 +4569,15 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_String("Map", "Fill", _fills[biome]);
 	ini.Put_String(HouseTypes[HOUSE_GOOD]->IniName, "TechLevel", "0");
 	ini.Put_String("Basic", "Player", HouseTypes[HOUSE_GOOD]->IniName);
-	ini.Put_Float("Lighting", "Ambient", tod * scale);
+	ini.Put_Float("Lighting", "Ambient", ambient);
 	ini.Put_Float("Lighting", "Red", 1.0);
 	ini.Put_Float("Lighting", "Green", 1.0);
 	ini.Put_Float("Lighting", "Blue", 1.0);
 	ini.Put_Float("Lighting", "Ground", 0.0);
-	static_assert(LightingIni::RMG_TIME_COUNT == TIME_OF_DAY_COUNT, "one Level setting per time of day");
-	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(LightingIni::RMG_LEVEL_LIGHT[SeedData.Time]));
+	ini.Put_Float("Lighting", "Level", LightingIni::Generated_Level(lighting.Level));
 
 	// gamemd's generator writes the storm lighting as well (0x599951 to 0x5999DC): the ambient level, then a dark blue tint.
-	ini.Put_Float("Lighting", "IonAmbient", tod * scale);
+	ini.Put_Float("Lighting", "IonAmbient", ambient);
 	ini.Put_Float("Lighting", "IonRed", LightingIni::Percent_Fraction(LightingIni::ION_RED));
 	ini.Put_Float("Lighting", "IonGreen", LightingIni::Percent_Fraction(LightingIni::ION_GREEN));
 	ini.Put_Float("Lighting", "IonBlue", LightingIni::Percent_Fraction(LightingIni::ION_BLUE));
@@ -4821,10 +4830,13 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	Map.Init_Radar();
 	Map.Compute_Radar_Image();
 
-	Scen->AmbientLight = tod * 100.0;
-	// Both paths reach this, so the map plays with the setting itself in thousandths, as gamemd stores
-	// it at 0x59A554; the Level=0 written above does not survive.
-	Scen->LevelLight = LightingIni::Generated_Level_Light(SeedData.Time);
+	// Both paths reach this, so the map plays with the settings themselves, as gamemd stores them from
+	// 0x59A529; the Level=0 and the plain tints written above do not survive.
+	Scen->AmbientLight = lighting.Ambient;
+	Scen->RedTint = lighting.Red;
+	Scen->GreenTint = lighting.Green;
+	Scen->BlueTint = lighting.Blue;
+	Scen->LevelLight = lighting.Level;
 
 	if (SeedData.UseTransitions) {
 		CCINIClass ini;
@@ -7126,7 +7138,7 @@ bool MapGeneratorClass::Init_Start_Points(void)
 /// </summary>
 void MapGeneratorClass::Create_Tiberium(void)
 {
-	int tiberium_count = SeedData.NumPlayers * (30 * SeedData.Tiberium + 2500) / TiberiumLayoutCells->Count();
+	int tiberium_count = SeedData.NumPlayers * Settings.Tiberium_Amount(SeedData.Tiberium) / TiberiumLayoutCells->Count();
 	int tib_index = 0;
 	int layout_index = 0;
 
@@ -7909,7 +7921,10 @@ void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, doubl
 				char tree_name[20];
 				int tree_index = Pick_Random_UInt(min_tree, max_tree);
 				sprintf(tree_name, "TREE%d%d", tree_index / 10, tree_index % 10);
-				new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+				if (TreesLeft > 0) {
+					new TerrainClass(TerrainTypes[TerrainTypeClass::From_Name(tree_name)], cptr->Fetch_CellID());
+					TreesLeft--;
+				}
 			}
 		}
 

@@ -76,6 +76,7 @@
 #include "houstype.h"
 #include "infatype.h"
 #include "levitate.h"
+#include "mapgen.h"
 #include "mission.h"
 #include "mods.h"
 #include "movie.h"
@@ -4043,7 +4044,9 @@ bool RulesClass::Objects(CCINIClass const & ini)
 /// multiplayer game can be refused when the players are not running the same rules. The
 /// Firestorm rule file is folded into the result whenever that addon is enabled, and each
 /// multiplayer rule file whenever it supplied a section. An absent file has to leave the
-/// result alone, because an empty database still hashes to a value of its own.
+/// result alone, because an empty database still hashes to a value of its own. The random map
+/// settings of RMGMD.INI are folded in too, because two machines with different settings lay out
+/// different maps from the same seed.
 /// </summary>
 /// <returns>Returns with the unique ID of the rules currently in force.</returns>
 int RulesClass::Get_Rule_Unique_ID(void)
@@ -4058,6 +4061,7 @@ int RulesClass::Get_Rule_Unique_ID(void)
 	if (Addon_Enabled(ADDON_FIRESTORM) && FSMPRuleINI.Section_Count() > 0) {
 		id += FSMPRuleINI.Get_Unique_ID();
 	}
+	id += Load_RMG_Settings().Unique_ID();
 	return(id);
 }
 

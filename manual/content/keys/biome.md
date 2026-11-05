@@ -23,7 +23,7 @@ Biome=2
 | `3` | Desert | Temperate | No river, and the smallest water budget. Urban areas and ordinary ground cover |
 | `4` | Mutated | Temperate | Ordinary river and lake, with up to two swamps in the lake. Urban areas, ordinary ground cover, and mold and crystal growths |
 
-A snow-theater map is lit at three quarters of the ambient level its [`Time`](/keys/time/) would otherwise give, and gets no veinholes.
+A snow-theater map takes its lighting from the snow lists of [RMGMD.INI](/formats/rmgmd-ini/), such as [`SnowAmbientLight`](/keys/snowambientlight/), and gets no veinholes.
 
 [`WaterAmount`](/keys/wateramount/) is scaled by a factor for each biome. Desert's factor is a third or less of any other biome's, so a desert map gets much less water at the same setting. A river also needs `WaterAmount` above `20` before the factor is applied, and the generator can still fail to fit one.
 

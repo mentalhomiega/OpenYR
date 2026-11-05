@@ -74,6 +74,8 @@ ADAPTER_UNITS = [
       }}),
     ("mapgen.cpp", "MapGeneratorClass", ["Init_Map"],
      {"file": "map file", "group": "random map generation"}),
+    ("rmgsettings.cpp", "RMGSettingsClass", ["Read_INI"],
+     {"file": "rmgmd.ini", "group": "random map generation"}),
     ("netshare.cpp", "RandomMap", [":Read_Scenario_Waypoints"],
      {"file": "map seed file", "group": "random map generation"}),
     ("rules.cpp", "DifficultyClass", [":Difficulty_Get"],
