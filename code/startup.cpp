@@ -570,11 +570,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		ConfigINI.Load(*cfile, false);
 		Init_Mods(ConfigINI.Get_String("Options", "Mods", DeploymentConfig.Mods.c_str()).c_str());
 
-		std::string uidirectory = path;
-		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
-			uidirectory += '\\';
-		}
-		uidirectory += "ui\\";
+		std::string uidirectory = Terminate_Path(path) + "ui\\";
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
 		UI_Theme_Set_Directory(uidirectory);
 

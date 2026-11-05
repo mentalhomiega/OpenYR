@@ -11,6 +11,7 @@
 
 #include "truecolour.h"
 #include "strutil.h"
+#include "gamedirs.h"
 
 #include "_alpha.h"
 #include "abuffer.h"
@@ -678,10 +679,7 @@ void TrueColour_Forget_Range(void const * begin, std::size_t size)
 /// </summary>
 void TrueColour_Add_Directory(char const * path)
 {
-	std::string directory = path;
-	if (!directory.empty() && directory.back() != '\\' && directory.back() != '/') {
-		directory += '\\';
-	}
+	std::string const directory = Terminate_Path(path);
 	CDFileClass::Add_Search_Drive(directory.c_str());
 	for (auto & [name, record] : Sheets) {
 		if (record.State != STATE_LOADED) {
