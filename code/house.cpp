@@ -1101,77 +1101,70 @@ static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
 }
 
 
+static bool Owns_Any_Unit_Id(CounterClass const & tally, TypeList<UnitTypeClass const *> const & types)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		if (tally.Value(types[index]->HeapID) > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+// Whether the house's last working, non-deconstructing building in the building list carries the upgrade.
+// Only that one building is checked.
+static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass const * upgrade)
+{
+	BuildingClass * host = NULL;
+	for (int index = Buildings.Count() - 1; index >= 0; index--) {
+		BuildingClass * bptr = Buildings[index];
+		if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn &&
+				bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
+			host = bptr;
+			break;
+		}
+	}
+	if (host == NULL) return(false);
+
+	for (int slot = 0; slot < ARRAY_SIZE(host->Upgrades); slot++) {
+		if (host->Upgrades[slot] == upgrade) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
 {
 	for (int i = 0; i < pre.Count(); i++) {
+		bool met;
 		switch (pre[i]) {
-			case STRUCT_G_POWER:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower)) return(false);
-				break;
+			case STRUCT_G_POWER:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower); break;
+			case STRUCT_G_FACTORY:    met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory); break;
+			case STRUCT_G_BARRACKS:   met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks); break;
+			case STRUCT_G_RADAR:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar); break;
+			case STRUCT_G_TECH:       met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech); break;
+			case STRUCT_G_GDIFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory); break;
+			case STRUCT_G_NODFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory); break;
 
-			case STRUCT_G_FACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory)) return(false);
-				break;
-
-			case STRUCT_G_BARRACKS:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks)) return(false);
-				break;
-
-			case STRUCT_G_RADAR:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar)) return(false);
-				break;
-
-			case STRUCT_G_TECH:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech)) return(false);
-				break;
-
-			case STRUCT_G_PROC: {
-				bool found = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc);
-				for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
-					if (house.AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
-						found = true;
-					}
-				}
-				if (!found) return(false);
-			}
-			break;
-
-			case STRUCT_G_GDIFACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory)) return(false);
-				break;
-
-			case STRUCT_G_NODFACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory)) return(false);
+			case STRUCT_G_PROC:
+				met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc) ||
+					Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate);
 				break;
 
 			default: {
 				BuildingTypeClass * btype = BuildingTypes[pre[i]];
 				if (!btype->PowersUpBuilding.empty()) {
-					BuildingClass * bptr;
-					bool found = false;
-					for (int j = Buildings.Count() - 1; j >= 0; j--) {
-						bptr = Buildings[j];
-						if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn) {
-							if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-								found = true;
-								break;
-							}
-						}
-					}
-					if (found) {
-						for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
-							if (bptr->Upgrades[k] == btype) {
-								goto breakout;
-							}
-						}
-					}
-					return(false);
+					met = Has_Installed_Upgrade(house, btype);
+				} else {
+					met = house.ABQuantity.Value(pre[i]) != 0;
 				}
-				if (house.ABQuantity.Value(pre[i]) == 0) return(false);
-				breakout:;
+				break;
 			}
-			break;
 		}
+		if (!met) return(false);
 	}
 	return(true);
 }
@@ -8331,6 +8324,41 @@ static void Make_Counted_Base_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, D
 }
 
 
+// Picks the one Firestorm gap generator plug the plan leaves out, with one Random_Pick call.
+static BuildingTypeClass * Pick_Excluded_Gap_Plug(void)
+{
+	static char const * const plug_names[] = {"GAPLUG2", "GAPLUG3", "GAPLUG4"};
+	return(BuildingTypes[BuildingTypeClass::From_Name(plug_names[Random_Pick(0, 2)])]);
+}
+
+
+// Moves a wanted building to a fixed slot of the candidate list. The slot's old entry takes its place
+// and the slot is marked not yet queued.
+static void Move_Buildable_To_Slot(DynamicVectorClass<BuildingTypeClass const *> & buildables, DynamicVectorClass<bool> & isadded, BuildingTypeClass const * wanted, int slot)
+{
+	for (int index = 0; index < buildables.Count(); index++) {
+		if (buildables[index] == wanted) {
+			BuildingTypeClass const * displaced = buildables[slot];
+			buildables[slot] = wanted;
+			isadded[index] = isadded[slot];
+			isadded[slot] = false;
+			buildables[index] = displaced;
+			break;
+		}
+	}
+}
+
+
+// Adds a defense placeholder, preceded by the side's wall tower when it has one.
+static void Add_Defense_Placeholder(DynamicVectorClass<BuildingTypeClass const *> & queue, BuildingTypeClass const * tower)
+{
+	if (tower != NULL) {
+		queue.Add(tower);
+	}
+	queue.Add((BuildingTypeClass const *)-1);
+}
+
+
 /// <summary>
 /// Builds the computer's base construction plan.
 /// This routine fills the base node list with everything this house is allowed and able to
@@ -8359,17 +8387,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	Base.Init();
 
-	BuildingTypeClass * plug = NULL;
-	if (Addon_Enabled(ADDON_FIRESTORM)) {
-		int plugnum = Random_Pick(0, 2);
-		if (plugnum == 0) {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG2")];
-		} else if (plugnum == 1) {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG3")];
-		} else {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG4")];
-		}
-	}
+	BuildingTypeClass * plug = Addon_Enabled(ADDON_FIRESTORM) ? Pick_Excluded_Gap_Plug() : NULL;
 
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
@@ -8404,29 +8422,8 @@ void HouseClass::Make_Base_Nodes(void)
 		startingqueue.Add(power);
 	}
 
-	BuildingTypeClass const * barracks = Get_First_Acted(Rule->BuildBarracks);
-	for (index = 0; index < buildables.Count(); index++) {
-		if (buildables[index] == barracks) {
-			BuildingTypeClass const * temp = buildables[0];
-			buildables[0] = barracks;
-			isadded[index] = isadded[0];
-			isadded[0] = false;
-			buildables[index] = temp;
-			break;
-		}
-	}
-
-	BuildingTypeClass const * weapons = Get_First_Acted(Rule->BuildWeapons);
-	for (index = 0; index < buildables.Count(); index++) {
-		if (buildables[index] == weapons) {
-			BuildingTypeClass const * temp = buildables[1];
-			buildables[1] = weapons;
-			isadded[index] = isadded[1];
-			isadded[1] = false;
-			buildables[index] = temp;
-			break;
-		}
-	}
+	Move_Buildable_To_Slot(buildables, isadded, Get_First_Acted(Rule->BuildBarracks), 0);
+	Move_Buildable_To_Slot(buildables, isadded, Get_First_Acted(Rule->BuildWeapons), 1);
 
 	int unprocessed = buildable_count - 1;
 	while (unprocessed > 0) {
@@ -8521,10 +8518,7 @@ void HouseClass::Make_Base_Nodes(void)
 			int deficiency = (int)wanted_defenses - defensecount;
 			defensecount += (int)deficiency;
 			do {
-				if (tower != NULL) {
-					finalqueue.Add(tower);
-				}
-				finalqueue.Add((BuildingTypeClass const *)-1);
+				Add_Defense_Placeholder(finalqueue, tower);
 				deficiency--;
 			} while (deficiency);
 		}
@@ -8535,10 +8529,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	if (!builds_walls || defenses_with_walls) {
 		for (int count = (3 - Difficulty) * placeholders; count > 0; count--) {
-			if (tower != NULL) {
-				finalqueue.Add(tower);
-			}
-			finalqueue.Add((BuildingTypeClass const *)-1);
+			Add_Defense_Placeholder(finalqueue, tower);
 		}
 	}
 
