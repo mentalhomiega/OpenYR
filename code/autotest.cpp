@@ -7,9 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-/*
-**	The step list is in docs/AUTOTEST.md. The handler table maps each command name to its handler.
-*/
+// The step list is in docs/AUTOTEST.md. The handler table maps each command name to its handler.
 
 #include "always.h"
 
@@ -818,12 +816,10 @@ static void Give_Attack_Order(TechnoClass * techno, AbstractClass * target, bool
 }
 
 
-/*
-**	strikeobj: the nearest live object of the type within radius cells of the cell is the target,
-**	whoever owns it except the player and its allies. Every armed unit and infantry the player owns
-**	is ordered to attack it. A target that moves stays the target, and an object that dies is
-**	replaced by the next strikeobj line.
-*/
+// strikeobj: the nearest live object of the type within radius cells of the cell is the target,
+// whoever owns it except the player and its allies. Every armed unit and infantry the player owns
+// is ordered to attack it. A target that moves stays the target, and an object that dies is
+// replaced by the next strikeobj line.
 void Strike_Object(std::string const & name, int x, int y, int radius, std::string const & side, std::string const & attacker)
 {
 	if (side != "" && side != "all" && side != "land" && side != "naval") {
@@ -857,10 +853,8 @@ void Strike_Object(std::string const & name, int x, int y, int radius, std::stri
 }
 
 
-/*
-**	scatter: Scatter is called on each live soldier of the type with the given threat, and the result is written.
-**	Frames before and after the call show where it sent the soldier.
-*/
+// scatter: Scatter is called on each live soldier of the type with the given threat, and the result is written.
+// Frames before and after the call show where it sent the soldier.
 void Scatter_Objects(std::string const & name, int x, int y, bool forced, bool nokidding)
 {
 	Coord const threat = x == -1 ? COORD_NONE : Cell(x, y).As_Coord();
@@ -1264,10 +1258,8 @@ static HouseClass * Named_House(std::string name)
 }
 
 
-/*
-**	trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
-**	trigger would. The value fills the action's number, house or time field.
-*/
+// trigaction <number> <value> <waypoint>: carries out that trigger action for the player's house, as a
+// trigger would. The value fills the action's number, house or time field.
 static void Trigger_Action_Step(StepType const & step)
 {
 	TActionClass * action = new TActionClass;
@@ -1300,10 +1292,8 @@ int Trigger_Springs(TriggerTypeClass const * type)
 }
 
 
-/*
-**	triggerlog <0|1>: writes a line each time a trigger springs. triggercoverage: writes each trigger
-**	type with how many times it has sprung this run, then the types that have not sprung at all.
-*/
+// triggerlog <0|1>: writes a line each time a trigger springs. triggercoverage: writes each trigger
+// type with how many times it has sprung this run, then the types that have not sprung at all.
 static void Trigger_Coverage_Step(StepType const &)
 {
 	std::vector<std::string> never;
@@ -1344,11 +1334,10 @@ static void Trigger_Coverage_Step(StepType const &)
 }
 
 
-/*
-**	Wait steps: waitcell, waittrigger, waitowns, waitlocal and waitgone pause the script until their condition
-**	holds, or until their timeout passes. Their words are the line's frame and command, then the
-**	arguments: see the wait functions below for each one's word positions.
-*/
+// Wait steps: waitcell, waittrigger, waitowns, waitlocal and waitgone pause the script until their condition
+// holds, or until their timeout passes. Their words are the line's frame and command, then the
+// arguments: see the wait functions below for each one's word positions.
+
 // The wait commands, each with the fewest words its line needs and the word that holds its timeout. waitcell and
 // waitgone are: frame, command, TypeID, x, y, then radius and timeout. waittrigger is: frame, command, trigger, timeout.
 // waitowns is: frame, command, house, TypeID, count, timeout. waitlocal is: frame, command, index, value, timeout.
@@ -1549,11 +1538,9 @@ bool Wait_Met(std::vector<std::string> const & words)
 }
 
 
-/*
-**	Ends the wait at the front of the script once its condition holds or its timeout passes. The
-**	steps after it move by the frames the wait took, so they keep their spacing from the wait line.
-**	Returns false while the wait goes on.
-*/
+// Ends the wait at the front of the script once its condition holds or its timeout passes. The
+// steps after it move by the frames the wait took, so they keep their spacing from the wait line.
+// Returns false while the wait goes on.
 bool Wait_Over(StepType const & step)
 {
 	int const timeout = Number(step.Words, Wait_Timeout_Word(step.Command), Wait_Default_Timeout);
@@ -1762,13 +1749,11 @@ static void Stock_Check_Mixes(StockCheckCounts & counts)
 }
 
 
-/*
-**	stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
-**	the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
-**	each name, so the names are the words of the INI files' sections and values, which is how the art and
-**	rules name their images. The summary counts the files those names reach and the ones refused, and lists
-**	the MIX archives the game attached with their entry counts.
-*/
+// stockcheck: reads every voxel, animation, shape and picture that the INI files name, through the loaders
+// the game uses, and logs each one a loader refuses with the loader's reason. A MIX keeps only the CRC of
+// each name, so the names are the words of the INI files' sections and values, which is how the art and
+// rules name their images. The summary counts the files those names reach and the ones refused, and lists
+// the MIX archives the game attached with their entry counts.
 static void Stock_Check_Step(StepType const &)
 {
 	std::set<std::string> names;
@@ -1797,10 +1782,8 @@ static void Stock_Check_Step(StepType const &)
 }
 
 
-/*
-**	previewtime: loads the multiplayer list the game builds from its packet files, then reads the preview of
-**	each map on it that is on hand, three times, and logs how long each step took.
-*/
+// previewtime: loads the multiplayer list the game builds from its packet files, then reads the preview of
+// each map on it that is on hand, three times, and logs how long each step took.
 static void Preview_Time_Step(StepType const &)
 {
 	std::chrono::steady_clock::time_point const listed = std::chrono::steady_clock::now();
