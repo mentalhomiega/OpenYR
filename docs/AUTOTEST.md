@@ -258,6 +258,52 @@ A command runs once the game frame reaches its frame, in file order.
 | `plan` | writes each computer house's base plan |
 | `fps` | writes the game frames counted in the last whole second, which the game's FPS readout shows |
 | `uploadverify <0\|1>` | 1 checks each present that the copy kept of every uploaded texture matches the picture it came from; 0 writes the counts of checks and mismatches |
+| `ally <TypeID> x y` | Like `spawn`, but the object belongs to the first house that is an ally of the player. The log says `placed` or `failed`, `no such type`, or `no house allied with the player` |
+| `banimstate <TypeID>` | Writes each building of that type with its cell, health, building state, animation stage and rate, power and house, then its construction animation, then each animation slot with the animation wanted, the one running, its stage and rate, and whether it is held still |
+| `bind <Command> <vk> [trigger]` | Gives the command that virtual-key code (decimal) with the trigger, `0` Press, `1` Double, `2` Hold or `3` Held, which is Press when left out. A conflicting binding is displaced, as the keyboard screen does. The log gets the key and the trigger name |
+| `blackout <frames>` | Starts a spy's power blackout of that many frames on the player's house |
+| `bridgeunit <TypeID>` | Writes each foot object of that type the player owns with its cell, whether it stands on a bridge, whether its cell is under a bridge or is a bridge deck, and its height |
+| `bshadow <TypeID>` | Writes each building of that type with the frame its body is drawn from, the frame its shadow is drawn from (half the image's frames further on), that frame's size and how many pixels it sets |
+| `bshape <TypeID>` | Writes each building of that type with its health, the `ConditionYellow` ratio, building state, mission, shape number, the body frame drawn, the image's frame count and whether its animations are the damaged forms |
+| `bunkers` | Writes each `Bunker=yes` structure with its cell and the vehicle inside it, or `nothing` |
+| `cloudcheck <SoldierTypeID>` | Writes whether the type is `NotHuman`, or -1 when no such type exists, how many `InfantryVirus` animations the map holds and how many particles of that animation's particle type are live, so a virus death can be told from an animation to a bare particle |
+| `crushcheck <CrusherTypeID> <SoldierTypeID>` | Writes, for each vehicle of the first type and each soldier of the second, the soldier's sequence, its dug-in crush protection and whether the vehicle may crush it |
+| `cursor <TypeID> x y` | Selects the player's first object of that type alone, hovers it over the object standing on that cell, and writes the action and the mouse shape number it shows. The selection is cleared afterwards |
+| `damage <TypeID> <amount>` | Hits every living object of that type the player owns for that much unforced damage, and writes its cell, the damage, its strength after and its Iron Curtain timer |
+| `defencerange <0\|1>` | Turns the Show defence range option off or on, as the options screen does, and writes the setting |
+| `evafile <EVA name>` | Opens that announcer line's sample for the player's side at no volume, and writes the file and `opened` or `failed`, or `-` when the line has no file |
+| `glideclock` | Times zoom glides by game frames instead of real time, for recordings |
+| `helptext <id>` | Writes the tooltip text the map gives for the mouse position now, or `(none)` |
+| `holdmove <0\|1>` | Turns `MissileLaunchHoldsMove` off or on for the rest of the run, and writes the setting |
+| `hoverat x y` | Moves the pointer to the centre of that cell, as `windowmove` does, so the object there is hovered from the next frame, and writes the pointer position |
+| `infstate <TypeID>` | Writes each soldier of that type with its cell, sequence, stage, shape, facing, whether it is prone, mission, height, fear, whether its type turns as a jump jet, and the direction to its target or -1 |
+| `ironcurtain <TypeID> <frames>` | Puts each object of that type, whoever owns it, under an Iron Curtain for that many frames, and writes its cell |
+| `lansession` | Marks the game as a network game, so the steps can see the multiplayer limits |
+| `lift <TypeID>` | Writes each object of that type with its cell, height above the ground, locomotor, jump jet state, the state of its magnetron hold (attacked, let go, crashing) with the types of the object holding it and the object it holds, then its strength, limbo state, weight, layer, Iron Curtain, sinking state, facing, bridge state, height and sequence |
+| `mapclick x y` | A left click at that screen point, given straight to the map as the window gives it |
+| `padstate <TypeID>` | Writes each building of that type, whoever owns it, with its owner, cell, link count and the type of the object in each radio slot, `-` for an empty slot |
+| `pips <TypeID> x y` | Writes the inputs of the occupant pip gate for the building of that type on that cell: owner, passive, allied, pips for all, can be occupied, shows pips, maximum and current occupants, hover, selection, whether the pips are visible to the player, and whether occupant pips are drawn. A cell with another building or none gives `no such building` |
+| `pitch <dir256> x y` | Sets the barrel pitch of the player's objects on that cell to that direction in 256 steps, 64 level and 0 straight up, and writes each |
+| `planes` | Writes each aircraft on the map with its cell, mission and passenger count |
+| `playanim <AnimTypeID> x y` | Plays one loop of that animation over the cell |
+| `raise x y width height level` | Sets the ground height of that block of cells to the level, so a test can put a cliff under a building. Cells off the map are skipped, and the rest are not redrawn or re-zoned |
+| `repairmission <TypeID>` | Puts the player's foot objects of that type on the repair mission, so the depot search of `UnitClass::Do_MISSION_REPAIR` runs |
+| `scriptedzoom <0\|1>` | Turns the scripted scene zoom option off or on, and writes the setting |
+| `scriptzoom` | Writes the game frame, the zoom drawn and the zoom shown, the map pixels the view shows, its centre, whether a scene holds the player's zoom, and the input lock |
+| `selected` | Writes how many objects are selected and their types |
+| `sensors` | Writes each vehicle, soldier or aircraft with `SensorsSight` coverage, with its cell, the cell and radius it last laid coverage for, and whether its own cell counts as sensed for its owner, then the number laying coverage and the cells sensed for the player |
+| `shape` | Writes the mouse shape the map shows now (`MouseType` number, 21 is can-attack), the first frame of its cursor entry, the frames the loaded cursor sheet holds, and the shape on screen, which an override such as the panel's normal pointer can change |
+| `spawns <TypeID>` | Writes each object of that type with its owner, cell, body and desired facing in 256 steps, whether it is rotating or moving, its locomotor destination, its target and mission. An object with a spawn manager also gets a `spawncycle` line with the current and queued targets, cycle status, next spawn frame and the status of each spawn |
+| `swaim <SuperSection> x y` | Aims that super weapon as its cameo click does, then writes whether the cell is under shroud, the object under it, the action they give, the mouse shape that action shows, and the weapon's range and line multiplier. A name that is no super weapon gives `no such super weapon` |
+| `teams` | Writes each team with its house, member count, current script mission, flags and script line. A team below full strength also gets lines with the members it lacks and why, and its recruiting values |
+| `teamtrace <0\|1>` | `1` writes a `TEAMTRACE` line for each team script line a team starts. `0` stops them |
+| `threatscan <TypeID> <ThreatType flags>` | Writes the target that the first object of that type, owned by a house that is no ally of the player, picks anywhere on the map for those flags, or `-` for none |
+| `typedump [Name]` | Writes the main fields of every weapon, projectile and warhead type, or only those with that name, one line each |
+| `water x y` | Writes the open water cell nearest to that cell |
+| `wheel <step> [x y]` | Glides the zoom by that step around a screen point, as the mouse wheel does. Without a point the zoom centres on the middle of the map view |
+| `windowshot <name>` | Saves what the window shows, map layer included, as `<name>.tga` in the screenshots folder |
+| `xbutton <1\|2>` | A press and release of side button 1 or 2 at the pointer, given to the window as the mouse gives it |
+| `zoom <factor>` | Sets the map view zoom at once, measured from the screen's own pixels (0.5 shows twice as much), and writes the view and screen sizes |
 
 Some steps count the objects of a house the map marks `PlayerControl=yes` as the player's, and others do not. `select`, `selectadd`, `waitcell`, `strike`, `strikeobj` with an attacker type, `spy` and `teamspy` count those houses' objects as the player's. `move` and `attack` select them too, but they order only the player's own objects (`Is_Player_Object`), in local and network runs alike. `order`, `planmove`, `planguard`, `forceattack` and `capture` order only the player's own objects.
 
