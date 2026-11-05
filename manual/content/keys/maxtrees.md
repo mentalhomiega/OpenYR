@@ -14,4 +14,4 @@ when_omitted:
 MaxTrees=600
 ```
 
-Once the woods have planted that many trees, the map's remaining woods still spread but plant no trees. A limit of zero or less plants none. Tiberium trees do not count against the limit and are not stopped by it. Woods rarely reach the stock limit: one temperate map with `Width=1` and `Vegetation=80` planted 65 trees against a limit of 383.
+Once the woods have planted that many trees, the map's remaining woods still spread but plant no trees. Yuri's Revenge uses the figure as a target instead, adding woods until the map has that many trees or 100 woods; here it only caps the trees the usual woods plant. A limit of zero or less plants none. Tiberium trees do not count against the limit and are not stopped by it. Woods rarely reach the stock limit: one temperate map with `Width=1` and `Vegetation=80` planted 65 trees against a limit of 383.

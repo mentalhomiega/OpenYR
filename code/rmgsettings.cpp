@@ -112,7 +112,9 @@ int RMGSettingsClass::Vegetation_Maximum() const
 
 /// <summary>
 /// Returns how many trees the generator's woods may plant on a map of a width setting from 0 to 3
-/// and a vegetation setting from 0 to 100, as gamemd computes its tree count at 0x5A4420.
+/// and a vegetation setting from 0 to 100, as gamemd computes its tree count at 0x5A4420. gamemd
+/// uses the count as a target and keeps adding woods until it is met or 100 woods are made; our
+/// generator uses it only as a cap.
 /// </summary>
 int RMGSettingsClass::Tree_Limit(int width, int vegetation) const
 {
