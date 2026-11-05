@@ -25,6 +25,7 @@
 #include "cncnet/cncnettunnelchoice.h"
 #include "conquer.h"
 #include "data.h"
+#include "diskfile.h"
 #include "gamedirs.h"
 #include "globals.h"
 #include "houstype.h"
@@ -1111,9 +1112,7 @@ std::string Without_Separator(std::string path)
 // Writes SPAWN.INI for the game to read at launch. False when the file cannot be written.
 bool Write_Spawn_Ini(std::string const & path, std::string const & ini)
 {
-	std::ofstream file(path, std::ios::binary | std::ios::trunc);
-	file << ini;
-	return(static_cast<bool>(file));
+	return(Write_Disk_File(path, ini));
 }
 
 
