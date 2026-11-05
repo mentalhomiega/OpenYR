@@ -549,11 +549,11 @@ enum CreateOutcome {
 };
 
 
-// Places a new object of the type for the owner, after the footprint check when check_footprint is set,
-// and puts it on Guard when guard is set. The caller logs CREATE_PLACED and CREATE_FAILED.
-static CreateOutcome Create_Step_Object(char const * command, TechnoTypeClass const * type, HouseClass * owner, Cell const & cell, bool guard, bool check_footprint)
+// Places a new object of the type for the owner once the footprint check passes, and puts it on Guard
+// when guard is set. The caller logs CREATE_PLACED and CREATE_FAILED.
+static CreateOutcome Create_Step_Object(char const * command, TechnoTypeClass const * type, HouseClass * owner, Cell const & cell, bool guard)
 {
-	if (check_footprint && !Footprint_Free(command, type, cell, owner)) {
+	if (!Footprint_Free(command, type, cell, owner)) {
 		return(CREATE_REFUSED);
 	}
 	TechnoClass * object = Place_New(type, owner, cell);
@@ -3997,7 +3997,7 @@ static void Spawn_Object(StepType const & step, bool player_owned)
 	HouseClass * enemy = player_owned ? PlayerPtr : First_Computer_House(false);
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (enemy != NULL && type != NULL) {
-		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, enemy, Cell(step.X, step.Y), true, true);
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, enemy, Cell(step.X, step.Y), true);
 		if (outcome != CREATE_REFUSED) {
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
@@ -4021,7 +4021,7 @@ static void Houseunit_Step(StepType const & step)
 	HouseClass * owner = Named_House(house_name);
 	TechnoTypeClass const * type = Find_Type(type_name);
 	if (owner != NULL && type != NULL) {
-		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), true, true);
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), true);
 		if (outcome != CREATE_REFUSED) {
 			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
@@ -4038,7 +4038,7 @@ static void Own_Step(StepType const & step, HouseClass * owner, char const * no_
 {
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
-		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), false, true);
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), false);
 		if (outcome != CREATE_REFUSED) {
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
