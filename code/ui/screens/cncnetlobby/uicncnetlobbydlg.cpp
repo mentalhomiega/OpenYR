@@ -22,7 +22,6 @@
 #include "deploymentconfig.h"
 #include "gamedirs.h"
 #include "globals.h"
-#include "hexdigit.h"
 #include "session.h"
 #include "ui/uienginehost.h"
 #include "ui/screens/cncnetlobby/uicncnetroom.h"
@@ -120,7 +119,7 @@ std::string Client_ID(void)
 	std::string id = Setting("ClientID", "");
 	bool valid = id.size() == 6;
 	for (char c : id) {
-		valid = valid && Hex_Digit_Value(c) >= 0 && !(c >= 'A' && c <= 'F');
+		valid = valid && ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
 	}
 	if (valid) {
 		return(id);
