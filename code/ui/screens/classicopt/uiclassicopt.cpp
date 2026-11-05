@@ -98,29 +98,9 @@ class UIClassicOptionsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("scroll");
-			Model.DirtyVariable("detail");
-			Model.DirtyVariable("difficulty");
-			Model.DirtyVariable("cameo");
-			Model.DirtyVariable("lines");
-			Model.DirtyVariable("tooltips");
-			Model.DirtyVariable("coasting");
-			Model.DirtyVariable("edge");
-			Model.DirtyVariable("hidden");
-			Model.DirtyVariable("defencerange");
-			Model.DirtyVariable("scrollname");
-			Model.DirtyVariable("detailname");
-			Model.DirtyVariable("difficultyname");
-			Model.DirtyVariable("music");
-			Model.DirtyVariable("sfx");
-			Model.DirtyVariable("voice");
-			Model.DirtyVariable("unit");
-			Model.DirtyVariable("movie");
-			Model.DirtyVariable("selected");
-			Model.DirtyVariable("stretch");
-			Model.DirtyVariable("systemcursor");
-			Model.DirtyVariable("classicmenus");
-			Model.DirtyVariable("scale");
+			Dirty({"scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+				"hidden", "defencerange", "scrollname", "detailname", "difficultyname", "music", "sfx",
+				"voice", "unit", "movie", "selected", "stretch", "systemcursor", "classicmenus", "scale"});
 		}
 
 	protected:

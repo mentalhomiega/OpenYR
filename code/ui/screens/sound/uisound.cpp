@@ -193,16 +193,8 @@ class UISoundViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("score");
-			Model.DirtyVariable("sound");
-			Model.DirtyVariable("voice");
-			Model.DirtyVariable("unit");
-			Model.DirtyVariable("movie");
-			Model.DirtyVariable("shuffle");
-			Model.DirtyVariable("repeat");
-			Model.DirtyVariable("custommusic");
-			Model.DirtyVariable("tracks");
-			Model.DirtyVariable("selected");
+			Dirty({"score", "sound", "voice", "unit", "movie", "shuffle", "repeat", "custommusic", "tracks",
+				"selected"});
 		}
 
 	protected:
