@@ -141,8 +141,8 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 
 	private:
 
-		// Called when no path was found: tells a friendly blocker in the cell ahead (direction `dir`) to move.
-		// Returns the result of Abandon_Navigation() when the unit should stop and give up, else nothing.
+		// Tells a friendly blocker in the cell in direction `dir` to move. Returns Abandon_Navigation()'s
+		// result when the unit stops here, else nothing.
 		std::optional<bool> Scatter_Friendly_Blockage(FacingType dir);
 
 		struct TurnTrackType {

@@ -9489,11 +9489,8 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 	*/
 	TeamClass::Suspend_Teams(Rule->SuspendPriority, House);
 
-	/*
-	**	Consider one foot soldier or vehicle as a defender. Threat is boosted when this
-	**	building is already its archive target; only a positive threat is boosted when
-	**	`boost_positive_only` is set.
-	*/
+	// Considers one foot soldier or vehicle as a defender. Its threat is multiplied by `boost` when this
+	// building's own ArchiveTarget is this building, and only a positive threat is when `boost_positive_only` is set.
 	auto consider_defender = [&](FootClass * foot, int boost, bool boost_positive_only) {
 		if (foot == NULL || !foot->IsActive || foot->Owner() != Owner()) {
 			return;

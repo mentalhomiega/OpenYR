@@ -8801,7 +8801,8 @@ void MapGeneratorClass::Generate_Urban_Buildings(const DynamicVectorClass<Cell> 
 
 // Places a random number of neutral civilians or vehicles named in `names`, up to the biome's figure in
 // `max_counts` for `biome`, on free cells that `pick_cell` returns, each with that biome's chance of being damaged.
-// The order of the random draws must not change: it fixes the generated map.
+// The first three `names` must be infantry types and the rest vehicle types. The order of the random
+// draws must not change: it fixes the generated map.
 template <size_t NameCount, typename PickCell>
 static void Place_Neutral_Units(char const * const (&names)[NameCount], int const (&max_counts)[BIOME_COUNT], int biome, PickCell pick_cell)
 {

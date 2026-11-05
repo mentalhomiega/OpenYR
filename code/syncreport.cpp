@@ -218,7 +218,7 @@ bool Report_Out_Of_Sync(EventClass const * events, int count, unsigned const * c
 
 
 // Writes a TarCom or NavCom target as "Type(index)": the heap ID of a techno, the packed cell
-// coordinates of a cell, or "None(0)" for no target. `text` needs room for 32 bytes.
+// coordinates of a cell, or "None(0)" for no target. The text is cut to fit `size`; 32 bytes holds any name.
 static void Format_Command_Target(AbstractClass * target, char * text, size_t size)
 {
 	int index = 0;
@@ -393,7 +393,6 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 			if (infp->House==housep) {
 				Coord coord = infp->PositionCoord;
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
-
 
 				char type_text[32];
 				char tarcom_text[32];
