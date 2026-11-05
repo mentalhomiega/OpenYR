@@ -542,6 +542,31 @@ static TechnoClass * Place_New(TechnoTypeClass const * type, HouseClass * owner,
 }
 
 
+enum CreateOutcome {
+	CREATE_REFUSED,		// The footprint check failed and logged its own reason.
+	CREATE_FAILED,
+	CREATE_PLACED
+};
+
+
+// Places a new object of the type for the owner, after the footprint check when check_footprint is set,
+// and puts it on Guard when guard is set. The caller logs CREATE_PLACED and CREATE_FAILED.
+static CreateOutcome Create_Step_Object(char const * command, TechnoTypeClass const * type, HouseClass * owner, Cell const & cell, bool guard, bool check_footprint)
+{
+	if (check_footprint && !Footprint_Free(command, type, cell, owner)) {
+		return(CREATE_REFUSED);
+	}
+	TechnoClass * object = Place_New(type, owner, cell);
+	if (object == NULL) {
+		return(CREATE_FAILED);
+	}
+	if (guard) {
+		object->Assign_Mission(MISSION_GUARD);
+	}
+	return(CREATE_PLACED);
+}
+
+
 // Moves the pointer to a window pixel as the mouse does, and returns the move event for a press at the same pixel.
 static WindowEvent Move_Pointer(int x, int y)
 {
@@ -3972,13 +3997,9 @@ static void Spawn_Object(StepType const & step, bool player_owned)
 	HouseClass * enemy = player_owned ? PlayerPtr : First_Computer_House(false);
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (enemy != NULL && type != NULL) {
-		Cell cell(step.X, step.Y);
-		if (Footprint_Free(step.Command.c_str(), type, cell, enemy)) {
-			TechnoClass * object = Place_New(type, enemy, cell);
-			if (object != NULL) {
-				object->Assign_Mission(MISSION_GUARD);
-			}
-			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, object != NULL ? "placed" : "failed");
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, enemy, Cell(step.X, step.Y), true, true);
+		if (outcome != CREATE_REFUSED) {
+			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
 	} else {
 		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : "no computer house with a construction yard");
@@ -4000,13 +4021,9 @@ static void Houseunit_Step(StepType const & step)
 	HouseClass * owner = Named_House(house_name);
 	TechnoTypeClass const * type = Find_Type(type_name);
 	if (owner != NULL && type != NULL) {
-		Cell cell(step.X, step.Y);
-		if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
-			TechnoClass * object = Place_New(type, owner, cell);
-			if (object != NULL) {
-				object->Assign_Mission(MISSION_GUARD);
-			}
-			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, object != NULL ? "placed" : "failed");
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), true, true);
+		if (outcome != CREATE_REFUSED) {
+			DebugString("AUTOTEST houseunit %s %s at %d,%d: %s\n", type->Name(), owner->Class->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
 	} else {
 		DebugString("AUTOTEST houseunit %s: %s\n", step.Argument.c_str(), type == NULL ? "no such type" : "no such house");
@@ -4021,10 +4038,9 @@ static void Own_Step(StepType const & step, HouseClass * owner, char const * no_
 {
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
-		Cell cell(step.X, step.Y);
-		if (Footprint_Free(step.Command.c_str(), type, cell, owner)) {
-			bool const placed = Place_New(type, owner, cell) != NULL;
-			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
+		CreateOutcome const outcome = Create_Step_Object(step.Command.c_str(), type, owner, Cell(step.X, step.Y), false, true);
+		if (outcome != CREATE_REFUSED) {
+			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, outcome == CREATE_PLACED ? "placed" : "failed");
 		}
 	} else {
 		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : no_house_reason);
