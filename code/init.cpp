@@ -196,6 +196,7 @@
 #include "smudtype.h"
 #include "spawner.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "suprtype.h"
 #include "tactical.h"
 #include "tag.h"
@@ -6693,11 +6694,7 @@ class TypeSelectCommandClass : public CommandClass
 	private:
 		static std::string Type_Name(TechnoTypeClass const * type)
 		{
-			std::string name = type->Name();
-			for (char & letter : name) {
-				letter = (char)toupper((unsigned char)letter);
-			}
-			return(name);
+			return(Upper(type->Name()));
 		}
 
 		// The names the selection sought: each selected type, and the types it deploys into or undeploys from (0x732D10).
