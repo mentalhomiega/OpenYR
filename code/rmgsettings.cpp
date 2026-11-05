@@ -24,10 +24,11 @@ char const * const GENERAL = "General";
 
 
 // Reads a comma-separated list over the start of values. Empty parts are skipped, as gamemd's reader
-// skips them, and entries the list does not reach keep their value.
-void Read_List(INIClass const & ini, char const * entry, std::span<int> values)
+// skips them, and entries the list does not reach keep their value. The manual's key extractor
+// recognises reads by this name and argument order.
+void Get_IntList(INIClass const & ini, char const * section, char const * entry, std::span<int> values)
 {
-	std::string const text = ini.Get_String(GENERAL, entry);
+	std::string const text = ini.Get_String(section, entry);
 	std::size_t index = 0;
 	for (std::string_view const part : Split_Views(text, ',')) {
 		if (!part.empty() && index < values.size()) {
@@ -53,21 +54,21 @@ void RMGSettingsClass::Read_INI(INIClass const & ini)
 {
 	MinimumTiberium = ini.Get_Int(GENERAL, "RMGMinimumTiberium", MinimumTiberium);
 	MaximumTiberium = ini.Get_Int(GENERAL, "RMGMaximumTiberium", MaximumTiberium);
-	Read_List(ini, "RMGLevelLightSettings", LevelLight);
-	Read_List(ini, "RMGVegetationMinimums", VegetationMinimums);
-	Read_List(ini, "RMGVegetationMaximums", VegetationMaximums);
+	Get_IntList(ini, GENERAL, "RMGLevelLightSettings", LevelLight);
+	Get_IntList(ini, GENERAL, "RMGVegetationMinimums", VegetationMinimums);
+	Get_IntList(ini, GENERAL, "RMGVegetationMaximums", VegetationMaximums);
 	int const map_type = ini.Get_Int(GENERAL, "RMGVegetationMapType", VegetationMapType);
 	if (map_type >= 0 && map_type < MAP_TYPE_COUNT) {
 		VegetationMapType = map_type;
 	}
-	Read_List(ini, "TemperateAmbientLight", TemperateAmbientLight);
-	Read_List(ini, "SnowAmbientLight", SnowAmbientLight);
-	Read_List(ini, "TemperateAmbientRed", TemperateAmbientRed);
-	Read_List(ini, "TemperateAmbientGreen", TemperateAmbientGreen);
-	Read_List(ini, "TemperateAmbientBlue", TemperateAmbientBlue);
-	Read_List(ini, "SnowAmbientRed", SnowAmbientRed);
-	Read_List(ini, "SnowAmbientGreen", SnowAmbientGreen);
-	Read_List(ini, "SnowAmbientBlue", SnowAmbientBlue);
+	Get_IntList(ini, GENERAL, "TemperateAmbientLight", TemperateAmbientLight);
+	Get_IntList(ini, GENERAL, "SnowAmbientLight", SnowAmbientLight);
+	Get_IntList(ini, GENERAL, "TemperateAmbientRed", TemperateAmbientRed);
+	Get_IntList(ini, GENERAL, "TemperateAmbientGreen", TemperateAmbientGreen);
+	Get_IntList(ini, GENERAL, "TemperateAmbientBlue", TemperateAmbientBlue);
+	Get_IntList(ini, GENERAL, "SnowAmbientRed", SnowAmbientRed);
+	Get_IntList(ini, GENERAL, "SnowAmbientGreen", SnowAmbientGreen);
+	Get_IntList(ini, GENERAL, "SnowAmbientBlue", SnowAmbientBlue);
 	MaxTrees = ini.Get_Int(GENERAL, "MaxTrees", MaxTrees);
 }
 
