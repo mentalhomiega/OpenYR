@@ -2235,37 +2235,48 @@ static bool Add_CC_Expansion_Mix(const char *name)
 
 
 /// <summary>
+/// Mounts a named expansion mixfile that is a loose file in any of the game's folders.
+/// Unlike the cached variant, it never finds one buried inside another mixfile.
+/// </summary>
+/// <param name="name">The filename of the mixfile to mount.</param>
+static void Add_Disk_Expansion_Mix(const char *name)
+{
+	if (CDFileClass(name).Is_Available()) {
+		ExpandMix.Add(new MFCD(name, &FastKey));
+		DebugStringNoPrefix(" %s", name);
+	}
+}
+
+
+/// <summary>
+/// Returns a newly mounted mixfile, or NULL if the game cannot find it.
+/// </summary>
+static MFCD * Mount_If_Available(const char *name)
+{
+	if (CCFileClass(name).Is_Available()) {
+		return(new MFCD(name, &FastKey));
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Mounts the numbered expansion mixfiles.
 /// This routine brings in the loose expansion archives and the cached ones, which is how
 /// added content gets to override what the game ships with.
 /// </summary>
 static void Init_Expand_Mixfiles(void)
 {
-	int index;
 	char name[64];
-	MFCD * expand;
 
-	for (index = 99; index >= 0; index--) {
+	for (int index = 99; index >= 0; index--) {
 		sprintf(name, "EXPANDMD%02d.MIX", index);
-		// Searched for as a loose file wherever the game's files are kept, but never
-		// inside another archive.
-		if (CDFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
-
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-		}
+		Add_Disk_Expansion_Mix(name);
 	}
 
-	for (index = 99; index >= 0; index--) {
+	for (int index = 99; index >= 0; index--) {
 		sprintf(name, "ECACHE%02d.MIX", index);
-		if (CCFileClass(name).Is_Available()) {
-			expand = new MFCD(name, &FastKey);
-
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-			expand->Cache();
-		}
+		Add_CC_Expansion_Mix(name);
 	}
 }
 
@@ -2277,26 +2288,10 @@ static void Init_Expand_Mixfiles(void)
 /// </summary>
 static void Init_Patch_Mixfiles(void)
 {
-	MFCD * expand;
-
 	// As with the expansion archives, found loose in any of the game's folders but never
 	// inside another archive.
-	if (CDFileClass("PATCH.MIX").Is_Available()) {
-		expand = new MFCD("PATCH.MIX", &FastKey);
-
-		ExpandMix.Add(expand);
-		DebugStringNoPrefix(" %s", "PATCH.MIX");
-	}
-
-
-	if (CCFileClass("PCACHE.MIX").Is_Available()) {
-		expand = new MFCD("PCACHE.MIX", &FastKey);
-
-		ExpandMix.Add(expand);
-		DebugStringNoPrefix(" %s", "PCACHE.MIX");
-		expand->Cache();
-	}
-
+	Add_Disk_Expansion_Mix("PATCH.MIX");
+	Add_CC_Expansion_Mix("PCACHE.MIX");
 }
 
 
@@ -2468,9 +2463,7 @@ static bool Init_Secondary_Mixfiles(void)
 {
 	// Each pair mounts Yuri's Revenge's archive before Red Alert 2's, so YR's copy of a
 	// file is found first.
-	if (CCFileClass("CONQMD.MIX").Is_Available()) {
-		ConquerMix = new MFCD("CONQMD.MIX", &FastKey);
-	}
+	ConquerMix = Mount_If_Available("CONQMD.MIX");
 
 	DebugStringNoPrefix(" CONQMD.MIX");
 
@@ -2488,9 +2481,7 @@ static bool Init_Secondary_Mixfiles(void)
 	BaseIsoGenericMix = new MFCD("ISOGEN.MIX", &FastKey);
 	BaseIsoGenericMix->Set_Resident_Members(true);
 
-	if (CCFileClass("CONQUER.MIX").Is_Available()) {
-		BaseConquerMix = new MFCD("CONQUER.MIX", &FastKey);
-	}
+	BaseConquerMix = Mount_If_Available("CONQUER.MIX");
 
 	DebugStringNoPrefix(" CONQUER.MIX");
 
@@ -2498,9 +2489,7 @@ static bool Init_Secondary_Mixfiles(void)
 		return(false);
 	}
 
-	if (CCFileClass("CAMEOMD.MIX").Is_Available()) {
-		CameoMix = new MFCD("CAMEOMD.MIX", &FastKey);
-	}
+	CameoMix = Mount_If_Available("CAMEOMD.MIX");
 
 	DebugStringNoPrefix(" CAMEOMD.MIX");
 
@@ -2508,9 +2497,7 @@ static bool Init_Secondary_Mixfiles(void)
 		return(false);
 	}
 
-	if (CCFileClass("CAMEO.MIX").Is_Available()) {
-		BaseCameoMix = new MFCD("CAMEO.MIX", &FastKey);
-	}
+	BaseCameoMix = Mount_If_Available("CAMEO.MIX");
 
 	DebugStringNoPrefix(" CAMEO.MIX");
 
@@ -2550,21 +2537,16 @@ static bool Init_Secondary_Mixfiles(void)
 
 #ifndef _DEMO
 
-	if (CCFileClass("MULTIMD.MIX").Is_Available()) {
-		MultiMix = new MFCD("MULTIMD.MIX", &FastKey);
-
+	MultiMix = Mount_If_Available("MULTIMD.MIX");
+	if (MultiMix != NULL) {
 		DebugStringNoPrefix(" MULTIMD.MIX");
 	}
 
 #endif
 
-	if (CCFileClass("THEMEMD.MIX").Is_Available()) {
-		ThemeMix = new MFCD("THEMEMD.MIX", &FastKey);
-	}
+	ThemeMix = Mount_If_Available("THEMEMD.MIX");
 
-	if (CCFileClass("THEME.MIX").Is_Available()) {
-		BaseThemeMix = new MFCD("THEME.MIX", &FastKey);
-	}
+	BaseThemeMix = Mount_If_Available("THEME.MIX");
 
 	DebugStringNoPrefix(" THEME.MIX");
 
