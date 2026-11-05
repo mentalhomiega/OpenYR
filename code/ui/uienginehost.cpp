@@ -19,8 +19,8 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "globals.h"
 #include "gamedlg.h"
+#include "globals.h"
 #include "goptions.h"
 #include "init.h"
 #include "keyboard.h"
@@ -39,8 +39,6 @@
 #include "video.h"
 #include "voc.h"
 #include "wwmouse.h"
-
-#include <cstdio>
 
 
 std::string UI_Color_Text(COLORREF color)

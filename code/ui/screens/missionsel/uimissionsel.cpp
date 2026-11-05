@@ -23,7 +23,7 @@ UIMissionSelPresenterClass::UIMissionSelPresenterClass(UIMissionSelState state) 
 
 void UIMissionSelPresenterClass::Name_Difficulty(void)
 {
-	State.DifficultyName = UI_Difficulty_Name(State.DifficultyNames, State.Difficulty);
+	State.DifficultyName = UI_Name_At(State.DifficultyNames, State.Difficulty);
 }
 
 

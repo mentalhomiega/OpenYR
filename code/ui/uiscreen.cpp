@@ -12,10 +12,10 @@
 #include <cstdio>
 
 
-std::string UI_Difficulty_Name(std::vector<std::string> const & names, int difficulty)
+std::string UI_Name_At(std::vector<std::string> const & names, int index)
 {
-	if (difficulty >= 0 && difficulty < (int)names.size()) {
-		return(names[difficulty]);
+	if (index >= 0 && index < (int)names.size()) {
+		return(names[index]);
 	}
 	return(std::string());
 }

@@ -15,15 +15,6 @@
 #include <utility>
 
 
-static std::string Name_Of(std::vector<std::string> const & names, int level)
-{
-	if (level < 0 || level >= (int)names.size()) {
-		return(std::string());
-	}
-	return(names[level]);
-}
-
-
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
 	State(std::move(state)),
 	Service(service),
@@ -165,10 +156,10 @@ void UIGameControlsPresenterClass::Apply(void)
 
 void UIGameControlsPresenterClass::Update_Names(void)
 {
-	State.SpeedName = Name_Of(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
-	State.ScrollName = Name_Of(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
-	State.DetailName = Name_Of(State.DetailNames, State.Detail);
-	State.DifficultyName = Name_Of(State.DifficultyNames, State.Difficulty);
+	State.SpeedName = UI_Name_At(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
+	State.ScrollName = UI_Name_At(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
+	State.DetailName = UI_Name_At(State.DetailNames, State.Detail);
+	State.DifficultyName = UI_Name_At(State.DifficultyNames, State.Difficulty);
 }
 
 
