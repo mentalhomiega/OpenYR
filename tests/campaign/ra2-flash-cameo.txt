@@ -16,8 +16,8 @@ ui wait 300
 ui click resume
 1 triggerlog 1
 5 waitcell AMCV 23 38 1 3000
-10 move AMCV 44 30
-11 waitcell AMCV 44 30 0 2500
+10 move AMCV 42 31
+11 waitcell AMCV 42 31 0 2500
 90 select AMCV
 95 command DeployObject
 96 waitowns player GACNST 1 300

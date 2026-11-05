@@ -1,10 +1,11 @@
 ; Campaign win check for Boot Camp day 2 (Red Alert 2): plays the tutorial through with a player's orders and no debug shortcut.
-; The Mobile Construction Vehicle drives out to open ground and deploys. The base builds a power plant, a refinery and a barracks one after the
-; other (a structure is placed when its build time has passed), the barracks trains about 40 GIs, and the GIs advance on Red's base in steps.
+; The Mobile Construction Vehicle drives out to open ground at 42,31 and deploys; at 44,30 the Construction Yard would cover two ramp
+; cells, so the deploy would be refused. The base builds a power plant, a refinery and a barracks one after the
+; other (a structure is placed when its build time has passed), the barracks trains about 50 GIs, and the GIs advance on Red's base in steps.
 ; Red's soldiers are attacked first, as one group, one cluster at a time: Red's idle GIs dig in on Area Guard (as gamemd's InfantryClass::Mission_AreaGuard
 ; does) and a dug-in GI shoots from beyond a GI's range, so a stream of GIs walking past them is shot down. The east pair (54,49) goes first because the
 ; walk to the rest passes it, then the ones at 42,51, 42,55 and 42,59. Then the Construction Yard (attack E1) and each building that is left (strikeobj).
-; Expected: "AUTOTEST game over frame 29202: won".
+; Expected: "AUTOTEST game over frame 31274: won".
 ; Run: scripts/run_autotest.ps1 -Script tests/campaign/win-trn02.txt -Campaign -Map TRN02T.MAP -Mods tests/autotest/ra2-campaigns -Width 800 -Height 600 -Seconds 900 -Filter "AUTOTEST +(sprung|win|game over|wait)|Exception"
 ; The ui lines click through the briefing page; the mission needs a window of at least 800x600.
 ui click more
@@ -20,8 +21,8 @@ ui wait 300
 ui click resume
 1 triggerlog 1
 5 waitcell AMCV 23 38 1 3000
-10 move AMCV 44 30
-11 waitcell AMCV 44 30 0 2500
+10 move AMCV 42 31
+11 waitcell AMCV 42 31 0 2500
 90 select AMCV
 95 command DeployObject
 96 waitowns player GACNST 1 300
@@ -88,7 +89,19 @@ ui click resume
 12509 produce E1
 12510 produce E1
 12511 produce E1
-12600 waitowns player E1 40 12000
+12520 produce E1
+12521 produce E1
+12522 produce E1
+12523 produce E1
+12524 produce E1
+12525 produce E1
+12526 produce E1
+12527 produce E1
+12528 produce E1
+12529 produce E1
+12530 produce E1
+12531 produce E1
+12600 waitowns player E1 50 12000
 12620 move E1 41 44
 12700 waitcell E1 41 44 3 900
 12720 move E1 42 49
