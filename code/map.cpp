@@ -1438,16 +1438,18 @@ int MapClass::Overpass(void)
 
 
 /// <summary>
-/// Repairs one span of a high bridge.
+/// Repairs one span of a bridge, high or train, using that bridge kind's tile set and deck overlays.
 /// The span is followed from its anchor cell, the broken pieces are restored, the supports
-/// are put back under the raised center pieces, and the bridge deck is laid down again. The
-/// zones and subzone connections are re-linked as the span is mended, so traffic may cross
-/// the bridge once more. The repair gives up if the far end of the span is never reached.
+/// are put back under the raised center pieces, and the deck is laid down again. The repair
+/// gives up if the far end of the span is never reached.
 /// </summary>
 /// <param name="cptr">Pointer to the cell that anchors the span; the repair starts here.</param>
 /// <param name="dir">The direction to follow the span in.</param>
 /// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
-void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+/// <param name="overlay_ew">Deck overlay laid on an east-west span.</param>
+/// <param name="overlay_ns">Deck overlay laid on a north-south span.</param>
+void MapClass::Repair_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns)
 {
 	Cell cell = CELL_NONE;
 	CellClass * cellptr = &Map[cptr->Fetch_CellID()];
@@ -1465,7 +1467,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 		cell = newcell;
 		cellptr = &Map[newcell];
 
-		int ittype = cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+		int ittype = cellptr->ITType - tileset + 1;
 
 		if (dir == FACING_E) {
 
@@ -1488,7 +1490,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 			 */
 			if ((ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 2) && cellptr->SubTile == 4) {
 
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + tileset - 1), ISOTILE_INVALID, -1, false);
 				reset_zones |= Register_Subzone_Connections(cell);
 
 				if (ittype == IsometricTileTypeClass::BridgeMiddle1 + 4) {
@@ -1525,7 +1527,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 			 */
 			if ((ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 1) && cellptr->SubTile == 2) {
 
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
+				Set_Bridge_Middle_State(cell, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
 				reset_zones |= Register_Subzone_Connections(cell);
 
 				if (ittype == IsometricTileTypeClass::BridgeMiddle2 + 4) {
@@ -1571,12 +1573,12 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 	if (length > 0) {
 		int remaining = length;
 		do {
-			int ittype = cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+			int ittype = cellptr->ITType - tileset + 1;
 			if ((ittype != IsometricTileTypeClass::BridgeMiddle1 || (cellptr->SubTile & 1) != 0) && (ittype != IsometricTileTypeClass::BridgeMiddle2 || (unsigned char)cellptr->SubTile >= 5)) {
 				if (dir == FACING_E) {
-					new OverlayClass(OverlayTypes[OVERLAY_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[overlay_ew], cellptr->Fetch_CellID(), HOUSE_NONE);
 				} else {
-					new OverlayClass(OverlayTypes[OVERLAY_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
+					new OverlayClass(OverlayTypes[overlay_ns], cellptr->Fetch_CellID(), HOUSE_NONE);
 				}
 			}
 
@@ -1623,6 +1625,22 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 
 
 /// <summary>
+/// Repairs one span of a high bridge.
+/// The span is followed from its anchor cell, the broken pieces are restored, the supports
+/// are put back under the raised center pieces, and the bridge deck is laid down again. The
+/// zones and subzone connections are re-linked as the span is mended, so traffic may cross
+/// the bridge once more. The repair gives up if the far end of the span is never reached.
+/// </summary>
+/// <param name="cptr">Pointer to the cell that anchors the span; the repair starts here.</param>
+/// <param name="dir">The direction to follow the span in.</param>
+/// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
+void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
+{
+	Repair_Bridge_Span(cptr, dir, dirty, IsometricTileTypeClass::BridgeSet, OVERLAY_BRIDGE1, OVERLAY_BRIDGE2);
+}
+
+
+/// <summary>
 /// Repairs one span of a train bridge.
 /// This routine is the train bridge counterpart of Repair_High_Bridge_Span. The span is
 /// followed from its anchor cell, the broken pieces are restored, the supports are put back
@@ -1634,176 +1652,7 @@ void MapClass::Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * 
 /// <param name="dirty">Optional rectangle to fill with the area to redraw, or NULL.</param>
 void MapClass::Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty)
 {
-	Cell cell = CELL_NONE;
-	CellClass * cellptr = &Map[cptr->Fetch_CellID()];
-
-	bool reset_zones = false;
-	DynamicVectorClass<Cell> cells;
-
-	/*
-	 * Walk up to 30 cells in the requested facing, repairing bridge middle
-	 * pieces and stopping at the far end piece.
-	 */
-	int length = 1;
-	while (length < 30) {
-		Cell newcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-		cell = newcell;
-		cellptr = &Map[newcell];
-
-		int ittype = cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-
-		if (dir == FACING_E) {
-
-			/*
-			 * East-west bridge bottom-right end pieces terminate the walk.
-			 */
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight1 && cellptr->SubTile == 4) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_W));
-				break;
-			}
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight2 && cellptr->SubTile == 4) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_W));
-				break;
-			}
-
-			/*
-			 * East-west bridge middle pieces.
-			 */
-			if ((ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + 2) && cellptr->SubTile == 4) {
-
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-				reset_zones |= Register_Subzone_Connections(cell);
-
-				if (ittype == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-					Map[cell].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_N)].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
-
-					for (int x = 0; x < 2; x++) {
-						for (int y = -2; y < 3; y++) {
-							cells.Add(Cell(cell + Cell(x, y)));
-						}
-					}
-				}
-			}
-
-		} else if (dir == FACING_S) {
-
-			/*
-			 * South bridge bottom-left end pieces terminate the walk.
-			 */
-			if (ittype == IsometricTileTypeClass::BridgeBottomLeft1 && cellptr->SubTile == 2) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_N));
-				break;
-			}
-			if (ittype == IsometricTileTypeClass::BridgeBottomLeft2 && cellptr->SubTile == 2) {
-				Set_Bridge_End_State(cell, false, false);
-				reset_zones |= Register_Subzone_Connections(Adjacent_Cell(cell, FACING_N));
-				break;
-			}
-
-			/*
-			 * South bridge middle pieces.
-			 */
-			if ((ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 3 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 4 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + 1) && cellptr->SubTile == 2) {
-
-				Set_Bridge_Middle_State(cell, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 - 1), ISOTILE_INVALID, -1, false);
-				reset_zones |= Register_Subzone_Connections(cell);
-
-				if (ittype == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-					Map[cell].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_E)].Height += BRIDGE_CELL_HEIGHT;
-					Map[Adjacent_Cell(cell, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
-
-					for (int y = 0; y < 2; y++) {
-						for (int x = -2; x < 3; x++) {
-							cells.Add(Cell(cell + Cell(x, y)));
-						}
-					}
-				}
-			}
-		}
-
-		length++;
-	}
-
-	/*
-	 * If the entire span was scanned without finding the end piece there is
-	 * nothing more to do.
-	 */
-	if (length == 30) {
-		return;
-	}
-
-	/*
-	 * An end piece was found. Re-walk the span placing the bridge-piece
-	 * overlay on each undamaged middle cell, and accumulate the dirty
-	 * rectangle for the caller.
-	 */
-	cellptr = &Map[cptr->Fetch_CellID()];
-
-	if (dirty != NULL) {
-		Coord coord = Coord(cptr->Fetch_CellID(), LEVEL_LEPTON_H * cptr->Height);
-		Point2D point;
-		TacticalMap->Coord_To_Pixel(coord, point);
-		dirty->X = point.X;
-		dirty->Y = point.Y;
-	}
-
-	if (length > 0) {
-		int remaining = length;
-		do {
-			int ittype = cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-			if ((ittype != IsometricTileTypeClass::BridgeMiddle1 || (cellptr->SubTile & 1) != 0) && (ittype != IsometricTileTypeClass::BridgeMiddle2 || (unsigned char)cellptr->SubTile >= 5)) {
-				if (dir == FACING_E) {
-					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE1], cellptr->Fetch_CellID(), HOUSE_NONE);
-				} else {
-					new OverlayClass(OverlayTypes[OVERLAY_RAILWAY_BRIDGE2], cellptr->Fetch_CellID(), HOUSE_NONE);
-				}
-			}
-
-			Cell newcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-			cell = newcell;
-			cellptr = &Map[newcell];
-
-			remaining--;
-		} while (remaining != 0);
-	}
-
-	/*
-	 * Finalize the dirty rectangle from the two span endpoints.
-	 */
-	if (dirty != NULL) {
-		Coord coord = Coord(cell, LEVEL_LEPTON_H * Map[cell].Height);
-		Point2D point;
-		TacticalMap->Coord_To_Pixel(coord, point);
-
-		int x1 = dirty->X;
-		int y1 = dirty->Y;
-		int minx = dirty->X;
-		if (dirty->X >= point.X) {
-			minx = point.X;
-		}
-		int miny = dirty->Y;
-		dirty->X = minx - 64;
-		if (y1 >= point.Y) {
-			miny = point.Y;
-		}
-		dirty->Y = miny - 64;
-		dirty->Width = abs(x1 - point.X) + 128;
-		dirty->Height = abs(y1 - point.Y) + 128;
-	}
-
-	if (reset_zones) {
-		Zone_Reset();
-	}
-
-	if (cells.Count() != 0) {
-		Recalc_Cells_In_List(cells);
-	}
+	Repair_Bridge_Span(cptr, dir, dirty, IsometricTileTypeClass::TrainBridgeSet, OVERLAY_RAILWAY_BRIDGE1, OVERLAY_RAILWAY_BRIDGE2);
 }
 
 
@@ -1880,13 +1729,15 @@ void MapClass::Repair_All_High_Bridges(void)
 }
 
 /// <summary>
-/// Repairs the high bridge nearest to the cell specified.
+/// Repairs the bridge of one kind (high or train) nearest to the cell specified.
 /// The search works outward from the cell until it meets a bridge anchor, and that one span
-/// is put back together. Use this routine when the bridge to mend is known only by
-/// something standing near it.
+/// is put back together.
 /// </summary>
 /// <param name="cell">The cell to search outward from.</param>
-void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+/// <param name="overlay_ew">Deck overlay laid on an east-west span.</param>
+/// <param name="overlay_ns">Deck overlay laid on a north-south span.</param>
+void MapClass::Repair_Bridge_From_Cell(Cell const & cell, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns)
 {
 	int radius = 1;
 
@@ -1913,14 +1764,14 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 
 						CellClass * cptr = &Map[candidate];
 
-						int bridgetile = cptr->ITType - IsometricTileTypeClass::BridgeSet + 1;
+						int bridgetile = cptr->ITType - tileset + 1;
 
 						/*
 						 * East-west bridge, top-left end piece.
 						 */
 						if ((bridgetile == IsometricTileTypeClass::BridgeTopLeft1 || bridgetile == IsometricTileTypeClass::BridgeTopLeft2) && cptr->SubTile == 8) {
 							Set_Bridge_End_State(candidate, false, false);
-							Repair_High_Bridge_Span(cptr, FACING_E);
+							Repair_Bridge_Span(cptr, FACING_E, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1930,7 +1781,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 2) && cptr->SubTile == 5) {
 
 							if (bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + tileset - 1), ISOTILE_INVALID, -1, false);
 
 								Cell base = Adjacent_Cell(candidate, FACING_W);
 								Map[base].Height += BRIDGE_CELL_HEIGHT;
@@ -1938,7 +1789,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 								Map[Adjacent_Cell(base, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
 							}
 
-							Repair_High_Bridge_Span(cptr, FACING_E);
+							Repair_Bridge_Span(cptr, FACING_E, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1947,7 +1798,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						 */
 						if ((bridgetile == IsometricTileTypeClass::BridgeTopRight1 || bridgetile == IsometricTileTypeClass::BridgeTopRight2) && cptr->SubTile == 12) {
 							Set_Bridge_End_State(candidate, false, false);
-							Repair_High_Bridge_Span(cptr, FACING_S);
+							Repair_Bridge_Span(cptr, FACING_S, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 
@@ -1957,7 +1808,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 1) && cptr->SubTile == 7) {
 
 							if (bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + IsometricTileTypeClass::BridgeSet - 1), ISOTILE_INVALID, -1, false);
+								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + tileset - 1), ISOTILE_INVALID, -1, false);
 
 								Cell base = Adjacent_Cell(candidate, FACING_N);
 								Map[base].Height += BRIDGE_CELL_HEIGHT;
@@ -1965,7 +1816,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 								Map[Adjacent_Cell(base, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
 							}
 
-							Repair_High_Bridge_Span(cptr, FACING_S);
+							Repair_Bridge_Span(cptr, FACING_S, NULL, tileset, overlay_ew, overlay_ns);
 							return;
 						}
 					}
@@ -1978,6 +1829,18 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 }
 
 /// <summary>
+/// Repairs the high bridge nearest to the cell specified.
+/// The search works outward from the cell until it meets a bridge anchor, and that one span
+/// is put back together. Use this routine when the bridge to mend is known only by
+/// something standing near it.
+/// </summary>
+/// <param name="cell">The cell to search outward from.</param>
+void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
+{
+	Repair_Bridge_From_Cell(cell, IsometricTileTypeClass::BridgeSet, OVERLAY_BRIDGE1, OVERLAY_BRIDGE2);
+}
+
+/// <summary>
 /// Repairs the train bridge nearest to the cell specified.
 /// This routine is the train bridge counterpart of Repair_High_Bridge_From_Cell. The search
 /// works outward from the cell until it meets a bridge anchor, and that one span is put
@@ -1986,93 +1849,7 @@ void MapClass::Repair_High_Bridge_From_Cell(Cell const & cell)
 /// <param name="cell">The cell to search outward from.</param>
 void MapClass::Repair_Train_Bridge_From_Cell(Cell const & cell)
 {
-	int radius = 1;
-
-	while (true) {
-
-		int extent = MapRect.Width;
-		if (extent <= MapRect.Height) {
-			extent = MapRect.Height;
-		}
-		if (radius >= extent) {
-			break;
-		}
-
-		for (int dy = -radius; dy < radius; dy++) {
-			for (int dx = -radius; dx < radius; dx++) {
-
-				Cell candidate = cell + Cell(dx, dy);
-
-				if (candidate.X >= MapRect.X && candidate.X <= MapRect.X + MapRect.Width &&
-					candidate.Y >= MapRect.Y && candidate.Y <= MapRect.Y + MapRect.Height) {
-
-					int idx = candidate.X + candidate.Y * MAP_CELL_W;
-					if (Array[idx] != NULL) {
-
-						CellClass * cptr = &Map[candidate];
-
-						int bridgetile = cptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1;
-
-						/*
-						 * East-west train bridge, top-left end piece.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeTopLeft1 || bridgetile == IsometricTileTypeClass::BridgeTopLeft2) && cptr->SubTile == 8) {
-							Set_Bridge_End_State(candidate, false, false);
-							Repair_Train_Bridge_Span(cptr, FACING_E, NULL);
-							return;
-						}
-
-						/*
-						 * East-west train bridge, middle pieces.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 1 || bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 2) && cptr->SubTile == 5) {
-
-							if (bridgetile == IsometricTileTypeClass::BridgeMiddle1 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle1 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-
-								Cell base = Adjacent_Cell(candidate, FACING_W);
-								Map[base].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_N)].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_S)].Height += BRIDGE_CELL_HEIGHT;
-							}
-
-							Repair_Train_Bridge_Span(cptr, FACING_E, NULL);
-							return;
-						}
-
-						/*
-						 * South train bridge, top-right end piece.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeTopRight1 || bridgetile == IsometricTileTypeClass::BridgeTopRight2) && cptr->SubTile == 12) {
-							Set_Bridge_End_State(candidate, false, false);
-							Repair_Train_Bridge_Span(cptr, FACING_S, NULL);
-							return;
-						}
-
-						/*
-						 * South train bridge, middle pieces.
-						 */
-						if ((bridgetile == IsometricTileTypeClass::BridgeMiddle2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 3 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 2 || bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 1) && cptr->SubTile == 7) {
-
-							if (bridgetile == IsometricTileTypeClass::BridgeMiddle2 + 4) {
-								Set_Bridge_Middle_State(candidate, IsometricTileType(IsometricTileTypeClass::BridgeMiddle2 + IsometricTileTypeClass::TrainBridgeSet - 1), ISOTILE_INVALID, -1, false);
-
-								Cell base = Adjacent_Cell(candidate, FACING_N);
-								Map[base].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_E)].Height += BRIDGE_CELL_HEIGHT;
-								Map[Adjacent_Cell(base, FACING_W)].Height += BRIDGE_CELL_HEIGHT;
-							}
-
-							Repair_Train_Bridge_Span(cptr, FACING_S, NULL);
-							return;
-						}
-					}
-				}
-			}
-		}
-
-		radius++;
-	}
+	Repair_Bridge_From_Cell(cell, IsometricTileTypeClass::TrainBridgeSet, OVERLAY_RAILWAY_BRIDGE1, OVERLAY_RAILWAY_BRIDGE2);
 }
 
 
@@ -4079,352 +3856,32 @@ void MapClass::Set_Bridge_Middle_State(Cell const & cell, IsometricTileType new_
 }
 
 
-/// <summary>
-/// Damages the bottom-right half of an east-west train bridge.
-/// This routine ages one side of a span by a single stage, taking the deck and the tile
-/// piece under it one step further toward ruin.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_FULL4) {
-			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_TRANSITION2) {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_DAMAGED;
-			}
-		} else {
-			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_TRANSITION1;
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype == IsometricTileTypeClass::BridgeBottomRight1 || ittype == IsometricTileTypeClass::BridgeBottomRight2) {
-		Set_Bridge_End_State(adjacent, true, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-	}
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /// <summary>
-/// Damages the top-left half of an east-west train bridge.
-/// This routine ages one side of a span by a single stage, taking the deck and the tile
-/// piece under it one step further toward ruin.
+/// Finds the anchor of the bridge span an engineer's repair order meant.
+/// Looks for a bridge cell within three cells of the given one and reports where its span
+/// is anchored and which way it runs. A low bridge within two cells is repaired on the spot
+/// instead, and false is returned then too; false also means no high or train span is there.
 /// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_FULL4) {
-			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_TRANSITION1) {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_DAMAGED;
-			}
-		} else {
-			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_TRANSITION2;
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype == IsometricTileTypeClass::BridgeTopLeft1 || ittype == IsometricTileTypeClass::BridgeTopLeft2) {
-		Set_Bridge_End_State(adjacent, true, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-	}
-}
-
-
-/// <summary>
-/// Destroys the bottom-right half of an east-west train bridge.
-/// This routine takes over once a span has been damaged past saving. It works its way
-/// along the deck dropping each piece in turn, and lets the bridge cells back down onto
-/// the ground they used to carry traffic over.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_DAMAGED) {
-			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_END2) {
-				Internal_Destroy_Train_Bridge_EW_BottomRight(adjacent, dir);
-				adjacentptr->Set_Under_Rail_Bridge(FACING_N, false);
-				adjacentptr->OverlayData = 0;
-				adjacentptr->Overlay = OVERLAY_NONE;
-				Map.Radar_Background(adjacentptr->CellID);
-			}
-		} else {
-			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_END1;
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype != IsometricTileTypeClass::BridgeBottomRight1 && ittype != IsometricTileTypeClass::BridgeBottomRight2) {
-		if (ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-		} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_Train_Bridge_EW_BottomRight(adjacent, dir);
-			if ((adjacentptr->SubTile & 1) != 0) {
-				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(-1, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
-			} else {
-				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(0, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
-			}
-		}
-	} else {
-		Set_Bridge_End_State(adjacent, true, false);
-	}
-}
-
-
-/// <summary>
-/// Destroys the top-left half of an east-west train bridge.
-/// This routine takes over once a span has been damaged past saving. It works its way
-/// along the deck dropping each piece in turn, and lets the bridge cells back down onto
-/// the ground they used to carry traffic over.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_DAMAGED) {
-			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_END1) {
-				Internal_Destroy_Train_Bridge_EW_TopLeft(adjacent, dir);
-				adjacentptr->Set_Under_Rail_Bridge(FACING_N, false);
-				adjacentptr->OverlayData = 0;
-				adjacentptr->Overlay = OVERLAY_NONE;
-				Map.Radar_Background(adjacentptr->CellID);
-			}
-		} else {
-			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_END2;
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype != IsometricTileTypeClass::BridgeTopLeft1 && ittype != IsometricTileTypeClass::BridgeTopLeft2) {
-		if (ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-		} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_Train_Bridge_EW_TopLeft(adjacent, dir);
-			if ((adjacentptr->SubTile & 1) != 0) {
-				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(-1, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
-			} else {
-				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(0, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
-			}
-		}
-	} else {
-		Set_Bridge_End_State(adjacent, true, false);
-	}
-}
-
-
-/// <summary>
-/// Damages the bottom-left half of a north-south train bridge.
-/// This routine ages one side of a span by a single stage, taking the deck and the tile
-/// piece under it one step further toward ruin.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
-			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_FULL4) {
-				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_TRANSITION1) {
-					adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_DAMAGED;
-				}
-			} else {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_TRANSITION2;
-			}
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype == IsometricTileTypeClass::BridgeBottomLeft1 || ittype == IsometricTileTypeClass::BridgeBottomLeft2) {
-		Set_Bridge_End_State(adjacent, true, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-	}
-}
-
-
-/// <summary>
-/// Damages the top-right half of a north-south train bridge.
-/// This routine ages one side of a span by a single stage, taking the deck and the tile
-/// piece under it one step further toward ruin.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
-			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_FULL4) {
-				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_TRANSITION2) {
-					adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_DAMAGED;
-				}
-			} else {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_TRANSITION1;
-			}
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype == IsometricTileTypeClass::BridgeTopRight1 || ittype == IsometricTileTypeClass::BridgeTopRight2) {
-		Set_Bridge_End_State(adjacent, true, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
-	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-	}
-}
-
-
-/// <summary>
-/// Destroys the bottom-left half of a north-south train bridge.
-/// This routine takes over once a span has been damaged past saving. It works its way
-/// along the deck dropping each piece in turn, and lets the bridge cells back down onto
-/// the ground they used to carry traffic over.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
-			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_DAMAGED) {
-				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_END1) {
-					Internal_Destroy_Train_Bridge_NS_BottomLeft(adjacent, dir);
-					adjacentptr->Set_Under_Rail_Bridge(FACING_W, false);
-					adjacentptr->OverlayData = 0;
-					adjacentptr->Overlay = OVERLAY_NONE;
-					Map.Radar_Background(adjacentptr->CellID);
-				}
-			} else {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_END2;
-			}
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype != IsometricTileTypeClass::BridgeBottomLeft1 && ittype != IsometricTileTypeClass::BridgeBottomLeft2) {
-		if (ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-		} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_Train_Bridge_NS_BottomLeft(adjacent, dir);
-			if (adjacentptr->SubTile > 4) {
-				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(1, -1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
-			} else {
-				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(1, 0)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
-			}
-		}
-	} else {
-		Set_Bridge_End_State(adjacent, true, false);
-	}
-}
-
-
-/// <summary>
-/// Destroys the top-right half of a north-south train bridge.
-/// This routine takes over once a span has been damaged past saving. It works its way
-/// along the deck dropping each piece in turn, and lets the bridge cells back down onto
-/// the ground they used to carry traffic over.
-/// </summary>
-/// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
-/// the given direction.</param>
-/// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir)
-{
-	Cell adjacent = Adjacent_Cell(cell, dir);
-	CellClass * adjacentptr = &Map[adjacent];
-	if (adjacentptr->IsBridgeDeck) {
-		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
-			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_DAMAGED) {
-				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_END2) {
-					Internal_Destroy_Train_Bridge_NS_TopRight(adjacent, dir);
-					adjacentptr->Set_Under_Rail_Bridge(FACING_W, false);
-					adjacentptr->OverlayData = 0;
-					adjacentptr->Overlay = OVERLAY_NONE;
-					Map.Radar_Background(adjacentptr->CellID);
-				}
-			} else {
-				adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_NS_END1;
-			}
-		}
-	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-	if (ittype != IsometricTileTypeClass::BridgeTopRight1 && ittype != IsometricTileTypeClass::BridgeTopRight2) {
-		if (ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
-		} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_Train_Bridge_NS_TopRight(adjacent, dir);
-			if (adjacentptr->SubTile > 4) {
-				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
-				Map[adjacent + Cell(1, -1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
-			} else {
-				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
-				Map[adjacent + Cell(1, 0)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::TrainBridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
-			}
-		}
-	} else {
-		Set_Bridge_End_State(adjacent, true, false);
-	}
-}
-
-
-/// <summary>
-/// Repairs a broken train bridge near the given cell.
-/// This routine is used by an engineer sent out to a damaged rail bridge. A low bridge
-/// lying close by is handed straight to the low bridge repair; otherwise it works out
-/// which span the order meant and puts the deck back a section at a time until the
-/// crossing is whole again. It is the counterpart of Repair_Bridge.
-/// </summary>
-/// <param name="cell">Where the repair was ordered; the bridge itself may be a few cells
-/// away.</param>
-void MapClass::Repair_Train_Bridge(Cell const & cell)
+/// <param name="cell">The cell the repair order was given at.</param>
+/// <param name="origin">Receives the span anchor cell.</param>
+/// <param name="east_west">Receives true if the bridge runs east-west.</param>
+bool MapClass::Locate_Bridge_Repair_Origin(Cell const & cell, Cell & origin, bool & east_west)
 {
 	/*
 	 * Scan the 5x5 block of cells around the supplied cell looking for a low
@@ -4435,7 +3892,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 		for (int y = -2; y < 3; y++) {
 			if (Is_Low_Bridge(cell + Cell(x, y))) {
 				Repair_Low_Bridge_Span(cell + Cell(x, y));
-				return;
+				return false;
 			}
 		}
 	}
@@ -4477,13 +3934,12 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 	 * Nothing bridge related found nearby - there is nothing to repair.
 	 */
 	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		return;
+		return false;
 	}
 
 	/*
 	 * Resolve the span anchor cell.
 	 */
-	Cell origin;
 	if (cellptr->IsUnderBridge) {
 
 		/*
@@ -4510,7 +3966,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 				break;
 			}
 			if (++count >= 4) {
-				return;
+				return false;
 			}
 		}
 
@@ -4518,11 +3974,33 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 		origin = Adjacent_Cell(Adjacent_Cell(walk, back), back);
 	}
 
+	east_west = cellptr->IsBridgeEastWest;
+	return true;
+}
+
+
+/// <summary>
+/// Repairs a broken train bridge near the given cell.
+/// This routine is used by an engineer sent out to a damaged rail bridge. A low bridge
+/// lying close by is handed straight to the low bridge repair; otherwise it works out
+/// which span the order meant and puts the deck back a section at a time until the
+/// crossing is whole again. It is the counterpart of Repair_Bridge.
+/// </summary>
+/// <param name="cell">Where the repair was ordered; the bridge itself may be a few cells
+/// away.</param>
+void MapClass::Repair_Train_Bridge(Cell const & cell)
+{
+	Cell origin;
+	bool east_west;
+	if (!Locate_Bridge_Repair_Origin(cell, origin, east_west)) {
+		return;
+	}
+
 	/*
 	 * Walk the span looking for the end or middle tiles, repairing as we go.
 	 */
 	Cell spancell = origin;
-	int advance = cellptr->IsBridgeEastWest ? FACING_W : FACING_N;
+	int advance = east_west ? FACING_W : FACING_N;
 
 	char zonechanged = 0;
 	IsometricTileType ittype = ISOTILE_CLEAR;
@@ -4664,145 +4142,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 /// <returns>bool; Was a span end found and dealt with?</returns>
 bool MapClass::Destroy_Train_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
 {
-	CellClass * cellptr = &Map[cell];
-
-	int count = 1;
-
-	CellClass * startptr;
-	bool was_owner;
-	Cell ownercell;
-	bool sprung;
-	int index;
-
-	/*
-	 * Remember the first adjacent cell of the span. It is used as one endpoint
-	 * when springing the bridge destruction triggers.
-	 */
-	Cell spanstart = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-	Cell lastcell = spanstart;
-
-	IsometricTileType ittype;
-
-	/*
-	 * Walk along the span looking for the end tile, giving up after 30 cells.
-	 */
-	while (true) {
-		lastcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-		cellptr = &Map[lastcell];
-
-		ittype = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-
-		if (dir == FACING_E) {
-
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight1 && cellptr->SubTile == 4
-				|| ittype == IsometricTileTypeClass::BridgeBottomRight2 && cellptr->SubTile == 4
-				|| (ittype == IsometricTileTypeClass::BridgeMiddle1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2)
-					&& cellptr->SubTile == 4) {
-				break;
-			}
-
-		} else if (dir == FACING_S
-			&& (ittype == IsometricTileTypeClass::BridgeBottomLeft1 && cellptr->SubTile == 2
-				|| ittype == IsometricTileTypeClass::BridgeBottomLeft2 && cellptr->SubTile == 2
-				|| (ittype == IsometricTileTypeClass::BridgeMiddle2
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2)
-					&& cellptr->SubTile == 2)) {
-			break;
-		}
-
-		if (++count >= 30) {
-			break;
-		}
-	}
-
-	/*
-	 * If no span end was found within range, there is nothing to destroy.
-	 */
-	if (count != 30) {
-
-		/*
-		 * Re-fetch the span start cell. Its height anchors the dirty rectangle.
-		 */
-		startptr = &Map[cell];
-
-		if (dirty != NULL) {
-
-			/*
-			 * Compute the screen rectangle spanning from the original cell to the
-			 * located span end and union it into the supplied dirty rectangle.
-			 */
-			Point2D startpix;
-			Coord coord;
-			coord = Coord(cell, LEVEL_LEPTON_H * startptr->Height);
-			TacticalMap->Coord_To_Pixel(coord, startpix);
-
-			Point2D endpix;
-			coord = Coord(lastcell, LEVEL_LEPTON_H * startptr->Height);
-			TacticalMap->Coord_To_Pixel(coord, endpix);
-
-			int minx = startpix.X;
-			if (startpix.X >= endpix.X) {
-				minx = endpix.X;
-			}
-			int miny = startpix.Y;
-			if (startpix.Y >= endpix.Y) {
-				miny = endpix.Y;
-			}
-
-			*dirty = Union(*dirty, Rect(minx - 64, miny - 64, abs(startpix.X - endpix.X) + 128, abs(startpix.Y - endpix.Y) + 128));
-		}
-
-		/*
-		 * Walk the span again, springing the bridge destruction triggers and locating
-		 * the transition from a bridge owner cell to a non-owner cell.
-		 */
-		was_owner = false;
-		ownercell = Cell(-1, -1);
-		sprung = false;
-
-		for (index = 0; index < count; index++) {
-
-			if (startptr->IsBridgeDeck && was_owner) {
-				ownercell = startptr->CellID;
-			}
-
-			if (!startptr->IsBridgeDeck && !was_owner && ownercell != Cell(-1, -1)) {
-
-				/*
-				 * Found the span end owner. Clear the rail bridge state on the cell
-				 * behind it, remove its overlay, refresh the radar background, then
-				 * recurse to continue.
-				 */
-				Cell behind = Adjacent_Cell(startptr->Fetch_CellID(), Facing_Sub(dir, FACING_180));
-				CellClass * behindptr = &Map[behind];
-
-				behindptr->Set_Under_Rail_Bridge((dir == FACING_E) ? FACING_N : FACING_W, false);
-				behindptr->OverlayData = 0;
-				behindptr->Overlay = OVERLAY_NONE;
-				Map.Radar_Background(behindptr->Fetch_CellID());
-
-				Destroy_Train_Bridge_Span(cell, dir, dirty);
-				return(true);
-			}
-
-			was_owner = !startptr->IsBridgeDeck;
-
-			if (was_owner && !sprung) {
-				Spring_Bridge_Destruction_Triggers(spanstart, lastcell);
-				sprung = true;
-			}
-
-			Cell next = Adjacent_Cell(startptr->Fetch_CellID(), dir);
-			startptr = &Map[next];
-		}
-	}
-
-	return(false);
+	return Destroy_Bridge_Span(cell, dir, dirty, IsometricTileTypeClass::TrainBridgeSet);
 }
 
 
@@ -5042,8 +4382,8 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 					);
 				}
 
-				Internal_Destroy_Train_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S);
-				Internal_Destroy_Train_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N);
+				Internal_Destroy_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S, IsometricTileTypeClass::TrainBridgeSet);
+				Internal_Destroy_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N, IsometricTileTypeClass::TrainBridgeSet);
 
 				Destroy_Train_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_N));
 				Destroy_Train_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_S));
@@ -5072,8 +4412,9 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 					-1,
 					false
 				);
-				Internal_Damage_High_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S);
-				Internal_Damage_High_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N);
+				// This damage step uses the high bridge tile set even on a train bridge.
+				Internal_Damage_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S, IsometricTileTypeClass::BridgeSet);
+				Internal_Damage_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N, IsometricTileTypeClass::BridgeSet);
 			}
 
 			return(false);
@@ -5130,8 +4471,8 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 				);
 			}
 
-			Internal_Destroy_Train_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E);
-			Internal_Destroy_Train_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W);
+			Internal_Destroy_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E, IsometricTileTypeClass::TrainBridgeSet);
+			Internal_Destroy_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W, IsometricTileTypeClass::TrainBridgeSet);
 
 			Destroy_Train_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_W));
 			Destroy_Train_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_E));
@@ -5160,8 +4501,8 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 				-1,
 				false
 			);
-			Internal_Damage_Train_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E);
-			Internal_Damage_Train_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W);
+			Internal_Damage_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E, IsometricTileTypeClass::TrainBridgeSet);
+			Internal_Damage_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W, IsometricTileTypeClass::TrainBridgeSet);
 		}
 
 		return(false);
@@ -5181,23 +4522,23 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 			case OVERLAYDATA_BRIDGE_EW_TRANSITION1:
 			case OVERLAYDATA_BRIDGE_EW_TRANSITION2:
 				bridge_deck_cell->OverlayData = OVERLAYDATA_BRIDGE_EW_DAMAGED;
-				Internal_Damage_Train_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Damage_Train_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Damage_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
+				Internal_Damage_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				return(false);
 
 			case OVERLAYDATA_BRIDGE_EW_DAMAGED:
-				Internal_Destroy_Train_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Destroy_Train_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
+				Internal_Destroy_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_N, false);
 				break;
 
 			case OVERLAYDATA_BRIDGE_EW_END1:
-				Internal_Destroy_Train_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
+				Internal_Destroy_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_N, false);
 				break;
 
 			case OVERLAYDATA_BRIDGE_EW_END2:
-				Internal_Destroy_Train_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_N, false);
 				break;
 
@@ -5208,23 +4549,23 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 			case OVERLAYDATA_BRIDGE_NS_TRANSITION1:
 			case OVERLAYDATA_BRIDGE_NS_TRANSITION2:
 				bridge_deck_cell->OverlayData = OVERLAYDATA_BRIDGE_NS_DAMAGED;
-				Internal_Damage_Train_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Damage_Train_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Damage_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
+				Internal_Damage_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				return(false);
 
 			case OVERLAYDATA_BRIDGE_NS_DAMAGED:
-				Internal_Destroy_Train_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Destroy_Train_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
+				Internal_Destroy_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_W, false);
 				break;
 
 			case OVERLAYDATA_BRIDGE_NS_END1:
-				Internal_Destroy_Train_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_W, false);
 				break;
 
 			case OVERLAYDATA_BRIDGE_NS_END2:
-				Internal_Destroy_Train_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
+				Internal_Destroy_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::TrainBridgeSet);
 				bridge_deck_cell->Set_Under_Rail_Bridge(FACING_W, false);
 				break;
 
@@ -5245,14 +4586,15 @@ bool MapClass::Damage_Train_Bridge(Cell const & cell)
 
 
 /// <summary>
-/// Damages the bottom-right half of an east-west high bridge.
+/// Damages the bottom-right half of an east-west bridge.
 /// This routine ages one side of a span by a single stage, taking the deck and the tile
 /// piece under it one step further toward ruin.
 /// </summary>
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Damage_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5265,26 +4607,27 @@ void MapClass::Internal_Damage_High_Bridge_EW_BottomRight(Cell const & cell, Fac
 			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_TRANSITION1;
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype == IsometricTileTypeClass::BridgeBottomRight1 || ittype == IsometricTileTypeClass::BridgeBottomRight2) {
 		Set_Bridge_End_State(adjacent, true, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 	}
 }
 
 
 /// <summary>
-/// Damages the top-left half of an east-west high bridge.
+/// Damages the top-left half of an east-west bridge.
 /// This routine ages one side of a span by a single stage, taking the deck and the tile
 /// piece under it one step further toward ruin.
 /// </summary>
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Damage_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5297,19 +4640,19 @@ void MapClass::Internal_Damage_High_Bridge_EW_TopLeft(Cell const & cell, FacingT
 			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_TRANSITION2;
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype == IsometricTileTypeClass::BridgeTopLeft1 || ittype == IsometricTileTypeClass::BridgeTopLeft2) {
 		Set_Bridge_End_State(adjacent, true, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 	}
 }
 
 
 /// <summary>
-/// Destroys the bottom-right half of an east-west high bridge.
+/// Destroys the bottom-right half of an east-west bridge.
 /// This routine takes over once a span has been damaged past saving. It works its way
 /// along the deck dropping each piece in turn, and lets the bridge cells back down onto
 /// the ground they used to carry traffic over.
@@ -5317,14 +4660,15 @@ void MapClass::Internal_Damage_High_Bridge_EW_TopLeft(Cell const & cell, FacingT
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Destroy_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
 	if (adjacentptr->IsBridgeDeck) {
 		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_DAMAGED) {
 			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_END2) {
-				Internal_Destroy_High_Bridge_EW_BottomRight(adjacent, dir);
+				Internal_Destroy_Bridge_EW_BottomRight(adjacent, dir, tileset);
 				adjacentptr->Set_Under_Bridge(FACING_N, false);
 				adjacentptr->OverlayData = 0;
 				adjacentptr->Overlay = OVERLAY_NONE;
@@ -5334,22 +4678,22 @@ void MapClass::Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, Fa
 			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_END1;
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype != IsometricTileTypeClass::BridgeBottomRight1 && ittype != IsometricTileTypeClass::BridgeBottomRight2) {
 		if (ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+			Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 		} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_High_Bridge_EW_BottomRight(adjacent, dir);
+			Internal_Destroy_Bridge_EW_BottomRight(adjacent, dir, tileset);
 			if ((adjacentptr->SubTile & 1) != 0) {
 				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(-1, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
 			} else {
 				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(0, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
 			}
 		}
 	} else {
@@ -5359,7 +4703,7 @@ void MapClass::Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, Fa
 
 
 /// <summary>
-/// Destroys the top-left half of an east-west high bridge.
+/// Destroys the top-left half of an east-west bridge.
 /// This routine takes over once a span has been damaged past saving. It works its way
 /// along the deck dropping each piece in turn, and lets the bridge cells back down onto
 /// the ground they used to carry traffic over.
@@ -5367,14 +4711,15 @@ void MapClass::Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, Fa
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Destroy_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
 	if (adjacentptr->IsBridgeDeck) {
 		if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_EW_DAMAGED) {
 			if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_EW_END1) {
-				Internal_Destroy_High_Bridge_EW_TopLeft(adjacent, dir);
+				Internal_Destroy_Bridge_EW_TopLeft(adjacent, dir, tileset);
 				adjacentptr->Set_Under_Bridge(FACING_N, false);
 				adjacentptr->OverlayData = 0;
 				adjacentptr->Overlay = OVERLAY_NONE;
@@ -5384,22 +4729,22 @@ void MapClass::Internal_Destroy_High_Bridge_EW_TopLeft(Cell const & cell, Facing
 			adjacentptr->OverlayData = OVERLAYDATA_BRIDGE_EW_END2;
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype != IsometricTileTypeClass::BridgeTopLeft1 && ittype != IsometricTileTypeClass::BridgeTopLeft2) {
 		if (ittype == IsometricTileTypeClass::BridgeMiddle1 || ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+			Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 		} else if (ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_High_Bridge_EW_TopLeft(adjacent, dir);
+			Internal_Destroy_Bridge_EW_TopLeft(adjacent, dir, tileset);
 			if ((adjacentptr->SubTile & 1) != 0) {
 				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(-1, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(-1, 0)].Height - BRIDGE_CELL_HEIGHT, 0);
 			} else {
 				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(0, 1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
 			}
 		}
 	} else {
@@ -5409,14 +4754,15 @@ void MapClass::Internal_Destroy_High_Bridge_EW_TopLeft(Cell const & cell, Facing
 
 
 /// <summary>
-/// Damages the bottom-left half of a north-south high bridge.
+/// Damages the bottom-left half of a north-south bridge.
 /// This routine ages one side of a span by a single stage, taking the deck and the tile
 /// piece under it one step further toward ruin.
 /// </summary>
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Damage_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5431,26 +4777,27 @@ void MapClass::Internal_Damage_High_Bridge_NS_BottomLeft(Cell const & cell, Faci
 			}
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype == IsometricTileTypeClass::BridgeBottomLeft1 || ittype == IsometricTileTypeClass::BridgeBottomLeft2) {
 		Set_Bridge_End_State(adjacent, true, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK), ISOTILE_INVALID, -1, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 	}
 }
 
 
 /// <summary>
-/// Damages the top-right half of a north-south high bridge.
+/// Damages the top-right half of a north-south bridge.
 /// This routine ages one side of a span by a single stage, taking the deck and the tile
 /// piece under it one step further toward ruin.
 /// </summary>
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece.</param>
-void MapClass::Internal_Damage_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Damage_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5465,19 +4812,19 @@ void MapClass::Internal_Damage_High_Bridge_NS_TopRight(Cell const & cell, Facing
 			}
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype == IsometricTileTypeClass::BridgeTopRight1 || ittype == IsometricTileTypeClass::BridgeTopRight2) {
 		Set_Bridge_End_State(adjacent, true, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_OK) {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1), ISOTILE_INVALID, -1, false);
 	} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1)  {
-		Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+		Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 	}
 }
 
 
 /// <summary>
-/// Destroys the bottom-left half of a north-south high bridge.
+/// Destroys the bottom-left half of a north-south bridge.
 /// This routine takes over once a span has been damaged past saving. It works its way
 /// along the deck dropping each piece in turn, and lets the bridge cells back down onto
 /// the ground they used to carry traffic over.
@@ -5485,7 +4832,8 @@ void MapClass::Internal_Damage_High_Bridge_NS_TopRight(Cell const & cell, Facing
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Destroy_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5493,7 +4841,7 @@ void MapClass::Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, Fac
 		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
 			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_DAMAGED) {
 				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_END1) {
-					Internal_Destroy_High_Bridge_NS_BottomLeft(adjacent, dir);
+					Internal_Destroy_Bridge_NS_BottomLeft(adjacent, dir, tileset);
 					adjacentptr->Set_Under_Bridge(FACING_W, false);
 					adjacentptr->OverlayData = 0;
 					adjacentptr->Overlay = OVERLAY_NONE;
@@ -5504,22 +4852,22 @@ void MapClass::Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, Fac
 			}
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype != IsometricTileTypeClass::BridgeBottomLeft1 && ittype != IsometricTileTypeClass::BridgeBottomLeft2) {
 		if (ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+			Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 		} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_High_Bridge_NS_BottomLeft(adjacent, dir);
+			Internal_Destroy_Bridge_NS_BottomLeft(adjacent, dir, tileset);
 			if (adjacentptr->SubTile > 4) {
 				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(1, -1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
 			} else {
 				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(1, 0)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
 			}
 		}
 	} else {
@@ -5529,7 +4877,7 @@ void MapClass::Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, Fac
 
 
 /// <summary>
-/// Destroys the top-right half of a north-south high bridge.
+/// Destroys the top-right half of a north-south bridge.
 /// This routine takes over once a span has been damaged past saving. It works its way
 /// along the deck dropping each piece in turn, and lets the bridge cells back down onto
 /// the ground they used to carry traffic over.
@@ -5537,7 +4885,8 @@ void MapClass::Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, Fac
 /// <param name="cell">The cell being worked from; the piece dealt with is its neighbor in
 /// the given direction.</param>
 /// <param name="dir">The facing that leads to that piece, and on along the span.</param>
-void MapClass::Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir)
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
+void MapClass::Internal_Destroy_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset)
 {
 	Cell adjacent = Adjacent_Cell(cell, dir);
 	CellClass * adjacentptr = &Map[adjacent];
@@ -5545,7 +4894,7 @@ void MapClass::Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, Facin
 		if (adjacentptr->OverlayData >= OVERLAYDATA_BRIDGE_NS_FULL1) {
 			if (adjacentptr->OverlayData > OVERLAYDATA_BRIDGE_NS_DAMAGED) {
 				if (adjacentptr->OverlayData == OVERLAYDATA_BRIDGE_NS_END2) {
-					Internal_Destroy_High_Bridge_NS_TopRight(adjacent, dir);
+					Internal_Destroy_Bridge_NS_TopRight(adjacent, dir, tileset);
 					adjacentptr->Set_Under_Bridge(FACING_W, false);
 					adjacentptr->OverlayData = 0;
 					adjacentptr->Overlay = OVERLAY_NONE;
@@ -5556,22 +4905,22 @@ void MapClass::Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, Facin
 			}
 		}
 	}
-	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+	IsometricTileType ittype = IsometricTileType(adjacentptr->ITType - tileset + 1);
 	if (ittype != IsometricTileTypeClass::BridgeTopRight1 && ittype != IsometricTileTypeClass::BridgeTopRight2) {
 		if (ittype == IsometricTileTypeClass::BridgeMiddle2 || ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1) {
-			Set_Bridge_Middle_State(adjacent, IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
+			Set_Bridge_Middle_State(adjacent, IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2), ISOTILE_INVALID, -1, false);
 		} else if (ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3) {
-			Internal_Destroy_High_Bridge_NS_TopRight(adjacent, dir);
+			Internal_Destroy_Bridge_NS_TopRight(adjacent, dir, tileset);
 			if (adjacentptr->SubTile > 4) {
 				Map[adjacent + Cell(-1, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(0, -1)].Destroy_Bridge();
 				Map[adjacent + Cell(1, -1)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent + Cell(0, -1)].Height - BRIDGE_CELL_HEIGHT, 0);
 			} else {
 				Map[adjacent + Cell(-1, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(0, 0)].Destroy_Bridge();
 				Map[adjacent + Cell(1, 0)].Destroy_Bridge();
-				Set_Bridge_Middle_State(adjacent,  IsometricTileType(IsometricTileTypeClass::BridgeSet + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
+				Set_Bridge_Middle_State(adjacent,  IsometricTileType(tileset + IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3), ISOTILE_INVALID, Map[adjacent].Height - BRIDGE_CELL_HEIGHT, 0);
 			}
 		}
 	} else {
@@ -5591,103 +4940,17 @@ void MapClass::Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, Facin
 /// away.</param>
 void MapClass::Repair_Bridge(Cell const & cell)
 {
-	/*
-	 * Scan the 5x5 block of cells around the supplied cell looking for a low
-	 * bridge overlay. If one is found, hand off to the low bridge repair routine
-	 * and exit.
-	 */
-	for (int x = -2; x < 3; x++) {
-		for (int y = -2; y < 3; y++) {
-			if (Is_Low_Bridge(cell + Cell(x, y))) {
-				Repair_Low_Bridge_Span(cell + Cell(x, y));
-				return;
-			}
-		}
-	}
-
-	/*
-	 * Locate a cell that is part of a bridge. Start at the supplied cell and, if it
-	 * is not itself bridge related, walk up to three cells out along each of the
-	 * eight facings until a bridge cell is found.
-	 */
-	CellClass * cellptr = &Map[cell];
-
-	char facing = FACING_FIRST;
-	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		for (int index = 0; index < FACING_COUNT; index++) {
-
-			Cell adjacent = Adjacent_Cell(cell, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			adjacent = Adjacent_Cell(adjacent, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			adjacent = Adjacent_Cell(adjacent, Facing_Add(facing, FACING_0));
-			cellptr = &Map[adjacent];
-			if (cellptr->IsUnderBridge || cellptr->WasUnderBridge) {
-				break;
-			}
-
-			facing = Facing_Add(facing, FACING_45);
-		}
-	}
-
-	/*
-	 * Nothing bridge related found nearby - there is nothing to repair.
-	 */
-	if (!cellptr->IsUnderBridge && !cellptr->WasUnderBridge) {
-		return;
-	}
-
-	/*
-	 * Resolve the span anchor cell.
-	 */
 	Cell origin;
-	if (cellptr->IsUnderBridge) {
-
-		/*
-		 * A live bridge cell points at the bridge owner (or is the owner).
-		 */
-		origin = cellptr->Get_Bridge_Deck_Cell();
-
-	} else {
-
-		/*
-		 * An already damaged ("was under") bridge cell. Walk along the bridge body
-		 * until a cell that is no longer marked as a former bridge cell is found,
-		 * giving up after four steps, then step back two cells to recover the span
-		 * end.
-		 */
-		int count = 0;
-		int step = cellptr->IsBridgeEastWest ? FACING_S : FACING_E;
-		Cell walk = cellptr->CellID;
-		CellClass * walkptr;
-		while (true) {
-			walk = Adjacent_Cell(walk, Facing_Add(step, FACING_0));
-			walkptr = &Map[walk];
-			if (!walkptr->WasUnderBridge) {
-				break;
-			}
-			if (++count >= 4) {
-				return;
-			}
-		}
-
-		FacingType back = Facing_Sub(step, FACING_180);
-		origin = Adjacent_Cell(Adjacent_Cell(walk, back), back);
+	bool east_west;
+	if (!Locate_Bridge_Repair_Origin(cell, origin, east_west)) {
+		return;
 	}
 
 	/*
 	 * Walk the span looking for the end or middle tiles, repairing as we go.
 	 */
 	Cell spancell = origin;
-	int advance = cellptr->IsBridgeEastWest ? FACING_W : FACING_N;
+	int advance = east_west ? FACING_W : FACING_N;
 
 	char zonechanged = 0;
 	IsometricTileType ittype = ISOTILE_CLEAR;
@@ -5897,17 +5160,18 @@ void MapClass::Spring_Bridge_Destruction_Triggers(Cell cell1, Cell cell2)
 
 
 /// <summary>
-/// Destroys one section of a high bridge.
+/// Destroys one section of a bridge, high or train, using that bridge kind's tile set.
 /// This routine follows the deck along until it reaches the end of a section, then clears
 /// the bridge away behind that end, springs the destruction triggers over the length of
 /// it, and carries on into the next section. A span whose end is nowhere nearby is left
-/// alone. It is the high bridge counterpart of Destroy_Train_Bridge_Span.
+/// alone.
 /// </summary>
 /// <param name="dir">The direction to follow the deck -- FACING_E for an east/west bridge,
 /// FACING_S for a north/south one.</param>
 /// <param name="dirty">Gathers up the area that will need redrawing. May be NULL.</param>
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
 /// <returns>bool; Was a span end found and dealt with?</returns>
-bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
+bool MapClass::Destroy_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty, IsometricTileType tileset)
 {
 	CellClass * cellptr = &Map[cell];
 
@@ -5935,7 +5199,7 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 		lastcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
 		cellptr = &Map[lastcell];
 
-		ittype = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+		ittype = IsometricTileType(cellptr->ITType - tileset + 1);
 
 		if (dir == FACING_E) {
 
@@ -6030,7 +5294,7 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 				behindptr->Overlay = OVERLAY_NONE;
 				Map.Radar_Background(behindptr->Fetch_CellID());
 
-				Destroy_High_Bridge_Span(cell, dir, dirty);
+				Destroy_Bridge_Span(cell, dir, dirty, tileset);
 				return(true);
 			}
 
@@ -6047,6 +5311,23 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Destroys one section of a high bridge.
+/// This routine follows the deck along until it reaches the end of a section, then clears
+/// the bridge away behind that end, springs the destruction triggers over the length of
+/// it, and carries on into the next section. A span whose end is nowhere nearby is left
+/// alone. It is the high bridge counterpart of Destroy_Train_Bridge_Span.
+/// </summary>
+/// <param name="dir">The direction to follow the deck -- FACING_E for an east/west bridge,
+/// FACING_S for a north/south one.</param>
+/// <param name="dirty">Gathers up the area that will need redrawing. May be NULL.</param>
+/// <returns>bool; Was a span end found and dealt with?</returns>
+bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
+{
+	return Destroy_Bridge_Span(cell, dir, dirty, IsometricTileTypeClass::BridgeSet);
 }
 
 
@@ -6271,8 +5552,8 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 						);
 					}
 
-					Internal_Destroy_High_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S);
-					Internal_Destroy_High_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N);
+					Internal_Destroy_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S, IsometricTileTypeClass::BridgeSet);
+					Internal_Destroy_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N, IsometricTileTypeClass::BridgeSet);
 
 					Destroy_High_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_N));
 					Destroy_High_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_S));
@@ -6302,8 +5583,8 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 						-1,
 						false
 					);
-					Internal_Damage_High_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S);
-					Internal_Damage_High_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N);
+					Internal_Damage_Bridge_NS_BottomLeft(middle_cellptr->Fetch_CellID(), FACING_S, IsometricTileTypeClass::BridgeSet);
+					Internal_Damage_Bridge_NS_TopRight(middle_cellptr->Fetch_CellID(), FACING_N, IsometricTileTypeClass::BridgeSet);
 				}
 			}
 
@@ -6355,8 +5636,8 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 				);
 			}
 
-			Internal_Destroy_High_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E);
-			Internal_Destroy_High_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W);
+			Internal_Destroy_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E, IsometricTileTypeClass::BridgeSet);
+			Internal_Destroy_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W, IsometricTileTypeClass::BridgeSet);
 
 			Destroy_High_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_W));
 			Destroy_High_Bridge_Connections(Adjacent_Cell(middle_cellptr->Fetch_CellID(), FACING_E));
@@ -6388,8 +5669,8 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 			-1,
 			false
 		);
-		Internal_Damage_High_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E);
-		Internal_Damage_High_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W);
+		Internal_Damage_Bridge_EW_BottomRight(middle_cellptr->Fetch_CellID(), FACING_E, IsometricTileTypeClass::BridgeSet);
+		Internal_Damage_Bridge_EW_TopLeft(middle_cellptr->Fetch_CellID(), FACING_W, IsometricTileTypeClass::BridgeSet);
 
 		return(false);
 	} else {
@@ -6408,13 +5689,13 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 			case OVERLAYDATA_BRIDGE_EW_TRANSITION1:
 			case OVERLAYDATA_BRIDGE_EW_TRANSITION2:
 				bridge_deck_cell->OverlayData = OVERLAYDATA_BRIDGE_EW_DAMAGED;
-				Internal_Damage_High_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Damage_High_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Damage_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
+				Internal_Damage_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				return(false);
 
 			case OVERLAYDATA_BRIDGE_EW_DAMAGED:
-				Internal_Destroy_High_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Destroy_High_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
+				Internal_Destroy_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_N, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6422,7 +5703,7 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 				break;
 
 			case OVERLAYDATA_BRIDGE_EW_END1:
-				Internal_Destroy_High_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir);
+				Internal_Destroy_Bridge_EW_BottomRight(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_N, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6430,7 +5711,7 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 				break;
 
 			case OVERLAYDATA_BRIDGE_EW_END2:
-				Internal_Destroy_High_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_EW_TopLeft(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_N, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6444,13 +5725,13 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 			case OVERLAYDATA_BRIDGE_NS_TRANSITION1:
 			case OVERLAYDATA_BRIDGE_NS_TRANSITION2:
 				bridge_deck_cell->OverlayData = OVERLAYDATA_BRIDGE_NS_DAMAGED;
-				Internal_Damage_High_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Damage_High_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Damage_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
+				Internal_Damage_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				return(false);
 
 			case OVERLAYDATA_BRIDGE_NS_DAMAGED:
-				Internal_Destroy_High_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
-				Internal_Destroy_High_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
+				Internal_Destroy_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_W, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6458,7 +5739,7 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 				break;
 
 			case OVERLAYDATA_BRIDGE_NS_END1:
-				Internal_Destroy_High_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180));
+				Internal_Destroy_Bridge_NS_TopRight(bridge_deck_cell->Fetch_CellID(), Facing_Sub(dir, FACING_180), IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_W, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6466,7 +5747,7 @@ bool MapClass::Damage_High_Bridge(Cell const & cell)
 				break;
 
 			case OVERLAYDATA_BRIDGE_NS_END2:
-				Internal_Destroy_High_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir);
+				Internal_Destroy_Bridge_NS_BottomLeft(bridge_deck_cell->Fetch_CellID(), dir, IsometricTileTypeClass::BridgeSet);
 				bridge_deck_cell->Set_Under_Bridge(FACING_W, false);
 				bridge_deck_cell->OverlayData = 0;
 				bridge_deck_cell->Overlay = OVERLAY_NONE;
@@ -6615,6 +5896,26 @@ void MapClass::Reveal_The_Map(HouseClass * house, bool unfog)
 int MapClass::Get_Height_GL(Coord const & coord)
 {
 	return(Map[coord].Get_Height(coord));
+}
+
+
+/// <summary>
+/// Reports whether a step between two coordinates passes through a bridge deck.
+/// Only cells under a bridge can be crossed. Bullets and particles use the result to land on
+/// or bounce off the deck.
+/// </summary>
+/// <param name="old_coord">Position before the step.</param>
+/// <param name="new_coord">Position after the step.</param>
+/// <param name="bridge_height">Absolute height of the deck at new_coord (ground height plus BRIDGE_LEPTON_HEIGHT).</param>
+BridgeDeckCrossing MapClass::Cross_Bridge_Deck(Coord const & old_coord, Coord const & new_coord, int bridge_height)
+{
+	if (!Map[new_coord].IsUnderBridge && !Map[old_coord].IsUnderBridge) {
+		return(DECK_CROSSING_NONE);
+	}
+	if (new_coord.Z >= bridge_height) {
+		return(old_coord.Z < bridge_height ? DECK_CROSSING_ROSE_INTO : DECK_CROSSING_NONE);
+	}
+	return(old_coord.Z >= bridge_height ? DECK_CROSSING_FELL_ONTO : DECK_CROSSING_NONE);
 }
 
 
@@ -9837,6 +9138,142 @@ void MapClass::Shutdown(void)
 
 
 /// <summary>
+/// Swaps one destroyable cliff tile for its ruined counterpart and two slope pieces.
+/// The zones and subzones under the footprint are rebuilt, everything standing there is
+/// retargeted, and rubble animations are scattered over it.
+/// </summary>
+/// <param name="point">Top corner cell of the cliff tile.</param>
+/// <param name="tile_type">Index of the cliff tile type that came down.</param>
+/// <param name="slope_a">Index of the slope piece placed at the corner.</param>
+/// <param name="slope_b">Index of the slope piece placed at slope_b_offset.</param>
+/// <param name="slope_b_offset">Cell offset of the second slope piece.</param>
+/// <param name="extent">Footprint size in cells; also the far corner used for the redraw area.</param>
+void MapClass::Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int slope_b, Cell slope_b_offset, Cell extent)
+{
+	/*
+	 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
+	 */
+	ObjectClass * tile = IsometricTileTypes[tile_type]->Create_One_Of(NULL);
+	tile->Set_Coord(Coord(point));
+	tile->IsInLimbo = false;
+	tile->IsDown = true;
+	tile->Mark(MARK_UP);
+	delete tile;
+
+	/*
+	 * Place the two slope set pieces that form the new sloped ground.
+	 */
+	ObjectClass * slope1 = IsometricTileTypes[slope_a]->Create_One_Of(NULL);
+	slope1->Unlimbo(Coord(point), DIR_N);
+
+	ObjectClass * slope2 = IsometricTileTypes[slope_b]->Create_One_Of(NULL);
+	slope2->Unlimbo(Coord(point + slope_b_offset), DIR_N);
+
+	Zone_Reset();
+
+	IsometricTileTypeClass * ittype = IsometricTileTypes[tile_type];
+	IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
+
+	/*
+	 * Recalculate the attributes of every cell the cliff tile touches.
+	 */
+	int x;
+	int y;
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true)) {
+					CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
+					Map[cell].Recalc_Attributes();
+				}
+			}
+		}
+	}
+
+	/*
+	 * Rebuild the subzone graph for those cells.
+	 */
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
+					Update_Cell_Subzones(cell);
+				}
+			}
+		}
+	}
+
+	/*
+	 * Refresh mission targets and the radar background for those cells.
+	 */
+	for (y = 0; y < ittype->Height; y++) {
+		for (x = 0; x < ittype->Width; x++) {
+			Cell cell = point + Cell(x, y);
+			if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
+				if (In_Local_Radar(cell, true)) {
+					TechnoClass::Remove_Target(&Map[cell]);
+					Map.Radar_Background(cell);
+				}
+			}
+		}
+	}
+
+	/*
+	 * Mark the affected screen region as dirty so it gets redrawn.
+	 */
+	Point2D pixel1;
+	TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
+
+	Point2D pixel2;
+	TacticalMap->Coord_To_Pixel(Coord(point + extent, LEVEL_LEPTON_H * Map[point + extent].Height), pixel2);
+
+	// The footprint runs right of the origin cell when it is wider than tall, else left.
+	bool runs_right = extent.X > extent.Y;
+	int left_pixel_x = runs_right ? pixel1.X : pixel2.X;
+	int right_pixel_x = runs_right ? pixel2.X : pixel1.X;
+
+	Rect dirty;
+	dirty.X = left_pixel_x - 2 * ISO_TILE_PIXEL_W;
+	dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
+	dirty.Width = right_pixel_x + 4 * ISO_TILE_PIXEL_W - left_pixel_x;
+	dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
+	TacticalMap->Register_Dirty_Area(dirty, false);
+
+	/*
+	 * Scatter the debris animations across the collapsed area.
+	 */
+	AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
+	AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
+	AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
+
+	for (y = point.Y; y < point.Y + extent.Y; y++) {
+		for (x = point.X; x < point.X + extent.X; x++) {
+			Cell cell(x, y);
+			AnimTypeClass * type = NULL;
+			for (int i = 0; i < 2; i++) {
+				switch (Scen->RandomNumber(0, 2)) {
+					case 0:
+						type = med1;
+						break;
+
+					case 1:
+						type = med2;
+						break;
+
+					case 2:
+						type = sml1;
+						break;
+				}
+				AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
+			}
+		}
+	}
+}
+
+
+/// <summary>
 /// Collapses a destroyable cliff into a slope.
 /// The cliff tile is swapped for its ruined counterpart and a pair of slope pieces, which
 /// leaves a way up where there was none -- so the zones and subzones are rebuilt, everything
@@ -9846,244 +9283,13 @@ void MapClass::Shutdown(void)
 void MapClass::Collapse_Cliff(CellClass * cptr)
 {
 	if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-2) {
-
-		Cell point = Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID;
-
-		/*
-		 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
-		 */
-		ObjectClass * tile = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs]->Create_One_Of(NULL);
-		tile->Set_Coord(Coord(point));
-		tile->IsInLimbo = false;
-		tile->IsDown = true;
-		tile->Mark(MARK_UP);
-		delete tile;
-
-		/*
-		 * Place the two slope set pieces that form the new sloped ground.
-		 */
-		ObjectClass * slope1 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces]->Create_One_Of(NULL);
-		slope1->Unlimbo(Coord(point), DIR_N);
-
-		ObjectClass * slope2 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 1]->Create_One_Of(NULL);
-		slope2->Unlimbo(Coord(point + Cell(3, 0)), DIR_N);
-
-		Zone_Reset();
-
-		IsometricTileTypeClass * ittype = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs];
-		IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
-
-		/*
-		 * Recalculate the attributes of every cell the cliff tile touches.
-		 */
-		int x;
-		int y;
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
-						Map[cell].Recalc_Attributes();
-					}
-				}
-			}
-		}
-
-		/*
-		 * Rebuild the subzone graph for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
-						Update_Cell_Subzones(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Refresh mission targets and the radar background for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						TechnoClass::Remove_Target(&Map[cell]);
-						Map.Radar_Background(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Mark the affected screen region as dirty so it gets redrawn.
-		 */
-		Point2D pixel1;
-		TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
-
-		Point2D pixel2;
-		TacticalMap->Coord_To_Pixel(Coord(point + Cell(5, 3), LEVEL_LEPTON_H * Map[point + Cell(5, 3)].Height), pixel2);
-
-		Rect dirty;
-		dirty.X = pixel1.X - 2 * ISO_TILE_PIXEL_W;
-		dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
-		dirty.Width = pixel2.X + 4 * ISO_TILE_PIXEL_W - pixel1.X;
-		dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
-		TacticalMap->Register_Dirty_Area(dirty, false);
-
-		/*
-		 * Scatter the debris animations across the collapsed area.
-		 */
-		AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
-		AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
-		AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
-
-		for (y = point.Y; y < point.Y + 3; y++) {
-			for (x = point.X; x < point.X + 5; x++) {
-				Cell cell(x, y);
-				AnimTypeClass * type = NULL;
-				for (int i = 0; i < 2; i++) {
-					switch (Scen->RandomNumber(0, 2)) {
-						case 0:
-							type = med1;
-							break;
-
-						case 1:
-							type = med2;
-							break;
-
-						case 2:
-							type = sml1;
-							break;
-					}
-					AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-				}
-			}
-		}
-
+		Cell corner = Cell(-(cptr->SubTile % 6), cptr->SubTile / -6) + cptr->CellID;
+		Collapse_Cliff_Tile(corner, IsometricTileTypeClass::DestroyableCliffs,
+			IsometricTileTypeClass::SlopeSetPieces, IsometricTileTypeClass::SlopeSetPieces + 1, Cell(3, 0), Cell(5, 3));
 	} else if (cptr->ITType == IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT-1) {
-
-		Cell point = Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID;
-
-		/*
-		 * Stamp the destroyed cliff replacement tile onto the map, then throw it away.
-		 */
-		ObjectClass * tile = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1]->Create_One_Of(NULL);
-		tile->Set_Coord(Coord(point));
-		tile->IsInLimbo = false;
-		tile->IsDown = true;
-		tile->Mark(MARK_UP);
-		delete tile;
-
-		/*
-		 * Place the two slope set pieces that form the new sloped ground.
-		 */
-		ObjectClass * slope1 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 3]->Create_One_Of(NULL);
-		slope1->Unlimbo(Coord(point), DIR_N);
-
-		ObjectClass * slope2 = IsometricTileTypes[IsometricTileTypeClass::SlopeSetPieces + 2]->Create_One_Of(NULL);
-		slope2->Unlimbo(Coord(point + Cell(0, 3)), DIR_N);
-
-		Zone_Reset();
-
-		IsometricTileTypeClass * ittype = IsometricTileTypes[IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1];
-		IsoTileSet const * image = (IsoTileSet const *)ittype->Get_Image_Data();
-
-		/*
-		 * Recalculate the attributes of every cell the cliff tile touches.
-		 */
-		int x;
-		int y;
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] = 0;
-						Map[cell].Recalc_Attributes();
-					}
-				}
-			}
-		}
-
-		/*
-		 * Rebuild the subzone graph for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true) && CellSubzones[Get_Cell_Subzone_Index(cell)].SubzoneID[SUBZONE_FINE] == 0) {
-						Update_Cell_Subzones(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Refresh mission targets and the radar background for those cells.
-		 */
-		for (y = 0; y < ittype->Height; y++) {
-			for (x = 0; x < ittype->Width; x++) {
-				Cell cell = point + Cell(x, y);
-				if (image->Fetch_Record_Pointer_Unsafe(x + y * ittype->Width) != NULL) {
-					if (In_Local_Radar(cell, true)) {
-						TechnoClass::Remove_Target(&Map[cell]);
-						Map.Radar_Background(cell);
-					}
-				}
-			}
-		}
-
-		/*
-		 * Mark the affected screen region as dirty so it gets redrawn.
-		 */
-		Point2D pixel1;
-		TacticalMap->Coord_To_Pixel(Coord(point, LEVEL_LEPTON_H * Map[point].Height), pixel1);
-
-		Point2D pixel2;
-		TacticalMap->Coord_To_Pixel(Coord(point + Cell(3, 5), LEVEL_LEPTON_H * Map[point + Cell(3, 5)].Height), pixel2);
-
-		Rect dirty;
-		dirty.X = pixel2.X - 2 * ISO_TILE_PIXEL_W;
-		dirty.Y = pixel1.Y - 2 * ISO_TILE_PIXEL_H;
-		dirty.Width = pixel1.X + 4 * ISO_TILE_PIXEL_W - pixel2.X;
-		dirty.Height = pixel2.Y + 4 * ISO_TILE_PIXEL_H - pixel1.Y;
-		TacticalMap->Register_Dirty_Area(dirty, false);
-
-		/*
-		 * Scatter the debris animations across the collapsed area.
-		 */
-		AnimTypeClass * med1 = AnimTypes[AnimTypeClass::From_Name("XGRYMED1")];
-		AnimTypeClass * med2 = AnimTypes[AnimTypeClass::From_Name("XGRYMED2")];
-		AnimTypeClass * sml1 = AnimTypes[AnimTypeClass::From_Name("XGRYSML1")];
-
-		for (y = point.Y; y < point.Y + 5; y++) {
-			for (x = point.X; x < point.X + 3; x++) {
-				Cell cell(x, y);
-				AnimTypeClass * type = NULL;
-				for (int i = 0; i < 2; i++) {
-					switch (Scen->RandomNumber(0, 2)) {
-						case 0:
-							type = med1;
-							break;
-
-						case 1:
-							type = med2;
-							break;
-
-						case 2:
-							type = sml1;
-							break;
-					}
-					AnimClass * anim = new AnimClass(type, Coord(cell, LEVEL_LEPTON_H * Map[cell].Height) + Coord(Scen->RandomNumber(-12, 12), Scen->RandomNumber(-8, 8), 0), Random_Pick(0, 2), 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
-				}
-			}
-		}
+		Cell corner = Cell(-(cptr->SubTile % 4), -(cptr->SubTile >> 2)) + cptr->CellID;
+		Collapse_Cliff_Tile(corner, IsometricTileTypeClass::DestroyableCliffs + DESTROYABLE_CLIFFS_COUNT - 1,
+			IsometricTileTypeClass::SlopeSetPieces + 3, IsometricTileTypeClass::SlopeSetPieces + 2, Cell(0, 3), Cell(3, 5));
 	}
 }
 

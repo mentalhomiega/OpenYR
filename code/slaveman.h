@@ -58,7 +58,6 @@ class SlaveManagerClass
 			InfantryClass * Slave = nullptr;
 			int Status = NODE_DEAD;
 			FrameCountdown Timer;
-			Cell OreCell = CELL_NONE;
 
 			bool Is_Timer_Expired(void) const;
 			void Start_Timer(int frames);

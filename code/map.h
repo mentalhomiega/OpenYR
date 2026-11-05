@@ -40,6 +40,7 @@
 
 #include "house.hh"
 #include "isotype.hh"
+#include "overlay.hh"
 #include "mzone.hh"
 #include "passblty.hh"
 #include "speed.hh"
@@ -55,6 +56,14 @@ class BuildingTypeClass;
 class FootClass;
 class SaveStreamClass;
 struct ConcreteFamily;
+
+
+// How a moving projectile or particle passed through a bridge deck during one step.
+enum BridgeDeckCrossing {
+	DECK_CROSSING_NONE,
+	DECK_CROSSING_FELL_ONTO,	// dropped onto the deck from above
+	DECK_CROSSING_ROSE_INTO		// rose into the deck from below
+};
 
 
 class MapClass: public GScreenClass
@@ -181,22 +190,14 @@ class MapClass: public GScreenClass
 		/*
 		 * Train / high per-direction damage and destruction walkers
 		 */
-		void Internal_Damage_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_Train_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_EW_BottomRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_EW_TopLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Damage_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir);
-		void Internal_Destroy_High_Bridge_NS_TopRight(Cell const & cell, FacingType dir);
+		void Internal_Damage_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_EW_BottomRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_EW_TopLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Damage_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_NS_BottomLeft(Cell const & cell, FacingType dir, IsometricTileType tileset);
+		void Internal_Destroy_Bridge_NS_TopRight(Cell const & cell, FacingType dir, IsometricTileType tileset);
 
 		/*
 		 * Train and high bridge span damage and destruction
@@ -206,6 +207,7 @@ class MapClass: public GScreenClass
 		void Destroy_Train_Bridge_Connections(Cell const & cell);
 		bool Damage_High_Bridge(Cell const & cell);
 		bool Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty);
+		bool Destroy_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty, IsometricTileType tileset);
 		void Destroy_High_Bridge_Connections(Cell const & cell);
 		void Spring_Bridge_Destruction_Triggers(Cell cell1, Cell cell2);
 
@@ -247,9 +249,12 @@ class MapClass: public GScreenClass
 		 */
 		void Repair_High_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty = NULL);
 		void Repair_Train_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty);
+		bool Locate_Bridge_Repair_Origin(Cell const & cell, Cell & origin, bool & east_west);
+		void Repair_Bridge_Span(CellClass * cptr, FacingType dir, Rect * dirty, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns);
 		void Repair_All_High_Bridges(void);
 		void Repair_High_Bridge_From_Cell(Cell const & cell);
 		void Repair_Train_Bridge_From_Cell(Cell const & cell);
+		void Repair_Bridge_From_Cell(Cell const & cell, IsometricTileType tileset, OverlayType overlay_ew, OverlayType overlay_ns);
 
 		/*
 		 * Low bridge piece damage and repair
@@ -309,6 +314,7 @@ class MapClass: public GScreenClass
 		bool Deform_Terrain(Cell const & cell, bool forced);
 		void Terrain_Deformation_AI(void);
 		void Collapse_Cliff(CellClass * cptr);
+		void Collapse_Cliff_Tile(Cell point, int tile_type, int slope_a, int slope_b, Cell slope_b_offset, Cell extent);
 		void Area_Reduce_Tiberium(Cell const & cell);
 		void Recalc_Cells_In_Rect(Rect const & rect);
 		void Recalc_Cells_In_List(DynamicVectorClass<Cell> const & vec);
@@ -346,6 +352,7 @@ class MapClass: public GScreenClass
 		 * Miscellaneous map queries and helpers
 		 */
 		int Get_Height_GL(Coord const & coord);
+		BridgeDeckCrossing Cross_Bridge_Deck(Coord const & old_coord, Coord const & new_coord, int bridge_height);
 		void Increment_Redraw_Counter(void);
 		bool Try_Open_Gate(FootClass * foot, Cell const & cell);
 		bool Is_Something_Nearby(Cell const & cell, int radius);

@@ -306,3 +306,4 @@ to a header when a second file needs it.
 | `For_Each_Ring_Offset(ring, visit)` | `slaveman.cpp` | Visits the offsets of one square ring. |
 | `Enum_Name(table, value, fallback)` | `options.cpp` | Name of an enum value from a table. |
 | `Find_Type_In(types, name)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type or a house by name. |
+| `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |

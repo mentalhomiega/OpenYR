@@ -85,7 +85,6 @@ void SlaveManagerClass::NodeType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Status);
 	stream.Serialize(Timer.Start);
 	stream.Serialize(Timer.Length);
-	stream.Serialize(OreCell);
 }
 
 
@@ -293,7 +292,6 @@ void SlaveManagerClass::Node_Scanning(NodeType & node, bool working)
 	if (ore == CELL_NONE) {
 		Send_Home(node);
 	} else {
-		node.OreCell = ore;
 		node.Status = NODE_MOVING;
 		slave->Assign_Destination(&Map[ore]);
 		slave->Assign_Mission(MISSION_MOVE);

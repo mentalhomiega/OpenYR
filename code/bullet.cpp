@@ -711,17 +711,9 @@ void BulletClass::Fly_Ballistic(Coord & coord, bool & forced, bool & collided, I
 	 * See if the arc carried the projectile through the deck of a bridge,
 	 * either dropping onto it from above or rising into it from below.
 	 */
-	bool fell_through_bridge = false;
-	bool rose_through_bridge = false;
-	if (cellptr->IsUnderBridge || Map[old_coord].IsUnderBridge) {
-		if (new_coord.Z >= bridge_height) {
-			if (old_coord.Z < bridge_height) {
-				rose_through_bridge = true;
-			}
-		} else if (old_coord.Z >= bridge_height) {
-			fell_through_bridge = true;
-		}
-	}
+	BridgeDeckCrossing crossing = Map.Cross_Bridge_Deck(old_coord, new_coord, bridge_height);
+	bool fell_through_bridge = (crossing == DECK_CROSSING_FELL_ONTO);
+	bool rose_through_bridge = (crossing == DECK_CROSSING_ROSE_INTO);
 
 	/*
 	 * Otherwise see if the projectile ran into a wall or a building on the
