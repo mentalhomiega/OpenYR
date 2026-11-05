@@ -3202,30 +3202,29 @@ static void Veterancy_Step(StepType const & step)
 }
 
 
-// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does.
+// sell <x> <y>: starts selling the player's structure on that cell, as the sell cursor's click does, with a queued SELL event.
 static void Sell_Step(StepType const & step)
 {
 	BuildingClass * building = Map[step.Argument_Cell()].Cell_Building();
 	DebugString("AUTOTEST sell %s at %d,%d\n", building != NULL ? building->Class->Name() : "(none)", step.Argument_Int(), step.X);
 	if (building != NULL && building->House == PlayerPtr) {
-		if (Network_Game()) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SELL, TargetClass(building)));
-		} else {
-			building->Sell_Back(-1);
-		}
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SELL, TargetClass(building)));
 	}
 }
 
 
 // repairon <TypeID>: turns repair on for the player's structures of that type. Unlike the repair cursor, which toggles repair,
-// a structure that is already repairing keeps repairing.
+// a structure that is already repairing keeps repairing, so the REPAIR event is queued only for one that is not.
 static void Repairon_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			building->Repair(1);
-			DebugString("AUTOTEST repairon %s repairing %d\n", building->Class->Name(), (int)building->IsRepairing);
+			bool const was_repairing = building->IsRepairing;
+			if (!was_repairing) {
+				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REPAIR, TargetClass(building)));
+			}
+			DebugString("AUTOTEST repairon %s was repairing %d queued %d\n", building->Class->Name(), (int)was_repairing, (int)!was_repairing);
 		}
 	}
 }
@@ -3237,24 +3236,20 @@ static void Poweroff_Step(StepType const & step)
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			building->Turn_Off();
-			DebugString("AUTOTEST poweroff %s on %d\n", building->Class->Name(), (int)building->IsOn);
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::POWEROFF, TargetClass(building)));
+			DebugString("AUTOTEST poweroff %s queued\n", building->Class->Name());
 		}
 	}
 }
 
 
-// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell, skipping the nearby-cell search an Alt-click makes.
+// rally <TypeID> x y: sets the rally point of the player's structures of that type to the cell with a queued ARCHIVE event, skipping the nearby-cell search an Alt-click makes.
 static void Rally_Step(StepType const & step)
 {
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		if (building->House == PlayerPtr && !building->IsInLimbo && stricmp(building->Class->Name(), step.Argument.c_str()) == 0) {
-			if (Network_Game()) {
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ARCHIVE, TargetClass(building), TargetClass(&Map[Cell(step.X, step.Y)])));
-			} else {
-				building->Assign_Archive_Target(&Map[Cell(step.X, step.Y)]);
-			}
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::ARCHIVE, TargetClass(building), TargetClass(&Map[Cell(step.X, step.Y)])));
 			DebugString("AUTOTEST rally %s to %d,%d\n", building->Class->Name(), step.X, step.Y);
 		}
 	}
