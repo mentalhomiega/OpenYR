@@ -247,6 +247,9 @@ a default and returns it when the section or entry is missing.
 |---|---|---|
 | `UI_Net_Apply_Switch(which, on)`, `UI_Net_Apply_Slider(which, value)` | `ui/screens/netlobby/uinetlobby.h` | Write one lobby option into `Session.Options`. Return false for a control with no option. The caller sends the change. |
 | `UI_Net_Fill_Options(state, ai_max, credits_min)` | `ui/screens/netlobby/uinetlobby.h` | Fills a lobby state from `Session.Options`. Used by LAN and CnCNet. |
+| `Clamp_Low_Wins(value, low, high)` | `ui/uiclamp.h` | `std::clamp` for ranges that rules can leave empty (low above high): a value below low gives low, anything else gives high. |
+| `UI_Difficulty_Names()` | `ui/uienginehost.h` | The display names of the difficulty levels, easiest first. |
+| `UI_Difficulty_Name(names, difficulty)` | `ui/uiscreen.h` | The name at a difficulty level, or an empty string outside the list. |
 | `CNCNET_OPTION_*` | `cncnet/cncnetspawn.h` | Names of the CnCNet room options. |
 | `SPAWN_ALLY_KEYS` | `cncnet/spawnkeys.h` | SPAWN.INI alliance keys in slot order. Readers and writers must share this order. |
 | `NativeSocket`, `NO_SOCKET`, `Close_Native(handle)` | `cncnet/cncnetnative.h` | Socket handle type for Winsock and POSIX. |

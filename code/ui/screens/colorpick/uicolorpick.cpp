@@ -18,12 +18,6 @@
 namespace
 {
 
-int Clamp(int value, int low, int high)
-{
-	return(std::clamp(value, low, high));
-}
-
-
 /// Sets the working hue, saturation and value from a packed color.
 void Load_HSV(UIColorPickState & state, unsigned int packed)
 {
@@ -92,19 +86,26 @@ bool Clashes_With(RGBClass const & candidate, bool candidate_custom, std::vector
 	return(false);
 }
 
-// The name of the stock lobby color that looks closest to a color.
-char const * Nearest_Standard_Name(RGBClass const & rgb)
+// The index below count whose color is closest to rgb, the first one on a tie. color_at(index) gives the color to compare.
+template <typename ColorAt>
+int Nearest_Index(RGBClass const & rgb, int count, ColorAt color_at)
 {
 	int nearest = 0;
 	double nearest_distance = 0.0;
-	for (int index = 0; index < PLAYER_COLOR_SEATS; index++) {
-		double const distance = Player_Color_Distance(rgb, UI_Stock_Color_RGB(index));
+	for (int index = 0; index < count; index++) {
+		double const distance = Player_Color_Distance(rgb, color_at(index));
 		if (index == 0 || distance < nearest_distance) {
 			nearest = index;
 			nearest_distance = distance;
 		}
 	}
-	return(Player_Color_Preset_At(nearest).Name);
+	return(nearest);
+}
+
+// The name of the stock lobby color that looks closest to a color.
+char const * Nearest_Standard_Name(RGBClass const & rgb)
+{
+	return(Player_Color_Preset_At(Nearest_Index(rgb, PLAYER_COLOR_SEATS, UI_Stock_Color_RGB)).Name);
 }
 
 // Brings the swatch, the numbers, the nearest standard color and the remap ramp preview in line with the chosen color.
@@ -173,15 +174,9 @@ std::string UI_Color_Name(std::string const & stock_label, unsigned int custom)
 	}
 
 	RGBClass const chosen = Player_Color_Preview(custom);
-	int nearest = 0;
-	double nearest_distance = 0.0;
-	for (int index = 0; index < Player_Color_Preset_Count(); index++) {
-		double const distance = Player_Color_Distance(chosen, Preset_Applied(Player_Color_Preset_At(index)));
-		if (index == 0 || distance < nearest_distance) {
-			nearest = index;
-			nearest_distance = distance;
-		}
-	}
+	int const nearest = Nearest_Index(chosen, Player_Color_Preset_Count(), [](int index) {
+		return(Preset_Applied(Player_Color_Preset_At(index)));
+	});
 	return(std::string("Custom (near ") + Player_Color_Preset_At(nearest).Name + ")");
 }
 
@@ -255,7 +250,7 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 
 	state.Open = true;
 	state.Row = row;
-	state.Seat = Clamp(seat, 0, PLAYER_COLOR_SEATS - 1);
+	state.Seat = std::clamp(seat, 0, PLAYER_COLOR_SEATS - 1);
 	state.Notice.clear();
 	state.Custom = Player_Color_Is_Custom(custom) ? custom : 0;
 	Load_HSV(state, state.Custom != 0 ? state.Custom : Player_Color_From_RGB(UI_Stock_Color_RGB(state.Seat)));
@@ -272,8 +267,8 @@ void UI_Color_Pick_Open(UIColorPickState & state, int row, unsigned int custom, 
 /// <param name="y">The row, from 0 at the top edge to UI_COLOR_FIELD_SIZE - 1.</param>
 void UI_Color_Pick_Field(UIColorPickState & state, int x, int y)
 {
-	x = Clamp(x, 0, UI_COLOR_FIELD_SIZE - 1);
-	y = Clamp(y, 0, UI_COLOR_FIELD_SIZE - 1);
+	x = std::clamp(x, 0, UI_COLOR_FIELD_SIZE - 1);
+	y = std::clamp(y, 0, UI_COLOR_FIELD_SIZE - 1);
 
 	state.Hue = x * 256 / UI_COLOR_FIELD_SIZE;
 	state.Saturation = 255 - (y * 255) / (UI_COLOR_FIELD_SIZE - 1);
@@ -290,7 +285,7 @@ void UI_Color_Pick_Value(UIColorPickState & state, int value)
 {
 	// The brightness slider reports its own value when the picker opens. An unchanged brightness is
 	// not a choice, so it leaves a stock color as it is.
-	int const chosen = std::max(Clamp(value, 0, 255), (int)PLAYER_COLOR_MIN_VALUE);
+	int const chosen = std::max(std::clamp(value, 0, 255), (int)PLAYER_COLOR_MIN_VALUE);
 	if (chosen == state.Value) {
 		return;
 	}
