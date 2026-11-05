@@ -4565,7 +4565,7 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 
 	static_assert(RMGSettingsClass::TIME_COUNT == TIME_OF_DAY_COUNT, "one lighting setting per time of day");
 	RMGSettingsClass::LightingType const lighting = Settings.Lighting(TheaterClass::As_Reference(_biome_to_theater(biome)).IsArctic, SeedData.Time);
-	double const ambient = lighting.Ambient * 0.01;
+	double const ambient = LightingIni::Percent_Fraction(lighting.Ambient);
 
 	/*
 	 * Interpolate the local map dimensions between the minimum and maximum size
