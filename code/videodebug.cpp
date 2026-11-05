@@ -121,10 +121,10 @@ void Video_Note_Draw_Digest(Surface const & surface, Rect const & area)
 	Rect const clipped = Intersect(area, surface.Get_Rect());
 	unsigned long long hash = FNV64_BASIS;
 	if (clipped.Width > 0 && clipped.Height > 0) {
-		char const * base = (char const *)surface.Lock(Point2D(clipped.X, clipped.Y));
+		SurfaceLock lock(surface, Point2D(clipped.X, clipped.Y));
+		char const * base = lock.As<char const>();
 		if (base != NULL) {
 			hash = Digest_Rows(hash, base, surface.Stride(), clipped.Width * surface.Bytes_Per_Pixel(), clipped.Height);
-			surface.Unlock();
 		}
 	}
 	DebugString("DRAW_DIGEST frame %d draw %llu hash %016llx\n", Frame, (unsigned long long)_DrawDigestCount, hash);
