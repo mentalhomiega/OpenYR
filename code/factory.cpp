@@ -485,10 +485,11 @@ bool FactoryClass::Abandon(void)
 		/*
 		**	Delete the object under construction.
 		*/
-		ScenarioInit++;
-		delete Object;
-		Object = NULL;
-		ScenarioInit--;
+		{
+			ScenarioInitScope const scope;
+			delete Object;
+			Object = NULL;
+		}
 
 		return(true);
 	}

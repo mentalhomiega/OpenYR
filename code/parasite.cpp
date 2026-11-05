@@ -88,10 +88,8 @@ void Set_Paralysis(TechnoClass * techno, int frames)
 /// </summary>
 bool Return_To_Map(TechnoClass * unit, Coord const & at, Dir256 facing)
 {
-	ScenarioInit++;
-	bool const placed = unit->Unlimbo(at, facing);
-	ScenarioInit--;
-	return(placed);
+	ScenarioInitScope const scope;
+	return(unit->Unlimbo(at, facing));
 }
 
 

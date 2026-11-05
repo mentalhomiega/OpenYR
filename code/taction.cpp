@@ -1935,11 +1935,12 @@ bool TActionClass::TAction_AUTOCREATE(HouseClass * , ObjectClass * , TriggerClas
 /// </summary>
 bool TActionClass::TAction_CREATE_TEAM(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	ScenarioInit++;
-	if (Team != NULL) {
-		Team->Create_One_Of();
+	{
+		ScenarioInitScope const scope;
+		if (Team != NULL) {
+			Team->Create_One_Of();
+		}
 	}
-	ScenarioInit--;
 	return(true);
 }
 
@@ -2833,11 +2834,10 @@ bool TActionClass::TAction_CREATE_BUILDING_AT(HouseClass * , ObjectClass * , Tri
 	Cell cell = Scen->Get_Waypoint_Cell(EffectLocation);
 
 	if (TriggerRect.Y > 0) {
-		ScenarioInit++;
+		ScenarioInitScope const scope;
 		BuildingClass * building = new BuildingClass(btype, hptr);
 		bool placed = building != nullptr && building->Unlimbo(Coord(cell));
 		if (!placed) delete building;
-		ScenarioInit--;
 		return(placed);
 	}
 
@@ -2980,9 +2980,10 @@ bool TActionClass::TAction_MAKE_ALLY_ONE_WAY(HouseClass * house, ObjectClass * ,
 		return(false);
 	}
 
-	ScenarioInit++;
-	house->Make_Ally(house2);
-	ScenarioInit--;
+	{
+		ScenarioInitScope const scope;
+		house->Make_Ally(house2);
+	}
 	return(true);
 }
 
@@ -2999,9 +3000,10 @@ bool TActionClass::TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * 
 		return(false);
 	}
 
-	ScenarioInit++;
-	house->Make_Enemy(house2);
-	ScenarioInit--;
+	{
+		ScenarioInitScope const scope;
+		house->Make_Enemy(house2);
+	}
 	return(true);
 }
 
@@ -3100,11 +3102,10 @@ bool TActionClass::TAction_CREATE_BUILDING(HouseClass * house, ObjectClass * , T
 		return(false);
 	}
 
-	ScenarioInit++;
+	ScenarioInitScope const scope;
 	BuildingClass * building = new BuildingClass(BuildingTypes[type], house);
 	bool placed = building != nullptr && building->Unlimbo(Coord(Scen->Get_Waypoint_Cell(EffectLocation)));
 	if (!placed) delete building;
-	ScenarioInit--;
 	return(placed);
 }
 

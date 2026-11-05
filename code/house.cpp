@@ -1476,9 +1476,8 @@ void HouseClass::AI(void)
 		for (int index = 0; index < maxteams; index++) {
 			TeamTypeClass const * ttype = Suggested_New_Team(true);
 			if (ttype != NULL) {
-				ScenarioInit++;
+				ScenarioInitScope const scope;
 				ttype->Create_One_Of();
-				ScenarioInit--;
 			}
 		}
 		AlertTime = Rule->AutocreateTime * Random_Pick(TICKS_PER_MINUTE/2, TICKS_PER_MINUTE*2);
@@ -6725,13 +6724,12 @@ void HouseClass::Restore_Starting_Buildings(void)
 /// <returns>bool; Was the building placed? One that could not be placed is deleted.</returns>
 bool HouseClass::Place_Scenario_Building(BuildingTypeClass const * type, Cell const & cell)
 {
-	ScenarioInit++;
+	ScenarioInitScope const scope;
 	BuildingClass * building = new BuildingClass(type, this);
 	bool placed = building != NULL && building->Unlimbo(Coord(cell));
 	if (!placed) {
 		delete building;
 	}
-	ScenarioInit--;
 	return(placed);
 }
 
@@ -10180,9 +10178,11 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 		return(NULL);
 	}
 
-	ScenarioInit++;
-	AircraftClass * plane = static_cast<AircraftClass *>(type->Create_One_Of(this));
-	ScenarioInit--;
+	AircraftClass * plane;
+	{
+		ScenarioInitScope const scope;
+		plane = static_cast<AircraftClass *>(type->Create_One_Of(this));
+	}
 	if (plane == NULL) {
 		return(NULL);
 	}
@@ -10190,9 +10190,11 @@ AircraftClass * HouseClass::Send_Plane(AircraftTypeClass const * type, MissionTy
 
 	DirType facing;
 	facing.Direction(Coord(cell, 0), Coord(target, 0));
-	ScenarioInit++;
-	bool const placed = plane->Unlimbo(Coord(cell, 0), facing.As_Dir256());
-	ScenarioInit--;
+	bool placed;
+	{
+		ScenarioInitScope const scope;
+		placed = plane->Unlimbo(Coord(cell, 0), facing.As_Dir256());
+	}
 	if (!placed) {
 		delete plane;
 		return(NULL);

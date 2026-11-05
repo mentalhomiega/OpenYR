@@ -886,26 +886,26 @@ void MapClass::Set_Map_Dimensions(Rect const & rect, bool reset_cells, int cell_
 			}
 		}
 
-		ScenarioInit++;
+		{
+			ScenarioInitScope const scope;
 
-		for (i = 0; i < Objects.Count(); i++) {
-			if (Objects[i]->RTTI != RTTI_PARTICLESYSTEM || ((ParticleSystemClass *)Objects[i])->Class->Behaves_Like() != PSYS_BEHAVIOR_GAS) {
-				Cell cell = Objects[i]->PositionCell;
-				const Cell *list = Objects[i]->Occupy_List();
-				while (*list != REFRESH_EOL) {
-					Cell ncell = cell + *list;
-					if (!In_Radar(ncell)) {
-						Objects[i]->Limbo();
-						delete Objects[i];
-						i--;
-						break;
+			for (i = 0; i < Objects.Count(); i++) {
+				if (Objects[i]->RTTI != RTTI_PARTICLESYSTEM || ((ParticleSystemClass *)Objects[i])->Class->Behaves_Like() != PSYS_BEHAVIOR_GAS) {
+					Cell cell = Objects[i]->PositionCell;
+					const Cell *list = Objects[i]->Occupy_List();
+					while (*list != REFRESH_EOL) {
+						Cell ncell = cell + *list;
+						if (!In_Radar(ncell)) {
+							Objects[i]->Limbo();
+							delete Objects[i];
+							i--;
+							break;
+						}
+						list++;
 					}
-					list++;
 				}
 			}
 		}
-
-		ScenarioInit--;
 
 		for (i = 0; i < Array.Length(); i++) {
 			CellClass *c1 = Array[i];

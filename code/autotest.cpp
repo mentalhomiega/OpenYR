@@ -532,9 +532,11 @@ bool Footprint_Free(char const * command, TechnoTypeClass const * type, Cell con
 static TechnoClass * Place_New(TechnoTypeClass const * type, HouseClass * owner, Cell const & cell)
 {
 	TechnoClass * object = static_cast<TechnoClass *>(type->Create_One_Of(owner));
-	ScenarioInit++;
-	bool const placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
-	ScenarioInit--;
+	bool placed;
+	{
+		ScenarioInitScope const scope;
+		placed = object != NULL && object->Unlimbo(Map[cell].Center_Coord(), DIR_N);
+	}
 	return(placed ? object : NULL);
 }
 
@@ -1117,9 +1119,10 @@ static void Terrainonore_Step(StepType const & step)
 		if (cell->Tiberium_Value() > 0 && cell->Cell_Terrain() == NULL && Map.In_Radar(cell->CellID)) {
 			int const before = cell->Overlay;
 			// Placed as the scenario reader does, which skips the runtime placement tests.
-			ScenarioInit++;
-			new TerrainClass(TerrainTypes[type], cell->CellID);
-			ScenarioInit--;
+			{
+				ScenarioInitScope const scope;
+				new TerrainClass(TerrainTypes[type], cell->CellID);
+			}
 			DebugString("AUTOTEST terrainonore %s at %d,%d: overlay %d -> %d, terrain %d\n", step.Argument.c_str(), cell->CellID.X, cell->CellID.Y, before, (int)cell->Overlay, cell->Cell_Terrain() != NULL ? 1 : 0);
 			return;
 		}

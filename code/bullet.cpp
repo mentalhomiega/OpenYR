@@ -258,18 +258,18 @@ BulletClass::~BulletClass(void)
 					if (i != FACING_NONE) {
 						newcoord = Adjacent_Cell(Coord, FacingType(i));
 					}
-					ScenarioInit++;
-					if (dog->Unlimbo(newcoord, dog->PrimaryFacing)) {
-						dog->Mark(MARK_DOWN);
-						dog->Do_Action(DO_DOG_MAUL, true);
-						if (dog->WasSelected) {
-							dog->Select();
+					{
+						ScenarioInitScope const scope;
+						if (dog->Unlimbo(newcoord, dog->PrimaryFacing)) {
+							dog->Mark(MARK_DOWN);
+							dog->Do_Action(DO_DOG_MAUL, true);
+							if (dog->WasSelected) {
+								dog->Select();
+							}
+							unlimbo = true;
+							break;
 						}
-						ScenarioInit--;
-						unlimbo = true;
-						break;
 					}
-					ScenarioInit--;
 				}
 
 				Payback = 0;
