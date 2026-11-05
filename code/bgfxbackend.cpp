@@ -17,7 +17,6 @@
 #include "except.h"
 #include "gpumap.h"
 
-#include "bgfxviews.hh"
 #include "hdrcolour.h"
 #include "rgb565.h"
 #include "tilediff.h"
@@ -25,6 +24,7 @@
 #include <algorithm>
 #include <cmath>
 #include <bgfx/bgfx.h>
+#include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
 #include <bx/allocator.h>
 #include <cstdio>
@@ -468,17 +468,6 @@ static void Set_View_Transform(bgfx::ViewId view, int width, int height)
 	bgfx::setViewRect(view, 0, 0, (uint16_t)width, (uint16_t)height);
 	Backend_Build_Ortho_Projection(projection, width, height);
 	bgfx::setViewTransform(view, NULL, projection);
-}
-
-
-// Destroys a valid handle and resets it to invalid. An invalid handle is left as it is.
-template<class Handle>
-static void Release_Handle(Handle & handle)
-{
-	if (bgfx::isValid(handle)) {
-		bgfx::destroy(handle);
-		handle = BGFX_INVALID_HANDLE;
-	}
 }
 
 
