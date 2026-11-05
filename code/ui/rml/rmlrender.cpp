@@ -679,14 +679,20 @@ void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 		texture->SetStatus(ImTextureStatus_OK);
 	}
 
+	texture->SetStatus(ImTextureStatus_Destroyed);
 	if (texture->Status == ImTextureStatus_WantDestroy && texture->UnusedFrames > 0) {
-		if (texture->TexID != ImTextureID_Invalid) {
-			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
-			Forget_Texture(handle.idx);
-			bgfx::destroy(handle);
-			texture->SetTexID(ImTextureID_Invalid);
-		}
-		texture->SetStatus(ImTextureStatus_Destroyed);
+		Destroy_ImGui_Texture(texture);
+	}
+}
+
+
+void UIRmlBgfxRenderClass::Destroy_ImGui_Texture(ImTextureData * texture)
+{
+	if (texture->TexID != ImTextureID_Invalid) {
+		bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+		Forget_Texture(handle.idx);
+		bgfx::destroy(handle);
+		texture->SetTexID(ImTextureID_Invalid);
 	}
 }
 
@@ -694,13 +700,7 @@ void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 void UIRmlBgfxRenderClass::Destroy_ImGui_Textures(void)
 {
 	for (ImTextureData * texture : ImGui::GetPlatformIO().Textures) {
-		if (texture->TexID != ImTextureID_Invalid) {
-			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
-			Forget_Texture(handle.idx);
-			bgfx::destroy(handle);
-			texture->SetTexID(ImTextureID_Invalid);
-		}
-		texture->SetStatus(ImTextureStatus_Destroyed);
+		Destroy_ImGui_Texture(texture);
 	}
 }
 

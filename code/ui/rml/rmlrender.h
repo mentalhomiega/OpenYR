@@ -107,6 +107,7 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 		bool Clear_Clip_Mask(void);
 		bool Record_Texture(unsigned short index, unsigned int bytes);
 		void Forget_Texture(unsigned short index);
+		void Destroy_ImGui_Texture(ImTextureData * texture);
 		void Update_ImGui_Texture(ImTextureData * texture);
 
 		bool IsReady;
