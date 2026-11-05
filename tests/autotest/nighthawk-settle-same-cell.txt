@@ -1,0 +1,15 @@
+; Three Night Hawks (SHAD) with no airfield or pad are granted near one another and ordered onto the same cell. gamemd's aircraft
+; Mission_Move (0x4166C0) checks the destination with AircraftClass::Cell_Seems_Ok (0x419B00), which refuses a cell another aircraft holds, and
+; picks another landing cell (AircraftClass::New_LZ, 0x418E20) until one is free. So once all three have stopped they should be on different cells.
+; The where lines give each Night Hawk's cell.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/nighthawk-settle-same-cell.txt -Seconds 150 -Filter "AUTOTEST   where|Exception"
+30 command CenterBase
+35 reveal
+40 grantunit SHAD 60 30
+41 grantunit SHAD 60 32
+42 grantunit SHAD 62 30
+120 move SHAD 70 30
+500 where SHAD
+800 where SHAD
+1100 where SHAD
+1101 quit
