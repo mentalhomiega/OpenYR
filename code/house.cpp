@@ -8324,6 +8324,41 @@ static void Make_Counted_Base_Nodes(DynamicVectorClass<BaseNodeClass> & nodes, D
 }
 
 
+/// Picks the one Firestorm gap generator plug the plan leaves out. The pick always consumes a Random call.
+static BuildingTypeClass * Pick_Excluded_Gap_Plug(void)
+{
+	static char const * const plug_names[] = {"GAPLUG2", "GAPLUG3", "GAPLUG4"};
+	return(BuildingTypes[BuildingTypeClass::From_Name(plug_names[Random_Pick(0, 2)])]);
+}
+
+
+/// Moves a wanted building to a fixed slot of the candidate list. The slot's old entry takes its place
+/// and the slot is marked not yet queued.
+static void Move_Buildable_To_Slot(DynamicVectorClass<BuildingTypeClass const *> & buildables, DynamicVectorClass<bool> & isadded, BuildingTypeClass const * wanted, int slot)
+{
+	for (int index = 0; index < buildables.Count(); index++) {
+		if (buildables[index] == wanted) {
+			BuildingTypeClass const * displaced = buildables[slot];
+			buildables[slot] = wanted;
+			isadded[index] = isadded[slot];
+			isadded[slot] = false;
+			buildables[index] = displaced;
+			break;
+		}
+	}
+}
+
+
+/// Adds a defense placeholder, preceded by the side's wall tower when it has one.
+static void Add_Defense_Placeholder(DynamicVectorClass<BuildingTypeClass const *> & queue, BuildingTypeClass const * tower)
+{
+	if (tower != NULL) {
+		queue.Add(tower);
+	}
+	queue.Add((BuildingTypeClass const *)-1);
+}
+
+
 /// <summary>
 /// Builds the computer's base construction plan.
 /// This routine fills the base node list with everything this house is allowed and able to
@@ -8352,17 +8387,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	Base.Init();
 
-	BuildingTypeClass * plug = NULL;
-	if (Addon_Enabled(ADDON_FIRESTORM)) {
-		int plugnum = Random_Pick(0, 2);
-		if (plugnum == 0) {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG2")];
-		} else if (plugnum == 1) {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG3")];
-		} else {
-			plug = BuildingTypes[BuildingTypeClass::From_Name("GAPLUG4")];
-		}
-	}
+	BuildingTypeClass * plug = Addon_Enabled(ADDON_FIRESTORM) ? Pick_Excluded_Gap_Plug() : NULL;
 
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
@@ -8397,29 +8422,8 @@ void HouseClass::Make_Base_Nodes(void)
 		startingqueue.Add(power);
 	}
 
-	BuildingTypeClass const * barracks = Get_First_Acted(Rule->BuildBarracks);
-	for (index = 0; index < buildables.Count(); index++) {
-		if (buildables[index] == barracks) {
-			BuildingTypeClass const * temp = buildables[0];
-			buildables[0] = barracks;
-			isadded[index] = isadded[0];
-			isadded[0] = false;
-			buildables[index] = temp;
-			break;
-		}
-	}
-
-	BuildingTypeClass const * weapons = Get_First_Acted(Rule->BuildWeapons);
-	for (index = 0; index < buildables.Count(); index++) {
-		if (buildables[index] == weapons) {
-			BuildingTypeClass const * temp = buildables[1];
-			buildables[1] = weapons;
-			isadded[index] = isadded[1];
-			isadded[1] = false;
-			buildables[index] = temp;
-			break;
-		}
-	}
+	Move_Buildable_To_Slot(buildables, isadded, Get_First_Acted(Rule->BuildBarracks), 0);
+	Move_Buildable_To_Slot(buildables, isadded, Get_First_Acted(Rule->BuildWeapons), 1);
 
 	int unprocessed = buildable_count - 1;
 	while (unprocessed > 0) {
@@ -8514,10 +8518,7 @@ void HouseClass::Make_Base_Nodes(void)
 			int deficiency = (int)wanted_defenses - defensecount;
 			defensecount += (int)deficiency;
 			do {
-				if (tower != NULL) {
-					finalqueue.Add(tower);
-				}
-				finalqueue.Add((BuildingTypeClass const *)-1);
+				Add_Defense_Placeholder(finalqueue, tower);
 				deficiency--;
 			} while (deficiency);
 		}
@@ -8528,10 +8529,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	if (!builds_walls || defenses_with_walls) {
 		for (int count = (3 - Difficulty) * placeholders; count > 0; count--) {
-			if (tower != NULL) {
-				finalqueue.Add(tower);
-			}
-			finalqueue.Add((BuildingTypeClass const *)-1);
+			Add_Defense_Placeholder(finalqueue, tower);
 		}
 	}
 
