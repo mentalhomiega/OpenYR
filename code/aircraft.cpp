@@ -2194,7 +2194,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 		RETURN_TO_BASE
 	};
 
-	// Fires one middle shot of a strafing run and moves on to the given status.
+	// Fires one middle shot of a strafing run, moves on to next_status and returns the mission delay.
 	auto strafe_shot = [&](int next_status) -> int {
 		if (TarCom == NULL) {
 			Status = RETURN_TO_BASE;

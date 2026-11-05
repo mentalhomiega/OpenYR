@@ -1116,9 +1116,9 @@ void BuildingClass::Draw_Extras(Point2D & xy, Rect & rect)
 
 /// <summary>
 /// Draws a voxel turret and its barrel, or a barrel alone when the building has no voxel turret.
-/// A barrel under a turret is drawn before the turret when the turret faces away from the viewer.
+/// A barrel under a turret is drawn before the turret while the turret faces north or west.
 /// </summary>
-void BuildingClass::Draw_Voxel_Turret_And_Barrel(Point2D & xy, Rect & rect, Cell cell)
+void BuildingClass::Draw_Voxel_Turret_And_Barrel(Point2D const & xy, Rect & rect, Cell cell)
 {
 	Matrix3D matrix;
 	matrix.Make_Identity();
@@ -1200,7 +1200,7 @@ void BuildingClass::Draw_Voxel_Turret_And_Barrel(Point2D & xy, Rect & rect, Cell
 /// Draws a voxel barrel together with the turret animation, which goes in front of or behind the
 /// barrel depending on the barrel's facing.
 /// </summary>
-void BuildingClass::Draw_Voxel_Barrel_With_Anim(Point2D & xy, Rect & rect, Cell cell)
+void BuildingClass::Draw_Voxel_Barrel_With_Anim(Point2D const & xy, Rect & rect, Cell cell)
 {
 	static int _dir_adjust = 28;
 	static bool _make_visible = true;
