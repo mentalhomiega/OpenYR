@@ -126,6 +126,20 @@ int main()
 	Expect("no number value", Bits(Parse_Nearest_Double(bad, &end)), Bits(0.0));
 	Expect("no number end", end == bad ? 1u : 0u, 1u);
 
+	// Rounding ties go to even, a junk suffix stops the read, and underflow and single overflow have a value.
+	Expect("double tie", Bits(Parse("9007199254740993")), Bits(9007199254740992.0));
+	Expect("single tie", Bits(Parse_Single("16777217")), Bits(16777216.0f));
+	Expect("single underflow", Bits(Parse_Single("1e-50")), Bits(0.0f));
+	Expect("double underflow", Bits(Parse("1e-400")), Bits(0.0));
+	Expect("single above max", Bits(Parse_Single("3.5e38")), Bits(HUGE_VALF));
+	char const * volatile suffixed = "2.5abc";
+	Expect("double suffix value", Bits(Parse_Nearest_Double(suffixed, &end)), Bits(2.5));
+	Expect("double suffix end", end == suffixed + 3 ? 1u : 0u, 1u);
+	Expect("single suffix value", Bits(Parse_Nearest_Single(suffixed, &end)), Bits(2.5f));
+	Expect("single suffix end", end == suffixed + 3 ? 1u : 0u, 1u);
+	Expect("single no number", Bits(Parse_Nearest_Single(bad, &end)), Bits(0.0f));
+	Expect("single no number end", end == bad ? 1u : 0u, 1u);
+
 	// Settings values are read as the nearest float, and a value written with Snprintf_Nearest reads back as that float.
 	char const * const settings[] = {"0.9", "1.1", "0.3", "0.25", "0.75", "1.5", "0.6", "12.345", "0.001", "0.05"};
 	for (char const * text : settings) {
