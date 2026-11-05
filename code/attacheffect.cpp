@@ -13,8 +13,10 @@
 
 #include "anim.h"
 #include "animtype.h"
+#include "ccini.h"
 #include "crc.h"
 #include "dbgprint.h"
+#include "findmake.h"
 #include "savestream.h"
 #include "techno.h"
 #include "techtype.h"
@@ -320,4 +322,20 @@ void AttachedEffectsClass::Remove_Anim(EffectStruct & effect)
 		effect.Anim->Delete_Me();
 		effect.Anim = nullptr;
 	}
+}
+
+
+void AttachEffectTypeClass::Read_Shared_INI(CCINIClass const & ini, char const * section)
+{
+	Animation = TGet_Class(ini, section, "AttachEffect.Animation", Animation);
+	Duration = ini.Get_Int(section, "AttachEffect.Duration", Duration);
+	IsTemporalHidesAnim = ini.Get_Bool(section, "AttachEffect.TemporalHidesAnim", IsTemporalHidesAnim);
+	SpeedMultiplier = ini.Get_Float(section, "AttachEffect.SpeedMultiplier", SpeedMultiplier);
+	ArmorMultiplier = ini.Get_Float(section, "AttachEffect.ArmorMultiplier", ArmorMultiplier);
+	FirepowerMultiplier = ini.Get_Float(section, "AttachEffect.FirepowerMultiplier", FirepowerMultiplier);
+	ROFMultiplier = ini.Get_Float(section, "AttachEffect.ROFMultiplier", ROFMultiplier);
+	IsCloakable = ini.Get_Bool(section, "AttachEffect.Cloakable", IsCloakable);
+	IsForceDecloak = ini.Get_Bool(section, "AttachEffect.ForceDecloak", IsForceDecloak);
+	IsDiscardOnEntry = ini.Get_Bool(section, "AttachEffect.DiscardOnEntry", IsDiscardOnEntry);
+	IsPenetratesIronCurtain = ini.Get_Bool(section, "AttachEffect.PenetratesIronCurtain", IsPenetratesIronCurtain);
 }

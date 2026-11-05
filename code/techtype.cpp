@@ -1150,17 +1150,7 @@ void TechnoTypeClass::Read_Insignia_INI(CCINIClass const & ini)
 
 void TechnoTypeClass::Read_Attach_Effect_INI(CCINIClass const & ini)
 {
-	AttachEffect.Animation = TGet_Class(ini, Name(), "AttachEffect.Animation", AttachEffect.Animation);
-	AttachEffect.Duration = ini.Get_Int(Name(), "AttachEffect.Duration", AttachEffect.Duration);
-	AttachEffect.IsTemporalHidesAnim = ini.Get_Bool(Name(), "AttachEffect.TemporalHidesAnim", AttachEffect.IsTemporalHidesAnim);
-	AttachEffect.SpeedMultiplier = ini.Get_Float(Name(), "AttachEffect.SpeedMultiplier", AttachEffect.SpeedMultiplier);
-	AttachEffect.ArmorMultiplier = ini.Get_Float(Name(), "AttachEffect.ArmorMultiplier", AttachEffect.ArmorMultiplier);
-	AttachEffect.FirepowerMultiplier = ini.Get_Float(Name(), "AttachEffect.FirepowerMultiplier", AttachEffect.FirepowerMultiplier);
-	AttachEffect.ROFMultiplier = ini.Get_Float(Name(), "AttachEffect.ROFMultiplier", AttachEffect.ROFMultiplier);
-	AttachEffect.IsCloakable = ini.Get_Bool(Name(), "AttachEffect.Cloakable", AttachEffect.IsCloakable);
-	AttachEffect.IsForceDecloak = ini.Get_Bool(Name(), "AttachEffect.ForceDecloak", AttachEffect.IsForceDecloak);
-	AttachEffect.IsDiscardOnEntry = ini.Get_Bool(Name(), "AttachEffect.DiscardOnEntry", AttachEffect.IsDiscardOnEntry);
-	AttachEffect.IsPenetratesIronCurtain = ini.Get_Bool(Name(), "AttachEffect.PenetratesIronCurtain", AttachEffect.IsPenetratesIronCurtain);
+	AttachEffect.Read_Shared_INI(ini, Name());
 	AttachEffect.Delay = ini.Get_Int(Name(), "AttachEffect.Delay", AttachEffect.Delay);
 	AttachEffect.InitialDelay = ini.Get_Int(Name(), "AttachEffect.InitialDelay", AttachEffect.InitialDelay);
 }
