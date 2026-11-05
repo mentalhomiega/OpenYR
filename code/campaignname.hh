@@ -13,6 +13,8 @@
 #include <cstddef>
 #include <string>
 
+#include "strutil.h"
+
 
 /*
  * A battle file's Scenario= value may name the archive its map is read from, as RA2->ALL01T.MAP
@@ -29,11 +31,7 @@ inline bool Campaign_Split_Scenario(std::string const & value, std::string & arc
 		return(false);
 	}
 
-	std::string prefix = value.substr(0, arrow);
-	for (char & ch : prefix) {
-		ch = (char)std::toupper((unsigned char)ch);
-	}
-	if (prefix != "RA2") {
+	if (Upper(value.substr(0, arrow)) != "RA2") {
 		return(false);
 	}
 
@@ -76,9 +74,5 @@ inline bool Campaign_Is_Mission_File(std::string const & file)
 		return(false);
 	}
 
-	std::string extension = file.substr(file.size() - 4);
-	for (char & ch : extension) {
-		ch = (char)std::toupper((unsigned char)ch);
-	}
-	return(extension == ".MAP");
+	return(Upper(file.substr(file.size() - 4)) == ".MAP");
 }

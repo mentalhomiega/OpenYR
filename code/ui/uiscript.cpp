@@ -17,6 +17,7 @@
 #include "dbgprint.h"
 #include "gamedirs.h"
 #include "movie.h"
+#include "strutil.h"
 #include "video.h"
 #include "windowevent.hh"
 
@@ -107,9 +108,7 @@ std::string Plain_Text(Rml::Element * element)
 			text += ch;
 		}
 	}
-	text.erase(0, text.find_first_not_of(" \t\r\n"));
-	text.erase(text.find_last_not_of(" \t\r\n") + 1);
-	return(Rml::StringUtilities::DecodeRml(text));
+	return(Rml::StringUtilities::DecodeRml(Trimmed(text, TRIM_SPACE_TAB_EOL)));
 }
 
 
@@ -467,10 +466,7 @@ void UIScript_Tick(Rml::Context * context)
 			}
 		} else if (step.Command == "theme") {
 			// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
-			std::string name = step.Argument;
-			for (char & c : name) {
-				c = (char)std::tolower((unsigned char)c);
-			}
+			std::string const name = Lower(step.Argument);
 			if (name == "allied") {
 				Options.MenuTheme = MENU_THEME_ALLIED;
 			} else if (name == "soviet") {

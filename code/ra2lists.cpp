@@ -17,6 +17,7 @@
 #include "ccini.h"
 #include "_deploymentconfig.h"
 #include "deploymentconfig.h"
+#include "strutil.h"
 #include "weapon.h"
 
 #include <cctype>
@@ -42,10 +43,7 @@ std::vector<std::string> Read_List(char const * section)
 	std::set<std::string> seen;
 	int const count = rules.Entry_Count(section);
 	for (int index = 0; index < count; index++) {
-		std::string name = rules.Get_String(section, rules.Get_Entry(section, index));
-		for (char & ch : name) {
-			ch = (char)std::toupper((unsigned char)ch);
-		}
+		std::string const name = Upper(rules.Get_String(section, rules.Get_Entry(section, index)));
 		if (!name.empty() && seen.insert(name).second) {
 			names.push_back(name);
 		}
