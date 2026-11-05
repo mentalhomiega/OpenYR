@@ -4677,7 +4677,6 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		return(FIRE_CANT);
 	}
 
-	// The refusals that depend on the weapon and the target, in the order GetFireError checks them.
 	FireErrorType const refusal = Weapon_Target_Refusal(weapon, techno, target, cellptr);
 	if (refusal != FIRE_OK) {
 		return(refusal);
