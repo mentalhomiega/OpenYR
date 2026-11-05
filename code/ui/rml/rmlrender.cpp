@@ -16,7 +16,6 @@
 #include "ui/rml/rmlrendermath.h"
 #include "ui/rml/rmltexture.h"
 
-
 #include <bgfx/bgfx.h>
 #include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
