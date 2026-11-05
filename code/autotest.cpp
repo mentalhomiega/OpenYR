@@ -360,6 +360,20 @@ static bool Is_Player_Techno_Named(TechnoClass const * techno, std::string const
 }
 
 
+// Whether the object is of the type with that ID, whoever owns it and on the map or not.
+static bool Is_Techno_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(stricmp(techno->TClass->Name(), name.c_str()) == 0);
+}
+
+
+// Whether the object is on the map and is of the type with that ID, whoever owns it.
+static bool Is_Techno_On_Map_Named(TechnoClass const * techno, std::string const & name)
+{
+	return(!techno->IsInLimbo && Is_Techno_Named(techno, name));
+}
+
+
 // Whether the object is on the map, belongs to the player's own house and stands in the cell.
 static bool Is_Player_Techno_At(TechnoClass const * techno, Cell const & cell)
 {
@@ -5292,14 +5306,14 @@ static void Lockscan_Step(StepType const &)
 {
 	int unlocked = 0;
 	int stale = 0;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->IsInLimbo || techno->IsLocked) continue;
-		bool const inlocal = Map.In_Local_Radar(techno->PositionCell);
-		unlocked++;
-		stale += (int)inlocal;
-		DebugString("AUTOTEST   lockscan %s of %s cell %d,%d mission %s inlocal %d strength %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)inlocal, (int)techno->Strength);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(!techno->IsInLimbo && !techno->IsLocked);},
+		[&](TechnoClass const * techno) {
+			bool const inlocal = Map.In_Local_Radar(techno->PositionCell);
+			unlocked++;
+			stale += (int)inlocal;
+			DebugString("AUTOTEST   lockscan %s of %s cell %d,%d mission %s inlocal %d strength %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), (int)inlocal, (int)techno->Strength);
+		});
 	DebugString("AUTOTEST   lockscan frame %d unlocked %d stale %d\n", (int)Frame, unlocked, stale);
 }
 
@@ -5307,30 +5321,30 @@ static void Lockscan_Step(StepType const &)
 // gattling <TypeID>: the state a gattling structure's draw and fire code read, for each object of that type.
 static void Gattling_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const tar = Cell_Or_None(techno->TarCom);
-		int const aim = techno->TarCom != NULL && techno->RTTI == RTTI_BUILDING ? (int)static_cast<BuildingClass const *>(techno)->Aim_Direction(techno->TarCom).As_Int() : -1;
-		int const center = techno->TarCom != NULL ? (int)::Direction(techno->Center_Coord(), techno->TarCom->Center_Coord()).As_Int() : -1;
-		int const fire = techno->RTTI == RTTI_BUILDING && techno->TarCom != NULL ? (int)static_cast<BuildingClass const *>(techno)->Can_Fire(techno->TarCom, 0) : -1;
-		int turret_frames = -1;
-		int barrel_frames = -1;
-		if (techno->RTTI == RTTI_BUILDING) {
-			BuildingTypeClass const * btype = static_cast<BuildingClass const *>(techno)->Class;
-			turret_frames = btype->AuxVoxel.MotLib != NULL ? btype->AuxVoxel.MotLib->Get_Frame_Count() : -1;
-			barrel_frames = btype->AuxVoxel2.MotLib != NULL ? btype->AuxVoxel2.MotLib->Get_Frame_Count() : -1;
-		}
-		DebugString("AUTOTEST   gattling %s of %s cell %d,%d mission %s facing %d desired %d dir32 %d aim %d center %d fire %d pitch %d spin %d stage %d frame %d target %d,%d at %d hva %d %d\n",
-			techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
-			(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
-			(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
-		Coord const turret = techno->Turret_Coord();
-		Coord const lead = techno->Predict_Target_Coord();
-		DebugString("AUTOTEST   barrelstate %s barrel desired %d current %d center z %d tarz %d turret %d,%d,%d lead %d,%d,%d\n",
-			techno->TClass->Name(), (int)techno->BarrelPitch.Desired().As_Int(), (int)techno->BarrelPitch.Current().As_Int(), techno->Center_Coord().Z,
-			techno->TarCom != NULL ? techno->TarCom->Center_Coord().Z : -1, turret.X, turret.Y, turret.Z, lead.X, lead.Y, lead.Z);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			Cell const tar = Cell_Or_None(techno->TarCom);
+			int const aim = techno->TarCom != NULL && techno->RTTI == RTTI_BUILDING ? (int)static_cast<BuildingClass const *>(techno)->Aim_Direction(techno->TarCom).As_Int() : -1;
+			int const center = techno->TarCom != NULL ? (int)::Direction(techno->Center_Coord(), techno->TarCom->Center_Coord()).As_Int() : -1;
+			int const fire = techno->RTTI == RTTI_BUILDING && techno->TarCom != NULL ? (int)static_cast<BuildingClass const *>(techno)->Can_Fire(techno->TarCom, 0) : -1;
+			int turret_frames = -1;
+			int barrel_frames = -1;
+			if (techno->RTTI == RTTI_BUILDING) {
+				BuildingTypeClass const * btype = static_cast<BuildingClass const *>(techno)->Class;
+				turret_frames = btype->AuxVoxel.MotLib != NULL ? btype->AuxVoxel.MotLib->Get_Frame_Count() : -1;
+				barrel_frames = btype->AuxVoxel2.MotLib != NULL ? btype->AuxVoxel2.MotLib->Get_Frame_Count() : -1;
+			}
+			DebugString("AUTOTEST   gattling %s of %s cell %d,%d mission %s facing %d desired %d dir32 %d aim %d center %d fire %d pitch %d spin %d stage %d frame %d target %d,%d at %d hva %d %d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
+				(int)techno->PrimaryFacing.Current().As_Int(), (int)techno->PrimaryFacing.Desired().As_Int(), (int)techno->PrimaryFacing.Current().As_Dir32(), aim, center, fire,
+				(int)techno->BarrelPitch.Current().As_Int(), techno->GattlingValue, techno->CurrentGattlingStage, techno->TurretAnimFrame, tar.X, tar.Y, (int)Frame, turret_frames, barrel_frames);
+			Coord const turret = techno->Turret_Coord();
+			Coord const lead = techno->Predict_Target_Coord();
+			DebugString("AUTOTEST   barrelstate %s barrel desired %d current %d center z %d tarz %d turret %d,%d,%d lead %d,%d,%d\n",
+				techno->TClass->Name(), (int)techno->BarrelPitch.Desired().As_Int(), (int)techno->BarrelPitch.Current().As_Int(), techno->Center_Coord().Z,
+				techno->TarCom != NULL ? techno->TarCom->Center_Coord().Z : -1, turret.X, turret.Y, turret.Z, lead.X, lead.Y, lead.Z);
+		});
 }
 
 
@@ -5339,39 +5353,39 @@ static void Gattling_Step(StepType const & step)
 // TurretAnimFrame, and a DiskLaser ring is drawn while DiskLaser is active.
 static void Animlog_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
-		int const walked = foot != NULL ? foot->TotalFramesWalked : -1;
-		int body_frames = -1;
-		int secondary = -1;
-		int secondary_desired = -1;
-		if (techno->RTTI == RTTI_UNIT) {
-			UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
-			body_frames = vehicle->Class->Voxel.MotLib != NULL ? vehicle->Class->Voxel.MotLib->Get_Frame_Count() : -1;
-			secondary = (int)vehicle->SecondaryFacing.Current().As_Int();
-			secondary_desired = (int)vehicle->SecondaryFacing.Desired().As_Int();
-		} else if (techno->RTTI == RTTI_AIRCRAFT) {
-			AircraftClass const * aircraft = static_cast<AircraftClass const *>(techno);
-			body_frames = aircraft->Class->Voxel.MotLib != NULL ? aircraft->Class->Voxel.MotLib->Get_Frame_Count() : -1;
-		}
-		int const body_frame = body_frames > 0 && walked >= 0 ? walked % body_frames : -1;
-		ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
-		char tar[48] = "none";
-		if (tarobject != NULL) {
-			std::snprintf(tar, sizeof(tar), "object %s", tarobject->Class_Of()->Name());
-		} else if (techno->TarCom != NULL) {
-			Cell const cell = techno->TarCom->Center_Coord().As_Cell();
-			std::snprintf(tar, sizeof(tar), "cell %d,%d", cell.X, cell.Y);
-		}
-		bool const moving = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving();
-		bool const moving_now = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving_Now();
-		DebugString("AUTOTEST   anim %s of %s frame %d cell %d,%d mission %s walked %d body %d/%d turretframe %d secondary %d desired %d primary %d moving %d now %d firing %d target %s laser %d height %d strength %d\n",
-			techno->TClass->Name(), techno->House->Class->Name(), (int)Frame, techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
-			walked, body_frame, body_frames, techno->TurretAnimFrame, secondary, secondary_desired, (int)techno->PrimaryFacing.Current().As_Int(),
-			(int)moving, (int)moving_now, foot != NULL ? (int)foot->IsFiring : -1, tar, (int)techno->DiskLaser.Is_Active(), foot != NULL ? foot->HeightAGL : -1, (int)techno->Strength);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			FootClass const * foot = techno->Is_Foot() ? static_cast<FootClass const *>(techno) : NULL;
+			int const walked = foot != NULL ? foot->TotalFramesWalked : -1;
+			int body_frames = -1;
+			int secondary = -1;
+			int secondary_desired = -1;
+			if (techno->RTTI == RTTI_UNIT) {
+				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
+				body_frames = vehicle->Class->Voxel.MotLib != NULL ? vehicle->Class->Voxel.MotLib->Get_Frame_Count() : -1;
+				secondary = (int)vehicle->SecondaryFacing.Current().As_Int();
+				secondary_desired = (int)vehicle->SecondaryFacing.Desired().As_Int();
+			} else if (techno->RTTI == RTTI_AIRCRAFT) {
+				AircraftClass const * aircraft = static_cast<AircraftClass const *>(techno);
+				body_frames = aircraft->Class->Voxel.MotLib != NULL ? aircraft->Class->Voxel.MotLib->Get_Frame_Count() : -1;
+			}
+			int const body_frame = body_frames > 0 && walked >= 0 ? walked % body_frames : -1;
+			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			char tar[48] = "none";
+			if (tarobject != NULL) {
+				std::snprintf(tar, sizeof(tar), "object %s", tarobject->Class_Of()->Name());
+			} else if (techno->TarCom != NULL) {
+				Cell const cell = techno->TarCom->Center_Coord().As_Cell();
+				std::snprintf(tar, sizeof(tar), "cell %d,%d", cell.X, cell.Y);
+			}
+			bool const moving = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving();
+			bool const moving_now = foot != NULL && foot->Locomotion != NULL && foot->Locomotion->Is_Moving_Now();
+			DebugString("AUTOTEST   anim %s of %s frame %d cell %d,%d mission %s walked %d body %d/%d turretframe %d secondary %d desired %d primary %d moving %d now %d firing %d target %s laser %d height %d strength %d\n",
+				techno->TClass->Name(), techno->House->Class->Name(), (int)Frame, techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()),
+				walked, body_frame, body_frames, techno->TurretAnimFrame, secondary, secondary_desired, (int)techno->PrimaryFacing.Current().As_Int(),
+				(int)moving, (int)moving_now, foot != NULL ? (int)foot->IsFiring : -1, tar, (int)techno->DiskLaser.Is_Active(), foot != NULL ? foot->HeightAGL : -1, (int)techno->Strength);
+		});
 }
 
 
@@ -5379,19 +5393,19 @@ static void Animlog_Step(StepType const & step)
 // holds it. The list is the one the last render built, which the on-screen type select reads.
 static void Pickable_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->House != PlayerPtr || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		bool listed = false;
-		Point2D window(-1, -1);
-		for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
-			if (!listed && entry.Object == static_cast<ObjectClass const *>(techno)) {
-				listed = true;
-				window = View_To_Screen_Point(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Player_Object_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			bool listed = false;
+			Point2D window(-1, -1);
+			for (Tactical::Selectable const & entry : Tactical::SelectableObjects) {
+				if (!listed && entry.Object == static_cast<ObjectClass const *>(techno)) {
+					listed = true;
+					window = View_To_Screen_Point(entry.Position - Point2D(TacticalMap->TacPixelX, TacticalMap->TacPixelY));
+				}
 			}
-		}
-		DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
-	}
+			DebugString("AUTOTEST   pickable %s cell %d,%d selected %d listed %d window %d,%d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->IsSelected, (int)listed, window.X, window.Y);
+		});
 }
 
 
@@ -5469,23 +5483,23 @@ static void Rallyof_Step(StepType const & step)
 // and the state of its magnetron hold (IsAttackedByLocomotor, IsLetGoByLocomotor, IsCrashing).
 static void Lift_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		char const * state = "-";
-		char const * locomotor = "-";
-		if (techno->Is_Foot()) {
-			FootClass const * foot = static_cast<FootClass const *>(techno);
-			if (foot->Locomotion != NULL) {
-				locomotor = Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_JumpjetLocomotion ? "jumpjet" : (Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_DriveLocomotion ? "drive" : "other");
-				JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
-				if (jump != NULL) {
-					state = jump->State_Name();
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			char const * state = "-";
+			char const * locomotor = "-";
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				if (foot->Locomotion != NULL) {
+					locomotor = Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_JumpjetLocomotion ? "jumpjet" : (Locomotion_Class_ID(foot->Locomotion.get()) == ClassID_DriveLocomotion ? "drive" : "other");
+					JumpjetLocomotionClass const * jump = dynamic_cast<JumpjetLocomotionClass const *>(foot->Locomotion.get());
+					if (jump != NULL) {
+						state = jump->State_Name();
+					}
 				}
 			}
-		}
-		DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d onbridge %d z %d doing %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()), (int)techno->IsOnBridge, techno->PositionCoord.Z, techno->RTTI == RTTI_INFANTRY ? (int)static_cast<InfantryClass const *>(techno)->Doing : -1);
-	}
+			DebugString("AUTOTEST   lift %s cell %d,%d height %d loco %s jump %s attacked %d letgo %d crashing %d source %s target %s strength %d limbo %d weight %d layer %d ironcurtain %d sinking %d facing %d onbridge %d z %d doing %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->HeightAGL, locomotor, state, (int)techno->IsAttackedByLocomotor, (int)techno->IsLetGoByLocomotor, (int)techno->IsCrashing, techno->LocomotorSource != NULL ? techno->LocomotorSource->TClass->Name() : "-", techno->LocomotorTarget != NULL ? techno->LocomotorTarget->TClass->Name() : "-", (int)techno->Strength, (int)techno->IsInLimbo, (int)techno->TClass->Weight, (int)(techno->Is_Foot() ? static_cast<FootClass const *>(techno)->In_Which_Layer() : LAYER_NONE), (int)techno->Is_Iron_Curtained(), (int)techno->IsSinking, static_cast<int>(techno->PrimaryFacing.Current().As_Dir256()), (int)techno->IsOnBridge, techno->PositionCoord.Z, techno->RTTI == RTTI_INFANTRY ? (int)static_cast<InfantryClass const *>(techno)->Doing : -1);
+		});
 }
 
 
@@ -5495,12 +5509,9 @@ static void Lift_Step(StepType const & step)
 static void Spots_Step(StepType const & step)
 {
 	std::vector<TechnoClass const *> found;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (!techno->IsInLimbo && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-			found.push_back(techno);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {found.push_back(techno);});
 	int pairs = 0;
 	for (size_t first = 0; first < found.size(); first++) {
 		Coord const at = found[first]->Get_Coord();
@@ -5523,115 +5534,115 @@ static void Spots_Step(StepType const & step)
 // plane that strike still has out, with its cell, mission, ammunition and target.
 static void Airstrike_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d marked by %s\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size(), techno->AirstrikeMarkedBy != NULL ? techno->AirstrikeMarkedBy->TClass->Name() : "-");
-		{
-			// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
-			int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
-			WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(which)->Weapon;
-			bool const airstrike = weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike;
-			DebugString("AUTOTEST   airstrike weapon %d %s airstrike %d range %d tarcom %s closeenough %d inrange %d fire %d\n", which, weapon != NULL ? weapon->Name() : "none", (int)airstrike, techno->Weapon_Range(which), dynamic_cast<ObjectClass const *>(techno->TarCom) != NULL ? dynamic_cast<ObjectClass const *>(techno->TarCom)->Class_Of()->Name() : "-", techno->TarCom != NULL ? (int)techno->Is_Close_Enough(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->In_Range(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1);
-		}
-		for (AircraftClass const * plane : techno->AirstrikePlanes) {
-			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(plane->TarCom);
-			DebugString("AUTOTEST   airstrike plane %s cell %d,%d mission %s ammo %d target %s at %d,%d limbo %d\n", plane->TClass->Name(), plane->Get_Cell().X, plane->Get_Cell().Y, MissionClass::Mission_Name(plane->Get_Mission()), plane->Ammo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? tarobject->Get_Cell().X : -1, tarobject != NULL ? tarobject->Get_Cell().Y : -1, (int)plane->IsInLimbo);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			DebugString("AUTOTEST   airstrike %s of %s cell %d,%d ready %d frame %d planes %d marked by %s\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, techno->AirstrikeReadyFrame, Frame, (int)techno->AirstrikePlanes.size(), techno->AirstrikeMarkedBy != NULL ? techno->AirstrikeMarkedBy->TClass->Name() : "-");
+			{
+				// The weapon chosen for the target, its range, and whether it reaches and can fire at the target now.
+				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
+				WeaponTypeClass const * weapon = techno->Get_Class_Weapon_Data(which)->Weapon;
+				bool const airstrike = weapon != NULL && weapon->WarheadPtr != NULL && weapon->WarheadPtr->IsAirstrike;
+				DebugString("AUTOTEST   airstrike weapon %d %s airstrike %d range %d tarcom %s closeenough %d inrange %d fire %d\n", which, weapon != NULL ? weapon->Name() : "none", (int)airstrike, techno->Weapon_Range(which), dynamic_cast<ObjectClass const *>(techno->TarCom) != NULL ? dynamic_cast<ObjectClass const *>(techno->TarCom)->Class_Of()->Name() : "-", techno->TarCom != NULL ? (int)techno->Is_Close_Enough(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->In_Range(techno->TarCom, which) : -1, techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1);
+			}
+			for (AircraftClass const * plane : techno->AirstrikePlanes) {
+				ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(plane->TarCom);
+				DebugString("AUTOTEST   airstrike plane %s cell %d,%d mission %s ammo %d target %s at %d,%d limbo %d\n", plane->TClass->Name(), plane->Get_Cell().X, plane->Get_Cell().Y, MissionClass::Mission_Name(plane->Get_Mission()), plane->Ammo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? tarobject->Get_Cell().X : -1, tarobject != NULL ? tarobject->Get_Cell().Y : -1, (int)plane->IsInLimbo);
+			}
+		});
 }
 
 
 // where <TypeID>: each object of that type, whoever owns it, with its cell, mission, destination and target.
 static void Where_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
-		Cell const tar = Cell_Or_None(techno->TarCom);
-		ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
-		DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
-		DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
-		DebugString("AUTOTEST   usable %s cell %d,%d inlocal %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)Map.In_Local_Radar(techno->Get_Cell()));
-		DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), Rank_Of(techno->Veterancy));
-		if (techno->RTTI == RTTI_UNIT) {
-			UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
-			DebugString("AUTOTEST   mirage look %s blink %d owner %d ally %d cycle %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->House->Is_Player_Control(), (int)vehicle->House->Is_Ally(PlayerPtr), vehicle->Mirage_Cycle(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
-		}
-		if (techno->RTTI == RTTI_AIRCRAFT) {
-			AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
-			DebugString("AUTOTEST   flight %s straight %d loaner %d flyby %d flyback %d entered %d inlocal %d legal %d\n", techno->TClass->Name(), (int)plane->IsLockedStraight, (int)plane->IsALoaner, (int)plane->Class->IsFlyBy, (int)plane->Class->IsFlyBack, (int)plane->IsLocked, (int)Map.In_Local_Radar(plane->PositionCell), (int)Map.In_Radar(plane->PositionCell));
-			Cell yard = CELL_NONE;
-			int yards = 0;
-			for (int index = 0; index < Buildings.Count(); index++) {
-				BuildingClass const * building = Buildings[index];
-				if (building->House == plane->House && building->Class->IsConstructionYard && !building->IsInLimbo) {
-					if (yards == 0) yard = building->Get_Cell();
-					yards++;
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			Cell const nav = techno->Is_Foot() && static_cast<FootClass const *>(techno)->NavCom != NULL ? static_cast<FootClass const *>(techno)->NavCom->Center_Coord().As_Cell() : Cell(-1, -1);
+			Cell const tar = Cell_Or_None(techno->TarCom);
+			ObjectClass const * tarobject = dynamic_cast<ObjectClass const *>(techno->TarCom);
+			DebugString("AUTOTEST   where %s of %s cell %d,%d mission %s nav %d,%d target %d,%d strength %d limbo %d tarcom %s tarlimbo %d warped %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, MissionClass::Mission_Name(techno->Get_Mission()), nav.X, nav.Y, tar.X, tar.Y, (int)techno->Strength, (int)techno->IsInLimbo, tarobject != NULL ? tarobject->Class_Of()->Name() : "-", tarobject != NULL ? (int)tarobject->IsInLimbo : -1, (int)techno->IsBeingWarpedOut);
+			DebugString("AUTOTEST   slaveof %s owner %s\n", techno->TClass->Name(), techno->SlaveOwner != NULL ? techno->SlaveOwner->TClass->Name() : "-");
+			DebugString("AUTOTEST   usable %s cell %d,%d inlocal %d\n", techno->TClass->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)Map.In_Local_Radar(techno->Get_Cell()));
+			DebugString("AUTOTEST   rank %s %d\n", techno->TClass->Name(), Rank_Of(techno->Veterancy));
+			if (techno->RTTI == RTTI_UNIT) {
+				UnitClass const * vehicle = static_cast<UnitClass const *>(techno);
+				DebugString("AUTOTEST   mirage look %s blink %d owner %d ally %d cycle %d terrain for player %d shimmer %d\n", vehicle->MirageType != NULL ? vehicle->MirageType->Name() : "none", (int)vehicle->Is_Blinking_Disguise(), (int)vehicle->House->Is_Player_Control(), (int)vehicle->House->Is_Ally(PlayerPtr), vehicle->Mirage_Cycle(), (int)vehicle->Is_Shown_As_Terrain_To(PlayerPtr), vehicle->Mirage_Shimmer_Flags());
+			}
+			if (techno->RTTI == RTTI_AIRCRAFT) {
+				AircraftClass const * plane = static_cast<AircraftClass const *>(techno);
+				DebugString("AUTOTEST   flight %s straight %d loaner %d flyby %d flyback %d entered %d inlocal %d legal %d\n", techno->TClass->Name(), (int)plane->IsLockedStraight, (int)plane->IsALoaner, (int)plane->Class->IsFlyBy, (int)plane->Class->IsFlyBack, (int)plane->IsLocked, (int)Map.In_Local_Radar(plane->PositionCell), (int)Map.In_Radar(plane->PositionCell));
+				Cell yard = CELL_NONE;
+				int yards = 0;
+				for (int index = 0; index < Buildings.Count(); index++) {
+					BuildingClass const * building = Buildings[index];
+					if (building->House == plane->House && building->Class->IsConstructionYard && !building->IsInLimbo) {
+						if (yards == 0) yard = building->Get_Cell();
+						yards++;
+					}
+				}
+				DebugString("AUTOTEST   edges start %d base %d entry %d exit %d yards %d first %d,%d local %d,%d,%d,%d\n", (int)plane->House->Control.Edge, (int)plane->House->Base_Edge, (int)plane->House->Entry_Edge(), (int)plane->House->Opposite_Base_Edge(), yards, (int)yard.X, (int)yard.Y, Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height);
+			}
+			{
+				bool const firing = techno->Is_Foot() && static_cast<FootClass const *>(techno)->IsFiring;
+				int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
+				bool const inrange = techno->TarCom != NULL && techno->In_Range(techno->TarCom, which);
+				int const fire = techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1;
+				DebugString("AUTOTEST   cloak %s cloak %d firing %d inrange %d fire %d\n", techno->TClass->Name(), (int)techno->Cloak, (int)firing, (int)inrange, fire);
+				// visual: how the local player is shown the object (VISUAL_*: 0 normal, 1 indistinct, 2 darken, 3 shadowy, 4 ripple, 5 hidden),
+				// with the cloak facts that decide it.
+				DebugString("AUTOTEST   visual %s character %d raw %d sensed %d height %d locked %d cloakable %d recloak %d ready %d delay %d stage %d owned %d\n",
+					techno->TClass->Name(), (int)techno->Visual_Character(false), (int)techno->Visual_Character(true), (int)techno->Is_Sensed_By_Player(),
+					(int)techno->HeightAGL, (int)techno->IsLocked, (int)techno->IsCloakable, (int)techno->Is_Allowed_To_Recloak(), (int)techno->Is_Ready_To_Cloak(), (int)techno->CloakDelay, techno->CloakingDevice.Fetch_Stage(), (int)techno->IsOwnedByPlayer);
+				// radar: whether the local player's radar plots the object, and how it counts as detected when it only shows because
+				// the player senses it (the DetectedType).
+				DetectedType detected = DETECTED_NONE;
+				bool const plotted = techno->Is_Radar_Visible(detected);
+				DebugString("AUTOTEST   radar %s plotted %d detected %d\n", techno->TClass->Name(), (int)plotted, (int)detected);
+				DebugString("AUTOTEST   sight %s range %d increase %d\n", techno->TClass->Name(), techno->TClass->SightRange, (int)techno->SightIncrease);
+				DebugString("AUTOTEST   facing %s body %d desired %d turret %d desired %d rotating %d paralysis %d moving %d\n", techno->TClass->Name(), (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
+					(int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256(), (int)techno->PrimaryFacing.Is_Rotating(), techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->ParalysisTimer : -1,
+					techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->Locomotion->Is_Moving() : -1);
+				DebugString("AUTOTEST   recloak %s arm %d immobilized %d stun %d deactivated %d locomotor %d radio %d tarcom %d closeenough %d\n", techno->TClass->Name(), (int)techno->Arm, (int)techno->Is_Immobilized(), (int)techno->StunDuration, (int)techno->IsDeactivated, (int)techno->IsAttackedByLocomotor,
+					techno->Contact_With_Whom() != NULL ? 1 : 0, techno->TarCom != NULL ? 1 : 0, techno->TarCom != NULL ? (int)techno->Is_Close_Enough_With_Selected_Weapon(techno->TarCom) : -1);
+			}
+			if (techno->ParasiteImUsing) {
+				ParasiteClass const & parasite = *techno->ParasiteImUsing;
+				DebugString("AUTOTEST   grapple stage %d frame %d delay %d anim %d victim %s angle %.4f\n", (int)parasite.GrappleState, parasite.GrappleAnimFrame, parasite.GrappleAnimDelay, parasite.GrappleAnim != NULL ? 1 : 0,
+					parasite.Victim != NULL ? parasite.Victim->TClass->Name() : "-", parasite.Victim != NULL ? (double)parasite.Victim->AngleRotatedSideways : 0.0);
+			}
+			if (techno->RTTI == RTTI_INFANTRY) {
+				InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
+				DebugString("AUTOTEST   soldier %s do %d deployed %d\n", soldier->Class->Name(), (int)soldier->Doing, (int)soldier->Is_Deployed());
+			}
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(foot->Locomotion.get());
+				if (teleport != NULL) {
+					DebugString("AUTOTEST   warp %s phase %d end %d warping %d chrono %d selected %d\n", techno->TClass->Name(), (int)teleport->Warp_Phase(), teleport->Warp_End(), (int)techno->IsBeingWarpedOut, (int)foot->Is_Chrono_Warping(), (int)techno->IsSelected);
 				}
 			}
-			DebugString("AUTOTEST   edges start %d base %d entry %d exit %d yards %d first %d,%d local %d,%d,%d,%d\n", (int)plane->House->Control.Edge, (int)plane->House->Base_Edge, (int)plane->House->Entry_Edge(), (int)plane->House->Opposite_Base_Edge(), yards, (int)yard.X, (int)yard.Y, Map.LocalRect.X, Map.LocalRect.Y, Map.LocalRect.Width, Map.LocalRect.Height);
-		}
-		{
-			bool const firing = techno->Is_Foot() && static_cast<FootClass const *>(techno)->IsFiring;
-			int const which = techno->What_Weapon_Should_I_Use(techno->TarCom);
-			bool const inrange = techno->TarCom != NULL && techno->In_Range(techno->TarCom, which);
-			int const fire = techno->TarCom != NULL ? (int)techno->Can_Fire(techno->TarCom, which) : -1;
-			DebugString("AUTOTEST   cloak %s cloak %d firing %d inrange %d fire %d\n", techno->TClass->Name(), (int)techno->Cloak, (int)firing, (int)inrange, fire);
-			// visual: how the local player is shown the object (VISUAL_*: 0 normal, 1 indistinct, 2 darken, 3 shadowy, 4 ripple, 5 hidden),
-			// with the cloak facts that decide it.
-			DebugString("AUTOTEST   visual %s character %d raw %d sensed %d height %d locked %d cloakable %d recloak %d ready %d delay %d stage %d owned %d\n",
-				techno->TClass->Name(), (int)techno->Visual_Character(false), (int)techno->Visual_Character(true), (int)techno->Is_Sensed_By_Player(),
-				(int)techno->HeightAGL, (int)techno->IsLocked, (int)techno->IsCloakable, (int)techno->Is_Allowed_To_Recloak(), (int)techno->Is_Ready_To_Cloak(), (int)techno->CloakDelay, techno->CloakingDevice.Fetch_Stage(), (int)techno->IsOwnedByPlayer);
-			// radar: whether the local player's radar plots the object, and how it counts as detected when it only shows because
-			// the player senses it (the DetectedType).
-			DetectedType detected = DETECTED_NONE;
-			bool const plotted = techno->Is_Radar_Visible(detected);
-			DebugString("AUTOTEST   radar %s plotted %d detected %d\n", techno->TClass->Name(), (int)plotted, (int)detected);
-			DebugString("AUTOTEST   sight %s range %d increase %d\n", techno->TClass->Name(), techno->TClass->SightRange, (int)techno->SightIncrease);
-			DebugString("AUTOTEST   facing %s body %d desired %d turret %d desired %d rotating %d paralysis %d moving %d\n", techno->TClass->Name(), (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->PrimaryFacing.Desired().As_Dir256(),
-				(int)techno->SecondaryFacing.Current().As_Dir256(), (int)techno->SecondaryFacing.Desired().As_Dir256(), (int)techno->PrimaryFacing.Is_Rotating(), techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->ParalysisTimer : -1,
-				techno->Is_Foot() ? (int)static_cast<FootClass const *>(techno)->Locomotion->Is_Moving() : -1);
-			DebugString("AUTOTEST   recloak %s arm %d immobilized %d stun %d deactivated %d locomotor %d radio %d tarcom %d closeenough %d\n", techno->TClass->Name(), (int)techno->Arm, (int)techno->Is_Immobilized(), (int)techno->StunDuration, (int)techno->IsDeactivated, (int)techno->IsAttackedByLocomotor,
-				techno->Contact_With_Whom() != NULL ? 1 : 0, techno->TarCom != NULL ? 1 : 0, techno->TarCom != NULL ? (int)techno->Is_Close_Enough_With_Selected_Weapon(techno->TarCom) : -1);
-		}
-		if (techno->ParasiteImUsing) {
-			ParasiteClass const & parasite = *techno->ParasiteImUsing;
-			DebugString("AUTOTEST   grapple stage %d frame %d delay %d anim %d victim %s angle %.4f\n", (int)parasite.GrappleState, parasite.GrappleAnimFrame, parasite.GrappleAnimDelay, parasite.GrappleAnim != NULL ? 1 : 0,
-				parasite.Victim != NULL ? parasite.Victim->TClass->Name() : "-", parasite.Victim != NULL ? (double)parasite.Victim->AngleRotatedSideways : 0.0);
-		}
-		if (techno->RTTI == RTTI_INFANTRY) {
-			InfantryClass const * soldier = static_cast<InfantryClass const *>(techno);
-			DebugString("AUTOTEST   soldier %s do %d deployed %d\n", soldier->Class->Name(), (int)soldier->Doing, (int)soldier->Is_Deployed());
-		}
-		if (techno->Is_Foot()) {
-			FootClass const * foot = static_cast<FootClass const *>(techno);
-			TeleportLocomotionClass const * teleport = dynamic_cast<TeleportLocomotionClass const *>(foot->Locomotion.get());
-			if (teleport != NULL) {
-				DebugString("AUTOTEST   warp %s phase %d end %d warping %d chrono %d selected %d\n", techno->TClass->Name(), (int)teleport->Warp_Phase(), teleport->Warp_End(), (int)techno->IsBeingWarpedOut, (int)foot->Is_Chrono_Warping(), (int)techno->IsSelected);
-			}
-		}
-	}
+		});
 }
 
 
 // turretcoord <TypeID>: the body and turret facings, TurretOffset and mounting that Turret_Coord(0) is built from.
 static void Turretcoord_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		TPoint3D<int> const flh = techno->Weapon_FLH(0);
-		Coord const render = techno->Render_Coord();
-		Coord const mount = techno->Turret_Coord(0);
-		DebugString("AUTOTEST   turretcoord %s of %s cell %d,%d body %d turret %d offset %d flh %d,%d,%d relative %d,%d,%d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->Turret_Facing().As_Dir256(), (int)techno->TClass->TurretOffset, flh.X, flh.Y, flh.Z, mount.X - render.X, mount.Y - render.Y, mount.Z - render.Z);
-		if (techno->Is_Foot()) {
-			FootClass const * foot = static_cast<FootClass const *>(techno);
-			Matrix3D const draw = foot->Locomotion->Draw_Matrix(NULL);
-			DebugString("AUTOTEST   turretcoord draw %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n", (double)draw[0].X, (double)draw[0].Y, (double)draw[0].Z, (double)draw[0].W, (double)draw[1].X, (double)draw[1].Y, (double)draw[1].Z, (double)draw[1].W, (double)draw[2].X, (double)draw[2].Y, (double)draw[2].Z, (double)draw[2].W);
-		}
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			TPoint3D<int> const flh = techno->Weapon_FLH(0);
+			Coord const render = techno->Render_Coord();
+			Coord const mount = techno->Turret_Coord(0);
+			DebugString("AUTOTEST   turretcoord %s of %s cell %d,%d body %d turret %d offset %d flh %d,%d,%d relative %d,%d,%d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y, (int)techno->PrimaryFacing.Current().As_Dir256(), (int)techno->Turret_Facing().As_Dir256(), (int)techno->TClass->TurretOffset, flh.X, flh.Y, flh.Z, mount.X - render.X, mount.Y - render.Y, mount.Z - render.Z);
+			if (techno->Is_Foot()) {
+				FootClass const * foot = static_cast<FootClass const *>(techno);
+				Matrix3D const draw = foot->Locomotion->Draw_Matrix(NULL);
+				DebugString("AUTOTEST   turretcoord draw %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f\n", (double)draw[0].X, (double)draw[0].Y, (double)draw[0].Z, (double)draw[0].W, (double)draw[1].X, (double)draw[1].Y, (double)draw[1].Z, (double)draw[1].W, (double)draw[2].X, (double)draw[2].Y, (double)draw[2].Z, (double)draw[2].W);
+			}
+		});
 }
 
 
@@ -5666,12 +5677,12 @@ static void Unitrecoil_Step(StepType const & step)
 // rock <TypeID>: the sideways and forwards tilt of each object of that type, the tilt per frame still to come, its facing and strength, and whether a parasite is inside it.
 static void Rock_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   rock %s frame %d at %d,%d sideways %.5f forwards %.5f sideways per frame %.5f forwards per frame %.5f facing %d strength %d parasite %d\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y,
-			(double)techno->AngleRotatedSideways, (double)techno->AngleRotatedForwards, (double)techno->RockingSidewaysPerFrame, (double)techno->RockingForwardsPerFrame, (int)techno->PrimaryFacing.Current().Facing, (int)techno->Strength, (int)(techno->ParasiteEatingMe != NULL));
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			DebugString("AUTOTEST   rock %s frame %d at %d,%d sideways %.5f forwards %.5f sideways per frame %.5f forwards per frame %.5f facing %d strength %d parasite %d\n", techno->TClass->Name(), Frame, techno->Get_Cell().X, techno->Get_Cell().Y,
+				(double)techno->AngleRotatedSideways, (double)techno->AngleRotatedForwards, (double)techno->RockingSidewaysPerFrame, (double)techno->RockingForwardsPerFrame, (int)techno->PrimaryFacing.Current().Facing, (int)techno->Strength, (int)(techno->ParasiteEatingMe != NULL));
+		});
 }
 
 
@@ -5728,11 +5739,11 @@ static void Tabflash_Step(StepType const &)
 // ambient <TypeID>: the sound the ambient table keeps on each object of that type, and how many objects it serves.
 static void Ambient_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		DebugString("AUTOTEST   ambient %s type sound %d attached %d limbo %d table %d frame %d\n", techno->TClass->Name(), (int)techno->TClass->AmbientSound, (int)AmbientSounds.Attached(techno), (int)techno->IsInLimbo, AmbientSounds.Count(), Frame);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			DebugString("AUTOTEST   ambient %s type sound %d attached %d limbo %d table %d frame %d\n", techno->TClass->Name(), (int)techno->TClass->AmbientSound, (int)AmbientSounds.Attached(techno), (int)techno->IsInLimbo, AmbientSounds.Count(), Frame);
+		});
 }
 
 
@@ -5867,12 +5878,9 @@ static void Count_Step(StepType const & step)
 {
 	for (int house = 0; house < Houses.Count(); house++) {
 		int count = 0;
-		for (int index = 0; index < Technos.Count(); index++) {
-			TechnoClass const * techno = Technos[index];
-			if (techno->House == Houses[house] && !techno->IsInLimbo && techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
-				count++;
-			}
-		}
+		For_Technos(
+			[&](TechnoClass const * techno) {return(techno->House == Houses[house] && !techno->IsInLimbo && techno->Strength > 0 && Is_Techno_Named(techno, step.Argument));},
+			[&](TechnoClass const *) {count++;});
 		if (count > 0) {
 			DebugString("AUTOTEST   count %s house %s: %d\n", step.Argument.c_str(), Houses[house]->Class->Name(), count);
 		}
@@ -5885,17 +5893,15 @@ static void Count_Step(StepType const & step)
 static void Sensors_Step(StepType const &)
 {
 	int total = 0;
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (!techno->Is_Foot() || techno->TClass->SensorsSight <= 0) {
-			continue;
-		}
-		FootClass const * foot = static_cast<FootClass const *>(techno);
-		bool const sensed = foot->SensorCell != CELL_NONE && foot->SensorHouse != NULL && Map[foot->SensorCell].Is_Sensed(foot->SensorHouse);
-		total += foot->SensorCell != CELL_NONE;
-		DebugString("AUTOTEST   sensor frame %d %s of %s cell %d,%d sensor cell %d,%d radius %d of %d sensed %d\n", Frame, techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
-			foot->SensorCell.X, foot->SensorCell.Y, foot->SensorRadius, techno->TClass->SensorsSight, (int)sensed);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(techno->Is_Foot() && techno->TClass->SensorsSight > 0);},
+		[&](TechnoClass const * techno) {
+			FootClass const * foot = static_cast<FootClass const *>(techno);
+			bool const sensed = foot->SensorCell != CELL_NONE && foot->SensorHouse != NULL && Map[foot->SensorCell].Is_Sensed(foot->SensorHouse);
+			total += foot->SensorCell != CELL_NONE;
+			DebugString("AUTOTEST   sensor frame %d %s of %s cell %d,%d sensor cell %d,%d radius %d of %d sensed %d\n", Frame, techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+				foot->SensorCell.X, foot->SensorCell.Y, foot->SensorRadius, techno->TClass->SensorsSight, (int)sensed);
+		});
 	int sensed_cells = 0;
 	Map.Reset_Iterator();
 	for (CellClass * cell = Map.Iterate(); cell != NULL; cell = Map.Iterate()) {
@@ -5970,16 +5976,15 @@ static void Quantity_Step(StepType const & step)
 
 static void Effects_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass * techno = Technos[index];
-		if (techno->Strength > 0 && stricmp(techno->TClass->Name(), step.Argument.c_str()) == 0) {
+	For_Technos(
+		[&](TechnoClass * techno) {return(techno->Strength > 0 && Is_Techno_Named(techno, step.Argument));},
+		[&](TechnoClass * techno) {
 			AttachedEffectsClass const & effects = techno->AttachedEffects;
 			int const speed = techno->Is_Foot() ? static_cast<FootClass *>(techno)->Current_Speed() : 0;
 			DebugString("AUTOTEST   effects %s of %s: count %d speed x%.3f armor x%.3f firepower x%.3f rof x%.3f cloakable %d | bias armor %.3f speed %.3f firepower %.3f | speed %d strength %d arm %d limbo %d\n",
 				techno->TClass->Name(), techno->House->Class->Name(), effects.Count(), effects.Speed_Multiplier(), effects.Armor_Multiplier(),
 				effects.Firepower_Multiplier(), effects.ROF_Multiplier(), (int)effects.Is_Cloakable(), techno->ArmorBias, techno->Is_Foot() ? static_cast<FootClass *>(techno)->SpeedBias : 1.0, techno->FirepowerBias, speed, (int)techno->Strength, (int)techno->Arm, (int)techno->IsInLimbo);
-		}
-	}
+		});
 }
 
 
@@ -6051,14 +6056,13 @@ static void Team_Step(StepType const & step)
 	} else {
 		if (team != NULL) {
 			team->IsForcedActive = true;
-			for (int index = 0; index < Technos.Count(); index++) {
-				TechnoClass * techno = Technos[index];
-				if (techno->House == enemy && techno->Is_Foot() && !techno->IsInLimbo && ((FootClass *)techno)->Team == NULL && techno->RTTI != RTTI_AIRCRAFT) {
+			For_Technos(
+				[&](TechnoClass * techno) {return(techno->House == enemy && techno->Is_Foot() && !techno->IsInLimbo && ((FootClass *)techno)->Team == NULL && techno->RTTI != RTTI_AIRCRAFT);},
+				[&](TechnoClass * techno) {
 					if (team->Add((FootClass *)techno)) {
 						added++;
 					}
-				}
-			}
+				});
 		}
 		DebugString("AUTOTEST team %s: %s, %d members, heap %d\n", step.Argument.c_str(), team != NULL ? "made" : "not made", added, type != NULL ? type->Fetch_Heap_ID() : -1);
 	}
@@ -6248,13 +6252,13 @@ static void Unitstate_Step(StepType const & step)
 // rockerlink <TypeID>: for each object of that type, the house and cell of the unit it is DirectRocker-linked to (or "-"), and whether its type is Pushy.
 static void Rockerlink_Step(StepType const & step)
 {
-	for (int index = 0; index < Technos.Count(); index++) {
-		TechnoClass const * techno = Technos[index];
-		if (techno->IsInLimbo || stricmp(techno->TClass->Name(), step.Argument.c_str()) != 0) continue;
-		TechnoClass const * partner = techno->DirectRockerLinkedUnit;
-		DebugString("AUTOTEST   rockerlink %s house %s at %d,%d linked %s house %s at %d,%d pushy %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
-			partner != NULL ? partner->TClass->Name() : "-", partner != NULL ? partner->House->Class->Name() : "-", partner != NULL ? partner->Get_Cell().X : -1, partner != NULL ? partner->Get_Cell().Y : -1, techno->TClass->IsPushy ? 1 : 0);
-	}
+	For_Technos(
+		[&](TechnoClass const * techno) {return(Is_Techno_On_Map_Named(techno, step.Argument));},
+		[&](TechnoClass const * techno) {
+			TechnoClass const * partner = techno->DirectRockerLinkedUnit;
+			DebugString("AUTOTEST   rockerlink %s house %s at %d,%d linked %s house %s at %d,%d pushy %d\n", techno->TClass->Name(), techno->House->Class->Name(), techno->Get_Cell().X, techno->Get_Cell().Y,
+				partner != NULL ? partner->TClass->Name() : "-", partner != NULL ? partner->House->Class->Name() : "-", partner != NULL ? partner->Get_Cell().X : -1, partner != NULL ? partner->Get_Cell().Y : -1, techno->TClass->IsPushy ? 1 : 0);
+		});
 }
 
 
