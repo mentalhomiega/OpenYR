@@ -45,6 +45,24 @@ int Fill_Choices(std::vector<UIChoice> & list, std::initializer_list<UIChoice> c
 }
 
 
+// Adds a choice labelled with its number for each value and returns the index of the last value
+// that does not exceed the limit, or -1 when every value does.
+int Fill_Count_Choices(std::vector<UIChoice> & list, std::vector<int> const & values, int limit)
+{
+	int picked = -1;
+	for (int value : values) {
+		UIChoice choice;
+		choice.Value = value;
+		choice.Label = std::to_string(value);
+		if (value <= limit) {
+			picked = (int)list.size();
+		}
+		list.push_back(choice);
+	}
+	return(picked);
+}
+
+
 void UIPresenterClass::Queue(UIIntent const & intent)
 {
 	Pending.push_back(intent);

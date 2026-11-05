@@ -73,15 +73,7 @@ void UIDisplayPresenterClass::Refresh_Rows(void)
 	State.RowCounts.clear();
 	State.RowCount = -1;
 	if (height > 0) {
-		for (int value : Service.Sidebar_Row_Counts(height)) {
-			UIChoice choice;
-			choice.Value = value;
-			choice.Label = std::to_string(value);
-			if (value <= previous) {
-				State.RowCount = (int)State.RowCounts.size();
-			}
-			State.RowCounts.push_back(choice);
-		}
+		State.RowCount = Fill_Count_Choices(State.RowCounts, Service.Sidebar_Row_Counts(height), previous);
 		if (State.RowCount < 0 && !State.RowCounts.empty()) {
 			State.RowCount = 0;
 		}
