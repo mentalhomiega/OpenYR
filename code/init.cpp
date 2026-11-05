@@ -1649,7 +1649,8 @@ static bool Parse_Debug_Option(char const * string)
 }
 
 
-// The letters after -X, each turning on one debug aid. Returns false for a letter that is none.
+// Applies each debug letter after -X. At the first unknown letter, prints the invalid-option text and returns false;
+// letters before it stay applied.
 static bool Parse_Switch_Letters(char const * letters)
 {
 	while (*letters) {
@@ -1936,7 +1937,7 @@ void Init_Random(void)
 		ftime(&t);
 		CryptRandom.Seed_Byte(t.millitm);
 		CryptRandom.Seed_Byte(t.time);
-#endif
+	#endif
 
 		/*
 		**	Set the optional user-specified seed
