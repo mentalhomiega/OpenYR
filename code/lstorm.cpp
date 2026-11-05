@@ -269,8 +269,8 @@ void LightningStormClass::AI(void)
 				Clouds.Delete_Index(index);
 			}
 		}
-		if (Clouds.Count() < 1 && AutoTest_Active()) {
-			DebugString("AUTOTEST storm drops its last cloud at frame %d\n", Frame);
+		if (Clouds.Count() < 1) {
+			AUTOTEST_LOG("storm drops its last cloud at frame %d\n", Frame);
 		}
 	}
 
