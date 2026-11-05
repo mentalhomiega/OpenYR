@@ -145,6 +145,7 @@
 #include "armortypes.h"
 #include "cameopcx.h"
 #include "empulse.h"
+#include "strutil.h"
 #include "surface.h"
 #include "truecolour.h"
 #include "weapon.h"
@@ -1165,6 +1166,28 @@ static void Trees_Step(StepType const &)
 		TerrainClass * terrain = Terrains[index];
 		DebugString("AUTOTEST tree %s at %d,%d strength %d armor %d immune %d overlay %d\n", terrain->Class->Name(), terrain->Get_Cell().X, terrain->Get_Cell().Y, terrain->Strength, (int)terrain->Class->Armor, (int)terrain->Class->IsImmune, (int)Map[terrain->Get_Cell()].Overlay);
 	}
+}
+
+
+// randommap: writes the scenario lighting, the number of trees and other terrain objects, and the number of
+// GALITE lamps, for checking what the map generator made.
+static void Randommap_Step(StepType const &)
+{
+	int trees = 0;
+	for (int index = 0; index < Terrains.Count(); index++) {
+		if (Starts_With_No_Case(Terrains[index]->Class->Name(), "TREE")) {
+			trees++;
+		}
+	}
+	int lamps = 0;
+	for (int index = 0; index < Buildings.Count(); index++) {
+		if (stricmp(Buildings[index]->Class->Name(), "GALITE") == 0) {
+			lamps++;
+		}
+	}
+	DebugString("AUTOTEST   randommap random %d ambient %d current %d tint %d,%d,%d ground %d level %d ion ambient %d\n", (int)Scen->IsRandom,
+		Scen->AmbientLight, Scen->CurrentAmbientLight, Scen->RedTint, Scen->GreenTint, Scen->BlueTint, Scen->GroundLight, Scen->LevelLight, Scen->IonAmbientLight);
+	DebugString("AUTOTEST   randommap trees %d other terrain %d lamps %d\n", trees, Terrains.Count() - trees, lamps);
 }
 
 
@@ -6752,6 +6775,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"veinholes", Veinholes_Step},
 		{"treehit", Treehit_Step},
 		{"trees", Trees_Step},
+		{"randommap", Randommap_Step},
 		{"terrainonore", Terrainonore_Step},
 		{"triggerlog", [](StepType const & step) {TriggerLog = step.Argument_Int() != 0;}},
 		{"triggercoverage", Trigger_Coverage_Step},
