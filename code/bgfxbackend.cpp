@@ -24,8 +24,8 @@
 #include <algorithm>
 #include <cmath>
 #include <bgfx/bgfx.h>
-#include "bgfxviews.hh"
 #include <bgfx/embedded_shader.h>
+#include "bgfxviews.hh"
 #include <bx/allocator.h>
 #include <cstdio>
 #include <cstdlib>
@@ -49,13 +49,7 @@ static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 // The composite shader ships for Direct3D 11 only. Other renderers get no program, so HDR output
 // falls back to SDR and the colour adjustment has no effect.
 static const bgfx::EmbeddedShader _CompositeShaders[] = {
-	{
-		"fs_composite",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_composite_dxbc, sizeof(fs_composite_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
+	BGFX_EMBEDDED_SHADER_D3D11(fs_composite),
 	BGFX_EMBEDDED_SHADER_END()
 };
 
@@ -1144,22 +1138,14 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 		return(false);
 	}
 
-	_VertexLayout.begin()
-		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
-		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
-		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-		.end();
+	_VertexLayout = Make_Ui_Vertex_Layout();
 
-	bgfx::RendererType::Enum type = bgfx::getRendererType();
-	bgfx::ShaderHandle vertexshader = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "vs_ocornut_imgui");
-	bgfx::ShaderHandle fragmentshader = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "fs_ocornut_imgui");
-
-	if (!bgfx::isValid(vertexshader) || !bgfx::isValid(fragmentshader)) {
+	_Program = Create_Embedded_Program(_EmbeddedShaders, "vs_ocornut_imgui", _EmbeddedShaders, "fs_ocornut_imgui");
+	if (!bgfx::isValid(_Program)) {
 		bgfx::shutdown();
 		return(false);
 	}
 
-	_Program = bgfx::createProgram(vertexshader, fragmentshader, true);
 	_TextureSampler = bgfx::createUniform("s_tex", bgfx::UniformType::Sampler);
 
 	if (!bgfx::isValid(_Program) || !bgfx::isValid(_TextureSampler)) {
@@ -1168,11 +1154,7 @@ static bool Start_Renderer(NativeWindow const & window, int drawablewidth, int d
 	}
 
 	// The composite pass draws the scene target to the window. Renderers without its shader keep the direct path.
-	bgfx::ShaderHandle compositevs = bgfx::createEmbeddedShader(_EmbeddedShaders, type, "vs_ocornut_imgui");
-	bgfx::ShaderHandle compositefs = bgfx::createEmbeddedShader(_CompositeShaders, type, "fs_composite");
-	if (bgfx::isValid(compositevs) && bgfx::isValid(compositefs)) {
-		_CompositeProgram = bgfx::createProgram(compositevs, compositefs, true);
-	}
+	_CompositeProgram = Create_Embedded_Program(_EmbeddedShaders, "vs_ocornut_imgui", _CompositeShaders, "fs_composite");
 	_CompositeLevels = bgfx::createUniform("u_compositeLevels", bgfx::UniformType::Vec4);
 	_ColourMatrix = bgfx::createUniform("u_colourMatrix", bgfx::UniformType::Vec4, 3);
 	_ColourTone = bgfx::createUniform("u_colourTone", bgfx::UniformType::Vec4);
