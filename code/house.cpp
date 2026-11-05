@@ -1101,77 +1101,70 @@ static bool Owns_Any_Id(CounterClass const & tally, TypeList<int> const & ids)
 }
 
 
+static bool Owns_Any_Unit_Id(CounterClass const & tally, TypeList<UnitTypeClass const *> const & types)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		if (tally.Value(types[index]->HeapID) > 0) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// A structure that is upgraded in place (PowersUpBuilding) counts only while the house has a working,
+/// non-deconstructing building that carries it as an upgrade.
+static bool Has_Installed_Upgrade(HouseClass const & house, BuildingTypeClass const * upgrade)
+{
+	BuildingClass * host = NULL;
+	for (int index = Buildings.Count() - 1; index >= 0; index--) {
+		BuildingClass * bptr = Buildings[index];
+		if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn &&
+				bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
+			host = bptr;
+			break;
+		}
+	}
+	if (host == NULL) return(false);
+
+	for (int slot = 0; slot < ARRAY_SIZE(host->Upgrades); slot++) {
+		if (host->Upgrades[slot] == upgrade) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 static bool Prerequisites_Met(HouseClass const & house, TypeList<int> const & pre)
 {
 	for (int i = 0; i < pre.Count(); i++) {
+		bool met;
 		switch (pre[i]) {
-			case STRUCT_G_POWER:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower)) return(false);
-				break;
+			case STRUCT_G_POWER:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisitePower); break;
+			case STRUCT_G_FACTORY:    met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory); break;
+			case STRUCT_G_BARRACKS:   met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks); break;
+			case STRUCT_G_RADAR:      met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar); break;
+			case STRUCT_G_TECH:       met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech); break;
+			case STRUCT_G_GDIFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory); break;
+			case STRUCT_G_NODFACTORY: met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory); break;
 
-			case STRUCT_G_FACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteFactory)) return(false);
-				break;
-
-			case STRUCT_G_BARRACKS:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteBarracks)) return(false);
-				break;
-
-			case STRUCT_G_RADAR:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteRadar)) return(false);
-				break;
-
-			case STRUCT_G_TECH:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteTech)) return(false);
-				break;
-
-			case STRUCT_G_PROC: {
-				bool found = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc);
-				for (int j = 0; j < Rule->PrerequisiteProcAlternate.Count() && !found; j++) {
-					if (house.AUQuantity.Value(Rule->PrerequisiteProcAlternate[j]->HeapID) > 0) {
-						found = true;
-					}
-				}
-				if (!found) return(false);
-			}
-			break;
-
-			case STRUCT_G_GDIFACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteGDIFactory)) return(false);
-				break;
-
-			case STRUCT_G_NODFACTORY:
-				if (!Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteNodFactory)) return(false);
+			case STRUCT_G_PROC:
+				met = Owns_Any_Id(house.ABQuantity, Rule->PrerequisiteProc) ||
+					Owns_Any_Unit_Id(house.AUQuantity, Rule->PrerequisiteProcAlternate);
 				break;
 
 			default: {
 				BuildingTypeClass * btype = BuildingTypes[pre[i]];
 				if (!btype->PowersUpBuilding.empty()) {
-					BuildingClass * bptr;
-					bool found = false;
-					for (int j = Buildings.Count() - 1; j >= 0; j--) {
-						bptr = Buildings[j];
-						if (!bptr->IsInLimbo && bptr->House == &house && bptr->IsOn) {
-							if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
-								found = true;
-								break;
-							}
-						}
-					}
-					if (found) {
-						for (int k = 0; k < ARRAY_SIZE(bptr->Upgrades); k++) {
-							if (bptr->Upgrades[k] == btype) {
-								goto breakout;
-							}
-						}
-					}
-					return(false);
+					met = Has_Installed_Upgrade(house, btype);
+				} else {
+					met = house.ABQuantity.Value(pre[i]) != 0;
 				}
-				if (house.ABQuantity.Value(pre[i]) == 0) return(false);
-				breakout:;
+				break;
 			}
-			break;
 		}
+		if (!met) return(false);
 	}
 	return(true);
 }
