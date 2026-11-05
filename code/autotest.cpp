@@ -115,6 +115,7 @@
 #include "video.h"
 #include "bgfxbackend.h"
 #include "gamedirs.h"
+#include "hexformat.h"
 #include "littleendian.h"
 #include "theme.h"
 #include "_rect.h"
@@ -196,10 +197,7 @@ static std::string AutoTest_Folder_Of(char const * filename)
 	if (error) {
 		return std::string();
 	}
-	if (!folder.empty() && folder.back() != '\\' && folder.back() != '/') {
-		folder += '\\';
-	}
-	return folder;
+	return Terminate_Path(folder);
 }
 
 // A path that a step reads from disk: a relative one is taken from the script's folder, a rooted one is kept as written.
@@ -998,9 +996,7 @@ static void Hashparts_Step(StepType const &)
 	unsigned char const * random = reinterpret_cast<unsigned char const *>(&Scen->RandomNumber);
 	std::string bytes;
 	for (size_t index = 0; index < sizeof(Scen->RandomNumber); index++) {
-		char text[4];
-		std::snprintf(text, sizeof(text), "%02X", random[index]);
-		bytes += text;
+		bytes += Hex_Text(random[index], 2, true);
 	}
 	DebugString("AUTOTEST   random %s\n", bytes.c_str());
 }
@@ -7164,9 +7160,7 @@ static bool Apply_Load_Time_Command(char const * command, std::string const & te
 	// as the extra string tables, so it is added now rather than at its frame.
 	if (std::strcmp(command, "searchdir") == 0 && !text.empty()) {
 		std::string path = AutoTest_Input_Path(text);
-		if (path.back() != '\\' && path.back() != '/') {
-			path += '\\';
-		}
+		path = Terminate_Path(path);
 		CDFileClass::Add_Search_Drive(path.c_str());
 	}
 	// The first loading screen comes before any game frame.
