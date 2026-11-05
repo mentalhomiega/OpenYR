@@ -39,14 +39,17 @@ bool Copy_Surface(XSurface * surface, UIMapPreviewImage & image)
 		return(false);
 	}
 
-	std::uint16_t const * pixels = (std::uint16_t const *)surface->Lock();
-	if (pixels == NULL) {
-		return(false);
-	}
+	bool copied;
+	{
+		SurfaceLock lock(*surface);
+		std::uint16_t const * pixels = lock.As<std::uint16_t const>();
+		if (pixels == NULL) {
+			return(false);
+		}
 
-	std::size_t held = (std::size_t)pitch * (std::size_t)(height - 1) + (std::size_t)width;
-	bool copied = UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pixels, held), width, height, pitch, image.Pixels);
-	surface->Unlock();
+		std::size_t held = (std::size_t)pitch * (std::size_t)(height - 1) + (std::size_t)width;
+		copied = UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pixels, held), width, height, pitch, image.Pixels);
+	}
 
 	if (!copied) {
 		image.Pixels.clear();
