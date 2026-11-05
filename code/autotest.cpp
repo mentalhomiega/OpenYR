@@ -1168,13 +1168,15 @@ static void Randommap_Step(StepType const &)
 
 
 /// <summary>
-/// Finds the house a script names: a spawn name, country name or IniName (an underscore stands for a space), or #n for the house at position n.
-/// "player" is not handled here; Wait_House takes it.
+/// Finds the house a script names: "player", a spawn name, country name or IniName (an underscore stands for a space), or #n for the house at position n.
 /// </summary>
 /// <param name="name">The name as the script writes it.</param>
 /// <returns>Returns the house, or NULL when no house has that name.</returns>
 static HouseClass * Named_House(std::string name)
 {
+	if (stricmp(name.c_str(), "player") == 0) {
+		return(PlayerPtr);
+	}
 	std::replace(name.begin(), name.end(), '_', ' ');
 	if (!name.empty() && name[0] == '#') {
 		int const position = std::atoi(name.c_str() + 1);
@@ -1387,16 +1389,6 @@ std::size_t Wait_Timeout_Word(std::string const & command)
 }
 
 
-// The house a wait names: "player" for the player, otherwise a house name with an underscore for each space.
-HouseClass * Wait_House(std::string name)
-{
-	if (stricmp(name.c_str(), "player") == 0) {
-		return(PlayerPtr);
-	}
-	return(Named_House(name));
-}
-
-
 // How many objects of the type the house has on the map, not counting those in limbo.
 template<typename T>
 int Placed_Count_In(DynamicVectorClass<T *> & list, HouseClass const * house, TechnoTypeClass const * type)
@@ -1435,7 +1427,7 @@ std::string Wait_Problem(std::vector<std::string> const & words)
 		return("no such trigger " + Word(words, 2));
 	}
 	if (command == "waitowns") {
-		if (Wait_House(Word(words, 2)) == NULL) {
+		if (Named_House(Word(words, 2)) == NULL) {
 			return("no such house " + Word(words, 2));
 		}
 		if (Find_Type(Word(words, 3)) == NULL) {
@@ -1473,7 +1465,7 @@ bool Wait_Met(std::vector<std::string> const & words)
 		return(Trigger_Springs(TriggerTypeClass::From_Name(Word(words, 2).c_str())) > 0);
 	}
 	if (command == "waitowns") {
-		HouseClass * house = Wait_House(Word(words, 2));
+		HouseClass * house = Named_House(Word(words, 2));
 		TechnoTypeClass const * type = Find_Type(Word(words, 3));
 		return(house != NULL && type != NULL && Placed_Count(house, type) >= Number(words, 4, 0));
 	}
@@ -6366,7 +6358,7 @@ static void Selected_Step(StepType const &)
 // house ("player" or a house name as the waits name one). Every copy of a network game must run it on the same frame.
 static void Defeat_Step(StepType const & step)
 {
-	HouseClass * house = Wait_House(step.Argument);
+	HouseClass * house = Named_House(step.Argument);
 	if (house == NULL || house->IsDefeated) {
 		DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
 	} else {
@@ -6379,7 +6371,7 @@ static void Defeat_Step(StepType const & step)
 // houseobjects <house>: the objects the house owns, by kind, and the ones it originally owns.
 static void Houseobjects_Step(StepType const & step)
 {
-	HouseClass * house = Wait_House(step.Argument);
+	HouseClass * house = Named_House(step.Argument);
 	if (house == NULL) {
 		DebugString("AUTOTEST houseobjects %s: no such house\n", step.Argument.c_str());
 	} else {
