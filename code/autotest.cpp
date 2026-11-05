@@ -408,13 +408,14 @@ bool Network_Game(void)
 }
 
 
-// Gives the player's objects of that type in one list a mission as a queued event, as a click's order is given.
+// Gives the objects of that type in one list that the player can select a mission as a queued event, as a click's
+// order is given. These include the objects of a house the map marks PlayerControl=yes.
 template<class T>
 void Queue_Player_Missions(DynamicVectorClass<T *> & list, std::string const & name, MissionType mission, AbstractClass * target, AbstractClass * destination)
 {
 	for (int index = 0; index < list.Count(); index++) {
 		T * object = list[index];
-		if (object != NULL && Is_Player_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
+		if (object != NULL && Is_Player_Or_Control_Object(object) && !object->IsInLimbo && stricmp(object->TClass->Name(), name.c_str()) == 0) {
 			object->Player_Assign_Mission(mission, target, destination);
 		}
 	}
