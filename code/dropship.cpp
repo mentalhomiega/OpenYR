@@ -437,19 +437,12 @@ void Dropship_Screen(void)
 	int y = (HiddenSurface->Get_Height() - drop_height) / 2;
 	int x = (HiddenSurface->Get_Width() - drop_width) / 2;
 
-	PaletteClass palette_data;
-	memmove(&palette_data, (unsigned char *)MFCD::Retrieve("DROPSHIP.PAL"), sizeof(palette_data));
-	for (i = 0; i < 256; ++i) {
-		palette_data[i] = RGBClass(palette_data[i].Get_Red() * 4, palette_data[i].Get_Green() * 4, palette_data[i].Get_Blue() * 4);
-	}
+	PaletteClass palette_data = Widen_Six_Bit_Palette(MFCD::Retrieve("DROPSHIP.PAL"));
 
 	ConvertClass *drawer_dropship = new ConvertClass(palette_data, GamePalette, *VisibleSurface, 63, false);
 	ConvertClass *drawer_dropship_alpha = new ConvertClass(palette_data, GamePalette, *VisibleSurface, 1, false);
 
-	memmove(&palette_data, (unsigned char *)MFCD::Retrieve("CAMEO.PAL"), sizeof(palette_data));
-	for (i = 0; i < 256; ++i) {
-		palette_data[i] = RGBClass(palette_data[i].Get_Red() * 4, palette_data[i].Get_Green() * 4, palette_data[i].Get_Blue() * 4);
-	}
+	palette_data = Widen_Six_Bit_Palette(MFCD::Retrieve("CAMEO.PAL"));
 	ConvertClass *drawer_cameo = new ConvertClass(palette_data, GamePalette, *VisibleSurface, 1, false);
 
 	Blitter const *plain_blitter = drawer_dropship->Blitter_From_Flags(SHAPE_NORMAL);

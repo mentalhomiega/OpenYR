@@ -567,70 +567,70 @@ void Blit_Hud_Panel(Surface & surface, Rect const & dest, Surface const & source
 		return;
 	}
 
-	unsigned short * out = static_cast<unsigned short *>(surface.Lock());
-	unsigned short const * in = static_cast<unsigned short const *>(source.Lock());
-	if (out == NULL || in == NULL) {
-		if (in != NULL) source.Unlock();
-		if (out != NULL) surface.Unlock();
-		surface.Blit_From(dest, source, source_rect);
-		return;
-	}
+	// Both locks are released before the plain blit below if either one fails.
+	{
+		SurfaceLock out_lock(surface);
+		SurfaceLock in_lock(source);
+		if (out_lock.Is_Valid() && in_lock.Is_Valid()) {
+			unsigned short * out = out_lock.As<unsigned short>();
+			unsigned short const * in = in_lock.As<unsigned short const>();
+			int const out_stride = surface.Stride() / 2;
+			int const in_stride = source.Stride() / 2;
+			RGBClass const fill = Hud_Fill_Color();
+			RGBClass const well = Hud_Well_Color();
+			int const fill_pixel = DSurface::Build_Hicolor_Pixel(fill);
+			int const well_pixel = DSurface::Build_Hicolor_Pixel(well);
+			HudLayout const layout = Hud_Layout();
+			Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
+			HudBlendTable const & blend = Hud_Blend_Table(opacity);
+			Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
+			Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
 
-	int const out_stride = surface.Stride() / 2;
-	int const in_stride = source.Stride() / 2;
-	RGBClass const fill = Hud_Fill_Color();
-	RGBClass const well = Hud_Well_Color();
-	int const fill_pixel = DSurface::Build_Hicolor_Pixel(fill);
-	int const well_pixel = DSurface::Build_Hicolor_Pixel(well);
-	HudLayout const layout = Hud_Layout();
-	Rect const solid[] = {layout.Radar, layout.Buttons, layout.Options};
-	HudBlendTable const & blend = Hud_Blend_Table(opacity);
-	Video_Set_Layer_Tint(0, fill.Get_Red(), fill.Get_Green(), fill.Get_Blue(), opacity);
-	Video_Set_Layer_Tint(1, well.Get_Red(), well.Get_Green(), well.Get_Blue(), opacity);
+			HudPanelColours const colours = {static_cast<unsigned short>(fill_pixel), static_cast<unsigned short>(well_pixel), &blend};
+			for (int y = 0; y < dest.Height; y++) {
+				int const sy = source_rect.Y + y;
+				unsigned short const * const row_in = in + sy * in_stride + source_rect.X;
+				unsigned short * const row_out = out + (dest.Y + y) * out_stride + dest.X;
 
-	HudPanelColours const colours = {static_cast<unsigned short>(fill_pixel), static_cast<unsigned short>(well_pixel), &blend};
-	for (int y = 0; y < dest.Height; y++) {
-		int const sy = source_rect.Y + y;
-		unsigned short const * const row_in = in + sy * in_stride + source_rect.X;
-		unsigned short * const row_out = out + (dest.Y + y) * out_stride + dest.X;
+				// The solid areas that cross this row, as spans of x from the left of the copied part.
+				std::pair<int, int> crossing[std::size(solid)];
+				int crossings = 0;
+				for (Rect const & rect : solid) {
+					if (sy >= rect.Y && sy < rect.Y + rect.Height) {
+						int const left = std::clamp(rect.X - source_rect.X, 0, dest.Width);
+						int const right = std::clamp(rect.X + rect.Width - source_rect.X, 0, dest.Width);
+						if (right > left) {
+							crossing[crossings++] = {left, right};
+						}
+					}
+				}
+				std::sort(crossing, crossing + crossings);
 
-		// The solid areas that cross this row, as spans of x from the left of the copied part.
-		std::pair<int, int> crossing[std::size(solid)];
-		int crossings = 0;
-		for (Rect const & rect : solid) {
-			if (sy >= rect.Y && sy < rect.Y + rect.Height) {
-				int const left = std::clamp(rect.X - source_rect.X, 0, dest.Width);
-				int const right = std::clamp(rect.X + rect.Width - source_rect.X, 0, dest.Width);
-				if (right > left) {
-					crossing[crossings++] = {left, right};
+				// Solid pixels are copied as drawn; the spans between them are drawn as panel.
+				int x = 0;
+				for (int index = 0; index < crossings; index++) {
+					int const left = std::max(crossing[index].first, x);
+					if (left > x) {
+						Panel_Span(row_in + x, row_out + x, left - x, colours);
+					}
+					if (crossing[index].second > left) {
+						std::memcpy(row_out + left, row_in + left, static_cast<std::size_t>(crossing[index].second - left) * sizeof(unsigned short));
+						x = crossing[index].second;
+					}
+				}
+				if (x < dest.Width) {
+					Panel_Span(row_in + x, row_out + x, dest.Width - x, colours);
 				}
 			}
-		}
-		std::sort(crossing, crossing + crossings);
 
-		// Solid pixels are copied as drawn; the spans between them are drawn as panel.
-		int x = 0;
-		for (int index = 0; index < crossings; index++) {
-			int const left = std::max(crossing[index].first, x);
-			if (left > x) {
-				Panel_Span(row_in + x, row_out + x, left - x, colours);
+			if (Emissive_Is_Enabled()) {
+				Emissive_After_Bit_Blit(surface, dest.X, dest.Y, source, source_rect.X, source_rect.Y, dest.Width, dest.Height);
 			}
-			if (crossing[index].second > left) {
-				std::memcpy(row_out + left, row_in + left, static_cast<std::size_t>(crossing[index].second - left) * sizeof(unsigned short));
-				x = crossing[index].second;
-			}
-		}
-		if (x < dest.Width) {
-			Panel_Span(row_in + x, row_out + x, dest.Width - x, colours);
+			return;
 		}
 	}
 
-	if (Emissive_Is_Enabled()) {
-		Emissive_After_Bit_Blit(surface, dest.X, dest.Y, source, source_rect.X, source_rect.Y, dest.Width, dest.Height);
-	}
-
-	source.Unlock();
-	surface.Unlock();
+	surface.Blit_From(dest, source, source_rect);
 }
 
 
