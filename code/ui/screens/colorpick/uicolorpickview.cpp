@@ -18,6 +18,27 @@
 #include <string>
 
 
+bool UI_Register_Color_Structs(Rml::DataModelConstructor & model)
+{
+	Rml::StructHandle<UIColorPresetOption> preset = model.RegisterStruct<UIColorPresetOption>();
+	if (!preset) {
+		return(false);
+	}
+	preset.RegisterMember("label", &UIColorPresetOption::Label);
+	preset.RegisterMember("value", &UIColorPresetOption::Value);
+	preset.RegisterMember("color", &UIColorPresetOption::Color);
+	preset.RegisterMember("textcolor", &UIColorPresetOption::TextColor);
+	preset.RegisterMember("taken", &UIColorPresetOption::Taken);
+	preset.RegisterMember("caption", &UIColorPresetOption::Caption);
+	Rml::StructHandle<UIColorRampStep> step = model.RegisterStruct<UIColorRampStep>();
+	if (!step) {
+		return(false);
+	}
+	step.RegisterMember("color", &UIColorRampStep::Color);
+	return(true);
+}
+
+
 UIColorPickViewClass::UIColorPickViewClass(UIPresenterClass & presenter, char const * document, char const * model) :
 	UIRmlViewClass(presenter, document, model)
 {

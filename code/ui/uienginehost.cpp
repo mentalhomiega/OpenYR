@@ -22,6 +22,7 @@
 #include "gamedlg.h"
 #include "globals.h"
 #include "goptions.h"
+#include "houstype.h"
 #include "init.h"
 #include "keyboard.h"
 #include "language/language.h"
@@ -52,6 +53,34 @@ std::string UI_Color_Text(COLORREF color)
 static int const UI_STOCK_COLORS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
 };
+
+
+int UI_Multiplay_House_Count(void)
+{
+	int count = 0;
+	for (int house = 0; house < HouseTypes.Count(); house++) {
+		count += HouseTypes[house]->IsMultiplay ? 1 : 0;
+	}
+	return(count);
+}
+
+
+int UI_Multiplay_House_At(int position)
+{
+	int count = 0;
+	for (int house = 0; house < HouseTypes.Count(); house++) {
+		if (HouseTypes[house]->IsMultiplay && count++ == position) {
+			return(house);
+		}
+	}
+	return(-1);
+}
+
+
+char const * UI_House_Name(int house)
+{
+	return(HouseTypes[house]->Full_Name());
+}
 
 
 int UI_Stock_Color_Count(void)

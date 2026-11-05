@@ -57,13 +57,15 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual void Reveal_Done(void) override;
 		virtual void Placed(void) override;
 		virtual void Set_Tab(int tab, unsigned offered) override;
-		virtual void Sync(void) override = 0;
+		virtual void Sync(void) override {}
 
 	protected:
 		virtual bool Bind(Rml::DataModelConstructor & model) = 0;
 		virtual void Loaded(void) {}
 		virtual void ProcessEvent(Rml::Event & event) override;
 		void Queue(char const * name, int value = 0, char const * text = nullptr);
+		// Marks each of the bound variables as changed, so the document redraws what shows them.
+		void Dirty(std::initializer_list<char const *> names);
 		// Sets the image on the surface element with the id and stores the image's generation in shown. Nothing
 		// happens when shown already holds that generation, or when the document or the surface is missing.
 		void Show_Surface(char const * id, int & shown, UIMapPreviewImage const & image);

@@ -177,28 +177,9 @@ class UIGameControlsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("speed");
-			Model.DirtyVariable("scroll");
-			Model.DirtyVariable("detail");
-			Model.DirtyVariable("difficulty");
-			Model.DirtyVariable("cameo");
-			Model.DirtyVariable("lines");
-			Model.DirtyVariable("tooltips");
-			Model.DirtyVariable("coasting");
-			Model.DirtyVariable("edge");
-			Model.DirtyVariable("hidden");
-			Model.DirtyVariable("defencerange");
-			Model.DirtyVariable("speedname");
-			Model.DirtyVariable("scrollname");
-			Model.DirtyVariable("detailname");
-			Model.DirtyVariable("difficultyname");
-			Model.DirtyVariable("rally");
-			Model.DirtyVariable("airpick");
-			Model.DirtyVariable("background");
-			Model.DirtyVariable("sorting");
-			Model.DirtyVariable("debugmode");
-			Model.DirtyVariable("replays");
-			Model.DirtyVariable("autosave");
+			Dirty({"speed", "scroll", "detail", "difficulty", "cameo", "lines", "tooltips", "coasting", "edge",
+				"hidden", "defencerange", "speedname", "scrollname", "detailname", "difficultyname", "rally",
+				"airpick", "background", "sorting", "debugmode", "replays", "autosave"});
 		}
 
 	protected:

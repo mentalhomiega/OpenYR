@@ -256,6 +256,9 @@ a default and returns it when the section or entry is missing.
 | `UI_Name_At(names, index)` | `ui/uiscreen.h` | The name at an index, or an empty string outside the list. |
 | `UI_Difficulty_Names()` | `ui/uienginehost.h` | The display names of the difficulty levels, easiest first. |
 | `UI_Fill_Stock_Colors(colors, limit)`, `UI_Stock_Color_Count()`, `UI_Stock_Color_Name(i)` | `ui/uienginehost.h` | The eight stock player colours (name, index, CSS colour) for a lobby's colour list. |
+| `UI_Fill_Multiplay_Sides(sides, current, selected)`, `UI_Multiplay_House_Count()`, `UI_Multiplay_House_At(position)` | `ui/uienginehost.h` | The houses a lobby offers (those with `IsMultiplay`), appended to a side list; `selected` receives the position of the `current` house. `At` maps a list position back to the `HouseTypes` index, or -1. |
+| `UI_Register_Color_Structs(model)` | `ui/screens/colorpick/uicolorpickview.h` | Registers the picker's preset and ramp-step structs with a document model. Returns false when RmlUi refuses either. |
+| `Dirty({names...})` | `ui/rml/rmlview.h` | Marks several bound model variables changed in one call. A view with nothing to refresh needs no `Sync`. |
 
 ## Lobby and network
 

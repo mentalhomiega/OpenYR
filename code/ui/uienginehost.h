@@ -44,6 +44,31 @@ void UI_Fill_Stock_Colors(std::vector<Option> & colors, int limit)
 	}
 }
 
+// The houses a player can pick in a lobby (those with IsMultiplay), in HouseTypes order. UI_Multiplay_House_At
+// returns the HouseTypes index of the house at a position in that list, or -1 outside it.
+int UI_Multiplay_House_Count(void);
+int UI_Multiplay_House_At(int position);
+char const * UI_House_Name(int house);
+
+/// <summary>
+/// Appends the multiplayer houses to a lobby's side list. When a house is the one at current and selected is not
+/// null, selected is set to its position in the list. Option needs the members Label and Value.
+/// </summary>
+template<class Option>
+void UI_Fill_Multiplay_Sides(std::vector<Option> & sides, int current, int * selected = nullptr)
+{
+	for (int position = 0; position < UI_Multiplay_House_Count(); position++) {
+		int const house = UI_Multiplay_House_At(position);
+		Option option;
+		option.Label = UI_House_Name(house);
+		option.Value = house;
+		if (selected != nullptr && house == current) {
+			*selected = (int)sides.size();
+		}
+		sides.push_back(option);
+	}
+}
+
 // The display names of the difficulty levels, easiest first.
 std::vector<std::string> UI_Difficulty_Names(void);
 

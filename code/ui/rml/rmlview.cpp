@@ -1071,6 +1071,14 @@ void UIRmlViewClass::Show_Surface(char const * id, int & shown, UIMapPreviewImag
 }
 
 
+void UIRmlViewClass::Dirty(std::initializer_list<char const *> names)
+{
+	for (char const * name : names) {
+		Model.DirtyVariable(name);
+	}
+}
+
+
 void UIRmlViewClass::Queue(char const * name, int value, char const * text)
 {
 	UIIntent intent;

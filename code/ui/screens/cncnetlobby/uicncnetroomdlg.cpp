@@ -573,19 +573,7 @@ void CnCNetRoomServiceClass::Fill_Sides(UINetLobbyState & state, CnCNetRoomPlaye
 {
 	state.Sides.clear();
 	state.Side = 0;
-	for (int index = 0; index < HouseTypes.Count(); index++) {
-		HouseTypeClass * house = HouseTypes[index];
-		if (!house->IsMultiplay) {
-			continue;
-		}
-		UINetOption option;
-		option.Label = house->Full_Name();
-		option.Value = index;
-		if (self != nullptr && index == self->Side) {
-			state.Side = static_cast<int>(state.Sides.size());
-		}
-		state.Sides.push_back(option);
-	}
+	UI_Fill_Multiplay_Sides(state.Sides, self != nullptr ? self->Side : -1, &state.Side);
 	UINetOption watch;
 	watch.Label = "Spectator";
 	watch.Value = CNCNET_SPECTATOR_SIDE;
@@ -855,20 +843,15 @@ void CnCNetRoomServiceClass::Own_Setup(int side, int color, int start, int team)
 
 void CnCNetRoomServiceClass::Set_Side(int index)
 {
-	int count = 0;
-	for (int house = 0; house < HouseTypes.Count(); house++) {
-		if (!HouseTypes[house]->IsMultiplay) {
-			continue;
+	int const house = UI_Multiplay_House_At(index);
+	if (house >= 0) {
+		Session.House = house;
+		if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
+			Own_Setup(house, self->Color, self->Start, self->Team);
 		}
-		if (count++ == index) {
-			Session.House = house;
-			if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
-				Own_Setup(house, self->Color, self->Start, self->Team);
-			}
-			return;
-		}
+		return;
 	}
-	if (index == count) {
+	if (index == UI_Multiplay_House_Count()) {
 		if (CnCNetRoomPlayerType const * self = TheRoom.Find_Player(Setup.Nick)) {
 			Own_Setup(CNCNET_SPECTATOR_SIDE, self->Color, -1, -1);
 		}
