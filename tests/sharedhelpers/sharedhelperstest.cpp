@@ -155,6 +155,9 @@ void Test_Split_And_Parse()
 	Check(skipped.size() == 2 && skipped[0] == "a" && skipped[1] == "b", "Split_List drops entries empty after trimming");
 	std::vector<std::string> const untrimmed = Split_List(" a ,,b", ',', std::string_view(), true);
 	Check(untrimmed.size() == 2 && untrimmed[0] == " a " && untrimmed[1] == "b", "an empty blank set keeps entries as written");
+	std::vector<std::string> const leading = Split_List(",a", ',', TRIM_SPACE_TAB, false);
+	Check(leading.size() == 2 && leading[0].empty() && leading[1] == "a", "a leading separator gives an empty first entry");
+	Check(Split_List(",a", ',', TRIM_SPACE_TAB, true) == std::vector<std::string>{"a"}, "a leading separator is dropped when empty entries are");
 	Check(Split_List("", ',', TRIM_SPACE_TAB, false).size() == 1, "empty text gives one empty entry");
 	Check(Split_List("", ',', TRIM_SPACE_TAB, true).empty(), "empty text gives no entry when empty ones are dropped");
 

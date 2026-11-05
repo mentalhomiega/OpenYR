@@ -20,7 +20,6 @@
 #include "strutil.h"
 #include "weapon.h"
 
-#include <cctype>
 #include <map>
 #include <set>
 #include <string>
