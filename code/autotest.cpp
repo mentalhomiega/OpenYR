@@ -5044,6 +5044,14 @@ static void Restart_Step(StepType const &)
 }
 
 
+// The name of the type at heap ID id, or none when the ID is outside the list.
+template<class T>
+static char const * Type_Name_At(DynamicVectorClass<T *> const & types, int id, char const * none)
+{
+	return(id >= 0 && id < types.Count() ? types[id]->Name() : none);
+}
+
+
 // triggers [all]: what the map's trigger system holds right now.
 static void Triggers_Step(StepType const & step)
 {
@@ -5074,10 +5082,10 @@ static void Triggers_Step(StepType const & step)
 			}
 			if (event->TechnoName[0] != '\0') events += std::string(" ") + event->TechnoName;
 			NeedType const need = Event_Needs(event->Event);
-			if (need == NEED_STRUCTURE) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < BuildingTypes.Count() ? BuildingTypes[event->Data.Value]->Name() : "NOSTRUCT");
-			if (need == NEED_UNIT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < UnitTypes.Count() ? UnitTypes[event->Data.Value]->Name() : "NOUNIT");
-			if (need == NEED_INFANTRY) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < InfantryTypes.Count() ? InfantryTypes[event->Data.Value]->Name() : "NOINFANTRY");
-			if (need == NEED_AIRCRAFT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < AircraftTypes.Count() ? AircraftTypes[event->Data.Value]->Name() : "NOAIRCRAFT");
+			if (need == NEED_STRUCTURE) events += std::string(" ") + Type_Name_At(BuildingTypes, event->Data.Value, "NOSTRUCT");
+			if (need == NEED_UNIT) events += std::string(" ") + Type_Name_At(UnitTypes, event->Data.Value, "NOUNIT");
+			if (need == NEED_INFANTRY) events += std::string(" ") + Type_Name_At(InfantryTypes, event->Data.Value, "NOINFANTRY");
+			if (need == NEED_AIRCRAFT) events += std::string(" ") + Type_Name_At(AircraftTypes, event->Data.Value, "NOAIRCRAFT");
 			events += ")";
 		}
 		DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d event count %d action count %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, event_count, action_count, events.c_str());
@@ -5163,14 +5171,24 @@ static void Types_Step(StepType const & step)
 }
 
 
+// Writes each type whose ID holds a comma, semicolon or space.
+template<class T>
+static void Note_Stray_Types(DynamicVectorClass<T *> const & types, char const * kind)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		if (std::strpbrk(types[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray %s %d %s\n", kind, index, types[index]->Name());
+	}
+}
+
+
 // typecounts: how many types of each kind there are, and any whose ID is not a plain name (a list read as one name).
 static void Typecounts_Step(StepType const &)
 {
 	DebugString("AUTOTEST   typecounts structures %d units %d infantry %d aircraft %d\n", BuildingTypes.Count(), UnitTypes.Count(), InfantryTypes.Count(), AircraftTypes.Count());
-	for (int index = 0; index < BuildingTypes.Count(); index++) if (std::strpbrk(BuildingTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray structure %d %s\n", index, BuildingTypes[index]->Name());
-	for (int index = 0; index < UnitTypes.Count(); index++) if (std::strpbrk(UnitTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray unit %d %s\n", index, UnitTypes[index]->Name());
-	for (int index = 0; index < InfantryTypes.Count(); index++) if (std::strpbrk(InfantryTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray infantry %d %s\n", index, InfantryTypes[index]->Name());
-	for (int index = 0; index < AircraftTypes.Count(); index++) if (std::strpbrk(AircraftTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray aircraft %d %s\n", index, AircraftTypes[index]->Name());
+	Note_Stray_Types(BuildingTypes, "structure");
+	Note_Stray_Types(UnitTypes, "unit");
+	Note_Stray_Types(InfantryTypes, "infantry");
+	Note_Stray_Types(AircraftTypes, "aircraft");
 }
 
 
