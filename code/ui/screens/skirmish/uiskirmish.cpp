@@ -463,33 +463,9 @@ class UISkirmishViewClass : public UIColorPickViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("handle");
-			Model.DirtyVariable("slots");
-			Model.DirtyVariable("rows");
-			Model.DirtyVariable("starts");
-			Model.DirtyVariable("notice");
-			Model.DirtyVariable("mapname");
-			Model.DirtyVariable("bases");
-			Model.DirtyVariable("crates");
-			Model.DirtyVariable("fog");
-			Model.DirtyVariable("bridges");
-			Model.DirtyVariable("redeploy");
-			Model.DirtyVariable("shortgame");
-			Model.DirtyVariable("engineer");
-			Model.DirtyVariable("units");
-			Model.DirtyVariable("credits");
-			Model.DirtyVariable("tech");
-			Model.DirtyVariable("speed");
-			Model.DirtyVariable("pickopen");
-			Model.DirtyVariable("pickswatch");
-			Model.DirtyVariable("picknotice");
-			Model.DirtyVariable("pickvalue");
-			Model.DirtyVariable("pickstyle");
-			Model.DirtyVariable("pickpresets");
-			Model.DirtyVariable("pickrgb");
-			Model.DirtyVariable("pickhsv");
-			Model.DirtyVariable("picknear");
-			Model.DirtyVariable("pickramp");
+			for (char const * name : Live) {
+				Model.DirtyVariable(name);
+			}
 
 			Show_Surface("preview", Shown, Data.State.Preview);
 			Show_Picker(Data.State.Picker);
@@ -564,52 +540,60 @@ class UISkirmishViewClass : public UIColorPickViewClass
 			step.RegisterMember("color", &UIColorRampStep::Color);
 
 			UISkirmishState & state = Data.State;
+			// A value the presenter changes is bound through live, so Sync dirties exactly the names bound here.
+			Live.clear();
+			auto live = [&](char const * name, auto * value) {
+				Live.push_back(name);
+				return(model.Bind(name, value));
+			};
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
 				&& model.RegisterArray<std::vector<UISkirmishSlot>>()
 				&& model.RegisterArray<std::vector<UIColorPresetOption>>()
 				&& model.RegisterArray<std::vector<UIColorRampStep>>()
-				&& model.Bind("handle", &state.Handle)
+				&& live("handle", &state.Handle)
 				&& model.Bind("kinds", &state.Kinds)
 				&& model.Bind("sides", &state.Sides)
-				&& model.Bind("starts", &state.Starts)
+				&& live("starts", &state.Starts)
 				&& model.Bind("teams", &state.Teams)
-				&& model.Bind("slots", &state.Slots)
-				&& model.Bind("rows", &state.Rows)
-				&& model.Bind("notice", &state.Notice)
-				&& model.Bind("mapname", &state.MapName)
-				&& model.Bind("bases", &state.Bases)
-				&& model.Bind("crates", &state.Crates)
-				&& model.Bind("fog", &state.Fog)
-				&& model.Bind("bridges", &state.Bridges)
-				&& model.Bind("redeploy", &state.Redeploy)
-				&& model.Bind("shortgame", &state.ShortGame)
-				&& model.Bind("engineer", &state.MultiEngineer)
-				&& model.Bind("superweapons", &state.SuperWeapons)
-				&& model.Bind("buildoffally", &state.BuildOffAlly)
-				&& model.Bind("units", &state.UnitCount)
+				&& live("slots", &state.Slots)
+				&& live("rows", &state.Rows)
+				&& live("notice", &state.Notice)
+				&& live("mapname", &state.MapName)
+				&& live("bases", &state.Bases)
+				&& live("crates", &state.Crates)
+				&& live("fog", &state.Fog)
+				&& live("bridges", &state.Bridges)
+				&& live("redeploy", &state.Redeploy)
+				&& live("shortgame", &state.ShortGame)
+				&& live("engineer", &state.MultiEngineer)
+				&& live("superweapons", &state.SuperWeapons)
+				&& live("buildoffally", &state.BuildOffAlly)
+				&& live("units", &state.UnitCount)
 				&& model.Bind("unitsmin", &state.UnitCountMin)
 				&& model.Bind("unitsmax", &state.UnitCountMax)
-				&& model.Bind("credits", &state.Credits)
+				&& live("credits", &state.Credits)
 				&& model.Bind("creditsmin", &state.CreditsMin)
 				&& model.Bind("creditsmax", &state.CreditsMax)
 				&& model.Bind("creditsstep", &state.CreditsStep)
-				&& model.Bind("tech", &state.TechLevel)
+				&& live("tech", &state.TechLevel)
 				&& model.Bind("techmax", &state.TechLevelMax)
-				&& model.Bind("speed", &state.GameSpeed)
-				&& model.Bind("pickopen", &state.Picker.Open)
-				&& model.Bind("pickswatch", &state.Picker.Swatch)
-				&& model.Bind("picknotice", &state.Picker.Notice)
-				&& model.Bind("pickvalue", &state.Picker.Value)
-				&& model.Bind("pickstyle", &state.Picker.MarkerStyle)
-				&& model.Bind("pickpresets", &state.Picker.Presets)
-				&& model.Bind("pickrgb", &state.Picker.ReadRGB)
-				&& model.Bind("pickhsv", &state.Picker.ReadHSV)
-				&& model.Bind("picknear", &state.Picker.Nearest)
-				&& model.Bind("pickramp", &state.Picker.Ramp));
+				&& live("speed", &state.GameSpeed)
+				&& live("pickopen", &state.Picker.Open)
+				&& live("pickswatch", &state.Picker.Swatch)
+				&& live("picknotice", &state.Picker.Notice)
+				&& live("pickvalue", &state.Picker.Value)
+				&& live("pickstyle", &state.Picker.MarkerStyle)
+				&& live("pickpresets", &state.Picker.Presets)
+				&& live("pickrgb", &state.Picker.ReadRGB)
+				&& live("pickhsv", &state.Picker.ReadHSV)
+				&& live("picknear", &state.Picker.Nearest)
+				&& live("pickramp", &state.Picker.Ramp));
 		}
 
 	private:
 		UISkirmishPresenterClass & Data;
+		// The names of the bound values Sync dirties, filled in by Bind.
+		std::vector<char const *> Live;
 		int Shown;
 		int Chosen[UI_SKIRMISH_MAX_SLOTS][FIELDS];
 };
