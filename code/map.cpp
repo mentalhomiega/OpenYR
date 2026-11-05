@@ -4462,145 +4462,7 @@ void MapClass::Repair_Train_Bridge(Cell const & cell)
 /// <returns>bool; Was a span end found and dealt with?</returns>
 bool MapClass::Destroy_Train_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
 {
-	CellClass * cellptr = &Map[cell];
-
-	int count = 1;
-
-	CellClass * startptr;
-	bool was_owner;
-	Cell ownercell;
-	bool sprung;
-	int index;
-
-	/*
-	 * Remember the first adjacent cell of the span. It is used as one endpoint
-	 * when springing the bridge destruction triggers.
-	 */
-	Cell spanstart = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-	Cell lastcell = spanstart;
-
-	IsometricTileType ittype;
-
-	/*
-	 * Walk along the span looking for the end tile, giving up after 30 cells.
-	 */
-	while (true) {
-		lastcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
-		cellptr = &Map[lastcell];
-
-		ittype = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::TrainBridgeSet + 1);
-
-		if (dir == FACING_E) {
-
-			if (ittype == IsometricTileTypeClass::BridgeBottomRight1 && cellptr->SubTile == 4
-				|| ittype == IsometricTileTypeClass::BridgeBottomRight2 && cellptr->SubTile == 4
-				|| (ittype == IsometricTileTypeClass::BridgeMiddle1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_3
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle1 + BRIDGE_MIDDLE_DAMAGED_2)
-					&& cellptr->SubTile == 4) {
-				break;
-			}
-
-		} else if (dir == FACING_S
-			&& (ittype == IsometricTileTypeClass::BridgeBottomLeft1 && cellptr->SubTile == 2
-				|| ittype == IsometricTileTypeClass::BridgeBottomLeft2 && cellptr->SubTile == 2
-				|| (ittype == IsometricTileTypeClass::BridgeMiddle2
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_3
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_1
-					|| ittype == IsometricTileTypeClass::BridgeMiddle2 + BRIDGE_MIDDLE_DAMAGED_2)
-					&& cellptr->SubTile == 2)) {
-			break;
-		}
-
-		if (++count >= 30) {
-			break;
-		}
-	}
-
-	/*
-	 * If no span end was found within range, there is nothing to destroy.
-	 */
-	if (count != 30) {
-
-		/*
-		 * Re-fetch the span start cell. Its height anchors the dirty rectangle.
-		 */
-		startptr = &Map[cell];
-
-		if (dirty != NULL) {
-
-			/*
-			 * Compute the screen rectangle spanning from the original cell to the
-			 * located span end and union it into the supplied dirty rectangle.
-			 */
-			Point2D startpix;
-			Coord coord;
-			coord = Coord(cell, LEVEL_LEPTON_H * startptr->Height);
-			TacticalMap->Coord_To_Pixel(coord, startpix);
-
-			Point2D endpix;
-			coord = Coord(lastcell, LEVEL_LEPTON_H * startptr->Height);
-			TacticalMap->Coord_To_Pixel(coord, endpix);
-
-			int minx = startpix.X;
-			if (startpix.X >= endpix.X) {
-				minx = endpix.X;
-			}
-			int miny = startpix.Y;
-			if (startpix.Y >= endpix.Y) {
-				miny = endpix.Y;
-			}
-
-			*dirty = Union(*dirty, Rect(minx - 64, miny - 64, abs(startpix.X - endpix.X) + 128, abs(startpix.Y - endpix.Y) + 128));
-		}
-
-		/*
-		 * Walk the span again, springing the bridge destruction triggers and locating
-		 * the transition from a bridge owner cell to a non-owner cell.
-		 */
-		was_owner = false;
-		ownercell = Cell(-1, -1);
-		sprung = false;
-
-		for (index = 0; index < count; index++) {
-
-			if (startptr->IsBridgeDeck && was_owner) {
-				ownercell = startptr->CellID;
-			}
-
-			if (!startptr->IsBridgeDeck && !was_owner && ownercell != Cell(-1, -1)) {
-
-				/*
-				 * Found the span end owner. Clear the rail bridge state on the cell
-				 * behind it, remove its overlay, refresh the radar background, then
-				 * recurse to continue.
-				 */
-				Cell behind = Adjacent_Cell(startptr->Fetch_CellID(), Facing_Sub(dir, FACING_180));
-				CellClass * behindptr = &Map[behind];
-
-				behindptr->Set_Under_Rail_Bridge((dir == FACING_E) ? FACING_N : FACING_W, false);
-				behindptr->OverlayData = 0;
-				behindptr->Overlay = OVERLAY_NONE;
-				Map.Radar_Background(behindptr->Fetch_CellID());
-
-				Destroy_Train_Bridge_Span(cell, dir, dirty);
-				return(true);
-			}
-
-			was_owner = !startptr->IsBridgeDeck;
-
-			if (was_owner && !sprung) {
-				Spring_Bridge_Destruction_Triggers(spanstart, lastcell);
-				sprung = true;
-			}
-
-			Cell next = Adjacent_Cell(startptr->Fetch_CellID(), dir);
-			startptr = &Map[next];
-		}
-	}
-
-	return(false);
+	return Destroy_Bridge_Span(cell, dir, dirty, IsometricTileTypeClass::TrainBridgeSet);
 }
 
 
@@ -5609,17 +5471,18 @@ void MapClass::Spring_Bridge_Destruction_Triggers(Cell cell1, Cell cell2)
 
 
 /// <summary>
-/// Destroys one section of a high bridge.
+/// Destroys one section of a bridge, high or train, using that bridge kind's tile set.
 /// This routine follows the deck along until it reaches the end of a section, then clears
 /// the bridge away behind that end, springs the destruction triggers over the length of
 /// it, and carries on into the next section. A span whose end is nowhere nearby is left
-/// alone. It is the high bridge counterpart of Destroy_Train_Bridge_Span.
+/// alone.
 /// </summary>
 /// <param name="dir">The direction to follow the deck -- FACING_E for an east/west bridge,
 /// FACING_S for a north/south one.</param>
 /// <param name="dirty">Gathers up the area that will need redrawing. May be NULL.</param>
+/// <param name="tileset">First isometric tile of the bridge kind (BridgeSet or TrainBridgeSet).</param>
 /// <returns>bool; Was a span end found and dealt with?</returns>
-bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
+bool MapClass::Destroy_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty, IsometricTileType tileset)
 {
 	CellClass * cellptr = &Map[cell];
 
@@ -5647,7 +5510,7 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 		lastcell = Adjacent_Cell(cellptr->Fetch_CellID(), dir);
 		cellptr = &Map[lastcell];
 
-		ittype = IsometricTileType(cellptr->ITType - IsometricTileTypeClass::BridgeSet + 1);
+		ittype = IsometricTileType(cellptr->ITType - tileset + 1);
 
 		if (dir == FACING_E) {
 
@@ -5742,7 +5605,7 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 				behindptr->Overlay = OVERLAY_NONE;
 				Map.Radar_Background(behindptr->Fetch_CellID());
 
-				Destroy_High_Bridge_Span(cell, dir, dirty);
+				Destroy_Bridge_Span(cell, dir, dirty, tileset);
 				return(true);
 			}
 
@@ -5759,6 +5622,23 @@ bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect 
 	}
 
 	return(false);
+}
+
+
+/// <summary>
+/// Destroys one section of a high bridge.
+/// This routine follows the deck along until it reaches the end of a section, then clears
+/// the bridge away behind that end, springs the destruction triggers over the length of
+/// it, and carries on into the next section. A span whose end is nowhere nearby is left
+/// alone. It is the high bridge counterpart of Destroy_Train_Bridge_Span.
+/// </summary>
+/// <param name="dir">The direction to follow the deck -- FACING_E for an east/west bridge,
+/// FACING_S for a north/south one.</param>
+/// <param name="dirty">Gathers up the area that will need redrawing. May be NULL.</param>
+/// <returns>bool; Was a span end found and dealt with?</returns>
+bool MapClass::Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty)
+{
+	return Destroy_Bridge_Span(cell, dir, dirty, IsometricTileTypeClass::BridgeSet);
 }
 
 

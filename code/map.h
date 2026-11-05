@@ -207,6 +207,7 @@ class MapClass: public GScreenClass
 		void Destroy_Train_Bridge_Connections(Cell const & cell);
 		bool Damage_High_Bridge(Cell const & cell);
 		bool Destroy_High_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty);
+		bool Destroy_Bridge_Span(Cell const & cell, FacingType dir, Rect * dirty, IsometricTileType tileset);
 		void Destroy_High_Bridge_Connections(Cell const & cell);
 		void Spring_Bridge_Destruction_Triggers(Cell cell1, Cell cell2);
 
