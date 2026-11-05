@@ -115,7 +115,7 @@ void Test_Names(void)
 	bool distinct = true;
 	for (int a = 0; a < MISSION_COUNT; a++) {
 		for (int b = a + 1; b < MISSION_COUNT; b++) {
-			distinct = distinct && !MissionRules::Same_Name(Missions[a], Missions[b]);
+			distinct = distinct && !Equals_No_Case(Missions[a], Missions[b]);
 		}
 	}
 	Check(distinct, "no two names match, ignoring case");
@@ -162,9 +162,9 @@ void Test_Lookup(void)
 	Check(MissionRules::From_Name(Missions, "<none>") == MISSION_NONE, "<none> finds no mission");
 	Check(MissionRules::From_Name(Missions, "9") == MISSION_NONE, "a mission number is not a name");
 
-	Check(MissionRules::Same_Name("Move", "move") && !MissionRules::Same_Name("Move", "Mov")
-		&& !MissionRules::Same_Name("Mov", "Move") && MissionRules::Same_Name("", ""),
-		"Same_Name compares whole names and ignores ASCII case");
+	Check(Equals_No_Case("Move", "move") && !Equals_No_Case("Move", "Mov")
+		&& !Equals_No_Case("Mov", "Move") && Equals_No_Case("", ""),
+		"Equals_No_Case compares whole names and ignores ASCII case");
 }
 
 

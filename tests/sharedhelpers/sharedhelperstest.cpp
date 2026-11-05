@@ -68,6 +68,26 @@ void Test_Trim()
 	Check(Trimmed("\va\f", TRIM_SPACE_TAB_EOL) == "\va\f", "line-end set leaves vertical tab and form feed");
 	Check(Trimmed("\v a\f\n", TRIM_ISSPACE) == "a", "isspace set strips every white space byte");
 	Check(Trimmed(std::string_view("\0a\x01", 3), TRIM_ISSPACE) == std::string("\0a\x01", 3), "isspace set leaves control bytes");
+
+	Check(Trim_End_Chars("", TRIM_SPACE_TAB_EOL).empty(), "end trim of empty text is empty");
+	Check(Trim_End_Chars(" \t\r\n", TRIM_SPACE_TAB_EOL).empty(), "end trim of only blanks is empty");
+	Check(Trim_End_Chars(" a b \t\r\n", TRIM_SPACE_TAB_EOL) == " a b", "end trim leaves the start alone");
+	Check(Trim_End_Chars("a\r\n", TRIM_SPACE_TAB) == "a\r\n", "end trim uses the set it is given");
+	Check(Trim_End_Chars(std::string_view("a\0 ", 3), TRIM_SPACE_TAB) == std::string_view("a\0", 2), "end trim keeps an embedded NUL");
+	Check(Trim_Chars(" a ", std::string_view()) == " a ", "an empty blank set trims nothing");
+	Check(Trim_Chars("", std::string_view()).empty(), "an empty blank set trims empty text to empty");
+}
+
+
+void Test_Equals_No_Case()
+{
+	Check(Equals_No_Case("Rifle", "rIFLE"), "ASCII letters match in either case");
+	Check(Equals_No_Case("", ""), "empty texts are equal");
+	Check(!Equals_No_Case("a", "ab"), "texts of different length differ");
+	Check(!Equals_No_Case("[", "{"), "punctuation between the letter ranges is not folded");
+	Check(!Equals_No_Case("\xC0", "\xE0"), "high-bit bytes are not folded");
+	Check(!Equals_No_Case(std::string_view("a\0b", 3), std::string_view("a\0c", 3)), "bytes after an embedded NUL are compared");
+	Check(Equals_No_Case(std::string_view("A\0b", 3), std::string_view("a\0B", 3)), "case folds past an embedded NUL");
 }
 
 
@@ -129,6 +149,15 @@ void Test_Split_And_Parse()
 	std::optional<HostPortText> const bracketed = Split_Host_Port("[::1]:80");
 	Check(bracketed && bracketed->Host == "[::1]" && bracketed->Port == "80", "a bracketed address keeps its colons in the host");
 
+	std::vector<std::string> const trimmed = Split_List(" a , ,b\t,", ',', TRIM_SPACE_TAB, false);
+	Check(trimmed.size() == 4 && trimmed[0] == "a" && trimmed[1].empty() && trimmed[2] == "b" && trimmed[3].empty(), "Split_List trims and keeps empty entries");
+	std::vector<std::string> const skipped = Split_List(" a , ,b\t,", ',', TRIM_SPACE_TAB, true);
+	Check(skipped.size() == 2 && skipped[0] == "a" && skipped[1] == "b", "Split_List drops entries empty after trimming");
+	std::vector<std::string> const untrimmed = Split_List(" a ,,b", ',', std::string_view(), true);
+	Check(untrimmed.size() == 2 && untrimmed[0] == " a " && untrimmed[1] == "b", "an empty blank set keeps entries as written");
+	Check(Split_List("", ',', TRIM_SPACE_TAB, false).size() == 1, "empty text gives one empty entry");
+	Check(Split_List("", ',', TRIM_SPACE_TAB, true).empty(), "empty text gives no entry when empty ones are dropped");
+
 	Check(Lower("MiXed 1") == "mixed 1", "Lower folds ASCII letters");
 	Check(Lower("").empty(), "Lower of empty text is empty");
 }
@@ -164,6 +193,7 @@ int main()
 {
 	Test_Little_Endian();
 	Test_Trim();
+	Test_Equals_No_Case();
 	Test_Starts_With();
 	Test_Hex_Text();
 	Test_Split_And_Parse();

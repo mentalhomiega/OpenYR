@@ -61,6 +61,13 @@ inline std::string_view Trim_Chars(std::string_view text, std::string_view blank
 }
 
 
+// Returns text without the characters found in blanks at its end. Text made only of blanks gives an empty view.
+inline std::string_view Trim_End_Chars(std::string_view text, std::string_view blanks)
+{
+	return(text.substr(0, text.find_last_not_of(blanks) + 1));
+}
+
+
 // Returns an owned copy of text without the characters found in blanks at either end.
 inline std::string Trimmed(std::string_view text, std::string_view blanks)
 {
@@ -76,6 +83,25 @@ inline bool Starts_With_No_Case(std::string_view text, std::string_view prefix)
 	}
 	for (std::size_t index = 0; index < prefix.size(); index++) {
 		if (std::tolower((unsigned char)text[index]) != std::tolower((unsigned char)prefix[index])) {
+			return(false);
+		}
+	}
+	return(true);
+}
+
+
+// Whether the two texts are equal, treating only the ASCII letters A-Z as equal to a-z whatever the C locale.
+inline bool Equals_No_Case(std::string_view left, std::string_view right)
+{
+	if (left.size() != right.size()) {
+		return(false);
+	}
+	for (std::size_t index = 0; index < left.size(); index++) {
+		char first = left[index];
+		char second = right[index];
+		if (first >= 'A' && first <= 'Z') first = (char)(first - 'A' + 'a');
+		if (second >= 'A' && second <= 'Z') second = (char)(second - 'A' + 'a');
+		if (first != second) {
 			return(false);
 		}
 	}
@@ -107,6 +133,21 @@ inline std::vector<std::string> Split_Parts(std::string_view text, char separato
 		parts.emplace_back(part);
 	}
 	return(parts);
+}
+
+
+// Splits a list at each separator and trims every entry of the characters in blanks, which may be empty to keep entries
+// as written. Entries that are empty after trimming are dropped when skip_empty is set and kept otherwise.
+inline std::vector<std::string> Split_List(std::string_view text, char separator, std::string_view blanks, bool skip_empty)
+{
+	std::vector<std::string> entries;
+	for (std::string_view const part : Split_Views(text, separator)) {
+		std::string_view const entry = Trim_Chars(part, blanks);
+		if (!skip_empty || !entry.empty()) {
+			entries.emplace_back(entry);
+		}
+	}
+	return(entries);
 }
 
 

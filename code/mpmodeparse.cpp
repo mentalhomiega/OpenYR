@@ -42,11 +42,7 @@ char const * const DIALOG_SECTION = "MultiplayerDialogSettings";
 /// <summary>Splits a comma separated line into its trimmed fields.</summary>
 std::vector<std::string> Split_Fields(std::string const & text)
 {
-	std::vector<std::string> fields;
-	for (std::string const & field : Split_Parts(text, ',')) {
-		fields.push_back(std::string(Trim_Chars(field, " \t")));
-	}
-	return(fields);
+	return(Split_List(text, ',', TRIM_SPACE_TAB, false));
 }
 
 }

@@ -27,13 +27,7 @@ char const * const COLORBLIND_SAFE = "ColorBlindSafe";
 // Empty names between commas are skipped.
 std::vector<std::string> Split_Button_List(std::string const & value)
 {
-	std::vector<std::string> list;
-	for (std::string const & part : Split_Parts(value, ',')) {
-		if (!part.empty()) {
-			list.push_back(part);
-		}
-	}
-	return(list);
+	return(Split_List(value, ',', std::string_view(), true));
 }
 
 }

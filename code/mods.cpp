@@ -52,20 +52,11 @@ std::string const & ModClass::Overlay(ModOverlayType type) const
 /// </summary>
 std::vector<std::string> Parse_Mod_List(char const * list)
 {
-	std::vector<std::string> names;
-
 	if (list == NULL) {
-		return(names);
+		return(std::vector<std::string>());
 	}
 
-	for (std::string const & part : Split_Parts(list, ',')) {
-		std::string const name = Trimmed(part, TRIM_SPACE_TAB);
-		if (!name.empty()) {
-			names.push_back(name);
-		}
-	}
-
-	return(names);
+	return(Split_List(list, ',', TRIM_SPACE_TAB, true));
 }
 
 
