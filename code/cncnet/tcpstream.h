@@ -15,6 +15,7 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 
@@ -25,10 +26,13 @@
 int TCP_Wait_Sliced(int total_ms, int slice_ms, std::atomic<bool> const * stop, std::function<int(int)> const & wait_once);
 
 
+class WinsockGuard;
+
+
 class TCPStreamClass
 {
 	public:
-		TCPStreamClass(void) = default;
+		TCPStreamClass(void);
 		~TCPStreamClass(void);
 		TCPStreamClass(TCPStreamClass const &) = delete;
 		TCPStreamClass & operator=(TCPStreamClass const &) = delete;
@@ -54,5 +58,5 @@ class TCPStreamClass
 		static constexpr SocketHandle INVALID = static_cast<SocketHandle>(-1);
 
 		SocketHandle Handle = INVALID;
-		bool Started = false;
+		std::unique_ptr<WinsockGuard> Network;
 };

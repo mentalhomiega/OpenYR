@@ -32,6 +32,9 @@ struct CnCNetTunnelBridgeClass::ResolutionType
 };
 
 
+CnCNetTunnelBridgeClass::CnCNetTunnelBridgeClass(void) = default;
+
+
 CnCNetTunnelBridgeClass::~CnCNetTunnelBridgeClass(void)
 {
 	Stop();
@@ -74,14 +77,12 @@ bool CnCNetTunnelBridgeClass::Start(std::string const & relay_host, uint16_t rel
 	LocalId = local_id;
 	PeerIds = std::move(peer_ids);
 
-#if defined(_WIN32)
-	WSADATA data;
-	if (WSAStartup(MAKEWORD(2, 2), &data) != 0) {
+	std::unique_ptr<WinsockGuard> network = std::make_unique<WinsockGuard>();
+	if (!network->Started()) {
 		error = "Networking could not start.";
 		return(false);
 	}
-	NetworkStarted = true;
-#endif
+	Network = std::move(network);
 
 	RelayReady = false;
 	RelayFailed = false;
@@ -163,12 +164,7 @@ void CnCNetTunnelBridgeClass::Stop(void)
 		Close_Native(Native(RelaySocket));
 		RelaySocket = -1;
 	}
-#if defined(_WIN32)
-	if (NetworkStarted) {
-		WSACleanup();
-	}
-#endif
-	NetworkStarted = false;
+	Network.reset();
 	GamePort = 0;
 }
 
