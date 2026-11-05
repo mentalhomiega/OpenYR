@@ -321,5 +321,5 @@ to a header when a second file needs it.
 | `Run_Start_Cell(cell, step, part_of_run)` | `map.cpp` | First cell of a bridge run. |
 | `For_Each_Ring_Offset(ring, visit)` | `slaveman.cpp` | Visits the offsets of one square ring. |
 | `Enum_Name(table, value, fallback)` | `options.cpp` | Name of an enum value from a table. |
-| `Find_Type_In(types, name)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type or a house by name. |
+| `Find_Type_In(types, name)`, `Type_Name_At(types, id, none)`, `Named_House(name)` | `autotest.cpp` | Look up a techno type by name or ID, or a house by name (including "player"). |
 | `Map.Cross_Bridge_Deck(old, new, bridge_height)` | `map.cpp` | Whether one step dropped onto or rose into a bridge deck. |

@@ -1168,13 +1168,15 @@ static void Randommap_Step(StepType const &)
 
 
 /// <summary>
-/// Finds the house a script names: a spawn name, country name or IniName (an underscore stands for a space), or #n for the house at position n.
-/// "player" is not handled here; Wait_House takes it.
+/// Finds the house a script names: "player", a spawn name, country name or IniName (an underscore stands for a space), or #n for the house at position n.
 /// </summary>
 /// <param name="name">The name as the script writes it.</param>
 /// <returns>Returns the house, or NULL when no house has that name.</returns>
 static HouseClass * Named_House(std::string name)
 {
+	if (stricmp(name.c_str(), "player") == 0) {
+		return(PlayerPtr);
+	}
 	std::replace(name.begin(), name.end(), '_', ' ');
 	if (!name.empty() && name[0] == '#') {
 		int const position = std::atoi(name.c_str() + 1);
@@ -1387,16 +1389,6 @@ std::size_t Wait_Timeout_Word(std::string const & command)
 }
 
 
-// The house a wait names: "player" for the player, otherwise a house name with an underscore for each space.
-HouseClass * Wait_House(std::string name)
-{
-	if (stricmp(name.c_str(), "player") == 0) {
-		return(PlayerPtr);
-	}
-	return(Named_House(name));
-}
-
-
 // How many objects of the type the house has on the map, not counting those in limbo.
 template<typename T>
 int Placed_Count_In(DynamicVectorClass<T *> & list, HouseClass const * house, TechnoTypeClass const * type)
@@ -1435,7 +1427,7 @@ std::string Wait_Problem(std::vector<std::string> const & words)
 		return("no such trigger " + Word(words, 2));
 	}
 	if (command == "waitowns") {
-		if (Wait_House(Word(words, 2)) == NULL) {
+		if (Named_House(Word(words, 2)) == NULL) {
 			return("no such house " + Word(words, 2));
 		}
 		if (Find_Type(Word(words, 3)) == NULL) {
@@ -1473,7 +1465,7 @@ bool Wait_Met(std::vector<std::string> const & words)
 		return(Trigger_Springs(TriggerTypeClass::From_Name(Word(words, 2).c_str())) > 0);
 	}
 	if (command == "waitowns") {
-		HouseClass * house = Wait_House(Word(words, 2));
+		HouseClass * house = Named_House(Word(words, 2));
 		TechnoTypeClass const * type = Find_Type(Word(words, 3));
 		return(house != NULL && type != NULL && Placed_Count(house, type) >= Number(words, 4, 0));
 	}
@@ -1785,7 +1777,8 @@ static void Mod_Signature_Step(StepType const & step)
 // The virtual-key code of a key step's first word: a single character gives its upper-case code, and a longer word is read as a decimal number.
 static int Key_Code(std::string const & name)
 {
-	std::string const word = name.substr(0, name.find_first_of(" \t"));
+	std::string rest;
+	std::string const word = Split_Argument(name, 1, rest).front();
 	if (word.size() == 1) {
 		return(std::toupper((unsigned char)word[0]));
 	}
@@ -2876,7 +2869,8 @@ static void Binding_Step(StepType const & step)
 static void Scheme_Step(StepType const & step)
 {
 	KeyboardScheme scheme = KEYBOARD_SCHEME_CLASSIC;
-	Keyboard_Scheme_From_Name(step.Argument.substr(0, step.Argument.find_first_of(" \t")), scheme);
+	std::string rest;
+	Keyboard_Scheme_From_Name(Split_Argument(step.Argument, 1, rest).front(), scheme);
 	HotkeyScheme = scheme;
 	HotkeyBindings = Scheme_Hotkeys(scheme);
 	Apply_Hotkeys();
@@ -4023,20 +4017,8 @@ static void Houseunit_Step(StepType const & step)
 // own <TypeID> x y: puts an object of the type, owned by the player, on that cell. neutral does the
 // same for the house of the Civilian side. enemy does it for the first computer house with a
 // construction yard that the player is not allied with.
-static void Own_Step(StepType const & step)
+static void Own_Step(StepType const & step, HouseClass * owner, char const * no_house_reason)
 {
-	HouseClass * owner = PlayerPtr;
-	if (step.Command == "neutral") {
-		owner = NULL;
-		SideType const civilian = SideClass::From_Name("Civilian");
-		for (int index = 0; owner == NULL && index < Houses.Count(); index++) {
-			if (Houses[index]->Class->Side == civilian) {
-				owner = Houses[index];
-			}
-		}
-	} else if (step.Command == "enemy") {
-		owner = First_Computer_House(true);
-	}
 	TechnoTypeClass const * type = Find_Type(step.Argument);
 	if (type != NULL && owner != NULL) {
 		Cell cell(step.X, step.Y);
@@ -4045,16 +4027,21 @@ static void Own_Step(StepType const & step)
 			DebugString("AUTOTEST %s %s at %d,%d: %s\n", step.Command.c_str(), type->Name(), step.X, step.Y, placed ? "placed" : "failed");
 		}
 	} else {
-		char const * reason = "no player house";
-		if (type == NULL) {
-			reason = "no such type";
-		} else if (step.Command == "neutral") {
-			reason = "no civilian house";
-		} else if (step.Command == "enemy") {
-			reason = "no enemy house";
-		}
-		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), reason);
+		DebugString("AUTOTEST %s %s: %s\n", step.Command.c_str(), step.Argument.c_str(), type == NULL ? "no such type" : no_house_reason);
 	}
+}
+
+
+// The first house on the Civilian side, or NULL when there is none.
+static HouseClass * Civilian_House()
+{
+	SideType const civilian = SideClass::From_Name("Civilian");
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->Class->Side == civilian) {
+			return(Houses[index]);
+		}
+	}
+	return(NULL);
 }
 
 
@@ -5052,6 +5039,14 @@ static void Restart_Step(StepType const &)
 }
 
 
+// The name of the type at heap ID id, or none when the ID is outside the list.
+template<class T>
+static char const * Type_Name_At(DynamicVectorClass<T *> const & types, int id, char const * none)
+{
+	return(id >= 0 && id < types.Count() ? types[id]->Name() : none);
+}
+
+
 // triggers [all]: what the map's trigger system holds right now.
 static void Triggers_Step(StepType const & step)
 {
@@ -5082,10 +5077,10 @@ static void Triggers_Step(StepType const & step)
 			}
 			if (event->TechnoName[0] != '\0') events += std::string(" ") + event->TechnoName;
 			NeedType const need = Event_Needs(event->Event);
-			if (need == NEED_STRUCTURE) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < BuildingTypes.Count() ? BuildingTypes[event->Data.Value]->Name() : "NOSTRUCT");
-			if (need == NEED_UNIT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < UnitTypes.Count() ? UnitTypes[event->Data.Value]->Name() : "NOUNIT");
-			if (need == NEED_INFANTRY) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < InfantryTypes.Count() ? InfantryTypes[event->Data.Value]->Name() : "NOINFANTRY");
-			if (need == NEED_AIRCRAFT) events += std::string(" ") + (event->Data.Value >= 0 && event->Data.Value < AircraftTypes.Count() ? AircraftTypes[event->Data.Value]->Name() : "NOAIRCRAFT");
+			if (need == NEED_STRUCTURE) events += std::string(" ") + Type_Name_At(BuildingTypes, event->Data.Value, "NOSTRUCT");
+			if (need == NEED_UNIT) events += std::string(" ") + Type_Name_At(UnitTypes, event->Data.Value, "NOUNIT");
+			if (need == NEED_INFANTRY) events += std::string(" ") + Type_Name_At(InfantryTypes, event->Data.Value, "NOINFANTRY");
+			if (need == NEED_AIRCRAFT) events += std::string(" ") + Type_Name_At(AircraftTypes, event->Data.Value, "NOAIRCRAFT");
 			events += ")";
 		}
 		DebugString("AUTOTEST   trigger %s '%s' owner %s live %d enabled %d event count %d action count %d events:%s\n", (char const *)type->IniName, (char const *)type->GivenName, type->House != NULL ? type->House->Class->Name() : "NOHOUSE", live, enabled, event_count, action_count, events.c_str());
@@ -5171,14 +5166,24 @@ static void Types_Step(StepType const & step)
 }
 
 
+// Writes each type whose ID holds a comma, semicolon or space.
+template<class T>
+static void Note_Stray_Types(DynamicVectorClass<T *> const & types, char const * kind)
+{
+	for (int index = 0; index < types.Count(); index++) {
+		if (std::strpbrk(types[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray %s %d %s\n", kind, index, types[index]->Name());
+	}
+}
+
+
 // typecounts: how many types of each kind there are, and any whose ID is not a plain name (a list read as one name).
 static void Typecounts_Step(StepType const &)
 {
 	DebugString("AUTOTEST   typecounts structures %d units %d infantry %d aircraft %d\n", BuildingTypes.Count(), UnitTypes.Count(), InfantryTypes.Count(), AircraftTypes.Count());
-	for (int index = 0; index < BuildingTypes.Count(); index++) if (std::strpbrk(BuildingTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray structure %d %s\n", index, BuildingTypes[index]->Name());
-	for (int index = 0; index < UnitTypes.Count(); index++) if (std::strpbrk(UnitTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray unit %d %s\n", index, UnitTypes[index]->Name());
-	for (int index = 0; index < InfantryTypes.Count(); index++) if (std::strpbrk(InfantryTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray infantry %d %s\n", index, InfantryTypes[index]->Name());
-	for (int index = 0; index < AircraftTypes.Count(); index++) if (std::strpbrk(AircraftTypes[index]->Name(), ",; ") != NULL) DebugString("AUTOTEST   stray aircraft %d %s\n", index, AircraftTypes[index]->Name());
+	Note_Stray_Types(BuildingTypes, "structure");
+	Note_Stray_Types(UnitTypes, "unit");
+	Note_Stray_Types(InfantryTypes, "infantry");
+	Note_Stray_Types(AircraftTypes, "aircraft");
 }
 
 
@@ -6366,7 +6371,7 @@ static void Selected_Step(StepType const &)
 // house ("player" or a house name as the waits name one). Every copy of a network game must run it on the same frame.
 static void Defeat_Step(StepType const & step)
 {
-	HouseClass * house = Wait_House(step.Argument);
+	HouseClass * house = Named_House(step.Argument);
 	if (house == NULL || house->IsDefeated) {
 		DebugString("AUTOTEST defeat %s: %s\n", step.Argument.c_str(), house == NULL ? "no such house" : "already defeated");
 	} else {
@@ -6379,7 +6384,7 @@ static void Defeat_Step(StepType const & step)
 // houseobjects <house>: the objects the house owns, by kind, and the ones it originally owns.
 static void Houseobjects_Step(StepType const & step)
 {
-	HouseClass * house = Wait_House(step.Argument);
+	HouseClass * house = Named_House(step.Argument);
 	if (house == NULL) {
 		DebugString("AUTOTEST houseobjects %s: no such house\n", step.Argument.c_str());
 	} else {
@@ -6884,9 +6889,9 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"spawn", [](StepType const & step) {Spawn_Object(step, false);}},
 		{"grantunit", [](StepType const & step) {Spawn_Object(step, true);}},
 		{"houseunit", Houseunit_Step},
-		{"own", Own_Step},
-		{"neutral", Own_Step},
-		{"enemy", Own_Step},
+		{"own", [](StepType const & step) {Own_Step(step, PlayerPtr, "no player house");}},
+		{"neutral", [](StepType const & step) {Own_Step(step, Civilian_House(), "no civilian house");}},
+		{"enemy", [](StepType const & step) {Own_Step(step, First_Computer_House(true), "no enemy house");}},
 		{"face", Face_Step},
 		{"pitch", Pitch_Step},
 		{"barrelpitch", Barrelpitch_Step},
