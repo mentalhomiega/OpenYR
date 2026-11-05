@@ -221,6 +221,354 @@ bool Key_From_Name(std::string const & name, Rml::Input::KeyIdentifier & key)
 	return(false);
 }
 
+// A step handler returns true when the tick must end, because the step waits or opened a screen.
+typedef bool (*StepHandler)(Rml::Context * context, UIStepType const & step, long long now);
+
+
+bool Settle(long long now)
+{
+	WaitUntil = now + 300;
+	return(true);
+}
+
+
+// Clicks the element, or logs that no visible one was found; what names the kind of element in the log.
+bool Click_Visible(Rml::Element * element, UIStepType const & step, long long now, char const * what)
+{
+	if (element == nullptr) {
+		DebugString("UISCRIPT   %s %s: no such visible %s\n", step.Command.c_str(), step.Argument.c_str(), what);
+		return(false);
+	}
+	element->Click();
+	return(Settle(now));
+}
+
+
+bool Step_Wait(Rml::Context *, UIStepType const & step, long long now)
+{
+	WaitUntil = now + std::atoi(step.Argument.c_str());
+	return(true);
+}
+
+
+bool Step_Shot(Rml::Context *, UIStepType const & step, long long now)
+{
+	ShotPath = Screenshot_Name((step.Argument + ".tga").c_str());
+	Backend_Request_Window_Capture(ShotPath.c_str());
+	// A still screen is not shown again until something changes, so one is asked for.
+	Video_Mark_Overlay_Dirty();
+	WaitUntil = now + 500;
+	return(true);
+}
+
+
+// Logs the game frame count and the clock, so two lines give the frame rate of the menu battle.
+bool Step_Frames(Rml::Context *, UIStepType const &, long long now)
+{
+	DebugString("UISCRIPT frames %d at %lld ms\n", Frame, now);
+	return(false);
+}
+
+
+bool Step_Ids(Rml::Context * context, UIStepType const &, long long)
+{
+	for (int index = 0; index < context->GetNumDocuments(); index++) {
+		Rml::ElementDocument * document = context->GetDocument(index);
+		if (document != nullptr && document->IsVisible()) {
+			DebugString("UISCRIPT   document %s\n", document->GetSourceURL().c_str());
+			Log_Ids(document, 1);
+			Log_Buttons(document);
+		}
+	}
+	return(false);
+}
+
+
+bool Step_Box(Rml::Context * context, UIStepType const & step, long long)
+{
+	Rml::Element * element = Find_Element(context, step.Argument);
+	if (element == nullptr) {
+		DebugString("UISCRIPT   box %s: no such visible element\n", step.Argument.c_str());
+	}
+	for (Rml::Element * at = element; at != nullptr; at = at->GetParentNode()) {
+		Rml::Vector2f const offset = at->GetAbsoluteOffset(Rml::BoxArea::Border);
+		Rml::Vector2f const size = at->GetBox().GetSize(Rml::BoxArea::Border);
+		DebugString("UISCRIPT   box #%s <%s> at %.1f,%.1f size %.1fx%.1f position %d\n", at->GetId().c_str(), at->GetTagName().c_str(),
+			offset.x, offset.y, size.x, size.y, (int)at->GetComputedValues().position());
+	}
+	return(false);
+}
+
+
+bool Step_Click(Rml::Context * context, UIStepType const & step, long long now)
+{
+	return(Click_Visible(Find_Element(context, step.Argument), step, now, "element"));
+}
+
+
+bool Step_Press(Rml::Context * context, UIStepType const & step, long long now)
+{
+	return(Click_Visible(Find_Button(context, step.Argument), step, now, "button"));
+}
+
+
+// "id value" sets the value of a slider, as dragging it would, or the text of a text
+// box, as typing it and leaving the box would.
+bool Step_Set(Rml::Context * context, UIStepType const & step, long long now)
+{
+	std::size_t const space = step.Argument.find(' ');
+	Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
+	bool const text_box = element != nullptr && element->GetAttribute<Rml::String>("type", "") == "text";
+	if (element == nullptr || (space == std::string::npos && !text_box)) {
+		DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
+		return(false);
+	}
+
+	// A text box given no value is emptied.
+	std::string const value = space == std::string::npos ? std::string() : step.Argument.substr(space + 1);
+	element->SetAttribute("value", value);
+	if (element->GetAttribute<Rml::String>("type", "") == "text") {
+		Rml::Dictionary parameters;
+		parameters["value"] = Rml::Variant(value);
+		element->DispatchEvent(Rml::EventId::Change, parameters);
+	}
+	return(Settle(now));
+}
+
+
+// "id fx fy" presses and releases the mouse at a point given as fractions of the element's box.
+bool Step_Pointer(Rml::Context * context, UIStepType const & step, long long now)
+{
+	std::istringstream fields(step.Argument);
+	std::string id;
+	float fx = 0.0f;
+	float fy = 0.0f;
+	fields >> id >> fx >> fy;
+	Rml::Element * element = Find_Element(context, id);
+	if (element == nullptr || fields.fail()) {
+		DebugString("UISCRIPT   pointer %s: no such visible element or no point\n", step.Argument.c_str());
+		return(false);
+	}
+
+	Rml::Vector2f const origin = element->GetAbsoluteOffset(Rml::BoxArea::Border);
+	Rml::Vector2f const size = element->GetBox().GetSize(Rml::BoxArea::Border);
+	context->ProcessMouseMove((int)(origin.x + fx * size.x), (int)(origin.y + fy * size.y), 0);
+	context->ProcessMouseButtonDown(0, 0);
+	context->ProcessMouseButtonUp(0, 0);
+	return(Settle(now));
+}
+
+
+// "id 1|2" presses a side button (1 is Mouse 4, 2 is Mouse 5) at the centre of the element.
+bool Step_Xbutton(Rml::Context * context, UIStepType const & step, long long now)
+{
+	std::istringstream fields(step.Argument);
+	std::string id;
+	int side = 0;
+	fields >> id >> side;
+	Rml::Element * element = Find_Element(context, id);
+	if (element == nullptr || fields.fail() || (side != 1 && side != 2)) {
+		DebugString("UISCRIPT   xbutton %s: no such visible element or no button\n", step.Argument.c_str());
+		return(false);
+	}
+
+	Window_Click(element, (side == 2) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1);
+	return(Settle(now));
+}
+
+
+// "id" makes a left click at the centre of the element, as a player's click arrives.
+bool Step_Wclick(Rml::Context * context, UIStepType const & step, long long now)
+{
+	Rml::Element * element = Find_Element(context, step.Argument);
+	if (element == nullptr) {
+		DebugString("UISCRIPT   wclick %s: no such visible element\n", step.Argument.c_str());
+		return(false);
+	}
+
+	Window_Click(element, WINDOW_BUTTON_LEFT);
+	return(Settle(now));
+}
+
+
+// "id|label" looks only inside the element with that id, such as one drop-down.
+bool Step_Choose(Rml::Context * context, UIStepType const & step, long long now)
+{
+	std::string label = step.Argument;
+	Rml::Element * within = nullptr;
+	std::size_t const bar = label.find('|');
+	if (bar != std::string::npos) {
+		within = Find_Element(context, label.substr(0, bar));
+		label.erase(0, bar + 1);
+	}
+	Rml::Element * element = bar != std::string::npos ? (within != nullptr ? Find_Text(within, label) : nullptr) : Find_Text(context, label);
+	if (element == nullptr) {
+		DebugString("UISCRIPT   choose %s: no such visible text\n", step.Argument.c_str());
+		return(false);
+	}
+
+	element->ScrollIntoView();
+	element->Click();
+	return(Settle(now));
+}
+
+
+// A "ctrl+" or "shift+" in front of the name holds that key down.
+bool Step_Key(Rml::Context * context, UIStepType const & step, long long now)
+{
+	std::string name = step.Argument;
+	int modifiers = 0;
+	for (bool more = true; more; ) {
+		more = false;
+		if (name.rfind("ctrl+", 0) == 0) {
+			modifiers |= Rml::Input::KM_CTRL;
+			name.erase(0, 5);
+			more = true;
+		} else if (name.rfind("shift+", 0) == 0) {
+			modifiers |= Rml::Input::KM_SHIFT;
+			name.erase(0, 6);
+			more = true;
+		} else if (name.rfind("alt+", 0) == 0) {
+			modifiers |= Rml::Input::KM_ALT;
+			name.erase(0, 4);
+			more = true;
+		}
+	}
+
+	Rml::Input::KeyIdentifier key;
+	if (!Key_From_Name(name, key)) {
+		DebugString("UISCRIPT   key %s: unknown key\n", step.Argument.c_str());
+		return(false);
+	}
+
+	context->ProcessKeyDown(key, modifiers);
+	context->ProcessKeyUp(key, modifiers);
+	return(Settle(now));
+}
+
+
+// Presses or releases one key, passing the shift, ctrl and alt keys that keydown steps hold, so a
+// capture sees each modifier go down and come up as a player's would.
+bool Step_Keydown_Or_Keyup(Rml::Context * context, UIStepType const & step, long long now)
+{
+	Rml::Input::KeyIdentifier key;
+	if (!Key_From_Name(step.Argument, key)) {
+		DebugString("UISCRIPT   %s %s: unknown key\n", step.Command.c_str(), step.Argument.c_str());
+		return(false);
+	}
+
+	int const bit = (key == Rml::Input::KI_LSHIFT) ? Rml::Input::KM_SHIFT : (key == Rml::Input::KI_LCONTROL) ? Rml::Input::KM_CTRL
+		: (key == Rml::Input::KI_LMENU) ? Rml::Input::KM_ALT : 0;
+	if (step.Command == "keydown") {
+		ScriptHeldModifiers |= bit;
+		context->ProcessKeyDown(key, ScriptHeldModifiers);
+	} else {
+		context->ProcessKeyUp(key, ScriptHeldModifiers);
+		ScriptHeldModifiers &= ~bit;
+	}
+	return(Settle(now));
+}
+
+
+// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
+bool Step_Theme(Rml::Context *, UIStepType const & step, long long now)
+{
+	std::string const name = Lower(step.Argument);
+	if (name == "allied") {
+		Options.MenuTheme = MENU_THEME_ALLIED;
+	} else if (name == "soviet") {
+		Options.MenuTheme = MENU_THEME_SOVIET;
+	} else if (name == "yuri") {
+		Options.MenuTheme = MENU_THEME_YURI;
+	} else {
+		Options.MenuTheme = MENU_THEME_RANDOM;
+	}
+	return(Settle(now));
+}
+
+
+// Holds the main thread without pumping messages, so the hang watchdog reports it.
+bool Step_Stall(Rml::Context *, UIStepType const & step, long long)
+{
+	Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
+	return(false);
+}
+
+
+bool Step_Command(Rml::Context *, UIStepType const & step, long long now)
+{
+	Execute_Command(step.Argument.c_str());
+	return(Settle(now));
+}
+
+
+bool Step_Movie(Rml::Context *, UIStepType const & step, long long)
+{
+	Play_Movie(step.Argument.c_str());
+	return(Settle(Monotonic_Milliseconds()));
+}
+
+
+bool Step_Checked(Rml::Context * context, UIStepType const & step, long long)
+{
+	Rml::Element * element = Find_Element(context, step.Argument);
+	if (element == nullptr) {
+		DebugString("UISCRIPT   checked %s: no such visible element\n", step.Argument.c_str());
+	} else {
+		DebugString("AUTOTEST checked %s %d\n", step.Argument.c_str(), element->HasAttribute("checked") ? 1 : 0);
+	}
+	return(false);
+}
+
+
+bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
+{
+	DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
+	return(false);
+}
+
+
+bool Step_Quit(Rml::Context *, UIStepType const &, long long)
+{
+	DebugString("UISCRIPT quit\n");
+	std::exit(0);
+}
+
+
+StepHandler Find_Step_Handler(std::string const & command)
+{
+	static struct { char const * Command; StepHandler Handler; } const handlers[] = {
+		{"wait", Step_Wait},
+		{"shot", Step_Shot},
+		{"frames", Step_Frames},
+		{"ids", Step_Ids},
+		{"box", Step_Box},
+		{"click", Step_Click},
+		{"set", Step_Set},
+		{"pointer", Step_Pointer},
+		{"xbutton", Step_Xbutton},
+		{"wclick", Step_Wclick},
+		{"press", Step_Press},
+		{"choose", Step_Choose},
+		{"key", Step_Key},
+		{"keydown", Step_Keydown_Or_Keyup},
+		{"keyup", Step_Keydown_Or_Keyup},
+		{"theme", Step_Theme},
+		{"stall", Step_Stall},
+		{"command", Step_Command},
+		{"movie", Step_Movie},
+		{"checked", Step_Checked},
+		{"hudrows", Step_Hudrows},
+		{"quit", Step_Quit},
+	};
+	for (auto const & entry : handlers) {
+		if (command == entry.Command) {
+			return(entry.Handler);
+		}
+	}
+	return(nullptr);
+}
+
 }	// namespace
 
 
@@ -283,226 +631,11 @@ void UIScript_Tick(Rml::Context * context)
 		Next++;
 		DebugString("UISCRIPT %s %s\n", step.Command.c_str(), step.Argument.c_str());
 
-		if (step.Command == "wait") {
-			WaitUntil = now + std::atoi(step.Argument.c_str());
-			return;
-		} else if (step.Command == "shot") {
-			ShotPath = Screenshot_Name((step.Argument + ".tga").c_str());
-			Backend_Request_Window_Capture(ShotPath.c_str());
-			// A still screen is not shown again until something changes, so one is asked for.
-			Video_Mark_Overlay_Dirty();
-			WaitUntil = now + 500;
-			return;
-		} else if (step.Command == "frames") {
-			// frames: logs the game frame count and the clock, so two lines give the frame rate of the menu battle.
-			DebugString("UISCRIPT frames %d at %lld ms\n", Frame, now);
-		} else if (step.Command == "ids") {
-			for (int index = 0; index < context->GetNumDocuments(); index++) {
-				Rml::ElementDocument * document = context->GetDocument(index);
-				if (document != nullptr && document->IsVisible()) {
-					DebugString("UISCRIPT   document %s\n", document->GetSourceURL().c_str());
-					Log_Ids(document, 1);
-					Log_Buttons(document);
-				}
-			}
-		} else if (step.Command == "box") {
-			Rml::Element * element = Find_Element(context, step.Argument);
-			if (element == nullptr) {
-				DebugString("UISCRIPT   box %s: no such visible element\n", step.Argument.c_str());
-			}
-			for (Rml::Element * at = element; at != nullptr; at = at->GetParentNode()) {
-				Rml::Vector2f const offset = at->GetAbsoluteOffset(Rml::BoxArea::Border);
-				Rml::Vector2f const size = at->GetBox().GetSize(Rml::BoxArea::Border);
-				DebugString("UISCRIPT   box #%s <%s> at %.1f,%.1f size %.1fx%.1f position %d\n", at->GetId().c_str(), at->GetTagName().c_str(),
-					offset.x, offset.y, size.x, size.y, (int)at->GetComputedValues().position());
-			}
-		} else if (step.Command == "click") {
-			Rml::Element * element = Find_Element(context, step.Argument);
-			if (element == nullptr) {
-				DebugString("UISCRIPT   click %s: no such visible element\n", step.Argument.c_str());
-			} else {
-				element->Click();
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "set") {
-			// "id value" sets the value of a slider, as dragging it would, or the text of a text
-			// box, as typing it and leaving the box would.
-			std::size_t const space = step.Argument.find(' ');
-			Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
-			bool const text_box = element != nullptr && element->GetAttribute<Rml::String>("type", "") == "text";
-			if (element == nullptr || (space == std::string::npos && !text_box)) {
-				DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
-			} else {
-				// A text box given no value is emptied.
-				std::string const value = space == std::string::npos ? std::string() : step.Argument.substr(space + 1);
-				element->SetAttribute("value", value);
-				if (element->GetAttribute<Rml::String>("type", "") == "text") {
-					Rml::Dictionary parameters;
-					parameters["value"] = Rml::Variant(value);
-					element->DispatchEvent(Rml::EventId::Change, parameters);
-				}
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "pointer") {
-			// "id fx fy" presses and releases the mouse at a point given as fractions of the element's box.
-			std::istringstream fields(step.Argument);
-			std::string id;
-			float fx = 0.0f;
-			float fy = 0.0f;
-			fields >> id >> fx >> fy;
-			Rml::Element * element = Find_Element(context, id);
-			if (element == nullptr || fields.fail()) {
-				DebugString("UISCRIPT   pointer %s: no such visible element or no point\n", step.Argument.c_str());
-			} else {
-				Rml::Vector2f const origin = element->GetAbsoluteOffset(Rml::BoxArea::Border);
-				Rml::Vector2f const size = element->GetBox().GetSize(Rml::BoxArea::Border);
-				context->ProcessMouseMove((int)(origin.x + fx * size.x), (int)(origin.y + fy * size.y), 0);
-				context->ProcessMouseButtonDown(0, 0);
-				context->ProcessMouseButtonUp(0, 0);
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "xbutton") {
-			// "id 1|2" presses a side button (1 is Mouse 4, 2 is Mouse 5) at the centre of the element.
-			std::istringstream fields(step.Argument);
-			std::string id;
-			int side = 0;
-			fields >> id >> side;
-			Rml::Element * element = Find_Element(context, id);
-			if (element == nullptr || fields.fail() || (side != 1 && side != 2)) {
-				DebugString("UISCRIPT   xbutton %s: no such visible element or no button\n", step.Argument.c_str());
-			} else {
-				Window_Click(element, (side == 2) ? WINDOW_BUTTON_X2 : WINDOW_BUTTON_X1);
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "wclick") {
-			// "id" makes a left click at the centre of the element, as a player's click arrives.
-			Rml::Element * element = Find_Element(context, step.Argument);
-			if (element == nullptr) {
-				DebugString("UISCRIPT   wclick %s: no such visible element\n", step.Argument.c_str());
-			} else {
-				Window_Click(element, WINDOW_BUTTON_LEFT);
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "press") {
-			Rml::Element * button = Find_Button(context, step.Argument);
-			if (button == nullptr) {
-				DebugString("UISCRIPT   press %s: no such visible button\n", step.Argument.c_str());
-			} else {
-				button->Click();
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "choose") {
-			// "id|label" looks only inside the element with that id, such as one drop-down.
-			std::string label = step.Argument;
-			Rml::Element * within = nullptr;
-			std::size_t const bar = label.find('|');
-			if (bar != std::string::npos) {
-				within = Find_Element(context, label.substr(0, bar));
-				label.erase(0, bar + 1);
-			}
-			Rml::Element * element = bar != std::string::npos ? (within != nullptr ? Find_Text(within, label) : nullptr) : Find_Text(context, label);
-			if (element == nullptr) {
-				DebugString("UISCRIPT   choose %s: no such visible text\n", step.Argument.c_str());
-			} else {
-				element->ScrollIntoView();
-				element->Click();
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "key") {
-			// A "ctrl+" or "shift+" in front of the name holds that key down.
-			std::string name = step.Argument;
-			int modifiers = 0;
-			for (bool more = true; more; ) {
-				more = false;
-				if (name.rfind("ctrl+", 0) == 0) {
-					modifiers |= Rml::Input::KM_CTRL;
-					name.erase(0, 5);
-					more = true;
-				} else if (name.rfind("shift+", 0) == 0) {
-					modifiers |= Rml::Input::KM_SHIFT;
-					name.erase(0, 6);
-					more = true;
-				} else if (name.rfind("alt+", 0) == 0) {
-					modifiers |= Rml::Input::KM_ALT;
-					name.erase(0, 4);
-					more = true;
-				}
-			}
-
-			Rml::Input::KeyIdentifier key;
-			if (!Key_From_Name(name, key)) {
-				DebugString("UISCRIPT   key %s: unknown key\n", step.Argument.c_str());
-			} else {
-				context->ProcessKeyDown(key, modifiers);
-				context->ProcessKeyUp(key, modifiers);
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "keydown" || step.Command == "keyup") {
-			// Presses or releases one key, passing the shift, ctrl and alt keys that keydown steps hold, so a
-			// capture sees each modifier go down and come up as a player's would.
-			Rml::Input::KeyIdentifier key;
-			if (!Key_From_Name(step.Argument, key)) {
-				DebugString("UISCRIPT   %s %s: unknown key\n", step.Command.c_str(), step.Argument.c_str());
-			} else {
-				int const bit = (key == Rml::Input::KI_LSHIFT) ? Rml::Input::KM_SHIFT : (key == Rml::Input::KI_LCONTROL) ? Rml::Input::KM_CTRL
-					: (key == Rml::Input::KI_LMENU) ? Rml::Input::KM_ALT : 0;
-				if (step.Command == "keydown") {
-					ScriptHeldModifiers |= bit;
-					context->ProcessKeyDown(key, ScriptHeldModifiers);
-				} else {
-					context->ProcessKeyUp(key, ScriptHeldModifiers);
-					ScriptHeldModifiers &= ~bit;
-				}
-				WaitUntil = now + 300;
-				return;
-			}
-		} else if (step.Command == "theme") {
-			// Sets the MenuTheme setting in memory, so the menus shown next take that tint.
-			std::string const name = Lower(step.Argument);
-			if (name == "allied") {
-				Options.MenuTheme = MENU_THEME_ALLIED;
-			} else if (name == "soviet") {
-				Options.MenuTheme = MENU_THEME_SOVIET;
-			} else if (name == "yuri") {
-				Options.MenuTheme = MENU_THEME_YURI;
-			} else {
-				Options.MenuTheme = MENU_THEME_RANDOM;
-			}
-			WaitUntil = now + 300;
-			return;
-		} else if (step.Command == "stall") {
-			// Holds the main thread without pumping messages, so the hang watchdog reports it.
-			Hang_Watchdog_Test_Stall((unsigned int)std::max(0, std::atoi(step.Argument.c_str())));
-		} else if (step.Command == "command") {
-			Execute_Command(step.Argument.c_str());
-			WaitUntil = now + 300;
-			return;
-		} else if (step.Command == "movie") {
-			Play_Movie(step.Argument.c_str());
-			WaitUntil = Monotonic_Milliseconds() + 300;
-			return;
-		} else if (step.Command == "checked") {
-			Rml::Element * element = Find_Element(context, step.Argument);
-			if (element == nullptr) {
-				DebugString("UISCRIPT   checked %s: no such visible element\n", step.Argument.c_str());
-			} else {
-				DebugString("AUTOTEST checked %s %d\n", step.Argument.c_str(), element->HasAttribute("checked") ? 1 : 0);
-			}
-		} else if (step.Command == "hudrows") {
-			DebugString("AUTOTEST hud rows %d saved %d\n", Hud_Rows(), Options.SidebarRows);
-		} else if (step.Command == "quit") {
-			DebugString("UISCRIPT quit\n");
-			std::exit(0);
-		} else {
+		StepHandler const handler = Find_Step_Handler(step.Command);
+		if (handler == nullptr) {
 			DebugString("UISCRIPT   unknown step %s\n", step.Command.c_str());
+		} else if (handler(context, step, now)) {
+			return;
 		}
 	}
 }
