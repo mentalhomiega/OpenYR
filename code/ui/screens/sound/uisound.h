@@ -81,6 +81,8 @@ class UISoundPresenterClass : public UIPresenterClass
 		virtual void Refresh(void) override;
 		static int Level_Of(float volume);
 		static float Volume_Of(int level);
+		// Puts back, without feedback, each volume that differs from how the screen opened.
+		void Restore_Changed_Volumes(void);
 
 		UISoundState State;
 

@@ -141,6 +141,16 @@ void UISoundPresenterClass::Refresh(void)
 }
 
 
+void UISoundPresenterClass::Restore_Changed_Volumes(void)
+{
+	for (UISoundVolumeClass const & volume : SOUND_VOLUMES) {
+		if (State.*volume.Level != Start.*volume.Level) {
+			(Service.*volume.Apply)(Volume_Of(Start.*volume.Level), false);
+		}
+	}
+}
+
+
 void UISoundPresenterClass::Refresh_Tracks(void)
 {
 	int const playing = (State.Selected >= 0 && State.Selected < (int)State.Tracks.size()) ? State.Tracks[State.Selected].Theme : -1;

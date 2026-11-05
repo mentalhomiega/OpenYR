@@ -90,13 +90,6 @@ class UIClassicOptionsPresenterClass : public UIPresenterClass
 
 	private:
 		void Apply(void);
-
-		UISoundServiceClass & SoundService;
-		int StartScore;
-		int StartSound;
-		int StartVoice;
-		int StartUnit;
-		int StartMovie;
 };
 
 

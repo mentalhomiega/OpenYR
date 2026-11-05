@@ -19,13 +19,7 @@ UIClassicOptionsPresenterClass::UIClassicOptionsPresenterClass(UIGameControlsSer
 		UIDisplayServiceClass & display, UIDisplayState displaystate) :
 	Game(game, std::move(gamestate)),
 	Sound(sound, soundstate),
-	Display(display, std::move(displaystate)),
-	SoundService(sound),
-	StartScore(soundstate.Score),
-	StartSound(soundstate.Sound),
-	StartVoice(soundstate.Voice),
-	StartUnit(soundstate.Unit),
-	StartMovie(soundstate.Movie)
+	Display(display, std::move(displaystate))
 {
 }
 
@@ -68,21 +62,7 @@ void UIClassicOptionsPresenterClass::Execute(UIIntent const & intent)
 		Result = UI_RESULT_ACCEPTED;
 
 	} else if (intent.Name == "cancel") {
-		if (Sound.State.Score != StartScore) {
-			SoundService.Set_Score_Volume(UISoundPresenterClass::Volume_Of(StartScore), false);
-		}
-		if (Sound.State.Sound != StartSound) {
-			SoundService.Set_Sound_Volume(UISoundPresenterClass::Volume_Of(StartSound), false);
-		}
-		if (Sound.State.Voice != StartVoice) {
-			SoundService.Set_Voice_Volume(UISoundPresenterClass::Volume_Of(StartVoice), false);
-		}
-		if (Sound.State.Unit != StartUnit) {
-			SoundService.Set_Unit_Voice_Volume(UISoundPresenterClass::Volume_Of(StartUnit), false);
-		}
-		if (Sound.State.Movie != StartMovie) {
-			SoundService.Set_Movie_Volume(UISoundPresenterClass::Volume_Of(StartMovie), false);
-		}
+		Sound.Restore_Changed_Volumes();
 		Result = UI_RESULT_CANCELLED;
 	}
 }
