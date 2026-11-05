@@ -1,0 +1,42 @@
+; A Soviet Construction Yard (NACNST) builds and places a Tesla Reactor (NAPOWR). Placement keeps the yard linked to the plant, so the yard enters bstate 2 (BuildingClass::Mission_Repair 0x44B780) for the plant's buildup and plays its active animation. NACNST.SHP has 6 frames (3 body, 3 shadow), and the active sequence runs past frame 3, so without BodyFrameFromIdle the body would draw a shadow frame.
+; Expected: while the yard at 50,30 is in bstate 2, the drawn frame follows the active stage (gamemd's BuildingClass::GetCurrentFrame, 0x43EF90, returns the animation stage at health above ConditionYellow): 1 at shape 1, 2 at shape 2, and 0 once the shape reaches the shadow frames. Frames 0, 1 and 2 of the body render identically apart from a 2x2 pixel patch, so none of them looks damaged. The second NACNST at 51,96 is the computer's yard and stays at bstate 1.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/soviet-yard-anim-produce.txt -Country 8 -Width 800 -Height 600 -RenderFrameRate 30 -Settings "[Options]<newline>DebugMode=yes" -Seconds 60 -Filter "AUTOTEST|Exception"
+20 own NACNST 50 30
+30 command CenterBase
+31 view 52 31
+40 command DebugInfiniteMoney
+41 command DebugUnlockAll
+42 command DebugInstantBuild
+43 reveal
+100 banimstate NACNST
+110 produce NAPOWR
+150 record 2
+151 place NAPOWR
+152 bshape NACNST
+152 banimstate NACNST
+156 bshape NACNST
+156 banimstate NACNST
+160 bshape NACNST
+160 banimstate NACNST
+170 bshape NACNST
+170 banimstate NACNST
+180 bshape NACNST
+180 banimstate NACNST
+190 bshape NACNST
+190 banimstate NACNST
+200 bshape NACNST
+200 banimstate NACNST
+220 bshape NACNST
+220 banimstate NACNST
+240 bshape NACNST
+240 banimstate NACNST
+260 bshape NACNST
+260 banimstate NACNST
+280 bshape NACNST
+280 banimstate NACNST
+300 bshape NACNST
+300 banimstate NACNST
+320 bshape NACNST
+320 banimstate NACNST
+340 record 0
+341 quit
