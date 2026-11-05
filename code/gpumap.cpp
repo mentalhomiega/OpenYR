@@ -33,41 +33,11 @@
 
 
 static const bgfx::EmbeddedShader _MapShaders[] = {
-	{
-		"vs_mapdraw",
-		{
-			{ bgfx::RendererType::Direct3D11, vs_mapdraw_dxbc, sizeof(vs_mapdraw_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
-	{
-		"fs_mapdraw",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_mapdraw_dxbc, sizeof(fs_mapdraw_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
-	{
-		"fs_mapblur",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_mapblur_dxbc, sizeof(fs_mapblur_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
-	{
-		"fs_mappost",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_mappost_dxbc, sizeof(fs_mappost_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
-	{
-		"fs_mapglow",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_mapglow_dxbc, sizeof(fs_mapglow_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
+	BGFX_EMBEDDED_SHADER_D3D11(vs_mapdraw),
+	BGFX_EMBEDDED_SHADER_D3D11(fs_mapdraw),
+	BGFX_EMBEDDED_SHADER_D3D11(fs_mapblur),
+	BGFX_EMBEDDED_SHADER_D3D11(fs_mappost),
+	BGFX_EMBEDDED_SHADER_D3D11(fs_mapglow),
 	BGFX_EMBEDDED_SHADER_END()
 };
 

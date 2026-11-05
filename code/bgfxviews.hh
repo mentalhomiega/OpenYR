@@ -46,3 +46,9 @@ inline void Release_Handle(Handle & handle)
 		handle = BGFX_INVALID_HANDLE;
 	}
 }
+
+
+// An embedded-shader table entry that carries a Direct3D 11 blob only, as built by the shader compiler
+// into <name>.bin.h. Other renderers get no shader.
+#define BGFX_EMBEDDED_SHADER_D3D11(name) 	{ 		#name, 		{ 			{ bgfx::RendererType::Direct3D11, name##_dxbc, sizeof(name##_dxbc) }, 			{ bgfx::RendererType::Count, NULL, 0 }, 		} 	}
+

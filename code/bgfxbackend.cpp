@@ -49,13 +49,7 @@ static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 // The composite shader ships for Direct3D 11 only. Other renderers get no program, so HDR output
 // falls back to SDR and the colour adjustment has no effect.
 static const bgfx::EmbeddedShader _CompositeShaders[] = {
-	{
-		"fs_composite",
-		{
-			{ bgfx::RendererType::Direct3D11, fs_composite_dxbc, sizeof(fs_composite_dxbc) },
-			{ bgfx::RendererType::Count, NULL, 0 },
-		}
-	},
+	BGFX_EMBEDDED_SHADER_D3D11(fs_composite),
 	BGFX_EMBEDDED_SHADER_END()
 };
 
