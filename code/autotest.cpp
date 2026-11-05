@@ -6135,6 +6135,37 @@ static void Bshape_Step(StepType const & step)
 }
 
 
+// bshadow <TypeID>: for each building of that type, the frame its body is drawn from, the frame its shadow is drawn from (half the image's frames further on), and how many pixels that shadow frame sets.
+static void Bshadow_Step(StepType const & step)
+{
+	for (int index = 0; index < Buildings.Count(); index++) {
+		BuildingClass const * building = Buildings[index];
+		if (building->IsInLimbo || stricmp(building->Class->Name(), step.Argument.c_str()) != 0) continue;
+		ShapeSet const * image = (ShapeSet const *)building->Get_Image_Data();
+		int const frames = image != NULL ? image->Get_Count() : 0;
+		if (frames == 0) continue;
+
+		int const body = building->Body_Frame(frames);
+		int const shadow = body + frames / 2;
+		Rect const rect = image->Get_Rect(shadow);
+		int pixels = 0;
+		unsigned char const * data = (unsigned char const *)image->Get_Data(shadow);
+		if (data != NULL && image->Is_RLE_Compressed(shadow)) {
+			// Each row is a 16-bit length that counts itself, then pixels where a zero byte is followed by the length of a transparent run.
+			for (int row = 0; row < rect.Height; row++) {
+				int const length = data[0] | (data[1] << 8);
+				for (unsigned char const * at = data + 2; at < data + length; at += (*at == 0 ? 2 : 1)) {
+					pixels += (*at != 0);
+				}
+				data += length;
+			}
+		}
+		DebugString("AUTOTEST   bshadow %s at %d,%d body frame %d shadow frame %d of %d is %dx%d with %d pixels\n", building->Class->Name(), building->Get_Cell().X, building->Get_Cell().Y,
+			body, shadow, frames, rect.Width, rect.Height, pixels);
+	}
+}
+
+
 // infstate <TypeID>: for each soldier of that type, the sequence it plays with its stage, the shape drawn, its facing and where it is.
 static void Infstate_Step(StepType const & step)
 {
@@ -6952,6 +6983,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"banims", Banims_Step},
 		{"banimstate", Banimstate_Step},
 		{"bshape", Bshape_Step},
+		{"bshadow", Bshadow_Step},
 		{"infstate", Infstate_Step},
 		{"unitstate", Unitstate_Step},
 		{"rockerlink", Rockerlink_Step},
