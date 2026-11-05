@@ -645,24 +645,26 @@ void Show_Who_Was_Responsible (void)
 		}
 
 		int step = 0;
-		unsigned short *bsurf = (unsigned short *)BackgroundSurface->Lock();
-		if (bsurf) {
-			step = BackgroundSurface->Stride() / 2;
-			int fade_x;
-			int fade_y = 0;
-			int xidx;
-			int yidx;
-			for (int raw_alpha = 256; raw_alpha > 0; raw_alpha -= 8) {
-				int alpha = std::min(raw_alpha, 255);
-				xidx = step * fade_y;
-				yidx = step * (VideoModeHeight - fade_y - 1);
-				for (fade_x = 0; fade_x < VideoModeWidth; fade_x++) {
-					(bsurf + xidx)[fade_x] = OD_Blend_Color((bsurf + xidx)[fade_x], 0, alpha);
-					(bsurf + yidx)[fade_x] = OD_Blend_Color((bsurf + yidx)[fade_x], 0, alpha);
+		{
+			SurfaceLock const background(*BackgroundSurface);
+			unsigned short * bsurf = background.As<unsigned short>();
+			if (bsurf) {
+				step = BackgroundSurface->Stride() / 2;
+				int fade_x;
+				int fade_y = 0;
+				int xidx;
+				int yidx;
+				for (int raw_alpha = 256; raw_alpha > 0; raw_alpha -= 8) {
+					int alpha = std::min(raw_alpha, 255);
+					xidx = step * fade_y;
+					yidx = step * (VideoModeHeight - fade_y - 1);
+					for (fade_x = 0; fade_x < VideoModeWidth; fade_x++) {
+						(bsurf + xidx)[fade_x] = OD_Blend_Color((bsurf + xidx)[fade_x], 0, alpha);
+						(bsurf + yidx)[fade_x] = OD_Blend_Color((bsurf + yidx)[fade_x], 0, alpha);
+					}
+					fade_y++;
 				}
-				fade_y++;
 			}
-			BackgroundSurface->Unlock();
 		}
 
 		if (GameInFocus) {

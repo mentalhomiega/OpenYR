@@ -248,10 +248,11 @@ bool Bink_Play(char const * name)
 		}
 
 		Api.DoFrame(bink);
-		void * pixels = draw->Lock();
-		if (pixels != nullptr) {
-			Api.CopyToBuffer(bink, pixels, draw->Stride(), (unsigned)draw->Get_Height(), 0, 0, format);
-			draw->Unlock();
+		{
+			SurfaceLock const lock(*draw);
+			if (lock.Is_Valid()) {
+				Api.CopyToBuffer(bink, lock.As<void>(), draw->Stride(), (unsigned)draw->Get_Height(), 0, 0, format);
+			}
 		}
 
 		VisibleSurface->Blit_From(area, *draw, source);

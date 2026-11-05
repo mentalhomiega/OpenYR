@@ -4496,10 +4496,10 @@ static void Pcxcameo_Step(StepType const & step)
 {
 	Surface const * picture = PCX_Cameo(step.Argument);
 	if (picture != NULL) {
-		unsigned short const * pixels = (unsigned short const *)picture->Lock();
+		SurfaceLock const lock(*picture);
+		unsigned short const * pixels = lock.As<unsigned short const>();
 		DebugString("AUTOTEST   pcxcameo %dx%d bpp %d corner %04X far %04X\n", picture->Get_Width(), picture->Get_Height(), picture->Bytes_Per_Pixel(),
 			pixels != NULL ? pixels[0] : 0, pixels != NULL ? pixels[picture->Get_Width() * picture->Get_Height() - 1] : 0);
-		picture->Unlock();
 	}
 }
 
