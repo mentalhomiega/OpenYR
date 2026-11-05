@@ -208,9 +208,11 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 		TechnoTypeClass const * tclass = teamtype->TaskForce->Members[index].Class;
 
 		for (int sub = 0; sub < teamtype->TaskForce->Members[index].Quantity; sub++) {
-			ScenarioInit++;
-			FootClass * temp = (FootClass *)tclass->Create_One_Of(teamtype->House);
-			ScenarioInit--;
+			FootClass * temp;
+			{
+				ScenarioInitScope const scope;
+				temp = (FootClass *)tclass->Create_One_Of(teamtype->House);
+			}
 
 			if (temp != NULL) {
 
@@ -236,9 +238,10 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 				**	Add the member to the team.
 				*/
 				if (team != NULL) {
-					ScenarioInit++;
-					bool ok = team->Add(temp);
-					ScenarioInit--;
+					{
+						ScenarioInitScope const scope;
+						bool ok = team->Add(temp);
+					}
 					temp->IsInitiated = true;
 				}
 
@@ -605,7 +608,7 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 				desiredfacing = DirType(DirType(eface).As_Int() - DirType(FACING_135).As_Int() - 1).Snap_To_8();
 			}
 
-			ScenarioInit++;
+			ScenarioInitScope const scope;
 
 			/*
 			**	Pick the location where the reinforcements appear and then place
@@ -686,7 +689,6 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 				if (adj >= FACING_COUNT) {
 					newcell = CELL_NONE;
 				} else if (newcell != CELL_NONE) {
-					ScenarioInit--;
 					continue;
 				}
 
@@ -696,8 +698,6 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 				 */
 				delete object;
 			}
-
-			ScenarioInit--;
 
 			object = o;
 			if (object != NULL) {
@@ -865,9 +865,11 @@ int Create_Air_Reinforcement(HouseClass * house, AircraftType air, int number, M
 		**	Create one of the required objects.  If this fails we could have
 		**	a real problem.
 		*/
-		ScenarioInit++;
-		TechnoClass * obj = (TechnoClass *)type->Create_One_Of(house);
-		ScenarioInit--;
+		TechnoClass * obj;
+		{
+			ScenarioInitScope const scope;
+			obj = (TechnoClass *)type->Create_One_Of(house);
+		}
 		if (!obj) return(sub);
 
 		/*
@@ -882,9 +884,11 @@ int Create_Air_Reinforcement(HouseClass * house, AircraftType air, int number, M
 		/*
 		**	Try and place the object onto the map.
 		*/
-		ScenarioInit++;
-		int placed = obj->Unlimbo(newcell, DIR_N);
-		ScenarioInit--;
+		int placed;
+		{
+			ScenarioInitScope const scope;
+			placed = obj->Unlimbo(newcell, DIR_N);
+		}
 		if (placed) {
 
 			/*

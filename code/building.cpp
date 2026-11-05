@@ -5909,9 +5909,11 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 					}
 					UndeployWaitStart = 0;
 
-					ScenarioInit++;
-					UnitClass * unit = new UnitClass(Class->UndeploysInto, House);
-					ScenarioInit--;
+					UnitClass * unit;
+					{
+						ScenarioInitScope const scope;
+						unit = new UnitClass(Class->UndeploysInto, House);
+					}
 					if (unit != NULL) {
 
 						/*
@@ -10039,12 +10041,14 @@ bool BuildingClass::Place_Beside_Structure(FootClass * who, SpeedType speed, boo
 {
 	Cell cell = Map.Nearby_Location(Get_Cell() + Cell(0, Class->Height()), speed);
 	Coord coord = (cell != CELL_NONE) ? Map[cell].Closest_Free_Spot(Map[cell].Center_Coord()) : COORD_NONE;
-	ScenarioInit++;
-	bool placed = coord != COORD_NONE && who->Unlimbo(coord, DIR_S);
-	if (!placed && keep_unplaced) {
-		placed = who->Unlimbo(Center_Coord(), DIR_S);
+	bool placed;
+	{
+		ScenarioInitScope const scope;
+		placed = coord != COORD_NONE && who->Unlimbo(coord, DIR_S);
+		if (!placed && keep_unplaced) {
+			placed = who->Unlimbo(Center_Coord(), DIR_S);
+		}
 	}
-	ScenarioInit--;
 	return(placed);
 }
 

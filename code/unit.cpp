@@ -3814,9 +3814,10 @@ bool UnitClass::Unload_Next_Passenger(void)
 						coord = Map.Closest_Free_Spot(coord);
 					}
 
-					ScenarioInit++;
-					placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
-					ScenarioInit--;
+					{
+						ScenarioInitScope const scope;
+						placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
+					}
 					break;
 				}
 			}
@@ -4306,9 +4307,11 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				BuildingClass * freebay = Find_Docking_Bay(Class->Dock, false, true);
 
 				// Under ScenarioInit a busy refinery does not refuse, so this sweep sees every bay.
-				ScenarioInit++;
-				BuildingClass * anybay = Find_Docking_Bay(Class->Dock, false, false);
-				ScenarioInit--;
+				BuildingClass * anybay;
+				{
+					ScenarioInitScope const scope;
+					anybay = Find_Docking_Bay(Class->Dock, false, false);
+				}
 
 				/*
 				**	A free refinery is reserved only when it is within reach. Otherwise the harvester drives
