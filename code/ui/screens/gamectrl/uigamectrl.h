@@ -131,6 +131,7 @@ namespace Rml
 
 // Binds the game control fields the Game Controls and Classic Options pages share. The UIChoice array must be registered first.
 bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsState & state);
+
 // The presenter of the game controls, with the settings as they stand now. Tabbed, it leaves with the Back label.
 std::unique_ptr<UIGameControlsPresenterClass> UI_Game_Controls_New_Presenter(bool tabbed);
 

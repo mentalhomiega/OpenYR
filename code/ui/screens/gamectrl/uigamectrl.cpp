@@ -182,7 +182,6 @@ bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsStat
 }
 
 
-
 namespace
 {
 
