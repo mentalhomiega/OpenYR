@@ -75,12 +75,6 @@ std::string Json_Escape(std::string const & text)
 }
 
 
-bool Write_File(fs::path const & path, std::string const & bytes)
-{
-	return(Write_Disk_File(path, bytes));
-}
-
-
 // Whether a file is a log or text file. Only these are zipped from their end when they are too large to read whole.
 bool Is_Log_Name(std::string const & name)
 {
@@ -169,7 +163,7 @@ std::vector<fs::path> Report_Undecided_Folders(fs::path const & exceptions)
 
 bool Report_Mark_Decided(fs::path const & folder, bool queued)
 {
-	return(Write_File(folder / REPORT_DECIDED_MARKER, queued ? "queued\n" : "not sent\n"));
+	return(Write_Disk_File(folder / REPORT_DECIDED_MARKER, queued ? "queued\n" : "not sent\n"));
 }
 
 
@@ -423,11 +417,11 @@ bool Report_Queue(fs::path const & pending, std::string const & id, std::string 
 {
 	std::error_code code;
 	fs::create_directories(pending, code);
-	if (!Write_File(pending / (id + ".zip"), zip)) {
+	if (!Write_Disk_File(pending / (id + ".zip"), zip)) {
 		error = "Could not write the report to " + pending.string() + ".";
 		return(false);
 	}
-	if (!Write_File(pending / (id + ".json"), meta)) {
+	if (!Write_Disk_File(pending / (id + ".json"), meta)) {
 		fs::remove(pending / (id + ".zip"), code);
 		error = "Could not write the report to " + pending.string() + ".";
 		return(false);
@@ -485,6 +479,6 @@ int Report_Count_Failed_Start(fs::path const & pending, std::string const & id)
 		file >> count;
 	}
 	count++;
-	Write_File(path, std::to_string(count) + "\n");
+	Write_Disk_File(path, std::to_string(count) + "\n");
 	return(count);
 }
