@@ -153,6 +153,22 @@ void ShadowPlane_After_Fill(Surface & dest, Rect const & rect)
 }
 
 
+// Writes value to each plane pixel in the clipped block whose source byte is not skip_value.
+static void Stamp_Plane(EmissivePlane & plane, int x, int y, Rect const & clip, unsigned char const * source, int width, int height, unsigned char skip_value, unsigned char value)
+{
+	Rect const area = Intersect(Intersect(clip, Rect(x, y, width, height)), Rect(0, 0, plane.Width, plane.Height));
+	for (int py = area.Y; py < area.Y + area.Height; py++) {
+		unsigned char const * row = source + (py - y) * width - x;
+		unsigned char * out = plane.Pixels + py * plane.Pitch;
+		for (int px = area.X; px < area.X + area.Width; px++) {
+			if (row[px] != skip_value) {
+				out[px] = value;
+			}
+		}
+	}
+}
+
+
 void ShadowPlane_After_Tile(Surface & dest, int x, int y, Rect const & clip, unsigned char const * mask, int width, int height, bool water)
 {
 	EmissivePlane * plane = ShadowPlane_For(&dest);
@@ -160,16 +176,8 @@ void ShadowPlane_After_Tile(Surface & dest, int x, int y, Rect const & clip, uns
 		return;
 	}
 	unsigned char const value = water && _Water ? SHADOWPLANE_WATER : 0;
-	Rect const area = Intersect(Intersect(clip, Rect(x, y, width, height)), Rect(0, 0, plane->Width, plane->Height));
-	for (int py = area.Y; py < area.Y + area.Height; py++) {
-		unsigned char const * row = mask + (py - y) * width - x;
-		unsigned char * out = plane->Pixels + py * plane->Pitch;
-		for (int px = area.X; px < area.X + area.Width; px++) {
-			if (row[px] != 32) {
-				out[px] = value;
-			}
-		}
-	}
+	// Mask bytes of 32 lie outside the tile diamond and leave the plane unchanged.
+	Stamp_Plane(*plane, x, y, clip, mask, width, height, 32, value);
 }
 
 
@@ -179,16 +187,8 @@ void ShadowPlane_After_Extra(Surface & dest, int x, int y, Rect const & clip, un
 	if (plane == NULL) {
 		return;
 	}
-	Rect const area = Intersect(Intersect(clip, Rect(x, y, width, height)), Rect(0, 0, plane->Width, plane->Height));
-	for (int py = area.Y; py < area.Y + area.Height; py++) {
-		unsigned char const * row = pixels + (py - y) * width - x;
-		unsigned char * out = plane->Pixels + py * plane->Pitch;
-		for (int px = area.X; px < area.X + area.Width; px++) {
-			if (row[px] != 0) {
-				out[px] = 0;
-			}
-		}
-	}
+	// Pixels of 0 are left undrawn and keep the plane; every drawn pixel clears it.
+	Stamp_Plane(*plane, x, y, clip, pixels, width, height, 0, 0);
 }
 
 
