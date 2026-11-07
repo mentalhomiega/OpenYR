@@ -12,6 +12,7 @@
 #include "hdrcolour.h"
 #include "ui/rml/rmlsettingpreview.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 #include "ui/uisettingpreview.h"
 #include "video.h"
 #include "colourblind.h"
@@ -41,11 +42,11 @@ void UIDisplayPresenterClass::Chosen_Frame(int & width, int & height)
 {
 	int screen_width = State.ScreenWidth;
 	int screen_height = State.ScreenHeight;
-	if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+	if (Index_In_Range(State.Selected, State.Modes.size())) {
 		screen_width = State.Modes[State.Selected].Width;
 		screen_height = State.Modes[State.Selected].Height;
 	}
-	float const scale = (State.Scale >= 0 && State.Scale < (int)State.Scales.size()) ? State.Scales[State.Scale].Value : 0.0f;
+	float const scale = Index_In_Range(State.Scale, State.Scales.size()) ? State.Scales[State.Scale].Value : 0.0f;
 
 	width = 0;
 	height = 0;
@@ -57,7 +58,7 @@ void UIDisplayPresenterClass::Chosen_Frame(int & width, int & height)
 
 int UIDisplayPresenterClass::Chosen_Rows(void) const
 {
-	return((ShownRowIndex >= 0 && ShownRowIndex < (int)State.RowCounts.size()) ? State.RowCounts[ShownRowIndex].Value : -1);
+	return(Index_In_Range(ShownRowIndex, State.RowCounts.size()) ? State.RowCounts[ShownRowIndex].Value : -1);
 }
 
 
@@ -101,7 +102,7 @@ void UIDisplayPresenterClass::Refresh_Preview(void)
 			State.Preview = *screen;
 
 			std::string label;
-			if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+			if (Index_In_Range(State.Selected, State.Modes.size())) {
 				label = State.Modes[State.Selected].Label;
 			} else {
 				char buffer[64];
@@ -118,13 +119,13 @@ void UIDisplayPresenterClass::Refresh_Preview(void)
 
 static int Pick_Choice(std::vector<UIChoice> const & choices, int index, int fallback)
 {
-	return((index >= 0 && index < (int)choices.size()) ? index : fallback);
+	return(Index_In_Range(index, choices.size()) ? index : fallback);
 }
 
 
 static bool Choice_Changed(std::vector<UIChoice> const & choices, int index, int initial)
 {
-	return(index != initial && index >= 0 && index < (int)choices.size());
+	return(index != initial && Index_In_Range(index, choices.size()));
 }
 
 
@@ -188,7 +189,7 @@ void UIDisplayPresenterClass::Reset_Page(void)
 		State.SidebarOpacity = HUD_DEFAULT_OPACITY;
 
 		int const row = Index_Of(State.RowCounts, HUD_DEFAULT_ROWS, ShownRowIndex);
-		if (row >= 0 && row < (int)State.RowCounts.size()) {
+		if (Index_In_Range(row, State.RowCounts.size())) {
 			ShownRowIndex = row;
 			State.RowCount = row;
 			PickedRows = State.RowCounts[row].Value;
@@ -224,7 +225,7 @@ void UIDisplayPresenterClass::Show_Colour_Preview(void)
 	PreviewedBrightness = State.Brightness;
 	PreviewedGamma = State.Gamma;
 
-	int const mode = (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size())
+	int const mode = Index_In_Range(State.ColorBlindMode, State.ColorBlindModes.size())
 		? State.ColorBlindModes[State.ColorBlindMode].Value : COLORBLIND_OFF;
 	Service.Preview_Colour(mode, State.ColorBlindStrength, State.Brightness, State.Gamma);
 	PreviewShown = true;
@@ -238,7 +239,7 @@ void UIDisplayPresenterClass::Restore_Preview(void)
 		return;
 	}
 	PreviewRestored = true;
-	int const mode = (Start.ColorBlindMode >= 0 && Start.ColorBlindMode < (int)State.ColorBlindModes.size())
+	int const mode = Index_In_Range(Start.ColorBlindMode, State.ColorBlindModes.size())
 		? State.ColorBlindModes[Start.ColorBlindMode].Value : COLORBLIND_OFF;
 	Service.Preview_Colour(mode, Start.ColorBlindStrength, Start.Brightness, Start.Gamma);
 }
@@ -267,7 +268,7 @@ void UIDisplayPresenterClass::Apply_Settings(void)
 	if (Choice_Changed(State.FrameLimits, State.FrameLimit, Start.FrameLimit)) {
 		Service.Set_Frame_Limit(State.FrameLimits[State.FrameLimit].Value);
 	}
-	if (State.WindowSize != Start.WindowSize && State.WindowSize >= 0 && State.WindowSize < (int)State.WindowSizes.size()) {
+	if (State.WindowSize != Start.WindowSize && Index_In_Range(State.WindowSize, State.WindowSizes.size())) {
 		Service.Set_Window_Size(State.WindowSizes[State.WindowSize].Width, State.WindowSizes[State.WindowSize].Height);
 	}
 	if (Choice_Changed(State.PlayerColorChoices, State.PlayerColors, Start.PlayerColors)) {
@@ -329,7 +330,7 @@ void UIDisplayPresenterClass::Apply_Settings(void)
 	if (State.Highlights != Start.Highlights) {
 		Service.Set_HDR_Highlights(State.Highlights);
 	}
-	if (State.ColorBlindMode >= 0 && State.ColorBlindMode < (int)State.ColorBlindModes.size()
+	if (Index_In_Range(State.ColorBlindMode, State.ColorBlindModes.size())
 		&& (State.ColorBlindMode != Start.ColorBlindMode || State.ColorBlindStrength != Start.ColorBlindStrength)) {
 		Service.Set_Colour_Blind(State.ColorBlindModes[State.ColorBlindMode].Value, State.ColorBlindStrength);
 	}
@@ -343,7 +344,7 @@ void UIDisplayPresenterClass::Apply_Settings(void)
 		Service.Set_Sidebar_Opacity(State.SidebarOpacity);
 	}
 	UI_Setting_Preview_Commit();
-	if (State.Scale != Start.Scale && State.Scale >= 0 && State.Scale < (int)State.Scales.size()) {
+	if (State.Scale != Start.Scale && Index_In_Range(State.Scale, State.Scales.size())) {
 		Service.Set_Interface_Scale(State.Scales[State.Scale].Value);
 		ScaleChanged = true;
 	}
@@ -351,6 +352,18 @@ void UIDisplayPresenterClass::Apply_Settings(void)
 		Picked = State.Modes[State.Selected];
 	}
 	Result = UI_RESULT_ACCEPTED;
+}
+
+
+bool UI_Bind_Display_Basics(Rml::DataModelConstructor & model, UIDisplayState & state)
+{
+	return(model.Bind("scales", &state.Scales)
+		&& model.Bind("scale", &state.Scale)
+		&& model.Bind("modes", &state.Modes)
+		&& model.Bind("selected", &state.Selected)
+		&& model.Bind("stretch", &state.StretchMovies)
+		&& model.Bind("systemcursor", &state.SystemCursor)
+		&& model.Bind("classicmenus", &state.ClassicMenus));
 }
 
 
@@ -393,14 +406,14 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	}
 
 	if (intent.Name == "select") {
-		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Modes.size()) ? intent.Value : -1;
+		State.Selected = Index_In_Range(intent.Value, State.Modes.size()) ? intent.Value : -1;
 		Refresh_Rows();
 
 	} else if (intent.Name == "framelimit") {
 		State.FrameLimit = Pick_Choice(State.FrameLimits, intent.Value, Start.FrameLimit);
 
 	} else if (intent.Name == "windowsize") {
-		State.WindowSize = (intent.Value >= 0 && intent.Value < (int)State.WindowSizes.size()) ? intent.Value : Start.WindowSize;
+		State.WindowSize = Index_In_Range(intent.Value, State.WindowSizes.size()) ? intent.Value : Start.WindowSize;
 	} else if (intent.Name == "playercolors") {
 		State.PlayerColors = Pick_Choice(State.PlayerColorChoices, intent.Value, Start.PlayerColors);
 
@@ -408,7 +421,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		Reset_Page();
 
 	} else if (intent.Name == "scale") {
-		State.Scale = (intent.Value >= 0 && intent.Value < (int)State.Scales.size()) ? intent.Value : Start.Scale;
+		State.Scale = Index_In_Range(intent.Value, State.Scales.size()) ? intent.Value : Start.Scale;
 		Refresh_Rows();
 
 	} else if (intent.Name == "gpurender") {
@@ -482,7 +495,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		// The drop-down reports its value again whenever its list or value is set, so only a row other than the
 		// one shown is a pick. The bound row count is not compared: the drop-down writes it before this runs.
 		int const index = Pick_Choice(State.RowCounts, intent.Value, ShownRowIndex);
-		if (index != ShownRowIndex && index >= 0 && index < (int)State.RowCounts.size()) {
+		if (index != ShownRowIndex && Index_In_Range(index, State.RowCounts.size())) {
 			ShownRowIndex = index;
 			State.RowCount = index;
 			PickedRows = State.RowCounts[State.RowCount].Value;
@@ -567,8 +580,8 @@ void Update_Gamma_Label(UIDisplayState & state)
 /// </summary>
 void Update_HDR_Tips(UIDisplayState & state)
 {
-	bool forced = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
-	bool off = state.HDROutput >= 0 && state.HDROutput < (int)state.HDROutputs.size() && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
+	bool forced = Index_In_Range(state.HDROutput, state.HDROutputs.size()) && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_ON;
+	bool off = Index_In_Range(state.HDROutput, state.HDROutputs.size()) && state.HDROutputs[state.HDROutput].Value == VIDEO_HDR_OFF;
 	if (forced) {
 		state.HDROutputTip = "On forces HDR10 output. Turn on HDR in Windows for this display first, or the picture will look wrong. Applies at the next start.";
 	} else if (off) {
@@ -701,13 +714,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			return(model.RegisterArray<std::vector<UIDisplayMode>>()
 				&& model.RegisterArray<std::vector<UIDisplayScale>>()
 				&& model.RegisterArray<std::vector<UIChoice>>()
-				&& model.Bind("scales", &state.Scales)
-				&& model.Bind("scale", &state.Scale)
-				&& model.Bind("modes", &state.Modes)
-				&& model.Bind("selected", &state.Selected)
-				&& model.Bind("stretch", &state.StretchMovies)
-				&& model.Bind("systemcursor", &state.SystemCursor)
-				&& model.Bind("classicmenus", &state.ClassicMenus)
+				&& UI_Bind_Display_Basics(model, state)
 				&& model.Bind("moderninterface", &state.ModernInterface)
 				&& model.Bind("moderninterfacerunning", &state.ModernInterfaceRunning)
 				&& model.Bind("ingame", &state.InGame)

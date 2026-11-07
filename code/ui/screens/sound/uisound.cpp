@@ -10,6 +10,7 @@
 #include "ui/screens/sound/uisound.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <algorithm>
 #include <utility>
@@ -85,10 +86,10 @@ void UISoundPresenterClass::Execute(UIIntent const & intent)
 		}
 
 	} else if (intent.Name == "select") {
-		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Tracks.size()) ? intent.Value : -1;
+		State.Selected = Index_In_Range(intent.Value, State.Tracks.size()) ? intent.Value : -1;
 
 	} else if (intent.Name == "play") {
-		if (State.Selected >= 0 && State.Selected < (int)State.Tracks.size()) {
+		if (Index_In_Range(State.Selected, State.Tracks.size())) {
 			Service.Play(State.Tracks[State.Selected].Theme);
 		}
 
@@ -153,7 +154,7 @@ void UISoundPresenterClass::Restore_Changed_Volumes(void)
 
 void UISoundPresenterClass::Refresh_Tracks(void)
 {
-	int const playing = (State.Selected >= 0 && State.Selected < (int)State.Tracks.size()) ? State.Tracks[State.Selected].Theme : -1;
+	int const playing = Index_In_Range(State.Selected, State.Tracks.size()) ? State.Tracks[State.Selected].Theme : -1;
 	State.Tracks = Service.Tracks();
 	State.Selected = -1;
 	for (int index = 0; index < (int)State.Tracks.size(); index++) {

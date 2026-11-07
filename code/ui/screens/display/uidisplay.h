@@ -256,6 +256,14 @@ std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & 
 UIDisplayServiceClass & UI_Display_Service(void);
 void UI_Display_State(UIDisplayState & state);
 
+namespace Rml
+{
+	class DataModelConstructor;
+}
+
+// Binds the resolution and interface scale fields the Display and Classic Options pages share. The mode and scale arrays must be registered first.
+bool UI_Bind_Display_Basics(Rml::DataModelConstructor & model, UIDisplayState & state);
+
 // Returns the mode to switch to when the player changed the resolution or the interface scale
 // (the current resolution, in the latter case), or nothing when the display need not be reset.
 std::optional<UIDisplayMode> UI_Display_Dialog(UISettingsTab page);
