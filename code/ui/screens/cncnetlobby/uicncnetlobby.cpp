@@ -15,11 +15,13 @@
 #include "cncnet/cncnettext.h"
 #include "ui/rml/rmlview.h"
 #include "strutil.h"
+#include "ui/uiclamp.h"
 #include "wallclock.h"
 
 #include <algorithm>
 #include <cctype>
 #include <ctime>
+#include <string_view>
 #include <utility>
 
 
@@ -92,10 +94,12 @@ void UICnCNetLobbyPresenterClass::Close_Conversation(std::string const & channel
 
 void UICnCNetLobbyPresenterClass::Send_Line(std::string const & channel, std::string const & text)
 {
-	if (text.rfind("/me ", 0) == 0) {
-		Session.Send_CTCP(channel, "ACTION", text.substr(4), 50);
-	} else if (text.rfind("/msg ", 0) == 0) {
-		std::string const rest = text.substr(5);
+	std::string_view const me_prefix = "/me ";
+	std::string_view const msg_prefix = "/msg ";
+	if (text.starts_with(me_prefix)) {
+		Session.Send_CTCP(channel, "ACTION", text.substr(me_prefix.size()), 50);
+	} else if (text.starts_with(msg_prefix)) {
+		std::string const rest = text.substr(msg_prefix.size());
 		std::size_t const space = rest.find(' ');
 		if (space != std::string::npos && space > 0) {
 			std::string const nick = rest.substr(0, space);
@@ -110,8 +114,14 @@ void UICnCNetLobbyPresenterClass::Send_Line(std::string const & channel, std::st
 
 void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 {
+	auto Select_User = [&](int index) {
+		if (Index_In_Range(index, State.Users.size())) {
+			SelectedUser = State.Users[index].Name;
+		}
+	};
+
 	if (intent.Name == "game") {
-		if (intent.Value >= 0 && intent.Value < static_cast<int>(State.Games.size())) {
+		if (Index_In_Range(intent.Value, State.Games.size())) {
 			SelectedHost = State.Games[intent.Value].Host;
 		}
 	} else if (intent.Name == "filter") {
@@ -121,17 +131,13 @@ void UICnCNetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "hideother") {
 		State.HideOther = intent.Value != 0;
 	} else if (intent.Name == "tab") {
-		if (intent.Value >= 0 && intent.Value < static_cast<int>(State.Tabs.size())) {
+		if (Index_In_Range(intent.Value, State.Tabs.size())) {
 			SelectedChannel = State.Tabs[intent.Value].Channel;
 		}
 	} else if (intent.Name == "user") {
-		if (intent.Value >= 0 && intent.Value < static_cast<int>(State.Users.size())) {
-			SelectedUser = State.Users[intent.Value].Name;
-		}
+		Select_User(intent.Value);
 	} else if (intent.Name == "whisper") {
-		if (intent.Value >= 0 && intent.Value < static_cast<int>(State.Users.size())) {
-			SelectedUser = State.Users[intent.Value].Name;
-		}
+		Select_User(intent.Value);
 		if (!SelectedUser.empty() && !CnCNetLobbyClass::Same_Nick(SelectedUser, Lobby.Own_Nick())) {
 			Open_Conversation(SelectedUser);
 		}
@@ -190,7 +196,7 @@ void UICnCNetLobbyPresenterClass::Refresh(void)
 
 std::string UICnCNetLobbyPresenterClass::Current_Channel(void) const
 {
-	if (State.Tab >= 0 && State.Tab < static_cast<int>(State.Tabs.size())) {
+	if (Index_In_Range(State.Tab, State.Tabs.size())) {
 		return(State.Tabs[State.Tab].Channel);
 	}
 	return(ChatChannel);
