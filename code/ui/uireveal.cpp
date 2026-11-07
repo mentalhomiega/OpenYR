@@ -15,8 +15,15 @@ static const int UI_REVEAL_PERIOD = 40;
 static const int UI_REVEAL_TIGHTEN = 240;
 
 
+static float UI_Reveal_Scale(float scale)
+{
+	return(scale <= 0.0f ? 1.0f : scale);
+}
+
+
 static int UI_Reveal_Half(float full, float scale)
 {
+	scale = UI_Reveal_Scale(scale);
 	return((int)(full / scale / 2.0f));
 }
 
@@ -33,16 +40,12 @@ static int UI_Reveal_Due(int frame, int half)
 
 float UI_Reveal_Width(float full, float scale, int elapsed, float shown)
 {
-	if (scale <= 0.0f) {
-		scale = 1.0f;
-	}
-
 	int half = UI_Reveal_Half(full, scale);
 	if (full <= 0.0f || half <= 0 || elapsed < 0) {
 		return(full);
 	}
 
-	float step = (float)UI_REVEAL_STEP * scale;
+	float step = (float)UI_REVEAL_STEP * UI_Reveal_Scale(scale);
 	int next = shown <= 0.0f ? 0 : (int)(shown / step + 0.5f);
 
 	int frame = 0;
@@ -59,7 +62,7 @@ float UI_Reveal_Width(float full, float scale, int elapsed, float shown)
 		frame++;
 	}
 
-	float width = (float)(UI_REVEAL_STEP * (frame + 1)) * scale;
+	float width = (float)(UI_REVEAL_STEP * (frame + 1)) * UI_Reveal_Scale(scale);
 	return(width >= full ? full : width);
 }
 
@@ -67,10 +70,6 @@ float UI_Reveal_Width(float full, float scale, int elapsed, float shown)
 // The original kept its side bars up for one more wait after the last band.
 bool UI_Reveal_Finished(float full, float scale, int elapsed)
 {
-	if (scale <= 0.0f) {
-		scale = 1.0f;
-	}
-
 	int half = UI_Reveal_Half(full, scale);
 	if (full <= 0.0f || half <= 0 || elapsed < 0) {
 		return(true);
