@@ -556,7 +556,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DATADIR=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-DATADIR=' }
   - id: launch:user-directory
     title: User data directory
     syntax: -USERDIR=<path>
@@ -564,7 +564,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-USERDIR=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-USERDIR=' }
   - id: launch:mod
     title: Mod folder
     syntax: -MOD=<name or path>
@@ -572,7 +572,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MOD=' }
+      - { file: code/init.cpp, function: Parse_Directory_Option, expression: 'literal:-MOD=' }
   - id: launch:autotest
     title: Unattended test run
     syntax: -AUTOTEST=<script>
@@ -580,7 +580,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-AUTOTEST=' }
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-AUTOTEST=' }
   - id: launch:spawn
     title: Client launch
     syntax: -SPAWN
@@ -588,7 +588,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-SPAWN' }
   - id: launch:replay
     title: Replay playback
     syntax: -REPLAY=<file>
@@ -596,7 +596,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-REPLAY=' }
+      - { file: code/init.cpp, function: Parse_Launch_Option, expression: 'literal:-REPLAY=' }
   - id: launch:tournament-time
     title: Tournament time limit
     syntax: -TIME=<minutes>
@@ -604,7 +604,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-TIME=' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-TIME=' }
   - id: launch:multiplayer-debug
     title: Internet debug display
     syntax: -MPDEBUG
@@ -612,7 +612,7 @@ launch_options:
     audience: debug
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MPDEBUG' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-MPDEBUG' }
   - id: launch:stealth
     title: Network stealth mode
     syntax: -STEALTH
@@ -620,7 +620,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-STEALTH' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-STEALTH' }
   - id: launch:attract
     title: Attract mode
     syntax: -ATTRACT
@@ -628,7 +628,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-ATTRACT' }
+      - { file: code/init.cpp, function: Parse_Network_Option, expression: 'literal:-ATTRACT' }
   - id: launch:resolution
     title: Resolution
     syntax: -<width>X<height>
@@ -636,7 +636,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'pattern:-<width>X<height>' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'pattern:-<width>X<height>' }
   - id: launch:height-480
     title: 480-pixel width
     syntax: "-480"
@@ -644,7 +644,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-480' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'literal:-480' }
   - id: launch:windowed
     title: Windowed mode
     syntax: -WIN
@@ -652,7 +652,7 @@ launch_options:
     audience: player
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-WIN' }
+      - { file: code/init.cpp, function: Parse_Screen_Option, expression: 'literal:-WIN' }
   - id: launch:multiple-instances
     title: Multiple copies
     syntax: -MULTIINSTANCE
@@ -662,7 +662,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MULTIINSTANCE' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-MULTIINSTANCE' }
   - id: launch:exception-test
     title: Exception reporting test
     syntax: -EXCEPTIONTEST=<fault>
@@ -673,7 +673,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-EXCEPTIONTEST=' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-EXCEPTIONTEST=' }
   - id: launch:desync-test
     title: Out-of-sync test
     syntax: -DESYNCTEST=<frame>
@@ -685,7 +685,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DESYNCTEST=' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-DESYNCTEST=' }
   - id: launch:sync-log
     title: Sync log
     syntax: -SYNCLOG
@@ -696,7 +696,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SYNCLOG' }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-SYNCLOG' }
   - id: launch:seed
     title: Random seed
     syntax: -SEED<number>
@@ -704,7 +704,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SEED', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Debug_Option, expression: 'literal:-SEED', guard: _DEBUG }
   - id: launch:monochrome
     title: Monochrome debug display
     syntax: -XM
@@ -712,7 +712,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XM', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XM', guard: _DEBUG }
   - id: launch:inert
     title: Inert weapons
     syntax: -XI
@@ -720,7 +720,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XI', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XI', guard: _DEBUG }
   - id: launch:speed-build
     title: Accelerated timers
     syntax: -XH
@@ -728,7 +728,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XH', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XH', guard: _DEBUG }
   - id: launch:record
     title: Multiplayer recording
     syntax: -XX
@@ -736,7 +736,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XX', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XX', guard: _DEBUG }
   - id: launch:playback
     title: Recording playback
     syntax: -XY
@@ -744,7 +744,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XY', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XY', guard: _DEBUG }
   - id: launch:console-debug
     title: Console debug output
     syntax: -XC
@@ -752,7 +752,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XC' }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XC' }
   - id: launch:event-debug
     title: Event and packet debug
     syntax: -XP
@@ -760,7 +760,7 @@ launch_options:
     audience: debug
     availability: *debug
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XP', guard: _DEBUG }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XP', guard: _DEBUG }
   - id: launch:quiet
     title: Quiet mode
     syntax: -XQ
@@ -768,7 +768,7 @@ launch_options:
     audience: developer
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'compact:-XQ' }
+      - { file: code/init.cpp, function: Parse_Switch_Letters, expression: 'compact:-XQ' }
 
 launch_exclusions:
   - site: { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-O' }
