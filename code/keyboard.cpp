@@ -63,9 +63,6 @@
 #include <cmath>
 
 
-#define	ARRAY_SIZE(x)		int(sizeof(x)/sizeof(x[0]))
-
-
 /// <summary>
 /// Halts the game for a waiting programmer.
 /// This routine is what the Scroll Lock key calls. It does nothing on its own -- the

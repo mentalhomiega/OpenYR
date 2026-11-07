@@ -85,7 +85,7 @@ char const * UI_House_Name(int house)
 
 int UI_Stock_Color_Count(void)
 {
-	return((int)(sizeof(UI_STOCK_COLORS) / sizeof(UI_STOCK_COLORS[0])));
+	return(ARRAY_SIZE(UI_STOCK_COLORS));
 }
 
 

@@ -211,7 +211,7 @@ HudColors const & Side_Colors(void)
 		{RGBClass(196, 52, 40), RGBClass(80, 24, 20)},
 		{RGBClass(150, 72, 196), RGBClass(60, 30, 84)},
 	};
-	return(_colors[Local_Side_Index(int(sizeof(_colors) / sizeof(_colors[0])))]);
+	return(_colors[Local_Side_Index(ARRAY_SIZE(_colors))]);
 }
 
 
