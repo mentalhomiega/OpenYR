@@ -144,8 +144,17 @@ class CnCNetLobbyClass
 		void Remove_Games_Of(std::string const & nick);
 		void Game_Listing(std::string const & nick, std::string const & arguments, uint64_t now);
 		void Queue_Room_Message(IRCEventType const & event);
+		void Queue_Room_Message_If_Room(IRCEventType const & event);
 		CnCNetChannelType * Incoming_Channel(IRCEventType const & event);
 		bool Is_Room_Channel(std::string const & name) const;
+		void Apply_Nick_Changed(IRCEventType const & event, uint64_t now);
+		void Apply_Joined(IRCEventType const & event);
+		void Apply_Parted(IRCEventType const & event);
+		void Apply_Quit(IRCEventType const & event);
+		void Apply_Kicked(IRCEventType const & event, uint64_t now);
+		void Apply_CTCP(IRCEventType const & event, uint64_t now);
+		void Apply_Names(IRCEventType const & event);
+		void Apply_Channel_Refused(IRCEventType const & event, uint64_t now);
 
 		CnCNetLobbyConfigType Config;
 		CnCNetStatus CurrentStatus = CnCNetStatus::OFFLINE;
