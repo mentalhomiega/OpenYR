@@ -137,19 +137,26 @@ void Read_Report_Data(std::istream & stream, std::streamoff on_disk, bool too_la
 }
 
 
+// Appends the fields from the method to the name length, which the local and central headers share.
+void Put_Entry_Fields(std::string & out, ZipEntryFields const & fields)
+{
+	Put_U16_LE(out, fields.Method);
+	Put_U16_LE(out, 0);								// Time.
+	Put_U16_LE(out, 0);								// Date.
+	Put_U32_LE(out, fields.Crc);
+	Put_U32_LE(out, fields.PackedSize);
+	Put_U32_LE(out, fields.Size);
+	Put_U16_LE(out, static_cast<unsigned>(fields.Name.size()));
+}
+
+
 // Appends the local file header of an entry and its name. The entry's body follows the name.
 void Append_Local_Header(std::string & entries, ZipEntryFields const & fields)
 {
 	Put_U32_LE(entries, 0x04034b50);
 	Put_U16_LE(entries, 20);						// Version needed: 2.0.
 	Put_U16_LE(entries, 0);							// Flags.
-	Put_U16_LE(entries, fields.Method);
-	Put_U16_LE(entries, 0);							// Time.
-	Put_U16_LE(entries, 0);							// Date.
-	Put_U32_LE(entries, fields.Crc);
-	Put_U32_LE(entries, fields.PackedSize);
-	Put_U32_LE(entries, fields.Size);
-	Put_U16_LE(entries, static_cast<unsigned>(fields.Name.size()));
+	Put_Entry_Fields(entries, fields);
 	Put_U16_LE(entries, 0);							// Extra field length.
 	entries += fields.Name;
 }
@@ -160,15 +167,9 @@ void Append_Central_Header(std::string & central, ZipEntryFields const & fields,
 {
 	Put_U32_LE(central, 0x02014b50);
 	Put_U16_LE(central, 20);					// Version made by.
-	Put_U16_LE(central, 20);
-	Put_U16_LE(central, 0);
-	Put_U16_LE(central, fields.Method);
-	Put_U16_LE(central, 0);
-	Put_U16_LE(central, 0);
-	Put_U32_LE(central, fields.Crc);
-	Put_U32_LE(central, fields.PackedSize);
-	Put_U32_LE(central, fields.Size);
-	Put_U16_LE(central, static_cast<unsigned>(fields.Name.size()));
+	Put_U16_LE(central, 20);					// Version needed: 2.0.
+	Put_U16_LE(central, 0);						// Flags.
+	Put_Entry_Fields(central, fields);
 	Put_U16_LE(central, 0);						// Extra field length.
 	Put_U16_LE(central, 0);						// Comment length.
 	Put_U16_LE(central, 0);						// Disk number.
