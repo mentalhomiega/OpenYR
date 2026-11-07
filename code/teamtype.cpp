@@ -67,6 +67,7 @@
 #include "findmake.h"
 #include "foot.h"
 #include "globals.h"
+#include "hexdigit.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -95,18 +96,9 @@
 /// <returns>Returns with the integer value of the leading hexadecimal digits.</returns>
 int _ahtoi(const char *string)
 {
-	char *s = (char *)string;
 	int integer = 0;
-	while (isxdigit((unsigned char)s[0]))
-	{
-		integer *= 16; /// desired base is 16
-
-		if (isdigit((unsigned char)s[0])) {
-			integer += s[0] - '0';
-		} else {
-			integer += toupper((unsigned char)s[0]) - ('A' - 10);
-		}
-		s++;
+	for (int digit; (digit = Hex_Digit_Value(*string)) >= 0; string++) {
+		integer = integer * 16 + digit;
 	}
 
 	return(integer);

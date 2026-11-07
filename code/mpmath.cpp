@@ -82,6 +82,7 @@
 #include "mpmath.h"
 
 #include "bsearch.h"
+#include "hexdigit.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1752,16 +1753,9 @@ void XMP_Decode_ASCII(char const * str, digit * mpn, int precision)
 		**	clearly the end of the processable string. Bail out
 		**	of the scan loop.
 		*/
-		if (!isxdigit((unsigned char)c)) break;
-
-		/*
-		**	Convert the character into an integer number 0 through 15.
-		*/
-		if (isdigit((unsigned char)c)) {
-			c -= '0';
-		} else {
-			c = (unsigned char)(toupper((unsigned char)c) - 'A') + 10;
-		}
+		int const value = Hex_Digit_Value((char)c);
+		if (value < 0) break;
+		c = (digit)value;
 
 		/*
 		**	If the integer digit is greater than the radix, then we
