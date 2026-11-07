@@ -15,7 +15,9 @@
 #include "ccfile.h"
 #include "deploymentconfig.h"
 #include "dbgprint.h"
+#include "data.h"
 #include "mixfile.h"
+#include "strutil.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -33,7 +35,7 @@ SampleBagSetClass::~SampleBagSetClass(void) = default;
 bool SampleBagSetClass::Read_From_Bag(char const * filename, std::vector<uint8_t> & bytes)
 {
 	std::string name(filename);
-	if (name.size() < 4 || _stricmp(name.c_str() + name.size() - 4, ".WAV") != 0) {
+	if (!Ends_With_No_Case(name, ".WAV")) {
 		return(false);
 	}
 	name.resize(name.size() - 4);
@@ -48,16 +50,15 @@ bool SampleBagSetClass::Read_From_Bag(char const * filename, std::vector<uint8_t
 				std::snprintf(stem, sizeof(stem), "AUDIO%02d", number);
 			}
 			CCFileClass index((std::string(stem) + ".IDX").c_str());
-			if (!index.Is_Available() || !index.Open(FileClass::READ)) {
+			if (!index.Is_Available()) {
 				continue;
 			}
 			BagFileType bag;
 			bag.BagName = std::string(stem) + ".BAG";
-			std::vector<uint8_t> data((size_t)std::max(index.Size(), 0));
-			if (!data.empty() && index.Read(data.data(), (int)data.size()) == (int)data.size()) {
+			std::vector<uint8_t> data;
+			if (Read_File_Bytes(index, data)) {
 				bag.Index.Load_Index(data.data(), data.size());
 			}
-			index.Close();
 			DebugString("Audio: %s.IDX lists %d samples\n", stem, bag.Index.Count());
 			if (bag.Index.Count() > 0) {
 				Bags.push_back(std::move(bag));
