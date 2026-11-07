@@ -50,6 +50,7 @@ needs them.
 | `Trimmed(text, blanks)`, `TRIM_SPACE_TAB`, `TRIM_SPACE_TAB_EOL`, `TRIM_ISSPACE` | `strutil.h` | The same trim as an owned string, and the three blank sets callers pass: space and tab, those plus CR and LF, and the six bytes `isspace` accepts in the C locale. Pick the set the file format needs. |
 | `Trim_End_Chars(text, blanks)` | `strutil.h` | A view of `text` without the characters in `blanks` at its end only. |
 | `Equals_No_Case(left, right)` | `strutil.h` | Whether two texts are equal when only ASCII letters ignore case. High-bit bytes never fold. |
+| `Ends_With_No_Case(text, suffix)` | `strutil.h` | Whether `text` ends with `suffix`, folding case as `Equals_No_Case` does. |
 | `Split_List(text, separator, blanks, skip_empty)` | `strutil.h` | Splits a list into trimmed strings. An empty `blanks` keeps entries as written. `skip_empty` drops the entries that are empty after trimming. |
 | `Starts_With_No_Case(text, prefix)` | `strutil.h` | Whether `text` starts with `prefix`, ignoring ASCII case. For an exact match use `std::string::starts_with`. |
 | `NameEntry`, `Enum_From_Name(table, text, fallback)`, `Enum_Name(table, value, fallback)` | `nametable.h` | Name table for an enum saved as text. The lookup ignores case with `stricmp`, takes the first match and gives `fallback` when none matches. Include `always.h` first. |

@@ -109,6 +109,13 @@ inline bool Equals_No_Case(std::string_view left, std::string_view right)
 }
 
 
+// Whether text ends with suffix, folding case as Equals_No_Case does.
+inline bool Ends_With_No_Case(std::string_view text, std::string_view suffix)
+{
+	return(text.size() >= suffix.size() && Equals_No_Case(text.substr(text.size() - suffix.size()), suffix));
+}
+
+
 // Splits at each separator and keeps empty parts: "a;;b" gives "a", "" and "b", and "" gives one empty part.
 // The views point into text, so text must outlive them.
 inline std::vector<std::string_view> Split_Views(std::string_view text, char separator)

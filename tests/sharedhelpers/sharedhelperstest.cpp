@@ -91,6 +91,15 @@ void Test_Equals_No_Case()
 }
 
 
+void Test_Ends_With_No_Case()
+{
+	Check(Ends_With_No_Case("ALL01UMD.map", ".MAP"), "a suffix matches in either case");
+	Check(Ends_With_No_Case(".ini", ".INI"), "the whole text can be the suffix");
+	Check(!Ends_With_No_Case("ini", ".ini"), "a text shorter than the suffix does not match");
+	Check(!Ends_With_No_Case("game.exe.bak", ".exe"), "the suffix must be at the end");
+}
+
+
 void Test_Starts_With()
 {
 	Check(Starts_With_No_Case("Select_All", "select"), "prefix match ignores case");
@@ -197,6 +206,7 @@ int main()
 	Test_Little_Endian();
 	Test_Trim();
 	Test_Equals_No_Case();
+	Test_Ends_With_No_Case();
 	Test_Starts_With();
 	Test_Hex_Text();
 	Test_Split_And_Parse();

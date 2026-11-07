@@ -667,7 +667,7 @@ bool Edit_Updater(RunType & run, std::string const & destination, std::string & 
 	std::error_code ec;
 	for (fs::directory_iterator it(Path(destination) / UPDATER_DIR, ec), end; !ec && it != end; it.increment(ec)) {
 		std::string const name = it->path().filename().string();
-		if (_strnicmp(name.c_str(), "UpdaterConfig_", 14) == 0 && name.size() > 4 && CnCNet_Equals_No_Case(name.substr(name.size() - 4), ".ini")) {
+		if (Starts_With_No_Case(name, "UpdaterConfig_") && Ends_With_No_Case(name, ".ini")) {
 			files.push_back(it->path().string());
 		}
 	}
@@ -829,7 +829,7 @@ std::string CNCNet_Registry_Install_Folder(void)
 
 		value[sizeof(value) - 1] = '\0';
 		std::string path = value;
-		if (path.size() >= 4 && CnCNet_Equals_No_Case(path.substr(path.size() - 4), ".exe")) {
+		if (Ends_With_No_Case(path, ".exe")) {
 			path = Path(path).parent_path().string();
 		}
 		if (!path.empty()) {

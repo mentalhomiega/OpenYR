@@ -73,5 +73,5 @@ inline bool Campaign_Is_Mission_File(std::string const & file)
 		return(false);
 	}
 
-	return(Upper(file.substr(file.size() - 4)) == ".MAP");
+	return(Ends_With_No_Case(file, ".MAP"));
 }
