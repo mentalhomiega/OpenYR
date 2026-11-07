@@ -978,11 +978,9 @@ void LoadScreenClass::Show_Start_Positions(void)
 		return(Point2D((x / ISO_TILE_PIXEL_W - left) * 2, y / ISO_TILE_PIXEL_H - top));
 	};
 
-	/*
-	** The marks a preview carries for the first start positions are blacked out, as Yuri's
-	** Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
-	** gap among them leaves the last ones marked.
-	*/
+	// The marks a preview carries for the first start positions are blacked out, as Yuri's
+	// Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
+	// gap among them leaves the last ones marked.
 	Surface & picture = *Preview->Get_Preview_Surface();
 	int marked = 0;
 	for (int waypoint = 0; waypoint < 8; waypoint++) {

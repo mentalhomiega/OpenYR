@@ -24,9 +24,9 @@
 namespace numparse_detail
 {
 
-/*
-**	Sets round to nearest for the life of the object and restores the previous mode after it.
-*/
+/// <summary>
+/// Sets round to nearest for the life of the object and restores the previous mode after it.
+/// </summary>
 class Nearest_Rounding_Scope
 {
 	public:
@@ -51,10 +51,10 @@ class Nearest_Rounding_Scope
 		unsigned int previous_ = 0;
 };
 
-/*
-**	Reads the number for Parse_Nearest_Double and Parse_Nearest_Single. T is the type read, and the
-**	fallback is strtod or strtof to match, since reading a double and narrowing it would round twice.
-*/
+/// <summary>
+/// Reads the number for Parse_Nearest_Double and Parse_Nearest_Single. T is the type read, and the
+/// fallback is strtod or strtof to match, since reading a double and narrowing it would round twice.
+/// </summary>
 template<class T>
 T Parse_Nearest(char const * text, char ** end)
 {
@@ -66,10 +66,8 @@ T Parse_Nearest(char const * text, char ** end)
 		cursor++;
 	}
 
-	/*
-	**	std::from_chars does not read hexadecimal, and it reports a value outside the range of the type
-	**	without a value. strtod handles both, so those cases use it under round to nearest.
-	*/
+	// std::from_chars does not read hexadecimal, and it reports a value outside the range of the type
+	// without a value. strtod handles both, so those cases use it under round to nearest.
 	bool const hexadecimal = cursor[0] == '0' && (cursor[1] == 'x' || cursor[1] == 'X');
 	T value = 0;
 	std::from_chars_result result{cursor, std::errc::invalid_argument};
