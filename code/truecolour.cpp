@@ -833,66 +833,80 @@ void TrueColour_Report(char const * name)
 }
 
 
-/// <summary>
-/// Writes a shape's frames as a PNG sheet, with the colour of each index taken from the palette given.
-/// When displayed is set, each palette colour is shown as the nearest entry of the screen palette,
-/// which is how the game's converters show it on screen.
-/// </summary>
-static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, bool displayed, char const * path)
+namespace {
+
+// A shape's frames laid out on one grid of palette indices, index 0 being transparent.
+struct ShapeSheet
 {
-	LooseShape loose;
-	ShapeSet const * shape = (ShapeSet const *)Fetch_Shape(name, loose);
-	if (shape == NULL) {
-		AUTOTEST_LOG("  exportshape %s: no such shape\n", name);
+	int CellWidth = 0;
+	int CellHeight = 0;
+	int Count = 0;
+	int Width = 0;
+	int Height = 0;
+	std::vector<std::uint8_t> Indices;
+};
+
+}
+
+
+// Sizes a blank sheet for the shape's frames; false when the shape has none.
+static bool Begin_Shape_Sheet(ShapeSet const & shape, ShapeSheet & sheet)
+{
+	sheet.CellWidth = shape.Get_Width();
+	sheet.CellHeight = shape.Get_Height();
+	sheet.Count = shape.Get_Count();
+	if (sheet.CellWidth <= 0 || sheet.CellHeight <= 0 || sheet.Count <= 0) {
 		return(false);
 	}
+	int const columns = std::min(sheet.Count, std::max(1, 4096 / sheet.CellWidth));
+	int const rows = (sheet.Count + columns - 1) / columns;
+	sheet.Width = columns * sheet.CellWidth;
+	sheet.Height = rows * sheet.CellHeight;
+	sheet.Indices.assign((size_t)sheet.Width * sheet.Height, 0);
+	return(true);
+}
 
-	int const width = shape->Get_Width();
-	int const height = shape->Get_Height();
-	int const count = shape->Get_Count();
-	if (width <= 0 || height <= 0 || count <= 0) {
-		return(false);
+
+// Copies one frame into its cell of the sheet, expanding the RLE runs of a compressed frame.
+static void Place_Shape_Frame(ShapeSet const & shape, int frame, ShapeSheet & sheet)
+{
+	Rect rect = shape.Get_Rect(frame);
+	unsigned char const * data = (unsigned char const *)shape.Get_Data(frame);
+	if (data == NULL || rect.Width <= 0 || rect.Height <= 0) {
+		return;
 	}
-	int const columns = std::min(count, std::max(1, 4096 / width));
-	int const rows = (count + columns - 1) / columns;
-	int const sheetwidth = columns * width;
-	int const sheetheight = rows * height;
-
-	std::vector<std::uint8_t> indices((size_t)sheetwidth * sheetheight, 0);
-	for (int frame = 0; frame < count; frame++) {
-		Rect rect = shape->Get_Rect(frame);
-		unsigned char const * data = (unsigned char const *)shape->Get_Data(frame);
-		if (data == NULL || rect.Width <= 0 || rect.Height <= 0) {
+	int const columns = sheet.Width / sheet.CellWidth;
+	int const left = (frame % columns) * sheet.CellWidth + rect.X;
+	int const top = (frame / columns) * sheet.CellHeight + rect.Y;
+	bool const rle = shape.Is_RLE_Compressed(frame);
+	for (int line = 0; line < rect.Height; line++) {
+		std::uint8_t * out = &sheet.Indices[(size_t)(top + line) * sheet.Width + left];
+		if (!rle) {
+			std::memcpy(out, data, (size_t)rect.Width);
+			data += rect.Width;
 			continue;
 		}
-		int const left = (frame % columns) * width + rect.X;
-		int const top = (frame / columns) * height + rect.Y;
-		bool const rle = shape->Is_RLE_Compressed(frame);
-		for (int line = 0; line < rect.Height; line++) {
-			std::uint8_t * out = &indices[(size_t)(top + line) * sheetwidth + left];
-			if (!rle) {
-				std::memcpy(out, data, (size_t)rect.Width);
-				data += rect.Width;
-				continue;
+		unsigned short length = 0;
+		std::memcpy(&length, data, sizeof(length));
+		unsigned char const * run = data + sizeof(length);
+		unsigned char const * end = data + length;
+		int column = 0;
+		while (run < end && column < rect.Width) {
+			if (*run == 0) {
+				column += run + 1 < end ? run[1] : rect.Width;
+				run += 2;
+			} else {
+				out[column++] = *run++;
 			}
-			unsigned short length = 0;
-			std::memcpy(&length, data, sizeof(length));
-			unsigned char const * run = data + sizeof(length);
-			unsigned char const * end = data + length;
-			int column = 0;
-			while (run < end && column < rect.Width) {
-				if (*run == 0) {
-					column += run + 1 < end ? run[1] : rect.Width;
-					run += 2;
-				} else {
-					out[column++] = *run++;
-				}
-			}
-			data = end;
 		}
+		data = end;
 	}
+}
 
-	RGBClass shown[256];
+
+// The colour each index is written with: the palette itself, or its nearest entry on the screen palette when displayed.
+static void Resolve_Sheet_Colours(PaletteClass const & palette, bool displayed, RGBClass (& shown)[256])
+{
 	for (int colour = 0; colour < 256; colour++) {
 		shown[colour] = palette[colour];
 		if (displayed) {
@@ -911,12 +925,17 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 			shown[colour] = GamePalette[best];
 		}
 	}
+}
 
-	std::vector<unsigned char> pixels(indices.size() * 4, 0);
-	std::vector<unsigned char> mask(indices.size() * 4, 0);
+
+// Fills the RGBA sheet and the house-colour mask from the indices; returns whether any house-colour index (16-31) occurs.
+static bool Colour_Sheet(ShapeSheet const & sheet, RGBClass const (& shown)[256], std::vector<unsigned char> & pixels, std::vector<unsigned char> & mask)
+{
+	pixels.assign(sheet.Indices.size() * 4, 0);
+	mask.assign(sheet.Indices.size() * 4, 0);
 	bool house = false;
-	for (size_t index = 0; index < indices.size(); index++) {
-		int colour = indices[index];
+	for (size_t index = 0; index < sheet.Indices.size(); index++) {
+		int colour = sheet.Indices[index];
 		if (colour == 0) {
 			continue;
 		}
@@ -932,19 +951,52 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 			house = true;
 		}
 	}
+	return(house);
+}
 
-	auto write = [&](std::string const & filename, std::vector<unsigned char> const & image) {
-		size_t size = 0;
-		void * png = tdefl_write_image_to_png_file_in_memory_ex(image.data(), sheetwidth, sheetheight, 4, &size, MZ_DEFAULT_LEVEL, false);
-		if (png == NULL) {
-			return(false);
-		}
-		RawFileClass file(filename.c_str());
-		bool ok = file.Open(FileClass::WRITE) && file.Write(png, (int)size) == (int)size;
-		file.Close();
-		mz_free(png);
-		return(ok);
-	};
+
+static bool Write_Sheet_Png(std::string const & filename, std::vector<unsigned char> const & image, ShapeSheet const & sheet)
+{
+	size_t size = 0;
+	void * png = tdefl_write_image_to_png_file_in_memory_ex(image.data(), sheet.Width, sheet.Height, 4, &size, MZ_DEFAULT_LEVEL, false);
+	if (png == NULL) {
+		return(false);
+	}
+	RawFileClass file(filename.c_str());
+	bool ok = file.Open(FileClass::WRITE) && file.Write(png, (int)size) == (int)size;
+	file.Close();
+	mz_free(png);
+	return(ok);
+}
+
+
+/// <summary>
+/// Writes a shape's frames as a PNG sheet, with the colour of each index taken from the palette given.
+/// When displayed is set, each palette colour is shown as the nearest entry of the screen palette,
+/// which is how the game's converters show it on screen.
+/// </summary>
+static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, bool displayed, char const * path)
+{
+	LooseShape loose;
+	ShapeSet const * shape = (ShapeSet const *)Fetch_Shape(name, loose);
+	if (shape == NULL) {
+		AUTOTEST_LOG("  exportshape %s: no such shape\n", name);
+		return(false);
+	}
+
+	ShapeSheet sheet;
+	if (!Begin_Shape_Sheet(*shape, sheet)) {
+		return(false);
+	}
+	for (int frame = 0; frame < sheet.Count; frame++) {
+		Place_Shape_Frame(*shape, frame, sheet);
+	}
+
+	RGBClass shown[256];
+	Resolve_Sheet_Colours(palette, displayed, shown);
+	std::vector<unsigned char> pixels;
+	std::vector<unsigned char> mask;
+	bool const house = Colour_Sheet(sheet, shown, pixels, mask);
 
 	std::string sheetname = path;
 	std::string maskname = sheetname;
@@ -955,9 +1007,9 @@ static bool Export_Shape_Sheet(char const * name, PaletteClass const & palette, 
 		maskname += "_hc";
 	}
 
-	bool ok = write(sheetname, pixels) && (!house || write(maskname, mask));
-	AUTOTEST_LOG("  exportshape %s frames %d cell %dx%d sheet %dx%d house %d -> %s %s\n", name, count, width, height, sheetwidth, sheetheight, (int)house, path,
-		ok ? "ok" : "failed");
+	bool ok = Write_Sheet_Png(sheetname, pixels, sheet) && (!house || Write_Sheet_Png(maskname, mask, sheet));
+	AUTOTEST_LOG("  exportshape %s frames %d cell %dx%d sheet %dx%d house %d -> %s %s\n", name, sheet.Count, sheet.CellWidth, sheet.CellHeight, sheet.Width, sheet.Height,
+		(int)house, path, ok ? "ok" : "failed");
 	return(ok);
 }
 
