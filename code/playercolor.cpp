@@ -289,7 +289,7 @@ HSVClass Player_Ramp_Entry(HSVClass const & base, int index)
 /// </summary>
 int Player_Color_Preset_Count(void)
 {
-	return((int)(sizeof(PRESETS) / sizeof(PRESETS[0])));
+	return(ARRAY_SIZE(PRESETS));
 }
 
 

@@ -20,6 +20,7 @@
 #include "crc.h"
 #include "globals.h"
 #include "savestream.h"
+#include "strutil.h"
 #include "vector.h"
 
 #include <cinttypes>
@@ -96,7 +97,7 @@ const char * AbstractTypeClass::Full_Name(void) const
 		// Ares: a UIName starting with NOSTR: is the name itself rather than a label.
 		static char const NOSTR_PREFIX[] = "NOSTR:";
 		size_t const prefix = sizeof(NOSTR_PREFIX) - 1;
-		if (_strnicmp(UINameLabel.c_str(), NOSTR_PREFIX, prefix) == 0) {
+		if (Starts_With_No_Case(UINameLabel, NOSTR_PREFIX)) {
 			return(UINameLabel.size() > prefix ? UINameLabel.c_str() + prefix : (char const *)GivenName);
 		}
 

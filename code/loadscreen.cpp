@@ -707,7 +707,7 @@ static bool Coop_Picture(char const * scenario, std::string & picture, std::stri
 			std::vector<std::string> const names = Split_Parts(list, ',');
 			for (size_t slot = 0; slot < names.size() && slot < 3; slot++) {
 				std::string const & name = names[slot];
-				if (!name.empty() && _strnicmp(scenario, name.c_str(), name.size()) == 0) {
+				if (!name.empty() && Starts_With_No_Case(scenario, name)) {
 					picture = ini.Get_String(section.c_str(), "CampaignLoadScreen");
 					palette = ini.Get_String(section.c_str(), "CampaignLoadScreenPallet");
 					return(!picture.empty() && !palette.empty());
@@ -978,11 +978,9 @@ void LoadScreenClass::Show_Start_Positions(void)
 		return(Point2D((x / ISO_TILE_PIXEL_W - left) * 2, y / ISO_TILE_PIXEL_H - top));
 	};
 
-	/*
-	** The marks a preview carries for the first start positions are blacked out, as Yuri's
-	** Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
-	** gap among them leaves the last ones marked.
-	*/
+	// The marks a preview carries for the first start positions are blacked out, as Yuri's
+	// Revenge does: one for each of the first eight waypoints that is set, counted from 0, so a
+	// gap among them leaves the last ones marked.
 	Surface & picture = *Preview->Get_Preview_Surface();
 	int marked = 0;
 	for (int waypoint = 0; waypoint < 8; waypoint++) {

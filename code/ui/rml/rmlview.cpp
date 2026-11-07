@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "numparse.h"
+#include "strutil.h"
 #include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"
 
@@ -798,7 +799,7 @@ bool UIRmlViewClass::Type_Ahead(Rml::Element * list, Rml::String const & text)
 	for (int step = 1; step <= (int)rows.size(); step++) {
 		int index = (current + step) % (int)rows.size();
 		std::string label = Row_Text(rows[index]);
-		if (strnicmp(label.c_str(), wanted.c_str(), wanted.size()) == 0) {
+		if (Starts_With_No_Case(label, wanted)) {
 			if (index != current) {
 				rows[index]->Click();
 			}

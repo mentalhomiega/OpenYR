@@ -497,7 +497,7 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 				**	Increase the scroll rate if the mouse button is held down.
 				*/
 				if (Keyboard->Down(KN_RMOUSE)) {
-					rate = std::clamp(rate+1, 4, (int)(sizeof(_rate)/sizeof(_rate[0]))-1);
+					rate = std::clamp(rate+1, 4, ARRAY_SIZE(_rate)-1);
 				}
 
 				/*

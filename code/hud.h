@@ -33,11 +33,9 @@ int Sidebar_Surface_Width(void);
 // Is the screen point over the map, and not over the sidebar, the command bar or a panel drawn on the map?
 bool Point_Over_Map(Point2D const & point);
 
-/*
-** The modern interface's build panel, laid out for the current screen. Panel is in screen
-** coordinates; the other rectangles are in the panel's own coordinates, which are also the
-** sidebar surface's.
-*/
+// The modern interface's build panel, laid out for the current screen. Panel is in screen
+// coordinates; the other rectangles are in the panel's own coordinates, which are also the
+// sidebar surface's.
 struct HudLayout {
 	Rect Panel;
 	Rect Buttons;		// The beacon, sell, power and repair buttons, left to right.
