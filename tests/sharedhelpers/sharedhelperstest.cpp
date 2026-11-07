@@ -7,13 +7,14 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins the edge cases of the small helpers that several files share: the little-endian writers
-// and the trim and text helpers in strutil.h. Needs no game data.
+// Pins the edge cases of the small helpers that several files share: the little-endian writers,
+// the trim and text helpers in strutil.h and the mod folder name in mods.h. Needs no game data.
 
 #include "ahtoi.h"
 #include "hexdigit.h"
 #include "hexformat.h"
 #include "littleendian.h"
+#include "mods.h"
 #include "strutil.h"
 #include "ui/uiclamp.h"
 
@@ -208,6 +209,14 @@ void Test_Index_In_Range()
 	Check(!Index_In_Range(0, 0), "nothing is in range of an empty container");
 }
 
+void Test_Mod_Folder_Own_Name()
+{
+	Check(Mod_Folder_Own_Name("Mods\\Name") == "Name", "a mod folder's own name is its last part");
+	Check(Mod_Folder_Own_Name("C:\\Games\\Mods\\Name\\") == "Name", "a trailing backslash is ignored");
+	Check(Mod_Folder_Own_Name("Mods/Name/") == "Name", "a trailing forward slash is ignored");
+	Check(Mod_Folder_Own_Name("Name") == "Name", "a bare folder name is its own name");
+}
+
 } // namespace
 
 
@@ -223,6 +232,7 @@ int main()
 	Test_Hex_Digits();
 	Test_Paths();
 	Test_Index_In_Range();
+	Test_Mod_Folder_Own_Name();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

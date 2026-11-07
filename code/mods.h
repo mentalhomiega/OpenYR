@@ -13,6 +13,7 @@
 #include "modchoice.h"
 #include "rawfile.h"
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -49,6 +50,17 @@ class ModClass
 
 std::vector<std::string> Parse_Mod_List(char const * list);
 std::string Mod_Folder_Name(std::string const & name, std::string const & datadirectory);
+
+// The folder's own name, its last part. A trailing separator is ignored, so "Mods/Name/" gives "Name".
+inline std::string Mod_Folder_Own_Name(std::string const & folder)
+{
+	std::filesystem::path path(folder);
+	if (!path.has_filename()) {
+		path = path.parent_path();
+	}
+
+	return(path.filename().string());
+}
 
 ModClass Read_Mod(std::string const & folder);
 std::vector<ModClass> Find_Mods(std::string const & datadirectory);

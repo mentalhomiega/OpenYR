@@ -11,12 +11,11 @@
 #include "diskfile.h"
 #include "fnv.h"
 #include "hexdigit.h"
+#include "hexformat.h"
 #include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
-#include <cstdio>
-#include <filesystem>
 #include <fstream>
 #include <iterator>
 
@@ -25,17 +24,6 @@ namespace ModSync
 	namespace {
 
 		constexpr std::size_t MAX_NAME_LENGTH = 40;
-
-
-		// The folder's own name, as the mod list shows it.
-		std::string Folder_Name(std::string const & folder)
-		{
-			std::filesystem::path path(folder);
-			if (!path.has_filename()) {
-				path = path.parent_path();
-			}
-			return(path.filename().string());
-		}
 
 
 		// A name that cannot break the text form: no separators, no control characters, a limited length.
@@ -87,13 +75,11 @@ namespace ModSync
 		{
 			std::string text;
 			for (Entry const & entry : signature.Mods) {
-				char hash[16];
-				std::snprintf(hash, sizeof(hash), "=%08x", entry.Hash);
 				if (!text.empty()) {
 					text += ',';
 				}
 				text += entry.Name;
-				text += hash;
+				text += "=" + Hex_Text(entry.Hash, 8, false);
 			}
 			return(text);
 		}
@@ -127,6 +113,14 @@ namespace ModSync
 			}
 			count = static_cast<std::uint32_t>(signature.Mods.size());
 			hash = Hash_Bytes(FNV_BASIS, text.data(), text.size());
+		}
+
+
+		// Returns the first entry named lower_name ignoring case, or nullptr; lower_name must already be lower case.
+		Entry const * Find_Mod(Signature const & signature, std::string const & lower_name)
+		{
+			auto found = std::find_if(signature.Mods.begin(), signature.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == lower_name);});
+			return(found == signature.Mods.end() ? nullptr : &*found);
 		}
 
 
@@ -174,7 +168,7 @@ namespace ModSync
 		Signature signature;
 		for (ModClass const & mod : mods) {
 			Entry entry;
-			entry.Name = Clean_Name(Folder_Name(mod.Folder));
+			entry.Name = Clean_Name(Mod_Folder_Own_Name(mod.Folder));
 			entry.Hash = Hash_Mod(mod);
 			signature.Mods.push_back(entry);
 		}
@@ -196,9 +190,7 @@ namespace ModSync
 		}
 
 		Digest_Of(signature, text, count, hash);
-		char digest[48];
-		std::snprintf(digest, sizeof(digest), "#%u=%08x", count, hash);
-		return(digest);
+		return("#" + std::to_string(count) + "=" + Hex_Text(hash, 8, false));
 	}
 
 
@@ -264,9 +256,8 @@ namespace ModSync
 		}
 
 		for (Entry const & mine : here.Mods) {
-			std::string const name = Lower(mine.Name);
-			auto theirs = std::find_if(there.Mods.begin(), there.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (theirs == there.Mods.end()) {
+			Entry const * theirs = Find_Mod(there, Lower(mine.Name));
+			if (theirs == nullptr) {
 				difference.OnlyHere.push_back(mine.Name);
 			} else if (theirs->Hash != mine.Hash) {
 				difference.Changed.push_back(mine.Name);
@@ -274,9 +265,7 @@ namespace ModSync
 		}
 
 		for (Entry const & theirs : there.Mods) {
-			std::string const name = Lower(theirs.Name);
-			auto mine = std::find_if(here.Mods.begin(), here.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (mine == here.Mods.end()) {
+			if (Find_Mod(here, Lower(theirs.Name)) == nullptr) {
 				difference.OnlyThere.push_back(theirs.Name);
 			}
 		}

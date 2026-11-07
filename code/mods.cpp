@@ -93,17 +93,6 @@ std::vector<std::string> const & Command_Line_Mods(void)
 }
 
 
-static std::string Folder_Own_Name(std::string const & folder)
-{
-	std::filesystem::path path(folder);
-	if (!path.has_filename()) {
-		path = path.parent_path();
-	}
-
-	return(path.filename().string());
-}
-
-
 static std::string Overlay_Path(INIClass const & ini, std::string const & folder, char const * key)
 {
 	std::string const file = Trimmed(ini.Get_String("Mod", key), TRIM_SPACE_TAB);
@@ -113,7 +102,7 @@ static std::string Overlay_Path(INIClass const & ini, std::string const & folder
 
 static void Read_Manifest(ModClass & mod)
 {
-	mod.Name = Folder_Own_Name(mod.Folder);
+	mod.Name = Mod_Folder_Own_Name(mod.Folder);
 
 	std::string const manifest = mod.Folder + ManifestName;
 	RawFileClass file(manifest.c_str());
@@ -171,7 +160,7 @@ std::vector<ModClass> Find_Mods(std::string const & datadirectory)
 	}
 
 	std::sort(mods.begin(), mods.end(), [](ModClass const & left, ModClass const & right) {
-		return(_stricmp(Folder_Own_Name(left.Folder).c_str(), Folder_Own_Name(right.Folder).c_str()) < 0);
+		return(_stricmp(Mod_Folder_Own_Name(left.Folder).c_str(), Mod_Folder_Own_Name(right.Folder).c_str()) < 0);
 	});
 
 	return(mods);
@@ -259,7 +248,7 @@ ModChoiceClass Mod_Choices(char const * list, std::string const & datadirectory)
 {
 	std::vector<ModChoiceType> found;
 	for (ModClass const & mod : Find_Mods(datadirectory)) {
-		found.push_back(Choice_Of(mod, Folder_Own_Name(mod.Folder)));
+		found.push_back(Choice_Of(mod, Mod_Folder_Own_Name(mod.Folder)));
 	}
 
 	return(ModChoiceClass(Named_Choices(Parse_Mod_List(list), datadirectory), Named_Choices(CommandLineMods, datadirectory), found));
@@ -365,7 +354,7 @@ std::string Active_Mod_List(void)
 		if (!list.empty()) {
 			list += ", ";
 		}
-		list += Folder_Own_Name(mod.Folder);
+		list += Mod_Folder_Own_Name(mod.Folder);
 	}
 
 	return(list);
