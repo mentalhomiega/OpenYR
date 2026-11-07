@@ -17,6 +17,7 @@
 #include "_xmouse.h"
 #include "audio/audioengine.h"
 #include "ccfile.h"
+#include "data.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "gamedirs.h"
@@ -132,35 +133,24 @@ bool Bink_Is_Playing(void)
 }
 
 
-/// <summary>
-/// Plays a Bink (.BIK) movie from the game's files, returning when it ends or the player skips it.
-/// The movie is shown the way the VQA movies are: centered, or stretched to the screen when movie
-/// stretching is on. A movie larger than the screen is cropped to its middle unless it is stretched.
-/// It plays silently while the engine's master volume is zero, as in a scripted test.
-/// </summary>
-bool Bink_Play(char const * name)
+// Reads the whole movie into data, logging when the file is there but cannot be read in full.
+static bool Load_Movie_Data(char const * name, std::vector<unsigned char> & data)
 {
-	if (Playing || !Load_Api()) {
+	CCFileClass file(name);
+	if (!file.Is_Available()) {
 		return(false);
 	}
-
-	std::vector<char> data;
-	{
-		CCFileClass file(name);
-		if (!file.Is_Available()) {
-			return(false);
-		}
-		int const size = file.Size();
-		if (size <= 0) {
-			return(false);
-		}
-		data.resize((std::size_t)size);
-		if (file.Read(data.data(), size) != size) {
-			DebugString("BINK %s: could not read the whole movie\n", name);
-			return(false);
-		}
+	if (!Read_File_Bytes(file, data)) {
+		DebugString("BINK %s: could not read the whole movie\n", name);
+		return(false);
 	}
+	return(true);
+}
 
+
+// Opens the movie from memory and sets its volume. Returns null when Bink cannot open it.
+static void * Open_Movie(char const * name, std::vector<unsigned char> & data)
+{
 	// The Movies slider scales Bink's own output, on top of the master gain.
 	float const movie_level = AudioEngine.Master_Gain() * AudioEngine.Group_Gain(AUDIO_GROUP_MOVIE);
 	bool const sound = movie_level > 0.0f;
@@ -168,10 +158,10 @@ bool Bink_Play(char const * name)
 		Api.SetSoundSystem(Api.OpenDirectSound, 0);
 	}
 
-	void * bink = Api.Open(data.data(), BINK_FROM_MEMORY);
+	void * bink = Api.Open(reinterpret_cast<char const *>(data.data()), BINK_FROM_MEMORY);
 	if (bink == nullptr) {
 		DebugString("BINK %s: not a movie Bink can open\n", name);
-		return(false);
+		return(nullptr);
 	}
 
 	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
@@ -180,48 +170,14 @@ bool Bink_Play(char const * name)
 	DebugString("BINK %s: %dx%d, %u frames at %u/%u\n", name, width, height, info->Frames, info->FrameRate, info->FrameRateDiv);
 	Api.SetVolume(bink, sound ? (int)(32768.0f * movie_level) : 0);
 	DebugString("BINK %s: movie level %.2f\n", name, movie_level);
+	return(bink);
+}
 
-	HiddenSurface->Fill(0);
-	Update_Visible_Surface(HiddenSurface);
 
-	if (width <= 0 || height <= 0) {
-		DebugString("BINK %s: the movie has no picture\n", name);
-		Api.Close(bink);
-		return(false);
-	}
-
-	// Bink writes the whole frame into the buffer it is given and does not clip it. A movie that fits
-	// the hidden surface is decoded into it. A larger one, such as an 800x600 movie at 640x480, is
-	// decoded into a surface of its own size.
-	Surface * draw = HiddenSurface;
-	std::optional<DSurface> frame;
-	if (width > draw->Get_Width() || height > draw->Get_Height()) {
-		frame.emplace(width, height);
-		draw = &*frame;
-	}
-
-	// Without stretching, a movie that fits the screen is centred and a larger one is cropped to its middle.
-	// The source and the area then have the same size, and both lie inside their surfaces.
-	int const shown_width = std::min(width, VisibleRect.Width);
-	int const shown_height = std::min(height, VisibleRect.Height);
-	Rect source((width - shown_width) / 2, (height - shown_height) / 2, shown_width, shown_height);
-	Rect area((VisibleRect.Width - shown_width) / 2, (VisibleRect.Height - shown_height) / 2, shown_width, shown_height);
-	if (DSurface::AllowStretchBlits && Options.StretchMovies) {
-		double const scale = std::min((double)VisibleRect.Width / width, (double)VisibleRect.Height / height);
-		area.Width = (int)(width * scale);
-		area.Height = (int)(height * scale);
-		area.X = (VisibleRect.Width - area.Width) / 2;
-		area.Y = (VisibleRect.Height - area.Height) / 2;
-		source = Rect(0, 0, width, height);
-		DebugString("Stretching movie %dx%d -> %dx%d\n", width, height, area.Width, area.Height);
-	}
-
-	unsigned const format = (DSurface::Get_Primary_Color_Mode() == COLORMODE_555) ? BINK_SURFACE_555 : BINK_SURFACE_565;
-
-	Playing = true;
-	Hide_Mouse();
-	Keyboard->Clear();
-
+// Decodes and shows frames until the movie ends or the player skips it, pausing while the game is out of focus.
+static void Play_Frames(void * bink, Surface * draw, Rect const & area, Rect const & source, unsigned format)
+{
+	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
 	bool paused = false;
 	while (true) {
 		Main_Window_Pump_Events();
@@ -264,6 +220,77 @@ bool Bink_Play(char const * name)
 		}
 		Api.NextFrame(bink);
 	}
+}
+
+
+/// <summary>
+/// Plays a Bink (.BIK) movie from the game's files, returning when it ends or the player skips it.
+/// The movie is shown the way the VQA movies are: centered, or stretched to the screen when movie
+/// stretching is on. A movie larger than the screen is cropped to its middle unless it is stretched.
+/// It plays silently while the engine's master volume is zero, as in a scripted test.
+/// </summary>
+bool Bink_Play(char const * name)
+{
+	if (Playing || !Load_Api()) {
+		return(false);
+	}
+
+	std::vector<unsigned char> data;
+	if (!Load_Movie_Data(name, data)) {
+		return(false);
+	}
+
+	void * bink = Open_Movie(name, data);
+	if (bink == nullptr) {
+		return(false);
+	}
+
+	BinkInfoType const * info = static_cast<BinkInfoType const *>(bink);
+	int const width = (int)info->Width;
+	int const height = (int)info->Height;
+
+	HiddenSurface->Fill(0);
+	Update_Visible_Surface(HiddenSurface);
+
+	if (width <= 0 || height <= 0) {
+		DebugString("BINK %s: the movie has no picture\n", name);
+		Api.Close(bink);
+		return(false);
+	}
+
+	// Bink writes the whole frame into the buffer it is given and does not clip it. A movie that fits
+	// the hidden surface is decoded into it. A larger one, such as an 800x600 movie at 640x480, is
+	// decoded into a surface of its own size.
+	Surface * draw = HiddenSurface;
+	std::optional<DSurface> frame;
+	if (width > draw->Get_Width() || height > draw->Get_Height()) {
+		frame.emplace(width, height);
+		draw = &*frame;
+	}
+
+	// Without stretching, a movie that fits the screen is centred and a larger one is cropped to its middle.
+	// The source and the area then have the same size, and both lie inside their surfaces.
+	int const shown_width = std::min(width, VisibleRect.Width);
+	int const shown_height = std::min(height, VisibleRect.Height);
+	Rect source((width - shown_width) / 2, (height - shown_height) / 2, shown_width, shown_height);
+	Rect area((VisibleRect.Width - shown_width) / 2, (VisibleRect.Height - shown_height) / 2, shown_width, shown_height);
+	if (DSurface::AllowStretchBlits && Options.StretchMovies) {
+		double const scale = std::min((double)VisibleRect.Width / width, (double)VisibleRect.Height / height);
+		area.Width = (int)(width * scale);
+		area.Height = (int)(height * scale);
+		area.X = (VisibleRect.Width - area.Width) / 2;
+		area.Y = (VisibleRect.Height - area.Height) / 2;
+		source = Rect(0, 0, width, height);
+		DebugString("Stretching movie %dx%d -> %dx%d\n", width, height, area.Width, area.Height);
+	}
+
+	unsigned const format = (DSurface::Get_Primary_Color_Mode() == COLORMODE_555) ? BINK_SURFACE_555 : BINK_SURFACE_565;
+
+	Playing = true;
+	Hide_Mouse();
+	Keyboard->Clear();
+
+	Play_Frames(bink, draw, area, source, format);
 
 	Api.Close(bink);
 	Playing = false;

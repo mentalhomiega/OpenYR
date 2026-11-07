@@ -2183,8 +2183,8 @@ static bool Init_Fonts(void)
 	*/
 	CCFileClass unicode("GAME.FNT");
 	if (unicode.Is_Available()) {
-		std::vector<unsigned char> image(unicode.Size());
-		if (!image.empty() && unicode.Read(image.data(), (int)image.size()) == (int)image.size()) {
+		std::vector<unsigned char> image;
+		if (Read_File_Bytes(unicode, image)) {
 			std::shared_ptr<BitFontData const> data = BitFontData::Parse(image.data(), image.size());
 			if (data != NULL) {
 				Metal12FontPtr = new BitFontClass(data);
