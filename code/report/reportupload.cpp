@@ -98,6 +98,101 @@ bool Deflate_Raw(std::string const & data, std::string & packed)
 	return(true);
 }
 
+
+// Fixed sizes of a zip entry's local header, central header and end record, in bytes.
+constexpr std::uintmax_t ZIP_LOCAL_HEADER_BYTES = 30;
+constexpr std::uintmax_t ZIP_CENTRAL_HEADER_BYTES = 46;
+constexpr std::uintmax_t ZIP_END_RECORD_BYTES = 22;
+
+
+// The values that an entry's local and central headers both store.
+struct ZipEntryFields
+{
+	std::string const & Name;
+	unsigned Method;
+	std::uint32_t Crc;
+	std::uint32_t PackedSize;
+	std::uint32_t Size;
+};
+
+
+// Reads a file whole, or for a log over REPORT_WHOLE_READ_MAX, its last REPORT_MAX_BYTES. The caller
+// leaves out any other file over that size before calling.
+void Read_Report_Data(std::istream & stream, std::streamoff on_disk, bool too_large, std::string & data)
+{
+	if (too_large) {
+		// The read can start in the middle of a line, so the first line of that part is cut.
+		stream.seekg(on_disk - static_cast<std::streamoff>(REPORT_MAX_BYTES), std::ios::beg);
+		data.resize(static_cast<std::size_t>(REPORT_MAX_BYTES));
+		stream.read(&data[0], static_cast<std::streamsize>(REPORT_MAX_BYTES));
+		data.resize(static_cast<std::size_t>(stream.gcount()));
+		std::size_t const line_end = data.find('\n');
+		if (line_end != std::string::npos) {
+			data.erase(0, line_end + 1);
+		}
+	} else {
+		stream.seekg(0, std::ios::beg);
+		data.assign((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
+	}
+}
+
+
+// Appends the local file header of an entry and its name. The entry's body follows the name.
+void Append_Local_Header(std::string & entries, ZipEntryFields const & fields)
+{
+	Put_U32_LE(entries, 0x04034b50);
+	Put_U16_LE(entries, 20);						// Version needed: 2.0.
+	Put_U16_LE(entries, 0);							// Flags.
+	Put_U16_LE(entries, fields.Method);
+	Put_U16_LE(entries, 0);							// Time.
+	Put_U16_LE(entries, 0);							// Date.
+	Put_U32_LE(entries, fields.Crc);
+	Put_U32_LE(entries, fields.PackedSize);
+	Put_U32_LE(entries, fields.Size);
+	Put_U16_LE(entries, static_cast<unsigned>(fields.Name.size()));
+	Put_U16_LE(entries, 0);							// Extra field length.
+	entries += fields.Name;
+}
+
+
+// Appends the central directory record of an entry, whose local header starts at offset.
+void Append_Central_Header(std::string & central, ZipEntryFields const & fields, std::uint32_t offset)
+{
+	Put_U32_LE(central, 0x02014b50);
+	Put_U16_LE(central, 20);					// Version made by.
+	Put_U16_LE(central, 20);
+	Put_U16_LE(central, 0);
+	Put_U16_LE(central, fields.Method);
+	Put_U16_LE(central, 0);
+	Put_U16_LE(central, 0);
+	Put_U32_LE(central, fields.Crc);
+	Put_U32_LE(central, fields.PackedSize);
+	Put_U32_LE(central, fields.Size);
+	Put_U16_LE(central, static_cast<unsigned>(fields.Name.size()));
+	Put_U16_LE(central, 0);						// Extra field length.
+	Put_U16_LE(central, 0);						// Comment length.
+	Put_U16_LE(central, 0);						// Disk number.
+	Put_U16_LE(central, 0);						// Internal attributes.
+	Put_U32_LE(central, 0);						// External attributes.
+	Put_U32_LE(central, offset);
+	central += fields.Name;
+}
+
+
+// Appends the end record of a zip whose central directory has count records and central_size bytes,
+// starting at central_offset.
+void Append_Zip_End(std::string & zip, std::size_t count, std::size_t central_size, std::uint32_t central_offset)
+{
+	Put_U32_LE(zip, 0x06054b50);
+	Put_U16_LE(zip, 0);								// This disk.
+	Put_U16_LE(zip, 0);								// Disk with the directory.
+	Put_U16_LE(zip, static_cast<unsigned>(count));
+	Put_U16_LE(zip, static_cast<unsigned>(count));
+	Put_U32_LE(zip, static_cast<std::uint32_t>(central_size));
+	Put_U32_LE(zip, central_offset);
+	Put_U16_LE(zip, 0);								// Comment length.
+}
+
 }
 
 
@@ -238,22 +333,8 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 			continue;
 		}
 
-		// A log too large to read whole is read from its last REPORT_MAX_BYTES. The first line
-		// of that part is cut, because the read starts in the middle of it.
 		std::string data;
-		if (too_large) {
-			stream.seekg(on_disk - static_cast<std::streamoff>(REPORT_MAX_BYTES), std::ios::beg);
-			data.resize(static_cast<std::size_t>(REPORT_MAX_BYTES));
-			stream.read(&data[0], static_cast<std::streamsize>(REPORT_MAX_BYTES));
-			data.resize(static_cast<std::size_t>(stream.gcount()));
-			std::size_t const line_end = data.find('\n');
-			if (line_end != std::string::npos) {
-				data.erase(0, line_end + 1);
-			}
-		} else {
-			stream.seekg(0, std::ios::beg);
-			data.assign((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>());
-		}
+		Read_Report_Data(stream, on_disk, too_large, data);
 		if (data.size() > 0xFFFFFFFFu || file.Name.size() > 0xFFFF) {
 			left_out.push_back(file);
 			continue;
@@ -264,47 +345,19 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 		bool const deflated = Deflate_Raw(data, packed) && packed.size() < data.size();
 		std::string const & body = deflated ? packed : data;
 		std::uint32_t const crc = Report_Crc32(data.data(), data.size());
-		std::uintmax_t const entry_bytes = 30 + 46 + 2 * file.Name.size() + body.size();
-		std::uintmax_t const zip_bytes = entries.size() + central.size() + entry_bytes + 22;
+		std::uintmax_t const entry_bytes = ZIP_LOCAL_HEADER_BYTES + ZIP_CENTRAL_HEADER_BYTES + 2 * file.Name.size() + body.size();
+		std::uintmax_t const zip_bytes = entries.size() + central.size() + entry_bytes + ZIP_END_RECORD_BYTES;
 		if (zip_bytes > max_bytes || zip_bytes > 0xFFFFFFFFu) {
 			left_out.push_back(file);
 			continue;
 		}
+
+		ZipEntryFields const fields{ file.Name, deflated ? 8u : 0u, crc, static_cast<std::uint32_t>(body.size()),
+			static_cast<std::uint32_t>(data.size()) };
 		std::uint32_t const offset = static_cast<std::uint32_t>(entries.size());
-		unsigned const method = deflated ? 8 : 0;
-
-		Put_U32_LE(entries, 0x04034b50);
-		Put_U16_LE(entries, 20);						// Version needed: 2.0.
-		Put_U16_LE(entries, 0);							// Flags.
-		Put_U16_LE(entries, method);
-		Put_U16_LE(entries, 0);							// Time.
-		Put_U16_LE(entries, 0);							// Date.
-		Put_U32_LE(entries, crc);
-		Put_U32_LE(entries, static_cast<std::uint32_t>(body.size()));
-		Put_U32_LE(entries, static_cast<std::uint32_t>(data.size()));
-		Put_U16_LE(entries, static_cast<unsigned>(file.Name.size()));
-		Put_U16_LE(entries, 0);							// Extra field length.
-		entries += file.Name;
+		Append_Local_Header(entries, fields);
 		entries += body;
-
-		Put_U32_LE(central, 0x02014b50);
-		Put_U16_LE(central, 20);					// Version made by.
-		Put_U16_LE(central, 20);
-		Put_U16_LE(central, 0);
-		Put_U16_LE(central, method);
-		Put_U16_LE(central, 0);
-		Put_U16_LE(central, 0);
-		Put_U32_LE(central, crc);
-		Put_U32_LE(central, static_cast<std::uint32_t>(body.size()));
-		Put_U32_LE(central, static_cast<std::uint32_t>(data.size()));
-		Put_U16_LE(central, static_cast<unsigned>(file.Name.size()));
-		Put_U16_LE(central, 0);						// Extra field length.
-		Put_U16_LE(central, 0);						// Comment length.
-		Put_U16_LE(central, 0);						// Disk number.
-		Put_U16_LE(central, 0);						// Internal attributes.
-		Put_U32_LE(central, 0);						// External attributes.
-		Put_U32_LE(central, offset);
-		central += file.Name;
+		Append_Central_Header(central, fields, offset);
 		ReportFileType sent = file;
 		sent.Size = static_cast<std::uintmax_t>(on_disk);
 		sent.Sent = data.size();
@@ -313,14 +366,7 @@ bool Report_Build_Zip(std::vector<ReportFileType> const & files, std::uintmax_t 
 
 	std::uint32_t const central_offset = static_cast<std::uint32_t>(entries.size());
 	zip = entries + central;
-	Put_U32_LE(zip, 0x06054b50);
-	Put_U16_LE(zip, 0);								// This disk.
-	Put_U16_LE(zip, 0);								// Disk with the directory.
-	Put_U16_LE(zip, static_cast<unsigned>(kept.size()));
-	Put_U16_LE(zip, static_cast<unsigned>(kept.size()));
-	Put_U32_LE(zip, static_cast<std::uint32_t>(central.size()));
-	Put_U32_LE(zip, central_offset);
-	Put_U16_LE(zip, 0);								// Comment length.
+	Append_Zip_End(zip, kept.size(), central.size(), central_offset);
 	return(true);
 }
 
