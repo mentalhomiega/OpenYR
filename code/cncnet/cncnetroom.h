@@ -200,7 +200,14 @@ class CnCNetRoomClass
 		void Apply_Nick_Changed(IRCEventType const & event, bool own);
 		void Apply_CTCP(IRCEventType const & event, bool here, bool own);
 		void Host_Message(IRCEventType const & event);
+		void Host_Hello(IRCEventType const & event);
+		void Host_Request(CnCNetRoomPlayerType & player, IRCEventType const & event);
+		void Host_Ready(CnCNetRoomPlayerType & player, IRCEventType const & event);
 		void Guest_Message(IRCEventType const & event);
+		void Guest_Options(IRCEventType const & event);
+		void Guest_Players(IRCEventType const & event);
+		void Guest_Refuse(IRCEventType const & event);
+		void Guest_Start(IRCEventType const & event);
 		void Player_Left(std::string const & nick);
 		void Forget_Pending(std::string const & nick);
 		void Refuse(std::string const & nick, std::string const & reason);
