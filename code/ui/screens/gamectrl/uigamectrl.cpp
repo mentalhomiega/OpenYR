@@ -163,6 +163,26 @@ void UIGameControlsPresenterClass::Update_Names(void)
 }
 
 
+bool UI_Bind_Game_Controls(Rml::DataModelConstructor & model, UIGameControlsState & state)
+{
+	return(model.Bind("scroll", &state.Scroll)
+		&& model.Bind("detail", &state.Detail)
+		&& model.Bind("difficulty", &state.Difficulty)
+		&& model.Bind("cameo", &state.CameoText)
+		&& model.Bind("lines", &state.ActionLines)
+		&& model.Bind("tooltips", &state.ToolTips)
+		&& model.Bind("coasting", &state.Coasting)
+		&& model.Bind("edge", &state.EdgeScroll)
+		&& model.Bind("hidden", &state.ShowHidden)
+		&& model.Bind("defencerange", &state.ShowDefenceRange)
+		&& model.Bind("hasdifficulty", &state.HasDifficulty)
+		&& model.Bind("scrollname", &state.ScrollName)
+		&& model.Bind("detailname", &state.DetailName)
+		&& model.Bind("difficultyname", &state.DifficultyName));
+}
+
+
+
 namespace
 {
 
@@ -193,25 +213,12 @@ class UIGameControlsViewClass : public UIRmlViewClass
 
 			UIGameControlsState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIChoice>>()
+				&& UI_Bind_Game_Controls(model, state)
 				&& model.Bind("speed", &state.Speed)
-				&& model.Bind("scroll", &state.Scroll)
-				&& model.Bind("detail", &state.Detail)
-				&& model.Bind("difficulty", &state.Difficulty)
-				&& model.Bind("cameo", &state.CameoText)
-				&& model.Bind("lines", &state.ActionLines)
-				&& model.Bind("tooltips", &state.ToolTips)
-				&& model.Bind("coasting", &state.Coasting)
-				&& model.Bind("edge", &state.EdgeScroll)
-				&& model.Bind("hidden", &state.ShowHidden)
-				&& model.Bind("defencerange", &state.ShowDefenceRange)
 				&& model.Bind("ingame", &state.InGame)
 				&& model.Bind("hasspeed", &state.HasSpeed)
-				&& model.Bind("hasdifficulty", &state.HasDifficulty)
 				&& model.Bind("soundenabled", &state.SoundEnabled)
 				&& model.Bind("speedname", &state.SpeedName)
-				&& model.Bind("scrollname", &state.ScrollName)
-				&& model.Bind("detailname", &state.DetailName)
-				&& model.Bind("difficultyname", &state.DifficultyName)
 				&& model.Bind("leavelabel", &state.LeaveLabel)
 				&& model.Bind("extras", &state.Extras)
 				&& model.Bind("rally", &state.AltToRally)

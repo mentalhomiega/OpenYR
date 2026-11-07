@@ -10,6 +10,7 @@
 #include "ui/screens/movies/uimovies.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <utility>
 
@@ -27,11 +28,11 @@ UIMoviesPresenterClass::UIMoviesPresenterClass(UIMoviesState state) :
 void UIMoviesPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Rows.size()) {
+		if (Index_In_Range(intent.Value, State.Rows.size())) {
 			State.Selected = intent.Value;
 		}
 	} else if (intent.Name == "open" || intent.Name == "play") {
-		if (State.Selected >= 0 && State.Selected < (int)State.Rows.size()) {
+		if (Index_In_Range(State.Selected, State.Rows.size())) {
 			Result = UI_RESULT_ACCEPTED;
 		}
 	} else if (intent.Name == "cancel") {

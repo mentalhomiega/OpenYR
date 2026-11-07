@@ -10,6 +10,7 @@
 #include "ui/screens/replays/uireplays.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <utility>
 
@@ -26,10 +27,10 @@ UIReplaysPresenterClass::UIReplaysPresenterClass(UIReplaysState state) :
 /// </summary>
 void UIReplaysPresenterClass::Execute(UIIntent const & intent)
 {
-	bool const picked = State.Selected >= 0 && State.Selected < (int)State.Rows.size();
+	bool const picked = Index_In_Range(State.Selected, State.Rows.size());
 
 	if (intent.Name == "select") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Rows.size()) {
+		if (Index_In_Range(intent.Value, State.Rows.size())) {
 			State.Selected = intent.Value;
 		}
 	} else if (intent.Name == "open" || intent.Name == "play") {
