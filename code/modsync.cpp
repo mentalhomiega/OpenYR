@@ -118,6 +118,14 @@ namespace ModSync
 		}
 
 
+		// Returns the first entry named lower_name ignoring case, or nullptr; lower_name must already be lower case.
+		Entry const * Find_Mod(Signature const & signature, std::string const & lower_name)
+		{
+			auto found = std::find_if(signature.Mods.begin(), signature.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == lower_name);});
+			return(found == signature.Mods.end() ? nullptr : &*found);
+		}
+
+
 		void Append_Names(std::string & text, std::vector<std::string> const & names)
 		{
 			for (std::size_t index = 0; index < names.size(); index++) {
@@ -252,9 +260,8 @@ namespace ModSync
 		}
 
 		for (Entry const & mine : here.Mods) {
-			std::string const name = Lower(mine.Name);
-			auto theirs = std::find_if(there.Mods.begin(), there.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (theirs == there.Mods.end()) {
+			Entry const * theirs = Find_Mod(there, Lower(mine.Name));
+			if (theirs == nullptr) {
 				difference.OnlyHere.push_back(mine.Name);
 			} else if (theirs->Hash != mine.Hash) {
 				difference.Changed.push_back(mine.Name);
@@ -262,9 +269,7 @@ namespace ModSync
 		}
 
 		for (Entry const & theirs : there.Mods) {
-			std::string const name = Lower(theirs.Name);
-			auto mine = std::find_if(here.Mods.begin(), here.Mods.end(), [&](Entry const & entry) {return(Lower(entry.Name) == name);});
-			if (mine == here.Mods.end()) {
+			if (Find_Mod(here, Lower(theirs.Name)) == nullptr) {
 				difference.OnlyThere.push_back(theirs.Name);
 			}
 		}
