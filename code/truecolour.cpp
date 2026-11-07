@@ -984,20 +984,21 @@ bool TrueColour_Export(char const * name, char const * path)
 /// </summary>
 bool TrueColour_Export_Palette(char const * name, char const * palette, char const * path)
 {
+	static constexpr std::string_view HOUSE_PREFIX = "house:";
 	PaletteClass pal = BlackPalette;
-	if (stricmp(palette, "theater") == 0) {
+	if (Equals_No_Case(palette, "theater")) {
 		pal = GamePalette;
-	} else if (stricmp(palette, "unit") == 0) {
+	} else if (Equals_No_Case(palette, "unit")) {
 		pal = SchemePalette;
-	} else if (stricmp(palette, "anim") == 0) {
+	} else if (Equals_No_Case(palette, "anim")) {
 		void const * data = MFCD::Retrieve("ANIM.PAL");
 		if (data == NULL) {
 			AUTOTEST_LOG("  exportpal %s: ANIM.PAL not found\n", name);
 			return(false);
 		}
 		pal = Widen_Six_Bit_Palette(data);
-	} else if (strnicmp(palette, "house:", 6) == 0) {
-		int const scheme = std::atoi(palette + 6);
+	} else if (Starts_With_No_Case(palette, HOUSE_PREFIX)) {
+		int const scheme = std::atoi(palette + HOUSE_PREFIX.size());
 		if (scheme < 0 || scheme >= ColorSchemes.Count()) {
 			AUTOTEST_LOG("  exportpal %s: no colour scheme %d\n", name, scheme);
 			return(false);

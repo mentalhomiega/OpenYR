@@ -24,6 +24,7 @@
 #include "globals.h"
 #include "shellmap.h"
 #include "stimer.h"
+#include "strutil.h"
 #include "timer.h"
 #include "voxqueue.h"
 
@@ -844,7 +845,7 @@ void Speak_Eva_Index(int line, bool now)
 			return;
 		}
 		EvaLineType const & entry = EvaLines[line];
-		if (!SpeechEnabled && _strnicmp(entry.Name.c_str(), "EVA_", 4) == 0) {
+		if (!SpeechEnabled && Starts_With_No_Case(entry.Name, "EVA_")) {
 			return;
 		}
 		control = entry.Priority == PRIORITY_CRITICAL ? VOXC_CRITICAL : entry.Control;

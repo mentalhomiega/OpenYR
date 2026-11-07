@@ -707,7 +707,7 @@ static bool Coop_Picture(char const * scenario, std::string & picture, std::stri
 			std::vector<std::string> const names = Split_Parts(list, ',');
 			for (size_t slot = 0; slot < names.size() && slot < 3; slot++) {
 				std::string const & name = names[slot];
-				if (!name.empty() && _strnicmp(scenario, name.c_str(), name.size()) == 0) {
+				if (!name.empty() && Starts_With_No_Case(scenario, name)) {
 					picture = ini.Get_String(section.c_str(), "CampaignLoadScreen");
 					palette = ini.Get_String(section.c_str(), "CampaignLoadScreenPallet");
 					return(!picture.empty() && !palette.empty());
