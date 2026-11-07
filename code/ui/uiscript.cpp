@@ -114,7 +114,7 @@ std::string Plain_Text(Rml::Element * element)
 
 Rml::Element * Find_Button(Rml::Element * element, std::string const & label)
 {
-	if (element->IsVisible() && element->GetTagName() == "button" && _stricmp(Plain_Text(element).c_str(), label.c_str()) == 0) {
+	if (element->IsVisible() && element->GetTagName() == "button" && Equals_No_Case(Plain_Text(element), label)) {
 		return(element);
 	}
 	for (int child = 0; child < element->GetNumChildren(); child++) {
@@ -144,7 +144,7 @@ Rml::Element * Find_Text(Rml::Element * element, std::string const & label)
 			return(found);
 		}
 	}
-	if (_stricmp(Plain_Text(element).c_str(), label.c_str()) == 0) {
+	if (Equals_No_Case(Plain_Text(element), label)) {
 		return(element);
 	}
 	return(nullptr);
@@ -232,6 +232,13 @@ bool Settle(long long now)
 }
 
 
+// Logs a step that found no visible element; tail adds what else the step needed.
+void Log_No_Element(UIStepType const & step, char const * tail)
+{
+	DebugString("UISCRIPT   %s %s: no such visible element%s\n", step.Command.c_str(), step.Argument.c_str(), tail);
+}
+
+
 // Clicks the element, or logs that no visible one was found; what names the kind of element in the log.
 bool Click_Visible(Rml::Element * element, UIStepType const & step, long long now, char const * what)
 {
@@ -288,7 +295,7 @@ bool Step_Box(Rml::Context * context, UIStepType const & step, long long)
 {
 	Rml::Element * element = Find_Element(context, step.Argument);
 	if (element == nullptr) {
-		DebugString("UISCRIPT   box %s: no such visible element\n", step.Argument.c_str());
+		Log_No_Element(step, "");
 	}
 	for (Rml::Element * at = element; at != nullptr; at = at->GetParentNode()) {
 		Rml::Vector2f const offset = at->GetAbsoluteOffset(Rml::BoxArea::Border);
@@ -320,7 +327,7 @@ bool Step_Set(Rml::Context * context, UIStepType const & step, long long now)
 	Rml::Element * element = Find_Element(context, step.Argument.substr(0, space));
 	bool const text_box = element != nullptr && element->GetAttribute<Rml::String>("type", "") == "text";
 	if (element == nullptr || (space == std::string::npos && !text_box)) {
-		DebugString("UISCRIPT   set %s: no such visible element or no value\n", step.Argument.c_str());
+		Log_No_Element(step, " or no value");
 		return(false);
 	}
 
@@ -346,7 +353,7 @@ bool Step_Pointer(Rml::Context * context, UIStepType const & step, long long now
 	fields >> id >> fx >> fy;
 	Rml::Element * element = Find_Element(context, id);
 	if (element == nullptr || fields.fail()) {
-		DebugString("UISCRIPT   pointer %s: no such visible element or no point\n", step.Argument.c_str());
+		Log_No_Element(step, " or no point");
 		return(false);
 	}
 
@@ -368,7 +375,7 @@ bool Step_Xbutton(Rml::Context * context, UIStepType const & step, long long now
 	fields >> id >> side;
 	Rml::Element * element = Find_Element(context, id);
 	if (element == nullptr || fields.fail() || (side != 1 && side != 2)) {
-		DebugString("UISCRIPT   xbutton %s: no such visible element or no button\n", step.Argument.c_str());
+		Log_No_Element(step, " or no button");
 		return(false);
 	}
 
@@ -382,7 +389,7 @@ bool Step_Wclick(Rml::Context * context, UIStepType const & step, long long now)
 {
 	Rml::Element * element = Find_Element(context, step.Argument);
 	if (element == nullptr) {
-		DebugString("UISCRIPT   wclick %s: no such visible element\n", step.Argument.c_str());
+		Log_No_Element(step, "");
 		return(false);
 	}
 
@@ -416,22 +423,22 @@ bool Step_Choose(Rml::Context * context, UIStepType const & step, long long now)
 // A "ctrl+" or "shift+" in front of the name holds that key down.
 bool Step_Key(Rml::Context * context, UIStepType const & step, long long now)
 {
+	static struct { std::string_view Prefix; int Modifier; } const modifier_prefixes[] = {
+		{"ctrl+", Rml::Input::KM_CTRL},
+		{"shift+", Rml::Input::KM_SHIFT},
+		{"alt+", Rml::Input::KM_ALT},
+	};
 	std::string name = step.Argument;
 	int modifiers = 0;
 	for (bool more = true; more; ) {
 		more = false;
-		if (name.rfind("ctrl+", 0) == 0) {
-			modifiers |= Rml::Input::KM_CTRL;
-			name.erase(0, 5);
-			more = true;
-		} else if (name.rfind("shift+", 0) == 0) {
-			modifiers |= Rml::Input::KM_SHIFT;
-			name.erase(0, 6);
-			more = true;
-		} else if (name.rfind("alt+", 0) == 0) {
-			modifiers |= Rml::Input::KM_ALT;
-			name.erase(0, 4);
-			more = true;
+		for (auto const & entry : modifier_prefixes) {
+			if (name.starts_with(entry.Prefix)) {
+				modifiers |= entry.Modifier;
+				name.erase(0, entry.Prefix.size());
+				more = true;
+				break;
+			}
 		}
 	}
 
@@ -513,7 +520,7 @@ bool Step_Checked(Rml::Context * context, UIStepType const & step, long long)
 {
 	Rml::Element * element = Find_Element(context, step.Argument);
 	if (element == nullptr) {
-		DebugString("UISCRIPT   checked %s: no such visible element\n", step.Argument.c_str());
+		Log_No_Element(step, "");
 	} else {
 		DebugString("AUTOTEST checked %s %d\n", step.Argument.c_str(), element->HasAttribute("checked") ? 1 : 0);
 	}
