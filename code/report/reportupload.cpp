@@ -9,6 +9,7 @@
 
 #include "report/reportupload.h"
 #include "diskfile.h"
+#include "hexformat.h"
 #include "littleendian.h"
 #include "strutil.h"
 
@@ -65,9 +66,7 @@ std::string Json_Escape(std::string const & text)
 			out += '\\';
 			out += c;
 		} else if (u < 0x20) {
-			char code[8];
-			std::snprintf(code, sizeof(code), "\\u%04x", u);
-			out += code;
+			out += "\\u" + Hex_Text(u, 4, false);
 		} else {
 			out += c;
 		}
