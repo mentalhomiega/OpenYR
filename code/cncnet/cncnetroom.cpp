@@ -146,53 +146,15 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 
 	switch (event.Kind) {
 		case IRCEventKind::JOINED:
-			if (!here) {
-				break;
-			}
-			if (own) {
-				JoinedAt = now;
-				if (IsHost) {
-					CurrentStatus = CnCNetRoomStatus::IN_ROOM;
-					Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
-						std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
-				} else {
-					CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
-					Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
-				}
-				Changed();
-			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
-				// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
-				Pending.push_back({event.Nick, now});
-				CnCNetRoomPlayerType player;
-				player.Name = event.Nick;
-				if (Admit(player) && !Config.Notice.empty()) {
-					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
-				}
-			}
+			Apply_Joined(event, here, own, now);
 			break;
 
 		case IRCEventKind::PARTED:
-			if (!here) {
-				break;
-			}
-			if (own) {
-				Close("You left the room.");
-			} else {
-				Player_Left(event.Nick);
-			}
+			Apply_Parted(event, here, own);
 			break;
 
 		case IRCEventKind::KICKED:
-			if (!here) {
-				break;
-			}
-			if (CnCNetLobbyClass::Same_Nick(event.Text, Config.OwnNick)) {
-				if (CurrentStatus != CnCNetRoomStatus::CLOSED) {
-					Close("You were removed from the room by " + event.Nick + ".");
-				}
-			} else {
-				Player_Left(event.Text);
-			}
+			Apply_Kicked(event, here);
 			break;
 
 		case IRCEventKind::QUIT:
@@ -200,35 +162,11 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 			break;
 
 		case IRCEventKind::NICK_CHANGED:
-			if (own) {
-				Config.OwnNick = event.Text;
-			}
-			if (CnCNetLobbyClass::Same_Nick(Config.HostNick, event.Nick)) {
-				Config.HostNick = event.Text;
-			}
-			for (PendingType & pending : Pending) {
-				if (CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)) {
-					pending.Nick = event.Text;
-				}
-			}
-			if (CnCNetRoomPlayerType * player = Player(event.Nick)) {
-				player->Name = event.Text;
-				Changed();
-				if (IsHost) {
-					Send_Players();
-				}
-			}
+			Apply_Nick_Changed(event, own);
 			break;
 
 		case IRCEventKind::CTCP:
-			if (!here || own) {
-				break;
-			}
-			if (IsHost) {
-				Host_Message(event);
-			} else if (CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick)) {
-				Guest_Message(event);
-			}
+			Apply_CTCP(event, here, own);
 			break;
 
 		case IRCEventKind::CHANNEL_REFUSED:
@@ -239,6 +177,98 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 
 		default:
 			break;
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Joined(IRCEventType const & event, bool here, bool own, uint64_t now)
+{
+	if (!here) {
+		return;
+	}
+	if (own) {
+		JoinedAt = now;
+		if (IsHost) {
+			CurrentStatus = CnCNetRoomStatus::IN_ROOM;
+			Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
+				std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
+		} else {
+			CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
+			Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
+		}
+		Changed();
+	} else if (IsHost && Find_Player(event.Nick) == nullptr) {
+		// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
+		Pending.push_back({event.Nick, now});
+		CnCNetRoomPlayerType player;
+		player.Name = event.Nick;
+		if (Admit(player) && !Config.Notice.empty()) {
+			Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
+		}
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Parted(IRCEventType const & event, bool here, bool own)
+{
+	if (!here) {
+		return;
+	}
+	if (own) {
+		Close("You left the room.");
+	} else {
+		Player_Left(event.Nick);
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Kicked(IRCEventType const & event, bool here)
+{
+	if (!here) {
+		return;
+	}
+	if (CnCNetLobbyClass::Same_Nick(event.Text, Config.OwnNick)) {
+		if (CurrentStatus != CnCNetRoomStatus::CLOSED) {
+			Close("You were removed from the room by " + event.Nick + ".");
+		}
+	} else {
+		Player_Left(event.Text);
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Nick_Changed(IRCEventType const & event, bool own)
+{
+	if (own) {
+		Config.OwnNick = event.Text;
+	}
+	if (CnCNetLobbyClass::Same_Nick(Config.HostNick, event.Nick)) {
+		Config.HostNick = event.Text;
+	}
+	for (PendingType & pending : Pending) {
+		if (CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)) {
+			pending.Nick = event.Text;
+		}
+	}
+	if (CnCNetRoomPlayerType * player = Player(event.Nick)) {
+		player->Name = event.Text;
+		Changed();
+		if (IsHost) {
+			Send_Players();
+		}
+	}
+}
+
+
+void CnCNetRoomClass::Apply_CTCP(IRCEventType const & event, bool here, bool own)
+{
+	if (!here || own) {
+		return;
+	}
+	if (IsHost) {
+		Host_Message(event);
+	} else if (CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick)) {
+		Guest_Message(event);
 	}
 }
 

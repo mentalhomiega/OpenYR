@@ -194,6 +194,11 @@ class CnCNetRoomClass
 
 		CnCNetRoomClass(void) = default;
 
+		void Apply_Joined(IRCEventType const & event, bool here, bool own, uint64_t now);
+		void Apply_Parted(IRCEventType const & event, bool here, bool own);
+		void Apply_Kicked(IRCEventType const & event, bool here);
+		void Apply_Nick_Changed(IRCEventType const & event, bool own);
+		void Apply_CTCP(IRCEventType const & event, bool here, bool own);
 		void Host_Message(IRCEventType const & event);
 		void Guest_Message(IRCEventType const & event);
 		void Player_Left(std::string const & nick);
