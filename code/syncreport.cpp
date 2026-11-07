@@ -433,7 +433,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 
 		fprintf(fp,"COORD:%6d,%6d,%5d  Facing:%3d  Mission:%2d  Type:%-14s Tgt:%-16s Speed:%4d  NavCom:%s\n",
 			coord.X,coord.Y,coord.Z,(int)infp->PrimaryFacing.Current().As_Dir256(),infp->Get_Mission(),
-			type_text, tarcom_text, int(infp->Speed * (MPH_LIGHT_SPEED + 1.0)), navcom_text);
+			type_text, tarcom_text, int(infp->Speed * (static_cast<double>(MPH_LIGHT_SPEED) + 1.0)), navcom_text);
 	});
 
 	Print_Techno_Sections<UnitClass>(fp, "Units", Units, [fp](UnitClass * unitp, unsigned int & crc) {
