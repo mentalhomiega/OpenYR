@@ -98,6 +98,123 @@ struct LookupType
 	addrinfo * Found = nullptr;
 };
 
+
+// Looks up host and sets found to its answer, which the caller frees. On false, error says why.
+bool Resolve_Host(std::string const & host, std::string const & service, addrinfo const & hints, std::atomic<bool> const * stop, addrinfo *& found, std::string & error)
+{
+	if (stop == nullptr) {
+		if (getaddrinfo(host.c_str(), service.c_str(), &hints, &found) != 0 || found == nullptr) {
+			error = "could not look up " + host;
+			return(false);
+		}
+		return(true);
+	}
+
+	// getaddrinfo cannot be interrupted, so a caller that may be stopped looks the name up on its own thread
+	// and waits for it in slices.
+	// The thread may still be inside getaddrinfo when the stream and its own network reference are gone, and
+	// Winsock must stay up until it is out, so the thread gets a reference of its own, taken here before it
+	// starts.
+	auto const lookup = std::make_shared<LookupType>();
+	WinsockGuard thread_network;
+	std::thread([lookup, host, service, hints, network = std::move(thread_network)]() {
+		addrinfo * answer = nullptr;
+		int const result = getaddrinfo(host.c_str(), service.c_str(), &hints, &answer);
+		{
+			std::lock_guard<std::mutex> guard(lookup->Lock);
+			if (lookup->Abandoned) {
+				if (result == 0 && answer != nullptr) {
+					freeaddrinfo(answer);
+				}
+			} else {
+				lookup->Result = result;
+				lookup->Found = answer;
+				lookup->Done = true;
+				lookup->Ready.notify_all();
+			}
+		}
+	}).detach();
+	int const waited = TCP_Wait_Sliced(LOOKUP_LIMIT_MS, STOP_SLICE_MS, stop, [&lookup](int slice_ms) {
+		std::unique_lock<std::mutex> guard(lookup->Lock);
+		lookup->Ready.wait_for(guard, std::chrono::milliseconds(slice_ms), [&lookup]() { return(lookup->Done); });
+		return(lookup->Done ? 1 : 0);
+	});
+	std::lock_guard<std::mutex> guard(lookup->Lock);
+	if (waited != 1 || !lookup->Done) {
+		lookup->Abandoned = !lookup->Done;
+		error = waited == -2 ? "stopped" : "could not look up " + host;
+		if (lookup->Done && lookup->Found != nullptr) {
+			freeaddrinfo(lookup->Found);
+		}
+		return(false);
+	}
+	if (lookup->Result != 0 || lookup->Found == nullptr) {
+		error = "could not look up " + host;
+		return(false);
+	}
+	found = lookup->Found;
+	return(true);
+}
+
+
+// How one address attempt ended. Stopped ends the whole connect with the error "stopped"; Failed moves on to
+// the next address.
+enum class AddressAttempt
+{
+	Connected,
+	Failed,
+	Stopped,
+};
+
+
+// Tries one address from the lookup. On Connected, opened holds a connected socket with TCP_NODELAY set; on
+// Failed and Stopped no socket is left open.
+AddressAttempt Connect_To_Address(addrinfo const * entry, int timeout_ms, std::atomic<bool> const * stop, NativeSocket & opened)
+{
+	NativeSocket const handle = socket(entry->ai_family, entry->ai_socktype, entry->ai_protocol);
+#if defined(_WIN32)
+	if (handle == INVALID_SOCKET) {
+		return(AddressAttempt::Failed);
+	}
+#else
+	if (handle < 0) {
+		return(AddressAttempt::Failed);
+	}
+#endif
+	if (!Set_Non_Blocking(handle)) {
+		Close_Native(handle);
+		return(AddressAttempt::Failed);
+	}
+
+	bool connected = connect(handle, entry->ai_addr, static_cast<int>(entry->ai_addrlen)) == 0;
+	bool const pending = !connected && Would_Block();
+	int const ready = pending ? TCP_Wait_Sliced(timeout_ms, STOP_SLICE_MS, stop, [handle](int slice_ms) { return(Wait(handle, true, slice_ms)); }) : 0;
+	if (ready == -2) {
+		Close_Native(handle);
+		return(AddressAttempt::Stopped);
+	}
+	if (ready == 1) {
+		int socket_error = 0;
+#if defined(_WIN32)
+		int size = sizeof(socket_error);
+		getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&socket_error), &size);
+#else
+		socklen_t size = sizeof(socket_error);
+		getsockopt(handle, SOL_SOCKET, SO_ERROR, &socket_error, &size);
+#endif
+		connected = socket_error == 0;
+	}
+
+	if (!connected) {
+		Close_Native(handle);
+		return(AddressAttempt::Failed);
+	}
+	int on = 1;
+	setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char const *>(&on), sizeof(on));
+	opened = handle;
+	return(AddressAttempt::Connected);
+}
+
 }
 
 
@@ -153,55 +270,8 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 
 	addrinfo * found = nullptr;
 	std::string const service = std::to_string(port);
-	if (stop == nullptr) {
-		if (getaddrinfo(host.c_str(), service.c_str(), &hints, &found) != 0 || found == nullptr) {
-			error = "could not look up " + host;
-			return(false);
-		}
-	} else {
-		// getaddrinfo cannot be interrupted, so a caller that may be stopped looks the name up on its own thread
-		// and waits for it in slices.
-		// The thread may still be inside getaddrinfo when the stream and its own network reference are gone, and
-		// Winsock must stay up until it is out, so the thread gets a reference of its own, taken here before it
-		// starts.
-		auto const lookup = std::make_shared<LookupType>();
-		WinsockGuard thread_network;
-		std::thread([lookup, host, service, hints, network = std::move(thread_network)]() {
-			addrinfo * answer = nullptr;
-			int const result = getaddrinfo(host.c_str(), service.c_str(), &hints, &answer);
-			{
-				std::lock_guard<std::mutex> guard(lookup->Lock);
-				if (lookup->Abandoned) {
-					if (result == 0 && answer != nullptr) {
-						freeaddrinfo(answer);
-					}
-				} else {
-					lookup->Result = result;
-					lookup->Found = answer;
-					lookup->Done = true;
-					lookup->Ready.notify_all();
-				}
-			}
-		}).detach();
-		int const waited = TCP_Wait_Sliced(LOOKUP_LIMIT_MS, STOP_SLICE_MS, stop, [&lookup](int slice_ms) {
-			std::unique_lock<std::mutex> guard(lookup->Lock);
-			lookup->Ready.wait_for(guard, std::chrono::milliseconds(slice_ms), [&lookup]() { return(lookup->Done); });
-			return(lookup->Done ? 1 : 0);
-		});
-		std::lock_guard<std::mutex> guard(lookup->Lock);
-		if (waited != 1 || !lookup->Done) {
-			lookup->Abandoned = !lookup->Done;
-			error = waited == -2 ? "stopped" : "could not look up " + host;
-			if (lookup->Done && lookup->Found != nullptr) {
-				freeaddrinfo(lookup->Found);
-			}
-			return(false);
-		}
-		if (lookup->Result != 0 || lookup->Found == nullptr) {
-			error = "could not look up " + host;
-			return(false);
-		}
-		found = lookup->Found;
+	if (!Resolve_Host(host, service, hints, stop, found, error)) {
+		return(false);
 	}
 
 	error = "could not reach " + host;
@@ -210,49 +280,17 @@ bool TCPStreamClass::Connect(std::string const & host, uint16_t port, int timeou
 			error = "stopped";
 			break;
 		}
-		NativeSocket const handle = socket(entry->ai_family, entry->ai_socktype, entry->ai_protocol);
-#if defined(_WIN32)
-		if (handle == INVALID_SOCKET) {
-			continue;
-		}
-#else
-		if (handle < 0) {
-			continue;
-		}
-#endif
-		if (!Set_Non_Blocking(handle)) {
-			Close_Native(handle);
-			continue;
-		}
-
-		bool connected = connect(handle, entry->ai_addr, static_cast<int>(entry->ai_addrlen)) == 0;
-		bool const pending = !connected && Would_Block();
-		int const ready = pending ? TCP_Wait_Sliced(timeout_ms, STOP_SLICE_MS, stop, [handle](int slice_ms) { return(Wait(handle, true, slice_ms)); }) : 0;
-		if (ready == -2) {
-			Close_Native(handle);
+		NativeSocket opened = NO_SOCKET;
+		AddressAttempt const attempt = Connect_To_Address(entry, timeout_ms, stop, opened);
+		if (attempt == AddressAttempt::Stopped) {
 			error = "stopped";
 			break;
 		}
-		if (ready == 1) {
-			int socket_error = 0;
-#if defined(_WIN32)
-			int size = sizeof(socket_error);
-			getsockopt(handle, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&socket_error), &size);
-#else
-			socklen_t size = sizeof(socket_error);
-			getsockopt(handle, SOL_SOCKET, SO_ERROR, &socket_error, &size);
-#endif
-			connected = socket_error == 0;
-		}
-
-		if (connected) {
-			int on = 1;
-			setsockopt(handle, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<char const *>(&on), sizeof(on));
-			Handle = static_cast<SocketHandle>(handle);
+		if (attempt == AddressAttempt::Connected) {
+			Handle = static_cast<SocketHandle>(opened);
 			error.clear();
 			break;
 		}
-		Close_Native(handle);
 	}
 
 	freeaddrinfo(found);
