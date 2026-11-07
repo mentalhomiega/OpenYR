@@ -155,10 +155,7 @@ bool Section_Name(std::string const & line, std::string & name)
 bool Key_Value(std::string const & line, std::string const & key, std::string & value)
 {
 	std::size_t const at = line.find_first_not_of(" \t");
-	if (at == std::string::npos || line.size() - at < key.size()) {
-		return(false);
-	}
-	if (_strnicmp(line.c_str() + at, key.c_str(), key.size()) != 0) {
+	if (at == std::string::npos || !Starts_With_No_Case(std::string_view(line).substr(at), key)) {
 		return(false);
 	}
 	std::size_t pos = at + key.size();
@@ -326,6 +323,7 @@ std::string Marker_Install(std::string const & copy)
 		return(std::string());
 	}
 
+	std::string_view const install_label = "Install:";
 	std::size_t start = 0;
 	while (start < bytes.size()) {
 		std::size_t end = bytes.find('\n', start);
@@ -333,8 +331,8 @@ std::string Marker_Install(std::string const & copy)
 			end = bytes.size();
 		}
 		std::string const line = bytes.substr(start, end - start);
-		if (line.compare(0, 8, "Install:") == 0) {
-			return(Trimmed(line.substr(8), TRIM_SPACE_TAB_EOL));
+		if (line.starts_with(install_label)) {
+			return(Trimmed(line.substr(install_label.size()), TRIM_SPACE_TAB_EOL));
 		}
 		start = end + 1;
 	}
