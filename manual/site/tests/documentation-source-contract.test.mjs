@@ -976,11 +976,19 @@ test('A computer player draws a country from the lobby roster', () => {
 test('A lobby side entry carries its country', () => {
 	const lobby = source('code/ui/screens/netlobby/uinetlobbydlg.cpp');
 
-	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'), [
-		'house->IsMultiplay',
-		'option.Value = index;',
-		'if (index == Session.House) {',
+	assert.match(
+		functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'),
+		/UI_Fill_Multiplay_Sides\(state\.Sides, Session\.House, &state\.Side\);/,
+		'the side list is filled from the countries and positioned by the one the player holds');
+	assertOrdered(functionBody(source('code/ui/uienginehost.h'), 'void UI_Fill_Multiplay_Sides('), [
+		'UI_Multiplay_House_At(position)',
+		'option.Value = house;',
+		'house == current',
 	], 'each entry carries its country and the list is positioned by the country it holds');
+	assertOrdered(functionBody(source('code/ui/uienginehost.cpp'), 'int UI_Multiplay_House_At(int position)'), [
+		'HouseTypes[house]->IsMultiplay',
+		'return(house);',
+	], 'only countries a player can pick are listed');
 	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Set_Side(int index)'), [
 		'Net2Country_At(index)',
 		'Session.House = country;',
