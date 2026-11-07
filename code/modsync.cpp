@@ -11,11 +11,11 @@
 #include "diskfile.h"
 #include "fnv.h"
 #include "hexdigit.h"
+#include "hexformat.h"
 #include "strutil.h"
 
 #include <algorithm>
 #include <cctype>
-#include <cstdio>
 #include <fstream>
 #include <iterator>
 
@@ -75,13 +75,11 @@ namespace ModSync
 		{
 			std::string text;
 			for (Entry const & entry : signature.Mods) {
-				char hash[16];
-				std::snprintf(hash, sizeof(hash), "=%08x", entry.Hash);
 				if (!text.empty()) {
 					text += ',';
 				}
 				text += entry.Name;
-				text += hash;
+				text += "=" + Hex_Text(entry.Hash, 8, false);
 			}
 			return(text);
 		}
@@ -192,9 +190,7 @@ namespace ModSync
 		}
 
 		Digest_Of(signature, text, count, hash);
-		char digest[48];
-		std::snprintf(digest, sizeof(digest), "#%u=%08x", count, hash);
-		return(digest);
+		return("#" + std::to_string(count) + "=" + Hex_Text(hash, 8, false));
 	}
 
 
