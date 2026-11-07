@@ -39,7 +39,7 @@ UINetLobbyPresenterClass::UINetLobbyPresenterClass(UINetLobbyServiceClass & serv
 /// </summary>
 static void Settle_Colour(UINetLobbyState & state)
 {
-	bool const listed = state.Color >= 0 && state.Color < (int)state.Colors.size();
+	bool const listed = Index_In_Range(state.Color, state.Colors.size());
 	std::string const stock = listed ? state.Colors[state.Color].Label : std::string();
 	state.ColorName = UI_Color_Button_Name(stock, state.CustomColor);
 	state.ColorTip = UI_Color_Name(stock, state.CustomColor);
@@ -82,7 +82,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 		State.Handle = intent.Text;
 		Service.Set_Handle(State.Handle.c_str());
 	} else if (intent.Name == "game") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Games.size() && intent.Value != State.Game) {
+		if (Index_In_Range(intent.Value, State.Games.size()) && intent.Value != State.Game) {
 			State.Game = intent.Value;
 			Service.Select_Game(State.Game);
 		}
@@ -96,17 +96,17 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			State.Say.clear();
 		}
 	} else if (intent.Name == "side") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Sides.size()) {
+		if (Index_In_Range(intent.Value, State.Sides.size())) {
 			State.Side = intent.Value;
 			Service.Set_Side(State.Side);
 		}
 	} else if (intent.Name == "team") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Teams.size()) {
+		if (Index_In_Range(intent.Value, State.Teams.size())) {
 			State.Team = intent.Value;
 			Service.Set_Team(State.Team);
 		}
 	} else if (intent.Name == "start") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Starts.size()) {
+		if (Index_In_Range(intent.Value, State.Starts.size())) {
 			State.Start = intent.Value;
 			Service.Set_Start(State.Start);
 		}
@@ -115,7 +115,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "pickok") {
 		Apply_Net_Picker(State, Service);
 	} else if (intent.Name == "pick") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Players.size()) {
+		if (Index_In_Range(intent.Value, State.Players.size())) {
 			std::string const & name = State.Players[intent.Value].Name;
 			std::vector<std::string>::iterator found = std::find(Picked.begin(), Picked.end(), name);
 			if (found != Picked.end()) {
