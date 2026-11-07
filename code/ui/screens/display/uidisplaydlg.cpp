@@ -402,27 +402,8 @@ UIDisplayServiceClass & UI_Display_Service(void)
 }
 
 
-void UI_Display_State(UIDisplayState & state)
+static void Fill_Window_Sizes(UIDisplayState & state)
 {
-	state = UIDisplayState();
-	state.StretchMovies = Options.StretchMovies;
-	state.SystemCursor = Options.SystemCursor;
-	state.ClassicMenus = Options.IsClassicMenus;
-	state.ModernInterface = Options.IsModernInterfaceChosen;
-	state.ModernInterfaceRunning = Options.ModernInterface;
-	state.InGame = GameActive;
-	state.BitmapSystemFont = Options.BitmapSystemFont;
-	state.ShowFPS = Options.ShowFPS;
-	state.FrameLimit = Fill_Choices(state.FrameLimits, {
-		{-1, "Display refresh"},
-		{30, "30"},
-		{60, "60"},
-		{120, "120"},
-		{144, "144"},
-		{240, "240"},
-		{0, "Unlimited"}
-	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
-
 	// Match resolution follows ScreenWidth and ScreenHeight. The fixed sizes above the desktop are left out.
 	UIDisplayMode match;
 	match.Width = -1;
@@ -463,6 +444,64 @@ void UI_Display_State(UIDisplayState & state)
 		state.WindowSize = (int)state.WindowSizes.size();
 		state.WindowSizes.push_back(mode);
 	}
+}
+
+
+static void Fill_Interface_Scales(UIDisplayState & state)
+{
+	// Automatic, the usual steps, and whatever else the settings file has asked for.
+	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
+	float const current = (Options.InterfaceScale > 0.0f) ? Options.InterfaceScale : 0.0f;
+	state.Scale = -1;
+	for (float step : steps) {
+		if (step == current) {
+			state.Scale = (int)state.Scales.size();
+		}
+		UIDisplayScale scale;
+		scale.Value = step;
+		if (step > 0.0f) {
+			char buffer[32];
+			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
+			scale.Label = buffer;
+		} else {
+			scale.Label = "Auto";
+		}
+		state.Scales.push_back(scale);
+	}
+	if (state.Scale < 0) {
+		UIDisplayScale scale;
+		scale.Value = current;
+		char buffer[32];
+		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
+		scale.Label = buffer;
+		state.Scale = (int)state.Scales.size();
+		state.Scales.push_back(scale);
+	}
+}
+
+
+void UI_Display_State(UIDisplayState & state)
+{
+	state = UIDisplayState();
+	state.StretchMovies = Options.StretchMovies;
+	state.SystemCursor = Options.SystemCursor;
+	state.ClassicMenus = Options.IsClassicMenus;
+	state.ModernInterface = Options.IsModernInterfaceChosen;
+	state.ModernInterfaceRunning = Options.ModernInterface;
+	state.InGame = GameActive;
+	state.BitmapSystemFont = Options.BitmapSystemFont;
+	state.ShowFPS = Options.ShowFPS;
+	state.FrameLimit = Fill_Choices(state.FrameLimits, {
+		{-1, "Display refresh"},
+		{30, "30"},
+		{60, "60"},
+		{120, "120"},
+		{144, "144"},
+		{240, "240"},
+		{0, "Unlimited"}
+	}, (Options.FrameRateLimit < 0) ? -1 : Options.FrameRateLimit, "%d");
+
+	Fill_Window_Sizes(state);
 	state.PlayerColors = Fill_Choices(state.PlayerColorChoices, {
 		{PLAYER_VIEW_DEFAULT, "Default"},
 		{PLAYER_VIEW_COLORBLIND_SAFE, "Color-blind safe"},
@@ -551,34 +590,7 @@ void UI_Display_State(UIDisplayState & state)
 	// The fewest rows when the saved count is below every choice.
 	state.RowCount = std::max(0, Fill_Count_Choices(state.RowCounts, _Service.Sidebar_Row_Counts(frame_height), Options.SidebarRows));
 
-	// Automatic, the usual steps, and whatever else the settings file has asked for.
-	static float const steps[] = {0.0f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f};
-	float const current = (Options.InterfaceScale > 0.0f) ? Options.InterfaceScale : 0.0f;
-	state.Scale = -1;
-	for (float step : steps) {
-		if (step == current) {
-			state.Scale = (int)state.Scales.size();
-		}
-		UIDisplayScale scale;
-		scale.Value = step;
-		if (step > 0.0f) {
-			char buffer[32];
-			std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(step * 100.0f));
-			scale.Label = buffer;
-		} else {
-			scale.Label = "Auto";
-		}
-		state.Scales.push_back(scale);
-	}
-	if (state.Scale < 0) {
-		UIDisplayScale scale;
-		scale.Value = current;
-		char buffer[32];
-		std::snprintf(buffer, sizeof(buffer), "%ld%%", std::lround(current * 100.0f));
-		scale.Label = buffer;
-		state.Scale = (int)state.Scales.size();
-		state.Scales.push_back(scale);
-	}
+	Fill_Interface_Scales(state);
 
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {

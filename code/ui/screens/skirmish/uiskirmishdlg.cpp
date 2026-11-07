@@ -413,10 +413,8 @@ class UISkirmishEngineServiceClass : public UISkirmishServiceClass
 }
 
 
-void UI_Skirmish_State(UISkirmishState & state)
+static void Fill_Choice_Tables(UISkirmishState & state)
 {
-	state.Handle = Session.Handle;
-
 	static char const * const kinds[UI_SKIRMISH_SLOT_KINDS] = {
 		"Open", "Closed", Computer_Difficulty_Name(DIFF_EASY), Computer_Difficulty_Name(DIFF_NORMAL), Computer_Difficulty_Name(DIFF_HARD)};
 	state.Kinds.clear();
@@ -444,7 +442,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 	UI_Color_Pick_Build_Presets(state.Picker);
 	UI_Fill_Stock_Colors(state.Colors, MAX_PLAYERS);
+}
 
+
+static void Fill_Rule_Options(UISkirmishState & state)
+{
 	state.UnitCountMin = SessionClass::CountMin[1];
 	state.UnitCountMax = SessionClass::CountMax[1];
 	state.UnitCount = Session.Options.UnitCount;
@@ -470,7 +472,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.MultiEngineer = rules_defaults ? Rule->IsMPMultiEngineer : Session.Options.CrapEngineers;
 	state.SuperWeapons = rules_defaults ? Rule->IsMPSuperWeapons : Session.Options.SWAllowed;
 	state.BuildOffAlly = rules_defaults ? Rule->IsMPBuildOffAlly : Session.Options.BuildOffAlly;
+}
 
+
+static void Restore_Remembered_Options(UISkirmishState & state)
+{
 	// The remembered setup comes back as it was left. Its options replace the rules' values, and its
 	// map is used only while the map's file is on hand; the first map that is on hand takes its place.
 	Load_Memory();
@@ -490,7 +496,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 	Select_Scenario_Session(index);
 	state.MapName = Session.Options.ScenarioDescription;
 	Fill_Starts(state);
+}
 
+
+static void Fill_Slots(UISkirmishState & state)
+{
 	// The last setup comes back from the remembered copy; a first run has one opponent.
 	state.Slots.assign(UI_SKIRMISH_MAX_SLOTS, UISkirmishSlot());
 	for (int row = 0; row < UI_SKIRMISH_MAX_SLOTS; row++) {
@@ -516,6 +526,17 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.Slots[0].Color = Index_In_Range(Session.PrefColor, state.Colors.size()) ? Session.PrefColor : 0;
 	state.Slots[0].Custom = Player_Color_Is_Custom(Session.PrefCustomColor) ? Session.PrefCustomColor : 0;
 	state.Slots[0].Kind = UI_SKIRMISH_SLOT_OPEN;
+}
+
+
+void UI_Skirmish_State(UISkirmishState & state)
+{
+	state.Handle = Session.Handle;
+
+	Fill_Choice_Tables(state);
+	Fill_Rule_Options(state);
+	Restore_Remembered_Options(state);
+	Fill_Slots(state);
 
 	Clear_Vector(&Session.Players);
 	Clear_Vector(&Session.Computers);
