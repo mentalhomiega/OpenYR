@@ -11,6 +11,7 @@
 
 #include "ui/rml/rmlview.h"
 #include "strutil.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -144,7 +145,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 			listed[index] = known->second;
 		}
 	}
-	if (State.Selected >= 0 && State.Selected < (int)State.Entries.size()) {
+	if (Index_In_Range(State.Selected, State.Entries.size())) {
 		State.Selected = listed[State.Selected];
 	}
 
@@ -215,7 +216,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 
 	State.Detail.clear();
 	State.File.clear();
-	if (State.Selected >= 0 && State.Selected < (int)State.Entries.size()) {
+	if (Index_In_Range(State.Selected, State.Entries.size())) {
 		UIScenarioEntry const & entry = State.Entries[State.Selected];
 		State.Detail = entry.Players > 0 ? "Players: " + std::to_string(entry.Players) : "Players: not known";
 		State.File = entry.File;
@@ -227,7 +228,7 @@ void UIScenarioPresenterClass::Rebuild(void)
 
 void UIScenarioPresenterClass::Select(int index)
 {
-	if (index >= 0 && index < (int)State.Entries.size() && index != State.Selected) {
+	if (Index_In_Range(index, State.Entries.size()) && index != State.Selected) {
 		State.Selected = index;
 		Service.Preview(State.Selected, State.Preview);
 		Rebuild();
@@ -287,7 +288,7 @@ void UIScenarioPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "random") {
 		int scenario = Service.Random();
 		Service.Read(State);
-		if (scenario >= 0 && scenario < (int)State.Entries.size()) {
+		if (Index_In_Range(scenario, State.Entries.size())) {
 			// The new map is shown even when the search or the player count would hide it.
 			State.Filter.clear();
 			State.Players = 0;

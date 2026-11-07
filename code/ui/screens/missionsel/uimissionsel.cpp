@@ -10,6 +10,7 @@
 #include "ui/screens/missionsel/uimissionsel.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <utility>
 
@@ -34,17 +35,17 @@ void UIMissionSelPresenterClass::Name_Difficulty(void)
 void UIMissionSelPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Missions.size()) {
+		if (Index_In_Range(intent.Value, State.Missions.size())) {
 			State.Selected = intent.Value;
 			State.MapName = State.Missions[State.Selected].Map;
 		}
 	} else if (intent.Name == "difficulty") {
-		if (intent.Value >= 0 && intent.Value < (int)State.DifficultyNames.size()) {
+		if (Index_In_Range(intent.Value, State.DifficultyNames.size())) {
 			State.Difficulty = intent.Value;
 			Name_Difficulty();
 		}
 	} else if (intent.Name == "ok") {
-		if (State.Selected >= 0 && State.Selected < (int)State.Missions.size()) {
+		if (Index_In_Range(State.Selected, State.Missions.size())) {
 			Picked = State.Missions[State.Selected];
 			Result = UI_RESULT_ACCEPTED;
 		}

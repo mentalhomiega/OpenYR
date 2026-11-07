@@ -167,13 +167,13 @@ void UISkirmishPresenterClass::Choose(int row, int field, int index)
 			break;
 
 		case FIELD_SIDE:
-			if (index >= 0 && index < (int)state.Sides.size()) {
+			if (Index_In_Range(index, state.Sides.size())) {
 				slot.Side = index;
 			}
 			break;
 
 		case FIELD_START:
-			if (index >= 0 && index < (int)state.Starts.size()) {
+			if (Index_In_Range(index, state.Starts.size())) {
 				for (int other = 0; index > 0 && other < state.Rows; other++) {
 					if (other != row && state.Is_Active(other) && state.Slots[other].Start == index) {
 						state.Slots[other].Start = slot.Start;
@@ -201,7 +201,7 @@ void UISkirmishPresenterClass::Choose(int row, int field, int index)
 void UISkirmishPresenterClass::Take_Color(int row, int index)
 {
 	UISkirmishState & state = State;
-	if (row < 0 || row >= state.Rows || index < 0 || index >= (int)state.Colors.size()) {
+	if (row < 0 || row >= state.Rows || !Index_In_Range(index, state.Colors.size())) {
 		return;
 	}
 
@@ -399,7 +399,7 @@ void UISkirmishPresenterClass::Apply_Picker(void)
 /// </summary>
 std::string UI_Skirmish_Slot_Text(UISkirmishState const & state, int row)
 {
-	if (row < 0 || row >= (int)state.Slots.size()) {
+	if (!Index_In_Range(row, state.Slots.size())) {
 		return(std::string());
 	}
 
@@ -419,7 +419,7 @@ std::string UI_Skirmish_Slot_Text(UISkirmishState const & state, int row)
 /// </summary>
 void UI_Skirmish_Slot_Parse(UISkirmishState & state, int row, std::string const & text)
 {
-	if (row < 0 || row >= (int)state.Slots.size()) {
+	if (!Index_In_Range(row, state.Slots.size())) {
 		return;
 	}
 

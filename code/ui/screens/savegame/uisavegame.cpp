@@ -10,6 +10,7 @@
 #include "ui/screens/savegame/uisavegame.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Elements/ElementFormControlInput.h>
@@ -27,7 +28,7 @@ void UISaveGamePresenterClass::Execute(UIIntent const & intent)
 	bool accept = false;
 
 	if (intent.Name == "select") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Entries.size()) {
+		if (Index_In_Range(intent.Value, State.Entries.size())) {
 			State.Selected = intent.Value;
 
 			if (State.Mode == UI_SAVE_GAME_SAVE) {

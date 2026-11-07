@@ -27,6 +27,7 @@
 #include "pcx.h"
 #include "scenario.h"
 #include "ui/screens/missionbrowser/uimissionbrowser.h"
+#include "ui/uiclamp.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uiview.h"
@@ -327,7 +328,7 @@ std::optional<int> UI_Mission_Browser_Dialog(void)
 	bool const played = UI_Run_Modal(*view) == UI_RESULT_ACCEPTED && presenter.Picked.has_value();
 
 	UIMissionBrowserState const & final_state = presenter.State;
-	if (final_state.Selected >= 0 && final_state.Selected < (int)final_state.Missions.size()) {
+	if (Index_In_Range(final_state.Selected, final_state.Missions.size())) {
 		Options.LastMission = final_state.Missions[final_state.Selected].Key;
 	}
 

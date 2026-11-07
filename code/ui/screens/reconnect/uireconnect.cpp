@@ -10,6 +10,7 @@
 #include "ui/screens/reconnect/uireconnect.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Element.h>
@@ -23,7 +24,7 @@ void UIReconnectPresenterClass::Execute(UIIntent const & intent)
 		Cancelled = true;
 
 	} else if (intent.Name == "kick") {
-		if (intent.Value >= 0 && (std::size_t)intent.Value < State.Players.size()) {
+		if (Index_In_Range(intent.Value, State.Players.size())) {
 			Kick = intent.Value;
 		}
 	}

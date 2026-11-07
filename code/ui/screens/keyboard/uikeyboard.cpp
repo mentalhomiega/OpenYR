@@ -13,6 +13,7 @@
 #include "keyboard.h"
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -36,7 +37,7 @@ void UIKeyboardPresenterClass::Execute(UIIntent const & intent)
 		Reload_Rows();
 
 	} else if (intent.Name == "category") {
-		State.Category = (intent.Value >= 0 && intent.Value < (int)State.Categories.size()) ? intent.Value : 0;
+		State.Category = Index_In_Range(intent.Value, State.Categories.size()) ? intent.Value : 0;
 		Reload_Rows();
 
 	} else if (intent.Name == "pick") {
@@ -163,7 +164,7 @@ void UIKeyboardPresenterClass::Reload_Rows(void)
 /// </summary>
 void UIKeyboardPresenterClass::Select(int command, int slot)
 {
-	if (command < 0 || command >= (int)State.Commands.size()) {
+	if (!Index_In_Range(command, State.Commands.size())) {
 		return;
 	}
 
