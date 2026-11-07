@@ -146,53 +146,15 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 
 	switch (event.Kind) {
 		case IRCEventKind::JOINED:
-			if (!here) {
-				break;
-			}
-			if (own) {
-				JoinedAt = now;
-				if (IsHost) {
-					CurrentStatus = CnCNetRoomStatus::IN_ROOM;
-					Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
-						std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
-				} else {
-					CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
-					Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
-				}
-				Changed();
-			} else if (IsHost && Find_Player(event.Nick) == nullptr) {
-				// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
-				Pending.push_back({event.Nick, now});
-				CnCNetRoomPlayerType player;
-				player.Name = event.Nick;
-				if (Admit(player) && !Config.Notice.empty()) {
-					Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
-				}
-			}
+			Apply_Joined(event, here, own, now);
 			break;
 
 		case IRCEventKind::PARTED:
-			if (!here) {
-				break;
-			}
-			if (own) {
-				Close("You left the room.");
-			} else {
-				Player_Left(event.Nick);
-			}
+			Apply_Parted(event, here, own);
 			break;
 
 		case IRCEventKind::KICKED:
-			if (!here) {
-				break;
-			}
-			if (CnCNetLobbyClass::Same_Nick(event.Text, Config.OwnNick)) {
-				if (CurrentStatus != CnCNetRoomStatus::CLOSED) {
-					Close("You were removed from the room by " + event.Nick + ".");
-				}
-			} else {
-				Player_Left(event.Text);
-			}
+			Apply_Kicked(event, here);
 			break;
 
 		case IRCEventKind::QUIT:
@@ -200,35 +162,11 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 			break;
 
 		case IRCEventKind::NICK_CHANGED:
-			if (own) {
-				Config.OwnNick = event.Text;
-			}
-			if (CnCNetLobbyClass::Same_Nick(Config.HostNick, event.Nick)) {
-				Config.HostNick = event.Text;
-			}
-			for (PendingType & pending : Pending) {
-				if (CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)) {
-					pending.Nick = event.Text;
-				}
-			}
-			if (CnCNetRoomPlayerType * player = Player(event.Nick)) {
-				player->Name = event.Text;
-				Changed();
-				if (IsHost) {
-					Send_Players();
-				}
-			}
+			Apply_Nick_Changed(event, own);
 			break;
 
 		case IRCEventKind::CTCP:
-			if (!here || own) {
-				break;
-			}
-			if (IsHost) {
-				Host_Message(event);
-			} else if (CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick)) {
-				Guest_Message(event);
-			}
+			Apply_CTCP(event, here, own);
 			break;
 
 		case IRCEventKind::CHANNEL_REFUSED:
@@ -243,28 +181,102 @@ void CnCNetRoomClass::Apply(IRCEventType const & event, uint64_t now)
 }
 
 
+void CnCNetRoomClass::Apply_Joined(IRCEventType const & event, bool here, bool own, uint64_t now)
+{
+	if (!here) {
+		return;
+	}
+	if (own) {
+		JoinedAt = now;
+		if (IsHost) {
+			CurrentStatus = CnCNetRoomStatus::IN_ROOM;
+			Outgoing.push_back({CnCNetRoomSendKind::MODE, Config.Channel, std::string(),
+				std::string(), std::string(), {"+klnNs", Config.Key, std::to_string(Config.Limits.MaxPlayers)}});
+		} else {
+			CurrentStatus = CnCNetRoomStatus::WAITING_HOST;
+			Send_CTCP(HELLO, std::to_string(CNCNET_ROOM_PROTOCOL) + ";" + Escape(Config.Build));
+		}
+		Changed();
+	} else if (IsHost && Find_Player(event.Nick) == nullptr) {
+		// Listed as not OpenYR until its hello arrives; Tick removes it if no hello comes.
+		Pending.push_back({event.Nick, now});
+		CnCNetRoomPlayerType player;
+		player.Name = event.Nick;
+		if (Admit(player) && !Config.Notice.empty()) {
+			Outgoing.push_back({CnCNetRoomSendKind::SAY, Config.Channel, std::string(), Config.Notice, "notice:" + event.Nick});
+		}
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Parted(IRCEventType const & event, bool here, bool own)
+{
+	if (!here) {
+		return;
+	}
+	if (own) {
+		Close("You left the room.");
+	} else {
+		Player_Left(event.Nick);
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Kicked(IRCEventType const & event, bool here)
+{
+	if (!here) {
+		return;
+	}
+	if (CnCNetLobbyClass::Same_Nick(event.Text, Config.OwnNick)) {
+		if (CurrentStatus != CnCNetRoomStatus::CLOSED) {
+			Close("You were removed from the room by " + event.Nick + ".");
+		}
+	} else {
+		Player_Left(event.Text);
+	}
+}
+
+
+void CnCNetRoomClass::Apply_Nick_Changed(IRCEventType const & event, bool own)
+{
+	if (own) {
+		Config.OwnNick = event.Text;
+	}
+	if (CnCNetLobbyClass::Same_Nick(Config.HostNick, event.Nick)) {
+		Config.HostNick = event.Text;
+	}
+	for (PendingType & pending : Pending) {
+		if (CnCNetLobbyClass::Same_Nick(pending.Nick, event.Nick)) {
+			pending.Nick = event.Text;
+		}
+	}
+	if (CnCNetRoomPlayerType * player = Player(event.Nick)) {
+		player->Name = event.Text;
+		Changed();
+		if (IsHost) {
+			Send_Players();
+		}
+	}
+}
+
+
+void CnCNetRoomClass::Apply_CTCP(IRCEventType const & event, bool here, bool own)
+{
+	if (!here || own) {
+		return;
+	}
+	if (IsHost) {
+		Host_Message(event);
+	} else if (CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick)) {
+		Guest_Message(event);
+	}
+}
+
+
 void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 {
 	if (event.Command == HELLO) {
-		Forget_Pending(event.Nick);
-		std::vector<std::string_view> const parts = Split_Views(event.Text, ';');
-		// A hello in another room protocol announces no build id, so it differs from ours.
-		bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
-		std::string const build = readable && parts.size() > 1 ? Unescape(parts[1]) : std::string();
-		if (CnCNetRoomPlayerType * known = Player(event.Nick)) {
-			// A listed player who says hello again, such as one listed as not OpenYR, takes the build it now announces.
-			known->OpenYR = true;
-			known->Build = build;
-			Changed();
-			Send_Options();
-			Send_Players();
-			return;
-		}
-		CnCNetRoomPlayerType player;
-		player.Name = event.Nick;
-		player.OpenYR = true;
-		player.Build = build;
-		Admit(player);
+		Host_Hello(event);
 		return;
 	}
 
@@ -273,63 +285,123 @@ void CnCNetRoomClass::Host_Message(IRCEventType const & event)
 		return;
 	}
 	if (event.Command == REQUEST) {
-		std::vector<std::string_view> const parts = Split_Views(event.Text, ',');
-		if (parts.size() >= 4) {
-			int const side = To_Int(parts[0], -2);
-			int const color = To_Int(parts[1], -2);
-			int const start = To_Int(parts[2], -2);
-			int const team = To_Int(parts[3], -2);
-			if (Setup_Allowed(*player, side, color, start, team)) {
-				Apply_Setup(*player, side, color, start, team);
-				player->Ready = false;
-				Changed();
-			}
-		}
-		Send_Players();
+		Host_Request(*player, event);
 	} else if (event.Command == READY) {
-		player->Ready = event.Text == "1";
-		Changed();
-		Send_Players();
+		Host_Ready(*player, event);
 	}
+}
+
+
+void CnCNetRoomClass::Host_Hello(IRCEventType const & event)
+{
+	Forget_Pending(event.Nick);
+	std::vector<std::string_view> const parts = Split_Views(event.Text, ';');
+	// A hello in another room protocol announces no build id, so it differs from ours.
+	bool const readable = To_Int(parts[0], 0) == CNCNET_ROOM_PROTOCOL;
+	std::string const build = readable && parts.size() > 1 ? Unescape(parts[1]) : std::string();
+	if (CnCNetRoomPlayerType * known = Player(event.Nick)) {
+		// A listed player who says hello again, such as one listed as not OpenYR, takes the build it now announces.
+		known->OpenYR = true;
+		known->Build = build;
+		Changed();
+		Send_Options();
+		Send_Players();
+		return;
+	}
+	CnCNetRoomPlayerType player;
+	player.Name = event.Nick;
+	player.OpenYR = true;
+	player.Build = build;
+	Admit(player);
+}
+
+
+void CnCNetRoomClass::Host_Request(CnCNetRoomPlayerType & player, IRCEventType const & event)
+{
+	std::vector<std::string_view> const parts = Split_Views(event.Text, ',');
+	if (parts.size() >= 4) {
+		int const side = To_Int(parts[0], -2);
+		int const color = To_Int(parts[1], -2);
+		int const start = To_Int(parts[2], -2);
+		int const team = To_Int(parts[3], -2);
+		if (Setup_Allowed(player, side, color, start, team)) {
+			Apply_Setup(player, side, color, start, team);
+			player.Ready = false;
+			Changed();
+		}
+	}
+	Send_Players();
+}
+
+
+void CnCNetRoomClass::Host_Ready(CnCNetRoomPlayerType & player, IRCEventType const & event)
+{
+	player.Ready = event.Text == "1";
+	Changed();
+	Send_Players();
 }
 
 
 void CnCNetRoomClass::Guest_Message(IRCEventType const & event)
 {
 	if (event.Command == OPTIONS) {
-		OptionList = Decode_Map(event.Text);
-		if (CurrentStatus == CnCNetRoomStatus::WAITING_HOST) {
-			CurrentStatus = CnCNetRoomStatus::IN_ROOM;
-		}
-		Changed();
+		Guest_Options(event);
 	} else if (event.Command == PLAYERS) {
-		PlayerList = Decode_Players(event.Text);
-		Changed();
+		Guest_Players(event);
 	} else if (event.Command == REFUSE) {
-		std::size_t const split = event.Text.find(';');
-		std::string const nick = Unescape(std::string_view(event.Text).substr(0, split));
-		if (CnCNetLobbyClass::Same_Nick(nick, Config.OwnNick)) {
-			Close(split == std::string::npos ? std::string("The host refused to let you join.") : Unescape(std::string_view(event.Text).substr(split + 1)));
-		}
+		Guest_Refuse(event);
 	} else if (event.Command == START && CurrentStatus == CnCNetRoomStatus::IN_ROOM) {
-		CnCNetRoomPlayerType const * self = Find_Player(Config.OwnNick);
-		if (self == nullptr || !self->Ready || !CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick) || Build_Differs_From_Host()
-				|| (Config.Options_Playable && !Config.Options_Playable(OptionList))) {
+		Guest_Start(event);
+	}
+}
+
+
+void CnCNetRoomClass::Guest_Options(IRCEventType const & event)
+{
+	OptionList = Decode_Map(event.Text);
+	if (CurrentStatus == CnCNetRoomStatus::WAITING_HOST) {
+		CurrentStatus = CnCNetRoomStatus::IN_ROOM;
+	}
+	Changed();
+}
+
+
+void CnCNetRoomClass::Guest_Players(IRCEventType const & event)
+{
+	PlayerList = Decode_Players(event.Text);
+	Changed();
+}
+
+
+void CnCNetRoomClass::Guest_Refuse(IRCEventType const & event)
+{
+	std::size_t const split = event.Text.find(';');
+	std::string const nick = Unescape(std::string_view(event.Text).substr(0, split));
+	if (CnCNetLobbyClass::Same_Nick(nick, Config.OwnNick)) {
+		Close(split == std::string::npos ? std::string("The host refused to let you join.") : Unescape(std::string_view(event.Text).substr(split + 1)));
+	}
+}
+
+
+void CnCNetRoomClass::Guest_Start(IRCEventType const & event)
+{
+	CnCNetRoomPlayerType const * self = Find_Player(Config.OwnNick);
+	if (self == nullptr || !self->Ready || !CnCNetLobbyClass::Same_Nick(event.Nick, Config.HostNick) || Build_Differs_From_Host()
+			|| (Config.Options_Playable && !Config.Options_Playable(OptionList))) {
+		return;
+	}
+	std::map<std::string, std::string> info = Decode_Map(event.Text);
+	if (Config.Start_Refusal) {
+		std::string const reason = Config.Start_Refusal(info);
+		if (!reason.empty()) {
+			ProblemText = reason;
 			return;
 		}
-		std::map<std::string, std::string> info = Decode_Map(event.Text);
-		if (Config.Start_Refusal) {
-			std::string const reason = Config.Start_Refusal(info);
-			if (!reason.empty()) {
-				ProblemText = reason;
-				return;
-			}
-		}
-		StartList = std::move(info);
-		StartOptions = OptionList;
-		CurrentStatus = CnCNetRoomStatus::STARTING;
-		Changed();
 	}
+	StartList = std::move(info);
+	StartOptions = OptionList;
+	CurrentStatus = CnCNetRoomStatus::STARTING;
+	Changed();
 }
 
 

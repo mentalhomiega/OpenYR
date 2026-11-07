@@ -33,6 +33,17 @@ bool Less_Folded(std::string const & a, std::string const & b)
 		[](char x, char y) { return(Fold(x) < Fold(y)); }));
 }
 
+
+std::string Refusal_Reason(std::string const & code)
+{
+	if (code == "471") return("is full.");
+	if (code == "473") return("is invite-only.");
+	if (code == "474") return("has banned you.");
+	if (code == "475") return("needs a different password.");
+	if (code == "403") return("no longer exists.");
+	return("could not be joined.");
+}
+
 }
 
 
@@ -90,77 +101,24 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 			}
 			break;
 
-		case IRCEventKind::NICK_CHANGED: {
-			Queue_Room_Message(event);
-			bool const own = Same_Nick(event.Nick, OwnNick);
-			if (own) {
-				OwnNick = event.Text;
-			}
-			for (CnCNetChannelType & channel : ChannelList) {
-				if (channel.Private && Same_Nick(channel.Name, event.Nick)) {
-					channel.Name = event.Text;
-				}
-				for (CnCNetUserType & user : channel.Users) {
-					if (Same_Nick(user.Nick, event.Nick)) {
-						user.Nick = event.Text;
-						Add_Line(channel, CnCNetLineKind::SYSTEM, std::string(), event.Nick + " is now known as " + event.Text + ".", now);
-						Sort_Users(channel);
-						break;
-					}
-				}
-			}
-			for (CnCNetGameType & game : GameList) {
-				if (Same_Nick(game.HostNick, event.Nick)) {
-					game.HostNick = event.Text;
-				}
-			}
+		case IRCEventKind::NICK_CHANGED:
+			Apply_Nick_Changed(event, now);
 			break;
-		}
 
 		case IRCEventKind::JOINED:
-			if (Is_Room_Channel(event.Channel)) {
-				Queue_Room_Message(event);
-			}
-			if (Same_Nick(event.Nick, OwnNick)) {
-				Channel(event.Channel, true);
-			} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
-				Add_User(*channel, CnCNetUserType{event.Nick, event.Text, false});
-			}
+			Apply_Joined(event);
 			break;
 
 		case IRCEventKind::PARTED:
-			if (Is_Room_Channel(event.Channel)) {
-				Queue_Room_Message(event);
-			}
-			if (Same_Nick(event.Nick, OwnNick)) {
-				Remove_Channel(event.Channel);
-			} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
-				Remove_User(*channel, event.Nick);
-			}
-			if (Same_Nick(event.Channel, Config.BroadcastChannel)) {
-				Remove_Games_Of(event.Nick);
-			}
+			Apply_Parted(event);
 			break;
 
 		case IRCEventKind::QUIT:
-			Queue_Room_Message(event);
-			for (CnCNetChannelType & channel : ChannelList) {
-				Remove_User(channel, event.Nick);
-			}
-			Remove_Games_Of(event.Nick);
+			Apply_Quit(event);
 			break;
 
 		case IRCEventKind::KICKED:
-			if (Is_Room_Channel(event.Channel)) {
-				Queue_Room_Message(event);
-			}
-			if (Same_Nick(event.Text, OwnNick)) {
-				Remove_Channel(event.Channel);
-				Add_System_Line(std::string(), "You were removed from " + event.Channel + " by " + event.Nick + ".", now);
-			} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
-				Remove_User(*channel, event.Text);
-				Add_Line(*channel, CnCNetLineKind::SYSTEM, std::string(), event.Text + " was removed by " + event.Nick + ".", now);
-			}
+			Apply_Kicked(event, now);
 			break;
 
 		case IRCEventKind::MESSAGE:
@@ -173,18 +131,7 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 		}
 
 		case IRCEventKind::CTCP:
-			if (event.Command == "GAME") {
-				if (Same_Nick(event.Channel, Config.BroadcastChannel)) {
-					Game_Listing(event.Nick, event.Text, now);
-				}
-			} else if (event.Command == "ACTION") {
-				CnCNetChannelType * channel = Incoming_Channel(event);
-				if (channel != nullptr) {
-					Add_Line(*channel, CnCNetLineKind::ACTION, event.Nick, event.Text, now);
-				}
-			} else {
-				Queue_Room_Message(event);
-			}
+			Apply_CTCP(event, now);
 			break;
 
 		case IRCEventKind::TOPIC:
@@ -194,48 +141,15 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 			break;
 
 		case IRCEventKind::NAMES:
-			if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
-				std::vector<CnCNetUserType> users;
-				for (std::string const & entry : event.Names) {
-					CnCNetUserType user;
-					std::size_t start = 0;
-					while (start < entry.size() && (entry[start] == '@' || entry[start] == '+' || entry[start] == '%' || entry[start] == '&' || entry[start] == '~')) {
-						if (entry[start] == '@') {
-							user.Operator = true;
-						}
-						++start;
-					}
-					user.Nick = entry.substr(start);
-					if (user.Nick.empty()) {
-						continue;
-					}
-					// Keep the ident of a user already seen joining.
-					for (CnCNetUserType const & known : channel->Users) {
-						if (Same_Nick(known.Nick, user.Nick)) {
-							user.Ident = known.Ident;
-						}
-					}
-					users.push_back(std::move(user));
-				}
-				channel->Users = std::move(users);
-				Sort_Users(*channel);
-			}
+			Apply_Names(event);
 			break;
 
 		case IRCEventKind::MODE:
 			break;
 
-		case IRCEventKind::CHANNEL_REFUSED: {
-			std::string reason = "could not be joined.";
-			if (event.Command == "471") reason = "is full.";
-			if (event.Command == "473") reason = "is invite-only.";
-			if (event.Command == "474") reason = "has banned you.";
-			if (event.Command == "475") reason = "needs a different password.";
-			if (event.Command == "403") reason = "no longer exists.";
-			Add_System_Line(std::string(), event.Channel + " " + reason, now);
-			Queue_Room_Message(event);
+		case IRCEventKind::CHANNEL_REFUSED:
+			Apply_Channel_Refused(event, now);
 			break;
-		}
 
 		case IRCEventKind::SERVER_TEXT:
 			Add_System_Line(std::string(), event.Text, now);
@@ -244,6 +158,137 @@ void CnCNetLobbyClass::Apply(IRCEventType const & event, uint64_t now)
 		case IRCEventKind::DISCONNECT:
 			break;
 	}
+}
+
+
+void CnCNetLobbyClass::Apply_Nick_Changed(IRCEventType const & event, uint64_t now)
+{
+	Queue_Room_Message(event);
+	bool const own = Same_Nick(event.Nick, OwnNick);
+	if (own) {
+		OwnNick = event.Text;
+	}
+	for (CnCNetChannelType & channel : ChannelList) {
+		if (channel.Private && Same_Nick(channel.Name, event.Nick)) {
+			channel.Name = event.Text;
+		}
+		for (CnCNetUserType & user : channel.Users) {
+			if (Same_Nick(user.Nick, event.Nick)) {
+				user.Nick = event.Text;
+				Add_Line(channel, CnCNetLineKind::SYSTEM, std::string(), event.Nick + " is now known as " + event.Text + ".", now);
+				Sort_Users(channel);
+				break;
+			}
+		}
+	}
+	for (CnCNetGameType & game : GameList) {
+		if (Same_Nick(game.HostNick, event.Nick)) {
+			game.HostNick = event.Text;
+		}
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_Joined(IRCEventType const & event)
+{
+	Queue_Room_Message_If_Room(event);
+	if (Same_Nick(event.Nick, OwnNick)) {
+		Channel(event.Channel, true);
+	} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
+		Add_User(*channel, CnCNetUserType{event.Nick, event.Text, false});
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_Parted(IRCEventType const & event)
+{
+	Queue_Room_Message_If_Room(event);
+	if (Same_Nick(event.Nick, OwnNick)) {
+		Remove_Channel(event.Channel);
+	} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
+		Remove_User(*channel, event.Nick);
+	}
+	if (Same_Nick(event.Channel, Config.BroadcastChannel)) {
+		Remove_Games_Of(event.Nick);
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_Quit(IRCEventType const & event)
+{
+	Queue_Room_Message(event);
+	for (CnCNetChannelType & channel : ChannelList) {
+		Remove_User(channel, event.Nick);
+	}
+	Remove_Games_Of(event.Nick);
+}
+
+
+void CnCNetLobbyClass::Apply_Kicked(IRCEventType const & event, uint64_t now)
+{
+	Queue_Room_Message_If_Room(event);
+	if (Same_Nick(event.Text, OwnNick)) {
+		Remove_Channel(event.Channel);
+		Add_System_Line(std::string(), "You were removed from " + event.Channel + " by " + event.Nick + ".", now);
+	} else if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
+		Remove_User(*channel, event.Text);
+		Add_Line(*channel, CnCNetLineKind::SYSTEM, std::string(), event.Text + " was removed by " + event.Nick + ".", now);
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_CTCP(IRCEventType const & event, uint64_t now)
+{
+	if (event.Command == "GAME") {
+		if (Same_Nick(event.Channel, Config.BroadcastChannel)) {
+			Game_Listing(event.Nick, event.Text, now);
+		}
+	} else if (event.Command == "ACTION") {
+		CnCNetChannelType * channel = Incoming_Channel(event);
+		if (channel != nullptr) {
+			Add_Line(*channel, CnCNetLineKind::ACTION, event.Nick, event.Text, now);
+		}
+	} else {
+		Queue_Room_Message(event);
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_Names(IRCEventType const & event)
+{
+	if (CnCNetChannelType * channel = Channel(event.Channel, false)) {
+		std::vector<CnCNetUserType> users;
+		for (std::string const & entry : event.Names) {
+			CnCNetUserType user;
+			std::size_t start = 0;
+			while (start < entry.size() && (entry[start] == '@' || entry[start] == '+' || entry[start] == '%' || entry[start] == '&' || entry[start] == '~')) {
+				if (entry[start] == '@') {
+					user.Operator = true;
+				}
+				++start;
+			}
+			user.Nick = entry.substr(start);
+			if (user.Nick.empty()) {
+				continue;
+			}
+			// Keep the ident of a user already seen joining.
+			for (CnCNetUserType const & known : channel->Users) {
+				if (Same_Nick(known.Nick, user.Nick)) {
+					user.Ident = known.Ident;
+				}
+			}
+			users.push_back(std::move(user));
+		}
+		channel->Users = std::move(users);
+		Sort_Users(*channel);
+	}
+}
+
+
+void CnCNetLobbyClass::Apply_Channel_Refused(IRCEventType const & event, uint64_t now)
+{
+	Add_System_Line(std::string(), event.Channel + " " + Refusal_Reason(event.Command), now);
+	Queue_Room_Message(event);
 }
 
 
@@ -340,6 +385,14 @@ void CnCNetLobbyClass::Queue_Room_Message(IRCEventType const & event)
 		RoomMessages.erase(RoomMessages.begin());
 	}
 	RoomMessages.push_back(event);
+}
+
+
+void CnCNetLobbyClass::Queue_Room_Message_If_Room(IRCEventType const & event)
+{
+	if (Is_Room_Channel(event.Channel)) {
+		Queue_Room_Message(event);
+	}
 }
 
 
