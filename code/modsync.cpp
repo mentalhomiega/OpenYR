@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
-#include <filesystem>
 #include <fstream>
 #include <iterator>
 
@@ -25,17 +24,6 @@ namespace ModSync
 	namespace {
 
 		constexpr std::size_t MAX_NAME_LENGTH = 40;
-
-
-		// The folder's own name, as the mod list shows it.
-		std::string Folder_Name(std::string const & folder)
-		{
-			std::filesystem::path path(folder);
-			if (!path.has_filename()) {
-				path = path.parent_path();
-			}
-			return(path.filename().string());
-		}
 
 
 		// A name that cannot break the text form: no separators, no control characters, a limited length.
@@ -174,7 +162,7 @@ namespace ModSync
 		Signature signature;
 		for (ModClass const & mod : mods) {
 			Entry entry;
-			entry.Name = Clean_Name(Folder_Name(mod.Folder));
+			entry.Name = Clean_Name(Mod_Folder_Own_Name(mod.Folder));
 			entry.Hash = Hash_Mod(mod);
 			signature.Mods.push_back(entry);
 		}

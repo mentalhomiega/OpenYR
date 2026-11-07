@@ -33,6 +33,7 @@ needs them.
 | `Write_Disk_File(path, bytes)` | `diskfile.h` | Writes bytes over a disk file in place. Returns false when it cannot open or write. It does not write to a temporary file first. |
 | `Read_File_Bytes(file, bytes)` | `data.h` | Reads a whole `FileClass` (a mix member, a search-path file or a `RawFileClass`). Returns false, with `bytes` empty, for a missing, empty or short read. |
 | `Terminate_Path(path)` | `gamedirs.h` | Appends the platform separator unless the path is empty or already ends in `\`, `/` or `:`. |
+| `Mod_Folder_Own_Name(folder)` | `mods.h` | The last part of a mod folder's path, with a trailing separator ignored. The mod list and the mod signature name a mod this way. |
 | `Data_Directory()`, `User_Directory()` | `gamedirs.h` | The directories as applied. Each is empty or ends in a separator. Write nothing to the data directory. |
 | `User_File_Write_Name`, `Saved_Game_Name`, `Screenshot_Name`, `Replay_Name`, `Music_Folder` | `gamedirs.h` | Where a file the game writes belongs. Do not build these paths by hand. |
 | `Executable_Path(&truncated)` | `gamedirs.h` | Full path of the running executable. A path longer than `MAX_PATH` is cut and `*truncated` is set. |
