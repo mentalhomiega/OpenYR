@@ -15,6 +15,7 @@
 #include "hexformat.h"
 #include "littleendian.h"
 #include "strutil.h"
+#include "ui/uiclamp.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -198,6 +199,15 @@ void Test_Paths()
 	Check(Directory_Prefix("gamemd.exe").empty() && Directory_Prefix("").empty(), "no separator gives an empty prefix");
 }
 
+void Test_Index_In_Range()
+{
+	Check(Index_In_Range(0, 1), "first index of a one element container is in range");
+	Check(Index_In_Range(4, 5), "last index is in range");
+	Check(!Index_In_Range(5, 5), "index equal to size is out of range");
+	Check(!Index_In_Range(-1, 5), "a negative index is out of range");
+	Check(!Index_In_Range(0, 0), "nothing is in range of an empty container");
+}
+
 } // namespace
 
 
@@ -212,6 +222,7 @@ int main()
 	Test_Split_And_Parse();
 	Test_Hex_Digits();
 	Test_Paths();
+	Test_Index_In_Range();
 
 	std::printf("%d checks, %d failed\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

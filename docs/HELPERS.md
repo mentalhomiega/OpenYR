@@ -253,6 +253,7 @@ a default and returns it when the section or entry is missing.
 | Helper | Header | Use |
 |---|---|---|
 | `Clamp_Low_Wins(value, low, high)` | `ui/uiclamp.h` | Like `std::clamp`, but safe when rules leave the range empty (low above high): then a value below low gives low and any other value gives high. |
+| `Index_In_Range(index, size)` | `ui/uiclamp.h` | True when an `int` index (possibly negative) names an element of a container of `size` elements; use it for the "selected row / intent value is valid" checks instead of `i >= 0 && i < (int)v.size()`. |
 | `Fill_Count_Choices(list, values, limit)` | `ui/uiscreen.h` | Adds a choice labelled with its number for each value; returns the index of the last value not above the limit, or -1. Used by the sidebar row counts. |
 | `UI_Name_At(names, index)` | `ui/uiscreen.h` | The name at an index, or an empty string outside the list. |
 | `UI_Difficulty_Names()` | `ui/uienginehost.h` | The display names of the difficulty levels, easiest first. |

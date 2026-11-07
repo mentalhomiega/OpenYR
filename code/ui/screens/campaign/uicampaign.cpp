@@ -10,6 +10,7 @@
 #include "ui/screens/campaign/uicampaign.h"
 
 #include "ui/rml/rmlview.h"
+#include "ui/uiclamp.h"
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
@@ -33,14 +34,14 @@ void UICampaignPresenterClass::Name_Difficulty(void)
 void UICampaignPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Entries.size()) {
+		if (Index_In_Range(intent.Value, State.Entries.size())) {
 			State.Selected = intent.Value;
 		}
 	} else if (intent.Name == "difficulty") {
 		State.Difficulty = intent.Value;
 		Name_Difficulty();
 	} else if (intent.Name == "ok") {
-		if (State.Selected >= 0 && State.Selected < (int)State.Entries.size()) {
+		if (Index_In_Range(State.Selected, State.Entries.size())) {
 			Picked = State.Entries[State.Selected];
 		}
 		Result = UI_RESULT_ACCEPTED;

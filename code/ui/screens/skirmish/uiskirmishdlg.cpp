@@ -29,6 +29,7 @@
 #include "session.h"
 #include "ui/screens/colorpick/uicolorpick.h"
 #include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/uiclamp.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -106,7 +107,7 @@ static int Slot_Start(UISkirmishState const & state, UISkirmishSlot const & slot
 
 static int Slot_Side(UISkirmishState const & state, UISkirmishSlot const & slot)
 {
-	return(slot.Side >= 0 && slot.Side < (int)state.Sides.size() ? state.Sides[slot.Side].Value : -1);
+	return(Index_In_Range(slot.Side, state.Sides.size()) ? state.Sides[slot.Side].Value : -1);
 }
 
 
@@ -512,7 +513,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 			}
 		}
 	}
-	state.Slots[0].Color = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colors.size()) ? Session.PrefColor : 0;
+	state.Slots[0].Color = Index_In_Range(Session.PrefColor, state.Colors.size()) ? Session.PrefColor : 0;
 	state.Slots[0].Custom = Player_Color_Is_Custom(Session.PrefCustomColor) ? Session.PrefCustomColor : 0;
 	state.Slots[0].Kind = UI_SKIRMISH_SLOT_OPEN;
 
