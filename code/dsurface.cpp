@@ -1311,7 +1311,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 	void * buffer = Lock(start);
 
 	if (DepthBuffer == NULL) {
-		Unlock();
+		if (buffer != NULL) {
+			Unlock();
+		}
 		return(false);
 	}
 
@@ -1323,7 +1325,6 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 	unsigned short z = (unsigned short)(alpha_start + (short)(DepthBuffer->Get_Bounds().Y + DepthBuffer->Get_Scroll()) - start.Y - clip.Y);
 
 	if (buffer == NULL) {
-		Unlock();
 		return(false);
 	}
 
@@ -2340,7 +2341,10 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 	Bytes_Per_Pixel();
 	void * buffer = Lock(start);
 
-	if (DepthBuffer == NULL) {
+	if (DepthBuffer == NULL || AlphaBuffer == NULL) {
+		if (buffer != NULL) {
+			Unlock();
+		}
 		return(false);
 	}
 
@@ -2490,7 +2494,9 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 	void * buffer = Lock(start);
 
 	if (DepthBuffer == NULL || AlphaBuffer == NULL) {
-		Unlock();
+		if (buffer != NULL) {
+			Unlock();
+		}
 		return(false);
 	}
 
@@ -2506,7 +2512,6 @@ bool DSurface::Draw_Depth_Additive_Line(Rect const & cliprect, Point2D const & s
 	int zwidth = DepthBuffer->Get_Buffer_Width();
 
 	if (buffer == NULL) {
-		Unlock();
 		return(false);
 	}
 
