@@ -1,0 +1,25 @@
+; Siege Chopper (SCHP) built at a war factory, flown to a cell and left hovering there, then given the deploy command.
+; Expected: it lands and logs "Deploy: SCHP deploys", as for a granted chopper (siege-chopper-air-deploy.txt).
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/siege-chopper-factory-deploy.txt -Settings "[Options]<newline>DebugMode=yes" -Seconds 120 -Filter "AUTOTEST +(frame|where SCHP|visual SCHP)|Deploy|Exception"
+30 command CenterBase
+30 command DebugInfiniteMoney
+31 command DebugUnlockAll
+32 command DebugInstantBuild
+35 reveal
+40 own NAPOWR 56 40
+41 own NACNST 50 30
+42 own NATECH 44 38
+43 own NAWEAP 60 20
+50 view 64 24
+60 produce SCHP
+300 where SCHP
+400 move SCHP 70 40
+600 where SCHP
+610 select SCHP
+620 command DeployObject
+630 where SCHP
+680 where SCHP
+750 where SCHP
+900 where SCHP
+1100 where SCHP
+1110 quit

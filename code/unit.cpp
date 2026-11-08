@@ -7775,15 +7775,17 @@ int UnitClass::Simple_Deploy_AI(void)
 {
 	switch (Status) {
 		case 0:
-			if (Locomotion->Is_Moving()) {
-				return(5);
-			}
+			// UnitClass::Deploy (0x739AC0) starts the landing of an airborne DeployToLand unit whether or not its locomotor still has a move;
+			// a hovering jumpjet keeps its moving flag, so waiting for it to stop would keep the unit in the air.
 			if (!IsSimpleDeployed && Class->IsDeployToLand && HeightAGL > 0) {
 				IsLandingToDeploy = true;
 				Assign_Target(NULL);
 				if (NavCom == NULL) {
 					Assign_Destination(&Map[Get_Cell()]);
 				}
+				return(5);
+			}
+			if (Locomotion->Is_Moving()) {
 				return(5);
 			}
 			if (Class->DeployingAnim != NULL) {

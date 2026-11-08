@@ -1,0 +1,15 @@
+; Siege Chopper (SCHP) flown to a cell and left hovering there, then given the deploy command. UnitClass::Deploy (0x739AC0) starts
+; the landing of an airborne DeployToLand unit without waiting for its locomotor to stop, and a hovering jumpjet keeps its moving flag.
+; Expected: the chopper comes down from height 500, logs "Deploy: SCHP deploys" and stays on Guard. Before the fix it stayed on Unload in the air.
+; Run: scripts/run_autotest.ps1 -Build agent24 -Script src-agent24/tests/autotest/siege-chopper-air-deploy.txt -Seconds 90 -Filter "AUTOTEST +(frame|where SCHP|visual SCHP)|Deploy|Exception"
+30 reveal
+40 grantunit SCHP 62 46
+50 order SCHP 70 40
+300 where SCHP
+310 select SCHP
+320 command DeployObject
+330 where SCHP
+400 where SCHP
+600 where SCHP
+800 where SCHP
+810 quit
