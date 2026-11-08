@@ -1,0 +1,31 @@
+; Scripted camera zoom and the frame's map layer. The view starts at cell 30,30 and the player zooms out to the minimum.
+; LOCK_INPUT (action 46) saves that zoom and zooms to the scene, and UNLOCK_INPUT (action 47) restores it. Each of those
+; changes drops the map layer in the logic step, so the frame still holds VIDEO_LAYER_KEY where the map was until the next
+; map draw. The autotest loop does not present between the change and that draw, so each overlaypresent step marks the
+; overlay changed and runs the window message handler, which presents the frame at that point.
+; A wheel step glides the view back towards zoom 1. The glide's end is applied before the frame's draw, so no step can
+; present between that drop and its draw; the overlaypresent at frame 115 checks a present after the glide.
+; presentdigest is on from frame 35 to 150, so a present that shows the key logs an AUTOTEST line with the key's pixel count.
+; FrameRateLimit=0 removes the refresh interval, so the present at each overlaypresent is not skipped.
+; Trigger actions 46 and 47 are run directly by the autotest, as a mission trigger would run them.
+; Expected: the log has no "present keyed" line. Before the video layer fix, two "present keyed" lines follow each of the
+; overlaypresent steps at frames 40 and 70, and none follows the one at frame 115.
+; Run: scripts/run_autotest.ps1 -Build agent26 -Script src-agent26/tests/autotest/scripted-camera-zoom-present.txt -Width 1920 -Height 1080 -Seconds 120 -Settings "[Video]`nFrameRateLimit=0" -Filter "AUTOTEST|Exception"
+1 glideclock
+3 reveal
+10 view 30 30
+20 zoom 0.5
+30 scriptzoom
+35 presentdigest 1
+40 trigaction 46 0 0
+40 overlaypresent
+50 scriptzoom
+70 trigaction 47 0 0
+70 overlaypresent
+80 scriptzoom
+90 wheel 0.34
+110 scriptzoom
+115 overlaypresent
+150 presentdigest 0
+155 scriptzoom
+160 quit
