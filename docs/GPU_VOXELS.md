@@ -7,17 +7,21 @@ pass this builds on.
 
 ## Where we are
 
-Stage 1 is in. With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (default `no`), a voxel object that is blitted
-straight into the map view is drawn on the GPU from its voxels instead of from the software's 256 by 256 picture.
-The GPU result is the same picture, index for index; nothing is smoother or sharper yet. The key does nothing
-unless the GPU draws the pass (`GpuRender`) or the `gpucheck` autotest step runs, and the Graphics page has no
-switch for it, because stage 1 has no visible benefit to offer.
+Stages 1 and 2 are in. With `GpuVoxels=yes` in `[Video]` of `RA2MD.INI` (default `no`), a voxel object that is
+blitted straight into the map view, or a vehicle composed from its hull, turret and barrel, is drawn on the GPU from
+its voxels instead of from the software's 256 by 256 picture. The GPU result is the same picture, index for index;
+nothing is smoother or sharper yet. The key does nothing unless the GPU draws the pass (`GpuRender`) or the
+`gpucheck` autotest step runs, and the Graphics page has no switch for it, because these stages have no visible
+benefit to offer.
 
-Stage 1 draws these objects on the GPU:
+These objects are drawn on the GPU:
 
 - vehicles and aircraft with no turret (hull only), such as an MCV, a Kirov or an Orca;
-- nothing else. Turreted vehicles compose hull, turret and barrel on an 8-bit scratch surface, which stays in
-  software, and so do shadows, voxel animations and bullets.
+- vehicles with a voxel turret and barrel, such as a Grizzly, a Rhino or an Apocalypse, with the turret at any
+  facing and the barrel at any pitch.
+
+These stay in software: shadows, voxel animations, bullets, and a turreted vehicle whose body is a shape (the
+scratch surface holds a sprite the GPU does not draw).
 
 While the emissive mask is on (`HDRHighlights=Enhanced` with an HDR display, or `Bloom`), `GpuVoxels` draws nothing,
 because the software voxel drawers write the mask and the GPU drawing does not. A voxel object drawn this way never
@@ -72,43 +76,66 @@ the part of the voxel buffer it covers (`VoxelDrawSystem::Capture`, `GpuVoxelPar
 - The recorded blit has no pixels of its own. Its colour index offset points into the voxel image (`GPU_VOXEL_BASE`
   in `code/gpumapvoxel.h`), and `fs_mapdraw.sc` reads the index there and then does everything it does for any
   blit: translator, alpha lighting, depth test, blend kind.
+- A turreted vehicle is one part with a piece for each of its hull, turret and barrel, drawn in the order the
+  software draws them: the hull, then the barrel and the turret, the barrel before the turret at some turret
+  facings and after it at the others. The software composes them on the 160 by 160 scratch surface, where a later
+  piece replaces the pixels below it that it draws, and the scratch surface passes each pixel through the colour
+  translation of its own drawer. The part's tile covers the scratch surface's dirty rectangle; each piece is
+  drawn into the tile at the place it would land on the scratch surface, clipped to the tile, with the palette
+  texture's second block, which is the first run through that translation. The blit that shows the composite
+  reads the tile at the pixels it would read from the scratch surface, so the sorting, depth and lighting of the
+  blit are the same as for a direct part.
+- While the GPU draws a pass, the software renders none of a part's pieces and writes nothing to the scratch surface.
 - A pass the GPU cannot draw (a limit, a failed program) renders the parts in software when it falls back, so the
   picture is complete.
 
 ## Comparing the two
 
-`tests/autotest/gpu-voxel-compare.txt` plays eight vehicle types turning through sixteen facings, with a Kirov and
-an Orca overhead, under `gpucheck`, with `GpuRender=no` so the software draws the pass. Each voxel part drawn in a
-checked pass, including the hull, turret and barrel parts that go to the scratch surface, is also drawn on the GPU
-and read back, and the log gets one line:
+`tests/autotest/gpu-voxel-compare.txt` plays eight vehicle types turning through sixteen facings, with a Kirov
+and an Orca overhead, then turns the turrets of five turreted types to facings other than the body's and lets two
+tanks drive with their turrets turning, under `gpucheck`, with `GpuRender=no` so the software draws the pass, and
+`HDRHighlights=Classic` so the emissive mask is off. Each voxel part drawn in a checked pass, a composite
+counting as one part, is also drawn on the GPU and read back, and the log gets one line:
 
 `GPU_VOXEL frame F part TYPE@FACING layers N pixels P covered C differing D coverage V maxstep S`
 
-`pixels` is the part's buffer region, `covered` the pixels either side wrote, `differing` the pixels whose palette
-index differs, `coverage` those where only one side wrote a pixel, and `maxstep` the largest difference in a 565
-channel between the voxel palette colours of the two indices. The pass's usual `GPU_DIFF` line then compares the
-finished picture, where a direct voxel blit goes through the same shader as every other blit.
-`GPU_RENDER` lines also count the voxel blits the GPU drew.
+`FACING` is the body's facing in 32 steps, followed by `t` and the turret's facing for a composite. `pixels` is the
+part's tile, `covered` the pixels either side wrote, `differing` the pixels whose palette index differs,
+`coverage` those where only one side wrote a pixel, and `maxstep` the largest difference in a 565 channel between
+the voxel palette colours of the two indices. For a composite the software side is the scratch surface after
+the pieces are composed. The pass's usual `GPU_DIFF` line then compares the finished picture, where a voxel blit
+goes through the same shader as every other blit. `GPU_RENDER` lines also count the voxel blits the GPU drew.
 
-| Type | Parts compared | Facings | Covered pixels | Differing |
-|---|---|---|---|---|
-| MTNK | 174 | 16 | 62,935 | 0 |
-| HTNK | 174 | 16 | 79,304 | 0 |
-| APOC | 174 | 16 | 89,006 | 0 |
-| TTNK | 116 | 16 | 80,399 | 0 |
-| FV | 116 | 16 | 85,215 | 0 |
-| SREF | 116 | 16 | 79,829 | 0 |
-| HARV | 116 | 16 | 89,215 | 0 |
-| AMCV | 59 | 16 | 116,617 | 0 |
-| ZEP (Kirov) | 57 | 1 | 223,098 | 0 |
-| ORCA | 57 | 1 | 32,091 | 0 |
+| Type | Parts compared | Body facings | Turret facings at a body facing | Covered pixels | Differing |
+|---|---|---|---|---|---|
+| MTNK | 81 | 16 | 30 | 66,448 | 0 |
+| HTNK | 81 | 16 | 28 | 83,714 | 0 |
+| APOC | 81 | 16 | 29 | 94,853 | 0 |
+| TTNK | 81 | 16 | 29 | 86,272 | 0 |
+| FV | 81 | 16 | 29 | 101,867 | 0 |
+| SREF | 81 | 16 | 16 | 102,449 | 0 |
+| HARV | 81 | 16 | 16 | 113,168 | 0 |
+| AMCV | 82 | 16 | 0 | 153,557 | 0 |
+| ZEP (Kirov) | 81 | 1 | 0 | 317,034 | 0 |
+| ORCA | 81 | 1 | 0 | 45,603 | 0 |
 
-The `GPU_DIFF` lines of the same run show the hundred or so one-step pixels that the run shows with
-`GpuVoxels=no`; the hull-only MCV, Kirov and Orca blits add none. Rendering the
-same scene with `GpuRender=yes` and `GpuVoxels` on and off gives the same screenshot outside the sidebar.
+A part is compared at most once for each pass the check reads back, so the same facing appears in several
+parts. Sixty-five of the 567 composites had a turret facing different from the body's. The `GPU_DIFF` lines of the
+same run have the same one-step pixels, about three a pass, as the run with `GpuVoxels=no`; none of them lies on a
+vehicle.
 
 The numbers vary from run to run in which passes are read back, so the regress log of the script keeps only its
 crash lines.
+
+## Cost
+
+With the key on, no voxel object uses the picture cache, so the GPU draws every object from its voxels in every
+pass. On `tests/autotest/bench-large-battle.txt` at 1920 by 1080 with `GpuRender=yes` (two runs of 144 seconds
+each, `scripts/perf_bench.ps1`), the mean draw took 5.5 ms with `GpuVoxels=no` and 7.8 ms with `yes`, and the
+GPU's part of the present 6.0 and 8.6 ms. The CPU's preparation of the voxel objects rose from 0.011 to 0.082 ms
+a draw. The run drew 144 times a second with the key off and 84 with it on, at 49.4 and 47.7 game frames a second,
+with 1,100 cached voxel pictures a second reused with it off and 1,806 uncached ones drawn with it on. Stage 7
+takes this cost down.
 
 ## Stages
 
@@ -117,7 +144,7 @@ Each stage has a check that fails when its picture departs from the software.
 | Stage | What it adds | Check | Estimate |
 |---|---|---|---|
 | 1 (done) | Walk, model store, voxel image, shader, direct blits, fallback, `GPU_VOXEL` check | `gpuvoxel` unit test, `gpu-voxel-compare.txt`, zero differing pixels | |
-| 2 | Turreted vehicles: draw hull, turret and barrel into one tile in the order the scratch surface composes them, and blit the tile like a direct part | `GPU_DIFF` over turreted units; screenshots with `GpuRender` on and off | 1 to 2 sessions |
+| 2 (done) | Turreted vehicles: hull, turret and barrel drawn into one tile in the order the scratch surface composes them, and the tile blitted like a direct part | `GPU_VOXEL` and `GPU_DIFF` over turreted units at body and turret facings that differ, zero differing pixels | |
 | 3 | Emissive mask: write the highlight strength beside the index and feed the glow plane and the HDR composite from it, so `GpuVoxels` works under `Bloom` and HDR Enhanced | glow and HDR frames compared with the software mask | 1 session |
 | 4 | The other voxel draws: shadows (the same walk of occupied columns, drawn darkened), voxel animations, bullets, debris and the translucent, predator and warp flags | `GPU_DIFF` on the existing voxel anim and cloak scripts | 1 session |
 | 5 | Smooth facing: build the object matrix from the exact facing instead of the 32-step key and draw every frame without the cache | the matrix at each of the 32 keys equals stage 4's; a turning unit shows no snap | 1 session |

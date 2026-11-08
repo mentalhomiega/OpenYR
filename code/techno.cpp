@@ -8555,8 +8555,10 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	}
 
 	// When the GPU draws this pass, it draws the object from its voxels and the software skips the rendering.
-	bool const gpu = GpuDraw_Voxels_Wanted();
-	bool const gpu_draws = gpu && GpuDraw_Is_Rendering(*LogicalSurface);
+	// A part composed on the scratch surface goes to the GPU only inside a composite UnitClass::Unit_Draw_Voxel opened.
+	bool const composited = RTTI == RTTI_UNIT && ((UnitClass const *)this)->IsCompositingToEightBitSurface;
+	bool const gpu = GpuDraw_Voxels_Wanted() && (!composited || GpuDraw_Composite_Open());
+	bool const gpu_draws = gpu && (composited ? GpuDraw_Composite_Rendering() : GpuDraw_Is_Rendering(*LogicalSurface));
 	VoxelScene scene;
 	if (gpu) {
 		scene = VoxelDrawSystem::Capture();
@@ -8565,7 +8567,11 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 	if (gpu) {
 		char label[24];
 		std::snprintf(label, sizeof(label), "%s@%d", (char const *)Class_Of()->IniName, int(PrimaryFacing.Current().As_Dir32()));
-		GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+		if (composited) {
+			GpuDraw_Composite_Piece(scene, region.Point + point);
+		} else {
+			GpuDraw_Voxel_Part(scene, label, !gpu_draws);
+		}
 	}
 	Rect cliprect = xcliprect;
 
@@ -8590,8 +8596,11 @@ SurfaceRegion TechnoClass::Techno_Render_Voxel_Object(VoxelDataStruct const & vo
 		predoffset = Get_Predator_Offset();
 	}
 
-	Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(flags), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
-	if (gpu) {
+	// The GPU composes the pieces of the scratch surface itself, so the software leaves it empty.
+	if (!(gpu_draws && composited)) {
+		Blit_Block(*LogicalSurface, *converter, *VoxelDrawSystem::Get_Surface(), region.Bounds, region.Point + point, cliprect, NULL, converter->Blitter_From_Flags(flags), Get_Z_Adjust(), Get_Z_Gradient(), brightness, predoffset);
+	}
+	if (gpu && !composited) {
 		GpuDraw_Voxel_End();
 	}
 

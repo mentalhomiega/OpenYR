@@ -209,6 +209,7 @@ A command runs once the game frame reaches its frame, in file order.
 | `windowpress x y` | moves the pointer to that window pixel and presses the left button there, as the start of a drag does |
 | `windowrelease x y` | moves the pointer to that window pixel and releases the left button there, as the end of a drag does |
 | `face <dir256> x y` | turns the body and turret of the player's objects on that cell to the 256-step facing (0 is north) |
+| `turretface <dir256> x y` | turns only the turret of the player's objects on that cell to the 256-step facing |
 | `voxelshade <type>` | writes the shade each normal of that voxel normal table gets under the live light, diffuse alone and with a specular highlight |
 | `cover x y` | writes how many buildings screen that cell and whether it counts as covered |
 | `hiddenmarker <mode>` | 0 hides the hidden-object marker, 1 shows it, 2 shows brackets in place of the Behind animation |

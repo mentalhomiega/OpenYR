@@ -4099,6 +4099,20 @@ static void Face_Step(StepType const & step)
 }
 
 
+// turretface <dir256> x y: turns only the turret of the player's objects on that cell to the 256-step facing.
+static void Turretface_Step(StepType const & step)
+{
+	Cell const cell(step.X, step.Y);
+	Dir256 const facing = static_cast<Dir256>(step.Argument_Int() & 255);
+	For_Technos(
+		[&](TechnoClass * techno) {return(Is_Player_Techno_At(techno, cell));},
+		[&](TechnoClass * techno) {
+			techno->SecondaryFacing.Set(DirType(facing));
+			DebugString("AUTOTEST   turretface %s at %d,%d to %d\n", techno->TClass->Name(), cell.X, cell.Y, (int)facing);
+		});
+}
+
+
 // pitch <dir256> x y: sets the barrel pitch of the player's objects on that cell, 64 level and 0 straight up.
 static void Pitch_Step(StepType const & step)
 {
@@ -6914,6 +6928,7 @@ static std::unordered_map<std::string_view, void (*)(StepType const &)> const & 
 		{"neutral", [](StepType const & step) {Own_Step(step, Civilian_House(), "no civilian house");}},
 		{"enemy", [](StepType const & step) {Own_Step(step, First_Computer_House(true), "no enemy house");}},
 		{"face", Face_Step},
+		{"turretface", Turretface_Step},
 		{"pitch", Pitch_Step},
 		{"barrelpitch", Barrelpitch_Step},
 		{"voxelshade", Voxelshade_Step},
