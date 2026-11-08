@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <limits>
 #include <numeric>
 
@@ -431,6 +432,32 @@ namespace NetTiming
 			wait++;
 		}
 		return(wait);
+	}
+
+
+	void IntervalStats::Add(double milliseconds)
+	{
+		if (Current.Count == 0 || milliseconds < Current.Min) {
+			Current.Min = milliseconds;
+		}
+		if (Current.Count == 0 || milliseconds > Current.Max) {
+			Current.Max = milliseconds;
+		}
+		Current.Count++;
+		Sum += milliseconds;
+		SumOfSquares += milliseconds * milliseconds;
+	}
+
+
+	IntervalStats::Summary IntervalStats::Take(void)
+	{
+		Summary result = Current;
+		if (result.Count > 0) {
+			result.Mean = Sum / result.Count;
+			result.Deviation = std::sqrt(std::max(0.0, SumOfSquares / result.Count - result.Mean * result.Mean));
+		}
+		*this = IntervalStats();
+		return(result);
 	}
 
 

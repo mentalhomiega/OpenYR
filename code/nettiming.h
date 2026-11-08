@@ -169,6 +169,30 @@ namespace NetTiming
 			// The part of a millisecond each frame is owed, counted in 1/Rate of a millisecond.
 			unsigned int Leftover = 0;
 	};
+
+	// Min, mean, max and standard deviation of the frame intervals seen since the last Take.
+	class IntervalStats
+	{
+		public:
+			struct Summary
+			{
+				unsigned int Count = 0;
+				double Min = 0.0;
+				double Mean = 0.0;
+				double Max = 0.0;
+				double Deviation = 0.0;
+			};
+
+			void Add(double milliseconds);
+			// Returns the summary and starts a new one.
+			Summary Take(void);
+
+		private:
+			Summary Current;
+			double Sum = 0.0;
+			double SumOfSquares = 0.0;
+	};
+
 	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
 	// gamemd's online timing, which the default policy follows. Response times are in ticks of

@@ -40,6 +40,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "fog.h"
+#include "framewait.h"
 #include "hangwatch.h"
 #include "perfstat.h"
 #include "init.h"
@@ -51,6 +52,7 @@
 #include "misc.h"
 #include "mpscore.h"
 #include "msgbox.h"
+#include "monotonic.h"
 #include "msgloop.h"
 #include "mstimer.h"
 #include "netdlg.h"
@@ -243,6 +245,42 @@ static int Target_Frame_Rate(void)
 
 // Recent time a view redraw took, in milliseconds, averaged over the last few draws.
 static unsigned int RenderCost = 0;
+
+
+/// <summary>
+/// With performance recording on, logs once a second how evenly the game frames ended and how much processor time
+/// the process used. Call it as each game frame ends.
+/// </summary>
+static void Log_Tick_Intervals(void)
+{
+	static NetTiming::IntervalStats intervals;
+	static std::int64_t last_tick = 0;
+	static std::int64_t window_start = 0;
+	static std::uint64_t window_cpu = 0;
+
+	if (!Perf_Enabled) {
+		last_tick = 0;
+		return;
+	}
+
+	std::int64_t const now = Monotonic_Nanoseconds();
+	if (last_tick != 0) {
+		intervals.Add((now - last_tick) / 1e6);
+	}
+	last_tick = now;
+
+	if (window_start == 0) {
+		window_start = now;
+		window_cpu = Process_Cpu_Microseconds();
+	} else if (now - window_start >= 1000000000) {
+		std::uint64_t const cpu = Process_Cpu_Microseconds();
+		NetTiming::IntervalStats::Summary const sum = intervals.Take();
+		DebugString("Pacing: %u ticks in %.1f ms, interval ms min/mean/max/sd %.3f/%.3f/%.3f/%.3f, cpu %.1f ms\n",
+			sum.Count, (now - window_start) / 1e6, sum.Min, sum.Mean, sum.Max, sum.Deviation, (cpu - window_cpu) / 1e3);
+		window_start = now;
+		window_cpu = cpu;
+	}
+}
 
 
 static void Note_Render_Cost(unsigned int took)
@@ -877,6 +915,8 @@ void Sync_Delay(void)
 		}
 		second_timer = 1000;
 	}
+
+	Log_Tick_Intervals();
 }
 
 

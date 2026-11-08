@@ -11,6 +11,7 @@
 #include "nettiming.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <initializer_list>
 #include <iostream>
@@ -487,6 +488,27 @@ namespace
 		Expect_Equal("no rate means no wait", pacer.Next_Wait(0), 0u);
 		pacer.Next_Wait(60);
 		Expect_Equal("a change of rate starts the average again", pacer.Next_Wait(45), 22u);
+	}
+
+
+	void Test_Interval_Stats(void)
+	{
+		using namespace NetTiming;
+
+		IntervalStats stats;
+		IntervalStats::Summary empty = stats.Take();
+		Expect_Equal("no intervals give a zero count", empty.Count, 0u);
+
+		for (double value : {16.0, 17.0, 16.0, 17.0}) {
+			stats.Add(value);
+		}
+		IntervalStats::Summary sum = stats.Take();
+		Expect_Equal("four intervals are counted", sum.Count, 4u);
+		Expect_Equal("the shortest interval", sum.Min, 16.0);
+		Expect_Equal("the longest interval", sum.Max, 17.0);
+		Expect_Equal("the mean interval", sum.Mean, 16.5);
+		Expect_Equal("the deviation of 16, 17, 16, 17", std::abs(sum.Deviation - 0.5) < 1e-9, true);
+		Expect_Equal("taking the summary starts a new one", stats.Take().Count, 0u);
 	}
 
 
@@ -1515,6 +1537,7 @@ int main(void)
 	Test_Game_Speed_Frame_Rate();
 	Test_Solo_Game_Speed_Frame_Rate();
 	Test_Frame_Pacer();
+	Test_Interval_Stats();
 	Test_Speed_Reaches_Frame_Rate();
 	Test_Gamemd_Timing();
 	Test_Host_Choice();
