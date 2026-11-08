@@ -215,8 +215,7 @@ class CrosscheckTable {
 			CrosscheckTally & tally = Tallies[std::string(file) + ":" + std::to_string(line)];
 			tally.Calls++;
 			if (!agrees && tally.Disagreements++ < 5) {
-				DebugString("RTTI crosscheck: disagreement at %s:%d
-", file, line);
+				DebugString("RTTI crosscheck: disagreement at %s:%d\n", file, line);
 			}
 			if ((++Total & 0xFFFFF) == 0) {
 				Write();
@@ -232,8 +231,7 @@ class CrosscheckTable {
 				return;
 			}
 			for (auto const & entry : Tallies) {
-				fprintf(out, "%s calls %lld disagreements %lld
-", entry.first.c_str(), entry.second.Calls, entry.second.Disagreements);
+				fprintf(out, "%s calls %lld disagreements %lld\n", entry.first.c_str(), entry.second.Calls, entry.second.Disagreements);
 			}
 			fclose(out);
 		}
