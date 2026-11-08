@@ -36,6 +36,7 @@
 			<div id="edge-left"></div>
 			<div id="edge-right"></div>
 		</div>
+		<div id="update"><p id="update-title"></p><p id="update-line"></p><p id="update-error"></p><div id="update-buttons"><button id="update-now" class="primary" data-event-click="queue('update_now')">Update</button><button id="update-later" data-event-click="queue('update_later')">Later</button></div></div>
 		<div id="tip" class="tooltip"></div>
 	</div>
 </body>

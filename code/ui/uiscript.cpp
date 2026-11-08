@@ -18,6 +18,7 @@
 #include "gamedirs.h"
 #include "movie.h"
 #include "strutil.h"
+#include "updatecheck.h"
 #include "video.h"
 #include "windowevent.hh"
 
@@ -535,6 +536,19 @@ bool Step_Hudrows(Rml::Context *, UIStepType const &, long long)
 }
 
 
+// Starts the update check for an installed build and a local feed, as the title menu does from the install record.
+bool Step_Updatecheck(Rml::Context *, UIStepType const & step, long long)
+{
+	std::string::size_type const space = step.Argument.find(' ');
+	if (space == std::string::npos) {
+		DebugString("UISCRIPT updatecheck needs a build and a feed\n");
+		return(false);
+	}
+	Update_Check_Begin(step.Argument.substr(0, space), step.Argument.substr(space + 1));
+	return(false);
+}
+
+
 bool Step_Quit(Rml::Context *, UIStepType const &, long long)
 {
 	DebugString("UISCRIPT quit\n");
@@ -566,6 +580,7 @@ StepHandler Find_Step_Handler(std::string const & command)
 		{"movie", Step_Movie},
 		{"checked", Step_Checked},
 		{"hudrows", Step_Hudrows},
+		{"updatecheck", Step_Updatecheck},
 		{"quit", Step_Quit},
 	};
 	for (auto const & entry : handlers) {
@@ -601,7 +616,9 @@ void UIScript_Add(std::string const & command, std::string const & argument)
 /// visible screen), box (logs where an element and each element around it lie), theme (sets the menu tint to allied, soviet, yuri or random, as the MenuTheme setting does), movie (plays the
 /// movie of that file name, as a campaign does), stall (milliseconds to hold the main thread
 /// without pumping messages, for testing the hang watchdog), command (runs the registered command of that
-/// name, as its key does; the in-game script's command step cannot run while a replay is paused) and quit.
+/// name, as its key does; the in-game script's command step cannot run while a replay is paused), updatecheck (an installed
+/// build such as beta33 and a local feed file, separated by a space: starts the update check the title menus start from the
+/// install record) and quit.
 /// </summary>
 void UIScript_Tick(Rml::Context * context)
 {

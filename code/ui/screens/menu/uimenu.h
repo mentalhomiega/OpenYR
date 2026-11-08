@@ -52,6 +52,9 @@ struct UIMenuState
 	// The player's name on the profile panel of the modern title menus; empty shows no panel.
 	std::string Profile;
 
+	// The menu choice that ends the game, returned when the player presses Update and the launcher has started.
+	int UpdateExitChoice = 0;
+
 	bool Wide = true;
 
 	// Whether a title screen menu opens with the slide-out from its middle; false shows it at once.

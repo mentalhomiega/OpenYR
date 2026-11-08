@@ -85,6 +85,7 @@ struct UpdateType
 	bool Offer = false;
 	unsigned Installed = 0;
 	unsigned Offered = 0;
+	std::wstring Tag;
 	AssetType Setup;
 	AssetType Checksum;
 
@@ -96,6 +97,11 @@ struct UpdateType
 // beta that has both assets. A build that is not a beta name is never offered over.
 UpdateType Decide_Update(std::wstring const & installed, ReleaseType const & release);
 
+// Reads a feed's text and decides, for the installed build, whether to offer its release. Offer is false
+// with the reason in Reason when the feed does not parse, names nothing newer, or names assets its kind
+// of feed may not use (see Asset_Sources_Allowed).
+UpdateType Evaluate_Feed(std::wstring const & installed, std::wstring const & feed, std::string const & body);
+
 // Where a feed or download comes from: an https:// URL, an absolute local path, or something refused.
 enum class SourceType { Https, LocalFile, Refused };
 SourceType Source_Kind(std::wstring const & url);
@@ -104,6 +110,16 @@ SourceType Source_Kind(std::wstring const & url);
 // https assets, so a release feed cannot send the update copy to a file on the player's disk. A local
 // feed, used by the tests, may name either. On false, reason says which asset was refused.
 bool Asset_Sources_Allowed(std::wstring const & feed, UpdateType const & update, std::wstring & reason);
+
+// The switch the game gives the launcher when the player presses Update. Its value is the game's
+// process id, which the launcher waits for before it starts the update.
+wchar_t const * const UpdateNowSwitch = L"/UPDATENOW=";
+
+// The launcher's command line for an update the player asked for in the game.
+std::wstring Update_Now_Command(std::wstring const & launcher_path, std::uint32_t game_process);
+
+// A process id written in decimal digits only, and not zero. False for anything else.
+bool Parse_Process_Id(std::wstring const & text, std::uint32_t & process);
 
 // The largest download, in bytes, that the update copy accepts. The setup with its package is far smaller.
 inline constexpr std::uint64_t DownloadLimit = 512ull * 1024 * 1024;
@@ -119,6 +135,9 @@ struct ConfigType
 	std::wstring UserDirectory;
 	std::wstring FeedUrl;
 	bool Check = true;
+
+	// Whether the launcher asks about an update itself. By default the game offers it on its title menus.
+	bool AskInLauncher = false;
 };
 
 // Reads OPENTS.INI text. A missing key takes its default; UserDirectory is returned as the setup writes it.

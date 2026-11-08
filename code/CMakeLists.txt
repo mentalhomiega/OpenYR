@@ -248,6 +248,11 @@ target_link_libraries(OpenTS PRIVATE
     odbc32 odbccp32
 )
 
+# The title menus offer beta updates with the launcher's feed code.
+if(WIN32)
+    target_link_libraries(OpenTS PRIVATE OpenYRLauncherCore)
+endif()
+
 # HDR detection reads the display's DXGI output and its HDR state.
 if(WIN32)
     target_link_libraries(OpenTS PRIVATE dxgi)

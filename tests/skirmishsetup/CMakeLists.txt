@@ -6,6 +6,7 @@ opents_add_test(SkirmishSetup
     SOURCES skirmishsetup.cpp
         ../uishell/uicolorstub.cpp
         ../uishell/uidevstub.cpp
+        ../uishell/updatestub.cpp
         ../uishell/uiscriptstub.cpp
         ../uishell/uitexturestub.cpp
     ENGINE
