@@ -9,6 +9,7 @@
 # Summary columns: mean is the mean of the per-second averages, p95 is the 95th percentile of the
 # per-second p95 values, and max is the largest per-second worst time. Frames, draws and presents are
 # per second. Pass -Logs to summarise existing logs without running the game.
+# -Settings passes extra INI text to run_autotest.ps1, for example "[Video]`nGpuRender=yes".
 #
 # Usage:
 #   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/perf_bench.ps1 -Build agent14 -Runs 3
@@ -24,7 +25,8 @@ param(
 	[string[]]$Logs = @(),
 	[int]$Width = 1920,
 	[int]$Height = 1080,
-	[int]$RenderFrameRate = 240
+	[int]$RenderFrameRate = 240,
+	[string]$Settings = ''
 )
 
 $root = Split-Path $PSScriptRoot -Parent
@@ -39,9 +41,11 @@ if ($Logs.Count -eq 0) {
 	if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) { Write-Error "perf_bench: no run_autotest.ps1 at $runner"; exit 1 }
 	$scriptPath = (Resolve-Path -LiteralPath $Script).Path
 	$Logs = @()
+	$settingsArgs = @()
+	if ($Settings) { $settingsArgs = @('-Settings', $Settings) }
 	for ($run = 1; $run -le $Runs; $run++) {
 		"perf_bench: run $run of $Runs, $scriptPath"
-		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map XMP08T2.MAP -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate -AIPlayers 3 -AICountries '5,5,5' -Seconds $Seconds -Filter 'BENCH|Exception' | Out-Host
+		powershell.exe -NoProfile -ExecutionPolicy Bypass -File $runner -Build $Build -Script $scriptPath -Map XMP08T2.MAP -Width $Width -Height $Height -RenderFrameRate $RenderFrameRate -AIPlayers 3 -AICountries '5,5,5' -Seconds $Seconds -Filter 'BENCH|Exception' @settingsArgs | Out-Host
 		$log = Get-ChildItem (Join-Path $debugDir '*.LOG') | Sort-Object LastWriteTime | Select-Object -Last 1
 		if (-not $log) { Write-Error "perf_bench: run $run wrote no debug log in $debugDir"; exit 1 }
 		$copy = Join-Path $OutDir "$Label-run$run.log"
